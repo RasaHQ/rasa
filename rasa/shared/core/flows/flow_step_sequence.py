@@ -8,29 +8,31 @@ from rasa.shared.core.flows.steps.internal import InternalFlowStep
 
 
 @dataclass
-class StepSequence:
+class FlowStepSequence:
+    """A Sequence of flow steps."""
+
     child_steps: List[FlowStep]
 
     @staticmethod
-    def from_json(steps_config: List[Dict[Text, Any]]) -> StepSequence:
-        """Used to read steps from parsed YAML.
+    def from_json(data: List[Dict[Text, Any]]) -> FlowStepSequence:
+        """Create a StepSequence object from serialized data
 
         Args:
-            steps_config: The parsed YAML as a dictionary.
+            data: data for a StepSequence in a serialized format
 
         Returns:
-            The parsed steps.
+            A StepSequence object including its flow step objects.
         """
 
-        flow_steps: List[FlowStep] = [step_from_json(config) for config in steps_config]
+        flow_steps: List[FlowStep] = [step_from_json(config) for config in data]
 
-        return StepSequence(child_steps=flow_steps)
+        return FlowStepSequence(child_steps=flow_steps)
 
     def as_json(self) -> List[Dict[Text, Any]]:
-        """Returns the steps as a dictionary.
+        """Serialize the StepSequence object and contained FlowStep objects
 
         Returns:
-            The steps as a dictionary.
+            the StepSequence and its FlowSteps as serialized data
         """
         return [
             step.as_json()
@@ -40,7 +42,7 @@ class StepSequence:
 
     @property
     def steps(self) -> List[FlowStep]:
-        """Returns the steps of the flow."""
+        """Return all steps in this step sequence and their sub steps."""
         return [
             step
             for child_step in self.child_steps
@@ -48,7 +50,7 @@ class StepSequence:
         ]
 
     def first(self) -> Optional[FlowStep]:
-        """Returns the first step of the sequence."""
+        """Return the first step of the sequence."""
         if len(self.child_steps) == 0:
             return None
         return self.child_steps[0]

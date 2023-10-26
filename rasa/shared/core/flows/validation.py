@@ -10,7 +10,7 @@ from rasa.shared.core.flows.flow_step_links import (
     IfFlowStepLink,
     ElseFlowStepLink,
 )
-from rasa.shared.core.flows.flow_step_sequence import StepSequence
+from rasa.shared.core.flows.flow_step_sequence import FlowStepSequence
 from rasa.shared.core.flows.steps.constants import CONTINUE_STEP_PREFIX, DEFAULT_STEPS
 from rasa.shared.core.flows.steps.link import LinkFlowStep
 from rasa.shared.core.flows.flow import Flow
@@ -201,7 +201,7 @@ def validate_no_empty_step_sequences(flow: Flow) -> None:
         for link in step.next.links:
             if (
                 isinstance(link, BranchingFlowStepLink)
-                and isinstance(link.target_reference, StepSequence)
+                and isinstance(link.target_reference, FlowStepSequence)
                 and len(link.target_reference.child_steps) == 0
             ):
                 raise EmptyStepSequenceException(flow.id, step.id)

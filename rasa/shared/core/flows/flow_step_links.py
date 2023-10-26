@@ -7,7 +7,7 @@ from typing import List, Union, Dict, Text, Any, Optional, Generator
 from rasa.shared.core.flows.flow_step import FlowStep
 
 if TYPE_CHECKING:
-    from rasa.shared.core.flows.flow_step_sequence import StepSequence
+    from rasa.shared.core.flows.flow_step_sequence import FlowStepSequence
 
 
 @dataclass
@@ -107,21 +107,21 @@ class FlowStepLink:
 
 @dataclass
 class BranchingFlowStepLink(FlowStepLink):
-    target_reference: Union[Text, StepSequence]
+    target_reference: Union[Text, FlowStepSequence]
     """The id of the linked step or a sequence of steps."""
 
     def steps_in_tree(self) -> Generator[FlowStep, None, None]:
         """Recursively generates the steps in the tree."""
-        from rasa.shared.core.flows.flow_step_sequence import StepSequence
+        from rasa.shared.core.flows.flow_step_sequence import FlowStepSequence
 
-        if isinstance(self.target_reference, StepSequence):
+        if isinstance(self.target_reference, FlowStepSequence):
             yield from self.target_reference.steps
 
     def child_steps(self) -> List[FlowStep]:
         """Returns the steps of the linked flow step sequence if any."""
-        from rasa.shared.core.flows.flow_step_sequence import StepSequence
+        from rasa.shared.core.flows.flow_step_sequence import FlowStepSequence
 
-        if isinstance(self.target_reference, StepSequence):
+        if isinstance(self.target_reference, FlowStepSequence):
             return self.target_reference.child_steps
         else:
             return []
@@ -129,9 +129,9 @@ class BranchingFlowStepLink(FlowStepLink):
     @property
     def target(self) -> Text:
         """Return the target flow step id."""
-        from rasa.shared.core.flows.flow_step_sequence import StepSequence
+        from rasa.shared.core.flows.flow_step_sequence import FlowStepSequence
 
-        if isinstance(self.target_reference, StepSequence):
+        if isinstance(self.target_reference, FlowStepSequence):
             if first := self.target_reference.first():
                 return first.id
             else:
@@ -175,13 +175,13 @@ class IfFlowStepLink(BranchingFlowStepLink):
         Returns:
             An IfFlowStepLink object.
         """
-        from rasa.shared.core.flows.flow_step_sequence import StepSequence
+        from rasa.shared.core.flows.flow_step_sequence import FlowStepSequence
 
         if isinstance(data["then"], str):
             return IfFlowStepLink(target_reference=data["then"], condition=data["if"])
         else:
             return IfFlowStepLink(
-                target_reference=StepSequence.from_json(data["then"]),
+                target_reference=FlowStepSequence.from_json(data["then"]),
                 condition=data["if"],
             )
 
@@ -191,12 +191,12 @@ class IfFlowStepLink(BranchingFlowStepLink):
         Returns:
             the IfFlowStepLink object as serialized data.
         """
-        from rasa.shared.core.flows.flow_step_sequence import StepSequence
+        from rasa.shared.core.flows.flow_step_sequence import FlowStepSequence
 
         return {
             "if": self.condition,
             "then": self.target_reference.as_json()
-            if isinstance(self.target_reference, StepSequence)
+            if isinstance(self.target_reference, FlowStepSequence)
             else self.target_reference,
         }
 
@@ -215,13 +215,13 @@ class ElseFlowStepLink(BranchingFlowStepLink):
         Returns:
             An ElseFlowStepLink
         """
-        from rasa.shared.core.flows.flow_step_sequence import StepSequence
+        from rasa.shared.core.flows.flow_step_sequence import FlowStepSequence
 
         if isinstance(data["else"], str):
             return ElseFlowStepLink(target_reference=data["else"])
         else:
             return ElseFlowStepLink(
-                target_reference=StepSequence.from_json(data["else"])
+                target_reference=FlowStepSequence.from_json(data["else"])
             )
 
     def as_json(self) -> Dict[Text, Any]:
@@ -230,11 +230,11 @@ class ElseFlowStepLink(BranchingFlowStepLink):
         Returns:
             The ElseFlowStepLink as serialized data.
         """
-        from rasa.shared.core.flows.flow_step_sequence import StepSequence
+        from rasa.shared.core.flows.flow_step_sequence import FlowStepSequence
 
         return {
             "else": self.target_reference.as_json()
-            if isinstance(self.target_reference, StepSequence)
+            if isinstance(self.target_reference, FlowStepSequence)
             else self.target_reference
         }
 

@@ -20,7 +20,7 @@ from rasa.shared.core.flows.steps.end import EndFlowStep
 from rasa.shared.core.flows.steps.start import StartFlowStep
 from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
 from rasa.shared.core.flows.steps.link import LinkFlowStep
-from rasa.shared.core.flows.flow_step_sequence import StepSequence
+from rasa.shared.core.flows.flow_step_sequence import FlowStepSequence
 
 
 @dataclass
@@ -33,7 +33,7 @@ class Flow:
     """The human-readable name of the flow."""
     description: Optional[Text]
     """The description of the flow."""
-    step_sequence: StepSequence
+    step_sequence: FlowStepSequence
     """The steps of the flow."""
 
     @staticmethod
@@ -46,7 +46,7 @@ class Flow:
         Returns:
             A Flow object.
         """
-        step_sequence = StepSequence.from_json(data.get("steps"))
+        step_sequence = FlowStepSequence.from_json(data.get("steps"))
 
         return Flow(
             id=flow_id,
@@ -61,7 +61,7 @@ class Flow:
         return flow_id.replace("_", " ").replace("-", " ")
 
     @staticmethod
-    def resolve_default_ids(step_sequence: StepSequence) -> StepSequence:
+    def resolve_default_ids(step_sequence: FlowStepSequence) -> FlowStepSequence:
         """Resolves the default ids of all steps in the sequence.
 
         If a step does not have an id, a default id is assigned to it based

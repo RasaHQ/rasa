@@ -8,7 +8,7 @@ from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
 )
 from rasa.shared.core.flows.flow_step_links import FlowStepLinks
 from rasa.shared.core.flows.steps.action import ActionFlowStep
-from rasa.shared.core.flows.flow_step_sequence import StepSequence
+from rasa.shared.core.flows.flow_step_sequence import FlowStepSequence
 from rasa.shared.core.flows.flow import Flow
 from rasa.shared.core.flows.flows_list import FlowsList
 
@@ -55,7 +55,7 @@ def test_flow_get_flow():
     frame = UserFlowStackFrame(frame_id="test", flow_id="foo", step_id="bar")
     flow = Flow(
         id="foo",
-        step_sequence=StepSequence(child_steps=[]),
+        step_sequence=FlowStepSequence(child_steps=[]),
         name="foo flow",
         description="foo flow description",
     )
@@ -69,7 +69,7 @@ def test_flow_get_flow_non_existant_id():
         flows=[
             Flow(
                 id="foo",
-                step_sequence=StepSequence(child_steps=[]),
+                step_sequence=FlowStepSequence(child_steps=[]),
                 name="foo flow",
                 description="foo flow description",
             )
@@ -93,7 +93,7 @@ def test_flow_get_step():
         flows=[
             Flow(
                 id="foo",
-                step_sequence=StepSequence(child_steps=[step]),
+                step_sequence=FlowStepSequence(child_steps=[step]),
                 name="foo flow",
                 description="foo flow description",
             )
@@ -108,7 +108,7 @@ def test_flow_get_step_non_existant_id():
         flows=[
             Flow(
                 id="foo",
-                step_sequence=StepSequence(child_steps=[]),
+                step_sequence=FlowStepSequence(child_steps=[]),
                 name="foo flow",
                 description="foo flow description",
             )
@@ -124,7 +124,7 @@ def test_flow_get_step_non_existant_flow_id():
         flows=[
             Flow(
                 id="foo",
-                step_sequence=StepSequence(child_steps=[]),
+                step_sequence=FlowStepSequence(child_steps=[]),
                 name="foo flow",
                 description="foo flow description",
             )
