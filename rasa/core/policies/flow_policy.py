@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any, Dict, Text, List, Optional
+import copy
 
 from jinja2 import Template
 from structlog.contextvars import (
@@ -499,20 +500,19 @@ class FlowExecutor:
         step_result: FlowStepResult = ContinueFlowWithNextStep()
 
         tracker = tracker.copy()
-
         number_of_initial_events = len(tracker.events)
-
-        number_of_steps_taken = 0
+        number_of_repetations = 0
+        prev_frame = None
 
         while isinstance(step_result, ContinueFlowWithNextStep):
-
-            number_of_steps_taken += 1
-            if number_of_steps_taken > MAX_NUMBER_OF_STEPS:
-                raise FlowCircuitBreakerTrippedException(
-                    self.dialogue_stack, number_of_steps_taken
-                )
-
             active_frame = self.dialogue_stack.top()
+            if active_frame == prev_frame:
+                number_of_repetations += 1
+            if number_of_repetations > MAX_NUMBER_OF_STEPS:
+                raise FlowCircuitBreakerTrippedException(
+                    self.dialogue_stack, number_of_repetations
+                )
+            prev_frame = copy.deepcopy(active_frame)
             if not isinstance(active_frame, BaseFlowStackFrame):
                 # If there is no current flow, we assume that all flows are done
                 # and there is nothing to do. The assumption here is that every
