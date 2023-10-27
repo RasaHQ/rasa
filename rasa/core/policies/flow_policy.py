@@ -501,18 +501,18 @@ class FlowExecutor:
 
         tracker = tracker.copy()
         number_of_initial_events = len(tracker.events)
-        number_of_repetations = 0
+        consecutive_repetition = 0
         prev_frame = None
 
         while isinstance(step_result, ContinueFlowWithNextStep):
             active_frame = self.dialogue_stack.top()
             if active_frame == prev_frame:
-                number_of_repetations += 1
+                consecutive_repetition += 1
             else:
-                number_of_repetations = 0
-            if number_of_repetations > MAX_NUMBER_OF_STEPS:
+                consecutive_repetition = 0
+            if consecutive_repetition > MAX_NUMBER_OF_STEPS:
                 raise FlowCircuitBreakerTrippedException(
-                    self.dialogue_stack, number_of_repetations
+                    self.dialogue_stack, consecutive_repetition
                 )
             prev_frame = copy.deepcopy(active_frame)
             if not isinstance(active_frame, BaseFlowStackFrame):
