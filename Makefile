@@ -59,8 +59,6 @@ clean:
 	rm -rf build/
 	rm -rf .mypy_cache/
 	rm -rf dist/
-	rm -rf docs/build
-	rm -rf docs/.docusaurus
 
 install:
 	poetry run python -m pip install -U pip
@@ -72,9 +70,6 @@ install-mitie:
 
 install-full: install-mitie
 	poetry install -E full
-
-install-docs:
-	cd docs/ && yarn install
 
 formatter:
 	poetry run black rasa tests
@@ -200,40 +195,8 @@ test-marker: clean
 	# TF_CPP_MIN_LOG_LEVEL=2 sets C code log level for tensorflow to error suppressing lower log events
 	TRANSFORMERS_OFFLINE=1 OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest tests -n $(JOBS) --dist loadscope -m "$(PYTEST_MARKER)" --cov rasa --ignore $(INTEGRATION_TEST_FOLDER) $(DD_ARGS)
 
-generate-pending-changelog:
-	poetry run python -c "from scripts import release; release.generate_changelog('major.minor.patch')"
-
-cleanup-generated-changelog:
-	# this is a helper to cleanup your git status locally after running "make test-docs"
-	# it's not run on CI at the moment
-	git status --porcelain | sed -n '/^D */s///p' | xargs git reset HEAD
-	git reset HEAD CHANGELOG.mdx
-	git ls-files --deleted | xargs git checkout
-	git checkout CHANGELOG.mdx
-
-test-docs: generate-pending-changelog docs
-	poetry run pytest tests/docs/*
-
-lint-docs: generate-pending-changelog docs
-	cd docs/ && yarn mdx-lint
-
-prepare-docs:
-	cd docs/ && poetry run yarn pre-build
-
-docs: prepare-docs
-	cd docs/ && yarn build
-
-livedocs:
-	cd docs/ && poetry run yarn start
-
-preview-docs:
-	cd docs/ && yarn build && yarn deploy-preview --alias=${PULL_REQUEST_NUMBER} --message="Preview for Pull Request #${PULL_REQUEST_NUMBER}"
-
-publish-docs:
-	cd docs/ && yarn build && yarn deploy
-
 release:
-	poetry run python scripts/release.py
+	poetry run python scripts/release.py prepare --interactive
 
 build-docker:
 	export IMAGE_NAME=rasa && \
@@ -292,3 +255,6 @@ run-integration-containers: build-tests-deployment-env ## Run the integration te
 stop-integration-containers: ## Stop the integration test containers.
 	cd tests_deployment && \
 	docker-compose -f docker-compose.integration.yml down
+
+tag-release-auto:
+	poetry run python scripts/release.py tag --skip-confirmation

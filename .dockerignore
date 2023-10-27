@@ -9,3 +9,4 @@ rasa/scripts
 data/
 examples/
 docker-data/*
+gha-creds-*.json
