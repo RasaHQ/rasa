@@ -56,7 +56,7 @@ if TYPE_CHECKING:
     import boto3.resources.factory.dynamodb.Table
     from sqlalchemy.engine.url import URL
     from sqlalchemy.engine.base import Engine
-    from sqlalchemy.orm import Session, Query, DeclarativeBase
+    from sqlalchemy.orm import Session, Query
     from sqlalchemy import Sequence
 
 logger = logging.getLogger(__name__)
@@ -1042,6 +1042,8 @@ def validate_port(port: Any) -> Optional[int]:
 
 class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
     """Store which can save and retrieve trackers from an SQL database."""
+
+    from sqlalchemy.orm import DeclarativeBase
 
     class Base(DeclarativeBase):
         pass
