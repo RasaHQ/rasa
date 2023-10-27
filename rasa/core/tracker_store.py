@@ -1016,7 +1016,7 @@ def ensure_schema_exists(session: "Session") -> None:
     if not isinstance(engine, sa.engine.base.Engine):
         # The "bind" is usually an instance of Engine, except in the case
         # where the session has been explicitly bound directly to a connection.
-        raise RasaException(f"Cannot ensure schema exists as no engine exists.")
+        raise RasaException("Cannot ensure schema exists as no engine exists.")
 
     if is_postgresql_url(engine.url):
         query = sa.exists(
