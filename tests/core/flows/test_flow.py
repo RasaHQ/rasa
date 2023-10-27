@@ -43,7 +43,7 @@ def only_patterns() -> FlowsList:
 
 @pytest.fixture
 def empty_flowlist() -> FlowsList:
-    return FlowsList(flows=[])
+    return FlowsList([])
 
 
 def test_user_flow_ids(user_flows_and_patterns: FlowsList):

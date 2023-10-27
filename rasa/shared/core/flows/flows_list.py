@@ -1,5 +1,5 @@
 from __future__ import annotations
-
+from dataclasses import dataclass
 from typing import List, Generator, Any, Optional, Dict, Text, Set
 
 import rasa.shared.utils.io
@@ -7,6 +7,7 @@ from rasa.shared.core.flows.flow import Flow
 from rasa.shared.core.flows.validation import validate_flow
 
 
+@dataclass
 class FlowsList:
     """A collection of flows.
 
@@ -15,24 +16,16 @@ class FlowsList:
     specific attributes or collecting all utterances across all flows.
     """
 
-    def __init__(self, flows: List[Flow]) -> None:
-        """Initializes the FlowsList object.
-
-        Args:
-            flows: The flows for this collection.
-        """
-        self.underlying_flows = flows
+    underlying_flows: List[Flow]
+    """The flows contained in this FlowsList."""
 
     def __iter__(self) -> Generator[Flow, None, None]:
         """Iterates over the flows."""
         yield from self.underlying_flows
 
-    def __eq__(self, other: Any) -> bool:
-        """Compares this FlowsList to another one."""
-        return (
-            isinstance(other, FlowsList)
-            and self.underlying_flows == other.underlying_flows
-        )
+    def __len__(self):
+        """Return the length of this FlowsList."""
+        return len(self.underlying_flows)
 
     def is_empty(self) -> bool:
         """Returns whether the flows list is empty."""

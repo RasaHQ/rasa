@@ -95,8 +95,9 @@ class FlowStep:
         Returns:
             The FlowStep as serialized data.
         """
-        data: Dict[Text, Any] = {"next": self.next.as_json(), "id": self.id}
-
+        data: Dict[Text, Any] = {"next": self.next.as_json()}
+        if self.custom_id:
+            data["id"] = self.custom_id
         if self.description:
             data["description"] = self.description
         if self.metadata:

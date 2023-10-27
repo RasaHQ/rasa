@@ -27,7 +27,7 @@ def flows_from_paths(files: List[Text]) -> FlowsList:
     """Returns the flows from paths."""
     from rasa.shared.core.flows.yaml_flows_io import YAMLFlowsReader
 
-    flows = FlowsList(flows=[])
+    flows = FlowsList([])
     for file in files:
         flows = flows.merge(YAMLFlowsReader.read_from_file(file))
     return flows

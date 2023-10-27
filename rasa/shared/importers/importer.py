@@ -71,7 +71,7 @@ class TrainingDataImporter(ABC):
         Returns:
             `FlowsList` containing all loaded flows.
         """
-        return FlowsList(flows=[])
+        return FlowsList([])
 
     def get_conversation_tests(self) -> StoryGraph:
         """Retrieves end-to-end conversation stories for testing.
@@ -310,7 +310,7 @@ class CombinedDataImporter(TrainingDataImporter):
         flow_lists = [importer.get_flows() for importer in self._importers]
 
         return reduce(
-            lambda merged, other: merged.merge(other), flow_lists, FlowsList(flows=[])
+            lambda merged, other: merged.merge(other), flow_lists, FlowsList([])
         )
 
     @rasa.shared.utils.common.cached_method

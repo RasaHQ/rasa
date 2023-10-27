@@ -59,14 +59,14 @@ def test_flow_get_flow():
         name="foo flow",
         description="foo flow description",
     )
-    all_flows = FlowsList(flows=[flow])
+    all_flows = FlowsList([flow])
     assert frame.flow(all_flows) == flow
 
 
 def test_flow_get_flow_non_existant_id():
     frame = UserFlowStackFrame(frame_id="test", flow_id="unknown", step_id="bar")
     all_flows = FlowsList(
-        flows=[
+        [
             Flow(
                 id="foo",
                 step_sequence=FlowStepSequence(child_steps=[]),
@@ -90,7 +90,7 @@ def test_flow_get_step():
         next=FlowStepLinks(links=[]),
     )
     all_flows = FlowsList(
-        flows=[
+        [
             Flow(
                 id="foo",
                 step_sequence=FlowStepSequence(child_steps=[step]),
@@ -105,7 +105,7 @@ def test_flow_get_step():
 def test_flow_get_step_non_existant_id():
     frame = UserFlowStackFrame(frame_id="test", flow_id="foo", step_id="unknown")
     all_flows = FlowsList(
-        flows=[
+        [
             Flow(
                 id="foo",
                 step_sequence=FlowStepSequence(child_steps=[]),
@@ -121,7 +121,7 @@ def test_flow_get_step_non_existant_id():
 def test_flow_get_step_non_existant_flow_id():
     frame = UserFlowStackFrame(frame_id="test", flow_id="unknown", step_id="unknown")
     all_flows = FlowsList(
-        flows=[
+        [
             Flow(
                 id="foo",
                 step_sequence=FlowStepSequence(child_steps=[]),
