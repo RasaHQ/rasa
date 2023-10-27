@@ -1,4 +1,5 @@
 from __future__ import annotations
+import copy
 
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional
@@ -42,6 +43,9 @@ class DialogueStack:
             The `DialogueStack` as a dictionary.
         """
         return [frame.as_dict() for frame in self.frames]
+
+    def copy(self) -> DialogueStack:
+        return copy.deepcopy(self)
 
     def push(self, frame: DialogueStackFrame, index: Optional[int] = None) -> None:
         """Pushes a new frame onto the stack.
