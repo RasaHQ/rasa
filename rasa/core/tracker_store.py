@@ -51,14 +51,13 @@ from rasa.shared.exceptions import ConnectionException, RasaException
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.endpoints import EndpointConfig
 import sqlalchemy as sa
-from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta
 
 if TYPE_CHECKING:
     import boto3.resources.factory.dynamodb.Table
     from sqlalchemy.engine.url import URL
     from sqlalchemy.engine.base import Engine
-    from sqlalchemy.orm import Session, Query
-    from sqlalchemy import Sequence
+    from sqlalchemy.orm import Session, Query, DeclarativeBase
+    from sqlalchemy import Sequence, Executable
 
 logger = logging.getLogger(__name__)
 
@@ -1013,6 +1012,9 @@ def ensure_schema_exists(session: "Session") -> None:
 
     engine = session.get_bind()
 
+    if not isinstance(engine, Engine):
+        return
+
     if is_postgresql_url(engine.url):
         query = sa.exists(
             sa.select(sa.text("schema_name"))
@@ -1041,7 +1043,10 @@ def validate_port(port: Any) -> Optional[int]:
 class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
     """Store which can save and retrieve trackers from an SQL database."""
 
-    Base: DeclarativeMeta = declarative_base()
+    from sqlalchemy.orm import DeclarativeBase
+
+    class Base(DeclarativeBase):
+        pass
 
     class SQLEvent(Base):
         """Represents an event in the SQL Tracker Store."""
@@ -1202,30 +1207,26 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
         """Create database `db` on `engine` if it does not exist."""
         import sqlalchemy.exc
 
-        conn = engine.connect()
-
-        matching_rows = (
-            conn.execution_options(isolation_level="AUTOCOMMIT")
-            .execute(
-                sa.text(
-                    "SELECT 1 FROM pg_catalog.pg_database "
-                    "WHERE datname = :database_name"
-                ),
-                database_name=database_name,
+        with engine.connect() as connection:
+            matching_rows = (
+                connection.execution_options(isolation_level="AUTOCOMMIT")
+                .execute(
+                    sa.text(
+                        f"SELECT 1 FROM pg_catalog.pg_database "
+                        f"WHERE datname = {database_name}"
+                    )
+                )
+                .rowcount
             )
-            .rowcount
-        )
 
-        if not matching_rows:
-            try:
-                conn.execute(f"CREATE DATABASE {database_name}")
-            except (
-                sqlalchemy.exc.ProgrammingError,
-                sqlalchemy.exc.IntegrityError,
-            ) as e:
-                logger.error(f"Could not create database '{database_name}': {e}")
-
-        conn.close()
+            if not matching_rows:
+                try:
+                    connection.execute(sa.text(f"CREATE DATABASE {database_name}"))
+                except (
+                    sqlalchemy.exc.ProgrammingError,
+                    sqlalchemy.exc.IntegrityError,
+                ) as e:
+                    logger.error(f"Could not create database '{database_name}': {e}")
 
     @contextlib.contextmanager
     def session_scope(self) -> Generator["Session", None, None]:
