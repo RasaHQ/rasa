@@ -862,9 +862,14 @@ def test_ensure_schema_exists(
 
     # mock the `session.query().scalar()` query which returns whether the schema
     # exists in the db
+    from sqlalchemy.engine.base import Engine
+
     scalar = Mock(return_value=schema_exists)
     query = Mock(scalar=scalar)
     session = Mock()
+    engine = Mock(spec=Engine)
+    engine.url = Mock()
+    session.get_bind = Mock(return_value=engine)
     session.query = Mock(return_value=query)
 
     with raises_context:

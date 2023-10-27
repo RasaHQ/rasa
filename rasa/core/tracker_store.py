@@ -1012,7 +1012,7 @@ def ensure_schema_exists(session: "Session") -> None:
 
     engine = session.get_bind()
 
-    if not isinstance(engine, Engine):
+    if not isinstance(engine, sa.engine.base.Engine):
         return
 
     if is_postgresql_url(engine.url):
