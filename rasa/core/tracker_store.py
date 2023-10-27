@@ -1004,6 +1004,7 @@ def ensure_schema_exists(session: "Session") -> None:
 
     Raises:
         `ValueError` if the requested schema does not exist.
+        RasaException if no engine can be obtained from session.
     """
     schema_name = os.environ.get(POSTGRESQL_SCHEMA)
 
@@ -1013,7 +1014,9 @@ def ensure_schema_exists(session: "Session") -> None:
     engine = session.get_bind()
 
     if not isinstance(engine, sa.engine.base.Engine):
-        return
+        # The "bind" is usually an instance of Engine, except in the case
+        # where the session has been explicitly bound directly to a connection.
+        raise RasaException(f"Cannot ensure schema exists as no engine exists.")
 
     if is_postgresql_url(engine.url):
         query = sa.exists(
@@ -1167,6 +1170,7 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
             host = parsed.hostname or host
 
         if not query:
+            # query needs to be set in order to create a URL
             query = {}
 
         return sa.engine.url.URL(
