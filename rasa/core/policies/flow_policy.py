@@ -508,6 +508,8 @@ class FlowExecutor:
             active_frame = self.dialogue_stack.top()
             if active_frame == prev_frame:
                 number_of_repetations += 1
+            else:
+                number_of_repetations = 0
             if number_of_repetations > MAX_NUMBER_OF_STEPS:
                 raise FlowCircuitBreakerTrippedException(
                     self.dialogue_stack, number_of_repetations
