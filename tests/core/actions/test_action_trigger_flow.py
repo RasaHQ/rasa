@@ -26,6 +26,7 @@ async def test_action_trigger_flow():
     assert len(event.value) == 1
     assert event.value[0]["type"] == UserFlowStackFrame.type()
     assert event.value[0]["flow_id"] == "foo"
+    assert event.value[0]["frame_type"] == FlowStackFrameType.REGULAR.value
 
 
 async def test_action_trigger_flow_with_slots():
