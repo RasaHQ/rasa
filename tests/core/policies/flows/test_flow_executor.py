@@ -3,8 +3,21 @@ from typing import List, Optional, Tuple
 import pytest
 from rasa.core.policies.flows import flow_executor
 from rasa.core.policies.flows.flow_exceptions import FlowCircuitBreakerTrippedException
+from rasa.dialogue_understanding.patterns.collect_information import (
+    CollectInformationPatternFlowStackFrame,
+)
+from rasa.dialogue_understanding.patterns.completed import (
+    CompletedPatternFlowStackFrame,
+)
+from rasa.dialogue_understanding.patterns.continue_interrupted import (
+    ContinueInterruptedPatternFlowStackFrame,
+)
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
-from rasa.dialogue_understanding.stack.frames.flow_stack_frame import UserFlowStackFrame
+from rasa.dialogue_understanding.stack.frames.chit_chat_frame import ChitChatStackFrame
+from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
+    FlowStackFrameType,
+    UserFlowStackFrame,
+)
 from rasa.dialogue_understanding.stack.frames.search_frame import SearchStackFrame
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, Event, SlotSet
@@ -15,6 +28,7 @@ from rasa.shared.core.flows.flow import (
     FlowLinks,
     FlowsList,
     SetSlotsFlowStep,
+    SlotRejection,
 )
 from rasa.shared.core.flows.yaml_flows_io import YAMLFlowsReader, flows_from_str
 from rasa.shared.core.slots import TextSlot
@@ -393,6 +407,355 @@ def test_advance_top_flow_on_stack_advances_user_flow():
     assert top.step_id == "bar"
 
 
+def test_trigger_pattern_continue_interrupted_adds_stackframe():
+    flows = flows_from_str(
+        """
+        flows:
+          foo_flow:
+            steps:
+            - id: "1"
+              collect: foo
+          bar_flow:
+            name: bar flow
+            steps:
+            - id: "2"
+              collect: bar
+        """
+    )
+
+    stack = DialogueStack(
+        frames=[UserFlowStackFrame(flow_id="bar_flow", step_id="2", frame_id="some-id")]
+    )
+
+    current_frame = UserFlowStackFrame(
+        flow_id="foo_flow",
+        step_id="1",
+        frame_id="some-other-id",
+        frame_type=FlowStackFrameType.INTERRUPT,
+    )
+
+    flow_executor.trigger_pattern_continue_interrupted(current_frame, stack, flows)
+
+    top = stack.top()
+    assert top is not None
+    assert isinstance(top, ContinueInterruptedPatternFlowStackFrame)
+    assert top.previous_flow_name == "bar flow"
+
+
+def test_trigger_pattern_continue_interrupted_does_not_trigger_if_no_interrupt():
+    flows = flows_from_str(
+        """
+        flows:
+          foo_flow:
+            steps:
+            - id: "1"
+              collect: foo
+          bar_flow:
+            name: bar flow
+            steps:
+            - id: "2"
+              collect: bar
+        """
+    )
+
+    stack = DialogueStack(
+        frames=[UserFlowStackFrame(flow_id="bar_flow", step_id="2", frame_id="some-id")]
+    )
+
+    current_frame = UserFlowStackFrame(
+        flow_id="foo_flow", step_id="1", frame_id="some-other-id"
+    )
+
+    flow_executor.trigger_pattern_continue_interrupted(current_frame, stack, flows)
+
+    # only the original frame should be on the stack
+    assert len(stack.frames) == 1
+
+
+def test_trigger_pattern_continue_interrupted_does_not_trigger_if_frame_is_already_finished():
+    flows = flows_from_str(
+        """
+        flows:
+          foo_flow:
+            steps:
+            - id: "1"
+              collect: foo
+          bar_flow:
+            name: bar flow
+            steps:
+            - id: "2"
+              collect: bar
+        """
+    )
+
+    stack = DialogueStack(
+        frames=[
+            UserFlowStackFrame(
+                flow_id="bar_flow",
+                step_id="END",
+                frame_id="some-id",
+                frame_type=FlowStackFrameType.INTERRUPT,
+            )
+        ]
+    )
+
+    current_frame = UserFlowStackFrame(
+        flow_id="foo_flow", step_id="1", frame_id="some-other-id"
+    )
+
+    flow_executor.trigger_pattern_continue_interrupted(current_frame, stack, flows)
+
+    # only the original frame should be on the stack
+    assert len(stack.frames) == 1
+
+
+def test_trigger_pattern_continue_interrupted_does_not_trigger_if_frame_is_not_user_frame():
+    flows = flows_from_str(
+        """
+        flows:
+          foo_flow:
+            steps:
+            - id: "1"
+              collect: foo
+          bar_flow:
+            name: bar flow
+            steps:
+            - id: "2"
+              collect: bar
+        """
+    )
+
+    stack = DialogueStack(frames=[ChitChatStackFrame(frame_id="some-id")])
+
+    current_frame = UserFlowStackFrame(
+        flow_id="foo_flow", step_id="1", frame_id="some-other-id"
+    )
+
+    flow_executor.trigger_pattern_continue_interrupted(current_frame, stack, flows)
+
+    # only the original frame should be on the stack
+    assert len(stack.frames) == 1
+
+
+def test_trigger_pattern_completed():
+    flows = flows_from_str(
+        """
+        flows:
+          foo_flow:
+            name: foo flow
+            steps:
+            - id: "1"
+              collect: foo
+        """
+    )
+
+    stack = DialogueStack(frames=[])
+
+    current_frame = UserFlowStackFrame(
+        flow_id="foo_flow", step_id="END", frame_id="some-other-id"
+    )
+
+    flow_executor.trigger_pattern_completed(current_frame, stack, flows)
+
+    top = stack.top()
+    assert top is not None
+    assert isinstance(top, CompletedPatternFlowStackFrame)
+    assert top.previous_flow_name == "foo flow"
+
+
+def test_trigger_pattern_completed_does_not_trigger_if_stack_not_empty():
+    flows = flows_from_str(
+        """
+        flows:
+          foo_flow:
+            name: foo flow
+            steps:
+            - id: "1"
+              collect: foo
+        """
+    )
+
+    stack = DialogueStack(frames=[ChitChatStackFrame(frame_id="some-id")])
+
+    current_frame = UserFlowStackFrame(
+        flow_id="foo_flow", step_id="END", frame_id="some-other-id"
+    )
+
+    flow_executor.trigger_pattern_completed(current_frame, stack, flows)
+
+    # only the original frame should be on the stack
+    assert len(stack.frames) == 1
+
+
+def test_trigger_pattern_completed_does_not_trigger_if_current_frame_is_not_user_frame():
+    flows = flows_from_str(
+        """
+        flows:
+          foo_flow:
+            name: foo flow
+            steps:
+            - id: "1"
+              collect: foo
+        """
+    )
+
+    stack = DialogueStack(frames=[])
+
+    current_frame = ChitChatStackFrame(frame_id="some-other-id")
+
+    flow_executor.trigger_pattern_completed(current_frame, stack, flows)
+
+    # stack should continue to be empty
+    assert len(stack.frames) == 0
+
+
+def test_pattern_ask_collect_information():
+    stack = DialogueStack(frames=[])
+
+    collect = "foo"
+    utter = "utter_ask_foo"
+    rejections = [SlotRejection(if_="1 > 2", utter="42")]
+
+    flow_executor.trigger_pattern_ask_collect_information(
+        collect, stack, rejections, utter
+    )
+
+    top = stack.top()
+    assert top is not None
+    assert isinstance(top, CollectInformationPatternFlowStackFrame)
+    assert top.collect == collect
+    assert top.utter == utter
+    assert top.rejections == rejections
+
+
+def test_reset_scoped_slots():
+    # a flow with three different collect steps, one for each configuration
+    # value (true, false and unset)
+    flows = flows_from_str(
+        """
+        flows:
+          foo_flow:
+            name: foo flow
+            steps:
+            - id: "1"
+              collect: foo
+              reset_after_flow_ends: true
+            - id: "2"
+              collect: bar
+              reset_after_flow_ends: false
+            - id: "3"
+              collect: baz
+        """
+    )
+    current_flow = flows.flow_by_id("foo_flow")
+    tracker = DialogueStateTracker.from_events(
+        "test",
+        [
+            SlotSet("foo", "foo"),
+            SlotSet("bar", "bar"),
+            SlotSet("baz", "baz"),
+        ],
+    )
+    events = flow_executor.reset_scoped_slots(current_flow, tracker)
+    assert events == [SlotSet("foo", None), SlotSet("baz", None)]
+
+
+def test_reset_scoped_slots_uses_initial_value():
+    # a flow with three different collect steps, one for each configuration
+    # value (true, false and unset)
+    flows = flows_from_str(
+        """
+        flows:
+          foo_flow:
+            name: foo flow
+            steps:
+            - collect: foo
+              reset_after_flow_ends: true
+        """
+    )
+    current_flow = flows.flow_by_id("foo_flow")
+    tracker = DialogueStateTracker.from_events(
+        "test",
+        [SlotSet("foo", "foo")],
+        slots=[TextSlot("foo", mappings={}, initial_value="42")],
+    )
+    events = flow_executor.reset_scoped_slots(current_flow, tracker)
+    assert events == [SlotSet("foo", "42")]
+
+
+def test_reset_scoped_slots_resets_set_slots():
+    # a flow with three different collect steps, one for each configuration
+    # value (true, false and unset)
+    flows = flows_from_str(
+        """
+        flows:
+          foo_flow:
+            name: foo flow
+            steps:
+            - set_slots: 
+              - foo: bar
+        """
+    )
+    current_flow = flows.flow_by_id("foo_flow")
+    tracker = DialogueStateTracker.from_events("test", [SlotSet("foo", "foo")])
+    events = flow_executor.reset_scoped_slots(current_flow, tracker)
+    assert events == [SlotSet("foo", None)]
+
+
+def test_reset_scoped_slots_does_not_reset_set_slots_if_collect_forbids_it():
+    # a flow with three different collect steps, one for each configuration
+    # value (true, false and unset)
+    flows = flows_from_str(
+        """
+        flows:
+          foo_flow:
+            name: foo flow
+            steps:
+            - collect: foo
+              reset_after_flow_ends: false
+            - set_slots: 
+              - foo: bar
+        """
+    )
+    current_flow = flows.flow_by_id("foo_flow")
+    tracker = DialogueStateTracker.from_events("test", [SlotSet("foo", "foo")])
+    events = flow_executor.reset_scoped_slots(current_flow, tracker)
+    assert events == []
+
+
+def test_run_step():
+    all_flows = flows_from_str(
+        """
+        flows:
+          my_flow:
+            steps:
+            - id: collect_foo
+              collect: foo
+              next:
+              - if: foo is 'foobar'
+                then: collect_bar
+              - else:
+                - id: collect_baz
+                  collect: baz
+                  next: END
+            - id: collect_bar
+              collect: bar
+        """
+    )
+
+    user_flow_frame = UserFlowStackFrame(
+        flow_id="my_flow", step_id="collect_foo", frame_id="some-frame-id"
+    )
+    stack = DialogueStack(frames=[user_flow_frame])
+    tracker = DialogueStateTracker.from_events(
+        "test", [stack.persist_as_event(), SlotSet("foo", "foobar")]
+    )
+    step = user_flow_frame.step(all_flows)
+    flow = user_flow_frame.flow(all_flows)
+
+    result = flow_executor.run_step(step, flow, stack, tracker, domain, flows)
+
+
 def test_executor_does_not_get_tripped_if_an_action_is_predicted_in_loop():
     flow_with_loop = flows_from_str(
         """
@@ -424,85 +787,6 @@ def test_executor_does_not_get_tripped_if_an_action_is_predicted_in_loop():
 
     selection = flow_executor.select_next_action(stack, tracker, domain, flow_with_loop)
     assert selection.action_name == "action_listen"
-
-
-def test_resets_all_slots_after_flow_ends() -> None:
-    flows = flows_from_str(
-        """
-        flows:
-          foo_flow:
-            steps:
-            - id: "1"
-              collect: my_slot
-            - id: "2"
-              set_slots:
-                - foo: bar
-                - other_slot: other_value
-            - id: "3"
-              action: action_listen
-        """
-    )
-    tracker = DialogueStateTracker.from_events(
-        "test",
-        [
-            SlotSet("my_slot", "my_value"),
-            SlotSet("foo", "bar"),
-            SlotSet("other_slot", "other_value"),
-            ActionExecuted("action_listen"),
-        ],
-        slots=[
-            TextSlot("my_slot", mappings=[], initial_value="initial_value"),
-            TextSlot("foo", mappings=[]),
-            TextSlot("other_slot", mappings=[]),
-        ],
-    )
-
-    current_flow = flows.flow_by_id("foo_flow")
-    events = flow_executor.reset_scoped_slots(current_flow, tracker)
-    assert events == [
-        SlotSet("my_slot", "initial_value"),
-        SlotSet("foo", None),
-        SlotSet("other_slot", None),
-    ]
-
-
-def test_set_slots_inherit_reset_from_collect_step() -> None:
-    """Test that `reset_after_flow_ends` is inherited from the collect step."""
-    slot_name = "my_slot"
-    flows = flows_from_str(
-        f"""
-        flows:
-          foo_flow:
-            steps:
-            - id: "1"
-              collect: {slot_name}
-              reset_after_flow_ends: false
-            - id: "2"
-              set_slots:
-                - foo: bar
-                - {slot_name}: my_value
-            - id: "3"
-              action: action_listen
-        """
-    )
-    tracker = DialogueStateTracker.from_events(
-        "test123",
-        [
-            SlotSet("my_slot", "my_value"),
-            SlotSet("foo", "bar"),
-            ActionExecuted("action_listen"),
-        ],
-        slots=[
-            TextSlot("my_slot", mappings=[], initial_value="initial_value"),
-            TextSlot("foo", mappings=[]),
-        ],
-    )
-
-    current_flow = flows.flow_by_id("foo_flow")
-    events = flow_executor.reset_scoped_slots(current_flow, tracker)
-    assert events == [
-        SlotSet("foo", None),
-    ]
 
 
 def test_executor_trips_internal_circuit_breaker():
@@ -553,7 +837,7 @@ def _run_flow_until_listen(
 
         events.extend(action_prediction.events or [])
         actions.append(action_prediction.action_name)
-        tracker.update_with_events(action_prediction.events or [], domain)
+        tracker.update_with_events(action_prediction.events or [])
         if action_prediction.action_name:
             tracker.update(ActionExecuted(action_prediction.action_name), domain)
         if action_prediction.action_name == "action_listen":

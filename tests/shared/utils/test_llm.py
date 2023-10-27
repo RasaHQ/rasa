@@ -24,7 +24,6 @@ def test_tracker_as_readable_transcript_handles_tracker_with_events(domain: Doma
             UserUttered("hello"),
             BotUttered("hi"),
         ],
-        domain,
     )
     assert tracker_as_readable_transcript(tracker) == ("""USER: hello\nAI: hi""")
 

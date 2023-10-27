@@ -386,9 +386,14 @@ def select_next_action(
 
             with bound_contextvars(step_id=current_step.id):
                 step_result = run_step(
-                    current_step, current_flow, stack, tracker, domain, flows
+                    current_step,
+                    current_flow,
+                    stack,
+                    tracker,
+                    domain.action_names_or_texts,
+                    flows,
                 )
-                tracker.update_with_events(step_result.events, domain)
+                tracker.update_with_events(step_result.events)
 
     gathered_events = list(tracker.events)[number_of_initial_events:]
     if isinstance(step_result, PauseFlowReturnPrediction):
@@ -407,7 +412,7 @@ def run_step(
     flow: Flow,
     stack: DialogueStack,
     tracker: DialogueStateTracker,
-    domain: Domain,
+    available_actions: List[str],
     flows: FlowsList,
 ) -> FlowStepResult:
     """Run a single step of a flow.
@@ -420,9 +425,12 @@ def run_step(
     Raises a `FlowException` if the step is invalid.
 
     Args:
-        flow: The flow that the step belongs to.
         step: The step to run.
+        flow: The flow that the step belongs to.
+        stack: The stack that the flow is on.
         tracker: The tracker to run the step on.
+        available_actions: The actions that are available in the domain.
+        flows: All flows.
 
     Returns:
     A result of running the step describing where to transition to.
@@ -443,7 +451,7 @@ def run_step(
         context = {"context": stack.current_context()}
         action_name = render_template_variables(step.action, context)
 
-        if action_name in domain.action_names_or_texts:
+        if action_name in available_actions:
             structlogger.debug("flow.step.run.action", context=context)
             return PauseFlowReturnPrediction(FlowActionPrediction(action_name, 1.0))
         else:

@@ -164,7 +164,7 @@ def execute_commands(
     flow_hash_events: List[Event] = []
     if new_hashes != (tracker.get_slot(FLOW_HASHES_SLOT) or {}):
         flow_hash_events.append(SlotSet(FLOW_HASHES_SLOT, new_hashes))
-        tracker.update_with_events(flow_hash_events, None)
+        tracker.update_with_events(flow_hash_events)
 
     events: List[Event] = flow_hash_events
 
@@ -181,7 +181,7 @@ def execute_commands(
             tracker, all_flows, original_tracker
         )
         events.extend(new_events)
-        tracker.update_with_events(new_events, None)
+        tracker.update_with_events(new_events)
 
     return remove_duplicated_set_slots(events)
 

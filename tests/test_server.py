@@ -2063,7 +2063,7 @@ async def test_update_conversation_with_events(
 
     if initial_tracker_events:
         tracker = await agent.processor.get_tracker(conversation_id)
-        tracker.update_with_events(initial_tracker_events, domain)
+        tracker.update_with_events(initial_tracker_events)
         await tracker_store.save(tracker)
 
     fetched_tracker = await rasa.server.update_conversation_with_events(

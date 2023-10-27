@@ -20,17 +20,14 @@ from tests.cli.conftest import RASA_EXE
 
 @pytest.fixture
 def marker_sqlite_tracker(tmp_path: Path) -> Tuple[SQLTrackerStore, Text]:
-    domain = Domain.empty()
     db_path = str(tmp_path / "rasa.db")
     tracker_store = SQLTrackerStore(dialect="sqlite", db=db_path)
     for i in range(5):
         tracker = DialogueStateTracker(str(i), None)
-        tracker.update_with_events([SlotSet(str(j), "slot") for j in range(5)], domain)
+        tracker.update_with_events([SlotSet(str(j), "slot") for j in range(5)])
         tracker.update(ActionExecuted(ACTION_SESSION_START_NAME))
         tracker.update(UserUttered("hello"))
-        tracker.update_with_events(
-            [SlotSet(str(5 + j), "slot") for j in range(5)], domain
-        )
+        tracker.update_with_events([SlotSet(str(5 + j), "slot") for j in range(5)])
         tracker_store.save(tracker)
 
     return tracker_store, db_path
