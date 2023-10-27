@@ -145,8 +145,6 @@ class Cacheable(Protocol):
 class LocalTrainingCache(TrainingCache):
     """Caches training results on local disk (see parent class for full docstring)."""
 
-    from sqlalchemy.orm import DeclarativeBase
-
     class Base(DeclarativeBase):
         pass
 
