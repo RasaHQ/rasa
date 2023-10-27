@@ -41,6 +41,7 @@ def postgres_login_db_connection() -> Iterator[sa.engine.Connection]:
             username=POSTGRES_USER,
             password=POSTGRES_PASSWORD,
             database=POSTGRES_DEFAULT_DB,
+            query={},
         )
     )
 
