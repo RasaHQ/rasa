@@ -138,7 +138,9 @@ class FlowPolicy(Policy):
 
         # create executor and predict next action
         try:
-            prediction = flow_executor.advance_flows(tracker, domain, flows)
+            prediction = flow_executor.advance_flows(
+                tracker, domain.action_names_or_texts, flows
+            )
             return self._create_prediction_result(
                 prediction.action_name,
                 domain,
@@ -162,7 +164,9 @@ class FlowPolicy(Policy):
             # we retry, with the internal error frame on the stack
             event = updated_stack.persist_as_event()
             tracker.update(event)
-            prediction = flow_executor.advance_flows(tracker, domain, flows)
+            prediction = flow_executor.advance_flows(
+                tracker, domain.action_names_or_texts, flows
+            )
             collected_events = [event] + (prediction.events or [])
             return self._create_prediction_result(
                 prediction.action_name,

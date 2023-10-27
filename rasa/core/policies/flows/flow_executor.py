@@ -61,7 +61,6 @@ from rasa.shared.core.flows.flow import (
     CollectInformationFlowStep,
     StaticFlowLink,
 )
-from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import (
     DialogueStateTracker,
 )
@@ -299,7 +298,7 @@ def reset_scoped_slots(
 
 
 def advance_flows(
-    tracker: DialogueStateTracker, domain: Domain, flows: FlowsList
+    tracker: DialogueStateTracker, available_actions: List[str], flows: FlowsList
 ) -> FlowActionPrediction:
     """Advance the flows.
 
@@ -307,6 +306,8 @@ def advance_flows(
 
     Args:
         tracker: The tracker to get the next action for.
+        available_actions: The actions that are available in the domain.
+        flows: All flows.
 
     Returns:
     The predicted action and the events to run.
@@ -317,7 +318,7 @@ def advance_flows(
         return FlowActionPrediction(None, 0.0)
 
     previous_stack = stack.as_dict()
-    prediction = select_next_action(stack, tracker, domain, flows)
+    prediction = select_next_action(stack, tracker, available_actions, flows)
     if previous_stack != stack.as_dict():
         # we need to update dialogue stack to persist the state of the executor
         if not prediction.events:
@@ -329,7 +330,7 @@ def advance_flows(
 def select_next_action(
     stack: DialogueStack,
     tracker: DialogueStateTracker,
-    domain: Domain,
+    available_actions: List[str],
     flows: FlowsList,
 ) -> FlowActionPrediction:
     """Select the next action to execute.
@@ -340,7 +341,10 @@ def select_next_action(
     advanced. If there are no more flows, the action listen is predicted.
 
     Args:
+        stack: The stack to get the next action for.
         tracker: The tracker to get the next action for.
+        available_actions: The actions that are available in the domain.
+        flows: All flows.
 
     Returns:
         The next action to execute, the events that should be applied to the
@@ -390,7 +394,7 @@ def select_next_action(
                     current_flow,
                     stack,
                     tracker,
-                    domain.action_names_or_texts,
+                    available_actions,
                     flows,
                 )
                 tracker.update_with_events(step_result.events)

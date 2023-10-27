@@ -10,7 +10,6 @@ import rasa.cli.evaluate
 from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.constants import ACTION_SESSION_START_NAME
-from rasa.shared.core.domain import Domain
 from rasa.core.tracker_store import SQLTrackerStore
 from rasa.cli.evaluate import STATS_SESSION_SUFFIX, STATS_OVERALL_SUFFIX
 from tests.conftest import write_endpoint_config_to_yaml
