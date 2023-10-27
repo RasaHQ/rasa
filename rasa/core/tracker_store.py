@@ -1015,7 +1015,7 @@ def ensure_schema_exists(session: "Session") -> None:
 
     if is_postgresql_url(engine.url):
         query = sa.exists(
-            sa.select([(sa.text("schema_name"))])
+            sa.select(sa.text("schema_name"))
             .select_from(sa.text("information_schema.schemata"))
             .where(sa.text(f"schema_name = '{schema_name}'"))
         )
