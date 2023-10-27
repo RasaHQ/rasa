@@ -353,7 +353,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
                     ),
                 }
                 for q in flow.get_collect_steps()
-                if LLMCommandGenerator.is_extractable(q, tracker)
+                if self.is_extractable(q, tracker)
             ]
             result.append(
                 {
