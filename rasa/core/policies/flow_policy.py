@@ -677,6 +677,10 @@ class FlowExecutor:
             structlogger.debug("flow.step.run.user_message")
             return ContinueFlowWithNextStep()
 
+        elif type(step) is FlowStep:
+            structlogger.debug("flow.step.run.base_flow_step")
+            return ContinueFlowWithNextStep()
+
         elif isinstance(step, GenerateResponseFlowStep):
             structlogger.debug("flow.step.run.generate_response")
             generated = step.generate(tracker)
@@ -696,10 +700,6 @@ class FlowExecutor:
             self.trigger_pattern_completed(current_frame)
             reset_events = self._reset_scoped_slots(flow, tracker)
             return ContinueFlowWithNextStep(events=reset_events)
-
-        elif isinstance(step, FlowStep):
-            structlogger.debug("flow.step.run.base_flow_step")
-            return ContinueFlowWithNextStep()
 
         else:
             raise FlowException(f"Unknown flow step type {type(step)}")
