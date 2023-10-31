@@ -48,7 +48,7 @@ class CorrectionPatternFlowStackFrame(PatternFlowStackFrame):
     @classmethod
     def type(cls) -> str:
         """Returns the type of the frame."""
-        return "pattern_correction"
+        return FLOW_PATTERN_CORRECTION_ID
 
     @staticmethod
     def from_dict(data: Dict[Text, Any]) -> CorrectionPatternFlowStackFrame:

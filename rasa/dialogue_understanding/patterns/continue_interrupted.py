@@ -23,7 +23,7 @@ class ContinueInterruptedPatternFlowStackFrame(PatternFlowStackFrame):
     @classmethod
     def type(cls) -> str:
         """Returns the type of the frame."""
-        return "pattern_continue_interrupted"
+        return FLOW_PATTERN_CONTINUE_INTERRUPTED
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> ContinueInterruptedPatternFlowStackFrame:

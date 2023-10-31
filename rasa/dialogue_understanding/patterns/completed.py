@@ -21,7 +21,7 @@ class CompletedPatternFlowStackFrame(PatternFlowStackFrame):
     @classmethod
     def type(cls) -> str:
         """Returns the type of the frame."""
-        return "pattern_completed"
+        return FLOW_PATTERN_COMPLETED
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> CompletedPatternFlowStackFrame:

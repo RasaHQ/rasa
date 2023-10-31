@@ -23,7 +23,7 @@ from rasa.shared.core.trackers import DialogueStateTracker
 
 structlogger = structlog.get_logger()
 
-FLOW_PATTERN_CANCEL_ID = RASA_DEFAULT_FLOW_PATTERN_PREFIX + "cancel_flow"
+FLOW_PATTERN_CANCEL = RASA_DEFAULT_FLOW_PATTERN_PREFIX + "cancel_flow"
 
 
 @dataclass
@@ -33,7 +33,7 @@ class CancelPatternFlowStackFrame(PatternFlowStackFrame):
     The frame contains the information about the stack frames that should
     be canceled."""
 
-    flow_id: str = FLOW_PATTERN_CANCEL_ID
+    flow_id: str = FLOW_PATTERN_CANCEL
     """The ID of the flow."""
     canceled_name: str = ""
     """The name of the flow that should be canceled."""
@@ -45,7 +45,7 @@ class CancelPatternFlowStackFrame(PatternFlowStackFrame):
     @classmethod
     def type(cls) -> str:
         """Returns the type of the frame."""
-        return "pattern_cancel_flow"
+        return FLOW_PATTERN_CANCEL
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> CancelPatternFlowStackFrame:

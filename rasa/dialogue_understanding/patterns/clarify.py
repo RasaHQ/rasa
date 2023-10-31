@@ -36,7 +36,7 @@ class ClarifyPatternFlowStackFrame(PatternFlowStackFrame):
     @classmethod
     def type(cls) -> str:
         """Returns the type of the frame."""
-        return "pattern_clarification"
+        return FLOW_PATTERN_CLARIFICATION
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> ClarifyPatternFlowStackFrame:

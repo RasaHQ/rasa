@@ -19,7 +19,7 @@ class InternalErrorPatternFlowStackFrame(PatternFlowStackFrame):
     @classmethod
     def type(cls) -> str:
         """Returns the type of the frame."""
-        return "pattern_internal_error"
+        return FLOW_PATTERN_INTERNAL_ERROR_ID
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> InternalErrorPatternFlowStackFrame:
