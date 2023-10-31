@@ -78,17 +78,20 @@ def configure_structlog(
     """Configure logging of the server."""
     if logging_config_file is not None:
         configure_logging_from_file(logging_config_file)
+    else:
+        logging.basicConfig(
+        format="%(message)s",
+        stream=sys.stdout,
+        level=log_level,
+    )
+        
     if log_level is None:  # Log level NOTSET is 0 so we use `is None` here
         log_level_name = os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
         # Change log level from str to int (note that log_level in function parameter
         # int already, coming from CLI argparse parameter).
         log_level = logging.getLevelName(log_level_name)
 
-    #logging.basicConfig(
-    #    format="%(message)s",
-    #    stream=sys.stdout,
-    #    level=log_level,
-    #)
+    
 
     shared_processors = [
         _anonymizer,
