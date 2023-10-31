@@ -1,0 +1,13 @@
+recipe: default.v1
+assistant_id: mood_bot
+language: en
+
+pipeline:
+  - name: LLMCommandGenerator
+    llm:
+      model_name: gpt-4
+      # model_name: "text-davinci-003"
+
+policies:
+  - name: FlowPolicy
+  - name: RulePolicy

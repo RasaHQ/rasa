@@ -1,0 +1,53 @@
+version: "3.1"
+
+slots:
+  how_are_you:
+    type: categorical
+    values:
+      - happy
+      - sad
+    mappings:
+      - type: custom
+  did_that_help:
+    type: bool
+    mappings:
+      - type: custom
+  confirm_correct:
+    type: text
+    mappings:
+      - type: custom
+
+intents:
+  - affirm
+  - deny
+  - goodbye
+  - bot_challenge
+
+responses:
+  utter_ask_how_are_you:
+  - text: "Hey! How are you?"
+    buttons:
+    - title: "great"
+      payload: "happy"
+    - title: "sad"
+      payload: "sad"
+
+  utter_ask_did_that_help:
+  - text: "Did that help you?"
+
+  utter_cheer_up:
+  - text: "Here is something to cheer you up:"
+    image: "https://i.imgur.com/nGF1K8f.jpg"
+
+  utter_happy:
+  - text: "Great, carry on!"
+
+  utter_goodbye:
+  - text: "Bye"
+
+  utter_iamabot:
+  - text: "I am a bot, powered by Rasa."
+
+session_config:
+  session_expiration_time: 60  # value in minutes
+  carry_over_slots_to_new_session: true

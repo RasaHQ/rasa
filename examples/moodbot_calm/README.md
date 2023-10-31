@@ -1,6 +1,7 @@
 # Moodbot
 
-The `moodbot` is a basic Rasa chatbot example.
+The `moodbot` is a basic Rasa chatbot example. This version uses the Rasa CALM
+approach to using LLMs.
 
 ## What’s inside this example?
 
@@ -8,6 +9,7 @@ This example contains some training data and the main files needed to build an
 assistant on your local machine. The `moodbot` consists of the following files:
 
 - **data/nlu.yml** contains training examples for the NLU model
+- **data/flows.yml** contains training flows
 - **data/rules.yml** contains training rules for the Core model
 - **config.yml** contains the model configuration
 - **domain.yml** contains the domain of the assistant

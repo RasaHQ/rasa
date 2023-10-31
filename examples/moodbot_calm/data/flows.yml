@@ -1,0 +1,22 @@
+flows:
+  greet:
+    description: user has started a conversation with a greeting or asking what the bot can do
+    steps:
+      - collect: how_are_you
+        id: "1"
+        next:
+          - if: how_are_you == "happy"
+            then:
+              - action: utter_happy
+                next: END
+          - else:
+              - action: utter_cheer_up
+                next: "did_help"           # would be nice if this line wasn't required, default go to next step
+      - collect: did_that_help
+        id: "2"
+        next:
+          - if: did_that_help
+            then:
+              action: utter_happy
+          - else:
+              action: utter_goodbye
