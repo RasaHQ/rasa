@@ -106,7 +106,7 @@ class ActionCancelFlow(action.Action):
             else:
                 structlogger.warning(
                     "action.cancel_flow.frame_not_found",
-                    stack=stack,
+                    dialogue_stack=stack,
                     frame_id=canceled_frame_id,
                 )
 

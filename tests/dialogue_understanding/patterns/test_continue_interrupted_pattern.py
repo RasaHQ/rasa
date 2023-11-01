@@ -3,12 +3,12 @@ from rasa.dialogue_understanding.patterns.continue_interrupted import (
 )
 
 
-def test_continue_interrupted_pattern_flow_stack_frame_type():
+async def test_continue_interrupted_pattern_flow_stack_frame_type() -> None:
     frame = ContinueInterruptedPatternFlowStackFrame()
     assert frame.type() == "pattern_continue_interrupted"
 
 
-def test_continue_interrupted_pattern_flow_stack_frame_from_dict():
+async def test_continue_interrupted_pattern_flow_stack_frame_from_dict() -> None:
     frame = ContinueInterruptedPatternFlowStackFrame.from_dict(
         {
             "frame_id": "test_id",

@@ -1,12 +1,12 @@
 from rasa.dialogue_understanding.patterns.clarify import ClarifyPatternFlowStackFrame
 
 
-def test_clarify_pattern_flow_stack_frame_type():
+async def test_clarify_pattern_flow_stack_frame_type() -> None:
     frame = ClarifyPatternFlowStackFrame()
     assert frame.type() == "pattern_clarification"
 
 
-def test_clarify_pattern_flow_stack_frame_from_dict():
+async def test_clarify_pattern_flow_stack_frame_from_dict() -> None:
     frame = ClarifyPatternFlowStackFrame.from_dict(
         {
             "frame_id": "test_id",

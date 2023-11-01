@@ -5,12 +5,12 @@ from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
 from rasa.shared.core.flows.flow import SlotRejection
 
 
-def test_collect_information_pattern_flow_stack_frame_type():
+async def test_collect_information_pattern_flow_stack_frame_type() -> None:
     frame = CollectInformationPatternFlowStackFrame()
     assert frame.type() == "pattern_collect_information"
 
 
-def test_collect_information_pattern_flow_stack_frame_from_dict():
+async def test_collect_information_pattern_flow_stack_frame_from_dict() -> None:
     frame = CollectInformationPatternFlowStackFrame.from_dict(
         {
             "frame_id": "test_id",
@@ -31,7 +31,7 @@ def test_collect_information_pattern_flow_stack_frame_from_dict():
     assert frame.type() == "pattern_collect_information"
 
 
-def test_collect_information_pattern_flow_stack_context_as_dict():
+async def test_collect_information_pattern_flow_stack_context_as_dict_empty() -> None:
     frame = CollectInformationPatternFlowStackFrame(
         frame_id="test_id",
         step_id="test_step_id",
@@ -50,7 +50,7 @@ def test_collect_information_pattern_flow_stack_context_as_dict():
     }
 
 
-def test_collect_information_pattern_flow_stack_context_as_dict_with_frame():
+async def test_collect_information_pattern_flow_stack_context_as_dict() -> None:
     frame = CollectInformationPatternFlowStackFrame(
         frame_id="test_id",
         step_id="test_step_id",
@@ -67,7 +67,6 @@ def test_collect_information_pattern_flow_stack_context_as_dict_with_frame():
             )
         ]
     ) == {
-        "frame_id": "test_id",
         "utter": "test_utter",
         "collect": "test_slot",
         "rejections": [{"if": "condition", "utter": "sample_a"}],

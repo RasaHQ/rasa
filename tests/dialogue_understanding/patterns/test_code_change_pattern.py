@@ -3,12 +3,12 @@ from rasa.dialogue_understanding.patterns.code_change import (
 )
 
 
-def test_code_change_error_pattern_flow_stack_frame_type():
+async def test_code_change_error_pattern_flow_stack_frame_type() -> None:
     frame = CodeChangeFlowStackFrame()
     assert frame.type() == "pattern_code_change"
 
 
-def test_code_change_pattern_flow_stack_frame_from_dict():
+async def test_code_change_pattern_flow_stack_frame_from_dict() -> None:
     frame = CodeChangeFlowStackFrame.from_dict(
         {
             "frame_id": "test_id",

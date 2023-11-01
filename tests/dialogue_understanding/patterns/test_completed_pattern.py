@@ -3,12 +3,12 @@ from rasa.dialogue_understanding.patterns.completed import (
 )
 
 
-def test_pattern_completed_error_pattern_flow_stack_frame_type():
+async def test_pattern_completed_error_pattern_flow_stack_frame_type() -> None:
     frame = CompletedPatternFlowStackFrame()
     assert frame.type() == "pattern_completed"
 
 
-def test_pattern_completed_pattern_flow_stack_frame_from_dict():
+async def test_pattern_completed_pattern_flow_stack_frame_from_dict() -> None:
     frame = CompletedPatternFlowStackFrame.from_dict(
         {
             "frame_id": "test_id",
