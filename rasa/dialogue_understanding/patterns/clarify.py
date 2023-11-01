@@ -91,7 +91,7 @@ class ActionClarifyFlows(action.Action):
             return []
 
         if not isinstance(top, ClarifyPatternFlowStackFrame):
-            structlogger.warning("action.clarify_flows.no_correction_frame", top=top)
+            structlogger.warning("action.clarify_flows.no_clarification_frame", top=top)
             return []
 
         options_string = self.assemble_options_string(top.names)
