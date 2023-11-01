@@ -42,6 +42,11 @@ responses:
       metadata:
         rephrase: True
 
+  utter_skip_question_answer:
+    - text: I'm here to provide you with the best assistance, and in order to do so, I kindly request that we complete this step together. Your input is essential for a seamless experience!
+      metadata:
+        rephrase: True
+
 slots:
   confirm_correction:
     type: bool
@@ -141,3 +146,10 @@ flows:
     steps:
       - action: utter_inform_code_change
       - action: action_clean_stack
+
+
+  pattern_skip_question:
+    description: flow used to handle users intent to skip questions (steps)
+    name: pattern skip question
+    steps:
+      - action: utter_skip_question_answer
