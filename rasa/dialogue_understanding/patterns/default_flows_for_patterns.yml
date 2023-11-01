@@ -53,11 +53,8 @@ flows:
     description: A meta flow that's started when a flow is cancelled.
     name: pattern_cancel_flow
     steps:
-      - id: "cancel_flow"
-        action: action_cancel_flow
-        next: "inform_user"
-      - id: "inform_user"
-        action: utter_flow_cancelled_rasa
+      - action: action_cancel_flow
+      - action: utter_flow_cancelled_rasa
 
   pattern_chitchat:
     description: handle interactions with the user that are not task-oriented
@@ -97,9 +94,7 @@ flows:
         - else: "ask_collect"
       - id: "ask_collect"
         action: "{{context.utter}}"
-        next: "listen"
-      - id: "listen"
-        action: action_listen
+      - action: action_listen
         next: "start"
 
   pattern_completed:
