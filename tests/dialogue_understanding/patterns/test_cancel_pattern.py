@@ -80,7 +80,7 @@ async def test_action_cancel_flow_frame_not_found(capsys: CaptureFixture) -> Non
         step_id="1",
         frame_id="test_id",
         canceled_name="foo_flow",
-        canceled_frames=["some-id1"],
+        canceled_frames=["some-other-id"],
     )
     stack = DialogueStack(frames=[user_frame, cancel_frame])
     tracker = DialogueStateTracker.from_events(
@@ -118,13 +118,13 @@ async def test_action_cancel_flow_single_cancelled_frame() -> None:
         flow_id="foo_flow", step_id="1", frame_id="some-id"
     )
     user_frame2 = UserFlowStackFrame(
-        flow_id="bar_flow", step_id="1", frame_id="some-id1"
+        flow_id="bar_flow", step_id="1", frame_id="some-other-id"
     )
     cancel_frame = CancelPatternFlowStackFrame(
         frame_id="test_id",
         step_id="1",
         canceled_name="bar_flow",
-        canceled_frames=["some-id1"],
+        canceled_frames=["some-other-id"],
     )
     stack = DialogueStack(frames=[user_frame1, user_frame2, cancel_frame])
     tracker = DialogueStateTracker.from_events(
@@ -151,7 +151,7 @@ async def test_action_cancel_flow_single_cancelled_frame() -> None:
     assert event.value[1]["type"] == UserFlowStackFrame.type()
     assert event.value[1]["flow_id"] == "bar_flow"
     assert event.value[1]["step_id"] == "NEXT:END"
-    assert event.value[1]["frame_id"] == "some-id1"
+    assert event.value[1]["frame_id"] == "some-other-id"
     assert event.value[2]["type"] == CancelPatternFlowStackFrame.type()
     assert event.value[2]["flow_id"] == "pattern_cancel_flow"
     assert event.value[2]["step_id"] == "1"
@@ -165,13 +165,13 @@ async def test_action_cancel_flow_multiple_cancelled_frame() -> None:
         flow_id="foo_flow", step_id="1", frame_id="some-id"
     )
     user_frame2 = UserFlowStackFrame(
-        flow_id="bar_flow", step_id="1", frame_id="some-id1"
+        flow_id="bar_flow", step_id="1", frame_id="some-other-id"
     )
     cancel_frame = CancelPatternFlowStackFrame(
         frame_id="test_id",
         step_id="1",
         canceled_name="bar_flow",
-        canceled_frames=["some-id1", "some-id"],
+        canceled_frames=["some-other-id", "some-id"],
     )
     stack = DialogueStack(frames=[user_frame1, user_frame2, cancel_frame])
     tracker = DialogueStateTracker.from_events(
@@ -198,7 +198,7 @@ async def test_action_cancel_flow_multiple_cancelled_frame() -> None:
     assert event.value[1]["type"] == UserFlowStackFrame.type()
     assert event.value[1]["flow_id"] == "bar_flow"
     assert event.value[1]["step_id"] == "NEXT:END"
-    assert event.value[1]["frame_id"] == "some-id1"
+    assert event.value[1]["frame_id"] == "some-other-id"
     assert event.value[2]["type"] == CancelPatternFlowStackFrame.type()
     assert event.value[2]["flow_id"] == "pattern_cancel_flow"
     assert event.value[2]["step_id"] == "1"
