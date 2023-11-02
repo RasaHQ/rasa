@@ -374,7 +374,7 @@ tests-no-zope = ["cloudpickle", "coverage[toml] (>=5.0.2)", "hypothesis", "mypy 
 name = "azure-core"
 version = "1.27.1"
 description = "Microsoft Azure Core Library for Python"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -394,7 +394,7 @@ aio = ["aiohttp (>=3.0)"]
 name = "azure-storage-blob"
 version = "12.16.0"
 description = "Microsoft Azure Blob Storage Client Library for Python"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -1760,7 +1760,7 @@ gitdb = ">=4.0.1,<5"
 name = "google-api-core"
 version = "2.8.0"
 description = "Google API client core library"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.6"
 files = [
@@ -1828,7 +1828,7 @@ tool = ["click (>=6.0.0)"]
 name = "google-cloud-core"
 version = "2.3.3"
 description = "Google Cloud API client core library"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -1847,7 +1847,7 @@ grpc = ["grpcio (>=1.38.0,<2.0dev)"]
 name = "google-cloud-storage"
 version = "2.10.0"
 description = "Google Cloud Storage API client library"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -1869,7 +1869,7 @@ protobuf = ["protobuf (<5.0.0dev)"]
 name = "google-crc32c"
 version = "1.5.0"
 description = "A python wrapper of the C library 'Google CRC32C'"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -1966,7 +1966,7 @@ six = "*"
 name = "google-resumable-media"
 version = "2.5.0"
 description = "Utilities for Google Media Downloads and Resumable Uploads"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">= 3.7"
 files = [
@@ -1985,7 +1985,7 @@ requests = ["requests (>=2.18.0,<3.0.0dev)"]
 name = "googleapis-common-protos"
 version = "1.56.1"
 description = "Common protobufs used in Google APIs"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.6"
 files = [
@@ -2412,7 +2412,7 @@ files = [
 name = "isodate"
 version = "0.6.1"
 description = "An ISO 8601 date/time/duration parser and formatter"
-category = "dev"
+category = "main"
 optional = false
 python-versions = "*"
 files = [
@@ -7327,4 +7327,4 @@ transformers = ["sentencepiece", "transformers"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8.1,<3.11"
-content-hash = "a31d110443f366e38fe2ab4222e1330731bb107a7149ba6f703c52956ea8e37a"
+content-hash = "43905b07d7234982c503d673282983a83b801b365dc4dac9405b7e43fb48017e"
