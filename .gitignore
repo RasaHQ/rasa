@@ -87,5 +87,4 @@ rasa/keys
 .rasa
 /results/
 # Local Netlify folder
-.netlify
 rasa.code-workspace

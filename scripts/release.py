@@ -1,9 +1,16 @@
-"""Prepare a Rasa OSS release.
+"""Prepare a Rasa Private release.
 
+When run with `prepare`:
 - creates a release branch
 - creates a new changelog section in CHANGELOG.mdx based on all collected changes
 - increases the version number
 - pushes the new branch to GitHub
+
+When run with `tag`:
+- tags the current commit with the version number found in the version module
+- pushes the tag to GitHub, which will kick off the release workflows.
+When run with `fetch`:
+- retrieves the current rasa-oss dependency version stored in pyproject.toml
 """
 import argparse
 import os
@@ -17,29 +24,51 @@ import questionary
 import toml
 from pep440_version_utils import Version, is_valid_version
 
-
 VERSION_FILE_PATH = "rasa/version.py"
 
 PYPROJECT_FILE_PATH = "pyproject.toml"
 
-REPO_BASE_URL = "https://github.com/RasaHQ/rasa"
+REPO_BASE_URL = "https://github.com/RasaHQ/rasa-private"
 
 RELEASE_BRANCH_PREFIX = "prepare-release-"
 
-PRERELEASE_FLAVORS = ("alpha", "rc")
+PRERELEASE_FLAVORS = ("alpha", "beta", "rc")
 
 RELEASE_BRANCH_PATTERN = re.compile(r"^\d+\.\d+\.x$")
 
 
 def create_argument_parser() -> argparse.ArgumentParser:
     """Parse all the command line arguments for the release script."""
-
-    parser = argparse.ArgumentParser(description="prepare the next library release")
-    parser.add_argument(
+    parser = argparse.ArgumentParser(
+        description="prepare or tag the next library release"
+    )
+    subparsers = parser.add_subparsers()
+    prepare_subparser = subparsers.add_parser(
+        "prepare",
+        description="Prepare the next release",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    prepare_subparser.set_defaults(func=prepare_release)
+    prepare_subparser.add_argument(
         "--next_version",
         type=str,
-        help="Either next version number or 'major', 'minor', 'micro', 'alpha', 'rc'",
+        help=(
+            "Either next version number or 'major', "
+            "'minor', 'micro', 'alpha', 'beta', 'rc'"
+
+        )
     )
+    prepare_subparser.add_argument(
+        "--interactive",
+        action="store_true",
+    )
+    tag_subparser = subparsers.add_parser(
+        "tag",
+        description="Tag the next release",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    tag_subparser.set_defaults(func=tag_release)
+    tag_subparser.add_argument("--skip-confirmation", action="store_true")
 
     return parser
 
@@ -132,15 +161,17 @@ def ask_version() -> Text:
     """Allow the user to confirm the version number."""
 
     def is_valid_version_number(v: Text) -> bool:
-        return v in {"major", "minor", "micro", "alpha", "rc"} or is_valid_version(v)
+        return v in {"major", "minor", "micro", "alpha", "beta", "rc"} or is_valid_version(v)
 
     current_version = Version(get_current_version())
     next_micro_version = str(current_version.next_micro())
     next_alpha_version = str(current_version.next_alpha())
+    next_beta_version = str(current_version.next_beta())
     version = questionary.text(
         f"What is the version number you want to release "
-        f"('major', 'minor', 'micro', 'alpha', 'rc' or valid version number "
-        f"e.g. '{next_micro_version}' or '{next_alpha_version}')?",
+        f"('major', 'minor', 'micro', 'alpha', 'beta', 'rc' or valid version number "
+        f"e.g. '{next_micro_version}' or '{next_alpha_version}'"
+        f" or '{next_beta_version}')?",
         validate=is_valid_version_number,
     ).ask()
 
@@ -152,6 +183,12 @@ def ask_version() -> Text:
                 str(current_version.next_alpha("minor")),
                 str(current_version.next_alpha("micro")),
                 str(current_version.next_alpha("major")),
+            ]
+        elif version == "beta":
+            choices = [
+                str(current_version.next_beta("minor")),
+                str(current_version.next_beta("micro")),
+                str(current_version.next_beta("major")),
             ]
         else:
             choices = [
@@ -229,8 +266,8 @@ def git_current_branch_is_main_or_release() -> bool:
     """
     current_branch = git_current_branch()
     return (
-        current_branch == "main"
-        or RELEASE_BRANCH_PATTERN.match(current_branch) is not None
+            current_branch == "main"
+            or RELEASE_BRANCH_PATTERN.match(current_branch) is not None
     )
 
 
@@ -272,6 +309,8 @@ def parse_next_version(version: Text) -> Version:
         return Version(get_current_version()).next_micro()
     elif version == "alpha":
         return Version(get_current_version()).next_alpha()
+    elif version == "beta":
+        return Version(get_current_version()).next_beta()
     elif version == "rc":
         return Version(get_current_version()).next_release_candidate()
     elif is_valid_version(version):
@@ -316,44 +355,122 @@ def print_done_message_same_branch(version: Version) -> None:
     )
 
 
-def main(args: argparse.Namespace) -> None:
-    """Start a release preparation."""
+def tag_commit(tag: Text) -> None:
+    """Tags a git commit."""
+    print(f"Applying tag '{tag}' to commit.")
+    check_call(["git", "tag", tag, "-m", "next release"])
 
+
+def push_tag(tag: Text) -> None:
+    """Pushes a tag to the remote."""
+    print(f"Pushing tag '{tag}' to origin.")
+    check_call(["git", "push", "origin", tag, "--tags"])
+
+
+def print_tag_release_done_message(version: Version) -> None:
+    """Print final information for the user about the tagged commit."""
+    print()
     print(
-        "The release script will increase the version number, "
-        "create a changelog and create a release branch. Let's go!"
+        f"\033[94m All done - tag for version {version} "
+        "was added and pushed to the remote \033[0m"
     )
 
-    ensure_clean_git()
-    version = next_version(args)
-    confirm_version(version)
 
-    validate_code_is_release_ready(version)
-
-    write_version_file(version)
-    write_version_to_pyproject(version)
-
-    if not version.pre:
-        # never update changelog on a prerelease version
-        generate_changelog(version)
-
-    # alpha workflow on feature branch when a version bump is required
-    if version.is_alpha and not git_current_branch_is_main_or_release():
-        create_commit(version)
-        push_changes()
-
-        print_done_message_same_branch(version)
+def confirm_tag_version(version: Version) -> bool:
+    """Allow the user to confirm the version tag they are applying."""
+    if str(version) in git_existing_tags():
+        confirmed = questionary.confirm(
+            f"Tag with version '{version}' already exists, overwrite?", default=False
+        ).ask()
     else:
-        base = git_current_branch()
-        branch = create_release_branch(version)
+        confirmed = questionary.confirm(
+            f"Current version is '{get_current_version()}. "
+            f"Is this the tag you want to apply?",
+            default=True,
+        ).ask()
+    if confirmed:
+        return True
+    else:
+        print("Aborting.")
+        sys.exit(1)
 
-        create_commit(version)
-        push_changes()
 
-        print_done_message(branch, base, version)
+def prepare_release(args: argparse.Namespace) -> None:
+    """Start a release preparation."""
+
+    if args.interactive:
+        print(
+            "The release script will increase the version number, "
+            "create a changelog and create a release branch. Let's go!"
+        )
+        ensure_clean_git()
+        version = next_version(args)
+        confirm_version(version)
+        validate_code_is_release_ready(version)
+
+        write_version_file(version)
+        write_version_to_pyproject(version)
+
+        if not version.pre:
+            # never update changelog on a pre-release version
+            generate_changelog(version)
+
+        # alpha or beta workflow on feature branch when a version bump is required
+        if (version.is_alpha or version.is_beta) and not git_current_branch_is_main_or_release():
+            create_commit(version)
+            push_changes()
+
+            print_done_message_same_branch(version)
+        else:
+            base = git_current_branch()
+            branch = create_release_branch(version)
+
+            create_commit(version)
+            push_changes()
+
+            print_done_message(branch, base, version)
+
+
+def tag_release(args: argparse.Namespace) -> None:
+    """Tag the current commit with the current version."""
+    print(
+        """
+    The release tag script will tag the current commit with the current version.
+
+    This should be done on the applicable *.x branch after running
+    `make prepare-release` and merging the prepared release branch.
+        """
+    )
+
+    branch = git_current_branch()
+    version = Version(get_current_version())
+
+    if not version.is_alpha and not version.is_beta and not git_current_branch_is_main_or_release():
+        print(
+            f"""
+    You are currently on branch {branch}.
+    You should only apply release tags to release branches (e.g. 1.x) or main.
+            """
+        )
+        sys.exit(1)
+    ensure_clean_git()
+    if args.skip_confirmation:
+        if str(version) in git_existing_tags():
+            print(f"Tag with version '{version}' already exists, will not overwrite.")
+            sys.exit(1)
+    else:
+        confirm_tag_version(version)
+    tag = str(version)
+    tag_commit(tag)
+    push_tag(tag)
+
+    print_tag_release_done_message(version)
 
 
 if __name__ == "__main__":
     arg_parser = create_argument_parser()
     cmdline_args = arg_parser.parse_args()
-    main(cmdline_args)
+    if not hasattr(cmdline_args, "func"):
+        arg_parser.print_usage()
+        exit()
+    cmdline_args.func(cmdline_args)

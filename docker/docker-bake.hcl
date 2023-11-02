@@ -1,5 +1,13 @@
-variable "IMAGE_NAME" {
-  default = "rasa/rasa"
+variable "TARGET_IMAGE_REGISTRY" {
+  default = "rasa"
+}
+
+variable "TARGET_IMAGE_NAME" {
+  default = "${TARGET_IMAGE_REGISTRY}/rasa"
+}
+
+variable "BASE_IMAGE_NAME" {
+  default = "${TARGET_IMAGE_REGISTRY}/rasa"
 }
 
 variable "IMAGE_TAG" {
@@ -30,22 +38,22 @@ group "base-images" {
 
 target "base" {
   dockerfile = "docker/Dockerfile.base"
-  tags       = ["${IMAGE_NAME}:base-${IMAGE_TAG}"]
+  tags       = ["${BASE_IMAGE_NAME}:base-${IMAGE_TAG}"]
   cache-to   = ["type=inline"]
 }
 
 target "base-mitie" {
   dockerfile = "docker/Dockerfile.base-mitie"
-  tags       = ["${IMAGE_NAME}:base-mitie-${IMAGE_TAG}"]
+  tags       = ["${BASE_IMAGE_NAME}:base-mitie-${IMAGE_TAG}"]
   cache-to   = ["type=inline"]
 }
 
 target "base-poetry" {
   dockerfile = "docker/Dockerfile.base-poetry"
-  tags       = ["${IMAGE_NAME}:base-poetry-${POETRY_VERSION}"]
+  tags       = ["${BASE_IMAGE_NAME}:base-poetry-${POETRY_VERSION}"]
 
   args = {
-    IMAGE_BASE_NAME = "${IMAGE_NAME}"
+    IMAGE_BASE_NAME = "${BASE_IMAGE_NAME}"
     BASE_IMAGE_HASH = "${BASE_IMAGE_HASH}"
     POETRY_VERSION  = "${POETRY_VERSION}"
   }
@@ -53,16 +61,16 @@ target "base-poetry" {
   cache-to = ["type=inline"]
 
   cache-from = [
-    "type=registry,ref=${IMAGE_NAME}:base-poetry-${POETRY_VERSION}",
+    "type=registry,ref=${BASE_IMAGE_NAME}:base-poetry-${POETRY_VERSION}",
   ]
 }
 
 target "base-builder" {
   dockerfile = "docker/Dockerfile.base-builder"
-  tags       = ["${IMAGE_NAME}:base-builder-${IMAGE_TAG}"]
+  tags       = ["${BASE_IMAGE_NAME}:base-builder-${IMAGE_TAG}"]
 
   args = {
-    IMAGE_BASE_NAME = "${IMAGE_NAME}"
+    IMAGE_BASE_NAME = "${BASE_IMAGE_NAME}"
     POETRY_VERSION  = "${POETRY_VERSION}"
   }
 
@@ -71,10 +79,10 @@ target "base-builder" {
 
 target "default" {
   dockerfile = "Dockerfile"
-  tags       = ["${IMAGE_NAME}:${IMAGE_TAG}"]
+  tags       = ["${TARGET_IMAGE_NAME}:${IMAGE_TAG}"]
 
   args = {
-    IMAGE_BASE_NAME         = "${IMAGE_NAME}"
+    IMAGE_BASE_NAME         = "${BASE_IMAGE_NAME}"
     BASE_IMAGE_HASH         = "${BASE_IMAGE_HASH}"
     BASE_BUILDER_IMAGE_HASH = "${BASE_BUILDER_IMAGE_HASH}"
   }
@@ -82,18 +90,18 @@ target "default" {
   cache-to = ["type=inline"]
 
   cache-from = [
-    "type=registry,ref=${IMAGE_NAME}:base-${BASE_IMAGE_HASH}",
-    "type=registry,ref=${IMAGE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH}",
-    "type=registry,ref=${IMAGE_NAME}:latest",
+    "type=registry,ref=${BASE_IMAGE_NAME}:base-${BASE_IMAGE_HASH}",
+    "type=registry,ref=${BASE_IMAGE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH}",
+    "type=registry,ref=${TARGET_IMAGE_NAME}:latest",
   ]
 }
 
 target "full" {
   dockerfile = "docker/Dockerfile.full"
-  tags       = ["${IMAGE_NAME}:${IMAGE_TAG}-full"]
+  tags       = ["${TARGET_IMAGE_NAME}:${IMAGE_TAG}-full"]
 
   args = {
-    IMAGE_BASE_NAME         = "${IMAGE_NAME}"
+    IMAGE_BASE_NAME         = "${BASE_IMAGE_NAME}"
     BASE_IMAGE_HASH         = "${BASE_IMAGE_HASH}"
     BASE_MITIE_IMAGE_HASH   = "${BASE_MITIE_IMAGE_HASH}"
     BASE_BUILDER_IMAGE_HASH = "${BASE_BUILDER_IMAGE_HASH}"
@@ -102,18 +110,18 @@ target "full" {
   cache-to = ["type=inline"]
 
   cache-from = [
-    "type=registry,ref=${IMAGE_NAME}:base-${BASE_IMAGE_HASH}",
-    "type=registry,ref=${IMAGE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH}",
-    "type=registry,ref=${IMAGE_NAME}:latest-full",
+    "type=registry,ref=${BASE_IMAGE_NAME}:base-${BASE_IMAGE_HASH}",
+    "type=registry,ref=${BASE_IMAGE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH}",
+    "type=registry,ref=${TARGET_IMAGE_NAME}:latest-full",
   ]
 }
 
 target "mitie-en" {
   dockerfile = "docker/Dockerfile.pretrained_embeddings_mitie_en"
-  tags       = ["${IMAGE_NAME}:${IMAGE_TAG}-mitie-en"]
+  tags       = ["${TARGET_IMAGE_NAME}:${IMAGE_TAG}-mitie-en"]
 
   args = {
-    IMAGE_BASE_NAME         = "${IMAGE_NAME}"
+    IMAGE_BASE_NAME         = "${BASE_IMAGE_NAME}"
     BASE_IMAGE_HASH         = "${BASE_IMAGE_HASH}"
     BASE_MITIE_IMAGE_HASH   = "${BASE_MITIE_IMAGE_HASH}"
     BASE_BUILDER_IMAGE_HASH = "${BASE_BUILDER_IMAGE_HASH}"
@@ -122,19 +130,19 @@ target "mitie-en" {
   cache-to = ["type=inline"]
 
   cache-from = [
-    "type=registry,ref=${IMAGE_NAME}:base-${BASE_IMAGE_HASH}",
-    "type=registry,ref=${IMAGE_NAME}:base-mitie-${BASE_MITIE_IMAGE_HASH}",
-    "type=registry,ref=${IMAGE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH}",
-    "type=registry,ref=${IMAGE_NAME}:latest-mitie-en",
+    "type=registry,ref=${BASE_IMAGE_NAME}:base-${BASE_IMAGE_HASH}",
+    "type=registry,ref=${BASE_IMAGE_NAME}:base-mitie-${BASE_MITIE_IMAGE_HASH}",
+    "type=registry,ref=${BASE_IMAGE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH}",
+    "type=registry,ref=${TARGET_IMAGE_NAME}:latest-mitie-en",
   ]
 }
 
 target "spacy-de" {
   dockerfile = "docker/Dockerfile.pretrained_embeddings_spacy_de"
-  tags       = ["${IMAGE_NAME}:${IMAGE_TAG}-spacy-de"]
+  tags       = ["${TARGET_IMAGE_NAME}:${IMAGE_TAG}-spacy-de"]
 
   args = {
-    IMAGE_BASE_NAME         = "${IMAGE_NAME}"
+    IMAGE_BASE_NAME         = "${BASE_IMAGE_NAME}"
     BASE_IMAGE_HASH         = "${BASE_IMAGE_HASH}"
     BASE_BUILDER_IMAGE_HASH = "${BASE_BUILDER_IMAGE_HASH}"
   }
@@ -142,18 +150,18 @@ target "spacy-de" {
   cache-to = ["type=inline"]
 
   cache-from = [
-    "type=registry,ref=${IMAGE_NAME}:base-${BASE_IMAGE_HASH}",
-    "type=registry,ref=${IMAGE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH}",
-    "type=registry,ref=${IMAGE_NAME}:latest-spacy-de",
+    "type=registry,ref=${BASE_IMAGE_NAME}:base-${BASE_IMAGE_HASH}",
+    "type=registry,ref=${BASE_IMAGE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH}",
+    "type=registry,ref=${TARGET_IMAGE_NAME}:latest-spacy-de",
   ]
 }
 
 target "spacy-it" {
   dockerfile = "docker/Dockerfile.pretrained_embeddings_spacy_it"
-  tags       = ["${IMAGE_NAME}:${IMAGE_TAG}-spacy-it"]
+  tags       = ["${TARGET_IMAGE_NAME}:${IMAGE_TAG}-spacy-it"]
 
   args = {
-    IMAGE_BASE_NAME         = "${IMAGE_NAME}"
+    IMAGE_BASE_NAME         = "${BASE_IMAGE_NAME}"
     BASE_IMAGE_HASH         = "${BASE_IMAGE_HASH}"
     BASE_BUILDER_IMAGE_HASH = "${BASE_BUILDER_IMAGE_HASH}"
   }
@@ -161,18 +169,18 @@ target "spacy-it" {
   cache-to = ["type=inline"]
 
   cache-from = [
-    "type=registry,ref=${IMAGE_NAME}:base-${BASE_IMAGE_HASH}",
-    "type=registry,ref=${IMAGE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH}",
-    "type=registry,ref=${IMAGE_NAME}:latest-spacy-it",
+    "type=registry,ref=${BASE_IMAGE_NAME}:base-${BASE_IMAGE_HASH}",
+    "type=registry,ref=${BASE_IMAGE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH}",
+    "type=registry,ref=${TARGET_IMAGE_NAME}:latest-spacy-it",
   ]
 }
 
 target "spacy-en" {
   dockerfile = "docker/Dockerfile.pretrained_embeddings_spacy_en"
-  tags       = ["${IMAGE_NAME}:${IMAGE_TAG}-spacy-en"]
+  tags       = ["${TARGET_IMAGE_NAME}:${IMAGE_TAG}-spacy-en"]
 
   args = {
-    IMAGE_BASE_NAME         = "${IMAGE_NAME}"
+    IMAGE_BASE_NAME         = "${BASE_IMAGE_NAME}"
     BASE_IMAGE_HASH         = "${BASE_IMAGE_HASH}"
     BASE_BUILDER_IMAGE_HASH = "${BASE_BUILDER_IMAGE_HASH}"
   }
@@ -180,8 +188,8 @@ target "spacy-en" {
   cache-to = ["type=inline"]
 
   cache-from = [
-    "type=registry,ref=${IMAGE_NAME}:base-${BASE_IMAGE_HASH}",
-    "type=registry,ref=${IMAGE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH}",
-    "type=registry,ref=${IMAGE_NAME}:latest-spacy-en",
+    "type=registry,ref=${BASE_IMAGE_NAME}:base-${BASE_IMAGE_HASH}",
+    "type=registry,ref=${BASE_IMAGE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH}",
+    "type=registry,ref=${TARGET_IMAGE_NAME}:latest-spacy-en",
   ]
 }
