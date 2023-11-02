@@ -131,7 +131,7 @@ class TestLLMCommandGenerator:
             "request_timeout": 7,
             "temperature": 0.0,
             "model_name": "gpt-4",
-            "max_tokens": 256
+            "max_tokens": 256,
         }
         # When
         with patch(
