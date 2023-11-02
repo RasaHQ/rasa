@@ -7,7 +7,7 @@ from rasa.dialogue_understanding.generator.command_generator import CommandGener
 from rasa.dialogue_understanding.commands.chit_chat_answer_command import (
     ChitChatAnswerCommand,
 )
-from rasa.shared.core.flows.flow import FlowsList
+from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import TEXT, COMMANDS
 from rasa.shared.nlu.training_data.message import Message
@@ -29,7 +29,7 @@ class WackyCommandGenerator(CommandGenerator):
 def test_command_generator_catches_processing_errors():
     generator = WackyCommandGenerator()
     messages = [Message.build("Hi"), Message.build("What is your purpose?")]
-    generator.process(messages, FlowsList([]))
+    generator.process(messages, FlowsList(underlying_flows=[]))
     commands = [m.get(COMMANDS) for m in messages]
 
     assert len(commands[0]) == 0
@@ -41,4 +41,4 @@ def test_command_generator_still_throws_not_implemented_error():
     # This test can be removed if the predict_commands method stops to be abstract
     generator = CommandGenerator()
     with pytest.raises(NotImplementedError):
-        generator.process([Message.build("test")], FlowsList([]))
+        generator.process([Message.build("test")], FlowsList(underlying_flows=[]))

@@ -14,7 +14,7 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, Event, SlotSet
-from rasa.shared.core.flows.flow import FlowsList
+from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.flows.yaml_flows_io import YAMLFlowsReader
 from rasa.shared.core.slots import TextSlot
 from rasa.shared.core.trackers import DialogueStateTracker

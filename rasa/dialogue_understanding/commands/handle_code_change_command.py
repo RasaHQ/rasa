@@ -10,7 +10,7 @@ from rasa.dialogue_understanding.patterns.code_change import CodeChangeFlowStack
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.shared.core.constants import DIALOGUE_STACK_SLOT
 from rasa.shared.core.events import Event, SlotSet
-from rasa.shared.core.flows.flow import FlowsList
+from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.dialogue_understanding.stack.utils import top_user_flow_frame
 

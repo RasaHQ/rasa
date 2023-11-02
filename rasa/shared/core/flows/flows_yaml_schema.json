@@ -19,7 +19,6 @@
   "$defs": {
     "steps": {
       "type": "array",
-      "minContains": 1,
       "items": {
         "type": "object",
         "oneOf": [
@@ -149,6 +148,9 @@
               },
               "next": {
                 "$ref": "#$defs/next"
+              },
+              "llm": {
+                "type": "object"
               }
             }
           }
@@ -178,7 +180,7 @@
               "intent"
             ],
             "type": "object",
-            "additionalProperties": false, 
+            "additionalProperties": false,
             "properties": {
               "intent": {
                 "type": "object",
@@ -206,7 +208,6 @@
       "anyOf": [
         {
           "type": "array",
-          "minContains": 1,
           "items": {
             "type": "object",
             "oneOf": [

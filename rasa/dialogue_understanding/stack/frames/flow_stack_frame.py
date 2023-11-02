@@ -4,7 +4,8 @@ from enum import Enum
 from typing import Any, Dict, Optional
 
 from rasa.dialogue_understanding.stack.frames import DialogueStackFrame
-from rasa.shared.core.flows.flow import START_STEP, Flow, FlowStep, FlowsList
+from rasa.shared.core.flows.steps.constants import START_STEP
+from rasa.shared.core.flows import Flow, FlowsList, FlowStep
 from rasa.shared.exceptions import RasaException
 
 

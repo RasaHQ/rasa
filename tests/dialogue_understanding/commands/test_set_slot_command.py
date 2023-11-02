@@ -2,7 +2,7 @@ import pytest
 from rasa.dialogue_understanding.commands.set_slot_command import SetSlotCommand
 from rasa.shared.core.constants import DIALOGUE_STACK_SLOT
 from rasa.shared.core.events import SlotSet
-from rasa.shared.core.flows.flow import FlowsList
+from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.flows.yaml_flows_io import flows_from_str
 
@@ -38,7 +38,10 @@ def test_run_command_skips_if_slot_is_set_to_same_value():
     tracker = DialogueStateTracker.from_events("test", evts=[SlotSet("foo", "bar")])
     command = SetSlotCommand(name="foo", value="bar")
 
-    assert command.run_command_on_tracker(tracker, FlowsList(flows=[]), tracker) == []
+    assert (
+        command.run_command_on_tracker(tracker, FlowsList(underlying_flows=[]), tracker)
+        == []
+    )
 
 
 def test_run_command_sets_slot_if_asked_for():

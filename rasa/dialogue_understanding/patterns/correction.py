@@ -7,9 +7,7 @@ from rasa.dialogue_understanding.patterns.collect_information import (
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
-from rasa.shared.core.flows.flow import (
-    START_STEP,
-)
+from rasa.shared.core.flows.steps.constants import START_STEP, END_STEP
 from rasa.shared.core.trackers import (
     DialogueStateTracker,
 )
@@ -30,7 +28,7 @@ from rasa.shared.core.events import (
     SlotSet,
 )
 from rasa.core.nlg import NaturalLanguageGenerator
-from rasa.shared.core.flows.flow import END_STEP, ContinueFlowStep
+from rasa.shared.core.flows.steps.continuation import ContinueFlowStep
 
 structlogger = structlog.get_logger()
 

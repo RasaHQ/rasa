@@ -44,26 +44,28 @@ from rasa.shared.core.constants import (
     ACTION_SEND_TEXT_NAME,
 )
 from rasa.shared.core.events import Event, SlotSet
-from rasa.shared.core.flows.flow import (
-    END_STEP,
-    ActionFlowStep,
-    BranchFlowStep,
-    ContinueFlowStep,
-    ElseFlowLink,
-    EndFlowStep,
-    Flow,
-    FlowStep,
-    FlowsList,
-    GenerateResponseFlowStep,
-    IfFlowLink,
+from rasa.shared.core.flows import FlowStep
+from rasa.shared.core.flows.flow_step_links import (
+    IfFlowStepLink,
+    ElseFlowStepLink,
+    StaticFlowStepLink,
+)
+from rasa.shared.core.flows.steps.constants import END_STEP
+from rasa.shared.core.flows.steps.continuation import ContinueFlowStep
+from rasa.shared.core.flows.steps.set_slots import SetSlotsFlowStep
+from rasa.shared.core.flows.steps.collect import (
     SlotRejection,
+    CollectInformationFlowStep,
+)
+from rasa.shared.core.flows.steps.generate_response import GenerateResponseFlowStep
+from rasa.shared.core.flows.steps.user_message import (
     StepThatCanStartAFlow,
     UserMessageStep,
-    LinkFlowStep,
-    SetSlotsFlowStep,
-    CollectInformationFlowStep,
-    StaticFlowLink,
 )
+from rasa.shared.core.flows.steps.link import LinkFlowStep
+from rasa.shared.core.flows.steps.action import ActionFlowStep
+from rasa.shared.core.flows import Flow, FlowsList
+from rasa.shared.core.flows.steps.end import EndFlowStep
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.engine.graph import ExecutionContext
@@ -202,7 +204,7 @@ class FlowPolicy(Policy):
             # if the policy doesn't support the current stack frame, we'll abstain
             return self._prediction(self._default_predictions(domain))
 
-        flows = flows or FlowsList([])
+        flows = flows or FlowsList(underlying_flows=[])
         executor = FlowExecutor.from_tracker(tracker, flows, domain)
 
         # create executor and predict next action
@@ -310,7 +312,9 @@ class FlowExecutor:
         The created `FlowExecutor`.
         """
         dialogue_stack = DialogueStack.from_tracker(tracker)
-        return FlowExecutor(dialogue_stack, flows or FlowsList([]), domain)
+        return FlowExecutor(
+            dialogue_stack, flows or FlowsList(underlying_flows=[]), domain
+        )
 
     def find_startable_flow(self, tracker: DialogueStateTracker) -> Optional[Flow]:
         """Finds a flow which can be started.
@@ -364,18 +368,18 @@ class FlowExecutor:
     ) -> Optional[Text]:
         """Selects the next step id based on the current step."""
         next = current.next
-        if len(next.links) == 1 and isinstance(next.links[0], StaticFlowLink):
+        if len(next.links) == 1 and isinstance(next.links[0], StaticFlowStepLink):
             return next.links[0].target
 
         # evaluate if conditions
         for link in next.links:
-            if isinstance(link, IfFlowLink) and link.condition:
+            if isinstance(link, IfFlowStepLink) and link.condition:
                 if self.is_condition_satisfied(link.condition, tracker):
                     return link.target
 
         # evaluate else condition
         for link in next.links:
-            if isinstance(link, ElseFlowLink):
+            if isinstance(link, ElseFlowStepLink):
                 return link.target
 
         if next.links:
@@ -672,8 +676,8 @@ class FlowExecutor:
             structlogger.debug("flow.step.run.user_message")
             return ContinueFlowWithNextStep()
 
-        elif isinstance(step, BranchFlowStep):
-            structlogger.debug("flow.step.run.branch")
+        elif type(step) is FlowStep:
+            structlogger.debug("flow.step.run.base_flow_step")
             return ContinueFlowWithNextStep()
 
         elif isinstance(step, GenerateResponseFlowStep):

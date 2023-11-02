@@ -6,7 +6,7 @@ import logging
 import pkg_resources
 
 import rasa.shared.constants
-from rasa.shared.core.flows.flow import FlowsList
+from rasa.shared.core.flows import FlowsList
 import rasa.shared.utils.common
 import rasa.shared.core.constants
 import rasa.shared.utils.io
@@ -71,7 +71,7 @@ class TrainingDataImporter(ABC):
         Returns:
             `FlowsList` containing all loaded flows.
         """
-        return FlowsList(flows=[])
+        return FlowsList(underlying_flows=[])
 
     def get_conversation_tests(self) -> StoryGraph:
         """Retrieves end-to-end conversation stories for testing.
@@ -310,7 +310,9 @@ class CombinedDataImporter(TrainingDataImporter):
         flow_lists = [importer.get_flows() for importer in self._importers]
 
         return reduce(
-            lambda merged, other: merged.merge(other), flow_lists, FlowsList(flows=[])
+            lambda merged, other: merged.merge(other),
+            flow_lists,
+            FlowsList(underlying_flows=[]),
         )
 
     @rasa.shared.utils.common.cached_method

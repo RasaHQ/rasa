@@ -26,11 +26,11 @@ from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
-from rasa.shared.core.flows.flow import (
-    CollectInformationFlowStep,
-    FlowsList,
+from rasa.shared.core.flows.steps.collect import (
     SlotRejection,
+    CollectInformationFlowStep,
 )
+from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.slots import (
     Slot,
     BooleanSlot,
@@ -100,7 +100,7 @@ class TestLLMCommandGenerator:
     ):
         """Test that predict_commands returns an empty list when flows is None."""
         # Given
-        empty_flows = FlowsList([])
+        empty_flows = FlowsList(underlying_flows=[])
         # When
         predicted_commands = command_generator.predict_commands(
             Mock(), flows=empty_flows, tracker=Mock()

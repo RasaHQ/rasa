@@ -5,7 +5,9 @@ from rasa.dialogue_understanding.patterns.collect_information import (
 from rasa.dialogue_understanding.stack.frames import BaseFlowStackFrame
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
-from rasa.shared.core.flows.flow import END_STEP, ContinueFlowStep, FlowsList
+from rasa.shared.core.flows.steps.constants import END_STEP
+from rasa.shared.core.flows.steps.continuation import ContinueFlowStep
+from rasa.shared.core.flows import FlowsList
 
 
 def top_flow_frame(

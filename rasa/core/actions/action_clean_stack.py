@@ -14,7 +14,8 @@ from rasa.dialogue_understanding.stack.frames.flow_stack_frame import FlowStackF
 from rasa.shared.core.constants import ACTION_CLEAN_STACK, DIALOGUE_STACK_SLOT
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import Event, SlotSet
-from rasa.shared.core.flows.flow import ContinueFlowStep, END_STEP
+from rasa.shared.core.flows.steps.constants import END_STEP
+from rasa.shared.core.flows.steps.continuation import ContinueFlowStep
 from rasa.shared.core.trackers import DialogueStateTracker
 
 
