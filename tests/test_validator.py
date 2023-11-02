@@ -6,6 +6,10 @@ from typing import Any, Dict, List, Text
 import pytest
 from _pytest.logging import LogCaptureFixture
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.flows.yaml_flows_io import flows_from_str
+from rasa.shared.core.training_data.structures import StoryGraph
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
 from rasa.validator import Validator
 
@@ -1158,50 +1162,6 @@ def test_verify_unique_flows_duplicate_names(
     ) in caplog.text
 
 
-def test_verify_flow_names_non_empty(
-    tmp_path: Path,
-    nlu_data_path: Path,
-    caplog: LogCaptureFixture,
-) -> None:
-    flows_file = tmp_path / "flows.yml"
-    with open(flows_file, "w") as file:
-        file.write(
-            f"""
-                        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
-                        flows:
-                          transfer_money:
-                            description: This flow lets users send money.
-                            name: ""
-                            steps:
-                            - collect: transfer_recipient
-                        """
-        )
-    domain_file = tmp_path / "domain.yml"
-    with open(domain_file, "w") as file:
-        file.write(
-            f"""
-                        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
-                        slots:
-                            transfer_recipient:
-                                type: text
-                                mappings: []
-                        """
-        )
-    importer = RasaFileImporter(
-        config_file="data/test_moodbot/config.yml",
-        domain_path=str(domain_file),
-        training_data_paths=[str(flows_file), str(nlu_data_path)],
-    )
-
-    validator = Validator.from_importer(importer)
-
-    with caplog.at_level(logging.ERROR):
-        assert not validator.verify_unique_flows()
-
-    assert "empty name" in caplog.text
-    assert "transfer_money" in caplog.text
-
-
 def test_verify_unique_flows_duplicate_descriptions(
     tmp_path: Path,
     nlu_data_path: Path,
@@ -1347,6 +1307,24 @@ def test_verify_predicates_invalid_rejection_if(
         assert not validator.verify_predicates()
 
     assert error_log in caplog.text
+
+
+def test_flow_predicate_validation_fails_for_faulty_flow_link_predicates():
+    flows = flows_from_str(
+        """
+        flows:
+          pattern_bar:
+            steps:
+            - id: first
+              action: action_listen
+              next:
+                - if: xxx !!!
+                  then: END
+                - else: END
+        """
+    )
+    validator = Validator(Domain.empty(), TrainingData(), StoryGraph([]), flows, None)
+    assert not validator.verify_predicates()
 
 
 @pytest.fixture

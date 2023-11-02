@@ -6,13 +6,10 @@ from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
     UserFlowStackFrame,
     FlowStackFrameType,
 )
-from rasa.shared.core.flows.flow import (
-    ActionFlowStep,
-    Flow,
-    FlowLinks,
-    FlowsList,
-    StepSequence,
-)
+from rasa.shared.core.flows.flow_step_links import FlowStepLinks
+from rasa.shared.core.flows.steps.action import ActionFlowStep
+from rasa.shared.core.flows.flow_step_sequence import FlowStepSequence
+from rasa.shared.core.flows import Flow, FlowsList
 
 
 def test_flow_frame_type():
@@ -55,28 +52,14 @@ def test_flow_stack_frame_type_from_str_none():
 
 def test_flow_get_flow():
     frame = UserFlowStackFrame(frame_id="test", flow_id="foo", step_id="bar")
-    flow = Flow(
-        id="foo",
-        step_sequence=StepSequence(child_steps=[]),
-        name="foo flow",
-        description="foo flow description",
-    )
-    all_flows = FlowsList(flows=[flow])
+    flow = Flow("foo")
+    all_flows = FlowsList([flow])
     assert frame.flow(all_flows) == flow
 
 
-def test_flow_get_flow_non_existant_id():
+def test_flow_get_flow_non_existent_id():
     frame = UserFlowStackFrame(frame_id="test", flow_id="unknown", step_id="bar")
-    all_flows = FlowsList(
-        flows=[
-            Flow(
-                id="foo",
-                step_sequence=StepSequence(child_steps=[]),
-                name="foo flow",
-                description="foo flow description",
-            )
-        ]
-    )
+    all_flows = FlowsList([Flow("foo")])
     with pytest.raises(InvalidFlowIdException):
         frame.flow(all_flows)
 
@@ -89,48 +72,23 @@ def test_flow_get_step():
         custom_id="my_step",
         description=None,
         metadata={},
-        next=FlowLinks(links=[]),
+        next=FlowStepLinks(links=[]),
     )
     all_flows = FlowsList(
-        flows=[
-            Flow(
-                id="foo",
-                step_sequence=StepSequence(child_steps=[step]),
-                name="foo flow",
-                description="foo flow description",
-            )
-        ]
+        [Flow("foo", step_sequence=FlowStepSequence(child_steps=[step]))]
     )
     assert frame.step(all_flows) == step
 
 
-def test_flow_get_step_non_existant_id():
+def test_flow_get_step_non_existent_id():
     frame = UserFlowStackFrame(frame_id="test", flow_id="foo", step_id="unknown")
-    all_flows = FlowsList(
-        flows=[
-            Flow(
-                id="foo",
-                step_sequence=StepSequence(child_steps=[]),
-                name="foo flow",
-                description="foo flow description",
-            )
-        ]
-    )
+    all_flows = FlowsList([Flow("foo")])
     with pytest.raises(InvalidFlowStepIdException):
         frame.step(all_flows)
 
 
-def test_flow_get_step_non_existant_flow_id():
+def test_flow_get_step_non_existent_flow_id():
     frame = UserFlowStackFrame(frame_id="test", flow_id="unknown", step_id="unknown")
-    all_flows = FlowsList(
-        flows=[
-            Flow(
-                id="foo",
-                step_sequence=StepSequence(child_steps=[]),
-                name="foo flow",
-                description="foo flow description",
-            )
-        ]
-    )
+    all_flows = FlowsList([Flow("foo")])
     with pytest.raises(InvalidFlowIdException):
         frame.step(all_flows)

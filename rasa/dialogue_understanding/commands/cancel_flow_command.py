@@ -10,7 +10,7 @@ from rasa.dialogue_understanding.patterns.cancel import CancelPatternFlowStackFr
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
 from rasa.shared.core.events import Event
-from rasa.shared.core.flows.flow import FlowsList
+from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.dialogue_understanding.stack.utils import top_user_flow_frame
 

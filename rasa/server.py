@@ -1378,7 +1378,7 @@ def create_app(
         """Get all the flows currently stored by the agent."""
         processor = app.ctx.agent.processor
         flows = processor.get_flows()
-        return response.json(flows.as_json())
+        return response.json(flows.as_json_list())
 
     @app.get("/domain")
     @requires_auth(app, auth_token)
