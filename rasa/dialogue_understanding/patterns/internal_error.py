@@ -1,9 +1,9 @@
 from __future__ import annotations
-
-from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
 from dataclasses import dataclass
 from typing import Any, Dict
+
 from rasa.dialogue_understanding.stack.frames import PatternFlowStackFrame
+from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
 
 
 FLOW_PATTERN_INTERNAL_ERROR_ID = RASA_DEFAULT_FLOW_PATTERN_PREFIX + "internal_error"
@@ -19,7 +19,7 @@ class InternalErrorPatternFlowStackFrame(PatternFlowStackFrame):
     @classmethod
     def type(cls) -> str:
         """Returns the type of the frame."""
-        return "pattern_internal_error"
+        return FLOW_PATTERN_INTERNAL_ERROR_ID
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> InternalErrorPatternFlowStackFrame:

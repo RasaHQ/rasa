@@ -1,10 +1,9 @@
 from __future__ import annotations
-
 from dataclasses import dataclass
 from typing import Any, Dict
-from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
-from rasa.dialogue_understanding.stack.frames import PatternFlowStackFrame
 
+from rasa.dialogue_understanding.stack.frames import PatternFlowStackFrame
+from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
 
 FLOW_PATTERN_SKIP_QUESTION = RASA_DEFAULT_FLOW_PATTERN_PREFIX + "skip_question"
 
@@ -21,7 +20,7 @@ class SkipQuestionPatternFlowStackFrame(PatternFlowStackFrame):
     @classmethod
     def type(cls) -> str:
         """Returns the type of the frame."""
-        return "pattern_skip_question"
+        return FLOW_PATTERN_SKIP_QUESTION
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> SkipQuestionPatternFlowStackFrame:

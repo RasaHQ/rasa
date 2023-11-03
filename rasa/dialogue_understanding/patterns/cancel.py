@@ -1,19 +1,18 @@
 from __future__ import annotations
-
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 import structlog
+from rasa.core.actions import action
+from rasa.core.channels.channel import OutputChannel
+from rasa.core.nlg.generator import NaturalLanguageGenerator
 from rasa.dialogue_understanding.stack.dialogue_stack import (
     DialogueStack,
 )
 from rasa.dialogue_understanding.stack.frames import (
-    PatternFlowStackFrame,
     BaseFlowStackFrame,
+    PatternFlowStackFrame,
 )
-from rasa.core.actions import action
-from rasa.core.channels.channel import OutputChannel
-from rasa.core.nlg.generator import NaturalLanguageGenerator
 from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
 from rasa.shared.core.constants import ACTION_CANCEL_FLOW
 from rasa.shared.core.domain import Domain
@@ -25,7 +24,7 @@ from rasa.shared.core.trackers import DialogueStateTracker
 
 structlogger = structlog.get_logger()
 
-FLOW_PATTERN_CANCEL_ID = RASA_DEFAULT_FLOW_PATTERN_PREFIX + "cancel_flow"
+FLOW_PATTERN_CANCEL = RASA_DEFAULT_FLOW_PATTERN_PREFIX + "cancel_flow"
 
 
 @dataclass
@@ -35,7 +34,7 @@ class CancelPatternFlowStackFrame(PatternFlowStackFrame):
     The frame contains the information about the stack frames that should
     be canceled."""
 
-    flow_id: str = FLOW_PATTERN_CANCEL_ID
+    flow_id: str = FLOW_PATTERN_CANCEL
     """The ID of the flow."""
     canceled_name: str = ""
     """The name of the flow that should be canceled."""
@@ -47,7 +46,7 @@ class CancelPatternFlowStackFrame(PatternFlowStackFrame):
     @classmethod
     def type(cls) -> str:
         """Returns the type of the frame."""
-        return "pattern_cancel_flow"
+        return FLOW_PATTERN_CANCEL
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> CancelPatternFlowStackFrame:
@@ -108,7 +107,7 @@ class ActionCancelFlow(action.Action):
             else:
                 structlogger.warning(
                     "action.cancel_flow.frame_not_found",
-                    stack=stack,
+                    dialogue_stack=stack,
                     frame_id=canceled_frame_id,
                 )
 

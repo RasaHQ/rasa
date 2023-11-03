@@ -1,34 +1,25 @@
 from __future__ import annotations
-
 from dataclasses import dataclass, field
 from typing import Any, Dict, Text, List, Optional
+
+import structlog
+from rasa.core.actions import action
+from rasa.core.channels import OutputChannel
+from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
-from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
-from rasa.shared.core.flows.steps.constants import START_STEP, END_STEP
-from rasa.shared.core.trackers import (
-    DialogueStateTracker,
-)
-import structlog
-from rasa.core.actions import action
-from rasa.core.channels import OutputChannel
 from rasa.dialogue_understanding.stack.frames import (
     BaseFlowStackFrame,
     PatternFlowStackFrame,
 )
-
-from rasa.shared.core.constants import (
-    ACTION_CORRECT_FLOW_SLOT,
-)
+from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
+from rasa.shared.core.constants import ACTION_CORRECT_FLOW_SLOT
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import (
-    Event,
-    SlotSet,
-)
-from rasa.core.nlg import NaturalLanguageGenerator
-from rasa.shared.core.flows.steps.continuation import ContinueFlowStep
+from rasa.shared.core.events import Event, SlotSet
+from rasa.shared.core.flows.flow import ContinueFlowStep, END_STEP, START_STEP
+from rasa.shared.core.trackers import DialogueStateTracker
 
 structlogger = structlog.get_logger()
 
@@ -57,7 +48,7 @@ class CorrectionPatternFlowStackFrame(PatternFlowStackFrame):
     @classmethod
     def type(cls) -> str:
         """Returns the type of the frame."""
-        return "pattern_correction"
+        return FLOW_PATTERN_CORRECTION_ID
 
     @staticmethod
     def from_dict(data: Dict[Text, Any]) -> CorrectionPatternFlowStackFrame:
@@ -135,7 +126,5 @@ class ActionCorrectFlowSlot(action.Action):
                 )
 
         events: List[Event] = [stack.persist_as_event()]
-
         events.extend([SlotSet(k, v) for k, v in top.corrected_slots.items()])
-
         return events

@@ -1,16 +1,15 @@
 from __future__ import annotations
-
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 import structlog
+from rasa.core.actions import action
+from rasa.core.channels.channel import OutputChannel
+from rasa.core.nlg.generator import NaturalLanguageGenerator
 from rasa.dialogue_understanding.stack.dialogue_stack import (
     DialogueStack,
 )
 from rasa.dialogue_understanding.stack.frames import PatternFlowStackFrame
-from rasa.core.actions import action
-from rasa.core.channels.channel import OutputChannel
-from rasa.core.nlg.generator import NaturalLanguageGenerator
 from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
 from rasa.shared.core.constants import ACTION_CLARIFY_FLOWS
 from rasa.shared.core.domain import Domain
@@ -37,7 +36,7 @@ class ClarifyPatternFlowStackFrame(PatternFlowStackFrame):
     @classmethod
     def type(cls) -> str:
         """Returns the type of the frame."""
-        return "pattern_clarification"
+        return FLOW_PATTERN_CLARIFICATION
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> ClarifyPatternFlowStackFrame:
@@ -92,7 +91,7 @@ class ActionClarifyFlows(action.Action):
             return []
 
         if not isinstance(top, ClarifyPatternFlowStackFrame):
-            structlogger.warning("action.clarify_flows.no_correction_frame", top=top)
+            structlogger.warning("action.clarify_flows.no_clarification_frame", top=top)
             return []
 
         options_string = self.assemble_options_string(top.names)
