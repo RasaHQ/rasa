@@ -6,8 +6,11 @@ import structlog
 from jinja2 import Template
 from rasa.shared.core.flows.flow_step import FlowStep
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.utils.llm import llm_factory, tracker_as_readable_transcript, \
-    DEFAULT_OPENAI_MAX_GENERATED_TOKENS
+from rasa.shared.utils.llm import (
+    llm_factory,
+    tracker_as_readable_transcript,
+    DEFAULT_OPENAI_MAX_GENERATED_TOKENS,
+)
 
 from rasa.shared.utils.llm import (
     DEFAULT_OPENAI_TEMPERATURE,
