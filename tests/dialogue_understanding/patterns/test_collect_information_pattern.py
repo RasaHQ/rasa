@@ -2,7 +2,7 @@ from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
 )
 from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
-from rasa.shared.core.flows.flow import SlotRejection
+from rasa.shared.core.flows.steps.collect import SlotRejection
 
 
 async def test_collect_information_pattern_flow_stack_frame_type() -> None:

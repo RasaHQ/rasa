@@ -15,6 +15,7 @@ async def test_alphabetical_order_default_responses() -> None:
         "utter_inform_code_change",
         "utter_internal_error_rasa",
         "utter_no_knowledge_base",
+        "utter_skip_question_answer",
     ]
     # To make the test pass, add new responses to the default_flows_for_patterns.yml
     # in alphabetical order.
@@ -37,6 +38,7 @@ async def test_alphabetical_order_default_flows() -> None:
         "pattern_correction",
         "pattern_internal_error",
         "pattern_search",
+        "pattern_skip_question",
     ]
     # To make the test pass, add new pattens to the default_flows_for_patterns.yml
     # in alphabetical order.

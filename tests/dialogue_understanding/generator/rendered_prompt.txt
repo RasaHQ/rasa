@@ -27,6 +27,7 @@ Based on this information generate a list of actions you want to take. Your job 
 * Starting another flow, described by "StartFlow(flow_name)". An example would be "StartFlow(transfer_money)"
 * Cancelling the current flow, described by "CancelFlow()"
 * Clarifying which flow should be started. An example would be Clarify(list_contacts, add_contact, remove_contact) if the user just wrote "contacts" and there are multiple potential candidates. It also works with a single flow name to confirm you understood correctly, as in Clarify(transfer_money).
+* Intercepting and handle user messages with the intent to bypass the current step in the flow, described by "SkipQuestion()". Examples of user skip phrases are: "Go to the next question", "Ask me something else".
 * Responding to knowledge-oriented user messages, described by "SearchAndReply()"
 * Responding to a casual, non-task-oriented user message, described by "ChitChat()".
 * Handing off to a human, in case the user seems frustrated or explicitly asks to speak to one, described by "HumanHandoff()".
@@ -38,6 +39,7 @@ Only use information provided by the user.
 Only start a flow if it's completely clear what the user wants. Imagine you were a person reading this message. If it's not 100% clear, clarify the next step.
 Don't be overly confident. Take a conservative approach and clarify before proceeding.
 If the user asks for two things which seem contradictory, clarify before starting a flow.
+If it's not clear whether the user wants to skip the step or to cancel the flow, cancel the flow.
 Strictly adhere to the provided action types listed above.
 Focus on the last message and take it one step at a time.
 Use the previous conversation steps only to aid understanding.

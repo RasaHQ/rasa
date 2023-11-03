@@ -19,6 +19,7 @@ from rasa.dialogue_understanding.commands import (
     StartFlowCommand,
     HumanHandoffCommand,
     ChitChatAnswerCommand,
+    SkipQuestionCommand,
     KnowledgeAnswerCommand,
     ClarifyCommand,
 )
@@ -226,6 +227,7 @@ class TestLLMCommandGenerator:
             ("StartFlow(check_balance)", [StartFlowCommand(flow="check_balance")]),
             ("CancelFlow()", [CancelFlowCommand()]),
             ("ChitChat()", [ChitChatAnswerCommand()]),
+            ("SkipQuestion()", [SkipQuestionCommand()]),
             ("SearchAndReply()", [KnowledgeAnswerCommand()]),
             ("HumanHandoff()", [HumanHandoffCommand()]),
             ("Clarify(transfer_money)", [ClarifyCommand(options=["transfer_money"])]),
