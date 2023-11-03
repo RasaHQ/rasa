@@ -15,6 +15,7 @@ from rasa.dialogue_understanding.commands import (
     StartFlowCommand,
     HumanHandoffCommand,
     ChitChatAnswerCommand,
+    SkipQuestionCommand,
     KnowledgeAnswerCommand,
     ClarifyCommand,
 )
@@ -239,6 +240,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         start_flow_re = re.compile(r"StartFlow\(([a-zA-Z_][a-zA-Z0-9_-]*?)\)")
         cancel_flow_re = re.compile(r"CancelFlow\(\)")
         chitchat_re = re.compile(r"ChitChat\(\)")
+        skip_question_re = re.compile(r"SkipQuestion\(\)")
         knowledge_re = re.compile(r"SearchAndReply\(\)")
         humand_handoff_re = re.compile(r"HumanHandoff\(\)")
         clarify_re = re.compile(r"Clarify\(([a-zA-Z0-9_, ]+)\)")
@@ -263,6 +265,8 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
                 commands.append(CancelFlowCommand())
             elif chitchat_re.search(action):
                 commands.append(ChitChatAnswerCommand())
+            elif skip_question_re.search(action):
+                commands.append(SkipQuestionCommand())
             elif knowledge_re.search(action):
                 commands.append(KnowledgeAnswerCommand())
             elif humand_handoff_re.search(action):
