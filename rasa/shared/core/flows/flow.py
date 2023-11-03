@@ -9,6 +9,7 @@ from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
 from rasa.shared.core.flows.flow_step import FlowStep
 
 from rasa.shared.core.flows.flow_step_links import StaticFlowStepLink
+from rasa.shared.core.flows.nlu_trigger import NLUTriggers
 from rasa.shared.core.flows.steps.continuation import ContinueFlowStep
 from rasa.shared.core.flows.steps.constants import (
     CONTINUE_STEP_PREFIX,
@@ -34,6 +35,8 @@ class Flow:
     """The description of the flow."""
     step_sequence: FlowStepSequence = field(default_factory=FlowStepSequence.empty)
     """The steps of the flow."""
+    nlu_triggers: Optional[NLUTriggers] = None
+    """The list of intents, e.g. nlu triggers, that start the flow."""
 
     @staticmethod
     def from_json(flow_id: Text, data: Dict[Text, Any]) -> Flow:
@@ -46,12 +49,14 @@ class Flow:
             A Flow object.
         """
         step_sequence = FlowStepSequence.from_json(data.get("steps"))
+        nlu_triggers = NLUTriggers.from_json(data.get("nlu_trigger"))
 
         return Flow(
             id=flow_id,
             custom_name=data.get("name"),
             description=data.get("description"),
             step_sequence=Flow.resolve_default_ids(step_sequence),
+            nlu_triggers=nlu_triggers,
         )
 
     @staticmethod
@@ -112,6 +117,9 @@ class Flow:
             data["name"] = self.custom_name
         if self.description is not None:
             data["description"] = self.description
+        if self.nlu_triggers:
+            data["nlu_trigger"] = self.nlu_triggers.as_json()
+
         return data
 
     def readable_name(self) -> str:
@@ -187,6 +195,18 @@ class Flow:
             return collects
 
         return _previously_asked_collect(step_id or START_STEP, set())
+
+    def get_trigger_intents(self) -> Set[str]:
+        """Returns the trigger intents of the flow"""
+        results: Set[str] = set()
+
+        if not self.nlu_triggers:
+            return results
+
+        for condition in self.nlu_triggers.trigger_conditions:
+            results.add(condition.intent)
+
+        return results
 
     @property
     def is_rasa_default_flow(self) -> bool:

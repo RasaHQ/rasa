@@ -360,3 +360,39 @@ def test_flow_step_iteration_in_deeply_nested_flow():
     flow = flows.flow_by_id("deep_flow")
     assert flow is not None
     assert len(flow.steps) == 7
+
+
+@pytest.mark.parametrize(
+    "nlu_trigger_config, actual_intents",
+    [
+        (
+            """nlu_trigger:
+                 - intent: bar""",
+            ["bar"],
+        ),
+        (
+            """nlu_trigger:
+                 - intent: bar
+                 - intent: foo""",
+            ["bar", "foo"],
+        ),
+        (
+            "",
+            [],
+        ),
+    ],
+)
+def test_get_trigger_intents(nlu_trigger_config, actual_intents):
+    flows = flows_from_str(
+        f"""
+        flows:
+          foo:
+            {nlu_trigger_config}
+            steps:
+              - action: utter_welcome
+        """
+    )
+
+    intents = flows.underlying_flows[0].get_trigger_intents()
+
+    assert intents == set(actual_intents)

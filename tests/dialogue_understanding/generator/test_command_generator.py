@@ -1,8 +1,9 @@
 from typing import Optional, List
+from unittest.mock import Mock
 
 import pytest
 
-from rasa.dialogue_understanding.commands import Command
+from rasa.dialogue_understanding.commands import Command, StartFlowCommand
 from rasa.dialogue_understanding.generator.command_generator import CommandGenerator
 from rasa.dialogue_understanding.commands.chit_chat_answer_command import (
     ChitChatAnswerCommand,
@@ -42,3 +43,24 @@ def test_command_generator_still_throws_not_implemented_error():
     generator = CommandGenerator()
     with pytest.raises(NotImplementedError):
         generator.process([Message.build("test")], FlowsList(underlying_flows=[]))
+
+
+def test_process_does_not_predict_commands_if_commands_already_present():
+    """Test that predict_commands does not overwrite commands
+    if commands are already set on message."""
+    command_generator = CommandGenerator()
+
+    command = StartFlowCommand("some flow").as_dict()
+
+    test_message = Message.build(text="some message")
+    test_message.set(COMMANDS, [command], add_to_output=True)
+
+    assert len(test_message.get(COMMANDS)) == 1
+    assert test_message.get(COMMANDS) == [command]
+
+    returned_message = command_generator.process(
+        [test_message], flows=Mock(), tracker=Mock()
+    )[0]
+
+    assert len(returned_message.get(COMMANDS)) == 1
+    assert returned_message.get(COMMANDS) == [command]

@@ -34,9 +34,7 @@ from rasa.shared.core.slots import (
     Slot,
     bool_from_any,
 )
-from rasa.shared.nlu.constants import (
-    TEXT,
-)
+from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.utils.llm import (

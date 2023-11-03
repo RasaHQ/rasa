@@ -58,10 +58,6 @@ from rasa.shared.core.flows.steps.collect import (
     CollectInformationFlowStep,
 )
 from rasa.shared.core.flows.steps.generate_response import GenerateResponseFlowStep
-from rasa.shared.core.flows.steps.user_message import (
-    StepThatCanStartAFlow,
-    UserMessageStep,
-)
 from rasa.shared.core.flows.steps.link import LinkFlowStep
 from rasa.shared.core.flows.steps.action import ActionFlowStep
 from rasa.shared.core.flows import Flow, FlowsList
@@ -73,6 +69,7 @@ from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.domain import Domain
+from rasa.shared.core.flows.steps.user_message import StepThatCanStartAFlow
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.core.trackers import (
     DialogueStateTracker,
@@ -671,10 +668,6 @@ class FlowExecutor:
             return ContinueFlowWithNextStep(
                 events=[SlotSet(slot["key"], slot["value"]) for slot in step.slots],
             )
-
-        elif isinstance(step, UserMessageStep):
-            structlogger.debug("flow.step.run.user_message")
-            return ContinueFlowWithNextStep()
 
         elif type(step) is FlowStep:
             structlogger.debug("flow.step.run.base_flow_step")

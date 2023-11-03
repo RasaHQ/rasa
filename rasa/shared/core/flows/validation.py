@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Optional, Set, Text
+from collections import defaultdict
+from typing import Optional, Set, Text, List
 
 from rasa.shared.core.flows.flow_step import (
     FlowStep,
@@ -157,6 +158,23 @@ class EmptyFlowException(RasaException):
         return f"Flow '{self.flow_id}' does not have any steps."
 
 
+class DuplicateNLUTriggerException(RasaException):
+    """Raised when multiple flows can be started by the same intent."""
+
+    def __init__(self, intent: str, flow_names: List[str]) -> None:
+        """Initializes the exception."""
+        self.intent = intent
+        self.flow_names = flow_names
+
+    def __str__(self) -> Text:
+        """Return a string representation of the exception."""
+        return (
+            f"The intent '{self.intent}' is used as 'nlu_trigger' "
+            f"in multiple flows: {self.flow_names}."
+            f"An intent should just trigger one flow, not multiple."
+        )
+
+
 def validate_flow(flow: Flow) -> None:
     """Validates the flow configuration.
 
@@ -254,3 +272,17 @@ def validate_all_steps_can_be_reached(flow: Flow) -> None:
     for step in flow.steps:
         if step.id not in reached_steps:
             raise UnreachableFlowStepException(step.id, flow.id)
+
+
+def validate_nlu_trigger(flows: List[Flow]) -> None:
+    """Validates that an intent can just trigger one flow."""
+    nlu_trigger_to_flows = defaultdict(list)
+
+    for flow in flows:
+        intents = flow.get_trigger_intents()
+        for intent in intents:
+            nlu_trigger_to_flows[intent].append(flow.name)
+
+    for intent, flow_names in nlu_trigger_to_flows.items():
+        if len(flow_names) > 1:
+            raise DuplicateNLUTriggerException(intent, flow_names)

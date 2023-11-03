@@ -17,6 +17,45 @@
     }
   },
   "$defs": {
+    "nlu_trigger": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "intent"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "intent": {
+                "type": "object",
+                "properties": {
+                  "confidence_threshold": {
+                    "type": "number"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              }
+            }
+          },
+          {
+            "properties": {
+              "intent": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      }
+    },
     "steps": {
       "type": "array",
       "items": {
@@ -174,30 +213,7 @@
           "type": "string"
         },
         "nlu_trigger": {
-          "type": "array",
-          "items": {
-            "required": [
-              "intent"
-            ],
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "intent": {
-                "type": "object",
-                "properties": {
-                  "confidence_threshold": {
-                    "type": "number"
-                  },
-                  "name": {
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "name"
-                ]
-              }
-            }
-          }
+          "$ref": "#$defs/nlu_trigger"
         },
         "steps": {
           "$ref": "#$defs/steps"

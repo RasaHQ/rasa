@@ -29,7 +29,6 @@ def step_from_json(data: Dict[Text, Any]) -> FlowStep:
     """
     from rasa.shared.core.flows.steps import (
         ActionFlowStep,
-        UserMessageStep,
         CollectInformationFlowStep,
         LinkFlowStep,
         SetSlotsFlowStep,
@@ -38,8 +37,6 @@ def step_from_json(data: Dict[Text, Any]) -> FlowStep:
 
     if "action" in data:
         return ActionFlowStep.from_json(data)
-    if "intent" in data:
-        return UserMessageStep.from_json(data)
     if "collect" in data:
         return CollectInformationFlowStep.from_json(data)
     if "link" in data:

@@ -36,6 +36,11 @@ class CommandGenerator:
         The processed messages (usually this is just one during prediction).
         """
         for message in messages:
+            if message.get(COMMANDS):
+                # do not overwrite commands if they are already present
+                # i.e. another command generator already predicted commands
+                continue
+
             try:
                 commands = self.predict_commands(message, flows, tracker)
             except Exception as e:

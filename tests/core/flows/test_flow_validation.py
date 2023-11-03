@@ -15,6 +15,7 @@ from rasa.shared.core.flows.validation import (
     ReservedFlowStepIdException,
     NoNextAllowedForLinkException,
     UnresolvedFlowStepIdException,
+    DuplicateNLUTriggerException,
 )
 
 
@@ -306,3 +307,22 @@ def test_validation_fails_on_unresolvable_next_step_id_in_branch() -> None:
     assert e.value.flow_id == "abc"
     assert bad_id in e.value.step_id
     assert "utter_middle_two" in e.value.referenced_from_step_id
+
+
+def test_validation_fails_on_multiple_flows_with_same_nlu_triggers():
+    flow_config = """
+        flows:
+          foo:
+            nlu_trigger:
+              - intent: foo
+            steps:
+              - action: utter_welcome
+          bar:
+            nlu_trigger:
+              - intent: foo
+            steps:
+              - action: utter_welcome
+        """
+
+    with pytest.raises(DuplicateNLUTriggerException):
+        flows_from_str(flow_config)
