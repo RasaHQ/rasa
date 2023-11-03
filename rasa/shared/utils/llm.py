@@ -29,6 +29,8 @@ DEFAULT_OPENAI_EMBEDDING_MODEL_NAME = "text-embedding-ada-002"
 
 DEFAULT_OPENAI_TEMPERATURE = 0.7
 
+DEFAULT_OPENAI_MAX_GENERATED_TOKENS = 256
+
 
 def tracker_as_readable_transcript(
     tracker: DialogueStateTracker,
