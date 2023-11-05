@@ -1001,10 +1001,10 @@ class Domain:
                     )
                 )
             else:
-                # TODO: figure out what to do here.
-                logger.warning(
+                # TODO: in the future we need to prevent this entirely.
+                logger.error(
                     f"Slot {flow_slot} is reserved for Rasa internal usage, "
-                    f"but it already exists. 🤔"
+                    f"but it already exists. This might lead to bad outcomes."
                 )
 
     def _add_requested_slot(self) -> None:
