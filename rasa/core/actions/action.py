@@ -35,7 +35,6 @@ from rasa.shared.constants import (
     UTTER_PREFIX,
     FLOW_PREFIX,
 )
-from rasa.shared.core import events
 from rasa.shared.core.constants import (
     DIALOGUE_STACK_SLOT,
     USER_INTENT_OUT_OF_SCOPE,
@@ -829,15 +828,21 @@ class RemoteAction(Action):
                 responses, output_channel, nlg, tracker
             )
 
-            evts = events.deserialise_events(events_json)
+            events = rasa.shared.core.events.deserialise_events(events_json)
             # filter out `SlotSet` events for internal `dialogue_stack` slot
-            evts = [
+            filtered_events = [
                 event
-                for event in evts
+                for event in events
                 if not (isinstance(event, SlotSet) and event.key == DIALOGUE_STACK_SLOT)
             ]
+            if len(filtered_events) != len(events):
+                logger.warning(
+                    f"Filtered out an event to set {DIALOGUE_STACK_SLOT} via a custom "
+                    f"action. Setting this slot is currently limited to "
+                    f"built-in actions."
+                )
 
-            return cast(List[Event], bot_messages) + evts
+            return cast(List[Event], bot_messages) + filtered_events
 
         except ClientResponseError as e:
             if e.status == 400:
