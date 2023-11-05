@@ -111,7 +111,7 @@ class Policy(GraphComponent):
 
     @staticmethod
     def does_support_stack_frame(frame: DialogueStackFrame) -> bool:
-        """Returns the stack frames supported by the policy."""
+        """Determine whether a stack frame is supported by the policy."""
         return False
 
     def supports_current_stack_frame(
