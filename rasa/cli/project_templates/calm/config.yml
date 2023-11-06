@@ -8,4 +8,4 @@ pipeline:
     max_tokens: 256
 
 policies:
-- name: rasa.core.policies.flow_policy.FlowPolicy
+- name: FlowPolicy
