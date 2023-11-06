@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, List, Text
 
 from rasa_sdk import Action, Tracker
 from rasa_sdk.events import SlotSet
@@ -13,7 +13,7 @@ class AddContact(Action):
 
     def run(
         self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[str, Any]
-    ):
+    ) -> List[Dict[Text, Any]]:
         contacts = get_contacts(tracker.sender_id)
         name = tracker.get_slot("add_contact_name")
         handle = tracker.get_slot("add_contact_handle")
