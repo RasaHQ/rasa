@@ -1,6 +1,6 @@
 import uuid
 
-from typing import Optional, Any
+from typing import Optional
 from unittest.mock import Mock, patch
 
 import pytest
@@ -262,39 +262,11 @@ class TestLLMCommandGenerator:
         """Test that parse_commands identifies the correct commands."""
         # When
         with patch.object(
-            LLMCommandGenerator, "coerce_slot_value", Mock(return_value=None)
+            LLMCommandGenerator, "get_nullable_slot_value", Mock(return_value=None)
         ):
             parsed_commands = LLMCommandGenerator.parse_commands(input_action, Mock())
         # Then
         assert parsed_commands == expected_command
-
-    @pytest.mark.parametrize(
-        "slot_name, slot, slot_value, expected_output",
-        [
-            ("some_other_slot", FloatSlot("some_float", []), None, None),
-            ("some_float", FloatSlot("some_float", []), 40, 40.0),
-            ("some_float", FloatSlot("some_float", []), 40.0, 40.0),
-            ("some_text", TextSlot("some_text", []), "fourty", "fourty"),
-            ("some_bool", BooleanSlot("some_bool", []), "True", True),
-            ("some_bool", BooleanSlot("some_bool", []), "false", False),
-        ],
-    )
-    def test_coerce_slot_value(
-        self,
-        slot_name: str,
-        slot: Slot,
-        slot_value: Any,
-        expected_output: Any,
-    ):
-        """Test that coerce_slot_value coerces the slot value correctly."""
-        # Given
-        tracker = DialogueStateTracker.from_events("test", evts=[], slots=[slot])
-        # When
-        coerced_value = LLMCommandGenerator.coerce_slot_value(
-            slot_value, slot_name, tracker
-        )
-        # Then
-        assert coerced_value == expected_output
 
     @pytest.mark.parametrize(
         "input_value, expected_output",

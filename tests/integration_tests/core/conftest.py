@@ -41,10 +41,12 @@ def postgres_login_db_connection() -> Iterator[sa.engine.Connection]:
             username=POSTGRES_USER,
             password=POSTGRES_PASSWORD,
             database=POSTGRES_DEFAULT_DB,
+            query={},
         )
     )
 
     conn = engine.connect()
+    conn.execution_options(isolation_level="AUTOCOMMIT")
     try:
         _create_login_db(conn)
         yield conn
@@ -56,12 +58,8 @@ def postgres_login_db_connection() -> Iterator[sa.engine.Connection]:
 
 
 def _create_login_db(connection: sa.engine.Connection) -> None:
-    connection.execution_options(isolation_level="AUTOCOMMIT").execute(
-        f"CREATE DATABASE {POSTGRES_LOGIN_DB}"
-    )
+    connection.execute(sa.text(f"CREATE DATABASE {POSTGRES_LOGIN_DB}"))
 
 
 def _drop_db(connection: sa.engine.Connection, database_name: Text) -> None:
-    connection.execution_options(isolation_level="AUTOCOMMIT").execute(
-        f"DROP DATABASE IF EXISTS {database_name}"
-    )
+    connection.execute(sa.text(f"DROP DATABASE IF EXISTS {database_name}"))

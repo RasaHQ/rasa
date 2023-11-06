@@ -5,7 +5,6 @@ from asyncio import AbstractEventLoop
 from typing import Any, Dict, Optional, Text, Generator
 
 from sqlalchemy.orm import Session
-from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta
 from sqlalchemy import Column, Integer, String
 from sqlalchemy import Text as SqlAlchemyText  # to avoid name clash with typing.Text
 
@@ -22,7 +21,10 @@ class SQLEventBroker(EventBroker):
 
     """
 
-    Base: DeclarativeMeta = declarative_base()
+    from sqlalchemy.orm import DeclarativeBase
+
+    class Base(DeclarativeBase):
+        pass
 
     class SQLBrokerEvent(Base):
         """ORM which represents a row in the `events` table."""

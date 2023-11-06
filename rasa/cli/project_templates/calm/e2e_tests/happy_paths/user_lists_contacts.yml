@@ -1,0 +1,5 @@
+test_cases:
+  - test_case: user lists their contacts
+    steps:
+      - user: Please show me my contacts
+      - utter: utter_list_contacts

@@ -51,7 +51,6 @@ from rasa.shared.exceptions import ConnectionException, RasaException
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.endpoints import EndpointConfig
 import sqlalchemy as sa
-from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta
 
 if TYPE_CHECKING:
     import boto3.resources.factory.dynamodb.Table
@@ -1005,6 +1004,7 @@ def ensure_schema_exists(session: "Session") -> None:
 
     Raises:
         `ValueError` if the requested schema does not exist.
+        RasaException if no engine can be obtained from session.
     """
     schema_name = os.environ.get(POSTGRESQL_SCHEMA)
 
@@ -1013,9 +1013,14 @@ def ensure_schema_exists(session: "Session") -> None:
 
     engine = session.get_bind()
 
+    if not isinstance(engine, sa.engine.base.Engine):
+        # The "bind" is usually an instance of Engine, except in the case
+        # where the session has been explicitly bound directly to a connection.
+        raise RasaException("Cannot ensure schema exists as no engine exists.")
+
     if is_postgresql_url(engine.url):
         query = sa.exists(
-            sa.select([(sa.text("schema_name"))])
+            sa.select(sa.text("schema_name"))
             .select_from(sa.text("information_schema.schemata"))
             .where(sa.text(f"schema_name = '{schema_name}'"))
         )
@@ -1041,7 +1046,10 @@ def validate_port(port: Any) -> Optional[int]:
 class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
     """Store which can save and retrieve trackers from an SQL database."""
 
-    Base: DeclarativeMeta = declarative_base()
+    from sqlalchemy.orm import DeclarativeBase
+
+    class Base(DeclarativeBase):
+        pass
 
     class SQLEvent(Base):
         """Represents an event in the SQL Tracker Store."""
@@ -1161,6 +1169,10 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
             port = parsed.port or port
             host = parsed.hostname or host
 
+        if not query:
+            # query needs to be set in order to create a URL
+            query = {}
+
         return sa.engine.url.URL(
             dialect,
             username,
@@ -1199,30 +1211,23 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
         """Create database `db` on `engine` if it does not exist."""
         import sqlalchemy.exc
 
-        conn = engine.connect()
-
-        matching_rows = (
-            conn.execution_options(isolation_level="AUTOCOMMIT")
-            .execute(
+        with engine.connect() as connection:
+            connection.execution_options(isolation_level="AUTOCOMMIT")
+            matching_rows = connection.execute(
                 sa.text(
-                    "SELECT 1 FROM pg_catalog.pg_database "
-                    "WHERE datname = :database_name"
-                ),
-                database_name=database_name,
-            )
-            .rowcount
-        )
+                    f"SELECT 1 FROM pg_catalog.pg_database "
+                    f"WHERE datname = '{database_name}'"
+                )
+            ).rowcount
 
-        if not matching_rows:
-            try:
-                conn.execute(f"CREATE DATABASE {database_name}")
-            except (
-                sqlalchemy.exc.ProgrammingError,
-                sqlalchemy.exc.IntegrityError,
-            ) as e:
-                logger.error(f"Could not create database '{database_name}': {e}")
-
-        conn.close()
+            if not matching_rows:
+                try:
+                    connection.execute(sa.text(f"CREATE DATABASE {database_name}"))
+                except (
+                    sqlalchemy.exc.ProgrammingError,
+                    sqlalchemy.exc.IntegrityError,
+                ) as e:
+                    logger.error(f"Could not create database '{database_name}': {e}")
 
     @contextlib.contextmanager
     def session_scope(self) -> Generator["Session", None, None]:
