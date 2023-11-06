@@ -19,7 +19,7 @@ class Contact(BaseModel):
 
 def get_session_db_path(session_id: str) -> str:
     tempdir = tempfile.gettempdir()
-    project_name = "financial_demo_flows_llms"
+    project_name = "calm_starter"
     return os.path.join(tempdir, project_name, session_id)
 
 
