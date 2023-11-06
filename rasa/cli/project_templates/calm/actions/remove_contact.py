@@ -3,10 +3,7 @@ from rasa_sdk import Action, Tracker
 from rasa_sdk.events import SlotSet
 from rasa_sdk.executor import CollectingDispatcher
 
-from rasa.cli.project_templates.calm.actions.db import (
-    get_contacts,
-    write_contacts
-)
+from actions.db import get_contacts, write_contacts
 
 
 class RemoveContact(Action):
@@ -30,7 +27,7 @@ class RemoveContact(Action):
                 write_contacts(tracker.sender_id, contacts)
                 return [
                     SlotSet("return_value", "success"),
-                    SlotSet("remove_contact_name", removed_contact.name)
+                    SlotSet("remove_contact_name", removed_contact.name),
                 ]
 
         else:

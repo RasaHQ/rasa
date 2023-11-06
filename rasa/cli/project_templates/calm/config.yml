@@ -9,4 +9,3 @@ pipeline:
 
 policies:
 - name: rasa.core.policies.flow_policy.FlowPolicy
-assistant_id: 20231103-211221-milky-crop

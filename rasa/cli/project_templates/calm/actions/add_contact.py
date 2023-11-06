@@ -1,22 +1,19 @@
 from typing import Any, Dict
+
 from rasa_sdk import Action, Tracker
 from rasa_sdk.events import SlotSet
 from rasa_sdk.executor import CollectingDispatcher
 
-from rasa.cli.project_templates.calm.actions.db import (
-    add_contact,
-    get_contacts,
-    Contact,
-)
+from actions.db import add_contact, get_contacts, Contact
 
 
 class AddContact(Action):
-
     def name(self) -> str:
         return "add_contact"
 
-    def run(self, dispatcher: CollectingDispatcher,
-            tracker: Tracker, domain: Dict[str, Any]):
+    def run(
+        self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[str, Any]
+    ):
         contacts = get_contacts(tracker.sender_id)
         name = tracker.get_slot("add_contact_name")
         handle = tracker.get_slot("add_contact_handle")
