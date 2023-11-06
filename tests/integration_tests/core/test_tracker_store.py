@@ -45,16 +45,12 @@ def test_sql_tracker_store_with_login_db(
         login_db=POSTGRES_LOGIN_DB,
     )
 
-    matching_rows = (
-        postgres_login_db_connection.execution_options(isolation_level="AUTOCOMMIT")
-        .execute(
-            sa.text(
-                "SELECT 1 FROM pg_catalog.pg_database WHERE datname = :database_name"
-            ),
-            database_name=POSTGRES_TRACKER_STORE_DB,
+    matching_rows = postgres_login_db_connection.execute(
+        sa.text(
+            f"SELECT 1 FROM pg_catalog.pg_database "
+            f"WHERE datname = '{POSTGRES_TRACKER_STORE_DB}'"
         )
-        .rowcount
-    )
+    ).rowcount
     assert matching_rows == 1
     assert tracker_store.engine.url.database == POSTGRES_TRACKER_STORE_DB
     tracker_store.engine.dispose()
@@ -65,9 +61,9 @@ def test_sql_tracker_store_with_login_db(
 def test_sql_tracker_store_with_login_db_db_already_exists(
     postgres_login_db_connection: sa.engine.Connection,
 ):
-    postgres_login_db_connection.execution_options(
-        isolation_level="AUTOCOMMIT"
-    ).execute(f"CREATE DATABASE {POSTGRES_TRACKER_STORE_DB}")
+    postgres_login_db_connection.execute(
+        sa.text(f"CREATE DATABASE {POSTGRES_TRACKER_STORE_DB}")
+    )
 
     tracker_store = SQLTrackerStore(
         dialect="postgresql",
@@ -79,16 +75,13 @@ def test_sql_tracker_store_with_login_db_db_already_exists(
         login_db=POSTGRES_LOGIN_DB,
     )
 
-    matching_rows = (
-        postgres_login_db_connection.execution_options(isolation_level="AUTOCOMMIT")
-        .execute(
-            sa.text(
-                "SELECT 1 FROM pg_catalog.pg_database WHERE datname = :database_name"
-            ),
-            database_name=POSTGRES_TRACKER_STORE_DB,
+    matching_rows = postgres_login_db_connection.execute(
+        sa.text(
+            f"SELECT 1 FROM pg_catalog.pg_database "
+            f"WHERE datname = '{POSTGRES_TRACKER_STORE_DB}'"
         )
-        .rowcount
-    )
+    ).rowcount
+
     assert matching_rows == 1
     tracker_store.engine.dispose()
 
@@ -104,14 +97,20 @@ def test_sql_tracker_store_with_login_db_race_condition(
 
     def mock_execute(self, *args, **kwargs):
         # this simulates a race condition
-        if kwargs == {"database_name": POSTGRES_TRACKER_STORE_DB}:
-            original_execute(
-                self.execution_options(isolation_level="AUTOCOMMIT"),
-                f"CREATE DATABASE {POSTGRES_TRACKER_STORE_DB}",
-            )
-            return Mock(rowcount=0)
-        else:
-            return original_execute(self, *args, **kwargs)
+        from sqlalchemy import Executable
+
+        if isinstance(args[0], Executable):
+            if (
+                f"SELECT 1 FROM pg_catalog.pg_database "
+                f"WHERE datname = '{POSTGRES_TRACKER_STORE_DB}'" in str(args[0])
+            ):
+                original_execute(
+                    self.execution_options(isolation_level="AUTOCOMMIT"),
+                    sa.text(f"CREATE DATABASE {POSTGRES_TRACKER_STORE_DB}"),
+                )
+                return Mock(rowcount=0)
+            else:
+                return original_execute(self, *args, **kwargs)
 
     with monkeypatch.context() as mp:
         mp.setattr(sa.engine.Connection, "execute", mock_execute)
@@ -133,16 +132,13 @@ def test_sql_tracker_store_with_login_db_race_condition(
             for record in caplog.records
         ]
     )
-    matching_rows = (
-        postgres_login_db_connection.execution_options(isolation_level="AUTOCOMMIT")
-        .execute(
-            sa.text(
-                "SELECT 1 FROM pg_catalog.pg_database WHERE datname = :database_name"
-            ),
-            database_name=POSTGRES_TRACKER_STORE_DB,
+    matching_rows = postgres_login_db_connection.execute(
+        sa.text(
+            f"SELECT 1 FROM pg_catalog.pg_database "
+            f"WHERE datname = '{POSTGRES_TRACKER_STORE_DB}'"
         )
-        .rowcount
-    )
+    ).rowcount
+
     assert matching_rows == 1
     tracker_store.engine.dispose()
 
@@ -155,9 +151,9 @@ async def test_postgres_tracker_store_retrieve_full_tracker(
 ) -> None:
     sender_id = tracker_with_restarted_event.sender_id
 
-    postgres_login_db_connection.execution_options(
-        isolation_level="AUTOCOMMIT"
-    ).execute(f"CREATE DATABASE {POSTGRES_TRACKER_STORE_DB}")
+    postgres_login_db_connection.execute(
+        sa.text(f"CREATE DATABASE {POSTGRES_TRACKER_STORE_DB}")
+    )
 
     tracker_store = SQLTrackerStore(
         dialect="postgresql",
@@ -186,9 +182,9 @@ async def test_postgres_tracker_store_retrieve(
 ) -> None:
     sender_id = tracker_with_restarted_event.sender_id
 
-    postgres_login_db_connection.execution_options(
-        isolation_level="AUTOCOMMIT"
-    ).execute(f"CREATE DATABASE {POSTGRES_TRACKER_STORE_DB}")
+    postgres_login_db_connection.execute(
+        sa.text(f"CREATE DATABASE {POSTGRES_TRACKER_STORE_DB}")
+    )
 
     tracker_store = SQLTrackerStore(
         dialect="postgresql",
