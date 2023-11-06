@@ -22,7 +22,7 @@ class ProjectTemplateName(Enum):
 
     DEFAULT = "default"
     TUTORIAL = "tutorial"
-    DM2 = "dm2"
+    CALM = "calm"
 
     def __str__(self) -> str:
         return self.value

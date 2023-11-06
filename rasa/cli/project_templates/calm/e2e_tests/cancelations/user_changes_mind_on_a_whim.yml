@@ -1,0 +1,7 @@
+test_cases:
+  - test_case: user changes mind based on new info
+    steps:
+      - user: I want to add contact
+      - utter: utter_ask_add_contact_handle
+      - user: Stop
+      - utter: utter_flow_cancelled_rasa
