@@ -1,0 +1,11 @@
+recipe: default.v1
+language: en
+pipeline:
+- name: LLMCommandGenerator
+  llm:
+    model_name: gpt-4
+    request_timeout: 7
+    max_tokens: 256
+
+policies:
+- name: FlowPolicy

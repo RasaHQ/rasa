@@ -1,0 +1,16 @@
+test_cases:
+  - test_case: user cancels adding a contact during the correction
+    steps:
+      - user: I want to add a new contact
+      - utter: utter_ask_add_contact_handle
+      - user: it's @foo
+      - slot_was_set:
+          - add_contact_handle: "@foo"
+      - utter: utter_ask_add_contact_name
+      - user: Wait, no, the handle is @bar
+      - slot_was_set:
+          - add_contact_handle: "@bar"
+      - utter: utter_corrected_previous_input
+      - utter: utter_ask_add_contact_name
+      - user: I changed my mind, stop.
+      - utter: utter_flow_cancelled_rasa

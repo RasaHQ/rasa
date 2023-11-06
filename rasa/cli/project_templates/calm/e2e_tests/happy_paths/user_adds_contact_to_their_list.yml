@@ -1,0 +1,15 @@
+test_cases:
+  - test_case: user adds a contact to their list
+    steps:
+      - user: I want to add someone to my contact list
+      - utter: utter_ask_add_contact_handle
+      - user: it's @barts
+      - slot_was_set:
+          - add_contact_handle: "@barts"
+      - utter: utter_ask_add_contact_name
+      - user: just Bart
+      - slot_was_set:
+          - add_contact_name: Bart
+      - utter: utter_ask_add_contact_confirmation
+      - user: Yes
+      - utter: utter_contact_added
