@@ -52,7 +52,7 @@ def test_run_command_on_tracker(tracker: DialogueStateTracker, all_flows: FlowsL
 
 @pytest.fixture
 def about_to_be_cleaned_tracker(tracker: DialogueStateTracker, all_flows: FlowsList):
-    tracker.update_with_events([start_bar_user_uttered], None)
+    tracker.update_with_events([start_bar_user_uttered])
     execute_commands(tracker, all_flows)
     changed_flows = flows_from_str(change_cases["step_id_changed"])
     execute_commands(tracker, changed_flows)
@@ -84,7 +84,7 @@ async def test_stack_cleaning_action(about_to_be_cleaned_tracker: DialogueStateT
         about_to_be_cleaned_tracker,
         Domain.empty(),
     )
-    about_to_be_cleaned_tracker.update_with_events(events, None)
+    about_to_be_cleaned_tracker.update_with_events(events)
 
     dialogue_stack = DialogueStack.from_tracker(about_to_be_cleaned_tracker)
     assert len(dialogue_stack.frames) == 3

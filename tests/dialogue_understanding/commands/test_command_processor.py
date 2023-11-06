@@ -108,7 +108,7 @@ def test_detects_changes(case: str, flow_yaml: str, tracker: DialogueStateTracke
 
 def test_starting_of_another_flow(tracker: DialogueStateTracker, all_flows: FlowsList):
     """Tests that commands are not discarded when there is no change."""
-    tracker.update_with_events([start_bar_user_uttered], None)
+    tracker.update_with_events([start_bar_user_uttered])
     execute_commands(tracker, all_flows)
     dialogue_stack = DialogueStack.from_tracker(tracker)
     assert len(dialogue_stack.frames) == 2
@@ -119,7 +119,7 @@ def test_starting_of_another_flow(tracker: DialogueStateTracker, all_flows: Flow
 
 def test_stack_cleaning_command_is_applied_on_changes(tracker: DialogueStateTracker):
     all_flows = flows_from_str(change_cases["step_id_changed"])
-    tracker.update_with_events([start_bar_user_uttered], None)
+    tracker.update_with_events([start_bar_user_uttered])
     execute_commands(tracker, all_flows)
     dialogue_stack = DialogueStack.from_tracker(tracker)
     assert len(dialogue_stack.frames) == 2

@@ -110,7 +110,7 @@ def user_flows_on_the_stack(dialogue_stack: DialogueStack) -> Set[str]:
     }
 
 
-def end_top_user_flow(stack: DialogueStack) -> None:
+def end_top_user_flow(stack: DialogueStack) -> DialogueStack:
     """Ends all frames on top of the stack including the topmost user frame.
 
     Ends all flows until the next user flow is reached. This is useful
@@ -121,8 +121,11 @@ def end_top_user_flow(stack: DialogueStack) -> None:
         stack: The dialogue stack.
     """
 
-    for frame in reversed(stack.frames):
+    updated_stack = stack.copy()
+
+    for frame in reversed(updated_stack.frames):
         if isinstance(frame, BaseFlowStackFrame):
             frame.step_id = ContinueFlowStep.continue_step_for_id(END_STEP)
             if isinstance(frame, UserFlowStackFrame):
                 break
+    return updated_stack

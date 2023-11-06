@@ -605,7 +605,7 @@ class FormAction(LoopAction):
             f"these events: {events_as_str}."
         )
 
-        tracker.update_with_events(extraction_events, domain)
+        tracker.update_with_events(extraction_events)
 
         for slot_name in self.required_slots(domain):
             if not self._should_request_slot(tracker, slot_name):
@@ -731,7 +731,7 @@ class FormAction(LoopAction):
         events = self._default_activation_events()
 
         temp_tracker = tracker.copy()
-        temp_tracker.update_with_events(events, domain)
+        temp_tracker.update_with_events(events)
         events += await self.activate(output_channel, nlg, temp_tracker, domain)
 
         return events

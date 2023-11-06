@@ -200,7 +200,7 @@ class MessageProcessor:
 
         await self._send_bot_messages(extraction_events, tracker, output_channel)
 
-        tracker.update_with_events(extraction_events, self.domain)
+        tracker.update_with_events(extraction_events)
 
         structlogger.debug(
             "processor.extract.slots",
@@ -978,7 +978,7 @@ class MessageProcessor:
             inputs={PLACEHOLDER_TRACKER: tracker}, targets=[target]
         )
         events = results[target]
-        tracker.update_with_events(events, self.domain)
+        tracker.update_with_events(events)
         return tracker
 
     def get_flows(self) -> FlowsList:
@@ -1001,7 +1001,7 @@ class MessageProcessor:
             # Use temporary tracker as we might need to discard the policy events in
             # case of a rejection.
             temporary_tracker = tracker.copy()
-            temporary_tracker.update_with_events(prediction.events, self.domain)
+            temporary_tracker.update_with_events(prediction.events)
 
             run_args = inspect.getfullargspec(action.run).args
             if "metadata" in run_args:
@@ -1075,7 +1075,7 @@ class MessageProcessor:
                 policy_name=prediction.policy_name,
                 action_name=action.name(),
             )
-            tracker.update_with_events(prediction.events, self.domain)
+            tracker.update_with_events(prediction.events)
 
             # log the action and its produced events
             tracker.update(action.event_for_successful_execution(prediction))
@@ -1085,7 +1085,7 @@ class MessageProcessor:
             action_name=action.name(),
             rasa_events=copy.deepcopy(events),
         )
-        tracker.update_with_events(events, self.domain)
+        tracker.update_with_events(events)
 
     def _has_session_expired(self, tracker: DialogueStateTracker) -> bool:
         """Determine whether the latest session in `tracker` has expired.

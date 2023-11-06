@@ -10,7 +10,6 @@ import rasa.cli.evaluate
 from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.constants import ACTION_SESSION_START_NAME
-from rasa.shared.core.domain import Domain
 from rasa.core.tracker_store import SQLTrackerStore
 from rasa.cli.evaluate import STATS_SESSION_SUFFIX, STATS_OVERALL_SUFFIX
 from tests.conftest import write_endpoint_config_to_yaml
@@ -20,17 +19,14 @@ from tests.cli.conftest import RASA_EXE
 
 @pytest.fixture
 def marker_sqlite_tracker(tmp_path: Path) -> Tuple[SQLTrackerStore, Text]:
-    domain = Domain.empty()
     db_path = str(tmp_path / "rasa.db")
     tracker_store = SQLTrackerStore(dialect="sqlite", db=db_path)
     for i in range(5):
         tracker = DialogueStateTracker(str(i), None)
-        tracker.update_with_events([SlotSet(str(j), "slot") for j in range(5)], domain)
+        tracker.update_with_events([SlotSet(str(j), "slot") for j in range(5)])
         tracker.update(ActionExecuted(ACTION_SESSION_START_NAME))
         tracker.update(UserUttered("hello"))
-        tracker.update_with_events(
-            [SlotSet(str(5 + j), "slot") for j in range(5)], domain
-        )
+        tracker.update_with_events([SlotSet(str(5 + j), "slot") for j in range(5)])
         tracker_store.save(tracker)
 
     return tracker_store, db_path
