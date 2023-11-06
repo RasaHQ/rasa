@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from typing import Optional, Dict, Any, List
+from typing import Any, Dict, List, Optional
+
+import structlog
 
 from rasa.core.actions.action import Action
 from rasa.core.channels import OutputChannel
@@ -17,6 +19,8 @@ from rasa.shared.core.events import Event, SlotSet
 from rasa.shared.core.flows.steps.constants import END_STEP
 from rasa.shared.core.flows.steps.continuation import ContinueFlowStep
 from rasa.shared.core.trackers import DialogueStateTracker
+
+structlogger = structlog.get_logger()
 
 
 class ActionCleanStack(Action):
@@ -36,11 +40,16 @@ class ActionCleanStack(Action):
     ) -> List[Event]:
         """Clean the stack."""
         stack = DialogueStack.from_tracker(tracker)
-
+        structlogger.debug("action_clean_stack.run")
         new_frames = []
         # Set all frames to their end step, filter out any non-BaseFlowStackFrames
         for frame in stack.frames:
             if isinstance(frame, BaseFlowStackFrame):
+                structlogger.debug(
+                    "action_clean_stack.terminating_frame",
+                    frame_id=frame.frame_id,
+                    flow_id=frame.flow_id,
+                )
                 frame.step_id = ContinueFlowStep.continue_step_for_id(END_STEP)
                 if isinstance(frame, UserFlowStackFrame):
                     # Making sure there are no "continue interrupts" triggered

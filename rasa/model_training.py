@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Text, NamedTuple, Optional, List, Union, Dict, Any
 
 import randomname
+import structlog
 
 import rasa.engine.validation
 from rasa.engine.caching import LocalTrainingCache
@@ -30,6 +31,8 @@ import rasa.model
 CODE_NEEDS_TO_BE_RETRAINED = 0b0001
 CODE_FORCED_TRAINING = 0b1000
 CODE_NO_NEED_TO_TRAIN = 0b0000
+
+structlogger = structlog.get_logger()
 
 
 class TrainingResult(NamedTuple):
@@ -144,6 +147,7 @@ def _check_restricted_slots(domain: Domain) -> None:
                 f"Slot name - '{slot.name}' is reserved and can not be used. "
                 f"Please use another slot name."
             )
+            structlogger.error("slots.reserved_slot_redefined", slot_name=slot.name)
     return None
 
 
