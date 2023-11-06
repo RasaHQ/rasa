@@ -971,7 +971,8 @@ class MessageProcessor:
             tracker: the dialogue state tracker
 
         Returns:
-            An updated tracker after commands have been applied"""
+        An updated tracker after commands have been applied
+        """
         target = "command_processor"
         results = self.graph_runner.run(
             inputs={PLACEHOLDER_TRACKER: tracker}, targets=[target]
