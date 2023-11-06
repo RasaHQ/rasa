@@ -35,4 +35,3 @@ responses:
       text: "Should I remove {remove_contact_handle} from your contact list?"
   utter_remove_contact_cancelled:
     - text: "Okay, I am cancelling this removal of a contact."
-
