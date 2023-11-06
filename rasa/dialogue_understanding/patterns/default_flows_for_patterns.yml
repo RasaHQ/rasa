@@ -1,9 +1,21 @@
 version: "3.1"
-responses:  
+responses:
+  utter_boolean_slot_rejection:
+    - text: "Sorry, the value you provided, `{{value}}`, is not valid. Please respond with a valid value."
+      metadata:
+        rephrase: True
+        template: jinja
+
   utter_can_do_something_else:
     - text: "What else I can help you with?"
       metadata:
         rephrase: True
+
+  utter_categorical_slot_rejection:
+    - text: "Sorry, you responded with an invalid value - `{{value}}`. Please select one of the available options."
+      metadata:
+        rephrase: True
+        template: jinja
 
   utter_clarification_options_rasa:
     - text: "I can help, but I need more information. Which of these would you like to do: {{context.clarification_options}}?"
@@ -13,6 +25,12 @@ responses:
 
   utter_corrected_previous_input:
     - text: "Ok, I am updating {{ context.corrected_slots.keys()|join(', ') }} to {{ context.corrected_slots.values()|join(', ') }} respectively."
+      metadata:
+        rephrase: True
+        template: jinja
+
+  utter_float_slot_rejection:
+    - text: "Sorry, it seems the value you provided `{{value}}` is not a valid number. Please provide a valid number in your response."
       metadata:
         rephrase: True
         template: jinja

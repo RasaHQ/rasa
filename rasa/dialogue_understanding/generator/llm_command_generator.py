@@ -30,9 +30,7 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.slots import (
     BooleanSlot,
     CategoricalSlot,
-    FloatSlot,
     Slot,
-    bool_from_any,
 )
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.message import Message
@@ -253,9 +251,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
                 if slot_name == "flow_name":
                     commands.append(StartFlowCommand(flow=slot_value))
                 else:
-                    typed_slot_value = cls.coerce_slot_value(
-                        slot_value, slot_name, tracker
-                    )
+                    typed_slot_value = cls.get_nullable_slot_value(slot_value)
                     commands.append(
                         SetSlotCommand(name=slot_name, value=typed_slot_value)
                     )
@@ -296,39 +292,16 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         return value.strip("'\" ")
 
     @classmethod
-    def coerce_slot_value(
-        cls, slot_value: str, slot_name: str, tracker: DialogueStateTracker
-    ) -> Union[str, bool, float, None]:
-        """Coerce the slot value to the correct type.
-
-        Tries to coerce the slot value to the correct type. If the
-        conversion fails, `None` is returned.
+    def get_nullable_slot_value(cls, slot_value: str) -> Union[str, None]:
+        """Get the slot value or None if the value is a none value.
 
         Args:
-            value: The value to coerce.
-            slot_name: The name of the slot.
-            tracker: The tracker containing the current state of the conversation.
+            slot_value: the value to coerce
 
         Returns:
-            The coerced value or `None` if the conversion failed.
+            The slot value or None if the value is a none value.
         """
-        nullable_value = slot_value if not cls.is_none_value(slot_value) else None
-        if slot_name not in tracker.slots:
-            return nullable_value
-
-        slot = tracker.slots[slot_name]
-        if isinstance(slot, BooleanSlot):
-            try:
-                return bool_from_any(nullable_value)
-            except (ValueError, TypeError):
-                return None
-        elif isinstance(slot, FloatSlot):
-            try:
-                return float(nullable_value)
-            except (ValueError, TypeError):
-                return None
-        else:
-            return nullable_value
+        return slot_value if not cls.is_none_value(slot_value) else None
 
     def prepare_flows_for_template(
         self, flows: FlowsList, tracker: DialogueStateTracker
