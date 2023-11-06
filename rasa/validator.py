@@ -1,4 +1,5 @@
 import logging
+import structlog
 import re
 import string
 from collections import defaultdict
@@ -37,6 +38,7 @@ from rasa.shared.nlu.training_data.training_data import TrainingData
 import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger()
 
 
 class Validator:
@@ -663,7 +665,7 @@ class Validator:
 
     def verify_flows(self) -> bool:
         """Checks for inconsistencies across flows."""
-        logger.info("Validating flows...")
+        structlogger.info("validation.flows.started")
 
         if self.flows.is_empty():
             logger.warning(

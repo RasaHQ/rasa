@@ -31,7 +31,7 @@ from rasa.shared.constants import (
     DOCS_URL_POLICIES,
     DOCS_URL_RULES,
 )
-from rasa.shared.core.domain import Domain
+from rasa.shared.core.domain import Domain, InvalidDomain
 from rasa.shared.core.constants import (
     ACTION_BACK_NAME,
     ACTION_RESTART_NAME,
@@ -383,7 +383,7 @@ class DefaultV1RecipeValidator(GraphComponent):
         if not self._policy_schema_nodes:
             return
         self._warn_if_no_rule_policy_is_contained()
-        self._warn_if_domain_contains_form_names_but_no_rule_policy_given(domain)
+        self._raise_if_domain_contains_form_names_but_no_rule_policy_given(domain)
         self._raise_if_a_rule_policy_is_incompatible_with_domain(domain)
         self._validate_policy_priorities()
         self._warn_if_rule_based_data_is_unused_or_missing(story_graph=story_graph)
@@ -400,10 +400,14 @@ class DefaultV1RecipeValidator(GraphComponent):
                 docs=DOCS_URL_DEFAULT_ACTIONS,
             )
 
-    def _warn_if_domain_contains_form_names_but_no_rule_policy_given(
+    def _raise_if_domain_contains_form_names_but_no_rule_policy_given(
         self, domain: Domain
     ) -> None:
-        """Validates that there exists a rule policy if forms are defined."""
+        """Validates that there exists a rule policy if forms are defined.
+
+        Raises:
+            `InvalidConfigException` if domain and rule policies do not match
+        """
         contains_rule_policy = any(
             schema_node
             for schema_node in self._graph_schema.nodes.values()
@@ -411,7 +415,7 @@ class DefaultV1RecipeValidator(GraphComponent):
         )
 
         if domain.form_names and not contains_rule_policy:
-            rasa.shared.utils.io.raise_warning(
+            raise InvalidDomain(
                 "You have defined a form action, but have not added the "
                 f"'{RulePolicy.__name__}' to your policy ensemble. "
                 f"Either remove all forms from your domain or add the "

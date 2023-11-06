@@ -961,6 +961,18 @@ class MessageProcessor:
     def run_command_processor(
         self, tracker: DialogueStateTracker
     ) -> DialogueStateTracker:
+        """Run the command processor to apply commands to the stack.
+
+        The command processor applies all the commands from the NLU pipeline to the
+        dialogue stack. The dialogue stack then acts as base for decision making for
+        the policies that can use it.
+
+        Args:
+            tracker: the dialogue state tracker
+
+        Returns:
+        An updated tracker after commands have been applied
+        """
         target = "command_processor"
         results = self.graph_runner.run(
             inputs={PLACEHOLDER_TRACKER: tracker}, targets=[target]

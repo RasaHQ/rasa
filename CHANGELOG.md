@@ -10,6 +10,46 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.6.13] - 2023-10-23
+                        
+Rasa 3.6.13 (2023-10-23)                         
+### Bugfixes
+- [#12927](https://github.com/rasahq/rasa/issues/12927): Fix wrong conflicts that occur when rasa validate stories is run with slots that have active_loop set to null in mapping conditions.
+
+
+## [3.6.12] - 2023-10-10
+                        
+Rasa 3.6.12 (2023-10-10)                         
+### Bugfixes
+- [#12904](https://github.com/rasahq/rasa/issues/12904): Refresh headers used in requests (e.g. action server requests) made by `EndpointConfig` using its `headers` attribute.
+- [#12906](https://github.com/rasahq/rasa/issues/12906): Upgrade `pillow` to `10.0.1` to address security vulnerability CVE-2023-4863 found in `10.0.0` version.
+
+
+## [3.6.11] - 2023-10-05
+                        
+Rasa 3.6.11 (2023-10-05)                         
+### Bugfixes
+- [#12722](https://github.com/rasahq/rasa/issues/12722): Intent names will not be falsely abbreviated in interactive training (fixes OSS-413).
+
+  This will also fix a bug where forced user utterances (using the regex matcher) will
+  be reverted even though they are present in the domain.
+- [#12886](https://github.com/rasahq/rasa/issues/12886): Cache `EndpointConfig` session object using `cached_property` decorator instead of recreating this object on every request.
+  Initialize these connection pools for action server and model server endpoints as part of the Sanic `after_server_start` listener.
+  Also close connection pools during Sanic `after_server_stop` listener.
+
+
+## [3.6.10] - 2023-09-26
+                        
+Rasa 3.6.10 (2023-09-26)                         
+### Improvements
+- [#12827](https://github.com/rasahq/rasa/issues/12827): Improved handling of last batch during DIET and TED training. The last batch is discarded if it contains less than half a batch size of data.
+- [#12852](https://github.com/rasahq/rasa/issues/12852): Added `username` to the connection parameters for `RedisLockStore` and `RedisTrackerStore`
+- [#1493](https://github.com/rasahq/rasa/issues/1493): Telemetry data is only send for licensed users.
+
+### Improved Documentation
+- [#12868](https://github.com/rasahq/rasa/issues/12868): Remove the Playground from docs.
+
+
 ## [3.6.9] - 2023-09-15
 
 Rasa 3.6.9 (2023-09-15)

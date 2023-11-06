@@ -53,11 +53,8 @@ from rasa.shared.core.constants import (
     ACTION_RESTART_NAME,
     ACTION_SESSION_START_NAME,
     ACTION_LISTEN_NAME,
+    DEFAULT_SLOT_NAMES,
     REQUESTED_SLOT,
-    SESSION_START_METADATA_SLOT,
-    DIALOGUE_STACK_SLOT,
-    RETURN_VALUE_SLOT,
-    FLOW_HASHES_SLOT,
 )
 from rasa.shared.core.domain import Domain, SessionConfig
 from rasa.shared.core.events import (
@@ -1117,11 +1114,7 @@ async def test_requesting_non_existent_tracker(rasa_app: SanicASGITestClient):
     assert content["paused"] is False
     assert content["slots"] == {
         "name": None,
-        REQUESTED_SLOT: None,
-        FLOW_HASHES_SLOT: None,
-        SESSION_START_METADATA_SLOT: None,
-        DIALOGUE_STACK_SLOT: None,
-        RETURN_VALUE_SLOT: None,
+        **{slot: None for slot in DEFAULT_SLOT_NAMES},
     }
     assert content["sender_id"] == "madeupid"
     assert content["events"] == [
