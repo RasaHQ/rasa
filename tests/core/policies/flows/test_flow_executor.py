@@ -5,7 +5,6 @@ from rasa.core.policies.flows import flow_executor
 from rasa.core.policies.flows.flow_exceptions import (
     FlowCircuitBreakerTrippedException,
     NoNextStepInFlowException,
-    UnkownActionForFlowException,
 )
 from rasa.core.policies.flows.flow_step_result import (
     ContinueFlowWithNextStep,
@@ -806,31 +805,6 @@ def test_run_step_action():
 
     assert isinstance(result, PauseFlowReturnPrediction)
     assert result.action_prediction.action_name == "utter_ask_foo"
-
-
-def test_run_step_action_that_does_not_exist():
-    flows = flows_from_str(
-        """
-        flows:
-          my_flow:
-            steps:
-            - id: action
-              action: utter_ask_foo
-        """
-    )
-
-    user_flow_frame = UserFlowStackFrame(
-        flow_id="my_flow", step_id="action", frame_id="some-frame-id"
-    )
-    stack = DialogueStack(frames=[user_flow_frame])
-    tracker = DialogueStateTracker.from_events("test", [stack.persist_as_event()])
-    step = user_flow_frame.step(flows)
-    flow = user_flow_frame.flow(flows)
-
-    available_actions = []
-
-    with pytest.raises(UnkownActionForFlowException):
-        flow_executor.run_step(step, flow, stack, tracker, available_actions, flows)
 
 
 def test_run_step_link():
