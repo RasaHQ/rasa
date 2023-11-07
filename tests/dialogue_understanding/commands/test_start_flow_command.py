@@ -187,7 +187,7 @@ def test_run_start_flow_with_multiple_flows():
     )
 
     updated_tracker = tracker.copy()
-    updated_tracker.update_with_events(events_bar, domain=None)
+    updated_tracker.update_with_events(events_bar)
     events_foo = StartFlowCommand(flow="foo").run_command_on_tracker(
         updated_tracker, all_flows, tracker
     )

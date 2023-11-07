@@ -1274,7 +1274,7 @@ async def test_action_extract_slots_predefined_mappings(
     assert events == [SlotSet(slot_name, slot_value)]
 
     events.extend([user])
-    tracker.update_with_events(events, domain)
+    tracker.update_with_events(events)
 
     new_events = await action_extract_slots.run(
         CollectingOutputChannel(),
@@ -1285,7 +1285,7 @@ async def test_action_extract_slots_predefined_mappings(
     assert new_events == [SlotSet(slot_name, slot_value)]
 
     new_events.extend([BotUttered(), ActionExecuted("action_listen"), new_user])
-    tracker.update_with_events(new_events, domain)
+    tracker.update_with_events(new_events)
 
     updated_evts = await action_extract_slots.run(
         CollectingOutputChannel(),
@@ -2782,8 +2782,7 @@ async def test_action_extract_slots_emits_necessary_slot_set_events(
                 intent={"name": intent_name},
                 entities=[{"entity": entity_name, "value": value_to_set}],
             )
-        ],
-        domain=domain,
+        ]
     )
 
     action = ActionExtractSlots(None)
@@ -2853,7 +2852,7 @@ async def test_action_extract_slots_priority_of_slot_mappings():
         tracker,
         domain,
     )
-    tracker.update_with_events(events, domain=domain)
+    tracker.update_with_events(events)
     assert tracker.get_slot("location_slot") == entity_value
 
 

@@ -20,7 +20,7 @@ async def marker_trackerstore() -> TrackerStore:
     store = InMemoryTrackerStore(domain)
     for i in range(5):
         tracker = DialogueStateTracker(str(i), None)
-        tracker.update_with_events([UserUttered(str(j)) for j in range(10)], domain)
+        tracker.update_with_events([UserUttered(str(j)) for j in range(10)])
         await store.save(tracker)
 
     return store
@@ -38,8 +38,7 @@ async def test_load_sessions(tmp_path):
             SessionStarted(),
             UserUttered("2"),
             UserUttered("3"),
-        ],
-        domain,
+        ]
     )
     await store.save(tracker)
 

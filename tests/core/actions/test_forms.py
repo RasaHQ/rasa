@@ -349,7 +349,7 @@ responses:
         UserUttered("return my shoes", {"name": "form_2", "confidence": 1.0}),
         DefinePrevUserUtteredFeaturization(False),
     ]
-    tracker.update_with_events(next_events, domain)
+    tracker.update_with_events(next_events)
     events_expected.extend(next_events)
 
     # form_1 is still active, and bot will first validate if the user utterance
@@ -640,7 +640,7 @@ async def test_validate_slots(
         domain,
     )
     assert slot_events == [SlotSet(slot_name, slot_value), SlotSet("num_tables", 5)]
-    tracker.update_with_events(slot_events, domain)
+    tracker.update_with_events(slot_events)
 
     with aioresponses() as mocked:
         mocked.post(ACTION_SERVER_URL, payload={"events": validate_return_events})
@@ -817,7 +817,7 @@ async def test_validate_slots_on_activation_with_other_action_after_user_utteran
             tracker,
             domain,
         )
-        tracker.update_with_events(slot_events, domain)
+        tracker.update_with_events(slot_events)
 
         form_action = FormAction(form_name, action_server)
 
@@ -1141,7 +1141,7 @@ async def test_extract_other_slots_with_entity(
         tracker,
         domain,
     )
-    tracker.update_with_events(slot_events, domain)
+    tracker.update_with_events(slot_events)
 
     if slot_events:
         slot_values = await form.validate(
@@ -1323,7 +1323,7 @@ async def test_ignored_intents_with_slot_type_from_entity(
         tracker,
         domain,
     )
-    tracker.update_with_events(slot_events, domain)
+    tracker.update_with_events(slot_events)
 
     assert slot_events == []
 
@@ -1415,7 +1415,7 @@ async def test_ignored_intents_with_slot_type_from_text(
         tracker,
         domain,
     )
-    tracker.update_with_events(slot_events, domain)
+    tracker.update_with_events(slot_events)
     assert slot_events == []
 
     form_slot_events = await form.validate(
@@ -1540,7 +1540,7 @@ async def test_ignored_intents_with_other_type_of_slots(
         tracker,
         domain,
     )
-    tracker.update_with_events(slot_events, domain)
+    tracker.update_with_events(slot_events)
     assert slot_events == []
 
     form_slot_events = await form.validate(
@@ -1613,7 +1613,7 @@ async def test_extract_other_slots_with_matched_mapping_conditions():
         domain,
     )
     assert slot_events == [SlotSet("name", "Emily")]
-    tracker.update_with_events(slot_events, domain)
+    tracker.update_with_events(slot_events)
 
     form_slot_events = await form.validate(
         tracker,
@@ -1685,7 +1685,7 @@ async def test_extract_other_slots_raises_no_matched_conditions():
         tracker,
         domain,
     )
-    tracker.update_with_events(slot_events, domain)
+    tracker.update_with_events(slot_events)
 
     assert slot_events == []
 

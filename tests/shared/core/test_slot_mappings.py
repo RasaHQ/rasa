@@ -96,7 +96,7 @@ def test_slot_mappings_ignored_intents_during_active_loop():
         intent={"name": "chitchat", "confidence": 0.9604260921478271},
         entities=[],
     )
-    tracker.update_with_events([event1, event2], domain)
+    tracker.update_with_events([event1, event2])
     mappings_for_cuisine = domain.as_dict().get("slots").get("cuisine").get("mappings")
     assert (
         SlotMapping.intent_is_desired(mappings_for_cuisine[0], tracker, domain) is False

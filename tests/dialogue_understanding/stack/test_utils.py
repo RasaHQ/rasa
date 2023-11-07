@@ -211,14 +211,14 @@ def test_end_top_user_flow():
     )
     stack = DialogueStack(frames=[user_frame, pattern_frame])
 
-    end_top_user_flow(stack)
+    updated_stack = end_top_user_flow(stack)
 
-    assert len(stack.frames) == 2
+    assert len(updated_stack.frames) == 2
 
-    assert stack.frames[0] == UserFlowStackFrame(
+    assert updated_stack.frames[0] == UserFlowStackFrame(
         flow_id="my_flow", step_id="NEXT:END", frame_id="some-frame-id"
     )
-    assert stack.frames[1] == CollectInformationPatternFlowStackFrame(
+    assert updated_stack.frames[1] == CollectInformationPatternFlowStackFrame(
         collect="foo", frame_id="some-other-id", step_id="NEXT:END"
     )
 
@@ -232,14 +232,14 @@ def test_end_top_user_flow_only_ends_topmost_user_frame():
     )
     stack = DialogueStack(frames=[other_user_frame, user_frame])
 
-    end_top_user_flow(stack)
+    updated_stack = end_top_user_flow(stack)
 
-    assert len(stack.frames) == 2
+    assert len(updated_stack.frames) == 2
 
-    assert stack.frames[0] == UserFlowStackFrame(
+    assert updated_stack.frames[0] == UserFlowStackFrame(
         flow_id="my_other_flow", step_id="collect_bar2", frame_id="some-other-id"
     )
-    assert stack.frames[1] == UserFlowStackFrame(
+    assert updated_stack.frames[1] == UserFlowStackFrame(
         flow_id="my_flow", step_id="NEXT:END", frame_id="some-frame-id"
     )
 

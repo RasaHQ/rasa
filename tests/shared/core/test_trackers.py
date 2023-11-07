@@ -407,7 +407,7 @@ async def test_tracker_update_slots_with_entity(domain: Domain):
         tracker,
         domain,
     )
-    tracker.update_with_events(events, domain)
+    tracker.update_with_events(events)
 
     assert tracker.get_slot(test_entity) == expected_slot_value
 
@@ -1514,7 +1514,7 @@ async def test_fill_slots_for_policy_entities():
         tracker,
         domain,
     )
-    tracker.update_with_events(events, domain)
+    tracker.update_with_events(events)
 
     # Slots are correctly set
     assert tracker.slots[nlu_entity].value == nlu_entity_value
@@ -1608,7 +1608,7 @@ def test_model_id_is_added_to_events():
     tracker = DialogueStateTracker("bloop", [])
     tracker.model_id = "some_id"
     tracker.update(ActionExecuted(action_name="test"))
-    tracker.update_with_events([UserUttered(), SessionStarted()], None)
+    tracker.update_with_events([UserUttered(), SessionStarted()])
     assert all(e.metadata[METADATA_MODEL_ID] == "some_id" for e in tracker.events)
 
 

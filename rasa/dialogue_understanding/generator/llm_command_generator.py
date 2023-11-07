@@ -4,6 +4,7 @@ from typing import Dict, Any, List, Optional, Tuple, Union
 
 from jinja2 import Template
 import structlog
+from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 
 from rasa.dialogue_understanding.stack.utils import top_flow_frame
 from rasa.dialogue_understanding.generator import CommandGenerator
@@ -19,7 +20,6 @@ from rasa.dialogue_understanding.commands import (
     KnowledgeAnswerCommand,
     ClarifyCommand,
 )
-from rasa.core.policies.flow_policy import DialogueStack
 from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource

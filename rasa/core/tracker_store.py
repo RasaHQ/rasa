@@ -598,9 +598,7 @@ class RedisTrackerStore(TrackerStore, SerializedTrackerAsText):
             return tracker
 
         merged = tracker.init_copy()
-        merged.update_with_events(
-            list(prior_tracker.events), override_timestamp=False, domain=None
-        )
+        merged.update_with_events(list(prior_tracker.events), override_timestamp=False)
 
         for new_event in tracker.events:
             # Event subclasses implement `__eq__` method that make it difficult

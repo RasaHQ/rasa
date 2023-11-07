@@ -502,12 +502,10 @@ async def test_markers_cli_results_save_correctly(tmp_path: Path):
 
     for i in range(5):
         tracker = DialogueStateTracker(str(i), None)
-        tracker.update_with_events([SlotSet(str(j), "slot") for j in range(5)], domain)
+        tracker.update_with_events([SlotSet(str(j), "slot") for j in range(5)])
         tracker.update(ActionExecuted(ACTION_SESSION_START_NAME))
         tracker.update(UserUttered("hello"))
-        tracker.update_with_events(
-            [SlotSet(str(5 + j), "slot") for j in range(5)], domain
-        )
+        tracker.update_with_events([SlotSet(str(5 + j), "slot") for j in range(5)])
         await store.save(tracker)
 
     tracker_loader = MarkerTrackerLoader(store, "all")

@@ -155,7 +155,6 @@ async def test_action_two_stage_fallback_does_not_return_key_error(
             UserUttered("wunderbar"),
             ActiveLoop("action_two_stage_fallback"),
         ],
-        domain,
     )
     await agent.tracker_store.save(tracker)
 
