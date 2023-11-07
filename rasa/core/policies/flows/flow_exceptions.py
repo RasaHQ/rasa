@@ -42,19 +42,3 @@ class NoNextStepInFlowException(FlowException):
         """
         super().__init__("No next step can be selected for the flow.")
         self.dialogue_stack = dialogue_stack
-
-
-class UnkownActionForFlowException(FlowException):
-    """Exception that is raised when there is an unkown action for a flow."""
-
-    def __init__(self, flow_id: str, action_name: str) -> None:
-        """Creates a `UnkownActionForFlowException`.
-
-        Args:
-            flow_id: The flow id.
-            action_name: The unkown action.
-        """
-        super().__init__(
-            f"The action '{action_name}' is not known for flow '{flow_id}'."
-        )
-        self.flow_id = flow_id

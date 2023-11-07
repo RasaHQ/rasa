@@ -10,7 +10,6 @@ from rasa.core.policies.flows.flow_exceptions import (
     FlowCircuitBreakerTrippedException,
     FlowException,
     NoNextStepInFlowException,
-    UnkownActionForFlowException,
 )
 from rasa.core.policies.flows.flow_step_result import (
     FlowActionPrediction,
@@ -468,7 +467,7 @@ def run_step(
             return PauseFlowReturnPrediction(FlowActionPrediction(action_name, 1.0))
         else:
             structlogger.warning("flow.step.run.action.unknown", action=action_name)
-            raise UnkownActionForFlowException(flow.id, action_name)
+            return ContinueFlowWithNextStep()
 
     elif isinstance(step, LinkFlowStep):
         structlogger.debug("flow.step.run.link")
