@@ -1117,8 +1117,8 @@ jobs:
           pip install keyring
           pip install keyrings.google-artifactregistry-auth
           pip install twine
-          gcloud artifacts print-settings python --project=rasa-releases --repository=rasa-plus-py --location=europe-west3 > ~/.pypirc
-          twine upload --verbose --repository-url https://europe-west3-python.pkg.dev/rasa-releases/rasa-plus-py/ ${{ format('{0}/dist/*', github.workspace) }}
+          gcloud artifacts print-settings python --project=rasa-releases --repository=rasa --location=europe-west3 > ~/.pypirc
+          twine upload --verbose --repository-url https://europe-west3-python.pkg.dev/rasa-releases/rasa/ ${{ format('{0}/dist/*', github.workspace) }}
 
       - name: Notify Sentry about the release
         env:
@@ -1128,8 +1128,8 @@ jobs:
         run: |
           curl -sL https://sentry.io/get-cli/ | bash
           GITHUB_TAG=${GITHUB_TAG/refs\/tags\//}
-          sentry-cli releases new -p rasa-open-source "rasa-$GITHUB_TAG" --ignore-missing
-          sentry-cli releases set-commits --auto "rasa-$GITHUB_TAG"
+          sentry-cli releases new -p rasa-open-source "rasa-$GITHUB_TAG"
+          sentry-cli releases set-commits "rasa-$GITHUB_TAG" --auto --ignore-missing
           sentry-cli releases finalize "rasa-$GITHUB_TAG"
 
       - name: Notify Slack & Publish Release Notes 🗞
