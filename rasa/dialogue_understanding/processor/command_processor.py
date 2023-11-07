@@ -7,6 +7,7 @@ from rasa.dialogue_understanding.commands import (
     CorrectSlotsCommand,
     CorrectedSlot,
     SetSlotCommand,
+    StartFlowCommand,
     FreeFormAnswerCommand,
 )
 from rasa.dialogue_understanding.commands.handle_code_change_command import (
@@ -54,7 +55,7 @@ def contains_command(commands: List[Command], typ: Type[Command]) -> bool:
     return any(isinstance(command, typ) for command in commands)
 
 
-def _get_commands_from_tracker(tracker: DialogueStateTracker) -> List[Command]:
+def get_commands_from_tracker(tracker: DialogueStateTracker) -> List[Command]:
     """Extracts the commands from the tracker.
 
     Args:
@@ -69,6 +70,13 @@ def _get_commands_from_tracker(tracker: DialogueStateTracker) -> List[Command]:
         return [Command.command_from_json(command) for command in dumped_commands]
     else:
         return []
+
+
+def filter_start_flow_commands(commands: List[Command]) -> List[str]:
+    """Filters the start flow commands from a list of commands."""
+    return [
+        command.flow for command in commands if isinstance(command, StartFlowCommand)
+    ]
 
 
 def validate_state_of_commands(commands: List[Command]) -> None:
@@ -143,7 +151,7 @@ def execute_commands(
     Returns:
     A tuple of the action to execute and the events that were created.
     """
-    commands: List[Command] = _get_commands_from_tracker(tracker)
+    commands: List[Command] = get_commands_from_tracker(tracker)
     original_tracker = tracker.copy()
 
     commands = clean_up_commands(commands, tracker, all_flows)

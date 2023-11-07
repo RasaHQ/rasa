@@ -129,3 +129,28 @@ def end_top_user_flow(stack: DialogueStack) -> DialogueStack:
             if isinstance(frame, UserFlowStackFrame):
                 break
     return updated_stack
+
+
+def get_collect_steps_excluding_ask_before_filling_for_active_flow(
+    dialogue_stack: DialogueStack, all_flows: FlowsList
+) -> Set[str]:
+    """Get all collect steps that are part of the current flow, without
+    considering the collect steps that has to be asked before filling.
+
+    Args:
+        dialogue_stack: The dialogue stack.
+        all_flows: All flows.
+
+    Returns:
+        All collect steps that are part of the current active flow,
+        excluding the collect steps that have to be asked before filling.
+    """
+    active_frame = top_user_flow_frame(dialogue_stack)
+    if active_frame is None:
+        return set()
+    active_flow = active_frame.flow(all_flows)
+    return set(
+        step.collect
+        for step in active_flow.get_collect_steps()
+        if not step.ask_before_filling
+    )

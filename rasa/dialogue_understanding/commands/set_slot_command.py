@@ -5,13 +5,38 @@ from typing import Any, Dict, List
 
 import structlog
 from rasa.dialogue_understanding.commands import Command
+from rasa.dialogue_understanding.patterns.collect_information import (
+    CollectInformationPatternFlowStackFrame,
+)
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
-from rasa.dialogue_understanding.stack.utils import filled_slots_for_active_flow
+from rasa.dialogue_understanding.stack.utils import (
+    get_collect_steps_excluding_ask_before_filling_for_active_flow,
+)
 from rasa.shared.core.events import Event, SlotSet
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 
 structlogger = structlog.get_logger()
+
+
+def get_flows_predicted_to_start_from_tracker(
+    tracker: DialogueStateTracker,
+) -> List[str]:
+    """Returns the flows that are predicted to start from the current state.
+
+    Args:
+        tracker: The tracker to use.
+
+    Returns:
+        The flows that are predicted to start from the current state.
+    """
+    from rasa.dialogue_understanding.processor.command_processor import (
+        get_commands_from_tracker,
+        filter_start_flow_commands,
+    )
+
+    commands = get_commands_from_tracker(tracker)
+    return filter_start_flow_commands(commands)
 
 
 @dataclass
@@ -54,22 +79,36 @@ class SetSlotCommand(Command):
         Returns:
             The events to apply to the tracker.
         """
-        stack = DialogueStack.from_tracker(tracker)
-        slots_so_far = filled_slots_for_active_flow(stack, all_flows)
         if tracker.get_slot(self.name) == self.value:
             # value hasn't changed, skip this one
             structlogger.debug(
                 "command_executor.skip_command.slot_already_set", command=self
             )
             return []
-        if self.name not in slots_so_far:
-            # only fill slots that belong to a collect infos that can be asked
+
+        stack = DialogueStack.from_tracker(tracker)
+        # Get slots of the active flow
+        slots_of_active_flow = (
+            get_collect_steps_excluding_ask_before_filling_for_active_flow(
+                stack, all_flows
+            )
+        )
+
+        # Add slots that are asked in the current collect step. This is needed
+        # to include slots that has ask_before_filling set to True.
+        top_frame = stack.top()
+        if isinstance(top_frame, CollectInformationPatternFlowStackFrame):
+            slots_of_active_flow.add(top_frame.collect)
+
+        if self.name not in slots_of_active_flow:
+            # Get the other predicted flows from the most recent message on the tracker.
+            predicted_flows = get_flows_predicted_to_start_from_tracker(tracker)
             use_slot_fill = any(
                 step.collect == self.name and not step.ask_before_filling
                 for flow in all_flows.underlying_flows
+                if flow.id in predicted_flows
                 for step in flow.get_collect_steps()
             )
-
             if not use_slot_fill:
                 structlogger.debug(
                     "command_executor.skip_command.slot_not_asked_for", command=self

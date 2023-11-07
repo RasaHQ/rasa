@@ -1,10 +1,19 @@
+from typing import List
+
 import pytest
-from rasa.dialogue_understanding.commands.set_slot_command import SetSlotCommand
+
+from rasa.dialogue_understanding.commands.set_slot_command import (
+    get_flows_predicted_to_start_from_tracker,
+    Command,
+    SetSlotCommand,
+)
+from rasa.dialogue_understanding.commands.start_flow_command import StartFlowCommand
 from rasa.shared.core.constants import DIALOGUE_STACK_SLOT
-from rasa.shared.core.events import SlotSet
+from rasa.shared.core.events import SlotSet, UserUttered
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.flows.yaml_flows_io import flows_from_str
+from rasa.shared.nlu.constants import COMMANDS
 
 
 def test_command_name():
@@ -229,3 +238,123 @@ def test_run_command_skips_setting_unknown_slot():
     command = SetSlotCommand(name="unknown", value="unknown")
 
     assert command.run_command_on_tracker(tracker, all_flows, tracker) == []
+
+
+def test_run_command_set_slot_of_startable_flows() -> None:
+    all_flows = flows_from_str(
+        """
+        flows:
+            my_flow:
+                steps:
+                - collect: foo
+                - collect: bar
+            another_flow:
+                steps:
+                - collect: baz
+                - collect: qux
+        """
+    )
+    tracker = DialogueStateTracker.from_events(
+        "test",
+        evts=[
+            UserUttered(
+                "start foo",
+                None,
+                None,
+                {
+                    COMMANDS: [
+                        StartFlowCommand("another_flow").as_dict(),
+                        SetSlotCommand("baz", "bazbaz").as_dict(),
+                    ]
+                },
+            ),
+            SlotSet(DIALOGUE_STACK_SLOT, []),
+        ],
+    )
+    command = SetSlotCommand(name="baz", value="bazbaz")
+    events = command.run_command_on_tracker(tracker, all_flows, tracker)
+    assert events == [SlotSet("baz", "bazbaz")]
+
+
+def test_run_command_set_slot_of_startable_flows_and_skip_the_rest() -> None:
+    all_flows = flows_from_str(
+        """
+        flows:
+            my_flow:
+                steps:
+                - collect: foo
+                - collect: bar
+            another_flow:
+                steps:
+                - collect: baz
+                - collect: qux
+            third_flow:
+                steps:
+                - collect: boom
+                - collect: xyz
+        """
+    )
+    tracker = DialogueStateTracker.from_events(
+        "test",
+        evts=[
+            UserUttered(
+                "start foo",
+                None,
+                None,
+                {
+                    COMMANDS: [
+                        StartFlowCommand("my_flow").as_dict(),
+                        StartFlowCommand("third_flow").as_dict(),
+                        SetSlotCommand("foo", "foofoo").as_dict(),
+                        SetSlotCommand("qux", "quxqux").as_dict(),
+                        SetSlotCommand("boom", "boomboom").as_dict(),
+                    ]
+                },
+            ),
+            SlotSet(DIALOGUE_STACK_SLOT, []),
+        ],
+    )
+    command = SetSlotCommand(name="foo", value="foofoo")
+    events = command.run_command_on_tracker(tracker, all_flows, tracker)
+    assert events == [SlotSet("foo", "foofoo")]
+
+    command = SetSlotCommand(name="qux", value="quxqux")
+    events = command.run_command_on_tracker(tracker, all_flows, tracker)
+    assert events == []
+
+    command = SetSlotCommand(name="boom", value="boomboom")
+    events = command.run_command_on_tracker(tracker, all_flows, tracker)
+    assert events == [SlotSet("boom", "boomboom")]
+
+
+@pytest.mark.parametrize(
+    "commands, expected",
+    [
+        (
+            [
+                StartFlowCommand("my_flow").as_dict(),
+                SetSlotCommand("foo", "foofoo").as_dict(),
+            ],
+            ["my_flow"],
+        ),
+        (
+            [
+                StartFlowCommand("my_flow").as_dict(),
+                StartFlowCommand("test_flow").as_dict(),
+            ],
+            ["my_flow", "test_flow"],
+        ),
+        ([SetSlotCommand("foo", "foofoo").as_dict()], []),
+    ],
+)
+def test_get_flows_predicted_to_start_from_tracker(
+    commands: List[Command], expected: List[str]
+) -> None:
+    tracker = DialogueStateTracker.from_events(
+        "test",
+        evts=[
+            UserUttered("start foo", None, None, {COMMANDS: commands}),
+            SlotSet(DIALOGUE_STACK_SLOT, []),
+        ],
+    )
+    assert get_flows_predicted_to_start_from_tracker(tracker) == expected

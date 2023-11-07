@@ -1,8 +1,17 @@
+from typing import List
+
 import pytest
 
+from rasa.dialogue_understanding.commands import (
+    SetSlotCommand,
+    StartFlowCommand,
+    CorrectSlotsCommand,
+    Command,
+)
 from rasa.dialogue_understanding.patterns.code_change import FLOW_PATTERN_CODE_CHANGE_ID
 from rasa.dialogue_understanding.processor.command_processor import (
     execute_commands,
+    filter_start_flow_commands,
     find_updated_flows,
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
@@ -126,3 +135,24 @@ def test_stack_cleaning_command_is_applied_on_changes(tracker: DialogueStateTrac
     assert (top_frame := dialogue_stack.top())
     assert isinstance(top_frame, PatternFlowStackFrame)
     assert top_frame.flow_id == FLOW_PATTERN_CODE_CHANGE_ID
+
+
+@pytest.mark.parametrize(
+    "commands, expected_output",
+    [
+        ([], []),
+        ([StartFlowCommand("foo"), SetSlotCommand("bar", "temp")], ["foo"]),
+        (
+            [
+                StartFlowCommand("foo"),
+                StartFlowCommand("bar"),
+                CorrectSlotsCommand(["test"]),
+            ],
+            ["foo", "bar"],
+        ),
+    ],
+)
+def test_filter_start_flow_commands(
+    commands: List[Command], expected_output: List[str]
+) -> None:
+    assert filter_start_flow_commands(commands) == expected_output
