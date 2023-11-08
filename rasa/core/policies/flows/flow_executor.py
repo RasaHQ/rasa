@@ -45,7 +45,13 @@ from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     ACTION_SEND_TEXT_NAME,
 )
-from rasa.shared.core.events import Event, SlotSet
+from rasa.shared.core.events import (
+    Event,
+    FlowCompleted,
+    FlowResumed,
+    FlowStarted,
+    SlotSet,
+)
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.flows.flow_step_links import (
     StaticFlowStepLink,
@@ -208,8 +214,10 @@ def events_for_collect_step_execution(
 
 def trigger_pattern_continue_interrupted(
     current_frame: DialogueStackFrame, stack: DialogueStack, flows: FlowsList
-) -> None:
+) -> List[Event]:
     """Trigger the pattern to continue an interrupted flow if needed."""
+    events: List[Event] = []
+
     # get previously started user flow that will be continued
     interrupted_user_flow_frame = top_user_flow_frame(stack)
     interrupted_user_flow_step = (
@@ -231,6 +239,11 @@ def trigger_pattern_continue_interrupted(
                 previous_flow_name=interrupted_user_flow.readable_name(),
             )
         )
+        events.append(
+            FlowResumed(interrupted_user_flow.id, interrupted_user_flow_step.id)
+        )
+
+    return events
 
 
 def trigger_pattern_completed(
@@ -382,9 +395,8 @@ def advance_flows_until_next_action(
             break
 
         with bound_contextvars(flow_id=active_frame.flow_id):
-            structlogger.debug(
-                "flow.execution.loop", previous_step_id=active_frame.step_id
-            )
+            previous_step_id = active_frame.step_id
+            structlogger.debug("flow.execution.loop", previous_step_id=previous_step_id)
             current_flow = active_frame.flow(flows)
             next_step = select_next_step(
                 active_frame.step(flows), current_flow, stack, tracker
@@ -404,7 +416,22 @@ def advance_flows_until_next_action(
                     available_actions,
                     flows,
                 )
-                tracker.update_with_events(step_result.events)
+                new_events = step_result.events
+                if (
+                    isinstance(step_result, ContinueFlowWithNextStep)
+                    and step_result.has_flow_ended
+                ):
+                    # insert flow completed before flow resumed event
+                    offset = (
+                        -1
+                        if new_events and isinstance(new_events[-1], FlowResumed)
+                        else 0
+                    )
+                    idx = len(new_events) + offset
+                    new_events.insert(
+                        idx, FlowCompleted(active_frame.flow_id, previous_step_id)
+                    )
+                tracker.update_with_events(new_events)
 
     gathered_events = list(tracker.events)[number_of_initial_events:]
     if isinstance(step_result, PauseFlowReturnPrediction):
@@ -415,7 +442,7 @@ def advance_flows_until_next_action(
         return prediction
     else:
         structlogger.warning("flow.step.execution.no_action")
-        return FlowActionPrediction(None, 0.0)
+        return FlowActionPrediction(None, 0.0, events=gathered_events)
 
 
 def run_step(
@@ -446,14 +473,18 @@ def run_step(
     Returns:
     A result of running the step describing where to transition to.
     """
+    initial_events: List[Event] = []
+    if step == flow.first_step_in_flow():
+        initial_events.append(FlowStarted(flow.id))
+
     if isinstance(step, CollectInformationFlowStep):
         structlogger.debug("flow.step.run.collect")
         trigger_pattern_ask_collect_information(
             step.collect, stack, step.rejections, step.utter
         )
 
-        events = events_for_collect_step_execution(step, tracker)
-        return ContinueFlowWithNextStep(events=events)
+        events: List[Event] = events_for_collect_step_execution(step, tracker)
+        return ContinueFlowWithNextStep(events=initial_events + events)
 
     elif isinstance(step, ActionFlowStep):
         if not step.action:
@@ -464,10 +495,12 @@ def run_step(
 
         if action_name in available_actions:
             structlogger.debug("flow.step.run.action", context=context)
-            return PauseFlowReturnPrediction(FlowActionPrediction(action_name, 1.0))
+            return PauseFlowReturnPrediction(
+                FlowActionPrediction(action_name, 1.0, events=initial_events)
+            )
         else:
             structlogger.warning("flow.step.run.action.unknown", action=action_name)
-            return ContinueFlowWithNextStep()
+            return ContinueFlowWithNextStep(events=initial_events)
 
     elif isinstance(step, LinkFlowStep):
         structlogger.debug("flow.step.run.link")
@@ -481,16 +514,16 @@ def run_step(
             # linked flow
             index=-1,
         )
-        return ContinueFlowWithNextStep()
+        return ContinueFlowWithNextStep(events=initial_events)
 
     elif isinstance(step, SetSlotsFlowStep):
         structlogger.debug("flow.step.run.slot")
-        events = events_from_set_slots_step(step)
-        return ContinueFlowWithNextStep(events=events)
+        slot_events: List[Event] = events_from_set_slots_step(step)
+        return ContinueFlowWithNextStep(events=initial_events + slot_events)
 
     elif type(step) is FlowStep:
         structlogger.debug("flow.step.run.base_flow_step")
-        return ContinueFlowWithNextStep()
+        return ContinueFlowWithNextStep(events=initial_events)
 
     elif isinstance(step, GenerateResponseFlowStep):
         structlogger.debug("flow.step.run.generate_response")
@@ -499,6 +532,7 @@ def run_step(
             ACTION_SEND_TEXT_NAME,
             1.0,
             metadata={"message": {"text": generated}},
+            events=initial_events,
         )
         return PauseFlowReturnPrediction(action_prediction)
 
@@ -506,10 +540,14 @@ def run_step(
         # this is the end of the flow, so we'll pop it from the stack
         structlogger.debug("flow.step.run.flow_end")
         current_frame = stack.pop()
-        trigger_pattern_continue_interrupted(current_frame, stack, flows)
         trigger_pattern_completed(current_frame, stack, flows)
-        reset_events = reset_scoped_slots(flow, tracker)
-        return ContinueFlowWithNextStep(events=reset_events)
+        resumed_events = trigger_pattern_continue_interrupted(
+            current_frame, stack, flows
+        )
+        reset_events: List[Event] = reset_scoped_slots(flow, tracker)
+        return ContinueFlowWithNextStep(
+            events=initial_events + reset_events + resumed_events, has_flow_ended=True
+        )
 
     else:
         raise FlowException(f"Unknown flow step type {type(step)}")

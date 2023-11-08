@@ -6,7 +6,7 @@ from rasa.dialogue_understanding.patterns.collect_information import (
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import UserFlowStackFrame
 from rasa.shared.core.constants import DIALOGUE_STACK_SLOT
-from rasa.shared.core.events import SlotSet
+from rasa.shared.core.events import FlowCancelled, SlotSet
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.flows.yaml_flows_io import flows_from_str
 
@@ -60,9 +60,13 @@ def test_run_command_on_tracker():
     command = CancelFlowCommand()
 
     events = command.run_command_on_tracker(tracker, all_flows, tracker)
-    assert len(events) == 1
+    assert len(events) == 2
 
-    dialogue_stack_event = events[0]
+    # the first event should be a flow canceled event
+    flow_cancelled_event = events[0]
+    assert flow_cancelled_event == FlowCancelled("foo", "first_step")
+
+    dialogue_stack_event = events[1]
     assert isinstance(dialogue_stack_event, SlotSet)
     assert dialogue_stack_event.key == DIALOGUE_STACK_SLOT
 

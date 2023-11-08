@@ -2030,3 +2030,348 @@ class SessionStarted(AlwaysEqualEventMixin):
         """Applies event to current conversation state."""
         # noinspection PyProtectedMember
         tracker._reset()
+
+
+class FlowStarted(SkipEventInMDStoryMixin):
+    """Mark the beginning of a new flow."""
+
+    type_name = "flow_started"
+
+    def __init__(
+        self,
+        flow_id: Text,
+        timestamp: Optional[float] = None,
+        metadata: Optional[Dict[Text, Any]] = None,
+    ) -> None:
+        """Creates event to start flow.
+
+        Args:
+            flow_id: ID of the flow to be started.
+            timestamp: When the event was created.
+            metadata: Additional event metadata.
+        """
+        self.flow_id = flow_id
+        super().__init__(timestamp, metadata)
+
+    def __repr__(self) -> Text:
+        """Returns event as string for debugging."""
+        return f"FlowStarted(flow: {self.flow_id})"
+
+    def __str__(self) -> Text:
+        """Returns event as human-readable string."""
+        return f"{self.__class__.__name__}({self.flow_id})"
+
+    def __hash__(self) -> int:
+        """Returns unique hash for event."""
+        return hash(self.flow_id)
+
+    def __eq__(self, other: Any) -> bool:
+        """Compares object with other object."""
+        if not isinstance(other, FlowStarted):
+            return NotImplemented
+
+        return self.flow_id == other.flow_id
+
+    def as_dict(self) -> Dict[Text, Any]:
+        """Returns serialized event."""
+        serialized = super().as_dict()
+        serialized.update({"flow_id": self.flow_id})
+        return serialized
+
+    @classmethod
+    def _from_parameters(cls, parameters: Dict[Text, Any]) -> "FlowStarted":
+        try:
+            return FlowStarted(
+                parameters.get("flow_id"),
+                parameters.get("timestamp"),
+                parameters.get("metadata"),
+            )
+        except KeyError as e:
+            raise ValueError(f"Failed to parse flow_started event. {e}")
+
+
+class FlowInterrupted(SkipEventInMDStoryMixin):
+    """Mark the interruption of a flow."""
+
+    type_name = "flow_interrupted"
+
+    def __init__(
+        self,
+        flow_id: Text,
+        step_id: Text,
+        timestamp: Optional[float] = None,
+        metadata: Optional[Dict[Text, Any]] = None,
+    ) -> None:
+        """Creates event to interrupt a flow.
+
+        Args:
+            flow_id: Name of the flow to be interrupted.
+            step_id: ID of the flow step where the flow was interrupted.
+            timestamp: When the event was created.
+            metadata: Additional event metadata.
+        """
+        self.flow_id = flow_id
+        self.step_id = step_id
+        self.is_interrupted = True
+        super().__init__(timestamp, metadata)
+
+    def __repr__(self) -> Text:
+        """Returns event as string for debugging."""
+        return f"FlowInterrupted(flow: {self.flow_id}, step_id: {self.step_id})"
+
+    def __str__(self) -> Text:
+        """Returns event as human-readable string."""
+        return f"{self.__class__.__name__}({self.flow_id}, {self.step_id})"
+
+    def __hash__(self) -> int:
+        """Returns unique hash for event."""
+        return hash(
+            (
+                self.flow_id,
+                self.step_id,
+                json.dumps({"is_interrupted": self.is_interrupted}),
+            )
+        )
+
+    def __eq__(self, other: Any) -> bool:
+        """Compares object with other object."""
+        if not isinstance(other, FlowInterrupted):
+            return NotImplemented
+
+        return (self.flow_id, self.step_id) == (other.flow_id, other.step_id)
+
+    def as_dict(self) -> Dict[Text, Any]:
+        """Returns serialized event."""
+        serialized = super().as_dict()
+        serialized.update(
+            {
+                "flow_id": self.flow_id,
+                "step_id": self.step_id,
+            }
+        )
+        return serialized
+
+    @classmethod
+    def _from_parameters(cls, parameters: Dict[Text, Any]) -> "FlowInterrupted":
+        try:
+            return FlowInterrupted(
+                parameters.get("flow_id"),
+                parameters.get("step_id"),
+                parameters.get("timestamp"),
+                parameters.get("metadata"),
+            )
+        except KeyError as e:
+            raise ValueError(f"Failed to parse flow_interrupted event. {e}")
+
+
+class FlowResumed(SkipEventInMDStoryMixin):
+    """Mark the resuming of a flow."""
+
+    type_name = "flow_resumed"
+
+    def __init__(
+        self,
+        flow_id: Text,
+        step_id: Text,
+        timestamp: Optional[float] = None,
+        metadata: Optional[Dict[Text, Any]] = None,
+    ) -> None:
+        """Creates event to resume a flow.
+
+        Args:
+            flow_id: ID of the flow to be resumed.
+            step_id: ID of the flow step where the flow was resumed.
+            timestamp: When the event was created.
+            metadata: Additional event metadata.
+        """
+        self.flow_id = flow_id
+        self.step_id = step_id
+        self.is_resumed = True
+        super().__init__(timestamp, metadata)
+
+    def __repr__(self) -> Text:
+        """Returns event as string for debugging."""
+        return f"FlowResumed(flow: {self.flow_id}, step_id: {self.step_id})"
+
+    def __str__(self) -> Text:
+        """Returns event as human-readable string."""
+        return f"{self.__class__.__name__}({self.flow_id}, {self.step_id})"
+
+    def __hash__(self) -> int:
+        """Returns unique hash for event."""
+        return hash(
+            (self.flow_id, self.step_id, json.dumps({"is_resumed": self.is_resumed}))
+        )
+
+    def __eq__(self, other: Any) -> bool:
+        """Compares object with other object."""
+        if not isinstance(other, FlowResumed):
+            return NotImplemented
+
+        return (self.flow_id, self.step_id) == (other.flow_id, other.step_id)
+
+    def as_dict(self) -> Dict[Text, Any]:
+        """Returns serialized event."""
+        serialized = super().as_dict()
+        serialized.update({"flow_id": self.flow_id, "step_id": self.step_id})
+        return serialized
+
+    @classmethod
+    def _from_parameters(cls, parameters: Dict[Text, Any]) -> "FlowResumed":
+        try:
+            return FlowResumed(
+                parameters.get("flow_id"),
+                parameters.get("step_id"),
+                parameters.get("timestamp"),
+                parameters.get("metadata"),
+            )
+        except KeyError as e:
+            raise ValueError(f"Failed to parse flow_resumed event. {e}")
+
+
+class FlowCompleted(SkipEventInMDStoryMixin):
+    """Mark the completion of a flow."""
+
+    type_name = "flow_completed"
+
+    def __init__(
+        self,
+        flow_id: Text,
+        step_id: Text,
+        timestamp: Optional[float] = None,
+        metadata: Optional[Dict[Text, Any]] = None,
+    ) -> None:
+        """Creates event to complete a flow.
+
+        Args:
+            flow_id: ID of the flow to be completed.
+            step_id: ID of the flow step where the flow was completed.
+            timestamp: When the event was created.
+            metadata: Additional event metadata.
+        """
+        self.flow_id = flow_id
+        self.step_id = step_id
+        self.is_completed = True
+        super().__init__(timestamp, metadata)
+
+    def __repr__(self) -> Text:
+        """Returns event as string for debugging."""
+        return f"FlowCompleted(flow: {self.flow_id}, step_id: {self.step_id})"
+
+    def __str__(self) -> Text:
+        """Returns event as human-readable string."""
+        return f"{self.__class__.__name__}({self.flow_id}, {self.step_id})"
+
+    def __hash__(self) -> int:
+        """Returns unique hash for event."""
+        return hash(
+            (
+                self.flow_id,
+                self.step_id,
+                json.dumps({"is_completed": self.is_completed}),
+            )
+        )
+
+    def __eq__(self, other: Any) -> bool:
+        """Compares object with other object."""
+        if not isinstance(other, FlowCompleted):
+            return NotImplemented
+
+        return (self.flow_id, self.step_id) == (other.flow_id, other.step_id)
+
+    def as_dict(self) -> Dict[Text, Any]:
+        """Returns serialized event."""
+        serialized = super().as_dict()
+        serialized.update(
+            {
+                "flow_id": self.flow_id,
+                "step_id": self.step_id,
+            }
+        )
+        return serialized
+
+    @classmethod
+    def _from_parameters(cls, parameters: Dict[Text, Any]) -> "FlowCompleted":
+        try:
+            return FlowCompleted(
+                parameters.get("flow_id"),
+                parameters.get("step_id"),
+                parameters.get("timestamp"),
+                parameters.get("metadata"),
+            )
+        except KeyError as e:
+            raise ValueError(f"Failed to parse flow_completed event. {e}")
+
+
+class FlowCancelled(SkipEventInMDStoryMixin):
+    """Mark the cancellation of a flow."""
+
+    type_name = "flow_cancelled"
+
+    def __init__(
+        self,
+        flow_id: Text,
+        step_id: Text,
+        timestamp: Optional[float] = None,
+        metadata: Optional[Dict[Text, Any]] = None,
+    ) -> None:
+        """Creates event to cancel a flow.
+
+        Args:
+            flow_id: ID of the flow which was cancelled.
+            step_id: ID of the flow step where the flow was cancelled.
+            timestamp: When the event was created.
+            metadata: Additional event metadata.
+        """
+        self.flow_id = flow_id
+        self.step_id = step_id
+        self.is_cancelled = True
+        super().__init__(timestamp, metadata)
+
+    def __repr__(self) -> Text:
+        """Returns event as string for debugging."""
+        return f"FlowCancelled(flow: {self.flow_id}, step_id: {self.step_id})"
+
+    def __str__(self) -> Text:
+        """Returns event as human-readable string."""
+        return f"{self.__class__.__name__}({self.flow_id}, {self.step_id})"
+
+    def __hash__(self) -> int:
+        """Returns unique hash for event."""
+        return hash(
+            (
+                self.flow_id,
+                self.step_id,
+                json.dumps({"is_cancelled": self.is_cancelled}),
+            )
+        )
+
+    def __eq__(self, other: Any) -> bool:
+        """Compares object with other object."""
+        if not isinstance(other, FlowCancelled):
+            return NotImplemented
+
+        return (self.flow_id, self.step_id) == (other.flow_id, other.step_id)
+
+    def as_dict(self) -> Dict[Text, Any]:
+        """Returns serialized event."""
+        serialized = super().as_dict()
+        serialized.update(
+            {
+                "flow_id": self.flow_id,
+                "step_id": self.step_id,
+            }
+        )
+        return serialized
+
+    @classmethod
+    def _from_parameters(cls, parameters: Dict[Text, Any]) -> "FlowCancelled":
+        try:
+            return FlowCancelled(
+                parameters.get("flow_id"),
+                parameters.get("step_id"),
+                parameters.get("timestamp"),
+                parameters.get("metadata"),
+            )
+        except KeyError as e:
+            raise ValueError(f"Failed to parse flow_cancelled event. {e}")

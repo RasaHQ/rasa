@@ -1,7 +1,7 @@
 import pytest
 from rasa.dialogue_understanding.commands.start_flow_command import StartFlowCommand
 from rasa.shared.core.constants import DIALOGUE_STACK_SLOT
-from rasa.shared.core.events import SlotSet
+from rasa.shared.core.events import FlowInterrupted, SlotSet
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.flows.yaml_flows_io import flows_from_str
 
@@ -151,9 +151,13 @@ def test_run_start_flow_interrupting_existing_flow():
     command = StartFlowCommand(flow="bar")
 
     events = command.run_command_on_tracker(tracker, all_flows, tracker)
-    assert len(events) == 1
+    assert len(events) == 2
 
-    dialogue_stack_event = events[0]
+    # the first event should be a flow interrupted event
+    flow_started_event = events[0]
+    assert flow_started_event == FlowInterrupted(flow_id="foo", step_id="START")
+
+    dialogue_stack_event = events[1]
     assert isinstance(dialogue_stack_event, SlotSet)
     assert dialogue_stack_event.key == DIALOGUE_STACK_SLOT
 

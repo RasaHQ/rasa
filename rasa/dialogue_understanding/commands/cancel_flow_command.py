@@ -9,7 +9,7 @@ from rasa.dialogue_understanding.commands import Command
 from rasa.dialogue_understanding.patterns.cancel import CancelPatternFlowStackFrame
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
-from rasa.shared.core.events import Event
+from rasa.shared.core.events import Event, FlowCancelled
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.dialogue_understanding.stack.utils import top_user_flow_frame
@@ -81,6 +81,8 @@ class CancelFlowCommand(Command):
         """
 
         stack = DialogueStack.from_tracker(tracker)
+        applied_events: List[Event] = []
+
         original_stack = DialogueStack.from_tracker(original_tracker)
         user_frame = top_user_flow_frame(original_stack)
         current_flow = user_frame.flow(all_flows) if user_frame else None
@@ -102,4 +104,8 @@ class CancelFlowCommand(Command):
                 canceled_frames=canceled_frames,
             )
         )
-        return [stack.persist_as_event()]
+
+        if user_frame:
+            applied_events.append(FlowCancelled(user_frame.flow_id, user_frame.step_id))
+
+        return applied_events + [stack.persist_as_event()]

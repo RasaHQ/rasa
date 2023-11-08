@@ -8,7 +8,7 @@ from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import ActionExecuted, SlotSet
+from rasa.shared.core.events import ActionExecuted, FlowStarted, SlotSet
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.dialogue_understanding.stack.frames import (
@@ -182,8 +182,13 @@ def test_policy_triggers_error_pattern_if_internal_circuit_breaker_is_tripped(
     predicted_idx = prediction.max_confidence_index
     assert domain.action_names_or_texts[predicted_idx] == "utter_internal_error_rasa"
     # check that the stack was updated.
-    assert len(prediction.optional_events) == 2
-    event = prediction.optional_events[1]
+    assert len(prediction.optional_events) == 3
+
+    assert prediction.optional_events[1] == FlowStarted(
+        flow_id="pattern_internal_error"
+    )
+
+    event = prediction.optional_events[2]
     assert isinstance(event, SlotSet)
 
     assert event.key == "dialogue_stack"

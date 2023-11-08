@@ -28,7 +28,16 @@ from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
 from rasa.dialogue_understanding.stack.frames.search_frame import SearchStackFrame
 from rasa.shared.core.constants import ACTION_SEND_TEXT_NAME
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import ActionExecuted, Event, SlotSet
+from rasa.shared.core.events import (
+    ActionExecuted,
+    BotUttered,
+    Event,
+    FlowCompleted,
+    FlowResumed,
+    FlowStarted,
+    SlotSet,
+    UserUttered,
+)
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.flows.flow import (
     END_STEP,
@@ -39,7 +48,7 @@ from rasa.shared.core.flows.flow_step_links import FlowStepLinks
 from rasa.shared.core.flows.steps import SetSlotsFlowStep
 from rasa.shared.core.flows.steps.collect import SlotRejection
 from rasa.shared.core.flows.yaml_flows_io import flows_from_str
-from rasa.shared.core.slots import TextSlot
+from rasa.shared.core.slots import AnySlot, FloatSlot, TextSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 
 
@@ -759,7 +768,7 @@ def test_run_step_collect():
     )
 
     assert isinstance(result, ContinueFlowWithNextStep)
-    assert result.events == []
+    assert result.events == [FlowStarted(flow_id="my_flow")]
     assert len(stack.frames) == 2
     assert isinstance(stack.frames[0], UserFlowStackFrame)
     assert isinstance(stack.frames[1], CollectInformationPatternFlowStackFrame)
@@ -871,7 +880,7 @@ def test_run_step_set_slot():
     )
 
     assert isinstance(result, ContinueFlowWithNextStep)
-    assert result.events == [SlotSet("bar", "baz")]
+    assert result.events == [FlowStarted(flow_id="my_flow"), SlotSet("bar", "baz")]
 
 
 def test_run_step_generate_response():
@@ -1144,3 +1153,194 @@ def _run_flow_until_listen(
             # the flow isn't doing anything anymore
             break
     return actions, events
+
+
+def test_flow_policy_events_after_flow_starts() -> None:
+    flows = flows_from_str(
+        """
+        flows:
+          search_hotels:
+            steps:
+            - id: "1_collect_num_rooms"
+              collect: num_rooms
+            - collect: start_date
+            - collect: end_date
+            - action: action_search_hotels
+        """
+    )
+    tracker = DialogueStateTracker.from_events(
+        "test",
+        [
+            UserUttered("search hotels"),
+        ],
+        slots=[
+            FloatSlot("num_rooms", mappings=[]),
+            TextSlot("start_date", mappings=[]),
+            TextSlot("end_slot", mappings=[]),
+        ],
+    )
+
+    dialogue_stack = DialogueStack.from_tracker(tracker)
+    flow = flows.flow_by_id("search_hotels")
+    step = flow.step_by_id("1_collect_num_rooms")
+    available_actions = []
+    step_result = flow_executor.run_step(
+        step=step,
+        flow=flow,
+        stack=dialogue_stack,
+        tracker=tracker,
+        available_actions=available_actions,
+        flows=flows,
+    )
+    assert step_result is not None
+    assert step_result.events == [FlowStarted("search_hotels")]
+
+
+def test_flow_policy_events_after_flow_ends() -> None:
+    flows = flows_from_str(
+        """
+        flows:
+          search_hotels:
+            steps:
+            - id: "1_collect_num_rooms"
+              collect: num_rooms
+            - collect: start_date
+            - collect: end_date
+            - id: "2_action_search_hotels"
+              action: action_search_hotels
+          pattern_completed:
+            steps:
+            - action: utter_completed
+        """
+    )
+    tracker = DialogueStateTracker.from_events(
+        "test",
+        [
+            UserUttered("search hotels"),
+            BotUttered("How many rooms?"),
+            UserUttered("5"),
+            BotUttered("When do you want to check in?"),
+            UserUttered("tomorrow"),
+            BotUttered("When do you want to check out?"),
+            UserUttered("next week"),
+            BotUttered("Ok, searching for hotels"),
+            SlotSet(
+                "dialogue_stack",
+                [
+                    {
+                        "flow_id": "search_hotels",
+                        "frame_id": "OGE1U359",
+                        "frame_type": "regular",
+                        "step_id": "2_action_search_hotels",
+                        "type": "flow",
+                    }
+                ],
+            ),
+        ],
+        slots=[
+            FloatSlot("num_rooms", mappings=[]),
+            TextSlot("start_date", mappings=[]),
+            TextSlot("end_slot", mappings=[]),
+            AnySlot("dialogue_stack", mappings=[]),
+        ],
+    )
+
+    stack = DialogueStack.from_tracker(tracker)
+    available_actions = []
+    result = flow_executor.advance_flows_until_next_action(
+        stack=stack, tracker=tracker, available_actions=available_actions, flows=flows
+    )
+    assert result is not None
+    assert (
+        FlowCompleted(flow_id="search_hotels", step_id="2_action_search_hotels")
+        in result.events
+    )
+
+
+def test_flow_policy_events_after_interruption() -> None:
+    flows = flows_from_str(
+        """
+        flows:
+          search_hotels:
+            steps:
+            - id: "1_collect_num_rooms"
+              collect: num_rooms
+            - collect: start_date
+            - collect: end_date
+            - action: action_search_hotels
+          check_balance:
+            steps:
+            - id: "1_check_balance"
+              action: action_check_balance
+            - id: "2_utter_current_balance"
+              action: utter_current_balance
+          pattern_continue_interrupted:
+            steps:
+            - action: utter_continue_interrupted
+          pattern_collect_information:
+            steps:
+            - action: utter_collect_information
+            - id: "listen"
+              action: action_listen
+          pattern_completed:
+            steps:
+            - action: utter_how_else_can_i_help
+        """
+    )
+    tracker = DialogueStateTracker.from_events(
+        "test",
+        [
+            UserUttered("search hotels"),
+            BotUttered("How many rooms?"),
+            UserUttered("Check how much money I have"),
+            SlotSet(
+                "dialogue_stack",
+                [
+                    {
+                        "flow_id": "search_hotels",
+                        "frame_id": "OGE1U359",
+                        "frame_type": "regular",
+                        "step_id": "1_collect_num_rooms",
+                        "type": "flow",
+                    },
+                    {
+                        "collect": "num_rooms",
+                        "flow_id": "pattern_collect_information",
+                        "frame_id": "39LEDJUN",
+                        "rejections": [],
+                        "step_id": "listen",
+                        "type": "pattern_collect_information",
+                        "utter": "utter_ask_num_rooms",
+                    },
+                    {
+                        "flow_id": "check_balance",
+                        "frame_id": "6ZV8O9T3",
+                        "frame_type": "interrupt",
+                        "step_id": "2_utter_current_balance",
+                        "type": "flow",
+                    },
+                ],
+            ),
+            BotUttered("You have 1000 dollars"),
+            BotUttered("How many rooms?"),
+        ],
+        slots=[
+            FloatSlot("num_rooms", mappings=[]),
+            TextSlot("start_date", mappings=[]),
+            TextSlot("end_slot", mappings=[]),
+            AnySlot("dialogue_stack", mappings=[]),
+        ],
+    )
+
+    stack = DialogueStack.from_tracker(tracker)
+    available_actions = []
+    result = flow_executor.advance_flows_until_next_action(
+        stack=stack, tracker=tracker, available_actions=available_actions, flows=flows
+    )
+    assert result is not None
+    assert result.events[0] == FlowCompleted(
+        flow_id="check_balance", step_id="2_utter_current_balance"
+    )
+    assert result.events[1] == FlowResumed(
+        flow_id="search_hotels", step_id="1_collect_num_rooms"
+    )

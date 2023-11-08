@@ -14,7 +14,7 @@ from rasa.dialogue_understanding.stack.utils import (
     top_user_flow_frame,
     user_flows_on_the_stack,
 )
-from rasa.shared.core.events import Event
+from rasa.shared.core.events import Event, FlowInterrupted
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 
@@ -64,6 +64,7 @@ class StartFlowCommand(Command):
         """
         stack = DialogueStack.from_tracker(tracker)
         original_stack = DialogueStack.from_tracker(original_tracker)
+        applied_events: List[Event] = []
 
         if self.flow in user_flows_on_the_stack(stack):
             structlogger.debug(
@@ -80,11 +81,19 @@ class StartFlowCommand(Command):
         original_top_flow = (
             original_user_frame.flow(all_flows) if original_user_frame else None
         )
-        frame_type = (
-            FlowStackFrameType.INTERRUPT
-            if original_top_flow
-            else FlowStackFrameType.REGULAR
-        )
+
+        frame_type = FlowStackFrameType.REGULAR
+
+        if original_top_flow:
+            frame_type = FlowStackFrameType.INTERRUPT
+
+            if original_user_frame is not None:
+                applied_events.append(
+                    FlowInterrupted(
+                        original_user_frame.flow_id, original_user_frame.step_id
+                    )
+                )
+
         structlogger.debug("command_executor.start_flow", command=self)
         stack.push(UserFlowStackFrame(flow_id=self.flow, frame_type=frame_type))
-        return [stack.persist_as_event()]
+        return applied_events + [stack.persist_as_event()]

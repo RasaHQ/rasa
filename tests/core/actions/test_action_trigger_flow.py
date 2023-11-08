@@ -9,7 +9,7 @@ from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
 )
 from rasa.shared.core.constants import DIALOGUE_STACK_SLOT
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import ActiveLoop, SlotSet
+from rasa.shared.core.events import ActiveLoop, FlowInterrupted, SlotSet
 from rasa.shared.core.trackers import DialogueStateTracker
 
 
@@ -82,11 +82,16 @@ async def test_action_trigger_uses_interrupt_flow_type_if_stack_already_contains
 
     events = await action.run(channel, nlg, tracker, Domain.empty())
 
-    assert len(events) == 1
-    event = events[0]
-    assert isinstance(event, SlotSet)
-    assert event.key == DIALOGUE_STACK_SLOT
-    assert len(event.value) == 2
-    assert event.value[1]["type"] == UserFlowStackFrame.type()
-    assert event.value[1]["flow_id"] == "foo"
-    assert event.value[1]["frame_type"] == FlowStackFrameType.INTERRUPT.value
+    assert len(events) == 2
+
+    # The first event is a FlowInterrupted event
+    flow_interrupted = events[0]
+    assert flow_interrupted == FlowInterrupted("my_flow", "collect_bar")
+
+    stack_event = events[1]
+    assert isinstance(stack_event, SlotSet)
+    assert stack_event.key == DIALOGUE_STACK_SLOT
+    assert len(stack_event.value) == 2
+    assert stack_event.value[1]["type"] == UserFlowStackFrame.type()
+    assert stack_event.value[1]["flow_id"] == "foo"
+    assert stack_event.value[1]["frame_type"] == FlowStackFrameType.INTERRUPT.value

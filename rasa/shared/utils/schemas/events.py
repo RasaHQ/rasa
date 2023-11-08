@@ -128,6 +128,37 @@ USER_UTTERANCE_REVERTED = {"properties": {"event": {"const": "rewind"}}}
 BOT_UTTERED = {"properties": {"event": {"const": "bot"}}}
 SESSION_STARTED = {"properties": {"event": {"const": "session_started"}}}
 AGENT_UTTERED = {"properties": {"event": {"const": "agent"}}}
+FLOW_STARTED = {
+    "properties": {"event": {"const": "flow_started"}, "flow_id": {"type": "string"}}
+}
+FLOW_INTERRUPTED = {
+    "properties": {
+        "event": {"const": "flow_interrupted"},
+        "flow_id": {"type": "string"},
+        "step_id": {"type": "string"},
+    }
+}
+FLOW_RESUMED = {
+    "properties": {
+        "event": {"const": "flow_resumed"},
+        "flow_id": {"type": "string"},
+        "step_id": {"type": "string"},
+    }
+}
+FLOW_COMPLETED = {
+    "properties": {
+        "event": {"const": "flow_completed"},
+        "flow_id": {"type": "string"},
+        "step_id": {"type": "string"},
+    }
+}
+FLOW_CANCELLED = {
+    "properties": {
+        "event": {"const": "flow_cancelled"},
+        "flow_id": {"type": "string"},
+        "step_id": {"type": "string"},
+    }
+}
 
 EVENT_SCHEMA = {
     "type": "object",
@@ -161,6 +192,11 @@ EVENT_SCHEMA = {
         BOT_UTTERED,
         SESSION_STARTED,
         AGENT_UTTERED,
+        FLOW_STARTED,
+        FLOW_INTERRUPTED,
+        FLOW_RESUMED,
+        FLOW_COMPLETED,
+        FLOW_CANCELLED,
     ],
 }
 
