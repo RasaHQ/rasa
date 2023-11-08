@@ -2002,8 +2002,8 @@ async def test_run_command_processor_starting_a_flow(
     assert isinstance(tracker.events[3], SlotSet)
     # flow hashes SlotSet
     assert tracker.events[2].key == FLOW_HASHES_SLOT
-    assert "foo" in tracker.events[3].value
-    assert "bar" in tracker.events[3].value
+    assert "foo" in tracker.events[2].value
+    assert "bar" in tracker.events[2].value
     # dialogue stack SlotSet
     assert tracker.events[3].key == DIALOGUE_STACK_SLOT
     assert next(iter(tracker.events[3].value))["flow_id"] == "foo"
