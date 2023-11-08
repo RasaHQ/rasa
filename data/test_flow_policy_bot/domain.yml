@@ -1,0 +1,20 @@
+version: "3.1"
+
+slots:
+  foo_slot_a:
+    type: text
+    mappings:
+      - type: custom
+  foo_slot_b:
+    type: text
+    mappings:
+      - type: custom
+  bar_slot_a:
+    type: text
+    mappings:
+      - type: custom
+  bar_slot_b:
+    type: text
+    mappings:
+      - type: custom
+

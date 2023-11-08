@@ -1,0 +1,17 @@
+flows:
+  foo:
+    description: This is just a flow example
+    name: "Foo flow"
+    steps:
+      - collect: foo_slot_a
+        description: Foo slot a
+      - collect: foo_slot_b
+        description: Foo slot b
+  bar:
+    description: This is just another flow example
+    name: "Bar flow"
+    steps:
+      - collect: bar_slot_a
+        description: Bar slot a
+      - collect: bar_slot_b
+        description: Bar slot b

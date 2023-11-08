@@ -975,7 +975,7 @@ class MessageProcessor:
         """
         target = "command_processor"
         results = self.graph_runner.run(
-            inputs={PLACEHOLDER_TRACKER: tracker}, targets=[target]
+            inputs={PLACEHOLDER_TRACKER: tracker.copy()}, targets=[target]
         )
         events = results[target]
         tracker.update_with_events(events)
