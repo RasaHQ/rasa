@@ -112,7 +112,7 @@ flows:
         action: action_run_slot_rejections
       - action: validate_{{context.collect}}
         next: 
-        - if: "{{context.collect}} is not null"
+        - if: "slots.{{context.collect}} is not null"
           then: "END"
         - else: "ask_collect"
       - id: "ask_collect"

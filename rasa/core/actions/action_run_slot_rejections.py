@@ -98,8 +98,7 @@ def run_rejections(
     """Run the predicate checks under rejections."""
     violation = False
     internal_error = False
-    current_context = dialogue_stack.current_context()
-    current_context[slot_name] = slot_value
+    current_context = {"slots": {slot_name: slot_value}}
 
     structlogger.debug("run.predicate.context", context=current_context)
     document = current_context.copy()

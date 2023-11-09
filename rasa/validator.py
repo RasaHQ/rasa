@@ -634,11 +634,15 @@ class Validator:
             for step in flow.steps:
                 for link in step.next.links:
                     if isinstance(link, IfFlowStepLink):
+                        all_good = self._verify_namespaces(
+                            link.condition, step.id, flow.id, all_good
+                        )
+
                         # TODO: need to handle link conditions with context / jinja
                         if "{{" in link.condition:
                             continue
                         predicate, all_good = Validator._construct_predicate(
-                            link.condition, step.id
+                            link.condition, step.id, all_good
                         )
                         if predicate and not predicate.is_valid():
                             logger.error(
@@ -650,8 +654,12 @@ class Validator:
                 if isinstance(step, CollectInformationFlowStep):
                     predicates = [predicate.if_ for predicate in step.rejections]
                     for predicate in predicates:
+                        all_good = self._verify_namespaces(
+                            predicate, step.id, flow.id, all_good
+                        )
+
                         pred, all_good = Validator._construct_predicate(
-                            predicate, step.id
+                            predicate, step.id, all_good
                         )
                         if pred and not pred.is_valid():
                             logger.error(
@@ -662,6 +670,41 @@ class Validator:
                             )
                             all_good = False
         return all_good
+
+    def _verify_namespaces(
+        self, predicate: str, step_id: str, flow_id: str, all_good: bool
+    ) -> bool:
+        slots = re.findall(r"\bslots\.\w+", predicate)
+        results: List[bool] = [all_good]
+
+        if slots:
+            domain_slots = {slot.name: slot for slot in self.domain.slots}
+            for slot in slots:
+                slot_name = slot.split(".")[1]
+                if slot_name not in domain_slots:
+                    logger.error(
+                        f"Detected invalid slot '{slot_name}' "
+                        f"at step '{step_id}' "
+                        f"for flow id '{flow_id}'. "
+                        f"Please make sure that all slots are specified "
+                        f"in the domain file."
+                    )
+                    results.append(False)
+
+        if not slots:
+            # no slots found, check if context namespace is used
+            variables = re.findall(r"\bcontext\.\w+", predicate)
+            if not variables:
+                logger.error(
+                    f"Predicate '{predicate}' at step '{step_id}' for flow id "
+                    f"'{flow_id}' references one or more variables  without "
+                    f"the `slots.` or `context.` namespace prefix. "
+                    f"Please make sure that all variables reference the required "
+                    f"namespace."
+                )
+                results.append(False)
+
+        return all(results)
 
     def verify_flows(self) -> bool:
         """Checks for inconsistencies across flows."""

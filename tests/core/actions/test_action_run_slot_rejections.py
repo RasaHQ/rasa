@@ -217,7 +217,7 @@ async def test_action_run_slot_rejections_top_frame_slot_not_been_set(
             "utter": "utter_ask_recurrent_payment_type",
             "rejections": [
                 {
-                    "if": 'not ({"direct debit" "standing order"} contains recurrent_payment_type)',  # noqa: E501
+                    "if": 'not ({"direct debit" "standing order"} contains slots.recurrent_payment_type)',  # noqa: E501
                     "utter": "utter_invalid_recurrent_payment_type",
                 }
             ],
@@ -271,7 +271,7 @@ async def test_action_run_slot_rejections_run_success(
             "utter": "utter_ask_recurrent_payment_type",
             "rejections": [
                 {
-                    "if": 'not ({"direct debit" "standing order"} contains recurrent_payment_type)',  # noqa: E501
+                    "if": 'not ({"direct debit" "standing order"} contains slots.recurrent_payment_type)',  # noqa: E501
                     "utter": "utter_invalid_recurrent_payment_type",
                 }
             ],
@@ -309,7 +309,8 @@ async def test_action_run_slot_rejections_run_success(
 
 
 @pytest.mark.parametrize(
-    "predicate", [None, "recurrent_payment_type in {'direct debit', 'standing order'}"]
+    "predicate",
+    [None, "slots.recurrent_payment_type in {'direct debit', 'standing order'}"],
 )
 async def test_action_run_slot_rejections_internal_error(
     predicate: Optional[Text],
@@ -396,7 +397,7 @@ async def test_action_run_slot_rejections_collect_missing_utter(
             "utter": "utter_ask_recurrent_payment_type",
             "rejections": [
                 {
-                    "if": 'not ({"direct debit" "standing order"} contains recurrent_payment_type)',  # noqa: E501
+                    "if": 'not ({"direct debit" "standing order"} contains slots.recurrent_payment_type)',  # noqa: E501
                     "utter": None,
                 }
             ],
@@ -454,7 +455,7 @@ async def test_action_run_slot_rejections_not_found_utter(
             "utter": "utter_ask_recurrent_payment_type",
             "rejections": [
                 {
-                    "if": 'not ({"direct debit" "standing order"} contains recurrent_payment_type)',  # noqa: E501
+                    "if": 'not ({"direct debit" "standing order"} contains slots.recurrent_payment_type)',  # noqa: E501
                     "utter": "utter_not_found",
                 }
             ],
@@ -512,11 +513,11 @@ async def test_action_run_slot_rejections_pass_multiple_rejection_checks(
             "utter": "utter_ask_payment_amount",
             "rejections": [
                 {
-                    "if": "payment_amount > 1000",
+                    "if": "slots.payment_amount > 1000",
                     "utter": "utter_payment_too_high",
                 },
                 {
-                    "if": "payment_amount < 0",
+                    "if": "slots.payment_amount < 0",
                     "utter": "utter_payment_negative",
                 },
             ],
@@ -571,11 +572,11 @@ async def test_action_run_slot_rejections_fails_multiple_rejection_checks(
             "utter": "utter_ask_payment_amount",
             "rejections": [
                 {
-                    "if": "payment_amount > 1000",
+                    "if": "slots.payment_amount > 1000",
                     "utter": "utter_payment_too_high",
                 },
                 {
-                    "if": "payment_amount < 0",
+                    "if": "slots.payment_amount < 0",
                     "utter": "utter_payment_negative",
                 },
             ],

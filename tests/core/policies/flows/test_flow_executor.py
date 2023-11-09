@@ -1,3 +1,4 @@
+import uuid
 from typing import List, Optional, Tuple
 from unittest.mock import patch
 import pytest
@@ -119,7 +120,7 @@ def test_evaluate_predicate_with_context_successfully():
 
 
 def test_evaluate_predicate_with_slots():
-    predicate = "'foo' = my_slot"
+    predicate = "'foo' = slots.my_slot"
 
     satisfied_tracker = DialogueStateTracker.from_events(
         "test", [SlotSet("my_slot", "foo")]
@@ -196,7 +197,7 @@ def test_select_next_step_branch_if():
             - id: collect_foo
               collect: foo
               next:
-              - if: foo is 'foobar'
+              - if: slots.foo is 'foobar'
                 then: collect_bar
               - else:
                 - id: collect_baz
@@ -1344,3 +1345,31 @@ def test_flow_policy_events_after_interruption() -> None:
     assert result.events[1] == FlowResumed(
         flow_id="search_hotels", step_id="1_collect_num_rooms"
     )
+
+
+@pytest.mark.parametrize(
+    "predicate, expected", [("slots.bar > 10", True), ("slots.bar <= 10", False)]
+)
+def test_flow_executor_is_condition_satisfied_with_slots_namespace(
+    predicate: str,
+    expected: bool,
+) -> None:
+    test_domain = Domain.from_yaml(
+        """
+        slots:
+            bar:
+              type: float
+              initial_value: 0.0
+        """
+    )
+
+    tracker = DialogueStateTracker.from_events(
+        sender_id=uuid.uuid4().hex,
+        evts=[SlotSet("bar", 100)],
+        slots=test_domain.slots,
+    )
+
+    context = {}
+    result = flow_executor.is_condition_satisfied(predicate, context, tracker)
+
+    assert result is expected

@@ -1237,7 +1237,7 @@ def test_verify_predicates_invalid_rejection_if(
     nlu_data_path: Path,
     caplog: LogCaptureFixture,
 ) -> None:
-    predicate = 'account_type not in {{"debit", "savings"}}'
+    predicate = 'slots.account_type not in {{"debit", "savings"}}'
     error_log = (
         f"Detected invalid rejection '{predicate}' "
         f"at `collect` step 'ask_account_type' "
@@ -1284,12 +1284,12 @@ def test_verify_predicates_invalid_rejection_if(
                         intents:
                           - greet
                         slots:
+                            account_type:
+                                type: text
                             transfer_recipient:
                                 type: text
-                                mappings: []
                             transfer_amount:
                                 type: float
-                                mappings: []
                         actions:
                           - action_transfer_money
                           - action_set_up_recurrent_payment
@@ -1368,7 +1368,7 @@ def test_verify_utterances_in_dialogues_finds_all_responses_in_flows(
                         - id: "ask_amount"
                           collect: amount
                           rejections:
-                            - if: amount > 1000
+                            - if: slots.amount > 1000
                               utter: utter_amount_too_high
                           next: "summarize_transfer"
                         - id: "summarize_transfer"
@@ -1412,7 +1412,7 @@ def test_verify_utterances_in_dialogues_missing_responses_in_flows(
                         - id: "ask_amount"
                           collect: transfer_money_amount
                           rejections:
-                            - if: transfer_money_amount > 1000
+                            - if: slots.transfer_money_amount > 1000
                               utter: utter_amount_too_high
                           next: "summarize_transfer"
                         - id: "summarize_transfer"
@@ -1433,3 +1433,104 @@ def test_verify_utterances_in_dialogues_missing_responses_in_flows(
     with pytest.warns(UserWarning, match=match):
         # force validator to not ignore warnings (default is True)
         validator.verify_utterances_in_dialogues(ignore_warnings=False)
+
+
+@pytest.mark.parametrize("predicate", ["account_type is null", "not account_type"])
+def test_verify_predicates_namespaces_not_referenced(
+    predicate: str,
+    caplog: LogCaptureFixture,
+) -> None:
+    flows = flows_from_str(
+        f"""
+        flows:
+          flow_bar:
+            steps:
+            - id: first
+              action: action_listen
+              next:
+                - if: "{predicate}"
+                  then: END
+                - else: END
+        """
+    )
+    validator = Validator(Domain.empty(), TrainingData(), StoryGraph([]), flows, None)
+    with caplog.at_level(logging.ERROR):
+        assert not validator.verify_predicates()
+
+    assert (
+        f"Predicate '{predicate}' at step 'first' for flow id "
+        f"'flow_bar' references one or more variables  without "
+        f"the `slots.` or `context.` namespace prefix. "
+        f"Please make sure that all variables reference the required "
+        f"namespace."
+    ) in caplog.text
+
+
+@pytest.mark.parametrize(
+    "predicate",
+    [
+        "slots.account_type is 'debit'",
+        "not slots.account_type",
+        "context.collect is not null",
+        "not context.collect",
+    ],
+)
+def test_verify_predicates_reference_namespaces(
+    predicate: str,
+    caplog: LogCaptureFixture,
+) -> None:
+    flows = flows_from_str(
+        f"""
+        flows:
+          flow_bar:
+            steps:
+            - id: first
+              action: action_listen
+              next:
+                - if: "{predicate}"
+                  then: END
+                - else: END
+        """
+    )
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        slots:
+          account_type:
+            type: text
+            mappings: []
+        """
+    )
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), flows, None)
+    with caplog.at_level(logging.ERROR):
+        assert validator.verify_predicates()
+
+    assert not caplog.text
+
+
+def test_verify_namespaces_reference_slots_not_in_the_domain(
+    caplog: LogCaptureFixture,
+) -> None:
+    flows = flows_from_str(
+        """
+        flows:
+          flow_bar:
+            steps:
+            - id: first
+              action: action_listen
+              next:
+                - if: "slots.membership is 'gold'"
+                  then: END
+                - else: END
+        """
+    )
+    validator = Validator(Domain.empty(), TrainingData(), StoryGraph([]), flows, None)
+    with caplog.at_level(logging.ERROR):
+        assert not validator.verify_predicates()
+
+    assert (
+        "Detected invalid slot 'membership' "
+        "at step 'first' for flow id 'flow_bar'. "
+        "Please make sure that all slots are specified "
+        "in the domain file."
+    ) in caplog.text

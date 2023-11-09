@@ -92,12 +92,12 @@ def is_condition_satisfied(
     predicate: Text, context: Dict[str, Any], tracker: DialogueStateTracker
 ) -> bool:
     """Evaluate a predicate condition."""
-
     # attach context to the predicate evaluation to allow conditions using it
     context = {"context": context}
 
     document: Dict[str, Any] = context.copy()
-    document.update(tracker.current_slot_values())
+    # add slots namespace to the document
+    document["slots"] = tracker.current_slot_values()
 
     p = Predicate(render_template_variables(predicate, context))
     try:
