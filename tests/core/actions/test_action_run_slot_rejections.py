@@ -7,6 +7,7 @@ from pytest import CaptureFixture
 from rasa.core.actions.action_run_slot_rejections import ActionRunSlotRejections
 from rasa.core.channels import OutputChannel
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
+from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
 from rasa.shared.core.slots import AnySlot, FloatSlot, TextSlot
@@ -183,15 +184,13 @@ async def test_action_run_slot_rejections_top_frame_slot_not_been_set(
 
     tracker = DialogueStateTracker.from_events(
         sender_id=uuid.uuid4().hex,
-        evts=[
-            UserUttered("i want to setup a new recurrent payment."),
-            SlotSet("dialogue_stack", dialogue_stack),
-        ],
+        evts=[UserUttered("i want to setup a new recurrent payment.")],
         slots=[
             TextSlot("recurrent_payment_type", mappings=[]),
             AnySlot("dialogue_stack", mappings=[]),
         ],
     )
+    tracker.update_stack(DialogueStack.from_dict(dialogue_stack))
 
     action_run_slot_rejections = ActionRunSlotRejections()
     events = await action_run_slot_rejections.run(
@@ -239,14 +238,13 @@ async def test_action_run_slot_rejections_run_success(
         evts=[
             UserUttered("i want to setup an international transfer."),
             SlotSet("recurrent_payment_type", "international transfer"),
-            SlotSet("dialogue_stack", dialogue_stack),
         ],
         slots=[
             TextSlot("recurrent_payment_type", mappings=[]),
             AnySlot("dialogue_stack", mappings=[]),
         ],
     )
-
+    tracker.update_stack(DialogueStack.from_dict(dialogue_stack))
     action_run_slot_rejections = ActionRunSlotRejections()
     events = await action_run_slot_rejections.run(
         output_channel=default_channel,
@@ -304,13 +302,13 @@ async def test_action_run_slot_rejections_internal_error(
         evts=[
             UserUttered("i want to setup a new recurrent payment."),
             SlotSet("recurrent_payment_type", "international transfer"),
-            SlotSet("dialogue_stack", dialogue_stack),
         ],
         slots=[
             TextSlot("recurrent_payment_type", mappings=[]),
             AnySlot("dialogue_stack", mappings=[]),
         ],
     )
+    tracker.update_stack(DialogueStack.from_dict(dialogue_stack))
 
     action_run_slot_rejections = ActionRunSlotRejections()
     events = await action_run_slot_rejections.run(
@@ -365,13 +363,13 @@ async def test_action_run_slot_rejections_collect_missing_utter(
         evts=[
             UserUttered("i want to setup a new recurrent payment."),
             SlotSet("recurrent_payment_type", "international transfer"),
-            SlotSet("dialogue_stack", dialogue_stack),
         ],
         slots=[
             TextSlot("recurrent_payment_type", mappings=[]),
             AnySlot("dialogue_stack", mappings=[]),
         ],
     )
+    tracker.update_stack(DialogueStack.from_dict(dialogue_stack))
 
     action_run_slot_rejections = ActionRunSlotRejections()
     events = await action_run_slot_rejections.run(
@@ -423,13 +421,13 @@ async def test_action_run_slot_rejections_not_found_utter(
         evts=[
             UserUttered("i want to setup a new recurrent payment."),
             SlotSet("recurrent_payment_type", "international transfer"),
-            SlotSet("dialogue_stack", dialogue_stack),
         ],
         slots=[
             TextSlot("recurrent_payment_type", mappings=[]),
             AnySlot("dialogue_stack", mappings=[]),
         ],
     )
+    tracker.update_stack(DialogueStack.from_dict(dialogue_stack))
 
     action_run_slot_rejections = ActionRunSlotRejections()
     events = await action_run_slot_rejections.run(
@@ -544,13 +542,13 @@ async def test_action_run_slot_rejections_fails_multiple_rejection_checks(
         evts=[
             UserUttered("i want to transfer $-100."),
             SlotSet("payment_amount", -100),
-            SlotSet("dialogue_stack", dialogue_stack),
         ],
         slots=[
             FloatSlot("payment_amount", mappings=[]),
             AnySlot("dialogue_stack", mappings=[]),
         ],
     )
+    tracker.update_stack(DialogueStack.from_dict(dialogue_stack))
 
     action_run_slot_rejections = ActionRunSlotRejections()
     events = await action_run_slot_rejections.run(

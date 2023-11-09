@@ -260,7 +260,7 @@ class CorrectSlotsCommand(Command):
         Returns:
             The events to apply to the tracker.
         """
-        stack = DialogueStack.from_tracker(tracker)
+        stack = tracker.stack
         user_frame = utils.top_user_flow_frame(stack)
 
         top_flow_frame = utils.top_flow_frame(stack)
@@ -283,4 +283,4 @@ class CorrectSlotsCommand(Command):
         self.end_previous_correction(top_flow_frame, stack)
 
         stack.push(correction_frame, index=insertion_index)
-        return [stack.persist_as_event()]
+        return tracker.create_stack_update_events(stack)

@@ -174,7 +174,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         Returns:
             The rendered prompt template.
         """
-        top_relevant_frame = top_flow_frame(DialogueStack.from_tracker(tracker))
+        top_relevant_frame = top_flow_frame(tracker.stack)
         top_flow = top_relevant_frame.flow(flows) if top_relevant_frame else None
         current_step = top_relevant_frame.step(flows) if top_relevant_frame else None
 

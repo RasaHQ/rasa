@@ -54,8 +54,7 @@ class SetSlotCommand(Command):
         Returns:
             The events to apply to the tracker.
         """
-        stack = DialogueStack.from_tracker(tracker)
-        slots_so_far = filled_slots_for_active_flow(stack, all_flows)
+        slots_so_far = filled_slots_for_active_flow(tracker.stack, all_flows)
         if tracker.get_slot(self.name) == self.value:
             # value hasn't changed, skip this one
             structlogger.debug(

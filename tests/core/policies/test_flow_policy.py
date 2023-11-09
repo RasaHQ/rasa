@@ -88,8 +88,9 @@ def test_predict_action_probabilities_abstains_from_unsupported_frame(
         "test abstain",
         domain=domain,
         slots=domain.slots,
-        evts=[ActionExecuted(action_name="action_listen"), stack.persist_as_event()],
+        evts=[ActionExecuted(action_name="action_listen")],
     )
+    tracker.update_stack(stack)
 
     prediction = default_flow_policy.predict_action_probabilities(
         tracker=tracker,
@@ -113,8 +114,9 @@ def test_predict_action_probabilities_advances_topmost_flow(
         "test abstain",
         domain=domain,
         slots=domain.slots,
-        evts=[ActionExecuted(action_name="action_listen"), stack.persist_as_event()],
+        evts=[ActionExecuted(action_name="action_listen")],
     )
+    tracker.update_stack(stack)
 
     prediction = default_flow_policy.predict_action_probabilities(
         tracker=tracker, domain=Domain.empty(), flows=default_flows
@@ -168,10 +170,11 @@ def test_policy_triggers_error_pattern_if_internal_circuit_breaker_is_tripped(
 
     tracker = DialogueStateTracker.from_events(
         "test",
-        evts=[ActionExecuted(action_name="action_listen"), stack.persist_as_event()],
+        evts=[ActionExecuted(action_name="action_listen")],
         domain=domain,
         slots=domain.slots,
     )
+    tracker.update_stack(stack)
 
     prediction = default_flow_policy.predict_action_probabilities(
         tracker=tracker, domain=domain, flows=flow_with_loop

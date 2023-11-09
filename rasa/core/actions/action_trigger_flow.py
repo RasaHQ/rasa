@@ -46,7 +46,7 @@ class ActionTriggerFlow(action.Action):
         """Return the flow name."""
         return self._flow_action_name
 
-    def create_event_to_start_flow(self, tracker: DialogueStateTracker) -> Event:
+    def create_events_to_start_flow(self, tracker: DialogueStateTracker) -> Event:
         """Create an event to start the flow.
 
         Args:
@@ -54,7 +54,7 @@ class ActionTriggerFlow(action.Action):
 
         Returns:
             The event to start the flow."""
-        stack = DialogueStack.from_tracker(tracker)
+        stack = tracker.stack
         frame_type = (
             FlowStackFrameType.REGULAR
             if stack.is_empty()
@@ -67,7 +67,7 @@ class ActionTriggerFlow(action.Action):
                 frame_type=frame_type,
             )
         )
-        return stack.persist_as_event()
+        return tracker.create_stack_update_events(stack)
 
     def create_events_to_set_flow_slots(self, metadata: Dict[str, Any]) -> List[Event]:
         """Create events to set the flow slots.
@@ -92,7 +92,7 @@ class ActionTriggerFlow(action.Action):
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> List[Event]:
         """Trigger the flow."""
-        events: List[Event] = [self.create_event_to_start_flow(tracker)]
+        events: List[Event] = self.create_events_to_start_flow(tracker)
         events.extend(self.create_events_to_set_flow_slots(metadata))
 
         if tracker.active_loop_name:

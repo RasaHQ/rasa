@@ -44,6 +44,6 @@ class KnowledgeAnswerCommand(FreeFormAnswerCommand):
         Returns:
             The events to apply to the tracker.
         """
-        dialogue_stack = DialogueStack.from_tracker(tracker)
-        dialogue_stack.push(SearchPatternFlowStackFrame())
-        return [dialogue_stack.persist_as_event()]
+        stack = tracker.stack
+        stack.push(SearchPatternFlowStackFrame())
+        return tracker.create_stack_update_events(stack)

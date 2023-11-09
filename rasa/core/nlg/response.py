@@ -72,7 +72,7 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
     ) -> Optional[Dict[Text, Any]]:
         """Generate a response for the requested utter action."""
         filled_slots = tracker.current_slot_values()
-        stack_context = DialogueStack.from_tracker(tracker).current_context()
+        stack_context = tracker.stack.current_context()
         return self.generate_from_slots(
             utter_action, filled_slots, stack_context, output_channel, **kwargs
         )

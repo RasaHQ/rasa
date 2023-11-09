@@ -37,7 +37,6 @@ from rasa.shared.constants import (
 )
 from rasa.shared.core import events
 from rasa.shared.core.constants import (
-    DIALOGUE_STACK_SLOT,
     USER_INTENT_OUT_OF_SCOPE,
     ACTION_LISTEN_NAME,
     ACTION_RESTART_NAME,
@@ -830,12 +829,6 @@ class RemoteAction(Action):
             )
 
             evts = events.deserialise_events(events_json)
-            # filter out `SlotSet` events for internal `dialogue_stack` slot
-            evts = [
-                event
-                for event in evts
-                if not (isinstance(event, SlotSet) and event.key == DIALOGUE_STACK_SLOT)
-            ]
 
             return cast(List[Event], bot_messages) + evts
 

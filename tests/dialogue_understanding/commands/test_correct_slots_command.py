@@ -12,10 +12,10 @@ from rasa.dialogue_understanding.patterns.correction import (
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import UserFlowStackFrame
-from rasa.shared.core.constants import DIALOGUE_STACK_SLOT
-from rasa.shared.core.events import SlotSet
+from rasa.shared.core.events import DialogueStackUpdated, SlotSet
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.flows.yaml_flows_io import flows_from_str
+import jsonpatch
 
 
 def test_command_name():
@@ -71,19 +71,20 @@ def test_run_command_on_tracker_correcting_previous_flow():
         "test",
         evts=[
             SlotSet("foo", "foofoo"),
-            SlotSet(
-                DIALOGUE_STACK_SLOT,
-                [
-                    {
-                        "type": "flow",
-                        "frame_type": "regular",
-                        "flow_id": "my_flow",
-                        "step_id": "collect_bar",
-                        "frame_id": "some-frame-id",
-                    }
-                ],
-            ),
         ],
+    )
+    tracker.update_stack(
+        DialogueStack.from_dict(
+            [
+                {
+                    "type": "flow",
+                    "frame_type": "regular",
+                    "flow_id": "my_flow",
+                    "step_id": "collect_bar",
+                    "frame_id": "some-frame-id",
+                }
+            ]
+        )
     )
     command = CorrectSlotsCommand(
         corrected_slots=[CorrectedSlot(name="foo", value="not-foofoo")]
@@ -93,10 +94,11 @@ def test_run_command_on_tracker_correcting_previous_flow():
     assert len(events) == 1
 
     dialogue_stack_event = events[0]
-    assert isinstance(dialogue_stack_event, SlotSet)
-    assert dialogue_stack_event.key == DIALOGUE_STACK_SLOT
+    assert isinstance(dialogue_stack_event, DialogueStackUpdated)
 
-    dialogue_stack_dump = dialogue_stack_event.value
+    patch = jsonpatch.JsonPatch.from_string(dialogue_stack_event.update)
+    dialogue_stack_dump = patch.apply(tracker.stack.as_dict())
+
     # flow should still be on the stack and a correction pattern should have been added
     assert isinstance(dialogue_stack_dump, list) and len(dialogue_stack_dump) == 2
 
@@ -128,19 +130,20 @@ def test_run_command_on_tracker_correcting_current_flow():
         "test",
         evts=[
             SlotSet("foo", "foofoo"),
-            SlotSet(
-                DIALOGUE_STACK_SLOT,
-                [
-                    {
-                        "type": "flow",
-                        "frame_type": "regular",
-                        "flow_id": "my_flow",
-                        "step_id": "collect_bar",
-                        "frame_id": "some-frame-id",
-                    }
-                ],
-            ),
         ],
+    )
+    tracker.update_stack(
+        DialogueStack.from_dict(
+            [
+                {
+                    "type": "flow",
+                    "frame_type": "regular",
+                    "flow_id": "my_flow",
+                    "step_id": "collect_bar",
+                    "frame_id": "some-frame-id",
+                }
+            ]
+        )
     )
     command = CorrectSlotsCommand(
         corrected_slots=[CorrectedSlot(name="bar", value="barbar")]
@@ -150,10 +153,11 @@ def test_run_command_on_tracker_correcting_current_flow():
     assert len(events) == 1
 
     dialogue_stack_event = events[0]
-    assert isinstance(dialogue_stack_event, SlotSet)
-    assert dialogue_stack_event.key == DIALOGUE_STACK_SLOT
+    assert isinstance(dialogue_stack_event, DialogueStackUpdated)
 
-    dialogue_stack_dump = dialogue_stack_event.value
+    patch = jsonpatch.JsonPatch.from_string(dialogue_stack_event.update)
+    dialogue_stack_dump = patch.apply(tracker.stack.as_dict())
+
     # flow should still be on the stack and a correction flow should have been added
     assert isinstance(dialogue_stack_dump, list) and len(dialogue_stack_dump) == 2
 
@@ -185,29 +189,30 @@ def test_run_command_on_tracker_correcting_during_a_correction():
         "test",
         evts=[
             SlotSet("foo", "foofoo"),
-            SlotSet(
-                DIALOGUE_STACK_SLOT,
-                [
-                    {
-                        "type": "flow",
-                        "frame_type": "regular",
-                        "flow_id": "my_flow",
-                        "step_id": "collect_bar",
-                        "frame_id": "some-frame-id",
-                    },
-                    {
-                        "type": "pattern_correction",
-                        "flow_id": "pattern_correction",
-                        "step_id": "collect_bar",
-                        "frame_id": "some-other-id",
-                        "corrected_slots": {"foo": "not-foofoo"},
-                        "reset_flow_id": "my_flow",
-                        "reset_step_id": "collect_foo",
-                        "is_reset_only": False,
-                    },
-                ],
-            ),
         ],
+    )
+    tracker.update_stack(
+        DialogueStack.from_dict(
+            [
+                {
+                    "type": "flow",
+                    "frame_type": "regular",
+                    "flow_id": "my_flow",
+                    "step_id": "collect_bar",
+                    "frame_id": "some-frame-id",
+                },
+                {
+                    "type": "pattern_correction",
+                    "flow_id": "pattern_correction",
+                    "step_id": "collect_bar",
+                    "frame_id": "some-other-id",
+                    "corrected_slots": {"foo": "not-foofoo"},
+                    "reset_flow_id": "my_flow",
+                    "reset_step_id": "collect_foo",
+                    "is_reset_only": False,
+                },
+            ]
+        )
     )
     command = CorrectSlotsCommand(
         corrected_slots=[CorrectedSlot(name="bar", value="barbar")]
@@ -217,10 +222,11 @@ def test_run_command_on_tracker_correcting_during_a_correction():
     assert len(events) == 1
 
     dialogue_stack_event = events[0]
-    assert isinstance(dialogue_stack_event, SlotSet)
-    assert dialogue_stack_event.key == DIALOGUE_STACK_SLOT
+    assert isinstance(dialogue_stack_event, DialogueStackUpdated)
 
-    dialogue_stack_dump = dialogue_stack_event.value
+    patch = jsonpatch.JsonPatch.from_string(dialogue_stack_event.update)
+    dialogue_stack_dump = patch.apply(tracker.stack.as_dict())
+
     # flow should still be on the stack and a correction flow should have been added
     assert isinstance(dialogue_stack_dump, list) and len(dialogue_stack_dump) == 3
 
@@ -236,7 +242,7 @@ def test_run_command_on_tracker_correcting_during_a_correction():
 
 
 def test_index_for_correction_frame_handles_empty_stack():
-    stack = DialogueStack(frames=[])
+    stack = DialogueStack.empty()
     top_flow_frame = UserFlowStackFrame(
         flow_id="foo", step_id="first_step", frame_id="some-frame-id"
     )

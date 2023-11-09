@@ -86,7 +86,7 @@ class ActionCancelFlow(action.Action):
         metadata: Optional[Dict[str, Any]] = None,
     ) -> List[Event]:
         """Cancel the flow."""
-        stack = DialogueStack.from_tracker(tracker)
+        stack = tracker.stack
         if not (top := stack.top()):
             structlogger.warning("action.cancel_flow.no_active_flow")
             return []
@@ -111,4 +111,4 @@ class ActionCancelFlow(action.Action):
                     frame_id=canceled_frame_id,
                 )
 
-        return [stack.persist_as_event()]
+        return tracker.create_stack_update_events(stack)

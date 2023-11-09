@@ -159,15 +159,16 @@ class FlowPolicy(Policy):
                 ),
             )
             # end the current flow and start the internal error flow
-            updated_stack = end_top_user_flow(DialogueStack.from_tracker(tracker))
+            updated_stack = tracker.stack
+            end_top_user_flow(updated_stack)
             updated_stack.push(InternalErrorPatternFlowStackFrame())
             # we retry, with the internal error frame on the stack
-            event = updated_stack.persist_as_event()
-            tracker.update(event)
+            events = tracker.create_stack_update_events(updated_stack)
+            tracker.update_with_events(events)
             prediction = flow_executor.advance_flows(
                 tracker, domain.action_names_or_texts, flows
             )
-            collected_events = [event] + (prediction.events or [])
+            collected_events = events + (prediction.events or [])
             return self._create_prediction_result(
                 prediction.action_name,
                 domain,

@@ -507,21 +507,6 @@ class Validator:
 
         return all_good
 
-    @staticmethod
-    def _log_error_if_dialogue_stack_slot(
-        slot: Slot, step_id: str, flow_id: str, all_good: bool
-    ) -> bool:
-        if slot.name == constants.DIALOGUE_STACK_SLOT:
-            logger.error(
-                f"The slot '{constants.DIALOGUE_STACK_SLOT}' is used in the "
-                f"step '{step_id}' of flow id '{flow_id}', but it "
-                f"is a reserved slot. You must not use reserved slots in "
-                f"your flows.",
-            )
-            all_good = False
-
-        return all_good
-
     def verify_flows_steps_against_domain(self) -> bool:
         """Checks flows steps' references against the domain file."""
         all_good = True
@@ -539,9 +524,6 @@ class Validator:
                     all_good = self._log_error_if_list_slot(
                         current_slot, step.id, flow.id, all_good
                     )
-                    all_good = self._log_error_if_dialogue_stack_slot(
-                        current_slot, step.id, flow.id, all_good
-                    )
 
                 elif isinstance(step, SetSlotsFlowStep):
                     for slot in step.slots:
@@ -554,9 +536,6 @@ class Validator:
                             continue
 
                         all_good = self._log_error_if_list_slot(
-                            current_slot, step.id, flow.id, all_good
-                        )
-                        all_good = self._log_error_if_dialogue_stack_slot(
                             current_slot, step.id, flow.id, all_good
                         )
 

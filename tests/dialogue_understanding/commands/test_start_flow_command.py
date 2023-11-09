@@ -1,7 +1,8 @@
 import pytest
 from rasa.dialogue_understanding.commands.start_flow_command import StartFlowCommand
-from rasa.shared.core.constants import DIALOGUE_STACK_SLOT
-from rasa.shared.core.events import SlotSet
+from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
+from rasa.dialogue_understanding.stack.frames.flow_stack_frame import UserFlowStackFrame
+from rasa.shared.core.events import DialogueStackUpdated, SlotSet
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.flows.yaml_flows_io import flows_from_str
 
@@ -39,15 +40,18 @@ def test_run_command_on_tracker():
     assert len(events) == 1
 
     dialogue_stack_event = events[0]
-    assert isinstance(dialogue_stack_event, SlotSet)
-    assert dialogue_stack_event.key == DIALOGUE_STACK_SLOT
+    assert isinstance(dialogue_stack_event, DialogueStackUpdated)
 
-    dialogue_stack_dump = dialogue_stack_event.value
-    assert isinstance(dialogue_stack_dump, list) and len(dialogue_stack_dump) == 1
-    assert dialogue_stack_dump[0]["frame_type"] == "regular"
-    assert dialogue_stack_dump[0]["flow_id"] == "foo"
-    assert dialogue_stack_dump[0]["step_id"] == "START"
-    assert dialogue_stack_dump[0].get("frame_id") is not None
+    updated_stack = tracker.stack.update_from_patch(dialogue_stack_event.update)
+
+    assert len(updated_stack.frames) == 1
+
+    frame = updated_stack.frames[0]
+    assert isinstance(frame, UserFlowStackFrame)
+    assert frame.frame_type == "regular"
+    assert frame.flow_id == "foo"
+    assert frame.step_id == "START"
+    assert frame.frame_id is not None
 
 
 def test_run_start_flow_that_does_not_exist():
@@ -80,9 +84,8 @@ def test_run_start_flow_that_is_already_on_the_stack():
     )
 
     tracker = DialogueStateTracker.from_events("test", evts=[])
-    tracker.update(
-        SlotSet(
-            DIALOGUE_STACK_SLOT,
+    tracker.update_stack(
+        DialogueStack.from_dict(
             [
                 {
                     "type": "flow",
@@ -91,7 +94,7 @@ def test_run_start_flow_that_is_already_on_the_stack():
                     "step_id": "START",
                     "frame_id": "test",
                 }
-            ],
+            ]
         )
     )
     command = StartFlowCommand(flow="foo")
@@ -134,9 +137,8 @@ def test_run_start_flow_interrupting_existing_flow():
     )
 
     tracker = DialogueStateTracker.from_events("test", evts=[])
-    tracker.update(
-        SlotSet(
-            DIALOGUE_STACK_SLOT,
+    tracker.update_stack(
+        DialogueStack.from_dict(
             [
                 {
                     "type": "flow",
@@ -145,24 +147,28 @@ def test_run_start_flow_interrupting_existing_flow():
                     "step_id": "START",
                     "frame_id": "test",
                 }
-            ],
+            ]
         )
     )
+
     command = StartFlowCommand(flow="bar")
 
     events = command.run_command_on_tracker(tracker, all_flows, tracker)
     assert len(events) == 1
 
     dialogue_stack_event = events[0]
-    assert isinstance(dialogue_stack_event, SlotSet)
-    assert dialogue_stack_event.key == DIALOGUE_STACK_SLOT
+    assert isinstance(dialogue_stack_event, DialogueStackUpdated)
 
-    dialogue_stack_dump = dialogue_stack_event.value
-    assert isinstance(dialogue_stack_dump, list) and len(dialogue_stack_dump) == 2
-    assert dialogue_stack_dump[1]["frame_type"] == "interrupt"
-    assert dialogue_stack_dump[1]["flow_id"] == "bar"
-    assert dialogue_stack_dump[1]["step_id"] == "START"
-    assert dialogue_stack_dump[1].get("frame_id") is not None
+    updated_stack = tracker.stack.update_from_patch(dialogue_stack_event.update)
+
+    assert len(updated_stack.frames) == 2
+
+    frame = updated_stack.frames[1]
+    assert isinstance(frame, UserFlowStackFrame)
+    assert frame.frame_type == "interrupt"
+    assert frame.flow_id == "bar"
+    assert frame.step_id == "START"
+    assert frame.frame_id is not None
 
 
 def test_run_start_flow_with_multiple_flows():
@@ -195,14 +201,16 @@ def test_run_start_flow_with_multiple_flows():
     assert len(events_foo) == 1
 
     dialogue_stack_event = events_foo[0]
-    assert isinstance(dialogue_stack_event, SlotSet)
-    assert dialogue_stack_event.key == DIALOGUE_STACK_SLOT
+    assert isinstance(dialogue_stack_event, DialogueStackUpdated)
 
-    dialogue_stack_dump = dialogue_stack_event.value
-    assert isinstance(dialogue_stack_dump, list) and len(dialogue_stack_dump) == 2
+    updated_stack = updated_tracker.stack.update_from_patch(dialogue_stack_event.update)
+
+    assert len(updated_stack.frames) == 2
 
     # both frames should be regular if they are started at the same time
-    assert dialogue_stack_dump[1]["frame_type"] == "regular"
-    assert dialogue_stack_dump[1]["flow_id"] == "foo"
-    assert dialogue_stack_dump[0]["frame_type"] == "regular"
-    assert dialogue_stack_dump[0]["flow_id"] == "bar"
+    assert isinstance(updated_stack.frames[1], UserFlowStackFrame)
+    assert updated_stack.frames[1].frame_type == "regular"
+    assert updated_stack.frames[1].flow_id == "foo"
+    assert isinstance(updated_stack.frames[0], UserFlowStackFrame)
+    assert updated_stack.frames[0].frame_type == "regular"
+    assert updated_stack.frames[0].flow_id == "bar"

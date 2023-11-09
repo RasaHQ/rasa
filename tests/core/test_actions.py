@@ -79,7 +79,6 @@ from rasa.shared.core.constants import (
     FOLLOWUP_ACTION,
     REQUESTED_SLOT,
     SESSION_START_METADATA_SLOT,
-    DIALOGUE_STACK_SLOT,
     RETURN_VALUE_SLOT,
     FLOW_HASHES_SLOT,
     DEFAULT_ACTION_NAMES,
@@ -223,7 +222,6 @@ async def test_remote_action_runs(
                     REQUESTED_SLOT: None,
                     FLOW_HASHES_SLOT: None,
                     SESSION_START_METADATA_SLOT: None,
-                    DIALOGUE_STACK_SLOT: None,
                     RETURN_VALUE_SLOT: None,
                 },
                 "events": [],
@@ -288,7 +286,6 @@ async def test_remote_action_logs_events(
                     REQUESTED_SLOT: None,
                     FLOW_HASHES_SLOT: None,
                     SESSION_START_METADATA_SLOT: None,
-                    DIALOGUE_STACK_SLOT: None,
                     RETURN_VALUE_SLOT: None,
                 },
                 "events": [],
@@ -3038,25 +3035,3 @@ def test_default_actions_and_names_consistency():
         RULE_SNIPPET_ACTION_NAME
     }
     assert names_of_default_actions == names_of_executable_actions_in_constants
-
-
-async def test_filter_out_dialogue_stack_slot_set_in_a_custom_action(
-    default_channel: OutputChannel,
-    default_nlg: NaturalLanguageGenerator,
-    default_tracker: DialogueStateTracker,
-    domain: Domain,
-) -> None:
-    endpoint = EndpointConfig("https://example.com/webhooks/actions")
-    remote_action = action.RemoteAction("my_action", endpoint)
-    events = [SlotSet(DIALOGUE_STACK_SLOT, {}), SlotSet("some_slot", "some_value")]
-    events_as_dict = [event.as_dict() for event in events]
-    response = {"events": events_as_dict, "responses": []}
-    with aioresponses() as mocked:
-        mocked.post("https://example.com/webhooks/actions", payload=response)
-
-        events = await remote_action.run(
-            default_channel, default_nlg, default_tracker, domain
-        )
-
-    assert len(events) == 1
-    assert events[0] == SlotSet("some_slot", "some_value")

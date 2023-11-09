@@ -1,9 +1,9 @@
 import pytest
 from rasa.dialogue_understanding.commands.clarify_command import ClarifyCommand
-from rasa.shared.core.constants import DIALOGUE_STACK_SLOT
-from rasa.shared.core.events import SlotSet
+from rasa.shared.core.events import DialogueStackUpdated, SlotSet
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.flows.yaml_flows_io import flows_from_str
+import jsonpatch
 
 
 def test_command_name():
@@ -63,12 +63,14 @@ def test_run_command_ignores_non_existant_flows():
 
     events = command.run_command_on_tracker(tracker, all_flows, tracker)
     assert len(events) == 1
-    dialogue_stack_dump = events[0]
-    assert isinstance(dialogue_stack_dump, SlotSet)
-    assert dialogue_stack_dump.key == DIALOGUE_STACK_SLOT
-    assert len(dialogue_stack_dump.value) == 1
+    dialogue_stack_event = events[0]
+    assert isinstance(dialogue_stack_event, DialogueStackUpdated)
 
-    frame = dialogue_stack_dump.value[0]
+    patch = jsonpatch.JsonPatch.from_string(dialogue_stack_event.update)
+    dialogue_stack_dump = patch.apply(tracker.stack.as_dict())
+    assert len(dialogue_stack_dump) == 1
+
+    frame = dialogue_stack_dump[0]
     assert frame["type"] == "pattern_clarification"
     assert frame["flow_id"] == "pattern_clarification"
     assert frame["step_id"] == "START"
@@ -93,11 +95,13 @@ def test_run_command_uses_name_of_flow():
 
     events = command.run_command_on_tracker(tracker, all_flows, tracker)
     assert len(events) == 1
-    dialogue_stack_dump = events[0]
-    assert isinstance(dialogue_stack_dump, SlotSet)
-    assert dialogue_stack_dump.key == DIALOGUE_STACK_SLOT
-    assert len(dialogue_stack_dump.value) == 1
+    dialogue_stack_event = events[0]
+    assert isinstance(dialogue_stack_event, DialogueStackUpdated)
 
-    frame = dialogue_stack_dump.value[0]
+    patch = jsonpatch.JsonPatch.from_string(dialogue_stack_event.update)
+    dialogue_stack_dump = patch.apply(tracker.stack.as_dict())
+    assert len(dialogue_stack_dump) == 1
+
+    frame = dialogue_stack_dump[0]
     assert frame["type"] == "pattern_clarification"
     assert frame["names"] == ["some foo"]

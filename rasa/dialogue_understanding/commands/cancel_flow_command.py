@@ -80,8 +80,8 @@ class CancelFlowCommand(Command):
             The events to apply to the tracker.
         """
 
-        stack = DialogueStack.from_tracker(tracker)
-        original_stack = DialogueStack.from_tracker(original_tracker)
+        stack = tracker.stack
+        original_stack = original_tracker.stack
         user_frame = top_user_flow_frame(original_stack)
         current_flow = user_frame.flow(all_flows) if user_frame else None
 
@@ -102,4 +102,4 @@ class CancelFlowCommand(Command):
                 canceled_frames=canceled_frames,
             )
         )
-        return [stack.persist_as_event()]
+        return tracker.create_stack_update_events(stack)

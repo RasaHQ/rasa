@@ -7,9 +7,8 @@ from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
     FlowStackFrameType,
     UserFlowStackFrame,
 )
-from rasa.shared.core.constants import DIALOGUE_STACK_SLOT
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import ActiveLoop, SlotSet
+from rasa.shared.core.events import ActiveLoop, DialogueStackUpdated, SlotSet
 from rasa.shared.core.trackers import DialogueStateTracker
 
 
@@ -20,13 +19,17 @@ async def test_action_trigger_flow():
     nlg = TemplatedNaturalLanguageGenerator({})
     events = await action.run(channel, nlg, tracker, Domain.empty())
     assert len(events) == 1
-    event = events[0]
-    assert isinstance(event, SlotSet)
-    assert event.key == DIALOGUE_STACK_SLOT
-    assert len(event.value) == 1
-    assert event.value[0]["type"] == UserFlowStackFrame.type()
-    assert event.value[0]["flow_id"] == "foo"
-    assert event.value[0]["frame_type"] == FlowStackFrameType.REGULAR.value
+    dialogue_stack_event = events[0]
+    assert isinstance(dialogue_stack_event, DialogueStackUpdated)
+
+    updated_stack = tracker.stack.update_from_patch(dialogue_stack_event.update)
+
+    assert len(updated_stack.frames) == 1
+
+    frame = updated_stack.frames[0]
+    assert isinstance(frame, UserFlowStackFrame)
+    assert frame.flow_id == "foo"
+    assert frame.frame_type == FlowStackFrameType.REGULAR.value
 
 
 async def test_action_trigger_flow_with_slots():
@@ -38,14 +41,19 @@ async def test_action_trigger_flow_with_slots():
         channel, nlg, tracker, Domain.empty(), metadata={"slots": {"foo": "bar"}}
     )
 
-    event = events[0]
-    assert isinstance(event, SlotSet)
-    assert event.key == DIALOGUE_STACK_SLOT
-    assert len(event.value) == 1
-    assert event.value[0]["type"] == UserFlowStackFrame.type()
-    assert event.value[0]["flow_id"] == "foo"
-
     assert len(events) == 2
+
+    dialogue_stack_event = events[0]
+    assert isinstance(dialogue_stack_event, DialogueStackUpdated)
+
+    updated_stack = tracker.stack.update_from_patch(dialogue_stack_event.update)
+
+    assert len(updated_stack.frames) == 1
+
+    frame = updated_stack.frames[0]
+    assert isinstance(frame, UserFlowStackFrame)
+    assert frame.flow_id == "foo"
+
     event = events[1]
     assert isinstance(event, SlotSet)
     assert event.key == "foo"
@@ -74,7 +82,8 @@ async def test_action_trigger_uses_interrupt_flow_type_if_stack_already_contains
         flow_id="my_flow", step_id="collect_bar", frame_id="some-frame-id"
     )
     stack = DialogueStack(frames=[user_frame])
-    tracker = DialogueStateTracker.from_events("test", [stack.persist_as_event()])
+    tracker = DialogueStateTracker.from_events("test", evts=[])
+    tracker.update_stack(stack)
 
     action = ActionTriggerFlow("flow_foo")
     channel = CollectingOutputChannel()
@@ -83,10 +92,14 @@ async def test_action_trigger_uses_interrupt_flow_type_if_stack_already_contains
     events = await action.run(channel, nlg, tracker, Domain.empty())
 
     assert len(events) == 1
-    event = events[0]
-    assert isinstance(event, SlotSet)
-    assert event.key == DIALOGUE_STACK_SLOT
-    assert len(event.value) == 2
-    assert event.value[1]["type"] == UserFlowStackFrame.type()
-    assert event.value[1]["flow_id"] == "foo"
-    assert event.value[1]["frame_type"] == FlowStackFrameType.INTERRUPT.value
+    dialogue_stack_event = events[0]
+    assert isinstance(dialogue_stack_event, DialogueStackUpdated)
+
+    updated_stack = tracker.stack.update_from_patch(dialogue_stack_event.update)
+
+    assert len(updated_stack.frames) == 2
+
+    frame = updated_stack.frames[1]
+    assert isinstance(frame, UserFlowStackFrame)
+    assert frame.flow_id == "foo"
+    assert frame.frame_type == FlowStackFrameType.INTERRUPT.value

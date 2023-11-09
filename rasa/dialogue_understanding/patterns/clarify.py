@@ -86,7 +86,7 @@ class ActionClarifyFlows(action.Action):
         metadata: Optional[Dict[str, Any]] = None,
     ) -> List[Event]:
         """Correct the slots."""
-        stack = DialogueStack.from_tracker(tracker)
+        stack = tracker.stack
         if not (top := stack.top()):
             structlogger.warning("action.clarify_flows.no_active_flow")
             return []
@@ -98,4 +98,4 @@ class ActionClarifyFlows(action.Action):
         options_string = self.assemble_options_string(top.names)
         top.clarification_options = options_string
         # since we modified the stack frame, we need to update the stack
-        return [stack.persist_as_event()]
+        return tracker.create_stack_update_events(stack)

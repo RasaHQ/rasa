@@ -113,10 +113,10 @@ def find_updated_flows(tracker: DialogueStateTracker, all_flows: FlowsList) -> S
     A set of flow ids of those flows that have changed
     """
     stored_fingerprints: Dict[str, str] = tracker.get_slot(FLOW_HASHES_SLOT) or {}
-    dialogue_stack = DialogueStack.from_tracker(tracker)
+    stack = tracker.stack
 
     changed_flows = set()
-    for frame in dialogue_stack.frames:
+    for frame in stack.frames:
         if isinstance(frame, BaseFlowStackFrame):
             flow = all_flows.flow_by_id(frame.flow_id)
             if flow is None or (
@@ -292,14 +292,14 @@ def clean_up_commands(
     Returns:
     The cleaned up commands.
     """
-    dialogue_stack = DialogueStack.from_tracker(tracker)
-    slots_so_far = filled_slots_for_active_flow(dialogue_stack, all_flows)
+    stack = tracker.stack
+    slots_so_far = filled_slots_for_active_flow(stack, all_flows)
 
     clean_commands: List[Command] = []
 
     for command in commands:
         if isinstance(command, SetSlotCommand) and command.name in slots_so_far:
-            current_collect_info = get_current_collect_step(dialogue_stack, all_flows)
+            current_collect_info = get_current_collect_step(stack, all_flows)
 
             if current_collect_info and current_collect_info.collect == command.name:
                 # not a correction but rather an answer to the current collect info
@@ -309,7 +309,7 @@ def clean_up_commands(
             structlogger.debug(
                 "command_executor.convert_command.correction", command=command
             )
-            top = top_flow_frame(dialogue_stack)
+            top = top_flow_frame(stack)
             if isinstance(top, CorrectionPatternFlowStackFrame):
                 already_corrected_slots = top.corrected_slots
             else:

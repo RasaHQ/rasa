@@ -50,7 +50,7 @@ class ErrorCommand(Command):
         Returns:
             The events to apply to the tracker.
         """
-        dialogue_stack = DialogueStack.from_tracker(tracker)
+        stack = tracker.stack
         structlogger.debug("command_executor.error", command=self)
-        dialogue_stack.push(InternalErrorPatternFlowStackFrame())
-        return [dialogue_stack.persist_as_event()]
+        stack.push(InternalErrorPatternFlowStackFrame())
+        return tracker.create_stack_update_events(stack)

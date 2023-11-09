@@ -1,6 +1,6 @@
 import pytest
 from rasa.dialogue_understanding.commands.set_slot_command import SetSlotCommand
-from rasa.shared.core.constants import DIALOGUE_STACK_SLOT
+from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.shared.core.events import SlotSet
 from rasa.shared.core.flows.flow import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -55,21 +55,18 @@ def test_run_command_sets_slot_if_asked_for():
         """
     )
 
-    tracker = DialogueStateTracker.from_events(
-        "test",
-        evts=[
-            SlotSet(
-                DIALOGUE_STACK_SLOT,
-                [
-                    {
-                        "type": "flow",
-                        "flow_id": "my_flow",
-                        "step_id": "collect_foo",
-                        "frame_id": "some-frame-id",
-                    },
-                ],
-            ),
-        ],
+    tracker = DialogueStateTracker.from_events("test", evts=[])
+    tracker.update_stack(
+        DialogueStack.from_dict(
+            [
+                {
+                    "type": "flow",
+                    "flow_id": "my_flow",
+                    "step_id": "collect_foo",
+                    "frame_id": "some-frame-id",
+                },
+            ],
+        )
     )
     command = SetSlotCommand(name="foo", value="foofoo")
 
@@ -92,21 +89,18 @@ def test_run_command_skips_set_slot_if_slot_was_not_asked_for():
         """
     )
 
-    tracker = DialogueStateTracker.from_events(
-        "test",
-        evts=[
-            SlotSet(
-                DIALOGUE_STACK_SLOT,
-                [
-                    {
-                        "type": "flow",
-                        "flow_id": "my_flow",
-                        "step_id": "collect_foo",
-                        "frame_id": "some-frame-id",
-                    },
-                ],
-            ),
-        ],
+    tracker = DialogueStateTracker.from_events("test", evts=[])
+    tracker.update_stack(
+        DialogueStack.from_dict(
+            [
+                {
+                    "type": "flow",
+                    "flow_id": "my_flow",
+                    "step_id": "collect_foo",
+                    "frame_id": "some-frame-id",
+                },
+            ],
+        )
     )
     command = SetSlotCommand(name="bar", value="barbar")
 
@@ -129,21 +123,18 @@ def test_run_command_can_set_slots_before_asking():
         """
     )
 
-    tracker = DialogueStateTracker.from_events(
-        "test",
-        evts=[
-            SlotSet(
-                DIALOGUE_STACK_SLOT,
-                [
-                    {
-                        "type": "flow",
-                        "flow_id": "my_flow",
-                        "step_id": "collect_foo",
-                        "frame_id": "some-frame-id",
-                    },
-                ],
-            ),
-        ],
+    tracker = DialogueStateTracker.from_events("test", evts=[])
+    tracker.update_stack(
+        DialogueStack.from_dict(
+            [
+                {
+                    "type": "flow",
+                    "flow_id": "my_flow",
+                    "step_id": "collect_foo",
+                    "frame_id": "some-frame-id",
+                },
+            ],
+        )
     )
     command = SetSlotCommand(name="bar", value="barbar")
 
@@ -167,21 +158,18 @@ def test_run_command_can_set_slot_that_was_already_asked_in_the_past():
         """
     )
 
-    tracker = DialogueStateTracker.from_events(
-        "test",
-        evts=[
-            SlotSet(
-                DIALOGUE_STACK_SLOT,
-                [
-                    {
-                        "type": "flow",
-                        "flow_id": "my_flow",
-                        "step_id": "collect_bar",
-                        "frame_id": "some-frame-id",
-                    },
-                ],
-            ),
-        ],
+    tracker = DialogueStateTracker.from_events("test", evts=[])
+    tracker.update_stack(
+        DialogueStack.from_dict(
+            [
+                {
+                    "type": "flow",
+                    "flow_id": "my_flow",
+                    "step_id": "collect_bar",
+                    "frame_id": "some-frame-id",
+                },
+            ],
+        )
     )
     # set the slot for a collect information that was asked in the past
     # this isn't how we'd usually use this command as this should be converted
@@ -206,21 +194,18 @@ def test_run_command_skips_setting_unknown_slot():
         """
     )
 
-    tracker = DialogueStateTracker.from_events(
-        "test",
-        evts=[
-            SlotSet(
-                DIALOGUE_STACK_SLOT,
-                [
-                    {
-                        "type": "flow",
-                        "flow_id": "my_flow",
-                        "step_id": "collect_bar",
-                        "frame_id": "some-frame-id",
-                    },
-                ],
-            ),
-        ],
+    tracker = DialogueStateTracker.from_events("test", evts=[])
+    tracker.update_stack(
+        DialogueStack.from_dict(
+            [
+                {
+                    "type": "flow",
+                    "flow_id": "my_flow",
+                    "step_id": "collect_bar",
+                    "frame_id": "some-frame-id",
+                },
+            ],
+        )
     )
     # set the slot for a collect information that was asked in the past
     command = SetSlotCommand(name="unknown", value="unknown")

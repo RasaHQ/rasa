@@ -62,8 +62,8 @@ class StartFlowCommand(Command):
         Returns:
             The events to apply to the tracker.
         """
-        stack = DialogueStack.from_tracker(tracker)
-        original_stack = DialogueStack.from_tracker(original_tracker)
+        stack = tracker.stack
+        original_stack = original_tracker.stack
 
         if self.flow in user_flows_on_the_stack(stack):
             structlogger.debug(
@@ -87,4 +87,4 @@ class StartFlowCommand(Command):
         )
         structlogger.debug("command_executor.start_flow", command=self)
         stack.push(UserFlowStackFrame(flow_id=self.flow, frame_type=frame_type))
-        return [stack.persist_as_event()]
+        return tracker.create_stack_update_events(stack)

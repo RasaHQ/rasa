@@ -159,11 +159,12 @@ def select_next_step_id(
 def select_next_step(
     current_step: FlowStep,
     current_flow: Flow,
-    stack: DialogueStack,
     tracker: DialogueStateTracker,
 ) -> Optional[FlowStep]:
     """Get the next step to execute."""
-    next_id = select_next_step_id(current_step, stack.current_context(), tracker)
+    next_id = select_next_step_id(
+        current_step, tracker.stack.current_context(), tracker
+    )
     step = current_flow.step_by_id(next_id)
     structlogger.debug(
         "flow.step.next",
@@ -174,10 +175,12 @@ def select_next_step(
     return step
 
 
-def advance_top_flow_on_stack(updated_id: str, stack: DialogueStack) -> None:
+def advance_top_flow_on_stack(updated_id: str, tracker: DialogueStateTracker) -> None:
     """Advance the top flow on the stack."""
+    stack = tracker.stack
     if (top := stack.top()) and isinstance(top, BaseFlowStackFrame):
         top.step_id = updated_id
+        tracker.update_stack(stack)
 
 
 def events_from_set_slots_step(step: SetSlotsFlowStep) -> List[Event]:
@@ -312,23 +315,14 @@ def advance_flows(
     Returns:
     The predicted action and the events to run.
     """
-    stack = DialogueStack.from_tracker(tracker)
-    if stack.is_empty():
+    if tracker.stack.is_empty():
         # if there are no flows, there is nothing to do
         return FlowActionPrediction(None, 0.0)
 
-    previous_stack = stack.as_dict()
-    prediction = select_next_action(stack, tracker, available_actions, flows)
-    if previous_stack != stack.as_dict():
-        # we need to update dialogue stack to persist the state of the executor
-        if not prediction.events:
-            prediction.events = []
-        prediction.events.append(stack.persist_as_event())
-    return prediction
+    return select_next_action(tracker, available_actions, flows)
 
 
 def select_next_action(
-    stack: DialogueStack,
     tracker: DialogueStateTracker,
     available_actions: List[str],
     flows: FlowsList,
@@ -341,7 +335,6 @@ def select_next_action(
     advanced. If there are no more flows, the action listen is predicted.
 
     Args:
-        stack: The stack to get the next action for.
         tracker: The tracker to get the next action for.
         available_actions: The actions that are available in the domain.
         flows: All flows.
@@ -362,9 +355,11 @@ def select_next_action(
 
         number_of_steps_taken += 1
         if number_of_steps_taken > MAX_NUMBER_OF_STEPS:
-            raise FlowCircuitBreakerTrippedException(stack, number_of_steps_taken)
+            raise FlowCircuitBreakerTrippedException(
+                tracker.stack, number_of_steps_taken
+            )
 
-        active_frame = stack.top()
+        active_frame = tracker.stack.top()
         if not isinstance(active_frame, BaseFlowStackFrame):
             # If there is no current flow, we assume that all flows are done
             # and there is nothing to do. The assumption here is that every
@@ -380,19 +375,18 @@ def select_next_action(
             )
             current_flow = active_frame.flow(flows)
             current_step = select_next_step(
-                active_frame.step(flows), current_flow, stack, tracker
+                active_frame.step(flows), current_flow, tracker
             )
 
             if not current_step:
                 continue
 
-            advance_top_flow_on_stack(current_step.id, stack)
+            advance_top_flow_on_stack(current_step.id, tracker)
 
             with bound_contextvars(step_id=current_step.id):
                 step_result = run_step(
                     current_step,
                     current_flow,
-                    stack,
                     tracker,
                     available_actions,
                     flows,
@@ -414,7 +408,6 @@ def select_next_action(
 def run_step(
     step: FlowStep,
     flow: Flow,
-    stack: DialogueStack,
     tracker: DialogueStateTracker,
     available_actions: List[str],
     flows: FlowsList,
@@ -431,7 +424,6 @@ def run_step(
     Args:
         step: The step to run.
         flow: The flow that the step belongs to.
-        stack: The stack that the flow is on.
         tracker: The tracker to run the step on.
         available_actions: The actions that are available in the domain.
         flows: All flows.
@@ -441,10 +433,11 @@ def run_step(
     """
     if isinstance(step, CollectInformationFlowStep):
         structlogger.debug("flow.step.run.collect")
+        stack = tracker.stack
         trigger_pattern_ask_collect_information(
             step.collect, stack, step.rejections, step.utter
         )
-
+        tracker.update_stack(stack)
         events = events_for_collect_step(step, tracker)
         return ContinueFlowWithNextStep(events=events)
 
@@ -452,7 +445,7 @@ def run_step(
         if not step.action:
             raise FlowException(f"Action not specified for step {step}")
 
-        context = {"context": stack.current_context()}
+        context = {"context": tracker.stack.current_context()}
         action_name = render_template_variables(step.action, context)
 
         if action_name in available_actions:
@@ -464,6 +457,7 @@ def run_step(
 
     elif isinstance(step, LinkFlowStep):
         structlogger.debug("flow.step.run.link")
+        stack = tracker.stack
         stack.push(
             UserFlowStackFrame(
                 flow_id=step.link,
@@ -474,6 +468,7 @@ def run_step(
             # linked flow
             index=-1,
         )
+        tracker.update_stack(stack)
         return ContinueFlowWithNextStep()
 
     elif isinstance(step, SetSlotsFlowStep):
@@ -498,9 +493,11 @@ def run_step(
     elif isinstance(step, EndFlowStep):
         # this is the end of the flow, so we'll pop it from the stack
         structlogger.debug("flow.step.run.flow_end")
+        stack = tracker.stack
         current_frame = stack.pop()
         trigger_pattern_continue_interrupted(current_frame, stack, flows)
         trigger_pattern_completed(current_frame, stack, flows)
+        tracker.update_stack(stack)
         reset_events = reset_scoped_slots(flow, tracker)
         return ContinueFlowWithNextStep(events=reset_events)
 

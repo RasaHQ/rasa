@@ -4,8 +4,6 @@ from rasa.dialogue_understanding.patterns.collect_information import (
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import UserFlowStackFrame
-from rasa.shared.core.constants import DIALOGUE_STACK_SLOT
-from rasa.shared.core.events import SlotSet
 
 
 def test_dialogue_stack_from_dict():
@@ -77,31 +75,13 @@ def test_dialogue_stack_as_dict():
     ]
 
 
-def test_dialogue_stack_as_event():
-    # check that the stack gets persisted as an event storing the dict
-    stack = DialogueStack(
-        frames=[
-            UserFlowStackFrame(
-                flow_id="foo", step_id="first_step", frame_id="some-frame-id"
-            ),
-            CollectInformationPatternFlowStackFrame(
-                collect="foo",
-                frame_id="some-other-id",
-                utter="utter_ask_foo",
-            ),
-        ]
-    )
-
-    assert stack.persist_as_event() == SlotSet(DIALOGUE_STACK_SLOT, stack.as_dict())
-
-
 def test_dialogue_stack_as_dict_handles_empty():
-    stack = DialogueStack(frames=[])
+    stack = DialogueStack.empty()
     assert stack.as_dict() == []
 
 
 def test_push_to_empty_stack():
-    stack = DialogueStack(frames=[])
+    stack = DialogueStack.empty()
     stack.push(
         UserFlowStackFrame(
             flow_id="foo", step_id="first_step", frame_id="some-frame-id"
@@ -155,7 +135,7 @@ def test_dialogue_stack_update():
 
 
 def test_update_empty_stack():
-    stack = DialogueStack(frames=[])
+    stack = DialogueStack.empty()
     stack.update(
         UserFlowStackFrame(
             flow_id="foo", step_id="first_step", frame_id="some-frame-id"
@@ -177,7 +157,7 @@ def test_pop_frame():
         collect="foo", frame_id="some-other-id"
     )
 
-    stack = DialogueStack(frames=[])
+    stack = DialogueStack.empty()
     stack.push(user_frame)
     stack.push(pattern_frame)
     assert stack.pop() == pattern_frame
@@ -185,7 +165,7 @@ def test_pop_frame():
 
 
 def test_top_empty_stack():
-    stack = DialogueStack(frames=[])
+    stack = DialogueStack.empty()
     assert stack.top() is None
 
 
@@ -197,14 +177,14 @@ def test_top():
         collect="foo", frame_id="some-other-id"
     )
 
-    stack = DialogueStack(frames=[])
+    stack = DialogueStack.empty()
     stack.push(user_frame)
     stack.push(pattern_frame)
     assert stack.top() == pattern_frame
 
 
 def test_get_current_context_empty_stack():
-    stack = DialogueStack(frames=[])
+    stack = DialogueStack.empty()
     assert stack.current_context() == {}
 
 
@@ -216,7 +196,7 @@ def test_get_current_context():
         collect="foo", frame_id="some-other-id", utter="utter_ask_foo"
     )
 
-    stack = DialogueStack(frames=[])
+    stack = DialogueStack.empty()
     stack.push(user_frame)
     stack.push(pattern_frame)
     assert stack.current_context() == {
@@ -232,7 +212,7 @@ def test_get_current_context():
 
 
 def test_is_empty_on_empty():
-    stack = DialogueStack(frames=[])
+    stack = DialogueStack.empty()
     assert stack.is_empty() is True
 
 

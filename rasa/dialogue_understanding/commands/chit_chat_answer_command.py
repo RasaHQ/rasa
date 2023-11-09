@@ -44,6 +44,6 @@ class ChitChatAnswerCommand(FreeFormAnswerCommand):
         Returns:
             The events to apply to the tracker.
         """
-        stack = DialogueStack.from_tracker(tracker)
+        stack = tracker.stack
         stack.push(ChitchatPatternFlowStackFrame())
-        return [stack.persist_as_event()]
+        return tracker.create_stack_update_events(stack)

@@ -42,8 +42,7 @@ class ActionRunSlotRejections(Action):
         utterance = None
         internal_error = False
 
-        dialogue_stack = DialogueStack.from_tracker(tracker)
-        top_frame = dialogue_stack.top()
+        top_frame = tracker.stack.top()
         if not isinstance(top_frame, CollectInformationPatternFlowStackFrame):
             return []
 
@@ -65,7 +64,7 @@ class ActionRunSlotRejections(Action):
 
         slot_value = tracker.get_slot(slot_name)
 
-        current_context = dialogue_stack.current_context()
+        current_context = tracker.stack.current_context()
         current_context[slot_name] = slot_value
 
         structlogger.debug("run.predicate.context", context=current_context)

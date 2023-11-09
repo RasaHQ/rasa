@@ -999,51 +999,6 @@ def test_verify_flow_steps_against_domain_disallowed_list_slot(
     )
 
 
-def test_verify_flow_steps_against_domain_dialogue_stack_slot(
-    tmp_path: Path,
-    nlu_data_path: Path,
-    caplog: LogCaptureFixture,
-) -> None:
-    flows_file = tmp_path / "flows.yml"
-    with open(flows_file, "w") as file:
-        file.write(
-            f"""
-                version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
-                flows:
-                  my_flow:
-                    description: Test that dialogue stack is not modified in flows.
-                    name: test flow
-                    steps:
-                    - id: "ask_internal_slot"
-                      collect: dialogue_stack
-                """
-        )
-    domain_file = tmp_path / "domain.yml"
-    with open(domain_file, "w") as file:
-        file.write(
-            f"""
-                version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
-                intents:
-                  - greet
-                """
-        )
-    importer = RasaFileImporter(
-        config_file="data/test_moodbot/config.yml",
-        domain_path=str(domain_file),
-        training_data_paths=[str(flows_file), str(nlu_data_path)],
-    )
-
-    validator = Validator.from_importer(importer)
-
-    with caplog.at_level(logging.ERROR):
-        assert not validator.verify_flows_steps_against_domain()
-
-    assert (
-        "The slot 'dialogue_stack' is used in the step 'ask_internal_slot' "
-        "of flow id 'my_flow', but it is a reserved slot." in caplog.text
-    )
-
-
 def test_verify_flow_steps_against_domain_interpolated_action_name(
     caplog: LogCaptureFixture,
     tmp_path: Path,
