@@ -1327,6 +1327,70 @@ def test_flow_predicate_validation_fails_for_faulty_flow_link_predicates():
     assert not validator.verify_predicates()
 
 
+def test_verify_predicates_with_valid_jinja(
+    tmp_path: Path,
+    nlu_data_path: Path,
+) -> None:
+    predicate_collect = '"{{context.collect}} is not null"'
+    predicate_link = '"{{context.collect}} is null"'
+    flows_file = tmp_path / "flows.yml"
+    with open(flows_file, "w") as file:
+        file.write(
+            f"""
+                        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                        flows:
+                          transfer_money:
+                            description: This flow lets users send money.
+                            name: transfer money
+                            steps:
+                            - id: "ask_account_type"
+                              collect: account_type
+                              rejections:
+                                - if: {predicate_collect}
+                                  utter: utter_invalid_account_type
+                              next: "ask_recipient"
+                            - id: "ask_recipient"
+                              collect: transfer_recipient
+                              next:
+                                - if: {predicate_link}
+                                  then: "ask_amount"
+                                - else: END
+                            - id: "ask_amount"
+                              collect: transfer_amount
+                              next: "execute_transfer"
+                            - id: "execute_transfer"
+                              action: action_transfer_money
+                        """
+        )
+    domain_file = tmp_path / "domain.yml"
+    with open(domain_file, "w") as file:
+        file.write(
+            f"""
+                        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                        intents:
+                          - greet
+                        slots:
+                            transfer_recipient:
+                                type: text
+                                mappings: []
+                            transfer_amount:
+                                type: float
+                                mappings: []
+                        actions:
+                          - action_transfer_money
+                        """
+        )
+    importer = RasaFileImporter(
+        config_file="data/test_moodbot/config.yml",
+        domain_path=str(domain_file),
+        training_data_paths=[str(flows_file), str(nlu_data_path)],
+    )
+
+    validator = Validator.from_importer(importer)
+
+    assert validator.verify_predicates()
+
+
 @pytest.fixture
 def domain_file_name(tmp_path: Path) -> Path:
     domain_file_name = tmp_path / "domain.yml"

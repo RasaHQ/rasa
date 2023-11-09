@@ -5,9 +5,11 @@ import string
 from collections import defaultdict
 from typing import Set, Text, Optional, Dict, Any, List, Tuple
 
+from jinja2 import Template
 from pypred import Predicate
 
 import rasa.core.training.story_conflict
+from rasa.dialogue_understanding.stack.frames import PatternFlowStackFrame
 from rasa.shared.core.flows.flow_step_links import IfFlowStepLink
 from rasa.shared.core.flows.steps.set_slots import SetSlotsFlowStep
 from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
@@ -611,12 +613,41 @@ class Validator:
 
         return all_good
 
+    def _build_context(self) -> Dict[str, Any]:
+        """Build context for jinja template rendering.
+
+        Returns:
+            A dictionary containing the allowed namespaces for jinja template rendering:
+            - `context`: The context mapping the attributes of every flow stack frame
+                to None values because this is only used for rendering the template
+                during validation.
+            - `slots`: The slots of the domain mapped to None values because this is
+                only used for rendering the template during validation and not for
+                evaluating the predicate at runtime.
+        """
+        subclasses = [subclass for subclass in PatternFlowStackFrame.__subclasses__()]
+        subclass_attrs = []
+        for subclass in subclasses:
+            subclass_attrs.extend(
+                [attr for attr in dir(subclass) if not attr.startswith("__")]
+            )
+
+        context = {
+            "context": {attr: None for attr in subclass_attrs},
+            "slots": {slot.name: None for slot in self.domain.slots},
+        }
+        return context
+
     @staticmethod
     def _construct_predicate(
-        predicate: Optional[str], step_id: str, all_good: bool = True
+        predicate: Optional[str],
+        step_id: str,
+        context: Dict[str, Any],
+        all_good: bool = True,
     ) -> Tuple[Optional[Predicate], bool]:
+        rendered_template = Template(predicate).render(context)
         try:
-            pred = Predicate(predicate)
+            pred = Predicate(rendered_template)
         except (TypeError, Exception) as exception:
             logger.error(
                 f"Could not initialize the predicate found under step "
@@ -630,6 +661,8 @@ class Validator:
     def verify_predicates(self) -> bool:
         """Validate predicates used in flow step links and slot rejections."""
         all_good = True
+        context = self._build_context()
+
         for flow in self.flows.underlying_flows:
             for step in flow.steps:
                 for link in step.next.links:
@@ -638,11 +671,8 @@ class Validator:
                             link.condition, step.id, flow.id, all_good
                         )
 
-                        # TODO: need to handle link conditions with context / jinja
-                        if "{{" in link.condition:
-                            continue
                         predicate, all_good = Validator._construct_predicate(
-                            link.condition, step.id, all_good
+                            link.condition, step.id, context, all_good
                         )
                         if predicate and not predicate.is_valid():
                             logger.error(
@@ -659,7 +689,7 @@ class Validator:
                         )
 
                         pred, all_good = Validator._construct_predicate(
-                            predicate, step.id, all_good
+                            predicate, step.id, context, all_good
                         )
                         if pred and not pred.is_valid():
                             logger.error(
