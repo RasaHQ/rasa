@@ -1996,8 +1996,11 @@ async def test_run_command_processor_starting_a_flow(
     # When
     tracker = processor.run_command_processor(tracker)
     # Then
+    # tracker had two events: action_list and user utterance event
     # we expect two new SlotSet events: flow hashes and dialogue stack
     assert len(tracker.events) == 4
+    assert isinstance(tracker.events[0], ActionExecuted)
+    assert isinstance(tracker.events[1], UserUttered)
     assert isinstance(tracker.events[2], SlotSet)
     assert isinstance(tracker.events[3], SlotSet)
     # flow hashes SlotSet
@@ -2044,9 +2047,13 @@ async def test_run_command_processor_setting_a_slot(
     # When
     tracker = processor.run_command_processor(tracker)
     # Then
+    # tracker had three events: action_list, dialogue set slot and user utterance events
     # we expect two new SlotSet events: flow hashes (since those are not in the tracker)
     # and a set slot event
     assert len(tracker.events) == 5
+    assert isinstance(tracker.events[0], ActionExecuted)
+    assert isinstance(tracker.events[1], SlotSet)
+    assert isinstance(tracker.events[2], UserUttered)
     assert isinstance(tracker.events[3], SlotSet)
     assert isinstance(tracker.events[4], SlotSet)
     # flow hashes SlotSet
