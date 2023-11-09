@@ -493,7 +493,7 @@ class Domain:
             slot_class = Slot.resolve_by_type(slot_type)
 
             if SLOT_MAPPINGS not in slot_dict[slot_name]:
-                logger.warning(
+                logger.debug(
                     f"Slot '{slot_name}' has no mappings defined. "
                     f"We will continue with an empty list of mappings."
                 )
