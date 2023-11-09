@@ -1,6 +1,5 @@
 import copy
 import json
-import logging
 import re
 import textwrap
 from pathlib import Path
@@ -8,7 +7,6 @@ import random
 from typing import Dict, List, Text, Any, Union, Set, Optional
 
 import pytest
-from pytest import LogCaptureFixture
 from pytest import WarningsRecorder
 
 from rasa.shared.exceptions import YamlSyntaxException, YamlException
