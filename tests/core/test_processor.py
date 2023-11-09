@@ -1993,14 +1993,18 @@ async def test_run_command_processor_starting_a_flow(
             parse_data={"commands": [{"command": "start flow", "flow": "foo"}]},
         )
     )
+    num_previous_events = len(tracker.events)
     # When
     tracker = processor.run_command_processor(tracker)
+    num_added_events = len(tracker.events) - num_previous_events
     # Then
     # tracker had two events: action_list and user utterance event
     # we expect two new SlotSet events: flow hashes and dialogue stack
-    assert len(tracker.events) == 4
+    assert num_added_events == 2
+    # previous events
     assert isinstance(tracker.events[0], ActionExecuted)
     assert isinstance(tracker.events[1], UserUttered)
+    # new events
     assert isinstance(tracker.events[2], SlotSet)
     assert isinstance(tracker.events[3], SlotSet)
     # flow hashes SlotSet
@@ -2044,16 +2048,20 @@ async def test_run_command_processor_setting_a_slot(
             ),
         ]
     )
+    num_previous_events = len(tracker.events)
     # When
     tracker = processor.run_command_processor(tracker)
+    num_added_events = len(tracker.events) - num_previous_events
     # Then
     # tracker had three events: action_list, dialogue set slot and user utterance events
     # we expect two new SlotSet events: flow hashes (since those are not in the tracker)
     # and a set slot event
-    assert len(tracker.events) == 5
+    assert num_added_events == 2
+    # previous events
     assert isinstance(tracker.events[0], ActionExecuted)
     assert isinstance(tracker.events[1], SlotSet)
     assert isinstance(tracker.events[2], UserUttered)
+    # new events
     assert isinstance(tracker.events[3], SlotSet)
     assert isinstance(tracker.events[4], SlotSet)
     # flow hashes SlotSet
