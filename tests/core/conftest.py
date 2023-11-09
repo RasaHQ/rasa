@@ -1,29 +1,29 @@
 import asyncio
-
-from rasa.utils.endpoints import EndpointConfig
-from sanic.request import Request
 import uuid
 from datetime import datetime
-
 from typing import Generator, Callable, Dict, Text
 
-from scipy import sparse
-
 import pytest
-
 from rasa.core.agent import Agent
 from rasa.core.channels.channel import CollectingOutputChannel, OutputChannel
-from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import ReminderScheduled, UserUttered, ActionExecuted
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator, NaturalLanguageGenerator
 from rasa.core.processor import MessageProcessor
-from rasa.shared.core.slots import Slot
 from rasa.core.tracker_store import MongoTrackerStore
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import ReminderScheduled, UserUttered, ActionExecuted
+from rasa.shared.core.slots import Slot
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.nlu.constants import (
+    INTENT,
+    ACTION_NAME,
+    FEATURE_TYPE_SENTENCE,
+)
 from rasa.shared.nlu.training_data.features import Features
-from rasa.shared.nlu.constants import INTENT, ACTION_NAME, FEATURE_TYPE_SENTENCE
-from tests.dialogues import TEST_MOODBOT_DIALOGUE
+from rasa.utils.endpoints import EndpointConfig
+from sanic.request import Request
+from scipy import sparse
 from tests.core.utilities import tracker_from_dialogue
+from tests.dialogues import TEST_MOODBOT_DIALOGUE
 
 
 class CustomSlot(Slot):
@@ -186,3 +186,20 @@ def moodbot_features(
 @pytest.fixture
 def moodbot_tracker(moodbot_domain: Domain) -> DialogueStateTracker:
     return tracker_from_dialogue(TEST_MOODBOT_DIALOGUE, moodbot_domain)
+
+
+@pytest.fixture(scope="session")
+async def trained_flow_policy_bot(trained_async: Callable) -> Text:
+    return await trained_async(
+        domain="data/test_flow_policy_bot/domain.yml",
+        config="data/test_flow_policy_bot/config.yml",
+        training_files=[
+            "data/test_flow_policy_bot/data/flows.yml",
+        ],
+    )
+
+
+@pytest.fixture
+async def flow_policy_bot_agent(trained_flow_policy_bot: Text) -> Agent:
+    endpoint = EndpointConfig("https://example.com/webhooks/actions")
+    return Agent.load(model_path=trained_flow_policy_bot, action_endpoint=endpoint)

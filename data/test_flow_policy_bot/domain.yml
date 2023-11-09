@@ -1,0 +1,11 @@
+version: "3.1"
+
+slots:
+  foo_slot_a:
+    type: text
+  foo_slot_b:
+    type: text
+  bar_slot_a:
+    type: text
+  bar_slot_b:
+    type: text
