@@ -91,18 +91,38 @@ def validate_state_of_commands(commands: List[Command]) -> None:
 
     Args:
         commands: The commands to validate.
-    """
-    # assert that there is only at max one cancel flow command
-    assert sum(isinstance(c, CancelFlowCommand) for c in commands) <= 1
 
-    # assert that free form answer commands are only at the beginning of the list
+    Raises:
+        ValueError: If the state of the commands is invalid.
+    """
+    # check that there is only at max one cancel flow command
+    if sum(isinstance(c, CancelFlowCommand) for c in commands) > 1:
+        structlogger.error(
+            "command_processor.validate_state_of_commands.multiple_cancel_flow_commands",
+            commands=commands,
+        )
+        raise ValueError("There can only be one cancel flow command.")
+
+    # check that free form answer commands are only at the beginning of the list
     free_form_answer_commands = [
         c for c in commands if isinstance(c, FreeFormAnswerCommand)
     ]
-    assert free_form_answer_commands == commands[: len(free_form_answer_commands)]
+    if free_form_answer_commands != commands[: len(free_form_answer_commands)]:
+        structlogger.error(
+            "command_processor.validate_state_of_commands.free_form_answer_commands_not_at_beginning",  # noqa: E501
+            commands=commands,
+        )
+        raise ValueError(
+            "Free form answer commands must be at start of the predicted command list."
+        )
 
-    # assert that there is at max only one correctslots command
-    assert sum(isinstance(c, CorrectSlotsCommand) for c in commands) <= 1
+    # check that there is at max only one correctslots command
+    if sum(isinstance(c, CorrectSlotsCommand) for c in commands) > 1:
+        structlogger.error(
+            "command_processor.validate_state_of_commands.multiple_correct_slots_commands",
+            commands=commands,
+        )
+        raise ValueError("There can only be one correct slots command.")
 
 
 def find_updated_flows(tracker: DialogueStateTracker, all_flows: FlowsList) -> Set[str]:
@@ -149,7 +169,7 @@ def execute_commands(
         all_flows: All flows.
 
     Returns:
-    A tuple of the action to execute and the events that were created.
+        A list of the events that were created.
     """
     commands: List[Command] = get_commands_from_tracker(tracker)
     original_tracker = tracker.copy()
@@ -160,7 +180,7 @@ def execute_commands(
     if updated_flows:
         # Override commands
         structlogger.debug(
-            "command_executor.running_flows_were_updated",
+            "command_processor.execute_commands.running_flows_were_updated",
             updated_flow_ids=updated_flows,
         )
         commands = [HandleCodeChangeCommand()]
@@ -252,7 +272,7 @@ def get_current_collect_step(
         # for some reason only the collect information pattern step is on the stack
         # but no flow that triggered it. this should never happen.
         structlogger.warning(
-            "command_executor.get_current_collect_step.no_flow_on_stack",
+            "command_processor.get_current_collect_step.no_flow_on_stack",
             stack=dialogue_stack,
         )
         return None
@@ -262,7 +282,7 @@ def get_current_collect_step(
         # this is a failure, if there is a frame, we should be able to get the
         # step from it
         structlogger.warning(
-            "command_executor.get_current_collect_step.no_step_for_frame",
+            "command_processor.get_current_collect_step.no_step_for_frame",
             frame=frame_that_triggered_collect_infos,
         )
         return None
@@ -275,7 +295,7 @@ def get_current_collect_step(
         # this should never happen as we only push collect information patterns
         # onto the stack if there is a collect information step
         structlogger.warning(
-            "command_executor.get_current_collect_step.step_not_collect",
+            "command_processor.get_current_collect_step.step_not_collect",
             step=step,
         )
         return None
@@ -286,9 +306,11 @@ def clean_up_commands(
 ) -> List[Command]:
     """Clean up a list of commands.
 
-    This will remove commands that are not necessary anymore, e.g. because the slot
-    they set is already set to the same value. It will also remove commands that
-    start a flow that is already on the stack.
+    This will clean commands that are not necessary anymore. e.g. removing commands
+    where the slot they correct was previously corrected to the same value, grouping
+    all slot corrections into one command, removing duplicate cancel flow commands
+    and moving free form answer commands to the beginning of the list (to be last when
+    reversed.)
 
     Args:
         commands: The commands to clean up.
@@ -304,53 +326,91 @@ def clean_up_commands(
     clean_commands: List[Command] = []
 
     for command in commands:
-        if isinstance(command, SetSlotCommand) and command.name in slots_so_far:
-            current_collect_info = get_current_collect_step(dialogue_stack, all_flows)
-
-            if current_collect_info and current_collect_info.collect == command.name:
-                # not a correction but rather an answer to the current collect info
-                clean_commands.append(command)
-                continue
-
-            structlogger.debug(
-                "command_executor.convert_command.correction", command=command
+        if isinstance(command, SetSlotCommand):
+            clean_commands = clean_up_slot_command(
+                clean_commands, command, dialogue_stack, all_flows, slots_so_far
             )
-            top = top_flow_frame(dialogue_stack)
-            if isinstance(top, CorrectionPatternFlowStackFrame):
-                already_corrected_slots = top.corrected_slots
-            else:
-                already_corrected_slots = {}
-
-            if (
-                command.name in already_corrected_slots
-                and already_corrected_slots[command.name] == command.value
-            ):
-                structlogger.debug(
-                    "command_executor.skip_command.slot_already_corrected",
-                    command=command,
-                )
-                continue
-
-            corrected_slot = CorrectedSlot(command.name, command.value)
-            for c in clean_commands:
-                if isinstance(c, CorrectSlotsCommand):
-                    c.corrected_slots.append(corrected_slot)
-                    break
-            else:
-                clean_commands.append(
-                    CorrectSlotsCommand(corrected_slots=[corrected_slot])
-                )
         elif isinstance(command, CancelFlowCommand) and contains_command(
             clean_commands, CancelFlowCommand
         ):
             structlogger.debug(
-                "command_executor.skip_command.already_cancelled_flow", command=command
+                "command_processor.clean_up_commands.skip_command_already_cancelled_flow",
+                command=command,
             )
         elif isinstance(command, FreeFormAnswerCommand):
             structlogger.debug(
-                "command_executor.prepend_command.free_form_answer", command=command
+                "command_processor.clean_up_commands.prepend_command_free_form_answer",
+                command=command,
             )
             clean_commands.insert(0, command)
         else:
             clean_commands.append(command)
     return clean_commands
+
+
+def clean_up_slot_command(
+    commands_so_far: List[Command],
+    command: SetSlotCommand,
+    dialogue_stack: DialogueStack,
+    all_flows: FlowsList,
+    slots_so_far: Set[str],
+) -> List[Command]:
+    """Clean up a slot command.
+
+    This will remove commands that are not necessary anymore, e.g. because the slot
+    they correct was previously corrected to the same value. It will group all slot
+    corrections into one command.
+
+    Args:
+        commands_so_far: The commands cleaned up so far.
+        command: The command to clean up.
+        dialogue_stack: The dialogue stack.
+        all_flows: All flows.
+        slots_so_far: The slots that have been filled so far.
+
+    Returns:
+        The cleaned up commands.
+    """
+    resulting_commands = commands_so_far[:]
+    if command.name in slots_so_far:
+        current_collect_info = get_current_collect_step(dialogue_stack, all_flows)
+
+        if current_collect_info and current_collect_info.collect == command.name:
+            # not a correction but rather an answer to the current collect info
+            resulting_commands.append(command)
+            return resulting_commands
+
+        structlogger.debug(
+            "command_processor.clean_up_slot_command.convert_command_to_correction",
+            command=command,
+        )
+        top = top_flow_frame(dialogue_stack)
+        if isinstance(top, CorrectionPatternFlowStackFrame):
+            already_corrected_slots = top.corrected_slots
+        else:
+            already_corrected_slots = {}
+
+        if (
+            command.name in already_corrected_slots
+            and already_corrected_slots[command.name] == command.value
+        ):
+            structlogger.debug(
+                "command_processor.clean_up_slot_command.skip_command_slot_already_corrected",
+                command=command,
+            )
+            return resulting_commands
+
+        # Group all corrections into one command
+        corrected_slot = CorrectedSlot(command.name, command.value)
+        for c in resulting_commands:
+            if isinstance(c, CorrectSlotsCommand):
+                c.corrected_slots.append(corrected_slot)
+                break
+        else:
+            resulting_commands.append(
+                CorrectSlotsCommand(corrected_slots=[corrected_slot])
+            )
+    else:
+        resulting_commands.append(command)
+
+    return resulting_commands
