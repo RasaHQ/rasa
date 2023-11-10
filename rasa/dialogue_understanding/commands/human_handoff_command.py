@@ -2,10 +2,18 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any, Dict, List
+
+import structlog
 from rasa.dialogue_understanding.commands import Command
+from rasa.dialogue_understanding.patterns.human_handoff import (
+    HumanHandoffPatternFlowStackFrame,
+)
+from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.shared.core.events import Event
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
+
+structlogger = structlog.get_logger()
 
 
 @dataclass
@@ -42,4 +50,7 @@ class HumanHandoffCommand(Command):
         Returns:
             The events to apply to the tracker.
         """
-        return []
+        dialogue_stack = DialogueStack.from_tracker(tracker)
+        structlogger.debug("command_executor.error", command=self)
+        dialogue_stack.push(HumanHandoffPatternFlowStackFrame())
+        return [dialogue_stack.persist_as_event()]
