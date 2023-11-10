@@ -1,0 +1,19 @@
+test_cases:
+  - test_case: user corrects the handle
+    steps:
+      - user: I want to add a new contact
+      - utter: utter_ask_add_contact_handle
+      - user: it's @jane
+      - slot_was_set:
+          - add_contact_handle: "@jane"
+      - utter: utter_ask_add_contact_name
+      - user: It's Jane Bar
+      - slot_was_set:
+          - add_contact_name: "Jane Bar"
+      - user: Wait, it's Jane Foo
+      - slot_was_set:
+          - add_contact_name: "Jane Foo"
+      - utter: utter_corrected_previous_input
+      - utter: utter_ask_add_contact_confirmation
+      - user: Yes
+      - utter: utter_contact_added

@@ -494,7 +494,6 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
                 UserUttered(text="hello", intent={"name": "greet"}),
                 ActionExecuted(action_name="utter_greet"),
             ],
-            default_domain,
         )
         prediction = loaded_policy.predict_action_probabilities(
             tracker, default_domain, precomputations
@@ -543,7 +542,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         tracker = DialogueStateTracker(sender_id="init", slots=default_domain.slots)
 
         tracker.update_with_events(
-            [UserUttered(text="hello", intent={"name": query_intent})], default_domain
+            [UserUttered(text="hello", intent={"name": query_intent})]
         )
 
         # Preset the model predictions to the similarity values
@@ -637,7 +636,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         """Skips predictions to prevent loop."""
         precomputations = None
         tracker = DialogueStateTracker(sender_id="init", slots=default_domain.slots)
-        tracker.update_with_events(tracker_events, default_domain)
+        tracker.update_with_events(tracker_events)
         with caplog.at_level(logging.DEBUG):
             prediction = trained_policy.predict_action_probabilities(
                 tracker, default_domain, precomputations
@@ -689,7 +688,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
     ):
         """Skips predictions if there's a new intent created."""
         tracker = DialogueStateTracker(sender_id="init", slots=default_domain.slots)
-        tracker.update_with_events(tracker_events, default_domain)
+        tracker.update_with_events(tracker_events)
 
         with caplog.at_level(logging.DEBUG):
             prediction = trained_policy.predict_action_probabilities(

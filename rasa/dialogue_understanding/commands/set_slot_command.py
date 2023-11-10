@@ -1,0 +1,119 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Any, Dict, List
+
+import structlog
+from rasa.dialogue_understanding.commands import Command
+from rasa.dialogue_understanding.patterns.collect_information import (
+    CollectInformationPatternFlowStackFrame,
+)
+from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
+from rasa.dialogue_understanding.stack.utils import (
+    get_collect_steps_excluding_ask_before_filling_for_active_flow,
+)
+from rasa.shared.core.events import Event, SlotSet
+from rasa.shared.core.flows import FlowsList
+from rasa.shared.core.trackers import DialogueStateTracker
+
+structlogger = structlog.get_logger()
+
+
+def get_flows_predicted_to_start_from_tracker(
+    tracker: DialogueStateTracker,
+) -> List[str]:
+    """Returns the flows that are predicted to start from the current state.
+
+    Args:
+        tracker: The tracker to use.
+
+    Returns:
+        The flows that are predicted to start from the current state.
+    """
+    from rasa.dialogue_understanding.processor.command_processor import (
+        get_commands_from_tracker,
+        filter_start_flow_commands,
+    )
+
+    commands = get_commands_from_tracker(tracker)
+    return filter_start_flow_commands(commands)
+
+
+@dataclass
+class SetSlotCommand(Command):
+    """A command to set a slot."""
+
+    name: str
+    value: Any
+
+    @classmethod
+    def command(cls) -> str:
+        """Returns the command type."""
+        return "set slot"
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> SetSlotCommand:
+        """Converts the dictionary to a command.
+
+        Returns:
+            The converted dictionary.
+        """
+        try:
+            return SetSlotCommand(name=data["name"], value=data["value"])
+        except KeyError as e:
+            raise ValueError(f"Missing key when parsing SetSlotCommand: {e}") from e
+
+    def run_command_on_tracker(
+        self,
+        tracker: DialogueStateTracker,
+        all_flows: FlowsList,
+        original_tracker: DialogueStateTracker,
+    ) -> List[Event]:
+        """Runs the command on the tracker.
+
+        Args:
+            tracker: The tracker to run the command on.
+            all_flows: All flows in the assistant.
+            original_tracker: The tracker before any command was executed.
+
+        Returns:
+            The events to apply to the tracker.
+        """
+        if tracker.get_slot(self.name) == self.value:
+            # value hasn't changed, skip this one
+            structlogger.debug(
+                "command_executor.skip_command.slot_already_set", command=self
+            )
+            return []
+
+        stack = DialogueStack.from_tracker(tracker)
+        # Get slots of the active flow
+        slots_of_active_flow = (
+            get_collect_steps_excluding_ask_before_filling_for_active_flow(
+                stack, all_flows
+            )
+        )
+
+        # Add slots that are asked in the current collect step. This is needed
+        # to include slots that has ask_before_filling set to True.
+        top_frame = stack.top()
+        if isinstance(top_frame, CollectInformationPatternFlowStackFrame):
+            slots_of_active_flow.add(top_frame.collect)
+
+        if self.name not in slots_of_active_flow:
+            # Get the other predicted flows from the most recent message on the tracker.
+            predicted_flows = get_flows_predicted_to_start_from_tracker(tracker)
+            use_slot_fill = any(
+                step.collect == self.name and not step.ask_before_filling
+                for flow in all_flows.underlying_flows
+                if flow.id in predicted_flows
+                for step in flow.get_collect_steps()
+            )
+            if not use_slot_fill:
+                structlogger.debug(
+                    "command_executor.skip_command.slot_not_asked_for", command=self
+                )
+                return []
+
+        structlogger.debug("command_executor.set_slot", command=self)
+        return [SlotSet(self.name, self.value)]

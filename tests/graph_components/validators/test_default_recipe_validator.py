@@ -40,7 +40,7 @@ from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.core.policies.policy import Policy
 from rasa.shared.core.training_data.structures import StoryGraph
-from rasa.shared.core.domain import KEY_FORMS, Domain, InvalidDomain
+from rasa.shared.core.domain import InvalidDomain, KEY_FORMS, Domain
 from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.data import TrainingType
 from rasa.shared.nlu.constants import (
@@ -827,11 +827,11 @@ def test_core_raise_if_domain_contains_form_names_but_no_rule_policy_given(
         lambda *args, **kwargs: None,
     )
     if should_raise:
-        with pytest.raises(
-            InvalidDomain,
-            match="You have defined a form action, but have not added the",
-        ):
+        with pytest.raises(InvalidDomain) as e:
             validator.validate(importer)
+            assert e.value.message.startswith(
+                "You have defined a form action, but have not added the"
+            )
     else:
         validator.validate(importer)
 
@@ -1015,7 +1015,9 @@ def test_nlu_training_data_validation():
 
 
 def test_no_warnings_with_default_project(tmp_path: Path):
-    rasa.utils.common.copy_directory(Path("rasa/cli/initial_project"), tmp_path)
+    rasa.utils.common.copy_directory(
+        Path("rasa/cli/project_templates/default/"), tmp_path
+    )
 
     importer = TrainingDataImporter.load_from_config(
         config_path=str(tmp_path / "config.yml"),

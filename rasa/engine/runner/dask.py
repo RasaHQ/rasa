@@ -100,6 +100,12 @@ class DaskGraphRunner(GraphRunner):
         try:
             dask_result = dask.get(run_graph, run_targets)
             return dict(dask_result)
+        except KeyError as e:
+            raise GraphRunError(
+                f"Could not find key {e} in the graph. Error running runner. "
+                f"Please check that you are running bot developed with CALM instead "
+                f"of bot developed with previous version of dialog management (DM1)."
+            ) from e
         except RuntimeError as e:
             raise GraphRunError("Error running runner.") from e
 

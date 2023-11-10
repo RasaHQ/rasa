@@ -79,3 +79,16 @@ DEFAULT_SYSLOG_PORT = 514
 
 COMPRESS_ACTION_SERVER_REQUEST_ENV_NAME = "COMPRESS_ACTION_SERVER_REQUEST"
 DEFAULT_COMPRESS_ACTION_SERVER_REQUEST = False
+
+# uses python like string formatting for the interpolation of templates
+RASA_FORMAT_TEMPLATE_ENGINE = "format"
+
+# uses jinja for the interpolation of templates
+JINJA2_TEMPLATE_ENGINE = "jinja"
+
+# default engine used if no engine is specified in the response
+DEFAULT_TEMPLATE_ENGINE = RASA_FORMAT_TEMPLATE_ENGINE
+
+# configuration parameter used to specify the template engine to use
+# for a response
+TEMPLATE_ENGINE_CONFIG_KEY = "template"

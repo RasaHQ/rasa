@@ -37,12 +37,13 @@ from rasa.shared.constants import (
     IGNORED_INTENTS,
     RESPONSE_CONDITION,
 )
-import rasa.shared.core.constants
 from rasa.shared.core.constants import (
     ACTION_SHOULD_SEND_DOMAIN,
+    SLOT_MAPPINGS,
     SlotMappingType,
     MAPPING_TYPE,
     MAPPING_CONDITIONS,
+    KNOWLEDGE_BASE_SLOT_NAMES,
     ACTIVE_LOOP,
 )
 from rasa.shared.exceptions import (
@@ -55,7 +56,13 @@ import rasa.shared.utils.io
 import rasa.shared.utils.common
 import rasa.shared.core.slot_mappings
 from rasa.shared.core.events import SlotSet, UserUttered
-from rasa.shared.core.slots import Slot, CategoricalSlot, TextSlot, AnySlot, ListSlot
+from rasa.shared.core.slots import (
+    Slot,
+    CategoricalSlot,
+    TextSlot,
+    AnySlot,
+    ListSlot,
+)
 from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
@@ -485,6 +492,13 @@ class Domain:
             slot_type = slot_dict[slot_name].pop("type", None)
             slot_class = Slot.resolve_by_type(slot_type)
 
+            if SLOT_MAPPINGS not in slot_dict[slot_name]:
+                logger.debug(
+                    f"Slot '{slot_name}' has no mappings defined. "
+                    f"We will continue with an empty list of mappings."
+                )
+                slot_dict[slot_name][SLOT_MAPPINGS] = []
+
             slot = slot_class(slot_name, **slot_dict[slot_name])
             slots.append(slot)
         return slots
@@ -766,6 +780,7 @@ class Domain:
         self.form_names, self.forms, overridden_form_actions = self._initialize_forms(
             forms
         )
+
         action_names += overridden_form_actions
 
         self.responses = responses
@@ -952,6 +967,7 @@ class Domain:
     def _add_default_slots(self) -> None:
         """Sets up the default slots and slot values for the domain."""
         self._add_requested_slot()
+        self._add_flow_slots()
         self._add_knowledge_base_slots()
         self._add_categorical_slot_default_value()
         self._add_session_metadata_slot()
@@ -964,6 +980,33 @@ class Domain:
         """
         for slot in [s for s in self.slots if isinstance(s, CategoricalSlot)]:
             slot.add_default_value()
+
+    def _add_flow_slots(self) -> None:
+        """Adds the slots needed for the conversation flows.
+
+        Add a slot called `dialogue_stack_slot` to the list of slots. The value of
+        this slot will be a call stack of the flow ids.
+        """
+        from rasa.shared.core.constants import FLOW_SLOT_NAMES
+
+        slot_names = [slot.name for slot in self.slots]
+
+        for flow_slot in FLOW_SLOT_NAMES:
+            if flow_slot not in slot_names:
+                self.slots.append(
+                    AnySlot(
+                        flow_slot,
+                        mappings=[],
+                        influence_conversation=False,
+                        is_builtin=True,
+                    )
+                )
+            else:
+                # TODO: in the future we need to prevent this entirely.
+                logger.error(
+                    f"Slot {flow_slot} is reserved for Rasa internal usage, "
+                    f"but it already exists. This might lead to bad outcomes."
+                )
 
     def _add_requested_slot(self) -> None:
         """Add a slot called `requested_slot` to the list of slots.
@@ -979,6 +1022,7 @@ class Domain:
                     rasa.shared.core.constants.REQUESTED_SLOT,
                     mappings=[],
                     influence_conversation=False,
+                    is_builtin=True,
                 )
             )
 
@@ -1001,20 +1045,24 @@ class Domain:
                 )
             )
             slot_names = [slot.name for slot in self.slots]
-            knowledge_base_slots = [
-                rasa.shared.core.constants.SLOT_LISTED_ITEMS,
-                rasa.shared.core.constants.SLOT_LAST_OBJECT,
-                rasa.shared.core.constants.SLOT_LAST_OBJECT_TYPE,
-            ]
-            for slot in knowledge_base_slots:
+            for slot in KNOWLEDGE_BASE_SLOT_NAMES:
                 if slot not in slot_names:
                     self.slots.append(
-                        TextSlot(slot, mappings=[], influence_conversation=False)
+                        TextSlot(
+                            slot,
+                            mappings=[],
+                            influence_conversation=False,
+                            is_builtin=True,
+                        )
                     )
 
     def _add_session_metadata_slot(self) -> None:
         self.slots.append(
-            AnySlot(rasa.shared.core.constants.SESSION_START_METADATA_SLOT, mappings=[])
+            AnySlot(
+                rasa.shared.core.constants.SESSION_START_METADATA_SLOT,
+                mappings=[],
+                is_builtin=True,
+            )
         )
 
     def index_for_action(self, action_name: Text) -> int:

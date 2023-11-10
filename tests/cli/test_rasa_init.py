@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Callable
 from _pytest.pytester import RunResult
 from _pytest.monkeypatch import MonkeyPatch
+import pytest
 
 from rasa.cli import scaffold
 from tests.conftest import enable_cache
@@ -46,7 +47,7 @@ def test_init_help(run: Callable[..., RunResult]):
 
     help_text = f"""usage: {RASA_EXE} init [-h] [-v] [-vv] [--quiet]
         [--logging-config-file LOGGING_CONFIG_FILE] [--no-prompt]
-        [--init-dir INIT_DIR]"""
+        [--init-dir INIT_DIR] [--template {{default,tutorial,calm}}]"""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
@@ -101,3 +102,18 @@ def test_train_data_in_project_dir(monkeypatch: MonkeyPatch, tmp_path: Path):
         scaffold.init_project(args, str(new_project_folder_path))
     assert os.getcwd() == str(new_project_folder_path)
     assert os.path.exists(".rasa/cache")
+
+
+@pytest.mark.parametrize("template", ["default", "tutorial", "calm"])
+def test_train_data_non_default_template(
+    run_with_stdin: Callable[..., RunResult],
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+    template: str,
+):
+    run_with_stdin(
+        "init", "--quiet", "--init-dir", str(tmp_path), stdin=b"N"
+    )  # avoid training an initial model
+
+    # picking domain as it is present in all templates
+    assert (tmp_path / "domain.yml").exists()

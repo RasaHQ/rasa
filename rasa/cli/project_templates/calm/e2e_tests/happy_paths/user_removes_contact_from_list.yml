@@ -1,0 +1,12 @@
+test_cases:
+  - test_case: user removes a contact using contact list
+    steps:
+      - user: Please show me my contacts
+      - utter: utter_list_contacts
+      - utter: utter_can_do_something_else
+      - user: Remove contact @MaryLu
+      - slot_was_set:
+          - remove_contact_handle: "@MaryLu"
+      - utter: utter_ask_remove_contact_confirmation
+      - user: yes
+      - utter: utter_remove_contact_success

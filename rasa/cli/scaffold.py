@@ -1,4 +1,5 @@
 import argparse
+from enum import Enum
 import os
 import sys
 from typing import List, Text
@@ -14,6 +15,17 @@ from rasa.shared.constants import (
     DEFAULT_DATA_PATH,
     DEFAULT_MODELS_PATH,
 )
+
+
+class ProjectTemplateName(Enum):
+    """Enum of the different project templates."""
+
+    DEFAULT = "default"
+    TUTORIAL = "tutorial"
+    CALM = "calm"
+
+    def __str__(self) -> str:
+        return self.value
 
 
 def add_subparser(
@@ -42,7 +54,13 @@ def add_subparser(
         default=None,
         help="Directory where your project should be initialized.",
     )
-
+    scaffold_parser.add_argument(
+        "--template",
+        type=ProjectTemplateName,
+        choices=list(ProjectTemplateName),
+        default=ProjectTemplateName.DEFAULT,
+        help="Select the template to use for the project.",
+    )
     scaffold_parser.set_defaults(func=run)
 
 
@@ -127,22 +145,27 @@ def print_run_or_instructions(args: argparse.Namespace) -> None:
 def init_project(args: argparse.Namespace, path: Text) -> None:
     """Inits project."""
     os.chdir(path)
-    create_initial_project(".")
+    create_initial_project(".", args.template)
     print(f"Created project directory at '{os.getcwd()}'.")
     print_train_or_instructions(args)
 
 
-def create_initial_project(path: Text) -> None:
+def create_initial_project(
+    path: Text, template: ProjectTemplateName = ProjectTemplateName.DEFAULT
+) -> None:
     """Creates directory structure and templates for initial project."""
     from distutils.dir_util import copy_tree
 
-    copy_tree(scaffold_path(), path)
+    copy_tree(scaffold_path(template), path)
 
 
-def scaffold_path() -> Text:
+def scaffold_path(template: ProjectTemplateName) -> Text:
     import pkg_resources
+    import rasa.cli.project_templates
 
-    return pkg_resources.resource_filename(__name__, "initial_project")
+    template_module = rasa.cli.project_templates.__name__
+
+    return pkg_resources.resource_filename(template_module, template.value)
 
 
 def print_cancel() -> None:

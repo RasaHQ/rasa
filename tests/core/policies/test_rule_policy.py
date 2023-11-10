@@ -758,7 +758,7 @@ def test_rule_policy_finetune(
     )
 
     original_data = training.load_data(
-        "examples/rules/data/rules.yml", trained_rule_policy_domain
+        "examples/nlu_based/rules/data/rules.yml", trained_rule_policy_domain
     )
 
     loaded_policy.train(original_data + [new_rule], trained_rule_policy_domain)
@@ -805,7 +805,7 @@ def test_rule_policy_contradicting_rule_finetune(
     )
 
     original_data = training.load_data(
-        "examples/rules/data/rules.yml", trained_rule_policy_domain
+        "examples/nlu_based/rules/data/rules.yml", trained_rule_policy_domain
     )
 
     with pytest.raises(InvalidRule) as execinfo:
@@ -1847,7 +1847,7 @@ def test_immediate_submit(policy: RulePolicy):
 
 @pytest.fixture()
 def trained_rule_policy_domain() -> Domain:
-    return Domain.load("examples/rules/domain.yml")
+    return Domain.load("examples/nlu_based/rules/domain.yml")
 
 
 @pytest.fixture()
@@ -1855,7 +1855,7 @@ def trained_rule_policy(
     trained_rule_policy_domain: Domain, policy: RulePolicy
 ) -> RulePolicy:
     trackers = training.load_data(
-        "examples/rules/data/rules.yml", trained_rule_policy_domain
+        "examples/nlu_based/rules/data/rules.yml", trained_rule_policy_domain
     )
 
     policy.train(trackers, trained_rule_policy_domain)

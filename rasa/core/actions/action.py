@@ -33,9 +33,10 @@ from rasa.shared.constants import (
     DOCS_BASE_URL,
     DEFAULT_NLU_FALLBACK_INTENT_NAME,
     UTTER_PREFIX,
+    FLOW_PREFIX,
 )
-from rasa.shared.core import events
 from rasa.shared.core.constants import (
+    DIALOGUE_STACK_SLOT,
     USER_INTENT_OUT_OF_SCOPE,
     ACTION_LISTEN_NAME,
     ACTION_RESTART_NAME,
@@ -56,6 +57,7 @@ from rasa.shared.core.constants import (
     ACTION_VALIDATE_SLOT_MAPPINGS,
     MAPPING_TYPE,
     SlotMappingType,
+    KNOWLEDGE_BASE_SLOT_NAMES,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -96,6 +98,13 @@ logger = logging.getLogger(__name__)
 def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["Action"]:
     """List default actions."""
     from rasa.core.actions.two_stage_fallback import TwoStageFallbackAction
+    from rasa.dialogue_understanding.patterns.correction import ActionCorrectFlowSlot
+    from rasa.dialogue_understanding.patterns.cancel import ActionCancelFlow
+    from rasa.dialogue_understanding.patterns.clarify import ActionClarifyFlows
+    from rasa.core.actions.action_run_slot_rejections import ActionRunSlotRejections
+    from rasa.core.actions.action_trigger_chitchat import ActionTriggerChitchat
+    from rasa.core.actions.action_trigger_search import ActionTriggerSearch
+    from rasa.core.actions.action_clean_stack import ActionCleanStack
 
     return [
         ActionListen(),
@@ -111,6 +120,13 @@ def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["A
         ActionSendText(),
         ActionBack(),
         ActionExtractSlots(action_endpoint),
+        ActionCancelFlow(),
+        ActionCorrectFlowSlot(),
+        ActionClarifyFlows(),
+        ActionRunSlotRejections(),
+        ActionCleanStack(),
+        ActionTriggerSearch(),
+        ActionTriggerChitchat(),
     ]
 
 
@@ -207,6 +223,10 @@ def action_for_name_or_text(
 
         return FormAction(action_name_or_text, action_endpoint)
 
+    if action_name_or_text.startswith(FLOW_PREFIX):
+        from rasa.core.actions.action_trigger_flow import ActionTriggerFlow
+
+        return ActionTriggerFlow(action_name_or_text)
     return RemoteAction(action_name_or_text, action_endpoint)
 
 
@@ -757,6 +777,23 @@ class RemoteAction(Action):
 
         return bot_messages
 
+    @staticmethod
+    def filter_forbidden_events(events: List[Event]) -> List[Event]:
+        """Filter special events that are not allowed in custom actions."""
+        # filter out `SlotSet` events for internal `dialogue_stack` slot
+        filtered_events = [
+            event
+            for event in events
+            if not (isinstance(event, SlotSet) and event.key == DIALOGUE_STACK_SLOT)
+        ]
+        if len(filtered_events) != len(events):
+            logger.warning(
+                f"Filtered out an event to set {DIALOGUE_STACK_SLOT} via a custom "
+                f"action. Setting this slot is currently limited to "
+                f"built-in actions."
+            )
+        return filtered_events
+
     async def run(
         self,
         output_channel: "OutputChannel",
@@ -808,8 +845,9 @@ class RemoteAction(Action):
                 responses, output_channel, nlg, tracker
             )
 
-            evts = events.deserialise_events(events_json)
-            return cast(List[Event], bot_messages) + evts
+            events = rasa.shared.core.events.deserialise_events(events_json)
+            events = self.filter_forbidden_events(events)
+            return cast(List[Event], bot_messages) + events
 
         except ClientResponseError as e:
             if e.status == 400:
@@ -1277,7 +1315,9 @@ class ActionExtractSlots(Action):
         executed_custom_actions: Set[Text] = set()
 
         user_slots = [
-            slot for slot in domain.slots if slot.name not in DEFAULT_SLOT_NAMES
+            slot
+            for slot in domain.slots
+            if slot.name not in DEFAULT_SLOT_NAMES | KNOWLEDGE_BASE_SLOT_NAMES
         ]
 
         for slot in user_slots:

@@ -17,6 +17,7 @@ from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.storage import ModelMetadata
 from rasa.model import get_latest_model
 from rasa.plugin import plugin_manager
+from rasa.shared.core.flows import FlowsList
 from rasa.shared.data import TrainingType
 import rasa.shared.utils.io
 import rasa.core.actions.action
@@ -79,7 +80,7 @@ from rasa.utils.endpoints import EndpointConfig
 logger = logging.getLogger(__name__)
 structlogger = structlog.get_logger()
 
-MAX_NUMBER_OF_PREDICTIONS = int(os.environ.get("MAX_NUMBER_OF_PREDICTIONS", "10"))
+MAX_NUMBER_OF_PREDICTIONS = int(os.environ.get("MAX_NUMBER_OF_PREDICTIONS", "20"))
 
 
 class MessageProcessor:
@@ -199,7 +200,7 @@ class MessageProcessor:
 
         await self._send_bot_messages(extraction_events, tracker, output_channel)
 
-        tracker.update_with_events(extraction_events, self.domain)
+        tracker.update_with_events(extraction_events)
 
         structlogger.debug(
             "processor.extract.slots",
@@ -651,13 +652,9 @@ class MessageProcessor:
     @staticmethod
     def _log_slots(tracker: DialogueStateTracker) -> None:
         # Log currently set slots
-        slot_values = "\n".join(
-            [f"\t{s.name}: {s.value}" for s in tracker.slots.values()]
-        )
-        if slot_values.strip():
-            structlogger.debug(
-                "processor.slots.log", slot_values=copy.deepcopy(slot_values)
-            )
+        slots = {s.name: s.value for s in tracker.slots.values() if s.value is not None}
+
+        structlogger.debug("processor.slots.log", slots=slots)
 
     def _check_for_unseen_features(self, parse_data: Dict[Text, Any]) -> None:
         """Warns the user if the NLU parse data contains unrecognized features.
@@ -720,10 +717,10 @@ class MessageProcessor:
         if self.http_interpreter:
             parse_data = await self.http_interpreter.parse(message)
         else:
+            # Intent is not explicitly present. Pass message to graph.
             msg = YAMLStoryReader.unpack_regex_message(
                 message=Message({TEXT: message.text})
             )
-            # Intent is not explicitly present. Pass message to graph.
             if msg.data.get(INTENT) is None:
                 parse_data = self._parse_message_with_graph(
                     message, tracker, only_output_properties
@@ -854,6 +851,8 @@ class MessageProcessor:
         # keep taking actions decided by the policy until it chooses to 'listen'
         should_predict_another_action = True
 
+        tracker = self.run_command_processor(tracker)
+
         # action loop. predicts actions until we hit action listen
         while should_predict_another_action and self._should_handle_message(tracker):
             # this actually just calls the policy's method by the same name
@@ -959,6 +958,35 @@ class MessageProcessor:
                     ):
                         scheduler.remove_job(scheduled_job.id)
 
+    def run_command_processor(
+        self, tracker: DialogueStateTracker
+    ) -> DialogueStateTracker:
+        """Run the command processor to apply commands to the stack.
+
+        The command processor applies all the commands from the NLU pipeline to the
+        dialogue stack. The dialogue stack then acts as base for decision making for
+        the policies that can use it.
+
+        Args:
+            tracker: the dialogue state tracker
+
+        Returns:
+        An updated tracker after commands have been applied
+        """
+        target = "command_processor"
+        results = self.graph_runner.run(
+            inputs={PLACEHOLDER_TRACKER: tracker.copy()}, targets=[target]
+        )
+        events = results[target]
+        tracker.update_with_events(events)
+        return tracker
+
+    def get_flows(self) -> FlowsList:
+        """Get the list of flows from the graph."""
+        target = "flows_provider"
+        results = self.graph_runner.run(inputs={}, targets=[target])
+        return results[target]
+
     async def _run_action(
         self,
         action: rasa.core.actions.action.Action,
@@ -973,7 +1001,7 @@ class MessageProcessor:
             # Use temporary tracker as we might need to discard the policy events in
             # case of a rejection.
             temporary_tracker = tracker.copy()
-            temporary_tracker.update_with_events(prediction.events, self.domain)
+            temporary_tracker.update_with_events(prediction.events)
 
             run_args = inspect.getfullargspec(action.run).args
             if "metadata" in run_args:
@@ -1044,8 +1072,10 @@ class MessageProcessor:
             structlogger.debug(
                 "processor.actions.policy_prediction",
                 prediction_events=copy.deepcopy(prediction.events),
+                policy_name=prediction.policy_name,
+                action_name=action.name(),
             )
-            tracker.update_with_events(prediction.events, self.domain)
+            tracker.update_with_events(prediction.events)
 
             # log the action and its produced events
             tracker.update(action.event_for_successful_execution(prediction))
@@ -1055,7 +1085,7 @@ class MessageProcessor:
             action_name=action.name(),
             rasa_events=copy.deepcopy(events),
         )
-        tracker.update_with_events(events, self.domain)
+        tracker.update_with_events(events)
 
     def _has_session_expired(self, tracker: DialogueStateTracker) -> bool:
         """Determine whether the latest session in `tracker` has expired.

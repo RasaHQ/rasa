@@ -4,6 +4,10 @@ import copy
 import logging
 from enum import Enum
 from pathlib import Path
+from rasa.dialogue_understanding.stack.dialogue_stack import (
+    DialogueStack,
+    DialogueStackFrame,
+)
 from rasa.shared.core.events import Event
 from typing import (
     Any,
@@ -104,6 +108,24 @@ class Policy(GraphComponent):
             The data type supported by this policy (ML-based training data).
         """
         return SupportedData.ML_DATA
+
+    @staticmethod
+    def does_support_stack_frame(frame: DialogueStackFrame) -> bool:
+        """Determine whether a stack frame is supported by the policy."""
+        return False
+
+    def supports_current_stack_frame(
+        self, tracker: DialogueStateTracker, only_after_user_message: bool = True
+    ) -> bool:
+        """Check whether the policy is allowed to act."""
+        dialogue_stack = DialogueStack.from_tracker(tracker)
+
+        if top_frame := dialogue_stack.top():
+            return self.does_support_stack_frame(top_frame)
+        elif only_after_user_message and len(tracker.events) > 0:
+            return not tracker.has_action_after_latest_user_message()
+        else:
+            return True
 
     def __init__(
         self,

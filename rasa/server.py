@@ -327,11 +327,6 @@ async def get_test_stories(
         # keep only non-empty trackers
         trackers = [tracker for tracker in trackers if len(tracker.events)]
 
-    logger.debug(
-        f"Fetched trackers for {len(trackers)} conversation sessions "
-        f"for conversation ID {conversation_id}."
-    )
-
     story_steps = []
 
     more_than_one_story = len(trackers) > 1
@@ -719,11 +714,19 @@ def create_app(
         """Get a dump of a conversation's tracker including its events."""
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
         until_time = rasa.utils.endpoints.float_arg(request, "until")
-
-        tracker = await app.ctx.agent.processor.fetch_full_tracker_with_initial_session(
-            conversation_id,
-            output_channel=CollectingOutputChannel(),
+        should_start_session = rasa.utils.endpoints.bool_arg(
+            request, "start_session", default=True
         )
+
+        if should_start_session:
+            tracker = (
+                await app.ctx.agent.processor.fetch_full_tracker_with_initial_session(
+                    conversation_id,
+                    output_channel=CollectingOutputChannel(),
+                )
+            )
+        else:
+            tracker = await app.ctx.agent.processor.get_tracker(conversation_id)
 
         try:
             if until_time is not None:
@@ -828,7 +831,6 @@ def create_app(
     @app.get("/conversations/<conversation_id:path>/story")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
-    @ensure_conversation_exists()
     async def retrieve_story(request: Request, conversation_id: Text) -> HTTPResponse:
         """Get an end-to-end story corresponding to this conversation."""
         until_time = rasa.utils.endpoints.float_arg(request, "until")
@@ -1369,6 +1371,14 @@ def create_app(
 
         logger.debug(f"Successfully unloaded model '{model_file}'.")
         return response.json(None, status=HTTPStatus.NO_CONTENT)
+
+    @app.get("/flows")
+    @requires_auth(app, auth_token)
+    async def get_flows(request: Request) -> HTTPResponse:
+        """Get all the flows currently stored by the agent."""
+        processor = app.ctx.agent.processor
+        flows = processor.get_flows()
+        return response.json(flows.as_json_list())
 
     @app.get("/domain")
     @requires_auth(app, auth_token)

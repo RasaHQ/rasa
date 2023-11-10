@@ -188,7 +188,7 @@ async def test_end_to_evaluation_trips_circuit_breaker(
     assistant_id: placeholder_default
     policies:
     - name: MemoizationPolicy
-      max_history: 11
+      max_history: 21
 
     pipeline: []
     """
@@ -215,6 +215,16 @@ async def test_end_to_evaluation_trips_circuit_breaker(
     )
 
     circuit_trip_predicted = [
+        "utter_greet",
+        "utter_greet",
+        "utter_greet",
+        "utter_greet",
+        "utter_greet",
+        "utter_greet",
+        "utter_greet",
+        "utter_greet",
+        "utter_greet",
+        "utter_greet",
         "utter_greet",
         "utter_greet",
         "utter_greet",

@@ -24,13 +24,22 @@
     ]
   },
   "sender_id": "mysender",
-  "latest_action": {"action_name": "action_listen"},
+  "latest_action": {
+    "action_name": "action_listen"
+  },
   "latest_action_name": "action_listen",
   "active_loop": {},
   "paused": false,
   "latest_event_time": 1517821726.211042,
   "followup_action": null,
-  "slots": {"name": null, "requested_slot": null, "session_started_metadata": null},
+  "slots": {
+    "dialogue_stack": null,
+    "flow_hashes": null,
+    "name": null,
+    "requested_slot": null,
+    "return_value": null,
+    "session_started_metadata": null
+  },
   "latest_input_channel": null,
   "events": [
     {
@@ -71,7 +80,9 @@
       },
       "event": "user",
       "text": "/greet",
-      "input_channel": null, "message_id": null, "metadata": {}
+      "input_channel": null,
+      "message_id": null,
+      "metadata": {}
     },
     {
       "timestamp": 1517821726.200373,
@@ -120,7 +131,9 @@
       },
       "event": "user",
       "text": "/mood_great",
-      "input_channel": null, "message_id": null, "metadata": {}
+      "input_channel": null,
+      "message_id": null,
+      "metadata": {}
     },
     {
       "timestamp": 1517821726.209908,

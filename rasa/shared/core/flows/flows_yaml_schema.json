@@ -1,0 +1,286 @@
+{
+  "type": "object",
+  "required": [
+    "flows"
+  ],
+  "properties": {
+    "version": {
+      "type": "string"
+    },
+    "flows": {
+      "type": "object",
+      "patternProperties": {
+        "^[A-Za-z_][A-Za-z0-9_]*$": {
+          "$ref": "#$defs/flow"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "nlu_trigger": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "intent"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "intent": {
+                "type": "object",
+                "properties": {
+                  "confidence_threshold": {
+                    "type": "number"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              }
+            }
+          },
+          {
+            "properties": {
+              "intent": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "oneOf": [
+          {
+            "required": [
+              "action"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "action": {
+                "type": "string"
+              },
+              "next": {
+                "$ref": "#$defs/next"
+              }
+            }
+          },
+          {
+            "required": [
+              "collect"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "description":{
+                "type": "string"
+              },
+              "collect": {
+                "type": "string"
+              },
+              "ask_before_filling": {
+                "type": "boolean"
+              },
+              "reset_after_flow_ends": {
+                "type": "boolean"
+              },
+              "utter": {
+                "type": "string"
+              },
+              "rejections": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "if",
+                    "utter"
+                  ],
+                  "properties": {
+                    "if": {
+                      "type": "string"
+                    },
+                    "utter": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "next": {
+                "$ref": "#$defs/next"
+              }
+            }
+          },
+          {
+            "required": [
+              "link"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "link": {
+                "type": "string"
+              },
+              "next": {
+                "type": "null"
+              }
+            }
+          },
+          {
+            "required": [
+              "set_slots"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "set_slots": {
+                "$ref": "#$defs/set_slots"
+              },
+              "next": {
+                "$ref": "#$defs/next"
+              }
+            }
+          },
+          {
+            "required": [
+              "next"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "next": {
+                "$ref": "#$defs/next"
+              },
+              "id": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "required": [
+              "generation_prompt"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "generation_prompt": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "next": {
+                "$ref": "#$defs/next"
+              },
+              "llm": {
+                "type": "object"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "flow": {
+      "required": [
+        "steps"
+      ],
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "if": {
+          "type": ["string", "boolean"]
+        },
+        "name": {
+          "type": "string"
+        },
+        "nlu_trigger": {
+          "$ref": "#$defs/nlu_trigger"
+        },
+        "steps": {
+          "$ref": "#$defs/steps"
+        }
+      }
+    },
+    "next": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "oneOf": [
+              {
+                "required": [
+                  "if",
+                  "then"
+                ]
+              },
+              {
+                "required": [
+                  "else"
+                ]
+              }
+            ],
+            "properties": {
+              "else": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "$ref": "#$defs/steps"
+                  }
+                ]
+              },
+              "if": {
+                "type": "string"
+              },
+              "then": {
+                "oneOf": [
+                  {
+                    "$ref": "#$defs/steps"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "type": "string"
+        }
+      ]
+    },
+    "set_slots": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "patternProperties": {
+          "^[A-Za-z_][A-Za-z0-9_]*$": {
+            "type": ["string", "null", "boolean", "number"]
+          }
+        }
+      }
+    }
+  }
+}

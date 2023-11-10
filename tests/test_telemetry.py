@@ -1,27 +1,18 @@
-import asyncio
 import json
 import os
 from pathlib import Path
 from typing import Any, Dict, Generator, Text
 
 from _pytest.monkeypatch import MonkeyPatch
-import jsonschema
 from unittest.mock import MagicMock, Mock
 import pytest
 import responses
 
 from rasa import telemetry
 import rasa.constants
-from rasa.core.agent import Agent
-from rasa.core.brokers.broker import EventBroker
-from rasa.core.channels import CmdlineInput
-from rasa.core.tracker_store import TrackerStore
-from rasa.shared.importers.importer import TrainingDataImporter
-from rasa.shared.nlu.training_data.training_data import TrainingData
 
 TELEMETRY_TEST_USER = "083642a3e448423ca652134f00e7fc76"  # just some random static id
 TELEMETRY_TEST_KEY = "5640e893c1324090bff26f655456caf3"  # just some random static id
-TELEMETRY_EVENTS_JSON = "docs/docs/telemetry/events.json"
 
 
 @pytest.fixture(autouse=True)
@@ -41,81 +32,6 @@ def patch_telemetry_context() -> Generator[None, None, None]:
     telemetry.TELEMETRY_CONTEXT = None
     yield
     telemetry.TELEMETRY_CONTEXT = defaut_context
-
-
-async def test_events_schema(
-    monkeypatch: MonkeyPatch, default_agent: Agent, config_path: Text
-):
-    # this allows us to patch the printing part used in debug mode to collect the
-    # reported events
-    monkeypatch.setenv("RASA_TELEMETRY_DEBUG", "true")
-    monkeypatch.setenv("RASA_TELEMETRY_ENABLED", "true")
-
-    mock = Mock()
-    monkeypatch.setattr(telemetry, "print_telemetry_event", mock)
-
-    with open(TELEMETRY_EVENTS_JSON) as f:
-        schemas = json.load(f)["events"]
-    initial = asyncio.all_tasks()
-    # Generate all known backend telemetry events, and then use events.json to
-    # validate their schema.
-    training_data = TrainingDataImporter.load_from_config(config_path)
-
-    with telemetry.track_model_training(training_data, "rasa"):
-        pass
-
-    telemetry.track_telemetry_disabled()
-
-    telemetry.track_data_split(0.5, "nlu")
-
-    telemetry.track_validate_files(True)
-
-    telemetry.track_data_convert("yaml", "nlu")
-
-    telemetry.track_tracker_export(5, TrackerStore(domain=None), EventBroker())
-
-    telemetry.track_interactive_learning_start(True, False)
-
-    telemetry.track_server_start([CmdlineInput()], None, None, 42, True)
-
-    telemetry.track_project_init("tests/")
-
-    telemetry.track_shell_started("nlu")
-
-    telemetry.track_visualization()
-
-    telemetry.track_core_model_test(5, True, default_agent)
-
-    telemetry.track_nlu_model_test(TrainingData())
-
-    telemetry.track_markers_extraction_initiated("all", False, False, None)
-
-    telemetry.track_markers_extracted(1)
-
-    telemetry.track_markers_stats_computed(1)
-
-    telemetry.track_markers_parsed_count(1, 1, 1)
-
-    # Also track train started for a graph config
-    training_data = TrainingDataImporter.load_from_config(
-        "data/test_config/graph_config.yml"
-    )
-    with telemetry.track_model_training(training_data, "rasa"):
-        pass
-
-    pending = asyncio.all_tasks() - initial
-    await asyncio.gather(*pending)
-
-    assert mock.call_count == 20
-
-    for args, _ in mock.call_args_list:
-        event = args[0]
-        # `metrics_id` automatically gets added to all event but is
-        # not part of the schema so we need to remove it before validation
-        del event["properties"]["metrics_id"]
-        jsonschema.validate(
-            instance=event["properties"], schema=schemas[event["event"]]
-        )
 
 
 async def _mock_track_internal_exception(*args, **kwargs) -> None:

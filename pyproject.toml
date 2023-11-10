@@ -9,18 +9,17 @@ exclude = "((.eggs | .git | .pytest_cache | build | dist))"
 
 [tool.poetry]
 name = "rasa"
-version = "3.7.0a1"
+version = "3.7.0rc1"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
 maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
 homepage = "https://rasa.com"
 repository = "https://github.com/rasahq/rasa"
 documentation = "https://rasa.com/docs"
-classifiers = [ "Development Status :: 5 - Production/Stable", "Intended Audience :: Developers", "License :: OSI Approved :: Apache Software License", "Topic :: Software Development :: Libraries",]
+classifiers = [ "Development Status :: 5 - Production/Stable", "Intended Audience :: Developers", "Topic :: Software Development :: Libraries",]
 keywords = [ "nlp", "machine-learning", "machine-learning-library", "bot", "bots", "botkit", "rasa conversational-agents", "conversational-ai", "chatbot", "chatbot-framework", "bot-framework",]
-include = [ "LICENSE.txt", "README.md", "rasa/shared/core/training_data/visualization.html", "rasa/cli/default_config.yml", "rasa/shared/importers/*", "rasa/utils/schemas/*", "rasa/keys",]
+include = [ "LICENSE.txt", "README.md", "rasa/shared/core/training_data/visualization.html", "rasa/cli/default_config.yml", "rasa/shared/importers/*", "rasa/utils/schemas/*", "rasa/keys", "rasa/dialogue_understanding/classifiers/command_prompt_template.jinja2",]
 readme = "README.md"
-license = "Apache-2.0"
 [[tool.poetry.source]]
 name = "internal repository mirroring psycopg binary for macos"
 url = "https://europe-west3-python.pkg.dev/rasa-releases/psycopg-binary/simple/"
@@ -87,8 +86,10 @@ line-length = 88
 select = [ "D", "E", "F", "W", "RUF",]
 
 [tool.poetry.dependencies]
-python = ">=3.8,<3.11"
+python = ">=3.8.1,<3.11"
 boto3 = "^1.26.136"
+google-cloud-storage = "^2.4.0"
+azure-storage-blob = "<12.17.0"
 requests = "^2.23"
 matplotlib = ">=3.1,<3.8"
 attrs = ">=19.3,<23.2"
@@ -111,7 +112,6 @@ colorhash = ">=1.0.2,<1.3.0"
 jsonschema = ">=3.2,<4.18"
 packaging = ">=20.0,<21.0"
 pytz = ">=2019.1,<2023.0"
-rasa-sdk = "~3.7.0a1"
 colorclass = "~2.2"
 terminaltables = "~3.1.0"
 sanic = "~21.12"
@@ -126,7 +126,7 @@ prompt-toolkit = "^3.0,<3.0.29"
 python-socketio = ">=4.4,<6"
 python-engineio = ">=4,<6,!=5.0.0"
 pydot = "~1.4"
-SQLAlchemy = ">=1.4.0,<1.5.0"
+SQLAlchemy = ">=2.0.0,<2.1.0"
 sklearn-crfsuite = "~0.3"
 psycopg2-binary = ">=2.8.2,<2.10.0"
 python-dateutil = "~2.8"
@@ -149,10 +149,12 @@ pluggy = "^1.0.0"
 slack-sdk = "^3.19.2"
 confluent-kafka = ">=1.9.2,<3.0.0"
 portalocker = "^2.7.0"
+pypred = "^0.4.0"
 structlog = "^23.1.0"
 structlog-sentry = "^2.0.2"
-# pin dnspython to avoid dependency incompatibility
-# in order to fix https://rasahq.atlassian.net/browse/ATO-1419
+langchain = "^0.0.321"
+jinja2 = "^3.0.0"
+openai = "^0.28.1"
 dnspython = "2.3.0"
 wheel = ">=0.38.1"
 certifi = ">=2023.7.22"
@@ -248,6 +250,10 @@ timeout = 60
 timeout_func_only = true
 asyncio_mode = "auto"
 
+[tool.poetry.dependencies.rasa-sdk]
+version = "~3.7.0rc1"
+allow-prereleases = true
+
 [tool.poetry.dependencies.tensorflow]
 version = "2.12.0"
 markers = "sys_platform != 'darwin' or platform_machine != 'arm64'"
@@ -320,13 +326,10 @@ moto = "~=4.1.2"
 fakeredis = "^2.11.2"
 mongomock = "^4.1.2"
 black = "^22.10.0"
-google-cloud-storage = "^2.4.0"
-azure-storage-blob = "<12.17.0"
 coveralls = "^3.0.1"
 towncrier = "^22.8.0"
 toml = "^0.10.0"
 pep440-version-utils = "^0.3.0"
-pydoc-markdown = "^4.7.0"
 pytest-timeout = "^2.1.0"
 mypy = "^1.0.0"
 bandit = "^1.6.3"

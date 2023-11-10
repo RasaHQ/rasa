@@ -198,10 +198,10 @@ class DialogueStateTracker:
         # id of the source of the messages
         self.sender_id = sender_id
         # slots that can be filled in this domain
+        self.slots: Dict[str, Slot] = AnySlotDict()
         if slots is not None:
             self.slots = {slot.name: copy.copy(slot) for slot in slots}
-        else:
-            self.slots = AnySlotDict()
+
         # file source of the messages
         self.sender_source = sender_source
         # whether the tracker belongs to a rule-based data
@@ -689,14 +689,16 @@ class DialogueStateTracker:
     def update_with_events(
         self,
         new_events: List[Event],
-        domain: Optional[Domain],
+        # TODO: remove domain argument - breaking change.
+        domain: Optional[Domain] = None,
         override_timestamp: bool = True,
     ) -> None:
         """Adds multiple events to the tracker.
 
         Args:
             new_events: Events to apply.
-            domain: The current model's domain.
+            domain: The current model's domain. Not needed anymore.
+              kept for backwards compatibility.
             override_timestamp: If `True` refresh all timestamps of the events. As the
                 events are usually created at some earlier point, this makes sure that
                 all new events come after any current tracker events.

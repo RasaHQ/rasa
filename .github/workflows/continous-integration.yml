@@ -16,8 +16,6 @@ concurrency:
 # - GH_RELEASE_NOTES_TOKEN: personal access token of `rasabot` github account
 #                           (login for account in 1pw)
 # - SLACK_WEBHOOK_TOKEN: token to post to RasaHQ slack account (in 1password)
-# - PYPI_TOKEN: publishing token for amn41 account, needs to be maintainer of
-#               RasaHQ/rasa on pypi (account credentials in 1password)
 # - DOCKERHUB_PASSWORD: password for an account with write access to the rasa
 #                       repo on hub.docker.com. used to pull and upload containers
 # - RASA_OSS_TELEMETRY_WRITE_KEY: key to write to segment. Used to report telemetry.
@@ -36,6 +34,7 @@ env:
   IS_TAG_BUILD: ${{ startsWith(github.event.ref, 'refs/tags') }}
   DOCKERHUB_USERNAME: tmbo
   DEFAULT_PYTHON_VERSION: "3.10"
+  TARGET_IMAGE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-docker"
 
   # for wait_for_xx jobs
   WAIT_TIMEOUT_SECS: 3000
@@ -49,7 +48,6 @@ jobs:
       # Both of the outputs below are strings but only one exists at any given time
       backend: ${{ steps.changed-files.outputs.backend || steps.run-all.outputs.backend }}
       docker: ${{ steps.changed-files.outputs.docker || steps.run-all.outputs.docker }}
-      docs: ${{ steps.changed-files.outputs.docs || steps.run-all.outputs.docs }}
       is_pre_release_version: ${{ steps.rasa_check_version_type.outputs.is_pre_release_version }}
     steps:
       - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
@@ -68,7 +66,6 @@ jobs:
         run: |
           echo "backend=true" >> $GITHUB_OUTPUT
           echo "docker=true" >> $GITHUB_OUTPUT
-          echo "docs=true" >> $GITHUB_OUTPUT
 
       - name: Check if tag version is a pre release version
         id: rasa_check_version_type
@@ -81,31 +78,6 @@ jobs:
           else
             echo "is_pre_release_version=true" >> $GITHUB_OUTPUT
           fi
-
-  wait_for_docs_tests:
-    # Looks for doc test workflows and waits for it to complete successfully
-    # Runs on pushes to main exclusively
-    name: Wait for docs tests
-    if: github.ref_type != 'tag'
-    runs-on: ubuntu-22.04
-    needs: [changes]
-
-    steps:
-      - name: Wait for doc tests
-        uses: fountainhead/action-wait-for-check@297be350cf8393728ea4d4b39435c7d7ae167c93
-        id: wait-for-doc-tests
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          checkName: Test Documentation
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          timeoutSeconds: ${{ env.WAIT_TIMEOUT_SECS }}
-          intervalSeconds: ${{ env.WAIT_INTERVAL_SECS }}
-
-      - name: Fail the step if the doc tests run could not be found
-        if: ${{ steps.wait-for-doc-tests.outputs.conclusion == 'timed_out' }}
-        run: |
-          echo "Could not find the doc tests run."
-          exit 1
 
   quality:
     name: Code Quality
@@ -253,13 +225,6 @@ jobs:
         python-version: [3.8, 3.9, "3.10"]
 
     steps:
-      - name: Run DataDog Agent
-        if: needs.changes.outputs.backend == 'true' && (matrix.os != 'windows-2019' || contains(github.event.pull_request.labels.*.name, 'tools:datadog-windows'))
-        run: |
-          docker run --name dd_agent -p 8126:8126 -d -e "DD_API_KEY=${{ secrets.DD_API_KEY }}" -e "DD_INSIDE_CI=true" -e "DD_HOSTNAME=none" -e "DD_SITE=datadoghq.eu" -e GITHUB_ACTIONS=true -e CI=true datadog/agent:latest
-          docker ps --all --filter name=dd_agent --filter status=running --no-trunc --format "{{.ID}} {{.Status}}"
-          docker port dd_agent
-
       - name: Checkout git repository 🕝
         if: needs.changes.outputs.backend == 'true'
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
@@ -310,7 +275,7 @@ jobs:
         if: needs.changes.outputs.backend == 'true'
         # Poetry on Windows cannot pick up the virtual environments directory properly,
         # and it creates a new one every time the pipeline runs.
-        # This step solves this problem — it tells poetry to always use `.venv` directory inside
+        # This step solves this problem — it tells poetry to always use `.venv` directory inside
         # the project itself, which also makes it easier for us to determine the correct directory
         # that needs to be cached.
         run: poetry config virtualenvs.in-project true
@@ -408,13 +373,6 @@ jobs:
         python-version: [3.8, 3.9, "3.10"]
 
     steps:
-      - name: Run DataDog Agent
-        if: needs.changes.outputs.backend == 'true' && (matrix.os != 'windows-2019' || contains(github.event.pull_request.labels.*.name, 'tools:datadog-windows'))
-        run: |
-          docker run --name dd_agent -p 8126:8126 -d -e "DD_API_KEY=${{ secrets.DD_API_KEY }}" -e "DD_INSIDE_CI=true" -e "DD_HOSTNAME=none" -e "DD_SITE=datadoghq.eu" -e GITHUB_ACTIONS=true -e CI=true datadog/agent:latest
-          docker ps --all --filter name=dd_agent --filter status=running --no-trunc --format "{{.ID}} {{.Status}}"
-          docker port dd_agent
-
       - name: Checkout git repository 🕝
         if: needs.changes.outputs.backend == 'true'
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
@@ -465,7 +423,7 @@ jobs:
         if: needs.changes.outputs.backend == 'true'
         # Poetry on Windows cannot pick up the virtual environments directory properly,
         # and it creates a new one every time the pipeline runs.
-        # This step solves this problem — it tells poetry to always use `.venv` directory inside
+        # This step solves this problem — it tells poetry to always use `.venv` directory inside
         # the project itself, which also makes it easier for us to determine the correct directory
         # that needs to be cached.
         run: poetry config virtualenvs.in-project true
@@ -545,62 +503,6 @@ jobs:
           name: ${{ matrix.test }}-coverage
           path: |
             ${{ github.workspace }}/${{ matrix.test }}-coverage
-
-  prepare_coverage_reports_analyse_with_sonarcloud:
-    name: Prepare coverage reports and Analyse coverage with Sonarcloud
-    if: github.ref_type != 'tag'
-    runs-on: ubuntu-22.04
-    # Always upload results even if tests failed
-    needs:
-      - test
-      - changes
-
-    steps:
-      - name: Checkout git repository 🕝
-        if: needs.changes.outputs.backend == 'true'
-        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
-
-      - name: Set up Python 3.10 🐍
-        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
-        with:
-          python-version: "3.10"
-
-      - name: Get backend coverage reports
-        if: needs.changes.outputs.backend == 'true'
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a
-        with:
-          path: ${{ github.workspace }}/tests_coverage
-
-      - name: Merge all reports
-        if: needs.changes.outputs.backend == 'true'
-        run: |
-          subs=`ls ${{ github.workspace }}/tests_coverage`
-          download_dir="${{ github.workspace }}/tests_coverage"
-          final_dir="${{ github.workspace }}/tests_coverage/final"
-
-          # Downloaded artifacts go into folders, gotta extract them all into one folder for upload
-          mkdir "${final_dir}/"
-          for i in $subs; do
-            mv "${download_dir}/$i"/* "${final_dir}/"
-          done
-
-          pip install coverage
-          coverage combine "${final_dir}/"*
-          coverage xml
-
-      - name: Analyse code with SonarCloud
-        uses: sonarsource/sonarcloud-github-action@5875562561d22a34be0c657405578705a169af6c
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          args: >
-            -Dsonar.organization=rasahq
-            -Dsonar.projectKey=RasaHQ_rasa
-            -Dsonar.sources=.
-            -Dsonar.python.coverage.reportPaths=${{ github.workspace }}/tests_coverage
-            -Dsonar.host.url=https://sonarcloud.io
-            -Dsonar.verbose=true
 
   integration_test:
     name: Run Non-Sequential Integration Tests
@@ -712,7 +614,7 @@ jobs:
         if: needs.changes.outputs.backend == 'true'
         # Poetry on Windows cannot pick up the virtual environments directory properly,
         # and it creates a new one every time the pipeline runs.
-        # This step solves this problem — it tells poetry to always use `.venv` directory inside
+        # This step solves this problem — it tells poetry to always use `.venv` directory inside
         # the project itself, which also makes it easier for us to determine the correct directory
         # that needs to be cached.
         run: poetry config virtualenvs.in-project true
@@ -814,7 +716,7 @@ jobs:
         if: needs.changes.outputs.backend == 'true'
         # Poetry on Windows cannot pick up the virtual environments directory properly,
         # and it creates a new one every time the pipeline runs.
-        # This step solves this problem — it tells poetry to always use `.venv` directory inside
+        # This step solves this problem — it tells poetry to always use `.venv` directory inside
         # the project itself, which also makes it easier for us to determine the correct directory
         # that needs to be cached.
         run: poetry config virtualenvs.in-project true
@@ -854,7 +756,7 @@ jobs:
       image_tag: ${{ steps.set_output.outputs.image_tag }}
       # Return 'true' if tag version is equal or higher than the latest tagged Rasa version
       is_newest_version: ${{ steps.rasa_get_version.outputs.is_newest_version }}
-      
+
     steps:
       # Due to an issue with checking out a wrong commit, we make sure
       # to checkout HEAD commit for a pull request.
@@ -880,8 +782,17 @@ jobs:
           echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
         shell: bash
 
-      - name: Login to DockerHub Registry 🔢
-        run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${{ env.DOCKERHUB_USERNAME }} --password-stdin || true
+      - id: 'auth-release'
+        name: Authenticate with gcloud for release registry 🎫
+        uses: 'google-github-actions/auth@e8df18b60c5dd38ba618c121b779307266153fbf'
+        with:
+          token_format: 'access_token'
+          credentials_json: '${{ secrets.RASA_OSS_RELEASE_ACCOUNT_KEY }}' #needs to be added to secrets
+
+      - name: Authenticate docker for release registry 🎫
+        run: |
+          # Set up docker to authenticate via gcloud command-line tool.
+          gcloud auth configure-docker europe-west3-docker.pkg.dev
 
       - name: Check if tag version is equal or higher than the latest tagged Rasa version
         id: rasa_get_version
@@ -912,7 +823,7 @@ jobs:
           BASE_IMAGE_HASH=${{ hashFiles('docker/Dockerfile.base') }}
           echo "base_image_hash=${BASE_IMAGE_HASH}" >> $GITHUB_OUTPUT
 
-          BASE_IMAGE_EXISTS=$((docker manifest inspect rasa/rasa:base-${BASE_IMAGE_HASH} &> /dev/null && echo true || echo false) || true)
+          BASE_IMAGE_EXISTS=$((docker manifest inspect ${{ env.TARGET_IMAGE_REGISTRY }}/rasa:base-${BASE_IMAGE_HASH} &> /dev/null && echo true || echo false) || true)
           echo "base_exists=${BASE_IMAGE_EXISTS}" >> $GITHUB_OUTPUT
 
           # Base MITIE image
@@ -920,42 +831,46 @@ jobs:
           MAKEFILE_MITIE_HASH=${{ hashFiles('Makefile') }}
           echo "base_mitie_image_hash=${BASE_MITIE_IMAGE_HASH:0:50}-${MAKEFILE_MITIE_HASH:0:50}" >> $GITHUB_OUTPUT
 
-          BASE_IMAGE_MITIE_EXISTS=$((docker manifest inspect rasa/rasa:base-mitie-${BASE_MITIE_IMAGE_HASH:0:50}-${MAKEFILE_MITIE_HASH:0:50} &> /dev/null && echo true || echo false) || true)
+          BASE_IMAGE_MITIE_EXISTS=$((docker manifest inspect ${{ env.TARGET_IMAGE_REGISTRY }}/rasa:base-mitie-${BASE_MITIE_IMAGE_HASH:0:50}-${MAKEFILE_MITIE_HASH:0:50} &> /dev/null && echo true || echo false) || true)
           echo "base_mitie_exists=${BASE_IMAGE_MITIE_EXISTS}" >> $GITHUB_OUTPUT
 
           # Base poetry image
-          BASE_IMAGE_POETRY_EXISTS=$((docker manifest inspect rasa/rasa:base-poetry-${{ env.POETRY_VERSION }} &> /dev/null && echo true || echo false) || true)
+          BASE_IMAGE_POETRY_EXISTS=$((docker manifest inspect ${{ env.TARGET_IMAGE_REGISTRY }}/rasa:base-poetry-${{ env.POETRY_VERSION }} &> /dev/null && echo true || echo false) || true)
           echo "base_poetry_exists=${BASE_IMAGE_POETRY_EXISTS}" >> $GITHUB_OUTPUT
 
           # Base builder image
           BASE_IMAGE_BUILDER_HASH=${{ hashFiles('docker/Dockerfile.base-builder') }}-poetry-${{ env.POETRY_VERSION }}
           echo "base_builder_image_hash=${BASE_IMAGE_BUILDER_HASH}" >> $GITHUB_OUTPUT
 
-          BASE_IMAGE_BUILDER_EXISTS=$((docker manifest inspect rasa/rasa:base-builder-${BASE_IMAGE_BUILDER_HASH} &> /dev/null && echo true || echo false) || true)
+          BASE_IMAGE_BUILDER_EXISTS=$((docker manifest inspect ${{ env.TARGET_IMAGE_REGISTRY }}/rasa:base-builder-${BASE_IMAGE_BUILDER_HASH} &> /dev/null && echo true || echo false) || true)
           echo "base_builder_exists=${BASE_IMAGE_BUILDER_EXISTS}" >> $GITHUB_OUTPUT
 
       - name: Build Docker base image 🛠
         if: steps.check_image.outputs.base_exists == 'false' || env.IS_TAG_BUILD == 'true'
         run: |
           export IMAGE_TAG=${{ steps.check_image.outputs.base_image_hash }}
+          export TARGET_IMAGE_REGISTRY=${{ env.TARGET_IMAGE_REGISTRY }}
           docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl base
 
       - name: Push Docker base image if it's not building from a fork ⬆
         if: (steps.check_image.outputs.base_exists == 'false' || env.IS_TAG_BUILD == 'true') && github.event.pull_request.head.repo.owner.login == 'RasaHQ'
         run: |
           export IMAGE_TAG=${{ steps.check_image.outputs.base_image_hash }}
+          export TARGET_IMAGE_REGISTRY=${{ env.TARGET_IMAGE_REGISTRY }}
           docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl base --push
 
       - name: Build Docker mitie base image 🛠
         if: steps.check_image.outputs.base_mitie_exists == 'false' || steps.check_image.outputs.base_exists == 'false'
         run: |
           export IMAGE_TAG=${{ steps.check_image.outputs.base_mitie_image_hash }}
+          export TARGET_IMAGE_REGISTRY=${{ env.TARGET_IMAGE_REGISTRY }}
           docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl base-mitie
 
       - name: Push Docker mitie base image if it's not building from a fork ⬆
         if: (steps.check_image.outputs.base_mitie_exists == 'false' || steps.check_image.outputs.base_exists == 'false') && github.event.pull_request.head.repo.owner.login == 'RasaHQ'
         run: |
           export IMAGE_TAG=${{ steps.check_image.outputs.base_mitie_image_hash }}
+          export TARGET_IMAGE_REGISTRY=${{ env.TARGET_IMAGE_REGISTRY }}
           docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl base-mitie --push
 
       - name: Build Docker poetry base image 🛠
@@ -963,6 +878,7 @@ jobs:
         run: |
           export IMAGE_TAG=${{ env.POETRY_VERSION }}
           export BASE_IMAGE_HASH=${{ steps.check_image.outputs.base_image_hash }}
+          export TARGET_IMAGE_REGISTRY=${{ env.TARGET_IMAGE_REGISTRY }}
           docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl base-poetry
 
       - name: Push Docker poetry base image if it's not building from a fork ⬆
@@ -970,6 +886,7 @@ jobs:
         run: |
           export IMAGE_TAG=${{ env.POETRY_VERSION }}
           export BASE_IMAGE_HASH=${{ steps.check_image.outputs.base_image_hash }}
+          export TARGET_IMAGE_REGISTRY=${{ env.TARGET_IMAGE_REGISTRY }}
           docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl base-poetry --push
 
       - name: Build Docker builder base image 🛠
@@ -982,6 +899,7 @@ jobs:
         if: (steps.check_image.outputs.base_builder_exists == 'false' || steps.check_image.outputs.base_exists == 'false') && github.event.pull_request.head.repo.owner.login == 'RasaHQ'
         run: |
           export IMAGE_TAG=${{ steps.check_image.outputs.base_builder_image_hash }}
+          export TARGET_IMAGE_REGISTRY=${{ env.TARGET_IMAGE_REGISTRY }}
           docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl base-builder --push
 
       # Set environment variables for a pull request
@@ -1032,10 +950,10 @@ jobs:
     needs: [changes, build_docker_base_images_and_set_env]
     env:
       IMAGE_TAG: ${{ needs.build_docker_base_images_and_set_env.outputs.image_tag }}
+      TARGET_IMAGE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-docker"
       BASE_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_image_hash }}
       BASE_MITIE_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_mitie_image_hash }}
       BASE_BUILDER_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_builder_image_hash }}
-
     strategy:
       matrix:
         image: [default, full, mitie-en, spacy-de, spacy-it, spacy-en]
@@ -1082,17 +1000,26 @@ jobs:
       - name: Echo Available platforms
         run: echo ${{ steps.buildx.outputs.platforms }}
 
-      - name: Login to DockerHub Registry 🔢
-        if: needs.changes.outputs.docker == 'true'
-        run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${{ env.DOCKERHUB_USERNAME }} --password-stdin || true
-
       - name: Copy Segment write key to the package
-        if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && github.repository == 'RasaHQ/rasa'
+        if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && github.repository == 'RasaHQ/rasa-private'
         env:
           RASA_TELEMETRY_WRITE_KEY: ${{ secrets.RASA_OSS_TELEMETRY_WRITE_KEY }}
           RASA_EXCEPTION_WRITE_KEY: ${{ secrets.RASA_OSS_EXCEPTION_WRITE_KEY }}
         run: |
           ./scripts/write_keys_file.sh
+
+      # Authenticate and push to the release registry
+      - id: 'auth-release'
+        name: Authenticate with gcloud for release registry 🎫
+        uses: 'google-github-actions/auth@e8df18b60c5dd38ba618c121b779307266153fbf'
+        with:
+          token_format: 'access_token'
+          credentials_json: '${{ secrets.RASA_OSS_RELEASE_ACCOUNT_KEY }}'
+
+      - name: Authenticate docker for release registry 🎫
+        run: |
+          # Set up docker to authenticate via gcloud command-line tool.
+          gcloud auth configure-docker europe-west3-docker.pkg.dev
 
       - name: Build Docker image
         if: needs.changes.outputs.docker == 'true'
@@ -1103,39 +1030,37 @@ jobs:
         run: df -h
 
       - name: Push image with main tag 📦
-        if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'RasaHQ/rasa'
+        if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'RasaHQ/rasa-private'
         run: |
           docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }} --push
 
       - name: Push image with ${{github.ref}} tag 📦
-        if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && env.IS_TAG_BUILD == 'true' && github.repository == 'RasaHQ/rasa'
+        if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && env.IS_TAG_BUILD == 'true' && github.repository == 'RasaHQ/rasa-private'
         run: |
-          IS_NEWEST_VERSION=${{ needs.build_docker_base_images_and_set_env.outputs.is_newest_version }}
-
           docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }} --push
 
-          # Tag the image as latest
-          if [[ "${IS_NEWEST_VERSION}" == "true" ]]; then
-            if [[ "${{ matrix.image }}" == "default" ]]; then
-              RELEASE_TAG="${IMAGE_TAG}"
-            else
-              RELEASE_TAG="${IMAGE_TAG}-${{ matrix.image }}"
-            fi
-
-            LATEST_TAG=$(echo $RELEASE_TAG | sed 's/'$IMAGE_TAG'/latest/g')
-            
-            # This will not build the image from ground up, but will only tag the existing image with LATEST_TAG
-            IMAGE_TAG=${LATEST_TAG} docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }}
-            # Push tagged image
-            IMAGE_TAG=${LATEST_TAG} docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }} --push
+      - name: Push image with latest tag 📦
+        if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && env.IS_TAG_BUILD == 'true' && github.repository == 'RasaHQ/rasa-private' && needs.build_docker_base_images_and_set_env.outputs.is_newest_version == 'true'
+        run: |
+          if [[ "${{ matrix.image }}" == "default" ]]; then
+            RELEASE_TAG="${IMAGE_TAG}"
+          else
+            RELEASE_TAG="${IMAGE_TAG}-${{ matrix.image }}"
           fi
+
+          LATEST_TAG=$(echo $RELEASE_TAG | sed 's/'$IMAGE_TAG'/latest/g')
+          
+          # This will not build the image from ground up, but will only tag the existing image with LATEST_TAG
+          IMAGE_TAG=${LATEST_TAG} docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }}
+          # Push tagged image
+          IMAGE_TAG=${LATEST_TAG} docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }} --push
 
   deploy:
     name: Deploy to PyPI
     runs-on: ubuntu-22.04
 
     # deploy will only be run when there is a tag available
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && github.repository == 'RasaHQ/rasa'
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && github.repository == 'RasaHQ/rasa-private'
     needs: [docker] # only run after the docker build stage succeeds
 
     steps:
@@ -1167,11 +1092,33 @@ jobs:
       - name: Build ⚒️ Distributions
         run: poetry build
 
-      - name: Publish to PyPI 📦
-        uses: pypa/gh-action-pypi-publish@c7f29f7adef1a245bd91520e94867e5c6eedddcc
+      # Push to the internal release registry
+      - name: Publish to internal PyPI 📦
+        uses: pypa/gh-action-pypi-publish@717ba43cfbb0387f6ce311b169a825772f54d295
         with:
-          user: __token__
-          password: ${{ secrets.PYPI_TOKEN }}
+          user: "github-ci"
+          password: ${{ secrets.PYPI_PASSWORD }}
+          repository_url: "https://pypi.rasa.com/simple/"
+          packages_dir: ${{ format('{0}/dist', github.workspace) }}
+
+      # Authenticate and push to the release registry
+      - id: "auth-release"
+        name: Authenticate with gcloud for release registry 🎫
+        uses: "google-github-actions/auth@ceee102ec2387dd9e844e01b530ccd4ec87ce955"
+        with:
+          token_format: 'access_token'
+          credentials_json: "${{ secrets.RASA_OSS_RELEASE_ACCOUNT_KEY }}"
+
+      - name: "Set up Cloud SDK"
+        uses: "google-github-actions/setup-gcloud@62d4898025f6041e16b1068643bfc5a696863587"
+
+      - name: Release via GCP Artifact Registry
+        run: |
+          pip install keyring
+          pip install keyrings.google-artifactregistry-auth
+          pip install twine
+          gcloud artifacts print-settings python --project=rasa-releases --repository=rasa-plus-py --location=europe-west3 > ~/.pypirc
+          twine upload --verbose --repository-url https://europe-west3-python.pkg.dev/rasa-releases/rasa-plus-py/ ${{ format('{0}/dist/*', github.workspace) }}
 
       - name: Notify Sentry about the release
         env:
@@ -1182,7 +1129,7 @@ jobs:
           curl -sL https://sentry.io/get-cli/ | bash
           GITHUB_TAG=${GITHUB_TAG/refs\/tags\//}
           sentry-cli releases new -p rasa-open-source "rasa-$GITHUB_TAG"
-          sentry-cli releases set-commits --auto "rasa-$GITHUB_TAG"
+          sentry-cli releases set-commits "rasa-$GITHUB_TAG" --auto --ignore-missing
           sentry-cli releases finalize "rasa-$GITHUB_TAG"
 
       - name: Notify Slack & Publish Release Notes 🗞
@@ -1202,7 +1149,7 @@ jobs:
     name: Notify Slack & Publish Release Notes
     runs-on: ubuntu-22.04
     # run this job when the workflow is triggered by a tag push
-    if: always() && github.repository == 'RasaHQ/rasa' && github.ref_type == 'tag'
+    if: always() && github.repository == 'RasaHQ/rasa-private' && github.ref_type == 'tag'
     needs:
       - deploy
 
@@ -1214,4 +1161,5 @@ jobs:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_TOKEN }}
         uses: Ilshidur/action-slack@689ad44a9c9092315abd286d0e3a9a74d31ab78a
         with:
-          args: "⛔️ *Rasa Open Source* version `${{ github.ref_name }}` could not be released 😱! Please check out GitHub Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          args: "⛔️ *Rasa Private* version `${{ github.ref_name }}` could not be released 😱! Please check out GitHub Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            

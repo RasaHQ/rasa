@@ -3,7 +3,10 @@ from functools import reduce
 from typing import Text, Optional, List, Dict, Set, Any, Tuple, Type, Union, cast
 import logging
 
+import pkg_resources
+
 import rasa.shared.constants
+from rasa.shared.core.flows import FlowsList
 import rasa.shared.utils.common
 import rasa.shared.core.constants
 import rasa.shared.utils.io
@@ -58,6 +61,17 @@ class TrainingDataImporter(ABC):
             `StoryGraph` containing all loaded stories.
         """
         ...
+
+    def get_flows(self) -> FlowsList:
+        """Retrieves the flows that should be used for training.
+
+        Default implementation returns an empty `FlowsList`. The default
+        implementation is required because of backwards compatibility.
+
+        Returns:
+            `FlowsList` containing all loaded flows.
+        """
+        return FlowsList(underlying_flows=[])
 
     def get_conversation_tests(self) -> StoryGraph:
         """Retrieves end-to-end conversation stories for testing.
@@ -140,7 +154,7 @@ class TrainingDataImporter(ABC):
         if isinstance(importer, E2EImporter):
             # When we only train NLU then there is no need to enrich the data with
             # E2E data from Core training data.
-            importer = importer.importer
+            importer = importer._importer
 
         return NluDataImporter(importer)
 
@@ -169,7 +183,9 @@ class TrainingDataImporter(ABC):
                 RasaFileImporter(config_path, domain_path, training_data_paths)
             ]
 
-        return E2EImporter(ResponsesSyncImporter(CombinedDataImporter(importers)))
+        return E2EImporter(
+            FlowSyncImporter(ResponsesSyncImporter(CombinedDataImporter(importers)))
+        )
 
     @staticmethod
     def _importer_from_dict(
@@ -289,6 +305,17 @@ class CombinedDataImporter(TrainingDataImporter):
         )
 
     @rasa.shared.utils.common.cached_method
+    def get_flows(self) -> FlowsList:
+        """Retrieves training stories / rules (see parent class for full docstring)."""
+        flow_lists = [importer.get_flows() for importer in self._importers]
+
+        return reduce(
+            lambda merged, other: merged.merge(other),
+            flow_lists,
+            FlowsList(underlying_flows=[]),
+        )
+
+    @rasa.shared.utils.common.cached_method
     def get_conversation_tests(self) -> StoryGraph:
         """Retrieves conversation test stories (see parent class for full docstring)."""
         stories = [importer.get_conversation_tests() for importer in self._importers]
@@ -318,26 +345,130 @@ class CombinedDataImporter(TrainingDataImporter):
         return self._importers[0].get_config_file_for_auto_config()
 
 
-class ResponsesSyncImporter(TrainingDataImporter):
-    """Importer that syncs `responses` between Domain and NLU training data.
-
-    Synchronizes responses between Domain and NLU and
-    adds retrieval intent properties from the NLU training data
-    back to the Domain.
-    """
+class PassThroughImporter(TrainingDataImporter):
+    """Importer that passes through all calls to the actual importer."""
 
     def __init__(self, importer: TrainingDataImporter):
-        """Initializes the ResponsesSyncImporter."""
+        """Initializes the FlowSyncImporter."""
         self._importer = importer
 
     def get_config(self) -> Dict:
         """Retrieves model config (see parent class for full docstring)."""
         return self._importer.get_config()
 
-    @rasa.shared.utils.common.cached_method
+    def get_flows(self) -> FlowsList:
+        """Retrieves model flows (see parent class for full docstring)."""
+        return self._importer.get_flows()
+
     def get_config_file_for_auto_config(self) -> Optional[Text]:
         """Returns config file path for auto-config only if there is a single one."""
         return self._importer.get_config_file_for_auto_config()
+
+    def get_domain(self) -> Domain:
+        """Retrieves model domain (see parent class for full docstring)."""
+        return self._importer.get_domain()
+
+    def get_stories(self, exclusion_percentage: Optional[int] = None) -> StoryGraph:
+        """Retrieves training stories / rules (see parent class for full docstring)."""
+        return self._importer.get_stories(exclusion_percentage)
+
+    def get_conversation_tests(self) -> StoryGraph:
+        """Retrieves conversation test stories (see parent class for full docstring)."""
+        return self._importer.get_conversation_tests()
+
+    def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
+        """Updates NLU data with responses for retrieval intents from domain."""
+        return self._importer.get_nlu_data(language)
+
+
+DEFAULT_PATTERN_FLOWS_FILE_NAME = "default_flows_for_patterns.yml"
+
+
+class FlowSyncImporter(PassThroughImporter):
+    """Importer that syncs `flows` between Domain and flow training data."""
+
+    @staticmethod
+    def load_default_pattern_flows() -> FlowsList:
+        """Loads the default flows from the file system."""
+        from rasa.shared.core.flows.yaml_flows_io import YAMLFlowsReader
+
+        default_flows_file = pkg_resources.resource_filename(
+            "rasa.dialogue_understanding.patterns", DEFAULT_PATTERN_FLOWS_FILE_NAME
+        )
+
+        return YAMLFlowsReader.read_from_file(default_flows_file)
+
+    @staticmethod
+    def load_default_pattern_flows_domain() -> Domain:
+        """Loads the default flows from the file system."""
+        default_flows_file = pkg_resources.resource_filename(
+            "rasa.dialogue_understanding.patterns", DEFAULT_PATTERN_FLOWS_FILE_NAME
+        )
+
+        return Domain.from_path(default_flows_file)
+
+    @classmethod
+    def merge_with_default_flows(cls, flows: FlowsList) -> FlowsList:
+        """Merges the passed flows with the default flows.
+
+        If a user defined flow contains a flow with an id of a default flow,
+        it will overwrite the default flow.
+
+        Args:
+            flows: user defined flows.
+
+        Returns:
+            Merged flows."""
+        default_flows = cls.load_default_pattern_flows()
+
+        user_flow_ids = [flow.id for flow in flows.underlying_flows]
+        missing_default_flows = [
+            default_flow
+            for default_flow in default_flows.underlying_flows
+            if default_flow.id not in user_flow_ids
+        ]
+
+        return flows.merge(FlowsList(missing_default_flows))
+
+    @rasa.shared.utils.common.cached_method
+    def get_flows(self) -> FlowsList:
+        flows = self._importer.get_flows()
+
+        if flows.is_empty():
+            # if there are no flows, we don't need to add the default flows either
+            return flows
+
+        return self.merge_with_default_flows(flows)
+
+    @rasa.shared.utils.common.cached_method
+    def get_domain(self) -> Domain:
+        """Merge existing domain with properties of flows."""
+        domain = self._importer.get_domain()
+
+        flows = self.get_flows()
+
+        if flows.is_empty():
+            # if there are no flows, we don't need to add the default flows either
+            return domain
+
+        default_flows_domain = self.load_default_pattern_flows_domain()
+
+        flow_names = [
+            rasa.shared.constants.FLOW_PREFIX + flow.id
+            for flow in flows.underlying_flows
+        ]
+
+        flow_domain = Domain.from_dict({KEY_ACTIONS: flow_names})
+        return domain.merge(flow_domain.merge(default_flows_domain))
+
+
+class ResponsesSyncImporter(PassThroughImporter):
+    """Importer that syncs `responses` between Domain and NLU training data.
+
+    Synchronizes responses between Domain and NLU and
+    adds retrieval intent properties from the NLU training data
+    back to the Domain.
+    """
 
     @rasa.shared.utils.common.cached_method
     def get_domain(self) -> Domain:
@@ -421,14 +552,6 @@ class ResponsesSyncImporter(TrainingDataImporter):
             }
         )
 
-    def get_stories(self, exclusion_percentage: Optional[int] = None) -> StoryGraph:
-        """Retrieves training stories / rules (see parent class for full docstring)."""
-        return self._importer.get_stories(exclusion_percentage)
-
-    def get_conversation_tests(self) -> StoryGraph:
-        """Retrieves conversation test stories (see parent class for full docstring)."""
-        return self._importer.get_conversation_tests()
-
     @rasa.shared.utils.common.cached_method
     def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
         """Updates NLU data with responses for retrieval intents from domain."""
@@ -457,21 +580,17 @@ class ResponsesSyncImporter(TrainingDataImporter):
         return TrainingData(responses=responses)
 
 
-class E2EImporter(TrainingDataImporter):
+class E2EImporter(PassThroughImporter):
     """Importer with the following functionality.
 
     - enhances the NLU training data with actions / user messages from the stories.
     - adds potential end-to-end bot messages from stories as actions to the domain
     """
 
-    def __init__(self, importer: TrainingDataImporter) -> None:
-        """Initializes the E2EImporter."""
-        self.importer = importer
-
     @rasa.shared.utils.common.cached_method
     def get_domain(self) -> Domain:
         """Retrieves model domain (see parent class for full docstring)."""
-        original = self.importer.get_domain()
+        original = self._importer.get_domain()
         e2e_domain = self._get_domain_with_e2e_actions()
 
         return original.merge(e2e_domain)
@@ -492,32 +611,14 @@ class E2EImporter(TrainingDataImporter):
 
         return Domain.from_dict({KEY_E2E_ACTIONS: list(additional_e2e_action_names)})
 
-    def get_stories(self, exclusion_percentage: Optional[int] = None) -> StoryGraph:
-        """Retrieves the stories that should be used for training.
-
-        See parent class for details.
-        """
-        return self.importer.get_stories(exclusion_percentage)
-
-    def get_conversation_tests(self) -> StoryGraph:
-        """Retrieves conversation test stories (see parent class for full docstring)."""
-        return self.importer.get_conversation_tests()
-
-    def get_config(self) -> Dict:
-        """Retrieves model config (see parent class for full docstring)."""
-        return self.importer.get_config()
-
-    @rasa.shared.utils.common.cached_method
-    def get_config_file_for_auto_config(self) -> Optional[Text]:
-        """Returns config file path for auto-config only if there is a single one."""
-        return self.importer.get_config_file_for_auto_config()
+        return self._importer.get_config_file_for_auto_config()
 
     @rasa.shared.utils.common.cached_method
     def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
         """Retrieves NLU training data (see parent class for full docstring)."""
         training_datasets = [
             _additional_training_data_from_default_actions(),
-            self.importer.get_nlu_data(language),
+            self._importer.get_nlu_data(language),
             self._additional_training_data_from_stories(),
         ]
 

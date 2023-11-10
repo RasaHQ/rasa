@@ -5,7 +5,7 @@
 [![Join the chat on Rasa Community Forum](https://img.shields.io/badge/forum-join%20discussions-brightgreen.svg)](https://forum.rasa.com/?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![PyPI version](https://badge.fury.io/py/rasa.svg)](https://badge.fury.io/py/rasa)
 [![Supported Python Versions](https://img.shields.io/pypi/pyversions/rasa.svg)](https://pypi.python.org/pypi/rasa)
-[![Build Status](https://github.com/RasaHQ/rasa/workflows/Continuous%20Integration/badge.svg)](https://github.com/RasaHQ/rasa/actions)
+[![Build Status](https://github.com/RasaHQ/rasa-private/workflows/Continuous%20Integration/badge.svg)](https://github.com/RasaHQ/rasa-private/actions)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=RasaHQ_rasa&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=RasaHQ_rasa)
 [![Documentation Status](https://img.shields.io/badge/docs-stable-brightgreen.svg)](https://rasa.com/docs)
 ![Documentation Build](https://img.shields.io/netlify/d2e447e4-5a5e-4dc7-be5d-7c04ae7ff706?label=Documentation%20Build)
@@ -186,27 +186,6 @@ In case the PATH variable had not been automatically setup, run:
 export PATH="$HOME/.cargo/bin:$PATH"
 ```
 
-
-### Running and changing the documentation
-
-First of all, install all the required dependencies:
-
-```bash
-make install install-docs
-```
-
-After the installation has finished, you can run and view the documentation
-locally using:
-
-```bash
-make livedocs
-```
-
-It should open a new tab with the local version of the docs in your browser;
-if not, visit http://localhost:3000 in your browser.
-You can now change the docs locally and the web page will automatically reload
-and apply your changes.
-
 ### Running the Tests
 
 In order to run the tests, make sure that you have the development requirements installed:
@@ -307,15 +286,6 @@ To check the types execute
 make types
 ```
 
-### Deploying documentation updates
-
-We use `Docusaurus v2` to build docs for tagged versions and for the `main` branch.
-To run Docusaurus, install `Node.js 12.x`.
-The static site that gets built is pushed to the `documentation` branch of this repo.
-
-We host the site on netlify. On `main` branch builds (see `.github/workflows/documentation.yml`), we push the built docs to
-the `documentation` branch. Netlify automatically re-deploys the docs pages whenever there is a change to that branch.
-
 ## Releases
 Rasa has implemented robust policies governing version naming, as well as release pace for major, minor, and patch releases.
 
@@ -343,7 +313,7 @@ The maintenance duration and end of life for every release are shown on our webs
 ### Cutting a Major / Minor release
 #### A week before release day
 
-1. **Make sure the [milestone](https://github.com/RasaHQ/rasa/milestones) already exists and is scheduled for the
+1. **Make sure the [milestone](https://github.com/RasaHQ/rasa-private/milestones) already exists and is scheduled for the
 correct date.**
 2. **Take a look at the issues & PRs that are in the milestone**: does it look about right for the release highlights
 we are planning to ship? Does it look like anything is missing? Don't worry about being aware of every PR that should
@@ -374,10 +344,6 @@ start the release process (in case anything is missing).
 4. **You may now do the release by following the instructions outlined in the
 [Rasa Open Source README](#steps-to-release-a-new-version) !**
 
-#### After a Major release
-
-After a Major release has been completed, please follow [these instructions to complete the documentation update](./docs/README.md#manual-steps-after-a-new-version).
-
 ### Steps to release a new version
 Releasing a new version is quite simple, as the packages are build and distributed by GitHub Actions.
 
@@ -394,10 +360,9 @@ Releasing a new version is quite simple, as the packages are build and distribut
 4. Switch to the branch you want to cut the release from (`main` in case of a major, the `<major>.<minor>.x` branch for minors and patches)
     - Update the `rasa-sdk` entry in `pyproject.toml` with the new release version and run `poetry update`. This creates a new `poetry.lock` file with all dependencies resolved.
     - Commit the changes with `git commit -am "bump rasa-sdk dependency"` but do not push them. They will be automatically picked up by the following step.
-5. If this is a major release, update the list of actively maintained versions [in the README](#actively-maintained-versions) and in [the docs](./docs/docs/actively-maintained-versions.mdx).
-6. Run `make release`
-7. Create a PR against the release branch (e.g. `1.2.x`)
-8. Once your PR is merged, tag a new release (this SHOULD always happen on the release branch), e.g. using
+5. Run `make release`
+6. Create a PR against the release branch (e.g. `1.2.x`)
+7. Once your PR is merged, tag a new release (this SHOULD always happen on the release branch), e.g. using
     ```bash
     git checkout 1.2.x
     git pull origin 1.2.x
@@ -405,13 +370,13 @@ Releasing a new version is quite simple, as the packages are build and distribut
     git push origin 1.2.0 --tags
     ```
     GitHub will build this tag and publish the build artifacts.
-9. After all the steps are completed and if everything goes well then we should see a message automatically posted in the company's Slack (`product` channel) like this [one](https://rasa-hq.slack.com/archives/C7B08Q5FX/p1614354499046600)
-10. If no message appears in the channel then you can do the following checks:
-    - Check the workflows in [Github Actions](https://github.com/RasaHQ/rasa/actions) and make sure that the merged PR of the current release is completed successfully. To easily find your PR you can use the filters `event: push` and `branch: <version number>` (example on release 2.4 you can see [here](https://github.com/RasaHQ/rasa/actions/runs/643344876))
+8. After all the steps are completed and if everything goes well then we should see a message automatically posted in the company's Slack (`product` channel) like this [one](https://rasa-hq.slack.com/archives/C7B08Q5FX/p1614354499046600)
+9. If no message appears in the channel then you can do the following checks:
+    - Check the workflows in [Github Actions](https://github.com/RasaHQ/rasa-private/actions) and make sure that the merged PR of the current release is completed successfully. To easily find your PR you can use the filters `event: push` and `branch: <version number>` (example on release 2.4 you can see [here](https://github.com/RasaHQ/rasa/actions/runs/643344876))
     - If the workflow is not completed, then try to re run the workflow in case that solves the problem
     - If the problem persists, check also the log files and try to find the root cause of the issue
     - If you still cannot resolve the error, contact the infrastructure team by providing any helpful information from your investigation
-11.  After the message is posted correctly in the `product` channel, check also in the `product-engineering-alerts` channel if there are any alerts related to the Rasa Open Source release like this [one](https://rasa-hq.slack.com/archives/C01585AN2NP/p1615486087001000)
+10. After the message is posted correctly in the `product` channel, check also in the `product-engineering-alerts` channel if there are any alerts related to the Rasa Open Source release like this [one](https://rasa-hq.slack.com/archives/C01585AN2NP/p1615486087001000)
 
 ### Cutting a Patch release
 
@@ -427,15 +392,15 @@ need your fixes to be on the `2.0.x` release branch). All patch releases must co
 steps + get the PR merged.
 4. Once the PR is in, pull the `.x` branch again and push the tag!
 
-### Additional Release Tasks 
+### Additional Release Tasks
 **Note: This is only required if the released version is the highest version available.
-For instance, perform the following steps when version > [version](https://github.com/RasaHQ/rasa/blob/main/rasa/version.py) on main.**
+For instance, perform the following steps when version > [version](https://github.com/RasaHQ/rasa-private/blob/main/rasa/version.py) on main.**
 
 In order to check compatibility between the new released Rasa version to the latest version of Rasa X/Enterprise, we perform the following steps:
-1. Following a new Rasa release, an automated pull request is created in [Rasa-X-Demo](https://github.com/RasaHQ/rasa-x-demo/pulls). 
+1. Following a new Rasa release, an automated pull request is created in [Rasa-X-Demo](https://github.com/RasaHQ/rasa-x-demo/pulls).
 2. Once the above PR is merged, follow instructions [here](https://github.com/RasaHQ/rasa-x-demo/blob/master/.github/VERSION_BUMPER_PR_COMMENT.md), to release a version.
 3. Update the new version in the Rasa X/Enterprise [env file](https://github.com/RasaHQ/rasa-x/blob/main/.env).
-The [Rasa-X-Demo](https://github.com/RasaHQ/rasa-x-demo) project uses the new updated Rasa version to train and test a model which in turn is used by our CI to run tests in the Rasa X/Enterprise repository, 
+The [Rasa-X-Demo](https://github.com/RasaHQ/rasa-x-demo) project uses the new updated Rasa version to train and test a model which in turn is used by our CI to run tests in the Rasa X/Enterprise repository,
 thus validating compatibility between Rasa and Rasa X/Enterprise.
 
 ### Actively maintained versions
@@ -443,8 +408,7 @@ thus validating compatibility between Rasa and Rasa X/Enterprise.
 Please refer to the [Rasa Product Release and Maintenance Policy](https://rasa.com/rasa-product-release-and-maintenance-policy/) page.
 
 ## License
-Licensed under the Apache License, Version 2.0.
-Copyright 2022 Rasa Technologies GmbH. [Copy of the license](LICENSE.txt).
+Copyright 2022 Rasa Technologies GmbH.
 
 A list of the Licenses of the dependencies of the project can be found at
 the bottom of the

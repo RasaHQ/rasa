@@ -1,6 +1,11 @@
+from rasa.core.policies.flow_policy import FlowPolicy
+from rasa.dialogue_understanding.generator.nlu_command_adapter import NLUCommandAdapter
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.classifiers.fallback_classifier import FallbackClassifier
 from rasa.nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifier
+from rasa.dialogue_understanding.generator.llm_command_generator import (
+    LLMCommandGenerator,
+)
 from rasa.nlu.classifiers.logistic_regression_classifier import (
     LogisticRegressionClassifier,
 )
@@ -45,6 +50,8 @@ DEFAULT_COMPONENTS = [
     MitieIntentClassifier,
     SklearnIntentClassifier,
     LogisticRegressionClassifier,
+    NLUCommandAdapter,
+    LLMCommandGenerator,
     # Response Selectors
     ResponseSelector,
     # Message Entity Extractors
@@ -76,4 +83,5 @@ DEFAULT_COMPONENTS = [
     RulePolicy,
     MemoizationPolicy,
     AugmentedMemoizationPolicy,
+    FlowPolicy,
 ]

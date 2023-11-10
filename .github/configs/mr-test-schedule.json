@@ -1,3 +1,0 @@
-{
-  "body": "```yml\r\ninclude:\r\n  - dataset: [\"all\"]\r\n    config: [\"all\"]\r\n```"
-}

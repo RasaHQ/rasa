@@ -43,6 +43,7 @@ from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 import rasa.shared.utils.io
 from rasa.shared.core.domain import Domain
+from rasa.shared.core.slots import AnySlot
 from rasa.shared.exceptions import InvalidConfigException
 from rasa.utils.tensorflow.constants import EPOCHS
 
@@ -1044,6 +1045,26 @@ def test_check_unresolved_slots(capsys: CaptureFixture):
         ]
     )
     assert rasa.model_training._check_unresolved_slots(domain, stories) is None
+
+
+def test_check_restricted_slots(monkeypatch: MonkeyPatch):
+    domain_path = "data/test_domains/default_with_mapping.yml"
+    domain = Domain.load(domain_path)
+    mock = Mock()
+    monkeypatch.setattr(rasa.shared.utils.cli, "print_warning", mock)
+    rasa.model_training._check_restricted_slots(domain)
+    assert not mock.called
+
+    domain.slots.append(
+        AnySlot(
+            name="context",
+            mappings=[{}],
+            initial_value=None,
+            influence_conversation=False,
+        )
+    )
+    rasa.model_training._check_restricted_slots(domain)
+    assert mock.called
 
 
 @pytest.mark.parametrize(

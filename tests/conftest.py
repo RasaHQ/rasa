@@ -930,3 +930,17 @@ def tracker_with_restarted_event(
     events = initial_events_including_restart + events_after_restart
 
     return DialogueStateTracker.from_events(sender_id=sender_id, evts=events)
+
+
+@pytest.fixture(scope="session")
+def tests_folder() -> str:
+    tests_folder = os.path.dirname(os.path.abspath(__file__))
+    assert os.path.isdir(tests_folder)
+    return tests_folder
+
+
+@pytest.fixture(scope="session")
+def tests_data_folder(tests_folder: str) -> str:
+    tests_data_folder = os.path.join(os.path.split(tests_folder)[0], "data")
+    assert os.path.isdir(tests_data_folder)
+    return tests_data_folder

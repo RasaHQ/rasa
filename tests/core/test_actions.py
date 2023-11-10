@@ -26,6 +26,7 @@ from rasa.core.actions.action import (
     ActionSessionStart,
     ActionEndToEndResponse,
     ActionExtractSlots,
+    default_actions,
 )
 from rasa.core.actions.forms import FormAction
 from rasa.core.channels import CollectingOutputChannel, OutputChannel
@@ -74,23 +75,15 @@ from rasa.core.nlg.response import TemplatedNaturalLanguageGenerator
 from rasa.shared.core.constants import (
     USER_INTENT_SESSION_START,
     ACTION_LISTEN_NAME,
-    ACTION_RESTART_NAME,
-    ACTION_SESSION_START_NAME,
-    ACTION_DEFAULT_FALLBACK_NAME,
-    ACTION_DEACTIVATE_LOOP_NAME,
-    ACTION_REVERT_FALLBACK_EVENTS_NAME,
-    ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
-    ACTION_DEFAULT_ASK_REPHRASE_NAME,
-    ACTION_BACK_NAME,
-    ACTION_TWO_STAGE_FALLBACK_NAME,
-    ACTION_UNLIKELY_INTENT_NAME,
-    RULE_SNIPPET_ACTION_NAME,
-    ACTION_SEND_TEXT_NAME,
     ACTIVE_LOOP,
     FOLLOWUP_ACTION,
     REQUESTED_SLOT,
     SESSION_START_METADATA_SLOT,
-    ACTION_EXTRACT_SLOTS,
+    DIALOGUE_STACK_SLOT,
+    RETURN_VALUE_SLOT,
+    FLOW_HASHES_SLOT,
+    DEFAULT_ACTION_NAMES,
+    RULE_SNIPPET_ACTION_NAME,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
@@ -139,25 +132,15 @@ def test_domain_action_instantiation():
         action.action_for_name_or_text(action_name, domain, None)
         for action_name in domain.action_names_or_texts
     ]
-
-    assert len(instantiated_actions) == 17
+    expected_action_names = DEFAULT_ACTION_NAMES + [
+        "my_module.ActionTest",
+        "utter_test",
+        "utter_chitchat",
+    ]
+    assert len(instantiated_actions) == len(expected_action_names)
+    for i, instantiated_action in enumerate(instantiated_actions):
+        assert instantiated_action.name() == expected_action_names[i]
     assert instantiated_actions[0].name() == ACTION_LISTEN_NAME
-    assert instantiated_actions[1].name() == ACTION_RESTART_NAME
-    assert instantiated_actions[2].name() == ACTION_SESSION_START_NAME
-    assert instantiated_actions[3].name() == ACTION_DEFAULT_FALLBACK_NAME
-    assert instantiated_actions[4].name() == ACTION_DEACTIVATE_LOOP_NAME
-    assert instantiated_actions[5].name() == ACTION_REVERT_FALLBACK_EVENTS_NAME
-    assert instantiated_actions[6].name() == ACTION_DEFAULT_ASK_AFFIRMATION_NAME
-    assert instantiated_actions[7].name() == ACTION_DEFAULT_ASK_REPHRASE_NAME
-    assert instantiated_actions[8].name() == ACTION_TWO_STAGE_FALLBACK_NAME
-    assert instantiated_actions[9].name() == ACTION_UNLIKELY_INTENT_NAME
-    assert instantiated_actions[10].name() == ACTION_BACK_NAME
-    assert instantiated_actions[11].name() == ACTION_SEND_TEXT_NAME
-    assert instantiated_actions[12].name() == RULE_SNIPPET_ACTION_NAME
-    assert instantiated_actions[13].name() == ACTION_EXTRACT_SLOTS
-    assert instantiated_actions[14].name() == "my_module.ActionTest"
-    assert instantiated_actions[15].name() == "utter_test"
-    assert instantiated_actions[16].name() == "utter_chitchat"
 
 
 @pytest.mark.parametrize(
@@ -238,7 +221,10 @@ async def test_remote_action_runs(
                 "slots": {
                     "name": None,
                     REQUESTED_SLOT: None,
+                    FLOW_HASHES_SLOT: None,
                     SESSION_START_METADATA_SLOT: None,
+                    DIALOGUE_STACK_SLOT: None,
+                    RETURN_VALUE_SLOT: None,
                 },
                 "events": [],
                 "latest_input_channel": None,
@@ -300,7 +286,10 @@ async def test_remote_action_logs_events(
                 "slots": {
                     "name": None,
                     REQUESTED_SLOT: None,
+                    FLOW_HASHES_SLOT: None,
                     SESSION_START_METADATA_SLOT: None,
+                    DIALOGUE_STACK_SLOT: None,
+                    RETURN_VALUE_SLOT: None,
                 },
                 "events": [],
                 "latest_input_channel": None,
@@ -1285,7 +1274,7 @@ async def test_action_extract_slots_predefined_mappings(
     assert events == [SlotSet(slot_name, slot_value)]
 
     events.extend([user])
-    tracker.update_with_events(events, domain)
+    tracker.update_with_events(events)
 
     new_events = await action_extract_slots.run(
         CollectingOutputChannel(),
@@ -1296,7 +1285,7 @@ async def test_action_extract_slots_predefined_mappings(
     assert new_events == [SlotSet(slot_name, slot_value)]
 
     new_events.extend([BotUttered(), ActionExecuted("action_listen"), new_user])
-    tracker.update_with_events(new_events, domain)
+    tracker.update_with_events(new_events)
 
     updated_evts = await action_extract_slots.run(
         CollectingOutputChannel(),
@@ -2793,8 +2782,7 @@ async def test_action_extract_slots_emits_necessary_slot_set_events(
                 intent={"name": intent_name},
                 entities=[{"entity": entity_name, "value": value_to_set}],
             )
-        ],
-        domain=domain,
+        ]
     )
 
     action = ActionExtractSlots(None)
@@ -2864,7 +2852,7 @@ async def test_action_extract_slots_priority_of_slot_mappings():
         tracker,
         domain,
     )
-    tracker.update_with_events(events, domain=domain)
+    tracker.update_with_events(events)
     assert tracker.get_slot("location_slot") == entity_value
 
 
@@ -3042,3 +3030,33 @@ async def test_action_send_text_handles_missing_metadata(
     )
 
     assert events == [BotUttered("")]
+
+
+def test_default_actions_and_names_consistency():
+    names_of_default_actions = {action.name() for action in default_actions()}
+    names_of_executable_actions_in_constants = set(DEFAULT_ACTION_NAMES) - {
+        RULE_SNIPPET_ACTION_NAME
+    }
+    assert names_of_default_actions == names_of_executable_actions_in_constants
+
+
+async def test_filter_out_dialogue_stack_slot_set_in_a_custom_action(
+    default_channel: OutputChannel,
+    default_nlg: NaturalLanguageGenerator,
+    default_tracker: DialogueStateTracker,
+    domain: Domain,
+) -> None:
+    endpoint = EndpointConfig("https://example.com/webhooks/actions")
+    remote_action = action.RemoteAction("my_action", endpoint)
+    events = [SlotSet(DIALOGUE_STACK_SLOT, {}), SlotSet("some_slot", "some_value")]
+    events_as_dict = [event.as_dict() for event in events]
+    response = {"events": events_as_dict, "responses": []}
+    with aioresponses() as mocked:
+        mocked.post("https://example.com/webhooks/actions", payload=response)
+
+        events = await remote_action.run(
+            default_channel, default_nlg, default_tracker, domain
+        )
+
+    assert len(events) == 1
+    assert events[0] == SlotSet("some_slot", "some_value")

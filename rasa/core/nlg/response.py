@@ -1,5 +1,7 @@
 import copy
 import logging
+from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
+from rasa.core.constants import DEFAULT_TEMPLATE_ENGINE, TEMPLATE_ENGINE_CONFIG_KEY
 
 from rasa.shared.core.trackers import DialogueStateTracker
 from typing import Text, Any, Dict, Optional, List
@@ -7,6 +9,7 @@ from typing import Text, Any, Dict, Optional, List
 from rasa.core.nlg import interpolator
 from rasa.core.nlg.generator import NaturalLanguageGenerator, ResponseVariationFilter
 from rasa.shared.constants import RESPONSE_CONDITION
+from rasa.shared.nlu.constants import METADATA
 
 logger = logging.getLogger(__name__)
 
@@ -69,14 +72,16 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
     ) -> Optional[Dict[Text, Any]]:
         """Generate a response for the requested utter action."""
         filled_slots = tracker.current_slot_values()
+        stack_context = DialogueStack.from_tracker(tracker).current_context()
         return self.generate_from_slots(
-            utter_action, filled_slots, output_channel, **kwargs
+            utter_action, filled_slots, stack_context, output_channel, **kwargs
         )
 
     def generate_from_slots(
         self,
         utter_action: Text,
         filled_slots: Dict[Text, Any],
+        stack_context: Dict[Text, Any],
         output_channel: Text,
         **kwargs: Any,
     ) -> Optional[Dict[Text, Any]]:
@@ -87,19 +92,25 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         )
         # Filling the slots in the response with placeholders and returning the response
         if r is not None:
-            return self._fill_response(r, filled_slots, **kwargs)
+            return self._fill_response(r, filled_slots, stack_context, **kwargs)
         else:
             return None
 
     def _fill_response(
         self,
         response: Dict[Text, Any],
-        filled_slots: Optional[Dict[Text, Any]] = None,
+        filled_slots: Dict[Text, Any],
+        stack_context: Dict[Text, Any],
         **kwargs: Any,
     ) -> Dict[Text, Any]:
         """Combine slot values and key word arguments to fill responses."""
         # Getting the slot values in the response variables
-        response_vars = self._response_variables(filled_slots, kwargs)
+        response_vars = self._response_variables(filled_slots, stack_context, kwargs)
+
+        # template formatting method
+        method = response.get(METADATA, {}).get(
+            TEMPLATE_ENGINE_CONFIG_KEY, DEFAULT_TEMPLATE_ENGINE
+        )
 
         keys_to_interpolate = [
             "text",
@@ -113,20 +124,26 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
             for key in keys_to_interpolate:
                 if key in response:
                     response[key] = interpolator.interpolate(
-                        response[key], response_vars
+                        response[key],
+                        response_vars,
+                        method=method,
                     )
         return response
 
     @staticmethod
     def _response_variables(
-        filled_slots: Dict[Text, Any], kwargs: Dict[Text, Any]
+        filled_slots: Dict[Text, Any],
+        stack_context: Dict[Text, Any],
+        kwargs: Dict[Text, Any],
     ) -> Dict[Text, Any]:
         """Combine slot values and key word arguments to fill responses."""
         if filled_slots is None:
             filled_slots = {}
 
+        # copy in the context from the stack
+        response_vars = {"context": stack_context}
         # Copying the filled slots in the response variables.
-        response_vars = filled_slots.copy()
+        response_vars.update(filled_slots)
         response_vars.update(kwargs)
         return response_vars
 

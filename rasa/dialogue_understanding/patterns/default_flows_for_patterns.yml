@@ -1,0 +1,164 @@
+version: "3.1"
+responses:
+  utter_boolean_slot_rejection:
+    - text: "Sorry, the value you provided, `{{value}}`, is not valid. Please respond with a valid value."
+      metadata:
+        rephrase: True
+        template: jinja
+
+  utter_can_do_something_else:
+    - text: "What else I can help you with?"
+      metadata:
+        rephrase: True
+
+  utter_categorical_slot_rejection:
+    - text: "Sorry, you responded with an invalid value - `{{value}}`. Please select one of the available options."
+      metadata:
+        rephrase: True
+        template: jinja
+
+  utter_clarification_options_rasa:
+    - text: "I can help, but I need more information. Which of these would you like to do: {{context.clarification_options}}?"
+      metadata:
+        rephrase: True
+        template: jinja
+
+  utter_corrected_previous_input:
+    - text: "Ok, I am updating {{ context.corrected_slots.keys()|join(', ') }} to {{ context.corrected_slots.values()|join(', ') }} respectively."
+      metadata:
+        rephrase: True
+        template: jinja
+
+  utter_float_slot_rejection:
+    - text: "Sorry, it seems the value you provided `{{value}}` is not a valid number. Please provide a valid number in your response."
+      metadata:
+        rephrase: True
+        template: jinja
+
+  utter_flow_cancelled_rasa:
+    - text: "Okay, stopping {{ context.canceled_name }}."
+      metadata:
+        rephrase: True
+        template: jinja
+
+  utter_flow_continue_interrupted: 
+    - text: "Let's continue with {{ context.previous_flow_name }}."
+      metadata:
+        rephrase: True
+        template: jinja
+
+  utter_inform_code_change:
+    - text: There has been an update to my code. I need to wrap up our running dialogue and start from scratch.
+      metadata:
+        rephrase: True
+
+  utter_internal_error_rasa:
+    - text: Sorry, I am having trouble with that. Please try again in a few minutes.
+
+  utter_no_knowledge_base:
+    - text: I am afraid, I don't know the answer. At this point, I don't have access to a knowledge base.
+      metadata:
+        rephrase: True
+
+  utter_skip_question_answer:
+    - text: I'm here to provide you with the best assistance, and in order to do so, I kindly request that we complete this step together. Your input is essential for a seamless experience!
+      metadata:
+        rephrase: True
+
+slots:
+  confirm_correction:
+    type: bool
+    mappings:
+      - type: custom
+
+flows:
+  pattern_cancel_flow:
+    description: A meta flow that's started when a flow is cancelled.
+    name: pattern_cancel_flow
+    steps:
+      - action: action_cancel_flow
+      - action: utter_flow_cancelled_rasa
+
+  pattern_chitchat:
+    description: handle interactions with the user that are not task-oriented
+    name: pattern chitchat
+    steps:
+      - generation_prompt: |
+          You are an incredibly friendly assistant. Generate a short 
+          response to the user's comment in simple english.
+
+          User: {{latest_user_message}}
+          Response:
+
+  pattern_clarification:
+    description: handle clarifications with the user
+    name: pattern clarification
+    steps:
+      - action: action_clarify_flows
+      - action: utter_clarification_options_rasa
+
+  pattern_code_change:
+    description: flow used to clean the stack after a bot update
+    name: pattern code change
+    steps:
+      - action: utter_inform_code_change
+      - action: action_clean_stack
+
+  pattern_collect_information:
+    description: flow used to fill a slot
+    name: pattern collect information
+    steps:
+      - id: "start"
+        action: action_run_slot_rejections
+      - action: validate_{{context.collect}}
+        next: 
+        - if: "slots.{{context.collect}} is not null"
+          then: "END"
+        - else: "ask_collect"
+      - id: "ask_collect"
+        action: "{{context.utter}}"
+      - action: action_listen
+        next: "start"
+
+  pattern_completed:
+    description: a flow has been completed and there is nothing else to be done
+    name: pattern completed
+    steps:
+      - action: utter_can_do_something_else
+
+  pattern_continue_interrupted:
+    description: A flow that should will be started to continue an interrupted flow.
+    name: pattern continue interrupted
+    steps:
+      - action: utter_flow_continue_interrupted
+
+  pattern_correction:
+    description: Handle a correction of a slot value.
+    name: pattern correction
+    steps:
+      - action: action_correct_flow_slot
+        next:
+          - if: not context.is_reset_only
+            then:
+              - action: utter_corrected_previous_input
+                next: "END"
+          - else: "END"
+
+  pattern_internal_error:
+    description: internal error
+    name: pattern internal error
+    steps:
+      - action: utter_internal_error_rasa
+
+  pattern_search:
+    description: handle a knowledge-based question or request
+    name: pattern search
+    steps:
+      - action: utter_no_knowledge_base
+      # - action: action_trigger_search to use doc search policy if present
+
+  pattern_skip_question:
+    description: flow used to handle users intent to skip questions (steps)
+    name: pattern skip question
+    steps:
+      - action: utter_skip_question_answer

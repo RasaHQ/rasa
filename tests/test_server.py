@@ -53,8 +53,8 @@ from rasa.shared.core.constants import (
     ACTION_RESTART_NAME,
     ACTION_SESSION_START_NAME,
     ACTION_LISTEN_NAME,
+    DEFAULT_SLOT_NAMES,
     REQUESTED_SLOT,
-    SESSION_START_METADATA_SLOT,
 )
 from rasa.shared.core.domain import Domain, SessionConfig
 from rasa.shared.core.events import (
@@ -695,7 +695,6 @@ async def test_evaluate_stories_end_to_end(
 
 
 async def test_add_message(rasa_app: SanicASGITestClient):
-
     conversation_id = "test_add_message_test_id"
 
     _, response = await rasa_app.get(f"/conversations/{conversation_id}/tracker")
@@ -1115,8 +1114,7 @@ async def test_requesting_non_existent_tracker(rasa_app: SanicASGITestClient):
     assert content["paused"] is False
     assert content["slots"] == {
         "name": None,
-        REQUESTED_SLOT: None,
-        SESSION_START_METADATA_SLOT: None,
+        **{slot: None for slot in DEFAULT_SLOT_NAMES},
     }
     assert content["sender_id"] == "madeupid"
     assert content["events"] == [
@@ -1451,6 +1449,7 @@ def test_list_routes(empty_agent: Agent):
         "load_model",
         "unload_model",
         "get_domain",
+        "get_flows",
     }
 
 
@@ -1916,16 +1915,21 @@ async def test_get_story(
     assert response.content.decode().strip() == expected
 
 
-async def test_get_story_without_conversation_id(
+async def test_get_story_with_new_conversation_id(
     rasa_app: SanicASGITestClient, monkeypatch: MonkeyPatch
 ):
-    conversation_id = "some-conversation-ID"
+    conversation_id = "some-conversation-ID-42"
     url = f"/conversations/{conversation_id}/story"
 
     _, response = await rasa_app.get(url)
 
-    assert response.status == HTTPStatus.NOT_FOUND
-    assert response.json["message"] == "Conversation ID not found."
+    expected = """version: "3.1"
+stories:
+- story: some-conversation-ID-42
+  steps: []"""
+
+    assert response.status == HTTPStatus.OK
+    assert response.content.decode().strip() == expected
 
 
 async def test_get_story_does_not_update_conversation_session(
@@ -2052,7 +2056,7 @@ async def test_update_conversation_with_events(
 
     if initial_tracker_events:
         tracker = await agent.processor.get_tracker(conversation_id)
-        tracker.update_with_events(initial_tracker_events, domain)
+        tracker.update_with_events(initial_tracker_events)
         await tracker_store.save(tracker)
 
     fetched_tracker = await rasa.server.update_conversation_with_events(

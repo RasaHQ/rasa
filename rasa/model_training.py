@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Text, NamedTuple, Optional, List, Union, Dict, Any
 
 import randomname
+import structlog
 
 import rasa.engine.validation
 from rasa.engine.caching import LocalTrainingCache
@@ -24,11 +25,14 @@ import rasa.shared.utils.cli
 import rasa.shared.exceptions
 import rasa.shared.utils.io
 import rasa.shared.constants
+from rasa.shared.constants import CONTEXT
 import rasa.model
 
 CODE_NEEDS_TO_BE_RETRAINED = 0b0001
 CODE_FORCED_TRAINING = 0b1000
 CODE_NO_NEED_TO_TRAIN = 0b0000
+
+structlogger = structlog.get_logger()
 
 
 class TrainingResult(NamedTuple):
@@ -124,6 +128,29 @@ def _check_unresolved_slots(domain: Domain, stories: StoryGraph) -> None:
     return None
 
 
+def _check_restricted_slots(domain: Domain) -> None:
+    """Checks if there are any restricted slots.
+
+    Args:
+        domain: The domain.
+
+    Raises:
+        Warn user if there are any restricted slots.
+
+    Returns:
+        `None` if there are no restricted slots.
+    """
+    restricted_slot_names = [CONTEXT]
+    for slot in domain.slots:
+        if slot.name in restricted_slot_names:
+            rasa.shared.utils.cli.print_warning(
+                f"Slot name - '{slot.name}' is reserved and can not be used. "
+                f"Please use another slot name."
+            )
+            structlogger.error("slots.reserved_slot_redefined", slot_name=slot.name)
+    return None
+
+
 def train(
     domain: Text,
     config: Text,
@@ -167,6 +194,7 @@ def train(
     )
 
     stories = file_importer.get_stories()
+    flows = file_importer.get_flows()
     nlu_data = file_importer.get_nlu_data()
 
     training_type = TrainingType.BOTH
@@ -175,9 +203,9 @@ def train(
         rasa.shared.utils.common.mark_as_experimental_feature("end-to-end training")
         training_type = TrainingType.END_TO_END
 
-    if stories.is_empty() and nlu_data.contains_no_pure_nlu_data():
+    if stories.is_empty() and nlu_data.contains_no_pure_nlu_data() and flows.is_empty():
         rasa.shared.utils.cli.print_error(
-            "No training data given. Please provide stories and NLU data in "
+            "No training data given. Please provide stories, flows or NLU data in "
             "order to train a Rasa model using the '--data' argument."
         )
         return TrainingResult(code=1)
@@ -191,20 +219,25 @@ def train(
         )
         training_type = TrainingType.NLU
 
-    elif stories.is_empty():
+    elif stories.is_empty() and flows.is_empty():
         rasa.shared.utils.cli.print_warning(
-            "No stories present. Just a Rasa NLU model will be trained."
+            "No stories or flows present. Just a Rasa NLU model will be trained."
         )
         training_type = TrainingType.NLU
 
     # We will train nlu if there are any nlu example, including from e2e stories.
-    elif nlu_data.contains_no_pure_nlu_data() and not nlu_data.has_e2e_examples():
+    elif (
+        nlu_data.contains_no_pure_nlu_data()
+        and not nlu_data.has_e2e_examples()
+        and flows.is_empty()
+    ):
         rasa.shared.utils.cli.print_warning(
-            "No NLU data present. Just a Rasa Core model will be trained."
+            "No NLU data present. No NLU model will be trained."
         )
         training_type = TrainingType.CORE
 
     _check_unresolved_slots(domain_object, stories)
+    _check_restricted_slots(domain_object)
 
     with telemetry.track_model_training(file_importer, model_type="rasa"):
         return _train_graph(
@@ -388,6 +421,7 @@ def train_core(
         return None
 
     _check_unresolved_slots(domain, stories_data)
+    _check_restricted_slots(domain)
 
     return _train_graph(
         file_importer,

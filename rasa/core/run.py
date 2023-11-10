@@ -3,7 +3,17 @@ import logging
 import uuid
 import os
 from functools import partial
-from typing import Any, List, Optional, TYPE_CHECKING, Text, Union, Dict
+from typing import (
+    Any,
+    Callable,
+    List,
+    Optional,
+    Text,
+    Tuple,
+    TYPE_CHECKING,
+    Union,
+    Dict,
+)
 
 import rasa.core.utils
 from rasa.plugin import plugin_manager
@@ -99,6 +109,7 @@ def configure_app(
     syslog_port: Optional[int] = None,
     syslog_protocol: Optional[Text] = None,
     request_timeout: Optional[int] = None,
+    server_listeners: Optional[List[Tuple[Callable, Text]]] = None,
 ) -> Sanic:
     """Run the agent."""
     rasa.core.utils.configure_file_logging(
@@ -150,6 +161,10 @@ def configure_app(
 
         app.add_task(run_cmdline_io)
 
+    if server_listeners:
+        for (listener, event) in server_listeners:
+            app.register_listener(listener, event)
+
     return app
 
 
@@ -179,6 +194,7 @@ def serve_application(
     syslog_port: Optional[int] = None,
     syslog_protocol: Optional[Text] = None,
     request_timeout: Optional[int] = None,
+    server_listeners: Optional[List[Tuple[Callable, Text]]] = None,
 ) -> None:
     """Run the API entrypoint."""
     if not channel and not credentials:
@@ -204,6 +220,7 @@ def serve_application(
         syslog_port=syslog_port,
         syslog_protocol=syslog_protocol,
         request_timeout=request_timeout,
+        server_listeners=server_listeners,
     )
 
     ssl_context = server.create_ssl_context(

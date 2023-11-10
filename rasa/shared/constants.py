@@ -62,6 +62,8 @@ TCP_PROTOCOL = "TCP"
 
 DEFAULT_SENDER_ID = "default"
 UTTER_PREFIX = "utter_"
+UTTER_ASK_PREFIX = "utter_ask_"
+FLOW_PREFIX = "flow_"
 
 ASSISTANT_ID_KEY = "assistant_id"
 ASSISTANT_ID_DEFAULT_VALUE = "placeholder_default"
@@ -108,3 +110,6 @@ RESPONSE_CONDITION = "condition"
 CHANNEL = "channel"
 
 OPENAI_API_KEY_ENV_VAR = "OPENAI_API_KEY"
+
+RASA_DEFAULT_FLOW_PATTERN_PREFIX = "pattern_"
+CONTEXT = "context"

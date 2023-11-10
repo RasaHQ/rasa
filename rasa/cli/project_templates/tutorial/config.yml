@@ -1,0 +1,11 @@
+recipe: default.v1
+language: en
+pipeline:
+  - name: LLMCommandGenerator
+    llm:
+      model_name: gpt-4
+
+policies:
+  - name: FlowPolicy
+#  - name: rasa_plus.ml.DocsearchPolicy
+#  - name: RulePolicy

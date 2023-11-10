@@ -775,12 +775,17 @@ def test_generate_training_data_with_cycles(domain: Domain):
     # deterministic way but should always be 3 or 4
     assert len(training_trackers) == 3 or len(training_trackers) == 4
 
-    # if we have 4 trackers, there is going to be one example more for label 10
-    num_tens = len(training_trackers) - 1
-    # if new default actions are added the keys of the actions will be changed
+    # if we have 4 trackers, there is going to be one example more for utter_default
+    num_utter_default = len(training_trackers) - 1
 
     all_label_ids = [id for ids in label_ids for id in ids]
-    assert Counter(all_label_ids) == {0: 6, 16: 3, 15: num_tens, 1: 2, 17: 1}
+    assert Counter(all_label_ids) == {
+        0: 6,
+        domain.action_names_or_texts.index("utter_goodbye"): 3,
+        domain.action_names_or_texts.index("utter_default"): num_utter_default,
+        1: 2,
+        domain.action_names_or_texts.index("utter_greet"): 1,
+    }
 
 
 def test_generate_training_data_with_unused_checkpoints(domain: Domain):

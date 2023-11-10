@@ -17,7 +17,7 @@ else
 fi
 
 # Diff of uncommitted changes for running locally
-DEV_FILES_WITH_DIFF=`git diff HEAD --name-only -- rasa | xargs echo -n`
+DEV_FILES_WITH_DIFF=`git diff HEAD --name-only -- rasa/**/*.py | xargs echo -n`
 
 if [ ! -z "$DEV_FILES_WITH_DIFF" ]
 then

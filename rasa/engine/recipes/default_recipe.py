@@ -13,6 +13,10 @@ from rasa.core.featurizers.precomputation import (
     CoreFeaturizationInputConverter,
     CoreFeaturizationCollector,
 )
+from rasa.graph_components.providers.flows_provider import FlowsProvider
+from rasa.dialogue_understanding.processor.command_processor_component import (
+    CommandProcessorComponent,
+)
 from rasa.plugin import plugin_manager
 from rasa.shared.exceptions import FileNotFoundException
 from rasa.core.policies.ensemble import DefaultPolicyPredictionEnsemble
@@ -97,6 +101,7 @@ class DefaultV1Recipe(Recipe):
         POLICY_WITHOUT_END_TO_END_SUPPORT = 4
         POLICY_WITH_END_TO_END_SUPPORT = 5
         MODEL_LOADER = 6
+        COMMAND_GENERATOR = 7
 
     name = "default.v1"
     _registered_components: Dict[Text, RegisteredComponent] = {}  # noqa: RUF012
@@ -287,7 +292,17 @@ class DefaultV1Recipe(Recipe):
             train_nodes=train_nodes,
             cli_parameters=cli_parameters,
         )
-
+        train_nodes["flows_provider"] = SchemaNode(
+            needs={
+                "importer": "finetuning_validator",
+            },
+            uses=FlowsProvider,
+            constructor_name="create",
+            fn="provide_train",
+            config={},
+            is_target=True,
+            is_input=True,
+        )
         persist_nlu_data = bool(cli_parameters.get("persist_nlu_training_data"))
         train_nodes["nlu_training_data_provider"] = SchemaNode(
             needs={"importer": "finetuning_validator"},
@@ -581,6 +596,17 @@ class DefaultV1Recipe(Recipe):
             config={"exclusion_percentage": cli_parameters.get("exclusion_percentage")},
             is_input=True,
         )
+        train_nodes["flows_provider"] = SchemaNode(
+            needs={
+                "importer": "finetuning_validator",
+            },
+            uses=FlowsProvider,
+            constructor_name="create",
+            fn="provide_train",
+            config={},
+            is_target=True,
+            is_input=True,
+        )
         train_nodes["training_tracker_provider"] = SchemaNode(
             needs={
                 "story_graph": "story_graph_provider",
@@ -719,6 +745,15 @@ class DefaultV1Recipe(Recipe):
         plugin_manager().hook.modify_default_recipe_graph_predict_nodes(
             predict_nodes=predict_nodes
         )
+        predict_nodes["flows_provider"] = SchemaNode(
+            **DEFAULT_PREDICT_KWARGS,
+            needs={},
+            uses=FlowsProvider,
+            fn="provide_inference",
+            config={},
+            resource=Resource("flows_provider"),
+        )
+
         for idx, config in enumerate(predict_config["pipeline"]):
             component_name = config.pop("name")
             component = self._from_registry(component_name)
@@ -750,6 +785,7 @@ class DefaultV1Recipe(Recipe):
                 {
                     self.ComponentType.INTENT_CLASSIFIER,
                     self.ComponentType.ENTITY_EXTRACTOR,
+                    self.ComponentType.COMMAND_GENERATOR,
                 }
             ):
                 if component.is_trainable:
@@ -839,6 +875,14 @@ class DefaultV1Recipe(Recipe):
             config={},
             resource=Resource("domain_provider"),
         )
+        predict_nodes["flows_provider"] = SchemaNode(
+            **DEFAULT_PREDICT_KWARGS,
+            needs={},
+            uses=FlowsProvider,
+            fn="provide_inference",
+            config={},
+            resource=Resource("flows_provider"),
+        )
 
         node_with_e2e_features = None
 
@@ -846,6 +890,17 @@ class DefaultV1Recipe(Recipe):
             node_with_e2e_features = self._add_end_to_end_features_for_inference(
                 predict_nodes, preprocessors
             )
+
+        predict_nodes["command_processor"] = SchemaNode(
+            **DEFAULT_PREDICT_KWARGS,
+            needs=self._get_needs_from_args(
+                CommandProcessorComponent, "execute_commands"
+            ),
+            uses=CommandProcessorComponent,
+            fn="execute_commands",
+            config={},
+            resource=Resource("command_processor"),
+        )
 
         rule_policy_resource = None
         policies: List[Text] = []

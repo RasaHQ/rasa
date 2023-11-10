@@ -15,6 +15,8 @@ logger = logging.getLogger(__name__)
 
 
 class SocketBlueprint(Blueprint):
+    """Blueprint for socketio connections."""
+
     def __init__(
         self, sio: AsyncServer, socketio_path: Text, *args: Any, **kwargs: Any
     ) -> None:

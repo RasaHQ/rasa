@@ -21,12 +21,14 @@ from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturize
 from rasa.shared.core.slots import InvalidSlotTypeException, TextSlot
 from rasa.shared.core.constants import (
     DEFAULT_INTENTS,
+    KNOWLEDGE_BASE_SLOT_NAMES,
     SLOT_LISTED_ITEMS,
     SLOT_LAST_OBJECT,
     SLOT_LAST_OBJECT_TYPE,
     DEFAULT_KNOWLEDGE_BASE_ACTION,
     ENTITY_LABEL_SEPARATOR,
     DEFAULT_ACTION_NAMES,
+    DEFAULT_SLOT_NAMES,
 )
 from rasa.shared.core.domain import (
     InvalidDomain,
@@ -177,7 +179,7 @@ def test_create_train_data_unfeaturized_entities():
 def test_domain_from_template(domain: Domain):
     assert not domain.is_empty()
     assert len(domain.intents) == 10 + len(DEFAULT_INTENTS)
-    assert len(domain.action_names_or_texts) == 19
+    assert len(domain.action_names_or_texts) == 5 + len(DEFAULT_ACTION_NAMES)
 
 
 def test_avoid_action_repetition(domain: Domain):
@@ -888,7 +890,7 @@ def test_domain_from_multiple_files():
         "utter_default": [{"text": "default message"}],
         "utter_amazement": [{"text": "awesomness!"}],
     }
-    expected_slots = [
+    expected_slots = list(DEFAULT_SLOT_NAMES) + [
         "activate_double_simulation",
         "activate_simulation",
         "display_cure_method",
@@ -913,8 +915,6 @@ def test_domain_from_multiple_files():
         "humbleSelectionManagement",
         "humbleSelectionStatus",
         "offers",
-        "requested_slot",
-        "session_started_metadata",
     ]
 
     domain_slots = []
@@ -928,7 +928,7 @@ def test_domain_from_multiple_files():
     assert expected_responses == domain.responses
     assert expected_forms == domain.forms
     assert domain.session_config.session_expiration_time == 360
-    assert expected_slots == sorted(domain_slots)
+    assert sorted(expected_slots) == sorted(domain_slots)
 
 
 def test_domain_warnings(domain: Domain):
@@ -2380,3 +2380,12 @@ def test_merge_yaml_domains_loads_actions_which_explicitly_need_domain():
 def test_domain_responses_with_ids_are_loaded(domain_yaml, expected) -> None:
     domain = Domain.from_yaml(domain_yaml)
     assert domain.responses == expected
+
+
+def test_domain_default_slots_are_marked_as_builtin(domain: Domain) -> None:
+    all_default_slot_names = DEFAULT_SLOT_NAMES.union(KNOWLEDGE_BASE_SLOT_NAMES)
+    domain_default_slots = [
+        slot for slot in domain.slots if slot.name in all_default_slot_names
+    ]
+
+    assert all(slot.is_builtin for slot in domain_default_slots)
