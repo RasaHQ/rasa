@@ -17,7 +17,7 @@ from rasa.dialogue_understanding.commands.can_not_handle_command import (
 )
 from rasa.dialogue_understanding.commands.clarify_command import ClarifyCommand
 from rasa.dialogue_understanding.commands.error.error_command import ErrorCommand
-from rasa.dialogue_understanding.commands.error.user_input_exceeds_limit_error_command import (
+from rasa.dialogue_understanding.commands.error.user_input_exceeds_limit_error_command import (  # noqa: E501
     UserInputExceedsLimitErrorCommand,
 )
 from rasa.dialogue_understanding.commands.set_slot_command import SetSlotCommand
