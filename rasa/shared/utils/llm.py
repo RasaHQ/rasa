@@ -9,7 +9,7 @@ from rasa.shared.engine.caching import get_local_cache_location
 import rasa.shared.utils.io
 
 if TYPE_CHECKING:
-    from langchain.embeddings.base import Embeddings
+    from langchain.schema.embeddings import Embeddings
     from langchain.llms.base import BaseLLM
 
 
@@ -181,7 +181,7 @@ def embedder_factory(
     Returns:
     Instantiated Embedder based on the configuration.
     """
-    from langchain.embeddings.base import Embeddings
+    from langchain.schema.embeddings import Embeddings
     from langchain.embeddings import (
         CohereEmbeddings,
         HuggingFaceHubEmbeddings,
