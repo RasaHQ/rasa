@@ -47,6 +47,11 @@ responses:
         rephrase: True
         template: jinja
 
+  utter_human_handoff_not_available:
+    - text: I understand you want to be connected to a human agent, but that's something I cannot help you with at the moment. Is there something else I can help you with?
+      metadata:
+        rephrase: True
+
   utter_inform_code_change:
     - text: There has been an update to my code. I need to wrap up our running dialogue and start from scratch.
       metadata:
@@ -143,6 +148,12 @@ flows:
               - action: utter_corrected_previous_input
                 next: "END"
           - else: "END"
+
+  pattern_human_handoff:
+    description: human handoff
+    name: pattern human handoff
+    steps:
+      - action: utter_human_handoff_not_available
 
   pattern_internal_error:
     description: internal error
