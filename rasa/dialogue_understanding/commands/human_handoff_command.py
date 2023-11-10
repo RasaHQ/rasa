@@ -51,6 +51,8 @@ class HumanHandoffCommand(Command):
             The events to apply to the tracker.
         """
         dialogue_stack = DialogueStack.from_tracker(tracker)
-        structlogger.debug("command_executor.error", command=self)
         dialogue_stack.push(HumanHandoffPatternFlowStackFrame())
+        structlogger.debug(
+            "command_executor.human_handoff.pushed_to_stack", command=self
+        )
         return [dialogue_stack.persist_as_event()]
