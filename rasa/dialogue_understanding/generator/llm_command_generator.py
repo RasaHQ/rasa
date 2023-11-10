@@ -116,7 +116,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
     ) -> Optional["MessageLimitConfig"]:
 
         validators = self.get_message_limit_validators()
-        message_limit_config = config.get(MESSAGE_LIMIT_CONFIG_KEY, {})
+        message_limit_config = config.get(MESSAGE_LIMIT_CONFIG_KEY) or {}
         limit = message_limit_config.get("limit")
         unit = message_limit_config.get("unit", "characters")
 
@@ -131,10 +131,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             return None
 
         structlogger.info(
-            "llm_command_generator.init_message_limits.set_limit",
-            limit=limit,
-            unit=unit,
-            config=config,
+            "llm_command_generator.init_message_limits.set_limit", config=config,
         )
         return MessageLimitConfig(limit, unit)
 
