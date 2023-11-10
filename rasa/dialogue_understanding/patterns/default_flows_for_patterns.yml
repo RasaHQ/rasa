@@ -58,7 +58,9 @@ responses:
         rephrase: True
 
   utter_internal_error_rasa:
-    - text: Sorry, I am having trouble with that. Please try again in a few minutes.
+    - text: "{% if context.message %}{{ context.message }}{% else %}Sorry, I am having trouble with that. Please try again in a few minutes.{% endif %}"
+      metadata:
+        template: jinja
 
   utter_no_knowledge_base:
     - text: I am afraid, I don't know the answer. At this point, I don't have access to a knowledge base.

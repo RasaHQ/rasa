@@ -1,4 +1,4 @@
-from rasa.dialogue_understanding.commands.error_command import ErrorCommand
+from rasa.dialogue_understanding.commands import ErrorCommand
 from rasa.dialogue_understanding.stack.frames.pattern_frame import PatternFlowStackFrame
 from rasa.shared.core.events import DialogueStackUpdated, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -10,8 +10,14 @@ def test_name_of_command():
     assert ErrorCommand.command() == "error"
 
 
-def test_from_dict():
+def test_from_empty_dict():
     assert ErrorCommand.from_dict({}) == ErrorCommand()
+
+
+def test_from_dict():
+    assert ErrorCommand.from_dict({"message": "Error message"}) == ErrorCommand(
+        message="Error message"
+    )
 
 
 def test_run_command_on_tracker():

@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from rasa.dialogue_understanding.stack.frames import PatternFlowStackFrame
 from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
@@ -15,6 +15,9 @@ class InternalErrorPatternFlowStackFrame(PatternFlowStackFrame):
 
     flow_id: str = FLOW_PATTERN_INTERNAL_ERROR_ID
     """The ID of the flow."""
+
+    message: Optional[str] = None
+    """Optional message to be uttered to the user"""
 
     @classmethod
     def type(cls) -> str:
@@ -34,4 +37,5 @@ class InternalErrorPatternFlowStackFrame(PatternFlowStackFrame):
         return InternalErrorPatternFlowStackFrame(
             frame_id=data["frame_id"],
             step_id=data["step_id"],
+            message=data.get("message"),
         )

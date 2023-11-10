@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import structlog
 from rasa.dialogue_understanding.commands import Command
@@ -19,6 +19,9 @@ structlogger = structlog.get_logger()
 class ErrorCommand(Command):
     """A command to indicate that the bot failed to handle the dialogue."""
 
+    message: Optional[str] = None
+    """Optional message to be uttered to the user"""
+
     @classmethod
     def command(cls) -> str:
         """Returns the command type."""
@@ -31,7 +34,7 @@ class ErrorCommand(Command):
         Returns:
             The converted dictionary.
         """
-        return ErrorCommand()
+        return ErrorCommand(message=data.get("message"))
 
     def run_command_on_tracker(
         self,
@@ -51,5 +54,5 @@ class ErrorCommand(Command):
         """
         stack = tracker.stack
         structlogger.debug("command_executor.error", command=self)
-        stack.push(InternalErrorPatternFlowStackFrame())
+        stack.push(InternalErrorPatternFlowStackFrame(message=self.message))
         return tracker.create_stack_updated_events(stack)

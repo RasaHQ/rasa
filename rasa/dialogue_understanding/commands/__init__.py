@@ -16,7 +16,10 @@ from rasa.dialogue_understanding.commands.can_not_handle_command import (
     CannotHandleCommand,
 )
 from rasa.dialogue_understanding.commands.clarify_command import ClarifyCommand
-from rasa.dialogue_understanding.commands.error_command import ErrorCommand
+from rasa.dialogue_understanding.commands.error.error_command import ErrorCommand
+from rasa.dialogue_understanding.commands.error.user_input_exceeds_limit_error_command import (
+    UserInputExceedsLimitErrorCommand,
+)
 from rasa.dialogue_understanding.commands.set_slot_command import SetSlotCommand
 from rasa.dialogue_understanding.commands.start_flow_command import StartFlowCommand
 from rasa.dialogue_understanding.commands.human_handoff_command import (
@@ -27,7 +30,6 @@ from rasa.dialogue_understanding.commands.correct_slots_command import (
     CorrectedSlot,
 )
 
-
 __all__ = [
     "Command",
     "FreeFormAnswerCommand",
@@ -37,10 +39,12 @@ __all__ = [
     "SkipQuestionCommand",
     "CannotHandleCommand",
     "ClarifyCommand",
-    "ErrorCommand",
     "SetSlotCommand",
     "StartFlowCommand",
     "HumanHandoffCommand",
     "CorrectSlotsCommand",
     "CorrectedSlot",
+    # error commands
+    "ErrorCommand",
+    "UserInputExceedsLimitErrorCommand",
 ]
