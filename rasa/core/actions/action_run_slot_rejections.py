@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Union
 
 import structlog
 from jinja2 import Template
@@ -11,6 +11,14 @@ from rasa.dialogue_understanding.patterns.collect_information import (
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.shared.core.constants import ACTION_RUN_SLOT_REJECTIONS_NAME
 from rasa.shared.core.events import Event, SlotSet
+from rasa.shared.core.flows.steps.collect import SlotRejection
+from rasa.shared.core.slots import (
+    BooleanSlot,
+    CategoricalSlot,
+    FloatSlot,
+    Slot,
+    bool_from_any,
+)
 
 if TYPE_CHECKING:
     from rasa.core.nlg import NaturalLanguageGenerator
@@ -19,6 +27,114 @@ if TYPE_CHECKING:
     from rasa.shared.core.trackers import DialogueStateTracker
 
 structlogger = structlog.get_logger()
+
+UTTERANCE_NOT_DEFINED_BY_USER = "TO.UPDATE.VALUE.BUT.MISSING.UTTERANCE"
+
+
+def utterance_for_slot_type(slot: Slot) -> Optional[str]:
+    """Return the utterance to use for the slot type."""
+    if isinstance(slot, BooleanSlot):
+        return "utter_boolean_slot_rejection"
+    elif isinstance(slot, FloatSlot):
+        return "utter_float_slot_rejection"
+    elif isinstance(slot, CategoricalSlot):
+        return "utter_categorical_slot_rejection"
+    return None
+
+
+def coerce_slot_value(
+    slot_value: str, slot_name: str, tracker: "DialogueStateTracker"
+) -> Union[str, bool, float, None]:
+    """Coerce the slot value to the correct type.
+
+    Tries to coerce the slot value to the correct type. If the
+    conversion fails, `None` is returned.
+
+    Args:
+        value: The value to coerce.
+        slot_name: The name of the slot.
+        tracker: The tracker containing the current state of the conversation.
+
+    Returns:
+        The coerced value or `None` if the conversion failed.
+    """
+    if slot_name not in tracker.slots:
+        return slot_value
+
+    slot = tracker.slots[slot_name]
+    if isinstance(slot, BooleanSlot):
+        try:
+            return bool_from_any(slot_value)
+        except (ValueError, TypeError):
+            structlogger.debug(
+                "run.rejection.boolean_slot_value_error",
+                rejection=slot_value,
+            )
+            return None
+    elif isinstance(slot, FloatSlot):
+        try:
+            return float(slot_value)
+        except (ValueError, TypeError):
+            structlogger.debug(
+                "run.rejection.float_slot_value_error",
+                rejection=slot_value,
+            )
+            return None
+    elif isinstance(slot, CategoricalSlot) and slot_value not in slot.values:
+        structlogger.debug(
+            "run.rejection.categorical_slot_value_not_in_domain",
+            rejection=slot_value,
+        )
+        return None
+    return slot_value
+
+
+def run_rejections(
+    slot_value: Union[str, bool, float, None],
+    slot_name: str,
+    rejections: List[SlotRejection],
+) -> Optional[str]:
+    """Run the predicate checks under rejections."""
+    violation = False
+    internal_error = False
+    current_context = {"slots": {slot_name: slot_value}}
+
+    structlogger.debug("run.predicate.context", context=current_context)
+    document = current_context.copy()
+
+    for rejection in rejections:
+        condition = rejection.if_
+        utterance = rejection.utter
+
+        try:
+            rendered_template = Template(condition).render(current_context)
+            predicate = Predicate(rendered_template)
+            violation = predicate.evaluate(document)
+            structlogger.debug(
+                "run.predicate.result",
+                predicate=predicate.description(),
+                violation=violation,
+            )
+        except (TypeError, Exception) as e:
+            structlogger.error(
+                "run.predicate.error",
+                predicate=condition,
+                document=document,
+                error=str(e),
+            )
+            violation = True
+            internal_error = True
+
+        if violation:
+            break
+
+    if not violation:
+        return None
+    if internal_error:
+        utterance = "utter_internal_error_rasa"
+    if not isinstance(utterance, str):
+        utterance = UTTERANCE_NOT_DEFINED_BY_USER
+    return utterance
 
 
 class ActionRunSlotRejections(Action):
@@ -37,16 +153,9 @@ class ActionRunSlotRejections(Action):
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> List[Event]:
         """Run the predicate checks."""
-        events: List[Event] = []
-        violation = False
         utterance = None
-        internal_error = False
-
         top_frame = tracker.stack.top()
         if not isinstance(top_frame, CollectInformationPatternFlowStackFrame):
-            return []
-
-        if not top_frame.rejections:
             return []
 
         slot_name = top_frame.collect
@@ -64,51 +173,36 @@ class ActionRunSlotRejections(Action):
 
         slot_value = tracker.get_slot(slot_name)
 
-        current_context = tracker.stack.current_context()
-        current_context[slot_name] = slot_value
-
-        structlogger.debug("run.predicate.context", context=current_context)
-        document = current_context.copy()
-
-        for rejection in top_frame.rejections:
-            condition = rejection.if_
-            utterance = rejection.utter
-
-            try:
-                rendered_template = Template(condition).render(current_context)
-                predicate = Predicate(rendered_template)
-                violation = predicate.evaluate(document)
-                structlogger.debug(
-                    "run.predicate.result",
-                    predicate=predicate.description(),
-                    violation=violation,
-                )
-            except (TypeError, Exception) as e:
-                structlogger.error(
-                    "run.predicate.error",
-                    predicate=condition,
-                    document=document,
-                    error=str(e),
-                )
-                violation = True
-                internal_error = True
-
-            if violation:
-                break
-
-        if not violation:
+        if slot_instance and slot_instance.has_been_set and slot_value is None:
             return []
 
-        # reset slot value that was initially filled with an invalid value
-        events.append(SlotSet(top_frame.collect, None))
+        typed_slot_value = coerce_slot_value(slot_value, slot_name, tracker)
+        if typed_slot_value is None:
+            # the slot value could not be coerced to the correct type
+            utterance = utterance_for_slot_type(slot_instance)
+        elif top_frame.rejections:
+            # run the predicate checks under rejections
+            utterance = run_rejections(
+                typed_slot_value, slot_name, top_frame.rejections
+            )
 
-        if internal_error:
-            utterance = "utter_internal_error_rasa"
+        events: List[Event] = []
+        if utterance:
+            # the slot value has been rejected
+            events.append(SlotSet(slot_name, None))
+        elif slot_value != typed_slot_value or type(slot_value) != type(
+            typed_slot_value
+        ):
+            # the slot value has been coerced to the correct type
+            return [SlotSet(slot_name, typed_slot_value)]
+        elif slot_value == typed_slot_value:
+            # the slot value has not changed and no utterrance present
+            return []
 
-        if not isinstance(utterance, str):
+        if utterance == UTTERANCE_NOT_DEFINED_BY_USER:
             structlogger.error(
                 "run.rejection.missing.utter",
-                utterance=utterance,
+                utterance=None,
             )
             return events
 
@@ -116,6 +210,7 @@ class ActionRunSlotRejections(Action):
             utterance,
             tracker,
             output_channel.name(),
+            value=slot_value,
         )
 
         if message is None:

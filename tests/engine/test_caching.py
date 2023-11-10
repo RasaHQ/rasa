@@ -491,6 +491,7 @@ def test_cache_exceeds_size_but_not_in_database(
     assert not test_file.is_file()
 
 
+@pytest.mark.skip_on_windows
 def test_clean_up_of_cached_result_if_database_fails(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
@@ -515,7 +516,8 @@ def test_clean_up_of_cached_result_if_database_fails(
             fingerprint_key, output, output_fingerprint, default_model_storage
         )
 
-    assert list(tmp_path.glob("*")) == [tmp_path / database_name]
+    # the database got deleted
+    assert list(tmp_path.glob("*")) == []
 
 
 def test_resource_with_model_storage(

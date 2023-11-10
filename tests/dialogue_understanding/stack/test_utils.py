@@ -7,6 +7,7 @@ from rasa.dialogue_understanding.stack.frames.flow_stack_frame import UserFlowSt
 from rasa.dialogue_understanding.stack.utils import (
     end_top_user_flow,
     filled_slots_for_active_flow,
+    get_collect_steps_excluding_ask_before_filling_for_active_flow,
     top_flow_frame,
     top_user_flow_frame,
     user_flows_on_the_stack,
@@ -211,14 +212,14 @@ def test_end_top_user_flow():
     )
     stack = DialogueStack(frames=[user_frame, pattern_frame])
 
-    end_top_user_flow(stack)
+    updated_stack = end_top_user_flow(stack)
 
-    assert len(stack.frames) == 2
+    assert len(updated_stack.frames) == 2
 
-    assert stack.frames[0] == UserFlowStackFrame(
+    assert updated_stack.frames[0] == UserFlowStackFrame(
         flow_id="my_flow", step_id="NEXT:END", frame_id="some-frame-id"
     )
-    assert stack.frames[1] == CollectInformationPatternFlowStackFrame(
+    assert updated_stack.frames[1] == CollectInformationPatternFlowStackFrame(
         collect="foo", frame_id="some-other-id", step_id="NEXT:END"
     )
 
@@ -232,14 +233,14 @@ def test_end_top_user_flow_only_ends_topmost_user_frame():
     )
     stack = DialogueStack(frames=[other_user_frame, user_frame])
 
-    end_top_user_flow(stack)
+    updated_stack = end_top_user_flow(stack)
 
-    assert len(stack.frames) == 2
+    assert len(updated_stack.frames) == 2
 
-    assert stack.frames[0] == UserFlowStackFrame(
+    assert updated_stack.frames[0] == UserFlowStackFrame(
         flow_id="my_other_flow", step_id="collect_bar2", frame_id="some-other-id"
     )
-    assert stack.frames[1] == UserFlowStackFrame(
+    assert updated_stack.frames[1] == UserFlowStackFrame(
         flow_id="my_flow", step_id="NEXT:END", frame_id="some-frame-id"
     )
 
@@ -249,3 +250,60 @@ def test_end_top_user_flow_handles_empty():
     end_top_user_flow(stack)
 
     assert len(stack.frames) == 0
+
+
+def test_get_collect_steps_excluding_ask_before_filling_for_active_flow() -> None:
+    all_flows = flows_from_str(
+        """
+        flows:
+          my_flow:
+            name: foo flow
+            steps:
+            - collect: foo
+            - collect: bar
+              ask_before_filling: true
+            - collect: baz
+          other_flow:
+            name: abc flow
+            steps:
+            - collect: abc
+            - collect: xyz
+              ask_before_filling: true
+            - collect: fgh
+        """
+    )
+    user_frame = UserFlowStackFrame(
+        flow_id="my_flow", step_id="collect_bar", frame_id="some-frame-id"
+    )
+    stack = DialogueStack(frames=[user_frame])
+    slots = get_collect_steps_excluding_ask_before_filling_for_active_flow(
+        stack, all_flows
+    )
+    assert slots == {"foo", "baz"}
+
+
+def test_get_collect_steps_excluding_ask_before_filling_empty_stack() -> None:
+    all_flows = flows_from_str(
+        """
+        flows:
+          my_flow:
+            name: foo flow
+            steps:
+            - collect: foo
+            - collect: bar
+              ask_before_filling: true
+            - collect: baz
+          other_flow:
+            name: abc flow
+            steps:
+            - collect: abc
+            - collect: xyz
+              ask_before_filling: true
+            - collect: fgh
+        """
+    )
+    stack = DialogueStack(frames=[])
+    slots = get_collect_steps_excluding_ask_before_filling_for_active_flow(
+        stack, all_flows
+    )
+    assert slots == set()

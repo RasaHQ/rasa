@@ -8,7 +8,12 @@ from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
     UserFlowStackFrame,
 )
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import ActiveLoop, DialogueStackUpdated, SlotSet
+from rasa.shared.core.events import (
+    ActiveLoop,
+    DialogueStackUpdated,
+    FlowInterrupted,
+    SlotSet,
+)
 from rasa.shared.core.trackers import DialogueStateTracker
 
 
@@ -91,8 +96,13 @@ async def test_action_trigger_uses_interrupt_flow_type_if_stack_already_contains
 
     events = await action.run(channel, nlg, tracker, Domain.empty())
 
-    assert len(events) == 1
-    dialogue_stack_event = events[0]
+    assert len(events) == 2
+
+    # The first event is a FlowInterrupted event
+    flow_interrupted = events[0]
+    assert flow_interrupted == FlowInterrupted("my_flow", "collect_bar")
+
+    dialogue_stack_event = events[1]
     assert isinstance(dialogue_stack_event, DialogueStackUpdated)
 
     updated_stack = tracker.stack.update_from_patch(dialogue_stack_event.update)

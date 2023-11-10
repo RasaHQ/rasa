@@ -80,6 +80,17 @@ def test_remote_action_validate_all_event_subclasses(event_class: Type[Event]):
         }
     elif event_class.type_name == "entities":
         response = {"events": [{"event": "entities", "entities": []}], "responses": []}
+    elif event_class.type_name.startswith("flow_"):
+        response = {
+            "events": [
+                {
+                    "event": event_class.type_name,
+                    "flow_id": "test",
+                    "step_id": "example",
+                }
+            ],
+            "responses": [],
+        }
     else:
         response = {"events": [{"event": event_class.type_name}], "responses": []}
 

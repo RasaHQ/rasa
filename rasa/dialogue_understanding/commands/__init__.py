@@ -9,6 +9,9 @@ from rasa.dialogue_understanding.commands.knowledge_answer_command import (
 from rasa.dialogue_understanding.commands.chit_chat_answer_command import (
     ChitChatAnswerCommand,
 )
+from rasa.dialogue_understanding.commands.skip_question_command import (
+    SkipQuestionCommand,
+)
 from rasa.dialogue_understanding.commands.can_not_handle_command import (
     CannotHandleCommand,
 )
@@ -31,6 +34,7 @@ __all__ = [
     "CancelFlowCommand",
     "KnowledgeAnswerCommand",
     "ChitChatAnswerCommand",
+    "SkipQuestionCommand",
     "CannotHandleCommand",
     "ClarifyCommand",
     "ErrorCommand",

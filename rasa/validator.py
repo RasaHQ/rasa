@@ -1,20 +1,20 @@
 import logging
+import structlog
 import re
 import string
 from collections import defaultdict
 from typing import Set, Text, Optional, Dict, Any, List, Tuple
 
+from jinja2 import Template
 from pypred import Predicate
 
 import rasa.core.training.story_conflict
-from rasa.shared.core.flows.flow import (
-    ActionFlowStep,
-    BranchFlowStep,
-    CollectInformationFlowStep,
-    FlowsList,
-    IfFlowLink,
-    SetSlotsFlowStep,
-)
+from rasa.dialogue_understanding.stack.frames import PatternFlowStackFrame
+from rasa.shared.core.flows.flow_step_links import IfFlowStepLink
+from rasa.shared.core.flows.steps.set_slots import SetSlotsFlowStep
+from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
+from rasa.shared.core.flows.steps.action import ActionFlowStep
+from rasa.shared.core.flows import FlowsList
 import rasa.shared.nlu.constants
 from rasa.shared.constants import (
     ASSISTANT_ID_DEFAULT_VALUE,
@@ -40,6 +40,7 @@ from rasa.shared.nlu.training_data.training_data import TrainingData
 import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger()
 
 
 class Validator:
@@ -578,10 +579,6 @@ class Validator:
                 )
                 all_good = False
 
-            if not flow.name:
-                logger.error(f"Flow with flow id '{flow.id}' has an empty name.")
-                all_good = False
-
             if flow.name in flow_names:
                 logger.error(
                     f"Detected duplicate flow name '{flow.name}' for flow "
@@ -595,45 +592,109 @@ class Validator:
 
         return all_good
 
+    def _build_context(self) -> Dict[str, Any]:
+        """Build context for jinja template rendering.
+
+        Returns:
+            A dictionary containing the allowed namespaces for jinja template rendering:
+            - `context`: The context mapping the attributes of every flow stack frame
+                to None values because this is only used for rendering the template
+                during validation.
+            - `slots`: The slots of the domain mapped to None values because this is
+                only used for rendering the template during validation and not for
+                evaluating the predicate at runtime.
+        """
+        subclasses = [subclass for subclass in PatternFlowStackFrame.__subclasses__()]
+        subclass_attrs = []
+        for subclass in subclasses:
+            subclass_attrs.extend(
+                [attr for attr in dir(subclass) if not attr.startswith("__")]
+            )
+
+        context = {
+            "context": {attr: None for attr in subclass_attrs},
+            "slots": {slot.name: None for slot in self.domain.slots},
+        }
+        return context
+
     @staticmethod
     def _construct_predicate(
-        predicate: Optional[str], step_id: str, all_good: bool = True
+        predicate: Optional[str],
+        object_id: str,
+        context: Dict[str, Any],
+        is_step: bool,
+        all_good: bool = True,
     ) -> Tuple[Optional[Predicate], bool]:
+        rendered_template = Template(predicate).render(context)
         try:
-            pred = Predicate(predicate)
+            pred = Predicate(rendered_template)
         except (TypeError, Exception) as exception:
-            logger.error(
-                f"Could not initialize the predicate found under step "
-                f"'{step_id}': {exception}."
-            )
+            if is_step:
+                logger.error(
+                    f"Could not initialize the predicate found under step "
+                    f"'{object_id}': {exception}"
+                )
+            else:
+                logger.error(
+                    f"Could not initialize the predicate found in flow gruard "
+                    f"for flow: '{object_id}': {exception}."
+                )
             pred = None
             all_good = False
 
         return pred, all_good
 
     def verify_predicates(self) -> bool:
-        """Checks that predicates used in branch flow steps or `collect` steps are valid."""  # noqa: E501
+        """Validate predicates used in flow step links and slot rejections."""
         all_good = True
+        context = self._build_context()
+
         for flow in self.flows.underlying_flows:
+            if flow.guard_condition:
+                predicate, all_good = self._construct_predicate(
+                    flow.guard_condition,
+                    flow.id,
+                    context,
+                    is_step=False,
+                    all_good=all_good,
+                )
+                if predicate and not predicate.is_valid():
+                    logger.error(
+                        f"Detected invalid flow guard condition "
+                        f"'{flow.guard_condition}' for flow id '{flow.id}'. "
+                        f"Please make sure that all conditions are valid."
+                    )
+                    all_good = False
             for step in flow.steps:
-                if isinstance(step, BranchFlowStep):
-                    for link in step.next.links:
-                        if isinstance(link, IfFlowLink):
-                            predicate, all_good = Validator._construct_predicate(
-                                link.condition, step.id
+                for link in step.next.links:
+                    if isinstance(link, IfFlowStepLink):
+                        all_good = self._verify_namespaces(
+                            link.condition, step.id, flow.id, all_good
+                        )
+
+                        predicate, all_good = self._construct_predicate(
+                            link.condition,
+                            step.id,
+                            context,
+                            is_step=True,
+                            all_good=all_good,
+                        )
+                        if predicate and not predicate.is_valid():
+                            logger.error(
+                                f"Detected invalid condition '{link.condition}' "
+                                f"at step '{step.id}' for flow id '{flow.id}'. "
+                                f"Please make sure that all conditions are valid."
                             )
-                            if predicate and not predicate.is_valid():
-                                logger.error(
-                                    f"Detected invalid condition '{link.condition}' "
-                                    f"at step '{step.id}' for flow id '{flow.id}'. "
-                                    f"Please make sure that all conditions are valid."
-                                )
-                                all_good = False
-                elif isinstance(step, CollectInformationFlowStep):
+                            all_good = False
+                if isinstance(step, CollectInformationFlowStep):
                     predicates = [predicate.if_ for predicate in step.rejections]
                     for predicate in predicates:
-                        pred, all_good = Validator._construct_predicate(
-                            predicate, step.id
+                        all_good = self._verify_namespaces(
+                            predicate, step.id, flow.id, all_good
+                        )
+
+                        pred, all_good = self._construct_predicate(
+                            predicate, step.id, context, is_step=True, all_good=all_good
                         )
                         if pred and not pred.is_valid():
                             logger.error(
@@ -645,9 +706,44 @@ class Validator:
                             all_good = False
         return all_good
 
+    def _verify_namespaces(
+        self, predicate: str, step_id: str, flow_id: str, all_good: bool
+    ) -> bool:
+        slots = re.findall(r"\bslots\.\w+", predicate)
+        results: List[bool] = [all_good]
+
+        if slots:
+            domain_slots = {slot.name: slot for slot in self.domain.slots}
+            for slot in slots:
+                slot_name = slot.split(".")[1]
+                if slot_name not in domain_slots:
+                    logger.error(
+                        f"Detected invalid slot '{slot_name}' "
+                        f"at step '{step_id}' "
+                        f"for flow id '{flow_id}'. "
+                        f"Please make sure that all slots are specified "
+                        f"in the domain file."
+                    )
+                    results.append(False)
+
+        if not slots:
+            # no slots found, check if context namespace is used
+            variables = re.findall(r"\bcontext\.\w+", predicate)
+            if not variables:
+                logger.error(
+                    f"Predicate '{predicate}' at step '{step_id}' for flow id "
+                    f"'{flow_id}' references one or more variables  without "
+                    f"the `slots.` or `context.` namespace prefix. "
+                    f"Please make sure that all variables reference the required "
+                    f"namespace."
+                )
+                results.append(False)
+
+        return all(results)
+
     def verify_flows(self) -> bool:
         """Checks for inconsistencies across flows."""
-        logger.info("Validating flows...")
+        structlogger.info("validation.flows.started")
 
         if self.flows.is_empty():
             logger.warning(

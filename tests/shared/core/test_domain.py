@@ -1,6 +1,5 @@
 import copy
 import json
-import logging
 import re
 import textwrap
 from pathlib import Path
@@ -8,7 +7,6 @@ import random
 from typing import Dict, List, Text, Any, Union, Set, Optional
 
 import pytest
-from pytest import LogCaptureFixture
 from pytest import WarningsRecorder
 
 from rasa.shared.exceptions import YamlSyntaxException, YamlException
@@ -1979,6 +1977,33 @@ def test_domain_slots_for_entities_with_mapping_conditions_no_slot_set():
     assert len(events) == 0
 
 
+def test_domain_slots_for_entities_with_mapping_conditions_no_active_loop():
+    domain = Domain.from_yaml(
+        textwrap.dedent(
+            f"""
+            version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+            entities:
+            - city
+            slots:
+              location:
+                type: text
+                influence_conversation: false
+                mappings:
+                - type: from_entity
+                  entity: city
+                  conditions:
+                  - active_loop: null
+            forms:
+              booking_form:
+                required_slots:
+                  - location
+            """
+        )
+    )
+    events = domain.slots_for_entities([{"entity": "city", "value": "Berlin"}])
+    assert events == [SlotSet("location", "Berlin")]
+
+
 def test_domain_slots_for_entities_sets_valid_slot():
     domain = Domain.from_yaml(
         textwrap.dedent(
@@ -2355,23 +2380,6 @@ def test_merge_yaml_domains_loads_actions_which_explicitly_need_domain():
 def test_domain_responses_with_ids_are_loaded(domain_yaml, expected) -> None:
     domain = Domain.from_yaml(domain_yaml)
     assert domain.responses == expected
-
-
-def test_domain_with_slots_without_mappings(caplog: LogCaptureFixture) -> None:
-    domain_yaml = """
-    slots:
-      slot_without_mappings:
-        type: text
-    """
-    with caplog.at_level(logging.WARN):
-        domain = Domain.from_yaml(domain_yaml)
-
-    assert isinstance(domain.slots[0].mappings, list)
-    assert len(domain.slots[0].mappings) == 0
-    assert (
-        "Slot 'slot_without_mappings' has no mappings defined. "
-        "We will continue with an empty list of mappings."
-    ) in caplog.text
 
 
 def test_domain_default_slots_are_marked_as_builtin(domain: Domain) -> None:

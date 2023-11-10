@@ -1,0 +1,10 @@
+flows:
+  foo:
+    description: "A test flow"
+    steps:
+      - action: "utter_test"
+  bar:
+    description: "Another test flow"
+    steps:
+      - action: "utter_greet"
+      - collect: "important_info"

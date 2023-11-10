@@ -9,7 +9,7 @@ from rasa.shared.engine.caching import get_local_cache_location
 import rasa.shared.utils.io
 
 if TYPE_CHECKING:
-    from langchain.embeddings.base import Embeddings
+    from langchain.schema.embeddings import Embeddings
     from langchain.llms.base import BaseLLM
 
 
@@ -28,6 +28,8 @@ DEFAULT_OPENAI_CHAT_MODEL_NAME_ADVANCED = "gpt-4"
 DEFAULT_OPENAI_EMBEDDING_MODEL_NAME = "text-embedding-ada-002"
 
 DEFAULT_OPENAI_TEMPERATURE = 0.7
+
+DEFAULT_OPENAI_MAX_GENERATED_TOKENS = 256
 
 
 def tracker_as_readable_transcript(
@@ -179,7 +181,7 @@ def embedder_factory(
     Returns:
     Instantiated Embedder based on the configuration.
     """
-    from langchain.embeddings.base import Embeddings
+    from langchain.schema.embeddings import Embeddings
     from langchain.embeddings import (
         CohereEmbeddings,
         HuggingFaceHubEmbeddings,

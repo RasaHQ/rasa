@@ -23,9 +23,7 @@ from rasa.core.constants import (
 )
 
 from rasa.shared.core.events import Event
-from rasa.shared.core.flows.flow import (
-    FlowsList,
-)
+from rasa.shared.core.flows import FlowsList
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.engine.graph import ExecutionContext
@@ -134,7 +132,7 @@ class FlowPolicy(Policy):
             # if the policy doesn't support the current stack frame, we'll abstain
             return self._prediction(self._default_predictions(domain))
 
-        flows = flows or FlowsList([])
+        flows = flows or FlowsList(underlying_flows=[])
 
         # create executor and predict next action
         try:
@@ -163,12 +161,12 @@ class FlowPolicy(Policy):
             end_top_user_flow(updated_stack)
             updated_stack.push(InternalErrorPatternFlowStackFrame())
             # we retry, with the internal error frame on the stack
-            events = tracker.create_stack_update_events(updated_stack)
-            tracker.update_with_events(events)
+            event = updated_stack.persist_as_event()
+            tracker.update(event)
             prediction = flow_executor.advance_flows(
                 tracker, domain.action_names_or_texts, flows
             )
-            collected_events = events + (prediction.events or [])
+            collected_events = [event] + (prediction.events or [])
             return self._create_prediction_result(
                 prediction.action_name,
                 domain,

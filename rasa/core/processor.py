@@ -17,7 +17,7 @@ from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.storage import ModelMetadata
 from rasa.model import get_latest_model
 from rasa.plugin import plugin_manager
-from rasa.shared.core.flows.flow import FlowsList
+from rasa.shared.core.flows import FlowsList
 from rasa.shared.data import TrainingType
 import rasa.shared.utils.io
 import rasa.core.actions.action
@@ -961,9 +961,21 @@ class MessageProcessor:
     def run_command_processor(
         self, tracker: DialogueStateTracker
     ) -> DialogueStateTracker:
+        """Run the command processor to apply commands to the stack.
+
+        The command processor applies all the commands from the NLU pipeline to the
+        dialogue stack. The dialogue stack then acts as base for decision making for
+        the policies that can use it.
+
+        Args:
+            tracker: the dialogue state tracker
+
+        Returns:
+        An updated tracker after commands have been applied
+        """
         target = "command_processor"
         results = self.graph_runner.run(
-            inputs={PLACEHOLDER_TRACKER: tracker}, targets=[target]
+            inputs={PLACEHOLDER_TRACKER: tracker.copy()}, targets=[target]
         )
         events = results[target]
         tracker.update_with_events(events)

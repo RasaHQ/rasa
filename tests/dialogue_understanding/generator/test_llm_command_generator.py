@@ -1,6 +1,6 @@
 import uuid
 
-from typing import Optional, Any
+from typing import Optional
 from unittest.mock import Mock, patch
 
 import pytest
@@ -19,6 +19,7 @@ from rasa.dialogue_understanding.commands import (
     StartFlowCommand,
     HumanHandoffCommand,
     ChitChatAnswerCommand,
+    SkipQuestionCommand,
     KnowledgeAnswerCommand,
     ClarifyCommand,
 )
@@ -26,11 +27,11 @@ from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
-from rasa.shared.core.flows.flow import (
-    CollectInformationFlowStep,
-    FlowsList,
+from rasa.shared.core.flows.steps.collect import (
     SlotRejection,
+    CollectInformationFlowStep,
 )
+from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.slots import (
     Slot,
     BooleanSlot,
@@ -100,7 +101,7 @@ class TestLLMCommandGenerator:
     ):
         """Test that predict_commands returns an empty list when flows is None."""
         # Given
-        empty_flows = FlowsList([])
+        empty_flows = FlowsList(underlying_flows=[])
         # When
         predicted_commands = command_generator.predict_commands(
             Mock(), flows=empty_flows, tracker=Mock()
@@ -130,6 +131,7 @@ class TestLLMCommandGenerator:
             "request_timeout": 7,
             "temperature": 0.0,
             "model_name": "gpt-4",
+            "max_tokens": 256,
         }
         # When
         with patch(
@@ -226,6 +228,7 @@ class TestLLMCommandGenerator:
             ("StartFlow(check_balance)", [StartFlowCommand(flow="check_balance")]),
             ("CancelFlow()", [CancelFlowCommand()]),
             ("ChitChat()", [ChitChatAnswerCommand()]),
+            ("SkipQuestion()", [SkipQuestionCommand()]),
             ("SearchAndReply()", [KnowledgeAnswerCommand()]),
             ("HumanHandoff()", [HumanHandoffCommand()]),
             ("Clarify(transfer_money)", [ClarifyCommand(options=["transfer_money"])]),
@@ -259,39 +262,11 @@ class TestLLMCommandGenerator:
         """Test that parse_commands identifies the correct commands."""
         # When
         with patch.object(
-            LLMCommandGenerator, "coerce_slot_value", Mock(return_value=None)
+            LLMCommandGenerator, "get_nullable_slot_value", Mock(return_value=None)
         ):
             parsed_commands = LLMCommandGenerator.parse_commands(input_action, Mock())
         # Then
         assert parsed_commands == expected_command
-
-    @pytest.mark.parametrize(
-        "slot_name, slot, slot_value, expected_output",
-        [
-            ("some_other_slot", FloatSlot("some_float", []), None, None),
-            ("some_float", FloatSlot("some_float", []), 40, 40.0),
-            ("some_float", FloatSlot("some_float", []), 40.0, 40.0),
-            ("some_text", TextSlot("some_text", []), "fourty", "fourty"),
-            ("some_bool", BooleanSlot("some_bool", []), "True", True),
-            ("some_bool", BooleanSlot("some_bool", []), "false", False),
-        ],
-    )
-    def test_coerce_slot_value(
-        self,
-        slot_name: str,
-        slot: Slot,
-        slot_value: Any,
-        expected_output: Any,
-    ):
-        """Test that coerce_slot_value coerces the slot value correctly."""
-        # Given
-        tracker = DialogueStateTracker.from_events("test", evts=[], slots=[slot])
-        # When
-        coerced_value = LLMCommandGenerator.coerce_slot_value(
-            slot_value, slot_name, tracker
-        )
-        # Then
-        assert coerced_value == expected_output
 
     @pytest.mark.parametrize(
         "input_value, expected_output",

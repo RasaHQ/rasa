@@ -1,7 +1,7 @@
 from typing import Iterable, Text, Optional, List
 
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.flows.flow import FlowsList
+from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.nlu.training_data.training_data import TrainingData
 
@@ -27,7 +27,7 @@ def flows_from_paths(files: List[Text]) -> FlowsList:
     """Returns the flows from paths."""
     from rasa.shared.core.flows.yaml_flows_io import YAMLFlowsReader
 
-    flows = FlowsList(flows=[])
+    flows = FlowsList(underlying_flows=[])
     for file in files:
         flows = flows.merge(YAMLFlowsReader.read_from_file(file))
     return flows

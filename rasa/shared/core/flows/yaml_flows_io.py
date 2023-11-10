@@ -2,15 +2,17 @@ import textwrap
 from pathlib import Path
 from typing import List, Text, Union
 
-from rasa.shared.core.flows.utils import KEY_FLOWS
-
+import rasa.shared
+import rasa.shared.data
 import rasa.shared.utils.io
 import rasa.shared.utils.validation
 from rasa.shared.exceptions import YamlException
 
-from rasa.shared.core.flows.flow import Flow, FlowsList
+from rasa.shared.core.flows.flow import Flow
+from rasa.shared.core.flows.flows_list import FlowsList
 
 FLOWS_SCHEMA_FILE = "shared/core/flows/flows_yaml_schema.json"
+KEY_FLOWS = "flows"
 
 
 class YAMLFlowsReader:
@@ -100,3 +102,22 @@ class YamlFlowsWriter:
 def flows_from_str(yaml_str: str) -> FlowsList:
     """Reads flows from a YAML string."""
     return YAMLFlowsReader.read_from_string(textwrap.dedent(yaml_str))
+
+
+def is_flows_file(file_path: Union[Text, Path]) -> bool:
+    """Check if file contains Flow training data.
+
+    Args:
+        file_path: Path of the file to check.
+
+    Returns:
+        `True` in case the file is a flows YAML training data file,
+        `False` otherwise.
+
+    Raises:
+        YamlException: if the file seems to be a YAML file (extension) but
+            can not be read / parsed.
+    """
+    return rasa.shared.data.is_likely_yaml_file(
+        file_path
+    ) and rasa.shared.utils.io.is_key_in_yaml(file_path, KEY_FLOWS)

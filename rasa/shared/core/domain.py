@@ -44,6 +44,7 @@ from rasa.shared.core.constants import (
     MAPPING_TYPE,
     MAPPING_CONDITIONS,
     KNOWLEDGE_BASE_SLOT_NAMES,
+    ACTIVE_LOOP,
 )
 from rasa.shared.exceptions import (
     RasaException,
@@ -492,7 +493,7 @@ class Domain:
             slot_class = Slot.resolve_by_type(slot_type)
 
             if SLOT_MAPPINGS not in slot_dict[slot_name]:
-                logger.warning(
+                logger.debug(
                     f"Slot '{slot_name}' has no mappings defined. "
                     f"We will continue with an empty list of mappings."
                 )
@@ -997,10 +998,10 @@ class Domain:
                     )
                 )
             else:
-                # TODO: figure out what to do here.
-                logger.warning(
+                # TODO: in the future we need to prevent this entirely.
+                logger.error(
                     f"Slot {flow_slot} is reserved for Rasa internal usage, "
-                    f"but it already exists. 🤔"
+                    f"but it already exists. This might lead to bad outcomes."
                 )
 
     def _add_requested_slot(self) -> None:
@@ -1452,9 +1453,11 @@ class Domain:
                 matching_entities = []
 
                 for mapping in slot.mappings:
-                    if mapping[MAPPING_TYPE] != str(
-                        SlotMappingType.FROM_ENTITY
-                    ) or mapping.get(MAPPING_CONDITIONS):
+                    mapping_conditions = mapping.get(MAPPING_CONDITIONS)
+                    if mapping[MAPPING_TYPE] != str(SlotMappingType.FROM_ENTITY) or (
+                        mapping_conditions
+                        and mapping_conditions[0].get(ACTIVE_LOOP) is not None
+                    ):
                         continue
 
                     for entity in entities:

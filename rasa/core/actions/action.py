@@ -35,7 +35,6 @@ from rasa.shared.constants import (
     UTTER_PREFIX,
     FLOW_PREFIX,
 )
-from rasa.shared.core import events
 from rasa.shared.core.constants import (
     USER_INTENT_OUT_OF_SCOPE,
     ACTION_LISTEN_NAME,
@@ -828,9 +827,8 @@ class RemoteAction(Action):
                 responses, output_channel, nlg, tracker
             )
 
-            evts = events.deserialise_events(events_json)
-
-            return cast(List[Event], bot_messages) + evts
+            events = rasa.shared.core.events.deserialise_events(events_json)
+            return cast(List[Event], bot_messages) + events
 
         except ClientResponseError as e:
             if e.status == 400:

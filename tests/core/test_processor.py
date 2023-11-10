@@ -1,29 +1,26 @@
 import asyncio
 import datetime
-from http import HTTPStatus
+import json
+import logging
 import os.path
 import shutil
 import textwrap
+import time
+import uuid
+from http import HTTPStatus
 from pathlib import Path
+from typing import Optional, Text, List, Callable, Type, Any
+from unittest import mock
+from unittest.mock import MagicMock
 
 import freezegun
 import pytest
-from unittest.mock import MagicMock
-from rasa.plugin import plugin_manager
-
-import time
-import uuid
-import json
-from _pytest.monkeypatch import MonkeyPatch
-from _pytest.logging import LogCaptureFixture
-from aioresponses import aioresponses
-from typing import Optional, Text, List, Callable, Type, Any
-from unittest import mock
-
-from rasa.core.lock_store import InMemoryLockStore
-from rasa.core.policies.ensemble import DefaultPolicyPredictionEnsemble
-from rasa.core.tracker_store import InMemoryTrackerStore
 import rasa.shared.utils.io
+import tests.utilities
+from _pytest.logging import LogCaptureFixture
+from _pytest.monkeypatch import MonkeyPatch
+from aioresponses import aioresponses
+from rasa.core import jobs
 from rasa.core.actions.action import (
     ActionBotResponse,
     ActionListen,
@@ -31,28 +28,43 @@ from rasa.core.actions.action import (
     ActionSendText,
     ActionUnlikelyIntent,
 )
-from rasa.core.nlg import NaturalLanguageGenerator, TemplatedNaturalLanguageGenerator
-from rasa.core.policies.policy import PolicyPrediction
-from tests.conftest import (
-    with_assistant_id,
-    with_assistant_ids,
-    with_model_id,
-    with_model_ids,
-)
-import tests.utilities
-
-from rasa.core import jobs
 from rasa.core.agent import Agent, load_agent
 from rasa.core.channels.channel import (
     CollectingOutputChannel,
     UserMessage,
     OutputChannel,
 )
+from rasa.core.http_interpreter import RasaNLUHttpInterpreter
+from rasa.core.lock_store import InMemoryLockStore
+from rasa.core.nlg import NaturalLanguageGenerator, TemplatedNaturalLanguageGenerator
+from rasa.core.policies.ensemble import DefaultPolicyPredictionEnsemble
+from rasa.core.policies.policy import PolicyPrediction
+from rasa.core.processor import MessageProcessor
+from rasa.core.tracker_store import InMemoryTrackerStore
+from rasa.dialogue_understanding.patterns.collect_information import (
+    CollectInformationPatternFlowStackFrame,
+)
+from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.storage import ModelStorage
 from rasa.exceptions import ActionLimitReached
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.plugin import plugin_manager
 from rasa.shared.constants import ASSISTANT_ID_KEY, LATEST_TRAINING_DATA_FORMAT_VERSION
+from rasa.shared.core.constants import (
+    ACTION_EXTRACT_SLOTS,
+    ACTION_RESTART_NAME,
+    ACTION_SEND_TEXT_NAME,
+    ACTION_UNLIKELY_INTENT_NAME,
+    DEFAULT_INTENTS,
+    ACTION_LISTEN_NAME,
+    ACTION_SESSION_START_NAME,
+    EXTERNAL_MESSAGE_PREFIX,
+    IS_EXTERNAL,
+    SESSION_START_METADATA_SLOT,
+    FLOW_HASHES_SLOT,
+    DIALOGUE_STACK_SLOT,
+)
 from rasa.shared.core.domain import SessionConfig, Domain, KEY_ACTIONS
 from rasa.shared.core.events import (
     ActionExecuted,
@@ -69,26 +81,16 @@ from rasa.shared.core.events import (
     ActionExecutionRejected,
     LoopInterrupted,
 )
-from rasa.core.http_interpreter import RasaNLUHttpInterpreter
-from rasa.core.processor import MessageProcessor
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import INTENT_NAME_KEY, METADATA_MODEL_ID
 from rasa.shared.nlu.training_data.message import Message
 from rasa.utils.endpoints import EndpointConfig
-from rasa.shared.core.constants import (
-    ACTION_EXTRACT_SLOTS,
-    ACTION_RESTART_NAME,
-    ACTION_SEND_TEXT_NAME,
-    ACTION_UNLIKELY_INTENT_NAME,
-    DEFAULT_INTENTS,
-    ACTION_LISTEN_NAME,
-    ACTION_SESSION_START_NAME,
-    EXTERNAL_MESSAGE_PREFIX,
-    IS_EXTERNAL,
-    SESSION_START_METADATA_SLOT,
+from tests.conftest import (
+    with_assistant_id,
+    with_assistant_ids,
+    with_model_id,
+    with_model_ids,
 )
-
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -1976,3 +1978,97 @@ async def test_run_anonymization_pipeline_mocked_pipeline(
     await processor.run_anonymization_pipeline(tracker)
 
     event_diff.assert_called_once()
+
+
+async def test_run_command_processor_starting_a_flow(
+    flow_policy_bot_agent: Agent, monkeypatch: MonkeyPatch
+):
+    # Given
+    processor = flow_policy_bot_agent.processor
+    sender_id = uuid.uuid4().hex
+    tracker = await processor.tracker_store.get_or_create_tracker(sender_id)
+    tracker.update(
+        UserUttered(
+            text="I want to start foo flow",
+            parse_data={"commands": [{"command": "start flow", "flow": "foo"}]},
+        )
+    )
+    num_previous_events = len(tracker.events)
+    # When
+    tracker = processor.run_command_processor(tracker)
+    num_added_events = len(tracker.events) - num_previous_events
+    # Then
+    # tracker had two events: action_list and user utterance event
+    # we expect two new SlotSet events: flow hashes and dialogue stack
+    assert num_added_events == 2
+    # previous events
+    assert isinstance(tracker.events[0], ActionExecuted)
+    assert isinstance(tracker.events[1], UserUttered)
+    # new events
+    assert isinstance(tracker.events[2], SlotSet)
+    assert isinstance(tracker.events[3], SlotSet)
+    # flow hashes SlotSet
+    assert tracker.events[2].key == FLOW_HASHES_SLOT
+    assert "foo" in tracker.events[2].value
+    assert "bar" in tracker.events[2].value
+    # dialogue stack SlotSet
+    assert tracker.events[3].key == DIALOGUE_STACK_SLOT
+    assert next(iter(tracker.events[3].value))["flow_id"] == "foo"
+    assert next(iter(tracker.events[3].value))["step_id"] == "START"
+    assert next(iter(tracker.events[3].value))["type"] == "flow"
+
+
+async def test_run_command_processor_setting_a_slot(
+    flow_policy_bot_agent: Agent, monkeypatch: MonkeyPatch
+):
+    # Given
+    processor = flow_policy_bot_agent.processor
+    sender_id = uuid.uuid4().hex
+    tracker = await processor.tracker_store.get_or_create_tracker(sender_id)
+    tracker.update_with_events(
+        [
+            SlotSet(
+                DIALOGUE_STACK_SLOT,
+                value=[
+                    UserFlowStackFrame(
+                        flow_id="foo", step_id="0_collect_foo_slot_a"
+                    ).as_dict(),
+                    CollectInformationPatternFlowStackFrame(
+                        collect="foo_slot_a"
+                    ).as_dict(),
+                ],
+            ),
+            UserUttered(
+                text="Foo slot a value is Foooo",
+                parse_data={
+                    "commands": [
+                        {"command": "set slot", "name": "foo_slot_a", "value": "Foooo"}
+                    ]
+                },
+            ),
+        ]
+    )
+    num_previous_events = len(tracker.events)
+    # When
+    tracker = processor.run_command_processor(tracker)
+    num_added_events = len(tracker.events) - num_previous_events
+    # Then
+    # tracker had three events: action_list, dialogue set slot and user utterance events
+    # we expect two new SlotSet events: flow hashes (since those are not in the tracker)
+    # and a set slot event
+    assert num_added_events == 2
+    # previous events
+    assert isinstance(tracker.events[0], ActionExecuted)
+    assert isinstance(tracker.events[1], SlotSet)
+    assert isinstance(tracker.events[2], UserUttered)
+    # new events
+    assert isinstance(tracker.events[3], SlotSet)
+    assert isinstance(tracker.events[4], SlotSet)
+    # flow hashes SlotSet
+    assert tracker.events[3].key == FLOW_HASHES_SLOT
+    assert "foo" in tracker.events[3].value
+    assert "bar" in tracker.events[3].value
+    # dialogue stack SlotSet
+    assert tracker.events[4].key == "foo_slot_a"
+    assert tracker.events[4].type_name == "slot"
+    assert tracker.events[4].value == "Foooo"

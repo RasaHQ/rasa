@@ -29,3 +29,16 @@ class FlowCircuitBreakerTrippedException(FlowException):
         )
         self.dialogue_stack = dialogue_stack
         self.number_of_steps_taken = number_of_steps_taken
+
+
+class NoNextStepInFlowException(FlowException):
+    """Exception that is raised when there is no next step in a flow."""
+
+    def __init__(self, dialogue_stack: DialogueStack) -> None:
+        """Creates a `NoNextStepInFlowException`.
+
+        Args:
+            dialogue_stack: The dialogue stack.
+        """
+        super().__init__("No next step can be selected for the flow.")
+        self.dialogue_stack = dialogue_stack

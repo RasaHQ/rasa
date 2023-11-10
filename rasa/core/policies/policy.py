@@ -46,6 +46,7 @@ import rasa.shared.utils.common
 
 if TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
+    from rasa.dialogue_understanding.stack.frames import DialogueStackFrame
 
 
 logger = logging.getLogger(__name__)
@@ -107,8 +108,8 @@ class Policy(GraphComponent):
         return SupportedData.ML_DATA
 
     @staticmethod
-    def does_support_stack_frame(frame: dialogue_stack_frame) -> bool:
-        """Returns the stack frames supported by the policy."""
+    def does_support_stack_frame(frame: "DialogueStackFrame") -> bool:
+        """Determine whether a stack frame is supported by the policy."""
         return False
 
     def supports_current_stack_frame(

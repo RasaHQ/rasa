@@ -6,6 +6,7 @@ from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
     FlowStackFrameType,
     UserFlowStackFrame,
 )
+from rasa.dialogue_understanding.stack.utils import top_user_flow_frame
 from rasa.core.actions import action
 from rasa.core.channels import OutputChannel
 from rasa.shared.constants import FLOW_PREFIX
@@ -14,6 +15,7 @@ from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     ActiveLoop,
     Event,
+    FlowInterrupted,
     SlotSet,
 )
 from rasa.core.nlg import NaturalLanguageGenerator
@@ -46,8 +48,8 @@ class ActionTriggerFlow(action.Action):
         """Return the flow name."""
         return self._flow_action_name
 
-    def create_events_to_start_flow(self, tracker: DialogueStateTracker) -> Event:
-        """Create an event to start the flow.
+    def create_events_to_start_flow(self, tracker: DialogueStateTracker) -> List[Event]:
+        """Create events to start the flow.
 
         Args:
             tracker: The tracker to start the flow on.
@@ -55,11 +57,17 @@ class ActionTriggerFlow(action.Action):
         Returns:
             The event to start the flow."""
         stack = tracker.stack
-        frame_type = (
-            FlowStackFrameType.REGULAR
-            if stack.is_empty()
-            else FlowStackFrameType.INTERRUPT
-        )
+        events: List[Event] = []
+
+        frame_type = FlowStackFrameType.REGULAR
+
+        if not stack.is_empty():
+            frame_type = FlowStackFrameType.INTERRUPT
+            top_user_frame = top_user_flow_frame(stack)
+            if top_user_frame is not None:
+                events.append(
+                    FlowInterrupted(top_user_frame.flow_id, top_user_frame.step_id)
+                )
 
         stack.push(
             UserFlowStackFrame(
@@ -67,7 +75,7 @@ class ActionTriggerFlow(action.Action):
                 frame_type=frame_type,
             )
         )
-        return tracker.create_stack_update_events(stack)
+        return events + tracker.create_stack_update_events(stack)
 
     def create_events_to_set_flow_slots(self, metadata: Dict[str, Any]) -> List[Event]:
         """Create events to set the flow slots.

@@ -28,7 +28,10 @@ class FlowStepResult:
 class ContinueFlowWithNextStep(FlowStepResult):
     """Represents the result of a flow step that should continue with the next step."""
 
-    def __init__(self, events: Optional[List[Event]] = None) -> None:
+    def __init__(
+        self, events: Optional[List[Event]] = None, has_flow_ended: bool = False
+    ) -> None:
+        self.has_flow_ended = has_flow_ended
         super().__init__(events=events)
 
 

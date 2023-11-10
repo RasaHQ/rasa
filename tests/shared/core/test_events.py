@@ -48,6 +48,11 @@ from rasa.shared.core.events import (
     ActionExecutionRejected,
     LegacyFormValidation,
     format_message,
+    FlowStarted,
+    FlowInterrupted,
+    FlowResumed,
+    FlowCompleted,
+    FlowCancelled,
 )
 from rasa.shared.nlu.constants import INTENT_NAME_KEY, METADATA_MODEL_ID
 from tests.core.policies.test_rule_policy import GREET_INTENT_NAME, UTTER_GREET_ACTION
@@ -82,6 +87,26 @@ from tests.core.policies.test_rule_policy import GREET_INTENT_NAME, UTTER_GREET_
         (
             ReminderScheduled("my_intent", datetime.now()),
             ReminderScheduled("my_other_intent", datetime.now()),
+        ),
+        (
+            FlowStarted("my_flow"),
+            FlowStarted("my_other_flow"),
+        ),
+        (
+            FlowInterrupted("my_flow", "my_step"),
+            FlowInterrupted("my_other_flow", "my_other_step"),
+        ),
+        (
+            FlowResumed("my_flow", "my_step"),
+            FlowResumed("my_other_flow", "my_other_step"),
+        ),
+        (
+            FlowCompleted("my_flow", "my_step"),
+            FlowCompleted("my_other_flow", "my_other_step"),
+        ),
+        (
+            FlowCancelled("my_flow", "my_step"),
+            FlowCancelled("my_other_flow", "my_other_step"),
         ),
     ],
 )
@@ -128,6 +153,11 @@ def test_event_has_proper_implementation(one_event, another_event):
         AgentUttered("my_text", "my_data"),
         ReminderScheduled("my_intent", datetime.now()),
         ReminderScheduled("my_intent", datetime.now(pytz.timezone("US/Central"))),
+        FlowStarted("my_flow"),
+        FlowInterrupted("my_flow", "my_step"),
+        FlowResumed("my_flow", "my_step"),
+        FlowCompleted("my_flow", "my_step"),
+        FlowCancelled("my_flow", "my_step"),
     ],
 )
 def test_dict_serialisation(one_event):
@@ -271,6 +301,25 @@ def test_json_parse_agent():
 
 
 @pytest.mark.parametrize(
+    "event, event_class",
+    [
+        ("flow_interrupted", FlowInterrupted),
+        ("flow_resumed", FlowResumed),
+        ("flow_cancelled", FlowCancelled),
+        ("flow_completed", FlowCompleted),
+    ],
+)
+def test_json_parse_flow_events(event: str, event_class: Any) -> None:
+    event = {"event": event, "flow_id": "test_flow", "step_id": "test_id"}
+    assert Event.from_parameters(event) == event_class("test_flow", "test_id")
+
+
+def test_json_parse_flow_started() -> None:
+    event = {"event": "flow_started", "flow_id": "test_flow"}
+    assert Event.from_parameters(event) == FlowStarted("test_flow")
+
+
+@pytest.mark.parametrize(
     "event_class",
     [
         UserUttered,
@@ -298,6 +347,25 @@ def test_correct_timestamp_setting(event_class):
     event = event_class("test")
     time.sleep(0.01)
     event2 = event_class("test")
+
+    assert event.timestamp < event2.timestamp
+
+
+@pytest.mark.parametrize(
+    "event_class", [FlowInterrupted, FlowResumed, FlowCancelled, FlowCompleted]
+)
+def test_correct_timestamp_setting_for_flow_events(event_class) -> None:
+    event = event_class("test_flow", "test_id")
+    time.sleep(0.01)
+    event2 = event_class("test_flow", "test_id")
+
+    assert event.timestamp < event2.timestamp
+
+
+def test_correct_timestamp_setting_for_flow_started() -> None:
+    event = FlowStarted("test_flow")
+    time.sleep(0.01)
+    event2 = FlowStarted("test_flow")
 
     assert event.timestamp < event2.timestamp
 
@@ -771,6 +839,11 @@ tested_events = [
         action_text_target="example",
     ),
     WarningPredictedAction(action_name="action_listen", action_name_prediction="test"),
+    FlowStarted("foo"),
+    FlowInterrupted("foo", "bar"),
+    FlowResumed("foo", "bar"),
+    FlowCompleted("foo", "bar"),
+    FlowCancelled("foo", "bar"),
 ]
 
 

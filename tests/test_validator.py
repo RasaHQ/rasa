@@ -6,6 +6,10 @@ from typing import Any, Dict, List, Text
 import pytest
 from _pytest.logging import LogCaptureFixture
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.flows.yaml_flows_io import flows_from_str
+from rasa.shared.core.training_data.structures import StoryGraph
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
 from rasa.validator import Validator
 
@@ -1113,50 +1117,6 @@ def test_verify_unique_flows_duplicate_names(
     ) in caplog.text
 
 
-def test_verify_flow_names_non_empty(
-    tmp_path: Path,
-    nlu_data_path: Path,
-    caplog: LogCaptureFixture,
-) -> None:
-    flows_file = tmp_path / "flows.yml"
-    with open(flows_file, "w") as file:
-        file.write(
-            f"""
-                        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
-                        flows:
-                          transfer_money:
-                            description: This flow lets users send money.
-                            name: ""
-                            steps:
-                            - collect: transfer_recipient
-                        """
-        )
-    domain_file = tmp_path / "domain.yml"
-    with open(domain_file, "w") as file:
-        file.write(
-            f"""
-                        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
-                        slots:
-                            transfer_recipient:
-                                type: text
-                                mappings: []
-                        """
-        )
-    importer = RasaFileImporter(
-        config_file="data/test_moodbot/config.yml",
-        domain_path=str(domain_file),
-        training_data_paths=[str(flows_file), str(nlu_data_path)],
-    )
-
-    validator = Validator.from_importer(importer)
-
-    with caplog.at_level(logging.ERROR):
-        assert not validator.verify_unique_flows()
-
-    assert "empty name" in caplog.text
-    assert "transfer_money" in caplog.text
-
-
 def test_verify_unique_flows_duplicate_descriptions(
     tmp_path: Path,
     nlu_data_path: Path,
@@ -1232,7 +1192,7 @@ def test_verify_predicates_invalid_rejection_if(
     nlu_data_path: Path,
     caplog: LogCaptureFixture,
 ) -> None:
-    predicate = 'account_type not in {{"debit", "savings"}}'
+    predicate = 'slots.account_type not in {{"debit", "savings"}}'
     error_log = (
         f"Detected invalid rejection '{predicate}' "
         f"at `collect` step 'ask_account_type' "
@@ -1279,12 +1239,12 @@ def test_verify_predicates_invalid_rejection_if(
                         intents:
                           - greet
                         slots:
+                            account_type:
+                                type: text
                             transfer_recipient:
                                 type: text
-                                mappings: []
                             transfer_amount:
                                 type: float
-                                mappings: []
                         actions:
                           - action_transfer_money
                           - action_set_up_recurrent_payment
@@ -1302,6 +1262,88 @@ def test_verify_predicates_invalid_rejection_if(
         assert not validator.verify_predicates()
 
     assert error_log in caplog.text
+
+
+def test_flow_predicate_validation_fails_for_faulty_flow_link_predicates():
+    flows = flows_from_str(
+        """
+        flows:
+          pattern_bar:
+            steps:
+            - id: first
+              action: action_listen
+              next:
+                - if: xxx !!!
+                  then: END
+                - else: END
+        """
+    )
+    validator = Validator(Domain.empty(), TrainingData(), StoryGraph([]), flows, None)
+    assert not validator.verify_predicates()
+
+
+def test_verify_predicates_with_valid_jinja(
+    tmp_path: Path,
+    nlu_data_path: Path,
+) -> None:
+    predicate_collect = '"{{context.collect}} is not null"'
+    predicate_link = '"{{context.collect}} is null"'
+    flows_file = tmp_path / "flows.yml"
+    with open(flows_file, "w") as file:
+        file.write(
+            f"""
+                        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                        flows:
+                          transfer_money:
+                            description: This flow lets users send money.
+                            name: transfer money
+                            steps:
+                            - id: "ask_account_type"
+                              collect: account_type
+                              rejections:
+                                - if: {predicate_collect}
+                                  utter: utter_invalid_account_type
+                              next: "ask_recipient"
+                            - id: "ask_recipient"
+                              collect: transfer_recipient
+                              next:
+                                - if: {predicate_link}
+                                  then: "ask_amount"
+                                - else: END
+                            - id: "ask_amount"
+                              collect: transfer_amount
+                              next: "execute_transfer"
+                            - id: "execute_transfer"
+                              action: action_transfer_money
+                        """
+        )
+    domain_file = tmp_path / "domain.yml"
+    with open(domain_file, "w") as file:
+        file.write(
+            f"""
+                        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                        intents:
+                          - greet
+                        slots:
+                            transfer_recipient:
+                                type: text
+                                mappings: []
+                            transfer_amount:
+                                type: float
+                                mappings: []
+                        actions:
+                          - action_transfer_money
+                        """
+        )
+    importer = RasaFileImporter(
+        config_file="data/test_moodbot/config.yml",
+        domain_path=str(domain_file),
+        training_data_paths=[str(flows_file), str(nlu_data_path)],
+    )
+
+    validator = Validator.from_importer(importer)
+
+    assert validator.verify_predicates()
 
 
 @pytest.fixture
@@ -1345,7 +1387,7 @@ def test_verify_utterances_in_dialogues_finds_all_responses_in_flows(
                         - id: "ask_amount"
                           collect: amount
                           rejections:
-                            - if: amount > 1000
+                            - if: slots.amount > 1000
                               utter: utter_amount_too_high
                           next: "summarize_transfer"
                         - id: "summarize_transfer"
@@ -1389,7 +1431,7 @@ def test_verify_utterances_in_dialogues_missing_responses_in_flows(
                         - id: "ask_amount"
                           collect: transfer_money_amount
                           rejections:
-                            - if: transfer_money_amount > 1000
+                            - if: slots.transfer_money_amount > 1000
                               utter: utter_amount_too_high
                           next: "summarize_transfer"
                         - id: "summarize_transfer"
@@ -1410,3 +1452,176 @@ def test_verify_utterances_in_dialogues_missing_responses_in_flows(
     with pytest.warns(UserWarning, match=match):
         # force validator to not ignore warnings (default is True)
         validator.verify_utterances_in_dialogues(ignore_warnings=False)
+
+
+@pytest.mark.parametrize("predicate", ["account_type is null", "not account_type"])
+def test_verify_predicates_namespaces_not_referenced(
+    predicate: str,
+    caplog: LogCaptureFixture,
+) -> None:
+    flows = flows_from_str(
+        f"""
+        flows:
+          flow_bar:
+            steps:
+            - id: first
+              action: action_listen
+              next:
+                - if: "{predicate}"
+                  then: END
+                - else: END
+        """
+    )
+    validator = Validator(Domain.empty(), TrainingData(), StoryGraph([]), flows, None)
+    with caplog.at_level(logging.ERROR):
+        assert not validator.verify_predicates()
+
+    assert (
+        f"Predicate '{predicate}' at step 'first' for flow id "
+        f"'flow_bar' references one or more variables  without "
+        f"the `slots.` or `context.` namespace prefix. "
+        f"Please make sure that all variables reference the required "
+        f"namespace."
+    ) in caplog.text
+
+
+@pytest.mark.parametrize(
+    "predicate, expected_validation_result",
+    [
+        ("True", True),
+        ("False", True),
+        ("slots.spam", True),
+        ("slots.spam is 'eggs'", True),
+        ("slots.authenticated AND slots.email_verified", True),
+        ("slots.authenticated OR slots.email_verified", True),
+        ("xxx !!!", False),
+    ],
+)
+def test_verify_predicates_on_flow_guards(
+    predicate: str, expected_validation_result: bool
+):
+    """Test that verify_predicates() correctly verifys flow guard predicates."""
+    # Given
+    flows = flows_from_str(
+        f"""
+        flows:
+          spam_eggs:
+            if: {predicate}
+            steps:
+            - id: first
+              action: action_listen
+        """
+    )
+    validator = Validator(Domain.empty(), TrainingData(), StoryGraph([]), flows, None)
+    # When
+    validation_result = validator.verify_predicates()
+    # Then
+    assert validation_result == expected_validation_result
+
+
+@pytest.mark.parametrize(
+    "predicate",
+    [
+        "xxx !!!",
+        "slots.spam is 'eggs' AND",
+        "slots.spam is 'eggs' OR",
+        "slots.spam is AND OR not 'eggs'",
+    ],
+)
+def test_verify_predicates_invalid_flow_guards(
+    predicate: str,
+    caplog: LogCaptureFixture,
+) -> None:
+    """Test that verify_predicates() correctly logs invalid flow guard predicates."""
+    # Given
+    error_log = (
+        f"Detected invalid flow guard condition "
+        f"'{predicate}' for flow id 'spam_eggs'. "
+        f"Please make sure that all conditions are valid."
+    )
+    flows = flows_from_str(
+        f"""
+        flows:
+          spam_eggs:
+            if: {predicate}
+            steps:
+            - id: first
+              action: action_listen
+        """
+    )
+    validator = Validator(Domain.empty(), TrainingData(), StoryGraph([]), flows, None)
+    # When
+    with caplog.at_level(logging.ERROR):
+        assert not validator.verify_predicates()
+    # Then
+    assert error_log in caplog.text
+
+
+@pytest.mark.parametrize(
+    "predicate",
+    [
+        "slots.account_type is 'debit'",
+        "not slots.account_type",
+        "context.collect is not null",
+        "not context.collect",
+    ],
+)
+def test_verify_predicates_reference_namespaces(
+    predicate: str,
+    caplog: LogCaptureFixture,
+) -> None:
+    flows = flows_from_str(
+        f"""
+        flows:
+          flow_bar:
+            steps:
+            - id: first
+              action: action_listen
+              next:
+                - if: "{predicate}"
+                  then: END
+                - else: END
+        """
+    )
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        slots:
+          account_type:
+            type: text
+            mappings: []
+        """
+    )
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), flows, None)
+    with caplog.at_level(logging.ERROR):
+        assert validator.verify_predicates()
+
+    assert not caplog.text
+
+
+def test_verify_namespaces_reference_slots_not_in_the_domain(
+    caplog: LogCaptureFixture,
+) -> None:
+    flows = flows_from_str(
+        """
+        flows:
+          flow_bar:
+            steps:
+            - id: first
+              action: action_listen
+              next:
+                - if: "slots.membership is 'gold'"
+                  then: END
+                - else: END
+        """
+    )
+    validator = Validator(Domain.empty(), TrainingData(), StoryGraph([]), flows, None)
+    with caplog.at_level(logging.ERROR):
+        assert not validator.verify_predicates()
+
+    assert (
+        "Detected invalid slot 'membership' "
+        "at step 'first' for flow id 'flow_bar'. "
+        "Please make sure that all slots are specified "
+        "in the domain file."
+    ) in caplog.text

@@ -10,7 +10,7 @@ from rasa.dialogue_understanding.patterns.internal_error import (
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.shared.core.events import Event
-from rasa.shared.core.flows.flow import FlowsList
+from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 
 structlogger = structlog.get_logger()

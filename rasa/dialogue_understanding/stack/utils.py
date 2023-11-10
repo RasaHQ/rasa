@@ -5,7 +5,9 @@ from rasa.dialogue_understanding.patterns.collect_information import (
 from rasa.dialogue_understanding.stack.frames import BaseFlowStackFrame
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
-from rasa.shared.core.flows.flow import END_STEP, ContinueFlowStep, FlowsList
+from rasa.shared.core.flows.steps.constants import END_STEP
+from rasa.shared.core.flows.steps.continuation import ContinueFlowStep
+from rasa.shared.core.flows import FlowsList
 
 
 def top_flow_frame(
@@ -108,7 +110,7 @@ def user_flows_on_the_stack(dialogue_stack: DialogueStack) -> Set[str]:
     }
 
 
-def end_top_user_flow(stack: DialogueStack) -> None:
+def end_top_user_flow(stack: DialogueStack) -> DialogueStack:
     """Ends all frames on top of the stack including the topmost user frame.
 
     Ends all flows until the next user flow is reached. This is useful
@@ -118,8 +120,37 @@ def end_top_user_flow(stack: DialogueStack) -> None:
     Args:
         stack: The dialogue stack.
     """
-    for frame in reversed(stack.frames):
+
+    updated_stack = stack.copy()
+
+    for frame in reversed(updated_stack.frames):
         if isinstance(frame, BaseFlowStackFrame):
             frame.step_id = ContinueFlowStep.continue_step_for_id(END_STEP)
             if isinstance(frame, UserFlowStackFrame):
                 break
+    return updated_stack
+
+
+def get_collect_steps_excluding_ask_before_filling_for_active_flow(
+    dialogue_stack: DialogueStack, all_flows: FlowsList
+) -> Set[str]:
+    """Get all collect steps that are part of the current flow, without
+    considering the collect steps that has to be asked before filling.
+
+    Args:
+        dialogue_stack: The dialogue stack.
+        all_flows: All flows.
+
+    Returns:
+        All collect steps that are part of the current active flow,
+        excluding the collect steps that have to be asked before filling.
+    """
+    active_frame = top_user_flow_frame(dialogue_stack)
+    if active_frame is None:
+        return set()
+    active_flow = active_frame.flow(all_flows)
+    return set(
+        step.collect
+        for step in active_flow.get_collect_steps()
+        if not step.ask_before_filling
+    )

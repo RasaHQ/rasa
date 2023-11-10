@@ -1128,8 +1128,8 @@ jobs:
         run: |
           curl -sL https://sentry.io/get-cli/ | bash
           GITHUB_TAG=${GITHUB_TAG/refs\/tags\//}
-          sentry-cli releases new -p rasa-open-source "rasa-$GITHUB_TAG" --ignore-missing
-          sentry-cli releases set-commits --auto "rasa-$GITHUB_TAG"
+          sentry-cli releases new -p rasa-open-source "rasa-$GITHUB_TAG"
+          sentry-cli releases set-commits "rasa-$GITHUB_TAG" --auto --ignore-missing
           sentry-cli releases finalize "rasa-$GITHUB_TAG"
 
       - name: Notify Slack & Publish Release Notes 🗞

@@ -16,6 +16,7 @@ from rasa.dialogue_understanding.commands import (
     StartFlowCommand,
     HumanHandoffCommand,
     ChitChatAnswerCommand,
+    SkipQuestionCommand,
     KnowledgeAnswerCommand,
     ClarifyCommand,
 )
@@ -23,27 +24,20 @@ from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.core.flows.flow import (
-    Flow,
-    FlowStep,
-    FlowsList,
-    CollectInformationFlowStep,
-)
+from rasa.shared.core.flows import FlowStep, Flow, FlowsList
+from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.slots import (
     BooleanSlot,
     CategoricalSlot,
-    FloatSlot,
     Slot,
-    bool_from_any,
 )
-from rasa.shared.nlu.constants import (
-    TEXT,
-)
+from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.utils.llm import (
     DEFAULT_OPENAI_CHAT_MODEL_NAME_ADVANCED,
+    DEFAULT_OPENAI_MAX_GENERATED_TOKENS,
     get_prompt_template,
     llm_factory,
     tracker_as_readable_transcript,
@@ -59,6 +53,7 @@ DEFAULT_LLM_CONFIG = {
     "request_timeout": 7,
     "temperature": 0.0,
     "model_name": DEFAULT_OPENAI_CHAT_MODEL_NAME_ADVANCED,
+    "max_tokens": DEFAULT_OPENAI_MAX_GENERATED_TOKENS,
 }
 
 LLM_CONFIG_KEY = "llm"
@@ -243,6 +238,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         start_flow_re = re.compile(r"StartFlow\(([a-zA-Z_][a-zA-Z0-9_-]*?)\)")
         cancel_flow_re = re.compile(r"CancelFlow\(\)")
         chitchat_re = re.compile(r"ChitChat\(\)")
+        skip_question_re = re.compile(r"SkipQuestion\(\)")
         knowledge_re = re.compile(r"SearchAndReply\(\)")
         humand_handoff_re = re.compile(r"HumanHandoff\(\)")
         clarify_re = re.compile(r"Clarify\(([a-zA-Z0-9_, ]+)\)")
@@ -255,9 +251,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
                 if slot_name == "flow_name":
                     commands.append(StartFlowCommand(flow=slot_value))
                 else:
-                    typed_slot_value = cls.coerce_slot_value(
-                        slot_value, slot_name, tracker
-                    )
+                    typed_slot_value = cls.get_nullable_slot_value(slot_value)
                     commands.append(
                         SetSlotCommand(name=slot_name, value=typed_slot_value)
                     )
@@ -267,6 +261,8 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
                 commands.append(CancelFlowCommand())
             elif chitchat_re.search(action):
                 commands.append(ChitChatAnswerCommand())
+            elif skip_question_re.search(action):
+                commands.append(SkipQuestionCommand())
             elif knowledge_re.search(action):
                 commands.append(KnowledgeAnswerCommand())
             elif humand_handoff_re.search(action):
@@ -296,39 +292,16 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         return value.strip("'\" ")
 
     @classmethod
-    def coerce_slot_value(
-        cls, slot_value: str, slot_name: str, tracker: DialogueStateTracker
-    ) -> Union[str, bool, float, None]:
-        """Coerce the slot value to the correct type.
-
-        Tries to coerce the slot value to the correct type. If the
-        conversion fails, `None` is returned.
+    def get_nullable_slot_value(cls, slot_value: str) -> Union[str, None]:
+        """Get the slot value or None if the value is a none value.
 
         Args:
-            value: The value to coerce.
-            slot_name: The name of the slot.
-            tracker: The tracker containing the current state of the conversation.
+            slot_value: the value to coerce
 
         Returns:
-            The coerced value or `None` if the conversion failed.
+            The slot value or None if the value is a none value.
         """
-        nullable_value = slot_value if not cls.is_none_value(slot_value) else None
-        if slot_name not in tracker.slots:
-            return nullable_value
-
-        slot = tracker.slots[slot_name]
-        if isinstance(slot, BooleanSlot):
-            try:
-                return bool_from_any(nullable_value)
-            except (ValueError, TypeError):
-                return None
-        elif isinstance(slot, FloatSlot):
-            try:
-                return float(nullable_value)
-            except (ValueError, TypeError):
-                return None
-        else:
-            return nullable_value
+        return slot_value if not cls.is_none_value(slot_value) else None
 
     def prepare_flows_for_template(
         self, flows: FlowsList, tracker: DialogueStateTracker
