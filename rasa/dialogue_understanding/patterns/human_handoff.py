@@ -11,7 +11,7 @@ FLOW_PATTERN_HUMAN_HANDOFF = RASA_DEFAULT_FLOW_PATTERN_PREFIX + "human_handoff"
 
 @dataclass
 class HumanHandoffPatternFlowStackFrame(PatternFlowStackFrame):
-    """"""
+    """A pattern flow stack frame which hands off to a human."""
 
     flow_id: str = FLOW_PATTERN_HUMAN_HANDOFF
     """The ID of the flow."""
