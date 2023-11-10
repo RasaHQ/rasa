@@ -1531,6 +1531,78 @@ def test_verify_predicates_namespaces_not_referenced(
 
 
 @pytest.mark.parametrize(
+    "predicate, expected_validation_result",
+    [
+        ("True", True),
+        ("False", True),
+        ("slots.spam", True),
+        ("slots.spam is 'eggs'", True),
+        ("slots.authenticated AND slots.email_verified", True),
+        ("slots.authenticated OR slots.email_verified", True),
+        ("xxx !!!", False),
+    ],
+)
+def test_verify_predicates_on_flow_guards(
+    predicate: str, expected_validation_result: bool
+):
+    """Test that verify_predicates() correctly verifys flow guard predicates."""
+    # Given
+    flows = flows_from_str(
+        f"""
+        flows:
+          spam_eggs:
+            if: {predicate}
+            steps:
+            - id: first
+              action: action_listen
+        """
+    )
+    validator = Validator(Domain.empty(), TrainingData(), StoryGraph([]), flows, None)
+    # When
+    validation_result = validator.verify_predicates()
+    # Then
+    assert validation_result == expected_validation_result
+
+
+@pytest.mark.parametrize(
+    "predicate",
+    [
+        "xxx !!!",
+        "slots.spam is 'eggs' AND",
+        "slots.spam is 'eggs' OR",
+        "slots.spam is AND OR not 'eggs'",
+    ],
+)
+def test_verify_predicates_invalid_flow_guards(
+    predicate: str,
+    caplog: LogCaptureFixture,
+) -> None:
+    """Test that verify_predicates() correctly logs invalid flow guard predicates."""
+    # Given
+    error_log = (
+        f"Detected invalid flow guard condition "
+        f"'{predicate}' for flow id 'spam_eggs'. "
+        f"Please make sure that all conditions are valid."
+    )
+    flows = flows_from_str(
+        f"""
+        flows:
+          spam_eggs:
+            if: {predicate}
+            steps:
+            - id: first
+              action: action_listen
+        """
+    )
+    validator = Validator(Domain.empty(), TrainingData(), StoryGraph([]), flows, None)
+    # When
+    with caplog.at_level(logging.ERROR):
+        assert not validator.verify_predicates()
+    # Then
+    assert error_log in caplog.text
+
+
+@pytest.mark.parametrize(
     "predicate",
     [
         "slots.account_type is 'debit'",

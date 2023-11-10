@@ -363,6 +363,39 @@ def test_flow_step_iteration_in_deeply_nested_flow():
 
 
 @pytest.mark.parametrize(
+    "guard_condition, expected_startable",
+    [
+        ("True", True),
+        ("False", False),
+        ("True and False", False),
+        ("True or False", True),
+        ("context.x > 0", True),
+        ("context.x < 0", False),
+        ("slots.spam is not null", True),
+        ("slots.spam is 'eggs'", True),
+        ("slots.spam is 'ham'", False),
+        ("slots.authenticated AND slots.email_verified", True),
+        ("slots.some_missing_slot is 'available'", False),
+    ],
+)
+def test_is_startable(guard_condition: str, expected_startable: bool):
+    """Test that the start condition is evaluated correctly."""
+    # Given
+    flow = Flow.from_json(
+        "foo",
+        {"if": guard_condition, "steps": [{"id": "first", "action": "action_listen"}]},
+    )
+    document = {
+        "context": {"x": 2},
+        "slots": {"spam": "eggs", "authenticated": True, "email_verified": True},
+    }
+    # When
+    is_startable = flow.is_startable(document)
+    # Then
+    assert is_startable == expected_startable
+
+
+@pytest.mark.parametrize(
     "nlu_trigger_config, actual_intents",
     [
         (

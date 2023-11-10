@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from functools import cached_property
 from typing import Text, Optional, Dict, Any, List, Set
+from pypred import Predicate
+import structlog
 
 import rasa.shared.utils.io
 from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
@@ -16,11 +18,16 @@ from rasa.shared.core.flows.steps.constants import (
     START_STEP,
     END_STEP,
 )
-from rasa.shared.core.flows.steps.end import EndFlowStep
-from rasa.shared.core.flows.steps.start import StartFlowStep
-from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
-from rasa.shared.core.flows.steps.link import LinkFlowStep
+from rasa.shared.core.flows.steps import (
+    CollectInformationFlowStep,
+    EndFlowStep,
+    LinkFlowStep,
+    StartFlowStep,
+)
 from rasa.shared.core.flows.flow_step_sequence import FlowStepSequence
+
+
+structlogger = structlog.get_logger()
 
 
 @dataclass
@@ -33,6 +40,8 @@ class Flow:
     """The human-readable name of the flow."""
     description: Optional[Text] = None
     """The description of the flow."""
+    guard_condition: Optional[Text] = None
+    """The condition that needs to be fulfilled for the flow to be startable."""
     step_sequence: FlowStepSequence = field(default_factory=FlowStepSequence.empty)
     """The steps of the flow."""
     nlu_triggers: Optional[NLUTriggers] = None
@@ -55,6 +64,8 @@ class Flow:
             id=flow_id,
             custom_name=data.get("name"),
             description=data.get("description"),
+            # str or bool are permitted in the flow schema but internally we want a str
+            guard_condition=str(data.get("if")) if data.get("if") else None,
             step_sequence=Flow.resolve_default_ids(step_sequence),
             nlu_triggers=nlu_triggers,
         )
@@ -117,6 +128,8 @@ class Flow:
             data["name"] = self.custom_name
         if self.description is not None:
             data["description"] = self.description
+        if self.guard_condition is not None:
+            data["if"] = self.guard_condition
         if self.nlu_triggers:
             data["nlu_trigger"] = self.nlu_triggers.as_json()
 
@@ -240,3 +253,34 @@ class Flow:
     def name(self) -> str:
         """Create a default name if none is present."""
         return self.custom_name or Flow.create_default_name(self.id)
+
+    def is_startable(self, data: Optional[Dict[str, Any]] = None) -> bool:
+        """Return whether the start condition is satisfied.
+
+        Args:
+            data: The context and slots to evaluate the start condition against.
+
+        Returns:
+            Whether the start condition is satisfied.
+        """
+        # If no starting condition exists, the flow is always startable.
+        if not self.guard_condition:
+            return True
+
+        try:
+            predicate = Predicate(self.guard_condition)
+            is_startable = predicate.evaluate(data)
+            structlogger.debug(
+                "command_generator.validate_flow_starting_conditions.result",
+                predicate=predicate.description(),
+                is_startable=is_startable,
+            )
+            return is_startable
+        except (TypeError, Exception) as e:
+            structlogger.error(
+                "command_generator.validate_flow_starting_conditions.error",
+                predicate=self.guard_condition,
+                context=data,
+                error=str(e),
+            )
+            return False

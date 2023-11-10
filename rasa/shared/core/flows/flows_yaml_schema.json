@@ -207,7 +207,7 @@
           "type": "string"
         },
         "if": {
-          "type": "string"
+          "type": ["string", "boolean"]
         },
         "name": {
           "type": "string"

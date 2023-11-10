@@ -118,3 +118,13 @@ class FlowsList:
         return {
             utterance for flow in self.underlying_flows for utterance in flow.utterances
         }
+
+    def startable_flows(self, data: Optional[Dict[str, Any]] = None) -> FlowsList:
+        """Get all flows for which the starting conditions are met.
+
+        Args:
+            data: The context and slots to evaluate the starting conditions against.
+
+        Returns:
+            All flows for which the starting conditions are met."""
+        return FlowsList([f for f in self.underlying_flows if f.is_startable(data)])

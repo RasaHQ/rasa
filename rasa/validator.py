@@ -641,18 +641,25 @@ class Validator:
     @staticmethod
     def _construct_predicate(
         predicate: Optional[str],
-        step_id: str,
+        object_id: str,
         context: Dict[str, Any],
+        is_step: bool,
         all_good: bool = True,
     ) -> Tuple[Optional[Predicate], bool]:
         rendered_template = Template(predicate).render(context)
         try:
             pred = Predicate(rendered_template)
         except (TypeError, Exception) as exception:
-            logger.error(
-                f"Could not initialize the predicate found under step "
-                f"'{step_id}': {exception}."
-            )
+            if is_step:
+                logger.error(
+                    f"Could not initialize the predicate found under step "
+                    f"'{object_id}': {exception}"
+                )
+            else:
+                logger.error(
+                    f"Could not initialize the predicate found in flow gruard "
+                    f"for flow: '{object_id}': {exception}."
+                )
             pred = None
             all_good = False
 
@@ -664,6 +671,21 @@ class Validator:
         context = self._build_context()
 
         for flow in self.flows.underlying_flows:
+            if flow.guard_condition:
+                predicate, all_good = self._construct_predicate(
+                    flow.guard_condition,
+                    flow.id,
+                    context,
+                    is_step=False,
+                    all_good=all_good,
+                )
+                if predicate and not predicate.is_valid():
+                    logger.error(
+                        f"Detected invalid flow guard condition "
+                        f"'{flow.guard_condition}' for flow id '{flow.id}'. "
+                        f"Please make sure that all conditions are valid."
+                    )
+                    all_good = False
             for step in flow.steps:
                 for link in step.next.links:
                     if isinstance(link, IfFlowStepLink):
@@ -671,8 +693,12 @@ class Validator:
                             link.condition, step.id, flow.id, all_good
                         )
 
-                        predicate, all_good = Validator._construct_predicate(
-                            link.condition, step.id, context, all_good
+                        predicate, all_good = self._construct_predicate(
+                            link.condition,
+                            step.id,
+                            context,
+                            is_step=True,
+                            all_good=all_good,
                         )
                         if predicate and not predicate.is_valid():
                             logger.error(
@@ -688,8 +714,8 @@ class Validator:
                             predicate, step.id, flow.id, all_good
                         )
 
-                        pred, all_good = Validator._construct_predicate(
-                            predicate, step.id, context, all_good
+                        pred, all_good = self._construct_predicate(
+                            predicate, step.id, context, is_step=True, all_good=all_good
                         )
                         if pred and not pred.is_valid():
                             logger.error(
