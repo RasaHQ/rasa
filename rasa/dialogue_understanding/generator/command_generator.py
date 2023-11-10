@@ -100,7 +100,7 @@ class CommandGenerator:
 
         # Get current context and slots to prepare document for flow guard check.
         return {
-            "context": DialogueStack.from_tracker(tracker).current_context(),
+            "context": tracker.stack.current_context(),
             "slots": tracker.current_slot_values(),
         }
 

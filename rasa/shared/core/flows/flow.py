@@ -2,22 +2,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from functools import cached_property
-from typing import (
-    Any,
-    Dict,
-    Generator,
-    List,
-    Optional,
-    Protocol,
-    Set,
-    Text,
-    Union,
-)
+from typing import Text, Optional, Dict, Any, List, Set
+from pypred import Predicate
 import structlog
-
-from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX, UTTER_PREFIX
-from rasa.shared.exceptions import RasaException
 
 import rasa.shared.utils.io
 from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
@@ -222,6 +209,18 @@ class Flow:
 
         return _previously_asked_collect(step_id or START_STEP, set())
 
+    def get_trigger_intents(self) -> Set[str]:
+        """Returns the trigger intents of the flow"""
+        results: Set[str] = set()
+
+        if not self.nlu_triggers:
+            return results
+
+        for condition in self.nlu_triggers.trigger_conditions:
+            results.add(condition.intent)
+
+        return results
+
     @property
     def is_rasa_default_flow(self) -> bool:
         """Test whether the flow is a rasa default flow."""
@@ -255,54 +254,8 @@ class Flow:
         """Create a default name if none is present."""
         return self.custom_name or Flow.create_default_name(self.id)
 
-    def first(self) -> Optional[FlowStep]:
-        """Returns the first step of the sequence."""
-        if len(self.child_steps) == 0:
-            return None
-        return self.child_steps[0]
-
-
-def step_from_json(flow_step_config: Dict[Text, Any]) -> FlowStep:
-    """Used to read flow steps from parsed YAML.
-
-    Args:
-        flow_step_config: The parsed YAML as a dictionary.
-
-    Returns:
-        The parsed flow step.
-    """
-    if "action" in flow_step_config:
-        return ActionFlowStep.from_json(flow_step_config)
-    if "collect" in flow_step_config:
-        return CollectInformationFlowStep.from_json(flow_step_config)
-    if "link" in flow_step_config:
-        return LinkFlowStep.from_json(flow_step_config)
-    if "set_slots" in flow_step_config:
-        return SetSlotsFlowStep.from_json(flow_step_config)
-    if "generation_prompt" in flow_step_config:
-        return GenerateResponseFlowStep.from_json(flow_step_config)
-    else:
-        return BranchFlowStep.from_json(flow_step_config)
-
-
-@dataclass
-class FlowStep:
-    """Represents the configuration of a flow step."""
-
-    custom_id: Optional[Text]
-    """The id of the flow step."""
-    idx: int
-    """The index of the step in the flow."""
-    description: Optional[Text]
-    """The description of the flow step."""
-    metadata: Dict[Text, Any]
-    """Additional, unstructured information about this flow step."""
-    next: "FlowLinks"
-    """The next steps of the flow step."""
-
-    @classmethod
-    def _from_json(cls, flow_step_config: Dict[Text, Any]) -> FlowStep:
-        """Used to read flow steps from parsed YAML.
+    def is_startable(self, data: Optional[Dict[str, Any]] = None) -> bool:
+        """Return whether the start condition is satisfied.
 
         Args:
             data: The context and slots to evaluate the start condition against.
@@ -310,330 +263,9 @@ class FlowStep:
         Returns:
             Whether the start condition is satisfied.
         """
-        return FlowStep(
-            # the idx is set later once the flow is created that contains
-            # this step
-            idx=-1,
-            custom_id=flow_step_config.get("id"),
-            description=flow_step_config.get("description"),
-            metadata=flow_step_config.get("metadata", {}),
-            next=FlowLinks.from_json(flow_step_config.get("next", [])),
-        )
-
-    def as_json(self) -> Dict[Text, Any]:
-        """Returns the flow step as a dictionary.
-
-        Returns:
-            The flow step as a dictionary.
-        """
-        dump = {"next": self.next.as_json(), "id": self.id}
-
-        if self.description:
-            dump["description"] = self.description
-        if self.metadata:
-            dump["metadata"] = self.metadata
-        return dump
-
-    def steps_in_tree(self) -> Generator[FlowStep, None, None]:
-        """Returns the steps in the tree of the flow step."""
-        yield self
-        yield from self.next.steps_in_tree()
-
-    @property
-    def id(self) -> Text:
-        """Returns the id of the flow step."""
-        return self.custom_id or self.default_id()
-
-    def default_id(self) -> str:
-        """Returns the default id of the flow step."""
-        return f"{self.idx}_{self.default_id_postfix()}"
-
-    def default_id_postfix(self) -> str:
-        """Returns the default id postfix of the flow step."""
-        raise NotImplementedError()
-
-    @property
-    def utterances(self) -> Set[str]:
-        """Return all the utterances used in this step"""
-        return set()
-
-
-class InternalFlowStep(FlowStep):
-    """Represents the configuration of a built-in flow step.
-
-    Built in flow steps are required to manage the lifecycle of a
-    flow and are not intended to be used by users.
-    """
-
-    @classmethod
-    def from_json(cls, flow_step_config: Dict[Text, Any]) -> ActionFlowStep:
-        """Used to read flow steps from parsed JSON.
-
-        Args:
-            flow_step_config: The parsed JSON as a dictionary.
-
-        Returns:
-            The parsed flow step.
-        """
-        raise ValueError("A start step cannot be parsed.")
-
-    def as_json(self) -> Dict[Text, Any]:
-        """Returns the flow step as a dictionary.
-
-        Returns:
-            The flow step as a dictionary.
-        """
-        raise ValueError("A start step cannot be dumped.")
-
-
-@dataclass
-class StartFlowStep(InternalFlowStep):
-    """Represents the configuration of a start flow step."""
-
-    def __init__(self, start_step_id: Optional[Text]) -> None:
-        """Initializes a start flow step.
-
-        Args:
-            start_step: The step to start the flow from.
-        """
-        if start_step_id is not None:
-            links: List[FlowLink] = [StaticFlowLink(target=start_step_id)]
-        else:
-            links = []
-
-        super().__init__(
-            idx=0,
-            custom_id=START_STEP,
-            description=None,
-            metadata={},
-            next=FlowLinks(links=links),
-        )
-
-
-@dataclass
-class EndFlowStep(InternalFlowStep):
-    """Represents the configuration of an end to a flow."""
-
-    def __init__(self) -> None:
-        """Initializes an end flow step."""
-        super().__init__(
-            idx=0,
-            custom_id=END_STEP,
-            description=None,
-            metadata={},
-            next=FlowLinks(links=[]),
-        )
-
-
-CONTINUE_STEP_PREFIX = "NEXT:"
-
-
-@dataclass
-class ContinueFlowStep(InternalFlowStep):
-    """Represents the configuration of a continue-step flow step."""
-
-    def __init__(self, next: str) -> None:
-        """Initializes a continue-step flow step."""
-        super().__init__(
-            idx=0,
-            custom_id=CONTINUE_STEP_PREFIX + next,
-            description=None,
-            metadata={},
-            # The continue step links to the step that should be continued.
-            # The flow policy in a sense only "runs" the logic of a step
-            # when it transitions to that step, once it is there it will use
-            # the next link to transition to the next step. This means that
-            # if we want to "re-run" a step, we need to link to it again.
-            # This is why the continue step links to the step that should be
-            # continued.
-            next=FlowLinks(links=[StaticFlowLink(target=next)]),
-        )
-
-    @staticmethod
-    def continue_step_for_id(step_id: str) -> str:
-        return CONTINUE_STEP_PREFIX + step_id
-
-
-@dataclass
-class ActionFlowStep(FlowStep):
-    """Represents the configuration of an action flow step."""
-
-    action: Text
-    """The action of the flow step."""
-
-    @classmethod
-    def from_json(cls, flow_step_config: Dict[Text, Any]) -> ActionFlowStep:
-        """Used to read flow steps from parsed YAML.
-
-        Args:
-            flow_step_config: The parsed YAML as a dictionary.
-
-        Returns:
-            The parsed flow step.
-        """
-        base = super()._from_json(flow_step_config)
-        return ActionFlowStep(
-            action=flow_step_config.get("action", ""),
-            **base.__dict__,
-        )
-
-    def as_json(self) -> Dict[Text, Any]:
-        """Returns the flow step as a dictionary.
-
-        Returns:
-            The flow step as a dictionary.
-        """
-        dump = super().as_json()
-        dump["action"] = self.action
-        return dump
-
-    def default_id_postfix(self) -> str:
-        return self.action
-
-    @property
-    def utterances(self) -> Set[str]:
-        """Return all the utterances used in this step"""
-        return {self.action} if self.action.startswith(UTTER_PREFIX) else set()
-
-
-@dataclass
-class BranchFlowStep(FlowStep):
-    """Represents the configuration of a branch flow step."""
-
-    @classmethod
-    def from_json(cls, flow_step_config: Dict[Text, Any]) -> BranchFlowStep:
-        """Used to read flow steps from parsed YAML.
-
-        Args:
-            flow_step_config: The parsed YAML as a dictionary.
-
-        Returns:
-            The parsed flow step.
-        """
-        base = super()._from_json(flow_step_config)
-        return BranchFlowStep(**base.__dict__)
-
-    def as_json(self) -> Dict[Text, Any]:
-        """Returns the flow step as a dictionary.
-
-        Returns:
-            The flow step as a dictionary.
-        """
-        dump = super().as_json()
-        return dump
-
-    def default_id_postfix(self) -> str:
-        """Returns the default id postfix of the flow step."""
-        return "branch"
-
-
-@dataclass
-class LinkFlowStep(FlowStep):
-    """Represents the configuration of a link flow step."""
-
-    link: Text
-    """The link of the flow step."""
-
-    @classmethod
-    def from_json(cls, flow_step_config: Dict[Text, Any]) -> LinkFlowStep:
-        """Used to read flow steps from parsed YAML.
-
-        Args:
-            flow_step_config: The parsed YAML as a dictionary.
-
-        Returns:
-            The parsed flow step.
-        """
-        base = super()._from_json(flow_step_config)
-        return LinkFlowStep(
-            link=flow_step_config.get("link", ""),
-            **base.__dict__,
-        )
-
-    def as_json(self) -> Dict[Text, Any]:
-        """Returns the flow step as a dictionary.
-
-        Returns:
-            The flow step as a dictionary.
-        """
-        dump = super().as_json()
-        dump["link"] = self.link
-        return dump
-
-    def default_id_postfix(self) -> str:
-        """Returns the default id postfix of the flow step."""
-        return f"link_{self.link}"
-
-
-DEFAULT_LLM_CONFIG = {
-    "_type": "openai",
-    "request_timeout": 5,
-    "temperature": DEFAULT_OPENAI_TEMPERATURE,
-    "model_name": DEFAULT_OPENAI_GENERATE_MODEL_NAME,
-}
-
-
-@dataclass
-class GenerateResponseFlowStep(FlowStep):
-    """Represents the configuration of a step prompting an LLM."""
-
-    generation_prompt: Text
-    """The prompt template of the flow step."""
-    llm_config: Optional[Dict[Text, Any]] = None
-    """The LLM configuration of the flow step."""
-
-    @classmethod
-    def from_json(cls, flow_step_config: Dict[Text, Any]) -> GenerateResponseFlowStep:
-        """Used to read flow steps from parsed YAML.
-
-        Args:
-            flow_step_config: The parsed YAML as a dictionary.
-
-        Returns:
-            The parsed flow step.
-        """
-        base = super()._from_json(flow_step_config)
-        return GenerateResponseFlowStep(
-            generation_prompt=flow_step_config.get("generation_prompt", ""),
-            llm_config=flow_step_config.get("llm", None),
-            **base.__dict__,
-        )
-
-    def as_json(self) -> Dict[Text, Any]:
-        """Returns the flow step as a dictionary.
-
-        Returns:
-            The flow step as a dictionary.
-        """
-        dump = super().as_json()
-        dump["generation_prompt"] = self.generation_prompt
-        if self.llm_config:
-            dump["llm"] = self.llm_config
-
-        return dump
-
-    def generate(self, tracker: DialogueStateTracker) -> Optional[Text]:
-        """Generates a response for the given tracker.
-
-        Args:
-            tracker: The tracker to generate a response for.
-
-        Returns:
-            The generated response.
-        """
-        from rasa.shared.utils.llm import llm_factory, tracker_as_readable_transcript
-        from jinja2 import Template
-
-        context = {
-            "history": tracker_as_readable_transcript(tracker, max_turns=5),
-            "latest_user_message": tracker.latest_message.text
-            if tracker.latest_message
-            else "",
-        }
-        context.update(tracker.current_slot_values())
-
-        llm = llm_factory(self.llm_config, DEFAULT_LLM_CONFIG)
-        prompt = Template(self.generation_prompt).render(context)
+        # If no starting condition exists, the flow is always startable.
+        if not self.guard_condition:
+            return True
 
         try:
             predicate = Predicate(self.guard_condition)

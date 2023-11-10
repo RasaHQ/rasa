@@ -1181,14 +1181,13 @@ def test_flow_policy_events_after_flow_starts() -> None:
         ],
     )
 
-    dialogue_stack = DialogueStack.from_tracker(tracker)
     flow = flows.flow_by_id("search_hotels")
     step = flow.step_by_id("1_collect_num_rooms")
     available_actions = []
     step_result = flow_executor.run_step(
         step=step,
         flow=flow,
-        stack=dialogue_stack,
+        stack=tracker.stack,
         tracker=tracker,
         available_actions=available_actions,
         flows=flows,
@@ -1246,10 +1245,12 @@ def test_flow_policy_events_after_flow_ends() -> None:
         ],
     )
 
-    stack = DialogueStack.from_tracker(tracker)
     available_actions = []
     result = flow_executor.advance_flows_until_next_action(
-        stack=stack, tracker=tracker, available_actions=available_actions, flows=flows
+        stack=tracker.stack,
+        tracker=tracker,
+        available_actions=available_actions,
+        flows=flows,
     )
     assert result is not None
     assert (
@@ -1333,10 +1334,12 @@ def test_flow_policy_events_after_interruption() -> None:
         ],
     )
 
-    stack = DialogueStack.from_tracker(tracker)
     available_actions = []
     result = flow_executor.advance_flows_until_next_action(
-        stack=stack, tracker=tracker, available_actions=available_actions, flows=flows
+        stack=tracker.stack,
+        tracker=tracker,
+        available_actions=available_actions,
+        flows=flows,
     )
     assert result is not None
     assert result.events[0] == FlowCompleted(

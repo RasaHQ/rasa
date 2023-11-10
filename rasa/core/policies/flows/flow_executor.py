@@ -330,7 +330,7 @@ def advance_flows(
     Returns:
     The predicted action and the events to run.
     """
-    stack = DialogueStack.from_tracker(tracker)
+    stack = tracker.stack
     if stack.is_empty():
         # if there are no flows, there is nothing to do
         return FlowActionPrediction(None, 0.0)

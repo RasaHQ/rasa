@@ -53,9 +53,8 @@ class SkipQuestionCommand(Command):
         Returns:
             The events to apply to the tracker.
         """
-        stack = DialogueStack.from_tracker(tracker)
-        original_stack = DialogueStack.from_tracker(original_tracker)
-        user_frame = top_user_flow_frame(original_stack)
+        stack = tracker.stack
+        user_frame = top_user_flow_frame(original_tracker.stack)
         current_flow = user_frame.flow(all_flows) if user_frame else None
 
         if not current_flow:

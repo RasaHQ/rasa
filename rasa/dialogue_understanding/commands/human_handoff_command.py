@@ -50,9 +50,9 @@ class HumanHandoffCommand(Command):
         Returns:
             The events to apply to the tracker.
         """
-        dialogue_stack = DialogueStack.from_tracker(tracker)
-        dialogue_stack.push(HumanHandoffPatternFlowStackFrame())
+        stack = tracker.stack
+        stack.push(HumanHandoffPatternFlowStackFrame())
         structlogger.debug(
             "command_executor.human_handoff.pushed_to_stack", command=self
         )
-        return [dialogue_stack.persist_as_event()]
+        return [stack.persist_as_event()]

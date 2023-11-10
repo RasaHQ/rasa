@@ -128,7 +128,7 @@ class DialogueStack:
         """
         return len(self.frames) == 0
 
-    def update_from_patch(self, patch: str) -> DialogueStack:
-        patch = jsonpatch.JsonPatch.from_string(patch)
+    def update_from_patch(self, patch_dump: str) -> DialogueStack:
+        patch = jsonpatch.JsonPatch.from_string(patch_dump)
         dialogue_stack_dump = patch.apply(self.as_dict())
         return DialogueStack.from_dict(dialogue_stack_dump)
