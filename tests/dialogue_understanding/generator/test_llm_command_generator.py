@@ -1,6 +1,6 @@
 import uuid
 
-from typing import Optional
+from typing import Optional, Dict, Text, Any
 from unittest.mock import Mock, patch
 
 import pytest
@@ -22,6 +22,7 @@ from rasa.dialogue_understanding.commands import (
     SkipQuestionCommand,
     KnowledgeAnswerCommand,
     ClarifyCommand,
+    UserInputExceedsLimitErrorCommand,
 )
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
@@ -82,7 +83,9 @@ class TestLLMCommandGenerator:
         self, model_storage: ModelStorage, resource: Resource
     ) -> None:
         generator = LLMCommandGenerator(
-            {"prompt": "data/test_prompt_templates/test_prompt.jinja2"},
+            {
+                "prompt": "data/test_prompt_templates/test_prompt.jinja2",
+            },
             model_storage,
             resource,
         )
@@ -95,6 +98,69 @@ class TestLLMCommandGenerator:
         assert generator.prompt_template.startswith(
             "Your task is to analyze the current conversation"
         )
+        assert generator.message_limit is None
+
+    @pytest.mark.parametrize(
+        "config, expected_limit_exists, expected_limit, expected_unit",
+        [
+            ({"user_message_length_limit": {"limit": 100}}, True, 100, "characters"),
+            (
+                {"user_message_length_limit": {"limit": 100, "unit": "words"}},
+                True,
+                100,
+                "words",
+            ),
+            ({"user_message_length_limit": {"unit": "characters"}}, False, None, None),
+            (
+                {"user_message_length_limit": {"limit": -1, "unit": "words"}},
+                False,
+                None,
+                None,
+            ),
+            (
+                {"user_message_length_limit": {"limit": 0, "unit": "words"}},
+                False,
+                None,
+                None,
+            ),
+            (
+                {"user_message_length_limit": {"limit": -123, "unit": "words"}},
+                False,
+                None,
+                None,
+            ),
+        ],
+    )
+    def test_llm_command_generator_init_with_message_length_limit(
+        self,
+        config: Dict[Text, Any],
+        expected_limit_exists: bool,
+        expected_limit: Optional[int],
+        expected_unit: Optional[Text],
+        model_storage: ModelStorage,
+        resource: Resource,
+    ) -> None:
+        generator = LLMCommandGenerator(
+            config,
+            model_storage,
+            resource,
+        )
+        if expected_limit_exists:
+            assert generator.message_limit is not None
+            assert generator.message_limit.limit == expected_limit
+            assert generator.message_limit.unit == expected_unit
+        else:
+            assert generator.message_limit is None
+
+    def test_llm_command_generator_init_with_invalid_message_limit_unit(
+        self, model_storage: ModelStorage, resource: Resource
+    ):
+        with pytest.raises(ValueError):
+            LLMCommandGenerator(
+                {"user_message_length_limit": {"unit": "i don't exist", "limit": 100}},
+                model_storage,
+                resource,
+            )
 
     def test_predict_commands_with_no_flows(
         self, command_generator: LLMCommandGenerator
@@ -119,6 +185,46 @@ class TestLLMCommandGenerator:
         )
         # Then
         assert not predicted_commands
+
+    def test_predict_commands_with_long_message(
+        self, model_storage: ModelStorage, resource: Resource
+    ):
+        """Test that predict_commands returns UserInputExceedsLimitErrorCommand"""
+        # Given
+        generator = LLMCommandGenerator({}, model_storage, resource)
+        test_tracker = DialogueStateTracker.from_events(
+            sender_id="test",
+            evts=[UserUttered("Hello"), BotUttered("Hi")],
+        )
+        test_flows = flows_from_str(
+            """
+            flows:
+              test_flow:
+                description: some description
+                steps:
+                - id: first_step
+                  collect: test_slot
+            """
+        )
+
+        with patch(
+            "rasa.dialogue_understanding.generator"
+            ".llm_command_generator"
+            ".LLMCommandGenerator"
+            ".check_if_message_exceeds_limit"
+        ) as mock_check_if_message_exceeds_limit:
+
+            mock_check_if_message_exceeds_limit.return_value = True
+
+            # When
+            predicted_commands = generator.predict_commands(
+                Mock(), flows=test_flows, tracker=test_tracker
+            )
+
+            # Then
+            mock_check_if_message_exceeds_limit.assert_called_once()
+            assert len(predicted_commands) == 1
+            assert isinstance(predicted_commands[0], UserInputExceedsLimitErrorCommand)
 
     def test_generate_action_list_calls_llm_factory_correctly(
         self,
@@ -441,3 +547,34 @@ class TestLLMCommandGenerator:
         )
         # Then
         assert is_extractable
+
+    @pytest.mark.parametrize(
+        "message, limit, unit, expected_exceeds_limit",
+        [
+            ("Hello", 5, "characters", False),
+            ("Hello! I'm a long message", 3, "characters", True),
+            ("Hello", 3, "words", False),
+            ("Hello! I'm a long message", 3, "words", True),
+            ("Hello! I'm a long message", -1, "characters", False),
+            ("Hello! I'm a long message", -1, "words", False),
+        ],
+    )
+    def test_check_if_message_exceeds_limit(
+        self,
+        message: Text,
+        limit: int,
+        unit: Text,
+        expected_exceeds_limit: bool,
+        model_storage: ModelStorage,
+        resource: Resource,
+    ):
+        # Given
+        generator = LLMCommandGenerator(
+            {"user_message_length_limit": {"unit": unit, "limit": limit}},
+            model_storage,
+            resource,
+        )
+        message = Message.build(text=message)
+        # When
+        exceeds_limit = generator.check_if_message_exceeds_limit(message)
+        assert exceeds_limit == expected_exceeds_limit
