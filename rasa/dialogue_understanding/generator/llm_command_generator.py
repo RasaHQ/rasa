@@ -131,7 +131,8 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             return None
 
         structlogger.info(
-            "llm_command_generator.init_message_limits.set_limit", config=config,
+            "llm_command_generator.init_message_limits.set_limit",
+            config=config,
         )
         return MessageLimitConfig(limit, unit)
 
