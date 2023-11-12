@@ -38,4 +38,4 @@ def test_flow_writing(basic_flows_file: str):
     YamlFlowsWriter.dump(flows_list.underlying_flows, tmp_file_name)
 
     re_read_flows_list = YAMLFlowsReader.read_from_file(tmp_file_name)
-    assert re_read_flows_list.as_dict() == flows_list.as_dict()
+    assert re_read_flows_list.as_json_list() == flows_list.as_json_list()
