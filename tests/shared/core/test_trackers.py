@@ -1426,6 +1426,7 @@ def test_policy_prediction_reflected_in_tracker_state():
         "followup_action": None,
         "paused": False,
         "events": None,
+        "stack": [],
         "latest_input_channel": None,
         "active_loop": {},
         "latest_action": {"action_name": "action_listen"},

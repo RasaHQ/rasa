@@ -215,6 +215,7 @@ async def test_remote_action_runs(
                 "latest_action_name": None,
                 "sender_id": "my-sender",
                 "paused": False,
+                "stack": [],
                 "latest_event_time": None,
                 FOLLOWUP_ACTION: "action_listen",
                 "slots": {
@@ -278,6 +279,7 @@ async def test_remote_action_logs_events(
                 "latest_action": {},
                 "latest_action_name": None,
                 "sender_id": "my-sender",
+                "stack": [],
                 "paused": False,
                 FOLLOWUP_ACTION: ACTION_LISTEN_NAME,
                 "latest_event_time": None,

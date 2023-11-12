@@ -1127,7 +1127,7 @@ class AllSlotsReset(AlwaysEqualEventMixin):
 class DialogueStackUpdated(Event):
     """Update the stack of a conversation."""
 
-    type_name = "update_stack"
+    type_name = "stack"
 
     def __init__(
         self,

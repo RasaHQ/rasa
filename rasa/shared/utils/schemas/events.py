@@ -160,6 +160,10 @@ FLOW_CANCELLED = {
     }
 }
 
+DIALOGUE_STACK_UPDATED = {
+    "properties": {"event": {"const": "stack"}, "update": {"type": "array"}}
+}
+
 EVENT_SCHEMA = {
     "type": "object",
     "properties": {
@@ -197,6 +201,7 @@ EVENT_SCHEMA = {
         FLOW_RESUMED,
         FLOW_COMPLETED,
         FLOW_CANCELLED,
+        DIALOGUE_STACK_UPDATED,
     ],
 }
 
