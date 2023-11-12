@@ -32,6 +32,7 @@
   "paused": false,
   "latest_event_time": 1517821726.211042,
   "followup_action": null,
+  "stack": [],
   "slots": {
     "flow_hashes": null,
     "name": null,
