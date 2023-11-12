@@ -26,6 +26,7 @@ from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
     FlowStackFrameType,
     UserFlowStackFrame,
 )
+from rasa.shared.core.events import DialogueStackUpdated
 from rasa.dialogue_understanding.stack.frames.search_frame import SearchStackFrame
 from rasa.shared.core.constants import ACTION_SEND_TEXT_NAME
 from rasa.shared.core.domain import Domain
@@ -49,7 +50,7 @@ from rasa.shared.core.flows.flow_step_links import FlowStepLinks
 from rasa.shared.core.flows.steps import SetSlotsFlowStep
 from rasa.shared.core.flows.steps.collect import SlotRejection
 from rasa.shared.core.flows.yaml_flows_io import flows_from_str
-from rasa.shared.core.slots import AnySlot, FloatSlot, TextSlot
+from rasa.shared.core.slots import FloatSlot, TextSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 
 
@@ -70,21 +71,21 @@ def test_render_template_empty_text():
 
 def test_evaluate_simple_predicate():
     predicate = "2 > 1"
-    stack = DialogueStack(frames=[])
+    stack = DialogueStack.empty()
     tracker = DialogueStateTracker.from_events("test", [])
     assert flow_executor.is_condition_satisfied(predicate, stack, tracker)
 
 
 def test_evaluate_simple_predicate_failing():
     predicate = "2 < 1"
-    stack = DialogueStack(frames=[])
+    stack = DialogueStack.empty()
     tracker = DialogueStateTracker.from_events("test", [])
     assert not flow_executor.is_condition_satisfied(predicate, stack, tracker)
 
 
 def test_invalid_predicate():
     predicate = "2 >!= 1"
-    stack = DialogueStack(frames=[])
+    stack = DialogueStack.empty()
     tracker = DialogueStateTracker.from_events("test", [])
     assert not flow_executor.is_condition_satisfied(predicate, stack, tracker)
 
@@ -109,9 +110,8 @@ def test_evaluate_predicate_with_context_successfully():
         ]
     )
 
-    satisfied_tracker = DialogueStateTracker.from_events(
-        "test", [stack.persist_as_event()]
-    )
+    satisfied_tracker = DialogueStateTracker.from_events("test", [])
+    satisfied_tracker.update_stack(stack)
     assert flow_executor.is_condition_satisfied(
         predicate,
         stack.current_context(),
@@ -179,7 +179,8 @@ def test_select_next_step_static_link():
         flow_id="my_flow", step_id="collect_foo", frame_id="some-frame-id"
     )
     stack = DialogueStack(frames=[user_flow_frame])
-    tracker = DialogueStateTracker.from_events("test", [stack.persist_as_event()])
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
     step = user_flow_frame.step(all_flows)
 
     assert (
@@ -212,9 +213,8 @@ def test_select_next_step_branch_if():
         flow_id="my_flow", step_id="collect_foo", frame_id="some-frame-id"
     )
     stack = DialogueStack(frames=[user_flow_frame])
-    tracker = DialogueStateTracker.from_events(
-        "test", [stack.persist_as_event(), SlotSet("foo", "foobar")]
-    )
+    tracker = DialogueStateTracker.from_events("test", [SlotSet("foo", "foobar")])
+    tracker.update_stack(stack)
     step = user_flow_frame.step(all_flows)
 
     assert (
@@ -247,9 +247,8 @@ def test_select_next_step_branch_else():
         flow_id="my_flow", step_id="collect_foo", frame_id="some-frame-id"
     )
     stack = DialogueStack(frames=[user_flow_frame])
-    tracker = DialogueStateTracker.from_events(
-        "test", [stack.persist_as_event(), SlotSet("foo", "bazbaz")]
-    )
+    tracker = DialogueStateTracker.from_events("test", [SlotSet("foo", "bazbaz")])
+    tracker.update_stack(stack)
     step = user_flow_frame.step(all_flows)
 
     assert (
@@ -287,9 +286,8 @@ def test_select_next_step_branch_not_possible():
         flow_id="my_flow", step_id="collect_foo", frame_id="some-frame-id"
     )
     stack = DialogueStack(frames=[user_flow_frame])
-    tracker = DialogueStateTracker.from_events(
-        "test", [stack.persist_as_event(), SlotSet("foo", "bazbaz")]
-    )
+    tracker = DialogueStateTracker.from_events("test", [SlotSet("foo", "bazbaz")])
+    tracker.update_stack(stack)
     step = user_flow_frame.step(all_flows)
 
     step.next.links = step.next.links[:-1]  # removes the else branch
@@ -315,7 +313,8 @@ def test_select_handles_END_next():
         flow_id="my_flow", step_id="collect_foo", frame_id="some-frame-id"
     )
     stack = DialogueStack(frames=[user_flow_frame])
-    tracker = DialogueStateTracker.from_events("test", [stack.persist_as_event()])
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
     step = user_flow_frame.step(all_flows)
 
     assert (
@@ -339,7 +338,8 @@ def test_select_handles_no_next():
         flow_id="my_flow", step_id="collect_foo", frame_id="some-frame-id"
     )
     stack = DialogueStack(frames=[user_flow_frame])
-    tracker = DialogueStateTracker.from_events("test", [stack.persist_as_event()])
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
     step = user_flow_frame.step(all_flows)
 
     # we need to manually create this case as the YAML parser doesn't allow
@@ -368,7 +368,8 @@ def test_select_handles_current_node_being_END():
         flow_id="my_flow", step_id=END_STEP, frame_id="some-frame-id"
     )
     stack = DialogueStack(frames=[user_flow_frame])
-    tracker = DialogueStateTracker.from_events("test", [stack.persist_as_event()])
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
     step = user_flow_frame.step(all_flows)
 
     assert (
@@ -392,7 +393,8 @@ def test_select_handles_current_node_being_link():
         flow_id="my_flow", step_id="link_to_foo", frame_id="some-frame-id"
     )
     stack = DialogueStack(frames=[user_flow_frame])
-    tracker = DialogueStateTracker.from_events("test", [stack.persist_as_event()])
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
     step = user_flow_frame.step(all_flows)
 
     assert (
@@ -402,9 +404,9 @@ def test_select_handles_current_node_being_link():
 
 
 def test_advance_top_flow_on_stack_handles_empty_stack():
-    stack = DialogueStack(frames=[])
+    stack = DialogueStack.empty()
     flow_executor.update_top_flow_step_id("foo", stack)
-    assert stack == DialogueStack(frames=[])
+    assert stack == DialogueStack.empty()
 
 
 def test_advance_top_flow_on_stack_handles_non_user_flow_stack():
@@ -569,7 +571,7 @@ def test_trigger_pattern_completed():
         """
     )
 
-    stack = DialogueStack(frames=[])
+    stack = DialogueStack.empty()
 
     current_frame = UserFlowStackFrame(
         flow_id="foo_flow", step_id=END_STEP, frame_id="some-other-id"
@@ -619,7 +621,7 @@ def test_trigger_pattern_completed_does_not_trigger_if_not_user_frame():
         """
     )
 
-    stack = DialogueStack(frames=[])
+    stack = DialogueStack.empty()
 
     current_frame = ChitChatStackFrame(frame_id="some-other-id")
 
@@ -630,7 +632,7 @@ def test_trigger_pattern_completed_does_not_trigger_if_not_user_frame():
 
 
 def test_pattern_ask_collect_information():
-    stack = DialogueStack(frames=[])
+    stack = DialogueStack.empty()
 
     collect = "foo"
     utter = "utter_ask_foo"
@@ -758,7 +760,8 @@ def test_run_step_collect():
         flow_id="my_flow", step_id="collect_foo", frame_id="some-frame-id"
     )
     stack = DialogueStack(frames=[user_flow_frame])
-    tracker = DialogueStateTracker.from_events("test", [stack.persist_as_event()])
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
     step = user_flow_frame.step(flows)
     flow = user_flow_frame.flow(flows)
 
@@ -776,7 +779,7 @@ def test_run_step_collect():
 
 
 def test_trigger_pattern_ask_collect_information():
-    stack = DialogueStack(frames=[])
+    stack = DialogueStack.empty()
     flow_executor.trigger_pattern_ask_collect_information(
         "collect_foo", stack, [], "utter_ask_foo"
     )
@@ -803,7 +806,8 @@ def test_run_step_action():
         flow_id="my_flow", step_id="action", frame_id="some-frame-id"
     )
     stack = DialogueStack(frames=[user_flow_frame])
-    tracker = DialogueStateTracker.from_events("test", [stack.persist_as_event()])
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
     step = user_flow_frame.step(flows)
     flow = user_flow_frame.flow(flows)
 
@@ -832,7 +836,8 @@ def test_run_step_link():
         flow_id="my_flow", step_id="link", frame_id="some-frame-id"
     )
     stack = DialogueStack(frames=[user_flow_frame])
-    tracker = DialogueStateTracker.from_events("test", [stack.persist_as_event()])
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
     step = user_flow_frame.step(flows)
     flow = user_flow_frame.flow(flows)
 
@@ -870,7 +875,8 @@ def test_run_step_set_slot():
         flow_id="my_flow", step_id="set_slot", frame_id="some-frame-id"
     )
     stack = DialogueStack(frames=[user_flow_frame])
-    tracker = DialogueStateTracker.from_events("test", [stack.persist_as_event()])
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
     step = user_flow_frame.step(flows)
     flow = user_flow_frame.flow(flows)
 
@@ -899,7 +905,8 @@ def test_run_step_generate_response():
         flow_id="my_flow", step_id="generate", frame_id="some-frame-id"
     )
     stack = DialogueStack(frames=[user_flow_frame])
-    tracker = DialogueStateTracker.from_events("test", [stack.persist_as_event()])
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
     step = user_flow_frame.step(flows)
     flow = user_flow_frame.flow(flows)
     available_actions = []
@@ -930,7 +937,8 @@ def test_run_step_end():
         flow_id="my_flow", step_id=END_STEP, frame_id="some-frame-id"
     )
     stack = DialogueStack(frames=[user_flow_frame])
-    tracker = DialogueStateTracker.from_events("test", [stack.persist_as_event()])
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
     step = user_flow_frame.step(flows)
     flow = user_flow_frame.flow(flows)
 
@@ -968,15 +976,16 @@ def test_executor_does_not_get_tripped_if_an_action_is_predicted_in_loop():
 
     tracker = DialogueStateTracker.from_events(
         "test",
-        evts=[ActionExecuted(action_name="action_listen"), stack.persist_as_event()],
+        evts=[ActionExecuted(action_name="action_listen")],
         domain=domain,
         slots=domain.slots,
     )
+    tracker.update_stack(stack)
 
     available_actions = ["action_listen"]
 
     selection = flow_executor.advance_flows_until_next_action(
-        stack, tracker, available_actions, flow_with_loop
+        tracker, available_actions, flow_with_loop
     )
     assert selection.action_name == "action_listen"
 
@@ -1006,16 +1015,17 @@ def test_executor_trips_internal_circuit_breaker():
 
     tracker = DialogueStateTracker.from_events(
         "test",
-        evts=[ActionExecuted(action_name="action_listen"), stack.persist_as_event()],
+        evts=[ActionExecuted(action_name="action_listen")],
         domain=domain,
         slots=domain.slots,
     )
+    tracker.update_stack(stack)
 
     available_actions = []
 
     with pytest.raises(FlowCircuitBreakerTrippedException):
         flow_executor.advance_flows_until_next_action(
-            stack, tracker, available_actions, flow_with_loop
+            tracker, available_actions, flow_with_loop
         )
 
 
@@ -1051,17 +1061,16 @@ def test_executor_raises_no_next_step_in_flow_exception():
 
     tracker = DialogueStateTracker.from_events(
         "test",
-        evts=[ActionExecuted(action_name="action_listen"), stack.persist_as_event()],
+        evts=[ActionExecuted(action_name="action_listen")],
         domain=domain,
         slots=domain.slots,
     )
+    tracker.update_stack(stack)
 
     available_actions = []
 
     with pytest.raises(NoNextStepInFlowException):
-        flow_executor.advance_flows_until_next_action(
-            stack, tracker, available_actions, flows
-        )
+        flow_executor.advance_flows_until_next_action(tracker, available_actions, flows)
 
 
 def test_advance_flows_empty_stack():
@@ -1080,11 +1089,12 @@ def test_advance_flows_empty_stack():
               next: "1"
         """
     )
-    stack = DialogueStack(frames=[])
+    stack = DialogueStack.empty()
     tracker = DialogueStateTracker.from_events(
         "test",
-        evts=[stack.persist_as_event()],
+        evts=[],
     )
+    tracker.update_stack(stack)
     available_actions = []
     prediction = flow_executor.advance_flows(tracker, available_actions, flows)
     assert prediction.action_name is None
@@ -1107,25 +1117,22 @@ def test_advance_flows_selects_next_action():
     )
     tracker = DialogueStateTracker.from_events(
         "test",
-        evts=[stack.persist_as_event()],
+        evts=[],
     )
+    tracker.update_stack(stack)
     available_actions = ["utter_goodbye"]
     prediction = flow_executor.advance_flows(tracker, available_actions, flows)
     assert prediction.action_name == "utter_goodbye"
-    assert prediction.events == [
-        SlotSet(
-            "dialogue_stack",
-            [
-                {
-                    "frame_id": "some-id",
-                    "flow_id": "foo_flow",
-                    "step_id": "2",
-                    "frame_type": "regular",
-                    "type": "flow",
-                }
-            ],
-        )
-    ]
+
+    assert len(prediction.events) == 1
+    assert isinstance(prediction.events[0], DialogueStackUpdated)
+    tracker.update_with_events(prediction.events)
+
+    assert len(tracker.stack.frames) == 1
+
+    assert isinstance(tracker.stack.frames[0], UserFlowStackFrame)
+    assert tracker.stack.frames[0].step_id == "2"
+    assert tracker.stack.frames[0].flow_id == "foo_flow"
 
 
 def _run_flow_until_listen(
@@ -1213,6 +1220,17 @@ def test_flow_policy_events_after_flow_ends() -> None:
             - action: utter_completed
         """
     )
+    stack = DialogueStack.from_dict(
+        [
+            {
+                "flow_id": "search_hotels",
+                "frame_id": "OGE1U359",
+                "frame_type": "regular",
+                "step_id": "2_action_search_hotels",
+                "type": "flow",
+            }
+        ]
+    )
     tracker = DialogueStateTracker.from_events(
         "test",
         [
@@ -1224,30 +1242,17 @@ def test_flow_policy_events_after_flow_ends() -> None:
             BotUttered("When do you want to check out?"),
             UserUttered("next week"),
             BotUttered("Ok, searching for hotels"),
-            SlotSet(
-                "dialogue_stack",
-                [
-                    {
-                        "flow_id": "search_hotels",
-                        "frame_id": "OGE1U359",
-                        "frame_type": "regular",
-                        "step_id": "2_action_search_hotels",
-                        "type": "flow",
-                    }
-                ],
-            ),
         ],
         slots=[
             FloatSlot("num_rooms", mappings=[]),
             TextSlot("start_date", mappings=[]),
             TextSlot("end_slot", mappings=[]),
-            AnySlot("dialogue_stack", mappings=[]),
         ],
     )
+    tracker.update_stack(stack)
 
     available_actions = []
     result = flow_executor.advance_flows_until_next_action(
-        stack=tracker.stack,
         tracker=tracker,
         available_actions=available_actions,
         flows=flows,
@@ -1289,40 +1294,39 @@ def test_flow_policy_events_after_interruption() -> None:
             - action: utter_how_else_can_i_help
         """
     )
+    stack = DialogueStack.from_dict(
+        [
+            {
+                "flow_id": "search_hotels",
+                "frame_id": "OGE1U359",
+                "frame_type": "regular",
+                "step_id": "1_collect_num_rooms",
+                "type": "flow",
+            },
+            {
+                "collect": "num_rooms",
+                "flow_id": "pattern_collect_information",
+                "frame_id": "39LEDJUN",
+                "rejections": [],
+                "step_id": "listen",
+                "type": "pattern_collect_information",
+                "utter": "utter_ask_num_rooms",
+            },
+            {
+                "flow_id": "check_balance",
+                "frame_id": "6ZV8O9T3",
+                "frame_type": "interrupt",
+                "step_id": "2_utter_current_balance",
+                "type": "flow",
+            },
+        ]
+    )
     tracker = DialogueStateTracker.from_events(
         "test",
         [
             UserUttered("search hotels"),
             BotUttered("How many rooms?"),
             UserUttered("Check how much money I have"),
-            SlotSet(
-                "dialogue_stack",
-                [
-                    {
-                        "flow_id": "search_hotels",
-                        "frame_id": "OGE1U359",
-                        "frame_type": "regular",
-                        "step_id": "1_collect_num_rooms",
-                        "type": "flow",
-                    },
-                    {
-                        "collect": "num_rooms",
-                        "flow_id": "pattern_collect_information",
-                        "frame_id": "39LEDJUN",
-                        "rejections": [],
-                        "step_id": "listen",
-                        "type": "pattern_collect_information",
-                        "utter": "utter_ask_num_rooms",
-                    },
-                    {
-                        "flow_id": "check_balance",
-                        "frame_id": "6ZV8O9T3",
-                        "frame_type": "interrupt",
-                        "step_id": "2_utter_current_balance",
-                        "type": "flow",
-                    },
-                ],
-            ),
             BotUttered("You have 1000 dollars"),
             BotUttered("How many rooms?"),
         ],
@@ -1330,22 +1334,21 @@ def test_flow_policy_events_after_interruption() -> None:
             FloatSlot("num_rooms", mappings=[]),
             TextSlot("start_date", mappings=[]),
             TextSlot("end_slot", mappings=[]),
-            AnySlot("dialogue_stack", mappings=[]),
         ],
     )
+    tracker.update_stack(stack)
 
     available_actions = []
     result = flow_executor.advance_flows_until_next_action(
-        stack=tracker.stack,
         tracker=tracker,
         available_actions=available_actions,
         flows=flows,
     )
     assert result is not None
-    assert result.events[0] == FlowCompleted(
+    assert result.events[2] == FlowCompleted(
         flow_id="check_balance", step_id="2_utter_current_balance"
     )
-    assert result.events[1] == FlowResumed(
+    assert result.events[3] == FlowResumed(
         flow_id="search_hotels", step_id="1_collect_num_rooms"
     )
 

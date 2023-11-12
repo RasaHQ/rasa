@@ -8,7 +8,6 @@ from rasa.core.actions.action import Action, create_bot_utterance
 from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
 )
-from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.shared.core.constants import ACTION_RUN_SLOT_REJECTIONS_NAME
 from rasa.shared.core.events import Event, SlotSet
 from rasa.shared.core.flows.steps.collect import SlotRejection

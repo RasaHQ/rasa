@@ -252,7 +252,6 @@ def test_run_command_set_slot_of_startable_flows() -> None:
                     ]
                 },
             ),
-            SlotSet(DIALOGUE_STACK_SLOT, []),
         ],
     )
     command = SetSlotCommand(name="baz", value="bazbaz")
@@ -295,7 +294,6 @@ def test_run_command_set_slot_of_startable_flows_and_skip_the_rest() -> None:
                     ]
                 },
             ),
-            SlotSet(DIALOGUE_STACK_SLOT, []),
         ],
     )
     command = SetSlotCommand(name="foo", value="foofoo")
@@ -338,7 +336,6 @@ def test_get_flows_predicted_to_start_from_tracker(
         "test",
         evts=[
             UserUttered("start foo", None, None, {COMMANDS: commands}),
-            SlotSet(DIALOGUE_STACK_SLOT, []),
         ],
     )
     assert get_flows_predicted_to_start_from_tracker(tracker) == expected

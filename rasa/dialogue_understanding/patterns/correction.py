@@ -9,7 +9,6 @@ from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
 )
-from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import (
     BaseFlowStackFrame,
     PatternFlowStackFrame,

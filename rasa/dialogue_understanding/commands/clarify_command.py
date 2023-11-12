@@ -6,7 +6,6 @@ from typing import Any, Dict, List
 import structlog
 from rasa.dialogue_understanding.commands import Command
 from rasa.dialogue_understanding.patterns.clarify import ClarifyPatternFlowStackFrame
-from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.shared.core.events import Event
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker

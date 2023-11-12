@@ -64,7 +64,6 @@ from rasa.shared.core.events import (
 )
 from rasa.shared.core.domain import Domain, State
 from rasa.shared.core.slots import AnySlot, Slot
-import jsonpatch
 
 
 if TYPE_CHECKING:

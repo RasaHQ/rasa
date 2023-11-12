@@ -6,9 +6,6 @@ import structlog
 from rasa.core.actions import action
 from rasa.core.channels.channel import OutputChannel
 from rasa.core.nlg.generator import NaturalLanguageGenerator
-from rasa.dialogue_understanding.stack.dialogue_stack import (
-    DialogueStack,
-)
 from rasa.dialogue_understanding.stack.frames import PatternFlowStackFrame
 from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
 from rasa.shared.core.constants import ACTION_CLARIFY_FLOWS

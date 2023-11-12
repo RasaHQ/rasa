@@ -1,7 +1,7 @@
 from rasa.dialogue_understanding.commands.knowledge_answer_command import (
     KnowledgeAnswerCommand,
 )
-from rasa.shared.core.events import DialogueStackUpdated, SlotSet, UserUttered
+from rasa.shared.core.events import DialogueStackUpdated, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 
 

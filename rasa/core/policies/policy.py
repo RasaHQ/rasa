@@ -4,7 +4,6 @@ import copy
 import logging
 from enum import Enum
 from pathlib import Path
-from rasa.dialogue_understanding.stack.frames import dialogue_stack_frame
 from rasa.shared.core.events import Event
 from typing import (
     Any,

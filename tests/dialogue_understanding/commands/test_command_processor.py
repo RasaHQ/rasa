@@ -14,7 +14,6 @@ from rasa.dialogue_understanding.processor.command_processor import (
     filter_start_flow_commands,
     find_updated_flows,
 )
-from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import (
     UserFlowStackFrame,
     PatternFlowStackFrame,

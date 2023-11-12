@@ -3,7 +3,7 @@ from rasa.core.channels import CollectingOutputChannel
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 from rasa.dialogue_understanding.stack.frames import ChitChatStackFrame
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import DialogueStackUpdated, SlotSet
+from rasa.shared.core.events import DialogueStackUpdated
 from rasa.shared.core.trackers import DialogueStateTracker
 
 

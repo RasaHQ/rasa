@@ -15,7 +15,6 @@ from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
 from rasa.shared.core.slots import (
-    AnySlot,
     BooleanSlot,
     CategoricalSlot,
     FloatSlot,
@@ -115,26 +114,27 @@ async def test_action_run_slot_rejections_top_frame_not_collect_information(
     rejection_test_nlg: TemplatedNaturalLanguageGenerator,
     rejection_test_domain: Domain,
 ) -> None:
-    dialogue_stack = [
-        {
-            "frame_id": "4YL3KDBR",
-            "flow_id": "setup_recurrent_payment",
-            "step_id": "ask_payment_type",
-            "frame_type": "regular",
-            "type": "flow",
-        },
-    ]
+    dialogue_stack = DialogueStack.from_dict(
+        [
+            {
+                "frame_id": "4YL3KDBR",
+                "flow_id": "setup_recurrent_payment",
+                "step_id": "ask_payment_type",
+                "frame_type": "regular",
+                "type": "flow",
+            },
+        ]
+    )
     tracker = DialogueStateTracker.from_events(
         sender_id=uuid.uuid4().hex,
         evts=[
             UserUttered("i want to setup a new recurrent payment."),
-            SlotSet(DIALOGUE_STACK_SLOT, dialogue_stack),
         ],
         slots=[
             TextSlot("recurrent_payment_type", mappings=[]),
-            AnySlot(DIALOGUE_STACK_SLOT, mappings=[]),
         ],
     )
+    tracker.update_stack(dialogue_stack)
 
     action_run_slot_rejections = ActionRunSlotRejections()
 
@@ -153,36 +153,37 @@ async def test_action_run_slot_rejections_top_frame_none_rejections(
     rejection_test_nlg: TemplatedNaturalLanguageGenerator,
     rejection_test_domain: Domain,
 ) -> None:
-    dialogue_stack = [
-        {
-            "frame_id": "4YL3KDBR",
-            "flow_id": "setup_recurrent_payment",
-            "step_id": "ask_payment_recipient",
-            "frame_type": "regular",
-            "type": "flow",
-        },
-        {
-            "frame_id": "6Z7PSTRM",
-            "flow_id": "pattern_collect_information",
-            "step_id": "start",
-            "collect": "payment_recipient",
-            "utter": "utter_ask_payment_recipient",
-            "rejections": [],
-            "type": "pattern_collect_information",
-        },
-    ]
+    dialogue_stack = DialogueStack.from_dict(
+        [
+            {
+                "frame_id": "4YL3KDBR",
+                "flow_id": "setup_recurrent_payment",
+                "step_id": "ask_payment_recipient",
+                "frame_type": "regular",
+                "type": "flow",
+            },
+            {
+                "frame_id": "6Z7PSTRM",
+                "flow_id": "pattern_collect_information",
+                "step_id": "start",
+                "collect": "payment_recipient",
+                "utter": "utter_ask_payment_recipient",
+                "rejections": [],
+                "type": "pattern_collect_information",
+            },
+        ]
+    )
 
     tracker = DialogueStateTracker.from_events(
         sender_id=uuid.uuid4().hex,
         evts=[
             UserUttered("I want to make a payment."),
-            SlotSet(DIALOGUE_STACK_SLOT, dialogue_stack),
         ],
         slots=[
             TextSlot("payment_recipient", mappings=[]),
-            AnySlot(DIALOGUE_STACK_SLOT, mappings=[]),
         ],
     )
+    tracker.update_stack(dialogue_stack)
 
     action_run_slot_rejections = ActionRunSlotRejections()
     events = await action_run_slot_rejections.run(
@@ -201,39 +202,40 @@ async def test_action_run_slot_rejections_top_frame_slot_not_been_set(
     rejection_test_domain: Domain,
     capsys: CaptureFixture,
 ) -> None:
-    dialogue_stack = [
-        {
-            "frame_id": "4YL3KDBR",
-            "flow_id": "setup_recurrent_payment",
-            "step_id": "ask_payment_type",
-            "frame_type": "regular",
-            "type": "flow",
-        },
-        {
-            "frame_id": "6Z7PSTRM",
-            "flow_id": "pattern_collect_information",
-            "step_id": "start",
-            "collect": "recurrent_payment_type",
-            "utter": "utter_ask_recurrent_payment_type",
-            "rejections": [
-                {
-                    "if": 'not ({"direct debit" "standing order"} contains slots.recurrent_payment_type)',  # noqa: E501
-                    "utter": "utter_invalid_recurrent_payment_type",
-                }
-            ],
-            "type": "pattern_collect_information",
-        },
-    ]
+    dialogue_stack = DialogueStack.from_dict(
+        [
+            {
+                "frame_id": "4YL3KDBR",
+                "flow_id": "setup_recurrent_payment",
+                "step_id": "ask_payment_type",
+                "frame_type": "regular",
+                "type": "flow",
+            },
+            {
+                "frame_id": "6Z7PSTRM",
+                "flow_id": "pattern_collect_information",
+                "step_id": "start",
+                "collect": "recurrent_payment_type",
+                "utter": "utter_ask_recurrent_payment_type",
+                "rejections": [
+                    {
+                        "if": 'not ({"direct debit" "standing order"} contains slots.recurrent_payment_type)',  # noqa: E501
+                        "utter": "utter_invalid_recurrent_payment_type",
+                    }
+                ],
+                "type": "pattern_collect_information",
+            },
+        ]
+    )
 
     tracker = DialogueStateTracker.from_events(
         sender_id=uuid.uuid4().hex,
         evts=[UserUttered("i want to setup a new recurrent payment.")],
         slots=[
             TextSlot("recurrent_payment_type", mappings=[]),
-            AnySlot(DIALOGUE_STACK_SLOT, mappings=[]),
         ],
     )
-    tracker.update_stack(DialogueStack.from_dict(dialogue_stack))
+    tracker.update_stack(dialogue_stack)
 
     action_run_slot_rejections = ActionRunSlotRejections()
     events = await action_run_slot_rejections.run(
@@ -253,29 +255,31 @@ async def test_action_run_slot_rejections_run_success(
     rejection_test_nlg: TemplatedNaturalLanguageGenerator,
     rejection_test_domain: Domain,
 ) -> None:
-    dialogue_stack = [
-        {
-            "frame_id": "4YL3KDBR",
-            "flow_id": "setup_recurrent_payment",
-            "step_id": "ask_payment_type",
-            "frame_type": "regular",
-            "type": "flow",
-        },
-        {
-            "frame_id": "6Z7PSTRM",
-            "flow_id": "pattern_collect_information",
-            "step_id": "start",
-            "collect": "recurrent_payment_type",
-            "utter": "utter_ask_recurrent_payment_type",
-            "rejections": [
-                {
-                    "if": 'not ({"direct debit" "standing order"} contains slots.recurrent_payment_type)',  # noqa: E501
-                    "utter": "utter_invalid_recurrent_payment_type",
-                }
-            ],
-            "type": "pattern_collect_information",
-        },
-    ]
+    dialogue_stack = DialogueStack.from_dict(
+        [
+            {
+                "frame_id": "4YL3KDBR",
+                "flow_id": "setup_recurrent_payment",
+                "step_id": "ask_payment_type",
+                "frame_type": "regular",
+                "type": "flow",
+            },
+            {
+                "frame_id": "6Z7PSTRM",
+                "flow_id": "pattern_collect_information",
+                "step_id": "start",
+                "collect": "recurrent_payment_type",
+                "utter": "utter_ask_recurrent_payment_type",
+                "rejections": [
+                    {
+                        "if": 'not ({"direct debit" "standing order"} contains slots.recurrent_payment_type)',  # noqa: E501
+                        "utter": "utter_invalid_recurrent_payment_type",
+                    }
+                ],
+                "type": "pattern_collect_information",
+            },
+        ]
+    )
     tracker = DialogueStateTracker.from_events(
         sender_id=uuid.uuid4().hex,
         evts=[
@@ -284,10 +288,9 @@ async def test_action_run_slot_rejections_run_success(
         ],
         slots=[
             TextSlot("recurrent_payment_type", mappings=[]),
-            AnySlot(DIALOGUE_STACK_SLOT, mappings=[]),
         ],
     )
-    tracker.update_stack(DialogueStack.from_dict(dialogue_stack))
+    tracker.update_stack(dialogue_stack)
     action_run_slot_rejections = ActionRunSlotRejections()
     events = await action_run_slot_rejections.run(
         output_channel=default_channel,
@@ -317,29 +320,31 @@ async def test_action_run_slot_rejections_internal_error(
     capsys: CaptureFixture,
 ) -> None:
     """Test that an invalid or None predicate dispatches an internal error utterance."""
-    dialogue_stack = [
-        {
-            "frame_id": "4YL3KDBR",
-            "flow_id": "setup_recurrent_payment",
-            "step_id": "ask_payment_type",
-            "frame_type": "regular",
-            "type": "flow",
-        },
-        {
-            "frame_id": "6Z7PSTRM",
-            "flow_id": "pattern_collect_information",
-            "step_id": "start",
-            "collect": "recurrent_payment_type",
-            "utter": "utter_ask_recurrent_payment_type",
-            "rejections": [
-                {
-                    "if": predicate,
-                    "utter": "utter_invalid_recurrent_payment_type",
-                }
-            ],
-            "type": "pattern_collect_information",
-        },
-    ]
+    dialogue_stack = DialogueStack.from_dict(
+        [
+            {
+                "frame_id": "4YL3KDBR",
+                "flow_id": "setup_recurrent_payment",
+                "step_id": "ask_payment_type",
+                "frame_type": "regular",
+                "type": "flow",
+            },
+            {
+                "frame_id": "6Z7PSTRM",
+                "flow_id": "pattern_collect_information",
+                "step_id": "start",
+                "collect": "recurrent_payment_type",
+                "utter": "utter_ask_recurrent_payment_type",
+                "rejections": [
+                    {
+                        "if": predicate,
+                        "utter": "utter_invalid_recurrent_payment_type",
+                    }
+                ],
+                "type": "pattern_collect_information",
+            },
+        ]
+    )
 
     tracker = DialogueStateTracker.from_events(
         sender_id=uuid.uuid4().hex,
@@ -349,10 +354,9 @@ async def test_action_run_slot_rejections_internal_error(
         ],
         slots=[
             TextSlot("recurrent_payment_type", mappings=[]),
-            AnySlot(DIALOGUE_STACK_SLOT, mappings=[]),
         ],
     )
-    tracker.update_stack(DialogueStack.from_dict(dialogue_stack))
+    tracker.update_stack(dialogue_stack)
 
     action_run_slot_rejections = ActionRunSlotRejections()
     events = await action_run_slot_rejections.run(
@@ -378,29 +382,31 @@ async def test_action_run_slot_rejections_collect_missing_utter(
     rejection_test_domain: Domain,
     capsys: CaptureFixture,
 ) -> None:
-    dialogue_stack = [
-        {
-            "frame_id": "4YL3KDBR",
-            "flow_id": "setup_recurrent_payment",
-            "step_id": "ask_payment_type",
-            "frame_type": "regular",
-            "type": "flow",
-        },
-        {
-            "frame_id": "6Z7PSTRM",
-            "flow_id": "pattern_collect_information",
-            "step_id": "start",
-            "collect": "recurrent_payment_type",
-            "utter": "utter_ask_recurrent_payment_type",
-            "rejections": [
-                {
-                    "if": 'not ({"direct debit" "standing order"} contains slots.recurrent_payment_type)',  # noqa: E501
-                    "utter": None,
-                }
-            ],
-            "type": "pattern_collect_information",
-        },
-    ]
+    dialogue_stack = DialogueStack.from_dict(
+        [
+            {
+                "frame_id": "4YL3KDBR",
+                "flow_id": "setup_recurrent_payment",
+                "step_id": "ask_payment_type",
+                "frame_type": "regular",
+                "type": "flow",
+            },
+            {
+                "frame_id": "6Z7PSTRM",
+                "flow_id": "pattern_collect_information",
+                "step_id": "start",
+                "collect": "recurrent_payment_type",
+                "utter": "utter_ask_recurrent_payment_type",
+                "rejections": [
+                    {
+                        "if": 'not ({"direct debit" "standing order"} contains slots.recurrent_payment_type)',  # noqa: E501
+                        "utter": None,
+                    }
+                ],
+                "type": "pattern_collect_information",
+            },
+        ]
+    )
 
     tracker = DialogueStateTracker.from_events(
         sender_id=uuid.uuid4().hex,
@@ -410,10 +416,9 @@ async def test_action_run_slot_rejections_collect_missing_utter(
         ],
         slots=[
             TextSlot("recurrent_payment_type", mappings=[]),
-            AnySlot(DIALOGUE_STACK_SLOT, mappings=[]),
         ],
     )
-    tracker.update_stack(DialogueStack.from_dict(dialogue_stack))
+    tracker.update_stack(dialogue_stack)
 
     action_run_slot_rejections = ActionRunSlotRejections()
     events = await action_run_slot_rejections.run(
@@ -436,29 +441,31 @@ async def test_action_run_slot_rejections_not_found_utter(
     rejection_test_domain: Domain,
     capsys: CaptureFixture,
 ) -> None:
-    dialogue_stack = [
-        {
-            "frame_id": "4YL3KDBR",
-            "flow_id": "setup_recurrent_payment",
-            "step_id": "ask_payment_type",
-            "frame_type": "regular",
-            "type": "flow",
-        },
-        {
-            "frame_id": "6Z7PSTRM",
-            "flow_id": "pattern_collect_information",
-            "step_id": "start",
-            "collect": "recurrent_payment_type",
-            "utter": "utter_ask_recurrent_payment_type",
-            "rejections": [
-                {
-                    "if": 'not ({"direct debit" "standing order"} contains slots.recurrent_payment_type)',  # noqa: E501
-                    "utter": "utter_not_found",
-                }
-            ],
-            "type": "pattern_collect_information",
-        },
-    ]
+    dialogue_stack = DialogueStack.from_dict(
+        [
+            {
+                "frame_id": "4YL3KDBR",
+                "flow_id": "setup_recurrent_payment",
+                "step_id": "ask_payment_type",
+                "frame_type": "regular",
+                "type": "flow",
+            },
+            {
+                "frame_id": "6Z7PSTRM",
+                "flow_id": "pattern_collect_information",
+                "step_id": "start",
+                "collect": "recurrent_payment_type",
+                "utter": "utter_ask_recurrent_payment_type",
+                "rejections": [
+                    {
+                        "if": 'not ({"direct debit" "standing order"} contains slots.recurrent_payment_type)',  # noqa: E501
+                        "utter": "utter_not_found",
+                    }
+                ],
+                "type": "pattern_collect_information",
+            },
+        ]
+    )
 
     tracker = DialogueStateTracker.from_events(
         sender_id=uuid.uuid4().hex,
@@ -468,10 +475,9 @@ async def test_action_run_slot_rejections_not_found_utter(
         ],
         slots=[
             TextSlot("recurrent_payment_type", mappings=[]),
-            AnySlot(DIALOGUE_STACK_SLOT, mappings=[]),
         ],
     )
-    tracker.update_stack(DialogueStack.from_dict(dialogue_stack))
+    tracker.update_stack(dialogue_stack)
 
     action_run_slot_rejections = ActionRunSlotRejections()
     events = await action_run_slot_rejections.run(
@@ -494,46 +500,47 @@ async def test_action_run_slot_rejections_pass_multiple_rejection_checks(
     rejection_test_domain: Domain,
     capsys: CaptureFixture,
 ) -> None:
-    dialogue_stack = [
-        {
-            "frame_id": "4YL3KDBR",
-            "flow_id": "setup_recurrent_payment",
-            "step_id": "ask_payment_amount",
-            "frame_type": "regular",
-            "type": "flow",
-        },
-        {
-            "frame_id": "6Z7PSTRM",
-            "flow_id": "pattern_collect_information",
-            "step_id": "start",
-            "collect": "payment_amount",
-            "utter": "utter_ask_payment_amount",
-            "rejections": [
-                {
-                    "if": "slots.payment_amount > 1000",
-                    "utter": "utter_payment_too_high",
-                },
-                {
-                    "if": "slots.payment_amount < 0",
-                    "utter": "utter_payment_negative",
-                },
-            ],
-            "type": "pattern_collect_information",
-        },
-    ]
+    dialogue_stack = DialogueStack.from_dict(
+        [
+            {
+                "frame_id": "4YL3KDBR",
+                "flow_id": "setup_recurrent_payment",
+                "step_id": "ask_payment_amount",
+                "frame_type": "regular",
+                "type": "flow",
+            },
+            {
+                "frame_id": "6Z7PSTRM",
+                "flow_id": "pattern_collect_information",
+                "step_id": "start",
+                "collect": "payment_amount",
+                "utter": "utter_ask_payment_amount",
+                "rejections": [
+                    {
+                        "if": "slots.payment_amount > 1000",
+                        "utter": "utter_payment_too_high",
+                    },
+                    {
+                        "if": "slots.payment_amount < 0",
+                        "utter": "utter_payment_negative",
+                    },
+                ],
+                "type": "pattern_collect_information",
+            },
+        ]
+    )
 
     tracker = DialogueStateTracker.from_events(
         sender_id=uuid.uuid4().hex,
         evts=[
             UserUttered("i want to transfer £500."),
             SlotSet("payment_amount", 500.0),
-            SlotSet(DIALOGUE_STACK_SLOT, dialogue_stack),
         ],
         slots=[
             FloatSlot("payment_amount", mappings=[]),
-            AnySlot(DIALOGUE_STACK_SLOT, mappings=[]),
         ],
     )
+    tracker.update_stack(dialogue_stack)
 
     action_run_slot_rejections = ActionRunSlotRejections()
     events = await action_run_slot_rejections.run(
@@ -553,33 +560,35 @@ async def test_action_run_slot_rejections_fails_multiple_rejection_checks(
     rejection_test_domain: Domain,
     capsys: CaptureFixture,
 ) -> None:
-    dialogue_stack = [
-        {
-            "frame_id": "4YL3KDBR",
-            "flow_id": "setup_recurrent_payment",
-            "step_id": "ask_payment_amount",
-            "frame_type": "regular",
-            "type": "flow",
-        },
-        {
-            "frame_id": "6Z7PSTRM",
-            "flow_id": "pattern_collect_information",
-            "step_id": "start",
-            "collect": "payment_amount",
-            "utter": "utter_ask_payment_amount",
-            "rejections": [
-                {
-                    "if": "slots.payment_amount > 1000",
-                    "utter": "utter_payment_too_high",
-                },
-                {
-                    "if": "slots.payment_amount < 0",
-                    "utter": "utter_payment_negative",
-                },
-            ],
-            "type": "pattern_collect_information",
-        },
-    ]
+    dialogue_stack = DialogueStack.from_dict(
+        [
+            {
+                "frame_id": "4YL3KDBR",
+                "flow_id": "setup_recurrent_payment",
+                "step_id": "ask_payment_amount",
+                "frame_type": "regular",
+                "type": "flow",
+            },
+            {
+                "frame_id": "6Z7PSTRM",
+                "flow_id": "pattern_collect_information",
+                "step_id": "start",
+                "collect": "payment_amount",
+                "utter": "utter_ask_payment_amount",
+                "rejections": [
+                    {
+                        "if": "slots.payment_amount > 1000",
+                        "utter": "utter_payment_too_high",
+                    },
+                    {
+                        "if": "slots.payment_amount < 0",
+                        "utter": "utter_payment_negative",
+                    },
+                ],
+                "type": "pattern_collect_information",
+            },
+        ]
+    )
 
     tracker = DialogueStateTracker.from_events(
         sender_id=uuid.uuid4().hex,
@@ -589,10 +598,9 @@ async def test_action_run_slot_rejections_fails_multiple_rejection_checks(
         ],
         slots=[
             FloatSlot("payment_amount", mappings=[]),
-            AnySlot(DIALOGUE_STACK_SLOT, mappings=[]),
         ],
     )
-    tracker.update_stack(DialogueStack.from_dict(dialogue_stack))
+    tracker.update_stack(dialogue_stack)
 
     action_run_slot_rejections = ActionRunSlotRejections()
     events = await action_run_slot_rejections.run(
@@ -616,25 +624,27 @@ async def test_invalid_categorical_slot_using_coercion(
     rejection_test_nlg: TemplatedNaturalLanguageGenerator,
     rejection_test_domain: Domain,
 ) -> None:
-    dialogue_stack = [
-        {
-            "frame_id": "6Z7PSTRM",
-            "flow_id": "pattern_collect_information",
-            "step_id": "start",
-            "collect": "payment_execution_mode",
-            "utter": "utter_ask_payment_execution_mode",
-            "type": "pattern_collect_information",
-        },
-    ]
+    dialogue_stack = DialogueStack.from_dict(
+        [
+            {
+                "frame_id": "6Z7PSTRM",
+                "flow_id": "pattern_collect_information",
+                "step_id": "start",
+                "collect": "payment_execution_mode",
+                "utter": "utter_ask_payment_execution_mode",
+                "type": "pattern_collect_information",
+            },
+        ]
+    )
     tracker = DialogueStateTracker.from_events(
         sender_id=uuid.uuid4().hex,
         evts=[
             UserUttered("i want to make a fast payment"),
             SlotSet("payment_execution_mode", "fast"),
-            SlotSet(DIALOGUE_STACK_SLOT, dialogue_stack),
         ],
         slots=rejection_test_domain.slots,
     )
+    tracker.update_stack(dialogue_stack)
 
     action_run_slot_rejections = ActionRunSlotRejections()
     events = await action_run_slot_rejections.run(
@@ -658,25 +668,27 @@ async def test_valid_categorical_slot(
     rejection_test_nlg: TemplatedNaturalLanguageGenerator,
     rejection_test_domain: Domain,
 ) -> None:
-    dialogue_stack = [
-        {
-            "frame_id": "6Z7PSTRM",
-            "flow_id": "pattern_collect_information",
-            "step_id": "start",
-            "collect": "payment_execution_mode",
-            "utter": "utter_ask_payment_execution_mode",
-            "type": "pattern_collect_information",
-        },
-    ]
+    dialogue_stack = DialogueStack.from_dict(
+        [
+            {
+                "frame_id": "6Z7PSTRM",
+                "flow_id": "pattern_collect_information",
+                "step_id": "start",
+                "collect": "payment_execution_mode",
+                "utter": "utter_ask_payment_execution_mode",
+                "type": "pattern_collect_information",
+            },
+        ]
+    )
     tracker = DialogueStateTracker.from_events(
         sender_id=uuid.uuid4().hex,
         evts=[
             UserUttered("i want to make an immediate payment"),
             SlotSet("payment_execution_mode", "immediate"),
-            SlotSet(DIALOGUE_STACK_SLOT, dialogue_stack),
         ],
         slots=rejection_test_domain.slots,
     )
+    tracker.update_stack(dialogue_stack)
 
     action_run_slot_rejections = ActionRunSlotRejections()
     events = await action_run_slot_rejections.run(
@@ -694,25 +706,27 @@ async def test_invalid_boolean_slot_using_coercion(
     rejection_test_nlg: TemplatedNaturalLanguageGenerator,
     rejection_test_domain: Domain,
 ) -> None:
-    dialogue_stack = [
-        {
-            "frame_id": "6Z7PSTRM",
-            "flow_id": "pattern_collect_information",
-            "step_id": "start",
-            "collect": "payment_confirmation",
-            "utter": "utter_ask_payment_confirmation",
-            "type": "pattern_collect_information",
-        },
-    ]
+    dialogue_stack = DialogueStack.from_dict(
+        [
+            {
+                "frame_id": "6Z7PSTRM",
+                "flow_id": "pattern_collect_information",
+                "step_id": "start",
+                "collect": "payment_confirmation",
+                "utter": "utter_ask_payment_confirmation",
+                "type": "pattern_collect_information",
+            },
+        ]
+    )
     tracker = DialogueStateTracker.from_events(
         sender_id=uuid.uuid4().hex,
         evts=[
             UserUttered("maybe"),
             SlotSet("payment_confirmation", "maybe"),
-            SlotSet(DIALOGUE_STACK_SLOT, dialogue_stack),
         ],
         slots=rejection_test_domain.slots,
     )
+    tracker.update_stack(dialogue_stack)
 
     action_run_slot_rejections = ActionRunSlotRejections()
     events = await action_run_slot_rejections.run(
@@ -736,25 +750,27 @@ async def test_valid_boolean_slot_coercion_changes_value(
     rejection_test_nlg: TemplatedNaturalLanguageGenerator,
     rejection_test_domain: Domain,
 ) -> None:
-    dialogue_stack = [
-        {
-            "frame_id": "6Z7PSTRM",
-            "flow_id": "pattern_collect_information",
-            "step_id": "start",
-            "collect": "payment_confirmation",
-            "utter": "utter_ask_payment_confirmation",
-            "type": "pattern_collect_information",
-        },
-    ]
+    dialogue_stack = DialogueStack.from_dict(
+        [
+            {
+                "frame_id": "6Z7PSTRM",
+                "flow_id": "pattern_collect_information",
+                "step_id": "start",
+                "collect": "payment_confirmation",
+                "utter": "utter_ask_payment_confirmation",
+                "type": "pattern_collect_information",
+            },
+        ]
+    )
     tracker = DialogueStateTracker.from_events(
         sender_id=uuid.uuid4().hex,
         evts=[
             UserUttered("no"),
             SlotSet("payment_confirmation", "no"),
-            SlotSet(DIALOGUE_STACK_SLOT, dialogue_stack),
         ],
         slots=rejection_test_domain.slots,
     )
+    tracker.update_stack(dialogue_stack)
 
     action_run_slot_rejections = ActionRunSlotRejections()
     events = await action_run_slot_rejections.run(
@@ -775,25 +791,27 @@ async def test_valid_boolean_slot(
     rejection_test_nlg: TemplatedNaturalLanguageGenerator,
     rejection_test_domain: Domain,
 ) -> None:
-    dialogue_stack = [
-        {
-            "frame_id": "6Z7PSTRM",
-            "flow_id": "pattern_collect_information",
-            "step_id": "start",
-            "collect": "payment_confirmation",
-            "utter": "utter_ask_payment_confirmation",
-            "type": "pattern_collect_information",
-        },
-    ]
+    dialogue_stack = DialogueStack.from_dict(
+        [
+            {
+                "frame_id": "6Z7PSTRM",
+                "flow_id": "pattern_collect_information",
+                "step_id": "start",
+                "collect": "payment_confirmation",
+                "utter": "utter_ask_payment_confirmation",
+                "type": "pattern_collect_information",
+            },
+        ]
+    )
     tracker = DialogueStateTracker.from_events(
         sender_id=uuid.uuid4().hex,
         evts=[
             UserUttered("false"),
             SlotSet("payment_confirmation", False),
-            SlotSet(DIALOGUE_STACK_SLOT, dialogue_stack),
         ],
         slots=rejection_test_domain.slots,
     )
+    tracker.update_stack(dialogue_stack)
 
     action_run_slot_rejections = ActionRunSlotRejections()
     events = await action_run_slot_rejections.run(
@@ -810,25 +828,27 @@ async def test_invalid_float_slot_using_coercion(
     rejection_test_nlg: TemplatedNaturalLanguageGenerator,
     rejection_test_domain: Domain,
 ) -> None:
-    dialogue_stack = [
-        {
-            "frame_id": "6Z7PSTRM",
-            "flow_id": "pattern_collect_information",
-            "step_id": "start",
-            "collect": "payment_amount",
-            "utter": "utter_ask_payment_amount",
-            "type": "pattern_collect_information",
-        },
-    ]
+    dialogue_stack = DialogueStack.from_dict(
+        [
+            {
+                "frame_id": "6Z7PSTRM",
+                "flow_id": "pattern_collect_information",
+                "step_id": "start",
+                "collect": "payment_amount",
+                "utter": "utter_ask_payment_amount",
+                "type": "pattern_collect_information",
+            },
+        ]
+    )
     tracker = DialogueStateTracker.from_events(
         sender_id=uuid.uuid4().hex,
         evts=[
             UserUttered("junk"),
             SlotSet("payment_amount", "junk"),
-            SlotSet(DIALOGUE_STACK_SLOT, dialogue_stack),
         ],
         slots=rejection_test_domain.slots,
     )
+    tracker.update_stack(dialogue_stack)
 
     action_run_slot_rejections = ActionRunSlotRejections()
     events = await action_run_slot_rejections.run(
@@ -852,25 +872,27 @@ async def test_valid_float_slot_coercion_changes_value(
     rejection_test_nlg: TemplatedNaturalLanguageGenerator,
     rejection_test_domain: Domain,
 ) -> None:
-    dialogue_stack = [
-        {
-            "frame_id": "6Z7PSTRM",
-            "flow_id": "pattern_collect_information",
-            "step_id": "start",
-            "collect": "payment_amount",
-            "utter": "utter_ask_payment_amount",
-            "type": "pattern_collect_information",
-        },
-    ]
+    dialogue_stack = DialogueStack.from_dict(
+        [
+            {
+                "frame_id": "6Z7PSTRM",
+                "flow_id": "pattern_collect_information",
+                "step_id": "start",
+                "collect": "payment_amount",
+                "utter": "utter_ask_payment_amount",
+                "type": "pattern_collect_information",
+            },
+        ]
+    )
     tracker = DialogueStateTracker.from_events(
         sender_id=uuid.uuid4().hex,
         evts=[
             UserUttered("40"),
             SlotSet("payment_amount", 40),
-            SlotSet(DIALOGUE_STACK_SLOT, dialogue_stack),
         ],
         slots=rejection_test_domain.slots,
     )
+    tracker.update_stack(dialogue_stack)
 
     action_run_slot_rejections = ActionRunSlotRejections()
     events = await action_run_slot_rejections.run(
@@ -891,25 +913,27 @@ async def test_valid_float_slot(
     rejection_test_nlg: TemplatedNaturalLanguageGenerator,
     rejection_test_domain: Domain,
 ) -> None:
-    dialogue_stack = [
-        {
-            "frame_id": "6Z7PSTRM",
-            "flow_id": "pattern_collect_information",
-            "step_id": "start",
-            "collect": "payment_amount",
-            "utter": "utter_ask_payment_amount",
-            "type": "pattern_collect_information",
-        },
-    ]
+    dialogue_stack = DialogueStack.from_dict(
+        [
+            {
+                "frame_id": "6Z7PSTRM",
+                "flow_id": "pattern_collect_information",
+                "step_id": "start",
+                "collect": "payment_amount",
+                "utter": "utter_ask_payment_amount",
+                "type": "pattern_collect_information",
+            },
+        ]
+    )
     tracker = DialogueStateTracker.from_events(
         sender_id=uuid.uuid4().hex,
         evts=[
             UserUttered("40.5"),
             SlotSet("payment_amount", 40.5),
-            SlotSet(DIALOGUE_STACK_SLOT, dialogue_stack),
         ],
         slots=rejection_test_domain.slots,
     )
+    tracker.update_stack(dialogue_stack)
 
     action_run_slot_rejections = ActionRunSlotRejections()
     events = await action_run_slot_rejections.run(
@@ -926,25 +950,27 @@ async def test_action_run_slot_rejections_with_text_slot(
     rejection_test_nlg: TemplatedNaturalLanguageGenerator,
     rejection_test_domain: Domain,
 ) -> None:
-    dialogue_stack = [
-        {
-            "frame_id": "6Z7PSTRM",
-            "flow_id": "pattern_collect_information",
-            "step_id": "start",
-            "collect": "payment_recipient",
-            "utter": "utter_payment_recipient",
-            "type": "pattern_collect_information",
-        },
-    ]
+    dialogue_stack = DialogueStack.from_dict(
+        [
+            {
+                "frame_id": "6Z7PSTRM",
+                "flow_id": "pattern_collect_information",
+                "step_id": "start",
+                "collect": "payment_recipient",
+                "utter": "utter_payment_recipient",
+                "type": "pattern_collect_information",
+            },
+        ]
+    )
     tracker = DialogueStateTracker.from_events(
         sender_id=uuid.uuid4().hex,
         evts=[
             UserUttered("Joohn"),
             SlotSet("payment_recipient", "Jooohn"),
-            SlotSet(DIALOGUE_STACK_SLOT, dialogue_stack),
         ],
         slots=rejection_test_domain.slots,
     )
+    tracker.update_stack(dialogue_stack)
 
     action_run_slot_rejections = ActionRunSlotRejections()
     events = await action_run_slot_rejections.run(
@@ -961,25 +987,27 @@ async def test_action_run_slot_rejections_with_existing_slot_set_to_none(
     rejection_test_nlg: TemplatedNaturalLanguageGenerator,
     rejection_test_domain: Domain,
 ) -> None:
-    dialogue_stack = [
-        {
-            "frame_id": "6Z7PSTRM",
-            "flow_id": "pattern_collect_information",
-            "step_id": "start",
-            "collect": "payment_recipient",
-            "utter": "utter_payment_recipient",
-            "type": "pattern_collect_information",
-        },
-    ]
+    dialogue_stack = DialogueStack.from_dict(
+        [
+            {
+                "frame_id": "6Z7PSTRM",
+                "flow_id": "pattern_collect_information",
+                "step_id": "start",
+                "collect": "payment_recipient",
+                "utter": "utter_payment_recipient",
+                "type": "pattern_collect_information",
+            },
+        ]
+    )
     tracker = DialogueStateTracker.from_events(
         sender_id=uuid.uuid4().hex,
         evts=[
             UserUttered("junk"),
             SlotSet("payment_recipient", None),
-            SlotSet(DIALOGUE_STACK_SLOT, dialogue_stack),
         ],
         slots=rejection_test_domain.slots,
     )
+    tracker.update_stack(dialogue_stack)
 
     action_run_slot_rejections = ActionRunSlotRejections()
     events = await action_run_slot_rejections.run(

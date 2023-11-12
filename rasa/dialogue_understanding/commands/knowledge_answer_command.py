@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from typing import Any, Dict, List
 from rasa.dialogue_understanding.commands import FreeFormAnswerCommand
 from rasa.dialogue_understanding.patterns.search import SearchPatternFlowStackFrame
-from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.shared.core.events import Event
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker

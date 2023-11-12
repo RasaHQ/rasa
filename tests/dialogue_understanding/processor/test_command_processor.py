@@ -32,7 +32,13 @@ from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
     BaseFlowStackFrame,
     UserFlowStackFrame,
 )
-from rasa.shared.core.events import BotUttered, Event, SlotSet, UserUttered
+from rasa.shared.core.events import (
+    BotUttered,
+    DialogueStackUpdated,
+    Event,
+    SlotSet,
+    UserUttered,
+)
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.flows.steps import CollectInformationFlowStep
 from rasa.shared.core.flows.yaml_flows_io import flows_from_str
@@ -201,30 +207,25 @@ def test_execute_commands(all_flows: FlowsList):
             )
         ],
     )
-    expected_events = [
-        {"flow_hashes": {"foo": "some-hash", "bar": "some-hash"}},
-        {
-            "dialogue_stack": [
-                {
-                    "flow_id": "foo",
-                    "frame_id": "some-frame-id",
-                    "frame_type": "regular",
-                    "step_id": "first_step",
-                    "type": "flow",
-                }
-            ]
-        },
-    ]
     # When
     events = execute_commands(tracker, all_flows)
     # Then
-    assert len(events) == len(expected_events)
-    for event, expected_event in zip(events, expected_events):
-        assert event.key == next(iter(expected_event.keys()))
-    assert events[0].value.keys() == next(iter(expected_events[0].values())).keys()
-    assert (
-        events[1].value[0].keys() == next(iter(expected_events[1].values()))[0].keys()
-    )
+    assert len(events) == 2
+
+    assert isinstance(events[0], SlotSet)
+    assert events[0].key == "flow_hashes"
+    assert events[0].value.keys() == {"foo", "bar"}
+
+    assert isinstance(events[1], DialogueStackUpdated)
+    updated_stack = tracker.stack.update_from_patch(events[1].update)
+
+    assert len(updated_stack.frames) == 2
+
+    frame = updated_stack.frames[1]
+    assert isinstance(frame, UserFlowStackFrame)
+    assert frame.flow_id == "foo"
+    assert frame.step_id == "START"
+    assert frame.frame_type == "regular"
 
 
 @pytest.mark.parametrize(
@@ -343,9 +344,8 @@ def test_clean_up_commands(
 
     stack = DialogueStack(frames=[user_frame_collect_eggs, pattern_frame_collect_eggs])
 
-    tracker_eggs = DialogueStateTracker.from_events(
-        sender_id="test", evts=[stack.persist_as_event()]
-    )
+    tracker_eggs = DialogueStateTracker.from_events(sender_id="test", evts=[])
+    tracker_eggs.update_stack(stack)
     # When
     with patch(
         (
@@ -384,9 +384,8 @@ def test_clean_up_commands_with_correction_pattern_on_stack(
 ):
     stack = DialogueStack(frames=[user_frame_collect_eggs, pattern_frame_correction])
 
-    tracker_eggs = DialogueStateTracker.from_events(
-        sender_id="test", evts=[stack.persist_as_event()]
-    )
+    tracker_eggs = DialogueStateTracker.from_events(sender_id="test", evts=[])
+    tracker_eggs.update_stack(stack)
     # When
     with patch(
         (

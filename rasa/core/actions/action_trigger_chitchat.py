@@ -3,7 +3,6 @@ from typing import Optional, Dict, Any, List
 from rasa.core.actions.action import Action
 from rasa.core.channels import OutputChannel
 from rasa.core.nlg import NaturalLanguageGenerator
-from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import ChitChatStackFrame
 from rasa.shared.core.constants import ACTION_TRIGGER_CHITCHAT
 from rasa.shared.core.domain import Domain

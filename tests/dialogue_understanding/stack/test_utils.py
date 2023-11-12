@@ -302,7 +302,7 @@ def test_get_collect_steps_excluding_ask_before_filling_empty_stack() -> None:
             - collect: fgh
         """
     )
-    stack = DialogueStack(frames=[])
+    stack = DialogueStack.empty()
     slots = get_collect_steps_excluding_ask_before_filling_for_active_flow(
         stack, all_flows
     )

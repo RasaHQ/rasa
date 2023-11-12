@@ -2,7 +2,7 @@ import pytest
 from rasa.dialogue_understanding.commands.start_flow_command import StartFlowCommand
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import UserFlowStackFrame
-from rasa.shared.core.events import DialogueStackUpdated, SlotSet, FlowInterrupted
+from rasa.shared.core.events import DialogueStackUpdated, FlowInterrupted
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.flows.yaml_flows_io import flows_from_str
 

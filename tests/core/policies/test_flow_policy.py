@@ -3,12 +3,19 @@ import pytest
 from rasa.core.policies.flow_policy import (
     FlowPolicy,
 )
+from rasa.dialogue_understanding.patterns.internal_error import (
+    InternalErrorPatternFlowStackFrame,
+)
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import ActionExecuted, FlowStarted, SlotSet
+from rasa.shared.core.events import (
+    ActionExecuted,
+    DialogueStackUpdated,
+    FlowStarted,
+)
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.dialogue_understanding.stack.frames import (
@@ -127,20 +134,19 @@ def test_predict_action_probabilities_advances_topmost_flow(
     predicted_idx = prediction.max_confidence_index
     assert domain.action_names_or_texts[predicted_idx] == "action_unlikely_intent"
     # check that the stack was updated
-    assert prediction.optional_events == [
-        SlotSet(
-            "dialogue_stack",
-            [
-                {
-                    "frame_id": "some-id",
-                    "flow_id": "foo_flow",
-                    "step_id": "2",
-                    "frame_type": "regular",
-                    "type": "flow",
-                }
-            ],
-        )
-    ]
+    assert len(prediction.optional_events) == 1
+    dialogue_stack_event = prediction.optional_events[0]
+    assert isinstance(dialogue_stack_event, DialogueStackUpdated)
+    updated_stack = tracker.stack.update_from_patch(dialogue_stack_event.update)
+
+    assert len(updated_stack.frames) == 1
+
+    frame = updated_stack.frames[0]
+    assert isinstance(frame, UserFlowStackFrame)
+    assert frame.flow_id == "foo_flow"
+    assert frame.step_id == "2"
+    assert frame.frame_id is not None
+    assert frame.frame_type == "regular"
 
 
 def test_policy_triggers_error_pattern_if_internal_circuit_breaker_is_tripped(
@@ -177,7 +183,7 @@ def test_policy_triggers_error_pattern_if_internal_circuit_breaker_is_tripped(
     tracker.update_stack(stack)
 
     prediction = default_flow_policy.predict_action_probabilities(
-        tracker=tracker, domain=domain, flows=flow_with_loop
+        tracker=tracker.copy(), domain=domain, flows=flow_with_loop
     )
 
     assert prediction.max_confidence == 1.0
@@ -185,17 +191,21 @@ def test_policy_triggers_error_pattern_if_internal_circuit_breaker_is_tripped(
     predicted_idx = prediction.max_confidence_index
     assert domain.action_names_or_texts[predicted_idx] == "utter_internal_error_rasa"
     # check that the stack was updated.
-    assert prediction.optional_events[1] == FlowStarted(
+    assert prediction.optional_events[2] == FlowStarted(
         flow_id="pattern_internal_error"
     )
 
-    event = prediction.optional_events[3]
-    assert isinstance(event, SlotSet)
+    assert isinstance(prediction.optional_events[0], DialogueStackUpdated)
+    assert isinstance(prediction.optional_events[1], DialogueStackUpdated)
 
-    assert event.key == "dialogue_stack"
+    tracker.update_with_events(prediction.optional_events)
+    updated_stack = tracker.stack
+
     # the user flow should be on the stack as well as the error pattern
-    assert len(event.value) == 2
+    assert len(updated_stack.frames) == 2
+
     # the user flow should be about to end
-    assert event.value[0]["step_id"] == "NEXT:END"
+    assert isinstance(updated_stack.frames[0], UserFlowStackFrame)
+    assert updated_stack.frames[0].step_id == "NEXT:END"
     # the pattern should be the other frame
-    assert event.value[1]["flow_id"] == "pattern_internal_error"
+    assert isinstance(updated_stack.frames[1], InternalErrorPatternFlowStackFrame)

@@ -7,7 +7,6 @@ from rasa.core.policies.flows.flow_exceptions import FlowCircuitBreakerTrippedEx
 from rasa.dialogue_understanding.patterns.internal_error import (
     InternalErrorPatternFlowStackFrame,
 )
-from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import (
     BaseFlowStackFrame,
     DialogueStackFrame,
@@ -158,7 +157,7 @@ class FlowPolicy(Policy):
             )
             # end the current flow and start the internal error flow
             updated_stack = tracker.stack
-            end_top_user_flow(updated_stack)
+            updated_stack = end_top_user_flow(updated_stack)
             updated_stack.push(InternalErrorPatternFlowStackFrame())
             # we retry, with the internal error frame on the stack
             events = tracker.create_stack_update_events(updated_stack)

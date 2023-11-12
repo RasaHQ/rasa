@@ -7,8 +7,7 @@ import structlog
 
 from rasa.dialogue_understanding.commands import Command
 from rasa.dialogue_understanding.patterns.code_change import CodeChangeFlowStackFrame
-from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
-from rasa.shared.core.events import Event, SlotSet
+from rasa.shared.core.events import Event
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.dialogue_understanding.stack.utils import top_user_flow_frame

@@ -5,7 +5,7 @@ from rasa.dialogue_understanding.patterns.collect_information import (
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import UserFlowStackFrame
-from rasa.shared.core.events import DialogueStackUpdated, SlotSet, FlowCancelled
+from rasa.shared.core.events import DialogueStackUpdated, FlowCancelled
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.flows.yaml_flows_io import flows_from_str
 import jsonpatch

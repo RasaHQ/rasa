@@ -4,7 +4,6 @@ from typing import Dict, Any, List, Optional, Tuple, Union
 
 from jinja2 import Template
 import structlog
-from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 
 from rasa.dialogue_understanding.stack.utils import top_flow_frame
 from rasa.dialogue_understanding.generator import CommandGenerator

@@ -1,6 +1,6 @@
 import pytest
 from rasa.dialogue_understanding.commands.clarify_command import ClarifyCommand
-from rasa.shared.core.events import DialogueStackUpdated, SlotSet
+from rasa.shared.core.events import DialogueStackUpdated
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.flows.yaml_flows_io import flows_from_str
 import jsonpatch

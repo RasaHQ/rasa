@@ -13,9 +13,8 @@ from rasa.dialogue_understanding.stack.dialogue_stack import (
     DialogueStack,
 )
 from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
-from rasa.shared.core.constants import DIALOGUE_STACK_SLOT
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import SlotSet
+from rasa.shared.core.events import DialogueStackUpdated, SlotSet
 from rasa.shared.core.trackers import DialogueStateTracker
 
 
@@ -69,8 +68,9 @@ async def test_action_correct_flow_slot_no_correct_frame(
         "test",
         domain=domain,
         slots=domain.slots,
-        evts=[stack.persist_as_event()],
+        evts=[],
     )
+    tracker.update_stack(stack)
     action = ActionCorrectFlowSlot()
     events = await action.run(
         CollectingOutputChannel(),
@@ -104,8 +104,9 @@ async def test_action_correct_flow_slot_no_reset_step_id() -> None:
         "test",
         domain=domain,
         slots=domain.slots,
-        evts=[stack.persist_as_event()],
+        evts=[],
     )
+    tracker.update_stack(stack)
     action = ActionCorrectFlowSlot()
     events = await action.run(
         CollectingOutputChannel(),
@@ -113,23 +114,31 @@ async def test_action_correct_flow_slot_no_reset_step_id() -> None:
         tracker,
         domain,
     )
+
     assert len(events) == 2
-    stack_event = events[0]
-    assert isinstance(stack_event, SlotSet)
-    assert stack_event.key == DIALOGUE_STACK_SLOT
-    assert len(stack_event.value) == 3
-    assert stack_event.value[0]["type"] == UserFlowStackFrame.type()
-    assert stack_event.value[0]["flow_id"] == "foo_flow"
-    assert stack_event.value[0]["step_id"] == "START"
-    assert (
-        stack_event.value[1]["type"] == CollectInformationPatternFlowStackFrame.type()
-    )
-    assert stack_event.value[1]["flow_id"] == "pattern_collect_information"
-    assert stack_event.value[1]["step_id"] == "NEXT:END"
-    assert stack_event.value[2]["type"] == CorrectionPatternFlowStackFrame.type()
-    assert stack_event.value[2]["flow_id"] == "pattern_correction"
-    assert stack_event.value[2]["step_id"] == "1"
-    assert stack_event.value[2]["corrected_slots"] == {"foo": "bar"}
+    event = events[0]
+    assert isinstance(event, DialogueStackUpdated)
+
+    updated_stack = tracker.stack.update_from_patch(event.update)
+
+    assert len(updated_stack.frames) == 3
+
+    frame = updated_stack.frames[0]
+    assert isinstance(frame, UserFlowStackFrame)
+    assert frame.flow_id == "foo_flow"
+    assert frame.step_id == "START"
+
+    frame = updated_stack.frames[1]
+    assert isinstance(frame, CollectInformationPatternFlowStackFrame)
+    assert frame.flow_id == "pattern_collect_information"
+    assert frame.step_id == "NEXT:END"
+
+    frame = updated_stack.frames[2]
+    assert isinstance(frame, CorrectionPatternFlowStackFrame)
+    assert frame.flow_id == "pattern_correction"
+    assert frame.step_id == "1"
+    assert frame.corrected_slots == {"foo": "bar"}
+
     correction_slot_set_event = events[1]
     assert isinstance(correction_slot_set_event, SlotSet)
     assert correction_slot_set_event.key == "foo"
@@ -158,8 +167,9 @@ async def test_action_correct_flow_slot() -> None:
         "test",
         domain=domain,
         slots=domain.slots,
-        evts=[stack.persist_as_event()],
+        evts=[],
     )
+    tracker.update_stack(stack)
     action = ActionCorrectFlowSlot()
     events = await action.run(
         CollectingOutputChannel(),
@@ -167,23 +177,31 @@ async def test_action_correct_flow_slot() -> None:
         tracker,
         domain,
     )
+
     assert len(events) == 2
-    stack_event = events[0]
-    assert isinstance(stack_event, SlotSet)
-    assert stack_event.key == DIALOGUE_STACK_SLOT
-    assert len(stack_event.value) == 3
-    assert stack_event.value[0]["type"] == UserFlowStackFrame.type()
-    assert stack_event.value[0]["flow_id"] == "foo_flow"
-    assert stack_event.value[0]["step_id"] == "NEXT:ask_some_slot"
-    assert (
-        stack_event.value[1]["type"] == CollectInformationPatternFlowStackFrame.type()
-    )
-    assert stack_event.value[1]["flow_id"] == "pattern_collect_information"
-    assert stack_event.value[1]["step_id"] == "NEXT:END"
-    assert stack_event.value[2]["type"] == CorrectionPatternFlowStackFrame.type()
-    assert stack_event.value[2]["flow_id"] == "pattern_correction"
-    assert stack_event.value[2]["step_id"] == "1"
-    assert stack_event.value[2]["corrected_slots"] == {"foo": "bar"}
+    event = events[0]
+    assert isinstance(event, DialogueStackUpdated)
+
+    updated_stack = tracker.stack.update_from_patch(event.update)
+
+    assert len(updated_stack.frames) == 3
+
+    frame = updated_stack.frames[0]
+    assert isinstance(frame, UserFlowStackFrame)
+    assert frame.flow_id == "foo_flow"
+    assert frame.step_id == "NEXT:ask_some_slot"
+
+    frame = updated_stack.frames[1]
+    assert isinstance(frame, CollectInformationPatternFlowStackFrame)
+    assert frame.flow_id == "pattern_collect_information"
+    assert frame.step_id == "NEXT:END"
+
+    frame = updated_stack.frames[2]
+    assert isinstance(frame, CorrectionPatternFlowStackFrame)
+    assert frame.flow_id == "pattern_correction"
+    assert frame.step_id == "1"
+    assert frame.corrected_slots == {"foo": "bar"}
+
     correction_slot_set_event = events[1]
     assert isinstance(correction_slot_set_event, SlotSet)
     assert correction_slot_set_event.key == "foo"

@@ -9,13 +9,12 @@ from rasa.core.actions.action_clean_stack import ActionCleanStack
 
 from rasa.dialogue_understanding.patterns.code_change import FLOW_PATTERN_CODE_CHANGE_ID
 from rasa.dialogue_understanding.processor.command_processor import execute_commands
-from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import (
     UserFlowStackFrame,
     PatternFlowStackFrame,
 )
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import DialogueStackUpdated, SlotSet
+from rasa.shared.core.events import DialogueStackUpdated
 from rasa.shared.core.flows.flow import (
     START_STEP,
     ContinueFlowStep,

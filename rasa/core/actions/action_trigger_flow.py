@@ -1,7 +1,6 @@
 from typing import Any, Dict, Optional, Text, List
 
 import structlog
-from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
     FlowStackFrameType,
     UserFlowStackFrame,

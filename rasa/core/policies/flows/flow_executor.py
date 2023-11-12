@@ -187,10 +187,11 @@ def select_next_step(
     return step
 
 
-def update_top_flow_step_id(updated_id: str, stack: DialogueStack) -> None:
+def update_top_flow_step_id(updated_id: str, stack: DialogueStack) -> DialogueStack:
     """Update the top flow on the stack."""
     if (top := stack.top()) and isinstance(top, BaseFlowStackFrame):
         top.step_id = updated_id
+    return stack
 
 
 def events_from_set_slots_step(step: SetSlotsFlowStep) -> List[Event]:
@@ -335,20 +336,10 @@ def advance_flows(
         # if there are no flows, there is nothing to do
         return FlowActionPrediction(None, 0.0)
 
-    previous_stack = stack.as_dict()
-    prediction = advance_flows_until_next_action(
-        stack, tracker, available_actions, flows
-    )
-    if previous_stack != stack.as_dict():
-        # we need to update dialogue stack to persist the state of the executor
-        if not prediction.events:
-            prediction.events = []
-        prediction.events.append(stack.persist_as_event())
-    return prediction
+    return advance_flows_until_next_action(tracker, available_actions, flows)
 
 
 def advance_flows_until_next_action(
-    stack: DialogueStack,
     tracker: DialogueStateTracker,
     available_actions: List[str],
     flows: FlowsList,
@@ -361,7 +352,6 @@ def advance_flows_until_next_action(
     advanced. If there are no more flows, the action listen is predicted.
 
     Args:
-        stack: The stack to get the next action for.
         tracker: The tracker to get the next action for.
         available_actions: The actions that are available in the domain.
         flows: All flows.
@@ -382,9 +372,11 @@ def advance_flows_until_next_action(
 
         number_of_steps_taken += 1
         if number_of_steps_taken > MAX_NUMBER_OF_STEPS:
-            raise FlowCircuitBreakerTrippedException(stack, number_of_steps_taken)
+            raise FlowCircuitBreakerTrippedException(
+                tracker.stack, number_of_steps_taken
+            )
 
-        active_frame = stack.top()
+        active_frame = tracker.stack.top()
         if not isinstance(active_frame, BaseFlowStackFrame):
             # If there is no current flow, we assume that all flows are done
             # and there is nothing to do. The assumption here is that every
@@ -399,19 +391,20 @@ def advance_flows_until_next_action(
             structlogger.debug("flow.execution.loop", previous_step_id=previous_step_id)
             current_flow = active_frame.flow(flows)
             next_step = select_next_step(
-                active_frame.step(flows), current_flow, stack, tracker
+                active_frame.step(flows), current_flow, tracker.stack, tracker
             )
 
             if not next_step:
-                raise NoNextStepInFlowException(stack)
+                raise NoNextStepInFlowException(tracker.stack)
 
-            update_top_flow_step_id(next_step.id, stack)
+            tracker.update_stack(update_top_flow_step_id(next_step.id, tracker.stack))
 
             with bound_contextvars(step_id=next_step.id):
+                step_stack = tracker.stack
                 step_result = run_step(
                     next_step,
                     current_flow,
-                    stack,
+                    step_stack,
                     tracker,
                     available_actions,
                     flows,
@@ -431,6 +424,7 @@ def advance_flows_until_next_action(
                     new_events.insert(
                         idx, FlowCompleted(active_frame.flow_id, previous_step_id)
                     )
+                tracker.update_stack(step_stack)
                 tracker.update_with_events(new_events)
 
     gathered_events = list(tracker.events)[number_of_initial_events:]

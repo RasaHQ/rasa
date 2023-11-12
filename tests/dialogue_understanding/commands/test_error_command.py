@@ -1,8 +1,7 @@
 from rasa.dialogue_understanding.commands.error_command import ErrorCommand
 from rasa.dialogue_understanding.stack.frames.pattern_frame import PatternFlowStackFrame
-from rasa.shared.core.events import DialogueStackUpdated, SlotSet, UserUttered
+from rasa.shared.core.events import DialogueStackUpdated, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
-import jsonpatch
 
 
 def test_name_of_command():

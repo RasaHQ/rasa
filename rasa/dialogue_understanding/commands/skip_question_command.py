@@ -8,7 +8,6 @@ from rasa.dialogue_understanding.commands import Command
 from rasa.dialogue_understanding.patterns.skip_question import (
     SkipQuestionPatternFlowStackFrame,
 )
-from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.utils import top_user_flow_frame
 from rasa.shared.core.events import Event
 from rasa.shared.core.flows.flows_list import FlowsList
@@ -64,4 +63,4 @@ class SkipQuestionCommand(Command):
             return []
 
         stack.push(SkipQuestionPatternFlowStackFrame())
-        return [stack.persist_as_event()]
+        return tracker.create_stack_update_events(stack)
