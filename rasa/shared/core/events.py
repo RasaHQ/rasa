@@ -521,12 +521,12 @@ class UserUttered(Event):
 
     @property
     def commands(self) -> List[Dict[str, Any]]:
+        """Returns commands included in the message."""
         if COMMANDS in self.parse_data and isinstance(
             self.parse_data[COMMANDS], list  # type: ignore[literal-required]
         ):
             return self.parse_data[COMMANDS]  # type: ignore[literal-required]
-        else:
-            return []
+        return []
 
     @property
     def intent_name(self) -> Optional[Text]:
