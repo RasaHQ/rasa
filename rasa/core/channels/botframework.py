@@ -203,7 +203,13 @@ class BotFrameworkInput(InputChannel):
         self.jwt_keys: Dict[Text, Any] = {}
         self.jwt_update_time = datetime.datetime.fromtimestamp(0)
 
-        self._update_cached_jwk_keys()
+        try:
+            self._update_cached_jwk_keys()
+        except HTTPError as error:
+            logger.warning(
+                f"Could not update JWT keys from {MICROSOFT_OPEN_ID_URI}."
+            )
+            logger.exception(error, exc_info=True)
 
     def _update_cached_jwk_keys(self) -> None:
         logger.debug("Updating JWT keys for the Botframework.")
