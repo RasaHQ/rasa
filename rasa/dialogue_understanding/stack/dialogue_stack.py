@@ -129,7 +129,50 @@ class DialogueStack:
         return len(self.frames) == 0
 
     def update_from_patch(self, patch_dump: str) -> DialogueStack:
-        """Updates the stack from a patch."""
+        """Updates the stack from a patch.
+
+        Args:
+            patch_dump: The patch to apply to the stack.
+
+        Returns:
+            The updated stack."""
         patch = jsonpatch.JsonPatch.from_string(patch_dump)
         dialogue_stack_dump = patch.apply(self.as_dict())
         return DialogueStack.from_dict(dialogue_stack_dump)
+
+    def create_stack_patch(self, updated_stack: DialogueStack) -> Optional[str]:
+        """Creates a patch to update the stack to the updated stack state.
+
+        Example:
+            > stack = DialogueStack.from_dict([
+            >     {
+            >         "type": "flow",
+            >         "frame_type": "regular",
+            >         "flow_id": "foo",
+            >         "step_id": "START",
+            >         "frame_id": "test",
+            >     }
+            > ])
+            > updated_stack = DialogueStack.from_dict([
+            >     {
+            >         "type": "flow",
+            >         "frame_type": "regular",
+            >         "flow_id": "foo",
+            >         "step_id": "1",
+            >         "frame_id": "test",
+            >     }
+            > ])
+            > stack.create_stack_patch(updated_stack)
+            '[{"op": "replace", "path": "/0/step_id", "value": "1"}]'
+
+        Args:
+            updated_stack: The updated stack.
+
+        Returns:
+            The patch to update the stack to the updated stack state.
+        """
+        patch = jsonpatch.JsonPatch.from_diff(self.as_dict(), updated_stack.as_dict())
+
+        if patch:
+            return patch.to_string()
+        return None

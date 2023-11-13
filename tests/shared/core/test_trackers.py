@@ -11,6 +11,7 @@ from typing import List, Text, Dict, Any, Type
 import fakeredis
 import freezegun
 import pytest
+import dataclasses
 
 from rasa.core.actions.action import ActionExtractSlots
 from rasa.core.channels import CollectingOutputChannel
@@ -57,6 +58,7 @@ from rasa.shared.core.events import (
     LoopInterrupted,
     DefinePrevUserUtteredFeaturization,
     EntitiesAdded,
+    DialogueStackUpdated,
 )
 from rasa.shared.core.slots import (
     FloatSlot,
@@ -89,6 +91,8 @@ from rasa.shared.nlu.constants import (
     METADATA_MODEL_ID,
     PREDICTED_CONFIDENCE_KEY,
 )
+from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
+from rasa.dialogue_understanding.stack.frames.flow_stack_frame import UserFlowStackFrame
 
 test_domain = Domain.load("data/test_moodbot/domain.yml")
 
@@ -1665,3 +1669,63 @@ def test_assistant_id_is_not_added_to_events_with_assistant_id():
         ActionExecuted(action_name="test", metadata={ASSISTANT_ID_KEY: "old_name"})
     )
     assert tracker.events[-1].metadata[ASSISTANT_ID_KEY] == "old_name"
+
+
+def test_update_stack_event_applies():
+    patch = '[{"op": "add", "path": "/0", "value": {"frame_id": "some-frame-id", "flow_id": "foo", "step_id": "first_step", "frame_type": "regular", "type": "flow"}}]'
+    events = [DialogueStackUpdated(patch)]
+
+    tracker = get_tracker(events)
+
+    assert tracker.stack == DialogueStack(
+        [
+            UserFlowStackFrame(
+                flow_id="foo", step_id="first_step", frame_id="some-frame-id"
+            )
+        ]
+    )
+
+
+def test_update_stack_event_applies():
+    patch = '[{"op": "add", "path": "/0", "value": {"frame_id": "some-frame-id", "flow_id": "foo", "step_id": "first_step", "frame_type": "regular", "type": "flow"}}]'
+
+    tracker = get_tracker([])
+
+    tracker.apply_stack_update(patch)
+
+    assert tracker.stack == DialogueStack(
+        [
+            UserFlowStackFrame(
+                flow_id="foo", step_id="first_step", frame_id="some-frame-id"
+            )
+        ]
+    )
+
+
+def test_create_stack_updated_events_on_empty():
+    tracker = get_tracker([])
+    stack = DialogueStack.empty()
+    events = tracker.create_stack_updated_events(stack)
+    assert events == []
+
+
+def test_tracker_update_stack():
+    tracker = get_tracker([])
+
+    user_frame = UserFlowStackFrame(
+        flow_id="foo", step_id="first_step", frame_id="some-frame-id"
+    )
+    stack = DialogueStack(frames=[user_frame])
+
+    tracker.update_stack(stack)
+    assert tracker.stack == stack
+
+    updated_frame = dataclasses.replace(user_frame, step_id="second_step")
+    updated_stack = DialogueStack(frames=[updated_frame])
+
+    events = tracker.create_stack_updated_events(updated_stack)
+    assert events == [
+        DialogueStackUpdated(
+            '[{"op": "replace", "path": "/0/step_id", "value": "second_step"}]'
+        )
+    ]

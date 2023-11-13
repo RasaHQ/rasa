@@ -222,3 +222,73 @@ def test_is_empty_on_non_empty():
     )
     stack = DialogueStack(frames=[user_frame])
     assert stack.is_empty() is False
+
+
+def test_create_stack_patch_with_empty():
+    empty_stack = DialogueStack.empty()
+    assert empty_stack.create_stack_patch(empty_stack) is None
+
+
+def test_create_stack_patch_with_same_stack_is_none():
+    user_frame = UserFlowStackFrame(
+        flow_id="foo", step_id="first_step", frame_id="some-frame-id"
+    )
+    stack = DialogueStack(frames=[user_frame])
+    assert stack.create_stack_patch(stack) is None
+
+
+def test_create_stack_patch_with_different_stack():
+    user_frame = UserFlowStackFrame(
+        flow_id="foo", step_id="first_step", frame_id="some-frame-id"
+    )
+    stack = DialogueStack(frames=[user_frame])
+
+    updated_frame = dataclasses.replace(user_frame, step_id="second_step")
+    updated_stack = DialogueStack(frames=[updated_frame])
+
+    patch = stack.create_stack_patch(updated_stack)
+    assert patch == '[{"op": "replace", "path": "/0/step_id", "value": "second_step"}]'
+
+
+def test_create_stack_patch_with_different_stack_starting_empty():
+    user_frame = UserFlowStackFrame(
+        flow_id="foo", step_id="first_step", frame_id="some-frame-id"
+    )
+    stack = DialogueStack.empty()
+
+    updated_stack = DialogueStack(frames=[user_frame])
+
+    patch = stack.create_stack_patch(updated_stack)
+    assert (
+        patch
+        == '[{"op": "add", "path": "/0", "value": {"frame_id": "some-frame-id", "flow_id": "foo", "step_id": "first_step", "frame_type": "regular", "type": "flow"}}]'
+    )
+
+
+def test_stack_update_from_patch_starting_empty():
+    stack = DialogueStack.empty()
+
+    patch = '[{"op": "add", "path": "/0", "value": {"frame_id": "some-frame-id", "flow_id": "foo", "step_id": "first_step", "frame_type": "regular", "type": "flow"}}]'
+    updated_stack = stack.update_from_patch(patch)
+
+    assert updated_stack.frames == [
+        UserFlowStackFrame(
+            flow_id="foo", step_id="first_step", frame_id="some-frame-id"
+        )
+    ]
+
+
+def test_stack_update_from_existing_stack():
+    user_frame = UserFlowStackFrame(
+        flow_id="foo", step_id="first_step", frame_id="some-frame-id"
+    )
+    stack = DialogueStack(frames=[user_frame])
+
+    patch = '[{"op": "replace", "path": "/0/step_id", "value": "second_step"}]'
+    updated_stack = stack.update_from_patch(patch)
+
+    assert updated_stack.frames == [
+        UserFlowStackFrame(
+            flow_id="foo", step_id="second_step", frame_id="some-frame-id"
+        )
+    ]

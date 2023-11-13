@@ -399,15 +399,11 @@ class DialogueStateTracker:
         self, updated_stack: "DialogueStack"
     ) -> List[Event]:
         """Creates events to update the stack to the given one."""
-        from jsonpatch import JsonPatch
+        patch = self._underlying_stack.create_stack_patch(updated_stack)
 
-        diff = JsonPatch.from_diff(
-            self._underlying_stack.as_dict(), updated_stack.as_dict()
-        )
-
-        # if there is no diff, this is a no-op
-        if diff:
-            return [DialogueStackUpdated(diff.to_string())]
+        # if there is no patch, this is a no-op
+        if patch:
+            return [DialogueStackUpdated(patch)]
         return []
 
     def update_stack(self, updated_stack: "DialogueStack") -> None:
