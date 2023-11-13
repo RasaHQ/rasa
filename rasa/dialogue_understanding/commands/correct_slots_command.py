@@ -285,4 +285,4 @@ class CorrectSlotsCommand(Command):
         self.end_previous_correction(top_flow_frame, stack)
 
         stack.push(correction_frame, index=insertion_index)
-        return tracker.create_stack_update_events(stack)
+        return tracker.create_stack_updated_events(stack)

@@ -95,4 +95,4 @@ class StartFlowCommand(Command):
 
         structlogger.debug("command_executor.start_flow", command=self)
         stack.push(UserFlowStackFrame(flow_id=self.flow, frame_type=frame_type))
-        return applied_events + tracker.create_stack_update_events(stack)
+        return applied_events + tracker.create_stack_updated_events(stack)

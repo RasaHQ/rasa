@@ -64,6 +64,7 @@ from rasa.shared.core.events import (
 )
 from rasa.shared.core.domain import Domain, State
 from rasa.shared.core.slots import AnySlot, Slot
+import jsonpatch
 
 
 if TYPE_CHECKING:
@@ -394,7 +395,9 @@ class DialogueStateTracker:
             logger.info(f"Tried to access non existent slot '{key}'")
             return None
 
-    def create_stack_update_events(self, updated_stack: "DialogueStack") -> List[Event]:
+    def create_stack_updated_events(
+        self, updated_stack: "DialogueStack"
+    ) -> List[Event]:
         """Creates events to update the stack to the given one."""
         from jsonpatch import JsonPatch
 
@@ -405,12 +408,11 @@ class DialogueStateTracker:
         # if there is no diff, this is a no-op
         if diff:
             return [DialogueStackUpdated(diff.to_string())]
-        else:
-            return []
+        return []
 
     def update_stack(self, updated_stack: "DialogueStack") -> None:
         """Set's the updated stack on this tracker."""
-        for event in self.create_stack_update_events(updated_stack):
+        for event in self.create_stack_updated_events(updated_stack):
             self.update(event)
 
     def apply_stack_update(self, update: str) -> None:

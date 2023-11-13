@@ -108,4 +108,4 @@ class ActionCancelFlow(action.Action):
                     frame_id=canceled_frame_id,
                 )
 
-        return tracker.create_stack_update_events(stack)
+        return tracker.create_stack_updated_events(stack)

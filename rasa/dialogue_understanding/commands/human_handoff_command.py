@@ -54,4 +54,4 @@ class HumanHandoffCommand(Command):
         structlogger.debug(
             "command_executor.human_handoff.pushed_to_stack", command=self
         )
-        return tracker.create_stack_update_events(stack)
+        return tracker.create_stack_updated_events(stack)

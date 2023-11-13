@@ -74,7 +74,7 @@ class ActionTriggerFlow(action.Action):
                 frame_type=frame_type,
             )
         )
-        return events + tracker.create_stack_update_events(stack)
+        return events + tracker.create_stack_updated_events(stack)
 
     def create_events_to_set_flow_slots(self, metadata: Dict[str, Any]) -> List[Event]:
         """Create events to set the flow slots.

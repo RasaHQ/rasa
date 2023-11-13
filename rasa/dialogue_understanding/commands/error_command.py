@@ -52,4 +52,4 @@ class ErrorCommand(Command):
         stack = tracker.stack
         structlogger.debug("command_executor.error", command=self)
         stack.push(InternalErrorPatternFlowStackFrame())
-        return tracker.create_stack_update_events(stack)
+        return tracker.create_stack_updated_events(stack)

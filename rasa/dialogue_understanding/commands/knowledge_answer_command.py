@@ -45,4 +45,4 @@ class KnowledgeAnswerCommand(FreeFormAnswerCommand):
         """
         stack = tracker.stack
         stack.push(SearchPatternFlowStackFrame())
-        return tracker.create_stack_update_events(stack)
+        return tracker.create_stack_updated_events(stack)

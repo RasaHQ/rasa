@@ -61,4 +61,4 @@ class HandleCodeChangeCommand(Command):
             return []
 
         stack.push(CodeChangeFlowStackFrame())
-        return tracker.create_stack_update_events(stack)
+        return tracker.create_stack_updated_events(stack)

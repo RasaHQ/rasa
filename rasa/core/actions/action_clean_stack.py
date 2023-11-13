@@ -56,4 +56,4 @@ class ActionCleanStack(Action):
                 new_frames.append(frame)
         new_stack = DialogueStack.from_dict([frame.as_dict() for frame in new_frames])
 
-        return tracker.create_stack_update_events(new_stack)
+        return tracker.create_stack_updated_events(new_stack)

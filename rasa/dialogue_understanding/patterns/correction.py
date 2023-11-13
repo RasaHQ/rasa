@@ -124,6 +124,6 @@ class ActionCorrectFlowSlot(action.Action):
                     ContinueFlowStep.continue_step_for_id(END_STEP)
                 )
 
-        events: List[Event] = tracker.create_stack_update_events(stack)
+        events: List[Event] = tracker.create_stack_updated_events(stack)
         events.extend([SlotSet(k, v) for k, v in top.corrected_slots.items()])
         return events

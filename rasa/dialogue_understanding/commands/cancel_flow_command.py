@@ -109,4 +109,4 @@ class CancelFlowCommand(Command):
         if user_frame:
             applied_events.append(FlowCancelled(user_frame.flow_id, user_frame.step_id))
 
-        return applied_events + tracker.create_stack_update_events(stack)
+        return applied_events + tracker.create_stack_updated_events(stack)

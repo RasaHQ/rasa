@@ -94,4 +94,4 @@ class ActionClarifyFlows(action.Action):
         options_string = self.assemble_options_string(top.names)
         top.clarification_options = options_string
         # since we modified the stack frame, we need to update the stack
-        return tracker.create_stack_update_events(stack)
+        return tracker.create_stack_updated_events(stack)
