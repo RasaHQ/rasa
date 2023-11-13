@@ -259,16 +259,23 @@ def test_create_stack_patch_with_different_stack_starting_empty():
     updated_stack = DialogueStack(frames=[user_frame])
 
     patch = stack.create_stack_patch(updated_stack)
-    assert (
-        patch
-        == '[{"op": "add", "path": "/0", "value": {"frame_id": "some-frame-id", "flow_id": "foo", "step_id": "first_step", "frame_type": "regular", "type": "flow"}}]'
+    expected_patch = (
+        '[{"op": "add", "path": "/0", "value": {"frame_id": "some-frame-id", '
+        '"flow_id": "foo", "step_id": "first_step", "frame_type": "regular", '
+        '"type": "flow"}}]'
     )
+    assert patch == expected_patch
 
 
 def test_stack_update_from_patch_starting_empty():
     stack = DialogueStack.empty()
 
-    patch = '[{"op": "add", "path": "/0", "value": {"frame_id": "some-frame-id", "flow_id": "foo", "step_id": "first_step", "frame_type": "regular", "type": "flow"}}]'
+    patch = (
+        '[{"op": "add", "path": "/0", "value": {'
+        '"frame_id": "some-frame-id", "flow_id": "foo", '
+        '"step_id": "first_step", "frame_type": "regular", "type": "flow"}}]'
+    )
+
     updated_stack = stack.update_from_patch(patch)
 
     assert updated_stack.frames == [

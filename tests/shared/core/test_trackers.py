@@ -1672,7 +1672,11 @@ def test_assistant_id_is_not_added_to_events_with_assistant_id():
 
 
 def test_update_stack_event_applies():
-    patch = '[{"op": "add", "path": "/0", "value": {"frame_id": "some-frame-id", "flow_id": "foo", "step_id": "first_step", "frame_type": "regular", "type": "flow"}}]'
+    patch = (
+        '[{"op": "add", "path": "/0", "value": '
+        '{"frame_id": "some-frame-id", "flow_id": "foo", '
+        '"step_id": "first_step", "frame_type": "regular", "type": "flow"}}]'
+    )
     events = [DialogueStackUpdated(patch)]
 
     tracker = get_tracker(events)
@@ -1686,8 +1690,12 @@ def test_update_stack_event_applies():
     )
 
 
-def test_update_stack_event_applies():
-    patch = '[{"op": "add", "path": "/0", "value": {"frame_id": "some-frame-id", "flow_id": "foo", "step_id": "first_step", "frame_type": "regular", "type": "flow"}}]'
+def test_update_stack_applying_updates():
+    patch = (
+        '[{"op": "add", "path": "/0", "value": '
+        '{"frame_id": "some-frame-id", "flow_id": "foo", '
+        '"step_id": "first_step", "frame_type": "regular", "type": "flow"}}]'
+    )
 
     tracker = get_tracker([])
 
