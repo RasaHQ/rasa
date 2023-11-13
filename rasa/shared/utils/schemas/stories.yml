@@ -28,6 +28,14 @@ mapping:
               user:
                 type: "str"
                 allowempty: False
+              commands:
+                type: "seq"
+                matching: "any"
+                sequence:
+                - type: "map"
+                  mapping:
+                    regex;(.*):
+                      type: "any"
               entities:
                 type: "seq"
                 matching: "any"

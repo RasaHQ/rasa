@@ -63,6 +63,7 @@ KEY_STEPS = "steps"
 KEY_ENTITIES = "entities"
 KEY_USER_INTENT = "intent"
 KEY_USER_MESSAGE = "user"
+KEY_COMMANDS = "commands"
 KEY_SLOT_NAME = "slot_was_set"
 KEY_ACTIVE_LOOP = "active_loop"
 KEY_ACTION = "action"
@@ -469,7 +470,12 @@ class YAMLStoryReader(StoryReader):
             entities = self._parse_raw_entities(raw_entities)
             # set plain_text to None because only intent was provided in the stories
             plain_text = None
-        return UserUttered(plain_text, intent, entities)
+        return UserUttered(
+            plain_text,
+            intent,
+            entities,
+            parse_data={KEY_COMMANDS: step.get(KEY_COMMANDS, [])},  # type: ignore[misc]
+        )
 
     @staticmethod
     def _parse_raw_entities(

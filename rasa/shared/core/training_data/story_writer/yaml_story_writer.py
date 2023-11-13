@@ -41,6 +41,7 @@ from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     KEY_RULE_CONDITION,
     KEY_RULE_NAME,
     KEY_STACK_UPDATE,
+    KEY_COMMANDS,
 )
 
 from rasa.shared.core.training_data.story_writer.story_writer import StoryWriter
@@ -273,6 +274,8 @@ class YAMLStoryWriter(StoryWriter):
                 )
             )
 
+        if user_utterance.commands:
+            result[KEY_COMMANDS] = user_utterance.commands
         return result
 
     @staticmethod

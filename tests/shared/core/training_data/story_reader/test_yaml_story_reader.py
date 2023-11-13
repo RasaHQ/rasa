@@ -1171,3 +1171,20 @@ def test_yaml_stack_update_is_parsed(domain: Domain) -> None:
             '"step_id": "START", "frame_type": "regular", "type": "flow"}}]'
         )
     )
+
+
+def test_yaml_commands_are_parsed(domain: Domain) -> None:
+    yaml_file = "data/test_yaml_stories/message_with_commands.yml"
+
+    tracker = training.load_data(
+        yaml_file,
+        domain,
+        use_story_concatenation=False,
+        tracker_limit=1000,
+        remove_duplicates=False,
+    )
+
+    assert tracker[0].events[1] == UserUttered("I want to transfer money")
+    assert tracker[0].events[1].commands == [
+        {"command": "start flow", "flow": "transfer_money"}
+    ]

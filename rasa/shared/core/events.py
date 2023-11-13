@@ -47,6 +47,7 @@ from rasa.shared.nlu.constants import (
     INTENT,
     TEXT,
     ENTITIES,
+    COMMANDS,
     ENTITY_ATTRIBUTE_VALUE,
     ACTION_TEXT,
     ACTION_NAME,
@@ -517,6 +518,13 @@ class UserUttered(Event):
     def __hash__(self) -> int:
         """Returns unique hash of object."""
         return hash(json.dumps(self.as_sub_state()))
+
+    @property
+    def commands(self) -> List[Dict[str, Any]]:
+        if COMMANDS in self.parse_data and isinstance(self.parse_data[COMMANDS], list):  # type: ignore[literal-required]
+            return self.parse_data[COMMANDS]  # type: ignore[literal-required]
+        else:
+            return []
 
     @property
     def intent_name(self) -> Optional[Text]:
