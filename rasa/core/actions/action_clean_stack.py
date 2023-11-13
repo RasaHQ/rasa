@@ -13,9 +13,9 @@ from rasa.dialogue_understanding.stack.frames import (
     UserFlowStackFrame,
 )
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import FlowStackFrameType
-from rasa.shared.core.constants import ACTION_CLEAN_STACK, DIALOGUE_STACK_SLOT
+from rasa.shared.core.constants import ACTION_CLEAN_STACK
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import Event, SlotSet
+from rasa.shared.core.events import Event
 from rasa.shared.core.flows.steps.constants import END_STEP
 from rasa.shared.core.flows.steps.continuation import ContinueFlowStep
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -39,11 +39,10 @@ class ActionCleanStack(Action):
         metadata: Optional[Dict[str, Any]] = None,
     ) -> List[Event]:
         """Clean the stack."""
-        stack = DialogueStack.from_tracker(tracker)
         structlogger.debug("action_clean_stack.run")
         new_frames = []
         # Set all frames to their end step, filter out any non-BaseFlowStackFrames
-        for frame in stack.frames:
+        for frame in tracker.stack.frames:
             if isinstance(frame, BaseFlowStackFrame):
                 structlogger.debug(
                     "action_clean_stack.terminating_frame",
@@ -57,4 +56,4 @@ class ActionCleanStack(Action):
                 new_frames.append(frame)
         new_stack = DialogueStack.from_dict([frame.as_dict() for frame in new_frames])
 
-        return [SlotSet(DIALOGUE_STACK_SLOT, new_stack.as_dict())]
+        return tracker.create_stack_updated_events(new_stack)

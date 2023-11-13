@@ -9,7 +9,6 @@ from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
 )
-from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import (
     BaseFlowStackFrame,
     PatternFlowStackFrame,
@@ -90,7 +89,7 @@ class ActionCorrectFlowSlot(action.Action):
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> List[Event]:
         """Correct the slots."""
-        stack = DialogueStack.from_tracker(tracker)
+        stack = tracker.stack
         if not (top := stack.top()):
             structlogger.warning("action.correct_flow_slot.no_active_flow")
             return []
@@ -125,6 +124,6 @@ class ActionCorrectFlowSlot(action.Action):
                     ContinueFlowStep.continue_step_for_id(END_STEP)
                 )
 
-        events: List[Event] = [stack.persist_as_event()]
+        events: List[Event] = tracker.create_stack_updated_events(stack)
         events.extend([SlotSet(k, v) for k, v in top.corrected_slots.items()])
         return events

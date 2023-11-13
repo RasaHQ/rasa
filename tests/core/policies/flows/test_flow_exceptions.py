@@ -9,14 +9,14 @@ from rasa.shared.exceptions import RasaException
 
 def test_flow_circuit_breaker_tripped_exception_is_rasa_exception():
     # important, because we treat internal exceptions differently
-    stack = DialogueStack(frames=[])
+    stack = DialogueStack.empty()
     e = FlowCircuitBreakerTrippedException(stack, 42)
     assert isinstance(e, RasaException)
 
 
 def test_no_next_step_in_flow_exception_is_rasa_exception():
     # important, because we treat internal exceptions differently
-    stack = DialogueStack(frames=[])
+    stack = DialogueStack.empty()
     e = NoNextStepInFlowException(stack)
     assert isinstance(e, RasaException)
 

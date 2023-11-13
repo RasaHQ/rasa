@@ -15,6 +15,7 @@ from unittest.mock import MagicMock
 
 import freezegun
 import pytest
+from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 import rasa.shared.utils.io
 import tests.utilities
 from _pytest.logging import LogCaptureFixture
@@ -63,13 +64,13 @@ from rasa.shared.core.constants import (
     IS_EXTERNAL,
     SESSION_START_METADATA_SLOT,
     FLOW_HASHES_SLOT,
-    DIALOGUE_STACK_SLOT,
 )
 from rasa.shared.core.domain import SessionConfig, Domain, KEY_ACTIONS
 from rasa.shared.core.events import (
     ActionExecuted,
     ActiveLoop,
     BotUttered,
+    DialogueStackUpdated,
     ReminderCancelled,
     ReminderScheduled,
     Restarted,
@@ -2006,16 +2007,17 @@ async def test_run_command_processor_starting_a_flow(
     assert isinstance(tracker.events[1], UserUttered)
     # new events
     assert isinstance(tracker.events[2], SlotSet)
-    assert isinstance(tracker.events[3], SlotSet)
+    assert isinstance(tracker.events[3], DialogueStackUpdated)
     # flow hashes SlotSet
     assert tracker.events[2].key == FLOW_HASHES_SLOT
     assert "foo" in tracker.events[2].value
     assert "bar" in tracker.events[2].value
-    # dialogue stack SlotSet
-    assert tracker.events[3].key == DIALOGUE_STACK_SLOT
-    assert next(iter(tracker.events[3].value))["flow_id"] == "foo"
-    assert next(iter(tracker.events[3].value))["step_id"] == "START"
-    assert next(iter(tracker.events[3].value))["type"] == "flow"
+    # dialogue stack update
+
+    frame = tracker.stack.frames[0]
+    assert isinstance(frame, UserFlowStackFrame)
+    assert frame.flow_id == "foo"
+    assert frame.step_id == "START"
 
 
 async def test_run_command_processor_setting_a_slot(
@@ -2027,17 +2029,6 @@ async def test_run_command_processor_setting_a_slot(
     tracker = await processor.tracker_store.get_or_create_tracker(sender_id)
     tracker.update_with_events(
         [
-            SlotSet(
-                DIALOGUE_STACK_SLOT,
-                value=[
-                    UserFlowStackFrame(
-                        flow_id="foo", step_id="0_collect_foo_slot_a"
-                    ).as_dict(),
-                    CollectInformationPatternFlowStackFrame(
-                        collect="foo_slot_a"
-                    ).as_dict(),
-                ],
-            ),
             UserUttered(
                 text="Foo slot a value is Foooo",
                 parse_data={
@@ -2047,6 +2038,14 @@ async def test_run_command_processor_setting_a_slot(
                 },
             ),
         ]
+    )
+    tracker.update_stack(
+        DialogueStack(
+            frames=[
+                UserFlowStackFrame(flow_id="foo", step_id="0_collect_foo_slot_a"),
+                CollectInformationPatternFlowStackFrame(collect="foo_slot_a"),
+            ]
+        )
     )
     num_previous_events = len(tracker.events)
     # When
@@ -2059,8 +2058,8 @@ async def test_run_command_processor_setting_a_slot(
     assert num_added_events == 2
     # previous events
     assert isinstance(tracker.events[0], ActionExecuted)
-    assert isinstance(tracker.events[1], SlotSet)
-    assert isinstance(tracker.events[2], UserUttered)
+    assert isinstance(tracker.events[1], UserUttered)
+    assert isinstance(tracker.events[2], DialogueStackUpdated)
     # new events
     assert isinstance(tracker.events[3], SlotSet)
     assert isinstance(tracker.events[4], SlotSet)

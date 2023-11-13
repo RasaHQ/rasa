@@ -4,8 +4,6 @@ from rasa.dialogue_understanding.patterns.collect_information import (
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import UserFlowStackFrame
-from rasa.shared.core.constants import DIALOGUE_STACK_SLOT
-from rasa.shared.core.events import SlotSet
 
 
 def test_dialogue_stack_from_dict():
@@ -77,31 +75,13 @@ def test_dialogue_stack_as_dict():
     ]
 
 
-def test_dialogue_stack_as_event():
-    # check that the stack gets persisted as an event storing the dict
-    stack = DialogueStack(
-        frames=[
-            UserFlowStackFrame(
-                flow_id="foo", step_id="first_step", frame_id="some-frame-id"
-            ),
-            CollectInformationPatternFlowStackFrame(
-                collect="foo",
-                frame_id="some-other-id",
-                utter="utter_ask_foo",
-            ),
-        ]
-    )
-
-    assert stack.persist_as_event() == SlotSet(DIALOGUE_STACK_SLOT, stack.as_dict())
-
-
 def test_dialogue_stack_as_dict_handles_empty():
-    stack = DialogueStack(frames=[])
+    stack = DialogueStack.empty()
     assert stack.as_dict() == []
 
 
 def test_push_to_empty_stack():
-    stack = DialogueStack(frames=[])
+    stack = DialogueStack.empty()
     stack.push(
         UserFlowStackFrame(
             flow_id="foo", step_id="first_step", frame_id="some-frame-id"
@@ -155,7 +135,7 @@ def test_dialogue_stack_update():
 
 
 def test_update_empty_stack():
-    stack = DialogueStack(frames=[])
+    stack = DialogueStack.empty()
     stack.update(
         UserFlowStackFrame(
             flow_id="foo", step_id="first_step", frame_id="some-frame-id"
@@ -177,7 +157,7 @@ def test_pop_frame():
         collect="foo", frame_id="some-other-id"
     )
 
-    stack = DialogueStack(frames=[])
+    stack = DialogueStack.empty()
     stack.push(user_frame)
     stack.push(pattern_frame)
     assert stack.pop() == pattern_frame
@@ -185,7 +165,7 @@ def test_pop_frame():
 
 
 def test_top_empty_stack():
-    stack = DialogueStack(frames=[])
+    stack = DialogueStack.empty()
     assert stack.top() is None
 
 
@@ -197,14 +177,14 @@ def test_top():
         collect="foo", frame_id="some-other-id"
     )
 
-    stack = DialogueStack(frames=[])
+    stack = DialogueStack.empty()
     stack.push(user_frame)
     stack.push(pattern_frame)
     assert stack.top() == pattern_frame
 
 
 def test_get_current_context_empty_stack():
-    stack = DialogueStack(frames=[])
+    stack = DialogueStack.empty()
     assert stack.current_context() == {}
 
 
@@ -216,7 +196,7 @@ def test_get_current_context():
         collect="foo", frame_id="some-other-id", utter="utter_ask_foo"
     )
 
-    stack = DialogueStack(frames=[])
+    stack = DialogueStack.empty()
     stack.push(user_frame)
     stack.push(pattern_frame)
     assert stack.current_context() == {
@@ -232,7 +212,7 @@ def test_get_current_context():
 
 
 def test_is_empty_on_empty():
-    stack = DialogueStack(frames=[])
+    stack = DialogueStack.empty()
     assert stack.is_empty() is True
 
 
@@ -242,3 +222,80 @@ def test_is_empty_on_non_empty():
     )
     stack = DialogueStack(frames=[user_frame])
     assert stack.is_empty() is False
+
+
+def test_create_stack_patch_with_empty():
+    empty_stack = DialogueStack.empty()
+    assert empty_stack.create_stack_patch(empty_stack) is None
+
+
+def test_create_stack_patch_with_same_stack_is_none():
+    user_frame = UserFlowStackFrame(
+        flow_id="foo", step_id="first_step", frame_id="some-frame-id"
+    )
+    stack = DialogueStack(frames=[user_frame])
+    assert stack.create_stack_patch(stack) is None
+
+
+def test_create_stack_patch_with_different_stack():
+    user_frame = UserFlowStackFrame(
+        flow_id="foo", step_id="first_step", frame_id="some-frame-id"
+    )
+    stack = DialogueStack(frames=[user_frame])
+
+    updated_frame = dataclasses.replace(user_frame, step_id="second_step")
+    updated_stack = DialogueStack(frames=[updated_frame])
+
+    patch = stack.create_stack_patch(updated_stack)
+    assert patch == '[{"op": "replace", "path": "/0/step_id", "value": "second_step"}]'
+
+
+def test_create_stack_patch_with_different_stack_starting_empty():
+    user_frame = UserFlowStackFrame(
+        flow_id="foo", step_id="first_step", frame_id="some-frame-id"
+    )
+    stack = DialogueStack.empty()
+
+    updated_stack = DialogueStack(frames=[user_frame])
+
+    patch = stack.create_stack_patch(updated_stack)
+    expected_patch = (
+        '[{"op": "add", "path": "/0", "value": {"frame_id": "some-frame-id", '
+        '"flow_id": "foo", "step_id": "first_step", "frame_type": "regular", '
+        '"type": "flow"}}]'
+    )
+    assert patch == expected_patch
+
+
+def test_stack_update_from_patch_starting_empty():
+    stack = DialogueStack.empty()
+
+    patch = (
+        '[{"op": "add", "path": "/0", "value": {'
+        '"frame_id": "some-frame-id", "flow_id": "foo", '
+        '"step_id": "first_step", "frame_type": "regular", "type": "flow"}}]'
+    )
+
+    updated_stack = stack.update_from_patch(patch)
+
+    assert updated_stack.frames == [
+        UserFlowStackFrame(
+            flow_id="foo", step_id="first_step", frame_id="some-frame-id"
+        )
+    ]
+
+
+def test_stack_update_from_existing_stack():
+    user_frame = UserFlowStackFrame(
+        flow_id="foo", step_id="first_step", frame_id="some-frame-id"
+    )
+    stack = DialogueStack(frames=[user_frame])
+
+    patch = '[{"op": "replace", "path": "/0/step_id", "value": "second_step"}]'
+    updated_stack = stack.update_from_patch(patch)
+
+    assert updated_stack.frames == [
+        UserFlowStackFrame(
+            flow_id="foo", step_id="second_step", frame_id="some-frame-id"
+        )
+    ]

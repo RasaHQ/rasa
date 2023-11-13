@@ -47,6 +47,7 @@ from rasa.shared.nlu.constants import (
     INTENT,
     TEXT,
     ENTITIES,
+    COMMANDS,
     ENTITY_ATTRIBUTE_VALUE,
     ACTION_TEXT,
     ACTION_NAME,
@@ -517,6 +518,15 @@ class UserUttered(Event):
     def __hash__(self) -> int:
         """Returns unique hash of object."""
         return hash(json.dumps(self.as_sub_state()))
+
+    @property
+    def commands(self) -> List[Dict[str, Any]]:
+        """Returns commands included in the message."""
+        if COMMANDS in self.parse_data and isinstance(
+            self.parse_data[COMMANDS], list  # type: ignore[literal-required]
+        ):
+            return self.parse_data[COMMANDS]  # type: ignore[literal-required]
+        return []
 
     @property
     def intent_name(self) -> Optional[Text]:
@@ -1122,6 +1132,75 @@ class AllSlotsReset(AlwaysEqualEventMixin):
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
         """Applies event to current conversation state."""
         tracker._reset_slots()
+
+
+class DialogueStackUpdated(Event):
+    """Update the stack of a conversation."""
+
+    type_name = "stack"
+
+    def __init__(
+        self,
+        update: str,
+        timestamp: Optional[float] = None,
+        metadata: Optional[Dict[Text, Any]] = None,
+    ) -> None:
+        """Creates an event which updates the stack on a tracker.
+
+        Args:
+            update: The update to the stack.
+            timestamp: When the event was created.
+            metadata: Additional event metadata.
+        """
+        self.update = update
+        super().__init__(timestamp, metadata)
+
+    def __hash__(self) -> int:
+        """Returns unique hash for event."""
+        return hash(self.update)
+
+    def __eq__(self, other: Any) -> bool:
+        """Compares object with other object."""
+        if not isinstance(other, DialogueStackUpdated):
+            return NotImplemented
+
+        return self.update == other.update
+
+    def __str__(self) -> Text:
+        """Returns text representation of event."""
+        return f"DialogueStackUpdate(update: {self.update})"
+
+    def __repr__(self) -> Text:
+        """Returns text representation of event for debugging."""
+        return f'DialogueStackUpdate("""{self.update}""")'
+
+    def as_story_string(self) -> Text:
+        """Returns text representation of event."""
+        props = json.dumps({"update": self.update})
+        return f"{self.type_name}{props}"
+
+    @classmethod
+    def _from_story_string(
+        cls, parameters: Dict[Text, Any]
+    ) -> Optional[List["DialogueStackUpdated"]]:
+
+        return [
+            DialogueStackUpdated(
+                parameters.get("update"),
+                parameters.get("timestamp"),
+                parameters.get("metadata"),
+            )
+        ]
+
+    def as_dict(self) -> Dict[Text, Any]:
+        """Returns serialized event."""
+        d = super().as_dict()
+        d.update({"update": self.update})
+        return d
+
+    def apply_to(self, tracker: "DialogueStateTracker") -> None:
+        """Applies event to current conversation state."""
+        tracker.apply_stack_update(self.update)
 
 
 class ReminderScheduled(Event):

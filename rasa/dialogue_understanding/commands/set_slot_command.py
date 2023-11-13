@@ -8,7 +8,6 @@ from rasa.dialogue_understanding.commands import Command
 from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
 )
-from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.utils import (
     get_collect_steps_excluding_ask_before_filling_for_active_flow,
 )
@@ -86,17 +85,16 @@ class SetSlotCommand(Command):
             )
             return []
 
-        stack = DialogueStack.from_tracker(tracker)
         # Get slots of the active flow
         slots_of_active_flow = (
             get_collect_steps_excluding_ask_before_filling_for_active_flow(
-                stack, all_flows
+                tracker.stack, all_flows
             )
         )
 
         # Add slots that are asked in the current collect step. This is needed
         # to include slots that has ask_before_filling set to True.
-        top_frame = stack.top()
+        top_frame = tracker.stack.top()
         if isinstance(top_frame, CollectInformationPatternFlowStackFrame):
             slots_of_active_flow.add(top_frame.collect)
 

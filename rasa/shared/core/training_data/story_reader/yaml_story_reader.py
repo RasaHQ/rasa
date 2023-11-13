@@ -42,7 +42,12 @@ from rasa.shared.constants import (
 )
 
 from rasa.shared.core.constants import RULE_SNIPPET_ACTION_NAME
-from rasa.shared.core.events import UserUttered, SlotSet, ActiveLoop
+from rasa.shared.core.events import (
+    UserUttered,
+    SlotSet,
+    ActiveLoop,
+    DialogueStackUpdated,
+)
 from rasa.shared.core.training_data.story_reader.story_reader import StoryReader
 from rasa.shared.core.training_data.structures import StoryStep
 from rasa.shared.nlu.training_data.message import Message
@@ -58,6 +63,7 @@ KEY_STEPS = "steps"
 KEY_ENTITIES = "entities"
 KEY_USER_INTENT = "intent"
 KEY_USER_MESSAGE = "user"
+KEY_COMMANDS = "commands"
 KEY_SLOT_NAME = "slot_was_set"
 KEY_ACTIVE_LOOP = "active_loop"
 KEY_ACTION = "action"
@@ -69,6 +75,7 @@ KEY_OR = "or"
 KEY_RULE_CONDITION = "condition"
 KEY_WAIT_FOR_USER_INPUT_AFTER_RULE = "wait_for_user_input"
 KEY_RULE_FOR_CONVERSATION_START = "conversation_start"
+KEY_STACK_UPDATE = "stack"
 
 
 CORE_SCHEMA_FILE = "shared/utils/schemas/stories.yml"
@@ -291,6 +298,8 @@ class YAMLStoryReader(StoryReader):
             self._parse_slot(step)
         elif KEY_ACTIVE_LOOP in step.keys():
             self._parse_active_loop(step[KEY_ACTIVE_LOOP])
+        elif KEY_STACK_UPDATE in step.keys():
+            self._parse_stack(step)
         elif KEY_METADATA in step.keys():
             pass
         else:
@@ -461,7 +470,12 @@ class YAMLStoryReader(StoryReader):
             entities = self._parse_raw_entities(raw_entities)
             # set plain_text to None because only intent was provided in the stories
             plain_text = None
-        return UserUttered(plain_text, intent, entities)
+        return UserUttered(
+            plain_text,
+            intent,
+            entities,
+            parse_data={KEY_COMMANDS: step.get(KEY_COMMANDS, [])},  # type: ignore[misc]
+        )
 
     @staticmethod
     def _parse_raw_entities(
@@ -552,6 +566,10 @@ class YAMLStoryReader(StoryReader):
             return
 
         self._add_event(action_name, {})
+
+    def _parse_stack(self, step: Dict[Text, Any]) -> None:
+        update = step.get(KEY_STACK_UPDATE, [])
+        self._add_event(DialogueStackUpdated.type_name, {"update": json.dumps(update)})
 
     def _parse_bot_message(self, step: Dict[Text, Any]) -> None:
         bot_message = step.get(KEY_BOT_END_TO_END_MESSAGE, "")

@@ -1,7 +1,6 @@
 from typing import Any, Dict, Optional, Text, List
 
 import structlog
-from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
     FlowStackFrameType,
     UserFlowStackFrame,
@@ -56,7 +55,7 @@ class ActionTriggerFlow(action.Action):
 
         Returns:
             The event to start the flow."""
-        stack = DialogueStack.from_tracker(tracker)
+        stack = tracker.stack
         events: List[Event] = []
 
         frame_type = FlowStackFrameType.REGULAR
@@ -75,7 +74,7 @@ class ActionTriggerFlow(action.Action):
                 frame_type=frame_type,
             )
         )
-        return events + [stack.persist_as_event()]
+        return events + tracker.create_stack_updated_events(stack)
 
     def create_events_to_set_flow_slots(self, metadata: Dict[str, Any]) -> List[Event]:
         """Create events to set the flow slots.

@@ -8,7 +8,6 @@ from rasa.dialogue_understanding.commands import Command
 from rasa.dialogue_understanding.patterns.internal_error import (
     InternalErrorPatternFlowStackFrame,
 )
-from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.shared.core.events import Event
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -50,7 +49,7 @@ class ErrorCommand(Command):
         Returns:
             The events to apply to the tracker.
         """
-        dialogue_stack = DialogueStack.from_tracker(tracker)
+        stack = tracker.stack
         structlogger.debug("command_executor.error", command=self)
-        dialogue_stack.push(InternalErrorPatternFlowStackFrame())
-        return [dialogue_stack.persist_as_event()]
+        stack.push(InternalErrorPatternFlowStackFrame())
+        return tracker.create_stack_updated_events(stack)

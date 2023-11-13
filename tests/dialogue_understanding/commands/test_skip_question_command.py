@@ -1,6 +1,10 @@
 from rasa.dialogue_understanding.commands import SkipQuestionCommand
-from rasa.shared.core.constants import DIALOGUE_STACK_SLOT
-from rasa.shared.core.events import SlotSet
+from rasa.dialogue_understanding.patterns.skip_question import (
+    FLOW_PATTERN_SKIP_QUESTION,
+)
+from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
+from rasa.dialogue_understanding.stack.frames.pattern_frame import PatternFlowStackFrame
+from rasa.shared.core.events import DialogueStackUpdated
 from rasa.shared.core.flows.yaml_flows_io import flows_from_str
 from rasa.shared.core.trackers import DialogueStateTracker
 
@@ -38,19 +42,19 @@ def test_run_command_on_tracker():
 
     tracker = DialogueStateTracker.from_events(
         "test",
-        evts=[
-            SlotSet(
-                DIALOGUE_STACK_SLOT,
-                [
-                    {
-                        "type": "flow",
-                        "flow_id": "my_flow",
-                        "step_id": "collect_bar",
-                        "frame_id": "some-frame-id",
-                    },
-                ],
-            ),
-        ],
+        evts=[],
+    )
+    tracker.update_stack(
+        DialogueStack.from_dict(
+            [
+                {
+                    "type": "flow",
+                    "flow_id": "my_flow",
+                    "step_id": "collect_bar",
+                    "frame_id": "some-frame-id",
+                },
+            ]
+        )
     )
     command = SkipQuestionCommand()
 
@@ -58,14 +62,12 @@ def test_run_command_on_tracker():
     assert len(events) == 1
 
     dialogue_stack_event = events[0]
-    assert isinstance(dialogue_stack_event, SlotSet)
-    assert dialogue_stack_event.key == DIALOGUE_STACK_SLOT
+    assert isinstance(dialogue_stack_event, DialogueStackUpdated)
+    updated_stack = tracker.stack.update_from_patch(dialogue_stack_event.update)
 
-    dialogue_stack_dump = dialogue_stack_event.value
-    # flow should still be on the stack and a skip question pattern flow should have
-    # been added
-    assert isinstance(dialogue_stack_dump, list) and len(dialogue_stack_dump) == 2
+    assert len(updated_stack.frames) == 2
 
-    assert dialogue_stack_dump[1]["type"] == "pattern_skip_question"
-    assert dialogue_stack_dump[1]["flow_id"] == "pattern_skip_question"
-    assert dialogue_stack_dump[1]["step_id"] == "START"
+    frame = updated_stack.frames[1]
+    assert isinstance(frame, PatternFlowStackFrame)
+    assert frame.type() == FLOW_PATTERN_SKIP_QUESTION
+    assert frame.step_id == "START"

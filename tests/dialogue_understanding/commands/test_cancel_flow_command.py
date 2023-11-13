@@ -5,10 +5,10 @@ from rasa.dialogue_understanding.patterns.collect_information import (
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import UserFlowStackFrame
-from rasa.shared.core.constants import DIALOGUE_STACK_SLOT
-from rasa.shared.core.events import FlowCancelled, SlotSet
+from rasa.shared.core.events import DialogueStackUpdated, FlowCancelled
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.flows.yaml_flows_io import flows_from_str
+import jsonpatch
 
 
 def test_command_name():
@@ -42,20 +42,20 @@ def test_run_command_on_tracker():
 
     tracker = DialogueStateTracker.from_events(
         "test",
-        evts=[
-            SlotSet(
-                DIALOGUE_STACK_SLOT,
-                [
-                    {
-                        "type": "flow",
-                        "frame_type": "regular",
-                        "flow_id": "foo",
-                        "step_id": "first_step",
-                        "frame_id": "some-frame-id",
-                    }
-                ],
-            )
-        ],
+        evts=[],
+    )
+    tracker.update_stack(
+        DialogueStack.from_dict(
+            [
+                {
+                    "type": "flow",
+                    "frame_type": "regular",
+                    "flow_id": "foo",
+                    "step_id": "first_step",
+                    "frame_id": "some-frame-id",
+                }
+            ]
+        )
     )
     command = CancelFlowCommand()
 
@@ -67,10 +67,11 @@ def test_run_command_on_tracker():
     assert flow_cancelled_event == FlowCancelled("foo", "first_step")
 
     dialogue_stack_event = events[1]
-    assert isinstance(dialogue_stack_event, SlotSet)
-    assert dialogue_stack_event.key == DIALOGUE_STACK_SLOT
+    assert isinstance(dialogue_stack_event, DialogueStackUpdated)
 
-    dialogue_stack_dump = dialogue_stack_event.value
+    patch = jsonpatch.JsonPatch.from_string(dialogue_stack_event.update)
+    dialogue_stack_dump = patch.apply(tracker.stack.as_dict())
+
     # flow should still be on the stack and a cancel flow should have been added
     assert isinstance(dialogue_stack_dump, list) and len(dialogue_stack_dump) == 2
 
@@ -117,7 +118,7 @@ def test_select_canceled_frames_cancels_only_top_user_flow():
 
 
 def test_select_canceled_frames_empty_stack():
-    stack = DialogueStack(frames=[])
+    stack = DialogueStack.empty()
 
     with pytest.raises(ValueError):
         # this shouldn't actually, happen. if the stack is empty we shouldn't
@@ -126,7 +127,7 @@ def test_select_canceled_frames_empty_stack():
 
 
 def test_select_canceled_frames_raises_if_frame_not_found():
-    stack = DialogueStack(frames=[])
+    stack = DialogueStack.empty()
 
     with pytest.raises(ValueError):
         # can't cacenl if there is no user flow on the stack. in reality

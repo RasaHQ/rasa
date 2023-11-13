@@ -3,15 +3,12 @@ import copy
 
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional
-from rasa.dialogue_understanding.stack.frames import DialogueStackFrame
-from rasa.shared.core.constants import (
-    DIALOGUE_STACK_SLOT,
-)
-from rasa.shared.core.events import Event, SlotSet
-from rasa.shared.core.trackers import (
-    DialogueStateTracker,
-)
 import structlog
+import typing
+import jsonpatch
+
+if typing.TYPE_CHECKING:
+    from rasa.dialogue_understanding.stack.frames import DialogueStackFrame
 
 structlogger = structlog.get_logger()
 
@@ -20,7 +17,7 @@ structlogger = structlog.get_logger()
 class DialogueStack:
     """Represents the current dialogue stack."""
 
-    frames: List[DialogueStackFrame]
+    frames: List["DialogueStackFrame"]
 
     @staticmethod
     def from_dict(data: List[Dict[str, Any]]) -> DialogueStack:
@@ -32,9 +29,20 @@ class DialogueStack:
         Returns:
             The created `DialogueStack`.
         """
+        from rasa.dialogue_understanding.stack.frames import DialogueStackFrame
+
         return DialogueStack(
-            [DialogueStackFrame.create_typed_frame(frame) for frame in data]
+            frames=[DialogueStackFrame.create_typed_frame(frame) for frame in data]
         )
+
+    @staticmethod
+    def empty() -> DialogueStack:
+        """Creates an empty `DialogueStack`.
+
+        Returns:
+            The created empty `DialogueStack`.
+        """
+        return DialogueStack(frames=[])
 
     def as_dict(self) -> List[Dict[str, Any]]:
         """Returns the `DialogueStack` as a dictionary.
@@ -47,7 +55,7 @@ class DialogueStack:
     def copy(self) -> DialogueStack:
         return copy.deepcopy(self)
 
-    def push(self, frame: DialogueStackFrame, index: Optional[int] = None) -> None:
+    def push(self, frame: "DialogueStackFrame", index: Optional[int] = None) -> None:
         """Pushes a new frame onto the stack.
 
         If the frame shouldn't be put on top of the stack, the index can be
@@ -63,7 +71,7 @@ class DialogueStack:
         else:
             self.frames.insert(index, frame)
 
-    def update(self, frame: DialogueStackFrame) -> None:
+    def update(self, frame: "DialogueStackFrame") -> None:
         """Updates the topmost frame.
 
         Args:
@@ -74,7 +82,7 @@ class DialogueStack:
 
         self.push(frame)
 
-    def pop(self) -> DialogueStackFrame:
+    def pop(self) -> "DialogueStackFrame":
         """Pops the topmost frame from the stack.
 
         Returns:
@@ -95,8 +103,8 @@ class DialogueStack:
 
     def top(
         self,
-        ignore: Optional[Callable[[DialogueStackFrame], bool]] = None,
-    ) -> Optional[DialogueStackFrame]:
+        ignore: Optional[Callable[["DialogueStackFrame"], bool]] = None,
+    ) -> Optional["DialogueStackFrame"]:
         """Returns the topmost frame from the stack.
 
         Args:
@@ -120,35 +128,51 @@ class DialogueStack:
         """
         return len(self.frames) == 0
 
-    @staticmethod
-    def get_persisted_stack(tracker: DialogueStateTracker) -> List[Dict[str, Any]]:
-        """Returns the persisted stack from the tracker.
-
-        The stack is stored on a slot on the tracker. If the slot is not set,
-        an empty list is returned.
+    def update_from_patch(self, patch_dump: str) -> DialogueStack:
+        """Updates the stack from a patch.
 
         Args:
-            tracker: The tracker to get the stack from.
+            patch_dump: The patch to apply to the stack.
 
         Returns:
-            The persisted stack as a dictionary."""
-        return tracker.get_slot(DIALOGUE_STACK_SLOT) or []
+            The updated stack."""
+        patch = jsonpatch.JsonPatch.from_string(patch_dump)
+        dialogue_stack_dump = patch.apply(self.as_dict())
+        return DialogueStack.from_dict(dialogue_stack_dump)
 
-    def persist_as_event(self) -> Event:
-        """Returns the stack as a slot set event."""
-        return SlotSet(DIALOGUE_STACK_SLOT, self.as_dict())
+    def create_stack_patch(self, updated_stack: DialogueStack) -> Optional[str]:
+        """Creates a patch to update the stack to the updated stack state.
 
-    @staticmethod
-    def from_tracker(tracker: DialogueStateTracker) -> DialogueStack:
-        """Creates a `DialogueStack` from a tracker.
-
-        The stack is read from a slot on the tracker. If the slot is not set,
-        an empty stack is returned.
+        Example:
+            > stack = DialogueStack.from_dict([
+            >     {
+            >         "type": "flow",
+            >         "frame_type": "regular",
+            >         "flow_id": "foo",
+            >         "step_id": "START",
+            >         "frame_id": "test",
+            >     }
+            > ])
+            > updated_stack = DialogueStack.from_dict([
+            >     {
+            >         "type": "flow",
+            >         "frame_type": "regular",
+            >         "flow_id": "foo",
+            >         "step_id": "1",
+            >         "frame_id": "test",
+            >     }
+            > ])
+            > stack.create_stack_patch(updated_stack)
+            '[{"op": "replace", "path": "/0/step_id", "value": "1"}]'
 
         Args:
-            tracker: The tracker to create the `DialogueStack` from.
+            updated_stack: The updated stack.
 
         Returns:
-            The created `DialogueStack`.
+            The patch to update the stack to the updated stack state.
         """
-        return DialogueStack.from_dict(DialogueStack.get_persisted_stack(tracker))
+        patch = jsonpatch.JsonPatch.from_diff(self.as_dict(), updated_stack.as_dict())
+
+        if patch:
+            return patch.to_string()
+        return None
