@@ -4808,14 +4808,14 @@ fire = "*"
 
 [[package]]
 name = "rasa-sdk"
-version = "3.7.0rc1"
+version = "3.7.0rc2"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 category = "main"
 optional = false
 python-versions = ">=3.8,<3.11"
 files = [
-    {file = "rasa_sdk-3.7.0rc1-py3-none-any.whl", hash = "sha256:9891ba85e1ab14039aed1d673eeff70a04652946ab0d539bcca7e7e2c90ae9f6"},
-    {file = "rasa_sdk-3.7.0rc1.tar.gz", hash = "sha256:e9f0142b73be15d26769c12fe31f21f1c347634b4d353964fb5ad6cd18d662b1"},
+    {file = "rasa_sdk-3.7.0rc2-py3-none-any.whl", hash = "sha256:bf9d7c641d9cd7713f942b75a0f11d35c3d123a4280ab1bff33adddbda468441"},
+    {file = "rasa_sdk-3.7.0rc2.tar.gz", hash = "sha256:7d173bfdde6663052d475879891072e8640715ec59f3333bee5f17693a72c653"},
 ]
 
 [package.dependencies]
@@ -7478,4 +7478,4 @@ transformers = ["sentencepiece", "transformers"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8.1,<3.11"
-content-hash = "9ea09829d6962602a5262a66584cbc9db38aa4aba932c3697b7816192dcb95ed"
+content-hash = "b2928b1b671d1d53134a743c1b6ae65ffccd021d464d78be3ef67c44cc734700"
