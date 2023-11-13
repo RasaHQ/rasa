@@ -10,9 +10,8 @@ from rasa.dialogue_understanding.stack.dialogue_stack import (
     DialogueStack,
 )
 from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
-from rasa.shared.core.constants import DIALOGUE_STACK_SLOT
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import SlotSet
+from rasa.shared.core.events import DialogueStackUpdated
 from rasa.shared.core.trackers import DialogueStateTracker
 
 
@@ -81,8 +80,9 @@ async def test_action_clarify_flows_no_clarify_frame(capsys: CaptureFixture) -> 
         "test",
         domain=domain,
         slots=domain.slots,
-        evts=[stack.persist_as_event()],
+        evts=[],
     )
+    tracker.update_stack(stack)
     action = ActionClarifyFlows()
     events = await action.run(
         CollectingOutputChannel(),
@@ -110,8 +110,9 @@ async def test_action_clarify_flows() -> None:
         "test",
         domain=domain,
         slots=domain.slots,
-        evts=[stack.persist_as_event()],
+        evts=[],
     )
+    tracker.update_stack(stack)
     action = ActionClarifyFlows()
     events = await action.run(
         CollectingOutputChannel(),
@@ -119,13 +120,19 @@ async def test_action_clarify_flows() -> None:
         tracker,
         domain,
     )
+
+    assert len(events) == 1
     event = events[0]
-    assert isinstance(event, SlotSet)
-    assert event.key == DIALOGUE_STACK_SLOT
-    assert len(event.value) == 1
-    assert event.value[0]["type"] == ClarifyPatternFlowStackFrame.type()
-    assert event.value[0]["flow_id"] == "pattern_clarification"
-    assert event.value[0]["step_id"] == "1"
-    assert event.value[0]["frame_id"] == "test_id"
-    assert event.value[0]["names"] == ["foo_flow", "bar_flow"]
-    assert event.value[0]["clarification_options"] == "foo_flow or bar_flow"
+    assert isinstance(event, DialogueStackUpdated)
+
+    updated_stack = tracker.stack.update_from_patch(event.update)
+
+    assert len(updated_stack.frames) == 1
+
+    frame = updated_stack.frames[0]
+    assert isinstance(frame, ClarifyPatternFlowStackFrame)
+    assert frame.flow_id == "pattern_clarification"
+    assert frame.step_id == "1"
+    assert frame.frame_id == "test_id"
+    assert frame.names == ["foo_flow", "bar_flow"]
+    assert frame.clarification_options == "foo_flow or bar_flow"

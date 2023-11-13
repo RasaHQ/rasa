@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from typing import Any, Dict, List
 from rasa.dialogue_understanding.commands import FreeFormAnswerCommand
 from rasa.dialogue_understanding.patterns.chitchat import ChitchatPatternFlowStackFrame
-from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.shared.core.events import Event
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -44,6 +43,6 @@ class ChitChatAnswerCommand(FreeFormAnswerCommand):
         Returns:
             The events to apply to the tracker.
         """
-        stack = DialogueStack.from_tracker(tracker)
+        stack = tracker.stack
         stack.push(ChitchatPatternFlowStackFrame())
-        return [stack.persist_as_event()]
+        return tracker.create_stack_updated_events(stack)

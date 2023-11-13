@@ -6,7 +6,6 @@ from typing import Any, Dict, List
 import structlog
 from rasa.dialogue_understanding.commands import Command
 from rasa.dialogue_understanding.patterns.clarify import ClarifyPatternFlowStackFrame
-from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.shared.core.events import Event
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -71,8 +70,8 @@ class ClarifyCommand(Command):
             )
             return []
 
-        stack = DialogueStack.from_tracker(tracker)
+        stack = tracker.stack
         relevant_flows = [all_flows.flow_by_id(opt) for opt in clean_options]
         names = [flow.readable_name() for flow in relevant_flows if flow is not None]
         stack.push(ClarifyPatternFlowStackFrame(names=names))
-        return [stack.persist_as_event()]
+        return tracker.create_stack_updated_events(stack)

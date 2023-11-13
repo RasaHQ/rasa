@@ -36,7 +36,6 @@ from rasa.shared.constants import (
     FLOW_PREFIX,
 )
 from rasa.shared.core.constants import (
-    DIALOGUE_STACK_SLOT,
     USER_INTENT_OUT_OF_SCOPE,
     ACTION_LISTEN_NAME,
     ACTION_RESTART_NAME,
@@ -777,23 +776,6 @@ class RemoteAction(Action):
 
         return bot_messages
 
-    @staticmethod
-    def filter_forbidden_events(events: List[Event]) -> List[Event]:
-        """Filter special events that are not allowed in custom actions."""
-        # filter out `SlotSet` events for internal `dialogue_stack` slot
-        filtered_events = [
-            event
-            for event in events
-            if not (isinstance(event, SlotSet) and event.key == DIALOGUE_STACK_SLOT)
-        ]
-        if len(filtered_events) != len(events):
-            logger.warning(
-                f"Filtered out an event to set {DIALOGUE_STACK_SLOT} via a custom "
-                f"action. Setting this slot is currently limited to "
-                f"built-in actions."
-            )
-        return filtered_events
-
     async def run(
         self,
         output_channel: "OutputChannel",
@@ -846,7 +828,6 @@ class RemoteAction(Action):
             )
 
             events = rasa.shared.core.events.deserialise_events(events_json)
-            events = self.filter_forbidden_events(events)
             return cast(List[Event], bot_messages) + events
 
         except ClientResponseError as e:

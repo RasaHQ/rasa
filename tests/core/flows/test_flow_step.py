@@ -10,6 +10,7 @@ from rasa.shared.core.flows.steps import (
     LinkFlowStep,
     SetSlotsFlowStep,
 )
+from rasa.shared.core.flows.flow_step_links import FlowStepLinks
 from rasa.shared.core.flows.yaml_flows_io import flows_from_str
 
 
@@ -117,3 +118,29 @@ def test_link_step_attributes(flow_with_all_steps: Flow):
     step = flow_with_all_steps.step_by_id("link_step")
     assert isinstance(step, LinkFlowStep)
     assert step.link == "test_flow"
+
+
+def test_flow_step_always_has_an_id_even_if_not_set():
+    step = ActionFlowStep(
+        custom_id=None,
+        idx=0,
+        action="action_listen",
+        description=None,
+        metadata={},
+        next=FlowStepLinks([]),
+    )
+    assert step.id == "0_action_listen"
+    assert step.as_json().get("id") == "0_action_listen"
+
+
+def test_flow_step_dump_uses_explicit_id():
+    step = ActionFlowStep(
+        custom_id="foo",
+        idx=0,
+        action="action_listen",
+        description=None,
+        metadata={},
+        next=FlowStepLinks([]),
+    )
+    assert step.id == "foo"
+    assert step.as_json().get("id") == "foo"

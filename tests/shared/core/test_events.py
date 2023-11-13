@@ -53,6 +53,7 @@ from rasa.shared.core.events import (
     FlowResumed,
     FlowCompleted,
     FlowCancelled,
+    DialogueStackUpdated,
 )
 from rasa.shared.nlu.constants import INTENT_NAME_KEY, METADATA_MODEL_ID
 from tests.core.policies.test_rule_policy import GREET_INTENT_NAME, UTTER_GREET_ACTION
@@ -108,6 +109,10 @@ from tests.core.policies.test_rule_policy import GREET_INTENT_NAME, UTTER_GREET_
             FlowCancelled("my_flow", "my_step"),
             FlowCancelled("my_other_flow", "my_other_step"),
         ),
+        (
+            DialogueStackUpdated("someupdate"),
+            DialogueStackUpdated("anotherupdate"),
+        ),
     ],
 )
 def test_event_has_proper_implementation(one_event, another_event):
@@ -158,6 +163,7 @@ def test_event_has_proper_implementation(one_event, another_event):
         FlowResumed("my_flow", "my_step"),
         FlowCompleted("my_flow", "my_step"),
         FlowCancelled("my_flow", "my_step"),
+        DialogueStackUpdated("someupdate"),
     ],
 )
 def test_dict_serialisation(one_event):
@@ -839,6 +845,10 @@ tested_events = [
         action_text_target="example",
     ),
     WarningPredictedAction(action_name="action_listen", action_name_prediction="test"),
+    DialogueStackUpdated(
+        update="""[{"op": "replace", "path": "/0/step_id",
+                    "value": "0_collect_transfer_money_recipient"}]"""
+    ),
     FlowStarted("foo"),
     FlowInterrupted("foo", "bar"),
     FlowResumed("foo", "bar"),

@@ -1,6 +1,5 @@
 import copy
 import logging
-from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.core.constants import DEFAULT_TEMPLATE_ENGINE, TEMPLATE_ENGINE_CONFIG_KEY
 
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -72,7 +71,7 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
     ) -> Optional[Dict[Text, Any]]:
         """Generate a response for the requested utter action."""
         filled_slots = tracker.current_slot_values()
-        stack_context = DialogueStack.from_tracker(tracker).current_context()
+        stack_context = tracker.stack.current_context()
         return self.generate_from_slots(
             utter_action, filled_slots, stack_context, output_channel, **kwargs
         )

@@ -1,0 +1,9 @@
+version: "3.1"
+
+stories:
+- story: simple_story
+  steps:
+  - user: I want to transfer money
+    commands:
+    - flow: transfer_money
+      command: start flow

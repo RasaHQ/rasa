@@ -5,7 +5,6 @@ from typing import Any, Dict, List
 
 import structlog
 from rasa.dialogue_understanding.commands import Command
-from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
     FlowStackFrameType,
     UserFlowStackFrame,
@@ -62,8 +61,8 @@ class StartFlowCommand(Command):
         Returns:
             The events to apply to the tracker.
         """
-        stack = DialogueStack.from_tracker(tracker)
-        original_stack = DialogueStack.from_tracker(original_tracker)
+        stack = tracker.stack
+        original_stack = original_tracker.stack
         applied_events: List[Event] = []
 
         if self.flow in user_flows_on_the_stack(stack):
@@ -96,4 +95,4 @@ class StartFlowCommand(Command):
 
         structlogger.debug("command_executor.start_flow", command=self)
         stack.push(UserFlowStackFrame(flow_id=self.flow, frame_type=frame_type))
-        return applied_events + [stack.persist_as_event()]
+        return applied_events + tracker.create_stack_updated_events(stack)

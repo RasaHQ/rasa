@@ -982,11 +982,7 @@ class Domain:
             slot.add_default_value()
 
     def _add_flow_slots(self) -> None:
-        """Adds the slots needed for the conversation flows.
-
-        Add a slot called `dialogue_stack_slot` to the list of slots. The value of
-        this slot will be a call stack of the flow ids.
-        """
+        """Adds the slots needed for the conversation flows."""
         from rasa.shared.core.constants import FLOW_SLOT_NAMES
 
         slot_names = [slot.name for slot in self.slots]

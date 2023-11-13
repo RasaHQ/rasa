@@ -28,6 +28,14 @@ mapping:
               user:
                 type: "str"
                 allowempty: False
+              commands:
+                type: "seq"
+                matching: "any"
+                sequence:
+                - type: "map"
+                  mapping:
+                    regex;(.*):
+                      type: "any"
               entities:
                 type: "seq"
                 matching: "any"
@@ -56,6 +64,22 @@ mapping:
               bot:
                 type: "str"
                 allowempty: False
+          - type: "map"
+            mapping:
+              stack:
+                type: "seq"
+                allowempty: False
+                sequence:
+                - type: "map"
+                  mapping:
+                    op:
+                      type: "str"
+                      allowempty: False
+                    path:
+                      type: "str"
+                      allowempty: False
+                    value:
+                      type: "any"
           - type: "map"
             mapping: &slot_was_set_seq
               slot_was_set: &slot_was_set_seq_value

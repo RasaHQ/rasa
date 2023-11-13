@@ -47,7 +47,7 @@ def test_top_flow_frame_uses_pattern():
 
 
 def test_top_flow_frame_handles_empty():
-    stack = DialogueStack(frames=[])
+    stack = DialogueStack.empty()
     assert top_flow_frame(stack) is None
 
 
@@ -64,7 +64,7 @@ def test_top_user_flow_frame():
 
 
 def test_top_user_flow_frame_handles_empty():
-    stack = DialogueStack(frames=[])
+    stack = DialogueStack.empty()
     assert top_user_flow_frame(stack) is None
 
 
@@ -84,7 +84,7 @@ def test_user_flows_on_the_stack():
 
 
 def test_user_flows_on_the_stack_handles_empty():
-    stack = DialogueStack(frames=[])
+    stack = DialogueStack.empty()
     assert user_flows_on_the_stack(stack) == set()
 
 
@@ -132,7 +132,7 @@ def test_filled_slots_for_active_flow_handles_empty():
         """
     )
 
-    stack = DialogueStack(frames=[])
+    stack = DialogueStack.empty()
     assert filled_slots_for_active_flow(stack, all_flows) == set()
 
 
@@ -246,7 +246,7 @@ def test_end_top_user_flow_only_ends_topmost_user_frame():
 
 
 def test_end_top_user_flow_handles_empty():
-    stack = DialogueStack(frames=[])
+    stack = DialogueStack.empty()
     end_top_user_flow(stack)
 
     assert len(stack.frames) == 0
@@ -302,7 +302,7 @@ def test_get_collect_steps_excluding_ask_before_filling_empty_stack() -> None:
             - collect: fgh
         """
     )
-    stack = DialogueStack(frames=[])
+    stack = DialogueStack.empty()
     slots = get_collect_steps_excluding_ask_before_filling_for_active_flow(
         stack, all_flows
     )

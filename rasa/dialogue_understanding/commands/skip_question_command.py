@@ -8,7 +8,6 @@ from rasa.dialogue_understanding.commands import Command
 from rasa.dialogue_understanding.patterns.skip_question import (
     SkipQuestionPatternFlowStackFrame,
 )
-from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.utils import top_user_flow_frame
 from rasa.shared.core.events import Event
 from rasa.shared.core.flows.flows_list import FlowsList
@@ -53,9 +52,8 @@ class SkipQuestionCommand(Command):
         Returns:
             The events to apply to the tracker.
         """
-        stack = DialogueStack.from_tracker(tracker)
-        original_stack = DialogueStack.from_tracker(original_tracker)
-        user_frame = top_user_flow_frame(original_stack)
+        stack = tracker.stack
+        user_frame = top_user_flow_frame(original_tracker.stack)
         current_flow = user_frame.flow(all_flows) if user_frame else None
 
         if not current_flow:
@@ -65,4 +63,4 @@ class SkipQuestionCommand(Command):
             return []
 
         stack.push(SkipQuestionPatternFlowStackFrame())
-        return [stack.persist_as_event()]
+        return tracker.create_stack_updated_events(stack)

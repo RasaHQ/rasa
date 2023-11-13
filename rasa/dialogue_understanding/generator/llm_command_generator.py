@@ -4,7 +4,6 @@ from typing import Dict, Any, List, Optional, Tuple, Union
 
 from jinja2 import Template
 import structlog
-from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 
 from rasa.dialogue_understanding.stack.utils import top_flow_frame
 from rasa.dialogue_understanding.generator import CommandGenerator
@@ -169,7 +168,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         Returns:
             The rendered prompt template.
         """
-        top_relevant_frame = top_flow_frame(DialogueStack.from_tracker(tracker))
+        top_relevant_frame = top_flow_frame(tracker.stack)
         top_flow = top_relevant_frame.flow(flows) if top_relevant_frame else None
         current_step = top_relevant_frame.step(flows) if top_relevant_frame else None
 

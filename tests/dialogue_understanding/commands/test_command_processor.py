@@ -14,7 +14,6 @@ from rasa.dialogue_understanding.processor.command_processor import (
     filter_start_flow_commands,
     find_updated_flows,
 )
-from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import (
     UserFlowStackFrame,
     PatternFlowStackFrame,
@@ -31,8 +30,8 @@ def test_properly_prepared_tracker(tracker: DialogueStateTracker):
     assert "foo" in tracker.get_slot(FLOW_HASHES_SLOT)
 
     # foo flow is on the stack
-    dialogue_stack = DialogueStack.from_tracker(tracker)
-    assert (top_frame := dialogue_stack.top())
+    stack = tracker.stack
+    assert (top_frame := stack.top())
     assert isinstance(top_frame, UserFlowStackFrame)
     assert top_frame.flow_id == "foo"
 
@@ -119,9 +118,9 @@ def test_starting_of_another_flow(tracker: DialogueStateTracker, all_flows: Flow
     """Tests that commands are not discarded when there is no change."""
     tracker.update_with_events([start_bar_user_uttered])
     execute_commands(tracker, all_flows)
-    dialogue_stack = DialogueStack.from_tracker(tracker)
-    assert len(dialogue_stack.frames) == 2
-    assert (top_frame := dialogue_stack.top())
+    stack = tracker.stack
+    assert len(stack.frames) == 2
+    assert (top_frame := stack.top())
     assert isinstance(top_frame, UserFlowStackFrame)
     assert top_frame.flow_id == "bar"
 
@@ -130,9 +129,9 @@ def test_stack_cleaning_command_is_applied_on_changes(tracker: DialogueStateTrac
     all_flows = flows_from_str(change_cases["step_id_changed"])
     tracker.update_with_events([start_bar_user_uttered])
     execute_commands(tracker, all_flows)
-    dialogue_stack = DialogueStack.from_tracker(tracker)
-    assert len(dialogue_stack.frames) == 2
-    assert (top_frame := dialogue_stack.top())
+    stack = tracker.stack
+    assert len(stack.frames) == 2
+    assert (top_frame := stack.top())
     assert isinstance(top_frame, PatternFlowStackFrame)
     assert top_frame.flow_id == FLOW_PATTERN_CODE_CHANGE_ID
 

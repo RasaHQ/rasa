@@ -8,7 +8,6 @@ from rasa.core.actions.action import Action, create_bot_utterance
 from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
 )
-from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.shared.core.constants import ACTION_RUN_SLOT_REJECTIONS_NAME
 from rasa.shared.core.events import Event, SlotSet
 from rasa.shared.core.flows.steps.collect import SlotRejection
@@ -93,7 +92,6 @@ def run_rejections(
     slot_value: Union[str, bool, float, None],
     slot_name: str,
     rejections: List[SlotRejection],
-    dialogue_stack: DialogueStack,
 ) -> Optional[str]:
     """Run the predicate checks under rejections."""
     violation = False
@@ -155,8 +153,7 @@ class ActionRunSlotRejections(Action):
     ) -> List[Event]:
         """Run the predicate checks."""
         utterance = None
-        dialogue_stack = DialogueStack.from_tracker(tracker)
-        top_frame = dialogue_stack.top()
+        top_frame = tracker.stack.top()
         if not isinstance(top_frame, CollectInformationPatternFlowStackFrame):
             return []
 
@@ -174,6 +171,7 @@ class ActionRunSlotRejections(Action):
             return []
 
         slot_value = tracker.get_slot(slot_name)
+
         if slot_instance and slot_instance.has_been_set and slot_value is None:
             return []
 
@@ -184,7 +182,7 @@ class ActionRunSlotRejections(Action):
         elif top_frame.rejections:
             # run the predicate checks under rejections
             utterance = run_rejections(
-                typed_slot_value, slot_name, top_frame.rejections, dialogue_stack
+                typed_slot_value, slot_name, top_frame.rejections
             )
 
         events: List[Event] = []

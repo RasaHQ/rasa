@@ -49,6 +49,7 @@ from rasa.shared.core.constants import (
 )
 from rasa.shared.core.conversation import Dialogue
 from rasa.shared.core.events import (
+    DialogueStackUpdated,
     UserUttered,
     ActionExecuted,
     Event,
@@ -64,10 +65,12 @@ from rasa.shared.core.events import (
 from rasa.shared.core.domain import Domain, State
 from rasa.shared.core.slots import AnySlot, Slot
 
+
 if TYPE_CHECKING:
     from rasa.shared.core.events import NLUPredictionData
     from rasa.shared.core.training_data.structures import Story
     from rasa.shared.core.training_data.story_writer.story_writer import StoryWriter
+    from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 
     EventTypeAlias = TypeVar("EventTypeAlias", bound=Event)
 
@@ -191,6 +194,8 @@ class DialogueStateTracker:
         of them to get the current state. The tracker will represent all the
         information we captured while processing messages of the dialogue.
         """
+        from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
+
         # maximum number of events to store
         self._max_event_history = max_event_history
         # list of previously seen events
@@ -202,6 +207,7 @@ class DialogueStateTracker:
         if slots is not None:
             self.slots = {slot.name: copy.copy(slot) for slot in slots}
 
+        self._underlying_stack = DialogueStack.empty()
         # file source of the messages
         self.sender_source = sender_source
         # whether the tracker belongs to a rule-based data
@@ -247,6 +253,7 @@ class DialogueStateTracker:
             "latest_event_time": latest_event_time,
             FOLLOWUP_ACTION: self.followup_action,
             "paused": self.is_paused(),
+            "stack": self.stack.as_dict(),
             "events": events_as_dict,
             "latest_input_channel": self.get_latest_input_channel(),
             ACTIVE_LOOP: (
@@ -386,6 +393,33 @@ class DialogueStateTracker:
         else:
             logger.info(f"Tried to access non existent slot '{key}'")
             return None
+
+    def create_stack_updated_events(
+        self, updated_stack: "DialogueStack"
+    ) -> List[Event]:
+        """Creates events to update the stack to the given one."""
+        patch = self._underlying_stack.create_stack_patch(updated_stack)
+
+        # if there is no patch, this is a no-op
+        if patch:
+            return [DialogueStackUpdated(patch)]
+        return []
+
+    def update_stack(self, updated_stack: "DialogueStack") -> None:
+        """Set's the updated stack on this tracker."""
+        for event in self.create_stack_updated_events(updated_stack):
+            self.update(event)
+
+    def apply_stack_update(self, update: str) -> None:
+        self._underlying_stack = self._underlying_stack.update_from_patch(update)
+
+    @property
+    def stack(self) -> "DialogueStack":
+        """Returns the current stack as a copy.
+
+        Important, modifying the returned stack does not modify the stack
+        stored on the tracker."""
+        return self._underlying_stack.copy()
 
     def has_bot_message_after_latest_user_message(self) -> bool:
         """Checks if there is a bot message after the most recent user message.

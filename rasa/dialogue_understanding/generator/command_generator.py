@@ -2,7 +2,6 @@ from typing import Any, Dict, List, Optional
 
 import structlog
 
-from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.commands import Command, StartFlowCommand
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -100,7 +99,7 @@ class CommandGenerator:
 
         # Get current context and slots to prepare document for flow guard check.
         return {
-            "context": DialogueStack.from_tracker(tracker).current_context(),
+            "context": tracker.stack.current_context(),
             "slots": tracker.current_slot_values(),
         }
 

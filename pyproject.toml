@@ -159,6 +159,7 @@ dnspython = "2.3.0"
 wheel = ">=0.38.1"
 certifi = ">=2023.7.22"
 cryptography = ">=41.0.2"
+jsonpatch = "^1.33"
 [[tool.poetry.dependencies.tensorflow-io-gcs-filesystem]]
 version = "==0.31"
 markers = "sys_platform == 'win32'"

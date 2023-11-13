@@ -10,9 +10,8 @@ from rasa.dialogue_understanding.stack.dialogue_stack import (
     DialogueStack,
 )
 from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
-from rasa.shared.core.constants import DIALOGUE_STACK_SLOT
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import SlotSet
+from rasa.shared.core.events import DialogueStackUpdated
 from rasa.shared.core.trackers import DialogueStateTracker
 
 
@@ -60,8 +59,9 @@ async def test_action_cancel_flow_no_cancel_frame(capsys: CaptureFixture) -> Non
         "test",
         domain=domain,
         slots=domain.slots,
-        evts=[stack.persist_as_event()],
+        evts=[],
     )
+    tracker.update_stack(stack)
     action = ActionCancelFlow()
     events = await action.run(
         CollectingOutputChannel(),
@@ -87,8 +87,9 @@ async def test_action_cancel_flow_frame_not_found(capsys: CaptureFixture) -> Non
         "test",
         domain=domain,
         slots=domain.slots,
-        evts=[stack.persist_as_event()],
+        evts=[],
     )
+    tracker.update_stack(stack)
     action = ActionCancelFlow()
     events = await action.run(
         CollectingOutputChannel(),
@@ -96,19 +97,7 @@ async def test_action_cancel_flow_frame_not_found(capsys: CaptureFixture) -> Non
         tracker,
         domain,
     )
-    event = events[0]
-    assert isinstance(event, SlotSet)
-    assert event.key == DIALOGUE_STACK_SLOT
-    assert len(event.value) == 2
-    assert event.value[0]["type"] == UserFlowStackFrame.type()
-    assert event.value[0]["flow_id"] == "foo_flow"
-    assert event.value[0]["step_id"] == "1"
-    assert event.value[0]["frame_id"] == "some-id"
-    assert event.value[1]["type"] == CancelPatternFlowStackFrame.type()
-    assert event.value[1]["flow_id"] == "pattern_cancel_flow"
-    assert event.value[1]["step_id"] == "1"
-    assert event.value[1]["frame_id"] == "test_id"
-    assert event.value[1]["canceled_name"] == "foo_flow"
+    assert len(events) == 0
     assert "action.cancel_flow.frame_not_found" in capsys.readouterr().out
 
 
@@ -131,8 +120,9 @@ async def test_action_cancel_flow_single_cancelled_frame() -> None:
         "test",
         domain=domain,
         slots=domain.slots,
-        evts=[stack.persist_as_event()],
+        evts=[],
     )
+    tracker.update_stack(stack)
     action = ActionCancelFlow()
     events = await action.run(
         CollectingOutputChannel(),
@@ -140,23 +130,33 @@ async def test_action_cancel_flow_single_cancelled_frame() -> None:
         tracker,
         Domain.empty(),
     )
+
+    assert len(events) == 1
     event = events[0]
-    assert isinstance(event, SlotSet)
-    assert event.key == DIALOGUE_STACK_SLOT
-    assert len(event.value) == 3
-    assert event.value[0]["type"] == UserFlowStackFrame.type()
-    assert event.value[0]["flow_id"] == "foo_flow"
-    assert event.value[0]["step_id"] == "1"
-    assert event.value[0]["frame_id"] == "some-id"
-    assert event.value[1]["type"] == UserFlowStackFrame.type()
-    assert event.value[1]["flow_id"] == "bar_flow"
-    assert event.value[1]["step_id"] == "NEXT:END"
-    assert event.value[1]["frame_id"] == "some-other-id"
-    assert event.value[2]["type"] == CancelPatternFlowStackFrame.type()
-    assert event.value[2]["flow_id"] == "pattern_cancel_flow"
-    assert event.value[2]["step_id"] == "1"
-    assert event.value[2]["frame_id"] == "test_id"
-    assert event.value[2]["canceled_name"] == "bar_flow"
+    assert isinstance(event, DialogueStackUpdated)
+
+    updated_stack = tracker.stack.update_from_patch(event.update)
+
+    assert len(updated_stack.frames) == 3
+
+    frame = updated_stack.frames[0]
+    assert isinstance(frame, UserFlowStackFrame)
+    assert frame.flow_id == "foo_flow"
+    assert frame.step_id == "1"
+    assert frame.frame_id == "some-id"
+
+    frame = updated_stack.frames[1]
+    assert isinstance(frame, UserFlowStackFrame)
+    assert frame.flow_id == "bar_flow"
+    assert frame.step_id == "NEXT:END"
+    assert frame.frame_id == "some-other-id"
+
+    frame = updated_stack.frames[2]
+    assert isinstance(frame, CancelPatternFlowStackFrame)
+    assert frame.flow_id == "pattern_cancel_flow"
+    assert frame.step_id == "1"
+    assert frame.frame_id == "test_id"
+    assert frame.canceled_name == "bar_flow"
 
 
 async def test_action_cancel_flow_multiple_cancelled_frame() -> None:
@@ -178,8 +178,9 @@ async def test_action_cancel_flow_multiple_cancelled_frame() -> None:
         "test",
         domain=domain,
         slots=domain.slots,
-        evts=[stack.persist_as_event()],
+        evts=[],
     )
+    tracker.update_stack(stack)
     action = ActionCancelFlow()
     events = await action.run(
         CollectingOutputChannel(),
@@ -187,20 +188,28 @@ async def test_action_cancel_flow_multiple_cancelled_frame() -> None:
         tracker,
         Domain.empty(),
     )
+
+    assert len(events) == 1
     event = events[0]
-    assert isinstance(event, SlotSet)
-    assert event.key == DIALOGUE_STACK_SLOT
-    assert len(event.value) == 3
-    assert event.value[0]["type"] == UserFlowStackFrame.type()
-    assert event.value[0]["flow_id"] == "foo_flow"
-    assert event.value[0]["step_id"] == "NEXT:END"
-    assert event.value[0]["frame_id"] == "some-id"
-    assert event.value[1]["type"] == UserFlowStackFrame.type()
-    assert event.value[1]["flow_id"] == "bar_flow"
-    assert event.value[1]["step_id"] == "NEXT:END"
-    assert event.value[1]["frame_id"] == "some-other-id"
-    assert event.value[2]["type"] == CancelPatternFlowStackFrame.type()
-    assert event.value[2]["flow_id"] == "pattern_cancel_flow"
-    assert event.value[2]["step_id"] == "1"
-    assert event.value[2]["frame_id"] == "test_id"
-    assert event.value[2]["canceled_name"] == "bar_flow"
+    assert isinstance(event, DialogueStackUpdated)
+
+    updated_stack = tracker.stack.update_from_patch(event.update)
+
+    assert len(updated_stack.frames) == 3
+
+    frame = updated_stack.frames[0]
+    assert isinstance(frame, UserFlowStackFrame)
+    assert frame.flow_id == "foo_flow"
+    assert frame.step_id == "NEXT:END"
+    assert frame.frame_id == "some-id"
+    frame = updated_stack.frames[1]
+    assert isinstance(frame, UserFlowStackFrame)
+    assert frame.flow_id == "bar_flow"
+    assert frame.step_id == "NEXT:END"
+    assert frame.frame_id == "some-other-id"
+    frame = updated_stack.frames[2]
+    assert isinstance(frame, CancelPatternFlowStackFrame)
+    assert frame.flow_id == "pattern_cancel_flow"
+    assert frame.step_id == "1"
+    assert frame.frame_id == "test_id"
+    assert frame.canceled_name == "bar_flow"
