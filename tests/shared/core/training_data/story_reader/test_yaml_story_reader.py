@@ -33,7 +33,13 @@ from rasa.shared.constants import (
 from rasa.shared.core.constants import RULE_SNIPPET_ACTION_NAME
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.training_data import loading
-from rasa.shared.core.events import ActionExecuted, UserUttered, SlotSet, ActiveLoop
+from rasa.shared.core.events import (
+    ActionExecuted,
+    UserUttered,
+    SlotSet,
+    ActiveLoop,
+    DialogueStackUpdated,
+)
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     YAMLStoryReader,
     DEFAULT_VALUE_TEXT_SLOTS,
@@ -1145,3 +1151,23 @@ async def test_unpack_regex_message_has_correct_entity_start_and_end():
             }
         ],
     }
+
+
+def test_yaml_stack_update_is_parsed(domain: Domain) -> None:
+    yaml_file = "data/test_yaml_stories/stack_update.yml"
+
+    tracker = training.load_data(
+        yaml_file,
+        domain,
+        use_story_concatenation=False,
+        tracker_limit=1000,
+        remove_duplicates=False,
+    )
+
+    assert tracker[0].events[0] == DialogueStackUpdated(
+        update=(
+            '[{"op": "add", "path": "/0", '
+            '"value": {"frame_id": "8UJPHH5C", "flow_id": "transfer_money", '
+            '"step_id": "START", "frame_type": "regular", "type": "flow"}}]'
+        )
+    )

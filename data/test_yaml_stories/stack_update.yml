@@ -1,0 +1,12 @@
+stories:
+  - story: stack_update_story
+    steps:
+    - stack:
+      - op: add
+        path: /0
+        value:
+          frame_id: 8UJPHH5C
+          flow_id: transfer_money
+          step_id: START
+          frame_type: regular
+          type: flow

@@ -57,6 +57,22 @@ mapping:
                 type: "str"
                 allowempty: False
           - type: "map"
+            mapping:
+              stack:
+                type: "seq"
+                allowempty: False
+                sequence:
+                - type: "map"
+                  mapping:
+                    op:
+                      type: "str"
+                      allowempty: False
+                    path:
+                      type: "str"
+                      allowempty: False
+                    value:
+                      type: "any"
+          - type: "map"
             mapping: &slot_was_set_seq
               slot_was_set: &slot_was_set_seq_value
                 type: "seq"

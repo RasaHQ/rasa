@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Text, Union, Optional
 
 from ruamel import yaml
+import json
 from ruamel.yaml.comments import CommentedMap
 from ruamel.yaml.scalarstring import DoubleQuotedScalarString, LiteralScalarString
 
@@ -10,12 +11,14 @@ import rasa.shared.utils.io
 import rasa.shared.core.constants
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 import rasa.shared.core.events
+from rasa.shared.core.constants import FLOW_HASHES_SLOT
 from rasa.shared.core.events import (
     UserUttered,
     ActionExecuted,
     SlotSet,
     ActiveLoop,
     Event,
+    DialogueStackUpdated,
 )
 
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
@@ -37,6 +40,7 @@ from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     KEY_WAIT_FOR_USER_INPUT_AFTER_RULE,
     KEY_RULE_CONDITION,
     KEY_RULE_NAME,
+    KEY_STACK_UPDATE,
 )
 
 from rasa.shared.core.training_data.story_writer.story_writer import StoryWriter
@@ -167,6 +171,8 @@ class YAMLStoryWriter(StoryWriter):
             return self.process_slot(event)
         if isinstance(event, ActiveLoop):
             return self.process_active_loop(event)
+        if isinstance(event, DialogueStackUpdated):
+            return self.process_stack(event)
         return None
 
     @staticmethod
@@ -300,7 +306,7 @@ class YAMLStoryWriter(StoryWriter):
         return result
 
     @staticmethod
-    def process_slot(event: SlotSet) -> OrderedDict:
+    def process_slot(event: SlotSet) -> Optional[OrderedDict]:
         """Converts a single `SlotSet` event into an ordered dict.
 
         Args:
@@ -309,7 +315,22 @@ class YAMLStoryWriter(StoryWriter):
         Returns:
             OrderedDict with an `SlotSet` event.
         """
+        if event.key == FLOW_HASHES_SLOT:
+            # this is a build in slot which should not be persisted
+            return None
         return OrderedDict([(KEY_SLOT_NAME, [{event.key: event.value}])])
+
+    @staticmethod
+    def process_stack(event: DialogueStackUpdated) -> OrderedDict:
+        """Converts a stack event into an ordered dict.
+
+        Args:
+            event: Original stack event.
+
+        Returns:
+            OrderedDict with a stack event.
+        """
+        return OrderedDict([(KEY_STACK_UPDATE, json.loads(event.update))])
 
     @staticmethod
     def process_checkpoints(checkpoints: List[Checkpoint]) -> List[OrderedDict]:
