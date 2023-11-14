@@ -1,6 +1,7 @@
 from rasa.dialogue_understanding.commands import ErrorCommand
-from rasa.dialogue_understanding.patterns.internal_error import \
-    InternalErrorPatternFlowStackFrame
+from rasa.dialogue_understanding.patterns.internal_error import (
+    InternalErrorPatternFlowStackFrame,
+)
 from rasa.dialogue_understanding.stack.frames.pattern_frame import PatternFlowStackFrame
 from rasa.shared.constants import RASA_PATTERN_INTERNAL_ERROR_DEFAULT
 from rasa.shared.core.events import DialogueStackUpdated

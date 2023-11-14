@@ -14,7 +14,7 @@ def test_internal_error_pattern_flow_stack_frame_from_dict() -> None:
             "frame_id": "test_id",
             "step_id": "test_step_id",
             "error_type": "test_error_type",
-            "info": {"test_info_field": "test_info_value"}
+            "info": {"test_info_field": "test_info_value"},
         }
     )
     assert frame.frame_id == "test_id"
