@@ -14,14 +14,14 @@ from rasa.shared.utils.llm import (
 
 from rasa.shared.utils.llm import (
     DEFAULT_OPENAI_TEMPERATURE,
-    DEFAULT_OPENAI_GENERATE_MODEL_NAME,
+    DEFAULT_OPENAI_CHAT_MODEL_NAME_ADVANCED,
 )
 
 DEFAULT_LLM_CONFIG = {
     "_type": "openai",
-    "request_timeout": 5,
+    "request_timeout": 7,
     "temperature": DEFAULT_OPENAI_TEMPERATURE,
-    "model_name": DEFAULT_OPENAI_GENERATE_MODEL_NAME,
+    "model_name": DEFAULT_OPENAI_CHAT_MODEL_NAME_ADVANCED,
     "max_tokens": DEFAULT_OPENAI_MAX_GENERATED_TOKENS,
 }
 structlogger = structlog.get_logger()
