@@ -22,7 +22,6 @@ from rasa.dialogue_understanding.commands import (
     SkipQuestionCommand,
     KnowledgeAnswerCommand,
     ClarifyCommand,
-    UserInputExceedsLimitErrorCommand,
 )
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
@@ -42,6 +41,7 @@ from rasa.shared.core.slots import (
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.utils.llm import DEFAULT_MAX_USER_INPUT_CHARACTERS
 from tests.utilities import flows_from_str
 
 
@@ -98,45 +98,28 @@ class TestLLMCommandGenerator:
         assert generator.prompt_template.startswith(
             "Your task is to analyze the current conversation"
         )
-        assert generator.message_limit is None
+        assert (
+            generator.user_input_config.max_characters
+            == DEFAULT_MAX_USER_INPUT_CHARACTERS
+        )
 
     @pytest.mark.parametrize(
-        "config, expected_limit_exists, expected_limit, expected_unit",
+        "config, expected_limit",
         [
-            ({"user_message_length_limit": {"limit": 100}}, True, 100, "characters"),
+            ({"user_input": {"max_characters": 100}}, 100),
+            ({"user_input": {"max_characters": -1}}, -1),
             (
-                {"user_message_length_limit": {"limit": 100, "unit": "words"}},
-                True,
-                100,
-                "words",
+                {"user_input": {"max_characters": None}},
+                DEFAULT_MAX_USER_INPUT_CHARACTERS,
             ),
-            ({"user_message_length_limit": {"unit": "characters"}}, False, None, None),
-            (
-                {"user_message_length_limit": {"limit": -1, "unit": "words"}},
-                False,
-                None,
-                None,
-            ),
-            (
-                {"user_message_length_limit": {"limit": 0, "unit": "words"}},
-                False,
-                None,
-                None,
-            ),
-            (
-                {"user_message_length_limit": {"limit": -123, "unit": "words"}},
-                False,
-                None,
-                None,
-            ),
+            ({"user_input": None}, DEFAULT_MAX_USER_INPUT_CHARACTERS),
+            ({"user_input": {}}, DEFAULT_MAX_USER_INPUT_CHARACTERS),
         ],
     )
     def test_llm_command_generator_init_with_message_length_limit(
         self,
         config: Dict[Text, Any],
-        expected_limit_exists: bool,
         expected_limit: Optional[int],
-        expected_unit: Optional[Text],
         model_storage: ModelStorage,
         resource: Resource,
     ) -> None:
@@ -145,22 +128,7 @@ class TestLLMCommandGenerator:
             model_storage,
             resource,
         )
-        if expected_limit_exists:
-            assert generator.message_limit is not None
-            assert generator.message_limit.limit == expected_limit
-            assert generator.message_limit.unit == expected_unit
-        else:
-            assert generator.message_limit is None
-
-    def test_llm_command_generator_init_with_invalid_message_limit_unit(
-        self, model_storage: ModelStorage, resource: Resource
-    ):
-        with pytest.raises(ValueError):
-            LLMCommandGenerator(
-                {"user_message_length_limit": {"unit": "i don't exist", "limit": 100}},
-                model_storage,
-                resource,
-            )
+        assert generator.user_input_config.max_characters == expected_limit
 
     def test_predict_commands_with_no_flows(
         self, command_generator: LLMCommandGenerator
@@ -224,7 +192,7 @@ class TestLLMCommandGenerator:
             # Then
             mock_check_if_message_exceeds_limit.assert_called_once()
             assert len(predicted_commands) == 1
-            assert isinstance(predicted_commands[0], UserInputExceedsLimitErrorCommand)
+            assert isinstance(predicted_commands[0], ErrorCommand)
 
     def test_generate_action_list_calls_llm_factory_correctly(
         self,
@@ -549,28 +517,24 @@ class TestLLMCommandGenerator:
         assert is_extractable
 
     @pytest.mark.parametrize(
-        "message, limit, unit, expected_exceeds_limit",
+        "message, max_characters, expected_exceeds_limit",
         [
-            ("Hello", 5, "characters", False),
-            ("Hello! I'm a long message", 3, "characters", True),
-            ("Hello", 3, "words", False),
-            ("Hello! I'm a long message", 3, "words", True),
-            ("Hello! I'm a long message", -1, "characters", False),
-            ("Hello! I'm a long message", -1, "words", False),
+            ("Hello", 5, False),
+            ("Hello! I'm a long message", 3, True),
+            ("Hello! I'm a long message", -1, False),
         ],
     )
     def test_check_if_message_exceeds_limit(
         self,
         message: Text,
-        limit: int,
-        unit: Text,
+        max_characters: int,
         expected_exceeds_limit: bool,
         model_storage: ModelStorage,
         resource: Resource,
     ):
         # Given
         generator = LLMCommandGenerator(
-            {"user_message_length_limit": {"unit": unit, "limit": limit}},
+            {"user_input": {"max_characters": max_characters}},
             model_storage,
             resource,
         )

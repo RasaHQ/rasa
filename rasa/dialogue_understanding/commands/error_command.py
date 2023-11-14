@@ -1,13 +1,15 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Text
 
 import structlog
+
 from rasa.dialogue_understanding.commands import Command
 from rasa.dialogue_understanding.patterns.internal_error import (
     InternalErrorPatternFlowStackFrame,
 )
+from rasa.shared.constants import RASA_PATTERN_INTERNAL_ERROR_DEFAULT
 from rasa.shared.core.events import Event
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -19,8 +21,8 @@ structlogger = structlog.get_logger()
 class ErrorCommand(Command):
     """A command to indicate that the bot failed to handle the dialogue."""
 
-    message: Optional[str] = None
-    """Optional message to be uttered to the user"""
+    error_type: Text = RASA_PATTERN_INTERNAL_ERROR_DEFAULT
+    info: Dict[Text, Any] = field(default_factory=dict)
 
     @classmethod
     def command(cls) -> str:
@@ -34,7 +36,10 @@ class ErrorCommand(Command):
         Returns:
             The converted dictionary.
         """
-        return ErrorCommand(message=data.get("message"))
+        return ErrorCommand(
+            error_type=data.get("error_type", RASA_PATTERN_INTERNAL_ERROR_DEFAULT),
+            info=data.get("info", {}),
+        )
 
     def run_command_on_tracker(
         self,
@@ -54,5 +59,7 @@ class ErrorCommand(Command):
         """
         stack = tracker.stack
         structlogger.debug("command_executor.error", command=self)
-        stack.push(InternalErrorPatternFlowStackFrame(message=self.message))
+        stack.push(InternalErrorPatternFlowStackFrame(
+            error_type=self.error_type, info=self.info
+        ))
         return tracker.create_stack_updated_events(stack)

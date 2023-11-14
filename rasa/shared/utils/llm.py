@@ -31,6 +31,8 @@ DEFAULT_OPENAI_TEMPERATURE = 0.7
 
 DEFAULT_OPENAI_MAX_GENERATED_TOKENS = 256
 
+DEFAULT_MAX_USER_INPUT_CHARACTERS = 420
+
 
 def tracker_as_readable_transcript(
     tracker: DialogueStateTracker,

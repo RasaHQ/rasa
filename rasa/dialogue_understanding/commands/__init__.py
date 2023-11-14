@@ -16,10 +16,7 @@ from rasa.dialogue_understanding.commands.can_not_handle_command import (
     CannotHandleCommand,
 )
 from rasa.dialogue_understanding.commands.clarify_command import ClarifyCommand
-from rasa.dialogue_understanding.commands.error.error_command import ErrorCommand
-from rasa.dialogue_understanding.commands.error.user_input_exceeds_limit_error_command import (  # noqa: E501
-    UserInputExceedsLimitErrorCommand,
-)
+from rasa.dialogue_understanding.commands.error_command import ErrorCommand
 from rasa.dialogue_understanding.commands.set_slot_command import SetSlotCommand
 from rasa.dialogue_understanding.commands.start_flow_command import StartFlowCommand
 from rasa.dialogue_understanding.commands.human_handoff_command import (
@@ -44,7 +41,5 @@ __all__ = [
     "HumanHandoffCommand",
     "CorrectSlotsCommand",
     "CorrectedSlot",
-    # error commands
     "ErrorCommand",
-    "UserInputExceedsLimitErrorCommand",
 ]

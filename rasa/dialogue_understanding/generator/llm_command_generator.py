@@ -1,7 +1,7 @@
 import importlib.resources
 import re
-from collections import namedtuple
-from typing import Dict, Any, List, Optional, Tuple, Union, Callable, Text
+from dataclasses import dataclass
+from typing import Dict, Any, List, Optional, Tuple, Union
 
 import structlog
 from jinja2 import Template
@@ -17,7 +17,6 @@ from rasa.dialogue_understanding.commands import (
     SkipQuestionCommand,
     KnowledgeAnswerCommand,
     ClarifyCommand,
-    UserInputExceedsLimitErrorCommand,
 )
 from rasa.dialogue_understanding.generator import CommandGenerator
 from rasa.dialogue_understanding.stack.utils import top_flow_frame
@@ -25,6 +24,7 @@ from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.shared.constants import RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG
 from rasa.shared.core.flows import FlowStep, Flow, FlowsList
 from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
 from rasa.shared.core.slots import (
@@ -43,11 +43,9 @@ from rasa.shared.utils.llm import (
     llm_factory,
     tracker_as_readable_transcript,
     sanitize_message_for_prompt,
+    DEFAULT_MAX_USER_INPUT_CHARACTERS,
 )
-from rasa.shared.utils.text_length_validators import (
-    validate_text_length_in_characters,
-    validate_text_length_in_words,
-)
+
 
 DEFAULT_COMMAND_PROMPT_TEMPLATE = importlib.resources.read_text(
     "rasa.dialogue_understanding.generator", "command_prompt_template.jinja2"
@@ -62,12 +60,27 @@ DEFAULT_LLM_CONFIG = {
 }
 
 LLM_CONFIG_KEY = "llm"
-MESSAGE_LIMIT_CONFIG_KEY = "user_message_length_limit"
+USER_INPUT_CONFIG_KEY = "user_input"
 
 structlogger = structlog.get_logger()
 
-MessageLimitConfig = namedtuple("MessageLimitConfig", "limit unit")
-"""Represents the configuration for message limit settings."""
+
+@dataclass
+class UserInputConfig:
+    """Configuration class for user input settings."""
+
+    max_characters: int = DEFAULT_MAX_USER_INPUT_CHARACTERS
+    """The maximum number of characters allowed in the user input."""
+
+    def __post_init__(self) -> None:
+        if self.max_characters is None:
+            self.max_characters = DEFAULT_MAX_USER_INPUT_CHARACTERS
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "UserInputConfig":
+        return cls(
+            max_characters=data.get("max_characters", DEFAULT_MAX_USER_INPUT_CHARACTERS)
+        )
 
 
 @DefaultV1Recipe.register(
@@ -80,20 +93,13 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
     """An LLM-based command generator."""
 
     @staticmethod
-    def get_message_limit_validators() -> Dict[Text, Callable]:
-        return {
-            "characters": validate_text_length_in_characters,
-            "words": validate_text_length_in_words,
-        }
-
-    @staticmethod
-    def get_message_limit_validator(unit: Text) -> Optional[Callable]:
-        return LLMCommandGenerator.get_message_limit_validators().get(unit)
-
-    @staticmethod
     def get_default_config() -> Dict[str, Any]:
         """The component's default config (see parent class for full docstring)."""
-        return {"prompt": None, LLM_CONFIG_KEY: None, MESSAGE_LIMIT_CONFIG_KEY: None}
+        return {
+            "prompt": None,
+            USER_INPUT_CONFIG_KEY: None,
+            LLM_CONFIG_KEY: None,
+        }
 
     def __init__(
         self,
@@ -106,35 +112,11 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             config.get("prompt"),
             DEFAULT_COMMAND_PROMPT_TEMPLATE,
         )
+        self.user_input_config = UserInputConfig.from_dict(
+            config.get("user_input") or {}
+        )
         self._model_storage = model_storage
         self._resource = resource
-        # add lambdas to populate everything beside the message
-        self.message_limit = self._parse_message_limit_config(config)
-
-    def _parse_message_limit_config(
-        self, config: Dict[str, Any]
-    ) -> Optional["MessageLimitConfig"]:
-
-        validators = self.get_message_limit_validators()
-        message_limit_config = config.get(MESSAGE_LIMIT_CONFIG_KEY) or {}
-        limit = message_limit_config.get("limit")
-        unit = message_limit_config.get("unit", "characters")
-
-        if unit not in validators:
-            valid_units = ", ".join(validators.keys())
-            raise ValueError(f"Invalid unit {unit}, choose: {valid_units}")
-
-        if limit is None or limit < 1:
-            structlogger.info(
-                "llm_command_generator.init_message_limits.no_limit", config=config
-            )
-            return None
-
-        structlogger.info(
-            "llm_command_generator.init_message_limits.set_limit",
-            config=config,
-        )
-        return MessageLimitConfig(limit, unit)
 
     @classmethod
     def create(
@@ -189,7 +171,12 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
 
         if self.check_if_message_exceeds_limit(message):
             # notify the user about message length
-            return [UserInputExceedsLimitErrorCommand()]
+            return [
+                ErrorCommand(
+                    error_type=RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
+                    info={"max_characters": self.user_input_config.max_characters},
+                )
+            ]
 
         flow_prompt = self.render_template(message, tracker, flows)
         structlogger.info(
@@ -494,15 +481,8 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         )
 
     def check_if_message_exceeds_limit(self, message: Message) -> bool:
-        """Checks if the given message exceeds the predefined limit."""
-
-        # if limit couldn't be set, omit it
-        if not self.message_limit:
+        """Checks if the given message exceeds the predefined number of characters."""
+        # if limit was a negative number, omit it
+        if self.user_input_config.max_characters < 0:
             return False
-
-        # prepare validators common arguments
-        common_kwargs = {"limit": self.message_limit.limit}
-
-        # get validator function and apply it
-        validator_fn = self.get_message_limit_validator(self.message_limit.unit)
-        return validator_fn(text=message.get(TEXT, ""), **common_kwargs)
+        return len(message.get(TEXT, "")) > self.user_input_config.max_characters
