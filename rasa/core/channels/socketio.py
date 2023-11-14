@@ -1,3 +1,4 @@
+import inspect
 import logging
 import uuid
 import json
@@ -229,7 +230,12 @@ class SocketIOInput(InputChannel):
             if "session_id" not in data or data["session_id"] is None:
                 data["session_id"] = uuid.uuid4().hex
             if self.session_persistence:
-                sio.enter_room(sid, data["session_id"])
+                if inspect.iscoroutinefunction(sio.enter_room):
+                    await sio.enter_room(sid, data["session_id"])
+                else:
+                    # for backwards compatibility with python-socketio < 5.10.
+                    # previously, this function was NOT async.
+                    sio.enter_room(sid, data["session_id"])
             await sio.emit("session_confirm", data["session_id"], room=sid)
             logger.debug(f"User {sid} connected to socketIO endpoint.")
 
