@@ -60,11 +60,6 @@ responses:
   utter_internal_error_rasa:
     - text: Sorry, I am having trouble with that. Please try again in a few minutes.
 
-  utter_user_input_too_long_error_rasa:
-    - text: I'm sorry, but your message is too long for me to process. Please keep your message concise and within {% if context.info.max_characters %}{{context.info.max_characters}} characters.{% else %}a reasonable length.{% endif %}
-      metadata:
-        template: jinja
-
   utter_no_knowledge_base:
     - text: I am afraid, I don't know the answer. At this point, I don't have access to a knowledge base.
       metadata:
@@ -74,6 +69,11 @@ responses:
     - text: I'm here to provide you with the best assistance, and in order to do so, I kindly request that we complete this step together. Your input is essential for a seamless experience!
       metadata:
         rephrase: True
+
+  utter_user_input_too_long_error_rasa:
+    - text: I'm sorry, but your message is too long for me to process. Please keep your message concise and within {% if context.info.max_characters %}{{context.info.max_characters}} characters.{% else %}a reasonable length.{% endif %}
+      metadata:
+        template: jinja
 
 slots:
   confirm_correction:
