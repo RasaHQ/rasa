@@ -27,7 +27,6 @@ from rasa.dialogue_understanding.commands.correct_slots_command import (
     CorrectedSlot,
 )
 
-
 __all__ = [
     "Command",
     "FreeFormAnswerCommand",
@@ -37,10 +36,10 @@ __all__ = [
     "SkipQuestionCommand",
     "CannotHandleCommand",
     "ClarifyCommand",
-    "ErrorCommand",
     "SetSlotCommand",
     "StartFlowCommand",
     "HumanHandoffCommand",
     "CorrectSlotsCommand",
     "CorrectedSlot",
+    "ErrorCommand",
 ]

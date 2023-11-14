@@ -1,6 +1,6 @@
 import uuid
 
-from typing import Optional
+from typing import Optional, Dict, Text, Any
 from unittest.mock import Mock, patch
 
 import pytest
@@ -26,6 +26,7 @@ from rasa.dialogue_understanding.commands import (
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.shared.constants import RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG
 from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
 from rasa.shared.core.flows.steps.collect import (
     SlotRejection,
@@ -41,6 +42,7 @@ from rasa.shared.core.slots import (
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.utils.llm import DEFAULT_MAX_USER_INPUT_CHARACTERS
 from tests.utilities import flows_from_str
 
 
@@ -82,7 +84,9 @@ class TestLLMCommandGenerator:
         self, model_storage: ModelStorage, resource: Resource
     ) -> None:
         generator = LLMCommandGenerator(
-            {"prompt": "data/test_prompt_templates/test_prompt.jinja2"},
+            {
+                "prompt": "data/test_prompt_templates/test_prompt.jinja2",
+            },
             model_storage,
             resource,
         )
@@ -95,6 +99,37 @@ class TestLLMCommandGenerator:
         assert generator.prompt_template.startswith(
             "Your task is to analyze the current conversation"
         )
+        assert (
+            generator.user_input_config.max_characters
+            == DEFAULT_MAX_USER_INPUT_CHARACTERS
+        )
+
+    @pytest.mark.parametrize(
+        "config, expected_limit",
+        [
+            ({"user_input": {"max_characters": 100}}, 100),
+            ({"user_input": {"max_characters": -1}}, -1),
+            (
+                {"user_input": {"max_characters": None}},
+                DEFAULT_MAX_USER_INPUT_CHARACTERS,
+            ),
+            ({"user_input": None}, DEFAULT_MAX_USER_INPUT_CHARACTERS),
+            ({"user_input": {}}, DEFAULT_MAX_USER_INPUT_CHARACTERS),
+        ],
+    )
+    def test_llm_command_generator_init_with_message_length_limit(
+        self,
+        config: Dict[Text, Any],
+        expected_limit: Optional[int],
+        model_storage: ModelStorage,
+        resource: Resource,
+    ) -> None:
+        generator = LLMCommandGenerator(
+            config,
+            model_storage,
+            resource,
+        )
+        assert generator.user_input_config.max_characters == expected_limit
 
     def test_predict_commands_with_no_flows(
         self, command_generator: LLMCommandGenerator
@@ -119,6 +154,51 @@ class TestLLMCommandGenerator:
         )
         # Then
         assert not predicted_commands
+
+    def test_predict_commands_with_long_message(
+        self, model_storage: ModelStorage, resource: Resource
+    ):
+        """Test that predict_commands returns UserInputExceedsLimitErrorCommand"""
+        # Given
+        generator = LLMCommandGenerator({}, model_storage, resource)
+        test_tracker = DialogueStateTracker.from_events(
+            sender_id="test",
+            evts=[UserUttered("Hello"), BotUttered("Hi")],
+        )
+        test_flows = flows_from_str(
+            """
+            flows:
+              test_flow:
+                description: some description
+                steps:
+                - id: first_step
+                  collect: test_slot
+            """
+        )
+
+        with patch(
+            "rasa.dialogue_understanding.generator"
+            ".llm_command_generator"
+            ".LLMCommandGenerator"
+            ".check_if_message_exceeds_limit"
+        ) as mock_check_if_message_exceeds_limit:
+
+            mock_check_if_message_exceeds_limit.return_value = True
+
+            # When
+            predicted_commands = generator.predict_commands(
+                Mock(), flows=test_flows, tracker=test_tracker
+            )
+
+            # Then
+            mock_check_if_message_exceeds_limit.assert_called_once()
+            assert len(predicted_commands) == 1
+            predicted_command = next(iter(predicted_commands))
+            assert isinstance(predicted_command, ErrorCommand)
+            assert (
+                predicted_command.error_type
+                == RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG
+            )
 
     def test_generate_action_list_calls_llm_factory_correctly(
         self,
@@ -441,3 +521,30 @@ class TestLLMCommandGenerator:
         )
         # Then
         assert is_extractable
+
+    @pytest.mark.parametrize(
+        "message, max_characters, expected_exceeds_limit",
+        [
+            ("Hello", 5, False),
+            ("Hello! I'm a long message", 3, True),
+            ("Hello! I'm a long message", -1, False),
+        ],
+    )
+    def test_check_if_message_exceeds_limit(
+        self,
+        message: Text,
+        max_characters: int,
+        expected_exceeds_limit: bool,
+        model_storage: ModelStorage,
+        resource: Resource,
+    ):
+        # Given
+        generator = LLMCommandGenerator(
+            {"user_input": {"max_characters": max_characters}},
+            model_storage,
+            resource,
+        )
+        message = Message.build(text=message)
+        # When
+        exceeds_limit = generator.check_if_message_exceeds_limit(message)
+        assert exceeds_limit == expected_exceeds_limit

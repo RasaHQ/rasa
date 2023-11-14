@@ -70,6 +70,11 @@ responses:
       metadata:
         rephrase: True
 
+  utter_user_input_too_long_error_rasa:
+    - text: I'm sorry, but your message is too long for me to process. Please keep your message concise and within {% if context.info.max_characters %}{{context.info.max_characters}} characters.{% else %}a reasonable length.{% endif %}
+      metadata:
+        template: jinja
+
 slots:
   confirm_correction:
     type: bool
@@ -159,7 +164,14 @@ flows:
     description: internal error
     name: pattern internal error
     steps:
-      - action: utter_internal_error_rasa
+      - next:
+        - if: "'{{context.error_type}}' == 'rasa_internal_error_user_input_too_long'"
+          then:
+          - action: utter_user_input_too_long_error_rasa
+            next: "END"
+        - else:
+            - action: utter_internal_error_rasa
+              next: "END"
 
   pattern_search:
     description: handle a knowledge-based question or request

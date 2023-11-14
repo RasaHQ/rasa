@@ -1,12 +1,11 @@
 import importlib.resources
 import re
+from dataclasses import dataclass
 from typing import Dict, Any, List, Optional, Tuple, Union
 
-from jinja2 import Template
 import structlog
+from jinja2 import Template
 
-from rasa.dialogue_understanding.stack.utils import top_flow_frame
-from rasa.dialogue_understanding.generator import CommandGenerator
 from rasa.dialogue_understanding.commands import (
     Command,
     ErrorCommand,
@@ -19,18 +18,21 @@ from rasa.dialogue_understanding.commands import (
     KnowledgeAnswerCommand,
     ClarifyCommand,
 )
+from rasa.dialogue_understanding.generator import CommandGenerator
+from rasa.dialogue_understanding.stack.utils import top_flow_frame
 from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.shared.constants import RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG
 from rasa.shared.core.flows import FlowStep, Flow, FlowsList
 from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
-from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.slots import (
     BooleanSlot,
     CategoricalSlot,
     Slot,
 )
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -41,7 +43,9 @@ from rasa.shared.utils.llm import (
     llm_factory,
     tracker_as_readable_transcript,
     sanitize_message_for_prompt,
+    DEFAULT_MAX_USER_INPUT_CHARACTERS,
 )
+
 
 DEFAULT_COMMAND_PROMPT_TEMPLATE = importlib.resources.read_text(
     "rasa.dialogue_understanding.generator", "command_prompt_template.jinja2"
@@ -56,8 +60,27 @@ DEFAULT_LLM_CONFIG = {
 }
 
 LLM_CONFIG_KEY = "llm"
+USER_INPUT_CONFIG_KEY = "user_input"
 
 structlogger = structlog.get_logger()
+
+
+@dataclass
+class UserInputConfig:
+    """Configuration class for user input settings."""
+
+    max_characters: int = DEFAULT_MAX_USER_INPUT_CHARACTERS
+    """The maximum number of characters allowed in the user input."""
+
+    def __post_init__(self) -> None:
+        if self.max_characters is None:
+            self.max_characters = DEFAULT_MAX_USER_INPUT_CHARACTERS
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "UserInputConfig":
+        return cls(
+            max_characters=data.get("max_characters", DEFAULT_MAX_USER_INPUT_CHARACTERS)
+        )
 
 
 @DefaultV1Recipe.register(
@@ -72,7 +95,11 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
     @staticmethod
     def get_default_config() -> Dict[str, Any]:
         """The component's default config (see parent class for full docstring)."""
-        return {"prompt": None, LLM_CONFIG_KEY: None}
+        return {
+            "prompt": None,
+            USER_INPUT_CONFIG_KEY: None,
+            LLM_CONFIG_KEY: None,
+        }
 
     def __init__(
         self,
@@ -84,6 +111,9 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         self.prompt_template = get_prompt_template(
             config.get("prompt"),
             DEFAULT_COMMAND_PROMPT_TEMPLATE,
+        )
+        self.user_input_config = UserInputConfig.from_dict(
+            config.get("user_input") or {}
         )
         self._model_storage = model_storage
         self._resource = resource
@@ -138,6 +168,16 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         if tracker is None or flows.is_empty():
             # cannot do anything if there are no flows or no tracker
             return []
+
+        if self.check_if_message_exceeds_limit(message):
+            # notify the user about message length
+            return [
+                ErrorCommand(
+                    error_type=RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
+                    info={"max_characters": self.user_input_config.max_characters},
+                )
+            ]
+
         flow_prompt = self.render_template(message, tracker, flows)
         structlogger.info(
             "llm_command_generator.predict_commands.prompt_rendered", prompt=flow_prompt
@@ -439,3 +479,10 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             if isinstance(current_step, CollectInformationFlowStep)
             else (None, None)
         )
+
+    def check_if_message_exceeds_limit(self, message: Message) -> bool:
+        """Checks if the given message exceeds the predefined number of characters."""
+        # if limit was a negative number, omit it
+        if self.user_input_config.max_characters < 0:
+            return False
+        return len(message.get(TEXT, "")) > self.user_input_config.max_characters

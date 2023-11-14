@@ -1,6 +1,11 @@
-from rasa.dialogue_understanding.commands.error_command import ErrorCommand
+from rasa.dialogue_understanding.commands import ErrorCommand
+from rasa.dialogue_understanding.patterns.internal_error import (
+    InternalErrorPatternFlowStackFrame,
+)
 from rasa.dialogue_understanding.stack.frames.pattern_frame import PatternFlowStackFrame
-from rasa.shared.core.events import DialogueStackUpdated, UserUttered
+from rasa.shared.constants import RASA_PATTERN_INTERNAL_ERROR_DEFAULT
+from rasa.shared.core.events import DialogueStackUpdated
+from rasa.shared.core.events import UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 
 
@@ -10,8 +15,22 @@ def test_name_of_command():
     assert ErrorCommand.command() == "error"
 
 
+def test_default_values():
+    command = ErrorCommand()
+    assert command.error_type == RASA_PATTERN_INTERNAL_ERROR_DEFAULT
+    assert isinstance(command.info, dict)
+    assert len(command.info) == 0
+
+
 def test_from_dict():
     assert ErrorCommand.from_dict({}) == ErrorCommand()
+
+
+def test_from_dict_error_type():
+    test_error_type = "test_error_type"
+    test_info = {"info_a": "value_a", "info_b": "value_b"}
+    test_data = {"error_type": test_error_type, "info": test_info}
+    assert ErrorCommand.from_dict(test_data) == ErrorCommand(test_error_type, test_info)
 
 
 def test_run_command_on_tracker():
@@ -34,6 +53,9 @@ def test_run_command_on_tracker():
 
     frame = updated_stack.frames[0]
     assert isinstance(frame, PatternFlowStackFrame)
+    assert isinstance(frame, InternalErrorPatternFlowStackFrame)
     assert frame.type() == "pattern_internal_error"
     assert frame.step_id == "START"
     assert frame.flow_id == "pattern_internal_error"
+    assert frame.error_type == RASA_PATTERN_INTERNAL_ERROR_DEFAULT
+    assert frame.info == dict()
