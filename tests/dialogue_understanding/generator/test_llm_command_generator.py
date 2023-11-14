@@ -195,8 +195,10 @@ class TestLLMCommandGenerator:
             assert len(predicted_commands) == 1
             predicted_command = next(iter(predicted_commands))
             assert isinstance(predicted_command, ErrorCommand)
-            assert (predicted_command.error_type ==
-                    RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG)
+            assert (
+                predicted_command.error_type
+                == RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG
+            )
 
     def test_generate_action_list_calls_llm_factory_correctly(
         self,
