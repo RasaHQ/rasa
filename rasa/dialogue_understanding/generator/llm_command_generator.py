@@ -24,8 +24,10 @@ from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.constants import RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG, \
-    RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY
+from rasa.shared.constants import (
+    RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
+    RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
+)
 from rasa.shared.core.flows import FlowStep, Flow, FlowsList
 from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
 from rasa.shared.core.slots import (

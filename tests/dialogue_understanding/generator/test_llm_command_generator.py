@@ -26,8 +26,10 @@ from rasa.dialogue_understanding.commands import (
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.constants import RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG, \
-    RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY
+from rasa.shared.constants import (
+    RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
+    RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
+)
 from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
 from rasa.shared.core.flows.steps.collect import (
     SlotRejection,
@@ -232,8 +234,7 @@ class TestLLMCommandGenerator:
         predicted_command = next(iter(predicted_commands))
         assert isinstance(predicted_command, ErrorCommand)
         assert (
-            predicted_command.error_type
-            == RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY
+            predicted_command.error_type == RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY
         )
 
     def test_generate_action_list_calls_llm_factory_correctly(
