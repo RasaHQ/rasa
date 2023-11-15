@@ -63,6 +63,13 @@ class FlowStepLinks:
         for link in self.links:
             yield from link.steps_in_tree()
 
+    def depth_in_tree(self) -> int:
+        """Returns the max depth in the tree of the flow step links."""
+        depth = 0
+        for link in self.links:
+            depth = max(depth, link.depth_in_tree())
+        return depth
+
 
 class FlowStepLink:
     """A flow step link that links two steps in a single flow."""
@@ -102,6 +109,10 @@ class FlowStepLink:
 
     def child_steps(self) -> List[FlowStep]:
         """Returns the steps of the linked FlowStepSequence if any."""
+        raise NotImplementedError()
+
+    def depth_in_tree(self) -> int:
+        """Returns the depth in the tree."""
         raise NotImplementedError()
 
 
@@ -156,6 +167,18 @@ class BranchingFlowStepLink(FlowStepLink):
             return IfFlowStepLink.from_json(data)
         else:
             return ElseFlowStepLink.from_json(data)
+
+    def depth_in_tree(self) -> int:
+        """Returns the depth in the tree."""
+        from rasa.shared.core.flows.flow_step_sequence import FlowStepSequence
+
+        if isinstance(self.target_reference, FlowStepSequence):
+            depth = 0
+            for step in self.target_reference.steps:
+                if isinstance(step.next, FlowStepLinks):
+                    depth = max(depth, step.next.depth_in_tree())
+            return depth + 1
+        return 1
 
 
 @dataclass
@@ -279,3 +302,7 @@ class StaticFlowStepLink(FlowStepLink):
     def target(self) -> Text:
         """Returns the target step id."""
         return self.target_step_id
+
+    def depth_in_tree(self) -> int:
+        """Returns the depth in the tree."""
+        return 0
