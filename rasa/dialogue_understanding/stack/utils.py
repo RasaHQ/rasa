@@ -1,4 +1,5 @@
 from typing import Optional, Set
+import typing
 from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
 )
@@ -8,6 +9,9 @@ from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
 from rasa.shared.core.flows.steps.constants import END_STEP
 from rasa.shared.core.flows.steps.continuation import ContinueFlowStep
 from rasa.shared.core.flows import FlowsList
+
+if typing.TYPE_CHECKING:
+    from rasa.shared.core.trackers import DialogueStateTracker
 
 
 def top_flow_frame(
@@ -60,7 +64,7 @@ def top_user_flow_frame(dialogue_stack: DialogueStack) -> Optional[UserFlowStack
 
 
 def filled_slots_for_active_flow(
-    dialogue_stack: DialogueStack, all_flows: FlowsList
+    tracker: "DialogueStateTracker", all_flows: FlowsList
 ) -> Set[str]:
     """Get all slots that have been filled for the 'current user flow'.
 
@@ -78,6 +82,9 @@ def filled_slots_for_active_flow(
     """
     filled_slots = set()
 
+    dialogue_stack = tracker.stack
+    previously_filled_slots = tracker.get_previously_updated_slots()
+
     for frame in reversed(dialogue_stack.frames):
         if not isinstance(frame, BaseFlowStackFrame):
             # we skip all frames that are not flows, e.g. chitchat / search
@@ -85,7 +92,10 @@ def filled_slots_for_active_flow(
             continue
         flow = frame.flow(all_flows)
         for q in flow.previous_collect_steps(frame.step_id):
-            filled_slots.add(q.collect)
+            # verify that the collect step of the flow was actually reached
+            # previously in the conversation
+            if q.collect in previously_filled_slots:
+                filled_slots.add(q.collect)
 
         if isinstance(frame, UserFlowStackFrame):
             # as soon as we hit the first stack frame that is a "normal"

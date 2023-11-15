@@ -3,7 +3,6 @@ import warnings
 
 import structlog
 
-from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.events import BotUttered, UserUttered
 from rasa.shared.engine.caching import get_local_cache_location
 import rasa.shared.utils.io
@@ -11,6 +10,7 @@ import rasa.shared.utils.io
 if TYPE_CHECKING:
     from langchain.schema.embeddings import Embeddings
     from langchain.llms.base import BaseLLM
+    from rasa.shared.core.trackers import DialogueStateTracker
 
 
 structlogger = structlog.get_logger()
@@ -35,7 +35,7 @@ DEFAULT_MAX_USER_INPUT_CHARACTERS = 420
 
 
 def tracker_as_readable_transcript(
-    tracker: DialogueStateTracker,
+    tracker: "DialogueStateTracker",
     human_prefix: str = USER,
     ai_prefix: str = AI,
     max_turns: Optional[int] = 20,

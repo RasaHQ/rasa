@@ -321,7 +321,7 @@ def clean_up_commands(
     The cleaned up commands.
     """
     stack = tracker.stack
-    slots_so_far = filled_slots_for_active_flow(stack, all_flows)
+    slots_so_far = filled_slots_for_active_flow(tracker, all_flows)
 
     clean_commands: List[Command] = []
 

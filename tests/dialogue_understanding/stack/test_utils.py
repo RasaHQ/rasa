@@ -2,7 +2,6 @@ from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
-from rasa.dialogue_understanding.stack.frames.chit_chat_frame import ChitChatStackFrame
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import UserFlowStackFrame
 from rasa.dialogue_understanding.stack.utils import (
     end_top_user_flow,
@@ -12,7 +11,9 @@ from rasa.dialogue_understanding.stack.utils import (
     top_user_flow_frame,
     user_flows_on_the_stack,
 )
+from rasa.shared.core.events import SlotSet, UserUttered, FlowCompleted, FlowStarted
 from rasa.shared.core.flows.yaml_flows_io import flows_from_str
+from rasa.shared.core.trackers import DialogueStateTracker
 
 
 def test_top_flow_frame_ignores_pattern():
@@ -88,7 +89,7 @@ def test_user_flows_on_the_stack_handles_empty():
     assert user_flows_on_the_stack(stack) == set()
 
 
-def test_filled_slots_for_active_flow():
+def test_filled_slots_for_active_flow_start():
     all_flows = flows_from_str(
         """
         flows:
@@ -106,12 +107,62 @@ def test_filled_slots_for_active_flow():
         """
     )
 
-    user_frame = UserFlowStackFrame(
-        flow_id="my_flow", step_id="collect_bar", frame_id="some-frame-id"
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(
+        DialogueStack.from_dict(
+            [
+                {
+                    "type": "flow",
+                    "flow_id": "my_flow",
+                    "step_id": "collect_foo",
+                    "frame_id": "some-frame-id",
+                }
+            ]
+        )
     )
-    stack = DialogueStack(frames=[user_frame])
 
-    assert filled_slots_for_active_flow(stack, all_flows) == {"foo", "bar"}
+    assert filled_slots_for_active_flow(tracker, all_flows) == set()
+
+
+def test_filled_slots_for_active_flow_end():
+    all_flows = flows_from_str(
+        """
+        flows:
+          my_flow:
+            name: foo flow
+            steps:
+            - id: collect_foo
+              collect: foo
+              next: collect_bar
+            - id: collect_bar
+              collect: bar
+              next: collect_baz
+            - id: collect_baz
+              collect: baz
+        """
+    )
+
+    tracker = DialogueStateTracker.from_events(
+        "test",
+        evts=[
+            SlotSet("foo", "foofoo"),
+            SlotSet("bar", "barbar"),
+        ],
+    )
+    tracker.update_stack(
+        DialogueStack.from_dict(
+            [
+                {
+                    "type": "flow",
+                    "flow_id": "my_flow",
+                    "step_id": "collect_baz",
+                    "frame_id": "some-frame-id",
+                }
+            ]
+        )
+    )
+
+    assert filled_slots_for_active_flow(tracker, all_flows) == {"foo", "bar"}
 
 
 def test_filled_slots_for_active_flow_handles_empty():
@@ -132,11 +183,11 @@ def test_filled_slots_for_active_flow_handles_empty():
         """
     )
 
-    stack = DialogueStack.empty()
-    assert filled_slots_for_active_flow(stack, all_flows) == set()
+    tracker = DialogueStateTracker.from_events("test", [])
+    assert filled_slots_for_active_flow(tracker, all_flows) == set()
 
 
-def test_filled_slots_for_active_flow_skips_chitchat():
+def test_filled_slots_for_active_flow_skips_user_uttered():
     all_flows = flows_from_str(
         """
         flows:
@@ -154,13 +205,29 @@ def test_filled_slots_for_active_flow_skips_chitchat():
         """
     )
 
-    user_frame = UserFlowStackFrame(
-        flow_id="my_flow", step_id="collect_bar", frame_id="some-frame-id"
+    tracker = DialogueStateTracker.from_events(
+        "test",
+        evts=[
+            FlowStarted("my_flow"),
+            SlotSet("foo", "foofoo"),
+            SlotSet("not_valid_slot", "some_value"),
+            UserUttered("some message"),
+        ],
     )
-    chitchat_frame = ChitChatStackFrame(frame_id="some-other-id")
-    stack = DialogueStack(frames=[user_frame, chitchat_frame])
+    tracker.update_stack(
+        DialogueStack.from_dict(
+            [
+                {
+                    "type": "flow",
+                    "flow_id": "my_flow",
+                    "step_id": "collect_bar",
+                    "frame_id": "some-frame-id",
+                }
+            ]
+        )
+    )
 
-    assert filled_slots_for_active_flow(stack, all_flows) == {"foo", "bar"}
+    assert filled_slots_for_active_flow(tracker, all_flows) == {"foo"}
 
 
 def test_filled_slots_for_active_flow_only_collects_till_top_most_user_flow_frame():
@@ -192,15 +259,33 @@ def test_filled_slots_for_active_flow_only_collects_till_top_most_user_flow_fram
         """
     )
 
-    user_frame = UserFlowStackFrame(
-        flow_id="my_flow", step_id="collect_bar", frame_id="some-frame-id"
+    tracker = DialogueStateTracker.from_events(
+        "test",
+        evts=[
+            FlowStarted("my_flow"),
+            SlotSet("foo", "foofoo"),
+            SlotSet("bar", "barbar"),
+            SlotSet("baz", "bazbaz"),
+            FlowCompleted("my_flow", "step_id"),
+            FlowStarted("my_other_flow"),
+            UserUttered("some message"),
+            SlotSet("foo2", "foofoo2"),
+        ],
     )
-    another_user_frame = UserFlowStackFrame(
-        flow_id="my_other_flow", step_id="collect_bar2", frame_id="some-other-id"
+    tracker.update_stack(
+        DialogueStack.from_dict(
+            [
+                {
+                    "type": "flow",
+                    "flow_id": "my_other_flow",
+                    "step_id": "collect_bar2",
+                    "frame_id": "some-frame-id",
+                }
+            ]
+        )
     )
-    stack = DialogueStack(frames=[another_user_frame, user_frame])
 
-    assert filled_slots_for_active_flow(stack, all_flows) == {"foo", "bar"}
+    assert filled_slots_for_active_flow(tracker, all_flows) == {"foo2"}
 
 
 def test_end_top_user_flow():

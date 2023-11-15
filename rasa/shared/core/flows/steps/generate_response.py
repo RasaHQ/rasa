@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Text, Optional, Dict, Any
+import typing
 import structlog
 from jinja2 import Template
 from rasa.shared.core.flows.flow_step import FlowStep
-from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.utils.llm import (
     llm_factory,
     tracker_as_readable_transcript,
@@ -25,6 +25,9 @@ DEFAULT_LLM_CONFIG = {
     "max_tokens": DEFAULT_OPENAI_MAX_GENERATED_TOKENS,
 }
 structlogger = structlog.get_logger()
+
+if typing.TYPE_CHECKING:
+    from rasa.shared.core.trackers import DialogueStateTracker
 
 
 @dataclass
@@ -67,7 +70,9 @@ class GenerateResponseFlowStep(FlowStep):
         return data
 
     @staticmethod
-    def create_prompt_template_inputs(tracker: DialogueStateTracker) -> Dict[str, Any]:
+    def create_prompt_template_inputs(
+        tracker: "DialogueStateTracker",
+    ) -> Dict[str, Any]:
         """Generate the prompt template inputs."""
         latest_message = tracker.latest_message.text if tracker.latest_message else ""
         inputs = {
@@ -77,7 +82,7 @@ class GenerateResponseFlowStep(FlowStep):
         inputs.update(tracker.current_slot_values())
         return inputs
 
-    def generate(self, tracker: DialogueStateTracker) -> Optional[str]:
+    def generate(self, tracker: "DialogueStateTracker") -> Optional[str]:
         """Generates a response for the given tracker.
 
         Args:
