@@ -368,7 +368,7 @@ def test_flow_step_iteration_in_deeply_nested_flow():
         ("True", True),
         ("False", False),
         (False, False),
-        (True, False),
+        (True, True),
         ("True and False", False),
         ("True or False", True),
         ("context.x > 0", True),
