@@ -15,8 +15,8 @@ from rasa.shared.constants import (
     CONFIG_MANDATORY_KEYS_CORE,
     CONFIG_MANDATORY_KEYS_NLU,
     CONFIG_MANDATORY_KEYS,
-    DEFAULT_DOMAIN_PATH,
     DEFAULT_DATA_PATH,
+    DEFAULT_DOMAIN_PATHS,
 )
 
 logger = logging.getLogger(__name__)
@@ -78,7 +78,7 @@ def run_training(args: argparse.Namespace, can_exit: bool = False) -> Optional[T
     from rasa import train as train_all
 
     domain = rasa.cli.utils.get_validated_path(
-        args.domain, "domain", DEFAULT_DOMAIN_PATH, none_is_valid=True
+        args.domain, "domain", DEFAULT_DOMAIN_PATHS, none_is_valid=True
     )
     config = rasa.cli.utils.get_validated_config(args.config, CONFIG_MANDATORY_KEYS)
 
@@ -143,7 +143,7 @@ def run_core_training(args: argparse.Namespace) -> Optional[Text]:
     from rasa.model_training import train_core
 
     args.domain = rasa.cli.utils.get_validated_path(
-        args.domain, "domain", DEFAULT_DOMAIN_PATH, none_is_valid=True
+        args.domain, "domain", DEFAULT_DOMAIN_PATHS, none_is_valid=True
     )
     story_file = rasa.cli.utils.get_validated_path(
         args.stories, "stories", DEFAULT_DATA_PATH, none_is_valid=True
@@ -196,7 +196,7 @@ def run_nlu_training(args: argparse.Namespace) -> Optional[Text]:
 
     if args.domain:
         args.domain = rasa.cli.utils.get_validated_path(
-            args.domain, "domain", DEFAULT_DOMAIN_PATH, none_is_valid=True
+            args.domain, "domain", DEFAULT_DOMAIN_PATHS, none_is_valid=True
         )
 
     return train_nlu(
