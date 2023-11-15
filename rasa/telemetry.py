@@ -1,5 +1,6 @@
 import asyncio
 import contextlib
+from collections import defaultdict
 from datetime import datetime
 from functools import wraps
 import hashlib
@@ -12,7 +13,7 @@ import platform
 import sys
 import textwrap
 import typing
-from typing import Any, Callable, Dict, List, Optional, Text
+from typing import Any, Callable, Dict, List, Optional, Text, Tuple
 import uuid
 import requests
 from terminaltables import SingleTable
@@ -27,7 +28,14 @@ from rasa.constants import (
 )
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.plugin import plugin_manager
-from rasa.shared.constants import DOCS_URL_TELEMETRY
+from rasa.shared.constants import DOCS_URL_TELEMETRY, UTTER_ASK_PREFIX
+from rasa.shared.core.flows import Flow
+from rasa.shared.core.flows.steps import (
+    CollectInformationFlowStep,
+    GenerateResponseFlowStep,
+    SetSlotsFlowStep,
+    LinkFlowStep,
+)
 from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 from rasa.utils import common as rasa_utils
@@ -101,6 +109,23 @@ TELEMETRY_MARKERS_PARSED_COUNT = "Markers Parsed"
 
 # used to calculate the context on the first call and cache it afterwards
 TELEMETRY_CONTEXT = None
+
+# constants used for the training started events
+NUM_FLOWS = "num_flows"
+NUM_FLOWS_WITH_NLU_TRIGGER = "num_flows_with_nlu_trigger"
+NUM_FLOWS_WITH_FLOW_GUARDS = "num_flows_with_flow_guards"
+NUM_FLOWS_WITH_NOT_STARTABLE_FLOW_GUARDS = "num_flows_with_not_startable_flow_guards"
+NUM_COLLECT_STEPS = "num_collect_steps"
+NUM_COLLECT_STEPS_WITH_SEPARATE_UTTER = "num_collect_steps_with_separate_utter"
+NUM_COLLECT_STEPS_WITH_REJECTIONS = "num_collect_steps_with_rejections"
+NUM_COLLECT_STEPS_WITH_NOT_RESET_AFTER_FLOW_ENDS = (
+    "num_collect_steps_with_not_reset_after_flow_ends"
+)
+NUM_SET_SLOT_STEPS = "num_set_slot_steps"
+MAX_DEPTH_OF_IF_CONSTRUCT = "max_depth_of_if_construct"
+NUM_LINK_STEPS = "num_link_steps"
+NUM_GENERATION_PROMPT_STEPS = "num_generation_prompt_steps"
+NUM_SHARED_SLOTS_BETWEEN_FLOWS = "num_shared_slots_between_flows"
 
 
 def print_telemetry_reporting_info() -> None:
@@ -750,48 +775,57 @@ def track_model_training(
     stories = training_data.get_stories()
     nlu_data = training_data.get_nlu_data()
     domain = training_data.get_domain()
+    flows = training_data.get_flows()
     count_conditional_responses = domain.count_conditional_response_variations()
     (
         count_total_mappings,
         count_custom_mappings,
         count_conditional_mappings,
     ) = domain.count_slot_mapping_statistics()
+    model_name, custom_prompt_used = _get_llm_config(config)
 
     training_id = uuid.uuid4().hex
+
+    tracking_data = {
+        "language": config.get("language"),
+        "training_id": training_id,
+        "type": model_type,
+        "pipeline": config.get("pipeline"),
+        "policies": config.get("policies"),
+        "train_schema": config.get("train_schema"),
+        "predict_schema": config.get("predict_schema"),
+        "num_intent_examples": len(nlu_data.intent_examples),
+        "num_entity_examples": len(nlu_data.entity_examples),
+        "num_actions": len(domain.action_names_or_texts),
+        # Old nomenclature from when 'responses' were still called
+        # 'templates' in the domain
+        "num_templates": len(domain.responses),
+        "num_conditional_response_variations": count_conditional_responses,
+        "num_slot_mappings": count_total_mappings,
+        "num_custom_slot_mappings": count_custom_mappings,
+        "num_conditional_slot_mappings": count_conditional_mappings,
+        "num_slots": len(domain.slots),
+        "num_forms": len(domain.forms),
+        "num_intents": len(domain.intents),
+        "num_entities": len(domain.entities),
+        "num_story_steps": len(stories.story_steps),
+        "num_lookup_tables": len(nlu_data.lookup_tables),
+        "num_synonyms": len(nlu_data.entity_synonyms),
+        "num_regexes": len(nlu_data.regex_features),
+        "is_finetuning": is_finetuning,
+        "recipe": config.get("recipe"),
+        "llm_model_name": model_name,
+        "llm_custom_prompt_used": custom_prompt_used,
+    }
+
+    flow_statistics = _collect_flow_statistics(flows.underlying_flows)
+    tracking_data.update(flow_statistics)
 
     # Make sure to update the example in docs/docs/telemetry/telemetry.mdx
     # if you change / add any properties
     _track(
         TRAINING_STARTED_EVENT,
-        {
-            "language": config.get("language"),
-            "training_id": training_id,
-            "type": model_type,
-            "pipeline": config.get("pipeline"),
-            "policies": config.get("policies"),
-            "train_schema": config.get("train_schema"),
-            "predict_schema": config.get("predict_schema"),
-            "num_intent_examples": len(nlu_data.intent_examples),
-            "num_entity_examples": len(nlu_data.entity_examples),
-            "num_actions": len(domain.action_names_or_texts),
-            # Old nomenclature from when 'responses' were still called
-            # 'templates' in the domain
-            "num_templates": len(domain.responses),
-            "num_conditional_response_variations": count_conditional_responses,
-            "num_slot_mappings": count_total_mappings,
-            "num_custom_slot_mappings": count_custom_mappings,
-            "num_conditional_slot_mappings": count_conditional_mappings,
-            "num_slots": len(domain.slots),
-            "num_forms": len(domain.forms),
-            "num_intents": len(domain.intents),
-            "num_entities": len(domain.entities),
-            "num_story_steps": len(stories.story_steps),
-            "num_lookup_tables": len(nlu_data.lookup_tables),
-            "num_synonyms": len(nlu_data.entity_synonyms),
-            "num_regexes": len(nlu_data.regex_features),
-            "is_finetuning": is_finetuning,
-            "recipe": config.get("recipe"),
-        },
+        tracking_data,
     )
     start = datetime.now()
     yield
@@ -805,6 +839,102 @@ def track_model_training(
             "runtime": int(runtime.total_seconds()),
         },
     )
+
+
+def _get_llm_config(config: Dict[str, Any]) -> Tuple[Optional[str], Optional[bool]]:
+    """Returns the model name used for the LLMCommandGenerator and
+    whether a custom prompt is used or not."""
+    from rasa.dialogue_understanding.generator import LLMCommandGenerator
+    from rasa.dialogue_understanding.generator.llm_command_generator import (
+        LLM_CONFIG_KEY,
+        DEFAULT_LLM_CONFIG,
+    )
+
+    custom_prompt_used: Optional[bool] = None
+    model_name: Optional[str] = None
+
+    pipeline = config.get("pipeline") if config.get("pipeline") is not None else []
+
+    if not isinstance(pipeline, list):
+        # needed in order to pass type checking
+        return model_name, custom_prompt_used
+
+    for component in pipeline:
+        if component["name"] == LLMCommandGenerator.__name__:
+            custom_prompt_used = False
+            model_name = str(DEFAULT_LLM_CONFIG["model_name"])
+            if "prompt" in component:
+                custom_prompt_used = True
+            if (
+                LLM_CONFIG_KEY in component
+                and "model_name" in component[LLM_CONFIG_KEY]
+            ):
+                model_name = component[LLM_CONFIG_KEY]["model_name"]
+
+    return model_name, custom_prompt_used
+
+
+def _collect_flow_statistics(flows: List[Flow]) -> Dict[str, Any]:
+    """Collects some statistics about the flows, such as number of specific steps."""
+    data = {
+        NUM_FLOWS: len(flows),
+        NUM_FLOWS_WITH_NLU_TRIGGER: 0,
+        NUM_FLOWS_WITH_FLOW_GUARDS: 0,
+        NUM_FLOWS_WITH_NOT_STARTABLE_FLOW_GUARDS: 0,
+        NUM_COLLECT_STEPS: 0,
+        NUM_COLLECT_STEPS_WITH_SEPARATE_UTTER: 0,
+        NUM_COLLECT_STEPS_WITH_REJECTIONS: 0,
+        NUM_COLLECT_STEPS_WITH_NOT_RESET_AFTER_FLOW_ENDS: 0,
+        NUM_SET_SLOT_STEPS: 0,
+        MAX_DEPTH_OF_IF_CONSTRUCT: 0,
+        NUM_LINK_STEPS: 0,
+        NUM_GENERATION_PROMPT_STEPS: 0,
+        NUM_SHARED_SLOTS_BETWEEN_FLOWS: 0,
+    }
+
+    slots_used_in_different_flows = defaultdict(set)
+
+    for flow in flows:
+        if flow.guard_condition:
+            data[NUM_FLOWS_WITH_FLOW_GUARDS] += 1
+            if flow.guard_condition.lower() == "false":
+                data[NUM_FLOWS_WITH_NOT_STARTABLE_FLOW_GUARDS] += 1
+
+        if flow.nlu_triggers:
+            data[NUM_FLOWS_WITH_NLU_TRIGGER] += 1
+
+        for step in flow.steps:
+            if isinstance(step, CollectInformationFlowStep):
+                slots_used_in_different_flows[step.collect].add(flow.id)
+                data[NUM_COLLECT_STEPS] += 1
+                if len(step.rejections) > 0:
+                    data[NUM_COLLECT_STEPS_WITH_REJECTIONS] += 1
+                if not step.reset_after_flow_ends:
+                    data[NUM_COLLECT_STEPS_WITH_NOT_RESET_AFTER_FLOW_ENDS] += 1
+                if step.utter != f"{UTTER_ASK_PREFIX}{step.collect}":
+                    data[NUM_COLLECT_STEPS_WITH_SEPARATE_UTTER] += 1
+
+            if isinstance(step, GenerateResponseFlowStep):
+                data[NUM_GENERATION_PROMPT_STEPS] += 1
+
+            if isinstance(step, SetSlotsFlowStep):
+                for slot in step.slots:
+                    slots_used_in_different_flows[slot["key"]].add(flow.id)
+                data[NUM_SET_SLOT_STEPS] += 1
+
+            if isinstance(step, LinkFlowStep):
+                data[NUM_LINK_STEPS] += 1
+
+            if step.next:
+                depth = step.next.depth_in_tree()
+                if depth > data[MAX_DEPTH_OF_IF_CONSTRUCT]:
+                    data[MAX_DEPTH_OF_IF_CONSTRUCT] = depth
+
+    for flows_with_slot in slots_used_in_different_flows.values():
+        if len(flows_with_slot) > 1:
+            data[NUM_SHARED_SLOTS_BETWEEN_FLOWS] += 1
+
+    return data
 
 
 @ensure_telemetry_enabled
