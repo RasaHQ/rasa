@@ -75,6 +75,9 @@ responses:
       metadata:
         template: jinja
 
+  utter_user_input_empty_error_rasa:
+    - text: I see an empty message. What can I assist you with?
+
 slots:
   confirm_correction:
     type: bool
@@ -169,6 +172,10 @@ flows:
           then:
           - action: utter_user_input_too_long_error_rasa
             next: "END"
+        - if: "'{{context.error_type}}' == 'rasa_internal_error_user_input_empty'"
+          then:
+            - action: utter_user_input_empty_error_rasa
+              next: "END"
         - else:
             - action: utter_internal_error_rasa
               next: "END"
