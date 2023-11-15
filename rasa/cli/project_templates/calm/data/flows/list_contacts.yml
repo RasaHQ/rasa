@@ -5,7 +5,7 @@ flows:
     steps:
       - action: list_contacts
         next:
-          - if: "contacts_list"
+          - if: "slots.contacts_list"
             then:
               - action: utter_list_contacts
                 next: END

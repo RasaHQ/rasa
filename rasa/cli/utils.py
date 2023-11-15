@@ -4,9 +4,9 @@ import logging
 import os
 import sys
 import time
+from pathlib import Path
 from types import FrameType
 from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Union, overload
-
 import randomname
 
 import rasa.shared.utils.cli
@@ -21,7 +21,6 @@ from rasa.shared.utils.cli import print_error
 from rasa import telemetry
 
 if TYPE_CHECKING:
-    from pathlib import Path
 
     from questionary import Question
     from typing_extensions import Literal
@@ -34,62 +33,73 @@ FREE_TEXT_INPUT_PROMPT = "Type out your own message..."
 
 @overload
 def get_validated_path(
-    current: Optional[Union["Path", Text]],
+    current: Optional[Union[Path, Text]],
     parameter: Text,
-    default: Optional[Union["Path", Text]] = ...,
+    default: Optional[Union[Path, Text, List[Text]]] = ...,
     none_is_valid: "Literal[False]" = ...,
-) -> Union["Path", Text]:
+) -> Union[Path, Text]:
     ...
 
 
 @overload
 def get_validated_path(
-    current: Optional[Union["Path", Text]],
+    current: Optional[Union[Path, Text]],
     parameter: Text,
-    default: Optional[Union["Path", Text]] = ...,
+    default: Optional[Union[Path, Text, List[Text]]] = ...,
     none_is_valid: "Literal[True]" = ...,
-) -> Optional[Union["Path", Text]]:
+) -> Optional[Union[Path, Text]]:
     ...
 
 
 def get_validated_path(
-    current: Optional[Union["Path", Text]],
+    current: Optional[Union[Path, Text]],
     parameter: Text,
-    default: Optional[Union["Path", Text]] = None,
+    default: Optional[Union[Path, Text, List[Text]]] = None,
     none_is_valid: bool = False,
-) -> Optional[Union["Path", Text]]:
+) -> Optional[Union[Path, Text]]:
     """Checks whether a file path or its default value is valid and returns it.
 
     Args:
         current: The parsed value.
         parameter: The name of the parameter.
-        default: The default value of the parameter.
+        default: one or multiple default values of the parameter.
         none_is_valid: `True` if `None` is valid value for the path,
                         else `False``
 
     Returns:
-        The current value if it was valid, else the default value of the
-        argument if it is valid, else `None`.
+        The current value if valid,
+        otherwise one of the default values of the argument if valid,
+        otherwise `None` if allowed,
+        otherwise raises an error and exits.
     """
-    if current is None or current is not None and not os.path.exists(current):
-        if default is not None and os.path.exists(default):
-            reason_str = f"'{current}' not found."
-            if current is None:
-                reason_str = f"Parameter '{parameter}' not set."
-            else:
-                rasa.shared.utils.io.raise_warning(
-                    f"The path '{current}' does not seem to exist. Using the "
-                    f"default value '{default}' instead."
-                )
+    if current and os.path.exists(current):
+        return current
 
-            logger.debug(f"{reason_str} Using default location '{default}' instead.")
-            current = default
-        elif none_is_valid:
-            current = None
+    # try to find a valid option among the defaults
+    if isinstance(default, str) or isinstance(default, Path):
+        default_options = [str(default)]
+    elif isinstance(default, list):
+        default_options = default
+    else:
+        default_options = []
+
+    valid_options = (option for option in default_options if os.path.exists(option))
+    chosen_option = next(valid_options, None)
+
+    # warn and log if user-chosen parameter wasn't found and thus overwritten
+    if chosen_option:
+        shared_info = f"Using default location '{chosen_option}' instead."
+        if current is None:
+            logger.debug(f"Parameter '{parameter}' was not set. {shared_info}")
         else:
-            cancel_cause_not_found(current, parameter, default)
+            rasa.shared.utils.io.raise_warning(
+                f"The path '{current}' does not seem to exist. {shared_info}"
+            )
 
-    return current
+    if chosen_option is None and not none_is_valid:
+        cancel_cause_not_found(current, parameter, default)
+
+    return chosen_option
 
 
 def missing_config_keys(
@@ -296,7 +306,7 @@ def _validate_story_structure(
 def cancel_cause_not_found(
     current: Optional[Union["Path", Text]],
     parameter: Text,
-    default: Optional[Union["Path", Text]],
+    default: Optional[Union["Path", Text, List[Text]]],
 ) -> None:
     """Exits with an error because the given path was not valid.
 
@@ -307,11 +317,15 @@ def cancel_cause_not_found(
 
     """
     default_clause = ""
-    if default:
-        default_clause = f"use the default location ('{default}') or "
+    if default and isinstance(default, str):
+        default_clause = f"use the default location ('{default}') or"
+    elif default and isinstance(default, list):
+        default_clause = f"use one of the default locations ({', '.join(default)}) or"
+
     rasa.shared.utils.cli.print_error(
-        "The path '{}' does not exist. Please make sure to {}specify it"
-        " with '--{}'.".format(current, default_clause, parameter)
+        f"The path '{current}' does not exist. "
+        f"Please make sure to {default_clause} specify it "
+        f"with '--{parameter}'."
     )
     sys.exit(1)
 

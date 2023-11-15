@@ -1,4 +1,5 @@
 import argparse
+from collections import defaultdict
 from enum import Enum
 import os
 import sys
@@ -26,6 +27,10 @@ class ProjectTemplateName(Enum):
 
     def __str__(self) -> str:
         return self.value
+
+
+template_domain_path = defaultdict(lambda: DEFAULT_DOMAIN_PATH)
+template_domain_path[ProjectTemplateName.CALM] = "domain"
 
 
 def add_subparser(
@@ -80,7 +85,7 @@ def print_train_or_instructions(args: argparse.Namespace) -> None:
     if should_train:
         print_success("Training an initial model...")
         training_result = rasa.train(
-            DEFAULT_DOMAIN_PATH,
+            template_domain_path[args.template],
             DEFAULT_CONFIG_PATH,
             DEFAULT_DATA_PATH,
             DEFAULT_MODELS_PATH,

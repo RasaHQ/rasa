@@ -8,7 +8,7 @@ flows:
       - collect: "remove_contact_confirmation"
         ask_before_filling: true
         next:
-          - if: "not remove_contact_confirmation"
+          - if: "not slots.remove_contact_confirmation"
             then:
               - action: utter_remove_contact_cancelled
                 next: END
@@ -16,11 +16,11 @@ flows:
       - id: "remove_contact"
         action: remove_contact
         next:
-          - if: "return_value == 'success'"
+          - if: "slots.return_value == 'success'"
             then:
               - action: utter_remove_contact_success
                 next: END
-          - if: "return_value == 'not_found'"
+          - if: "slots.return_value == 'not_found'"
             then:
               - action: utter_contact_not_in_list
                 next: END
