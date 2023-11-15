@@ -58,6 +58,8 @@ from rasa.shared.core.events import (
     LoopInterrupted,
     DefinePrevUserUtteredFeaturization,
     EntitiesAdded,
+    FlowStarted,
+    FlowCompleted,
     DialogueStackUpdated,
 )
 from rasa.shared.core.slots import (
@@ -1669,6 +1671,145 @@ def test_assistant_id_is_not_added_to_events_with_assistant_id():
         ActionExecuted(action_name="test", metadata={ASSISTANT_ID_KEY: "old_name"})
     )
     assert tracker.events[-1].metadata[ASSISTANT_ID_KEY] == "old_name"
+
+
+@pytest.mark.parametrize(
+    "events, dialogue_stack, expected_slots",
+    [
+        (
+            [
+                FlowStarted("my_flow"),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("transfer 10 to john"),
+                SlotSet("money", "10"),
+                SlotSet("recipient", "john"),
+            ],
+            {
+                "type": "flow",
+                "frame_type": "regular",
+                "flow_id": "my_flow",
+                "step_id": "END",
+                "frame_id": "some-frame-id",
+            },
+            ["recipient", "money"],
+        ),
+        (
+            [
+                FlowStarted("flow_1"),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("transfer 10 to john"),
+                FlowStarted("patter_collect_information"),
+                SlotSet("money", "10"),
+                SlotSet("recipient", "john"),
+                FlowCompleted("patter_collect_information", "step_1"),
+                FlowCompleted("flow_1", "step_1"),
+                FlowStarted("flow_2"),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("add max to my contacts"),
+                SlotSet("name", "max"),
+            ],
+            {
+                "type": "flow",
+                "frame_type": "regular",
+                "flow_id": "flow_2",
+                "step_id": "END",
+                "frame_id": "some-frame-id",
+            },
+            ["name"],
+        ),
+        (
+            [
+                user_uttered("transfer 10 to john"),
+                FlowStarted("transfer_money"),
+                FlowStarted("pattern_collect_information"),
+                SlotSet("money", "10"),
+                SlotSet("recipient", "john"),
+                FlowCompleted("pattern_collect_information", "step_1"),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("I want to book a restaurant for 4"),
+                FlowStarted("book_restaurant"),
+                SlotSet("person_count", "4"),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("wait, transfer the money first"),
+                FlowCompleted("book_restaurant", "step_1"),
+                user_uttered("oh wait I meant alex"),
+                SlotSet("recipient", "alex"),
+            ],
+            {
+                "type": "flow",
+                "frame_type": "regular",
+                "flow_id": "transfer_money",
+                "step_id": "collect_money",
+                "frame_id": "some-frame-id",
+            },
+            ["money", "recipient"],
+        ),
+        (
+            [
+                user_uttered("transfer 10 to john"),
+                FlowStarted("transfer_money"),
+                FlowStarted("pattern_collect_information"),
+                SlotSet("money", "10"),
+                SlotSet("recipient", "john"),
+                FlowCompleted("pattern_collect_information", "step_1"),
+                FlowStarted("interrupted_flow_1"),
+                SlotSet("slot_1", "value"),
+                FlowStarted("interrupted_flow_2"),
+                SlotSet("slot_2", "value"),
+                FlowCompleted("interrupted_flow_2", "END"),
+                FlowCompleted("interrupted_flow_1", "END"),
+                user_uttered("oh wait I meant alex"),
+                SlotSet("recipient", "alex"),
+            ],
+            {
+                "type": "flow",
+                "frame_type": "regular",
+                "flow_id": "transfer_money",
+                "step_id": "some-step",
+                "frame_id": "some-frame-id",
+            },
+            ["money", "recipient"],
+        ),
+        (
+            [
+                FlowStarted("flow_1"),
+                SlotSet("money", "10"),
+                SlotSet("recipient", "john"),
+                FlowCompleted("flow_1", "step_1"),
+            ],
+            {
+                "type": "flow",
+                "frame_type": "regular",
+                "flow_id": "flow_2",
+                "step_id": "START",
+                "frame_id": "some-frame-id",
+            },
+            [],
+        ),
+        (
+            [],
+            {
+                "type": "flow",
+                "frame_type": "regular",
+                "flow_id": "flow_1",
+                "step_id": "START",
+                "frame_id": "some-frame-id",
+            },
+            [],
+        ),
+    ],
+)
+def test_get_previously_updated_slots(
+    events: List[Event], dialogue_stack: Dict[str, str], expected_slots: List[str]
+):
+    tracker = DialogueStateTracker.from_events("👋", events)
+    tracker.update_stack(DialogueStack.from_dict([dialogue_stack]))
+
+    actual_slots = tracker.get_previously_updated_slots()
+
+    assert len(actual_slots) == len(expected_slots) and sorted(actual_slots) == sorted(
+        expected_slots
+    )
 
 
 def test_update_stack_event_applies():

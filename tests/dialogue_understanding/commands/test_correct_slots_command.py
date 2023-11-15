@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 import pytest
 from rasa.dialogue_understanding.commands.correct_slots_command import (
     CorrectSlotsCommand,
@@ -12,6 +12,8 @@ from rasa.dialogue_understanding.patterns.correction import (
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import UserFlowStackFrame
+from rasa.shared.core.events import Event
+from tests.utilities import flows_from_str_with_defaults
 from rasa.shared.core.events import DialogueStackUpdated, SlotSet
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.flows.yaml_flows_io import flows_from_str
@@ -130,6 +132,7 @@ def test_run_command_on_tracker_correcting_current_flow():
         "test",
         evts=[
             SlotSet("foo", "foofoo"),
+            SlotSet("bar", "bar"),
         ],
     )
     tracker.update_stack(
@@ -170,6 +173,178 @@ def test_run_command_on_tracker_correcting_current_flow():
     assert dialogue_stack_dump[1]["is_reset_only"] is False
 
 
+@pytest.mark.parametrize(
+    "corrected_slots, events, dialogue_stack",
+    [
+        (
+            [CorrectedSlot(name="foobar", value="foobarfoobar")],
+            [
+                SlotSet("foo", "foo"),
+            ],
+            {
+                "type": "flow",
+                "frame_type": "regular",
+                "flow_id": "my_flow",
+                "step_id": "collect_bar",
+                "frame_id": "some-frame-id",
+            },
+        ),
+        (
+            [CorrectedSlot(name="bar", value="barbar")],
+            [
+                SlotSet("foo", "foo"),
+                SlotSet("foobar", "foobar"),
+            ],
+            {
+                "type": "flow",
+                "frame_type": "regular",
+                "flow_id": "my_flow",
+                "step_id": "collect_foobar",
+                "frame_id": "some-frame-id",
+            },
+        ),
+        (
+            [CorrectedSlot(name="foo", value="foofoo")],
+            [],
+            {
+                "type": "flow",
+                "frame_type": "regular",
+                "flow_id": "my_flow",
+                "step_id": "collect_foo",
+                "frame_id": "some-frame-id",
+            },
+        ),
+        (
+            [CorrectedSlot(name="bar", value="barbar")],
+            [
+                SlotSet("foo", "foofoo"),
+                SlotSet("bar", "bar"),
+                SlotSet("foobar", "foobar"),
+            ],
+            {
+                "type": "flow",
+                "frame_type": "regular",
+                "flow_id": "my_flow",
+                "step_id": "collect_foobar",
+                "frame_id": "some-frame-id",
+            },
+        ),
+    ],
+)
+def test_run_command_on_tracker_correcting_invalid_slot(
+    corrected_slots: List[CorrectedSlot],
+    events: List[Event],
+    dialogue_stack: Dict[str, str],
+):
+    all_flows = flows_from_str_with_defaults(
+        """
+        flows:
+          my_flow:
+            name: foo flow
+            steps:
+            - id: collect_foo
+              collect: foo
+              next:
+              - if: foo == "foo"
+                then: collect_bar
+              - else: collect_foobar
+            - id: collect_bar
+              collect: bar
+              next: END
+            - id: collect_foobar
+              collect: foobar
+              next: END
+        """
+    )
+
+    tracker = DialogueStateTracker.from_events(
+        "test",
+        evts=events,
+    )
+    tracker.update_stack(DialogueStack.from_dict([dialogue_stack]))
+    command = CorrectSlotsCommand(corrected_slots=corrected_slots)
+
+    events = command.run_command_on_tracker(tracker, all_flows, tracker)
+    assert len(events) == 0
+
+
+@pytest.mark.parametrize(
+    "events, dialogue_stack, expected_reset_step",
+    [
+        (
+            [],
+            {
+                "type": "flow",
+                "frame_type": "regular",
+                "flow_id": "my_flow",
+                "step_id": "collect_bar",
+                "frame_id": "some-frame-id",
+            },
+            None,
+        ),
+        (
+            [
+                SlotSet("foo", "foo"),
+            ],
+            {
+                "type": "flow",
+                "frame_type": "regular",
+                "flow_id": "my_flow",
+                "step_id": "collect_bar",
+                "frame_id": "some-frame-id",
+            },
+            "collect_foo",
+        ),
+    ],
+)
+def test_run_command_on_tracker_correcting_slot_with_asked_before_filling(
+    events: List[Event],
+    dialogue_stack: Dict[str, str],
+    expected_reset_step: Optional[str],
+):
+    all_flows = flows_from_str_with_defaults(
+        """
+        flows:
+          my_flow:
+            name: foo flow
+            steps:
+            - id: collect_foo
+              collect: foo
+              ask_before_filling: true
+              next: collect_bar
+            - id: collect_bar
+              collect: bar
+        """
+    )
+
+    tracker = DialogueStateTracker.from_events("test", evts=events)
+    tracker.update_stack(DialogueStack.from_dict([dialogue_stack]))
+    command = CorrectSlotsCommand(
+        corrected_slots=[CorrectedSlot(name="foo", value="foofoo")]
+    )
+
+    events = command.run_command_on_tracker(tracker, all_flows, tracker)
+    assert len(events) == 1
+
+    dialogue_stack_event = events[0]
+    assert isinstance(dialogue_stack_event, DialogueStackUpdated)
+
+    updated_stack = tracker.stack.update_from_patch(dialogue_stack_event.update)
+
+    assert len(updated_stack.frames) == 2
+
+    frame = updated_stack.frames[1]
+    assert isinstance(frame, CorrectionPatternFlowStackFrame)
+    assert frame.flow_id == "pattern_correction"
+    assert frame.is_reset_only
+    assert frame.corrected_slots == {"foo": "foofoo"}
+    assert frame.step_id == "START"
+    if expected_reset_step:
+        assert frame.reset_step_id == expected_reset_step
+    else:
+        assert frame.reset_step_id is None
+
+
 def test_run_command_on_tracker_correcting_during_a_correction():
     all_flows = flows_from_str(
         """
@@ -188,6 +363,7 @@ def test_run_command_on_tracker_correcting_during_a_correction():
     tracker = DialogueStateTracker.from_events(
         "test",
         evts=[
+            SlotSet("bar", "bar"),
             SlotSet("foo", "foofoo"),
         ],
     )
@@ -310,17 +486,52 @@ def test_end_previous_correction_no_correction_present():
 
 
 @pytest.mark.parametrize(
-    "updated_slots, expected_step_id",
+    "updated_slots, events, expected_step_id",
     [
-        (["foo", "bar"], "collect_foo"),
-        (["bar", "foo"], "collect_foo"),
-        (["bar"], "collect_bar"),
-        (["foo"], "collect_foo"),
-        ([], None),
+        (
+            ["foo", "bar"],
+            [SlotSet("foo", "value"), SlotSet("bar", "value")],
+            "collect_foo",
+        ),
+        (
+            ["bar", "foo"],
+            [SlotSet("foo", "value"), SlotSet("bar", "value")],
+            "collect_foo",
+        ),
+        (
+            ["bar"],
+            [SlotSet("foo", "value"), SlotSet("bar", "value")],
+            "collect_bar",
+        ),
+        (
+            ["foo"],
+            [SlotSet("foo", "value"), SlotSet("bar", "value")],
+            "collect_foo",
+        ),
+        (
+            [],
+            [SlotSet("foo", "value"), SlotSet("bar", "value")],
+            None,
+        ),
+        (
+            ["foo", "bar"],
+            [SlotSet("bar", "value")],
+            "collect_bar",
+        ),
+        (
+            ["foo", "bar"],
+            [],
+            None,
+        ),
+        (
+            ["foo"],
+            [SlotSet("bar", "value")],
+            None,
+        ),
     ],
 )
 def test_find_earliest_updated_collect_info(
-    updated_slots: List[str], expected_step_id: str
+    updated_slots: List[str], events: List[Event], expected_step_id: str
 ):
     all_flows = flows_from_str(
         """
@@ -339,11 +550,25 @@ def test_find_earliest_updated_collect_info(
         """
     )
 
+    tracker = DialogueStateTracker.from_events("bot", events)
+    tracker.update_stack(
+        DialogueStack.from_dict(
+            [
+                {
+                    "type": "flow",
+                    "flow_id": "my_flow",
+                    "step_id": "collect_foo",
+                    "frame_id": "some-frame-id",
+                }
+            ]
+        )
+    )
+
     user_frame = UserFlowStackFrame(
         flow_id="my_flow", step_id="collect_bar", frame_id="some-frame-id"
     )
     step = CorrectSlotsCommand.find_earliest_updated_collect_info(
-        user_frame, updated_slots, all_flows
+        user_frame, updated_slots, all_flows, tracker
     )
     if expected_step_id is not None:
         assert step.id == expected_step_id

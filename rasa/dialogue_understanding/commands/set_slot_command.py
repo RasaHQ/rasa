@@ -78,6 +78,7 @@ class SetSlotCommand(Command):
         Returns:
             The events to apply to the tracker.
         """
+
         if tracker.get_slot(self.name) == self.value:
             # value hasn't changed, skip this one
             structlogger.debug(
