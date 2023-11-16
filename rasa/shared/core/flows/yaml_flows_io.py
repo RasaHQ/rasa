@@ -1,12 +1,14 @@
 import textwrap
 from pathlib import Path
-from typing import List, Text, Union
+from typing import Any, Dict, List, Text, Union
+
+import jsonschema
 
 import rasa.shared
 import rasa.shared.data
 import rasa.shared.utils.io
 import rasa.shared.utils.validation
-from rasa.shared.exceptions import YamlException
+from rasa.shared.exceptions import RasaException, YamlException
 
 from rasa.shared.core.flows.flow import Flow
 from rasa.shared.core.flows.flows_list import FlowsList
@@ -42,6 +44,75 @@ class YAMLFlowsReader:
         except YamlException as e:
             e.filename = str(filename)
             raise e
+        except RasaException as e:
+            raise YamlException(filename) from e
+
+    @staticmethod
+    def humanize_flow_error(error: jsonschema.ValidationError) -> str:
+        """Create a human understandable error message from a validation error."""
+
+        def errornuous_property(path: List[Any]) -> str:
+            if not path:
+                return "schema"
+            if isinstance(path[-1], int):
+                # the path is pointing towards an element in a list, so
+                # we use the name of the list if possible
+                return path[-2] if len(path) > 1 else "list"
+            return str(path[-1])
+
+        def schema_name(schema: Dict[str, Any]) -> str:
+            return schema.get("schema_name", schema.get("type"))
+
+        def schema_names(schemas: List[Dict[str, Any]]) -> List[str]:
+            names = []
+            for schema in schemas:
+                if name := schema_name(schema):
+                    names.append(name)
+            return names
+
+        def expected_schema(error: jsonschema.ValidationError, schema_type: str) -> str:
+            expected_schemas = error.schema.get(schema_type, [])
+            expected = schema_names(expected_schemas)
+            if expected:
+                return " or ".join(sorted(expected))
+            else:
+                return str(error.schema)
+
+        def format_oneof_error(error: jsonschema.ValidationError) -> str:
+            return (
+                f"Not a valid '{errornuous_property(error.absolute_path)}' definition. "
+                f"Expected {expected_schema(error, 'oneOf')}."
+            )
+
+        def format_anyof_error(error: jsonschema.ValidationError) -> str:
+            return (
+                f"Not a valid '{errornuous_property(error.absolute_path)}' definition. "
+                f"Expected {expected_schema(error, 'anyOf')}."
+            )
+
+        def format_type_error(error: jsonschema.ValidationError) -> str:
+            expected_value = schema_name(error.schema)
+            if isinstance(error.instance, dict):
+                instance = "a dictionary"
+            elif isinstance(error.instance, list):
+                instance = "a list"
+            else:
+                instance = f"`{error.instance}`"
+            return f"Found {instance} but expected a {expected_value}."
+
+        if error.validator == "oneOf":
+            return format_oneof_error(error)
+
+        if error.validator == "anyOf":
+            return format_anyof_error(error)
+
+        if error.validator == "type":
+            return format_type_error(error)
+
+        return (
+            f"The flow at {error.json_path} is not valid. "
+            f"Please double check your flow definition."
+        )
 
     @classmethod
     def read_from_string(cls, string: Text, skip_validation: bool = False) -> FlowsList:
@@ -57,7 +128,7 @@ class YAMLFlowsReader:
         """
         if not skip_validation:
             rasa.shared.utils.validation.validate_yaml_with_jsonschema(
-                string, FLOWS_SCHEMA_FILE
+                string, FLOWS_SCHEMA_FILE, humanize_error=cls.humanize_flow_error
             )
 
         yaml_content = rasa.shared.utils.io.read_yaml(string)

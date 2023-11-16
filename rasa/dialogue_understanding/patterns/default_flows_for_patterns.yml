@@ -93,7 +93,7 @@ flows:
     description: handle interactions with the user that are not task-oriented
     name: pattern chitchat
     steps:
-      - generation_prompt: |
+      - noop: |
           You are an incredibly friendly assistant. Generate a short 
           response to the user's comment in simple english.
 
@@ -164,7 +164,8 @@ flows:
     description: internal error
     name: pattern internal error
     steps:
-      - next:
+      - noop: true
+        next:
         - if: "'{{context.error_type}}' == 'rasa_internal_error_user_input_too_long'"
           then:
           - action: utter_user_input_too_long_error_rasa

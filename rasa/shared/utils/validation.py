@@ -1,13 +1,14 @@
 import logging
 import os
-from typing import Text, Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Callable
 
 from packaging import version
 from packaging.version import LegacyVersion
-from pykwalify.errors import SchemaError
 
 from ruamel.yaml.constructor import DuplicateKeyError
-
+from dataclasses import dataclass
+import jsonschema
+from dataclasses import field
 import rasa.shared
 from rasa.shared.exceptions import (
     YamlException,
@@ -28,14 +29,20 @@ logger = logging.getLogger(__name__)
 KEY_TRAINING_DATA_FORMAT_VERSION = "version"
 
 
+@dataclass
+class PathWithError:
+    message: str
+    path: List[str] = field(default_factory=list)
+
+
 class YamlValidationException(YamlException, ValueError):
     """Raised if a yaml file does not correspond to the expected schema."""
 
     def __init__(
         self,
-        message: Text,
-        validation_errors: Optional[List[SchemaError.SchemaErrorEntry]] = None,
-        filename: Optional[Text] = None,
+        message: str,
+        validation_errors: Optional[List[PathWithError]] = None,
+        filename: Optional[str] = None,
         content: Any = None,
     ) -> None:
         """Create The Error.
@@ -52,12 +59,9 @@ class YamlValidationException(YamlException, ValueError):
         self.validation_errors = validation_errors
         self.content = content
 
-    def __str__(self) -> Text:
-        msg = ""
-        if self.filename:
-            msg += f"Failed to validate '{self.filename}'. "
-        else:
-            msg += "Failed to validate YAML. "
+    def __str__(self) -> str:
+        msg = self.file_error_message()
+        msg += " Failed to validate YAML. "
         msg += self.message
         if self.validation_errors:
             unique_errors = {}
@@ -71,13 +75,13 @@ class YamlValidationException(YamlException, ValueError):
                 else:
                     error_representation = ""
 
-                error_representation += f"      {error}"
-                unique_errors[str(error)] = error_representation
+                error_representation += f"      {error.message}"
+                unique_errors[error.message] = error_representation
             error_msg = "\n".join(unique_errors.values())
             msg += f":\n{error_msg}"
         return msg
 
-    def _line_number_for_path(self, current: Any, path: Text) -> Optional[int]:
+    def _line_number_for_path(self, current: Any, path: List[str]) -> Optional[int]:
         """Get line number for a yaml path in the current content.
 
         Implemented using recursion: algorithm goes down the path navigating to the
@@ -102,10 +106,7 @@ class YamlValidationException(YamlException, ValueError):
         if not path:
             return this_line
 
-        if "/" in path:
-            head, tail = path.split("/", 1)
-        else:
-            head, tail = path, ""
+        head, tail = path[0], path[1:]
 
         if head:
             if isinstance(current, dict) and head in current:
@@ -118,7 +119,7 @@ class YamlValidationException(YamlException, ValueError):
 
 
 def validate_yaml_schema(
-    yaml_file_content: Text, schema_path: Text, package_name: Text = PACKAGE_NAME
+    yaml_file_content: str, schema_path: str, package_name: str = PACKAGE_NAME
 ) -> None:
     """Validate yaml content.
 
@@ -128,8 +129,7 @@ def validate_yaml_schema(
         package_name: the name of the package the schema is located in. defaults
             to `rasa`.
     """
-    from pykwalify.core import Core
-    from pykwalify.errors import SchemaError
+    import pykwalify
     from ruamel.yaml import YAMLError
     import pkg_resources
     import logging
@@ -163,7 +163,7 @@ def validate_yaml_schema(
     schema_utils_content = rasa.shared.utils.io.read_yaml_file(schema_utils_file)
     schema_content = dict(schema_content, **schema_utils_content)
 
-    c = Core(
+    c = pykwalify.core.Core(
         source_data=source_data,
         schema_data=schema_content,
         extensions=[schema_extensions],
@@ -171,17 +171,17 @@ def validate_yaml_schema(
 
     try:
         c.validate(raise_exception=True)
-    except SchemaError:
+    except pykwalify.errors.SchemaError:
         raise YamlValidationException(
             "Please make sure the file is correct and all "
             "mandatory parameters are specified. Here are the errors "
             "found during validation",
-            c.errors,
+            [PathWithError(message=str(e), path=e.path.split("/")) for e in c.errors],
             content=source_data,
         )
 
 
-def validate_training_data(json_data: Dict[Text, Any], schema: Dict[Text, Any]) -> None:
+def validate_training_data(json_data: Dict[str, Any], schema: Dict[str, Any]) -> None:
     """Validate rasa training data format to ensure proper training.
 
     Args:
@@ -191,12 +191,9 @@ def validate_training_data(json_data: Dict[Text, Any], schema: Dict[Text, Any]) 
     Raises:
         SchemaValidationError if validation fails.
     """
-    from jsonschema import validate
-    from jsonschema import ValidationError
-
     try:
-        validate(json_data, schema)
-    except ValidationError as e:
+        jsonschema.validate(json_data, schema)
+    except jsonschema.ValidationError as e:
         e.message += (
             f". Failed to validate data, make sure your data "
             f"is valid. For more information about the format visit "
@@ -206,7 +203,7 @@ def validate_training_data(json_data: Dict[Text, Any], schema: Dict[Text, Any]) 
 
 
 def validate_training_data_format_version(
-    yaml_file_content: Dict[Text, Any], filename: Optional[Text]
+    yaml_file_content: Dict[str, Any], filename: Optional[str]
 ) -> bool:
     """Validates version on the training data content using `version` field
        and warns users if the file is not compatible with the current version of
@@ -291,8 +288,18 @@ def validate_training_data_format_version(
     return False
 
 
+def default_error_humanizer(error: jsonschema.ValidationError) -> str:
+    """Creates a user readable error message for an error."""
+    return error.message
+
+
 def validate_yaml_with_jsonschema(
-    yaml_file_content: Text, schema_path: Text, package_name: Text = PACKAGE_NAME
+    yaml_file_content: str,
+    schema_path: str,
+    package_name: str = PACKAGE_NAME,
+    humanize_error: Callable[
+        [jsonschema.ValidationError], str
+    ] = default_error_humanizer,
 ) -> None:
     """Validate data format.
 
@@ -306,7 +313,6 @@ def validate_yaml_with_jsonschema(
         YamlSyntaxException: if the yaml file is not valid.
         SchemaValidationError: if validation fails.
     """
-    from jsonschema import validate, ValidationError
     from ruamel.yaml import YAMLError
     import pkg_resources
 
@@ -326,7 +332,18 @@ def validate_yaml_with_jsonschema(
         raise YamlSyntaxException(underlying_yaml_exception=e)
 
     try:
-        validate(source_data, schema_content)
-    except ValidationError as error:
-        error.message += ". Failed to validate data, make sure your data is valid."
-        raise SchemaValidationError.create_from(error) from error
+        jsonschema.validate(source_data, schema_content)
+    except jsonschema.ValidationError as error:
+        errors = [
+            PathWithError(
+                message=humanize_error(error),
+                path=[str(e) for e in error.absolute_path],
+            )
+        ]
+        raise YamlValidationException(
+            "Please make sure the file is correct and all "
+            "mandatory parameters are specified. Here are the errors "
+            "found during validation",
+            errors,
+            content=source_data,
+        )
