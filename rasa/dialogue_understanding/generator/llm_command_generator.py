@@ -24,7 +24,10 @@ from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.constants import RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG
+from rasa.shared.constants import (
+    RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
+    RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
+)
 from rasa.shared.core.flows import FlowStep, Flow, FlowsList
 from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
 from rasa.shared.core.slots import (
@@ -168,7 +171,10 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         if tracker is None or flows.is_empty():
             # cannot do anything if there are no flows or no tracker
             return []
-
+        if self.check_if_message_is_empty(message):
+            return [
+                ErrorCommand(error_type=RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY)
+            ]
         if self.check_if_message_exceeds_limit(message):
             # notify the user about message length
             return [
@@ -486,3 +492,6 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         if self.user_input_config.max_characters < 0:
             return False
         return len(message.get(TEXT, "")) > self.user_input_config.max_characters
+
+    def check_if_message_is_empty(self, message: Message) -> bool:
+        return len(message.get(TEXT, "").strip()) == 0
