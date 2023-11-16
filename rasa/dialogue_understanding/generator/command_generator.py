@@ -1,14 +1,38 @@
-from typing import Any, Dict, List, Optional
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Text
 
 import structlog
 
-from rasa.dialogue_understanding.commands import Command, StartFlowCommand
+from rasa.dialogue_understanding.commands import Command, StartFlowCommand, ErrorCommand
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.training_data.message import Message
-from rasa.shared.nlu.constants import COMMANDS
+from rasa.shared.nlu.constants import COMMANDS, TEXT
+from rasa.shared.utils.llm import DEFAULT_MAX_USER_INPUT_CHARACTERS
+from rasa.shared.constants import (
+    RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
+    RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
+)
 
 structlogger = structlog.get_logger()
+
+
+@dataclass
+class UserInputConfig:
+    """Configuration class for user input settings."""
+
+    max_characters: int = DEFAULT_MAX_USER_INPUT_CHARACTERS
+    """The maximum number of characters allowed in the user input."""
+
+    def __post_init__(self) -> None:
+        if self.max_characters is None:
+            self.max_characters = DEFAULT_MAX_USER_INPUT_CHARACTERS
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "UserInputConfig":
+        return cls(
+            max_characters=data.get("max_characters", DEFAULT_MAX_USER_INPUT_CHARACTERS)
+        )
 
 
 class CommandGenerator:
@@ -17,6 +41,11 @@ class CommandGenerator:
     Parses a message and returns a list of commands. The commands are then
     executed and will lead to tracker state modifications and action
     predictions."""
+
+    def __init__(self, config: Dict[Text, Any]):
+        self.user_input_config = UserInputConfig.from_dict(
+            config.get("user_input") or {}
+        )
 
     def process(
         self,
@@ -42,18 +71,13 @@ class CommandGenerator:
         startable_flows = flows.startable_flows(context_and_slots)
 
         for message in messages:
+
             if message.get(COMMANDS):
                 # do not overwrite commands if they are already present
                 # i.e. another command generator already predicted commands
                 continue
 
-            try:
-                commands = self.predict_commands(message, startable_flows, tracker)
-            except Exception as e:
-                if isinstance(e, NotImplementedError):
-                    raise e
-                structlogger.error("command_generator.predict.error", error=e)
-                commands = []
+            commands = self._evaluate_and_predict(message, startable_flows, tracker)
             # Double check commands for guarded flows. Unlikely but the llm could
             # have predicted a command for a flow that is not in the startable
             # flow list supplied in the prompt.
@@ -62,7 +86,39 @@ class CommandGenerator:
             )
             commands_dicts = [command.as_dict() for command in commands]
             message.set(COMMANDS, commands_dicts, add_to_output=True)
+
         return messages
+
+    def _evaluate_and_predict(
+        self,
+        message: Message,
+        startable_flows: FlowsList,
+        tracker: Optional[DialogueStateTracker] = None,
+    ) -> List[Command]:
+        """Evaluates the given message for errors and predicts commands if no errors
+        are found.
+
+        Args:
+            message: The message to process.
+            tracker: The tracker containing the conversation history up to now.
+            startable_flows: The startable flows to use for command prediction.
+
+        Returns:
+            Errors or predicted commands
+        """
+        # evaluate message for errors
+        commands = self.evaluate_message(message)
+
+        # if no errors, try predicting commands
+        if not commands:
+            try:
+                commands = self.predict_commands(message, startable_flows, tracker)
+            except NotImplementedError:
+                raise
+            except Exception as e:
+                structlogger.error("command_generator.predict.error", error=str(e))
+
+        return commands
 
     def predict_commands(
         self,
@@ -128,3 +184,50 @@ class CommandGenerator:
             commands=checked_commands,
         )
         return checked_commands
+
+    def evaluate_message(self, message: Message) -> List[Command]:
+        """Evaluates the given message
+
+        Args:
+            message: The message to evaluate.
+
+        Returns:
+            A list of error commands indicating the type of error.
+        """
+
+        errors: List[Command]
+
+        if self.check_if_message_is_empty(message):
+            # notify the user that the message is empty
+            errors = [
+                ErrorCommand(error_type=RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY)
+            ]
+        elif self.check_if_message_exceeds_limit(message):
+            # notify the user about message length
+            errors = [
+                ErrorCommand(
+                    error_type=RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
+                    info={"max_characters": self.user_input_config.max_characters},
+                )
+            ]
+        else:
+            return []
+
+        structlogger.info(
+            "command_generator.evaluate_message.error",
+            event_info="Invalid message",
+            errors=[e.as_dict() for e in errors],
+            message=message.get(TEXT),
+        )
+        return errors
+
+    def check_if_message_exceeds_limit(self, message: Message) -> bool:
+        """Checks if the given message exceeds the predefined number of characters."""
+        # if limit was a negative number, omit it
+        if self.user_input_config.max_characters < 0:
+            return False
+        return len(message.get(TEXT, "")) > self.user_input_config.max_characters
+
+    def check_if_message_is_empty(self, message: Message) -> bool:
+        """Checks if the given message is empty or whitespace-only."""
+        return len(message.get(TEXT, "").strip()) == 0
