@@ -6,7 +6,6 @@ from rasa.shared.core.flows import Flow, FlowStep
 from rasa.shared.core.flows.steps import (
     ActionFlowStep,
     CollectInformationFlowStep,
-    GenerateResponseFlowStep,
     LinkFlowStep,
     SetSlotsFlowStep,
 )
@@ -35,11 +34,7 @@ def flow_with_all_steps() -> Flow:
                       - if: "topic != large language models"
                         utter: utter_too_boring
                   - id: flow_step
-                    next: generation_step
-                  - id: generation_step
-                    generation_prompt: "Engage the user on the chosen topic:"
-                    llm:
-                      model: "gpt-5"
+                    next: link_step
                   - id: link_step
                     link: test_flow
                   """
@@ -54,7 +49,6 @@ def flow_with_all_steps() -> Flow:
         ("set_slots_step", SetSlotsFlowStep),
         ("collect_step", CollectInformationFlowStep),
         ("flow_step", FlowStep),
-        ("generation_step", GenerateResponseFlowStep),
         ("link_step", LinkFlowStep),
     ],
 )
@@ -105,13 +99,6 @@ def test_flow_step_attributes(flow_with_all_steps: Flow):
     assert type(step) is FlowStep
     assert len(step.next.links) == 1
     assert step.next.links[0].target == "generation_step"
-
-
-def test_generation_step_attributes(flow_with_all_steps: Flow):
-    step = flow_with_all_steps.step_by_id("generation_step")
-    assert isinstance(step, GenerateResponseFlowStep)
-    assert step.generation_prompt.startswith("Engage")
-    assert step.llm_config["model"] == "gpt-5"
 
 
 def test_link_step_attributes(flow_with_all_steps: Flow):

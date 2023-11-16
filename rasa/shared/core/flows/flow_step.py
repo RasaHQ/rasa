@@ -32,7 +32,6 @@ def step_from_json(data: Dict[Text, Any]) -> FlowStep:
         CollectInformationFlowStep,
         LinkFlowStep,
         SetSlotsFlowStep,
-        GenerateResponseFlowStep,
     )
 
     if "action" in data:
@@ -43,8 +42,6 @@ def step_from_json(data: Dict[Text, Any]) -> FlowStep:
         return LinkFlowStep.from_json(data)
     if "set_slots" in data:
         return SetSlotsFlowStep.from_json(data)
-    if "generation_prompt" in data:
-        return GenerateResponseFlowStep.from_json(data)
     else:
         return FlowStep.from_json(data)
 
