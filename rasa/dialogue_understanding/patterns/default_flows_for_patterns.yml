@@ -70,13 +70,13 @@ responses:
       metadata:
         rephrase: True
 
+  utter_user_input_empty_error_rasa:
+    - text: I see an empty message. What can I assist you with?
+
   utter_user_input_too_long_error_rasa:
     - text: I'm sorry, but your message is too long for me to process. Please keep your message concise and within {% if context.info.max_characters %}{{context.info.max_characters}} characters.{% else %}a reasonable length.{% endif %}
       metadata:
         template: jinja
-
-  utter_user_input_empty_error_rasa:
-    - text: I see an empty message. What can I assist you with?
 
 slots:
   confirm_correction:
