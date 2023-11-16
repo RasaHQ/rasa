@@ -1,3 +1,4 @@
+from .no_operation import NoOperationFlowStep
 from .action import ActionFlowStep
 from .collect import CollectInformationFlowStep
 from .continuation import ContinueFlowStep
@@ -19,4 +20,5 @@ all_steps = [
     LinkFlowStep,
     SetSlotsFlowStep,
     StartFlowStep,
+    NoOperationFlowStep,
 ]

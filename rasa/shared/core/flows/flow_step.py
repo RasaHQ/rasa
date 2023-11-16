@@ -12,6 +12,8 @@ from typing import (
 )
 import structlog
 
+from rasa.shared.exceptions import RasaException
+
 if TYPE_CHECKING:
     from rasa.shared.core.flows.flow_step_links import FlowStepLinks
 
@@ -33,6 +35,7 @@ def step_from_json(data: Dict[Text, Any]) -> FlowStep:
         LinkFlowStep,
         SetSlotsFlowStep,
         GenerateResponseFlowStep,
+        NoOperationFlowStep,
     )
 
     if "action" in data:
@@ -45,8 +48,9 @@ def step_from_json(data: Dict[Text, Any]) -> FlowStep:
         return SetSlotsFlowStep.from_json(data)
     if "generation_prompt" in data:
         return GenerateResponseFlowStep.from_json(data)
-    else:
-        return FlowStep.from_json(data)
+    if "noop" in data:
+        return NoOperationFlowStep.from_json(data)
+    raise RasaException(f"Failed to parse step from json. Unknown type for {data}.")
 
 
 @dataclass
@@ -92,8 +96,10 @@ class FlowStep:
         Returns:
             The FlowStep as serialized data.
         """
-        data: Dict[Text, Any] = {"next": self.next.as_json()}
-        data["id"] = self.id
+        data: Dict[Text, Any] = {"id": self.id}
+
+        if dumped_next := self.next.as_json():
+            data["next"] = dumped_next
         if self.description:
             data["description"] = self.description
         if self.metadata:

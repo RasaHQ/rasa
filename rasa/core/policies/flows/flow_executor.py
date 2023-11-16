@@ -66,6 +66,7 @@ from rasa.shared.core.flows.steps import (
     ContinueFlowStep,
     EndFlowStep,
     CollectInformationFlowStep,
+    NoOperationFlowStep,
 )
 from rasa.shared.core.flows.flow import (
     END_STEP,
@@ -515,8 +516,8 @@ def run_step(
         slot_events: List[Event] = events_from_set_slots_step(step)
         return ContinueFlowWithNextStep(events=initial_events + slot_events)
 
-    elif type(step) is FlowStep:
-        structlogger.debug("flow.step.run.base_flow_step")
+    elif isinstance(step, NoOperationFlowStep):
+        structlogger.debug("flow.step.run.no_operation")
         return ContinueFlowWithNextStep(events=initial_events)
 
     elif isinstance(step, GenerateResponseFlowStep):
