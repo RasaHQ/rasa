@@ -65,7 +65,7 @@ class Flow:
             custom_name=data.get("name"),
             description=data.get("description"),
             # str or bool are permitted in the flow schema but internally we want a str
-            guard_condition=str(data.get("if")) if data.get("if") else None,
+            guard_condition=str(data["if"]) if "if" in data else None,
             step_sequence=Flow.resolve_default_ids(step_sequence),
             nlu_triggers=nlu_triggers,
         )

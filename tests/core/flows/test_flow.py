@@ -367,6 +367,8 @@ def test_flow_step_iteration_in_deeply_nested_flow():
     [
         ("True", True),
         ("False", False),
+        (False, False),
+        (True, True),
         ("True and False", False),
         ("True or False", True),
         ("context.x > 0", True),
@@ -378,7 +380,7 @@ def test_flow_step_iteration_in_deeply_nested_flow():
         ("slots.some_missing_slot is 'available'", False),
     ],
 )
-def test_is_startable(guard_condition: str, expected_startable: bool):
+def test_is_startable(guard_condition: Tuple[bool, str], expected_startable: bool):
     """Test that the start condition is evaluated correctly."""
     # Given
     flow = Flow.from_json(
