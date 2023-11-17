@@ -129,7 +129,8 @@ def validate_yaml_schema(
         package_name: the name of the package the schema is located in. defaults
             to `rasa`.
     """
-    import pykwalify
+    import pykwalify.core
+    import pykwalify.errors
     from ruamel.yaml import YAMLError
     import pkg_resources
     import logging
