@@ -26,7 +26,10 @@ from rasa.dialogue_understanding.commands import (
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.constants import RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG
+from rasa.shared.constants import (
+    RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
+    RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
+)
 from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
 from rasa.shared.core.flows.steps.collect import (
     SlotRejection,
@@ -175,6 +178,7 @@ class TestLLMCommandGenerator:
                   collect: test_slot
             """
         )
+        test_message = Message.build(text="Test Message")
 
         with patch(
             "rasa.dialogue_understanding.generator"
@@ -187,7 +191,7 @@ class TestLLMCommandGenerator:
 
             # When
             predicted_commands = generator.predict_commands(
-                Mock(), flows=test_flows, tracker=test_tracker
+                test_message, flows=test_flows, tracker=test_tracker
             )
 
             # Then
@@ -199,6 +203,39 @@ class TestLLMCommandGenerator:
                 predicted_command.error_type
                 == RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG
             )
+
+    def test_predict_commands_with_empty_message(
+        self, model_storage: ModelStorage, resource: Resource
+    ):
+        """Test that predict_commands returns UserInputExceedsLimitErrorCommand"""
+        # Given
+        generator = LLMCommandGenerator({}, model_storage, resource)
+        test_tracker = DialogueStateTracker.from_events(
+            sender_id="test",
+            evts=[UserUttered("Hello"), BotUttered("Hi")],
+        )
+        test_flows = flows_from_str(
+            """
+            flows:
+              test_flow:
+                description: some description
+                steps:
+                - id: first_step
+                  collect: test_slot
+            """
+        )
+        test_message = Message.build(" \t\n")
+        # When
+        predicted_commands = generator.predict_commands(
+            test_message, flows=test_flows, tracker=test_tracker
+        )
+        # Then
+        assert len(predicted_commands) == 1
+        predicted_command = next(iter(predicted_commands))
+        assert isinstance(predicted_command, ErrorCommand)
+        assert (
+            predicted_command.error_type == RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY
+        )
 
     def test_generate_action_list_calls_llm_factory_correctly(
         self,
