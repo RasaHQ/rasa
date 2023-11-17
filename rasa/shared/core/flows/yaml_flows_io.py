@@ -49,9 +49,38 @@ class YAMLFlowsReader:
 
     @staticmethod
     def humanize_flow_error(error: jsonschema.ValidationError) -> str:
-        """Create a human understandable error message from a validation error."""
+        """Create a human understandable error message from a validation error.
+
+        Converts a jsonschema validation error into a human understandable
+        error message. This is used to provide more helpful error messages
+        when a user provides an invalid flow definition.
+
+        The documentation for the `jsonschema.ValidationError` can be found
+        here https://python-jsonschema.readthedocs.io/en/latest/errors/#best-match-and-relevance
+
+        Args:
+            error: The validation error to convert.
+
+        Returns:
+            A human understandable error message.
+        """
 
         def errornuous_property(path: List[Any]) -> str:
+            """Get the name of the property that caused the error.
+
+            The exception contains a path to the property that caused the error.
+            We will use that path to get the name of the property.
+
+            Example:
+                > erroneous_property(['flows', 'add_contact', 'steps', 0, 'next'])
+                'next'
+
+            Args:
+                path: The path to the property that caused the error.
+
+            Returns:
+                The name of the property that caused the error.
+            """
             if not path:
                 return "schema"
             if isinstance(path[-1], int):
@@ -61,9 +90,48 @@ class YAMLFlowsReader:
             return str(path[-1])
 
         def schema_name(schema: Dict[str, Any]) -> str:
+            """Get the name of the schema.
+
+            This helps when displaying error messages, as we don't want to
+            show the schema itself, but rather a name that describes
+            what we expect. E.g. the following schema
+
+            ```
+            "set_slots": {
+                "type": "array",
+                "schema_name": "list of slot sets",
+                "items": {
+                    "type": "object"
+                }
+            }
+            ```
+            has a `schema_name` set. When we need to raise an error because
+            this schema was not satisified, we will use the `schema_name`
+            instead of the type itself. The type is less specific (`array`)
+            and therefore less usefull than the handcrafted `schema_name`.
+
+            If a schema does not have a `schema_name` set, we will use the
+            `type` instead as a fallback."""
             return schema.get("schema_name", schema.get("type"))
 
         def schema_names(schemas: List[Dict[str, Any]]) -> List[str]:
+            """Get the names of the schemas.
+
+            Example:
+                > schema_names([
+                    {"required": ["action"], "schema_name": "action step"},
+                    {"required": ["collect"], "schema_name": "collect step"},
+                    {"required": ["link"], "schema_name": "link step"},
+                    {"required": ["set_slots"], "schema_name": "slot set step"},
+                    {"required": ["noop"], "schema_name": ""}])
+                ['action step', 'collect step', 'link step', 'slot set step']
+
+            Args:
+                schemas: The schemas to get the names of.
+
+            Returns:
+                The names of the schemas.
+            """
             names = []
             for schema in schemas:
                 if name := schema_name(schema):
@@ -71,6 +139,7 @@ class YAMLFlowsReader:
             return names
 
         def expected_schema(error: jsonschema.ValidationError, schema_type: str) -> str:
+            """Get the expected schema."""
             expected_schemas = error.schema.get(schema_type, [])
             expected = schema_names(expected_schemas)
             if expected:
@@ -79,18 +148,21 @@ class YAMLFlowsReader:
                 return str(error.schema)
 
         def format_oneof_error(error: jsonschema.ValidationError) -> str:
+            """Format a oneOf error."""
             return (
                 f"Not a valid '{errornuous_property(error.absolute_path)}' definition. "
                 f"Expected {expected_schema(error, 'oneOf')}."
             )
 
         def format_anyof_error(error: jsonschema.ValidationError) -> str:
+            """Format an anyOf error."""
             return (
                 f"Not a valid '{errornuous_property(error.absolute_path)}' definition. "
                 f"Expected {expected_schema(error, 'anyOf')}."
             )
 
         def format_type_error(error: jsonschema.ValidationError) -> str:
+            """Format a type error."""
             expected_value = schema_name(error.schema)
             if isinstance(error.instance, dict):
                 instance = "a dictionary"
