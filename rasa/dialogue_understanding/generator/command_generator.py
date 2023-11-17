@@ -107,18 +107,17 @@ class CommandGenerator:
             Errors or predicted commands
         """
         # evaluate message for errors
-        commands = self.evaluate_message(message)
+        if error_commands := self.evaluate_message(message):
+            return error_commands
 
         # if no errors, try predicting commands
-        if not commands:
-            try:
-                commands = self.predict_commands(message, startable_flows, tracker)
-            except NotImplementedError:
-                raise
-            except Exception as e:
-                structlogger.error("command_generator.predict.error", error=str(e))
-
-        return commands
+        try:
+            return self.predict_commands(message, startable_flows, tracker)
+        except NotImplementedError:
+            raise
+        except Exception as e:
+            structlogger.error("command_generator.predict.error", error=str(e))
+            return []
 
     def predict_commands(
         self,
