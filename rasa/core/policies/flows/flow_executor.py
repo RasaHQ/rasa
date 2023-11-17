@@ -41,10 +41,7 @@ from rasa.dialogue_understanding.stack.utils import (
 
 from pypred import Predicate
 
-from rasa.shared.core.constants import (
-    ACTION_LISTEN_NAME,
-    ACTION_SEND_TEXT_NAME,
-)
+from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.shared.core.events import (
     Event,
     FlowCompleted,

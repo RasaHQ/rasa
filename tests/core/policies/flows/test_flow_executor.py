@@ -1,6 +1,5 @@
 import uuid
 from typing import List, Optional, Tuple
-from unittest.mock import patch
 import pytest
 from rasa.core.policies.flows import flow_executor
 from rasa.core.policies.flows.flow_exceptions import (
@@ -28,7 +27,6 @@ from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
 )
 from rasa.shared.core.events import DialogueStackUpdated
 from rasa.dialogue_understanding.stack.frames.search_frame import SearchStackFrame
-from rasa.shared.core.constants import ACTION_SEND_TEXT_NAME
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     ActionExecuted,
