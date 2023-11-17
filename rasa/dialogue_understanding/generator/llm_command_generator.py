@@ -185,11 +185,11 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             ]
 
         flow_prompt = self.render_template(message, tracker, flows)
-        structlogger.info(
+        structlogger.debug(
             "llm_command_generator.predict_commands.prompt_rendered", prompt=flow_prompt
         )
         action_list = self._generate_action_list_using_llm(flow_prompt)
-        structlogger.info(
+        structlogger.debug(
             "llm_command_generator.predict_commands.actions_generated",
             action_list=action_list,
         )
