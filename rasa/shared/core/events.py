@@ -2109,6 +2109,14 @@ class SessionStarted(AlwaysEqualEventMixin):
         """Returns unique hash for event."""
         return hash(32143124320)
 
+    def __repr__(self) -> Text:
+        """Returns event as string for debugging."""
+        return f"SessionStarted(type_name: {self.type_name})"
+
+    def __str__(self) -> Text:
+        """Returns event as human-readable string."""
+        return f"{self.__class__.__name__}({self.type_name})"
+
     def as_story_string(self) -> None:
         """Skips representing event in stories."""
         logger.warning(

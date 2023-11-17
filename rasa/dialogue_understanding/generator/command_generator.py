@@ -178,10 +178,13 @@ class CommandGenerator:
                 and command.flow not in startable_flows.flow_ids
             )
         ]
-        structlogger.info(
-            "command_generator.check_commands_against_startable_flows.startable_commands",
-            commands=checked_commands,
-        )
+
+        if commands and len(checked_commands) != len(commands):
+            structlogger.info(
+                "command_generator.check_commands_against_startable_flows.startable_commands",
+                commands=checked_commands,
+            )
+
         return checked_commands
 
     def evaluate_message(self, message: Message) -> List[Command]:

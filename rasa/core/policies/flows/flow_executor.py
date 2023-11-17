@@ -493,7 +493,9 @@ def run_step(
                 FlowActionPrediction(action_name, 1.0, events=initial_events)
             )
         else:
-            structlogger.warning("flow.step.run.action.unknown", action=action_name)
+            if step.action != "validate_{{context.collect}}":
+                # do not log about non-existing validation actions of collect steps
+                structlogger.warning("flow.step.run.action.unknown", action=action_name)
             return ContinueFlowWithNextStep(events=initial_events)
 
     elif isinstance(step, LinkFlowStep):
