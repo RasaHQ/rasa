@@ -1,14 +1,13 @@
 {
   "type": "object",
-  "required": [
-    "flows"
-  ],
+  "required": ["flows"],
   "properties": {
     "version": {
       "type": "string"
     },
     "flows": {
       "type": "object",
+      "schema_name": "dictionary of flows",
       "patternProperties": {
         "^[A-Za-z_][A-Za-z0-9_]*$": {
           "$ref": "#$defs/flow"
@@ -27,9 +26,7 @@
           {
             "schema_name": "intent trigger",
             "type": "object",
-            "required": [
-              "intent"
-            ],
+            "required": ["intent"],
             "additionalProperties": false,
             "properties": {
               "intent": {
@@ -42,9 +39,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "name"
-                ]
+                "required": ["name"]
               }
             }
           },
@@ -65,7 +60,7 @@
       "items": {
         "type": "object",
         "properties": {
-          "id": {"type": "string"},
+          "id": { "type": "string" },
           "next": {
             "anyOf": [
               {
@@ -76,16 +71,11 @@
                   "oneOf": [
                     {
                       "schema_name": "if-then block",
-                      "required": [
-                        "if",
-                        "then"
-                      ]
+                      "required": ["if", "then"]
                     },
                     {
                       "schema_name": "else block",
-                      "required": [
-                        "else"
-                      ]
+                      "required": ["else"]
                     }
                   ],
                   "properties": {
@@ -125,22 +115,34 @@
               }
             ]
           },
-          "action": {"type": "string"},
-          "collect": {"type": "string"},
-          "link": {"type": "string"},
-          "set_slots": {"$ref": "#$defs/set_slots", "schema_name": "slot set"}
+          "action": { "type": "string" },
+          "collect": { "type": "string" },
+          "link": { "type": "string" },
+          "set_slots": { "$ref": "#$defs/set_slots", "schema_name": "slot set" }
         },
         "oneOf": [
-          {"required": ["action"], "schema_name": "action step"},
-          {"required": ["collect"], "schema_name": "collect step"},
-          {"required": ["link"], "schema_name": "link step"},
-          {"required": ["set_slots"], "schema_name": "slot set step"},
-          {"required": ["noop"], "schema_name": ""}
+          { "required": ["action"], "schema_name": "action step" },
+          { "required": ["collect"], "schema_name": "collect step" },
+          { "required": ["link"], "schema_name": "link step" },
+          { "required": ["set_slots"], "schema_name": "slot set step" },
+          { "required": ["noop"], "schema_name": "" }
         ],
         "dependentSchemas": {
-          "collect": {
+          "action": {
+            "additionalProperties": false,
             "properties": {
-              "description":{
+              "id": {},
+              "next": {},
+              "action": {}
+            }
+          },
+          "collect": {
+            "additionalProperties": false,
+            "properties": {
+              "collect": {},
+              "id": {},
+              "next": {},
+              "description": {
                 "type": "string"
               },
               "ask_before_filling": {
@@ -157,10 +159,7 @@
                 "schema_name": "list of rejections",
                 "items": {
                   "type": "object",
-                  "required": [
-                    "if",
-                    "utter"
-                  ],
+                  "required": ["if", "utter"],
                   "properties": {
                     "if": {
                       "type": ["boolean", "string"]
@@ -177,11 +176,10 @@
       }
     },
     "flow": {
-      "required": [
-        "steps"
-      ],
+      "required": ["steps"],
       "type": "object",
       "additionalProperties": false,
+      "schema_name": "dictionary with flow properties",
       "properties": {
         "description": {
           "type": "string"

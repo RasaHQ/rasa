@@ -79,10 +79,7 @@ def test_flow_validate_ambiguous_step_type():
     )
     with pytest.raises(YamlValidationException) as e:
         YAMLFlowsReader.read_from_string(data)
-    expected_error = (
-        "Not a valid 'steps' definition. Expected action step or "
-        "collect step or link step or slot set step."
-    )
+    expected_error = "Additional properties are not allowed ('collect' was unexpected)"
     assert expected_error in str(e.value)
 
 

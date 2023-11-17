@@ -181,6 +181,9 @@ class YAMLFlowsReader:
         if error.validator == "type":
             return format_type_error(error)
 
+        if error.validator == "additionalProperties":
+            return error.message
+
         return (
             f"The flow at {error.json_path} is not valid. "
             f"Please double check your flow definition."
