@@ -520,6 +520,20 @@ class UserUttered(Event):
         return hash(json.dumps(self.as_sub_state()))
 
     @property
+    def has_triggered_error(self) -> bool:
+        from rasa.dialogue_understanding.commands import ErrorCommand
+
+        return any(
+            command["command"] == ErrorCommand.command() for command in self.commands
+        )
+
+    @property
+    def error_commands(self) -> List[Dict[Text, Any]]:
+        from rasa.dialogue_understanding.commands import ErrorCommand
+
+        return [c for c in self.commands if c["command"] == ErrorCommand.command()]
+
+    @property
     def commands(self) -> List[Dict[str, Any]]:
         """Returns commands included in the message."""
         if COMMANDS in self.parse_data and isinstance(

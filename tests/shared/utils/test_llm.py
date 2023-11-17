@@ -1,3 +1,8 @@
+from typing import Text, Any, Dict
+from rasa.shared.constants import (
+    RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
+    RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
+)
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import BotUttered, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -6,9 +11,11 @@ from rasa.shared.utils.llm import (
     tracker_as_readable_transcript,
     embedder_factory,
     llm_factory,
+    ERROR_PLACEHOLDER,
 )
 from langchain import OpenAI
 from langchain.embeddings import OpenAIEmbeddings
+import pytest
 from pytest import MonkeyPatch
 
 
@@ -99,6 +106,55 @@ def test_tracker_as_readable_transcript_and_discard_excess_turns_with_default_ma
         """AI: T19\nUSER: U20\nAI: V21\nUSER: W22\nAI: X23\nUSER: Y24"""
     )
     assert response.count("\n") == 19
+
+
+@pytest.mark.parametrize(
+    "message, command, expected_response",
+    [
+        (
+            "Very long message",
+            {
+                "command": "error",
+                "error_type": RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
+            },
+            ERROR_PLACEHOLDER[RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG],
+        ),
+        (
+            "",
+            {
+                "command": "error",
+                "error_type": RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
+            },
+            ERROR_PLACEHOLDER[RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY],
+        ),
+    ],
+)
+def test_tracker_as_readable_transcript_with_messages_that_triggered_error(
+    message: Text,
+    command: Dict[Text, Any],
+    expected_response: Text,
+    domain: Domain,
+):
+    # Given
+    tracker = DialogueStateTracker(sender_id="test", slots=domain.slots)
+    tracker.update_with_events(
+        [
+            UserUttered("Hi"),
+            BotUttered("Hi, how can I help you"),
+            UserUttered(text=message, parse_data={"commands": [command]}),
+            BotUttered("Error response"),
+        ]
+    )
+    # When
+    response = tracker_as_readable_transcript(tracker)
+    # Then
+    assert response == (
+        f"USER: Hi\n"
+        f"AI: Hi, how can I help you\n"
+        f"USER: {expected_response}\n"
+        f"AI: Error response"
+    )
+    assert response.count("\n") == 3
 
 
 def test_sanitize_message_for_prompt_handles_none():

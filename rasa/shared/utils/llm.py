@@ -12,6 +12,10 @@ if TYPE_CHECKING:
     from langchain.llms.base import BaseLLM
     from rasa.shared.core.trackers import DialogueStateTracker
 
+from rasa.shared.constants import (
+    RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
+    RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
+)
 
 structlogger = structlog.get_logger()
 
@@ -32,6 +36,15 @@ DEFAULT_OPENAI_TEMPERATURE = 0.7
 DEFAULT_OPENAI_MAX_GENERATED_TOKENS = 256
 
 DEFAULT_MAX_USER_INPUT_CHARACTERS = 420
+
+
+# Placeholder messages used in the transcript for
+# instances where user input results in an error
+ERROR_PLACEHOLDER = {
+    RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG: "[User sent really long message]",
+    RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY: "",
+    "default": "[User input triggered an error]",
+}
 
 
 def tracker_as_readable_transcript(
@@ -67,15 +80,24 @@ def tracker_as_readable_transcript(
     transcript = []
 
     for event in tracker.events:
+
         if isinstance(event, UserUttered):
-            transcript.append(
-                f"{human_prefix}: {sanitize_message_for_prompt(event.text)}"
-            )
+            if event.has_triggered_error:
+                error = next(iter(event.error_commands))
+                error_type = error.get("error_type")
+                message = ERROR_PLACEHOLDER.get(
+                    error_type, ERROR_PLACEHOLDER["default"]
+                )
+            else:
+                message = sanitize_message_for_prompt(event.text)
+            transcript.append(f"{human_prefix}: {message}")
+
         elif isinstance(event, BotUttered):
             transcript.append(f"{ai_prefix}: {sanitize_message_for_prompt(event.text)}")
 
     if max_turns:
         transcript = transcript[-max_turns:]
+
     return "\n".join(transcript)
 
 
