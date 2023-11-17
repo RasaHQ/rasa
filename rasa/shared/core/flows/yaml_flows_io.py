@@ -65,14 +65,14 @@ class YAMLFlowsReader:
             A human understandable error message.
         """
 
-        def errornuous_property(path: List[Any]) -> str:
+        def faulty_property(path: List[Any]) -> str:
             """Get the name of the property that caused the error.
 
             The exception contains a path to the property that caused the error.
             We will use that path to get the name of the property.
 
             Example:
-                > erroneous_property(['flows', 'add_contact', 'steps', 0, 'next'])
+                > faulty_property(['flows', 'add_contact', 'steps', 0, 'next'])
                 'next'
 
             Args:
@@ -150,14 +150,14 @@ class YAMLFlowsReader:
         def format_oneof_error(error: jsonschema.ValidationError) -> str:
             """Format a oneOf error."""
             return (
-                f"Not a valid '{errornuous_property(error.absolute_path)}' definition. "
+                f"Not a valid '{faulty_property(error.absolute_path)}' definition. "
                 f"Expected {expected_schema(error, 'oneOf')}."
             )
 
         def format_anyof_error(error: jsonschema.ValidationError) -> str:
             """Format an anyOf error."""
             return (
-                f"Not a valid '{errornuous_property(error.absolute_path)}' definition. "
+                f"Not a valid '{faulty_property(error.absolute_path)}' definition. "
                 f"Expected {expected_schema(error, 'anyOf')}."
             )
 
