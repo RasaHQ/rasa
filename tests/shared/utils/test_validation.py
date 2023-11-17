@@ -651,10 +651,11 @@ def test_flow_with_a_step_with_ambiguous_type():
               ask_before_filling: true
     """
     )
-    assert (
-        "Additional properties are not allowed ('ask_before_filling', 'collect' were unexpected)"
-        in validate_and_return_error_msg(flow)
+    expected_error = (
+        "Additional properties are not allowed "
+        "('ask_before_filling', 'collect' were unexpected)"
     )
+    assert expected_error in validate_and_return_error_msg(flow)
 
 
 def test_flow_random_unexpected_property_on_action_step():
