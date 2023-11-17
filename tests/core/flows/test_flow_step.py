@@ -6,11 +6,11 @@ from rasa.shared.core.flows import Flow, FlowStep
 from rasa.shared.core.flows.steps import (
     ActionFlowStep,
     CollectInformationFlowStep,
-    GenerateResponseFlowStep,
     LinkFlowStep,
     SetSlotsFlowStep,
 )
 from rasa.shared.core.flows.flow_step_links import FlowStepLinks
+from rasa.shared.core.flows.steps.no_operation import NoOperationFlowStep
 from rasa.shared.core.flows.yaml_flows_io import flows_from_str
 
 
@@ -34,12 +34,9 @@ def flow_with_all_steps() -> Flow:
                     rejections:
                       - if: "topic != large language models"
                         utter: utter_too_boring
-                  - id: flow_step
-                    next: generation_step
-                  - id: generation_step
-                    generation_prompt: "Engage the user on the chosen topic:"
-                    llm:
-                      model: "gpt-5"
+                  - id: noop_step
+                    noop: true
+                    next: link_step
                   - id: link_step
                     link: test_flow
                   """
@@ -53,8 +50,7 @@ def flow_with_all_steps() -> Flow:
         ("action_step", ActionFlowStep),
         ("set_slots_step", SetSlotsFlowStep),
         ("collect_step", CollectInformationFlowStep),
-        ("flow_step", FlowStep),
-        ("generation_step", GenerateResponseFlowStep),
+        ("noop_step", NoOperationFlowStep),
         ("link_step", LinkFlowStep),
     ],
 )
@@ -65,7 +61,7 @@ def test_flow_step_serialization(
     step = flow_with_all_steps.step_by_id(flow_step_id)
     # using exact type check because FlowStep, the superclass, is also one of
     # the classes tested
-    assert type(step) is flow_step_class
+    assert isinstance(step, flow_step_class)
     step_data = step.as_json()
     step_from_data = flow_step_class.from_json(step_data)
     # overwriting idx of the re-serialized class as this is normally only happening
@@ -100,18 +96,11 @@ def test_collect_flow_step_attributes(flow_with_all_steps: Flow):
     assert step.rejections[0].utter == "utter_too_boring"
 
 
-def test_flow_step_attributes(flow_with_all_steps: Flow):
-    step = flow_with_all_steps.step_by_id("flow_step")
-    assert type(step) is FlowStep
+def test_noop_step_attributes(flow_with_all_steps: Flow):
+    step = flow_with_all_steps.step_by_id("noop_step")
+    assert isinstance(step, NoOperationFlowStep)
     assert len(step.next.links) == 1
-    assert step.next.links[0].target == "generation_step"
-
-
-def test_generation_step_attributes(flow_with_all_steps: Flow):
-    step = flow_with_all_steps.step_by_id("generation_step")
-    assert isinstance(step, GenerateResponseFlowStep)
-    assert step.generation_prompt.startswith("Engage")
-    assert step.llm_config["model"] == "gpt-5"
+    assert step.next.links[0].target == "link_step"
 
 
 def test_link_step_attributes(flow_with_all_steps: Flow):

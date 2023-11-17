@@ -1,6 +1,5 @@
 import uuid
 from typing import List, Optional, Tuple
-from unittest.mock import patch
 import pytest
 from rasa.core.policies.flows import flow_executor
 from rasa.core.policies.flows.flow_exceptions import (
@@ -28,7 +27,6 @@ from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
 )
 from rasa.shared.core.events import DialogueStackUpdated
 from rasa.dialogue_understanding.stack.frames.search_frame import SearchStackFrame
-from rasa.shared.core.constants import ACTION_SEND_TEXT_NAME
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     ActionExecuted,
@@ -888,38 +886,6 @@ def test_run_step_set_slot():
 
     assert isinstance(result, ContinueFlowWithNextStep)
     assert result.events == [FlowStarted(flow_id="my_flow"), SlotSet("bar", "baz")]
-
-
-def test_run_step_generate_response():
-    flows = flows_from_str(
-        """
-        flows:
-          my_flow:
-            steps:
-            - id: generate
-              generation_prompt: Generate a message!
-        """
-    )
-
-    user_flow_frame = UserFlowStackFrame(
-        flow_id="my_flow", step_id="generate", frame_id="some-frame-id"
-    )
-    stack = DialogueStack(frames=[user_flow_frame])
-    tracker = DialogueStateTracker.from_events("test", [])
-    tracker.update_stack(stack)
-    step = user_flow_frame.step(flows)
-    flow = user_flow_frame.flow(flows)
-    available_actions = []
-
-    # mock the steps `.generate` method to avoid an LLM call
-    with patch.object(step, "generate", return_value="generated"):
-        result = flow_executor.run_step(
-            step, flow, stack, tracker, available_actions, flows
-        )
-
-    assert isinstance(result, PauseFlowReturnPrediction)
-    assert result.action_prediction.action_name == ACTION_SEND_TEXT_NAME
-    assert result.action_prediction.metadata == {"message": {"text": "generated"}}
 
 
 def test_run_step_end():

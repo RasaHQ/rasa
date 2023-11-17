@@ -36,6 +36,18 @@ class YamlException(RasaException):
         """
         self.filename = filename
 
+    def file_error_message(self) -> str:
+        if self.filename:
+            return f"Error in '{self.filename}'."
+        else:
+            return "Error found."
+
+    def __str__(self) -> str:
+        msg = self.file_error_message()
+        if self.__cause__:
+            msg += f" {self.__cause__}"
+        return msg
+
 
 class YamlSyntaxException(YamlException):
     """Raised when a YAML file can not be parsed properly due to a syntax error."""
@@ -50,10 +62,8 @@ class YamlSyntaxException(YamlException):
         self.underlying_yaml_exception = underlying_yaml_exception
 
     def __str__(self) -> Text:
-        if self.filename:
-            exception_text = f"Failed to read '{self.filename}'."
-        else:
-            exception_text = "Failed to read YAML."
+        exception_text = self.file_error_message()
+        exception_text += " Failed to read YAML."
 
         if self.underlying_yaml_exception:
             if isinstance(

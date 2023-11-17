@@ -558,7 +558,7 @@ def test_train_validation_fail_on_warnings(
     assert result.ret == 1
 
 
-def test_train_validation_fail_to_load_domain(
+def test_train_succeeds_by_falling_back_to_default_domain(
     run_in_simple_project: Callable[..., RunResult],
 ):
     result = run_in_simple_project(
@@ -567,8 +567,8 @@ def test_train_validation_fail_to_load_domain(
         "not_existing_domain.yml",
     )
 
-    assert "Encountered empty domain during validation." in str(result.outlines)
-    assert result.ret == 1
+    assert "Your Rasa model is trained and saved" in str(result.outlines)
+    assert result.ret == 0
 
 
 def test_train_validation_max_history_1(

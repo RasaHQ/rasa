@@ -1,10 +1,11 @@
+import textwrap
 from typing import Text
 from threading import Thread
 
 import pytest
 
 from pep440_version_utils import Version
-from rasa.shared.core.flows.yaml_flows_io import FLOWS_SCHEMA_FILE
+from rasa.shared.core.flows.yaml_flows_io import FLOWS_SCHEMA_FILE, YAMLFlowsReader
 
 from rasa.shared.exceptions import YamlException, SchemaValidationError
 import rasa.shared.utils.io
@@ -19,6 +20,7 @@ from rasa.shared.constants import (
 from rasa.shared.nlu.training_data.formats.rasa_yaml import NLU_SCHEMA_FILE
 from rasa.shared.utils.validation import (
     KEY_TRAINING_DATA_FORMAT_VERSION,
+    YamlValidationException,
     validate_yaml_with_jsonschema,
 )
 
@@ -517,164 +519,221 @@ flows:
 )
 def test_flow_validation_pass(flow_yaml: str) -> None:
     # test fails if exception is raised
-    validate_yaml_with_jsonschema(flow_yaml, FLOWS_SCHEMA_FILE)
+    validate_yaml_with_jsonschema(
+        flow_yaml, FLOWS_SCHEMA_FILE, humanize_error=YAMLFlowsReader.humanize_flow_error
+    )
 
 
-@pytest.mark.parametrize(
-    "flow_yaml, error_msg",
-    [
-        ("""flows:""", "None is not of type 'object'."),
-        (
-            """flows:
-  test:
-    name: test
-    steps:""",
-            ("None is not of type 'array'."),
-        ),
-        (
-            """flows:
-         test:
-         - id: test""",
-            "[ordereddict([('id', 'test')])] is not of type 'object'.",
-        ),
-        (
-            """flows:
-  test:
-    name: test
-    steps:
-      - collect: recurrent_payment_type
-        rejections:
-          - if: not ({"direct debit" "standing order"} contains recurrent_payment_type)
-            utter: utter_invalid_recurrent_payment_type
-        desc: the type of payment""",
-            (
-                "('desc', 'the type of payment')]) is not valid"
-                " under any of the given schemas."
-            ),
-        ),
-        (  # next is a Bool
-            """flows:
-  test:
-    name: test
-    steps:
-      - collect: confirm_correct_card
-        ask_before_filling: true
-        next:
-          - if: "confirm_correct_card"
-            then:
-              - link: "replace_eligible_card"
-          - else:
-              - action: utter_relevant_card_not_linked
-                next: True""",
-            "('next', True)])])])])]) is not valid under any of the given schemas.",
-        ),
-        (  # just next and ask_before_filling
-            """flows:
-  test:
-    name: test
-    steps:
-      - ask_before_filling: true
-        next:
-          - if: "confirm_correct_card"
-            then:
-              - link: "replace_eligible_card"
-          - else:
-              - action: utter_relevant_card_not_linked
-                next: END""",
-            (
-                "('if', 'confirm_correct_card'), ('then',"
-                " [ordereddict([('link', 'replace_eligible_card')])])]), "
-                "ordereddict([('else', [ordereddict([('action', "
-                "'utter_relevant_card_not_linked'), ('next', 'END')])])])]"
-                " is not of type 'null'. Failed to validate data,"
-                " make sure your data is valid."
-            ),
-        ),
-        (  # action added to collect
-            """flows:
-  test:
-    steps:
-      - collect: confirm_correct_card
-        action: utter_xyz
-        ask_before_filling: true""",
-            (
-                "([('collect', 'confirm_correct_card'), ('action', 'utter_xyz'),"
-                " ('ask_before_filling', True)])"
-                " is not valid under any of the given schemas."
-            ),
-        ),
-        (  # random addition to action
-            """flows:
-  test:
-    steps:
-      - action: utter_xyz
-        random_xyz: true
-        next: END""",
-            "Failed validating 'type' in schema[2]['properties']['next']",
-        ),
-        (  # random addition to collect
-            """flows:
-  test:
-    steps:
-      - collect: confirm_correct_card
-        random_xyz: utter_xyz
-        ask_before_filling: true""",
-            (
-                "ordereddict([('collect', 'confirm_correct_card'), "
-                "('random_xyz', 'utter_xyz'), ('ask_before_filling', True)])"
-                " is not valid under any of the given schemas."
-            ),
-        ),
-        (  # random addition to flow definition
-            """flows:
-  test:
-    random_xyz: True
-    steps:
-      - action: utter_xyz
-        next: id-21312""",
-            "Additional properties are not allowed ('random_xyz' was unexpected).",
-        ),
-        (
-            """flows:
-  test:
-    steps:
-      - action: True
-        next: id-2132""",
-            (
-                "ordereddict([('action', True), ('next', 'id-2132')])"
-                " is not valid under any of the given schemas."
-            ),
-        ),
-        (  # next is a step
-            """flows:
-  test:
-    steps:
-      - action: xyz
-        next:
-        - action: utter_xyz""",
-            (
-                "([('action', 'xyz'), ('next',"
-                " [ordereddict([('action', 'utter_xyz')])])])"
-                " is not valid under any of the given schemas."
-            ),
-        ),
-        (  # next is without then
-            """flows:
-  test:
-    steps:
-      - action: xyz
-        next:
-        - if: xyz""",
-            (
-                "([('action', 'xyz'), ('next', [ordereddict([('if', 'xyz')])])])"
-                " is not valid under any of the given schemas."
-            ),
-        ),
-    ],
-)
-def test_flow_validation_fail(flow_yaml: str, error_msg: str) -> None:
-    with pytest.raises(SchemaValidationError) as e:
+def validate_and_return_error_msg(flow_yaml: str) -> str:
+    with pytest.raises(YamlValidationException) as e:
         rasa.shared.utils.validation.validate_yaml_with_jsonschema(
-            flow_yaml, FLOWS_SCHEMA_FILE
+            flow_yaml,
+            FLOWS_SCHEMA_FILE,
+            humanize_error=YAMLFlowsReader.humanize_flow_error,
         )
-    assert error_msg in str(e.value)
+    return str(e.value)
+
+
+def test_next_without_then():
+    flow = textwrap.dedent(
+        """
+      flows:
+        test:
+          steps:
+            - action: xyz
+              next:
+              - if: xyz
+    """
+    )
+    assert (
+        "Not a valid 'next' definition. Expected else block or if-then block."
+        in validate_and_return_error_msg(flow)
+    )
+
+
+def test_flow_without_content():
+    flow = textwrap.dedent(
+        """
+      flows:
+    """
+    )
+    assert (
+        "Found `None` but expected a dictionary of flows."
+        in validate_and_return_error_msg(flow)
+    )
+
+
+def test_flow_without_steps():
+    flow = textwrap.dedent(
+        """
+      flows:
+        test:
+          name: test
+          steps:
+    """
+    )
+    assert (
+        "Found `None` but expected a list of steps."
+        in validate_and_return_error_msg(flow)
+    )
+
+
+def test_flow_with_array_instead_of_object():
+    flow = textwrap.dedent(
+        """
+      flows:
+         test:
+         - id: test
+    """
+    )
+    assert (
+        "Found a list but expected a dictionary with flow properties."
+        in validate_and_return_error_msg(flow)
+    )
+
+
+def test_flow_with_boolean_as_next():
+    flow = textwrap.dedent(
+        """
+      flows:
+        test:
+          name: test
+          steps:
+            - collect: confirm_correct_card
+              ask_before_filling: true
+              next:
+                - if: "confirm_correct_card"
+                  then:
+                    - link: "replace_eligible_card"
+                - else:
+                    - action: utter_relevant_card_not_linked
+                      next: True
+    """
+    )
+    assert (
+        "Not a valid 'next' definition. Expected list of conditions or step id."
+        in validate_and_return_error_msg(flow)
+    )
+
+
+def test_flow_with_a_step_without_a_type():
+    flow = textwrap.dedent(
+        """
+      flows:
+        test:
+          name: test
+          steps:
+            - ask_before_filling: true
+              next:
+                - if: "confirm_correct_card"
+                  then:
+                    - link: "replace_eligible_card"
+                - else:
+                    - action: utter_relevant_card_not_linked
+                      next: END
+    """
+    )
+    expected_error = (
+        "Not a valid 'steps' definition. Expected action step or collect "
+        "step or link step or slot set step."
+    )
+    assert expected_error in validate_and_return_error_msg(flow)
+
+
+def test_flow_with_a_step_with_ambiguous_type():
+    flow = textwrap.dedent(
+        """
+      flows:
+        test:
+          steps:
+            - collect: confirm_correct_card
+              action: utter_xyz
+              ask_before_filling: true
+    """
+    )
+    expected_error = (
+        "Additional properties are not allowed "
+        "('ask_before_filling', 'collect' were unexpected)"
+    )
+    assert expected_error in validate_and_return_error_msg(flow)
+
+
+def test_flow_random_unexpected_property_on_action_step():
+    flow = textwrap.dedent(
+        """
+      flows:
+        test:
+          steps:
+            - action: utter_xyz
+              random_xyz: true
+              next: END
+    """
+    )
+    assert (
+        "Additional properties are not allowed ('random_xyz' was unexpected)"
+        in validate_and_return_error_msg(flow)
+    )
+
+
+def test_flow_random_unexpected_property_on_collect():
+    flow = textwrap.dedent(
+        """
+      flows:
+        test:
+          steps:
+            - collect: confirm_correct_card
+              random_xyz: utter_xyz
+              ask_before_filling: true
+    """
+    )
+    assert (
+        "Additional properties are not allowed ('random_xyz' was unexpected)"
+        in validate_and_return_error_msg(flow)
+    )
+
+
+def test_flow_random_unexpected_property_on_flow():
+    flow = textwrap.dedent(
+        """
+      flows:
+        test:
+          random_xyz: True
+          steps:
+            - action: utter_xyz
+              next: id-21312
+    """
+    )
+    assert (
+        "Additional properties are not allowed ('random_xyz' was unexpected)"
+        in validate_and_return_error_msg(flow)
+    )
+
+
+def test_flow_with_invalid_type_for_action():
+    flow = textwrap.dedent(
+        """
+      flows:
+        test:
+          steps:
+            - action: True
+              next: id-2132
+    """
+    )
+    assert "Found `True` but expected a string." in validate_and_return_error_msg(flow)
+
+
+def test_flow_next_is_not_a_step():
+    flow = textwrap.dedent(
+        """
+      flows:
+        test:
+          steps:
+            - action: xyz
+              next:
+              - action: utter_xyz
+    """
+    )
+    assert (
+        "Not a valid 'next' definition. Expected else block or if-then block."
+        in validate_and_return_error_msg(flow)
+    )

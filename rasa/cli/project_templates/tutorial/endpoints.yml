@@ -40,3 +40,6 @@ action_endpoint:
 #  username: username
 #  password: password
 #  queue: queue
+
+nlg:
+  type: rasa_plus.ml.ContextualResponseRephraser

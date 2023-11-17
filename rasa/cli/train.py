@@ -92,7 +92,7 @@ def run_training(args: argparse.Namespace, can_exit: bool = False) -> Optional[T
     if not args.skip_validation:
         logger.info("Started validating domain and training data...")
         importer = TrainingDataImporter.load_from_config(
-            domain_path=args.domain, training_data_paths=args.data, config_path=config
+            domain_path=domain, training_data_paths=args.data, config_path=config
         )
         rasa.cli.utils.validate_files(
             args.fail_on_validation_warnings, args.validation_max_history, importer

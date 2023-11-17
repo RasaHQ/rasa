@@ -41,10 +41,7 @@ from rasa.dialogue_understanding.stack.utils import (
 
 from pypred import Predicate
 
-from rasa.shared.core.constants import (
-    ACTION_LISTEN_NAME,
-    ACTION_SEND_TEXT_NAME,
-)
+from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.shared.core.events import (
     Event,
     FlowCompleted,
@@ -60,12 +57,12 @@ from rasa.shared.core.flows.flow_step_links import (
 )
 from rasa.shared.core.flows.steps import (
     ActionFlowStep,
-    GenerateResponseFlowStep,
     SetSlotsFlowStep,
     LinkFlowStep,
     ContinueFlowStep,
     EndFlowStep,
     CollectInformationFlowStep,
+    NoOperationFlowStep,
 )
 from rasa.shared.core.flows.flow import (
     END_STEP,
@@ -517,20 +514,9 @@ def run_step(
         slot_events: List[Event] = events_from_set_slots_step(step)
         return ContinueFlowWithNextStep(events=initial_events + slot_events)
 
-    elif type(step) is FlowStep:
-        structlogger.debug("flow.step.run.base_flow_step")
+    elif isinstance(step, NoOperationFlowStep):
+        structlogger.debug("flow.step.run.no_operation")
         return ContinueFlowWithNextStep(events=initial_events)
-
-    elif isinstance(step, GenerateResponseFlowStep):
-        structlogger.debug("flow.step.run.generate_response")
-        generated = step.generate(tracker)
-        action_prediction = FlowActionPrediction(
-            ACTION_SEND_TEXT_NAME,
-            1.0,
-            metadata={"message": {"text": generated}},
-            events=initial_events,
-        )
-        return PauseFlowReturnPrediction(action_prediction)
 
     elif isinstance(step, EndFlowStep):
         # this is the end of the flow, so we'll pop it from the stack
