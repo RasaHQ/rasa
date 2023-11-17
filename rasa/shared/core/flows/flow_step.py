@@ -34,7 +34,6 @@ def step_from_json(data: Dict[Text, Any]) -> FlowStep:
         CollectInformationFlowStep,
         LinkFlowStep,
         SetSlotsFlowStep,
-        GenerateResponseFlowStep,
         NoOperationFlowStep,
     )
 
@@ -46,8 +45,6 @@ def step_from_json(data: Dict[Text, Any]) -> FlowStep:
         return LinkFlowStep.from_json(data)
     if "set_slots" in data:
         return SetSlotsFlowStep.from_json(data)
-    if "generation_prompt" in data:
-        return GenerateResponseFlowStep.from_json(data)
     if "noop" in data:
         return NoOperationFlowStep.from_json(data)
     raise RasaException(f"Failed to parse step from json. Unknown type for {data}.")

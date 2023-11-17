@@ -100,6 +100,13 @@ def test_validate_if_none_is_valid():
     assert rasa.cli.utils.get_validated_path(None, "out", "default", True) is None
 
 
+def test_validate_with_multiple_default_options(tmp_path: pathlib.Path):
+    chosen_option = rasa.cli.utils.get_validated_path(
+        None, "out", ["xyz", str(tmp_path)]
+    )
+    assert chosen_option == str(tmp_path)
+
+
 def test_validate_with_none_if_default_is_valid(
     caplog: LogCaptureFixture, tmp_path: pathlib.Path
 ):

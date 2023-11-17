@@ -37,7 +37,6 @@
     "flow_hashes": null,
     "name": null,
     "requested_slot": null,
-    "return_value": null,
     "session_started_metadata": null
   },
   "latest_input_channel": null,

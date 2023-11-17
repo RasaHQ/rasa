@@ -13,4 +13,4 @@ responses:
   utter_no_contacts:
     - text: "You have no contacts in your list."
   utter_list_contacts:
-    - text: "You currently have the following contacts:\n {contacts_list}"
+    - text: "You currently have the following contacts:\n{contacts_list}"

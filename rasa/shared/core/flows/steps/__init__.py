@@ -3,7 +3,6 @@ from .action import ActionFlowStep
 from .collect import CollectInformationFlowStep
 from .continuation import ContinueFlowStep
 from .end import EndFlowStep
-from .generate_response import GenerateResponseFlowStep
 from .internal import InternalFlowStep
 from .link import LinkFlowStep
 from .set_slots import SetSlotsFlowStep
@@ -15,7 +14,6 @@ all_steps = [
     CollectInformationFlowStep,
     ContinueFlowStep,
     EndFlowStep,
-    GenerateResponseFlowStep,
     InternalFlowStep,
     LinkFlowStep,
     SetSlotsFlowStep,

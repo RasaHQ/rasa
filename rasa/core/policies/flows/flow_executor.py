@@ -60,7 +60,6 @@ from rasa.shared.core.flows.flow_step_links import (
 )
 from rasa.shared.core.flows.steps import (
     ActionFlowStep,
-    GenerateResponseFlowStep,
     SetSlotsFlowStep,
     LinkFlowStep,
     ContinueFlowStep,
@@ -519,17 +518,6 @@ def run_step(
     elif isinstance(step, NoOperationFlowStep):
         structlogger.debug("flow.step.run.no_operation")
         return ContinueFlowWithNextStep(events=initial_events)
-
-    elif isinstance(step, GenerateResponseFlowStep):
-        structlogger.debug("flow.step.run.generate_response")
-        generated = step.generate(tracker)
-        action_prediction = FlowActionPrediction(
-            ACTION_SEND_TEXT_NAME,
-            1.0,
-            metadata={"message": {"text": generated}},
-            events=initial_events,
-        )
-        return PauseFlowReturnPrediction(action_prediction)
 
     elif isinstance(step, EndFlowStep):
         # this is the end of the flow, so we'll pop it from the stack

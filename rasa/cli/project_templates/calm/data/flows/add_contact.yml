@@ -10,7 +10,7 @@ flows:
       - collect: "add_contact_confirmation"
         ask_before_filling: true
         next:
-          - if: not add_contact_confirmation
+          - if: not slots.add_contact_confirmation
             then:
               - action: utter_add_contact_cancelled
                 next: END
@@ -18,11 +18,11 @@ flows:
       - id: add_contact
         action: add_contact
         next:
-          - if: "return_value = 'success'"
+          - if: "slots.return_value = 'success'"
             then:
               - action: utter_contact_added
                 next: END
-          - if: "return_value = 'already_exists'"
+          - if: "slots.return_value = 'already_exists'"
             then:
               - action: utter_contact_already_exists
                 next: END
