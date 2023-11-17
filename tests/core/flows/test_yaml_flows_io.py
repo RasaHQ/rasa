@@ -210,3 +210,16 @@ def test_flow_validates_invalid_step_content():
         "or collect step or link step or slot set step."
     )
     assert expected_error in str(e.value)
+
+
+def test_flow_validates_true_flow_guard():
+    data = textwrap.dedent(
+        """
+        flows:
+            add_contact:
+                if: true
+                steps:
+                - noop: true
+        """
+    )
+    assert YAMLFlowsReader.read_from_string(data)
