@@ -83,8 +83,8 @@ def tracker_as_readable_transcript(
 
         if isinstance(event, UserUttered):
             if event.has_triggered_error:
-                error = next(iter(event.error_commands))
-                error_type = error.get("error_type")
+                first_error = event.error_commands[0]
+                error_type = first_error.get("error_type")
                 message = ERROR_PLACEHOLDER.get(
                     error_type, ERROR_PLACEHOLDER["default"]
                 )

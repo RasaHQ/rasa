@@ -521,11 +521,7 @@ class UserUttered(Event):
 
     @property
     def has_triggered_error(self) -> bool:
-        from rasa.dialogue_understanding.commands import ErrorCommand
-
-        return any(
-            command["command"] == ErrorCommand.command() for command in self.commands
-        )
+        return len(self.error_commands) > 0
 
     @property
     def error_commands(self) -> List[Dict[Text, Any]]:
