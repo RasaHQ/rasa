@@ -27,11 +27,9 @@ class NLUCommandAdapter(GraphComponent, CommandGenerator):
     """An NLU-based command generator."""
 
     def __init__(
-        self,
-        config: Dict[str, Any],
-        model_storage: ModelStorage,
-        resource: Resource,
+        self, config: Dict[str, Any], model_storage: ModelStorage, resource: Resource
     ) -> None:
+        super().__init__(config)
         self.config = {**self.get_default_config(), **config}
         self._model_storage = model_storage
         self._resource = resource
