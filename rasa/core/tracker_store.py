@@ -938,7 +938,7 @@ def _create_sequence(table_name: Text) -> "Sequence":
 
     Returns: A `Sequence` object
     """
-    from sqlalchemy.ext.declarative import declarative_base
+    from sqlalchemy.orm import declarative_base
 
     sequence_name = f"{table_name}_seq"
     Base = declarative_base()
