@@ -854,6 +854,8 @@ class DialogueStateTracker:
     ###
     def _reset(self) -> None:
         """Reset tracker to initial state - doesn't delete events though!."""
+        from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
+
         self._reset_slots()
         self._paused = False
         self.latest_action = {}
@@ -861,6 +863,7 @@ class DialogueStateTracker:
         self.latest_bot_utterance = BotUttered.empty()
         self.followup_action = ACTION_LISTEN_NAME
         self.active_loop = None
+        self._underlying_stack = DialogueStack.empty()
 
     def _reset_slots(self) -> None:
         """Set all the slots to their initial value."""
