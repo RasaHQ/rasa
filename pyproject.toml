@@ -164,6 +164,7 @@ jsonpatch = "^1.33"
 [[tool.poetry.dependencies.tensorflow-io-gcs-filesystem]]
 version = "==0.31"
 markers = "sys_platform == 'win32'"
+importlib-resources = "^6.1.1"
 
 [[tool.poetry.dependencies.tensorflow-io-gcs-filesystem]]
 version = "==0.32"
