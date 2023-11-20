@@ -4,6 +4,7 @@ import logging
 import multiprocessing
 import os
 import traceback
+import warnings
 from collections import defaultdict
 from functools import reduce, wraps
 from inspect import isawaitable
@@ -28,7 +29,10 @@ import jsonschema
 from sanic import Sanic, response
 from sanic.request import Request
 from sanic.response import HTTPResponse
-from sanic_cors import CORS
+
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+    from sanic_cors import CORS
 from sanic_jwt import Initialize, exceptions
 
 import rasa
