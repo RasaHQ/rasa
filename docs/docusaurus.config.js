@@ -77,15 +77,22 @@ module.exports = {
       title: 'Rasa',
       items: [
         {
-          label: 'Rasa',
-          to: path.join('/', BASE_URL),
-          position: 'left',
+          target: "_self",
+          label: "Rasa Pro",
+          position: "left",
+          href: `${SITE_URL}/docs/rasa-pro/`,
+        },
+        // TODO: ATO-1846 add link to Studio docs when they're live
+        {
+          label: "Rasa Open Source",
+          position: "left",
+          to: path.join("/", BASE_URL),
         },
         {
-          target: '_self',
-          label: 'Rasa X/Enterprise',
-          position: 'left',
-          href: `${SWAP_URL}/docs/rasa-enterprise/`,
+          target: "_self",
+          label: "Rasa X/Enterprise",
+          position: "left",
+          href: `${SITE_URL}/docs/rasa-enterprise/`,
         },
         {
           href: 'https://github.com/rasahq/rasa',
