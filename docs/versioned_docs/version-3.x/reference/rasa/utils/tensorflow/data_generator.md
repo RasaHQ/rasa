@@ -108,7 +108,8 @@ def __init__(model_data: RasaModelData,
              batch_size: Union[List[int], int],
              epochs: int = 1,
              batch_strategy: Text = SEQUENCE,
-             shuffle: bool = True)
+             shuffle: bool = True,
+             drop_small_last_batch: bool = False)
 ```
 
 Initializes the increasing batch size data generator.
@@ -120,6 +121,8 @@ Initializes the increasing batch size data generator.
 - `epochs` - The total number of epochs.
 - `batch_strategy` - The batch strategy.
 - `shuffle` - If &#x27;True&#x27;, data will be shuffled.
+- `drop_small_last_batch` - if &#x27;True&#x27;, the last batch in an epoch will be dropped
+  if it has less examples than half the batch size
 
 #### \_\_len\_\_
 
