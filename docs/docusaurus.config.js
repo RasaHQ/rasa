@@ -81,7 +81,12 @@ module.exports = {
           position: "left",
           href: `${SITE_URL}/docs/rasa-pro/`,
         },
-        // TODO: ATO-1846 add link to Studio docs when they're live
+        {
+          target: "_self",
+          label: "Rasa Studio",
+          position: "left",
+          href: `${SITE_URL}/docs/rasa-studio/`,
+        },
         {
           label: "Rasa Open Source",
           position: "left",
