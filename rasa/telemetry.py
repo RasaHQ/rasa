@@ -32,7 +32,6 @@ from rasa.shared.constants import DOCS_URL_TELEMETRY, UTTER_ASK_PREFIX
 from rasa.shared.core.flows import Flow
 from rasa.shared.core.flows.steps import (
     CollectInformationFlowStep,
-    GenerateResponseFlowStep,
     SetSlotsFlowStep,
     LinkFlowStep,
 )
@@ -124,7 +123,6 @@ NUM_COLLECT_STEPS_WITH_NOT_RESET_AFTER_FLOW_ENDS = (
 NUM_SET_SLOT_STEPS = "num_set_slot_steps"
 MAX_DEPTH_OF_IF_CONSTRUCT = "max_depth_of_if_construct"
 NUM_LINK_STEPS = "num_link_steps"
-NUM_GENERATION_PROMPT_STEPS = "num_generation_prompt_steps"
 NUM_SHARED_SLOTS_BETWEEN_FLOWS = "num_shared_slots_between_flows"
 
 
@@ -888,7 +886,6 @@ def _collect_flow_statistics(flows: List[Flow]) -> Dict[str, Any]:
         NUM_SET_SLOT_STEPS: 0,
         MAX_DEPTH_OF_IF_CONSTRUCT: 0,
         NUM_LINK_STEPS: 0,
-        NUM_GENERATION_PROMPT_STEPS: 0,
         NUM_SHARED_SLOTS_BETWEEN_FLOWS: 0,
     }
 
@@ -913,9 +910,6 @@ def _collect_flow_statistics(flows: List[Flow]) -> Dict[str, Any]:
                     data[NUM_COLLECT_STEPS_WITH_NOT_RESET_AFTER_FLOW_ENDS] += 1
                 if step.utter != f"{UTTER_ASK_PREFIX}{step.collect}":
                     data[NUM_COLLECT_STEPS_WITH_SEPARATE_UTTER] += 1
-
-            if isinstance(step, GenerateResponseFlowStep):
-                data[NUM_GENERATION_PROMPT_STEPS] += 1
 
             if isinstance(step, SetSlotsFlowStep):
                 for slot in step.slots:

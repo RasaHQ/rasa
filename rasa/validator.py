@@ -758,4 +758,6 @@ class Validator:
 
         all_good = all([condition_one, condition_two, condition_three])
 
+        structlogger.info("validation.flows.ended")
+
         return all_good

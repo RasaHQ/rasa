@@ -1878,3 +1878,18 @@ def test_tracker_update_stack():
             '[{"op": "replace", "path": "/0/step_id", "value": "second_step"}]'
         )
     ]
+
+
+def test_tracker_resets_stack_on_restart():
+    tracker = get_tracker([])
+
+    user_frame = UserFlowStackFrame(
+        flow_id="foo", step_id="first_step", frame_id="some-frame-id"
+    )
+    stack = DialogueStack(frames=[user_frame])
+
+    tracker.update_stack(stack)
+    assert tracker.stack == stack
+
+    tracker.update(Restarted())
+    assert tracker.stack == DialogueStack.empty()

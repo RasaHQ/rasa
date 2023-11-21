@@ -520,6 +520,16 @@ class UserUttered(Event):
         return hash(json.dumps(self.as_sub_state()))
 
     @property
+    def has_triggered_error(self) -> bool:
+        return len(self.error_commands) > 0
+
+    @property
+    def error_commands(self) -> List[Dict[Text, Any]]:
+        from rasa.dialogue_understanding.commands import ErrorCommand
+
+        return [c for c in self.commands if c["command"] == ErrorCommand.command()]
+
+    @property
     def commands(self) -> List[Dict[str, Any]]:
         """Returns commands included in the message."""
         if COMMANDS in self.parse_data and isinstance(
@@ -2098,6 +2108,14 @@ class SessionStarted(AlwaysEqualEventMixin):
     def __hash__(self) -> int:
         """Returns unique hash for event."""
         return hash(32143124320)
+
+    def __repr__(self) -> Text:
+        """Returns event as string for debugging."""
+        return f"SessionStarted(type_name: {self.type_name})"
+
+    def __str__(self) -> Text:
+        """Returns event as human-readable string."""
+        return f"{self.__class__.__name__}({self.type_name})"
 
     def as_story_string(self) -> None:
         """Skips representing event in stories."""

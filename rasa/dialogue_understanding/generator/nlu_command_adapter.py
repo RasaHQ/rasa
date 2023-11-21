@@ -27,11 +27,9 @@ class NLUCommandAdapter(GraphComponent, CommandGenerator):
     """An NLU-based command generator."""
 
     def __init__(
-        self,
-        config: Dict[str, Any],
-        model_storage: ModelStorage,
-        resource: Resource,
+        self, config: Dict[str, Any], model_storage: ModelStorage, resource: Resource
     ) -> None:
+        super().__init__(config)
         self.config = {**self.get_default_config(), **config}
         self._model_storage = model_storage
         self._resource = resource
@@ -94,7 +92,7 @@ class NLUCommandAdapter(GraphComponent, CommandGenerator):
             if flow.nlu_triggers and flow.nlu_triggers.is_triggered(message):
                 commands.append(StartFlowCommand(flow.id))
 
-        structlogger.debug("nlu_command_adapter.predict_commands", commands=commands)
+        structlogger.info("nlu_command_adapter.predict_commands", commands=commands)
 
         # there should be just one flow that can be triggered by the predicted intent
         # this is checked when loading the flows

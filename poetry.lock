@@ -4829,14 +4829,14 @@ fire = "*"
 
 [[package]]
 name = "rasa-sdk"
-version = "3.7.0rc2"
+version = "3.7.0rc3"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 category = "main"
 optional = false
 python-versions = ">=3.8,<3.11"
 files = [
-    {file = "rasa_sdk-3.7.0rc2-py3-none-any.whl", hash = "sha256:bf9d7c641d9cd7713f942b75a0f11d35c3d123a4280ab1bff33adddbda468441"},
-    {file = "rasa_sdk-3.7.0rc2.tar.gz", hash = "sha256:7d173bfdde6663052d475879891072e8640715ec59f3333bee5f17693a72c653"},
+    {file = "rasa_sdk-3.7.0rc3-py3-none-any.whl", hash = "sha256:07110aa8b9fdfdb509fc241910aaca03c012f886e10a23cb76ede664cf2b27e9"},
+    {file = "rasa_sdk-3.7.0rc3.tar.gz", hash = "sha256:45078d0a1d643a901561102f4668448e28746e6dc1b551232fa5cf369e0d2c44"},
 ]
 
 [package.dependencies]

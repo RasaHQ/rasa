@@ -1,12 +1,16 @@
-from typing import Optional, List
+from typing import Optional, List, Text, Type
 from unittest.mock import Mock, patch
 
 import pytest
 
-from rasa.dialogue_understanding.commands import Command, StartFlowCommand
-from rasa.dialogue_understanding.generator.command_generator import CommandGenerator
+from rasa.dialogue_understanding.commands import Command, StartFlowCommand, ErrorCommand
 from rasa.dialogue_understanding.commands.chit_chat_answer_command import (
     ChitChatAnswerCommand,
+)
+from rasa.dialogue_understanding.generator.command_generator import CommandGenerator
+from rasa.shared.constants import (
+    RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
+    RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
 )
 from rasa.shared.core.events import SlotSet
 from rasa.shared.core.flows import Flow, FlowsList
@@ -30,7 +34,7 @@ class WackyCommandGenerator(CommandGenerator):
 
 
 def test_command_generator_catches_processing_errors():
-    generator = WackyCommandGenerator()
+    generator = WackyCommandGenerator({})
     messages = [Message.build("Hi"), Message.build("What is your purpose?")]
     generator.process(messages, FlowsList(underlying_flows=[]))
     commands = [m.get(COMMANDS) for m in messages]
@@ -42,7 +46,7 @@ def test_command_generator_catches_processing_errors():
 
 def test_command_generator_still_throws_not_implemented_error():
     # This test can be removed if the predict_commands method stops to be abstract
-    generator = CommandGenerator()
+    generator = CommandGenerator({})
     with pytest.raises(NotImplementedError):
         generator.process([Message.build("test")], FlowsList([]))
 
@@ -64,7 +68,7 @@ def test_get_context_and_slots():
         "test", evts=test_events, slots=test_slots
     )
 
-    generator = CommandGenerator()
+    generator = CommandGenerator({})
     # When
     document = generator._get_context_and_slots(tracker)
     # Then
@@ -98,7 +102,7 @@ def test_check_commands_against_startable_flows(
 ):
     """Test that commands are correctly filtered against startable flows."""
     # Given
-    generator = CommandGenerator()
+    generator = CommandGenerator({})
     # When
     commands = generator._check_commands_against_startable_flows(
         commands, startable_flows
@@ -116,7 +120,7 @@ def test_command_processor_checks_flow_guards():
         with patch(
             "rasa.dialogue_understanding.generator.command_generator.CommandGenerator._check_commands_against_startable_flows"
         ) as check_commands_against_startable_flows:
-            generator = WackyCommandGenerator()
+            generator = WackyCommandGenerator({})
             messages = [Message.build("What is your purpose?")]
             # When
             generator.process(messages, FlowsList([Flow("spam")]))
@@ -128,7 +132,7 @@ def test_command_processor_checks_flow_guards():
 def test_process_does_not_predict_commands_if_commands_already_present():
     """Test that predict_commands does not overwrite commands
     if commands are already set on message."""
-    command_generator = CommandGenerator()
+    command_generator = CommandGenerator({})
 
     command = StartFlowCommand("some flow").as_dict()
 
@@ -147,3 +151,54 @@ def test_process_does_not_predict_commands_if_commands_already_present():
 
     assert len(returned_message.get(COMMANDS)) == 1
     assert returned_message.get(COMMANDS) == [command]
+
+
+@pytest.mark.parametrize(
+    "message, expected_error_type",
+    [
+        (" \n\t", RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY),
+        ("", RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY),
+        ("Very long message", RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG),
+    ],
+)
+def test_process_invalid_messages(message: Text, expected_error_type: Text):
+    # Given
+    generator = WackyCommandGenerator({"user_input": {"max_characters": 10}})
+    # When
+    processed_messages = generator.process(
+        messages=[Message.build(text=message)], flows=FlowsList(underlying_flows=[])
+    )
+    # Then
+    command = processed_messages[0].data["commands"][0]
+    assert command["command"] == ErrorCommand.command()
+    assert command["error_type"] == expected_error_type
+
+
+@pytest.mark.parametrize(
+    "message, expected_command_type, expected_error_type",
+    [
+        (" \n\t", ErrorCommand, RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY),
+        ("", ErrorCommand, RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY),
+        (
+            "Very very long message",
+            ErrorCommand,
+            RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
+        ),
+        ("Chit Chat", ChitChatAnswerCommand, None),
+    ],
+)
+def test_evaluate_and_predict_commands(
+    message: Text, expected_command_type: Type, expected_error_type: Optional[Text]
+):
+    # Given
+    generator = WackyCommandGenerator({"user_input": {"max_characters": 20}})
+    # When
+    commands = generator._evaluate_and_predict(
+        message=Message.build(text=message),
+        startable_flows=FlowsList(underlying_flows=[]),
+    )
+    # Then
+    assert len(commands) == 1
+    assert isinstance(commands[0], expected_command_type)
+    if isinstance(commands[0], ErrorCommand):
+        assert commands[0].error_type == expected_error_type

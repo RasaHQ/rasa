@@ -82,6 +82,14 @@ class UserMessage:
         self.metadata = metadata
         self.headers = kwargs.get("headers", None)
 
+    def __repr__(self) -> Text:
+        """Returns event as string for debugging."""
+        return f"UserMessage(text: {self.text}, sender_id: {self.sender_id})"
+
+    def __str__(self) -> Text:
+        """Returns event as human-readable string."""
+        return f"{self.__class__.__name__}({self.text})"
+
 
 def register(
     input_channels: List["InputChannel"], app: Sanic, route: Optional[Text]

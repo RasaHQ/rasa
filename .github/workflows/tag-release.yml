@@ -17,30 +17,25 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout git repository 🕝
-        if: needs.changes.outputs.backend == 'true'
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
 
       - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
-        if: needs.changes.outputs.backend == 'true'
         uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
         with:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
       - name: Read Poetry Version 🔢
-        if: needs.changes.outputs.backend == 'true'
         run: |
           echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
         shell: bash
 
       - name: Install poetry 🦄
-        if: needs.changes.outputs.backend == 'true'
         uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844 # v8
         with:
           poetry-version: ${{ env.POETRY_VERSION }}
 
       - name: Load Poetry Cached Libraries ⬇
         id: cache-poetry
-        if: needs.changes.outputs.backend == 'true'
         uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
         with:
           path: .venv
@@ -48,19 +43,17 @@ jobs:
           restore-keys: ${{ runner.os }}-poetry-${{ env.DEFAULT_PYTHON_VERSION }}
 
       - name: Clear Poetry cache
-        if: steps.cache-poetry.outputs.cache-hit == 'true' && needs.changes.outputs.backend == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')
+        if: steps.cache-poetry.outputs.cache-hit == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')
         run: rm -r .venv
 
       - name: Create virtual environment
-        if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')) && needs.changes.outputs.backend == 'true'
+        if: steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')
         run: python -m venv create .venv
 
       - name: Set up virtual environment
-        if: needs.changes.outputs.backend == 'true'
         run: poetry config virtualenvs.in-project true
 
       - name: Install Dependencies 📦
-        if: needs.changes.outputs.backend == 'true'
         # Poetry intermittently fails to install dependency if it is not PEP 517 compliant
         # This is a workaround for that issue
         run: |
