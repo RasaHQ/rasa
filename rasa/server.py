@@ -30,6 +30,10 @@ from sanic import Sanic, response
 from sanic.request import Request
 from sanic.response import HTTPResponse
 
+# The warning can be removed after the packages are updated:
+# sanic-cors: ^2.1.0
+# packaging`: 23.2 (introduces breaking changes)
+# pep440-version-utils (also requires update on packaging)
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=DeprecationWarning)
     from sanic_cors import CORS
