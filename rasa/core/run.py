@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import sys
 import uuid
 import platform
 import os
@@ -141,6 +142,10 @@ def configure_app(
 
     if _is_apple_silicon_system() or not use_uvloop:
         app.config.USE_UVLOOP = False
+        # some library still sets the loop to uvloop, even if disabled for sanic
+        # using uvloop leads to breakingio errors, see
+        # https://rasahq.atlassian.net/browse/ENG-667
+        asyncio.set_event_loop_policy(None)
 
     if input_channels:
         channels.channel.register(input_channels, app, route=route)
