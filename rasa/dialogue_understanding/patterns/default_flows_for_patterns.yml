@@ -216,6 +216,3 @@ flows:
     name: pattern skip question
     steps:
       - action: utter_skip_question_answer
-
-
-
