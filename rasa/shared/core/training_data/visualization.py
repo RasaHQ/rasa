@@ -15,7 +15,7 @@ from typing import (
 )
 
 import rasa.shared.utils.io
-from rasa.shared.constants import INTENT_MESSAGE_PREFIX, PACKAGE_NAME
+from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import UserUttered, ActionExecuted, Event
@@ -310,6 +310,7 @@ def _replace_edge_labels_with_nodes(
 
 def visualization_html_path() -> Text:
     import importlib
+
     with importlib.resources.path(__package__, VISUALIZATION_TEMPLATE_PATH) as r:
         return str(r)
 
