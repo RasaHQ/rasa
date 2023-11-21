@@ -386,15 +386,21 @@ class DefaultV1RecipeValidator(GraphComponent):
             return
 
         self._raise_if_dm1_and_calm_policies_used_at_the_same_time()
-        self._warn_if_no_rule_policy_is_contained()
+        self._warn_if_no_policy_handles_default_intents()
         self._raise_if_domain_contains_form_names_but_no_rule_policy_given(domain)
         self._raise_if_a_rule_policy_is_incompatible_with_domain(domain)
         self._validate_policy_priorities()
         self._warn_if_rule_based_data_is_unused_or_missing(story_graph=story_graph)
 
-    def _warn_if_no_rule_policy_is_contained(self) -> None:
-        """Warns if there is no rule policy among the given policies."""
-        if not any(node.uses == RulePolicy for node in self._policy_schema_nodes):
+    def _warn_if_no_policy_handles_default_intents(self) -> None:
+        """Warns if there is no policy handling the default intents."""
+        policies_handling_default_indents = (RulePolicy, FlowPolicy)
+
+        contains_policy_handling_default_intents = any(
+            issubclass(node.uses, policies_handling_default_indents)
+            for node in self._policy_schema_nodes
+        )
+        if not contains_policy_handling_default_intents:
             rasa.shared.utils.io.raise_warning(
                 f"'{RulePolicy.__name__}' is not included in the model's "
                 f"policy configuration. Default intents such as "

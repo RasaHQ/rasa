@@ -730,7 +730,9 @@ def test_core_warn_if_data_but_no_policy(
         "_raise_if_a_rule_policy_is_incompatible_with_domain",
         lambda *args, **kwargs: None,
     )
-    monkeypatch.setattr(validator, "_warn_if_no_rule_policy_is_contained", lambda: None)
+    monkeypatch.setattr(
+        validator, "_warn_if_no_policy_handles_default_intents", lambda: None
+    )
     monkeypatch.setattr(
         validator,
         "_warn_if_rule_based_data_is_unused_or_missing",
@@ -821,7 +823,9 @@ def test_core_raise_if_domain_contains_form_names_but_no_rule_policy_given(
     validator = DefaultV1RecipeValidator(graph_schema)
     monkeypatch.setattr(validator, "_validate_nlu", lambda *args, **kwargs: None)
     monkeypatch.setattr(
-        validator, "_warn_if_no_rule_policy_is_contained", lambda *args, **kwargs: None
+        validator,
+        "_warn_if_no_policy_handles_default_intents",
+        lambda *args, **kwargs: None,
     )
     monkeypatch.setattr(
         validator,

@@ -68,6 +68,7 @@ from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     YAMLStoryReader,
 )
 from rasa.shared.nlu.constants import (
+    COMMANDS,
     ENTITIES,
     INTENT,
     INTENT_NAME_KEY,
@@ -734,6 +735,7 @@ class MessageProcessor:
                 parse_data.update(
                     msg.as_dict(only_output_properties=only_output_properties)
                 )
+                parse_data[COMMANDS] = self._nlu_to_commands(parse_data, tracker)
 
         structlogger.debug(
             "processor.message.parse",
@@ -745,6 +747,24 @@ class MessageProcessor:
         self._check_for_unseen_features(parse_data)
 
         return parse_data
+
+    def _nlu_to_commands(
+        self, parse_data: Dict[str, Any], tracker: DialogueStateTracker
+    ) -> List[Dict[str, Any]]:
+        """Converts the NLU parse data to commands using the adaptor.
+
+        This is used if we receive intents/entities directly using `/intent{...}`
+        syntax. In this case, the nlu graph is not run. Therefore, we need to
+        convert the parse data to commands outside the graph.
+        """
+        from rasa.dialogue_understanding.generator.nlu_command_adapter import (
+            NLUCommandAdapter,
+        )
+
+        commands = NLUCommandAdapter.convert_nlu_to_commands(
+            Message(parse_data), tracker, self.get_flows()
+        )
+        return [command.as_dict() for command in commands]
 
     def _parse_message_with_graph(
         self,
