@@ -31,6 +31,7 @@ from rasa.engine.constants import (
     PLACEHOLDER_IMPORTER,
     PLACEHOLDER_MESSAGE,
     PLACEHOLDER_TRACKER,
+    PLACEHOLDER_ENDPOINTS,
 )
 from rasa.engine.recipes.recipe import Recipe
 from rasa.engine.storage.resource import Resource
@@ -403,6 +404,8 @@ class DefaultV1Recipe(Recipe):
                 return "training_tracker_provider"
             elif "tracker" == parameter:
                 return PLACEHOLDER_TRACKER
+            elif "endpoints" == parameter:
+                return PLACEHOLDER_ENDPOINTS
             elif "training_data" == parameter:
                 return "nlu_training_data_provider"
             return f"{parameter}_provider"

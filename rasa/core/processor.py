@@ -8,10 +8,11 @@ import tarfile
 import time
 from types import LambdaType
 from typing import Any, Dict, List, Optional, Text, Tuple, Union
+from rasa.core.utils import AvailableEndpoints
 
 from rasa.core.http_interpreter import RasaNLUHttpInterpreter
 from rasa.engine import loader
-from rasa.engine.constants import PLACEHOLDER_MESSAGE, PLACEHOLDER_TRACKER
+from rasa.engine.constants import PLACEHOLDER_MESSAGE, PLACEHOLDER_TRACKER, PLACEHOLDER_ENDPOINTS
 from rasa.engine.runner.dask import DaskGraphRunner
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.storage import ModelMetadata
@@ -97,6 +98,7 @@ class MessageProcessor:
         max_number_of_predictions: int = MAX_NUMBER_OF_PREDICTIONS,
         on_circuit_break: Optional[LambdaType] = None,
         http_interpreter: Optional[RasaNLUHttpInterpreter] = None,
+        endpoints: Optional[AvailableEndpoints] = None,
     ) -> None:
         """Initializes a `MessageProcessor`."""
         self.nlg = generator
@@ -108,6 +110,7 @@ class MessageProcessor:
         self.model_filename, self.model_metadata, self.graph_runner = self._load_model(
             model_path
         )
+        self.endpoints = endpoints
 
         if self.model_metadata.assistant_id is None:
             rasa.shared.utils.io.raise_warning(
@@ -1190,7 +1193,7 @@ class MessageProcessor:
             raise ValueError("Cannot predict next action if there is no core target.")
 
         results = self.graph_runner.run(
-            inputs={PLACEHOLDER_TRACKER: tracker}, targets=[target]
+            inputs={PLACEHOLDER_TRACKER: tracker, PLACEHOLDER_ENDPOINTS: self.endpoints}, targets=[target]
         )
         policy_prediction = results[target]
         return policy_prediction
