@@ -120,6 +120,7 @@ def configure_app(
     request_timeout: Optional[int] = None,
     server_listeners: Optional[List[Tuple[Callable, Text]]] = None,
     use_uvloop: Optional[bool] = True,
+    keep_alive_timeout: Optional[int] = constants.DEFAULT_KEEP_ALIVE_TIMEOUT,
 ) -> Sanic:
     """Run the agent."""
     rasa.core.utils.configure_file_logging(
@@ -139,6 +140,7 @@ def configure_app(
     else:
         app = _create_app_without_api(cors)
 
+    app.config.KEEP_ALIVE_TIMEOUT = keep_alive_timeout
     if _is_apple_silicon_system() or not use_uvloop:
         app.config.USE_UVLOOP = False
         # some library still sets the loop to uvloop, even if disabled for sanic
