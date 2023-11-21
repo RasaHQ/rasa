@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import sys
 import uuid
 import platform
 import os
