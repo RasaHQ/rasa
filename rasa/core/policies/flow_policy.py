@@ -16,7 +16,7 @@ from rasa.dialogue_understanding.stack.utils import (
 )
 
 from rasa.core.constants import (
-    DEFAULT_POLICY_PRIORITY,
+    FLOW_POLICY_PRIORITY,
     POLICY_MAX_HISTORY,
     POLICY_PRIORITY,
 )
@@ -67,7 +67,7 @@ class FlowPolicy(Policy):
         """Returns the default config (see parent class for full docstring)."""
         # please make sure to update the docs when changing a default parameter
         return {
-            POLICY_PRIORITY: DEFAULT_POLICY_PRIORITY,
+            POLICY_PRIORITY: FLOW_POLICY_PRIORITY,
             POLICY_MAX_HISTORY: None,
         }
 
