@@ -15,7 +15,7 @@ from typing import (
 )
 
 import rasa.shared.utils.io
-from rasa.shared.constants import INTENT_MESSAGE_PREFIX
+from rasa.shared.constants import INTENT_MESSAGE_PREFIX, PACKAGE_NAME
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import UserUttered, ActionExecuted, Event
@@ -40,7 +40,7 @@ START_NODE_ID = 0
 END_NODE_ID = -1
 TMP_NODE_ID = -2
 
-VISUALIZATION_TEMPLATE_PATH = "/visualization.html"
+VISUALIZATION_TEMPLATE_PATH = "visualization.html"
 
 
 class UserMessageGenerator:
@@ -309,11 +309,9 @@ def _replace_edge_labels_with_nodes(
 
 
 def visualization_html_path() -> Text:
-    import importlib_resources
-
-    return str(
-        importlib_resources.files(__name__).joinpath(VISUALIZATION_TEMPLATE_PATH)
-    )
+    import importlib
+    with importlib.resources.path(__package__, VISUALIZATION_TEMPLATE_PATH) as r:
+        return str(r)
 
 
 def persist_graph(graph: "networkx.Graph", output_file: Text) -> None:
