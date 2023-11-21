@@ -33,6 +33,7 @@ from rasa.core.policies.policy import PolicyPrediction
 from rasa.engine.runner.interface import GraphRunner
 from rasa.exceptions import ActionLimitReached, ModelNotFound
 from rasa.shared.core.constants import (
+    ACTION_CORRECT_FLOW_SLOT,
     USER_INTENT_RESTART,
     ACTION_LISTEN_NAME,
     ACTION_SESSION_START_NAME,
@@ -80,7 +81,7 @@ from rasa.utils.endpoints import EndpointConfig
 logger = logging.getLogger(__name__)
 structlogger = structlog.get_logger()
 
-MAX_NUMBER_OF_PREDICTIONS = int(os.environ.get("MAX_NUMBER_OF_PREDICTIONS", "20"))
+MAX_NUMBER_OF_PREDICTIONS = int(os.environ.get("MAX_NUMBER_OF_PREDICTIONS", "10"))
 
 
 class MessageProcessor:
@@ -818,6 +819,40 @@ class MessageProcessor:
             == USER_INTENT_RESTART
         )
 
+    def _tracker_state_specific_action_limit(
+        self, tracker: DialogueStateTracker
+    ) -> int:
+        """Select the action limit based on the tracker state.
+
+        Usually, we want to limit the number of predictions to the number of actions
+        that have been executed in the conversation so far. However, if the
+        conversation is currently in a state where the user is correcting the flow
+        we want to allow for more predictions to be made as we might be traversing
+        through a long flow.
+
+        Args:
+            tracker: instance of DialogueStateTracker.
+
+        Returns:
+        The maximum number of predictions to make.
+        """
+        reversed_events = list(tracker.events)[::-1]
+        is_conversation_in_flow_correction = False
+        for e in reversed_events:
+            if isinstance(e, ActionExecuted):
+                if e.action_name in (ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME):
+                    break
+                elif e.action_name == ACTION_CORRECT_FLOW_SLOT:
+                    is_conversation_in_flow_correction = True
+                    break
+
+        if is_conversation_in_flow_correction:
+            # allow for more predictions to be made as we might be traversing through
+            # a long flow. We multiply the number of predictions by 10 to allow for
+            # more predictions to be made - the factor is a best guess.
+            return self.max_number_of_predictions * 5
+        return self.max_number_of_predictions
+
     def is_action_limit_reached(
         self, tracker: DialogueStateTracker, should_predict_another_action: bool
     ) -> bool:
@@ -833,6 +868,7 @@ class MessageProcessor:
         """
         reversed_events = list(tracker.events)[::-1]
         num_predicted_actions = 0
+        state_specific_action_limit = self._tracker_state_specific_action_limit(tracker)
 
         for e in reversed_events:
             if isinstance(e, ActionExecuted):
@@ -841,7 +877,7 @@ class MessageProcessor:
                 num_predicted_actions += 1
 
         return (
-            num_predicted_actions >= self.max_number_of_predictions
+            num_predicted_actions >= state_specific_action_limit
             and should_predict_another_action
         )
 
