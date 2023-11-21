@@ -24,14 +24,18 @@ from typing import (
     TYPE_CHECKING,
     cast,
 )
+
+from rasa.dialogue_understanding.patterns.collect_information import (
+    FLOW_PATTERN_COLLECT_INFORMATION,
+)
 from rasa.dialogue_understanding.stack.utils import top_user_flow_frame
 
 import rasa.shared.utils.io
 from rasa.shared.constants import (
     ASSISTANT_ID_KEY,
     DEFAULT_SENDER_ID,
-    RASA_DEFAULT_FLOW_PATTERN_PREFIX,
 )
+from rasa.shared.core.flows import FlowsList
 from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_VALUE,
     ENTITY_ATTRIBUTE_TYPE,
@@ -51,7 +55,6 @@ from rasa.shared.core.constants import (
     ACTIVE_LOOP,
     ACTION_SESSION_START_NAME,
     FOLLOWUP_ACTION,
-    FLOW_SLOT_NAMES,
 )
 from rasa.shared.core.conversation import Dialogue
 from rasa.shared.core.events import (
@@ -67,9 +70,6 @@ from rasa.shared.core.events import (
     SessionStarted,
     ActionExecutionRejected,
     DefinePrevUserUtteredFeaturization,
-    SlotSet,
-    FlowCompleted,
-    FlowStarted,
 )
 from rasa.shared.core.domain import Domain, State
 from rasa.shared.core.slots import AnySlot, Slot
@@ -961,7 +961,7 @@ class DialogueStateTracker:
 
         return rasa.shared.utils.io.get_dictionary_fingerprint(data)
 
-    def get_previously_updated_slots(self) -> List[str]:
+    def get_previously_updated_slots(self, all_flows: FlowsList) -> List[str]:
         """Returns the slot names that were previously set in the active flow."""
         previously_updated_slots = set()
 
@@ -970,40 +970,26 @@ class DialogueStateTracker:
             # we are currently in no flow
             return []
 
-        current_flow_id = top_frame.flow_id
+        current_flow = all_flows.flow_by_id(top_frame.flow_id)
+        if not current_flow:
+            return []
 
-        interrupted_flow_ids: List[str] = []
+        collect_steps_of_flow = current_flow.get_collect_steps()
+        slots_names_of_flow = {step.collect for step in collect_steps_of_flow}
 
         for event in reversed(self.events):
-
-            if isinstance(event, FlowStarted):
-                if event.flow_id == current_flow_id:
-                    # the start of the current flow is reached
-                    # we are only interested in slots set in the active flow
-                    break
-                if event.flow_id in interrupted_flow_ids:
-                    # the start of the interrupted flow is reached
-                    interrupted_flow_ids.remove(event.flow_id)
-                    continue
-
-            if isinstance(event, FlowCompleted):
-                if event.flow_id != current_flow_id and not event.flow_id.startswith(
-                    RASA_DEFAULT_FLOW_PATTERN_PREFIX
-                ):
-                    # if we encounter a flow completed event with a different flow id,
-                    # the current active flow is interrupted
-                    interrupted_flow_ids.append(event.flow_id)
-                    continue
-
-            if interrupted_flow_ids:
-                # the current flow is interrupted by at least one other flow
-                continue
-
-            if not isinstance(event, SlotSet):
-                continue
-
-            if event.key not in FLOW_SLOT_NAMES and event.value is not None:
-                previously_updated_slots.add(event.key)
+            if isinstance(event, DialogueStackUpdated):
+                update_json_list = event.update_as_json()
+                for update_json in update_json_list:
+                    if update_json["op"] == "add":
+                        added_flow = update_json["value"]["flow_id"]
+                        if added_flow == current_flow.id:
+                            # exiting the loop upon finding start of the current flow
+                            break
+                        elif added_flow == FLOW_PATTERN_COLLECT_INFORMATION:
+                            slot = update_json["value"]["collect"]
+                            if slot in slots_names_of_flow:
+                                previously_updated_slots.add(slot)
 
         return list(previously_updated_slots)
 
