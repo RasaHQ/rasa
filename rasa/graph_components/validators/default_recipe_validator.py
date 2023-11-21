@@ -3,6 +3,7 @@ from collections import defaultdict
 from typing import Iterable, List, Dict, Text, Any, Set, Type, cast
 
 from rasa.core.featurizers.precomputation import CoreFeaturizationInputConverter
+from rasa.core.policies.unexpected_intent_policy import UnexpecTEDIntentPolicy
 from rasa.engine.graph import ExecutionContext, GraphComponent, GraphSchema, SchemaNode
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.storage.resource import Resource
@@ -20,8 +21,9 @@ from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.policies.policy import Policy, SupportedData
-from rasa.core.policies.memoization import MemoizationPolicy
+from rasa.core.policies.memoization import AugmentedMemoizationPolicy, MemoizationPolicy
 from rasa.core.policies.ted_policy import TEDPolicy
+from rasa.core.policies.flow_policy import FlowPolicy
 from rasa.core.constants import POLICY_PRIORITY
 from rasa.shared.core.training_data.structures import RuleStep, StoryGraph
 from rasa.shared.constants import (
@@ -382,6 +384,8 @@ class DefaultV1RecipeValidator(GraphComponent):
             )
         if not self._policy_schema_nodes:
             return
+
+        self._raise_if_dm1_and_calm_policies_used_at_the_same_time()
         self._warn_if_no_rule_policy_is_contained()
         self._raise_if_domain_contains_form_names_but_no_rule_policy_given(domain)
         self._raise_if_a_rule_policy_is_incompatible_with_domain(domain)
@@ -421,6 +425,39 @@ class DefaultV1RecipeValidator(GraphComponent):
                 f"Either remove all forms from your domain or add the "
                 f"'{RulePolicy.__name__}' to your policy configuration."
             )
+
+    def _raise_if_dm1_and_calm_policies_used_at_the_same_time(self) -> None:
+        """Validates that there exists a rule policy if forms are defined.
+
+        Raises:
+            `InvalidConfigException` if domain and rule policies do not match
+        """
+        contains_flow_policy = any(
+            schema_node
+            for schema_node in self._graph_schema.nodes.values()
+            if issubclass(schema_node.uses, FlowPolicy)
+        )
+
+        if not contains_flow_policy:
+            return
+
+        # if we are using a flow policy, there shouldn't be any dm1 policies
+        dm1_policies = (
+            RulePolicy,
+            TEDPolicy,
+            MemoizationPolicy,
+            AugmentedMemoizationPolicy,
+            UnexpecTEDIntentPolicy,
+        )
+
+        for schema_node in self._graph_schema.nodes.values():
+            if issubclass(schema_node.uses, dm1_policies):
+                raise InvalidConfigException(
+                    f"Adding `{schema_node.uses.__name__}` and `FlowPolicy` to "
+                    f"the policy ensemble is currently not supported. Please "
+                    f"refer to our documentation to understand more about "
+                    f"this constraint. https://rasa.com/docs/rasa-pro/concepts/policies"
+                )
 
     def _raise_if_a_rule_policy_is_incompatible_with_domain(
         self, domain: Domain

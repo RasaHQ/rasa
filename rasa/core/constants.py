@@ -46,6 +46,10 @@ UNLIKELY_INTENT_POLICY_PRIORITY = DEFAULT_POLICY_PRIORITY + 1
 # It is higher than default to prioritize training stories.
 MEMOIZATION_POLICY_PRIORITY = UNLIKELY_INTENT_POLICY_PRIORITY + 1
 
+# The priority of the `RulePolicy` is higher than all other policies since
+# rule execution takes precedence over training stories or predicted actions.
+RULE_POLICY_PRIORITY = MEMOIZATION_POLICY_PRIORITY + 1
+
 # chat policy priority
 CHAT_POLICY_PRIORITY = MEMOIZATION_POLICY_PRIORITY + 1
 
@@ -55,9 +59,6 @@ SEARCH_POLICY_PRIORITY = CHAT_POLICY_PRIORITY + 1
 # flow policy priority
 FLOW_POLICY_PRIORITY = SEARCH_POLICY_PRIORITY + 1
 
-# The priority of the `RulePolicy` is higher than all other policies since
-# rule execution takes precedence over training stories or predicted actions.
-RULE_POLICY_PRIORITY = FLOW_POLICY_PRIORITY + 1
 
 DIALOGUE = "dialogue"
 
