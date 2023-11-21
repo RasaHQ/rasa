@@ -120,7 +120,7 @@ def configure_app(
     request_timeout: Optional[int] = None,
     server_listeners: Optional[List[Tuple[Callable, Text]]] = None,
     use_uvloop: Optional[bool] = True,
-    keep_alive_timeout: Optional[int] = constants.DEFAULT_KEEP_ALIVE_TIMEOUT,
+    keep_alive_timeout: int = constants.DEFAULT_KEEP_ALIVE_TIMEOUT,
 ) -> Sanic:
     """Run the agent."""
     rasa.core.utils.configure_file_logging(

@@ -11,7 +11,7 @@ from typing import Any, Optional, Text, Dict
 from rasa.shared.exceptions import FileNotFoundException
 import rasa.shared.utils.io
 import rasa.utils.io
-from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
+from rasa.core.constants import DEFAULT_MAX_RETRY_ACTION_SERVER, DEFAULT_REQUEST_TIMEOUT
 
 
 logger = logging.getLogger(__name__)
@@ -164,23 +164,41 @@ class EndpointConfig:
                     f"'{os.path.abspath(self.cafile)}' does not exist."
                 ) from e
 
-        async with self.session.request(
-            method,
-            url,
-            headers=headers,
-            params=self.combine_parameters(kwargs),
-            compress=compress,
-            ssl=sslcontext,
-            **kwargs,
-        ) as response:
-            if response.status >= 400:
-                raise ClientResponseError(
-                    response.status, response.reason, await response.content.read()
-                )
+        while (max_retries := DEFAULT_MAX_RETRY_ACTION_SERVER) > 0:
             try:
-                return await response.json()
-            except ContentTypeError:
-                return None
+                async with self.session.request(
+                    method,
+                    url,
+                    headers=headers,
+                    params=self.combine_parameters(kwargs),
+                    compress=compress,
+                    ssl=sslcontext,
+                    **kwargs,
+                ) as response:
+                    if response.status >= 400:
+                        raise ClientResponseError(
+                            response.status,
+                            response.reason,
+                            await response.content.read(),
+                        )
+                    try:
+                        return await response.json()
+                    except ContentTypeError:
+                        return None
+            except aiohttp.ClientOSError as e:
+                underlying_exception = e.__cause__
+                if isinstance(underlying_exception, ConnectionResetError):
+                    max_retries -= 1
+                    logger.error(
+                        f"Caught ConnectionResetError: {e}, "
+                        f"Retrying sending request - {max_retries} retries left."
+                    )
+                    if max_retries == 0:
+                        raise e
+                else:
+                    # We need to raise other exceptions like ConnectionRefusedError
+                    raise e
+        return None
 
     @classmethod
     def from_dict(cls, data: Dict[Text, Any]) -> "EndpointConfig":
