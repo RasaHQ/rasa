@@ -57,10 +57,7 @@ EXPECTED_WARNINGS: List[Tuple[Type[Warning], str]] = [
     ),
     # This warning is triggered by magic_filter when running
     # rasa init
-    (
-        DeprecationWarning,
-        "pkg_resources is deprecated as an API."
-    ),
+    (DeprecationWarning, "pkg_resources is deprecated as an API."),
     # This warning is triggered by sanic-cors 2.0.0.
     # The warning can be removed after the packages are updated:
     # sanic-cors: ^2.1.0
