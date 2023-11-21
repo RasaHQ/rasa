@@ -981,8 +981,10 @@ class DialogueStateTracker:
             if isinstance(event, DialogueStackUpdated):
                 update_json_list = event.update_as_json()
                 for update_json in update_json_list:
-                    if update_json["op"] == "add":
-                        added_flow = update_json["value"]["flow_id"]
+                    if update_json["op"] == "add" and isinstance(
+                        update_json["value"], dict
+                    ):
+                        added_flow = update_json["value"].get("flow_id")
                         if added_flow == current_flow.id:
                             # exiting the loop upon finding start of the current flow
                             break
