@@ -512,7 +512,7 @@ def test_train_nlu_finetune_with_model(
     )
 
 
-def test_train_validation_warnings(
+def test_train_validation_debug_messages(
     run_in_simple_project: Callable[..., RunResult], request: pytest.FixtureRequest
 ):
     test_data_dir = Path(request.config.rootdir, "data", "test_validation", "data")
@@ -526,14 +526,15 @@ def test_train_validation_warnings(
         str(test_domain),
         "-c",
         "config.yml",
+        "--debug",
     )
 
     assert result.ret == 0
-    for warning in [
-        "The intent 'goodbye' is not used in any story or rule.",
+    for message in [
+        "The intent 'goodbye' is not used in any story, rule or flow.",
         "The utterance 'utter_chatter' is not used in any story, rule or flow.",
     ]:
-        assert warning in str(result.stderr)
+        assert message in str(result.stderr)
 
 
 def test_train_validation_fail_on_warnings(
