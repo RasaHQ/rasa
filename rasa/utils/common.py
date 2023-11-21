@@ -55,6 +55,15 @@ EXPECTED_WARNINGS: List[Tuple[Type[Warning], str]] = [
         np.VisibleDeprecationWarning,
         "Creating an ndarray from ragged nested sequences.*",
     ),
+    # This warning is triggered by sanic-cors 2.0.0.
+    # The warning can be removed after the packages are updated:
+    # sanic-cors: ^2.1.0
+    # packaging`: 23.2 (introduces breaking changes)
+    # pep440-version-utils (also requires update on packaging)
+    (
+        DeprecationWarning,
+        "distutils Version classes are deprecated. Use packaging.version instead.",
+    ),
     # cf. https://github.com/tensorflow/tensorflow/issues/38168
     (
         UserWarning,

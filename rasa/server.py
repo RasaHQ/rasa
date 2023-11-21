@@ -4,12 +4,11 @@ import logging
 import multiprocessing
 import os
 import traceback
-import warnings
 from collections import defaultdict
 from functools import reduce, wraps
+from http import HTTPStatus
 from inspect import isawaitable
 from pathlib import Path
-from http import HTTPStatus
 from typing import (
     Any,
     Callable,
@@ -26,36 +25,30 @@ from typing import (
 
 import aiohttp
 import jsonschema
-from sanic import Sanic, response
-from sanic.request import Request
-from sanic.response import HTTPResponse
-
-# The warning can be removed after the packages are updated:
-# sanic-cors: ^2.1.0
-# packaging`: 23.2 (introduces breaking changes)
-# pep440-version-utils (also requires update on packaging)
-with warnings.catch_warnings():
-    warnings.filterwarnings("ignore", category=DeprecationWarning)
-    from sanic_cors import CORS
-from sanic_jwt import Initialize, exceptions
-
 import rasa
 import rasa.core.utils
-from rasa.nlu.emulators.emulator import Emulator
-import rasa.utils.common
+import rasa.nlu.test
+import rasa.shared.core.events
+import rasa.shared.nlu.training_data.schemas.data_schema
 import rasa.shared.utils.common
 import rasa.shared.utils.io
 import rasa.shared.utils.validation
-import rasa.shared.nlu.training_data.schemas.data_schema
+import rasa.utils.common
 import rasa.utils.endpoints
 import rasa.utils.io
-from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
-    YAMLStoryWriter,
-)
-from rasa.shared.importers.importer import TrainingDataImporter
-from rasa.shared.nlu.training_data.formats import RasaYAMLReader
-from rasa.core.constants import DEFAULT_RESPONSE_TIMEOUT
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION
+from rasa.core.agent import Agent
+from rasa.core.channels.channel import (
+    CollectingOutputChannel,
+    OutputChannel,
+    UserMessage,
+)
+from rasa.core.constants import DEFAULT_RESPONSE_TIMEOUT
+from rasa.core.test import test
+from rasa.core.utils import AvailableEndpoints
+from rasa.nlu.emulators.emulator import Emulator
+from rasa.nlu.emulators.no_emulator import NoEmulator
+from rasa.nlu.test import CVEvaluationResult
 from rasa.shared.constants import (
     DOCS_URL_TRAINING_DATA,
     DOCS_BASE_URL,
@@ -64,26 +57,24 @@ from rasa.shared.constants import (
     TEST_STORIES_FILE_PREFIX,
 )
 from rasa.shared.core.domain import InvalidDomain, Domain
-from rasa.core.agent import Agent
-from rasa.core.channels.channel import (
-    CollectingOutputChannel,
-    OutputChannel,
-    UserMessage,
-)
-import rasa.shared.core.events
 from rasa.shared.core.events import Event
-from rasa.core.test import test
-from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
 from rasa.shared.core.trackers import (
     DialogueStateTracker,
     EventVerbosity,
 )
-from rasa.core.utils import AvailableEndpoints
-from rasa.nlu.emulators.no_emulator import NoEmulator
-import rasa.nlu.test
-from rasa.nlu.test import CVEvaluationResult
+from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
+    YAMLStoryWriter,
+)
+from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.nlu.training_data.formats import RasaYAMLReader
 from rasa.shared.utils.schemas.events import EVENTS_SCHEMA
+from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
 from rasa.utils.endpoints import EndpointConfig
+from sanic import Sanic, response
+from sanic.request import Request
+from sanic.response import HTTPResponse
+from sanic_cors import CORS
+from sanic_jwt import Initialize, exceptions
 
 if TYPE_CHECKING:
     from ssl import SSLContext
