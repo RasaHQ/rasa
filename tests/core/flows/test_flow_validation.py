@@ -254,7 +254,9 @@ def test_validation_fails_on_link_step_with_next() -> None:
               - action: utter_start
               - action: utter_middle
               - link: get_user_name
-              - action: utter_end
+                next: utter_end    # needs explicit next as there is no default
+              - id: utter_end
+                action: utter_end
         """
         )
     assert e.value.flow_id == "abc"

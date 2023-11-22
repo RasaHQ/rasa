@@ -87,6 +87,10 @@ class FlowStep:
             next=FlowStepLinks.from_json(data.get("next", [])),
         )
 
+    def does_allow_for_next_step(self) -> bool:
+        """Most steps allow linking to the next step. But some don't."""
+        return True
+
     def as_json(self) -> Dict[Text, Any]:
         """Serialize the FlowStep object.
 

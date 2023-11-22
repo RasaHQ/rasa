@@ -4,7 +4,6 @@ from typing import Dict, List, Optional, Any, Callable
 
 from packaging import version
 from packaging.version import LegacyVersion
-
 from ruamel.yaml.constructor import DuplicateKeyError
 from dataclasses import dataclass
 import jsonschema
@@ -132,7 +131,7 @@ def validate_yaml_schema(
     import pykwalify.core
     import pykwalify.errors
     from ruamel.yaml import YAMLError
-    import pkg_resources
+    import importlib_resources
     import logging
 
     log = logging.getLogger("pykwalify")
@@ -150,12 +149,12 @@ def validate_yaml_schema(
     except (YAMLError, DuplicateKeyError) as e:
         raise YamlSyntaxException(underlying_yaml_exception=e)
 
-    schema_file = pkg_resources.resource_filename(package_name, schema_path)
-    schema_utils_file = pkg_resources.resource_filename(
-        PACKAGE_NAME, RESPONSES_SCHEMA_FILE
+    schema_file = str(importlib_resources.files(package_name).joinpath(schema_path))
+    schema_utils_file = str(
+        importlib_resources.files(PACKAGE_NAME).joinpath(RESPONSES_SCHEMA_FILE)
     )
-    schema_extensions = pkg_resources.resource_filename(
-        PACKAGE_NAME, SCHEMA_EXTENSIONS_FILE
+    schema_extensions = str(
+        importlib_resources.files(PACKAGE_NAME).joinpath(SCHEMA_EXTENSIONS_FILE)
     )
 
     # Load schema content using our YAML loader as `pykwalify` uses a global instance
@@ -315,9 +314,9 @@ def validate_yaml_with_jsonschema(
         SchemaValidationError: if validation fails.
     """
     from ruamel.yaml import YAMLError
-    import pkg_resources
+    import importlib_resources
 
-    schema_file = pkg_resources.resource_filename(package_name, schema_path)
+    schema_file = str(importlib_resources.files(package_name).joinpath(schema_path))
     schema_content = rasa.shared.utils.io.read_json_file(schema_file)
 
     try:
