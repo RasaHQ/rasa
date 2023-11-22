@@ -182,6 +182,7 @@ class AvailableEndpoints:
         )
         lock_store = read_endpoint_config(endpoint_file, endpoint_type="lock_store")
         event_broker = read_endpoint_config(endpoint_file, endpoint_type="event_broker")
+        vector_store = read_endpoint_config(endpoint_file, endpoint_type="vector_store")
 
         return cls(
             nlg,
@@ -191,6 +192,7 @@ class AvailableEndpoints:
             tracker_store,
             lock_store,
             event_broker,
+            vector_store,
         )
 
     def __init__(
@@ -202,6 +204,7 @@ class AvailableEndpoints:
         tracker_store: Optional[EndpointConfig] = None,
         lock_store: Optional[EndpointConfig] = None,
         event_broker: Optional[EndpointConfig] = None,
+        vector_store: Optional[EndpointConfig] = None,
     ) -> None:
         """Create an `AvailableEndpoints` object."""
         self.model = model
@@ -211,6 +214,7 @@ class AvailableEndpoints:
         self.tracker_store = tracker_store
         self.lock_store = lock_store
         self.event_broker = event_broker
+        self.vector_store = vector_store
 
 
 def read_endpoints_from_path(

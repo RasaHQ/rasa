@@ -1212,6 +1212,10 @@ class DialogueStackUpdated(Event):
         """Applies event to current conversation state."""
         tracker.apply_stack_update(self.update)
 
+    def update_as_json(self) -> List[Dict[Text, Any]]:
+        """Return the update as a JsonPatch object."""
+        return json.loads(self.update)
+
 
 class ReminderScheduled(Event):
     """Schedules the asynchronous triggering of a user intent at a given time.

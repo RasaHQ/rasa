@@ -258,6 +258,10 @@ class TestLLMCommandGenerator:
             ("SetSlot(flow_name, some_flow)", [StartFlowCommand(flow="some_flow")]),
             ("StartFlow(some_flow)", [StartFlowCommand(flow="some_flow")]),
             ("StartFlow(does_not_exist)", []),
+            (
+                "StartFlow(02_benefits_learning_days)",
+                [StartFlowCommand(flow="02_benefits_learning_days")],
+            ),
             ("CancelFlow()", [CancelFlowCommand()]),
             ("ChitChat()", [ChitChatAnswerCommand()]),
             ("SkipQuestion()", [SkipQuestionCommand()]),
@@ -301,6 +305,11 @@ class TestLLMCommandGenerator:
                 steps:
                 - id: first_step
                   collect: test_slot
+              02_benefits_learning_days:
+                description: some foo
+                steps:
+                - id: some_id
+                  collect: some_slot
             """
         )
         with patch.object(

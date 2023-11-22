@@ -165,12 +165,11 @@ def create_initial_project(
 
 
 def scaffold_path(template: ProjectTemplateName) -> Text:
-    import pkg_resources
+    import importlib_resources
     import rasa.cli.project_templates
 
     template_module = rasa.cli.project_templates.__name__
-
-    return pkg_resources.resource_filename(template_module, template.value)
+    return str(importlib_resources.files(template_module).joinpath(template.value))
 
 
 def print_cancel() -> None:
