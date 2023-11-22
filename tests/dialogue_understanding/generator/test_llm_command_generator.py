@@ -257,6 +257,10 @@ class TestLLMCommandGenerator:
             ),
             ("SetSlot(flow_name, some_flow)", [StartFlowCommand(flow="some_flow")]),
             ("StartFlow(check_balance)", [StartFlowCommand(flow="check_balance")]),
+            (
+                "StartFlow(02_benefits_learning_days)",
+                [StartFlowCommand(flow="02_benefits_learning_days")],
+            ),
             ("CancelFlow()", [CancelFlowCommand()]),
             ("ChitChat()", [ChitChatAnswerCommand()]),
             ("SkipQuestion()", [SkipQuestionCommand()]),
