@@ -21,7 +21,6 @@ from rasa.shared.core.flows.steps.constants import (
 from rasa.shared.core.flows.steps import (
     CollectInformationFlowStep,
     EndFlowStep,
-    LinkFlowStep,
     StartFlowStep,
 )
 from rasa.shared.core.flows.flow_step_sequence import FlowStepSequence
@@ -97,10 +96,9 @@ class Flow:
 
         def resolve_default_next(steps: List[FlowStep], is_root_sequence: bool) -> None:
             for i, step in enumerate(steps):
-                if step.next.no_link_available():
+                if step.next.no_link_available() and step.does_allow_for_next_step():
                     if i == len(steps) - 1:
-                        # can't attach end to link step
-                        if is_root_sequence and not isinstance(step, LinkFlowStep):
+                        if is_root_sequence:
                             # if this is the root sequence, we need to add an end step
                             # to the end of the sequence. other sequences, e.g.
                             # in branches need to explicitly add a next step.

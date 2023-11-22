@@ -164,6 +164,31 @@ def test_collecting_flow_utterances():
     }
 
 
+def test_link_step_doesnt_get_assigned_default_next():
+    all_flows = flows_from_str(
+        """
+        flows:
+          foo:
+            steps:
+              - collect: age
+                next:
+                  - if: age<18
+                    then: young_flow
+                  - else: old_flow
+              # the following two flows should not get assigned default `next`
+              # properties
+              - id: young_flow
+                link: young_flow
+              - id: old_flow
+                link: old_flow
+        """
+    )
+    flow = all_flows.flow_by_id("foo")
+
+    assert flow.step_by_id("young_flow").next.links == []
+    assert flow.step_by_id("young_flow").next.links == []
+
+
 def test_default_flows_have_non_empty_names():
     default_flows = FlowSyncImporter.load_default_pattern_flows()
     for flow in default_flows.underlying_flows:
