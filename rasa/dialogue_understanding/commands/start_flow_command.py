@@ -70,7 +70,7 @@ class StartFlowCommand(Command):
                 "command_executor.skip_command.already_started_flow", command=self
             )
             return []
-        elif self.flow not in all_flows.user_flow_ids:
+        elif self.flow not in all_flows.flow_ids:
             structlogger.debug(
                 "command_executor.skip_command.start_invalid_flow_id", command=self
             )
