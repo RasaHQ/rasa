@@ -101,7 +101,6 @@ class EndpointConfig:
         self.type = kwargs.pop("store_type", kwargs.pop("type", None))
         self.cafile = cafile
         self.kwargs = kwargs
-        self._underlying_session: Optional[aiohttp.ClientSession] = None
 
     def session(self) -> aiohttp.ClientSession:
         """Creates and returns a configured aiohttp client session."""
