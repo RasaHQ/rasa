@@ -8,10 +8,15 @@ import tarfile
 import time
 from types import LambdaType
 from typing import Any, Dict, List, Optional, Text, Tuple, Union
+from rasa.core.utils import AvailableEndpoints
 
 from rasa.core.http_interpreter import RasaNLUHttpInterpreter
 from rasa.engine import loader
-from rasa.engine.constants import PLACEHOLDER_MESSAGE, PLACEHOLDER_TRACKER
+from rasa.engine.constants import (
+    PLACEHOLDER_MESSAGE,
+    PLACEHOLDER_TRACKER,
+    PLACEHOLDER_ENDPOINTS,
+)
 from rasa.engine.runner.dask import DaskGraphRunner
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.storage import ModelMetadata
@@ -33,6 +38,7 @@ from rasa.core.policies.policy import PolicyPrediction
 from rasa.engine.runner.interface import GraphRunner
 from rasa.exceptions import ActionLimitReached, ModelNotFound
 from rasa.shared.core.constants import (
+    ACTION_CORRECT_FLOW_SLOT,
     USER_INTENT_RESTART,
     ACTION_LISTEN_NAME,
     ACTION_SESSION_START_NAME,
@@ -81,7 +87,7 @@ from rasa.utils.endpoints import EndpointConfig
 logger = logging.getLogger(__name__)
 structlogger = structlog.get_logger()
 
-MAX_NUMBER_OF_PREDICTIONS = int(os.environ.get("MAX_NUMBER_OF_PREDICTIONS", "20"))
+MAX_NUMBER_OF_PREDICTIONS = int(os.environ.get("MAX_NUMBER_OF_PREDICTIONS", "10"))
 
 
 class MessageProcessor:
@@ -97,6 +103,7 @@ class MessageProcessor:
         max_number_of_predictions: int = MAX_NUMBER_OF_PREDICTIONS,
         on_circuit_break: Optional[LambdaType] = None,
         http_interpreter: Optional[RasaNLUHttpInterpreter] = None,
+        endpoints: Optional[AvailableEndpoints] = None,
     ) -> None:
         """Initializes a `MessageProcessor`."""
         self.nlg = generator
@@ -108,6 +115,7 @@ class MessageProcessor:
         self.model_filename, self.model_metadata, self.graph_runner = self._load_model(
             model_path
         )
+        self.endpoints = endpoints
 
         if self.model_metadata.assistant_id is None:
             rasa.shared.utils.io.raise_warning(
@@ -839,6 +847,40 @@ class MessageProcessor:
             == USER_INTENT_RESTART
         )
 
+    def _tracker_state_specific_action_limit(
+        self, tracker: DialogueStateTracker
+    ) -> int:
+        """Select the action limit based on the tracker state.
+
+        Usually, we want to limit the number of predictions to the number of actions
+        that have been executed in the conversation so far. However, if the
+        conversation is currently in a state where the user is correcting the flow
+        we want to allow for more predictions to be made as we might be traversing
+        through a long flow.
+
+        Args:
+            tracker: instance of DialogueStateTracker.
+
+        Returns:
+        The maximum number of predictions to make.
+        """
+        reversed_events = list(tracker.events)[::-1]
+        is_conversation_in_flow_correction = False
+        for e in reversed_events:
+            if isinstance(e, ActionExecuted):
+                if e.action_name in (ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME):
+                    break
+                elif e.action_name == ACTION_CORRECT_FLOW_SLOT:
+                    is_conversation_in_flow_correction = True
+                    break
+
+        if is_conversation_in_flow_correction:
+            # allow for more predictions to be made as we might be traversing through
+            # a long flow. We multiply the number of predictions by 10 to allow for
+            # more predictions to be made - the factor is a best guess.
+            return self.max_number_of_predictions * 5
+        return self.max_number_of_predictions
+
     def is_action_limit_reached(
         self, tracker: DialogueStateTracker, should_predict_another_action: bool
     ) -> bool:
@@ -854,6 +896,7 @@ class MessageProcessor:
         """
         reversed_events = list(tracker.events)[::-1]
         num_predicted_actions = 0
+        state_specific_action_limit = self._tracker_state_specific_action_limit(tracker)
 
         for e in reversed_events:
             if isinstance(e, ActionExecuted):
@@ -862,7 +905,7 @@ class MessageProcessor:
                 num_predicted_actions += 1
 
         return (
-            num_predicted_actions >= self.max_number_of_predictions
+            num_predicted_actions >= state_specific_action_limit
             and should_predict_another_action
         )
 
@@ -1175,7 +1218,11 @@ class MessageProcessor:
             raise ValueError("Cannot predict next action if there is no core target.")
 
         results = self.graph_runner.run(
-            inputs={PLACEHOLDER_TRACKER: tracker}, targets=[target]
+            inputs={
+                PLACEHOLDER_TRACKER: tracker,
+                PLACEHOLDER_ENDPOINTS: self.endpoints,
+            },
+            targets=[target],
         )
         policy_prediction = results[target]
         return policy_prediction

@@ -281,9 +281,9 @@ def test_verify_logging_message_for_intent_not_used_in_story(
     caplog.clear()
     with pytest.warns(UserWarning) as record:
         # force validator to not ignore warnings (default is True)
-        validator_under_test.verify_intents_in_stories(ignore_warnings=False)
+        validator_under_test.verify_intents_in_stories_or_flows(ignore_warnings=False)
 
-    assert "The intent 'goodbye' is not used in any story or rule." in (
+    assert "The intent 'goodbye' is not used in any story, rule or flow." in (
         m.message.args[0] for m in record
     )
 
@@ -292,13 +292,13 @@ def test_verify_logging_message_for_unused_utterance(
     caplog: LogCaptureFixture, validator_under_test: Validator
 ):
     caplog.clear()
-    with pytest.warns(UserWarning) as record:
-        # force validator to not ignore warnings (default is True)
-        validator_under_test.verify_utterances_in_dialogues(ignore_warnings=False)
-
-    assert "The utterance 'utter_chatter' is not used in any story, rule or flow." in (
-        m.message.args[0] for m in record
+    expected_debug_message = (
+        "The utterance 'utter_chatter' is not used in any story, rule or flow."
     )
+    with caplog.at_level(logging.DEBUG):
+        validator_under_test.verify_utterances_in_dialogues()
+
+    assert expected_debug_message in caplog.text
 
 
 def test_verify_logging_message_for_repetition_in_intents(caplog, nlu_data_path: Text):
@@ -1039,7 +1039,7 @@ def test_verify_flow_steps_against_domain_interpolated_action_name(
 
     validator = Validator.from_importer(importer)
 
-    with caplog.at_level(logging.WARNING):
+    with caplog.at_level(logging.DEBUG):
         assert validator.verify_flows_steps_against_domain()
         assert (
             "An interpolated action name 'validate_{context.collect}' was found "
@@ -1411,7 +1411,10 @@ def test_verify_utterances_in_dialogues_finds_all_responses_in_flows(
 
 
 def test_verify_utterances_in_dialogues_missing_responses_in_flows(
-    tmp_path: Path, nlu_data_path: Path, domain_file_name: Path
+    tmp_path: Path,
+    nlu_data_path: Path,
+    domain_file_name: Path,
+    caplog: LogCaptureFixture,
 ):
     flows_file_name = tmp_path / "flows.yml"
     # remove utter_ask_recipient from this flows file,
@@ -1446,12 +1449,13 @@ def test_verify_utterances_in_dialogues_missing_responses_in_flows(
     )
 
     validator = Validator.from_importer(importer)
-    match = (
+    expected_debug_message = (
         "The utterance 'utter_ask_recipient' is not used in any story, rule or flow."
     )
-    with pytest.warns(UserWarning, match=match):
-        # force validator to not ignore warnings (default is True)
-        validator.verify_utterances_in_dialogues(ignore_warnings=False)
+    with caplog.at_level(logging.DEBUG):
+        validator.verify_utterances_in_dialogues()
+
+    assert expected_debug_message in caplog.text
 
 
 @pytest.mark.parametrize("predicate", ["account_type is null", "not account_type"])

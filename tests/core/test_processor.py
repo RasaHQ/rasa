@@ -53,6 +53,7 @@ from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.plugin import plugin_manager
 from rasa.shared.constants import ASSISTANT_ID_KEY, LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.constants import (
+    ACTION_CORRECT_FLOW_SLOT,
     ACTION_EXTRACT_SLOTS,
     ACTION_RESTART_NAME,
     ACTION_SEND_TEXT_NAME,
@@ -1448,6 +1449,31 @@ def test_predict_next_action_raises_limit_reached_exception(
     tracker.set_latest_action({"action_name": "test_action"})
 
     default_processor.max_number_of_predictions = 1
+    with pytest.raises(ActionLimitReached):
+        default_processor.predict_next_with_tracker_if_should(tracker)
+
+
+def test_predict_next_action_raises_limit_reached_later_if_in_correction(
+    default_processor: MessageProcessor,
+):
+    tracker = DialogueStateTracker.from_events(
+        "test",
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered("Hi!"),
+            ActionExecuted(ACTION_CORRECT_FLOW_SLOT),
+        ],
+    )
+    tracker.set_latest_action({"action_name": "test_action"})
+
+    default_processor.max_number_of_predictions = 1
+
+    # should not raise an exception like in the above test
+    default_processor.predict_next_with_tracker_if_should(tracker)
+
+    # exception should be raised if there are already 5 actions (the previous
+    # one and another 4)
+    tracker.update_with_events([ActionExecuted("test_action")] * 4)
     with pytest.raises(ActionLimitReached):
         default_processor.predict_next_with_tracker_if_should(tracker)
 
