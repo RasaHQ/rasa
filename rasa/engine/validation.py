@@ -36,8 +36,9 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import DOCS_URL_GRAPH_COMPONENTS
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.training_data.message import Message
+from rasa.core.utils import AvailableEndpoints
 
-TypeAnnotation = Union[TypeVar, Text, Type]
+TypeAnnotation = Union[TypeVar, Text, Type, Optional[AvailableEndpoints]]
 
 
 @dataclasses.dataclass
@@ -450,7 +451,8 @@ def _validate_needs(
         if not has_kwargs and required_type is not None:
             parent = None
             if _is_placeholder_input(parent_name):
-                parent_return_type: TypeAnnotation = RESERVED_PLACEHOLDERS[parent_name]
+                parent_return_type: TypeAnnotation
+                parent_return_type = RESERVED_PLACEHOLDERS[parent_name]  # type: ignore
             else:
                 parent = graph.nodes[parent_name]
                 _, parent_return_type = _get_parameter_information(

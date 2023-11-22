@@ -2,7 +2,7 @@ import inspect
 import logging
 from typing import Any, Dict, Text, Type
 from typing_extensions import Protocol, runtime_checkable
-import pkg_resources
+import importlib_metadata
 import rasa.utils.common
 import rasa.shared.utils.io
 from rasa.engine.graph import GraphComponent
@@ -37,9 +37,9 @@ def calculate_fingerprint_key(
         The fingerprint key.
     """
     dependency_versions = {
-        package: pkg_resources.get_distribution(
+        package: importlib_metadata.version(
             import_name_to_package_map.get(package, package)
-        ).version
+        )
         for package in graph_component_class.required_packages()
     }
     fingerprint_data = {

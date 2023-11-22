@@ -31,6 +31,7 @@ from rasa.engine.constants import (
     PLACEHOLDER_IMPORTER,
     PLACEHOLDER_MESSAGE,
     PLACEHOLDER_TRACKER,
+    PLACEHOLDER_ENDPOINTS,
 )
 from rasa.engine.recipes.recipe import Recipe
 from rasa.engine.storage.resource import Resource
@@ -403,6 +404,8 @@ class DefaultV1Recipe(Recipe):
                 return "training_tracker_provider"
             elif "tracker" == parameter:
                 return PLACEHOLDER_TRACKER
+            elif "endpoints" == parameter:
+                return PLACEHOLDER_ENDPOINTS
             elif "training_data" == parameter:
                 return "nlu_training_data_provider"
             return f"{parameter}_provider"
@@ -1063,7 +1066,7 @@ class DefaultV1Recipe(Recipe):
             The resulting configuration including both the provided and
             the automatically configured keys.
         """
-        import pkg_resources
+        import importlib_resources
 
         if keys_to_configure:
             logger.debug(
@@ -1072,9 +1075,11 @@ class DefaultV1Recipe(Recipe):
                 f"Values will be provided from the default configuration."
             )
 
-        filename = "config_files/default_config.yml"
-
-        default_config_file = pkg_resources.resource_filename(__name__, filename)
+        default_config_file = str(
+            importlib_resources.files(__name__)
+            .joinpath("config_files")
+            .joinpath("default_config.yml")
+        )
         default_config = rasa.shared.utils.io.read_config_file(default_config_file)
 
         config = copy.deepcopy(config)
