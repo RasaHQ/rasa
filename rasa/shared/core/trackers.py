@@ -980,23 +980,29 @@ class DialogueStateTracker:
         hit_start_of_current_flow = False
 
         for event in reversed(self.events):
+            # stop once we have hit the start of the current flow
             if hit_start_of_current_flow:
                 break
-            if isinstance(event, DialogueStackUpdated):
-                stack_updates = event.update_as_json()
-                for update_data in stack_updates:
-                    if update_data["op"] == "add" and isinstance(
-                        update_data["value"], dict
-                    ):
-                        added_flow = update_data["value"].get("flow_id")
-                        if added_flow == current_flow.id:
-                            # exiting the loop upon finding start of the current flow
-                            hit_start_of_current_flow = True
-                            break
-                        elif added_flow == FLOW_PATTERN_COLLECT_INFORMATION:
-                            slot = update_data["value"]["collect"]
-                            if slot in slots_names_of_flow:
-                                previously_updated_slots.add(slot)
+            # skip any non dialogue stack update events
+            if not isinstance(event, DialogueStackUpdated):
+                continue
+
+            stack_updates = event.update_as_json()
+            add_frame_updates = [
+                update
+                for update in stack_updates
+                if update["op"] == "add" and isinstance(update["value"], dict)
+            ]
+            for update in add_frame_updates:
+                added_flow = update["value"].get("flow_id")
+                if added_flow == current_flow.id:
+                    # exiting the loop upon finding start of the current flow
+                    hit_start_of_current_flow = True
+                    break
+                elif added_flow == FLOW_PATTERN_COLLECT_INFORMATION:
+                    slot = update["value"]["collect"]
+                    if slot in slots_names_of_flow:
+                        previously_updated_slots.add(slot)
 
         return list(previously_updated_slots)
 
