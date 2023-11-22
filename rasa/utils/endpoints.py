@@ -102,9 +102,27 @@ class EndpointConfig:
         self.type = kwargs.pop("store_type", kwargs.pop("type", None))
         self.cafile = cafile
         self.kwargs = kwargs
+        self._underlying_session: Optional[aiohttp.ClientSession] = None
 
-    @cached_property
+    @property
     def session(self) -> aiohttp.ClientSession:
+        """Create a new session for the endpoint caching the result."""
+        if not self._underlying_session or self._underlying_session.closed:
+            self._underlying_session = self.create_new_session()
+
+        return self._underlying_session
+
+    async def close_session(self) -> None:
+        """Close the session for the endpoint."""
+        try:
+            if self._underlying_session and not self._underlying_session.closed:
+                await self._underlying_session.close()
+        except Exception as e:
+            structlogger.warn(
+                "endpoint.session.close_failed", url=self.url, exception=e
+            )
+
+    def create_new_session(self) -> aiohttp.ClientSession:
         """Creates and returns a configured aiohttp client session."""
         # create authentication parameters
         if self.basic_auth:
@@ -172,7 +190,9 @@ class EndpointConfig:
                     f"'{os.path.abspath(self.cafile)}' does not exist."
                 ) from e
 
-        while (max_retries := DEFAULT_MAX_RETRY_ACTION_SERVER) > 0:
+        retries = DEFAULT_MAX_RETRY_ACTION_SERVER
+        while retries > 0:
+            retries -= 1
             try:
                 async with self.session.request(
                     method,
@@ -195,24 +215,25 @@ class EndpointConfig:
                         return None
             except aiohttp.ClientOSError as e:
                 underlying_exception = e.__cause__
-                if isinstance(underlying_exception, ConnectionResetError):
-                    max_retries -= 1
+                if not isinstance(underlying_exception, ConnectionResetError):
+                    # We need to raise other exceptions like ConnectionRefusedError
+                    raise e
+
+                if retries == 1:
+                    # this is the last retry, so we need to raise the exception
+                    structlogger.error(
+                        "endpoint.request.retry_exhausted",
+                        url=url,
+                        exception=e,
+                    )
+                    raise e
+                else:
                     structlogger.debug(
                         "endpoint.request.retry",
                         url=url,
                         exception=e,
-                        retries_left=max_retries,
+                        retries_left=retries,
                     )
-                    if max_retries == 0:
-                        structlogger.error(
-                            "endpoint.request.retry_exhausted",
-                            url=url,
-                            exception=e,
-                        )
-                        raise e
-                else:
-                    # We need to raise other exceptions like ConnectionRefusedError
-                    raise e
         return None
 
     @classmethod

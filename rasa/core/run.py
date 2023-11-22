@@ -318,11 +318,11 @@ async def close_resources(app: Sanic, _: AbstractEventLoop) -> None:
 
     action_endpoint = current_agent.action_endpoint
     if action_endpoint:
-        await action_endpoint.session.close()
+        await action_endpoint.close_session()
 
     model_server = current_agent.model_server
     if model_server:
-        await model_server.session.close()
+        await model_server.close_session()
 
 
 async def create_connection_pools(app: Sanic, _: AbstractEventLoop) -> None:
