@@ -124,7 +124,6 @@ class Validator:
             duplication_hash[text].add(example.get("intent"))
 
         for text, intents in duplication_hash.items():
-
             if len(duplication_hash[text]) > 1:
                 everything_is_alright = ignore_warnings
                 intents_string = ", ".join(sorted(intents))
@@ -136,7 +135,7 @@ class Validator:
                 )
         return everything_is_alright
 
-    def verify_intents_in_stories(self, ignore_warnings: bool = True) -> bool:
+    def verify_intents_in_stories_or_flows(self, ignore_warnings: bool = True) -> bool:
         """Checks intents used in stories.
 
         Verifies if the intents used in the stories are valid, and whether
@@ -150,11 +149,18 @@ class Validator:
             for event in story.events
             if type(event) == UserUttered and event.intent_name is not None
         }
+        flow_intents = {
+            trigger.intent
+            for flow in self.flows.underlying_flows
+            if flow.nlu_triggers is not None
+            for trigger in flow.nlu_triggers.trigger_conditions
+        }
+        used_intents = stories_intents.union(flow_intents)
 
-        for story_intent in stories_intents:
-            if story_intent not in self.domain.intents:
+        for intent in used_intents:
+            if intent not in self.domain.intents:
                 rasa.shared.utils.io.raise_warning(
-                    f"The intent '{story_intent}' is used in your stories, but it "
+                    f"The intent '{intent}' is used in a story or flow, but it "
                     f"is not listed in the domain file. You should add it to your "
                     f"domain file!",
                     docs=DOCS_URL_DOMAINS,
@@ -162,9 +168,9 @@ class Validator:
                 everything_is_alright = ignore_warnings
 
         for intent in self._non_default_intents():
-            if intent not in stories_intents:
+            if intent not in used_intents:
                 rasa.shared.utils.io.raise_warning(
-                    f"The intent '{intent}' is not used in any story or rule."
+                    f"The intent '{intent}' is not used in any story, rule or flow."
                 )
                 everything_is_alright = ignore_warnings or everything_is_alright
 
@@ -250,7 +256,7 @@ class Validator:
 
         for utterance in utterance_actions:
             if utterance not in all_used_utterances:
-                rasa.shared.utils.io.raise_warning(
+                logger.debug(
                     f"The utterance '{utterance}' is not used in "
                     f"any story, rule or flow."
                 )
@@ -361,7 +367,7 @@ class Validator:
     def verify_nlu(self, ignore_warnings: bool = True) -> bool:
         """Runs all the validations on intents and utterances."""
         logger.info("Validating intents...")
-        intents_are_valid = self.verify_intents_in_stories(ignore_warnings)
+        intents_are_valid = self.verify_intents_in_stories_or_flows(ignore_warnings)
 
         logger.info("Validating uniqueness of intents and stories...")
         there_is_no_duplication = self.verify_example_repetition_in_intents(
@@ -544,7 +550,7 @@ class Validator:
                     regex = r"{context\..+?}"
                     matches = re.findall(regex, step.action)
                     if matches:
-                        logger.warning(
+                        logger.debug(
                             f"An interpolated action name '{step.action}' was "
                             f"found at step '{step.id}' of flow id '{flow.id}'. "
                             f"Skipping validation for this step. "

@@ -186,7 +186,7 @@ def test_data_validate_default_options(
     assert result.ret == 0
 
 
-def test_data_validate_not_used_warning(
+def test_data_validate_not_used_debug_message(
     run_in_simple_project: Callable[..., RunResult], request: FixtureRequest
 ):
     test_data_dir = Path(request.config.rootdir, "data", "test_validation", "data")
@@ -202,13 +202,14 @@ def test_data_validate_not_used_warning(
         str(test_domain),
         "-c",
         str(test_config),
+        "--debug",
     )
 
-    for warning in [
-        "The intent 'goodbye' is not used in any story or rule.",
+    for message in [
+        "The intent 'goodbye' is not used in any story, rule or flow.",
         "The utterance 'utter_chatter' is not used in any story, rule or flow.",
     ]:
-        assert warning in str(result.stderr)
+        assert message in str(result.stderr)
 
 
 def test_data_validate_failed_to_load_domain(
