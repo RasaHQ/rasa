@@ -100,6 +100,7 @@ async def test_agent_train(default_agent: Agent):
                         "value": "Rasa",
                     }
                 ],
+                "commands": [],
             },
         ),
         (
@@ -109,6 +110,7 @@ async def test_agent_train(default_agent: Agent):
                 "intent": {"name": "greet", "confidence": 1.0},
                 "text_tokens": [(0, 2), (3, 8)],
                 "entities": [],
+                "commands": [],
             },
         ),
     ],

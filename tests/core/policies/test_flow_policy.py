@@ -81,7 +81,7 @@ def test_flow_policy_does_not_support_search_frame():
 
 
 def test_get_default_config():
-    assert FlowPolicy.get_default_config() == {"priority": 1, "max_history": None}
+    assert FlowPolicy.get_default_config() == {"priority": 7, "max_history": None}
 
 
 def test_predict_action_probabilities_abstains_from_unsupported_frame(

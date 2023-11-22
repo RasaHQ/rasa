@@ -187,12 +187,29 @@ flows:
             - action: utter_internal_error_rasa
               next: "END"
 
+
+  pattern_restart:
+    description: flow used to restart the conversation
+    name: pattern restart
+    nlu_trigger:
+      - intent: restart
+    steps:
+      - action: action_restart
+
   pattern_search:
     description: handle a knowledge-based question or request
     name: pattern search
     steps:
       - action: utter_no_knowledge_base
       # - action: action_trigger_search to use doc search policy if present
+
+  pattern_session_start:
+    description: flow used to start the conversation
+    name: pattern session start
+    nlu_trigger:
+      - intent: session_start
+    steps:
+      - action: action_session_start
 
   pattern_skip_question:
     description: flow used to handle users intent to skip questions (steps)

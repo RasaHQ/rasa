@@ -1,5 +1,7 @@
 import warnings
 from pathlib import Path
+from rasa.core.policies.flow_policy import FlowPolicy
+from rasa.core.policies.unexpected_intent_policy import UnexpecTEDIntentPolicy
 
 import rasa.shared.utils.io
 from rasa.core.featurizers.precomputation import CoreFeaturizationInputConverter
@@ -35,7 +37,7 @@ from rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer import 
 from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
 from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.core.policies.memoization import MemoizationPolicy
+from rasa.core.policies.memoization import AugmentedMemoizationPolicy, MemoizationPolicy
 from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.core.policies.policy import Policy
@@ -728,7 +730,9 @@ def test_core_warn_if_data_but_no_policy(
         "_raise_if_a_rule_policy_is_incompatible_with_domain",
         lambda *args, **kwargs: None,
     )
-    monkeypatch.setattr(validator, "_warn_if_no_rule_policy_is_contained", lambda: None)
+    monkeypatch.setattr(
+        validator, "_warn_if_no_policy_handles_default_intents", lambda: None
+    )
     monkeypatch.setattr(
         validator,
         "_warn_if_rule_based_data_is_unused_or_missing",
@@ -819,7 +823,9 @@ def test_core_raise_if_domain_contains_form_names_but_no_rule_policy_given(
     validator = DefaultV1RecipeValidator(graph_schema)
     monkeypatch.setattr(validator, "_validate_nlu", lambda *args, **kwargs: None)
     monkeypatch.setattr(
-        validator, "_warn_if_no_rule_policy_is_contained", lambda *args, **kwargs: None
+        validator,
+        "_warn_if_no_policy_handles_default_intents",
+        lambda *args, **kwargs: None,
     )
     monkeypatch.setattr(
         validator,
@@ -1055,3 +1061,35 @@ def test_importer_with_invalid_model_config(tmp_path: Path):
             importer.get_config(),
             TrainingType.END_TO_END,
         )
+
+
+@pytest.mark.parametrize(
+    "dm1_component",
+    [
+        RulePolicy,
+        TEDPolicy,
+        MemoizationPolicy,
+        AugmentedMemoizationPolicy,
+        UnexpecTEDIntentPolicy,
+    ],
+)
+def test_core_fails_if_dm1_and_calm(dm1_component: Type[GraphComponent]):
+    graph_schema = GraphSchema(
+        {
+            "0": SchemaNode({}, dm1_component, "", "", {}),
+            "1": SchemaNode({}, FlowPolicy, "", "", {}),
+        }
+    )
+    importer = DummyImporter()
+    core_validator = DefaultV1RecipeValidator(graph_schema)
+
+    with pytest.raises(InvalidConfigException):
+        core_validator.validate(importer)
+
+
+def test_core_does_not_fail_if_calm_only():
+    graph_schema = GraphSchema({"0": SchemaNode({}, FlowPolicy, "", "", {})})
+    importer = DummyImporter()
+    core_validator = DefaultV1RecipeValidator(graph_schema)
+
+    assert core_validator.validate(importer)
