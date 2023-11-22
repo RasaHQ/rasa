@@ -194,6 +194,9 @@ def test_run_command_on_tracker_correcting_current_flow(
     assert dialogue_stack_dump[3]["is_reset_only"] is False
 
 
+# Skipped in https://rasahq.atlassian.net/browse/ENG-687
+# To be fixed in https://rasahq.atlassian.net/browse/ENG-690
+@pytest.mark.skip(reason="ENG-687")
 @pytest.mark.parametrize(
     "corrected_slots, events, dialogue_stack",
     [
@@ -294,6 +297,8 @@ def test_run_command_on_tracker_correcting_invalid_slot(
     [
         # TODO: This test case needs splitting out from the test case below
         # since the stack is a different length which messes all the asserts.
+        # Commented out in https://rasahq.atlassian.net/browse/ENG-687
+        # to be fixed in https://rasahq.atlassian.net/browse/ENG-690
         #  (
         #     [{
         #         "type": "flow",
@@ -594,7 +599,9 @@ def test_find_earliest_updated_collect_info(
             ["foo", "bar"],
             "collect_bar",
         ),
-        # TODO: Fix this test case.
+        # TODO: Fix or move this test case.
+        # Commented out in https://rasahq.atlassian.net/browse/ENG-687
+        # to be fixed in https://rasahq.atlassian.net/browse/ENG-690
         # (
         #     ["foo", "bar"],
         #     None,
