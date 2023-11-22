@@ -234,6 +234,7 @@ async def load_agent(
         model_server=model_server,
         remote_storage=remote_storage,
         http_interpreter=http_interpreter,
+        endpoints=endpoints,
     )
 
     try:
@@ -295,6 +296,7 @@ class Agent:
         model_server: Optional[EndpointConfig] = None,
         remote_storage: Optional[Text] = None,
         http_interpreter: Optional[RasaNLUHttpInterpreter] = None,
+        endpoints: Optional[AvailableEndpoints] = None,
     ):
         """Initializes an `Agent`."""
         self.domain = domain
@@ -305,6 +307,7 @@ class Agent:
         self.lock_store = self._create_lock_store(lock_store)
         self.action_endpoint = action_endpoint
         self.http_interpreter = http_interpreter
+        self.endpoints = endpoints
 
         self._set_fingerprint(fingerprint)
         self.model_server = model_server
@@ -323,6 +326,7 @@ class Agent:
         model_server: Optional[EndpointConfig] = None,
         remote_storage: Optional[Text] = None,
         http_interpreter: Optional[RasaNLUHttpInterpreter] = None,
+        endpoints: Optional[AvailableEndpoints] = None,
     ) -> Agent:
         """Constructs a new agent and loads the processer and model."""
         agent = Agent(
@@ -335,6 +339,7 @@ class Agent:
             model_server=model_server,
             remote_storage=remote_storage,
             http_interpreter=http_interpreter,
+            endpoints=endpoints,
         )
         agent.load_model(model_path=model_path, fingerprint=fingerprint)
         return agent
@@ -350,6 +355,7 @@ class Agent:
             action_endpoint=self.action_endpoint,
             generator=self.nlg,
             http_interpreter=self.http_interpreter,
+            endpoints=self.endpoints,
         )
         self.domain = self.processor.domain
 
