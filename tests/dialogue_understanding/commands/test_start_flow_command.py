@@ -118,7 +118,7 @@ def test_run_start_flow_which_is_a_pattern():
     command = StartFlowCommand(flow="pattern_foo")
 
     events = command.run_command_on_tracker(tracker, all_flows, tracker)
-    assert len(events) == 0
+    assert len(events) == 1
 
 
 def test_run_start_flow_interrupting_existing_flow():

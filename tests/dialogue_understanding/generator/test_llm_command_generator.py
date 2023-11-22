@@ -256,7 +256,8 @@ class TestLLMCommandGenerator:
                 [SetSlotCommand(name="transfer_money_amount_of_money", value=None)],
             ),
             ("SetSlot(flow_name, some_flow)", [StartFlowCommand(flow="some_flow")]),
-            ("StartFlow(check_balance)", [StartFlowCommand(flow="check_balance")]),
+            ("StartFlow(some_flow)", [StartFlowCommand(flow="some_flow")]),
+            ("StartFlow(does_not_exist)", []),
             ("CancelFlow()", [CancelFlowCommand()]),
             ("ChitChat()", [ChitChatAnswerCommand()]),
             ("SkipQuestion()", [SkipQuestionCommand()]),
@@ -292,10 +293,22 @@ class TestLLMCommandGenerator:
     ):
         """Test that parse_commands identifies the correct commands."""
         # When
+        test_flows = flows_from_str(
+            """
+            flows:
+              some_flow:
+                description: some description
+                steps:
+                - id: first_step
+                  collect: test_slot
+            """
+        )
         with patch.object(
             LLMCommandGenerator, "get_nullable_slot_value", Mock(return_value=None)
         ):
-            parsed_commands = LLMCommandGenerator.parse_commands(input_action, Mock())
+            parsed_commands = LLMCommandGenerator.parse_commands(
+                input_action, Mock(), test_flows
+            )
         # Then
         assert parsed_commands == expected_command
 
