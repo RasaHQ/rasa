@@ -151,7 +151,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             "llm_command_generator.predict_commands.actions_generated",
             action_list=action_list,
         )
-        commands = self.parse_commands(action_list, tracker)
+        commands = self.parse_commands(action_list, tracker, flows)
         structlogger.info(
             "llm_command_generator.predict_commands.finished",
             commands=commands,
@@ -219,7 +219,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
 
     @classmethod
     def parse_commands(
-        cls, actions: Optional[str], tracker: DialogueStateTracker
+        cls, actions: Optional[str], tracker: DialogueStateTracker, flows: FlowsList
     ) -> List[Command]:
         """Parse the actions returned by the llm into intent and entities.
 
@@ -252,14 +252,15 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
                 slot_value = cls.clean_extracted_value(match.group(2))
                 # error case where the llm tries to start a flow using a slot set
                 if slot_name == "flow_name":
-                    commands.append(StartFlowCommand(flow=slot_value))
+                    commands.extend(cls.start_flow_by_name(slot_value, flows))
                 else:
                     typed_slot_value = cls.get_nullable_slot_value(slot_value)
                     commands.append(
                         SetSlotCommand(name=slot_name, value=typed_slot_value)
                     )
             elif match := start_flow_re.search(action):
-                commands.append(StartFlowCommand(flow=match.group(1).strip()))
+                flow_name = match.group(1).strip()
+                commands.extend(cls.start_flow_by_name(flow_name, flows))
             elif cancel_flow_re.search(action):
                 commands.append(CancelFlowCommand())
             elif chitchat_re.search(action):
@@ -275,6 +276,19 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
                 commands.append(ClarifyCommand(options))
 
         return commands
+
+    @staticmethod
+    def start_flow_by_name(flow_name: str, flows: FlowsList) -> List[Command]:
+        """Start a flow by name.
+
+        If the flow does not exist, no command is returned."""
+        if flow_name in flows.user_flow_ids:
+            return [StartFlowCommand(flow=flow_name)]
+        else:
+            structlogger.debug(
+                "llm_command_generator.flow.start_invalid_flow_id", flow=flow_name
+            )
+            return []
 
     @staticmethod
     def is_none_value(value: str) -> bool:

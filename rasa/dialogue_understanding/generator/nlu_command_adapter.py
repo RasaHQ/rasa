@@ -77,6 +77,13 @@ class NLUCommandAdapter(GraphComponent, CommandGenerator):
         Returns:
             The commands triggered by NLU.
         """
+        return self.convert_nlu_to_commands(message, tracker, flows)
+
+    @staticmethod
+    def convert_nlu_to_commands(
+        message: Message, tracker: DialogueStateTracker, flows: FlowsList
+    ) -> List[Command]:
+        """Converts the predicted intent to a command."""
         if tracker is None or flows.is_empty():
             # cannot do anything if there are no flows or no tracker
             return []
