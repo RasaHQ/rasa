@@ -55,16 +55,14 @@ EXPECTED_WARNINGS: List[Tuple[Type[Warning], str]] = [
         np.VisibleDeprecationWarning,
         "Creating an ndarray from ragged nested sequences.*",
     ),
-    # raised by google rpc
-    (DeprecationWarning, "pkg_resources.declare_namespace\\('google.*"),
     # raised by langchain -> faiss
     (
         DeprecationWarning,
         "distutils Version classes are deprecated. Use packaging.version instead",
     ),
-    # raised by pycountry (rasa-plus anonymization), magic_filter, and probably other
-    # dependencies that use pkg_resources instead of importlib
-    (DeprecationWarning, "pkg_resources is deprecated .*"),
+    # raised by pycountry (rasa-plus anonymization), magic_filter, google rpc
+    # and probably other dependencies that use pkg_resources instead of importlib
+    (DeprecationWarning, ".*pkg_resources.*"),
     # This warning is triggered by sanic-cors 2.0.0.
     # The warning can be removed after the packages are updated:
     # sanic-cors: ^2.1.0
