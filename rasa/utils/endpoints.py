@@ -2,7 +2,6 @@ import ssl
 from functools import cached_property
 
 import aiohttp
-import logging
 import os
 from aiohttp.client_exceptions import ContentTypeError
 from sanic.request import Request
@@ -11,10 +10,11 @@ from typing import Any, Optional, Text, Dict
 from rasa.shared.exceptions import FileNotFoundException
 import rasa.shared.utils.io
 import rasa.utils.io
+import structlog
 from rasa.core.constants import DEFAULT_MAX_RETRY_ACTION_SERVER, DEFAULT_REQUEST_TIMEOUT
 
 
-logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger()
 
 
 def read_endpoint_config(
@@ -32,9 +32,13 @@ def read_endpoint_config(
 
         return EndpointConfig.from_dict(content[endpoint_type])
     except FileNotFoundError:
-        logger.error(
-            "Failed to read endpoint configuration "
-            "from {}. No such file.".format(os.path.abspath(filename))
+        structlogger.error(
+            "endpoint.read.failed_no_such_file",
+            filename=os.path.abspath(filename),
+            event_info=(
+                "Failed to read endpoint configuration file - "
+                "the file was not found."
+            ),
         )
         return None
 
@@ -56,9 +60,13 @@ def concat_url(base: Text, subpath: Optional[Text]) -> Text:
     """
     if not subpath:
         if base.endswith("/"):
-            logger.debug(
-                f"The URL '{base}' has a trailing slash. Please make sure the "
-                f"target server supports trailing slashes for this endpoint."
+            structlogger.debug(
+                "endpoint.concat_url.trailing_slash",
+                url=base,
+                event_info=(
+                    "The URL has a trailing slash. Please make sure the "
+                    "target server supports trailing slashes for this endpoint."
+                ),
             )
         return base
 
@@ -189,11 +197,18 @@ class EndpointConfig:
                 underlying_exception = e.__cause__
                 if isinstance(underlying_exception, ConnectionResetError):
                     max_retries -= 1
-                    logger.error(
-                        f"Caught ConnectionResetError: {e}, "
-                        f"Retrying sending request - {max_retries} retries left."
+                    structlogger.debug(
+                        "endpoint.request.retry",
+                        url=url,
+                        exception=e,
+                        retries_left=max_retries,
                     )
                     if max_retries == 0:
+                        structlogger.error(
+                            "endpoint.request.retry_exhausted",
+                            url=url,
+                            exception=e,
+                        )
                         raise e
                 else:
                     # We need to raise other exceptions like ConnectionRefusedError
@@ -281,7 +296,7 @@ def float_arg(
     try:
         return float(str(arg))
     except (ValueError, TypeError):
-        logger.warning(f"Failed to convert '{arg}' to float.")
+        structlogger.warning("endpoint.float_arg.convert_failed", arg=arg, key=key)
         return default
 
 
@@ -309,5 +324,6 @@ def int_arg(
     try:
         return int(str(arg))
     except (ValueError, TypeError):
-        logger.warning(f"Failed to convert '{arg}' to int.")
+
+        structlogger.warning("endpoint.int_arg.convert_failed", arg=arg, key=key)
         return default
