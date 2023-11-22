@@ -1674,8 +1674,10 @@ def test_assistant_id_is_not_added_to_events_with_assistant_id():
     assert tracker.events[-1].metadata[ASSISTANT_ID_KEY] == "old_name"
 
 
-# TODO: need to change this test, probably need some way to simulate conversations
-#   and create real event streams in trackers to test this somewhat usefully
+# TODO: ENG-687 need to change this test, probably need some way to simulate
+#  conversations and create real event streams in trackers to test this usefully
+
+
 @pytest.mark.skip
 @pytest.mark.parametrize(
     "events, dialogue_stack, expected_slots",
