@@ -1,5 +1,4 @@
 import ssl
-from functools import cached_property
 
 import aiohttp
 import os
@@ -11,7 +10,7 @@ from rasa.shared.exceptions import FileNotFoundException
 import rasa.shared.utils.io
 import rasa.utils.io
 import structlog
-from rasa.core.constants import DEFAULT_MAX_RETRY_ACTION_SERVER, DEFAULT_REQUEST_TIMEOUT
+from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 
 
 structlogger = structlog.get_logger()
@@ -104,25 +103,7 @@ class EndpointConfig:
         self.kwargs = kwargs
         self._underlying_session: Optional[aiohttp.ClientSession] = None
 
-    @property
     def session(self) -> aiohttp.ClientSession:
-        """Create a new session for the endpoint caching the result."""
-        if not self._underlying_session or self._underlying_session.closed:
-            self._underlying_session = self.create_new_session()
-
-        return self._underlying_session
-
-    async def close_session(self) -> None:
-        """Close the session for the endpoint."""
-        try:
-            if self._underlying_session and not self._underlying_session.closed:
-                await self._underlying_session.close()
-        except Exception as e:
-            structlogger.warn(
-                "endpoint.session.close_failed", url=self.url, exception=e
-            )
-
-    def create_new_session(self) -> aiohttp.ClientSession:
         """Creates and returns a configured aiohttp client session."""
         # create authentication parameters
         if self.basic_auth:
@@ -190,51 +171,26 @@ class EndpointConfig:
                     f"'{os.path.abspath(self.cafile)}' does not exist."
                 ) from e
 
-        retries = DEFAULT_MAX_RETRY_ACTION_SERVER
-        while retries > 0:
-            retries -= 1
-            try:
-                async with self.session.request(
-                    method,
-                    url,
-                    headers=headers,
-                    params=self.combine_parameters(kwargs),
-                    compress=compress,
-                    ssl=sslcontext,
-                    **kwargs,
-                ) as response:
-                    if response.status >= 400:
-                        raise ClientResponseError(
-                            response.status,
-                            response.reason,
-                            await response.content.read(),
-                        )
-                    try:
-                        return await response.json()
-                    except ContentTypeError:
-                        return None
-            except aiohttp.ClientOSError as e:
-                underlying_exception = e.__cause__
-                if not isinstance(underlying_exception, ConnectionResetError):
-                    # We need to raise other exceptions like ConnectionRefusedError
-                    raise e
-
-                if retries == 1:
-                    # this is the last retry, so we need to raise the exception
-                    structlogger.error(
-                        "endpoint.request.retry_exhausted",
-                        url=url,
-                        exception=e,
+        async with self.session() as session:
+            async with session.request(
+                method,
+                url,
+                headers=headers,
+                params=self.combine_parameters(kwargs),
+                compress=compress,
+                ssl=sslcontext,
+                **kwargs,
+            ) as response:
+                if response.status >= 400:
+                    raise ClientResponseError(
+                        response.status,
+                        response.reason,
+                        await response.content.read(),
                     )
-                    raise e
-                else:
-                    structlogger.debug(
-                        "endpoint.request.retry",
-                        url=url,
-                        exception=e,
-                        retries_left=retries,
-                    )
-        return None
+                try:
+                    return await response.json()
+                except ContentTypeError:
+                    return None
 
     @classmethod
     def from_dict(cls, data: Dict[Text, Any]) -> "EndpointConfig":

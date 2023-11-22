@@ -1,10 +1,8 @@
 import structlog
 from pathlib import Path
 from typing import Text, Optional, Union
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import Mock
 
-import aiohttp
-import asyncio
 import pytest
 from aioresponses import aioresponses
 
@@ -91,7 +89,7 @@ async def test_endpoint_config():
 
         # unfortunately, the mock library won't report any headers stored on
         # the session object, so we need to verify them separately
-        async with endpoint.session as s:
+        async with endpoint.session() as s:
             assert s._default_headers.get("X-Powered-By") == "Rasa"
             assert s._default_auth.login == "user"
             assert s._default_auth.password == "pass"
@@ -234,93 +232,3 @@ def test_int_arg(value: Optional[Union[int, str]], default: int, expected_result
     if value is not None:
         request.args = {"key": value}
     assert endpoint_utils.int_arg(request, "key", default) == expected_result
-
-
-async def test_endpoint_config_caches_session() -> None:
-    """Test that the EndpointConfig session is cached.
-
-    Assert identity of the session object, which should not be recreated when calling
-    the property `session` multiple times.
-    """
-    endpoint = endpoint_utils.EndpointConfig("https://example.com/")
-    session = endpoint.session
-
-    assert endpoint.session is session
-
-    # teardown
-    await endpoint.session.close()
-
-
-async def test_endpoint_config_constructor_does_not_create_session_cached_property() -> None:  # noqa: E501
-    """Test that the instantiation of EndpointConfig does not create the session cached property."""  # noqa: E501
-    endpoint = endpoint_utils.EndpointConfig("https://example.com/")
-
-    assert endpoint.__dict__.get("url") == "https://example.com/"
-    assert endpoint.__dict__.get("session") is None
-
-    # the property is created when it is accessed
-    async with endpoint.session as session:
-        assert session is not None
-
-    assert endpoint.__dict__.get("session") is session
-
-
-@pytest.mark.asyncio
-async def test_request_client_error():
-    endpoint_config = endpoint_utils.EndpointConfig(url="http://example.com")
-
-    with patch("aiohttp.ClientSession.request") as mock_request:
-        # Mock client error response
-        mock_response = AsyncMock()
-        mock_response.status = 404
-        mock_request.return_value.__aenter__.return_value = mock_response
-
-        # Call the request method
-        with pytest.raises(endpoint_utils.ClientResponseError) as context:
-            await endpoint_config.request(method="post", subpath="/endpoint")
-
-        assert context.value.status == 404
-        mock_response.content.read.assert_called_once()
-        await endpoint_config.session.close()
-
-
-@pytest.mark.asyncio
-async def test_request_connection_reset_error():
-    endpoint_config = endpoint_utils.EndpointConfig(url="http://example.com")
-
-    with patch("aiohttp.ClientSession.request") as mock_request:
-        # Mock connection reset error
-        mock_request.side_effect = aiohttp.ClientOSError(
-            "Connection reset by peer",
-            asyncio.TimeoutError("Connection timeout"),
-            ConnectionResetError("Connection reset by peer"),
-        )
-
-        # Call the request method
-        with pytest.raises(aiohttp.ClientOSError) as context:
-            await endpoint_config.request(method="post", subpath="/endpoint")
-
-    assert isinstance(context.value, aiohttp.ClientOSError)
-    assert context.value.errno == "Connection reset by peer"
-    await endpoint_config.session.close()
-
-
-@pytest.mark.asyncio
-async def test_request_connection_refused_error():
-    endpoint_config = endpoint_utils.EndpointConfig(url="http://example.com")
-
-    with patch("aiohttp.ClientSession.request") as mock_request:
-        # Mock connection reset error
-        mock_request.side_effect = aiohttp.ClientOSError(
-            "Connection refused by peer",
-            asyncio.TimeoutError("Connection timeout"),
-            ConnectionRefusedError("Connection refused by peer"),
-        )
-
-        # Call the request method
-        with pytest.raises(aiohttp.ClientOSError) as context:
-            await endpoint_config.request(method="post", subpath="/endpoint")
-
-    assert isinstance(context.value, aiohttp.ClientOSError)
-    assert context.value.errno == "Connection refused by peer"
-    await endpoint_config.session.close()

@@ -26,8 +26,6 @@ DEFAULT_LOCK_LIFETIME = 60  # in seconds
 
 DEFAULT_KEEP_ALIVE_TIMEOUT = 120  # in seconds
 
-DEFAULT_MAX_RETRY_ACTION_SERVER = 3
-
 BEARER_TOKEN_PREFIX = "Bearer "
 
 # The lowest priority is intended to be used by machine learning policies.
