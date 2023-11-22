@@ -117,7 +117,7 @@ class CorrectSlotsCommand(Command):
         step = user_frame.step(all_flows)
 
         asked_collect_steps = flow.previous_collect_steps(step.id)
-        previously_updated_slots = tracker.get_previously_updated_slots()
+        previously_updated_slots = tracker.get_previously_updated_slots(all_flows)
 
         for collect_step in reversed(asked_collect_steps):
             # make sure the collect step belongs to the active flow and

@@ -83,7 +83,7 @@ def filled_slots_for_active_flow(
     filled_slots = set()
 
     dialogue_stack = tracker.stack
-    previously_filled_slots = tracker.get_previously_updated_slots()
+    previously_filled_slots = tracker.get_previously_updated_slots(all_flows)
 
     for frame in reversed(dialogue_stack.frames):
         if not isinstance(frame, BaseFlowStackFrame):
