@@ -977,19 +977,24 @@ class DialogueStateTracker:
         collect_steps_of_flow = current_flow.get_collect_steps()
         slots_names_of_flow = {step.collect for step in collect_steps_of_flow}
 
+        hit_start_of_current_flow = False
+
         for event in reversed(self.events):
+            if hit_start_of_current_flow:
+                break
             if isinstance(event, DialogueStackUpdated):
-                update_json_list = event.update_as_json()
-                for update_json in update_json_list:
-                    if update_json["op"] == "add" and isinstance(
-                        update_json["value"], dict
+                stack_updates = event.update_as_json()
+                for update_data in stack_updates:
+                    if update_data["op"] == "add" and isinstance(
+                        update_data["value"], dict
                     ):
-                        added_flow = update_json["value"].get("flow_id")
+                        added_flow = update_data["value"].get("flow_id")
                         if added_flow == current_flow.id:
                             # exiting the loop upon finding start of the current flow
+                            hit_start_of_current_flow = True
                             break
                         elif added_flow == FLOW_PATTERN_COLLECT_INFORMATION:
-                            slot = update_json["value"]["collect"]
+                            slot = update_data["value"]["collect"]
                             if slot in slots_names_of_flow:
                                 previously_updated_slots.add(slot)
 
