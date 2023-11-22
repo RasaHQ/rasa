@@ -793,6 +793,7 @@ class MessageProcessor:
             TEXT: "",
             INTENT: {INTENT_NAME_KEY: None, PREDICTED_CONFIDENCE_KEY: 0.0},
             ENTITIES: [],
+            COMMANDS: [],
         }
         parse_data.update(
             parsed_message.as_dict(only_output_properties=only_output_properties)

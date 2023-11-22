@@ -1493,6 +1493,7 @@ async def test_parse_message_nlu_only(trained_moodbot_nlu_path: Text):
         "intent": {"name": "greet", "confidence": 1.0},
         "intent_ranking": [{"name": "greet", "confidence": 1.0}],
         "entities": [],
+        "commands": [],
     }
 
     message = UserMessage("Hello")
@@ -1509,6 +1510,7 @@ async def test_parse_message_core_only(trained_core_model: Text):
         "intent": {"name": "greet", "confidence": 1.0},
         "intent_ranking": [{"name": "greet", "confidence": 1.0}],
         "entities": [],
+        "commands": [],
     }
 
     message = UserMessage("Hello")
@@ -1525,6 +1527,7 @@ async def test_parse_message_full_model(trained_moodbot_path: Text):
         "intent": {"name": "greet", "confidence": 1.0},
         "intent_ranking": [{"name": "greet", "confidence": 1.0}],
         "entities": [],
+        "commands": [],
     }
 
     message = UserMessage("Hello")
