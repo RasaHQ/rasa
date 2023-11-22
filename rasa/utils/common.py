@@ -55,9 +55,9 @@ EXPECTED_WARNINGS: List[Tuple[Type[Warning], str]] = [
         np.VisibleDeprecationWarning,
         "Creating an ndarray from ragged nested sequences.*",
     ),
-    # This warning is triggered by magic_filter when running
-    # rasa init
-    (DeprecationWarning, "pkg_resources is deprecated as an API."),
+    # raised by pycountry (rasa-plus anonymization), magic_filter, and probably other
+    # dependencies that use pkg_resources instead of importlib
+    (DeprecationWarning, "pkg_resources is deprecated .*"),
     # This warning is triggered by sanic-cors 2.0.0.
     # The warning can be removed after the packages are updated:
     # sanic-cors: ^2.1.0
