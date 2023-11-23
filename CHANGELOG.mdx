@@ -1,0 +1,77 @@
+## [3.7.0] - 2023-11-22
+                       
+Rasa 3.7.0 (2023-11-22)                        
+### Improvements
+- [#12480](https://github.com/rasahq/rasa/issues/12480): Skip executing the pipeline when the user message is of the form /intent or /intent + entities.
+- [#12514](https://github.com/rasahq/rasa/issues/12514): Remove tensorflow-addons from dependencies as it is now deprecated.
+- [#12533](https://github.com/rasahq/rasa/issues/12533): Add building multi-platform Docker image (amd64/arm64)
+- [#12543](https://github.com/rasahq/rasa/issues/12543): Switch struct log to `FilteringBoundLogger` in order to retain log level set in the config.
+- [#12558](https://github.com/rasahq/rasa/issues/12558): Added metadata as an additional argument as an additional parameter to an
+  `Action`s `run` method.
+
+  Added an additional default action called `action_send_text` which allows
+  a policy to respond with a text. The text is passed to the action using the
+  metadata, e.g. `metadata={"message": {"text": "Hello"}}`.
+
+  Added LLM utility functions.
+- [#12704](https://github.com/rasahq/rasa/issues/12704): Passed request headers from REST channel.
+- [#12778](https://github.com/rasahq/rasa/issues/12778): Added additional method `fingerprint_addon` to the `GraphComponent` interface to allow inclusion of external data into the fingerprint calculation of a component
+- [#12901](https://github.com/rasahq/rasa/issues/12901): Added Schema file and schema validation for flows.
+- [#1557](https://github.com/rasahq/rasa/issues/1557): Added environment variables to configure JWT and auth token.
+  For JWT the following environment variables are available:
+  - JWT_SECRET
+  - JWT_METHOD
+  - JWT_PRIVATE_KEY
+
+  For auth token the following environment variable is available:
+  - AUTH_TOKEN
+- [#33](https://github.com/rasahq/rasa/issues/33): Add skip question command
+- [#41](https://github.com/rasahq/rasa/issues/41): Update the CALM starter template by:
+  - adding the following flows from the financial chatbot:
+    - add_contact.yml
+    - remove_contact.yml
+    - list_contacts.yml
+  - using multiple modules (in the form of yml files) to segregate the flows (a good model to be followed)
+  - adding e2e tests:
+    - happy paths
+    - cancelations
+    - corrections
+- [#74](https://github.com/rasahq/rasa/issues/74): - Enhanced the Rasa error pattern for accommodating various error types. 
+  - Upgraded the LLMCommandGenerator for processing the new 'user_input' configuration section. This update includes handling of messages that surpass the defined character limit.
+
+  **Configuration Update:**
+
+  The LLMCommandGenerator now supports a user-defined character limit via the 'user_input' configuration:
+
+  ```yaml
+    - name: LLMCommandGenerator
+      llm:
+        ...
+      user_input:
+        max_characters: 500
+  ```
+
+  **Default Behavior:**
+
+  In the absence of a specified limit, it defaults to a 420-character cap.
+  To bypass the limit entirely, set the 'max_characters' value to -1.
+- [#90](https://github.com/rasahq/rasa/issues/90): - Bot now returns a default message in response to an empty user message. This improves user experience by providing 
+  feedback even when no input is detected.
+  - `LLMCommandGenerator` behavior updated. It now returns an `ErrorCommand` for empty user messages. 
+  - Updated default error pattern and added the default utterance in `default_flows_for_patterns.yml`
+
+### Bugfixes
+- [#100](https://github.com/rasahq/rasa/issues/100): uvloop is disabled by default on apple silicon machines
+- [#12516](https://github.com/rasahq/rasa/issues/12516): Add `rasa_events` to the list of anonymizable structlog keys and rename structlog keys.
+- [#12521](https://github.com/rasahq/rasa/issues/12521): Introduce a validation step in `rasa data validate` and `rasa train` commands to identify non-existent paths and empty domains.
+- [#12556](https://github.com/rasahq/rasa/issues/12556): Rich responses containing buttons with parentheses characters are now correctly parsed.
+  Previously any characters found between the first identified pair of `()` in response button took precedence.
+- [#12735](https://github.com/rasahq/rasa/issues/12735): Resolve dependency incompatibility: Pin  version of `dnspython` to ==2.3.0.
+- [#12790](https://github.com/rasahq/rasa/issues/12790): Fixed `KeyError` which resulted when `domain_responses` doesn't exist as a keyword argument while using a custom action dispatcher with nlg server.
+- [#1762](https://github.com/rasahq/rasa/issues/1762): Fixed incompatibility with latest python-socketio release. 
+
+  The python-socketio released a backwards incompatible change on their minor 
+  release. This fix addresses this and makes the code compatible with prior and
+  the new python-socketio version. 
+
+  https://github.com/miguelgrinberg/python-socketio/blob/main/CHANGES.md
