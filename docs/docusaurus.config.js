@@ -50,7 +50,7 @@ module.exports = {
       }
     ]
   },
-  title: 'Rasa & Rasa Pro Documentation',
+  title: 'Rasa Documentation',
   url: SITE_URL,
   baseUrl: BASE_URL,
   favicon: '/img/favicon.ico',
@@ -58,8 +58,9 @@ module.exports = {
   projectName: 'rasa',
   themeConfig: {
     announcementBar: {
-      id: 'rasa_sdk_change', // Any value that will identify this message.
-      content: '<strong>Rasa SDK<strong> documentation has been moved to a <a href="https://rasa.com/docs/rasa/action-server/">section</a> of <strong>Rasa Open Source</strong>.',
+      id: 'rasa_oss_docs_change', // Any value that will identify this message.
+      content: 'This is the documentation for <strong>Rasa Open Source</strong>. If you\'re looking for <strong>Rasa Pro</strong> documentation, please visit <a href="https://rasa.com/docs/rasa-pro/">this page</a>.',
+
       backgroundColor: '#6200F5', // Defaults to `#fff`.
       textColor: '#fff', // Defaults to `#000`.
       // isCloseable: false, // Defaults to `true`.
