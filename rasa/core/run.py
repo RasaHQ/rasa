@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import uuid
+import platform
 import os
 from functools import partial
 from typing import (
@@ -87,6 +88,14 @@ def _create_app_without_api(cors: Optional[Union[Text, List[Text]]] = None) -> S
     return app
 
 
+def _is_apple_silicon_system() -> bool:
+    # check if the system is MacOS
+    if platform.system().lower() != "darwin":
+        return False
+    # check for arm architecture, indicating apple silicon
+    return platform.machine().startswith("arm") or os.uname().machine.startswith("arm")
+
+
 def configure_app(
     input_channels: Optional[List["InputChannel"]] = None,
     cors: Optional[Union[Text, List[Text], None]] = None,
@@ -168,6 +177,10 @@ def configure_app(
 
         app.add_task(run_cmdline_io)
 
+    if server_listeners:
+        for (listener, event) in server_listeners:
+            app.register_listener(listener, event)
+
     return app
 
 
@@ -197,6 +210,7 @@ def serve_application(
     syslog_port: Optional[int] = None,
     syslog_protocol: Optional[Text] = None,
     request_timeout: Optional[int] = None,
+    server_listeners: Optional[List[Tuple[Callable, Text]]] = None,
 ) -> None:
     """Run the API entrypoint."""
     if not channel and not credentials:
@@ -222,6 +236,7 @@ def serve_application(
         syslog_port=syslog_port,
         syslog_protocol=syslog_protocol,
         request_timeout=request_timeout,
+        server_listeners=server_listeners,
     )
 
     ssl_context = server.create_ssl_context(
