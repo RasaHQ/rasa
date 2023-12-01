@@ -131,7 +131,7 @@ prepare-tests-windows:
 # It will retry the installation 5 times if it fails
 # See: https://github.com/actions/virtual-environments/blob/main/images/win/scripts/ImageHelpers/ChocoHelpers.ps1
 prepare-tests-windows-gha:
-	powershell -command "Choco-Install wget graphviz"
+	powershell -command "Install-ChocoPackage wget graphviz"
 
 test: clean
 	# OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
