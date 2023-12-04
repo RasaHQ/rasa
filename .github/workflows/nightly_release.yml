@@ -96,7 +96,7 @@ jobs:
       # Authenticate and push to the release registry
       - id: 'auth-release'
         name: Authenticate with gcloud for release registry 🎫
-        uses: 'google-github-actions/auth@e8df18b60c5dd38ba618c121b779307266153fbf'
+        uses: 'google-github-actions/auth@67e9c72af6e0492df856527b474995862b7b6591'
         with:
           credentials_json: '${{ secrets.RASA_OSS_RELEASE_ACCOUNT_KEY }}'
 
@@ -165,7 +165,7 @@ jobs:
       # Authenticate and push to the release registry
       - id: 'auth-dev'
         name: Authenticate with gcloud for dev registry 🎫
-        uses: 'google-github-actions/auth@e8df18b60c5dd38ba618c121b779307266153fbf'
+        uses: 'google-github-actions/auth@67e9c72af6e0492df856527b474995862b7b6591'
         with:
           credentials_json: '${{ secrets.RASA_OSS_RELEASE_ACCOUNT_KEY }}'
 
