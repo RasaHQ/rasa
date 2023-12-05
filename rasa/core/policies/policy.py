@@ -112,13 +112,13 @@ class Policy(GraphComponent):
         return False
 
     def supports_current_stack_frame(
-        self, 
-        tracker: DialogueStateTracker, 
+        self,
+        tracker: DialogueStateTracker,
         only_after_user_message: bool = True,
         empty_stack_behavior: bool = True,
     ) -> bool:
         """Check whether the policy is allowed to act.
-        
+
         Args:
             tracker: The tracker.
             only_after_user_message: Whether to only allow actions after a user message.
