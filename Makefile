@@ -258,3 +258,6 @@ stop-integration-containers: ## Stop the integration test containers.
 
 tag-release-auto:
 	poetry run python scripts/release.py tag --skip-confirmation
+
+prepare-tests-windows-gha:
+	powershell -command "Install-ChocoPackage wget graphviz"
