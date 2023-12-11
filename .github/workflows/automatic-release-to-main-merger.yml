@@ -26,7 +26,9 @@ jobs:
     runs-on: ubuntu-22.04
 
     # only run this workflow if a pull request has been merged
-    if: github.event.pull_request.merged == true
+    # don't run this workflow on pull request from forks, permissions will be missing anyway
+    # https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#workflows-in-forked-repositories
+    if: github.event.pull_request.merged == true && github.event.pull_request.head.repo.full_name == 'RasaHQ/rasa'
 
     steps:
       - name: Checkout git repository 🕝
@@ -68,14 +70,6 @@ jobs:
         with:
           branch: ${{ steps.get-branch-name.outputs.new_branch }}
 
-      - name: Notify Slack if creating a new branch failed 💬
-        if: ${{ failure() && steps.create-new-branch.conclusion == 'failure' }}
-        env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_INFRASTRUCTURE_SQUAD_MONITORS_WEBHOOK_URL }}
-        uses: Ilshidur/action-slack@689ad44a9c9092315abd286d0e3a9a74d31ab78a
-        with:
-          args: "🚨 There was a problem with creating a new branch containing commits from the ${{ env.RELEASE_BRANCH }} release branch. Check out the Github action: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-
       - name: Open pull request ☄️
         if: ${{ steps.create-new-branch.conclusion == 'success' }}
         uses: repo-sync/pull-request@7e79a9f5dc3ad0ce53138f01df2fad14a04831c5
@@ -109,11 +103,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
-      - name: Notify Slack when closing of outdated merge-PRs failed 💬
-        if: ${{ failure() && steps.close-outdated-release-merge-prs.conclusion == 'failure'}}
+      - name: Notify Slack on failure 💬
+        if: failure()
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_INFRASTRUCTURE_SQUAD_MONITORS_WEBHOOK_URL }}
         uses: Ilshidur/action-slack@689ad44a9c9092315abd286d0e3a9a74d31ab78a
         with:
-          args: "🚨 There was a problem with closing outdated release-merge-PRs of the ${{ env.RELEASE_BRANCH }} release branch. Check out the Github action: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }} \
-                These release-merge-PRs are currently open: https://github.com/${{ github.repository }}/pulls?q=is%3Aopen+label%3A${{ env.LABEL_TYPE }}+head%3Amerge-${{ steps.get-branch-name.outputs.release_branch }}-main"
+          args: "🚨 There was a problem with porting changes from ${{ env.RELEASE_BRANCH }} to the `main` branch. \
+                 Check out the Github action: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"

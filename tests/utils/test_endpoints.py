@@ -1,4 +1,4 @@
-import logging
+import structlog
 from pathlib import Path
 from typing import Text, Optional, Union
 from unittest.mock import Mock
@@ -35,13 +35,14 @@ def test_concat_url(base, subpath, expected_result):
     assert endpoint_utils.concat_url(base, subpath) == expected_result
 
 
-def test_warning_for_base_paths_with_trailing_slash(caplog):
+def test_warning_for_base_paths_with_trailing_slash():
     test_path = "base/"
-
-    with caplog.at_level(logging.DEBUG, logger="rasa.utils.endpoints"):
+    with structlog.testing.capture_logs() as caplog:
         assert endpoint_utils.concat_url(test_path, None) == test_path
 
-    assert len(caplog.records) == 1
+    assert len(caplog) == 1
+    assert caplog[0]["event"] == "endpoint.concat_url.trailing_slash"
+    assert caplog[0]["log_level"] == "debug"
 
 
 async def test_endpoint_config():

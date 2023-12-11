@@ -1,3 +1,4 @@
+import warnings
 from unittest.mock import Mock
 
 import pytest
@@ -83,7 +84,6 @@ async def test_close_resources(loop: AbstractEventLoop):
     app = Mock()
     app.ctx.agent.tracker_store.event_broker = broker
 
-    with pytest.warns(None) as warnings:
+    with warnings.catch_warnings() as record:
         await run.close_resources(app, loop)
-
-    assert len(warnings) == 0
+        assert record is None

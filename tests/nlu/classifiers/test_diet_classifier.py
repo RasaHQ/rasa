@@ -23,6 +23,7 @@ from rasa.shared.nlu.constants import (
     PREDICTED_CONFIDENCE_KEY,
     INTENT_NAME_KEY,
 )
+from rasa.utils import train_utils
 from rasa.utils.tensorflow.constants import (
     LOSS_TYPE,
     RANDOM_SEED,
@@ -966,3 +967,95 @@ async def test_no_bilou_when_entity_recognition_off(
     diet.train(training_data=training_data)
 
     assert all(msg.get(BILOU_ENTITIES) is None for msg in training_data.nlu_examples)
+
+
+@pytest.mark.timeout(120, func_only=True)
+@pytest.mark.parametrize(
+    "batch_size, expected_num_batches, drop_small_last_batch",
+    # the training dataset has 48 NLU examples
+    [
+        (1, 48, True),
+        (8, 6, True),
+        (15, 3, True),
+        (16, 3, True),
+        (18, 3, True),
+        (20, 2, True),
+        (32, 2, True),
+        (64, 1, True),
+        (128, 1, True),
+        (256, 1, True),
+        (1, 48, False),
+        (8, 6, False),
+        (15, 4, False),
+        (16, 3, False),
+        (18, 3, False),
+        (20, 3, False),
+        (32, 2, False),
+        (64, 1, False),
+        (128, 1, False),
+        (256, 1, False),
+    ],
+)
+async def test_dropping_of_last_partial_batch(
+    batch_size: int,
+    expected_num_batches: int,
+    drop_small_last_batch: bool,
+    create_diet: Callable[..., DIETClassifier],
+    train_and_preprocess: Callable[..., Tuple[TrainingData, List[GraphComponent]]],
+):
+    """test that diets data processing produces the right amount of batches.
+
+    We introduced a change to only keep the last incomplete batch if
+    1. it has more than 50% of examples of batch size
+    2. or it is the only batch in the epoch
+    """
+
+    pipeline = [
+        {"component": WhitespaceTokenizer},
+        {"component": CountVectorsFeaturizer},
+    ]
+    diet = create_diet(
+        {ENTITY_RECOGNITION: False, RANDOM_SEED: 1, EPOCHS: 1, RUN_EAGERLY: True}
+    )
+    # This data set has 48 NLU examples
+    training_data, loaded_pipeline = train_and_preprocess(
+        pipeline, training_data="data/test/demo-rasa-no-ents.yml"
+    )
+
+    model_data = diet.preprocess_train_data(training_data)
+    data_generator, _ = train_utils.create_data_generators(
+        model_data, batch_size, 1, drop_small_last_batch=drop_small_last_batch
+    )
+
+    assert len(data_generator) == expected_num_batches
+
+
+@pytest.mark.timeout(120, func_only=True)
+async def test_dropping_of_last_partial_batch_empty_data(
+    create_diet: Callable[..., DIETClassifier],
+    train_and_preprocess: Callable[..., Tuple[TrainingData, List[GraphComponent]]],
+):
+    """test that diets data processing produces the right amount of batches.
+
+    We introduced a change to only keep the last incomplete batch if
+    1. it has more than 50% of examples of batch size
+    2. or it is the only batch in the epoch
+    """
+
+    pipeline = [
+        {"component": WhitespaceTokenizer},
+        {"component": CountVectorsFeaturizer},
+    ]
+    diet = create_diet(
+        {ENTITY_RECOGNITION: False, RANDOM_SEED: 1, EPOCHS: 1, RUN_EAGERLY: True}
+    )
+    training_data, loaded_pipeline = train_and_preprocess(
+        pipeline, training_data=TrainingData()
+    )
+
+    model_data = diet.preprocess_train_data(training_data)
+    data_generator, _ = train_utils.create_data_generators(
+        model_data, 64, 1, drop_small_last_batch=True
+    )
+
+    assert len(data_generator) == 0

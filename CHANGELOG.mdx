@@ -16,6 +16,133 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.6.15] - 2023-11-30
+                        
+Rasa 3.6.15 (2023-11-30)                          
+### Bugfixes
+- [#12965](https://github.com/rasahq/rasa/issues/12965): Fixed connection timeout to action server by setting KEEP_ALIVE_TIMEOUT to 120, and reverting changes introduced in #12886.
+
+
+## [3.6.14] - 2023-11-17
+                        
+Rasa 3.6.14 (2023-11-17)                         
+### Bugfixes
+- [#12948](https://github.com/rasahq/rasa/issues/12948): Fixed UnexpecTEDIntentlessPolicy training errors that resulted from a change to batching behavior. Changed the batching behavior back to the original for all components. Made the changed batching behavior accessible in DietClassifier using `drop_small_last_batch: True`.
+
+
+## [3.6.13] - 2023-10-23
+                        
+Rasa 3.6.13 (2023-10-23)                         
+### Bugfixes
+- [#12927](https://github.com/rasahq/rasa/issues/12927): Fix wrong conflicts that occur when rasa validate stories is run with slots that have active_loop set to null in mapping conditions.
+
+
+## [3.6.12] - 2023-10-10
+                        
+Rasa 3.6.12 (2023-10-10)                         
+### Bugfixes
+- [#12904](https://github.com/rasahq/rasa/issues/12904): Refresh headers used in requests (e.g. action server requests) made by `EndpointConfig` using its `headers` attribute.
+- [#12906](https://github.com/rasahq/rasa/issues/12906): Upgrade `pillow` to `10.0.1` to address security vulnerability CVE-2023-4863 found in `10.0.0` version.
+
+
+## [3.6.11] - 2023-10-05
+                        
+Rasa 3.6.11 (2023-10-05)                         
+### Bugfixes
+- [#12722](https://github.com/rasahq/rasa/issues/12722): Intent names will not be falsely abbreviated in interactive training (fixes OSS-413).
+
+  This will also fix a bug where forced user utterances (using the regex matcher) will
+  be reverted even though they are present in the domain.
+- [#12886](https://github.com/rasahq/rasa/issues/12886): Cache `EndpointConfig` session object using `cached_property` decorator instead of recreating this object on every request.
+  Initialize these connection pools for action server and model server endpoints as part of the Sanic `after_server_start` listener.
+  Also close connection pools during Sanic `after_server_stop` listener.
+
+
+## [3.6.10] - 2023-09-26
+                        
+Rasa 3.6.10 (2023-09-26)                         
+### Improvements
+- [#12827](https://github.com/rasahq/rasa/issues/12827): Improved handling of last batch during DIET and TED training. The last batch is discarded if it contains less than half a batch size of data.
+- [#12852](https://github.com/rasahq/rasa/issues/12852): Added `username` to the connection parameters for `RedisLockStore` and `RedisTrackerStore`
+- [#1493](https://github.com/rasahq/rasa/issues/1493): Telemetry data is only send for licensed users.
+
+### Improved Documentation
+- [#12868](https://github.com/rasahq/rasa/issues/12868): Remove the Playground from docs.
+
+
+## [3.6.9] - 2023-09-15
+                       
+Rasa 3.6.9 (2023-09-15)                        
+### Improvements
+- [#12778](https://github.com/rasahq/rasa/issues/12778): Added additional method `fingerprint_addon` to the `GraphComponent` interface to allow inclusion of external data into the fingerprint calculation of a component
+
+### Bugfixes
+- [#12790](https://github.com/rasahq/rasa/issues/12790): Fixed `KeyError` which resulted when `domain_responses` doesn't exist as a keyword argument while using a custom action dispatcher with nlg server.
+
+
+## [3.6.8] - 2023-08-30
+                       
+Rasa 3.6.8 (2023-08-30)                         
+
+No significant changes.
+
+
+## [3.6.7] - 2023-08-29
+                       
+Rasa 3.6.7 (2023-08-29)                        
+### Bugfixes
+- [#12768](https://github.com/rasahq/rasa/issues/12768): Updated certifi, cryptography, and scipy packages to address security vulnerabilities.
+
+
+## [3.6.6] - 2023-08-23
+                       
+Rasa 3.6.6 (2023-08-23)                        
+### Bugfixes
+- [#12755](https://github.com/rasahq/rasa/issues/12755): Updated setuptools and wheel to address security vulnerabilities.
+
+
+## [3.6.5] - 2023-08-17
+                       
+Rasa 3.6.5 (2023-08-17)                        
+### Improvements
+- [#12696](https://github.com/rasahq/rasa/issues/12696): Use the same session across requests in `RasaNLUHttpInterpreter`
+
+### Bugfixes
+- [#12737](https://github.com/rasahq/rasa/issues/12737): Resolve dependency incompatibility: Pin  version of `dnspython` to ==2.3.0.
+
+### Improved Documentation
+- [#12712](https://github.com/rasahq/rasa/issues/12712): Updated PII docs with new section on how to use Rasa X/Enterprise with PII management solution, and a new note on debug
+  logs being displayed after the bot message with `rasa shell`.
+
+
+## [3.6.4] - 2023-07-21
+                       
+Rasa 3.6.4 (2023-07-21)                        
+### Bugfixes
+- [#12575](https://github.com/rasahq/rasa/issues/12575): Extract conditional response variation and channel variation filtering logic into a separate component.
+  Enable usage of this component in the NaturalLanguageGenerator subclasses (e.g. CallbackNaturalLanguageGenerator, TemplatedNaturalLanguageGenerator).
+  Amend nlg_request_format to include a single response ID string field, instead of a list of IDs.
+
+### Improved Documentation
+- [#12663](https://github.com/rasahq/rasa/issues/12663): Updated commands with square brackets e.g (`pip install rasa[spacy]`) to use quotes (`pip install 'rasa[spacy]'`) for compatibility with zsh in docs.
+
+
+## [3.6.3] - 2023-07-20
+                       
+Rasa 3.6.3 (2023-07-20)                        
+### Improvements
+- [#12637](https://github.com/rasahq/rasa/issues/12637): Added a human readable component to structlog using the `event_info` key and made it the default rendered key if present.
+
+### Bugfixes
+- [#12638](https://github.com/rasahq/rasa/issues/12638): Fix the issue with the most recent model not being selected if the owner or permissions where modified on the model file.
+- [#12661](https://github.com/rasahq/rasa/issues/12661): Fixed `BlockingIOError` which occured as a result of too large data passed to strulogs.
+
+### Improved Documentation
+- [#12659](https://github.com/rasahq/rasa/issues/12659): Update action server documentation with new capability to extend Sanic features by using plugins.
+  Update rasa-sdk dependency to version 3.6.1.
+- [#12663](https://github.com/rasahq/rasa/issues/12663): Updated commands with square brackets e.g (`pip install rasa[spacy]`) to use quotes (`pip install 'rasa[spacy]'`) for compatibility with zsh in docs.
+
+
 ## [3.6.2] - 2023-07-06
                        
 Rasa 3.6.2 (2023-07-06)                        
