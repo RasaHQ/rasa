@@ -60,7 +60,7 @@ from rasa.shared.constants import (
     ASSISTANT_ID_KEY,
     DOCS_URL_DOMAINS,
     DEFAULT_SENDER_ID,
-    DOCS_URL_POLICIES,
+    DOCS_URL_NLU_BASED_POLICIES,
     UTTER_PREFIX,
 )
 from rasa.core.nlg import NaturalLanguageGenerator
@@ -171,7 +171,7 @@ class MessageProcessor:
             await self.save_tracker(tracker)
             rasa.shared.utils.io.raise_warning(
                 "No core model. Skipping action prediction and execution.",
-                docs=DOCS_URL_POLICIES,
+                docs=DOCS_URL_NLU_BASED_POLICIES,
             )
             return None
 
@@ -276,7 +276,7 @@ class MessageProcessor:
         if self.model_metadata.training_type == TrainingType.NLU:
             rasa.shared.utils.io.raise_warning(
                 "No core model. Skipping action prediction and execution.",
-                docs=DOCS_URL_POLICIES,
+                docs=DOCS_URL_NLU_BASED_POLICIES,
             )
             return None
 

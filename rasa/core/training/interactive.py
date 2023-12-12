@@ -73,7 +73,7 @@ from rasa.shared.constants import (
     INTENT_MESSAGE_PREFIX,
     DEFAULT_SENDER_ID,
     UTTER_PREFIX,
-    DOCS_URL_POLICIES,
+    DOCS_URL_NLU_BASED_POLICIES,
 )
 from rasa.shared.core.trackers import EventVerbosity, DialogueStateTracker
 from rasa.shared.core.training_data import visualization
@@ -963,7 +963,8 @@ async def _predict_till_next_listen(
                 "Cannot continue as no action was predicted by the dialogue manager. "
                 "This can happen if you trained the assistant with no policy included "
                 "in the configuration. If so, please re-train the assistant with at "
-                f"least one policy ({DOCS_URL_POLICIES}) included in the configuration."
+                f"least one policy ({DOCS_URL_NLU_BASED_POLICIES}) "
+                "included in the configuration."
             )
 
         probabilities = [prediction["score"] for prediction in predictions]
@@ -1141,7 +1142,7 @@ async def _validate_action(
             f"to indicate that the last user message was unexpected "
             f"at this point in the conversation. "
             f"Check out UnexpecTEDIntentPolicy "
-            f"({DOCS_URL_POLICIES}#unexpected-intent-policy) "
+            f"({DOCS_URL_NLU_BASED_POLICIES}#unexpected-intent-policy) "
             f"to learn more. Is that correct?"
         )
     else:
