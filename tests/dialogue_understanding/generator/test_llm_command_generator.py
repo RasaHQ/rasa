@@ -322,6 +322,47 @@ class TestLLMCommandGenerator:
         assert parsed_commands == expected_command
 
     @pytest.mark.parametrize(
+        "input_action, expected_command",
+        [
+            (
+                "SetSlot(test_slot, 1234)",
+                [SetSlotCommand(name="test_slot", value="1234")],
+            ),
+            (
+                "SetSlot(phone_number, (412) 555-1234)",
+                [SetSlotCommand(name="phone_number", value="(412) 555-1234")],
+            ),
+        ],
+    )
+    def test_parse_commands_uses_correct_regex(
+        self,
+        input_action: Optional[str],
+        expected_command: Command,
+    ):
+        """Test that parse_commands uses the expected regex."""
+        # When
+        test_flows = flows_from_str(
+            """
+            flows:
+              some_flow:
+                description: some description
+                steps:
+                - id: first_step
+                  collect: test_slot
+              02_benefits_learning_days:
+                description: some foo
+                steps:
+                - id: some_id
+                  collect: some_slot
+            """
+        )
+        parsed_commands = LLMCommandGenerator.parse_commands(
+            input_action, Mock(), test_flows
+        )
+        # Then
+        assert parsed_commands == expected_command
+
+    @pytest.mark.parametrize(
         "input_value, expected_output",
         [
             ("text", "text"),
