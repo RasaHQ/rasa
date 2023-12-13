@@ -195,24 +195,6 @@ class SlotNamingException(RasaException):
         )
 
 
-class SlotNamingException(RasaException):
-    """Raised when a slot name to be collected does not adhere to naming convention."""
-
-    def __init__(self, flow_id: str, step_id: str, slot_name: str) -> None:
-        """Initializes the exception."""
-        self.flow_id = flow_id
-        self.step_id = step_id
-        self.slot_name = slot_name
-
-    def __str__(self) -> Text:
-        """Return a string representation of the exception."""
-        return (
-            f"For the flow '{self.flow_id}', collect step '{self.step_id}' "
-            f"the slot name was set to : {self.slot_name}, while it has "
-            f"to adhere to the following pattern: [a-zA-Z_][a-zA-Z0-9_-]*?."
-        )
-
-
 def validate_flow(flow: Flow) -> None:
     """Validates the flow configuration.
 
