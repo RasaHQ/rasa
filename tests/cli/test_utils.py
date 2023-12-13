@@ -2,7 +2,7 @@ import contextlib
 import copy
 import re
 import argparse
-import logging
+import structlog
 import io
 import os
 import pathlib
@@ -15,7 +15,6 @@ from rasa.utils.common import EXPECTED_WARNINGS
 from ruamel.yaml import YAML
 
 import pytest
-from _pytest.logging import LogCaptureFixture
 
 import rasa.cli.utils
 from rasa.shared.constants import (
@@ -31,6 +30,7 @@ import rasa.shared.utils.io
 from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
 from tests.cli.conftest import RASA_EXE
 from tests.conftest import AsyncMock
+from tests.utilities import filter_logs
 
 
 @contextlib.contextmanager
@@ -107,29 +107,36 @@ def test_validate_with_multiple_default_options(tmp_path: pathlib.Path):
     assert chosen_option == str(tmp_path)
 
 
-def test_validate_with_none_if_default_is_valid(
-    caplog: LogCaptureFixture, tmp_path: pathlib.Path
-):
-    with caplog.at_level(logging.WARNING, rasa.cli.utils.logger.name):
+def test_validate_with_none_if_default_is_valid(tmp_path: pathlib.Path):
+
+    expected_event = "cli.get_validated_path.path_does_not_exists"
+    expected_log_level = "warning"
+
+    with structlog.testing.capture_logs() as caplog:
         assert rasa.cli.utils.get_validated_path(None, "out", str(tmp_path)) == str(
             tmp_path
         )
-
-        caplog_records = [
-            record for record in caplog.records if "ddtrace.internal" not in record.name
-        ]
-
-        assert caplog_records == []
+        logs = filter_logs(caplog, expected_event, expected_log_level)
+        assert len(logs) == 0
 
 
 def test_validate_with_invalid_directory_if_default_is_valid(tmp_path: pathlib.Path):
+
     invalid_directory = "gcfhvjkb"
-    with pytest.warns(UserWarning) as record:
+
+    expected_event = "cli.get_validated_path.path_does_not_exists"
+    expected_log_level = "warning"
+    expected_log_message = "does not seem to exist"
+
+    with structlog.testing.capture_logs() as caplog:
         assert rasa.cli.utils.get_validated_path(
             invalid_directory, "out", str(tmp_path)
         ) == str(tmp_path)
-    assert len(record) == 1
-    assert "does not seem to exist" in record[0].message.args[0]
+
+        logs = filter_logs(
+            caplog, expected_event, expected_log_level, [expected_log_message]
+        )
+        assert len(logs) == 1
 
 
 @pytest.mark.parametrize(
@@ -316,21 +323,35 @@ def test_validate_config_path_with_non_existing_file():
 
 
 @pytest.mark.parametrize(
-    "config_file",
+    "config_file, expected_log_event, expected_log_message",
     [
-        "data/test_config/config_no_assistant_id.yml",
-        "data/test_config/config_default_assistant_id_value.yml",
+        (
+            "data/test_config/config_no_assistant_id.yml",
+            "cli.validate_assistant_id_in_config.missing_unique_assistant_id_key",
+            f"is missing a unique value for the '{ASSISTANT_ID_KEY}' mandatory key. ",
+        ),
+        (
+            "data/test_config/config_default_assistant_id_value.yml",
+            "cli.validate_assistant_id_in_config.missing_unique_assistant_id_key",
+            f"is missing a unique value for the '{ASSISTANT_ID_KEY}' mandatory key.",
+        ),
     ],
 )
-def test_validate_assistant_id_in_config(config_file: Text) -> None:
+def test_validate_assistant_id_in_config(
+    config_file: Text,
+    expected_log_event: Text,
+    expected_log_message: Text,
+) -> None:
     copy_config_data = copy.deepcopy(rasa.shared.utils.io.read_yaml_file(config_file))
 
-    warning_message = (
-        f"The config file '{config_file!s}' is missing a "
-        f"unique value for the '{ASSISTANT_ID_KEY}' mandatory key."
-    )
-    with pytest.warns(UserWarning, match=warning_message):
+    expected_log_level = "warning"
+
+    with structlog.testing.capture_logs() as caplog:
         rasa.cli.utils.validate_assistant_id_in_config(config_file)
+        logs = filter_logs(
+            caplog, expected_log_event, expected_log_level, [expected_log_message]
+        )
+        assert len(logs) == 1
 
     config_data = rasa.shared.utils.io.read_yaml_file(config_file)
     assistant_name = config_data.get(ASSISTANT_ID_KEY)
@@ -585,17 +606,24 @@ def test_validate_files_config_default_assistant_id():
     importer = TrainingDataImporter.load_from_config(
         "data/test_config/config_defaults.yml", "data/test_moodbot/domain.yml", None
     )
-    msg = (
+    expected_event = "validator.config_missing_unique_mandatory_key_value"
+    expected_log_level = "warning"
+    expected_log_message = (
         f"The config file is missing a unique value for the "
         f"'{ASSISTANT_ID_KEY}' mandatory key. Please replace the default "
         f"placeholder value with a unique identifier."
     )
-    with pytest.warns(UserWarning, match=msg):
+
+    with structlog.testing.capture_logs() as caplog:
         rasa.cli.utils.validate_files(
             fail_on_warnings=False,
             max_history=None,
             importer=importer,
         )
+        logs = filter_logs(
+            caplog, expected_event, expected_log_level, [expected_log_message]
+        )
+        assert len(logs) == 1
 
 
 def test_validate_files_config_missing_assistant_id():
@@ -604,13 +632,22 @@ def test_validate_files_config_missing_assistant_id():
         "data/test_moodbot/domain.yml",
         None,
     )
-    msg = f"The config file is missing the '{ASSISTANT_ID_KEY}' mandatory key."
-    with pytest.warns(UserWarning, match=msg):
+    expected_event = "validator.config_missing_mandatory_key"
+    expected_log_level = "warning"
+    expected_log_message = (
+        f"The config file is missing the '{ASSISTANT_ID_KEY}' mandatory key."
+    )
+
+    with structlog.testing.capture_logs() as caplog:
         rasa.cli.utils.validate_files(
             fail_on_warnings=False,
             max_history=None,
             importer=importer,
         )
+        logs = filter_logs(
+            caplog, expected_event, expected_log_level, [expected_log_message]
+        )
+        assert len(logs) == 1
 
 
 def test_validate_assistant_id_in_config_preserves_comment() -> None:

@@ -1,20 +1,21 @@
-import logging
 import textwrap
 import warnings
+from pathlib import Path
 from typing import Any, Dict, List, Text
 
 import pytest
-from _pytest.logging import LogCaptureFixture
+import structlog
+
+# from _pytest.logging import LogCaptureFixture
+
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows.yaml_flows_io import flows_from_str
 from rasa.shared.core.training_data.structures import StoryGraph
-from rasa.shared.nlu.training_data.training_data import TrainingData
-
-from rasa.validator import Validator
-
 from rasa.shared.importers.rasa import RasaFileImporter
-from pathlib import Path
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.validator import Validator
+from tests.utilities import filter_logs
 
 
 @pytest.fixture(scope="class")
@@ -64,17 +65,24 @@ def test_verify_nlu_with_e2e_story(tmp_path: Path, nlu_data_path: Path):
         training_data_paths=[story_file_name, nlu_data_path],
     )
 
+    expected_event = (
+        "validator.verify_example_repetition_in_intents" ".one_example_multiple_intents"
+    )
+    expected_log_level = "warning"
+    expected_log_message = (
+        "The example 'good afternoon' was found labeled " "with multiple different"
+    )
+
     validator = Validator.from_importer(importer)
     # Since the nlu file actually fails validation,
     # record warnings to make sure that the only raised warning
     # is about the duplicate example 'good afternoon'
-    with pytest.warns(UserWarning) as record:
+    with structlog.testing.capture_logs() as caplog:
         validator.verify_nlu(ignore_warnings=False)
-        assert len(record) == 1
-        assert (
-            "The example 'good afternoon' was found labeled with multiple different"
-            in record[0].message.args[0]
+        logs = filter_logs(
+            caplog, expected_event, expected_log_level, [expected_log_message]
         )
+        assert len(logs) == 1
 
 
 def test_verify_intents_does_not_fail_on_valid_data(nlu_data_path: Text):
@@ -261,59 +269,76 @@ def test_verify_there_is_example_repetition_in_intents(nlu_data_path: Text):
 
 
 def test_verify_logging_message_for_intent_not_used_in_nlu(
-    caplog: LogCaptureFixture, validator_under_test: Validator
+    validator_under_test: Validator,
 ):
-    caplog.clear()
-    with pytest.warns(UserWarning) as record:
+    expected_event = "validator.verify_intents.not_in_nlu_training_data"
+    expected_log_level = "warning"
+    expected_log_message = (
+        "The intent 'goodbye' is listed in the domain "
+        "file, but is not found in the NLU training data."
+    )
+
+    with structlog.testing.capture_logs() as caplog:
         # force validator to not ignore warnings (default is True)
         validator_under_test.verify_intents(ignore_warnings=False)
-
-    assert (
-        "The intent 'goodbye' is listed in the domain file, "
-        "but is not found in the NLU training data."
-        in (m.message.args[0] for m in record)
-    )
+        logs = filter_logs(
+            caplog, expected_event, expected_log_level, [expected_log_message]
+        )
+        assert len(logs) == 1
 
 
 def test_verify_logging_message_for_intent_not_used_in_story(
-    caplog: LogCaptureFixture, validator_under_test: Validator
+    validator_under_test: Validator,
 ):
-    caplog.clear()
-    with pytest.warns(UserWarning) as record:
-        # force validator to not ignore warnings (default is True)
+    expected_event = "validator.verify_intents_in_stories_or_flows.not_used"
+    expected_log_level = "warning"
+    expected_log_message = (
+        "The intent 'goodbye' is not used " "in any story, rule or flow."
+    )
+
+    with structlog.testing.capture_logs() as caplog:
         validator_under_test.verify_intents_in_stories_or_flows(ignore_warnings=False)
+        logs = filter_logs(
+            caplog, expected_event, expected_log_level, [expected_log_message]
+        )
+        assert len(logs) == 1
 
-    assert "The intent 'goodbye' is not used in any story, rule or flow." in (
-        m.message.args[0] for m in record
+
+def test_verify_logging_message_for_unused_utterance(validator_under_test: Validator):
+    expected_event = "validator.verify_utterances_in_dialogues.not_used"
+    expected_log_level = "warning"
+    expected_log_message = (
+        "The utterance 'utter_chatter' is not used " "in any story, rule or flow."
     )
 
-
-def test_verify_logging_message_for_unused_utterance(
-    caplog: LogCaptureFixture, validator_under_test: Validator
-):
-    caplog.clear()
-    expected_debug_message = (
-        "The utterance 'utter_chatter' is not used in any story, rule or flow."
-    )
-    with caplog.at_level(logging.DEBUG):
-        validator_under_test.verify_utterances_in_dialogues()
-
-    assert expected_debug_message in caplog.text
+    with structlog.testing.capture_logs() as caplog:
+        validator_under_test.verify_utterances_in_dialogues(ignore_warnings=False)
+        logs = filter_logs(
+            caplog, expected_event, expected_log_level, [expected_log_message]
+        )
+        assert len(logs) == 1
 
 
-def test_verify_logging_message_for_repetition_in_intents(caplog, nlu_data_path: Text):
+def test_verify_logging_message_for_repetition_in_intents(nlu_data_path: Text):
     # moodbot nlu data already has duplicated example 'good afternoon'
     # for intents greet and goodbye
     importer = RasaFileImporter(
         domain_path="data/test_moodbot/domain.yml", training_data_paths=[nlu_data_path]
     )
     validator = Validator.from_importer(importer)
-    caplog.clear()  # clear caplog to avoid counting earlier debug messages
-    with pytest.warns(UserWarning) as record:
-        # force validator to not ignore warnings (default is True)
+
+    expected_event = (
+        "validator.verify_example_repetition_in_intents" ".one_example_multiple_intents"
+    )
+    expected_log_level = "warning"
+    expected_log_message_part = "You should fix that conflict "
+
+    with structlog.testing.capture_logs() as caplog:
         validator.verify_example_repetition_in_intents(ignore_warnings=False)
-    assert len(record) == 1
-    assert "You should fix that conflict " in record[0].message.args[0]
+        logs = filter_logs(
+            caplog, expected_event, expected_log_level, [expected_log_message_part]
+        )
+        assert len(logs) == 1
 
 
 def test_early_exit_on_invalid_domain():
@@ -376,14 +401,21 @@ def test_verify_actions_in_stories_not_in_domain(tmp_path: Path, domain_path: Te
         domain_path=domain_path, training_data_paths=[story_file_name]
     )
     validator = Validator.from_importer(importer)
-    with pytest.warns(UserWarning) as warning:
-        validity = validator.verify_actions_in_stories_rules()
-        assert validity is False
 
-    assert (
-        "The action 'action_test_1' is used in the 'story path 1' block, "
-        "but it is not listed in the domain file." in warning[0].message.args[0]
+    expected_event = "validator.verify_actions_in_stories_rules.not_in_domain"
+    expected_log_level = "warning"
+    expected_log_message = (
+        "The action 'action_test_1' is used in "
+        "the 'story path 1' block, but it is "
+        "not listed in the domain file."
     )
+
+    with structlog.testing.capture_logs() as caplog:
+        assert not validator.verify_actions_in_stories_rules()
+        logs = filter_logs(
+            caplog, expected_event, expected_log_level, [expected_log_message]
+        )
+        assert len(logs) == 1
 
 
 def test_verify_actions_in_rules_not_in_domain(tmp_path: Path, domain_path: Text):
@@ -402,14 +434,21 @@ def test_verify_actions_in_rules_not_in_domain(tmp_path: Path, domain_path: Text
         domain_path=domain_path, training_data_paths=[rules_file_name]
     )
     validator = Validator.from_importer(importer)
-    with pytest.warns(UserWarning) as warning:
-        validity = validator.verify_actions_in_stories_rules()
-        assert validity is False
 
-    assert (
-        "The action 'action_test_2' is used in the 'rule path 1' block, "
-        "but it is not listed in the domain file." in warning[0].message.args[0]
+    expected_event = "validator.verify_actions_in_stories_rules.not_in_domain"
+    expected_log_level = "warning"
+    expected_log_message = (
+        "The action 'action_test_2' is used in the "
+        "'rule path 1' block, but it is not listed in "
+        "the domain file."
     )
+
+    with structlog.testing.capture_logs() as caplog:
+        assert not validator.verify_actions_in_stories_rules()
+        logs = filter_logs(
+            caplog, expected_event, expected_log_level, [expected_log_message]
+        )
+        assert len(logs) == 1
 
 
 def test_verify_form_slots_invalid_domain(tmp_path: Path):
@@ -435,15 +474,21 @@ def test_verify_form_slots_invalid_domain(tmp_path: Path):
     )
     importer = RasaFileImporter(domain_path=domain)
     validator = Validator.from_importer(importer)
-    with pytest.warns(UserWarning) as w:
-        validity = validator.verify_form_slots()
-        assert validity is False
 
-    assert (
-        w[0].message.args[0] == "The form slot 'last_nam' in form 'name_form' "
-        "is not present in the domain slots."
-        "Please add the correct slot or check for typos."
+    expected_event = "validator.verify_form_slots.not_in_domain"
+    expected_log_level = "warning"
+    expected_log_message = (
+        "The form slot 'last_nam' in form 'name_form' "
+        "is not present in the domain slots.Please "
+        "add the correct slot or check for typos."
     )
+
+    with structlog.testing.capture_logs() as caplog:
+        assert not validator.verify_form_slots()
+        logs = filter_logs(
+            caplog, expected_event, expected_log_level, [expected_log_message]
+        )
+        assert len(logs) == 1
 
 
 def test_response_selector_responses_in_domain_no_errors():
@@ -580,13 +625,21 @@ def test_verify_slot_mappings_mapping_active_loop_not_in_forms(tmp_path: Path):
     )
     importer = RasaFileImporter(domain_path=domain)
     validator = Validator.from_importer(importer)
-    with pytest.warns(
-        UserWarning,
-        match=r"Slot 'some_slot' has a mapping condition "
-        r"for form 'som_form' which is not listed "
-        r"in domain forms.*",
-    ):
+
+    expected_event = "validator.verify_slot_mappings.not_in_domain"
+    expected_log_level = "warning"
+    expected_log_message = (
+        "Slot 'some_slot' has a mapping condition "
+        "for form 'som_form' which is not "
+        "listed in domain forms."
+    )
+
+    with structlog.testing.capture_logs() as caplog:
         assert not validator.verify_slot_mappings()
+        logs = filter_logs(
+            caplog, expected_event, expected_log_level, [expected_log_message]
+        )
+        assert len(logs) == 1
 
 
 def test_verify_slot_mappings_slot_with_mapping_conditions_not_in_form(tmp_path: Path):
@@ -622,12 +675,22 @@ def test_verify_slot_mappings_slot_with_mapping_conditions_not_in_form(tmp_path:
     )
     importer = RasaFileImporter(domain_path=domain)
     validator = Validator.from_importer(importer)
-    with pytest.warns(
-        UserWarning,
-        match=r"Slot 'location' has a mapping condition for form 'booking_form', "
-        r"but it's not present in 'booking_form' form's 'required_slots'.*",
-    ):
+
+    expected_event = "validator.verify_slot_mappings.not_in_forms_key"
+    expected_log_level = "warning"
+    expected_log_message = (
+        "Slot 'location' has a mapping "
+        "condition for form 'booking_form', "
+        "but it's not present in 'booking_form' "
+        "form's 'required_slots'."
+    )
+
+    with structlog.testing.capture_logs() as caplog:
         assert not validator.verify_slot_mappings()
+        logs = filter_logs(
+            caplog, expected_event, expected_log_level, [expected_log_message]
+        )
+        assert len(logs) == 1
 
 
 def test_verify_slot_mappings_valid(tmp_path: Path):
@@ -840,36 +903,41 @@ def test_verify_utterances_does_not_error_when_no_utterance_template_provided(
 
 
 @pytest.mark.parametrize(
-    "config_file, message",
+    "config_file, event, message",
     [
         (
             "data/test_config/config_defaults.yml",
+            "validator.config_missing_unique_mandatory_key_value",
             "The config file is missing a unique value for "
             "the 'assistant_id' mandatory key.",
         ),
         (
             "data/test_config/config_no_assistant_id.yml",
+            "validator.config_missing_mandatory_key",
             "The config file is missing the 'assistant_id' mandatory key.",
         ),
     ],
 )
 def test_warn_if_config_mandatory_keys_are_not_set_invalid_paths(
-    config_file: Text, message: Text
+    config_file: Text, event: Text, message: Text
 ) -> None:
     importer = RasaFileImporter(config_file=config_file)
     validator = Validator.from_importer(importer)
 
-    with pytest.warns(UserWarning, match=message):
+    with structlog.testing.capture_logs() as caplog:
         validator.warn_if_config_mandatory_keys_are_not_set()
+        logs = filter_logs(caplog, event, "warning", [message])
+        assert len(logs) == 1
 
 
 @pytest.mark.parametrize(
-    "domain_actions, domain_slots, log_message",
+    "domain_actions, domain_slots, event, log_message",
     [
         # set_slot slot is not listed in the domain
         (
             ["action_transfer_money"],
             {"transfer_amount": {"type": "float", "mappings": []}},
+            "validator.verify_flows_steps_against_domain.slot_not_in_domain",
             "The slot 'account_type' is used in the step 'set_account_type' "
             "of flow id 'transfer_money', but it is not listed in the domain slots.",
         ),
@@ -877,6 +945,7 @@ def test_warn_if_config_mandatory_keys_are_not_set_invalid_paths(
         (
             ["action_transfer_money"],
             {"account_type": {"type": "text", "mappings": []}},
+            "validator.verify_flows_steps_against_domain.slot_not_in_domain",
             "The slot 'transfer_amount' is used in the step 'ask_amount' "
             "of flow id 'transfer_money', but it is not listed in the domain slots.",
         ),
@@ -887,6 +956,7 @@ def test_warn_if_config_mandatory_keys_are_not_set_invalid_paths(
                 "account_type": {"type": "text", "mappings": []},
                 "transfer_amount": {"type": "float", "mappings": []},
             },
+            "validator.verify_flows_steps_against_domain.action_not_in_domain",
             "The action 'action_transfer_money' is used in the step 'execute_transfer' "
             "of flow id 'transfer_money', but it is not listed in the domain file.",
         ),
@@ -897,8 +967,8 @@ def test_verify_flow_steps_against_domain_fail(
     nlu_data_path: Path,
     domain_actions: List[Text],
     domain_slots: Dict[Text, Any],
+    event: Text,
     log_message: Text,
-    caplog: LogCaptureFixture,
 ) -> None:
     flows_file = tmp_path / "flows.yml"
     with open(flows_file, "w") as file:
@@ -941,16 +1011,15 @@ def test_verify_flow_steps_against_domain_fail(
 
     validator = Validator.from_importer(importer)
 
-    with caplog.at_level(logging.ERROR):
+    with structlog.testing.capture_logs() as caplog:
         assert not validator.verify_flows_steps_against_domain()
-
-    assert log_message in caplog.text
+        logs = filter_logs(caplog, event, "error", [log_message])
+        assert len(logs) == 1
 
 
 def test_verify_flow_steps_against_domain_disallowed_list_slot(
     tmp_path: Path,
     nlu_data_path: Path,
-    caplog: LogCaptureFixture,
 ) -> None:
     flows_file = tmp_path / "flows.yml"
     with open(flows_file, "w") as file:
@@ -993,18 +1062,27 @@ def test_verify_flow_steps_against_domain_disallowed_list_slot(
 
     validator = Validator.from_importer(importer)
 
-    with caplog.at_level(logging.ERROR):
-        assert not validator.verify_flows_steps_against_domain()
-
-    assert (
-        "The slot 'pizza_toppings' is used in the step 'ask_pizza_toppings' "
-        "of flow id 'order_pizza', but it is a list slot. List slots are "
-        "currently not supported in flows." in caplog.text
+    expected_event = (
+        "validator.verify_flows_steps_against_domain" ".use_of_list_slot_in_flow"
     )
+    expected_log_level = "error"
+    expected_log_message = (
+        "The slot 'pizza_toppings' is used in "
+        "the step 'ask_pizza_toppings' of flow id "
+        "'order_pizza', but it is a list slot. "
+        "List slots are currently not supported "
+        "in flows."
+    )
+
+    with structlog.testing.capture_logs() as caplog:
+        assert not validator.verify_flows_steps_against_domain()
+        logs = filter_logs(
+            caplog, expected_event, expected_log_level, [expected_log_message]
+        )
+        assert len(logs) == 1
 
 
 def test_verify_flow_steps_against_domain_interpolated_action_name(
-    caplog: LogCaptureFixture,
     tmp_path: Path,
     nlu_data_path: Path,
 ) -> None:
@@ -1039,19 +1117,28 @@ def test_verify_flow_steps_against_domain_interpolated_action_name(
 
     validator = Validator.from_importer(importer)
 
-    with caplog.at_level(logging.DEBUG):
+    expected_event = (
+        "validator.verify_flows_steps_against_domain" ".interpolated_action"
+    )
+    expected_log_level = "debug"
+    expected_log_message = (
+        "An interpolated action name 'validate_{context.collect}' "
+        "was found at step 'validate' of flow id "
+        "'pattern_collect_information'. Skipping validation for "
+        "this step."
+    )
+
+    with structlog.testing.capture_logs() as caplog:
         assert validator.verify_flows_steps_against_domain()
-        assert (
-            "An interpolated action name 'validate_{context.collect}' was found "
-            "at step 'validate' of flow id 'pattern_collect_information'. "
-            "Skipping validation for this step." in caplog.text
+        logs = filter_logs(
+            caplog, expected_event, expected_log_level, [expected_log_message]
         )
+        assert len(logs) == 1
 
 
 def test_verify_unique_flows_duplicate_names(
     tmp_path: Path,
     nlu_data_path: Path,
-    caplog: LogCaptureFixture,
 ) -> None:
     duplicate_flow_name = "transfer money"
     flows_file = tmp_path / "flows.yml"
@@ -1107,20 +1194,25 @@ def test_verify_unique_flows_duplicate_names(
 
     validator = Validator.from_importer(importer)
 
-    with caplog.at_level(logging.ERROR):
-        assert not validator.verify_unique_flows()
-
-    assert (
+    expected_event = "validator.verify_unique_flows.duplicate_name"
+    expected_log_level = "error"
+    expected_log_message = (
         f"Detected duplicate flow name '{duplicate_flow_name}' for "
         f"flow id 'recurrent_payment'. Flow names must be unique. "
         f"Please make sure that all flows have different names."
-    ) in caplog.text
+    )
+
+    with structlog.testing.capture_logs() as caplog:
+        assert not validator.verify_unique_flows()
+        logs = filter_logs(
+            caplog, expected_event, expected_log_level, [expected_log_message]
+        )
+        assert len(logs) == 1
 
 
 def test_verify_unique_flows_duplicate_descriptions(
     tmp_path: Path,
     nlu_data_path: Path,
-    caplog: LogCaptureFixture,
 ) -> None:
     duplicate_flow_description_with_punctuation = "This flow lets users send money."
     duplicate_flow_description = "This flow lets users send money"
@@ -1177,28 +1269,29 @@ def test_verify_unique_flows_duplicate_descriptions(
 
     validator = Validator.from_importer(importer)
 
-    with caplog.at_level(logging.ERROR):
-        validator.verify_unique_flows()
+    expected_event = "validator.verify_unique_flows.duplicate_description"
+    expected_log_level = "error"
+    expected_log_message = (
+        "Detected duplicate flow description for flow id "
+        "'recurrent_payment'. Flow descriptions must be unique. "
+        "Please make sure that all flows have different "
+        "descriptions."
+    )
 
-    assert (
-        "Detected duplicate flow description for flow id 'recurrent_payment'. "
-        "Flow descriptions must be unique. "
-        "Please make sure that all flows have different descriptions."
-    ) in caplog.text
+    with structlog.testing.capture_logs() as caplog:
+        assert not validator.verify_unique_flows()
+        logs = filter_logs(
+            caplog, expected_event, expected_log_level, [expected_log_message]
+        )
+        assert len(logs) == 1
 
 
 def test_verify_predicates_invalid_rejection_if(
     tmp_path: Path,
     nlu_data_path: Path,
-    caplog: LogCaptureFixture,
 ) -> None:
     predicate = 'slots.account_type not in {{"debit", "savings"}}'
-    error_log = (
-        f"Detected invalid rejection '{predicate}' "
-        f"at `collect` step 'ask_account_type' "
-        f"for flow id 'transfer_money'. "
-        f"Please make sure that all conditions are valid."
-    )
+
     flows_file = tmp_path / "flows.yml"
     with open(flows_file, "w") as file:
         file.write(
@@ -1258,10 +1351,21 @@ def test_verify_predicates_invalid_rejection_if(
 
     validator = Validator.from_importer(importer)
 
-    with caplog.at_level(logging.ERROR):
-        assert not validator.verify_predicates()
+    expected_event = "validator.verify_predicates.invalid_rejection"
+    expected_log_level = "error"
+    expected_log_message = (
+        f"Detected invalid rejection '{predicate}' "
+        f"at `collect` step 'ask_account_type' for "
+        f"flow id 'transfer_money'. Please make sure "
+        f"that all conditions are valid."
+    )
 
-    assert error_log in caplog.text
+    with structlog.testing.capture_logs() as caplog:
+        assert not validator.verify_predicates()
+        logs = filter_logs(
+            caplog, expected_event, expected_log_level, [expected_log_message]
+        )
+        assert len(logs) == 1
 
 
 def test_flow_predicate_validation_fails_for_faulty_flow_link_predicates():
@@ -1414,7 +1518,6 @@ def test_verify_utterances_in_dialogues_missing_responses_in_flows(
     tmp_path: Path,
     nlu_data_path: Path,
     domain_file_name: Path,
-    caplog: LogCaptureFixture,
 ):
     flows_file_name = tmp_path / "flows.yml"
     # remove utter_ask_recipient from this flows file,
@@ -1449,19 +1552,24 @@ def test_verify_utterances_in_dialogues_missing_responses_in_flows(
     )
 
     validator = Validator.from_importer(importer)
-    expected_debug_message = (
-        "The utterance 'utter_ask_recipient' is not used in any story, rule or flow."
-    )
-    with caplog.at_level(logging.DEBUG):
-        validator.verify_utterances_in_dialogues()
 
-    assert expected_debug_message in caplog.text
+    expected_event = "validator.verify_utterances_in_dialogues.not_used"
+    expected_log_level = "warning"
+    expected_log_message = (
+        "The utterance 'utter_ask_recipient' is not used in " "any story, rule or flow."
+    )
+    with structlog.testing.capture_logs() as caplog:
+        # force validator to not ignore warnings (default is True)
+        validator.verify_utterances_in_dialogues(ignore_warnings=False)
+        logs = filter_logs(
+            caplog, expected_event, expected_log_level, [expected_log_message]
+        )
+        assert len(logs) == 1
 
 
 @pytest.mark.parametrize("predicate", ["account_type is null", "not account_type"])
 def test_verify_predicates_namespaces_not_referenced(
     predicate: str,
-    caplog: LogCaptureFixture,
 ) -> None:
     flows = flows_from_str(
         f"""
@@ -1476,17 +1584,27 @@ def test_verify_predicates_namespaces_not_referenced(
                 - else: END
         """
     )
-    validator = Validator(Domain.empty(), TrainingData(), StoryGraph([]), flows, None)
-    with caplog.at_level(logging.ERROR):
-        assert not validator.verify_predicates()
 
-    assert (
+    expected_event = (
+        "validator.verify_namespaces" ".referencing_variables_without_namespace"
+    )
+    expected_log_level = "error"
+    expected_log_message = (
         f"Predicate '{predicate}' at step 'first' for flow id "
         f"'flow_bar' references one or more variables  without "
         f"the `slots.` or `context.` namespace prefix. "
         f"Please make sure that all variables reference the required "
         f"namespace."
-    ) in caplog.text
+    )
+    with structlog.testing.capture_logs() as caplog:
+        validator = Validator(
+            Domain.empty(), TrainingData(), StoryGraph([]), flows, None
+        )
+        assert not validator.verify_predicates()
+        logs = filter_logs(
+            caplog, expected_event, expected_log_level, [expected_log_message]
+        )
+        assert len(logs) == 1
 
 
 @pytest.mark.parametrize(
@@ -1534,11 +1652,12 @@ def test_verify_predicates_on_flow_guards(
 )
 def test_verify_predicates_invalid_flow_guards(
     predicate: str,
-    caplog: LogCaptureFixture,
 ) -> None:
     """Test that verify_predicates() correctly logs invalid flow guard predicates."""
     # Given
-    error_log = (
+    expected_log_event = "validator.verify_predicates.flow_guard.invalid_condition"
+    expected_log_level = "error"
+    expected_log_message = (
         f"Detected invalid flow guard condition "
         f"'{predicate}' for flow id 'spam_eggs'. "
         f"Please make sure that all conditions are valid."
@@ -1554,11 +1673,15 @@ def test_verify_predicates_invalid_flow_guards(
         """
     )
     validator = Validator(Domain.empty(), TrainingData(), StoryGraph([]), flows, None)
-    # When
-    with caplog.at_level(logging.ERROR):
+
+    with structlog.testing.capture_logs() as caplog:
+        # When
         assert not validator.verify_predicates()
-    # Then
-    assert error_log in caplog.text
+        # Then
+        logs = filter_logs(
+            caplog, expected_log_event, expected_log_level, [expected_log_message]
+        )
+        assert len(logs) == 1
 
 
 @pytest.mark.parametrize(
@@ -1570,10 +1693,7 @@ def test_verify_predicates_invalid_flow_guards(
         "not context.collect",
     ],
 )
-def test_verify_predicates_reference_namespaces(
-    predicate: str,
-    caplog: LogCaptureFixture,
-) -> None:
+def test_verify_predicates_reference_namespaces(predicate: str) -> None:
     flows = flows_from_str(
         f"""
         flows:
@@ -1597,15 +1717,14 @@ def test_verify_predicates_reference_namespaces(
         """
     )
     validator = Validator(test_domain, TrainingData(), StoryGraph([]), flows, None)
-    with caplog.at_level(logging.ERROR):
+
+    with structlog.testing.capture_logs() as caplog:
         assert validator.verify_predicates()
+        logs = filter_logs(caplog, log_level="error")
+        assert len(logs) == 0
 
-    assert not caplog.text
 
-
-def test_verify_namespaces_reference_slots_not_in_the_domain(
-    caplog: LogCaptureFixture,
-) -> None:
+def test_verify_namespaces_reference_slots_not_in_the_domain() -> None:
     flows = flows_from_str(
         """
         flows:
@@ -1619,13 +1738,18 @@ def test_verify_namespaces_reference_slots_not_in_the_domain(
                 - else: END
         """
     )
-    validator = Validator(Domain.empty(), TrainingData(), StoryGraph([]), flows, None)
-    with caplog.at_level(logging.ERROR):
-        assert not validator.verify_predicates()
-
-    assert (
+    expected_log_level = "error"
+    expected_log_event = "validator.verify_namespaces.invalid_slot"
+    expected_log_message = (
         "Detected invalid slot 'membership' "
         "at step 'first' for flow id 'flow_bar'. "
         "Please make sure that all slots are specified "
         "in the domain file."
-    ) in caplog.text
+    )
+    validator = Validator(Domain.empty(), TrainingData(), StoryGraph([]), flows, None)
+    with structlog.testing.capture_logs() as caplog:
+        assert not validator.verify_predicates()
+        logs = filter_logs(
+            caplog, expected_log_event, expected_log_level, [expected_log_message]
+        )
+        assert len(logs) == 1
