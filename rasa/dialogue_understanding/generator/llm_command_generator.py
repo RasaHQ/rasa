@@ -236,7 +236,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         commands: List[Command] = []
 
         slot_set_re = re.compile(
-            r"""SetSlot\(([a-zA-Z_][a-zA-Z0-9_-]*?), ?\"?(.*)\"?\)"""
+            r"""SetSlot\(([a-zA-Z_][a-zA-Z0-9_-]*?), ?(.*)\)"""
         )
         start_flow_re = re.compile(r"StartFlow\(([a-zA-Z0-9_-]+?)\)")
         cancel_flow_re = re.compile(r"CancelFlow\(\)")
