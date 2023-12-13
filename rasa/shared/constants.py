@@ -1,39 +1,42 @@
 from typing import List, Text
 
 
-DOCS_BASE_URL = "https://rasa.com/docs/rasa"
-LEGACY_DOCS_BASE_URL = "https://legacy-docs-v1.rasa.com"
-DOCS_URL_TRAINING_DATA = DOCS_BASE_URL + "/training-data-format"
+DOCS_BASE_URL = "https://rasa.com/docs/rasa-pro"
+DOCS_URL_CONCEPTS = DOCS_BASE_URL + "/concepts"
+DOCS_URL_NLU_BASED = DOCS_BASE_URL + "/nlu-based-assistants"
+
+# Docs URLs for CALM assistants
+DOCS_URL_SLOTS = DOCS_URL_CONCEPTS + "/domain#slots"
+DOCS_URL_RESPONSES = DOCS_URL_CONCEPTS + "/responses"
+DOCS_URL_POLICIES = DOCS_URL_CONCEPTS + "/policies/policy-overview"
+DOCS_URL_ACTIONS = DOCS_URL_CONCEPTS + "/actions"
+DOCS_URL_DEFAULT_ACTIONS = DOCS_URL_CONCEPTS + "/default-actions"
+DOCS_URL_COMPONENTS = DOCS_URL_CONCEPTS + "/components/overview"
+DOCS_URL_GRAPH_COMPONENTS = DOCS_URL_CONCEPTS + "/components/custom-graph-components"
+DOCS_URL_GRAPH_RECIPE = DOCS_URL_CONCEPTS + "/components/graph-recipe"
+
+# Docs URLs for NLU-based assistants
+DOCS_URL_TRAINING_DATA = DOCS_URL_NLU_BASED + "/training-data-format"
 DOCS_URL_TRAINING_DATA_NLU = DOCS_URL_TRAINING_DATA + "#nlu-training-data"
-DOCS_URL_DOMAINS = DOCS_BASE_URL + "/domain"
-DOCS_URL_SLOTS = DOCS_URL_DOMAINS + "#slots"
+DOCS_URL_DOMAINS = DOCS_URL_NLU_BASED + "/domain"
+DOCS_URL_NLU_BASED_SLOTS = DOCS_URL_DOMAINS + "#slots"
 DOCS_URL_INTENTS = DOCS_URL_DOMAINS + "#intents"
 DOCS_URL_ENTITIES = DOCS_URL_DOMAINS + "#entities"
-DOCS_URL_RESPONSES = DOCS_BASE_URL + "/responses"
-DOCS_URL_STORIES = DOCS_BASE_URL + "/stories"
-DOCS_URL_RULES = DOCS_BASE_URL + "/rules"
-DOCS_URL_FORMS = DOCS_BASE_URL + "/forms"
-DOCS_URL_PIPELINE = DOCS_BASE_URL + "/tuning-your-model"
-DOCS_URL_POLICIES = DOCS_BASE_URL + "/policies"
-DOCS_URL_TEST_STORIES = DOCS_BASE_URL + "/testing-your-assistant"
-DOCS_URL_MARKERS = DOCS_BASE_URL + "/markers"
-DOCS_URL_ACTIONS = DOCS_BASE_URL + "/actions"
-DOCS_URL_DEFAULT_ACTIONS = DOCS_BASE_URL + "/default-actions"
-DOCS_URL_CONNECTORS = DOCS_BASE_URL + "/connectors/"
-DOCS_URL_CONNECTORS_SLACK = DOCS_URL_CONNECTORS + "/slack"
-DOCS_URL_EVENT_BROKERS = DOCS_BASE_URL + "/event-brokers"
+DOCS_URL_STORIES = DOCS_URL_NLU_BASED + "/stories"
+DOCS_URL_RULES = DOCS_URL_NLU_BASED + "/rules"
+DOCS_URL_FORMS = DOCS_URL_NLU_BASED + "/forms"
+DOCS_URL_PIPELINE = DOCS_URL_NLU_BASED + "/model-configuration"
+DOCS_URL_NLU_BASED_POLICIES = DOCS_URL_NLU_BASED + "/policies"
+
+# Other docs URLs
+DOCS_URL_MARKERS = DOCS_BASE_URL + "/operating/analytics/realtime-markers"
+DOCS_URL_CONNECTORS = DOCS_BASE_URL + "/connectors/messaging-and-voice-channels"
+DOCS_URL_CONNECTORS_SLACK = DOCS_BASE_URL + "/connectors/slack"
+DOCS_URL_EVENT_BROKERS = DOCS_BASE_URL + "/production/event-brokers"
 DOCS_URL_PIKA_EVENT_BROKER = DOCS_URL_EVENT_BROKERS + "#pika-event-broker"
-DOCS_URL_TRACKER_STORES = DOCS_BASE_URL + "/tracker-stores"
-DOCS_URL_COMPONENTS = DOCS_BASE_URL + "/components"
-DOCS_URL_GRAPH_COMPONENTS = DOCS_BASE_URL + "/custom-graph-components"
-DOCS_URL_GRAPH_RECIPE = DOCS_BASE_URL + "/graph-recipe"
+DOCS_URL_TRACKER_STORES = DOCS_BASE_URL + "/production/tracker-stores"
 DOCS_URL_MIGRATION_GUIDE = DOCS_BASE_URL + "/migration-guide"
-DOCS_URL_MIGRATION_GUIDE_MD_DEPRECATION = (
-    f"{DOCS_URL_MIGRATION_GUIDE}#rasa-21-to-rasa-22"
-)
 DOCS_URL_TELEMETRY = DOCS_BASE_URL + "/telemetry/telemetry"
-DOCS_BASE_URL_RASA_X = "https://rasa.com/docs/rasa-enterprise"
-DOCS_BASE_URL_ACTION_SERVER = "https://rasa.com/docs/action-server"
 
 INTENT_MESSAGE_PREFIX = "/"
 

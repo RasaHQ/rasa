@@ -30,7 +30,7 @@ from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
     DOCS_URL_COMPONENTS,
     DOCS_URL_DEFAULT_ACTIONS,
-    DOCS_URL_POLICIES,
+    DOCS_URL_NLU_BASED_POLICIES,
     DOCS_URL_RULES,
 )
 from rasa.shared.core.domain import Domain, InvalidDomain
@@ -380,7 +380,7 @@ class DefaultV1RecipeValidator(GraphComponent):
         if not self._policy_schema_nodes and story_graph.story_steps:
             rasa.shared.utils.io.raise_warning(
                 "Found data for training policies but no policy was configured.",
-                docs=DOCS_URL_POLICIES,
+                docs=DOCS_URL_NLU_BASED_POLICIES,
             )
         if not self._policy_schema_nodes:
             return
@@ -508,7 +508,7 @@ class DefaultV1RecipeValidator(GraphComponent):
                     f"in PolicyEnsemble. When personalizing "
                     f"priorities, be sure to give all policies "
                     f"different priorities.",
-                    docs=DOCS_URL_POLICIES,
+                    docs=DOCS_URL_NLU_BASED_POLICIES,
                 )
 
     def _warn_if_rule_based_data_is_unused_or_missing(
