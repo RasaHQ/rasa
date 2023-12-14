@@ -415,7 +415,9 @@ class Validator:
         else:
             for conflict in conflicts:
                 structlogger.warn(
-                    "validator.verify_story_structure.conflicts", event_info=conflict
+                    "validator.verify_story_structure.conflicts",
+                    event_info="Found story structure conflict",
+                    conflict=str(conflict),
                 )
 
         return ignore_warnings or not conflicts

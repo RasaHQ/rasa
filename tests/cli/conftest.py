@@ -18,6 +18,8 @@ RASA_EXE = os.environ.get("RASA_EXECUTABLE", "rasa")
 
 @pytest.fixture
 def run(testdir: Testdir) -> Callable[..., RunResult]:
+    os.environ["LOG_LEVEL"] = "DEBUG"
+
     def do_run(*args):
         args = [shutil.which(RASA_EXE)] + list(args)
         return testdir.run(*args)
@@ -27,6 +29,8 @@ def run(testdir: Testdir) -> Callable[..., RunResult]:
 
 @pytest.fixture
 def run_with_stdin(testdir: Testdir) -> Callable[..., RunResult]:
+    os.environ["LOG_LEVEL"] = "DEBUG"
+
     def do_run(*args, stdin):
         args = [shutil.which(RASA_EXE)] + list(args)
         return testdir.run(*args, stdin=stdin)
@@ -77,7 +81,7 @@ def trained_simple_project(tmpdir_factory: TempdirFactory) -> Text:
     path = tmpdir_factory.mktemp("simple")
     create_simple_project(path)
 
-    os.environ["LOG_LEVEL"] = "ERROR"
+    os.environ["LOG_LEVEL"] = "DEBUG"
 
     check_call([shutil.which(RASA_EXE), "train"], cwd=path.strpath)
 
@@ -86,7 +90,7 @@ def trained_simple_project(tmpdir_factory: TempdirFactory) -> Text:
 
 @pytest.fixture
 def run_in_simple_project(testdir: Testdir) -> Callable[..., RunResult]:
-    os.environ["LOG_LEVEL"] = "ERROR"
+    os.environ["LOG_LEVEL"] = "DEBUG"
 
     create_simple_project(testdir.tmpdir)
 
@@ -99,7 +103,8 @@ def run_in_simple_project(testdir: Testdir) -> Callable[..., RunResult]:
 
 @pytest.fixture
 def run_in_simple_project_with_warnings(testdir: Testdir) -> Callable[..., RunResult]:
-    os.environ["LOG_LEVEL"] = "WARNING"
+    # Check for all the logs by default, logs can always be filtered out
+    os.environ["LOG_LEVEL"] = "DEBUG"
 
     create_simple_project(testdir.tmpdir)
 
@@ -112,7 +117,7 @@ def run_in_simple_project_with_warnings(testdir: Testdir) -> Callable[..., RunRe
 
 @pytest.fixture
 def run_in_simple_project_with_no_domain(testdir: Testdir) -> Callable[..., RunResult]:
-    os.environ["LOG_LEVEL"] = "WARNING"
+    os.environ["LOG_LEVEL"] = "DEBUG"
 
     create_simple_project(testdir.tmpdir)
     Path(testdir.tmpdir / "domain.yml").unlink()
@@ -128,7 +133,7 @@ def run_in_simple_project_with_no_domain(testdir: Testdir) -> Callable[..., RunR
 def run_in_simple_project_with_model(
     testdir: Testdir, trained_simple_project: Text
 ) -> Callable[..., RunResult]:
-    os.environ["LOG_LEVEL"] = "ERROR"
+    os.environ["LOG_LEVEL"] = "DEBUG"
 
     # makes sure we do not always retrain an initial model for every "new" project
     for file_name in os.listdir(trained_simple_project):
@@ -141,7 +146,6 @@ def run_in_simple_project_with_model(
     def do_run(*args):
         args = [shutil.which(RASA_EXE)] + list(args)
         result = testdir.run(*args)
-        os.environ["LOG_LEVEL"] = "INFO"
         return result
 
     return do_run
