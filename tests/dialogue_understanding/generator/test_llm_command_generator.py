@@ -1,4 +1,5 @@
 import uuid
+from pathlib import Path
 from typing import Optional, Dict, Text, Any
 from unittest.mock import Mock, patch
 
@@ -77,27 +78,39 @@ class TestLLMCommandGenerator:
         return LocalModelStorage(tmp_path_factory.mktemp(uuid.uuid4().hex))
 
     async def test_llm_command_generator_prompt_init_custom(
-        self, model_storage: ModelStorage, resource: Resource
+        self,
+        model_storage: ModelStorage,
     ) -> None:
         generator = LLMCommandGenerator(
             {
                 "prompt": "data/test_prompt_templates/test_prompt.jinja2",
             },
             model_storage,
-            resource,
+            Resource("llmcmdgen"),
         )
         assert generator.prompt_template.startswith("This is a test prompt.")
 
+        resource = generator.train([])
+        loaded = LLMCommandGenerator.load({}, model_storage, resource, None)
+        assert loaded.prompt_template.startswith("This is a test prompt.")
+
     async def test_llm_command_generator_prompt_init_default(
-        self, model_storage: ModelStorage, resource: Resource
+        self,
+        model_storage: ModelStorage,
     ) -> None:
-        generator = LLMCommandGenerator({}, model_storage, resource)
+        generator = LLMCommandGenerator({}, model_storage, Resource("llmcmdgen"))
         assert generator.prompt_template.startswith(
             "Your task is to analyze the current conversation"
         )
         assert (
             generator.user_input_config.max_characters
             == DEFAULT_MAX_USER_INPUT_CHARACTERS
+        )
+
+        resource = generator.train([])
+        loaded = LLMCommandGenerator.load({}, model_storage, resource, None)
+        assert loaded.prompt_template.startswith(
+            "Your task is to analyze the current conversation"
         )
 
     @pytest.mark.parametrize(
@@ -521,3 +534,46 @@ class TestLLMCommandGenerator:
         # When
         exceeds_limit = generator.check_if_message_exceeds_limit(message)
         assert exceeds_limit == expected_exceeds_limit
+
+    async def test_llm_command_generator_fingerprint_addon_diff_in_prompt_template(
+        model_storage: ModelStorage,
+        tmp_path: Path,
+    ) -> None:
+        prompt_dir = Path(tmp_path) / "prompt"
+        prompt_dir.mkdir(parents=True, exist_ok=True)
+        prompt_file = prompt_dir / "llm_command_generator_prompt.jinja2"
+        prompt_file.write_text("This is a test prompt")
+
+        config = {"prompt": str(prompt_file)}
+        generator = LLMCommandGenerator(config, model_storage, Resource("llmcmdgen"))
+        fingerprint_1 = generator.fingerprint_addon(config)
+
+        prompt_file.write_text("This is a test prompt. It has been changed.")
+        fingerprint_2 = generator.fingerprint_addon(config)
+        assert fingerprint_1 != fingerprint_2
+
+    async def test_llm_command_generator_fingerprint_addon_no_diff_in_prompt_template(
+        model_storage: ModelStorage,
+        tmp_path: Path,
+    ) -> None:
+        prompt_dir = Path(tmp_path) / "prompt"
+        prompt_dir.mkdir(parents=True, exist_ok=True)
+        prompt_file = prompt_dir / "llm_command_generator_prompt.jinja2"
+        prompt_file.write_text("This is a test prompt")
+
+        config = {"prompt": str(prompt_file)}
+        generator = LLMCommandGenerator(config, model_storage, Resource("llmcmdgen"))
+
+        fingerprint_1 = generator.fingerprint_addon(config)
+        fingerprint_2 = generator.fingerprint_addon(config)
+        assert fingerprint_1 is not None
+        assert fingerprint_1 == fingerprint_2
+
+    async def test_llm_command_generator_fingerprint_addon_default_prompt_template(
+        model_storage: ModelStorage,
+    ) -> None:
+        generator = LLMCommandGenerator({}, model_storage, Resource("llmcmdgen"))
+        fingerprint_1 = generator.fingerprint_addon({})
+        fingerprint_2 = generator.fingerprint_addon({})
+        assert fingerprint_1 is not None
+        assert fingerprint_1 == fingerprint_2
