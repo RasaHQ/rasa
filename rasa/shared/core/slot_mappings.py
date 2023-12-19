@@ -1,6 +1,6 @@
 from typing import Text, Dict, Any, List, Optional, TYPE_CHECKING
 
-from rasa.shared.constants import DOCS_URL_SLOTS, IGNORED_INTENTS
+from rasa.shared.constants import DOCS_URL_NLU_BASED_SLOTS, IGNORED_INTENTS
 import rasa.shared.utils.io
 from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
@@ -42,7 +42,7 @@ class SlotMapping:
             raise InvalidDomain(
                 f"Please make sure that the slot mappings for slot '{slot_name}' in "
                 f"your domain are valid dictionaries. Please see "
-                f"{DOCS_URL_SLOTS} for more information."
+                f"{DOCS_URL_NLU_BASED_SLOTS} for more information."
             )
 
         try:
@@ -51,7 +51,7 @@ class SlotMapping:
             raise InvalidDomain(
                 f"Your domain uses an invalid slot mapping of type "
                 f"'{mapping.get(MAPPING_TYPE)}' for slot '{slot_name}'. Please see "
-                f"{DOCS_URL_SLOTS} for more information."
+                f"{DOCS_URL_NLU_BASED_SLOTS} for more information."
             )
 
         validations: Dict[SlotMappingType, List[Text]] = {
@@ -69,7 +69,7 @@ class SlotMapping:
                     f"You need to specify a value for the key "
                     f"'{required_key}' in the slot mapping of type '{mapping_type}' "
                     f"for slot '{slot_name}'. Please see "
-                    f"{DOCS_URL_SLOTS} for more information."
+                    f"{DOCS_URL_NLU_BASED_SLOTS} for more information."
                 )
 
     @staticmethod
@@ -224,7 +224,7 @@ def validate_slot_mappings(domain_slots: Dict[Text, Any]) -> None:
     rasa.shared.utils.io.raise_warning(
         f"Slot auto-fill has been removed in 3.0 and replaced with a "
         f"new explicit mechanism to set slots. "
-        f"Please refer to {DOCS_URL_SLOTS} to learn more.",
+        f"Please refer to {DOCS_URL_NLU_BASED_SLOTS} to learn more.",
         UserWarning,
     )
 

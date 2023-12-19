@@ -6,7 +6,7 @@ import rasa.shared.core.constants
 from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.common
 import rasa.shared.utils.io
-from rasa.shared.constants import DOCS_URL_SLOTS
+from rasa.shared.constants import DOCS_URL_SLOTS, DOCS_URL_NLU_BASED_SLOTS
 
 logger = logging.getLogger(__name__)
 
@@ -446,8 +446,8 @@ class AnySlot(Slot):
                 f"An {AnySlot.__name__} cannot be featurized. "
                 f"Please use a different slot type for slot '{name}' instead. If you "
                 f"need to featurize a data type which is not supported out of the box, "
-                f"implement a custom slot type by subclassing '{Slot.__name__}'. "
-                f"See the documentation for more information: {DOCS_URL_SLOTS}"
+                f"implement a custom slot type by subclassing '{Slot.__name__}'. See "
+                f"the documentation for more information: {DOCS_URL_NLU_BASED_SLOTS}"
             )
 
         super().__init__(
@@ -477,5 +477,5 @@ class AnySlot(Slot):
             f"Please use a different slot type for slot '{self.name}' instead. If you "
             f"need to featurize a data type which is not supported out of the box, "
             f"implement a custom slot type by subclassing '{Slot.__name__}'. "
-            f"See the documentation for more information: {DOCS_URL_SLOTS}"
+            f"See the documentation for more information: {DOCS_URL_NLU_BASED_SLOTS}"
         )

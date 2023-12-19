@@ -1,10 +1,11 @@
 import importlib.resources
 import re
-from typing import Dict, Any, List, Optional, Tuple, Union
+from typing import Dict, Any, List, Optional, Text, Tuple, Union
 
 import structlog
 from jinja2 import Template
 
+import rasa.shared.utils.io
 from rasa.dialogue_understanding.commands import (
     Command,
     ErrorCommand,
@@ -31,9 +32,11 @@ from rasa.shared.core.slots import (
     Slot,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.exceptions import FileIOException
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.utils.io import deep_container_fingerprint
 from rasa.shared.utils.llm import (
     DEFAULT_OPENAI_CHAT_MODEL_NAME_ADVANCED,
     DEFAULT_OPENAI_MAX_GENERATED_TOKENS,
@@ -42,6 +45,8 @@ from rasa.shared.utils.llm import (
     tracker_as_readable_transcript,
     sanitize_message_for_prompt,
 )
+
+COMMAND_PROMPT_FILE_NAME = "command_prompt.jinja2"
 
 DEFAULT_COMMAND_PROMPT_TEMPLATE = importlib.resources.read_text(
     "rasa.dialogue_understanding.generator", "command_prompt_template.jinja2"
@@ -80,11 +85,15 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         }
 
     def __init__(
-        self, config: Dict[str, Any], model_storage: ModelStorage, resource: Resource
+        self,
+        config: Dict[str, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        prompt_template: Optional[Text] = None,
     ) -> None:
         super().__init__(config)
         self.config = {**self.get_default_config(), **config}
-        self.prompt_template = get_prompt_template(
+        self.prompt_template = prompt_template or get_prompt_template(
             config.get("prompt"),
             DEFAULT_COMMAND_PROMPT_TEMPLATE,
         )
@@ -112,10 +121,26 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         **kwargs: Any,
     ) -> "LLMCommandGenerator":
         """Loads trained component (see parent class for full docstring)."""
-        return cls(config, model_storage, resource)
+        prompt_template = None
+        try:
+            with model_storage.read_from(resource) as path:
+                prompt_template = rasa.shared.utils.io.read_file(
+                    path / COMMAND_PROMPT_FILE_NAME
+                )
+
+        except (FileNotFoundError, FileIOException) as e:
+            structlogger.warning(
+                "llm_command_generator.load.failed", error=e, resource=resource.name
+            )
+
+        return cls(config, model_storage, resource, prompt_template=prompt_template)
 
     def persist(self) -> None:
-        pass
+        """Persist this component to disk for future loading."""
+        with self._model_storage.write_to(self._resource) as path:
+            rasa.shared.utils.io.write_text_file(
+                self.prompt_template, path / COMMAND_PROMPT_FILE_NAME
+            )
 
     def train(self, training_data: TrainingData) -> Resource:
         """Train the intent classifier on a data set."""
@@ -455,3 +480,12 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             if isinstance(current_step, CollectInformationFlowStep)
             else (None, None)
         )
+
+    @classmethod
+    def fingerprint_addon(cls, config: Dict[str, Any]) -> Optional[str]:
+        """Add a fingerprint of the knowledge base for the graph."""
+        prompt_template = get_prompt_template(
+            config.get("prompt"),
+            DEFAULT_COMMAND_PROMPT_TEMPLATE,
+        )
+        return deep_container_fingerprint(prompt_template)
