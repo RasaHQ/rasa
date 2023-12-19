@@ -186,7 +186,7 @@ class SlotNamingException(RasaException):
         self.step_id = step_id
         self.slot_name = slot_name
 
-    def __str__(self) -> Text:
+    def __str__(self) -> str:
         """Return a string representation of the exception."""
         return (
             f"For the flow '{self.flow_id}', collect step '{self.step_id}' "
