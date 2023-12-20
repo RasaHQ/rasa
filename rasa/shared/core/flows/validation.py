@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+import re
 from typing import Optional, Set, Text, List
 
 from rasa.shared.core.flows.flow_step import (
@@ -14,6 +15,7 @@ from rasa.shared.core.flows.flow_step_links import (
 from rasa.shared.core.flows.flow_step_sequence import FlowStepSequence
 from rasa.shared.core.flows.steps.constants import CONTINUE_STEP_PREFIX, DEFAULT_STEPS
 from rasa.shared.core.flows.steps.link import LinkFlowStep
+from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
 from rasa.shared.core.flows.flow import Flow
 from rasa.shared.exceptions import RasaException
 
@@ -175,6 +177,24 @@ class DuplicateNLUTriggerException(RasaException):
         )
 
 
+class SlotNamingException(RasaException):
+    """Raised when a slot name to be collected does not adhere to naming convention."""
+
+    def __init__(self, flow_id: str, step_id: str, slot_name: str) -> None:
+        """Initializes the exception."""
+        self.flow_id = flow_id
+        self.step_id = step_id
+        self.slot_name = slot_name
+
+    def __str__(self) -> str:
+        """Return a string representation of the exception."""
+        return (
+            f"For the flow '{self.flow_id}', collect step '{self.step_id}' "
+            f"the slot name was set to : {self.slot_name}, while it has "
+            f"to adhere to the following pattern: [a-zA-Z_][a-zA-Z0-9_-]*?."
+        )
+
+
 def validate_flow(flow: Flow) -> None:
     """Validates the flow configuration.
 
@@ -190,6 +210,7 @@ def validate_flow(flow: Flow) -> None:
     validate_all_steps_can_be_reached(flow)
     validate_all_branches_have_an_else(flow)
     validate_not_using_builtin_ids(flow)
+    validate_slot_names_to_be_collected(flow)
 
 
 def validate_flow_not_empty(flow: Flow) -> None:
@@ -286,3 +307,13 @@ def validate_nlu_trigger(flows: List[Flow]) -> None:
     for intent, flow_names in nlu_trigger_to_flows.items():
         if len(flow_names) > 1:
             raise DuplicateNLUTriggerException(intent, flow_names)
+
+
+def validate_slot_names_to_be_collected(flow: Flow) -> None:
+    """Validates that slot names to be collected comply with a specified regex."""
+    slot_re = re.compile(r"""^[a-zA-Z_][a-zA-Z0-9_-]*?$""")
+    for step in flow.steps:
+        if isinstance(step, CollectInformationFlowStep):
+            slot_name = step.collect
+            if not slot_re.search(slot_name):
+                raise SlotNamingException(flow.id, step.id, slot_name)

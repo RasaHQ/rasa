@@ -20,7 +20,7 @@ from rasa.core.training import interactive
 from rasa.shared.constants import (
     INTENT_MESSAGE_PREFIX,
     DEFAULT_SENDER_ID,
-    DOCS_URL_POLICIES,
+    DOCS_URL_NLU_BASED_POLICIES,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
 )
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_UNLIKELY_INTENT_NAME
@@ -750,7 +750,7 @@ async def test_retry_on_error_success(monkeypatch: MonkeyPatch):
             f"to indicate that the last user message was unexpected "
             f"at this point in the conversation. "
             f"Check out UnexpecTEDIntentPolicy "
-            f"({DOCS_URL_POLICIES}#unexpected-intent-policy) "
+            f"({DOCS_URL_NLU_BASED_POLICIES}#unexpected-intent-policy) "
             f"to learn more. Is that correct?",
             True,
             ACTION_UNLIKELY_INTENT_NAME,
@@ -761,7 +761,7 @@ async def test_retry_on_error_success(monkeypatch: MonkeyPatch):
             f"to indicate that the last user message was unexpected "
             f"at this point in the conversation. "
             f"Check out UnexpecTEDIntentPolicy "
-            f"({DOCS_URL_POLICIES}#unexpected-intent-policy) "
+            f"({DOCS_URL_NLU_BASED_POLICIES}#unexpected-intent-policy) "
             f"to learn more. Is that correct?",
             False,
             ACTION_UNLIKELY_INTENT_NAME,

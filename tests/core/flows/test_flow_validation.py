@@ -16,6 +16,7 @@ from rasa.shared.core.flows.validation import (
     NoNextAllowedForLinkException,
     UnresolvedFlowStepIdException,
     DuplicateNLUTriggerException,
+    SlotNamingException,
 )
 
 
@@ -327,4 +328,16 @@ def test_validation_fails_on_multiple_flows_with_same_nlu_triggers():
         """
 
     with pytest.raises(DuplicateNLUTriggerException):
+        flows_from_str(flow_config)
+
+
+def test_validation_fails_slot_name_does_not_adhere_to_pattern():
+    flow_config = """
+        flows:
+          abc:
+            steps:
+              - collect: $welcome
+        """
+
+    with pytest.raises(SlotNamingException):
         flows_from_str(flow_config)
