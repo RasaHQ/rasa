@@ -1,4 +1,3 @@
-import os
 import importlib.resources
 import re
 from typing import Dict, Any, List, Optional, Text, Tuple, Union
@@ -47,7 +46,7 @@ from rasa.shared.utils.llm import (
     sanitize_message_for_prompt,
 )
 
-from rasa.shared.constants import ENV_LOG_PROMPT_CLASS_LIST
+from rasa.utils.log_utils import log_prompt
 
 COMMAND_PROMPT_FILE_NAME = "command_prompt.jinja2"
 
@@ -171,19 +170,13 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             return []
 
         flow_prompt = self.render_template(message, tracker, flows)
+        log_prompt(
+            "llm_command_generator.predict_commands.prompt_rendered",
+            prompt=flow_prompt,
+            component=self.__class__.__name__,
+            structlogger=structlogger,
+        )
 
-        if self.__class__.__name__ in os.environ.get(
-            ENV_LOG_PROMPT_CLASS_LIST, ""
-        ).split(" "):
-            structlogger.info(
-                "llm_command_generator.predict_commands.prompt_rendered",
-                prompt=flow_prompt,
-            )
-        else:
-            structlogger.debug(
-                "llm_command_generator.predict_commands.prompt_rendered",
-                prompt=flow_prompt,
-            )
         action_list = self._generate_action_list_using_llm(flow_prompt)
         structlogger.debug(
             "llm_command_generator.predict_commands.actions_generated",

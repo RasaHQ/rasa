@@ -8,7 +8,14 @@ import structlog
 from structlog_sentry import SentryProcessor
 from structlog.dev import ConsoleRenderer
 from structlog.typing import EventDict, WrappedLogger
-from rasa.shared.constants import ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL
+from rasa.shared.constants import (
+    ENV_LOG_LEVEL,
+    DEFAULT_LOG_LEVEL,
+    ENV_LOG_PROMPT_LLM_COMMAND_GENERATOR,
+    ENV_LOG_PROMPT_ENTERPRISE_SEARCH,
+    ENV_LOG_PROMPT_INTENTLESS_POLICY,
+    ENV_LOG_PROMPT_REPHRASER,
+)
 from rasa.plugin import plugin_manager
 
 
@@ -137,3 +144,18 @@ def configure_structlog(
         # logger.
         cache_logger_on_first_use=True,
     )
+
+
+def log_prompt(log_string: str, prompt: str, component: str, structlogger):
+    component_to_env_var = {
+        "LLMCommandGenerator": ENV_LOG_PROMPT_LLM_COMMAND_GENERATOR,
+        "EnterpriseSearchPolicy": ENV_LOG_PROMPT_ENTERPRISE_SEARCH,
+        "IntentlessPolicy": ENV_LOG_PROMPT_INTENTLESS_POLICY,
+        "ContextualResponseRephraser": ENV_LOG_PROMPT_REPHRASER,
+    }
+
+    log_prompt_flag = os.environ.get(component_to_env_var[component])
+    if log_prompt_flag == "True":
+        structlogger.info(log_string, prompt=prompt)
+    else:
+        structlogger.debug(log_string, prompt=prompt)
