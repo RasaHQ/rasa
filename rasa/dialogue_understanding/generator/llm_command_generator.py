@@ -1,3 +1,4 @@
+import os
 import importlib.resources
 import re
 from typing import Dict, Any, List, Optional, Text, Tuple, Union
@@ -45,6 +46,8 @@ from rasa.shared.utils.llm import (
     tracker_as_readable_transcript,
     sanitize_message_for_prompt,
 )
+
+from rasa.shared.constants import ENV_LOG_PROMPT_CLASS_LIST
 
 COMMAND_PROMPT_FILE_NAME = "command_prompt.jinja2"
 
@@ -168,9 +171,19 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             return []
 
         flow_prompt = self.render_template(message, tracker, flows)
-        structlogger.debug(
-            "llm_command_generator.predict_commands.prompt_rendered", prompt=flow_prompt
-        )
+
+        if self.__class__.__name__ in os.environ.get(
+            ENV_LOG_PROMPT_CLASS_LIST, ""
+        ).split(" "):
+            structlogger.info(
+                "llm_command_generator.predict_commands.prompt_rendered",
+                prompt=flow_prompt,
+            )
+        else:
+            structlogger.debug(
+                "llm_command_generator.predict_commands.prompt_rendered",
+                prompt=flow_prompt,
+            )
         action_list = self._generate_action_list_using_llm(flow_prompt)
         structlogger.debug(
             "llm_command_generator.predict_commands.actions_generated",
@@ -260,7 +273,9 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
 
         commands: List[Command] = []
 
-        slot_set_re = re.compile(r"""SetSlot\(([a-zA-Z_][a-zA-Z0-9_-]*?), ?(.*)\)""")
+        slot_set_re = re.compile(
+            r"""SetSlot\(([a-zA-Z_][a-zA-Z0-9_-]*?), ?\"?([^)]*?)\"?\)"""
+        )
         start_flow_re = re.compile(r"StartFlow\(([a-zA-Z0-9_-]+?)\)")
         cancel_flow_re = re.compile(r"CancelFlow\(\)")
         chitchat_re = re.compile(r"ChitChat\(\)")
