@@ -148,8 +148,8 @@ def configure_structlog(
 
 def log_prompt(log_string: str, prompt: str, component: str, structlogger):
     """Logs LLM prompt depending on a flag passed through environment variables.
-    If the the component's flag is set to True (e.g. LOG_PROMPT_LLM_COMMAND_GENERATOR=True),
-    its prompt is logged at INFO level.
+    If the the component's flag is set to True (e.g.
+    LOG_PROMPT_LLM_COMMAND_GENERATOR=True), its prompt is logged at INFO level.
 
     Args:
         log_string: string to be passed to the logger
