@@ -5,16 +5,8 @@ import pytest
 
 from rasa.utils.log_utils import configure_structlog, log_llm
 
-import structlog
 from structlog import get_logger
 from structlog.testing import capture_logs
-
-# from structlog.testing import LogCapture
-
-# @pytest.fixture(name="log_output")
-# def fixture_log_output():
-#     return LogCapture()
-
 
 logging.basicConfig(level="INFO")
 
@@ -40,12 +32,12 @@ attribute = "some attribute text"
     ],
     ids=[
         "LLM logging environment variables not specified",
-        "Only LOG_LEVEL_LLM='DEBUG'",
-        "Only LOG_LEVEL_LLM_COMMAND_GENERATOR='DEBUG'",
+        "Only LOG_LEVEL_LLM='INFO'",
+        "Only LOG_LEVEL_LLM_COMMAND_GENERATOR='INFO'",
     ],
 )
 def test_log_llm(environment_variables, logging_output):
-    """Environment variables control the llm logging as expected"""
+    """Check that environment variables control the llm logging as expected."""
     configure_structlog(log_level=20)  # DEBUG=10, INFO=20
 
     with capture_logs() as cap_logs:
