@@ -11,10 +11,9 @@ from structlog.typing import EventDict, WrappedLogger
 from rasa.shared.constants import (
     ENV_LOG_LEVEL,
     DEFAULT_LOG_LEVEL,
-    ENV_LOG_PROMPT_LLM_COMMAND_GENERATOR,
-    ENV_LOG_PROMPT_ENTERPRISE_SEARCH,
-    ENV_LOG_PROMPT_INTENTLESS_POLICY,
-    ENV_LOG_PROMPT_REPHRASER,
+    ENV_LOG_LEVEL_LLM,
+    ENV_LOG_LEVEL_LLM_BY_MODULE,
+    DEFAULT_LOG_LEVEL_LLM,
 )
 from rasa.plugin import plugin_manager
 
@@ -146,26 +145,28 @@ def configure_structlog(
     )
 
 
-def log_prompt(log_string: str, prompt: str, component: str, structlogger):
-    """Logs LLM prompt depending on a flag passed through environment variables.
-    If the the component's flag is set to True (e.g.
-    LOG_PROMPT_LLM_COMMAND_GENERATOR=True), its prompt is logged at INFO level.
+def log_llm(logger: Any, log_module: str, log_event: str, **kwargs: Dict) -> None:
+    """Logs LLM-specific events depending on a flag passed through an environment
+    variable. If the the module's flag is set to INFO (e.g.
+    LOG_PROMPT_LLM_COMMAND_GENERATOR=INFO), its prompt is logged at INFO level,
+    overriding the general log level setting.
 
     Args:
-        log_string: string to be passed to the logger
-        prompt: text of the prompt
-        component: name of the class/component
-        structlogger: instance of the structlogger of the component
+        logger: instance of the structlogger of the component
+        log_module: name of the module/component logging the event
+        log_event: string describing the log event
+        **kwargs: dictionary of additional logging context
     """
-    component_to_env_var = {
-        "LLMCommandGenerator": ENV_LOG_PROMPT_LLM_COMMAND_GENERATOR,
-        "EnterpriseSearchPolicy": ENV_LOG_PROMPT_ENTERPRISE_SEARCH,
-        "IntentlessPolicy": ENV_LOG_PROMPT_INTENTLESS_POLICY,
-        "ContextualResponseRephraser": ENV_LOG_PROMPT_REPHRASER,
-    }
+    log_level_llm = structlog.stdlib._NAME_TO_LEVEL[
+        os.environ.get(ENV_LOG_LEVEL_LLM, DEFAULT_LOG_LEVEL_LLM).lower()
+    ]
 
-    log_prompt_flag = os.environ.get(component_to_env_var[component])
-    if log_prompt_flag == "True":
-        structlogger.info(log_string, prompt=prompt)
-    else:
-        structlogger.debug(log_string, prompt=prompt)
+    log_level_llm_module = structlog.stdlib._NAME_TO_LEVEL[
+        os.environ.get(
+            ENV_LOG_LEVEL_LLM_BY_MODULE[log_module], DEFAULT_LOG_LEVEL_LLM
+        ).lower()
+    ]
+
+    log_level = max(log_level_llm, log_level_llm_module)  # DEBUG=10, INFO=20
+
+    logger.log(log_level, log_event, **kwargs)

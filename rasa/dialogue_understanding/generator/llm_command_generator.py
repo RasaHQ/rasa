@@ -46,7 +46,7 @@ from rasa.shared.utils.llm import (
     sanitize_message_for_prompt,
 )
 
-from rasa.utils.log_utils import log_prompt
+from rasa.utils.log_utils import log_llm
 
 COMMAND_PROMPT_FILE_NAME = "command_prompt.jinja2"
 
@@ -170,18 +170,21 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             return []
 
         flow_prompt = self.render_template(message, tracker, flows)
-        log_prompt(
-            "llm_command_generator.predict_commands.prompt_rendered",
+        log_llm(
+            logger=structlogger,
+            log_module=self.__class__.__name__,
+            log_event="llm_command_generator.predict_commands.prompt_rendered",
             prompt=flow_prompt,
-            component=self.__class__.__name__,
-            structlogger=structlogger,
         )
 
         action_list = self._generate_action_list_using_llm(flow_prompt)
-        structlogger.debug(
-            "llm_command_generator.predict_commands.actions_generated",
+        log_llm(
+            logger=structlogger,
+            log_module=self.__class__.__name__,
+            log_event="llm_command_generator.predict_commands.actions_generated",
             action_list=action_list,
         )
+
         commands = self.parse_commands(action_list, tracker, flows)
         structlogger.info(
             "llm_command_generator.predict_commands.finished",
