@@ -53,8 +53,11 @@ def filter_logs(
     Returns:
         A list of logs that matches the filtering criteria.
     """
+
     def contains_message_parts(log: Dict) -> bool:
-        contains_parts = [part in log["event_info"] for part in log_message_parts]
+        contains_parts = [
+            part in log.get("event_info", "") for part in log_message_parts
+        ]
         if log_contains_all_message_parts:
             return all(contains_parts)
         return any(contains_parts)
