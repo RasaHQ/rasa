@@ -75,10 +75,9 @@ def test_train(
 def test_train_finetune(
     run_in_simple_project: Callable[..., RunResult], capsys: CaptureFixture
 ):
-    run_in_simple_project("train", "--finetune")
-
-    output = capsys.readouterr().out
-    assert "No model for finetuning found" in output
+    output = run_in_simple_project("train", "--finetune")
+    logs = output.outlines + output.errlines
+    assert [log for log in logs if "No model for finetuning found" in log]
 
 
 def test_train_persist_nlu_data(
@@ -215,7 +214,8 @@ def test_train_dry_run(run_in_simple_project_with_model: Callable[..., RunResult
 
     output = run_in_simple_project_with_model("train", "--dry-run")
 
-    assert [s for s in output.outlines if "No training of components required" in s]
+    logs = output.outlines + output.errlines
+    assert [log for log in logs if "No training of components required" in log]
     assert output.ret == 0
 
 
@@ -237,7 +237,8 @@ def test_train_dry_run_failure(run_in_simple_project: Callable[..., RunResult]):
 
     output = run_in_simple_project("train", "--dry-run")
 
-    assert not any([s for s in output.outlines if "No training required." in s])
+    logs = output.outlines + output.errlines
+    assert not any([log for log in logs if "No training required." in log])
     assert (output.ret & CODE_NEEDS_TO_BE_RETRAINED == CODE_NEEDS_TO_BE_RETRAINED) and (
         output.ret & CODE_FORCED_TRAINING != CODE_FORCED_TRAINING
     )
@@ -254,7 +255,8 @@ def test_train_dry_run_force(
 
     output = run_in_simple_project_with_model("train", "--dry-run", "--force")
 
-    assert [s for s in output.outlines if "The training was forced." in s]
+    logs = output.outlines + output.errlines
+    assert [log for log in logs if "The training was forced." in log]
     assert output.ret == CODE_FORCED_TRAINING
 
 
@@ -507,9 +509,8 @@ def test_train_nlu_finetune_with_model(
 
     model_name = os.path.relpath(files[0])
     output = run_in_simple_project_with_model("train", "--finetune", model_name)
-    assert any(
-        "Your Rasa model is trained and saved at" in line for line in output.outlines
-    )
+    logs = output.outlines + output.errlines
+    assert [log for log in logs if "Your Rasa model is trained and saved at" in log]
 
 
 def test_train_validation_debug_messages(
@@ -528,13 +529,14 @@ def test_train_validation_debug_messages(
         "config.yml",
         "--debug",
     )
+    log_output = "\n".join(result.outlines + result.errlines)
 
     assert result.ret == 0
     for message in [
         "The intent 'goodbye' is not used in any story, rule or flow.",
         "The utterance 'utter_chatter' is not used in any story, rule or flow.",
     ]:
-        assert message in str(result.stderr)
+        assert message in log_output
 
 
 def test_train_validation_fail_on_warnings(
@@ -555,7 +557,8 @@ def test_train_validation_fail_on_warnings(
         "config.yml",
     )
 
-    assert "Project validation completed with errors." in str(result.outlines)
+    logs = result.outlines + result.errlines
+    assert [log for log in logs if "Project validation completed with errors." in log]
     assert result.ret == 1
 
 
@@ -567,8 +570,9 @@ def test_train_succeeds_by_falling_back_to_default_domain(
         "--domain",
         "not_existing_domain.yml",
     )
+    logs = result.outlines + result.errlines
 
-    assert "Your Rasa model is trained and saved" in str(result.outlines)
+    assert [log for log in logs if "Your Rasa model is trained and saved" in log]
     assert result.ret == 0
 
 
@@ -596,7 +600,9 @@ def test_train_validation_max_history_1(
         "config.yml",
     )
 
-    assert "Story structure conflict" in str(result.errlines)
+    logs = result.outlines + result.errlines
+
+    assert [log for log in logs if "Found story structure conflict" in log]
     assert result.ret == 0
 
 

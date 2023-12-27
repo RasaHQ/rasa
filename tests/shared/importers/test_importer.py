@@ -24,6 +24,9 @@ from rasa.shared.importers.multi_project import MultiProjectImporter
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.nlu.constants import ACTION_TEXT, ACTION_NAME, INTENT, TEXT
 from rasa.shared.nlu.training_data.message import Message
+import structlog
+
+from tests.utilities import filter_logs
 
 
 @pytest.fixture()
@@ -337,14 +340,21 @@ def test_response_missing(project: Text):
     )
 
     domain = importer.get_domain()
-    with pytest.warns(UserWarning) as record:
-        domain.check_missing_responses()
 
-    assert (
+    expected_log_level = "warning"
+    expected_log_event = "domain.check_missing_response"
+    expected_log_message = (
         "Action 'utter_chitchat' is listed as a response action in the domain "
         "file, but there is no matching response defined. Please check your "
         "domain."
-    ) in record[0].message.args[0]
+    )
+
+    with structlog.testing.capture_logs() as caplog:
+        domain.check_missing_responses()
+        logs = filter_logs(
+            caplog, expected_log_event, expected_log_level, [expected_log_message]
+        )
+        assert len(logs) == 1
 
 
 def test_nlu_data_domain_sync_responses(project: Text):

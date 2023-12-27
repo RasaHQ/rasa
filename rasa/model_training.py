@@ -1,3 +1,4 @@
+import sys
 import time
 from pathlib import Path
 from typing import Text, NamedTuple, Optional, List, Union, Dict, Any
@@ -58,7 +59,9 @@ def _dry_run_result(
         Result containing the return code and the fingerprint results.
     """
     if force_full_training:
-        rasa.shared.utils.cli.print_warning("The training was forced.")
+        structlogger.warn(
+            "model_training.force_full_training", event_info="The training was forced."
+        )
         return TrainingResult(
             code=CODE_FORCED_TRAINING, dry_run_results=fingerprint_results
         )
@@ -69,14 +72,20 @@ def _dry_run_result(
     )
 
     if training_required:
-        rasa.shared.utils.cli.print_warning("The model needs to be retrained.")
+        structlogger.warn(
+            "model_training.training_required",
+            event_info="The model needs to be retrained.",
+        )
         return TrainingResult(
             code=CODE_NEEDS_TO_BE_RETRAINED, dry_run_results=fingerprint_results
         )
 
-    rasa.shared.utils.cli.print_success(
-        "No training of components required "
-        "(the responses might still need updating!)."
+    structlogger.info(
+        "model_training.no_training_required",
+        event_info=(
+            "No training of components required "
+            "(the responses might still need updating!)."
+        ),
     )
     return TrainingResult(
         code=CODE_NO_NEED_TO_TRAIN, dry_run_results=fingerprint_results
@@ -119,13 +128,17 @@ def _check_unresolved_slots(domain: Domain, stories: StoryGraph) -> None:
     """
     unresolved_slots = get_unresolved_slots(domain, stories)
     if unresolved_slots:
-        rasa.shared.utils.cli.print_error_and_exit(
-            f"Unresolved slots found in stories/rules🚨 \n"
-            f'Tried to set slots "{unresolved_slots}" that are not present in'
-            f"your domain.\n Check whether they need to be added to the domain or "
-            f"whether there is a spelling error."
+        structlogger.error(
+            "model.training.check_unresolved_slots.not_in_domain",
+            slots=unresolved_slots,
+            event_info=(
+                f"Unresolved slots found in stories/rules🚨 \n"
+                f'Tried to set slots "{unresolved_slots}" that are not present in'
+                f"your domain.\n Check whether they need to be added to the domain or "
+                f"whether there is a spelling error."
+            ),
         )
-    return None
+        sys.exit(1)
 
 
 def _check_restricted_slots(domain: Domain) -> None:
@@ -143,9 +156,14 @@ def _check_restricted_slots(domain: Domain) -> None:
     restricted_slot_names = [CONTEXT]
     for slot in domain.slots:
         if slot.name in restricted_slot_names:
-            rasa.shared.utils.cli.print_warning(
-                f"Slot name - '{slot.name}' is reserved and can not be used. "
-                f"Please use another slot name."
+            structlogger.warn(
+                "model_training.check_restricted_slots.reserved_slot_name",
+                slot=slot.name,
+                event_info=(
+                    f"Slot name - '{slot.name}' is reserved "
+                    f"and can not be used. "
+                    f"Please use another slot name."
+                ),
             )
             structlogger.error("slots.reserved_slot_redefined", slot_name=slot.name)
     return None
@@ -204,24 +222,38 @@ def train(
         training_type = TrainingType.END_TO_END
 
     if stories.is_empty() and nlu_data.contains_no_pure_nlu_data() and flows.is_empty():
-        rasa.shared.utils.cli.print_error(
-            "No training data given. Please provide stories, flows or NLU data in "
-            "order to train a Rasa model using the '--data' argument."
+        structlogger.error(
+            "model_training.train.no_training_data_found",
+            event_info=(
+                "No training data given. Please provide "
+                "stories, flows or NLU data in "
+                "order to train a Rasa model using the "
+                "'--data' argument."
+            ),
         )
         return TrainingResult(code=1)
 
     domain_object = file_importer.get_domain()
     if domain_object.is_empty():
-        rasa.shared.utils.cli.print_warning(
-            "Core training was skipped because no valid domain file was found. "
-            "Only an NLU-model was created. Please specify a valid domain using "
-            "the '--domain' argument or check if the provided domain file exists."
+        structlogger.warn(
+            "model_training.train.domain_not_found",
+            event_info=(
+                "Core training was skipped because no "
+                "valid domain file was found. Only an "
+                "NLU-model was created. Please specify "
+                "a valid domain using the '--domain' "
+                "argument or check if the provided domain "
+                "file exists."
+            ),
         )
         training_type = TrainingType.NLU
 
     elif stories.is_empty() and flows.is_empty():
-        rasa.shared.utils.cli.print_warning(
-            "No stories or flows present. Just a Rasa NLU model will be trained."
+        structlogger.warn(
+            "model_training.train.flows_and_stories_not_found",
+            event_info=(
+                "No stories or flows present. Just a " "Rasa NLU model will be trained."
+            ),
         )
         training_type = TrainingType.NLU
 
@@ -231,8 +263,9 @@ def train(
         and not nlu_data.has_e2e_examples()
         and flows.is_empty()
     ):
-        rasa.shared.utils.cli.print_warning(
-            "No NLU data present. No NLU model will be trained."
+        structlogger.warn(
+            "model_training.train.nlu_data_not_found",
+            event_info="No NLU data present. No NLU model will be trained.",
         )
         training_type = TrainingType.CORE
 
@@ -268,11 +301,15 @@ def _train_graph(
     if model_to_finetune:
         model_to_finetune = rasa.model.get_model_for_finetuning(model_to_finetune)
         if not model_to_finetune:
-            rasa.shared.utils.cli.print_error_and_exit(
-                f"No model for finetuning found. Please make sure to either "
-                f"specify a path to a previous model or to have a finetunable "
-                f"model within the directory '{output_path}'."
+            structlogger.error(
+                "model_training.train.finetuning_model_not_found",
+                event_info=(
+                    f"No model for finetuning found. Please make sure to either "
+                    f"specify a path to a previous model or to have a finetunable "
+                    f"model within the directory '{output_path}'."
+                ),
             )
+            sys.exit(1)
 
         rasa.shared.utils.common.mark_as_experimental_feature(
             "Incremental Training feature"
@@ -325,8 +362,11 @@ def _train_graph(
                 force_retraining=force_full_training,
                 is_finetuning=is_finetuning,
             )
-            rasa.shared.utils.cli.print_success(
-                f"Your Rasa model is trained and saved at '{full_model_path}'."
+            structlogger.info(
+                "model_training.train.finished_training",
+                event_info=(
+                    f"Your Rasa model is trained " f"and saved at '{full_model_path}'."
+                ),
             )
 
         return TrainingResult(str(full_model_path), 0)
@@ -399,24 +439,35 @@ def train_core(
     domain = file_importer.get_domain()
 
     if nlu_data.has_e2e_examples():
-        rasa.shared.utils.cli.print_error(
-            "Stories file contains e2e stories. Please train using `rasa train` so that"
-            " the NLU model is also trained."
+        structlogger.error(
+            "model_training.train_core.e2e_stories_found",
+            event_info=(
+                "Stories file contains e2e stories. "
+                "Please train using `rasa train` so that "
+                "the NLU model is also trained."
+            ),
         )
         return None
 
     if domain.is_empty():
-        rasa.shared.utils.cli.print_error(
-            "Core training was skipped because no valid domain file was found. "
-            "Please specify a valid domain using '--domain' argument or check "
-            "if the provided domain file exists."
+        structlogger.error(
+            "model_training.train_core.domain_not_found",
+            event_info=(
+                "Core training was skipped because no valid "
+                "domain file was found. Please specify a valid "
+                "domain using '--domain' argument or check "
+                "if the provided domain file exists."
+            ),
         )
         return None
 
     if not stories_data:
-        rasa.shared.utils.cli.print_error(
-            "No stories given. Please provide stories in order to "
-            "train a Rasa Core model using the '--stories' argument."
+        structlogger.error(
+            "model_training.train_core.stories_not_found",
+            event_info=(
+                "No stories given. Please provide stories in order to "
+                "train a Rasa Core model using the '--stories' argument."
+            ),
         )
         return None
 
@@ -466,9 +517,12 @@ def train_nlu(
         Path to the model archive.
     """
     if not nlu_data:
-        rasa.shared.utils.cli.print_error(
-            "No NLU data given. Please provide NLU data in order to train "
-            "a Rasa NLU model using the '--nlu' argument."
+        structlogger.error(
+            "model_training.train_nlu.nlu_data_not_found",
+            event_info=(
+                "No NLU data given. Please provide NLU data in order to train "
+                "a Rasa NLU model using the '--nlu' argument."
+            ),
         )
         return None
 
@@ -479,10 +533,14 @@ def train_nlu(
 
     training_data = file_importer.get_nlu_data()
     if training_data.contains_no_pure_nlu_data():
-        rasa.shared.utils.cli.print_error(
-            f"Path '{nlu_data}' doesn't contain valid NLU data in it. "
-            f"Please verify the data format. "
-            f"The NLU model training will be skipped now."
+        structlogger.error(
+            "model_training.train_nlu.nlu_data_invalid",
+            path=nlu_data,
+            event_info=(
+                f"Path '{nlu_data}' doesn't contain valid NLU data in it. "
+                f"Please verify the data format. "
+                f"The NLU model training will be skipped now."
+            ),
         )
         return None
 

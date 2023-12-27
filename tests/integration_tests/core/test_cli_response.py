@@ -59,7 +59,7 @@ def test_rasa_validate_debug_with_errors(
     # throws cli errors about intent "greet"
     # in 'debug' mode
     err = (
-        "UserWarning: The intent 'greet' is listed in the domain file, "
+        "The intent 'greet' is listed in the domain file, "
         "but is not found in the NLU training data."
     )
     test_data_dir = Path(request.config.rootdir, "data", "test", "test_integration_err")
@@ -79,8 +79,9 @@ def test_rasa_validate_debug_with_errors(
         "--fail-on-warnings",
         "--debug",
     )
+    logs = result.errlines + result.outlines
     assert result.ret == 1
-    assert err in str(result.stderr)
+    assert any([log for log in logs if err in log])
 
 
 def test_rasa_validate_verbose_no_errors(

@@ -94,18 +94,29 @@ class Validator:
 
         for intent in self._non_default_intents():
             if intent not in nlu_data_intents:
-                rasa.shared.utils.io.raise_warning(
-                    f"The intent '{intent}' is listed in the domain file, but "
-                    f"is not found in the NLU training data."
+                structlogger.warn(
+                    "validator.verify_intents.not_in_nlu_training_data",
+                    intent=intent,
+                    event_info=(
+                        f"The intent '{intent}' is listed "
+                        f"in the domain file, but is not found "
+                        f"in the NLU training data."
+                    ),
                 )
                 everything_is_alright = ignore_warnings or everything_is_alright
 
         for intent in nlu_data_intents:
             if intent not in self.domain.intents:
-                rasa.shared.utils.io.raise_warning(
-                    f"There is a message in the training data labeled with intent "
-                    f"'{intent}'. This intent is not listed in your domain. You "
-                    f"should need to add that intent to your domain file!",
+                structlogger.warn(
+                    "validator.verify_intents.not_in_domain",
+                    intent=intent,
+                    event_info=(
+                        f"There is a message in the training data "
+                        f"labeled with intent '{intent}'. This "
+                        f"intent is not listed in your domain. You "
+                        f"should need to add that intent to your domain "
+                        f"file!"
+                    ),
                     docs=DOCS_URL_DOMAINS,
                 )
                 everything_is_alright = ignore_warnings
@@ -127,11 +138,19 @@ class Validator:
             if len(duplication_hash[text]) > 1:
                 everything_is_alright = ignore_warnings
                 intents_string = ", ".join(sorted(intents))
-                rasa.shared.utils.io.raise_warning(
-                    f"The example '{text}' was found labeled with multiple "
-                    f"different intents in the training data. Each annotated message "
-                    f"should only appear with one intent. You should fix that "
-                    f"conflict The example is labeled with: {intents_string}."
+                structlogger.warn(
+                    "validator.verify_example_repetition_in_intents"
+                    ".one_example_multiple_intents",
+                    example=text,
+                    intents=intents_string,
+                    event_info=(
+                        f"The example '{text}' was found labeled "
+                        f"with multiple different intents in the "
+                        f"training data. Each annotated message "
+                        f"should only appear with one intent. "
+                        f"You should fix that conflict The example is "
+                        f"labeled with: {intents_string}."
+                    ),
                 )
         return everything_is_alright
 
@@ -159,18 +178,28 @@ class Validator:
 
         for intent in used_intents:
             if intent not in self.domain.intents:
-                rasa.shared.utils.io.raise_warning(
-                    f"The intent '{intent}' is used in a story or flow, but it "
-                    f"is not listed in the domain file. You should add it to your "
-                    f"domain file!",
+                structlogger.warn(
+                    "validator.verify_intents_in_stories_or_flows.not_in_domain",
+                    intent=intent,
+                    event_info=(
+                        f"The intent '{intent}' is used in a "
+                        f"story or flow, but it is not listed in "
+                        f"the domain file. You should add it to your "
+                        f"domain file!"
+                    ),
                     docs=DOCS_URL_DOMAINS,
                 )
                 everything_is_alright = ignore_warnings
 
         for intent in self._non_default_intents():
             if intent not in used_intents:
-                rasa.shared.utils.io.raise_warning(
-                    f"The intent '{intent}' is not used in any story, rule or flow."
+                structlogger.warn(
+                    "validator.verify_intents_in_stories_or_flows.not_used",
+                    intent=intent,
+                    event_info=(
+                        f"The intent '{intent}' is not used "
+                        f"in any story, rule or flow."
+                    ),
                 )
                 everything_is_alright = ignore_warnings or everything_is_alright
 
@@ -201,11 +230,15 @@ class Validator:
         has_no_warnings = True
         for used_utterance in used_utterances_in_stories:
             if used_utterance not in utterance_actions:
-                rasa.shared.utils.io.raise_warning(
-                    f"The action '{used_utterance}' is used in the stories, "
-                    f"but is not a valid utterance action. Please make sure "
-                    f"the action is listed in your domain and there is a "
-                    f"template defined with its name.",
+                structlogger.warn(
+                    "validator.invalid_utterance_action",
+                    action=used_utterance,
+                    event_info=(
+                        f"The action '{used_utterance}' is used in the stories, "
+                        f"but is not a valid utterance action. Please make sure "
+                        f"the action is listed in your domain and there is a "
+                        f"template defined with its name."
+                    ),
                     docs=DOCS_URL_ACTIONS + "#utterance-actions",
                 )
                 has_no_warnings = False
@@ -256,9 +289,13 @@ class Validator:
 
         for utterance in utterance_actions:
             if utterance not in all_used_utterances:
-                logger.debug(
-                    f"The utterance '{utterance}' is not used in "
-                    f"any story, rule or flow."
+                structlogger.warn(
+                    "validator.verify_utterances_in_dialogues.not_used",
+                    utterance=utterance,
+                    event_info=(
+                        f"The utterance '{utterance}' is not used in "
+                        f"any story, rule or flow."
+                    ),
                 )
                 everything_is_alright = ignore_warnings or everything_is_alright
 
@@ -283,11 +320,17 @@ class Validator:
                     continue
 
                 if event.name not in self.domain.action_names_or_texts:
-                    rasa.shared.utils.io.raise_warning(
-                        f"The form '{event.name}' is used in the "
-                        f"'{story.block_name}' block, but it "
-                        f"is not listed in the domain file. You should add it to your "
-                        f"domain file!",
+                    structlogger.warn(
+                        "validator.verify_forms_in_stories_rules.not_in_domain",
+                        form=event.name,
+                        block=story.block_name,
+                        event_info=(
+                            f"The form '{event.name}' is used in the "
+                            f"'{story.block_name}' block, but it "
+                            f"is not listed in the domain file. "
+                            f"You should add it to your "
+                            f"domain file!"
+                        ),
                         docs=DOCS_URL_FORMS,
                     )
                     all_forms_exist = False
@@ -316,11 +359,16 @@ class Validator:
                     continue
 
                 if event.action_name not in self.domain.action_names_or_texts:
-                    rasa.shared.utils.io.raise_warning(
-                        f"The action '{event.action_name}' is used in the "
-                        f"'{story.block_name}' block, but it "
-                        f"is not listed in the domain file. You should add it to your "
-                        f"domain file!",
+                    structlogger.warn(
+                        "validator.verify_actions_in_stories_rules.not_in_domain",
+                        action=event.action_name,
+                        block=story.block_name,
+                        event_info=(
+                            f"The action '{event.action_name}' is used in the "
+                            f"'{story.block_name}' block, but it "
+                            f"is not listed in the domain file. You "
+                            f"should add it to your domain file!"
+                        ),
                         docs=DOCS_URL_DOMAINS,
                     )
                     everything_is_alright = False
@@ -342,7 +390,10 @@ class Validator:
             `False` is a conflict was found and `ignore_warnings` is `False`.
             `True` otherwise.
         """
-        logger.info("Story structure validation...")
+        structlogger.info(
+            "validator.verify_story_structure.start",
+            event_info="Story structure validation...",
+        )
 
         trackers = TrainingDataGenerator(
             self.story_graph,
@@ -357,24 +408,40 @@ class Validator:
         )
 
         if not conflicts:
-            logger.info("No story structure conflicts found.")
+            structlogger.info(
+                "validator.verify_story_structure.no_conflicts",
+                event_info="No story structure conflicts found.",
+            )
         else:
             for conflict in conflicts:
-                logger.warning(conflict)
+                structlogger.warn(
+                    "validator.verify_story_structure.conflicts",
+                    event_info="Found story structure conflict",
+                    conflict=str(conflict),
+                )
 
         return ignore_warnings or not conflicts
 
     def verify_nlu(self, ignore_warnings: bool = True) -> bool:
         """Runs all the validations on intents and utterances."""
-        logger.info("Validating intents...")
+        structlogger.info(
+            "validator.verify_intents_in_stories.start",
+            event_info="Validating intents...",
+        )
         intents_are_valid = self.verify_intents_in_stories_or_flows(ignore_warnings)
 
-        logger.info("Validating uniqueness of intents and stories...")
+        structlogger.info(
+            "validator.verify_example_repetition_in_intents.start",
+            event_info="Validating uniqueness of intents and stories...",
+        )
         there_is_no_duplication = self.verify_example_repetition_in_intents(
             ignore_warnings
         )
 
-        logger.info("Validating utterances...")
+        structlogger.info(
+            "validator.verify_utterances_in_dialogues.start",
+            event_info="Validating utterances...",
+        )
         stories_are_valid = self.verify_utterances_in_dialogues(ignore_warnings)
         return intents_are_valid and stories_are_valid and there_is_no_duplication
 
@@ -389,10 +456,15 @@ class Validator:
                 if slot in domain_slot_names:
                     continue
                 else:
-                    rasa.shared.utils.io.raise_warning(
-                        f"The form slot '{slot}' in form '{form}' "
-                        f"is not present in the domain slots."
-                        f"Please add the correct slot or check for typos.",
+                    structlogger.warn(
+                        "validator.verify_form_slots.not_in_domain",
+                        slot=slot,
+                        form=form,
+                        event_info=(
+                            f"The form slot '{slot}' in form '{form}' "
+                            f"is not present in the domain slots."
+                            f"Please add the correct slot or check for typos."
+                        ),
                         docs=DOCS_URL_DOMAINS,
                     )
                     everything_is_alright = False
@@ -412,11 +484,17 @@ class Validator:
                         condition_active_loop
                         and condition_active_loop not in self.domain.form_names
                     ):
-                        rasa.shared.utils.io.raise_warning(
-                            f"Slot '{slot.name}' has a mapping condition for form "
-                            f"'{condition_active_loop}' which is not listed in "
-                            f"domain forms. Please add this form to the forms section "
-                            f"or check for typos."
+                        structlogger.warn(
+                            "validator.verify_slot_mappings.not_in_domain",
+                            slot=slot.name,
+                            form=condition_active_loop,
+                            event_info=(
+                                f"Slot '{slot.name}' has a mapping "
+                                f"condition for form '{condition_active_loop}' "
+                                f"which is not listed in domain forms. Please "
+                                f"add this form to the forms section or check "
+                                f"for typos."
+                            ),
                         )
                         everything_is_alright = False
 
@@ -428,11 +506,18 @@ class Validator:
                         and slot.name not in form_slots
                         and mapping_type != SlotMappingType.FROM_TRIGGER_INTENT
                     ):
-                        rasa.shared.utils.io.raise_warning(
-                            f"Slot '{slot.name}' has a mapping condition for form "
-                            f"'{condition_active_loop}', but it's not present in "
-                            f"'{condition_active_loop}' form's '{REQUIRED_SLOTS_KEY}'. "
-                            f"The slot needs to be added to this key."
+                        structlogger.warn(
+                            "validator.verify_slot_mappings.not_in_forms_key",
+                            slot=slot.name,
+                            form=condition_active_loop,
+                            forms_key=REQUIRED_SLOTS_KEY,
+                            event_info=(
+                                f"Slot '{slot.name}' has a mapping condition "
+                                f"for form '{condition_active_loop}', but it's "
+                                f"not present in '{condition_active_loop}' "
+                                f"form's '{REQUIRED_SLOTS_KEY}'. "
+                                f"The slot needs to be added to this key."
+                            ),
                         )
                         everything_is_alright = False
 
@@ -448,11 +533,15 @@ class Validator:
 
         for intent_key, intent_dict in self.domain.intent_properties.items():
             if "triggers" in intent_dict:
-                rasa.shared.utils.io.raise_warning(
-                    f"The intent {intent_key} in the domain file "
-                    f"is using the MappingPolicy format "
-                    f"which has now been deprecated. "
-                    f"Please migrate to RulePolicy."
+                structlogger.warn(
+                    "validator.verify_domain_validity.mapping_policy_deprecation",
+                    intent_key=intent_key,
+                    event_info=(
+                        f"The intent {intent_key} in the domain file "
+                        f"is using the MappingPolicy format "
+                        f"which has now been deprecated. "
+                        f"Please migrate to RulePolicy."
+                    ),
                 )
                 return False
 
@@ -466,17 +555,25 @@ class Validator:
         """
         for key in set(CONFIG_MANDATORY_KEYS):
             if key not in self.config:
-                rasa.shared.utils.io.raise_warning(
-                    f"The config file is missing the '{key}' mandatory key."
+                structlogger.warn(
+                    "validator.config_missing_mandatory_key",
+                    key=key,
+                    event_info=(
+                        f"The config file is missing the " f"'{key}' mandatory key."
+                    ),
                 )
 
         assistant_id = self.config.get(ASSISTANT_ID_KEY)
 
         if assistant_id is not None and assistant_id == ASSISTANT_ID_DEFAULT_VALUE:
-            rasa.shared.utils.io.raise_warning(
-                f"The config file is missing a unique value for the "
-                f"'{ASSISTANT_ID_KEY}' mandatory key. Please replace the default "
-                f"placeholder value with a unique identifier."
+            structlogger.warn(
+                "validator.config_missing_unique_mandatory_key_value",
+                key=ASSISTANT_ID_KEY,
+                event_info=(
+                    f"The config file is missing a unique value for the "
+                    f"'{ASSISTANT_ID_KEY}' mandatory key. Please replace the default "
+                    f"placeholder value with a unique identifier."
+                ),
             )
 
     @staticmethod
@@ -488,11 +585,17 @@ class Validator:
         all_good: bool,
     ) -> bool:
         if slot_name not in domain_slots:
-            logger.error(
-                f"The slot '{slot_name}' is used in the "
-                f"step '{step_id}' of flow id '{flow_id}', but it "
-                f"is not listed in the domain slots. "
-                f"You should add it to your domain file!",
+            structlogger.error(
+                "validator.verify_flows_steps_against_domain.slot_not_in_domain",
+                slot=slot_name,
+                step=step_id,
+                flow=flow_id,
+                event_info=(
+                    f"The slot '{slot_name}' is used in the "
+                    f"step '{step_id}' of flow id '{flow_id}', but it "
+                    f"is not listed in the domain slots. "
+                    f"You should add it to your domain file!"
+                ),
             )
             all_good = False
 
@@ -503,12 +606,18 @@ class Validator:
         slot: Slot, step_id: str, flow_id: str, all_good: bool
     ) -> bool:
         if isinstance(slot, ListSlot):
-            logger.error(
-                f"The slot '{slot.name}' is used in the "
-                f"step '{step_id}' of flow id '{flow_id}', but it "
-                f"is a list slot. List slots are currently not "
-                f"supported in flows. You should change it to a "
-                f"text, boolean or float slot in your domain file!",
+            structlogger.error(
+                "validator.verify_flows_steps_against_domain.use_of_list_slot_in_flow",
+                slot=slot.name,
+                step=step_id,
+                flow=flow_id,
+                event_info=(
+                    f"The slot '{slot.name}' is used in the "
+                    f"step '{step_id}' of flow id '{flow_id}', but it "
+                    f"is a list slot. List slots are currently not "
+                    f"supported in flows. You should change it to a "
+                    f"text, boolean or float slot in your domain file!"
+                ),
             )
             all_good = False
 
@@ -550,19 +659,33 @@ class Validator:
                     regex = r"{context\..+?}"
                     matches = re.findall(regex, step.action)
                     if matches:
-                        logger.debug(
-                            f"An interpolated action name '{step.action}' was "
-                            f"found at step '{step.id}' of flow id '{flow.id}'. "
-                            f"Skipping validation for this step. "
-                            f"Please make sure that the action name is "
-                            f"listed in your domain responses or actions."
+                        structlogger.debug(
+                            "validator.verify_flows_steps_against_domain"
+                            ".interpolated_action",
+                            action=step.action,
+                            step=step.id,
+                            flow=flow.id,
+                            event_info=(
+                                f"An interpolated action name '{step.action}' was "
+                                f"found at step '{step.id}' of flow id '{flow.id}'. "
+                                f"Skipping validation for this step. "
+                                f"Please make sure that the action name is "
+                                f"listed in your domain responses or actions."
+                            ),
                         )
                     elif step.action not in self.domain.action_names_or_texts:
-                        logger.error(
-                            f"The action '{step.action}' is used in the step "
-                            f"'{step.id}' of flow id '{flow.id}', but it "
-                            f"is not listed in the domain file. "
-                            f"You should add it to your domain file!",
+                        structlogger.error(
+                            "validator.verify_flows_steps_against_domain"
+                            ".action_not_in_domain",
+                            action=step.action,
+                            step=step.id,
+                            flow=flow.id,
+                            event_info=(
+                                f"The action '{step.action}' is used in the "
+                                f"step '{step.id}' of flow id '{flow.id}', "
+                                f"but it is not listed in the domain file. "
+                                f"You should add it to your domain file!"
+                            ),
                         )
                         all_good = False
         return all_good
@@ -578,18 +701,28 @@ class Validator:
             flow_description = flow.description
             cleaned_description = flow_description.translate(punctuation_table)  # type: ignore[union-attr] # noqa: E501
             if cleaned_description in flow_descriptions:
-                logger.error(
-                    f"Detected duplicate flow description for flow id '{flow.id}'. "
-                    f"Flow descriptions must be unique. "
-                    f"Please make sure that all flows have different descriptions."
+                structlogger.error(
+                    "validator.verify_unique_flows.duplicate_description",
+                    flow=flow.id,
+                    event_info=(
+                        f"Detected duplicate flow description for "
+                        f"flow id '{flow.id}'. Flow descriptions must be "
+                        f"unique. Please make sure that all flows have "
+                        f"different descriptions."
+                    ),
                 )
                 all_good = False
 
             if flow.name in flow_names:
-                logger.error(
-                    f"Detected duplicate flow name '{flow.name}' for flow "
-                    f"id '{flow.id}'. Flow names must be unique. "
-                    f"Please make sure that all flows have different names."
+                structlogger.error(
+                    "validator.verify_unique_flows.duplicate_name",
+                    flow=flow.id,
+                    name=flow.name,
+                    event_info=(
+                        f"Detected duplicate flow name '{flow.name}' for flow "
+                        f"id '{flow.id}'. Flow names must be unique. "
+                        f"Please make sure that all flows have different names."
+                    ),
                 )
                 all_good = False
 
@@ -636,14 +769,24 @@ class Validator:
             pred = Predicate(rendered_template)
         except (TypeError, Exception) as exception:
             if is_step:
-                logger.error(
-                    f"Could not initialize the predicate found under step "
-                    f"'{object_id}': {exception}"
+                structlogger.error(
+                    "validator.verify_predicates.step_predicate.error",
+                    step=object_id,
+                    exception=exception,
+                    event_info=(
+                        f"Could not initialize the predicate found under step "
+                        f"'{object_id}': {exception}"
+                    ),
                 )
             else:
-                logger.error(
-                    f"Could not initialize the predicate found in flow gruard "
-                    f"for flow: '{object_id}': {exception}."
+                structlogger.error(
+                    "validator.verify_predicates.flow_guard_predicate.error",
+                    flow=object_id,
+                    exception=exception,
+                    event_info=(
+                        f"Could not initialize the predicate found in flow guard "
+                        f"for flow: '{object_id}': {exception}."
+                    ),
                 )
             pred = None
             all_good = False
@@ -665,10 +808,15 @@ class Validator:
                     all_good=all_good,
                 )
                 if predicate and not predicate.is_valid():
-                    logger.error(
-                        f"Detected invalid flow guard condition "
-                        f"'{flow.guard_condition}' for flow id '{flow.id}'. "
-                        f"Please make sure that all conditions are valid."
+                    structlogger.error(
+                        "validator.verify_predicates.flow_guard.invalid_condition",
+                        flow=flow.id,
+                        flow_guard=flow.guard_condition,
+                        event_info=(
+                            f"Detected invalid flow guard condition "
+                            f"'{flow.guard_condition}' for flow id '{flow.id}'. "
+                            f"Please make sure that all conditions are valid."
+                        ),
                     )
                     all_good = False
             for step in flow.steps:
@@ -686,10 +834,16 @@ class Validator:
                             all_good=all_good,
                         )
                         if predicate and not predicate.is_valid():
-                            logger.error(
-                                f"Detected invalid condition '{link.condition}' "
-                                f"at step '{step.id}' for flow id '{flow.id}'. "
-                                f"Please make sure that all conditions are valid."
+                            structlogger.error(
+                                "validator.verify_predicates.link.invalid_condition",
+                                step=step.id,
+                                link=link.condition,
+                                flow=flow.id,
+                                event_info=(
+                                    f"Detected invalid condition '{link.condition}' "
+                                    f"at step '{step.id}' for flow id '{flow.id}'. "
+                                    f"Please make sure that all conditions are valid."
+                                ),
                             )
                             all_good = False
                 if isinstance(step, CollectInformationFlowStep):
@@ -703,11 +857,17 @@ class Validator:
                             predicate, step.id, context, is_step=True, all_good=all_good
                         )
                         if pred and not pred.is_valid():
-                            logger.error(
-                                f"Detected invalid rejection '{predicate}' "
-                                f"at `collect` step '{step.id}' "
-                                f"for flow id '{flow.id}'. "
-                                f"Please make sure that all conditions are valid."
+                            structlogger.error(
+                                "validator.verify_predicates.invalid_rejection",
+                                step=step.id,
+                                rejection=predicate,
+                                flow=flow.id,
+                                event_info=(
+                                    f"Detected invalid rejection '{predicate}' "
+                                    f"at `collect` step '{step.id}' "
+                                    f"for flow id '{flow.id}'. "
+                                    f"Please make sure that all conditions are valid."
+                                ),
                             )
                             all_good = False
         return all_good
@@ -723,12 +883,18 @@ class Validator:
             for slot in slots:
                 slot_name = slot.split(".")[1]
                 if slot_name not in domain_slots:
-                    logger.error(
-                        f"Detected invalid slot '{slot_name}' "
-                        f"at step '{step_id}' "
-                        f"for flow id '{flow_id}'. "
-                        f"Please make sure that all slots are specified "
-                        f"in the domain file."
+                    structlogger.error(
+                        "validator.verify_namespaces.invalid_slot",
+                        slot=slot_name,
+                        step=step_id,
+                        flow=flow_id,
+                        event_info=(
+                            f"Detected invalid slot '{slot_name}' "
+                            f"at step '{step_id}' "
+                            f"for flow id '{flow_id}'. "
+                            f"Please make sure that all slots are specified "
+                            f"in the domain file."
+                        ),
                     )
                     results.append(False)
 
@@ -736,12 +902,19 @@ class Validator:
             # no slots found, check if context namespace is used
             variables = re.findall(r"\bcontext\.\w+", predicate)
             if not variables:
-                logger.error(
-                    f"Predicate '{predicate}' at step '{step_id}' for flow id "
-                    f"'{flow_id}' references one or more variables  without "
-                    f"the `slots.` or `context.` namespace prefix. "
-                    f"Please make sure that all variables reference the required "
-                    f"namespace."
+                structlogger.error(
+                    "validator.verify_namespaces"
+                    ".referencing_variables_without_namespace",
+                    step=step_id,
+                    predicate=predicate,
+                    flow=flow_id,
+                    event_info=(
+                        f"Predicate '{predicate}' at step '{step_id}' for flow id "
+                        f"'{flow_id}' references one or more variables  without "
+                        f"the `slots.` or `context.` namespace prefix. "
+                        f"Please make sure that all variables reference the required "
+                        f"namespace."
+                    ),
                 )
                 results.append(False)
 
@@ -752,9 +925,12 @@ class Validator:
         structlogger.info("validation.flows.started")
 
         if self.flows.is_empty():
-            logger.warning(
-                "No flows were found in the data files. "
-                "Will not proceed with flow validation.",
+            structlogger.warn(
+                "validator.verify_flows",
+                event_info=(
+                    "No flows were found in the data files. "
+                    "Will not proceed with flow validation."
+                ),
             )
             return True
 
