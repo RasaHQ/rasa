@@ -6,16 +6,10 @@ actions:
 slots:
   remove_contact_name:
     type: text
-    mappings:
-      - type: custom
   remove_contact_handle:
     type: text
-    mappings:
-      - type: custom
   remove_contact_confirmation:
     type: text
-    mappings:
-      - type: custom
 
 responses:
   utter_ask_remove_contact_handle:

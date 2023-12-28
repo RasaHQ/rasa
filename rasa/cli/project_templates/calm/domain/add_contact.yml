@@ -6,16 +6,10 @@ actions:
 slots:
   add_contact_confirmation:
     type: bool
-    mappings:
-      - type: custom
   add_contact_name:
     type: text
-    mappings:
-      - type: custom
   add_contact_handle:
     type: text
-    mappings:
-      - type: custom
 
 responses:
   utter_ask_add_contact_confirmation:
