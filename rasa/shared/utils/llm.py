@@ -217,6 +217,7 @@ def embedder_factory(
     )
 
     type_to_embedding_cls_dict: Dict[str, Type[Embeddings]] = {
+        "azure": OpenAIEmbeddings,
         "openai": OpenAIEmbeddings,
         "cohere": CohereEmbeddings,
         "spacy": SpacyEmbeddings,
