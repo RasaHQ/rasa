@@ -14,6 +14,7 @@ from rasa.shared.core.flows.flow_step_links import IfFlowStepLink
 from rasa.shared.core.flows.steps.set_slots import SetSlotsFlowStep
 from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
 from rasa.shared.core.flows.steps.action import ActionFlowStep
+from rasa.shared.core.flows.steps.link import LinkFlowStep
 from rasa.shared.core.flows import FlowsList
 import rasa.shared.nlu.constants
 from rasa.shared.constants import (
@@ -518,6 +519,8 @@ class Validator:
         """Checks flows steps' references against the domain file."""
         all_good = True
         domain_slots = {slot.name: slot for slot in self.domain.slots}
+        flow_ids = [flow.id for flow in self.flows.underlying_flows]
+
         for flow in self.flows.underlying_flows:
             for step in flow.steps:
                 if isinstance(step, CollectInformationFlowStep):
@@ -563,6 +566,16 @@ class Validator:
                             f"'{step.id}' of flow id '{flow.id}', but it "
                             f"is not listed in the domain file. "
                             f"You should add it to your domain file!",
+                        )
+                        all_good = False
+
+                elif isinstance(step, LinkFlowStep):
+                    if step.link not in flow_ids:
+                        logger.error(
+                            f"The flow '{step.link}' is used in the step "
+                            f"'{step.id}' of flow id '{flow.id}', but it "
+                            f"is not listed in the flows file. "
+                            f"Did you make a typo?",
                         )
                         all_good = False
         return all_good
@@ -758,11 +771,14 @@ class Validator:
             )
             return True
 
-        condition_one = self.verify_flows_steps_against_domain()
-        condition_two = self.verify_unique_flows()
-        condition_three = self.verify_predicates()
+        # add all flow validation conditions here
+        flow_validation_conditions = [
+            self.verify_flows_steps_against_domain(),
+            self.verify_unique_flows(),
+            self.verify_predicates(),
+        ]
 
-        all_good = all([condition_one, condition_two, condition_three])
+        all_good = all(flow_validation_conditions)
 
         structlogger.info("validation.flows.ended")
 

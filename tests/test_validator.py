@@ -1629,3 +1629,28 @@ def test_verify_namespaces_reference_slots_not_in_the_domain(
         "Please make sure that all slots are specified "
         "in the domain file."
     ) in caplog.text
+
+
+def test_verify_flow_id_from_link_step(
+    caplog: LogCaptureFixture,
+) -> None:
+    """Test that verify_flow_id_from_link_step() correctly logs invalid flow id."""
+    flows = flows_from_str(
+        """
+        flows:
+          flow_bar:
+            steps:
+            - id: first
+              link: "non_existent_flow"
+        """
+    )
+    validator = Validator(Domain.empty(), TrainingData(), StoryGraph([]), flows, None)
+    with caplog.at_level(logging.ERROR):
+        assert not validator.verify_flows_steps_against_domain()
+
+    assert (
+        "The flow 'non_existent_flow' is used in the step "
+        "'first' of flow id 'flow_bar', but it "
+        "is not listed in the flows file. "
+        "Did you make a typo?"
+    ) in caplog.text
