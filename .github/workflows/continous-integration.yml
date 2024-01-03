@@ -506,9 +506,9 @@ jobs:
         if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-22.04'
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
         with:
-          name: ${{ matrix.test }}-coverage
+          name: test-flaky-coverage
           path: |
-            ${{ github.workspace }}/${{ matrix.test }}-coverage
+            ${{ github.workspace }}/test-flaky-coverage
 
   integration_test:
     name: Run Non-Sequential Integration Tests
