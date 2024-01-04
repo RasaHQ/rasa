@@ -12,33 +12,24 @@ In order to gather metrics on our system's ability to handle increased loads and
 In each test case we spawned the following number of concurrent users at peak concurrency using a [spawn rate](https://docs.locust.io/en/1.5.0/configuration.html#all-available-configuration-options) of 1000 users per second.
 In our tests we used the Rasa [HTTP-API](https://rasa.com/docs/rasa/pages/http-api) and the [Locust](https://locust.io/) open source load testing tool.
 
+
 |        Users             |               CPU                            |      Memory   |
 |--------------------------|----------------------------------------------|---------------|
 | Up to 50,000             |         6vCPU                                |      16 GB    |
 | Up to 80,000             |         6vCPU, with almost 90% CPU usage     |      16 GB    |
 
-:::info This is the most optimal AWS setup tested on EKS with
-
-ec2: c5.2xlarge - 9.2rps/node throughput
-ec2: c5.4xlarge - 19.5rps/node throughput
-You can always choose a bigger compute efficient instance like c5.4xlarge with more CPU per node to maximize throughput per node
-
-:::
-
-|        AWS               |               RasaPro                        |      Rasa Action Server                   |
-|--------------------------|----------------------------------------------|-------------------------------------------|
-| EC2: C52xlarge           |         3vCPU, 10Gb Memory, 3 Sanic Threads  |      3vCPU, 2Gb Memory, 3 Sanic Threads   |
-| EC2: C54xlarge           |         7vCPU, 16Gb Memory, 7 Sanic Threads  |      7vCPU, 12Gb Memory, 7 Sanic Threads  |
 
 ### Some recommendations to improve latency
-- Running action as a sidecar, saves about ~100ms on average trips from the action server on the concluded tests. Results may vary depending on the number of calls made to the action server.
 - Sanic Workers must be mapped 1:1 to CPU for both Rasa Pro and Rasa Action Server
 - Create `async` actions to avoid any blocking I/O
-- Use KEDA for pre-emptive autoscaling of rasa pods in production based on http requests
 - `enable_selective_domain: true` : Domain is only sent for actions that needs it. This massively trims the payload between the two pods.
-- Consider using c5n.nxlarge machines which are more compute optimized and support better parallelization on http requests.
+- Consider using compute efficient machines on cloud which are optimized for high performance computing such as the C5 instances on AWS.
   However, as they are low on memory, models need to be trained lightweight.
-  Not suitable if you want to run transformers
+
+
+|        Machine                 |               RasaPro                          |      Rasa Action Server                          |
+|--------------------------------|------------------------------------------------|--------------------------------------------------|
+| AWS C5 or Azure F or Gcloud C2 |   3-7vCPU, 10-16Gb Memory, 3-7 Sanic Threads   |    3-7vCPU, 2-12Gb Memory, 3-7 Sanic Threads     |
 
 
 ### Debugging bot related issues while scaling up
