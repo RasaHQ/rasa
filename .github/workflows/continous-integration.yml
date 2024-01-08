@@ -341,7 +341,7 @@ jobs:
         if: needs.changes.outputs.backend == 'true'
         env:
           JOBS: 2
-          PYTHONIOENCODING: "utf-8"
+          PYTHONUTF8: 1
           DD_ENV: ${{ matrix.test }}
           DD_SERVICE: rasa
           DD_ARGS: --ddtrace --ddtrace-patch-all
