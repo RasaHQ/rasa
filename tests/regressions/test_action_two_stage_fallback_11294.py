@@ -2,12 +2,15 @@ import textwrap
 from pathlib import Path
 from typing import Callable
 
+import pytest
+
 import rasa.core.agent
 from rasa.core.channels import UserMessage
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.events import ActionExecuted, ActiveLoop, BotUttered, UserUttered
 
 
+@pytest.mark.timeout(180, func_only=True)
 async def test_action_two_stage_fallback_does_not_return_key_error(
     tmp_path: Path,
     trained_async: Callable,
