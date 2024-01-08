@@ -84,7 +84,7 @@ skips = [ "B104", "B301",]
 [tool.ruff]
 ignore = [ "D100", "D101", "D102", "D103", "D104", "D105", "D107", "RUF001", "RUF002", "RUF003", "RUF005",]
 line-length = 88
-select = [ "D", "E", "F", "W", "RUF", "I",]
+select = [ "D", "E", "F", "W", "RUF",]
 
 [tool.poetry.dependencies]
 python = ">=3.8.1,<3.11"
