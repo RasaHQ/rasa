@@ -4397,35 +4397,34 @@ murmurhash = ">=0.28.0,<1.1.0"
 
 [[package]]
 name = "presidio-analyzer"
-version = "2.2.351"
+version = "2.2.33"
 description = "Presidio analyzer package"
 category = "main"
 optional = false
 python-versions = "*"
 files = [
-    {file = "presidio_analyzer-2.2.351-py3-none-any.whl", hash = "sha256:9e4144ca4a809b084acf273d7e9615182f50e2bd6c195fe83d585fd24b507876"},
+    {file = "presidio_analyzer-2.2.33-py3-none-any.whl", hash = "sha256:1e0d4237f9ac28953e910900b42852927dbf8935de7bf023aebddc752a5bf9ea"},
 ]
 
 [package.dependencies]
-phonenumbers = ">=8.12,<9.0.0"
+phonenumbers = ">=8.12"
 pyyaml = "*"
 regex = "*"
-spacy = ">=3.4.4,<4.0.0"
+spacy = ">=3.4.4"
 tldextract = "*"
 
 [package.extras]
-stanza = ["spacy-stanza", "stanza"]
-transformers = ["spacy-huggingface-pipelines"]
+transformers = ["torch", "transformers"]
 
 [[package]]
 name = "presidio-anonymizer"
-version = "2.2.351"
+version = "2.2.33"
 description = "Persidio Anonymizer package - replaces analyzed text with desired values."
 category = "main"
 optional = false
 python-versions = ">=3.5"
 files = [
-    {file = "presidio_anonymizer-2.2.351-py3-none-any.whl", hash = "sha256:a898c38afcf01ac21aa7558702b8f22e378625854574df0b277c553bb3164f50"},
+    {file = "presidio_anonymizer-2.2.33-py3-none-any.whl", hash = "sha256:d1e7feff5ff2bc0eed13425356bce19e8e5ffda1f733d5d603b282ccfbe742d0"},
 ]
 
 [package.dependencies]
@@ -8264,4 +8263,4 @@ transformers = ["sentencepiece", "transformers"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8.1,<3.11"
-content-hash = "73102347493901a789dc1f207c6faa16a6084172df3844522214cf2e907e04af"
+content-hash = "0a7d141b3c346c458ea7a9bfce6851d94e763ef46b4a25c4205f989ad6b4eb1d"

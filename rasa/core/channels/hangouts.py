@@ -10,7 +10,7 @@ from sanic import Blueprint, response
 from sanic.request import Request
 from typing import Text, List, Dict, Any, Optional, Callable, Iterable, Awaitable, Union
 
-from google.oauth2 import id_token
+from google.oauth2 import id_token  # type: ignore
 from sanic.response import HTTPResponse
 from sanic.exceptions import SanicException
 
