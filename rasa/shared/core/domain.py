@@ -1806,7 +1806,9 @@ class Domain:
         return self.as_dict() == Domain.empty().as_dict()
 
     @staticmethod
-    def is_domain_file(filename: Union[Text, Path]) -> bool:
+    def is_domain_file(
+        filename: Union[Text, Path]
+    ) -> Union[bool, Dict[str, Any], List[Any]]:
         """Checks whether the given file path is a Rasa domain file.
 
         Args:
