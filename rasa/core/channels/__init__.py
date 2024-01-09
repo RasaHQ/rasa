@@ -24,6 +24,9 @@ from rasa.core.channels.twilio import TwilioInput
 from rasa.core.channels.twilio_voice import TwilioVoiceInput
 from rasa.core.channels.webexteams import WebexTeamsInput
 from rasa.core.channels.hangouts import HangoutsInput
+from rasa.core.channels.audiocodes import AudiocodesInput
+from rasa.core.channels.development_inspector import DevelopmentInspectInput
+from rasa.core.channels.vier_cvg import CVGInput
 
 input_channel_classes: List[Type[InputChannel]] = [
     CmdlineInput,
@@ -41,6 +44,9 @@ input_channel_classes: List[Type[InputChannel]] = [
     SocketIOInput,
     WebexTeamsInput,
     HangoutsInput,
+    AudiocodesInput,
+    DevelopmentInspectInput,
+    CVGInput,
 ]
 
 # Mapping from an input channel name to its class to allow name based lookup.
