@@ -6,7 +6,6 @@ from asyncio import CancelledError
 from typing import Dict, List, Optional, Text, Tuple, Union
 from urllib.parse import urlparse
 
-import rasa.core.agent
 import rasa.shared.utils.io
 import requests
 from rasa.core.channels import CollectingOutputChannel, UserMessage
@@ -52,6 +51,8 @@ class E2ETestRunner:
             remote_storage: Remote storage configuration.
             endpoints: Endpoints configuration.
         """
+        import rasa.core.agent
+
         logger.warning(
             "Started running end-to-end testing. "
             "Note that this feature is not intended for use in a "
