@@ -1,0 +1,5 @@
+test_cases:
+  - test_case: "test_goodbye"
+    steps:
+      - user: "goodbye"
+      - bot: "Have a great day"
