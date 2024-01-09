@@ -61,7 +61,6 @@ from rasa.model_training import train, train_nlu
 from rasa.shared.exceptions import RasaException
 import rasa.utils.common
 import rasa.utils.io
-from rasa.utils.licensing import LICENSE_ENV_VAR
 
 # we reuse a bit of pytest's own testing machinery, this should eventually come
 # from a separately installable pytest-cli plugin.
@@ -98,15 +97,6 @@ PATH_PYTEST_MARKER_MAPPINGS = {
     ],
     "category_performance": [Path("tests", "test_memory_leak.py").absolute()],
 }
-
-
-@pytest.fixture(autouse=True)
-def set_rasa_pro_license(monkeypatch: MonkeyPatch) -> None:
-    # Do not reformat this to a multiline string, it will fail JWT validation
-    monkeypatch.setenv(
-        LICENSE_ENV_VAR,
-        "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJkMWZjNTgzMC1lNmE0LTRjMTYtOTU0Mi0wYjlkODM5ZTlkY2YiLCJpYXQiOjE2NzMzNjYwNjIsIm5iZiI6MTY3MzM2NjA2Miwic2NvcGUiOiJyYXNhOnBybyByYXNhOnZvaWNlIiwiZXhwIjozMjUwMzY4MDAwMCwiZW1haWwiOiJhdG9tQHJhc2EuY29tIiwiY29tcGFueSI6ImF0b20ifQ.exONRHyeOJTtvpjaPlwqAXIUIdG2pS5TpL6OilPq02vrSbS3lawyyAK-DOqwMI22DRV_9k9qvy4b3a-jwRRT8NrD75rf8YdacigsxDRCFN6O2ElkLOPB8pFIISHK-StZ2JC48W4z_QEpEyhD3pUBNj7UcMhJ9MXbLRBrGWPdbf0WbVYeb4ZFavyZnfaCafTkczfGfdUrhKO7m7XEHAcVpMJC1x6qGZeQHTGdMkU5v2tCJBvxITHi8H3dcok6cN1GMJnG9Ym-Qp_We55pQnfeFPmO9eW64b9jg0YlP2QZx19ur0NqU0EgefJr4-ZLQoBy6g7Rlh255PR0e192ZWBP0A",
-    )
 
 
 @pytest.fixture(scope="session")

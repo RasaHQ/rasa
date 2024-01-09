@@ -345,6 +345,7 @@ jobs:
           DD_ENV: ${{ matrix.test }}
           DD_SERVICE: rasa
           DD_ARGS: --ddtrace --ddtrace-patch-all
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
         run: |
           make ${{ matrix.test }}
           if [[ "${{ matrix.os }}" != "windows-2019" ]]; then
