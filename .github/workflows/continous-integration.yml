@@ -25,6 +25,7 @@ concurrency:
 #                                 Key can be found at https://sentry.io/settings/rasahq/projects/rasa-open-source/install/python/
 # - SENTRY_AUTH_TOKEN: authentication used to tell Sentry about any new releases
 #                      created at https://sentry.io/settings/account/api/auth-tokens/
+# - RASA_PRO_LICENSE: license key for Rasa Pro. Used to run tests for Rasa Pro.
 
 env:
   # needed to fix issues with boto during testing:
@@ -39,6 +40,7 @@ env:
   # for wait_for_xx jobs
   WAIT_TIMEOUT_SECS: 3000
   WAIT_INTERVAL_SECS: 60
+  RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
 
 jobs:
   changes:
@@ -345,7 +347,6 @@ jobs:
           DD_ENV: ${{ matrix.test }}
           DD_SERVICE: rasa
           DD_ARGS: --ddtrace --ddtrace-patch-all
-          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
         run: |
           make ${{ matrix.test }}
           if [[ "${{ matrix.os }}" != "windows-2019" ]]; then
