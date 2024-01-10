@@ -1,0 +1,12 @@
+recipe: default.v1
+language: en
+pipeline:
+  - name: LLMCommandGenerator
+    llm:
+      model_name: gpt-4
+      request_timeout: 7
+
+policies:
+  - name: rasa.core.policies.flow_policy.FlowPolicy
+
+assistant_id: 20230405-114328-tranquil-mustard

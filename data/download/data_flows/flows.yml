@@ -1,0 +1,106 @@
+flows:
+  replace_eligible_card:
+    description: Never predict StartFlow for this flow, users are not able to trigger it themselves.
+    name: replace eligible card
+    steps:
+      - collect: replacement_reason
+        next:
+          - if: slots.replacement_reason == "lost"
+            then:
+              - collect: was_card_used_fraudulently
+                ask_before_filling: true
+                next:
+                  - if: slots.was_card_used_fraudulently
+                    then:
+                      - action: utter_report_fraud
+                        next: END
+                  - else: start_replacement
+          - if: "slots.replacement_reason == 'damaged'"
+            then: start_replacement
+          - else:
+            - action: utter_unknown_replacement_reason_handover
+              next: END
+      - id: start_replacement
+        action: utter_will_cancel_and_send_new
+      - action: utter_new_card_has_been_ordered
+
+  pattern_continue_interrupted:
+    description: A flow that should will be started to continue an interrupted flow.
+    name: pattern continue interrupted
+
+    steps:
+      - action: utter_flow_continue_interrupted
+
+  pattern_correction:
+    description: Handle a correction of a slot value.
+    name: pattern correction
+    steps:
+      - action: action_correct_flow_slot
+        next:
+          - if: not context.is_reset_only
+            then:
+              - action: utter_corrected_previous_input
+                next: "END"
+          - else: "END"
+
+  pattern_cancel_flow:
+    description: A meta flow that's started when a flow is cancelled.
+    name: pattern_cancel_flow
+
+    steps:
+      - id: "cancel_flow"
+        action: action_cancel_flow
+        next: "inform_user"
+      - id: "inform_user"
+        action: utter_flow_cancelled_rasa
+
+  pattern_internal_error:
+    description: internal error
+    name: pattern internal error
+    steps:
+      - action: utter_internal_error_rasa
+
+  pattern_completed:
+    description: a flow has been completed and there is nothing else to be done
+    name: pattern completed
+    steps:
+      - action: utter_can_do_something_else
+
+  pattern_search:
+    description: handle a knowledge-based question or request
+    name: pattern search
+    steps:
+      - action: utter_no_knowledge_base
+      # - action: action_trigger_search to use doc search policy if present
+
+  pattern_clarification:
+    description: handle clarifications with the user
+    name: pattern clarification
+    steps:
+      - action: action_clarify_flows
+      - action: utter_clarification_options_rasa
+
+  pattern_collect_information:
+    description: flow used to fill a slot
+    name: pattern collect information
+    steps:
+      - id: "start"
+        action: action_run_slot_rejections
+      - action: validate_{{context.collect}}
+        next:
+          - if: "{{context.collect}} is not null"
+            then: "END"
+          - else: "ask_collect"
+      - id: "ask_collect"
+        action: "{{context.utter}}"
+        next: "listen"
+      - id: "listen"
+        action: action_listen
+        next: "start"
+
+  pattern_code_change:
+    description: flow used to clean the stack after a bot update
+    name: pattern code change
+    steps:
+      - action: utter_inform_code_change
+      - action: action_clean_stack

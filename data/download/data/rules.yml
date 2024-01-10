@@ -1,0 +1,44 @@
+version: "3.1"
+
+rules:
+
+- rule: Bye
+  steps:
+  - intent: goodbye
+  - action: utter_goodbye
+
+- rule: Are you a bot
+  steps:
+  - intent: are_u_a_boot
+  - action: utter_i_am_a_bot
+
+- rule: how many stars - successful
+  steps:
+  - intent: how_many_stars
+  - action: action_rasa_stargazers_count
+  - slot_was_set:
+    - stargazers_count: "123"
+  - action: utter_i_have_stars
+
+- rule: how many stars - unsuccessful
+  steps:
+  - intent: how_many_stars
+  - action: action_rasa_stargazers_count
+  - slot_was_set:
+    - stargazers_count: null
+  - action: utter_something_went_wrong
+
+- rule: my name is
+  steps:
+  - intent: inform
+    entities:
+    - first_name: "whatever"
+  - action: utter_hi_first_name
+
+- rule: personal details
+  steps:
+  - intent: start_form
+  - action: personal_details_form
+  - active_loop: personal_details_form
+  - active_loop: null
+  - action: utter_form_completed
