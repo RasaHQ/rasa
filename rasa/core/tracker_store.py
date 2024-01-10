@@ -1349,7 +1349,7 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
                         timestamp=timestamp,
                         intent_name=intent,
                         action_name=action,
-                        data=json.dumps(data),
+                        data=json.dumps(data, ensure_ascii=False),
                     )
                 )
             session.commit()
