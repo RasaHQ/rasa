@@ -10,6 +10,7 @@ import responses
 
 from rasa import telemetry
 import rasa.constants
+from rasa.plugin import plugin_manager
 
 TELEMETRY_TEST_USER = "083642a3e448423ca652134f00e7fc76"  # just some random static id
 TELEMETRY_TEST_KEY = "5640e893c1324090bff26f655456caf3"  # just some random static id
@@ -202,6 +203,14 @@ def test_segment_does_not_raise_exception_on_failure(monkeypatch: MonkeyPatch):
 def test_segment_does_not_get_called_without_license(monkeypatch: MonkeyPatch):
     monkeypatch.setenv("RASA_TELEMETRY_ENABLED", "true")
     monkeypatch.setenv("RASA_TELEMETRY_WRITE_KEY", "foobar")
+
+    def mock_get_license_hash(*args, **kwargs):
+        return None
+
+    monkeypatch.setattr(
+        plugin_manager().hook, "get_license_hash", mock_get_license_hash
+    )
+
     telemetry.initialize_telemetry()
 
     with responses.RequestsMock(assert_all_requests_are_fired=False) as rsps:

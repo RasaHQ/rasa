@@ -780,6 +780,7 @@ jobs:
           make install-full | tee .output
           if grep 'The lock file is not up to date' .output; then exit 1; fi
           make prepare-tests-ubuntu
+          make prepare-spacy
 
       - name: Run kafka and zookeeper containers for integration testing
         if: needs.changes.outputs.backend == 'true'

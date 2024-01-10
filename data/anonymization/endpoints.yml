@@ -1,0 +1,31 @@
+event_broker:
+    type: kafka
+    partition_by_sender: True
+    security_protocol: PLAINTEXT
+    url: localhost
+    anonymization_topics:
+      - name: topic_1
+        anonymization_rules: Rule1
+      - name: topic_2
+        anonymization_rules: Rule2
+    client_id: kafka-python-rasa
+
+
+anonymization:
+  metadata:
+    language: en
+    # if you change the model_name value, you must amend the installation command
+    # in the Run Integration Tests GitHub workflow.
+    model_name: en_core_web_md
+    model_provider: spacy
+  rule_lists:
+    - id: Rule1
+      rules:
+        - entity: PERSON
+          substitution: faker
+        - entity: LOCATION
+          substitution: mask
+    - id: Rule2
+      rules:
+        - entity: CREDIT_CARD
+          substitution: mask

@@ -11,11 +11,6 @@ from rasa.utils.endpoints import EndpointConfig
 
 # import rasa_plus.telemetry
 # import rasa_plus.version
-from rasa.anonymization.anonymization_pipeline import (
-    AnonymizationPipeline,
-    AnonymizationPipelineProvider,
-    load_anonymization_pipeline,
-)
 
 # from rasa_plus.cli import markers
 from rasa.core.auth_retry_tracker_store import AuthRetryTrackerStore
@@ -28,6 +23,7 @@ if TYPE_CHECKING:
     from rasa.core.brokers.broker import EventBroker
     from rasa.core.tracker_store import TrackerStore
     from rasa.shared.core.domain import Domain
+    from rasa.anonymization.anonymization_pipeline import AnonymizationPipeline
 
 hookimpl = pluggy.HookimplMarker("rasa")
 logger = logging.getLogger(__name__)
@@ -105,12 +101,16 @@ def create_tracker_store(
 @hookimpl
 def init_anonymization_pipeline(endpoints_file: Optional[Text]) -> None:
     """Hook implementation for initializing the anonymization pipeline."""
+    from rasa.anonymization.anonymization_pipeline import load_anonymization_pipeline
+
     load_anonymization_pipeline(endpoints_file)
 
 
 @hookimpl
-def get_anonymization_pipeline() -> Optional[AnonymizationPipeline]:
+def get_anonymization_pipeline() -> Optional["AnonymizationPipeline"]:
     """Hook implementation for getting the anonymization pipeline."""
+    from rasa.anonymization.anonymization_pipeline import AnonymizationPipelineProvider
+
     return AnonymizationPipelineProvider().get_anonymization_pipeline()
 
 
@@ -124,6 +124,8 @@ def get_license_hash() -> Optional[Text]:
 @hookimpl
 def after_server_stop() -> None:
     """Hook implementation for stopping the anonymization pipeline."""
+    from rasa.anonymization.anonymization_pipeline import AnonymizationPipelineProvider
+
     anon_pipeline = AnonymizationPipelineProvider().get_anonymization_pipeline()
 
     if anon_pipeline is not None:
