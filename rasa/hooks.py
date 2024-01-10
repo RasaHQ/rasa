@@ -34,7 +34,7 @@ def refine_cli(
     subparsers: SubParsersAction,
     parent_parsers: List[argparse.ArgumentParser],
 ) -> None:
-    from rasa.cli import e2e_test, inspect
+    from rasa.cli import e2e_test, inspect, markers
     from rasa.cli.studio import studio
 
     from rasa.cli import license as license_cli
@@ -43,7 +43,7 @@ def refine_cli(
     e2e_test.add_subparser(subparsers, parent_parsers)
     studio.add_subparser(subparsers, parent_parsers)
     license_cli.add_subparser(subparsers, parent_parsers)
-    # markers.add_subparser(subparsers, parent_parsers)
+    markers.add_subparser(subparsers, parent_parsers)
     inspect.add_subparser(subparsers, parent_parsers)
     return None
 
@@ -78,8 +78,8 @@ def refine_cli(
 # def init_telemetry(endpoints_file: Optional[Text]) -> None:
 #     rasa_plus.telemetry.initialize_telemetry()
 #     rasa_plus.telemetry.identify_endpoint_config_traits(endpoints_file)
-#
-#
+
+
 @hookimpl
 def init_managers(endpoints_file: Optional[Text]) -> None:
     load_secret_manager(endpoints_file)
