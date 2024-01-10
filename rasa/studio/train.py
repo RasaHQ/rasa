@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 from typing import Any, Optional
 
+import rasa.cli.utils
 import rasa.shared.utils.cli
 from rasa.cli.train import (
     _model_for_finetuning,
@@ -64,7 +65,7 @@ def handle_train(args: argparse.Namespace) -> Optional[str]:
     training_files.append(trining_file)
 
     training_result = train_all(
-        domain=domain_file,
+        domain=str(domain_file),
         config=config,
         training_files=args.data,
         output=args.out,

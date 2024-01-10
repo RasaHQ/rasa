@@ -9,6 +9,7 @@ from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
 import rasa.studio.train
 
 
+@pytest.mark.timeout(120, func_only=True)
 @pytest.mark.parametrize(
     "args",
     [
