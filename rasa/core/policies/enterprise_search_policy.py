@@ -12,7 +12,6 @@ from rasa.core.constants import (
     POLICY_PRIORITY,
     SEARCH_POLICY_PRIORITY,
 )
-from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.core.utils import AvailableEndpoints
 from rasa.dialogue_understanding.stack.frames import (
@@ -53,6 +52,7 @@ from rasa.core.information_retrieval.information_retrieval import (
 
 if TYPE_CHECKING:
     from langchain.schema.embeddings import Embeddings
+    from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 
 structlogger = structlog.get_logger()
 
@@ -132,7 +132,7 @@ class EnterpriseSearchPolicy(Policy):
         resource: Resource,
         execution_context: ExecutionContext,
         vector_store: Optional[InformationRetrieval] = None,
-        featurizer: Optional[TrackerFeaturizer] = None,
+        featurizer: Optional["TrackerFeaturizer"] = None,
         prompt_template: Optional[Text] = None,
     ) -> None:
         """Constructs a new Policy object."""

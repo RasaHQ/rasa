@@ -1,7 +1,7 @@
 import importlib.resources
 import math
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Set, Text, Tuple
+from typing import Any, Dict, List, Optional, Set, TYPE_CHECKING, Text, Tuple
 
 import rasa.shared.utils.io
 import structlog
@@ -14,7 +14,6 @@ from rasa.core.constants import (
     CHAT_POLICY_PRIORITY,
     POLICY_PRIORITY,
 )
-from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 from rasa.core.policies.policy import Policy, PolicyPrediction, SupportedData
 from rasa.dialogue_understanding.stack.frames import (
     ChitChatStackFrame,
@@ -64,6 +63,9 @@ from rasa.utils.ml_utils import (
     persist_faiss_vector_store,
     response_for_template,
 )
+
+if TYPE_CHECKING:
+    from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 
 structlogger = structlog.get_logger()
 
@@ -387,7 +389,7 @@ class IntentlessPolicy(Policy):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-        featurizer: Optional[TrackerFeaturizer] = None,
+        featurizer: Optional["TrackerFeaturizer"] = None,
         responses_docsearch: Optional["FAISS"] = None,
         samples_docsearch: Optional["FAISS"] = None,
         prompt_template: Optional[Text] = None,
