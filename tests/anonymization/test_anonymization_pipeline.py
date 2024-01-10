@@ -378,6 +378,9 @@ def test_sync_anonymization_pipeline_log_run_serializable_dict_value(
 
     with caplog.at_level(logging.ERROR):
         anonymized_data = anonymization_pipeline.log_run(data)
-        assert not caplog.text
+
+        # filter out ddtrace logs
+        records = [record for record in caplog.records if "ddtrace" not in record.name]
+        assert not records
 
     assert None not in anonymized_data.values()

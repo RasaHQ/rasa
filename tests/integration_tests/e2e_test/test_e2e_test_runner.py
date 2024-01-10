@@ -11,7 +11,7 @@ from pytest import MonkeyPatch
 from rasa.core.agent import Agent
 from rasa.nlu.persistor import AWSPersistor
 
-from rasa_plus.e2e_test.e2e_test_runner import E2ETestRunner
+from rasa.e2e_test.e2e_test_runner import E2ETestRunner
 
 
 @pytest.fixture
