@@ -1,28 +1,33 @@
 import argparse
+import hashlib
 import logging
-from typing import TYPE_CHECKING, List
+from typing import Optional, TYPE_CHECKING, List, Text, Union
 
 import pluggy
 from rasa.cli import SubParsersAction
 
 # from rasa.cli import x as rasa_x
-# from rasa.utils.endpoints import EndpointConfig
+from rasa.utils.endpoints import EndpointConfig
 
 # import rasa_plus.telemetry
 # import rasa_plus.version
-# from rasa_plus.anonymization.anonymization_pipeline import (
-#     AnonymizationPipeline,
-#     AnonymizationPipelineProvider,
-#     load_anonymization_pipeline,
-# )
+from rasa.anonymization.anonymization_pipeline import (
+    AnonymizationPipeline,
+    AnonymizationPipelineProvider,
+    load_anonymization_pipeline,
+)
+
 # from rasa_plus.cli import markers
-# from rasa_plus.components.auth_retry_tracker_store import AuthRetryTrackerStore
-# from rasa_plus.secrets_manager.factory import load_secret_manager
+from rasa.core.auth_retry_tracker_store import AuthRetryTrackerStore
+from rasa.core.secrets_manager.factory import load_secret_manager
+
 # from rasa_plus.tracing import config
-# from rasa_plus.utils.licensing import retrieve_license_from_env
+from rasa.utils.licensing import retrieve_license_from_env
 
 if TYPE_CHECKING:
-    pass
+    from rasa.core.brokers.broker import EventBroker
+    from rasa.core.tracker_store import TrackerStore
+    from rasa.shared.core.domain import Domain
 
 hookimpl = pluggy.HookimplMarker("rasa")
 logger = logging.getLogger(__name__)
@@ -78,48 +83,48 @@ def refine_cli(
 #     rasa_plus.telemetry.identify_endpoint_config_traits(endpoints_file)
 #
 #
-# @hookimpl  # type: ignore[misc]
-# def init_managers(endpoints_file: Optional[Text]) -> None:
-#     load_secret_manager(endpoints_file)
-#
-#
-# @hookimpl  # type: ignore[misc]
-# def create_tracker_store(
-#     endpoint_config: Union["TrackerStore", "EndpointConfig"],
-#     domain: "Domain",
-#     event_broker: Optional["EventBroker"],
-# ) -> "TrackerStore":
-#
-#     if isinstance(endpoint_config, EndpointConfig):
-#         return AuthRetryTrackerStore(
-#             endpoint_config=endpoint_config, domain=domain, event_broker=event_broker
-#         )
-#     return endpoint_config
-#
-#
-# @hookimpl  # type: ignore[misc]
-# def init_anonymization_pipeline(endpoints_file: Optional[Text]) -> None:
-#     """Hook implementation for initializing the anonymization pipeline."""
-#     load_anonymization_pipeline(endpoints_file)
-#
-#
-# @hookimpl  # type: ignore[misc]
-# def get_anonymization_pipeline() -> Optional[AnonymizationPipeline]:
-#     """Hook implementation for getting the anonymization pipeline."""
-#     return AnonymizationPipelineProvider().get_anonymization_pipeline()
-#
-#
-# @hookimpl  # type: ignore[misc]
-# def get_license_hash() -> Optional[Text]:
-#     """Hook implementation for getting the license hash."""
-#     license_value = retrieve_license_from_env()
-#     return hashlib.sha256(license_value.encode("utf-8")).hexdigest()
-#
-#
-# @hookimpl  # type: ignore[misc]
-# def after_server_stop() -> None:
-#     """Hook implementation for stopping the anonymization pipeline."""
-#     anon_pipeline = AnonymizationPipelineProvider().get_anonymization_pipeline()
-#
-#     if anon_pipeline is not None:
-#         anon_pipeline.stop()
+@hookimpl
+def init_managers(endpoints_file: Optional[Text]) -> None:
+    load_secret_manager(endpoints_file)
+
+
+@hookimpl
+def create_tracker_store(
+    endpoint_config: Union["TrackerStore", "EndpointConfig"],
+    domain: "Domain",
+    event_broker: Optional["EventBroker"],
+) -> "TrackerStore":
+
+    if isinstance(endpoint_config, EndpointConfig):
+        return AuthRetryTrackerStore(
+            endpoint_config=endpoint_config, domain=domain, event_broker=event_broker
+        )
+    return endpoint_config
+
+
+@hookimpl
+def init_anonymization_pipeline(endpoints_file: Optional[Text]) -> None:
+    """Hook implementation for initializing the anonymization pipeline."""
+    load_anonymization_pipeline(endpoints_file)
+
+
+@hookimpl
+def get_anonymization_pipeline() -> Optional[AnonymizationPipeline]:
+    """Hook implementation for getting the anonymization pipeline."""
+    return AnonymizationPipelineProvider().get_anonymization_pipeline()
+
+
+@hookimpl
+def get_license_hash() -> Optional[Text]:
+    """Hook implementation for getting the license hash."""
+    license_value = retrieve_license_from_env()
+    return hashlib.sha256(license_value.encode("utf-8")).hexdigest()
+
+
+@hookimpl
+def after_server_stop() -> None:
+    """Hook implementation for stopping the anonymization pipeline."""
+    anon_pipeline = AnonymizationPipelineProvider().get_anonymization_pipeline()
+
+    if anon_pipeline is not None:
+        anon_pipeline.stop()
