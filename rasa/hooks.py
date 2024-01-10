@@ -34,16 +34,17 @@ def refine_cli(
     subparsers: SubParsersAction,
     parent_parsers: List[argparse.ArgumentParser],
 ) -> None:
-    from rasa.cli import e2e_test
+    from rasa.cli import e2e_test, inspect
+    from rasa.cli.studio import studio
 
-    # from rasa.cli import license as license_cli
+    from rasa.cli import license as license_cli
 
     # telemetry.modify_subparser(subparsers, parent_parsers)
     e2e_test.add_subparser(subparsers, parent_parsers)
-    # studio.add_subparser(subparsers, parent_parsers)
-    # license_cli.add_subparser(subparsers, parent_parsers)
+    studio.add_subparser(subparsers, parent_parsers)
+    license_cli.add_subparser(subparsers, parent_parsers)
     # markers.add_subparser(subparsers, parent_parsers)
-    # inspect.add_subparser(subparsers, parent_parsers)
+    inspect.add_subparser(subparsers, parent_parsers)
     return None
 
 
