@@ -47,12 +47,14 @@ logger = logging.getLogger(__name__)
 class MarkerRegistry:
     """Keeps track of tags that can be used to configure markers."""
 
-    all_tags: Set[Text] = set()
-    condition_tag_to_marker_class: Dict[Text, Type[ConditionMarker]] = {}
-    operator_tag_to_marker_class: Dict[Text, Type[OperatorMarker]] = {}
-    marker_class_to_tag: Dict[Type[Marker], Text] = {}
-    negated_tag_to_tag: Dict[Text, Text] = {}
-    tag_to_negated_tag: Dict[Text, Text] = {}
+    all_tags: Set[Text] = set()  # noqa: RUF012
+    condition_tag_to_marker_class: Dict[
+        Text, Type[ConditionMarker]
+    ] = {}  # noqa: RUF012
+    operator_tag_to_marker_class: Dict[Text, Type[OperatorMarker]] = {}  # noqa: RUF012
+    marker_class_to_tag: Dict[Type[Marker], Text] = {}  # noqa: RUF012
+    negated_tag_to_tag: Dict[Text, Text] = {}  # noqa: RUF012
+    tag_to_negated_tag: Dict[Text, Text] = {}  # noqa: RUF012
 
     @classmethod
     def register_builtin_markers(cls) -> None:
@@ -176,6 +178,7 @@ class Marker(ABC):
                 applies if and only if the non-negated marker does not apply)
             description: an optional description of the marker. It is not used
                 internally but can be used to document the marker.
+
         Raises:
             `InvalidMarkerConfig` if the chosen *name* of the marker is the tag of
             a predefined marker.
@@ -450,7 +453,7 @@ class Marker(ABC):
                     # printed when we run rasa evaluate with --debug flag
                     raise InvalidMarkerConfig(
                         f"Could not load marker {marker_name} from {yaml_file}. "
-                        f"Reason: {str(e)}. "
+                        f"Reason: {e!s}. "
                     )
                 loaded_markers.append(marker)
 
@@ -716,6 +719,7 @@ class OperatorMarker(Marker, ABC):
                 conversion of this marker
             description: an optional description of the marker. It is not used
                 internally but can be used to document the marker.
+
         Raises:
             `InvalidMarkerConfig` if the given number of sub-markers does not match
             the expected number of sub-markers
@@ -829,7 +833,7 @@ class OperatorMarker(Marker, ABC):
                 # printed when we run rasa evaluate with --debug flag
                 raise InvalidMarkerConfig(
                     f"Could not create sub-marker for operator '{tag}' from "
-                    f"{sub_marker_config}. Reason: {str(e)}"
+                    f"{sub_marker_config}. Reason: {e!s}"
                 )
             collected_sub_markers.append(sub_marker)
         try:
@@ -839,7 +843,7 @@ class OperatorMarker(Marker, ABC):
             # printed when we run rasa evaluate with --debug flag
             raise InvalidMarkerConfig(
                 f"Could not create operator '{tag}' with sub-markers "
-                f"{collected_sub_markers}. Reason: {str(e)}"
+                f"{collected_sub_markers}. Reason: {e!s}"
             )
         marker.name = name
         marker.description = description

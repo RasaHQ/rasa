@@ -247,11 +247,10 @@ class EvaluationStore:
         i_pred: int,
         i_target: int,
     ) -> int:
-        """
-        Compare the current predicted and target entities and decide which one
+        """Compare the current predicted and target entities and decide which one
         comes first. If the predicted entity comes first it returns -1,
         while it returns 1 if the target entity comes first.
-        If target and predicted are aligned it returns 0
+        If target and predicted are aligned it returns 0.
         """
         pred = None
         target = None
@@ -363,7 +362,8 @@ class WronglyClassifiedUserUtterance(UserUttered):
     """The NLU model predicted the wrong user utterance.
 
     Mostly used to mark wrong predictions and be able to
-    dump them as stories."""
+    dump them as stories.
+    """
 
     type_name = "wrong_utterance"
 
