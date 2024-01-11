@@ -1,4 +1,4 @@
-FROM rasa/rasa-plus:latest
+FROM python:3.10-slim
 
 COPY action_server /app/action_server
 
