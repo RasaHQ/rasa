@@ -1,4 +1,4 @@
-FROM rasa/rasa:latest
+FROM rasa/rasa:ci
 
 COPY action_server /app/action_server
 
