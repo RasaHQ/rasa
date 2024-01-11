@@ -1,0 +1,21 @@
+version: "3.1"
+nlu:
+  - intent: greet
+    examples: |
+      - hi
+      - hello
+      - how are you
+      - good morning
+      - good evening
+      - hey
+
+  - intent: goodbye
+    examples: |
+      - bye
+      - goodbye
+      - ciao
+
+  - intent: default
+    examples: |
+      - This is a generic message.
+      - This is a default message.

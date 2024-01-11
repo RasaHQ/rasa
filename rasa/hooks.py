@@ -6,17 +6,16 @@ from typing import Optional, TYPE_CHECKING, List, Text, Union
 import pluggy
 from rasa.cli import SubParsersAction
 
-# from rasa.cli import x as rasa_x
+from rasa.cli import x as rasa_x
 from rasa.utils.endpoints import EndpointConfig
 
 # import rasa_plus.telemetry
 # import rasa_plus.version
 
-# from rasa_plus.cli import markers
 from rasa.core.auth_retry_tracker_store import AuthRetryTrackerStore
 from rasa.core.secrets_manager.factory import load_secret_manager
 
-# from rasa_plus.tracing import config
+from rasa.tracing import config
 from rasa.utils.licensing import retrieve_license_from_env
 
 if TYPE_CHECKING:
@@ -54,26 +53,26 @@ def refine_cli(
 #     version = rasa_plus.version.__version__
 #
 #     return name, version
-#
-#
-# @hookimpl  # type: ignore[misc]
-# def configure_commandline(cmdline_arguments: argparse.Namespace) -> Optional[Text]:
-#     endpoints_file = None
-#
-#     if cmdline_arguments.func.__name__ == "rasa_x":
-#         _, endpoints_file = rasa_x._get_credentials_and_endpoints_paths(
-#             cmdline_arguments
-#         )
-#     elif "endpoints" in cmdline_arguments:
-#         endpoints_file = cmdline_arguments.endpoints
-#
-#     if endpoints_file is not None:
-#         tracer_provider = config.get_tracer_provider(endpoints_file)
-#         config.configure_tracing(tracer_provider)
-#
-#     return endpoints_file
-#
-#
+
+
+@hookimpl
+def configure_commandline(cmdline_arguments: argparse.Namespace) -> Optional[Text]:
+    endpoints_file = None
+
+    if cmdline_arguments.func.__name__ == "rasa_x":
+        _, endpoints_file = rasa_x._get_credentials_and_endpoints_paths(
+            cmdline_arguments
+        )
+    elif "endpoints" in cmdline_arguments:
+        endpoints_file = cmdline_arguments.endpoints
+
+    if endpoints_file is not None:
+        tracer_provider = config.get_tracer_provider(endpoints_file)
+        config.configure_tracing(tracer_provider)
+
+    return endpoints_file
+
+
 # @hookimpl  # type: ignore[misc]
 # def init_telemetry(endpoints_file: Optional[Text]) -> None:
 #     rasa_plus.telemetry.initialize_telemetry()

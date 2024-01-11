@@ -6,6 +6,8 @@ import pathlib
 import random
 import re
 import textwrap
+import threading
+import time
 
 import jwt
 import pytest
@@ -955,3 +957,31 @@ def read_license_file(license_file: Text) -> Text:
 @pytest.fixture()
 def valid_license() -> Text:
     return read_license_file("valid_license")
+
+
+def wait(
+    func: Callable,
+    result_available_event: threading.Event,
+    timeout_seconds: int,
+    max_sleep: int = 0,
+    waiting_for: Text = "",
+) -> None:
+    def wait_for_func_to_complete() -> None:
+        i = 0
+        while not func():
+            time.sleep(2**max_sleep)
+            if i < max_sleep:
+                i += 1
+
+        result_available_event.set()
+
+    thread = threading.Thread(target=wait_for_func_to_complete)
+    thread.start()
+
+    not_timed_out = result_available_event.wait(timeout=timeout_seconds)
+    timeout_msg = (
+        f"Timeout of {timeout_seconds} seconds expired waiting for " + waiting_for
+    )
+
+    if not_timed_out is False:
+        raise TimeoutError(timeout_msg)
