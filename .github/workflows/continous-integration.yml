@@ -970,8 +970,8 @@ jobs:
         env:
           GCLOUD_TOKEN: ${{ steps.poetry-auth.outputs.gcloud_access_token }}
         run: |
-          docker buildx use default
-          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl default
+          docker buildx create --name tracing-builder --use
+          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl default --load
 
       - name: Build action server docker container
         run: |
