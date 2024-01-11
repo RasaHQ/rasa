@@ -90,3 +90,5 @@ rasa/keys
 /results/
 # Local Netlify folder
 rasa.code-workspace
+.config
+.keras

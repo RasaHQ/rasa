@@ -4,6 +4,7 @@ JOBS ?= 1
 INTEGRATION_TEST_FOLDER = tests/integration_tests/
 INTEGRATION_TEST_PYTEST_MARKERS ?= "sequential or not sequential"
 PLATFORM ?= "linux/amd64"
+TRACING_INTEGRATION_TEST_FOLDER = tests/integration_tests/tracing
 
 help:
 	@echo "make"
@@ -142,9 +143,9 @@ test-integration:
 	# OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
 	# TF_CPP_MIN_LOG_LEVEL=2 sets C code log level for tensorflow to error suppressing lower log events
 ifeq (,$(wildcard tests_deployment/.env))
-	OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS) -m $(INTEGRATION_TEST_PYTEST_MARKERS) --dist loadgroup
+	OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS) -m $(INTEGRATION_TEST_PYTEST_MARKERS) --dist loadgroup  --ignore $(TRACING_INTEGRATION_TEST_FOLDER)
 else
-	set -o allexport; source tests_deployment/.env && OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS) -m $(INTEGRATION_TEST_PYTEST_MARKERS) --dist loadgroup && set +o allexport
+	set -o allexport; source tests_deployment/.env && OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS) -m $(INTEGRATION_TEST_PYTEST_MARKERS) --dist loadgroup --ignore $(TRACING_INTEGRATION_TEST_FOLDER) && set +o allexport
 endif
 
 test-anonymization: PYTEST_MARKER=category_anonymization and (not flaky) and (not acceptance)
@@ -262,3 +263,17 @@ stop-integration-containers: ## Stop the integration test containers.
 
 tag-release-auto:
 	poetry run python scripts/release.py tag --skip-confirmation
+
+tests_deployment/integration_tests_tracing_deployment/simple_bot/models/model.tar.gz:
+	cd ./tests_deployment/integration_tests_tracing_deployment/simple_bot && poetry run rasa train --fixed-model-name model
+
+train: tests_deployment/integration_tests_tracing_deployment/simple_bot/models/model.tar.gz
+
+run-tracing-integration-containers: train ## Run the tracing integration test containers.
+	docker-compose -f tests_deployment/integration_tests_tracing_deployment/docker-compose.intg.yml up -d
+
+stop-tracing-integration-containers: ## Stop the tracing integration test containers.
+	docker-compose -f tests_deployment/integration_tests_tracing_deployment/docker-compose.intg.yml down
+
+test-tracing-integration:
+	PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python PYTHONPATH=./vendor/jaeger-python-proto poetry run pytest $(TRACING_INTEGRATION_TEST_FOLDER) -n $(JOBS)
