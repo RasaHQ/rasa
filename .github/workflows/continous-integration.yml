@@ -907,7 +907,7 @@ jobs:
     runs-on: ubuntu-22.04
     needs: [ changes, build_docker_base_images_and_set_env ]
     env:
-      IMAGE_TAG: "ci"
+      IMAGE_TAG: ${{ needs.build_docker_base_images_and_set_env.outputs.image_tag }}
       TARGET_IMAGE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-docker"
       BASE_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_image_hash }}
       BASE_MITIE_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_mitie_image_hash }}
@@ -979,9 +979,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@ecf95283f03858871ff00b787d79c419715afc34  # v2.7.0
 
-      - name: Build docker container
-        env:
-          GCLOUD_TOKEN: ${{ steps.poetry-auth.outputs.gcloud_access_token }}
+      - name: Build rasa docker container
         run: |
           docker buildx create --name tracing-builder --use
           docker buildx bake -f docker/docker-bake.hcl default --load
@@ -989,7 +987,7 @@ jobs:
       - name: Build action server docker container
         run: |
           docker buildx use default
-          docker buildx build tests_deployment/integration_tests_tracing_deployment/action_server -t action_server -f tests_deployment/integration_tests_tracing_deployment/action_server/Dockerfile --load
+          docker buildx build tests_deployment/integration_tests_tracing_deployment/action_server -t action_server -f tests_deployment/integration_tests_tracing_deployment/action_server/Dockerfile --build-arg IMAGE_TAG=${{ IMAGE_TAG }} --load
 
       - name: Run docker containers for integration testing
         run: |

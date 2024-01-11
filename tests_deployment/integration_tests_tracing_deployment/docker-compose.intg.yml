@@ -25,7 +25,7 @@ services:
       - "16685:16685"
 
   rasa-pro-jaeger:
-    image: rasa/rasa:ci
+    image: rasa/rasa:${IMAGE_TAG}
     volumes:
       - "./simple_bot:/app"
       - "./endpoints-jaeger.yml:/app/endpoints.yml"
@@ -38,7 +38,7 @@ services:
       <<: *license
 
   rasa-pro-otlp:
-    image: rasa/rasa:ci
+    image: rasa/rasa:${IMAGE_TAG}
     volumes:
       - "./simple_bot:/app"
       - "./endpoints-otlp.yml:/app/endpoints.yml"
@@ -52,7 +52,7 @@ services:
       <<: *license
 
   rasa-pro-jaeger-no-action-server:
-    image: rasa/rasa:ci
+    image: rasa/rasa:${IMAGE_TAG}
     volumes:
       - "./simple_bot:/app"
       - "./endpoints-jaeger-no-action-server.yml:/app/endpoints.yml"
@@ -65,7 +65,7 @@ services:
       <<: *license
 
   rasa-pro-otlp-no-action-server:
-    image: rasa/rasa:ci
+    image: rasa/rasa:${IMAGE_TAG}
     volumes:
       - "./simple_bot:/app"
       - "./endpoints-otlp-no-action-server.yml:/app/endpoints.yml"
@@ -103,13 +103,6 @@ services:
       - "5057:5057"
     environment:
       <<: *license
-
-  redis:
-    image: redis:6
-
-    ports:
-      - 6380:6379
-
 
 
 networks: { rasa-pro-network: { } }

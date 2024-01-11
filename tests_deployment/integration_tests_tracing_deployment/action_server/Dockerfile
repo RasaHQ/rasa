@@ -1,4 +1,6 @@
-FROM rasa/rasa:ci
+ARG IMAGE_TAG
+
+FROM rasa/rasa:${IMAGE_TAG}
 
 COPY action_server /app/action_server
 
