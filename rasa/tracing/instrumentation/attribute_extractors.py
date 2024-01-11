@@ -1,12 +1,11 @@
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Text, Tuple
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Tuple
 
 from rasa.core.agent import Agent
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels import UserMessage
 from rasa.core.lock_store import LOCK_LIFETIME, LockStore
-from rasa.core.policies.flow_policy import FlowPolicy
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import TrackerStore
 from rasa.dialogue_understanding.commands import Command
@@ -21,6 +20,9 @@ from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
+
+if TYPE_CHECKING:
+    from rasa.core.policies.flow_policy import FlowPolicy
 
 # This file contains all attribute extractors for tracing instrumentation.
 # These are functions that are applied to the arguments of the wrapped function to be
@@ -72,7 +74,7 @@ def extract_llm_command_generator_attrs(
 
 
 def extract_flow_policy_attrs(
-    attributes: Dict[str, Any], flow_policy: FlowPolicy
+    attributes: Dict[str, Any], flow_policy: "FlowPolicy"
 ) -> None:
     """Extract more attributes for `GraphNode` type `FlowPolicy`.
 
