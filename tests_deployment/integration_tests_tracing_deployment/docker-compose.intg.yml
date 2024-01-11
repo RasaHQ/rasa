@@ -11,68 +11,68 @@ services:
       - ./otel-collector-config.yml:/etc/otel-collector-config.yml
       - ./certs/cert.pem:/certs/cert.pem
       - ./certs/cert-key.pem:/certs/cert-key.pem
-    networks: [ 'rasa-plus-network' ]
+    networks: [ 'rasa-pro-network' ]
     ports:
       - "4317"
 
   jaeger:
     image: jaegertracing/all-in-one@sha256:2fe77574dc1a9fe4da54c086c0c98feacce3ff87ab9addba933b7fc9b6d8de19
-    networks: [ 'rasa-plus-network' ]
+    networks: [ 'rasa-pro-network' ]
     ports:
       - "16686:16686"
       - "14250"
       - "6831:6831/udp"
       - "16685:16685"
 
-  rasa-plus-jaeger:
-    image: rasa/rasa-plus:latest
+  rasa-pro-jaeger:
+    image: rasa/rasa:latest
     volumes:
       - "./simple_bot:/app"
       - "./endpoints-jaeger.yml:/app/endpoints.yml"
     entrypoint: ""
     command: rasa run -p 5006 --enable-api
-    networks: [ 'rasa-plus-network' ]
+    networks: [ 'rasa-pro-network' ]
     ports:
       - "5006:5006"
     environment:
       <<: *license
 
-  rasa-plus-otlp:
-    image: rasa/rasa-plus:latest
+  rasa-pro-otlp:
+    image: rasa/rasa:latest
     volumes:
       - "./simple_bot:/app"
       - "./endpoints-otlp.yml:/app/endpoints.yml"
       - "./certs/ca.pem:/certs/ca.pem"
     entrypoint: ""
     command: rasa run -p 5007 --enable-api
-    networks: [ 'rasa-plus-network' ]
+    networks: [ 'rasa-pro-network' ]
     ports:
       - "5007:5007"
     environment:
       <<: *license
 
-  rasa-plus-jaeger-no-action-server:
-    image: rasa/rasa-plus:latest
+  rasa-pro-jaeger-no-action-server:
+    image: rasa/rasa:latest
     volumes:
       - "./simple_bot:/app"
       - "./endpoints-jaeger-no-action-server.yml:/app/endpoints.yml"
     entrypoint: ""
     command: rasa run -p 5008 --enable-api
-    networks: [ 'rasa-plus-network' ]
+    networks: [ 'rasa-pro-network' ]
     ports:
       - "5008:5008"
     environment:
       <<: *license
 
-  rasa-plus-otlp-no-action-server:
-    image: rasa/rasa-plus:latest
+  rasa-pro-otlp-no-action-server:
+    image: rasa/rasa:latest
     volumes:
       - "./simple_bot:/app"
       - "./endpoints-otlp-no-action-server.yml:/app/endpoints.yml"
       - "./certs/ca.pem:/certs/ca.pem"
     entrypoint: ""
     command: rasa run -p 5009 --enable-api
-    networks: [ 'rasa-plus-network' ]
+    networks: [ 'rasa-pro-network' ]
     ports:
       - "5009:5009"
     environment:
@@ -82,7 +82,7 @@ services:
     image: action_server:latest
     volumes:
       - "./endpoints-jaeger-for-action-server.yml:/app/endpoints.yml"
-    networks: [ 'rasa-plus-network' ]
+    networks: [ 'rasa-pro-network' ]
     entrypoint: ""
     command: python -m action_server -p 5056
     ports:
@@ -96,7 +96,7 @@ services:
     volumes:
       - "./endpoints-otlp-for-action-server.yml:/app/endpoints.yml"
       - "./certs/ca.pem:/certs/ca.pem"
-    networks: [ 'rasa-plus-network' ]
+    networks: [ 'rasa-pro-network' ]
     entrypoint: ""
     command: python -m action_server -p 5057
     ports:
@@ -112,4 +112,4 @@ services:
 
 
 
-networks: { rasa-plus-network: { } }
+networks: { rasa-pro-network: { } }
