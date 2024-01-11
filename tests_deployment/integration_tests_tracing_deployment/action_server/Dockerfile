@@ -1,6 +1,4 @@
-ARG IMAGE_TAG
-
-FROM rasa/rasa:${IMAGE_TAG}
+FROM python:3.10-slim
 
 COPY action_server /app/action_server
 
