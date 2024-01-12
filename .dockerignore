@@ -4,9 +4,10 @@ docs
 **/*.pyc
 **/__pycache__
 !docker/configs
-rasa/tests
-rasa/scripts
+tests
+scripts
 data/
 examples/
 docker-data/*
 gha-creds-*.json
+**/gha-creds-*.json
