@@ -8,6 +8,8 @@ from langchain.chains import LLMChain
 from langchain.docstore.document import Document
 from langchain.prompts import PromptTemplate
 from langchain.vectorstores import FAISS
+
+from rasa import telemetry
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
@@ -189,17 +191,17 @@ class LLMIntentClassifier(GraphComponent, IntentClassifier):
         )
 
         self.persist()
-        # telemetry.track_llm_intent_train_completed(
-        #     embeddings_type=self.embeddings_property("_type"),
-        #     embeddings_model=self.embeddings_property("model_name")
-        #     or self.embeddings_property("model"),
-        #     llm_type=self.llm_property("_type"),
-        #     llm_model=self.llm_property("model_name") or self.llm_property("model"),
-        #     fallback_intent=self.fallback_intent,
-        #     custom_prompt_template=self.custom_prompt_template(),
-        #     number_of_examples=self.number_of_examples,
-        #     number_of_available_intents=len(self.available_intents),
-        # )
+        telemetry.track_llm_intent_train_completed(
+            embeddings_type=self.embeddings_property("_type"),
+            embeddings_model=self.embeddings_property("model_name")
+            or self.embeddings_property("model"),
+            llm_type=self.llm_property("_type"),
+            llm_model=self.llm_property("model_name") or self.llm_property("model"),
+            fallback_intent=self.fallback_intent,
+            custom_prompt_template=self.custom_prompt_template(),
+            number_of_examples=self.number_of_examples,
+            number_of_available_intents=len(self.available_intents),
+        )
         return self._resource
 
     def process(self, messages: List[Message]) -> List[Message]:

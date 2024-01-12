@@ -9,9 +9,6 @@ from rasa.cli import SubParsersAction
 from rasa.cli import x as rasa_x
 from rasa.utils.endpoints import EndpointConfig
 
-# import rasa_plus.telemetry
-# import rasa_plus.version
-
 from rasa.core.auth_retry_tracker_store import AuthRetryTrackerStore
 from rasa.core.secrets_manager.factory import load_secret_manager
 
@@ -38,21 +35,12 @@ def refine_cli(
 
     from rasa.cli import license as license_cli
 
-    # telemetry.modify_subparser(subparsers, parent_parsers)
     e2e_test.add_subparser(subparsers, parent_parsers)
     studio.add_subparser(subparsers, parent_parsers)
     license_cli.add_subparser(subparsers, parent_parsers)
     markers.add_subparser(subparsers, parent_parsers)
     inspect.add_subparser(subparsers, parent_parsers)
     return None
-
-
-# @hookimpl  # type: ignore[misc]
-# def get_version_info() -> Tuple[Text, Text]:
-#     name = "Rasa Plus Version"
-#     version = rasa_plus.version.__version__
-#
-#     return name, version
 
 
 @hookimpl
@@ -73,10 +61,11 @@ def configure_commandline(cmdline_arguments: argparse.Namespace) -> Optional[Tex
     return endpoints_file
 
 
-# @hookimpl  # type: ignore[misc]
-# def init_telemetry(endpoints_file: Optional[Text]) -> None:
-#     rasa_plus.telemetry.initialize_telemetry()
-#     rasa_plus.telemetry.identify_endpoint_config_traits(endpoints_file)
+@hookimpl
+def init_telemetry(endpoints_file: Optional[Text]) -> None:
+    import rasa.telemetry
+
+    rasa.telemetry.identify_endpoint_config_traits(endpoints_file)
 
 
 @hookimpl

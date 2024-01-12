@@ -2,6 +2,8 @@ from typing import Any, Dict, Optional, Text
 
 import structlog
 from jinja2 import Template
+
+from rasa import telemetry
 from rasa.core.nlg.response import TemplatedNaturalLanguageGenerator
 from rasa.shared.core.domain import KEY_RESPONSES_TEXT, Domain
 from rasa.shared.core.events import BotUttered, UserUttered
@@ -187,12 +189,12 @@ class ContextualResponseRephraser(TemplatedNaturalLanguageGenerator):
             slots=tracker.current_slot_values(),
         )
         structlogger.debug("nlg.rephrase.prompt", prompt=prompt)
-        # telemetry.track_response_rephrase(
-        #     rephrase_all=self.rephrase_all,
-        #     custom_prompt_template=self.custom_prompt_template(prompt_template_text),
-        #     llm_type=self.llm_property("_type"),
-        #     llm_model=self.llm_property("model") or self.llm_property("model_name"),
-        # )
+        telemetry.track_response_rephrase(
+            rephrase_all=self.rephrase_all,
+            custom_prompt_template=self.custom_prompt_template(prompt_template_text),
+            llm_type=self.llm_property("_type"),
+            llm_model=self.llm_property("model") or self.llm_property("model_name"),
+        )
         if not (updated_text := self._generate_llm_response(prompt)):
             # If the LLM fails to generate a response, we
             # return the original response.

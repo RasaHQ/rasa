@@ -59,6 +59,7 @@ excluded_files:
   - "rasa/**/*"
   - "scripts/**/*"
   - "tests/**/*"
+  - "tests_deployment/integration_tests_tracing_deployment/**/*"
 
 # # Any typos we should ignore?
 excluded_words:

@@ -29,7 +29,7 @@ from rasa.e2e_test.e2e_test_result import (
     TestResult,
 )
 
-# from rasa.telemetry import track_e2e_test_run
+from rasa.telemetry import track_e2e_test_run
 
 logger = logging.getLogger(__name__)
 TEST_TURNS_TYPE = Dict[int, Union[TestStep, ActualStepOutput]]
@@ -583,7 +583,7 @@ class E2ETestRunner:
         results = []
 
         # telemetry call for tracking test runs
-        # track_e2e_test_run(input_test_cases, input_fixtures)
+        track_e2e_test_run(input_test_cases, input_fixtures)
 
         for test_case in input_test_cases:
             collector = CollectingOutputChannel()

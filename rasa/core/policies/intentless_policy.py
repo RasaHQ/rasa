@@ -10,6 +10,8 @@ from jinja2 import Template
 from langchain.docstore.document import Document
 from langchain.schema.embeddings import Embeddings
 from langchain.vectorstores import FAISS
+
+from rasa import telemetry
 from rasa.core.constants import (
     CHAT_POLICY_PRIORITY,
     POLICY_PRIORITY,
@@ -455,7 +457,7 @@ class IntentlessPolicy(Policy):
             can load the policy from the resource.
         """
         responses = filter_responses(responses, forms, flows or FlowsList([]))
-        # telemetry.track_intentless_policy_train()
+        telemetry.track_intentless_policy_train()
         response_texts = [r for r in extract_ai_response_examples(responses.data)]
 
         selected_trackers = [
@@ -495,13 +497,13 @@ class IntentlessPolicy(Policy):
             )
 
         structlogger.info("intentless_policy.training.completed")
-        # telemetry.track_intentless_policy_train_completed(
-        #     embeddings_type=self.embeddings_property("_type"),
-        #     embeddings_model=self.embeddings_property("model")
-        #     or self.embeddings_property("model_name"),
-        #     llm_type=self.llm_property("_type"),
-        #     llm_model=self.llm_property("model") or self.llm_property("model_name"),
-        # )
+        telemetry.track_intentless_policy_train_completed(
+            embeddings_type=self.embeddings_property("_type"),
+            embeddings_model=self.embeddings_property("model")
+            or self.embeddings_property("model_name"),
+            llm_type=self.llm_property("_type"),
+            llm_model=self.llm_property("model") or self.llm_property("model_name"),
+        )
 
         self.persist()
         return self._resource
@@ -571,14 +573,14 @@ class IntentlessPolicy(Policy):
             score=score,
         )
 
-        # telemetry.track_intentless_policy_predict(
-        #     embeddings_type=self.embeddings_property("_type"),
-        #     embeddings_model=self.embeddings_property("model")
-        #     or self.embeddings_property("model_name"),
-        #     llm_type=self.llm_property("_type"),
-        #     llm_model=self.llm_property("model") or self.llm_property("model_name"),
-        #     score=score,
-        # )
+        telemetry.track_intentless_policy_predict(
+            embeddings_type=self.embeddings_property("_type"),
+            embeddings_model=self.embeddings_property("model")
+            or self.embeddings_property("model_name"),
+            llm_type=self.llm_property("_type"),
+            llm_model=self.llm_property("model") or self.llm_property("model_name"),
+            score=score,
+        )
 
         result = self._prediction_result(predicted_action_name, domain, score)
 
