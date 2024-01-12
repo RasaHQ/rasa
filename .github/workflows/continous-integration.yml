@@ -987,7 +987,7 @@ jobs:
       - name: Build action server docker container
         run: |
           docker buildx use default
-          docker buildx build tests_deployment/integration_tests_tracing_deployment/action_server -t action_server -f tests_deployment/integration_tests_tracing_deployment/action_server/Dockerfile --build-arg TARGET_IMAGE_REGISTRY=$TARGET_IMAGE_REGISTRY --build-arg IMAGE_TAG=$IMAGE_TAG  --load
+          docker buildx build tests_deployment/integration_tests_tracing_deployment/action_server -t action_server:latest -f tests_deployment/integration_tests_tracing_deployment/action_server/Dockerfile --build-arg TARGET_IMAGE_REGISTRY=$TARGET_IMAGE_REGISTRY --build-arg IMAGE_TAG=$IMAGE_TAG  --load
 
       - name: Run docker containers for integration testing
         run: |
