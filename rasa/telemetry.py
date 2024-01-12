@@ -1478,7 +1478,9 @@ def identify_endpoint_config_traits(
     Otherwise, sets traits to None.
     """
     import rasa.utils.endpoints
-    from rasa.anonymization.anonymisation_rule_yaml_reader import KEY_ANONYMIZATION_RULES
+    from rasa.anonymization.anonymisation_rule_yaml_reader import (
+        KEY_ANONYMIZATION_RULES,
+    )
     from rasa.tracing.config import ENDPOINTS_TRACING_KEY
 
     traits = {}
