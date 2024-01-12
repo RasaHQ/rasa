@@ -1,4 +1,7 @@
-FROM python:3.10-slim
+ARG IMAGE_TAG
+ARG TARGET_IMAGE_REGISTRY
+
+FROM ${TARGET_IMAGE_REGISTRY}/rasa:${IMAGE_TAG}
 
 COPY action_server /app/action_server
 
