@@ -79,7 +79,7 @@ services:
       <<: *license
 
   action-server-jaeger:
-    image: action_server:latest
+    image: ${TARGET_IMAGE_REGISTRY}/action_server:latest
     volumes:
       - "./endpoints-jaeger-for-action-server.yml:/app/endpoints.yml"
     networks: [ 'rasa-pro-network' ]
@@ -92,7 +92,7 @@ services:
 
 
   action-server-otlp:
-    image: action_server:latest
+    image: ${TARGET_IMAGE_REGISTRY}/action_server:latest
     volumes:
       - "./endpoints-otlp-for-action-server.yml:/app/endpoints.yml"
       - "./certs/ca.pem:/certs/ca.pem"
