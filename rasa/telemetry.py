@@ -24,7 +24,6 @@ from terminaltables import SingleTable
 import rasa
 import rasa.anonymization.utils
 from rasa import model
-from rasa.anonymization.anonymisation_rule_yaml_reader import KEY_ANONYMIZATION_RULES
 from rasa.constants import (
     CONFIG_FILE_TELEMETRY_KEY,
     CONFIG_TELEMETRY_DATE,
@@ -1479,6 +1478,7 @@ def identify_endpoint_config_traits(
     Otherwise, sets traits to None.
     """
     import rasa.utils.endpoints
+    from rasa.anonymization.anonymisation_rule_yaml_reader import KEY_ANONYMIZATION_RULES
     from rasa.tracing.config import ENDPOINTS_TRACING_KEY
 
     traits = {}
