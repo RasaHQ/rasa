@@ -33,6 +33,6 @@ if __name__ == "__main__":
     cmdline_args = arg_parser.parse_args()
     configure_tracing(cmdline_args.endpoints)
 
-    from action_server.run import run_app
+    from .run import run_app
 
     run_app(cmdline_args.port)

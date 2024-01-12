@@ -4,7 +4,7 @@ from typing import Text
 
 from opentelemetry import trace
 
-from rasa_plus.tracing.config import get_tracer_provider
+from rasa.tracing.config import get_tracer_provider
 
 logger = logging.getLogger(__name__)
 
