@@ -2,7 +2,7 @@
 
 JOBS ?= 1
 INTEGRATION_TEST_FOLDER = tests/integration_tests/
-INTEGRATION_TEST_PYTEST_MARKERS ?= "sequential or not sequential"
+INTEGRATION_TEST_PYTEST_MARKERS ?= "sequential or broker or concurrent_lock_store or ((not sequential) and (not broker) and (not concurrent_lock_store))"
 PLATFORM ?= "linux/amd64"
 TRACING_INTEGRATION_TEST_FOLDER = tests/integration_tests/tracing
 

@@ -5,6 +5,7 @@ import os
 import pathlib
 import random
 import re
+import shutil
 import textwrap
 import threading
 import time
@@ -16,8 +17,9 @@ import uuid
 
 from pytest import TempdirFactory, MonkeyPatch, Function, TempPathFactory
 from spacy import Language
-from pytest import WarningsRecorder
+from pytest import WarningsRecorder, Pytester, RunResult
 
+from rasa.cli import scaffold
 from rasa.engine.caching import LocalTrainingCache
 from rasa.engine.graph import ExecutionContext, GraphSchema
 from rasa.engine.storage.local_model_storage import LocalModelStorage
@@ -985,3 +987,37 @@ def wait(
 
     if not_timed_out is False:
         raise TimeoutError(timeout_msg)
+
+
+def create_simple_project(path: Path):
+    scaffold.create_initial_project(str(path))
+
+    # create a config file
+    # for the cli test the resulting model is not important, use components that are
+    # fast to train
+    rasa.shared.utils.io.write_yaml(
+        {
+            "assistant_id": "placeholder_default",
+            "language": "en",
+            "pipeline": [{"name": "KeywordIntentClassifier"}],
+            "policies": [
+                # {"name": "RulePolicy"},
+                {"name": "MemoizationPolicy", "max_history": 3},
+            ],
+        },
+        path / "config.yml",
+    )
+    return path
+
+
+@pytest.fixture
+def run_in_simple_project(pytester: Pytester) -> Callable[..., RunResult]:
+    os.environ["LOG_LEVEL"] = "DEBUG"
+
+    create_simple_project(pytester.path)
+
+    def do_run(*args):
+        args = [shutil.which("rasa")] + list(args)
+        return pytester.run(*args)
+
+    return do_run

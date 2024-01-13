@@ -13,6 +13,7 @@ from _pytest.pytester import RunResult
 
 from rasa.cli import scaffold
 from rasa.shared.utils.io import write_yaml
+from tests.conftest import create_simple_project
 
 RASA_EXE = os.environ.get("RASA_EXECUTABLE", "rasa")
 
@@ -37,27 +38,6 @@ def run_with_stdin(testdir: Testdir) -> Callable[..., RunResult]:
         return testdir.run(*args, stdin=stdin)
 
     return do_run
-
-
-def create_simple_project(path: Path):
-    scaffold.create_initial_project(str(path))
-
-    # create a config file
-    # for the cli test the resulting model is not important, use components that are
-    # fast to train
-    write_yaml(
-        {
-            "assistant_id": "placeholder_default",
-            "language": "en",
-            "pipeline": [{"name": "KeywordIntentClassifier"}],
-            "policies": [
-                {"name": "RulePolicy"},
-                {"name": "MemoizationPolicy", "max_history": 3},
-            ],
-        },
-        path / "config.yml",
-    )
-    return path
 
 
 def create_simple_project_with_missing_assistant_id(path: Path):
@@ -87,19 +67,6 @@ def trained_simple_project(tmpdir_factory: TempdirFactory) -> Text:
     check_call([shutil.which(RASA_EXE), "train"], cwd=path.strpath)
 
     return path.strpath
-
-
-@pytest.fixture
-def run_in_simple_project(testdir: Testdir) -> Callable[..., RunResult]:
-    os.environ["LOG_LEVEL"] = "DEBUG"
-
-    create_simple_project(testdir.tmpdir)
-
-    def do_run(*args):
-        args = [shutil.which(RASA_EXE)] + list(args)
-        return testdir.run(*args)
-
-    return do_run
 
 
 @pytest.fixture

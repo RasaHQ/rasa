@@ -65,6 +65,7 @@ async def handle_message(
     return await agent.mocked_handle_message(message)
 
 
+@pytest.mark.concurrent_lock_store
 async def test_concurrent_message_handling(
     tmp_path: Path,
     concurrent_redis_lock_store: ConcurrentRedisLockStore,
@@ -95,6 +96,7 @@ async def test_concurrent_message_handling(
         assert results_order == expected_order
 
 
+@pytest.mark.concurrent_lock_store
 def test_create_concurrent_lock_store(
     concurrent_redis_lock_store: ConcurrentRedisLockStore,
 ) -> None:
@@ -107,6 +109,7 @@ def test_create_concurrent_lock_store(
     assert lock.conversation_id == conversation_id
 
 
+@pytest.mark.concurrent_lock_store
 def test_concurrent_serve_ticket(
     concurrent_redis_lock_store: ConcurrentRedisLockStore,
 ) -> None:
@@ -145,6 +148,7 @@ def test_concurrent_serve_ticket(
 
 
 # noinspection PyProtectedMember
+@pytest.mark.concurrent_lock_store
 def test_concurrent_lock_expiration(
     concurrent_redis_lock_store: ConcurrentRedisLockStore,
 ) -> None:
@@ -171,6 +175,7 @@ def test_concurrent_lock_expiration(
     assert ticket_three == initial_ticket_number + 2
 
 
+@pytest.mark.concurrent_lock_store
 def test_concurrent_get_lock(
     concurrent_redis_lock_store: ConcurrentRedisLockStore,
 ) -> None:
@@ -193,6 +198,7 @@ def test_concurrent_get_lock(
         assert lock.tickets[i].number == i + 1
 
 
+@pytest.mark.concurrent_lock_store
 def test_concurrent_delete_lock_success(
     concurrent_redis_lock_store: ConcurrentRedisLockStore,
     caplog: LogCaptureFixture,
@@ -213,6 +219,7 @@ def test_concurrent_delete_lock_success(
     assert len(lock.tickets) == 0
 
 
+@pytest.mark.concurrent_lock_store
 def test_concurrent_delete_lock_no_keys(
     concurrent_redis_lock_store: ConcurrentRedisLockStore,
     caplog: LogCaptureFixture,
@@ -228,6 +235,7 @@ def test_concurrent_delete_lock_no_keys(
     )
 
 
+@pytest.mark.concurrent_lock_store
 def test_concurrent_increment_ticket_number_and_save_lock(
     concurrent_redis_lock_store: ConcurrentRedisLockStore,
 ) -> None:
@@ -262,6 +270,7 @@ def test_concurrent_increment_ticket_number_and_save_lock(
         assert retrieved_lock.tickets[j].expires
 
 
+@pytest.mark.concurrent_lock_store
 def test_concurrent_finish_serving(
     concurrent_redis_lock_store: ConcurrentRedisLockStore,
 ) -> None:
