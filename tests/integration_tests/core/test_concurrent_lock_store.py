@@ -19,13 +19,13 @@ from rasa.core.concurrent_lock_store import (
 )
 
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
-REDIS_PORT = os.getenv("REDIS_PORT", 6380)
+REDIS_PORT = os.getenv("REDIS_PORT", 6379)
 
 
 @pytest.fixture
 def concurrent_redis_lock_store() -> Iterator[ConcurrentRedisLockStore]:
     # we need one redis database per worker, otherwise
-    # tests conflicts with each others when databases are flushed
+    # tests conflict with each others when databases are flushed
     pytest_worker_id = os.getenv("PYTEST_XDIST_WORKER", "gw0")
     redis_database = int(pytest_worker_id.replace("gw", ""))
     lock_store = ConcurrentRedisLockStore(

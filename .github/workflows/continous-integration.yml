@@ -787,7 +787,7 @@ jobs:
         if: needs.changes.outputs.backend == 'true'
         env:
           JOBS: 2
-          INTEGRATION_TEST_PYTEST_MARKERS: '"not sequential"'
+          INTEGRATION_TEST_PYTEST_MARKERS: '"(not sequential) and (not broker) and (not concurrent_lock_store)"'
           PYTHONIOENCODING: "utf-8"
         run: |
           make test-integration
@@ -997,7 +997,7 @@ jobs:
     needs: [changes]
     env:
       REDIS_HOST: localhost
-      REDIS_PORT: 6380
+      REDIS_PORT: 6379
 
     services:
       redis:
@@ -1011,7 +1011,7 @@ jobs:
         ports:
           # FIXME: cannot use ${{ env.REDIS_PORT }} here
           # mapping container ports to the host
-          - 6380:6380
+          - 6379:6379
 
     steps:
       - name: Checkout git repository 🕝
