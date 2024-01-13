@@ -701,21 +701,7 @@ def get_telemetry_id() -> Optional[Text]:
     Returns:
         The identifier, if it is configured correctly.
     """
-    license_property = property_of_active_license(
-        lambda active_license: active_license.jti
-    )
-    if license_property:
-        return license_property
-
-    try:
-        telemetry_config = (
-            rasa_utils.read_global_config_value(CONFIG_FILE_TELEMETRY_KEY) or {}
-        )
-
-        return telemetry_config.get(CONFIG_TELEMETRY_ID)
-    except Exception as e:  # skipcq:PYL-W0703
-        logger.debug(f"Unable to retrieve telemetry ID: {e}")
-        return None
+    return property_of_active_license(lambda active_license: active_license.jti)
 
 
 def toggle_telemetry_reporting(is_enabled: bool) -> None:

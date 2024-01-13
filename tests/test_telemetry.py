@@ -226,6 +226,11 @@ def test_segment_does_not_get_called_without_license(monkeypatch: MonkeyPatch):
         rasa.telemetry.plugin_manager().hook, "get_license_hash", mock_get_license_hash
     )
 
+    mock_license_property = MagicMock(return_value=None)
+    monkeypatch.setattr(
+        rasa.telemetry, "property_of_active_license", mock_license_property
+    )
+
     telemetry.initialize_telemetry()
 
     with responses.RequestsMock(assert_all_requests_are_fired=False) as rsps:
