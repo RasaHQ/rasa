@@ -36,6 +36,7 @@ env:
   DOCKERHUB_USERNAME: tmbo
   DEFAULT_PYTHON_VERSION: "3.10"
   TARGET_IMAGE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-docker"
+  NODE_VERSION_INSPECTOR_BUILD: 16
 
   # for wait_for_xx jobs
   WAIT_TIMEOUT_SECS: 3000
@@ -205,6 +206,54 @@ jobs:
           echo "$UNEXPECTED_FILES" && \
           exit 1 || \
           echo "Release includes all changelog entries."
+
+  inspector_build:
+    name: Check Inspector Build
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        shell: bash
+        working-directory: rasa/core/channels/inspector
+
+    steps:
+    - name: Checkout git repository 🕝
+      uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab
+
+    - name: Set up Node.js
+      uses: actions/setup-node@8c91899e586c5b171469028077307d293428b516 #v3.5.1
+      with:
+        node-version: ${{ env.NODE_VERSION_INSPECTOR_BUILD }}
+
+    - name: Cache node modules
+      uses: actions/cache@9b0c1fce7a93df8e3bb8926b0d6e9d89e92f20a7 #v3.0.11
+      id: yarn-cache
+      with:
+        path: "**/inspector/node_modules"
+        key: ${{ runner.os }}-modules-${{ hashFiles('**/inspector/yarn.lock') }}
+
+    - name: Install dependencies
+      if: steps.yarn-cache.outputs.cache-hit != 'true'
+      run: |
+        yarn install --frozen-lockfile
+
+    - name: Build Inspector
+      run: |
+        yarn build
+
+    - name: Store build output
+      uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3.1.3
+      with:
+        name: inspector-build
+        path: rasa/core/channels/inspector/dist
+
+    - name: Compare build output
+      run: |
+        if git diff --quiet -- dist; then
+          echo "No changes in the Inspector build output."
+        else
+          echo "Detected changes in the Inspector build output. Please build the Inspector and commit the contents of rasa/core/channels/inspector/dist/ ."
+          exit 1
+        fi
 
   test:
     name: Run Tests
@@ -1495,7 +1544,7 @@ jobs:
           fi
 
           LATEST_TAG=$(echo $RELEASE_TAG | sed 's/'$IMAGE_TAG'/latest/g')
-          
+
           # This will not build the image from ground up, but will only tag the existing image with LATEST_TAG
           IMAGE_TAG=${LATEST_TAG} docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }}
           # Push tagged image
@@ -1608,4 +1657,3 @@ jobs:
         uses: Ilshidur/action-slack@689ad44a9c9092315abd286d0e3a9a74d31ab78a
         with:
           args: "⛔️ *Rasa Private* version `${{ github.ref_name }}` could not be released 😱! Please check out GitHub Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-            
