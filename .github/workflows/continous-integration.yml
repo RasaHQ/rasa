@@ -283,7 +283,7 @@ jobs:
         run: poetry config virtualenvs.in-project true
 
       - name: Install Dependencies (Linux) 📦
-        if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-22.04'
+        if: needs.changes.outputs.backend == 'true'
         # Poetry intermittently fails to install dependency if it is not PEP 517 compliant
         # This is a workaround for that issue
         run: |
@@ -293,7 +293,7 @@ jobs:
           make prepare-tests-ubuntu
 
       - name: Add github workflow problem matchers
-        if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.7 && matrix.os == 'ubuntu-22.04'
+        if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.7
         # only annotate based on test runs on ubuntu: otherwise
         # all errors will be duplicated for each python / os combination
         # therefore, we only enable for the one where most tests are run
@@ -301,7 +301,7 @@ jobs:
         run: pip install pytest-github-actions-annotate-failures
 
       - name: Install ddtrace on Linux
-        if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-22.04'
+        if: needs.changes.outputs.backend == 'true'
         run: poetry run pip install -U 'ddtrace<2.0.0'
 
       - name: Test Code 🔍 (multi-process)
@@ -318,7 +318,7 @@ jobs:
         shell: bash # bash shell is a way to make code run for both Linux and Windows
 
       - name: Store coverage reports
-        if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-22.04'
+        if: needs.changes.outputs.backend == 'true'
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
         with:
           name: ${{ matrix.test }}-coverage
@@ -393,7 +393,7 @@ jobs:
         run: poetry config virtualenvs.in-project true
 
       - name: Install Dependencies (Linux) 📦
-        if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-22.04'
+        if: needs.changes.outputs.backend == 'true'
         # Poetry intermittently fails to install dependency if it is not PEP 517 compliant
         # This is a workaround for that issue
         run: |
@@ -408,7 +408,7 @@ jobs:
           poetry run python -m pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.5.0/en_core_web_lg-3.5.0-py3-none-any.whl
 
       - name: Add github workflow problem matchers
-        if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.7 && matrix.os == 'ubuntu-22.04'
+        if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.7
         # only annotate based on test runs on ubuntu: otherwise
         # all errors will be duplicated for each python / os combination
         # therefore, we only enable for the one where most tests are run
@@ -416,7 +416,7 @@ jobs:
         run: pip install pytest-github-actions-annotate-failures
 
       - name: Install ddtrace on Linux
-        if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-22.04'
+        if: needs.changes.outputs.backend == 'true'
         run: poetry run pip install -U 'ddtrace<2.0.0'
 
       - name: Test Code 🔍 (multi-process)
@@ -432,7 +432,7 @@ jobs:
         shell: bash # bash shell is a way to make code run for both Linux and Windows
 
       - name: Store coverage reports
-        if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-22.04'
+        if: needs.changes.outputs.backend == 'true'
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
         with:
           name: ${{ matrix.test }}-coverage
@@ -507,7 +507,7 @@ jobs:
         run: poetry config virtualenvs.in-project true
 
       - name: Install Dependencies (Linux) 📦
-        if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-22.04'
+        if: needs.changes.outputs.backend == 'true'
         run: |
           sudo apt-get -y install libpq-dev
           make install-full | tee .output
@@ -515,7 +515,7 @@ jobs:
           make prepare-tests-ubuntu
 
       - name: Add github workflow problem matchers
-        if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.7 && matrix.os == 'ubuntu-22.04'
+        if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.7
         # only annotate based on test runs on ubuntu: otherwise
         # all errors will be duplicated for each python / os combination
         # therefore, we only enable for the one where most tests are run
@@ -523,7 +523,7 @@ jobs:
         run: pip install pytest-github-actions-annotate-failures
 
       - name: Install ddtrace on Linux
-        if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-22.04'
+        if: needs.changes.outputs.backend == 'true'
         run: poetry run pip install -U 'ddtrace<2.0.0'
 
       - name: Test Code 🔍 (multi-process)
@@ -540,7 +540,7 @@ jobs:
         shell: bash # bash shell is a way to make code run for both Linux and Windows
 
       - name: Store coverage reports
-        if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-22.04'
+        if: needs.changes.outputs.backend == 'true'
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
         with:
           name: ${{ matrix.test }}-coverage
