@@ -1,3 +1,4 @@
+import textwrap
 from pathlib import Path
 from typing import Dict, Text
 import pytest
@@ -151,3 +152,10 @@ def test_directories_are_equal_different_file_content_sub_dir(
     (dir2 / "dir" / "file.txt").write_text("Bye!")
 
     assert not rasa.utils.io.are_directories_equal(dir1, dir2)
+
+
+def test_write_yaml(tmp_path: Path) -> None:
+    test_file = tmp_path / "test.yaml"
+    test_data = [{"a": 1}, {"b": 2}]
+    rasa.utils.io.write_yaml(test_data, test_file)
+    assert test_file.read_text() == textwrap.dedent("- a: 1\n" "- b: 2\n")

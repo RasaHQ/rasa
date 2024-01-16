@@ -1,0 +1,81 @@
+version: "3.1"
+
+nlu:
+- intent: greet
+  examples: |
+    - hey
+    - hello
+    - hi
+    - hello there
+    - good morning
+    - good evening
+    - moin
+    - hey there
+    - let's go
+    - hey dude
+    - goodmorning
+    - goodevening
+    - good afternoon
+
+- intent: goodbye
+  examples: |
+    - cu
+    - good by
+    - cee you later
+    - good night
+    - bye
+    - goodbye
+    - have a nice day
+    - see you around
+    - bye bye
+    - see you later
+
+- intent: are_u_a_boot
+  examples: |
+    - are you a bot?
+    - you a robot?
+    - are you a machine?
+    - is this live chat?
+
+- intent: feel_sad
+  examples: |
+    - sad.
+    - not well
+    - so so
+    - I feel bad.
+
+- intent: feel_great
+  examples: |
+    - I feel good.
+    - great.
+    - good.
+    - im fine.
+
+- intent: how_many_stars
+  examples: |
+    - How many stars do you have?
+    - github stars?
+    - how many stargazers?
+
+- intent: inform
+  examples: |
+    - my name is [Uros](first_name)
+    - I'm [John](first_name)
+    - Hi, my first name is [Luis](first_name)
+    - Milica
+    - Karin
+    - Steven
+    - I'm [18](age)
+    - I am [32](age) years old
+    - 9(age)
+  
+- intent: start_form
+  examples: |
+    - start
+    - start form
+  
+- intent: bird
+  examples: |
+    - bird one
+    - lasta
+    - eagle

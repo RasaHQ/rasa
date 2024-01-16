@@ -1,0 +1,6 @@
+tracing:
+  type: jaeger
+  host: jaeger
+  port: 6831
+  service_name: action-server-jaeger-testing
+  sync_export: ~

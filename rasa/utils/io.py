@@ -7,8 +7,23 @@ import tempfile
 import warnings
 import re
 from asyncio import AbstractEventLoop
+from collections import OrderedDict
+from io import StringIO
 from pathlib import Path
-from typing import Text, Any, Union, List, Type, Callable, TYPE_CHECKING, Pattern
+from typing import (
+    Optional,
+    Text,
+    Any,
+    Union,
+    List,
+    Type,
+    Callable,
+    TYPE_CHECKING,
+    Pattern,
+)
+
+from ruamel import yaml
+from ruamel.yaml import RoundTripRepresenter
 from typing_extensions import Protocol
 
 import rasa.shared.constants
@@ -16,6 +31,8 @@ import rasa.shared.utils.io
 
 if TYPE_CHECKING:
     from prompt_toolkit.validation import Validator
+
+YAML_LINE_MAX_WIDTH = 4096
 
 
 class WriteRow(Protocol):
@@ -266,3 +283,44 @@ def are_directories_equal(dir1: Path, dir2: Path) -> bool:
             return False
 
     return True
+
+
+def write_yaml(
+    data: Any,
+    target: Union[Text, Path, StringIO],
+    transform: Optional[Callable] = None,
+    should_preserve_key_order: bool = False,
+) -> None:
+    """Writes a yaml to the file or to the stream.
+
+    Args:
+        data: The data to write.
+        target: The path to the file which should be written or a stream object
+        transform: A function to transform the data before writing it.
+        should_preserve_key_order: Whether to force preserve key order in `data`.
+    """
+    yaml.add_representer(
+        OrderedDict,
+        RoundTripRepresenter.represent_dict,
+        representer=RoundTripRepresenter,
+    )
+
+    if should_preserve_key_order:
+        data = rasa.shared.utils.io.convert_to_ordered_dict(data)
+
+    dumper = yaml.YAML()
+    # no wrap lines
+    dumper.width = YAML_LINE_MAX_WIDTH  # type: ignore
+
+    # use `null` to represent `None`
+    dumper.representer.add_representer(
+        type(None),
+        lambda self, _: self.represent_scalar("tag:yaml.org,2002:null", "null"),
+    )
+
+    if isinstance(target, StringIO):
+        dumper.dump(data, target, transform=transform)
+        return
+
+    with Path(target).open("w", encoding="utf-8") as outfile:
+        dumper.dump(data, outfile, transform=transform)

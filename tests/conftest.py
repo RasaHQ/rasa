@@ -2,9 +2,13 @@ import asyncio
 import contextlib
 import copy
 import os
+import pathlib
 import random
 import re
+import shutil
 import textwrap
+import threading
+import time
 
 import jwt
 import pytest
@@ -13,8 +17,9 @@ import uuid
 
 from pytest import TempdirFactory, MonkeyPatch, Function, TempPathFactory
 from spacy import Language
-from pytest import WarningsRecorder
+from pytest import WarningsRecorder, Pytester, RunResult
 
+from rasa.cli import scaffold
 from rasa.engine.caching import LocalTrainingCache
 from rasa.engine.graph import ExecutionContext, GraphSchema
 from rasa.engine.storage.local_model_storage import LocalModelStorage
@@ -61,7 +66,6 @@ from rasa.shared.exceptions import RasaException
 import rasa.utils.common
 import rasa.utils.io
 
-
 # we reuse a bit of pytest's own testing machinery, this should eventually come
 # from a separately installable pytest-cli plugin.
 pytest_plugins = ["pytester"]
@@ -73,6 +77,7 @@ collect_ignore_glob = ["docs/*.py"]
 # Defines how tests are parallelized in the CI
 PATH_PYTEST_MARKER_MAPPINGS = {
     "acceptance": [Path("tests", "acceptance_tests").absolute()],
+    "category_anonymization": [Path("tests", "anonymization").absolute()],
     "category_cli": [Path("tests", "cli").absolute()],
     "category_core_featurizers": [Path("tests", "core", "featurizers").absolute()],
     "category_policies": [
@@ -944,3 +949,75 @@ def tests_data_folder(tests_folder: str) -> str:
     tests_data_folder = os.path.join(os.path.split(tests_folder)[0], "data")
     assert os.path.isdir(tests_data_folder)
     return tests_data_folder
+
+
+def read_license_file(license_file: Text) -> Text:
+    filepath = str(pathlib.Path(__file__).parent / "utils" / "fixtures" / license_file)
+    return open(filepath).read().strip()
+
+
+@pytest.fixture()
+def valid_license() -> Text:
+    return read_license_file("valid_license")
+
+
+def wait(
+    func: Callable,
+    result_available_event: threading.Event,
+    timeout_seconds: int,
+    max_sleep: int = 0,
+    waiting_for: Text = "",
+) -> None:
+    def wait_for_func_to_complete() -> None:
+        i = 0
+        while not func():
+            time.sleep(2**max_sleep)
+            if i < max_sleep:
+                i += 1
+
+        result_available_event.set()
+
+    thread = threading.Thread(target=wait_for_func_to_complete)
+    thread.start()
+
+    not_timed_out = result_available_event.wait(timeout=timeout_seconds)
+    timeout_msg = (
+        f"Timeout of {timeout_seconds} seconds expired waiting for " + waiting_for
+    )
+
+    if not_timed_out is False:
+        raise TimeoutError(timeout_msg)
+
+
+def create_simple_project(path: Path):
+    scaffold.create_initial_project(str(path))
+
+    # create a config file
+    # for the cli test the resulting model is not important, use components that are
+    # fast to train
+    rasa.shared.utils.io.write_yaml(
+        {
+            "assistant_id": "placeholder_default",
+            "language": "en",
+            "pipeline": [{"name": "KeywordIntentClassifier"}],
+            "policies": [
+                {"name": "RulePolicy"},
+                {"name": "MemoizationPolicy", "max_history": 3},
+            ],
+        },
+        path / "config.yml",
+    )
+    return path
+
+
+@pytest.fixture
+def run_in_simple_project(pytester: Pytester) -> Callable[..., RunResult]:
+    os.environ["LOG_LEVEL"] = "DEBUG"
+
+    create_simple_project(pytester.path)
+
+    def do_run(*args):
+        args = [shutil.which("rasa")] + list(args)
+        return pytester.run(*args)
+
+    return do_run

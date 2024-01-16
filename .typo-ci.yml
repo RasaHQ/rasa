@@ -29,7 +29,7 @@ excluded_files:
   - "*.ts"
   - "*.tsx"
   - "*.md"
-  - "CHANGELOG.mdx"
+  - "CHANGELOG.md"
   - "CODE_OF_CONDUCT.md"
   - "CONTRIBUTING.md"
   - "Dockerfile"
@@ -59,6 +59,8 @@ excluded_files:
   - "rasa/**/*"
   - "scripts/**/*"
   - "tests/**/*"
+  - "tests_deployment/integration_tests_tracing_deployment/**/*"
+  - "CODEOWNERS"
 
 # # Any typos we should ignore?
 excluded_words:

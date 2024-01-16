@@ -1,3 +1,4 @@
+import pathlib
 from pathlib import Path
 
 from subprocess import check_call
@@ -7,11 +8,12 @@ import pytest
 import shutil
 import os
 
-from pytest import TempdirFactory, Testdir
+from pytest import TempPathFactory, Testdir
 from _pytest.pytester import RunResult
 
 from rasa.cli import scaffold
 from rasa.shared.utils.io import write_yaml
+from tests.conftest import create_simple_project
 
 RASA_EXE = os.environ.get("RASA_EXECUTABLE", "rasa")
 
@@ -38,27 +40,6 @@ def run_with_stdin(testdir: Testdir) -> Callable[..., RunResult]:
     return do_run
 
 
-def create_simple_project(path: Path):
-    scaffold.create_initial_project(str(path))
-
-    # create a config file
-    # for the cli test the resulting model is not important, use components that are
-    # fast to train
-    write_yaml(
-        {
-            "assistant_id": "placeholder_default",
-            "language": "en",
-            "pipeline": [{"name": "KeywordIntentClassifier"}],
-            "policies": [
-                {"name": "RulePolicy"},
-                {"name": "MemoizationPolicy", "max_history": 3},
-            ],
-        },
-        path / "config.yml",
-    )
-    return path
-
-
 def create_simple_project_with_missing_assistant_id(path: Path):
     scaffold.create_initial_project(str(path))
 
@@ -77,28 +58,15 @@ def create_simple_project_with_missing_assistant_id(path: Path):
 
 
 @pytest.fixture(scope="session")
-def trained_simple_project(tmpdir_factory: TempdirFactory) -> Text:
-    path = tmpdir_factory.mktemp("simple")
+def trained_simple_project(tmp_path_factory: TempPathFactory) -> Text:
+    path = tmp_path_factory.mktemp("simple")
     create_simple_project(path)
 
     os.environ["LOG_LEVEL"] = "DEBUG"
 
-    check_call([shutil.which(RASA_EXE), "train"], cwd=path.strpath)
+    check_call([shutil.which(RASA_EXE), "train"], cwd=path)
 
-    return path.strpath
-
-
-@pytest.fixture
-def run_in_simple_project(testdir: Testdir) -> Callable[..., RunResult]:
-    os.environ["LOG_LEVEL"] = "DEBUG"
-
-    create_simple_project(testdir.tmpdir)
-
-    def do_run(*args):
-        args = [shutil.which(RASA_EXE)] + list(args)
-        return testdir.run(*args)
-
-    return do_run
+    return str(path)
 
 
 @pytest.fixture
@@ -149,3 +117,12 @@ def run_in_simple_project_with_model(
         return result
 
     return do_run
+
+
+@pytest.fixture
+def e2e_input_folder() -> pathlib.Path:
+    return (
+        pathlib.Path(__file__).parent.parent.parent
+        / "data"
+        / "end_to_end_testing_input_files"
+    )

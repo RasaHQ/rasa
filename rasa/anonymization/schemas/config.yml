@@ -1,0 +1,47 @@
+allowempty: True
+mapping:
+  anonymization:
+    type: "map"
+    mapping:
+      rule_lists:
+        type: "seq"
+        matching: "any"
+        required: True
+        sequence:
+        - type: "map"
+          mapping:
+            id:
+              type: "str"
+              required: True
+            rules:
+              type: "seq"
+              required: True
+              matching: "any"
+              sequence:
+              - type: "map"
+                mapping:
+                  entity:
+                    type: "str"
+                    required: True
+                  substitution:
+                    type: "str"
+                    enum: ["text", "mask", "faker"]
+                    required: False
+                  value:
+                    type: "str"
+                    required: False
+
+      metadata:
+        type: "map"
+        required: True
+        mapping:
+          language:
+            type: "str"
+            required: True
+          model_name:
+            type: "any"
+            required: True
+          model_provider:
+            type: "str"
+            required: True
+            enum: ["spacy", "stanza", "transformers"]

@@ -1,0 +1,7 @@
+tracing:
+  type: otlp
+  endpoint: localhost:4317
+  insecure: true
+
+action_endpoint:
+  url: "http://localhost:5057/webhook"

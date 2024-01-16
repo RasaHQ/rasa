@@ -1,0 +1,18 @@
+version: "3.1"
+
+intents:
+  - greet
+  - goodbye
+  - are_u_a_boot
+  - feel_sad
+  - feel_great
+  - how_many_stars
+  - inform
+  - start_form
+
+entities:
+  - name:
+      roles:
+        - first_name
+        - last_name
+  - age
