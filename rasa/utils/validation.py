@@ -26,22 +26,6 @@ def read_schema_file(schema_file: Text) -> Union[List[Any], Dict[Text, Any]]:
     return rasa.shared.utils.io.read_yaml_file(schema_path)
 
 
-def validate_all_yaml_inputs(
-    yaml_inputs: List[Dict[Text, Any]],
-    schema_content: Union[List[Any], Dict[Text, Any]],
-) -> None:
-    """Validate yaml content.
-
-    Args:
-        yaml_inputs: list of parsed yaml file contents to be validated
-        schema_content: the schema which is used to validate the yaml file
-    """
-    for yaml_input in yaml_inputs:
-        validate_yaml_content(
-            yaml_file_content=yaml_input, schema_content=schema_content
-        )
-
-
 def read_yaml(raw_yaml_file_content: Text) -> Dict[Text, Any]:
     """Read a yaml file and returns its parsed content .
 

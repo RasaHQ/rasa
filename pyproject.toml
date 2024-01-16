@@ -10,7 +10,7 @@ exclude = "((.eggs | .git | .pytest_cache | build | dist))"
 [tool.poetry]
 name = "rasa"
 version = "3.7.2"
-description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
+description = "State-of-the-art open-core Conversational AI framework for Enterprises that natively leverages generative AI for effortless assistant development."
 authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
 maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
 homepage = "https://rasa.com"
@@ -27,7 +27,7 @@ url = "https://europe-west3-python.pkg.dev/rasa-releases/psycopg-binary/simple/"
 [tool.towncrier]
 package = "rasa"
 package_dir = "rasa"
-filename = "CHANGELOG.mdx"
+filename = "CHANGELOG.md"
 directory = "./changelog"
 underlines = "   "
 title_format = "## [{version}] - {project_date}"

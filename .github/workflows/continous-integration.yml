@@ -1627,10 +1627,9 @@ jobs:
           sentry-cli releases set-commits "rasa-$GITHUB_TAG" --auto --ignore-missing
           sentry-cli releases finalize "rasa-$GITHUB_TAG"
 
-      - name: Notify Slack & Publish Release Notes 🗞
+      - name: Publish Release Notes 🗞
         env:
           GH_RELEASE_NOTES_TOKEN: ${{ secrets.GH_RELEASE_NOTES_TOKEN }}
-          SLACK_WEBHOOK_TOKEN: ${{ secrets.SLACK_WEBHOOK_TOKEN }}
           GITHUB_TAG: ${{ github.ref }}
           GITHUB_REPO_SLUG: ${{ github.repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -1638,10 +1637,18 @@ jobs:
           GITHUB_TAG=${GITHUB_TAG/refs\/tags\//}
           pip install -U github3.py pep440-version-utils
           python3 scripts/publish_gh_release_notes.py
-          ./scripts/ping_slack_about_package_release.sh
+
+      - name: Notify Slack of successful release
+        # notification will be sent to the #product channel on slack, webhook url is added as repository secret
+        if: success()
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_RELEASE_ASSISTANT_PRODUCT_WEBHOOK }}
+        uses: Ilshidur/action-slack@689ad44a9c9092315abd286d0e3a9a74d31ab78a
+        with:
+          args: "💥 New *Rasa Private* version `${{ github.ref_name }}` has been released!"
 
   send_slack_notification_for_release_on_failure:
-    name: Notify Slack & Publish Release Notes
+    name: Notify Slack of successful release
     runs-on: ubuntu-22.04
     # run this job when the workflow is triggered by a tag push
     if: always() && github.repository == 'RasaHQ/rasa-private' && github.ref_type == 'tag'
@@ -1653,7 +1660,7 @@ jobs:
         # send notification if 'deploy' is skipped (previous needed job failed) or failed
         if: needs.deploy.result != 'success'
         env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_TOKEN }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_RELEASE_ASSISTANT_ATOM_ALERTS_WEBHOOK }}
         uses: Ilshidur/action-slack@689ad44a9c9092315abd286d0e3a9a74d31ab78a
         with:
           args: "⛔️ *Rasa Private* version `${{ github.ref_name }}` could not be released 😱! Please check out GitHub Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"

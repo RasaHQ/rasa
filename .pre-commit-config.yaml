@@ -1,19 +1,71 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+exclude: |
+  (?x)^(
+    rasa\/core/channels\/inspector\/dist\/assets\/.+|
+    rasa/core/channels/inspector/dist/index.html
+  )$
+
 repos:
-  - repo: https://github.com/ambv/black
-    rev: 22.10.0
-    hooks:
-      - id: black
-        args: [--line-length=88]
   - repo: https://github.com/thlorenz/doctoc
     rev: v2.1.0
     hooks:
       - id: doctoc
         files: "CONTRIBUTING.md"
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-ast
+      - id: check-yaml
+      - id: check-json
+      - id: check-case-conflict
+      # fix-encoding-pragma is for https://peps.python.org/pep-0263/
+      # remove encoding pragma because it is not needed in python3 (default encoding is utf-8)
+      - id: fix-encoding-pragma
+        args: [ --remove ]
+      - id: forbid-submodules
+      - id: mixed-line-ending
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
+      - id: fix-byte-order-marker
+      - id: check-symlinks
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [ --maxkb=1024 ]
+    # ruff placed before black because --fix can require reformatting
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    # Ruff version.
+    rev: "v0.0.275"
+    hooks:
+      - id: ruff
+        args: [ "--fix" ]
+        exclude: tests\/.+
+      - id: ruff
+        # ignore D (docstring) for tests
+        args: [ "--fix", "--extend-ignore", "D" ]
+        files: tests\/.+
+  - repo: https://github.com/psf/black
+    rev: "22.8.0"
+    hooks:
+      - id: black
+        args: [ --line-length=88 ]
   - repo: local
     hooks:
       - id: docstring-check
         name: docstring-check
         entry: bash -c 'make lint-docstrings'
         language: system
-        types: [python]
+        types: [ python ]
         pass_filenames: false
+      - id: mypy-local
+        name: mypy (local)
+        entry: mypy
+        language: system
+        pass_filenames: false
+        stages: [ commit ]
+        args: [ "rasa", "tests", "--config-file", "pyproject.toml" ]
+
+
+

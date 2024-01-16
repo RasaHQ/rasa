@@ -8,7 +8,7 @@ import pytest
 import shutil
 import os
 
-from pytest import TempdirFactory, Testdir
+from pytest import TempPathFactory, Testdir
 from _pytest.pytester import RunResult
 
 from rasa.cli import scaffold
@@ -58,15 +58,15 @@ def create_simple_project_with_missing_assistant_id(path: Path):
 
 
 @pytest.fixture(scope="session")
-def trained_simple_project(tmpdir_factory: TempdirFactory) -> Text:
-    path = tmpdir_factory.mktemp("simple")
+def trained_simple_project(tmp_path_factory: TempPathFactory) -> Text:
+    path = tmp_path_factory.mktemp("simple")
     create_simple_project(path)
 
     os.environ["LOG_LEVEL"] = "DEBUG"
 
-    check_call([shutil.which(RASA_EXE), "train"], cwd=path.strpath)
+    check_call([shutil.which(RASA_EXE), "train"], cwd=path)
 
-    return path.strpath
+    return str(path)
 
 
 @pytest.fixture
