@@ -209,7 +209,7 @@ jobs:
   test:
     name: Run Tests
     if: github.ref_type != 'tag'
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-22.04
     timeout-minutes: 60
     needs: [changes]
     strategy:
@@ -224,7 +224,6 @@ jobs:
           - test-full-model-training
           - test-other-unit-tests
           - test-performance
-        os: [ubuntu-22.04]
         python-version: [3.8, 3.9, "3.10"]
 
     steps:
@@ -329,13 +328,12 @@ jobs:
   test-anonymization:
     name: Run Anonymization Unit Tests
     if: github.ref_type != 'tag'
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-22.04
     timeout-minutes: 60
     needs: [changes]
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04]
         python-version: [3.8, 3.9, "3.10"]
 
     steps:
@@ -444,13 +442,12 @@ jobs:
   test-flaky:
     name: Run Flaky Tests
     if: github.ref_type != 'tag'
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-22.04
     timeout-minutes: 60
     needs: [changes]
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04]
         python-version: [3.8, 3.9, "3.10"]
 
     steps:

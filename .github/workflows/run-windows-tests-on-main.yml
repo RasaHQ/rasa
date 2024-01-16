@@ -14,11 +14,12 @@ env:
 
   # for wait_for_xx jobs
   POETRY_VERSION: 1.4.2
+  RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
 
 jobs:
   test:
     name: Run Tests
-    runs-on: ${{ matrix.os }}
+    runs-on: windows-2019
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -32,7 +33,6 @@ jobs:
           - test-full-model-training
           - test-other-unit-tests
           - test-performance
-        os: [ windows-2019 ]
         python-version: [ 3.8, 3.9, "3.10" ]
 
     steps:
@@ -66,14 +66,14 @@ jobs:
           key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
 
       - name: Clear Poetry cache
-        if: steps.cache-poetry.outputs.cache-hit == 'true' && 'tools:clear-poetry-cache-unit-tests')
+        if: steps.cache-poetry.outputs.cache-hit == 'true'
         run: rm -r .venv
 
         # Poetry >= 1.1.0b uses virtualenv to create a virtual environment.
         # The virtualenv simply doesn't work on Windows with our setup,
         # that's why we use venv to create virtual environment
       - name: Create virtual environment
-        if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains('tools:clear-poetry-cache-unit-tests'))
+        if: steps.cache-poetry.outputs.cache-hit != 'true'
         run: python -m venv create .venv
 
       - name: Set up virtual environment
@@ -130,12 +130,11 @@ jobs:
 
   test-anonymization:
     name: Run Anonymization Unit Tests
-    runs-on: ${{ matrix.os }}
+    runs-on: windows-2019
     timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
-        os: [ windows-2019 ]
         python-version: [ 3.8, 3.9, "3.10" ]
 
     steps:
@@ -169,14 +168,14 @@ jobs:
           key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
 
       - name: Clear Poetry cache
-        if: steps.cache-poetry.outputs.cache-hit == 'true' && contains('tools:clear-poetry-cache-unit-tests')
+        if: steps.cache-poetry.outputs.cache-hit == 'true'
         run: rm -r .venv
 
         # Poetry >= 1.1.0b uses virtualenv to create a virtual environment.
         # The virtualenv simply doesn't work on Windows with our setup,
         # that's why we use venv to create virtual environment
       - name: Create virtual environment
-        if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains('tools:clear-poetry-cache-unit-tests'))
+        if: steps.cache-poetry.outputs.cache-hit != 'true'
         run: python -m venv create .venv
 
       - name: Set up virtual environment
@@ -231,19 +230,15 @@ jobs:
           DD_ARGS: --ddtrace --ddtrace-patch-all
         run: |
           make test-anonymization
-          if [[ "${{ matrix.os }}" != "windows-2019" ]]; then
-            mv .coverage ${{ github.workspace }}/${{ matrix.test }}-coverage
-          fi
         shell: bash # bash shell is a way to make code run for both Linux and Windows
 
   test-flaky:
     name: Run Flaky Tests
-    runs-on: ${{ matrix.os }}
+    runs-on: windows-2019
     timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
-        os: [ windows-2019 ]
         python-version: [3.8, 3.9, "3.10"]
 
     steps:
@@ -277,14 +272,14 @@ jobs:
           key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
 
       - name: Clear Poetry cache
-        if: steps.cache-poetry.outputs.cache-hit == 'true' && contains('tools:clear-poetry-cache-unit-tests')
+        if: steps.cache-poetry.outputs.cache-hit == 'true'
         run: rm -r .venv
 
         # Poetry >= 1.1.0b uses virtualenv to create a virtual environment.
         # The virtualenv simply doesn't work on Windows with our setup,
         # that's why we use venv to create virtual environment
       - name: Create virtual environment
-        if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains('tools:clear-poetry-cache-unit-tests'))
+        if: steps.cache-poetry.outputs.cache-hit != 'true'
         run: python -m venv create .venv
 
       - name: Set up virtual environment
@@ -334,9 +329,6 @@ jobs:
           DD_ARGS: --ddtrace --ddtrace-patch-all
         run: |
           make test-flaky
-          if [[ "${{ matrix.os }}" != "windows-2019" ]]; then
-            mv .coverage ${{ github.workspace }}/test-flaky-coverage
-          fi
         shell: bash # bash shell is a way to make code run for both Linux and Windows
 
   send_slack_notification_on_failure:
