@@ -716,7 +716,7 @@ def test_can_read_test_story(domain: Domain):
     # this should be the story simple_story_with_only_end -> show_it_all
     # the generated stories are in a non stable order - therefore we need to
     # do some trickery to find the one we want to test
-    tracker = [t for t in trackers if len(t.events) == 5][0]
+    tracker = [t for t in trackers if len(t.events) == 5][0]  # noqa: RUF015
     assert tracker.events[0] == ActionExecuted("action_listen")
     assert tracker.events[1] == UserUttered(
         intent={INTENT_NAME_KEY: "simple", "confidence": 1.0},
@@ -780,7 +780,7 @@ def test_generate_training_data_with_cycles(domain: Domain):
     # if new default actions are added the keys of the actions will be changed
 
     all_label_ids = [id for ids in label_ids for id in ids]
-    assert Counter(all_label_ids) == {0: 6, 15: 3, 14: num_tens, 1: 2, 16: 1}
+    assert Counter(all_label_ids) == {0: 6, 16: 3, 15: num_tens, 1: 2, 17: 1}
 
 
 def test_generate_training_data_with_unused_checkpoints(domain: Domain):

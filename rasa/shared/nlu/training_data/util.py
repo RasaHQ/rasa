@@ -33,7 +33,7 @@ GROUP_COMPLETE_MATCH = 0
 def transform_entity_synonyms(
     synonyms: List[Dict[Text, Any]], known_synonyms: Optional[Dict[Text, Any]] = None
 ) -> Dict[Text, Any]:
-    """Transforms the entity synonyms into a text->value dictionary"""
+    """Transforms the entity synonyms into a text->value dictionary."""
     entity_synonyms = known_synonyms if known_synonyms else {}
     for s in synonyms:
         if "value" in s and "synonyms" in s:
@@ -54,8 +54,7 @@ def check_duplicate_synonym(
 
 
 def get_file_format_extension(resource_name: Text) -> Text:
-    """
-    Get the file extension based on training data format. It supports both a folder and
+    """Get the file extension based on training data format. It supports both a folder and
     a file, and tries to guess the format as follows:
 
     - if the resource is a file and has a known format, return this format's extension
@@ -65,9 +64,10 @@ def get_file_format_extension(resource_name: Text) -> Text:
 
     Args:
         resource_name: The name of the resource, can be a file or a folder.
+
     Returns:
         The resource file format.
-    """
+    """  # noqa: E501
     from rasa.shared.nlu.training_data import loading
 
     if resource_name is None or not os.path.exists(resource_name):
@@ -97,7 +97,6 @@ def remove_untrainable_entities_from(example: Dict[Text, Any]) -> None:
     Args:
         example: Serialised training example to inspect.
     """
-
     example_entities = example.get(ENTITIES)
 
     if not example_entities:
@@ -193,7 +192,6 @@ def build_entity(
     Returns:
         an entity dictionary
     """
-
     entity = {
         ENTITY_ATTRIBUTE_START: start,
         ENTITY_ATTRIBUTE_END: end,

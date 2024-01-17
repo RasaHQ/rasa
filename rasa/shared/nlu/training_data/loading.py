@@ -44,7 +44,8 @@ _json_format_heuristics: Dict[Text, Callable[[Any, Text], bool]] = {
 def load_data(resource_name: Text, language: Optional[Text] = "en") -> "TrainingData":
     """Load training data from disk.
 
-    Merges them if loaded from disk and multiple files are found."""
+    Merges them if loaded from disk and multiple files are found.
+    """
     if not os.path.exists(resource_name):
         raise ValueError(f"File '{resource_name}' does not exist.")
 
@@ -91,7 +92,6 @@ def _reader_factory(fformat: Text) -> Optional["TrainingDataReader"]:
 
 def _load(filename: Text, language: Optional[Text] = "en") -> Optional["TrainingData"]:
     """Loads a single training data file from disk."""
-
     fformat = guess_format(filename)
     if fformat == UNK:
         raise ValueError(f"Unknown data format for file '{filename}'.")

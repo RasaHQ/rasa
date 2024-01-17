@@ -67,7 +67,6 @@ class SparseDropout(tf.keras.layers.Dropout):
         Raises:
             A ValueError if inputs is not a sparse tensor
         """
-
         if not isinstance(inputs, tf.SparseTensor):
             raise ValueError("Input tensor should be sparse.")
 
@@ -510,7 +509,6 @@ class InputMask(tf.keras.layers.Layer):
         Returns:
             A tuple of masked inputs and boolean mask.
         """
-
         if training is None:
             training = K.learning_phase()
 
@@ -651,7 +649,6 @@ class CRF(tf.keras.layers.Layer):
             Negative mean log-likelihood of all examples,
             given the sequence of tag indices.
         """
-
         log_likelihood, _ = crf_log_likelihood(
             logits, tag_indices, sequence_lengths, self.transition_params
         )
@@ -664,8 +661,7 @@ class CRF(tf.keras.layers.Layer):
     def f1_score(
         self, tag_ids: tf.Tensor, pred_ids: tf.Tensor, mask: tf.Tensor
     ) -> tf.Tensor:
-        """Calculates f1 score for train predictions"""
-
+        """Calculates f1 score for train predictions."""
         mask_bool = tf.cast(mask[:, :, 0], tf.bool)
 
         # pick only non padding values and flatten sequences
@@ -950,7 +946,6 @@ class SingleLabelDotProductLoss(DotProductLoss):
         all_labels: tf.Tensor,
     ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
         """Sample negative examples."""
-
         pos_inputs_embed = tf.expand_dims(inputs_embed, axis=-2)
         pos_labels_embed = tf.expand_dims(labels_embed, axis=-2)
 
@@ -980,7 +975,6 @@ class SingleLabelDotProductLoss(DotProductLoss):
         mask: Optional[tf.Tensor],
     ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
         """Define similarity."""
-
         # calculate similarity with several
         # embedded actions for the loss
         neg_inf = tf.constant(-1e9)
@@ -1024,7 +1018,6 @@ class SingleLabelDotProductLoss(DotProductLoss):
         mask: Optional[tf.Tensor],
     ) -> tf.Tensor:
         """Define max margin loss."""
-
         # loss for maximizing similarity with correct action
         loss = tf.maximum(0.0, self.mu_pos - tf.squeeze(sim_pos, axis=-1))
 
