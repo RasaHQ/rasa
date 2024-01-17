@@ -1001,7 +1001,7 @@ def create_simple_project(path: Path):
             "language": "en",
             "pipeline": [{"name": "KeywordIntentClassifier"}],
             "policies": [
-                # {"name": "RulePolicy"},
+                {"name": "RulePolicy"},
                 {"name": "MemoizationPolicy", "max_history": 3},
             ],
         },

@@ -1,0 +1,137 @@
+name: Run Acceptance Tests on Main
+
+on:
+  workflow_call:
+  push:
+    branches:
+      - main
+      - '[0-9]+.[0-9]+.x'
+
+
+env:
+  DEFAULT_PYTHON_VERSION: '3.10'
+  POETRY_VERSION: 1.4.2
+  RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+
+jobs:
+
+  anonymization_test:
+    name: PII language and model provider specific tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-22.04, windows-2019 ]
+        python-version: [ 3.8, 3.9, '3.10' ]
+
+    steps:
+    - name: Checkout git repository 🕝
+      uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab
+
+    - name: Free Up GitHub Actions Ubuntu Runner Disk Space 🔧
+      if: matrix.os == 'ubuntu-22.04'
+      # switching to a better maintained action https://github.com/insightsengineering/disk-space-reclaimer
+      uses: insightsengineering/disk-space-reclaimer@124df9d297f0327c676943bb718a894af8d3897f
+      with:
+        # All of these default to true, but feel free to set to "false" if necessary for your workflow
+        android: true
+        dotnet: true
+        haskell: true
+        large-packages: true
+        swap-storage: true
+        docker-images: true
+        tools-cache: true
+
+    - name: Set up Python ${{ matrix.python-version }} 🐍
+      uses: actions/setup-python@bd6b4b6205c4dbad673328db7b31b7fab9e241c0  # v4.6.1
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install poetry 🦄
+      uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844
+      with:
+        poetry-version: ${{ env.POETRY_VERSION }}
+
+    - name: Inject setuptools into poetry's environment
+      run: |
+        poetry self add setuptools
+
+    - name: Prevent race condition in poetry build
+      # More context about race condition during poetry build can be found here:
+      # https://github.com/python-poetry/poetry/issues/7611#issuecomment-1747836233
+      run: |
+        poetry config installer.max-workers 1
+
+    - name: Load Poetry Cached Libraries ⬇
+      id: cache-poetry
+      uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
+      with:
+        path: .venv
+        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
+
+    - name: Clear Poetry cache
+      if: steps.cache-poetry.outputs.cache-hit == 'true'
+      run: rm -r .venv
+
+    - name: Create virtual environment
+      run: python -m venv create .venv
+
+    - name: Set up virtual environment
+      # Poetry on Windows cannot pick up the virtual environments directory properly,
+      # and it creates a new one every time the pipeline runs.
+      # This step solves this problem — it tells poetry to always use `.venv` directory inside
+      # the project itself, which also makes it easier for us to determine the correct directory
+      # that needs to be cached.
+      run: poetry config virtualenvs.in-project true
+
+    - name: Upgrade pip (Linux only) 📦
+      # This is needed cause the cryptography module does not install with the out-of-the-box pip version on linux
+      if: matrix.os == 'ubuntu-22.04'
+      run: |
+        poetry run pip install --upgrade pip
+
+    - name: Install Dependencies 📦
+      run: |
+        make install
+        poetry run python -m pip install transformers
+        poetry run python -m pip install huggingface-hub
+        poetry run python -m pip install stanza
+        poetry run python -m pip install spacy-stanza
+        poetry run python -m pip install https://github.com/explosion/spacy-models/releases/download/es_core_news_lg-3.5.0/es_core_news_lg-3.5.0-py3-none-any.whl
+        poetry run python -m pip install https://github.com/explosion/spacy-models/releases/download/ja_core_news_lg-3.5.0/ja_core_news_lg-3.5.0-py3-none-any.whl
+        poetry run python -m pip install https://github.com/explosion/spacy-models/releases/download/it_core_news_lg-3.5.0/it_core_news_lg-3.5.0-py3-none-any.whl
+        poetry run python -m pip install https://github.com/explosion/spacy-models/releases/download/nl_core_news_lg-3.5.0/nl_core_news_lg-3.5.0-py3-none-any.whl
+        poetry run python -m pip install https://github.com/explosion/spacy-models/releases/download/fr_core_news_lg-3.5.0/fr_core_news_lg-3.5.0-py3-none-any.whl
+        poetry run python -m pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_lg-3.5.0/de_core_news_lg-3.5.0-py3-none-any.whl
+        poetry run python -m pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.5.0/en_core_web_lg-3.5.0-py3-none-any.whl
+
+    - name: Test Code 🔍
+      env:
+        JOBS: 2
+        PYTHONIOENCODING: "utf-8"
+      run: |
+        poetry run pytest tests/acceptance_tests/anonymization/run_on_main/test_with_dutch_language_model.py
+        poetry run pytest tests/acceptance_tests/anonymization/run_on_main/test_with_french_language_model.py
+        poetry run pytest tests/acceptance_tests/anonymization/run_on_main/test_with_german_language_model.py
+        poetry run pytest tests/acceptance_tests/anonymization/run_on_main/test_with_italian_language_model.py
+        poetry run pytest tests/acceptance_tests/anonymization/run_on_main/test_with_japanese_language_model.py
+        poetry run pytest tests/acceptance_tests/anonymization/run_on_main/test_with_spanish_language_model.py
+        poetry run pytest tests/acceptance_tests/anonymization/run_on_main/test_with_stanza_provider.py
+        poetry run pytest tests/acceptance_tests/anonymization/run_on_main/test_with_transformers_provider.py
+
+  send_slack_notification_on_failure:
+    name: Notify Slack
+    runs-on: ubuntu-22.04
+    if: always()
+    needs:
+      - anonymization_test
+
+    steps:
+      - name: Notify Slack of failure ⛔️
+        # send notification if 'test' is skipped (previous needed job failed) or failed
+        if: needs.anonymization_test.result != 'success'
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_RELEASE_ASSISTANT_ATOM_ALERTS_WEBHOOK }}
+        uses: Ilshidur/action-slack@689ad44a9c9092315abd286d0e3a9a74d31ab78a
+        with:
+          args: "⛔️ *Rasa Pro PII Acceptance Tests* failed 😱! Please check out GitHub Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
