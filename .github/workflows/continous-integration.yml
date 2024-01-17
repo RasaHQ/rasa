@@ -258,7 +258,7 @@ jobs:
   test:
     name: Run Tests
     if: github.ref_type != 'tag'
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-22.04
     timeout-minutes: 60
     needs: [changes]
     strategy:
@@ -273,7 +273,6 @@ jobs:
           - test-full-model-training
           - test-other-unit-tests
           - test-performance
-        os: [ubuntu-22.04, windows-2019]
         python-version: [3.8, 3.9, "3.10"]
 
     steps:
@@ -333,7 +332,7 @@ jobs:
         run: poetry config virtualenvs.in-project true
 
       - name: Install Dependencies (Linux) 📦
-        if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-22.04'
+        if: needs.changes.outputs.backend == 'true'
         # Poetry intermittently fails to install dependency if it is not PEP 517 compliant
         # This is a workaround for that issue
         run: |
@@ -342,52 +341,17 @@ jobs:
           if grep 'The lock file is not up to date' .output; then exit 1; fi
           make prepare-tests-ubuntu
 
-      - name: Install Dependencies (Windows) 📦
-        if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-2019'
-        # Restoring cache doesn't work properly on Windows due to symlinks.
-        # We create symlinks for spacy models, that's why we need to clean them up
-        # before caching the dependencies directory.
-        # More information: https://github.com/actions/cache/issues/120
-        # Poetry intermittently fails to install dependency if it is not PEP 517 compliant
-        # This is a workaround for that issue
-        run: |
-          $spacy_data_dir = ".venv\lib\site-packages\spacy\data"
-          if (Test-Path $spacy_data_dir) {
-            Get-ChildItem -Force -ErrorAction Stop $spacy_data_dir | Where-Object { if($_.Attributes -match "ReparsePoint"){$_.Delete()} }
-            Remove-Item -Force -Recurse $spacy_data_dir
-            New-Item -Path $spacy_data_dir -Type Directory
-          }
-          make install-full
-          make prepare-tests-windows-gha
-
       - name: Add github workflow problem matchers
-        if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.7 && matrix.os == 'ubuntu-22.04'
+        if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.7
         # only annotate based on test runs on ubuntu: otherwise
         # all errors will be duplicated for each python / os combination
         # therefore, we only enable for the one where most tests are run
         # (tests will still run in other envs, they will just not create annotations)
         run: pip install pytest-github-actions-annotate-failures
 
-      - name: Disable "LongPathsEnabled" option on Windows
-        if: matrix.os == 'windows-2019'
-        # On Windows laptops, a default preset prevents path names from being longer than
-        # 260 characters. Some of our users can't enable this setting due to company policies.
-        # We implemented a fix for model storage. The Windows container in GitHub
-        # comes with the setting enabled, so we disable it here in order to ensure our tests
-        # are running in an environment where long path names are prevented.
-        run: |
-          (Get-ItemProperty "HKLM:System\CurrentControlSet\Control\FileSystem").LongPathsEnabled
-          Set-ItemProperty 'HKLM:\System\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -value 0
-
       - name: Install ddtrace on Linux
-        if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-22.04'
+        if: needs.changes.outputs.backend == 'true'
         run: poetry run pip install -U 'ddtrace<2.0.0'
-
-      - name: Install ddtrace on Windows
-        if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-2019'
-        run: |
-          .\.venv\Scripts\activate
-          py -m pip install -U 'ddtrace<2.0.0'
 
       - name: Test Code 🔍 (multi-process)
         if: needs.changes.outputs.backend == 'true'
@@ -399,13 +363,11 @@ jobs:
           DD_ARGS: --ddtrace --ddtrace-patch-all
         run: |
           make ${{ matrix.test }}
-          if [[ "${{ matrix.os }}" != "windows-2019" ]]; then
-            mv .coverage ${{ github.workspace }}/${{ matrix.test }}-coverage
-          fi
+          mv .coverage ${{ github.workspace }}/${{ matrix.test }}-coverage
         shell: bash # bash shell is a way to make code run for both Linux and Windows
 
       - name: Store coverage reports
-        if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-22.04'
+        if: needs.changes.outputs.backend == 'true'
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
         with:
           name: ${{ matrix.test }}-coverage
@@ -415,13 +377,12 @@ jobs:
   test-anonymization:
     name: Run Anonymization Unit Tests
     if: github.ref_type != 'tag'
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-22.04
     timeout-minutes: 60
     needs: [changes]
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04, windows-2019]
         python-version: [3.8, 3.9, "3.10"]
 
     steps:
@@ -481,7 +442,7 @@ jobs:
         run: poetry config virtualenvs.in-project true
 
       - name: Install Dependencies (Linux) 📦
-        if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-22.04'
+        if: needs.changes.outputs.backend == 'true'
         # Poetry intermittently fails to install dependency if it is not PEP 517 compliant
         # This is a workaround for that issue
         run: |
@@ -490,57 +451,22 @@ jobs:
           if grep 'The lock file is not up to date' .output; then exit 1; fi
           make prepare-tests-ubuntu
 
-      - name: Install Dependencies (Windows) 📦
-        if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-2019'
-        # Restoring cache doesn't work properly on Windows due to symlinks.
-        # We create symlinks for spacy models, that's why we need to clean them up
-        # before caching the dependencies directory.
-        # More information: https://github.com/actions/cache/issues/120
-        # Poetry intermittently fails to install dependency if it is not PEP 517 compliant
-        # This is a workaround for that issue
-        run: |
-          $spacy_data_dir = ".venv\lib\site-packages\spacy\data"
-          if (Test-Path $spacy_data_dir) {
-            Get-ChildItem -Force -ErrorAction Stop $spacy_data_dir | Where-Object { if($_.Attributes -match "ReparsePoint"){$_.Delete()} }
-            Remove-Item -Force -Recurse $spacy_data_dir
-            New-Item -Path $spacy_data_dir -Type Directory
-          }
-          make install-full
-          make prepare-tests-windows-gha
-
       - name: Install spaCy language model
         if: needs.changes.outputs.backend == 'true'
         run: |
           poetry run python -m pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.5.0/en_core_web_lg-3.5.0-py3-none-any.whl
 
       - name: Add github workflow problem matchers
-        if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.7 && matrix.os == 'ubuntu-22.04'
+        if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.7
         # only annotate based on test runs on ubuntu: otherwise
         # all errors will be duplicated for each python / os combination
         # therefore, we only enable for the one where most tests are run
         # (tests will still run in other envs, they will just not create annotations)
         run: pip install pytest-github-actions-annotate-failures
 
-      - name: Disable "LongPathsEnabled" option on Windows
-        if: matrix.os == 'windows-2019'
-        # On Windows laptops, a default preset prevents path names from being longer than
-        # 260 characters. Some of our users can't enable this setting due to company policies.
-        # We implemented a fix for model storage. The Windows container in GitHub
-        # comes with the setting enabled, so we disable it here in order to ensure our tests
-        # are running in an environment where long path names are prevented.
-        run: |
-          (Get-ItemProperty "HKLM:System\CurrentControlSet\Control\FileSystem").LongPathsEnabled
-          Set-ItemProperty 'HKLM:\System\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -value 0
-
       - name: Install ddtrace on Linux
-        if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-22.04'
+        if: needs.changes.outputs.backend == 'true'
         run: poetry run pip install -U 'ddtrace<2.0.0'
-
-      - name: Install ddtrace on Windows
-        if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-2019'
-        run: |
-          .\.venv\Scripts\activate
-          py -m pip install -U 'ddtrace<2.0.0'
 
       - name: Test Code 🔍 (multi-process)
         if: needs.changes.outputs.backend == 'true'
@@ -551,13 +477,11 @@ jobs:
           DD_ARGS: --ddtrace --ddtrace-patch-all
         run: |
           make test-anonymization
-          if [[ "${{ matrix.os }}" != "windows-2019" ]]; then
-            mv .coverage ${{ github.workspace }}/${{ matrix.test }}-coverage
-          fi
+          mv .coverage ${{ github.workspace }}/${{ matrix.test }}-coverage
         shell: bash # bash shell is a way to make code run for both Linux and Windows
 
       - name: Store coverage reports
-        if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-22.04'
+        if: needs.changes.outputs.backend == 'true'
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
         with:
           name: ${{ matrix.test }}-coverage
@@ -567,13 +491,12 @@ jobs:
   test-flaky:
     name: Run Flaky Tests
     if: github.ref_type != 'tag'
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-22.04
     timeout-minutes: 60
     needs: [changes]
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04, windows-2019]
         python-version: [3.8, 3.9, "3.10"]
 
     steps:
@@ -633,57 +556,24 @@ jobs:
         run: poetry config virtualenvs.in-project true
 
       - name: Install Dependencies (Linux) 📦
-        if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-22.04'
+        if: needs.changes.outputs.backend == 'true'
         run: |
           sudo apt-get -y install libpq-dev
           make install-full | tee .output
           if grep 'The lock file is not up to date' .output; then exit 1; fi
           make prepare-tests-ubuntu
 
-      - name: Install Dependencies (Windows) 📦
-        if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-2019'
-        # Restoring cache doesn't work properly on Windows due to symlinks.
-        # We create symlinks for spacy models, that's why we need to clean them up
-        # before caching the dependencies' directory.
-        # More information: https://github.com/actions/cache/issues/120
-        run: |
-          $spacy_data_dir = ".venv\lib\site-packages\spacy\data"
-          if (Test-Path $spacy_data_dir) {
-            Get-ChildItem -Force -ErrorAction Stop $spacy_data_dir | Where-Object { if($_.Attributes -match "ReparsePoint"){$_.Delete()} }
-            Remove-Item -Force -Recurse $spacy_data_dir
-            New-Item -Path $spacy_data_dir -Type Directory
-          }
-          make install-full
-          make prepare-tests-windows-gha
-
       - name: Add github workflow problem matchers
-        if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.7 && matrix.os == 'ubuntu-22.04'
+        if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.7
         # only annotate based on test runs on ubuntu: otherwise
         # all errors will be duplicated for each python / os combination
         # therefore, we only enable for the one where most tests are run
         # (tests will still run in other envs, they will just not create annotations)
         run: pip install pytest-github-actions-annotate-failures
 
-      - name: Disable "LongPathsEnabled" option on Windows
-        if: matrix.os == 'windows-2019'
-        # On Windows laptops, a default preset prevents path names from being longer than
-        # 260 characters. Some of our users can't enable this setting due to company policies.
-        # We implemented a fix for model storage. The Windows container in GitHub
-        # comes with the setting enabled, so we disable it here in order to ensure our tests
-        # are running in an environment where long path names are prevented.
-        run: |
-          (Get-ItemProperty "HKLM:System\CurrentControlSet\Control\FileSystem").LongPathsEnabled
-          Set-ItemProperty 'HKLM:\System\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -value 0
-
       - name: Install ddtrace on Linux
-        if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-22.04'
+        if: needs.changes.outputs.backend == 'true'
         run: poetry run pip install -U 'ddtrace<2.0.0'
-
-      - name: Install ddtrace on Windows
-        if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-2019'
-        run: |
-          .\.venv\Scripts\activate
-          py -m pip install -U 'ddtrace<2.0.0'
 
       - name: Test Code 🔍 (multi-process)
         if: needs.changes.outputs.backend == 'true'
@@ -695,13 +585,11 @@ jobs:
           DD_ARGS: --ddtrace --ddtrace-patch-all
         run: |
           make test-flaky
-          if [[ "${{ matrix.os }}" != "windows-2019" ]]; then
-            mv .coverage ${{ github.workspace }}/test-flaky-coverage
-          fi
+          mv .coverage ${{ github.workspace }}/test-flaky-coverage
         shell: bash # bash shell is a way to make code run for both Linux and Windows
 
       - name: Store coverage reports
-        if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-22.04'
+        if: needs.changes.outputs.backend == 'true'
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
         with:
           name: ${{ matrix.test }}-coverage
