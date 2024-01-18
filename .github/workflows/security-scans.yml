@@ -16,7 +16,7 @@ jobs:
       backend: ${{ steps.filter.outputs.backend }}
       docker: ${{ steps.filter.outputs.docker }}
     steps:
-      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - uses: dorny/paths-filter@4512585405083f25c027a35db413c2b3b9006d50
         id: filter
         with:
@@ -27,13 +27,13 @@ jobs:
     name: Detecting hardcoded secrets
     runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       with:
         # Fetch all history for all tags and branches
         fetch-depth: '0'
     - name: Run Trivy vulnerability scanner
       id: trivy
-      uses: aquasecurity/trivy-action@e5f43133f6e8736992c9f3c1b3296e24b37e17f2
+      uses: aquasecurity/trivy-action@d43c1f16c00cfd3978dde6c07f4bbcf9eb6993ca
       continue-on-error: true
       with:
         format: 'table'
@@ -42,7 +42,7 @@ jobs:
         scanners: 'secret'
     - name: Alert on secret finding
       if: steps.trivy.outcome == 'failure'
-      uses: slackapi/slack-github-action@007b2c3c751a190b6f0f040e47ed024deaa72844
+      uses: slackapi/slack-github-action@e28cf165c92ffef168d23c5c9000cffc8a25e117
       with:
         payload: |
           {
@@ -80,11 +80,11 @@ jobs:
     steps:
       - name: Checkout git repository 🕝
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
       - name: Set up Python 3.10 🐍
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c
         with:
           python-version: '3.10'
 

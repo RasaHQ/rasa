@@ -54,7 +54,7 @@ jobs:
       docker: ${{ steps.changed-files.outputs.docker || steps.run-all.outputs.docker }}
       is_pre_release_version: ${{ steps.rasa_check_version_type.outputs.is_pre_release_version }}
     steps:
-      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - uses: dorny/paths-filter@4512585405083f25c027a35db413c2b3b9006d50
         # Run the normal filters if the all-tests-required label is not set
         id: changed-files
@@ -92,11 +92,11 @@ jobs:
     steps:
       - name: Checkout git repository 🕝
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
       - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c
         with:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
@@ -190,7 +190,7 @@ jobs:
 
     steps:
       - name: Checkout git repository 🕝
-        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
       - name: Assert release includes all changelog entries
         # check changelog folder only when we create pull request preparing release
@@ -278,11 +278,11 @@ jobs:
     steps:
       - name: Checkout git repository 🕝
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
       - name: Set up Python ${{ matrix.python-version }} 🐍
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -388,11 +388,11 @@ jobs:
     steps:
       - name: Checkout git repository 🕝
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
       - name: Set up Python ${{ matrix.python-version }} 🐍
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -663,11 +663,11 @@ jobs:
     steps:
       - name: Checkout git repository 🕝
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
       - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c
         with:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
@@ -859,11 +859,11 @@ jobs:
     steps:
       - name: Checkout git repository 🕝
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/checkout@v3
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
       - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c
         with:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
@@ -1145,20 +1145,20 @@ jobs:
       # to checkout HEAD commit for a pull request.
       # More details: https://github.com/actions/checkout/issues/299
       - name: Checkout pull request HEAD commit instead of merge commit 🕝
-        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
         if: github.event_name == 'pull_request'
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Checkout git repository 🕝
-        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
         if: github.event_name != 'pull_request'
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@2b82ce82d56a2a04d2637cd93a637ae1b359c0a7  # v2.2.0
+        uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@885d1462b80bc1c1c7f0b00334ad271f09369c55  # v2.7.0
+        uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226  # v3.0.0
 
       - name: Read Poetry Version 🔢
         run: |
@@ -1167,7 +1167,7 @@ jobs:
 
       - id: 'auth-release'
         name: Authenticate with gcloud for release registry 🎫
-        uses: 'google-github-actions/auth@e8df18b60c5dd38ba618c121b779307266153fbf'
+        uses: 'google-github-actions/auth@f6de81663f7788d05bd15bcce18f0e57f23f0846'
         with:
           token_format: 'access_token'
           credentials_json: '${{ secrets.RASA_OSS_RELEASE_ACCOUNT_KEY }}' #needs to be added to secrets
@@ -1346,20 +1346,20 @@ jobs:
       # to checkout HEAD commit for a pull request.
       # More details: https://github.com/actions/checkout/issues/299
       - name: Checkout pull request HEAD commit instead of merge commit 🕝
-        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
         if: github.event_name == 'pull_request'
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Checkout git repository 🕝
-        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
         if: github.event_name != 'pull_request'
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@2b82ce82d56a2a04d2637cd93a637ae1b359c0a7  # v2.2.0
+        uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@885d1462b80bc1c1c7f0b00334ad271f09369c55  # v2.7.0
+        uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226  # v3.0.0
 
       - name: Free disk space
         if: needs.changes.outputs.docker == 'true'
@@ -1394,7 +1394,7 @@ jobs:
       # Authenticate and push to the release registry
       - id: 'auth-release'
         name: Authenticate with gcloud for release registry 🎫
-        uses: 'google-github-actions/auth@e8df18b60c5dd38ba618c121b779307266153fbf'
+        uses: 'google-github-actions/auth@f6de81663f7788d05bd15bcce18f0e57f23f0846'
         with:
           token_format: 'access_token'
           credentials_json: '${{ secrets.RASA_OSS_RELEASE_ACCOUNT_KEY }}'
@@ -1448,10 +1448,10 @@ jobs:
 
     steps:
       - name: Checkout git repository 🕝
-        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
       - name: Set up Python 3.9 🐍
-        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c
         with:
           python-version: 3.9
 
@@ -1477,7 +1477,7 @@ jobs:
 
       # Push to the internal release registry
       - name: Publish to internal PyPI 📦
-        uses: pypa/gh-action-pypi-publish@717ba43cfbb0387f6ce311b169a825772f54d295
+        uses: pypa/gh-action-pypi-publish@2f6f737ca5f74c637829c0f5c3acd0e29ea5e8bf
         with:
           user: "github-ci"
           password: ${{ secrets.PYPI_PASSWORD }}
@@ -1487,13 +1487,13 @@ jobs:
       # Authenticate and push to the release registry
       - id: "auth-release"
         name: Authenticate with gcloud for release registry 🎫
-        uses: "google-github-actions/auth@ceee102ec2387dd9e844e01b530ccd4ec87ce955"
+        uses: "google-github-actions/auth@f6de81663f7788d05bd15bcce18f0e57f23f0846"
         with:
           token_format: 'access_token'
           credentials_json: "${{ secrets.RASA_OSS_RELEASE_ACCOUNT_KEY }}"
 
       - name: "Set up Cloud SDK"
-        uses: "google-github-actions/setup-gcloud@62d4898025f6041e16b1068643bfc5a696863587"
+        uses: "google-github-actions/setup-gcloud@5a5f7b85fca43e76e53463acaa9d408a03c98d3a"
 
       - name: Release via GCP Artifact Registry
         run: |
