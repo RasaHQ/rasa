@@ -747,7 +747,11 @@ class MessageProcessor:
         response_selector = parse_data.get(RESPONSE_SELECTOR, {})
         all_retrieval_intents = response_selector.get("all_retrieval_intents", [])
         if intent_name and intent_name in all_retrieval_intents:
-            retrieval_intent = response_selector.get(intent_name, {}).get(RESPONSE, {}).get(INTENT_RESPONSE_KEY)
+            retrieval_intent = (
+                response_selector.get(intent_name, {})
+                .get(RESPONSE, {})
+                .get(INTENT_RESPONSE_KEY)
+            )
             parse_data[INTENT][FULL_RETRIEVAL_INTENT_NAME_KEY] = retrieval_intent
 
     def _parse_message_with_graph(
