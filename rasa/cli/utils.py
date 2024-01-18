@@ -1,6 +1,7 @@
 import json
 import argparse
 import structlog
+import importlib
 import os
 import sys
 import time
@@ -441,3 +442,14 @@ def signal_handler(_: int, __: FrameType) -> None:
     """Kills Rasa when OS signal is received."""
     print("Goodbye 👋")
     sys.exit(0)
+
+
+def warn_if_rasa_plus_package_installed() -> None:
+    """Issue a user warning in case the `rasa_plus` package is installed."""
+    rasa_plus_package = "rasa_plus"
+    if importlib.util.find_spec(rasa_plus_package) is not None:
+        rasa.shared.utils.io.raise_warning(
+            f"{rasa_plus_package} python package is no longer necessary "
+            f"for using Rasa Pro. Please uninstall it.",
+            UserWarning,
+        )
