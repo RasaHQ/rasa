@@ -210,29 +210,27 @@ async def test_postgres_tracker_store_retrieve(
 
 
 async def test_redis_tracker_store_retrieve_full_tracker(
-    domain: Domain,
     tracker_with_restarted_event: DialogueStateTracker,
+    redis_tracker_store: RedisTrackerStore,
 ) -> None:
-    tracker_store = RedisTrackerStore(domain)
     sender_id = tracker_with_restarted_event.sender_id
 
-    await tracker_store.save(tracker_with_restarted_event)
+    await redis_tracker_store.save(tracker_with_restarted_event)
 
-    tracker = await tracker_store.retrieve_full_tracker(sender_id)
+    tracker = await redis_tracker_store.retrieve_full_tracker(sender_id)
     assert tracker == tracker_with_restarted_event
 
 
 async def test_redis_tracker_store_retrieve(
-    domain: Domain,
+    redis_tracker_store: RedisTrackerStore,
     tracker_with_restarted_event: DialogueStateTracker,
     events_after_restart: List[Event],
 ) -> None:
-    tracker_store = RedisTrackerStore(domain)
     sender_id = tracker_with_restarted_event.sender_id
 
-    await tracker_store.save(tracker_with_restarted_event)
+    await redis_tracker_store.save(tracker_with_restarted_event)
 
-    tracker = await tracker_store.retrieve(sender_id)
+    tracker = await redis_tracker_store.retrieve(sender_id)
     assert list(tracker.events) == events_after_restart
 
 
