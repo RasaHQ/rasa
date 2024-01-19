@@ -1,8 +1,11 @@
+import pytest
+
 from rasa.core.brokers.kafka import KafkaEventBroker
 from pytest import LogCaptureFixture
 import logging.config
 
 
+@pytest.mark.broker
 def test_kafka_event_broker_valid():
     broker = KafkaEventBroker(
         url="localhost",
@@ -23,6 +26,7 @@ def test_kafka_event_broker_valid():
         broker._close()
 
 
+@pytest.mark.broker
 def test_kafka_event_broker_buffer_error_is_handled(caplog: LogCaptureFixture):
     broker = KafkaEventBroker(
         url="localhost",
