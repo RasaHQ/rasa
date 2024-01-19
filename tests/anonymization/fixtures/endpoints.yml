@@ -1,0 +1,25 @@
+anonymization:
+  metadata:
+    language: en
+    model_name: model_name
+    model_provider: spacy
+  rule_lists:
+    - id: Rule1
+      rules:
+        - entity: PERSON
+          substitution: faker
+        - entity: LOCATION
+          substitution: mask
+    - id: Rule2
+      rules:
+        - entity: CITY
+          substitution: mask
+    - id: Rule3
+      rules:
+        - entity: GENDER
+          substitution: text
+          value: female
+    - id: Rule4
+      rules:
+        - entity: GENDER
+        - entity: PERSON

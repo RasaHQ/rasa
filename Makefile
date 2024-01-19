@@ -2,8 +2,9 @@
 
 JOBS ?= 1
 INTEGRATION_TEST_FOLDER = tests/integration_tests/
-INTEGRATION_TEST_PYTEST_MARKERS ?= "sequential or not sequential"
+INTEGRATION_TEST_PYTEST_MARKERS ?= "sequential or broker or concurrent_lock_store or ((not sequential) and (not broker) and (not concurrent_lock_store))"
 PLATFORM ?= "linux/amd64"
+TRACING_INTEGRATION_TEST_FOLDER = tests/integration_tests/tracing
 
 help:
 	@echo "make"
@@ -142,48 +143,52 @@ test-integration:
 	# OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
 	# TF_CPP_MIN_LOG_LEVEL=2 sets C code log level for tensorflow to error suppressing lower log events
 ifeq (,$(wildcard tests_deployment/.env))
-	OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS) -m $(INTEGRATION_TEST_PYTEST_MARKERS) --dist loadgroup
+	OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS) -m $(INTEGRATION_TEST_PYTEST_MARKERS) --dist loadgroup  --ignore $(TRACING_INTEGRATION_TEST_FOLDER)
 else
-	set -o allexport; source tests_deployment/.env && OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS) -m $(INTEGRATION_TEST_PYTEST_MARKERS) --dist loadgroup && set +o allexport
+	set -o allexport; source tests_deployment/.env && OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS) -m $(INTEGRATION_TEST_PYTEST_MARKERS) --dist loadgroup --ignore $(TRACING_INTEGRATION_TEST_FOLDER) && set +o allexport
 endif
 
-test-cli: PYTEST_MARKER=category_cli and (not flaky) and (not acceptance)
+test-anonymization: PYTEST_MARKER=category_anonymization and (not flaky) and (not acceptance)
+test-anonymization: DD_ARGS := $(or $(DD_ARGS),)
+test-anonymization: test-marker
+
+test-cli: PYTEST_MARKER=category_cli and (not flaky) and (not acceptance) and (not category_anonymization)
 test-cli: DD_ARGS := $(or $(DD_ARGS),)
 test-cli: test-marker
 
-test-core-featurizers: PYTEST_MARKER=category_core_featurizers and (not flaky) and (not acceptance)
+test-core-featurizers: PYTEST_MARKER=category_core_featurizers and (not flaky) and (not acceptance) and (not category_anonymization)
 test-core-featurizers: DD_ARGS := $(or $(DD_ARGS),)
 test-core-featurizers: test-marker
 
-test-policies: PYTEST_MARKER=category_policies and (not flaky) and (not acceptance)
+test-policies: PYTEST_MARKER=category_policies and (not flaky) and (not acceptance) and (not category_anonymization)
 test-policies: DD_ARGS := $(or $(DD_ARGS),)
 test-policies: test-marker
 
-test-nlu-featurizers: PYTEST_MARKER=category_nlu_featurizers and (not flaky) and (not acceptance)
+test-nlu-featurizers: PYTEST_MARKER=category_nlu_featurizers and (not flaky) and (not acceptance) and (not category_anonymization)
 test-nlu-featurizers: DD_ARGS := $(or $(DD_ARGS),)
 test-nlu-featurizers: prepare-spacy prepare-mitie prepare-transformers test-marker
 
-test-nlu-predictors: PYTEST_MARKER=category_nlu_predictors and (not flaky) and (not acceptance)
+test-nlu-predictors: PYTEST_MARKER=category_nlu_predictors and (not flaky) and (not acceptance) and (not category_anonymization)
 test-nlu-predictors: DD_ARGS := $(or $(DD_ARGS),)
 test-nlu-predictors: prepare-spacy prepare-mitie test-marker
 
-test-full-model-training: PYTEST_MARKER=category_full_model_training and (not flaky) and (not acceptance)
+test-full-model-training: PYTEST_MARKER=category_full_model_training and (not flaky) and (not acceptance) and (not category_anonymization)
 test-full-model-training: DD_ARGS := $(or $(DD_ARGS),)
 test-full-model-training: prepare-spacy prepare-mitie prepare-transformers test-marker
 
-test-other-unit-tests: PYTEST_MARKER=category_other_unit_tests and (not flaky) and (not acceptance)
+test-other-unit-tests: PYTEST_MARKER=category_other_unit_tests and (not flaky) and (not acceptance) and (not category_anonymization)
 test-other-unit-tests: DD_ARGS := $(or $(DD_ARGS),)
 test-other-unit-tests: prepare-spacy prepare-mitie test-marker
 
-test-performance: PYTEST_MARKER=category_performance and (not flaky) and (not acceptance)
+test-performance: PYTEST_MARKER=category_performance and (not flaky) and (not acceptance) and (not category_anonymization)
 test-performance: DD_ARGS := $(or $(DD_ARGS),)
 test-performance: test-marker
 
-test-flaky: PYTEST_MARKER=flaky and (not acceptance)
+test-flaky: PYTEST_MARKER=flaky and (not acceptance) and (not category_anonymization)
 test-flaky: DD_ARGS := $(or $(DD_ARGS),)
 test-flaky: prepare-spacy prepare-mitie test-marker
 
-test-acceptance: PYTEST_MARKER=acceptance and (not flaky)
+test-acceptance: PYTEST_MARKER=acceptance and (not flaky) and (not category_anonymization)
 test-acceptance: DD_ARGS := $(or $(DD_ARGS),)
 test-acceptance: prepare-spacy prepare-mitie test-marker
 
@@ -258,3 +263,17 @@ stop-integration-containers: ## Stop the integration test containers.
 
 tag-release-auto:
 	poetry run python scripts/release.py tag --skip-confirmation
+
+tests_deployment/integration_tests_tracing_deployment/simple_bot/models/model.tar.gz:
+	cd ./tests_deployment/integration_tests_tracing_deployment/simple_bot && poetry run rasa train --fixed-model-name model
+
+train: tests_deployment/integration_tests_tracing_deployment/simple_bot/models/model.tar.gz
+
+run-tracing-integration-containers: train ## Run the tracing integration test containers.
+	docker-compose -f tests_deployment/integration_tests_tracing_deployment/docker-compose.intg.yml up -d
+
+stop-tracing-integration-containers: ## Stop the tracing integration test containers.
+	docker-compose -f tests_deployment/integration_tests_tracing_deployment/docker-compose.intg.yml down
+
+test-tracing-integration:
+	PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python PYTHONPATH=./vendor/jaeger-python-proto poetry run pytest $(TRACING_INTEGRATION_TEST_FOLDER) -n $(JOBS)

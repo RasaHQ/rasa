@@ -17,6 +17,8 @@ venv
 .tox
 .mypy_cache/
 dist/
+!rasa/core/channels/inspector/
+!rasa/core/channels/inspector/dist/
 pip-wheel-metadata
 server/
 scala/
@@ -88,3 +90,5 @@ rasa/keys
 /results/
 # Local Netlify folder
 rasa.code-workspace
+.config
+.keras

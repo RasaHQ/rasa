@@ -27,6 +27,7 @@ from typing import (
 from socket import SOCK_DGRAM, SOCK_STREAM
 import numpy as np
 import rasa.utils.io
+from rasa.anonymization import ENV_LOG_LEVEL_FAKER, ENV_LOG_LEVEL_PRESIDIO
 from rasa.constants import (
     DEFAULT_LOG_LEVEL_LIBRARIES,
     ENV_LOG_LEVEL_LIBRARIES,
@@ -250,6 +251,8 @@ def configure_library_logging() -> None:
     update_matplotlib_log_level(library_log_level)
     update_kafka_log_level(library_log_level)
     update_rabbitmq_log_level(library_log_level)
+    update_presidio_log_level(library_log_level)
+    update_faker_log_level(library_log_level)
 
 
 def update_apscheduler_log_level() -> None:
@@ -372,6 +375,29 @@ def update_rabbitmq_log_level(library_log_level: Text) -> None:
     log_level = os.environ.get(ENV_LOG_LEVEL_RABBITMQ, library_log_level)
     logging.getLogger("aio_pika").setLevel(log_level)
     logging.getLogger("aiormq").setLevel(log_level)
+
+
+def update_presidio_log_level(library_log_level: Text) -> None:
+    """Set the log level of presidio.
+
+    Uses the library specific log level or the general libraries log level.
+    """
+    log_level = os.environ.get(ENV_LOG_LEVEL_PRESIDIO, library_log_level)
+    presidio_loggers = ["presidio_analyzer", "presidio_anonymizer"]
+
+    for logger_name in presidio_loggers:
+        logging.getLogger(logger_name).setLevel(log_level)
+        logging.getLogger(logger_name).propagate = False
+
+
+def update_faker_log_level(library_log_level: Text) -> None:
+    """Set the log level of faker.
+
+    Uses the library specific log level or the general libraries log level.
+    """
+    log_level = os.environ.get(ENV_LOG_LEVEL_FAKER, library_log_level)
+    logging.getLogger("faker").setLevel(log_level)
+    logging.getLogger("faker").propagate = False
 
 
 def sort_list_of_dicts_by_first_key(dicts: List[Dict]) -> List[Dict]:

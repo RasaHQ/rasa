@@ -1,0 +1,27 @@
+Given the following information, please provide an answer based on the provided documents and the context of the recent conversation.
+If the answer is not known or cannot be determined from the provided documents or context, please state that you do not know to the user.
+
+### Relevant Documents
+Use the following documents to answer the question:
+{% for doc in docs %}
+{{ loop.index }}. {{ doc.metadata }}
+{{ doc.page_content }}
+{% endfor %}
+
+{% if slots|length > 0 %}
+### Slots or Variables
+Here are the variables of the currently active conversation which may be used to answer the question:
+{% for slot in slots -%}
+- name: {{ slot.name }}, value: {{ slot.value }}, type: {{ slot.type }}
+{% endfor %}
+{% endif %}
+
+### Current Conversation
+Transcript of the current conversation, use it to determine the context of the question:
+{{ current_conversation }}
+
+Based on the above, please formulate an answer to the question or request in the user's last message. 
+It is important that you ensure the answer is grounded in the provided documents and conversation context. 
+Avoid speculating or making assumptions beyond the given information.
+
+Your answer:

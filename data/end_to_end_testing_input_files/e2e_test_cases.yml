@@ -1,0 +1,16 @@
+test_cases:
+  - test_case: "test_booking"
+    steps:
+      - user: "Hi!"
+      - bot: "Hey! How are you?"
+      - user: "I would like to book a trip."
+      - bot: "Where would you like to travel?"
+      - user: "I want to travel to Lisbon."
+      - bot: "Your trip to Lisbon has been booked."
+
+  - test_case: "test_mood_great"
+    steps:
+      - user: "Hi!"
+      - bot: "Hey! How are you?"
+      - user: "I am feeling wonderful."
+      - bot: "Great, carry on!"

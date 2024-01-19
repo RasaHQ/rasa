@@ -1,0 +1,349 @@
+name: Run Windows Tests On Main
+
+on:
+  schedule:
+    # Runs at the end of every day
+    - cron: 0 0 * * *
+  workflow_dispatch:
+
+
+env:
+  # needed to fix issues with boto during testing:
+  # https://github.com/travis-ci/travis-ci/issues/7940
+  BOTO_CONFIG: /dev/null
+
+  # for wait_for_xx jobs
+  POETRY_VERSION: 1.4.2
+  RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: windows-2019
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        test:
+          - test-cli
+          - test-core-featurizers
+          - test-policies
+          - test-nlu-featurizers
+          - test-nlu-predictors
+          - test-full-model-training
+          - test-other-unit-tests
+          - test-performance
+        python-version: [ 3.8, 3.9, "3.10" ]
+
+    steps:
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+
+      - name: Set up Python ${{ matrix.python-version }} 🐍
+        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Read Poetry Version 🔢
+        run: |
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Install poetry 🦄
+        uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844 # v8
+        with:
+          poetry-version: ${{ env.POETRY_VERSION }}
+
+      - name: Inject setuptools into poetry's runtime environment
+        run: |
+          poetry self add setuptools
+
+      - name: Load Poetry Cached Libraries ⬇
+        id: cache-poetry
+        uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
+        with:
+          path: .venv
+          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
+
+      - name: Clear Poetry cache
+        if: steps.cache-poetry.outputs.cache-hit == 'true'
+        run: rm -r .venv
+
+        # Poetry >= 1.1.0b uses virtualenv to create a virtual environment.
+        # The virtualenv simply doesn't work on Windows with our setup,
+        # that's why we use venv to create virtual environment
+      - name: Create virtual environment
+        if: steps.cache-poetry.outputs.cache-hit != 'true'
+        run: python -m venv create .venv
+
+      - name: Set up virtual environment
+        # Poetry on Windows cannot pick up the virtual environments directory properly,
+        # and it creates a new one every time the pipeline runs.
+        # This step solves this problem — it tells poetry to always use `.venv` directory inside
+        # the project itself, which also makes it easier for us to determine the correct directory
+        # that needs to be cached.
+        run: poetry config virtualenvs.in-project true
+
+      - name: Install Dependencies (Windows) 📦
+        # Restoring cache doesn't work properly on Windows due to symlinks.
+        # We create symlinks for spacy models, that's why we need to clean them up
+        # before caching the dependencies directory.
+        # More information: https://github.com/actions/cache/issues/120
+        # Poetry intermittently fails to install dependency if it is not PEP 517 compliant
+        # This is a workaround for that issue
+        run: |
+          $spacy_data_dir = ".venv\lib\site-packages\spacy\data"
+          if (Test-Path $spacy_data_dir) {
+            Get-ChildItem -Force -ErrorAction Stop $spacy_data_dir | Where-Object { if($_.Attributes -match "ReparsePoint"){$_.Delete()} }
+            Remove-Item -Force -Recurse $spacy_data_dir
+            New-Item -Path $spacy_data_dir -Type Directory
+          }
+          make install-full
+          make prepare-tests-windows-gha
+
+      - name: Disable "LongPathsEnabled" option on Windows
+        # On Windows laptops, a default preset prevents path names from being longer than
+        # 260 characters. Some of our users can't enable this setting due to company policies.
+        # We implemented a fix for model storage. The Windows container in GitHub
+        # comes with the setting enabled, so we disable it here in order to ensure our tests
+        # are running in an environment where long path names are prevented.
+        run: |
+          (Get-ItemProperty "HKLM:System\CurrentControlSet\Control\FileSystem").LongPathsEnabled
+          Set-ItemProperty 'HKLM:\System\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -value 0
+
+      - name: Install ddtrace on Windows
+        run: |
+          .\.venv\Scripts\activate
+          py -m pip install -U 'ddtrace<2.0.0'
+
+      - name: Test Code 🔍 (multi-process)
+        env:
+          JOBS: 2
+          PYTHONUTF8: 1
+          DD_ENV: ${{ matrix.test }}
+          DD_SERVICE: rasa
+          DD_ARGS: --ddtrace --ddtrace-patch-all
+        run: |
+          make ${{ matrix.test }}
+        shell: bash # bash shell is a way to make code run for both Linux and Windows
+
+
+  test-anonymization:
+    name: Run Anonymization Unit Tests
+    runs-on: windows-2019
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [ 3.8, 3.9, "3.10" ]
+
+    steps:
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+
+      - name: Set up Python ${{ matrix.python-version }} 🐍
+        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Read Poetry Version 🔢
+        run: |
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Install poetry 🦄
+        uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844 # v8
+        with:
+          poetry-version: ${{ env.POETRY_VERSION }}
+
+      - name: Inject setuptools into poetry's runtime environment
+        run: |
+          poetry self add setuptools
+
+      - name: Load Poetry Cached Libraries ⬇
+        id: cache-poetry
+        uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
+        with:
+          path: .venv
+          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
+
+      - name: Clear Poetry cache
+        if: steps.cache-poetry.outputs.cache-hit == 'true'
+        run: rm -r .venv
+
+        # Poetry >= 1.1.0b uses virtualenv to create a virtual environment.
+        # The virtualenv simply doesn't work on Windows with our setup,
+        # that's why we use venv to create virtual environment
+      - name: Create virtual environment
+        if: steps.cache-poetry.outputs.cache-hit != 'true'
+        run: python -m venv create .venv
+
+      - name: Set up virtual environment
+        # Poetry on Windows cannot pick up the virtual environments directory properly,
+        # and it creates a new one every time the pipeline runs.
+        # This step solves this problem — it tells poetry to always use `.venv` directory inside
+        # the project itself, which also makes it easier for us to determine the correct directory
+        # that needs to be cached.
+        run: poetry config virtualenvs.in-project true
+
+      - name: Install Dependencies (Windows) 📦
+        # Restoring cache doesn't work properly on Windows due to symlinks.
+        # We create symlinks for spacy models, that's why we need to clean them up
+        # before caching the dependencies directory.
+        # More information: https://github.com/actions/cache/issues/120
+        # Poetry intermittently fails to install dependency if it is not PEP 517 compliant
+        # This is a workaround for that issue
+        run: |
+          $spacy_data_dir = ".venv\lib\site-packages\spacy\data"
+          if (Test-Path $spacy_data_dir) {
+            Get-ChildItem -Force -ErrorAction Stop $spacy_data_dir | Where-Object { if($_.Attributes -match "ReparsePoint"){$_.Delete()} }
+            Remove-Item -Force -Recurse $spacy_data_dir
+            New-Item -Path $spacy_data_dir -Type Directory
+          }
+          make install-full
+          make prepare-tests-windows-gha
+
+      - name: Install spaCy language model
+        run: |
+          poetry run python -m pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.5.0/en_core_web_lg-3.5.0-py3-none-any.whl
+
+      - name: Disable "LongPathsEnabled" option on Windows
+        # On Windows laptops, a default preset prevents path names from being longer than
+        # 260 characters. Some of our users can't enable this setting due to company policies.
+        # We implemented a fix for model storage. The Windows container in GitHub
+        # comes with the setting enabled, so we disable it here in order to ensure our tests
+        # are running in an environment where long path names are prevented.
+        run: |
+          (Get-ItemProperty "HKLM:System\CurrentControlSet\Control\FileSystem").LongPathsEnabled
+          Set-ItemProperty 'HKLM:\System\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -value 0
+
+      - name: Install ddtrace on Windows
+        run: |
+          .\.venv\Scripts\activate
+          py -m pip install -U 'ddtrace<2.0.0'
+
+      - name: Test Code 🔍 (multi-process)
+        env:
+          JOBS: 2
+          PYTHONUTF8: 1
+          DD_SERVICE: rasa
+          DD_ARGS: --ddtrace --ddtrace-patch-all
+        run: |
+          make test-anonymization
+        shell: bash # bash shell is a way to make code run for both Linux and Windows
+
+  test-flaky:
+    name: Run Flaky Tests
+    runs-on: windows-2019
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [3.8, 3.9, "3.10"]
+
+    steps:
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+
+      - name: Set up Python ${{ matrix.python-version }} 🐍
+        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Read Poetry Version 🔢
+        run: |
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Install poetry 🦄
+        uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844 # v8
+        with:
+          poetry-version: ${{ env.POETRY_VERSION }}
+
+      - name: Inject setuptools into poetry's runtime environment
+        run: |
+          poetry self add setuptools
+
+      - name: Load Poetry Cached Libraries ⬇
+        id: cache-poetry
+        uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
+        with:
+          path: .venv
+          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
+
+      - name: Clear Poetry cache
+        if: steps.cache-poetry.outputs.cache-hit == 'true'
+        run: rm -r .venv
+
+        # Poetry >= 1.1.0b uses virtualenv to create a virtual environment.
+        # The virtualenv simply doesn't work on Windows with our setup,
+        # that's why we use venv to create virtual environment
+      - name: Create virtual environment
+        if: steps.cache-poetry.outputs.cache-hit != 'true'
+        run: python -m venv create .venv
+
+      - name: Set up virtual environment
+        # Poetry on Windows cannot pick up the virtual environments directory properly,
+        # and it creates a new one every time the pipeline runs.
+        # This step solves this problem — it tells poetry to always use `.venv` directory inside
+        # the project itself, which also makes it easier for us to determine the correct directory
+        # that needs to be cached.
+        run: poetry config virtualenvs.in-project true
+
+      - name: Install Dependencies (Windows) 📦
+        # Restoring cache doesn't work properly on Windows due to symlinks.
+        # We create symlinks for spacy models, that's why we need to clean them up
+        # before caching the dependencies' directory.
+        # More information: https://github.com/actions/cache/issues/120
+        run: |
+          $spacy_data_dir = ".venv\lib\site-packages\spacy\data"
+          if (Test-Path $spacy_data_dir) {
+            Get-ChildItem -Force -ErrorAction Stop $spacy_data_dir | Where-Object { if($_.Attributes -match "ReparsePoint"){$_.Delete()} }
+            Remove-Item -Force -Recurse $spacy_data_dir
+            New-Item -Path $spacy_data_dir -Type Directory
+          }
+          make install-full
+          make prepare-tests-windows-gha
+
+      - name: Disable "LongPathsEnabled" option on Windows
+        # On Windows laptops, a default preset prevents path names from being longer than
+        # 260 characters. Some of our users can't enable this setting due to company policies.
+        # We implemented a fix for model storage. The Windows container in GitHub
+        # comes with the setting enabled, so we disable it here in order to ensure our tests
+        # are running in an environment where long path names are prevented.
+        run: |
+          (Get-ItemProperty "HKLM:System\CurrentControlSet\Control\FileSystem").LongPathsEnabled
+          Set-ItemProperty 'HKLM:\System\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -value 0
+
+      - name: Install ddtrace on Windows
+        run: |
+          .\.venv\Scripts\activate
+          py -m pip install -U 'ddtrace<2.0.0'
+
+      - name: Test Code 🔍 (multi-process)
+        env:
+          JOBS: 2
+          PYTHONIOENCODING: "utf-8"
+          DD_ENV: test-flaky
+          DD_SERVICE: rasa
+          DD_ARGS: --ddtrace --ddtrace-patch-all
+        run: |
+          make test-flaky
+        shell: bash # bash shell is a way to make code run for both Linux and Windows
+
+  send_slack_notification_on_failure:
+    name: Notify Slack
+    runs-on: ubuntu-22.04
+    if: always()
+    needs: [ test, test-anonymization, test-flaky ]
+
+    steps:
+      - name: Notify Slack of failure ⛔️
+        # send notification if 'test', 'test-anonymization' or 'test-flaky' is skipped (previous needed job failed) or failed
+        if: needs.test.result != 'success' || needs.test-anonymization.result != 'success' || needs.test-flaky.result != 'success'
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_RELEASE_ASSISTANT_ATOM_ALERTS_WEBHOOK }}
+        uses: Ilshidur/action-slack@689ad44a9c9092315abd286d0e3a9a74d31ab78a
+        with:
+          args: "⛔️ *Windows Tests on Main failed* failed 😱! Please check out GitHub Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+

@@ -63,6 +63,14 @@ def _create_from_endpoint_config(
         from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 
         nlg = TemplatedNaturalLanguageGenerator(domain.responses)
+    elif endpoint_config.type.lower() == "rephrase":
+        from rasa.core.nlg.contextual_response_rephraser import (
+            ContextualResponseRephraser,
+        )
+
+        nlg = ContextualResponseRephraser(
+            endpoint_config=endpoint_config, domain=domain
+        )
     else:
         nlg = _load_from_module_name_in_endpoint_config(endpoint_config, domain)
 

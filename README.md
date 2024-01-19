@@ -1,110 +1,34 @@
-<h1 align="center">Rasa Open Source</h1>
+<h1 align="center">Rasa Pro</h1>
 
 <div align="center">
 
-[![Join the chat on Rasa Community Forum](https://img.shields.io/badge/forum-join%20discussions-brightgreen.svg)](https://forum.rasa.com/?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![PyPI version](https://badge.fury.io/py/rasa.svg)](https://badge.fury.io/py/rasa)
-[![Supported Python Versions](https://img.shields.io/pypi/pyversions/rasa.svg)](https://pypi.python.org/pypi/rasa)
 [![Build Status](https://github.com/RasaHQ/rasa-private/workflows/Continuous%20Integration/badge.svg)](https://github.com/RasaHQ/rasa-private/actions)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=RasaHQ_rasa&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=RasaHQ_rasa)
-[![Documentation Status](https://img.shields.io/badge/docs-stable-brightgreen.svg)](https://rasa.com/docs)
-![Documentation Build](https://img.shields.io/netlify/d2e447e4-5a5e-4dc7-be5d-7c04ae7ff706?label=Documentation%20Build)
-[![FOSSA Status](https://app.fossa.com/api/projects/custom%2B8141%2Fgit%40github.com%3ARasaHQ%2Frasa.git.svg?type=shield)](https://app.fossa.com/projects/custom%2B8141%2Fgit%40github.com%3ARasaHQ%2Frasa.git?ref=badge_shield)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://github.com/orgs/RasaHQ/projects/23)
+[![Documentation Status](https://img.shields.io/badge/docs-stable-brightgreen.svg)](https://rasa.com/docs/rasa-pro/)
 
 </div>
 
 <hr />
 
-💡 **We're migrating issues to Jira** 💡
-
-Starting January 2023, issues for Rasa Open Source are located in
-[this Jira board](https://rasa-open-source.atlassian.net/browse/OSS). You can browse issues without being logged in;
-if you want to create issues, you'll need to create a Jira account.
-
-<hr />
-
 <img align="right" height="255" src="https://www.rasa.com/assets/img/sara/sara-open-source-2.0.png" alt="An image of Sara, the Rasa mascot bird, holding a flag that reads Open Source with one wing, and a wrench in the other" title="Rasa Open Source">
 
-Rasa is an open source machine learning framework to automate text and voice-based conversations. With Rasa, you can build contextual assistants on:
-- Facebook Messenger
-- Slack
-- Google Hangouts
-- Webex Teams
-- Microsoft Bot Framework
-- Rocket.Chat
-- Mattermost
-- Telegram
-- Twilio
-- Your own custom conversational channels
+Rasa Pro is an open core product that extends Rasa Open Source. With over 50 million downloads, Rasa Open Source is the most popular open source framework for building chat and voice-based AI assistants.
 
-or voice assistants as:
-- Alexa Skills
-- Google Home Actions
+Rasa Pro extends Rasa Open Source with CALM, a generative AI-native approach to developing assistants, combined with enterprise-ready analytics, security, and observability capabilities. A paid license is required to run Rasa Pro, but all Rasa Pro code is visible to end users and can be customized as needed.
 
-Rasa helps you build contextual assistants capable of having layered conversations with
-lots of back-and-forth. In order for a human to have a meaningful exchange with a contextual
-assistant, the assistant needs to be able to use context to build on things that were previously
-discussed – Rasa enables you to build assistants that can do this in a scalable way.
-
-There's a lot more background information in this
-[blog post](https://medium.com/rasa-blog/a-new-approach-to-conversational-software-2e64a5d05f2a).
+Rasa Pro is the pro-code component of our enterprise solution, Rasa Platform, for implementing resilient and trustworthy AI assistants at scale. Rasa Studio complements Rasa Pro with a low-code user interface, enabling anyone on your team to create and improve your assistant.
 
 ---
-- 🤔 [Learn more about Rasa](https://rasa.community/)
+- 🤓 [Read The Docs](https://rasa.com/docs/rasa-pro/)
 
-- 🤓 [Read The Docs](https://rasa.com/docs/rasa/)
-
-- 😁 [Install Rasa](https://rasa.com/docs/rasa/installation/environment-set-up)
-
-- 🚀 [Dive deeper in the learning center](https://learning.rasa.com/)
-
-- 🤗 [Contribute](#how-to-contribute)
-
-- ❓ [Get enterprise-grade support](https://rasa.com/support/)
-
-- 🏢 [Explore the features of our commercial platform](https://rasa.com/product/rasa-platform/)
-
-- 📚 [Learn more about research papers that leverage Rasa](https://scholar.google.com/scholar?oi=bibs&hl=en&authuser=1&cites=16243802403383697687,353275993797024115,14567308604105196228,9067977709825839723,9855847065463746011&as_sdt=5)
-
-
+- 😁 [Install Rasa Pro](https://rasa.com/docs/rasa-pro/installation/python/installation)
 
 ---
-## Where to get help
 
-There is extensive documentation in the [Rasa Docs](https://rasa.com/docs/rasa).
-Make sure to select the correct version so you are looking at
-the docs for the version you installed.
-
-Please use [Rasa Community Forum](https://forum.rasa.com) for quick answers to
-questions.
-
-### README Contents:
-- [How to contribute](#how-to-contribute)
+## README Contents:
 - [Development Internals](#development-internals)
 - [Releases](#releases)
-- [License](#license)
-
-### How to contribute
-We are very happy to receive and merge your contributions into this repository!
-
-To contribute via pull request, follow these steps:
-
-1. Create an issue describing the bug/improvement you want to work on or pick up an
-   existing issue in [Jira](https://rasa-open-source.atlassian.net/jira/software/c/projects/OSS/boards/1)
-2. Follow our Pull Request guidelines: write code, test, documentation, changelog and follow our [Code Style](#code-style)
-3. Create a pull request describing your changes
-
-For more detailed instructions on how to contribute code, check out these [code contributor guidelines](CONTRIBUTING.md).
-
-You can find more information about how to contribute to Rasa (in lots of
-different ways!) [on our website.](http://rasa.community).
-
-Your pull request will be reviewed by a maintainer, who will get
-back to you about any necessary changes or questions. You will
-also be asked to sign a
-[Contributor License Agreement](https://cla-assistant.io/RasaHQ/rasa).
-
+- [Troubleshooting](#troubleshooting)
 
 ## Development Internals
 
@@ -186,9 +110,23 @@ In case the PATH variable had not been automatically setup, run:
 export PATH="$HOME/.cargo/bin:$PATH"
 ```
 
+#### Installing from published Python package
+
+We have a private package registry running at **europe-west3-docker.pkg.dev/rasa-releases/** which hosts python packages as well
+as docker containers. To use it, you need to be authenticated.
+Follow the steps in the [google documentation](https://cloud.google.com/artifact-registry/docs/python/authentication#keyring)
+to make sure `pip` has the necessary credentials to authenticate with the registry.
+Afterwards, you should be able to run `pip install rasa`.
+
+To be able to pull the docker image via `docker pull europe-west3-docker.pkg.dev/rasa-releases/rasa/rasa`,
+you’ll need to authenticate using the `gcloud auth` command: `gcloud auth configure-docker europe-west3-docker.pkg.dev`.
+
+More information is available in our [public documentation](https://rasa.com/docs/rasa-pro/installation/python/installation).
+
 ### Running the Tests
 
-In order to run the tests, make sure that you have the development requirements installed:
+In order to run the tests, make sure that you have set locally the environment variable `RASA_PRO_LICENSE` to a valid license available in 1Password.
+You should ensure to install the development requirements:
 
 ```bash
 make prepare-tests-ubuntu # Only on Ubuntu and Debian based systems
@@ -231,6 +169,18 @@ Finally, you can run the integration tests like this:
 ```bash
 make test-integration
 ```
+
+In order to run locally the integration tests for the tracing capability, you must first build the rasa image locally.
+You can do so using the `docker buildx bake` command.
+Note that the rasa image build requires a few base images, which must be built prior to building the rasa image.
+The Dockerfiles for these base images are located in the `docker` subdirectory.
+
+You must also set the following environment variables to build the rasa image locally:
+- `TARGET_IMAGE_REGISTRY`, e.g. you can either use `rasa` or the private registry `europe-west3-docker.pkg.dev/rasa-releases/rasa-docker`.
+- `IMAGE_TAG`, e.g. `localdev`, `latest` or PR ID.
+- `BASE_IMAGE_HASH`, e.g. `localdev`
+- `BASE_MITIE_IMAGE_HASH`, e.g. `localdev`
+- `BASE_BUILDER_IMAGE_HASH`, e.g. `localdev`
 
 
 ### Resolving merge conflicts
@@ -407,9 +357,12 @@ thus validating compatibility between Rasa and Rasa X/Enterprise.
 
 Please refer to the [Rasa Product Release and Maintenance Policy](https://rasa.com/rasa-product-release-and-maintenance-policy/) page.
 
-## License
-Copyright 2022 Rasa Technologies GmbH.
+## Troubleshooting
 
-A list of the Licenses of the dependencies of the project can be found at
-the bottom of the
-[Libraries Summary](https://libraries.io/github/RasaHQ/rasa).
+- When running docker commands, if you encounter this error: `OSError No space left on device`, consider running:
+
+  ```shell
+  docker system prune --all
+  ```
+
+  For more information on this command, please see the [Official Docker Documentation](https://docs.docker.com/engine/reference/commandline/system_prune/).

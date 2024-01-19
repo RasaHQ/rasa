@@ -19,6 +19,7 @@ from pymongo.errors import OperationFailure
 
 from rasa.core.agent import Agent
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.plugin import plugin_manager
 from rasa.shared.constants import DEFAULT_SENDER_ID
 from sqlalchemy.dialects.postgresql.base import PGDialect
 from sqlalchemy.dialects.sqlite.base import SQLiteDialect
@@ -158,7 +159,7 @@ def test_tracker_store_endpoint_config_loading(endpoints_path: Text):
 
 
 def test_create_tracker_store_from_endpoint_config(
-    domain: Domain, endpoints_path: Text
+    domain: Domain, endpoints_path: Text, monkeypatch: MonkeyPatch
 ):
     store = read_endpoint_config(endpoints_path, "tracker_store")
     tracker_store = RedisTrackerStore(
@@ -173,6 +174,13 @@ def test_create_tracker_store_from_endpoint_config(
         ssl_keyfile="keyfile.key",
         ssl_certfile="certfile.crt",
         ssl_ca_certs="my-bundle.ca-bundle",
+    )
+
+    def mock_create_tracker_store(*args, **kwargs):
+        return None
+
+    monkeypatch.setattr(
+        plugin_manager().hook, "create_tracker_store", mock_create_tracker_store
     )
 
     assert isinstance(tracker_store, type(TrackerStore.create(store, domain)))
@@ -276,10 +284,19 @@ class NonAsyncTrackerStore(TrackerStore):
         pass
 
 
-def test_tracker_store_with_host_argument_from_string(domain: Domain):
+def test_tracker_store_with_host_argument_from_string(
+    domain: Domain, monkeypatch: MonkeyPatch
+):
     endpoints_path = "data/test_endpoints/custom_tracker_endpoints.yml"
     store_config = read_endpoint_config(endpoints_path, "tracker_store")
     store_config.type = "tests.core.test_tracker_stores.HostExampleTrackerStore"
+
+    def mock_create_tracker_store(*args, **kwargs):
+        return None
+
+    monkeypatch.setattr(
+        plugin_manager().hook, "create_tracker_store", mock_create_tracker_store
+    )
 
     with warnings.catch_warnings(record=True) as record:
         warnings.simplefilter("error")
@@ -290,10 +307,17 @@ def test_tracker_store_with_host_argument_from_string(domain: Domain):
     assert isinstance(tracker_store, HostExampleTrackerStore)
 
 
-def test_tracker_store_from_invalid_module(domain: Domain):
+def test_tracker_store_from_invalid_module(domain: Domain, monkeypatch: MonkeyPatch):
     endpoints_path = "data/test_endpoints/custom_tracker_endpoints.yml"
     store_config = read_endpoint_config(endpoints_path, "tracker_store")
     store_config.type = "a.module.which.cannot.be.found"
+
+    def mock_create_tracker_store(*args, **kwargs):
+        return None
+
+    monkeypatch.setattr(
+        plugin_manager().hook, "create_tracker_store", mock_create_tracker_store
+    )
 
     with pytest.warns(UserWarning):
         tracker_store = TrackerStore.create(store_config, domain)
@@ -301,10 +325,17 @@ def test_tracker_store_from_invalid_module(domain: Domain):
     assert isinstance(tracker_store, InMemoryTrackerStore)
 
 
-def test_tracker_store_from_invalid_string(domain: Domain):
+def test_tracker_store_from_invalid_string(domain: Domain, monkeypatch: MonkeyPatch):
     endpoints_path = "data/test_endpoints/custom_tracker_endpoints.yml"
     store_config = read_endpoint_config(endpoints_path, "tracker_store")
     store_config.type = "any string"
+
+    def mock_create_tracker_store(*args, **kwargs):
+        return None
+
+    monkeypatch.setattr(
+        plugin_manager().hook, "create_tracker_store", mock_create_tracker_store
+    )
 
     with pytest.warns(UserWarning):
         tracker_store = TrackerStore.create(store_config, domain)
@@ -977,10 +1008,18 @@ def test_sql_tracker_store_creation_with_invalid_port(domain: Domain):
     assert "port '$DB_PORT' cannot be cast to integer." in str(error.value)
 
 
-def test_create_non_async_tracker_store(domain: Domain):
+def test_create_non_async_tracker_store(domain: Domain, monkeypatch: MonkeyPatch):
     endpoint_config = EndpointConfig(
         type="tests.core.test_tracker_stores.NonAsyncTrackerStore"
     )
+
+    def mock_create_tracker_store(*args, **kwargs):
+        return None
+
+    monkeypatch.setattr(
+        plugin_manager().hook, "create_tracker_store", mock_create_tracker_store
+    )
+
     with pytest.warns(FutureWarning):
         tracker_store = TrackerStore.create(endpoint_config)
     assert isinstance(tracker_store, AwaitableTrackerStore)

@@ -7,8 +7,7 @@ from pathlib import Path
 import tarfile
 import time
 from types import LambdaType
-from typing import Any, Dict, List, Optional, Text, Tuple, Union
-from rasa.core.utils import AvailableEndpoints
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Tuple, Union
 
 from rasa.core.http_interpreter import RasaNLUHttpInterpreter
 from rasa.engine import loader
@@ -84,6 +83,9 @@ from rasa.shared.nlu.constants import (
 from rasa.shared.nlu.training_data.message import Message
 from rasa.utils.endpoints import EndpointConfig
 
+if TYPE_CHECKING:
+    from rasa.core.utils import AvailableEndpoints
+
 logger = logging.getLogger(__name__)
 structlogger = structlog.get_logger()
 
@@ -103,7 +105,7 @@ class MessageProcessor:
         max_number_of_predictions: int = MAX_NUMBER_OF_PREDICTIONS,
         on_circuit_break: Optional[LambdaType] = None,
         http_interpreter: Optional[RasaNLUHttpInterpreter] = None,
-        endpoints: Optional[AvailableEndpoints] = None,
+        endpoints: Optional["AvailableEndpoints"] = None,
     ) -> None:
         """Initializes a `MessageProcessor`."""
         self.nlg = generator
