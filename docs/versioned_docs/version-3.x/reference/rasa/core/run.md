@@ -15,24 +15,29 @@ Instantiate the chosen input channel.
 #### configure\_app
 
 ```python
-def configure_app(input_channels: Optional[List["InputChannel"]] = None,
-                  cors: Optional[Union[Text, List[Text], None]] = None,
-                  auth_token: Optional[Text] = None,
-                  enable_api: bool = True,
-                  response_timeout: int = constants.DEFAULT_RESPONSE_TIMEOUT,
-                  jwt_secret: Optional[Text] = None,
-                  jwt_private_key: Optional[Text] = None,
-                  jwt_method: Optional[Text] = None,
-                  route: Optional[Text] = "/webhooks/",
-                  port: int = constants.DEFAULT_SERVER_PORT,
-                  endpoints: Optional[AvailableEndpoints] = None,
-                  log_file: Optional[Text] = None,
-                  conversation_id: Optional[Text] = uuid.uuid4().hex,
-                  use_syslog: bool = False,
-                  syslog_address: Optional[Text] = None,
-                  syslog_port: Optional[int] = None,
-                  syslog_protocol: Optional[Text] = None,
-                  request_timeout: Optional[int] = None) -> Sanic
+def configure_app(
+        input_channels: Optional[List["InputChannel"]] = None,
+        cors: Optional[Union[Text, List[Text], None]] = None,
+        auth_token: Optional[Text] = None,
+        enable_api: bool = True,
+        response_timeout: int = constants.DEFAULT_RESPONSE_TIMEOUT,
+        jwt_secret: Optional[Text] = None,
+        jwt_private_key: Optional[Text] = None,
+        jwt_method: Optional[Text] = None,
+        route: Optional[Text] = "/webhooks/",
+        port: int = constants.DEFAULT_SERVER_PORT,
+        endpoints: Optional[AvailableEndpoints] = None,
+        log_file: Optional[Text] = None,
+        conversation_id: Optional[Text] = uuid.uuid4().hex,
+        use_syslog: bool = False,
+        syslog_address: Optional[Text] = None,
+        syslog_port: Optional[int] = None,
+        syslog_protocol: Optional[Text] = None,
+        request_timeout: Optional[int] = None,
+        server_listeners: Optional[List[Tuple[Callable, Text]]] = None,
+        use_uvloop: Optional[bool] = True,
+        keep_alive_timeout: int = constants.DEFAULT_KEEP_ALIVE_TIMEOUT
+) -> Sanic
 ```
 
 Run the agent.
@@ -65,7 +70,9 @@ def serve_application(
         syslog_address: Optional[Text] = None,
         syslog_port: Optional[int] = None,
         syslog_protocol: Optional[Text] = None,
-        request_timeout: Optional[int] = None) -> None
+        request_timeout: Optional[int] = None,
+        server_listeners: Optional[List[Tuple[Callable,
+                                              Text]]] = None) -> None
 ```
 
 Run the API entrypoint.
@@ -95,30 +102,4 @@ Gracefully closes resources when shutting down server.
 
 - `app` - The Sanic application.
 - `_` - The current Sanic worker event loop.
-
-#### create\_connection\_pools
-
-```python
-async def create_connection_pools(app: Sanic, _: AbstractEventLoop) -> None
-```
-
-Create connection pools for the agent&#x27;s action server and model server.
-
-#### create\_action\_endpoint\_connection\_pool
-
-```python
-def create_action_endpoint_connection_pool(
-        agent: Agent) -> Optional["ClientSession"]
-```
-
-Create a connection pool for the action endpoint.
-
-#### create\_model\_server\_connection\_pool
-
-```python
-def create_model_server_connection_pool(
-        agent: Agent) -> Optional["ClientSession"]
-```
-
-Create a connection pool for the model server.
 

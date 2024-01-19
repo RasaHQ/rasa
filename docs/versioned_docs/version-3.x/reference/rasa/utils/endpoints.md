@@ -60,7 +60,6 @@ Creates an `EndpointConfig` instance.
 #### session
 
 ```python
-@cached_property
 def session() -> aiohttp.ClientSession
 ```
 

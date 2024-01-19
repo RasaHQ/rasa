@@ -16,11 +16,22 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.6.16] - 2024-01-19
+                        
+Rasa 3.6.16 (2024-01-19)                         
+### Bugfixes
+- [#12983](https://github.com/rasahq/rasa/issues/12983): Upgrade Cryptography to fix improper certificate validation.
+- [#12998](https://github.com/rasahq/rasa/issues/12998): Fixes a bug that caused the `full_retrieval_intent_name` key to be missing in the published event. Rasa Analytics makes use of this key to get the Retrieval Intent Name
+
+### Miscellaneous internal changes
+- [#712](https://github.com/rasahq/rasa/issues/712)
+
+
 ## [3.6.15] - 2023-11-30
 
 Rasa 3.6.15 (2023-11-30)
 ### Bugfixes
-- [#12965](https://github.com/rasahq/rasa/issues/12965): Fixed connection timeout to action server by setting `KEEP_ALIVE_TIMEOUT` to `120`, and reverting changes introduced in [#12886](https://github.com/rasahq/rasa/issues/12886).
+- [#12965](https://github.com/rasahq/rasa/issues/12965): Fixed connection timeout to action server by setting KEEP_ALIVE_TIMEOUT to 120, and reverting changes introduced in #12886.
 
 
 ## [3.6.14] - 2023-11-17
@@ -267,6 +278,7 @@ Rasa 3.5.12 (2023-06-23)
 
 ### Miscellaneous internal changes
 - [#12512](https://github.com/rasahq/rasa/issues/12512)
+
 
 ## [3.5.11] - 2023-06-08
 
