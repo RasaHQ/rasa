@@ -1943,46 +1943,44 @@ async def test_update_full_retrieval_intent(
         "intent": {"name": "chitchat", "confidence": 0.9},
         "entities": [],
         "response_selector": {
-            {
-                "all_retrieval_intents": ["faq", "chitchat"],
-                "faq": {
-                    "response": {
-                        "responses": [{"text": "Our return policy lasts 30 days."}],
+            "all_retrieval_intents": ["faq", "chitchat"],
+            "faq": {
+                "response": {
+                    "responses": [{"text": "Our return policy lasts 30 days."}],
+                    "confidence": 1.0,
+                    "intent_response_key": "faq/what_is_return_policy",
+                    "utter_action": "utter_faq/what_is_return_policy",
+                },
+                "ranking": [
+                    {
                         "confidence": 1.0,
                         "intent_response_key": "faq/what_is_return_policy",
-                        "utter_action": "utter_faq/what_is_return_policy",
                     },
-                    "ranking": [
+                    {
+                        "confidence": 2.3378809862799945e-19,
+                        "intent_response_key": "faq/how_can_i_track_my_order",
+                    },
+                ],
+            },
+            "chitchat": {
+                "response": {
+                    "responses": [
                         {
-                            "confidence": 1.0,
-                            "intent_response_key": "faq/what_is_return_policy",
-                        },
-                        {
-                            "confidence": 2.3378809862799945e-19,
-                            "intent_response_key": "faq/how_can_i_track_my_order",
+                            "text": "The sun is out today! Isn't that great?",
                         },
                     ],
+                    "confidence": 1.0,
+                    "intent_response_key": "chitchat/ask_weather",
+                    "utter_action": "utter_chitchat/ask_weather",
                 },
-                "chitchat": {
-                    "response": {
-                        "responses": [
-                            {
-                                "text": "The sun is out today! Isn't that great?",
-                            },
-                        ],
+                "ranking": [
+                    {
                         "confidence": 1.0,
                         "intent_response_key": "chitchat/ask_weather",
-                        "utter_action": "utter_chitchat/ask_weather",
                     },
-                    "ranking": [
-                        {
-                            "confidence": 1.0,
-                            "intent_response_key": "chitchat/ask_weather",
-                        },
-                        {"confidence": 0.0, "intent_response_key": "chitchat/ask_name"},
-                    ],
-                },
-            }
+                    {"confidence": 0.0, "intent_response_key": "chitchat/ask_name"},
+                ],
+            },
         },
     }
 
