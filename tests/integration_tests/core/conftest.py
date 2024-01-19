@@ -5,7 +5,8 @@ import pytest
 import sqlalchemy as sa
 
 from rasa.core.lock_store import RedisLockStore
-
+from rasa.core.tracker_store import RedisTrackerStore
+from rasa.shared.core.domain import Domain
 
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 REDIS_PORT = os.getenv("REDIS_PORT", 6379)
@@ -63,3 +64,16 @@ def _create_login_db(connection: sa.engine.Connection) -> None:
 
 def _drop_db(connection: sa.engine.Connection, database_name: Text) -> None:
     connection.execute(sa.text(f"DROP DATABASE IF EXISTS {database_name}"))
+
+
+@pytest.fixture
+def redis_tracker_store(domain: Domain) -> Iterator[RedisTrackerStore]:
+    # we need one redis database per worker, otherwise
+    # tests conflicts with each others when databases are flushed
+    pytest_worker_id = os.getenv("PYTEST_XDIST_WORKER", "gw0")
+    redis_database = int(pytest_worker_id.replace("gw", ""))
+    tracker_store = RedisTrackerStore(domain, db=redis_database)
+    try:
+        yield tracker_store
+    finally:
+        tracker_store.red.flushdb()
