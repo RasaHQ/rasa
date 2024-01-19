@@ -70,7 +70,12 @@ from rasa.shared.core.events import (
 from rasa.core.http_interpreter import RasaNLUHttpInterpreter
 from rasa.core.processor import MessageProcessor
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.nlu.constants import INTENT_NAME_KEY, METADATA_MODEL_ID
+from rasa.shared.nlu.constants import (
+    INTENT,
+    INTENT_NAME_KEY,
+    FULL_RETRIEVAL_INTENT_NAME_KEY,
+    METADATA_MODEL_ID,
+)
 from rasa.shared.nlu.training_data.message import Message
 from rasa.utils.endpoints import EndpointConfig
 from rasa.shared.core.constants import (
@@ -83,11 +88,6 @@ from rasa.shared.core.constants import (
     EXTERNAL_MESSAGE_PREFIX,
     IS_EXTERNAL,
     SESSION_START_METADATA_SLOT,
-)
-from rasa.shared.nlu.constants import (
-    INTENT,
-    INTENT_NAME_KEY,
-    FULL_RETRIEVAL_INTENT_NAME_KEY,
 )
 
 import logging
@@ -1967,7 +1967,7 @@ async def test_update_full_retrieval_intent(
                     "response": {
                         "responses": [
                             {
-                                "text": "I am not sure of the whole week but I can see the sun is out today."
+                                "text": "The sun is out today! Isn't that great?",
                             },
                         ],
                         "confidence": 1.0,
