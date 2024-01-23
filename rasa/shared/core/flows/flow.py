@@ -265,6 +265,16 @@ class Flow:
         if not self.guard_condition:
             return True
 
+        # if a flow guard condition exists and the flow was started via a link,
+        # e.g. is currently active, the flow is startable
+        if (
+            data
+            and data["context"]
+            and data["context"]["flow_id"]
+            and data["context"]["flow_id"] == self.id
+        ):
+            return True
+
         try:
             predicate = Predicate(self.guard_condition)
             is_startable = predicate.evaluate(data)
