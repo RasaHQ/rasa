@@ -210,6 +210,8 @@ def embedder_factory(
         CohereEmbeddings,
         HuggingFaceHubEmbeddings,
         HuggingFaceInstructEmbeddings,
+        HuggingFaceEmbeddings,
+        HuggingFaceBgeEmbeddings,
         LlamaCppEmbeddings,
         OpenAIEmbeddings,
         SpacyEmbeddings,
@@ -224,6 +226,8 @@ def embedder_factory(
         "vertexai": VertexAIEmbeddings,
         "huggingface_instruct": HuggingFaceInstructEmbeddings,
         "huggingface_hub": HuggingFaceHubEmbeddings,
+        "huggingface_bge": HuggingFaceBgeEmbeddings,
+        "huggingface": HuggingFaceEmbeddings,
         "llamacpp": LlamaCppEmbeddings,
     }
 
