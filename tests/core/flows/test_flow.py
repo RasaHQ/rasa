@@ -388,32 +388,37 @@ def test_flow_step_iteration_in_deeply_nested_flow():
 
 
 @pytest.mark.parametrize(
-    "guard_condition, expected_startable",
+    "guard_condition, flow_id, expected_startable",
     [
-        ("True", True),
-        ("False", False),
-        (False, False),
-        (True, True),
-        ("True and False", False),
-        ("True or False", True),
-        ("context.x > 0", True),
-        ("context.x < 0", False),
-        ("slots.spam is not null", True),
-        ("slots.spam is 'eggs'", True),
-        ("slots.spam is 'ham'", False),
-        ("slots.authenticated AND slots.email_verified", True),
-        ("slots.some_missing_slot is 'available'", False),
+        ("True", "foo", True),
+        ("False", "foo", False),
+        (False, "foo", False),
+        (True, "foo", True),
+        ("True and False", "foo", False),
+        ("True or False", "foo", True),
+        ("context.x > 0", "foo", True),
+        ("context.x < 0", "foo", False),
+        ("slots.spam is not null", "foo", True),
+        ("slots.spam is 'eggs'", "foo", True),
+        ("slots.spam is 'ham'", "foo", False),
+        ("slots.authenticated AND slots.email_verified", "foo", True),
+        ("slots.some_missing_slot is 'available'", "foo", False),
+        ("slots.some_missing_slot is 'available'", "foo", False),
+        ("False", "active_flow", True),
+        (False, "active_flow", True),
     ],
 )
-def test_is_startable(guard_condition: Tuple[bool, str], expected_startable: bool):
+def test_is_startable(
+    guard_condition: Tuple[bool, str], flow_id: str, expected_startable: bool
+):
     """Test that the start condition is evaluated correctly."""
     # Given
     flow = Flow.from_json(
-        "foo",
+        flow_id,
         {"if": guard_condition, "steps": [{"id": "first", "action": "action_listen"}]},
     )
     document = {
-        "context": {"x": 2},
+        "context": {"x": 2, "flow_id": "active_flow"},
         "slots": {"spam": "eggs", "authenticated": True, "email_verified": True},
     }
     # When
