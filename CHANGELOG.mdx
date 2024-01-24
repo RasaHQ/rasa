@@ -1,3 +1,16 @@
+## [3.7.5] - 2024-01-24
+                       
+Rasa 3.7.5 (2024-01-24)                        
+### Improvements
+- [#193](https://github.com/rasahq/rasa/issues/193): Add new embedding types: `huggingface` and `huggingface_bge`. These new types import the `HuggingFaceEmbeddings` and `HuggingFaceBgeEmbeddings` embedding classes from Langchain.
+
+### Bugfixes
+- [#189](https://github.com/rasahq/rasa/issues/189): Fixes a bug that caused the `full_retrieval_intent_name` key to be missing in the published event. Rasa Analytics makes use of this key to get the Retrieval Intent Name
+- [#196](https://github.com/rasahq/rasa/issues/196): Pin `grpcio` indirect dependency to `1.56.2` to address [CVE-2023-33953](https://www.cve.org/CVERecord?id=CVE-2023-33953)
+  Pin `aiohttp` to version `3.9.0` to address [CVE-2023-49081](https://www.cve.org/CVERecord?id=CVE-2023-49081)
+- [#771](https://github.com/rasahq/rasa/issues/771): Fixes the bug that resulted in an infinite loop on a collect step in a flow with a flow guard set to `if: False`.
+
+
 ## [3.7.4] - 2024-01-03
                        
 Rasa 3.7.4 (2024-01-03)                        
