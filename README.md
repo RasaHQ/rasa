@@ -340,7 +340,17 @@ to add.
 need your fixes to be on the `2.0.x` release branch). All patch releases must come from a `.x` branch!
 3. Once you're ready to release the Rasa Open Source patch, checkout the branch, run `make release` and follow the
 steps + get the PR merged.
-4. Once the PR is in, pull the `.x` branch again and push the tag!
+4. Once the PR is in, wait for the tag release workflow to create the tag. Due to a bug ([ATO-2084](https://rasahq.atlassian.net/browse/ATO-2084)) this tag does not trigger the CI workflow.
+5. Delete the newly created tag and recreate it with the following commands, (replace tag name with the relevant tag and `private` with the relevant name of remote). 
+```
+git tag -d 3.7.5
+git tag -a 3.7.5 -m "next release"
+git push private 3.7.5
+```
+
+After this you should see the CI workflow "Continuous Integration" in the Actions tab with the relevant tag name. Keep an eye on it to make sure it is successful as sometimes retries might be required. A notification is sent on Slack #product in case of release failure but there's no notification for release success ([related bug](https://rasahq.atlassian.net/browse/ATO-2090)).
+
+Make sure to merge the branch `3.7.x` after your PR with `main`. This needs to be done manually until Roberto is added (see [ATO-2091](https://rasahq.atlassian.net/browse/ATO-2091))
 
 ### Additional Release Tasks
 **Note: This is only required if the released version is the highest version available.
