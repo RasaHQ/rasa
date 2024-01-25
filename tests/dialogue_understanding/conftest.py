@@ -15,10 +15,12 @@ def all_flows() -> FlowsList:
         """
         flows:
           foo:
+            description: flow foo
             steps:
             - id: first_step
               action: action_listen
           bar:
+            description: flow bar
             steps:
             - id: also_first_step
               action: action_listen

@@ -57,6 +57,7 @@ def test_run_command_sets_slot_if_asked_for():
         """
         flows:
             my_flow:
+                description: test my flow
                 steps:
                 - id: collect_foo
                   collect: foo
@@ -90,6 +91,7 @@ def test_run_command_skips_set_slot_if_slot_was_not_asked_for():
         """
         flows:
             my_flow:
+                description: test my flow
                 steps:
                 - id: collect_foo
                   collect: foo
@@ -125,6 +127,7 @@ def test_run_command_can_set_slots_before_asking():
         """
         flows:
             my_flow:
+                description: test my flow
                 steps:
                 - id: collect_foo
                   collect: foo
@@ -160,6 +163,7 @@ def test_run_command_can_set_slot_that_was_already_asked_in_the_past():
         """
         flows:
             my_flow:
+                description: test my flow
                 steps:
                 - id: collect_foo
                   collect: foo
@@ -196,6 +200,7 @@ def test_run_command_skips_setting_unknown_slot():
         """
         flows:
             my_flow:
+                description: test my flow
                 steps:
                 - id: collect_foo
                   collect: foo
@@ -229,10 +234,12 @@ def test_run_command_set_slot_of_startable_flows() -> None:
         """
         flows:
             my_flow:
+                description: test my flow
                 steps:
                 - collect: foo
                 - collect: bar
             another_flow:
+                description: test another flow
                 steps:
                 - collect: baz
                 - collect: qux
@@ -264,14 +271,17 @@ def test_run_command_set_slot_of_startable_flows_and_skip_the_rest() -> None:
         """
         flows:
             my_flow:
+                description: test my flow
                 steps:
                 - collect: foo
                 - collect: bar
             another_flow:
+                description: test another flow
                 steps:
                 - collect: baz
                 - collect: qux
             third_flow:
+                description: test third flow
                 steps:
                 - collect: boom
                 - collect: xyz

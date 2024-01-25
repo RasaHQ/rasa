@@ -184,6 +184,9 @@ class YAMLFlowsReader:
         if error.validator == "additionalProperties":
             return error.message
 
+        if error.validator == "required":
+            return error.message
+
         return (
             f"The flow at {error.json_path} is not valid. "
             f"Please double check your flow definition."

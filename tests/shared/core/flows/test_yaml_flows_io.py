@@ -72,6 +72,7 @@ def test_flow_validate_ambiguous_step_type():
         """
         flows:
             add_contact:
+                description: add a contact to your contact list
                 steps:
                 - collect: "add_contact_handle"
                   action: add_contact
@@ -88,6 +89,7 @@ def test_flow_validate_wrong_type():
         """
         flows:
             add_contact:
+                description: add a contact to your contact list
                 steps:
                 - collect: "add_contact_handle"
                   ask_before_filling: 42
@@ -103,6 +105,7 @@ def test_flow_validate_invalid_next():
         """
         flows:
             add_contact:
+                description: add a contact to your contact list
                 steps:
                 - collect: "add_contact_handle"
                   next: 42
@@ -122,6 +125,7 @@ def test_flow_validate_invalid_set_slots():
         """
         flows:
             add_contact:
+                description: add a contact to your contact list
                 steps:
                 - set_slots:
                     foo: bar
@@ -137,6 +141,7 @@ def test_flow_validate_invalid_next_list():
         """
         flows:
             add_contact:
+                description: add a contact to your contact list
                 steps:
                 - collect: "foo"
                   next:
@@ -157,6 +162,7 @@ def test_flow_validate_invalid_nested_next():
         """
         flows:
             add_contact:
+                description: add a contact to your contact list
                 steps:
                 - collect: "foo"
                   next:
@@ -180,6 +186,7 @@ def test_flow_validates_success_branch_only():
         """
         flows:
             add_contact:
+                description: add a contact to your contact list
                 steps:
                 - noop: true
                   next:
@@ -196,6 +203,7 @@ def test_flow_validates_invalid_step_content():
         """
         flows:
             add_contact:
+                description: add a contact to your contact list
                 steps:
                 - foo: bar
         """
@@ -215,8 +223,23 @@ def test_flow_validates_true_flow_guard():
         flows:
             add_contact:
                 if: true
+                description: add a contact to your contact list
                 steps:
                 - noop: true
         """
     )
     assert YAMLFlowsReader.read_from_string(data)
+
+
+def test_flow_validates_missing_flow_description() -> None:
+    data = textwrap.dedent(
+        """
+        flows:
+            add_contact:
+                steps:
+                - noop: true
+        """
+    )
+    with pytest.raises(YamlValidationException) as e:
+        YAMLFlowsReader.read_from_string(data)
+    assert "'description' is a required property" in str(e.value)

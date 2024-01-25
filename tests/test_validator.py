@@ -1269,6 +1269,7 @@ def test_flow_predicate_validation_fails_for_faulty_flow_link_predicates():
         """
         flows:
           pattern_bar:
+            description: Test that faulty flow link predicates are detected.
             steps:
             - id: first
               action: action_listen
@@ -1467,6 +1468,7 @@ def test_verify_predicates_namespaces_not_referenced(
         f"""
         flows:
           flow_bar:
+            description: Test that predicates without namespaces are validated.
             steps:
             - id: first
               action: action_listen
@@ -1504,12 +1506,13 @@ def test_verify_predicates_namespaces_not_referenced(
 def test_verify_predicates_on_flow_guards(
     predicate: str, expected_validation_result: bool
 ):
-    """Test that verify_predicates() correctly verifys flow guard predicates."""
+    """Test that verify_predicates() correctly verify flow guard predicates."""
     # Given
     flows = flows_from_str(
         f"""
         flows:
           spam_eggs:
+            description: Test that predicates are validated.
             if: {predicate}
             steps:
             - id: first
@@ -1547,6 +1550,7 @@ def test_verify_predicates_invalid_flow_guards(
         f"""
         flows:
           spam_eggs:
+            description: Test that predicates are validated.
             if: {predicate}
             steps:
             - id: first
@@ -1578,6 +1582,7 @@ def test_verify_predicates_reference_namespaces(
         f"""
         flows:
           flow_bar:
+            description: Test that predicates with namespaces are validated.
             steps:
             - id: first
               action: action_listen
@@ -1610,6 +1615,7 @@ def test_verify_namespaces_reference_slots_not_in_the_domain(
         """
         flows:
           flow_bar:
+            description: Test that slots referenced in predicates are validated.
             steps:
             - id: first
               action: action_listen
@@ -1639,6 +1645,7 @@ def test_verify_flow_id_from_link_step(
         """
         flows:
           flow_bar:
+            description: Test that link flow id is validated.
             steps:
             - id: first
               link: "non_existent_flow"
