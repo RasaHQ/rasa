@@ -29,13 +29,16 @@ CHANNEL_NAME = "audiocodes"
 KEEP_ALIVE_SECONDS = 120
 KEEP_ALIVE_EXPIRATION_FACTOR = 1.5
 
-logger.info(
-    f"Validating current Rasa Pro license scope which must include "
-    f"the '{VOICE_SCOPE}' scope to use the voice channel."
-)
 
-voice_product_scope = PRODUCT_AREA + " " + VOICE_SCOPE
-validate_license_from_env(product_area=voice_product_scope)
+def validate_voice_license_scope() -> None:
+    """Validate that the correct license scope is present."""
+    logger.info(
+        f"Validating current Rasa Pro license scope which must include "
+        f"the '{VOICE_SCOPE}' scope to use the voice channel."
+    )
+
+    voice_product_scope = PRODUCT_AREA + " " + VOICE_SCOPE
+    validate_license_from_env(product_area=voice_product_scope)
 
 
 class Unauthorized(SanicException):
@@ -185,6 +188,7 @@ class AudiocodesInput(InputChannel):
         keep_alive: int,
         keep_alive_expiration_factor: float,
     ) -> None:
+        validate_voice_license_scope()
         self.conversations: Dict[Text, Conversation] = {}
         self.token = token
         self.use_websocket = use_websocket
