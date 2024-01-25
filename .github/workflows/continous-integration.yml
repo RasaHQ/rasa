@@ -258,7 +258,7 @@ jobs:
   test:
     name: Run Tests
     if: github.ref_type != 'tag'
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-22.04-8core
     timeout-minutes: 60
     needs: [changes]
     strategy:
@@ -356,7 +356,7 @@ jobs:
       - name: Test Code 🔍 (multi-process)
         if: needs.changes.outputs.backend == 'true'
         env:
-          JOBS: 2
+          JOBS: 6
           PYTHONUTF8: 1
           DD_ENV: ${{ matrix.test }}
           DD_SERVICE: rasa
@@ -377,7 +377,7 @@ jobs:
   test-anonymization:
     name: Run Anonymization Unit Tests
     if: github.ref_type != 'tag'
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-22.04-8core
     timeout-minutes: 60
     needs: [changes]
     strategy:
@@ -471,7 +471,7 @@ jobs:
       - name: Test Code 🔍 (multi-process)
         if: needs.changes.outputs.backend == 'true'
         env:
-          JOBS: 2
+          JOBS: 6
           PYTHONUTF8: 1
           DD_SERVICE: rasa
           DD_ARGS: --ddtrace --ddtrace-patch-all
@@ -491,7 +491,7 @@ jobs:
   test-flaky:
     name: Run Flaky Tests
     if: github.ref_type != 'tag'
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-22.04-8core
     timeout-minutes: 60
     needs: [changes]
     strategy:
@@ -578,7 +578,7 @@ jobs:
       - name: Test Code 🔍 (multi-process)
         if: needs.changes.outputs.backend == 'true'
         env:
-          JOBS: 2
+          JOBS: 6
           PYTHONIOENCODING: "utf-8"
           DD_ENV: test-flaky
           DD_SERVICE: rasa
@@ -599,7 +599,7 @@ jobs:
   integration_test:
     name: Run Non-Sequential Integration Tests
     if: github.ref_type != 'tag'
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-22.04-8core
     timeout-minutes: 60
     needs: [changes]
     env:
@@ -723,7 +723,7 @@ jobs:
       - name: Test Code with Services 🩺
         if: needs.changes.outputs.backend == 'true'
         env:
-          JOBS: 2
+          JOBS: 6
           INTEGRATION_TEST_PYTEST_MARKERS: '"(not sequential) and (not broker) and (not concurrent_lock_store)"'
           PYTHONIOENCODING: "utf-8"
         run: |
