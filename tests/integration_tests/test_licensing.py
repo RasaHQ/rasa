@@ -1,9 +1,9 @@
 import os
 from pathlib import Path
 from typing import Callable
-from unittest import mock
 
 import pytest
+from pytest import MonkeyPatch
 from _pytest.pytester import RunResult
 
 from rasa.utils.licensing import LICENSE_ENV_VAR
@@ -14,13 +14,6 @@ from rasa.utils.licensing import LICENSE_ENV_VAR
 LICENSE_STUDIO = os.getenv("INTEGRATION_TESTS_STUDIO_LICENSE")
 LICENSE_PRO = os.getenv("INTEGRATION_TESTS_PRO_LICENSE")
 LICENSE_PRO_ALL_FEATURES = os.getenv("INTEGRATION_TESTS_PRO_LICENSE_ALL_FEATURES")
-
-
-@pytest.fixture
-def with_pro_license():
-    """Fixture to mock the env with a Rasa Pro license."""
-    with mock.patch.dict(os.environ, {LICENSE_ENV_VAR: LICENSE_PRO}):
-        yield
 
 
 @pytest.fixture
@@ -38,9 +31,11 @@ audiocodes:
     yield credentials
 
 
-def test_missing_license(run_in_simple_project: Callable[..., RunResult]):
-    with mock.patch.dict(os.environ, {LICENSE_ENV_VAR: ""}):
-        result = run_in_simple_project("--help")
+def test_missing_license(
+    monkeypatch: MonkeyPatch, run_in_simple_project: Callable[..., RunResult]
+):
+    monkeypatch.setenv(LICENSE_ENV_VAR, "")
+    result = run_in_simple_project("--help")
 
     assert result.ret == 1
     assert (
@@ -49,9 +44,11 @@ def test_missing_license(run_in_simple_project: Callable[..., RunResult]):
     ) in str(result.stderr)
 
 
-def test_missing_license_scope(run_in_simple_project: Callable[..., RunResult]):
-    with mock.patch.dict(os.environ, {LICENSE_ENV_VAR: LICENSE_STUDIO}):
-        result = run_in_simple_project("--help")
+def test_missing_license_scope(
+    monkeypatch: MonkeyPatch, run_in_simple_project: Callable[..., RunResult]
+):
+    monkeypatch.setenv(LICENSE_ENV_VAR, LICENSE_STUDIO)
+    result = run_in_simple_project("--help")
 
     assert result.ret == 1
     assert (
@@ -62,18 +59,22 @@ def test_missing_license_scope(run_in_simple_project: Callable[..., RunResult]):
 
 
 def test_license_scope_ok(
-    run_in_simple_project: Callable[..., RunResult], with_pro_license
+    monkeypatch: MonkeyPatch,
+    run_in_simple_project: Callable[..., RunResult],
 ):
+    monkeypatch.setenv(LICENSE_ENV_VAR, LICENSE_PRO)
     result = run_in_simple_project("--help")
 
     assert result.ret == 0
 
 
 def test_license_scope_missing_voice_scope(
-    audiocodes_credentials,
+    monkeypatch: MonkeyPatch,
+    audiocodes_credentials: Path,
     run_in_simple_project: Callable[..., RunResult],
-    with_pro_license,
 ):
+    monkeypatch.setenv(LICENSE_ENV_VAR, LICENSE_PRO)
+
     # first, train a model
     result = run_in_simple_project("train")
     assert result.ret == 0
