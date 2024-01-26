@@ -28,7 +28,6 @@ concurrency:
 # - RASA_PRO_LICENSE: license key for Rasa Pro. Used to run tests for Rasa Pro.
 # - INTEGRATION_TESTS_STUDIO_LICENSE: license key for Studio. Used in integration tests. Expires in 2034.
 # - INTEGRATION_TESTS_PRO_LICENSE: license key for Pro. Used in integration tests. Expires in 2034.
-# - INTEGRATION_TESTS_PRO_LICENSE_ALL_FEATURES: license key for Pro with all features. Used in integration tests. Expires in 2034.
 
 env:
   # needed to fix issues with boto during testing:

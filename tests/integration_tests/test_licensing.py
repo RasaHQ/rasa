@@ -1,10 +1,12 @@
 import os
+import signal
+import time
 from pathlib import Path
 from typing import Callable
 
 import pytest
 from pytest import MonkeyPatch
-from _pytest.pytester import RunResult
+from _pytest.pytester import RunResult, Pytester
 
 from rasa.utils.licensing import LICENSE_ENV_VAR
 
@@ -13,7 +15,7 @@ from rasa.utils.licensing import LICENSE_ENV_VAR
 # they all expire on 26.01.2034
 LICENSE_STUDIO = os.getenv("INTEGRATION_TESTS_STUDIO_LICENSE")
 LICENSE_PRO = os.getenv("INTEGRATION_TESTS_PRO_LICENSE")
-LICENSE_PRO_ALL_FEATURES = os.getenv("INTEGRATION_TESTS_PRO_LICENSE_ALL_FEATURES")
+LICENSE_PRO_ALL_FEATURES = os.getenv("RASA_PRO_LICENSE")
 
 
 @pytest.fixture
@@ -89,29 +91,41 @@ def test_license_scope_missing_voice_scope(
     ) in str(result.stderr)
 
 
-# FIXME: this test should pass at some point, but apparently the license tool
-#        hosted at licenses.rasa-dev.io/#/licenses
-#        doesn't support generate the voice scope
-# def test_license_scope_voice_scope_ok(
-#     audiocodes_credentials, run_in_simple_project: Callable[..., RunResult]
-# ):
-#     with mock.patch.dict(os.environ, {LICENSE_ENV_VAR: LICENSE_PRO_ALL_FEATURES}):
-#         # first, train a model
-#         result = run_in_simple_project("train")
-#         assert result.ret == 0
+def test_license_scope_voice_scope_ok(
+    monkeypatch: MonkeyPatch,
+    audiocodes_credentials,
+    run_in_simple_project: Callable[..., RunResult],
+    pytester: Pytester,
+):
+    monkeypatch.setenv(LICENSE_ENV_VAR, LICENSE_PRO_ALL_FEATURES)
+    # first, train a model
+    result = run_in_simple_project("train")
+    assert result.ret == 0
 
-#         # then run
-#         try:
-#             result = run_in_simple_project(
-#                 "run", "--credentials", str(audiocodes_credentials), timeout=5
-#             )
-#         except Pytester.TimeoutExpired:
-#             import pdb
+    # then run; can't use run_in_simple_project() because
+    # we need to communicate()
+    popen = pytester.popen(
+        # setting stdin to an empty bytes string prevents pytester
+        # to close it; which is problematic below when we want to call
+        # communicate()
+        ["rasa", "run", "--credentials", str(audiocodes_credentials)], stdin=b""
+    )
 
-#             pdb.set_trace()
-#         else:
-#             # fail!
-#             import pdb
+    # sleep some time to let the time for the server to start
+    time.sleep(6)
+    # send CTR-C to the process
+    popen.send_signal(signal.SIGINT)
 
-#             pdb.set_trace()
-#             pass
+    # read stderr mostly
+    _, errs_bytes = popen.communicate()
+    errs = errs_bytes.decode()
+
+    # check that the voice channel is loaded
+    assert (
+        "Validating current Rasa Pro license scope which must include "
+        "the 'rasa:voice' scope to use the voice channel."
+    ) in errs
+    # check that the license scope is validated
+    assert "/webhooks/audiocodes/" in errs
+    # check that the server started
+    assert "Rasa server is up and running." in errs
