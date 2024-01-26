@@ -26,6 +26,9 @@ concurrency:
 # - SENTRY_AUTH_TOKEN: authentication used to tell Sentry about any new releases
 #                      created at https://sentry.io/settings/account/api/auth-tokens/
 # - RASA_PRO_LICENSE: license key for Rasa Pro. Used to run tests for Rasa Pro.
+# - INTEGRATION_TESTS_STUDIO_LICENSE: license key for Studio. Used in integration tests. Expires in 2034.
+# - INTEGRATION_TESTS_PRO_LICENSE: license key for Pro. Used in integration tests. Expires in 2034.
+# - INTEGRATION_TESTS_PRO_LICENSE_ALL_FEATURES: license key for Pro with all features. Used in integration tests. Expires in 2034.
 
 env:
   # needed to fix issues with boto during testing:
@@ -726,6 +729,9 @@ jobs:
           JOBS: 2
           INTEGRATION_TEST_PYTEST_MARKERS: '"(not sequential) and (not broker) and (not concurrent_lock_store)"'
           PYTHONIOENCODING: "utf-8"
+          INTEGRATION_TESTS_STUDIO_LICENSE: ${{ secrets.INTEGRATION_TESTS_STUDIO_LICENSE }}
+          INTEGRATION_TESTS_PRO_LICENSE: ${{ secrets.INTEGRATION_TESTS_PRO_LICENSE }}
+          INTEGRATION_TESTS_PRO_LICENSE_ALL_FEATURES: ${{ secrets.INTEGRATION_TESTS_PRO_LICENSE_ALL_FEATURES }}
         run: |
           make test-integration
 
