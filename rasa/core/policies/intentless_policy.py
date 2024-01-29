@@ -66,6 +66,8 @@ from rasa.utils.ml_utils import (
     response_for_template,
 )
 
+from rasa.utils.log_utils import log_llm
+
 if TYPE_CHECKING:
     from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 
@@ -607,6 +609,12 @@ class IntentlessPolicy(Policy):
             "current_conversation": history,
         }
         prompt = Template(self.prompt_template).render(**inputs)
+        log_llm(
+            logger=structlogger,
+            log_module=self.__class__.__name__,
+            log_event="intentless_policy.generate_answer.prompt_rendered",
+            prompt=prompt,
+        )
         try:
             return llm(prompt)
         except Exception as e:

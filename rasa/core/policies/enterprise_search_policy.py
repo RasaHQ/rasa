@@ -54,6 +54,8 @@ if TYPE_CHECKING:
     from langchain.schema.embeddings import Embeddings
     from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 
+from rasa.utils.log_utils import log_llm
+
 structlogger = structlog.get_logger()
 
 dotenv.load_dotenv("./.env")
@@ -335,8 +337,10 @@ class EnterpriseSearchPolicy(Policy):
                 "slots": self._prepare_slots_for_template(tracker),
             }
             prompt = Template(self.prompt_template).render(**inputs)
-            structlogger.debug(
-                "enterprise_search_policy.predict_action_probabilities.prompt",
+            log_llm(
+                logger=structlogger,
+                log_module=self.__class__.__name__,
+                log_event="enterprise_search_policy.predict_action_probabilities.prompt_rendered",
                 prompt=prompt,
             )
             try:
