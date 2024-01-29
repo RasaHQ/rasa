@@ -192,7 +192,7 @@ class ContextualResponseRephraser(TemplatedNaturalLanguageGenerator):
         )
         log_llm(
             logger=structlogger,
-            log_module=self.__class__.__name__,
+            log_module="ContextualResponseRephraser",
             log_event="nlg.rephrase.prompt_rendered",
             prompt=prompt,
         )

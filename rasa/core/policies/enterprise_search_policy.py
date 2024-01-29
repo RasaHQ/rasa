@@ -339,7 +339,7 @@ class EnterpriseSearchPolicy(Policy):
             prompt = Template(self.prompt_template).render(**inputs)
             log_llm(
                 logger=structlogger,
-                log_module=self.__class__.__name__,
+                log_module="EnterpriseSearchPolicy",
                 log_event="enterprise_search_policy.predict_action_probabilities.prompt_rendered",
                 prompt=prompt,
             )

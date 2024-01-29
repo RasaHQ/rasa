@@ -611,7 +611,7 @@ class IntentlessPolicy(Policy):
         prompt = Template(self.prompt_template).render(**inputs)
         log_llm(
             logger=structlogger,
-            log_module=self.__class__.__name__,
+            log_module="IntentlessPolicy",
             log_event="intentless_policy.generate_answer.prompt_rendered",
             prompt=prompt,
         )
