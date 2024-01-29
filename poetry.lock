@@ -178,18 +178,18 @@ aiohttp = "*"
 
 [[package]]
 name = "aioresponses"
-version = "0.7.4"
+version = "0.7.6"
 description = "Mock out requests made by ClientSession from aiohttp package"
 category = "dev"
 optional = false
 python-versions = "*"
 files = [
-    {file = "aioresponses-0.7.4-py2.py3-none-any.whl", hash = "sha256:1160486b5ea96fcae6170cf2bdef029b9d3a283b7dbeabb3d7f1182769bfb6b7"},
-    {file = "aioresponses-0.7.4.tar.gz", hash = "sha256:9b8c108b36354c04633bad0ea752b55d956a7602fe3e3234b939fc44af96f1d8"},
+    {file = "aioresponses-0.7.6-py2.py3-none-any.whl", hash = "sha256:d2c26defbb9b440ea2685ec132e90700907fd10bcca3e85ec2f157219f0d26f7"},
+    {file = "aioresponses-0.7.6.tar.gz", hash = "sha256:f795d9dbda2d61774840e7e32f5366f45752d1adc1b74c9362afd017296c7ee1"},
 ]
 
 [package.dependencies]
-aiohttp = ">=2.0.0,<4.0.0"
+aiohttp = ">=3.3.0,<4.0.0"
 
 [[package]]
 name = "aiormq"
