@@ -42,10 +42,18 @@ class TrainingHook(GraphNodeHook):
         graph_component_class = self._get_graph_component_class(
             execution_context, node_name
         )
+        graph_component_config = self._get_graph_component_config(
+            execution_context, node_name
+        )
+
+        merged_config = {
+            **config,
+            **graph_component_config,
+        }
 
         fingerprint_key = fingerprinting.calculate_fingerprint_key(
             graph_component_class=graph_component_class,
-            config=config,
+            config=merged_config,
             inputs=received_inputs,
         )
 
@@ -87,6 +95,12 @@ class TrainingHook(GraphNodeHook):
     ) -> Type:
         graph_component_class = execution_context.graph_schema.nodes[node_name].uses
         return graph_component_class
+
+    @staticmethod
+    def _get_graph_component_config(
+        execution_context: ExecutionContext, node_name: str
+    ) -> Dict[str, Any]:
+        return execution_context.graph_schema.nodes[node_name].config
 
 
 class LoggingHook(GraphNodeHook):

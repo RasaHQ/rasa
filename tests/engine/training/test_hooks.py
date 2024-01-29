@@ -19,7 +19,7 @@ def test_training_hook_saves_to_cache(
                     needs={},
                     constructor_name="create",
                     fn="run",
-                    config={},
+                    config={"custom_folder": "folder_name"},
                     uses=CacheableComponent,
                 )
             }
@@ -51,7 +51,7 @@ def test_training_hook_saves_to_cache(
     # This is the same key that the hook will generate
     fingerprint_key = fingerprinting.calculate_fingerprint_key(
         graph_component_class=CacheableComponent,
-        config={"prefix": "Hello "},
+        config={"custom_folder": "folder_name", "prefix": "Hello "},
         inputs={"suffix": "Joe"},
     )
 
