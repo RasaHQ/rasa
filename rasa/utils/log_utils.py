@@ -163,9 +163,7 @@ def log_llm(logger: Any, log_module: str, log_event: str, **kwargs: Dict) -> Non
     ]
 
     log_level_llm_module = LOG_LEVEL_NAME_TO_LEVEL[
-        os.environ.get(
-            ENV_LOG_LEVEL_LLM_BY_MODULE[log_module], DEFAULT_LOG_LEVEL_LLM
-        ).lower()
+        os.environ.get(ENV_LOG_LEVEL_LLM_BY_MODULE[log_module], DEFAULT_LOG_LEVEL_LLM)
     ]
 
     # log at the highest specified level, e.g. max(DEBUG=10, INFO=20)
