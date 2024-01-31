@@ -7,7 +7,7 @@ from typing import List, Text
 
 from rasa import telemetry
 from rasa.cli import SubParsersAction
-from rasa.cli.shell import shell
+from rasa.cli.inspect import inspect
 from rasa.shared.utils.cli import print_success, print_error_and_exit
 from rasa.shared.constants import (
     DOCS_BASE_URL,
@@ -106,9 +106,7 @@ def print_run_or_instructions(args: argparse.Namespace) -> None:
     import questionary
 
     should_run = (
-        questionary.confirm(
-            "Do you want to speak to the trained assistant on the command line? 🤖"
-        )
+        questionary.confirm("Do you want to speak to the trained assistant? 🤖")
         .skip_if(args.no_prompt, default=False)
         .ask()
     )
@@ -130,7 +128,7 @@ def print_run_or_instructions(args: argparse.Namespace) -> None:
 
         args.port = constants.DEFAULT_SERVER_PORT
 
-        shell(args)
+        inspect(args)
     else:
         if args.no_prompt:
             print(
