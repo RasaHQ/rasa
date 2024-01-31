@@ -1,4 +1,5 @@
 import os
+import signal
 import time
 from pathlib import Path
 from typing import Callable
@@ -114,7 +115,7 @@ def test_license_scope_voice_scope_ok(
     # sleep some time to let the time for the server to start
     time.sleep(6)
     # send CTR-C to the process
-    popen.terminate()
+    popen.send_signal(signal.SIGINT)
 
     # read stderr mostly
     _, errs_bytes = popen.communicate()
