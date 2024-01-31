@@ -107,7 +107,8 @@ def test_license_scope_voice_scope_ok(
         # setting stdin to an empty bytes string prevents pytester
         # to close it; which is problematic below when we want to call
         # communicate()
-        ["rasa", "run", "--credentials", str(audiocodes_credentials)], stdin=b""
+        ["rasa", "run", "--credentials", str(audiocodes_credentials)],
+        stdin=b"",
     )
 
     # sleep some time to let the time for the server to start
