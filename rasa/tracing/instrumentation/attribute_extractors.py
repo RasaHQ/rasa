@@ -305,3 +305,89 @@ def extract_attrs_for_generate(
         "class_name": self.__class__.__name__,
         "utter": utter_action,
     }
+
+
+def extract_attrs_for_execute_commands(
+    tracker: DialogueStateTracker, all_flows: FlowsList
+) -> Dict[str, Any]:
+    return {
+        "number_of_events": len(tracker.events),
+        "sender_id": tracker.sender_id,
+        "module_name": "command_processor",
+    }
+
+
+def extract_attrs_for_validate_state_of_commands(
+    commands: List[Command],
+) -> Dict[str, Any]:
+    commands_list = []
+
+    for command in commands:
+        command_type = command.command()
+        command_as_dict = command.as_dict()
+
+        if command_type == "set slot":
+            command_as_dict.pop("value", None)
+
+        if command_type == "correct slot":
+            corrected_slots = command_as_dict.get("corrected_slots", [])
+            updated_corrected_slots = []
+            for corrected_slot in corrected_slots:
+                corrected_slot.pop("value", None)
+                updated_corrected_slots.append(corrected_slot)
+
+            command_as_dict["corrected_slots"] = updated_corrected_slots
+
+        commands_list.append(command_as_dict)
+
+    return {
+        "cleaned_up_commands": str(commands_list),
+        "module_name": "command_processor",
+    }
+
+
+def extract_attrs_for_clean_up_commands(
+    commands: List[Command], tracker: DialogueStateTracker, all_flows: FlowsList
+) -> Dict[str, Any]:
+    commands_list = []
+
+    for command in commands:
+        command_type = command.command()
+        command_as_dict = command.as_dict()
+
+        if command_type == "set slot":
+            command_as_dict.pop("value", None)
+
+        commands_list.append(command_as_dict)
+
+    return {"commands": str(commands_list), "module_name": "command_processor"}
+
+
+def extract_attrs_for_remove_duplicated_set_slots(
+    events: List[Event],
+) -> Dict[str, Any]:
+    resulting_events = []
+
+    for event in events:
+        event_as_dict = event.as_dict()
+
+        if event_as_dict.get("event") == "stack":
+            update = event_as_dict.pop("update", "")
+            if update:
+                update = json.loads(update)
+                for update_dict in update:
+                    value = update_dict.pop("value", {})
+                    value.pop("corrected_slots", None)
+                    update_dict["value"] = json.dumps(value)
+                    event_as_dict["update"] = str([update_dict])
+                    break
+
+        elif event_as_dict.get("event") == "slot":
+            event_as_dict.pop("value", None)
+
+        resulting_events.append(event_as_dict)
+
+    return {
+        "resulting_events": str(resulting_events),
+        "module_name": "command_processor",
+    }

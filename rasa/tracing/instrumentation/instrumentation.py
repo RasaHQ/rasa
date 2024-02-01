@@ -1,5 +1,6 @@
 import contextlib
 import functools
+import importlib
 import inspect
 import logging
 from typing import (
@@ -46,6 +47,10 @@ T = TypeVar("T")
 
 logger = logging.getLogger(__name__)
 INSTRUMENTED_BOOLEAN_ATTRIBUTE_NAME = "class_has_been_instrumented"
+INSTRUMENTED_MODULE_BOOLEAN_ATTRIBUTE_NAME = "module_has_been_instrumented"
+COMMAND_PROCESSOR_MODULE_NAME = (
+    "rasa.dialogue_understanding.processor.command_processor"
+)
 
 
 def _check_extractor_argument_list(
@@ -91,10 +96,14 @@ def traceable(
             if attr_extractor and should_extract_args
             else {}
         )
+
+        module_name = attrs.pop("module_name", "")
         if issubclass(self.__class__, GraphNode) and fn.__name__ == "__call__":
             span_name = f"{self.__class__.__name__}." + attrs.get(
                 "component_class", "GraphNode"
             )
+        elif module_name == "command_processor":
+            span_name = f"{module_name}.{fn.__name__}"
         else:
             span_name = f"{self.__class__.__name__}.{fn.__name__}"
         with tracer.start_as_current_span(span_name, attributes=attrs):
@@ -326,6 +335,9 @@ def instrument(
         )
         mark_class_as_instrumented(contextual_response_rephraser_class)
 
+    if not module_is_instrumented(COMMAND_PROCESSOR_MODULE_NAME):
+        _instrument_command_processor_module(tracer_provider)
+
 
 def _instrument_processor(
     tracer_provider: TracerProvider, processor_class: Type[ProcessorType]
@@ -386,6 +398,34 @@ def _instrument_get_tracker(
     )
 
 
+def _instrument_command_processor_module(tracer_provider: TracerProvider) -> None:
+    _instrument_function(
+        tracer_provider.get_tracer(COMMAND_PROCESSOR_MODULE_NAME),
+        COMMAND_PROCESSOR_MODULE_NAME,
+        "execute_commands",
+        attribute_extractors.extract_attrs_for_execute_commands,
+    )
+    _instrument_function(
+        tracer_provider.get_tracer(COMMAND_PROCESSOR_MODULE_NAME),
+        COMMAND_PROCESSOR_MODULE_NAME,
+        "validate_state_of_commands",
+        attribute_extractors.extract_attrs_for_validate_state_of_commands,
+    )
+    _instrument_function(
+        tracer_provider.get_tracer(COMMAND_PROCESSOR_MODULE_NAME),
+        COMMAND_PROCESSOR_MODULE_NAME,
+        "clean_up_commands",
+        attribute_extractors.extract_attrs_for_clean_up_commands,
+    )
+    _instrument_function(
+        tracer_provider.get_tracer(COMMAND_PROCESSOR_MODULE_NAME),
+        COMMAND_PROCESSOR_MODULE_NAME,
+        "remove_duplicated_set_slots",
+        attribute_extractors.extract_attrs_for_remove_duplicated_set_slots,
+    )
+    mark_module_as_instrumented(COMMAND_PROCESSOR_MODULE_NAME)
+
+
 def _instrument_method(
     tracer: Tracer,
     instrumented_class: Type,
@@ -394,14 +434,42 @@ def _instrument_method(
     header_extractor: Optional[Callable] = None,
 ) -> None:
     method_to_trace = getattr(instrumented_class, method_name)
-    if inspect.iscoroutinefunction(method_to_trace):
-        traced_method = traceable_async(
-            method_to_trace, tracer, attr_extractor, header_extractor
+    traced_method = _wrap_with_tracing_decorator(
+        method_to_trace, tracer, attr_extractor, header_extractor
+    )
+    setattr(instrumented_class, method_name, traced_method)
+
+
+def _instrument_function(
+    tracer: Tracer,
+    module_name: Text,
+    function_name: Text,
+    attr_extractor: Optional[Callable],
+    header_extractor: Optional[Callable] = None,
+) -> None:
+    module = importlib.import_module(module_name)
+    function_to_trace = getattr(module, function_name)
+    traced_function = _wrap_with_tracing_decorator(
+        function_to_trace, tracer, attr_extractor, header_extractor
+    )
+
+    setattr(module, function_name, traced_function)
+
+
+def _wrap_with_tracing_decorator(
+    callable_to_trace: Callable,
+    tracer: Tracer,
+    attr_extractor: Optional[Callable],
+    header_extractor: Optional[Callable] = None,
+) -> Callable:
+    if inspect.iscoroutinefunction(callable_to_trace):
+        traced_callable = traceable_async(
+            callable_to_trace, tracer, attr_extractor, header_extractor
         )
     else:
-        traced_method = traceable(method_to_trace, tracer, attr_extractor)
+        traced_callable = traceable(callable_to_trace, tracer, attr_extractor)
 
-    setattr(instrumented_class, method_name, traced_method)
+    return traced_callable
 
 
 def _instrument_run_action(
@@ -472,3 +540,24 @@ def mark_class_as_instrumented(instrumented_class: Type) -> None:
             _mangled_instrumented_boolean_attribute_name(instrumented_class),
             True,
         )
+
+
+def _instrumented_module_boolean_attribute_name(module_name: Text) -> Text:
+    return f"{module_name}_{INSTRUMENTED_MODULE_BOOLEAN_ATTRIBUTE_NAME}"
+
+
+def module_is_instrumented(module_name: Text) -> bool:
+    """Check if a module has already been instrumented."""
+    module = importlib.import_module(module_name)
+    return getattr(
+        module,
+        _instrumented_module_boolean_attribute_name(module_name),
+        False,
+    )
+
+
+def mark_module_as_instrumented(module_name: Text) -> None:
+    """Mark a module as instrumented if it isn't already marked."""
+    module = importlib.import_module(module_name)
+    if not module_is_instrumented(module_name):
+        setattr(module, _instrumented_module_boolean_attribute_name(module_name), True)
