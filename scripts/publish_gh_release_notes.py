@@ -81,7 +81,7 @@ def main():
         return 1
 
     version = Version(tag_name)
-    if version.pre:
+    if version.pre or version.dev:
         md_body = "_Pre-release version_"
     else:
         md_body = parse_changelog(tag_name)
