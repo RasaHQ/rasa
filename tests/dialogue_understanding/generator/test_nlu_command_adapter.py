@@ -41,6 +41,7 @@ class TestNLUCommandAdapter:
             """
             flows:
               test_flow:
+                description: flow test_flow
                 nlu_trigger:
                   - intent: foo
                 steps:
@@ -123,6 +124,7 @@ class TestNLUCommandAdapter:
             """
             flows:
               first_flow:
+                description: flow first_flow
                 nlu_trigger:
                   - intent: foo
                 steps:
@@ -134,6 +136,7 @@ class TestNLUCommandAdapter:
             """
             flows:
               second_flow:
+                description: flow second_flow
                 nlu_trigger:
                   - intent: foo
                 steps:

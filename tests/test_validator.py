@@ -1373,6 +1373,7 @@ def test_flow_predicate_validation_fails_for_faulty_flow_link_predicates():
         """
         flows:
           pattern_bar:
+            description: Test that faulty flow link predicates are detected.
             steps:
             - id: first
               action: action_listen
@@ -1575,6 +1576,7 @@ def test_verify_predicates_namespaces_not_referenced(
         f"""
         flows:
           flow_bar:
+            description: Test that predicates without namespaces are validated.
             steps:
             - id: first
               action: action_listen
@@ -1622,12 +1624,13 @@ def test_verify_predicates_namespaces_not_referenced(
 def test_verify_predicates_on_flow_guards(
     predicate: str, expected_validation_result: bool
 ):
-    """Test that verify_predicates() correctly verifys flow guard predicates."""
+    """Test that verify_predicates() correctly verify flow guard predicates."""
     # Given
     flows = flows_from_str(
         f"""
         flows:
           spam_eggs:
+            description: Test that predicates are validated.
             if: {predicate}
             steps:
             - id: first
@@ -1666,6 +1669,7 @@ def test_verify_predicates_invalid_flow_guards(
         f"""
         flows:
           spam_eggs:
+            description: Test that predicates are validated.
             if: {predicate}
             steps:
             - id: first
@@ -1698,6 +1702,7 @@ def test_verify_predicates_reference_namespaces(predicate: str) -> None:
         f"""
         flows:
           flow_bar:
+            description: Test that predicates with namespaces are validated.
             steps:
             - id: first
               action: action_listen
@@ -1729,6 +1734,7 @@ def test_verify_namespaces_reference_slots_not_in_the_domain() -> None:
         """
         flows:
           flow_bar:
+            description: Test that slots referenced in predicates are validated.
             steps:
             - id: first
               action: action_listen
@@ -1753,3 +1759,29 @@ def test_verify_namespaces_reference_slots_not_in_the_domain() -> None:
             caplog, expected_log_event, expected_log_level, [expected_log_message]
         )
         assert len(logs) == 1
+
+
+def test_verify_flow_id_from_link_step(
+    caplog: LogCaptureFixture,
+) -> None:
+    """Test that verify_flow_id_from_link_step() correctly logs invalid flow id."""
+    flows = flows_from_str(
+        """
+        flows:
+          flow_bar:
+            description: Test that link flow id is validated.
+            steps:
+            - id: first
+              link: "non_existent_flow"
+        """
+    )
+    validator = Validator(Domain.empty(), TrainingData(), StoryGraph([]), flows, None)
+    with caplog.at_level(logging.ERROR):
+        assert not validator.verify_flows_steps_against_domain()
+
+    assert (
+        "The flow 'non_existent_flow' is used in the step "
+        "'first' of flow id 'flow_bar', but it "
+        "is not listed in the flows file. "
+        "Did you make a typo?"
+    ) in caplog.text

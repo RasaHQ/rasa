@@ -85,6 +85,7 @@ def test_run_command_on_tracker_correcting_previous_flow(collect_foo_tracker_upd
         """
         flows:
           my_flow:
+            description: test my flow
             name: foo flow
             steps:
             - id: collect_foo
@@ -143,6 +144,7 @@ def test_run_command_on_tracker_correcting_current_flow(
         """
         flows:
           my_flow:
+            description: test my flow
             name: foo flow
             steps:
             - id: collect_foo
@@ -340,6 +342,7 @@ def test_run_command_on_tracker_correcting_slot_with_asked_before_filling(
         """
         flows:
           my_flow:
+            description: test my flow
             name: foo flow
             steps:
             - id: collect_foo
@@ -386,6 +389,7 @@ def test_run_command_on_tracker_correcting_during_a_correction(
         """
         flows:
           my_flow:
+            description: test my flow
             name: foo flow
             steps:
             - id: collect_foo
@@ -551,6 +555,7 @@ def test_find_earliest_updated_collect_info(
         """
         flows:
           my_flow:
+            description: test my flow
             name: foo flow
             steps:
             - id: collect_foo
@@ -621,6 +626,7 @@ def test_find_earliest_updated_collect_info_todo(
         """
         flows:
           my_flow:
+            description: test my flow
             name: foo flow
             steps:
             - id: collect_foo
@@ -675,6 +681,7 @@ def test_are_all_slots_reset_only(proposed_slots: Dict[str, Any], expected: bool
         """
         flows:
           my_flow:
+            description: test my flow
             name: foo flow
             steps:
             - id: collect_foo

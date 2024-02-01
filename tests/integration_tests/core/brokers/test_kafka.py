@@ -1,3 +1,5 @@
+import pytest
+
 from rasa.core.brokers.kafka import KafkaEventBroker
 from pytest import LogCaptureFixture
 import logging.config

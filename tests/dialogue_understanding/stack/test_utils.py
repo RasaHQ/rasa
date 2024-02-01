@@ -96,6 +96,7 @@ def test_filled_slots_for_active_flow_start():
         """
         flows:
           my_flow:
+            description: test my flow
             name: foo flow
             steps:
             - id: collect_foo
@@ -133,6 +134,7 @@ def test_filled_slots_for_active_flow_end():
         """
         flows:
           my_flow:
+            description: test my flow
             name: foo flow
             steps:
             - id: collect_foo
@@ -174,6 +176,7 @@ def test_filled_slots_for_active_flow_handles_empty():
         """
         flows:
           my_flow:
+            description: test my flow
             name: foo flow
             steps:
             - id: collect_foo
@@ -198,6 +201,7 @@ def test_filled_slots_for_active_flow_skips_user_uttered():
         """
         flows:
           my_flow:
+            description: test my flow
             name: foo flow
             steps:
             - id: collect_foo
@@ -243,6 +247,7 @@ def test_filled_slots_for_active_flow_only_collects_till_top_most_user_flow_fram
         """
         flows:
           my_flow:
+            description: test my flow
             name: foo flow
             steps:
             - id: collect_foo
@@ -350,6 +355,7 @@ def test_get_collect_steps_excluding_ask_before_filling_for_active_flow() -> Non
         """
         flows:
           my_flow:
+            description: test my flow
             name: foo flow
             steps:
             - collect: foo
@@ -357,6 +363,7 @@ def test_get_collect_steps_excluding_ask_before_filling_for_active_flow() -> Non
               ask_before_filling: true
             - collect: baz
           other_flow:
+            description: test other flow
             name: abc flow
             steps:
             - collect: abc
@@ -380,6 +387,7 @@ def test_get_collect_steps_excluding_ask_before_filling_empty_stack() -> None:
         """
         flows:
           my_flow:
+            description: test my flow
             name: foo flow
             steps:
             - collect: foo
@@ -387,6 +395,7 @@ def test_get_collect_steps_excluding_ask_before_filling_empty_stack() -> None:
               ask_before_filling: true
             - collect: baz
           other_flow:
+            description: test other flow
             name: abc flow
             steps:
             - collect: abc
