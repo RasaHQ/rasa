@@ -159,7 +159,7 @@ def log_llm(logger: Any, log_module: str, log_event: str, **kwargs: Dict) -> Non
         **kwargs: dictionary of additional logging context
     """
     log_level_llm = LOG_LEVEL_NAME_TO_LEVEL[
-        os.environ.get(ENV_LOG_LEVEL_LLM, DEFAULT_LOG_LEVEL_LLM).lower()
+        os.environ.get(ENV_LOG_LEVEL_LLM, DEFAULT_LOG_LEVEL_LLM)
     ]
 
     log_level_llm_module = LOG_LEVEL_NAME_TO_LEVEL[
