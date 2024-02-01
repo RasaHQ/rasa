@@ -18,6 +18,8 @@ jobs:
     steps:
       - name: Checkout git repository 🕝
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        with:
+          token: ${{ secrets.RELEASE_TAGGER_PAT }}
 
       - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
         uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c
