@@ -1,3 +1,4 @@
+import logging
 import textwrap
 import warnings
 from pathlib import Path
@@ -6,7 +7,7 @@ from typing import Any, Dict, List, Text
 import pytest
 import structlog
 
-# from _pytest.logging import LogCaptureFixture
+from pytest import LogCaptureFixture
 
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.domain import Domain

@@ -574,9 +574,11 @@ def test_response_filtering_user_flows() -> None:
         f"""
         flows:
           foo:
+            description: test foo.
             steps:
               - action: {utter_hi}
           bar:
+            description: test bar.
             steps:
               - action: {utter_have_stars}
         """
