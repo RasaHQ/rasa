@@ -158,7 +158,7 @@ def log_llm(logger: Any, log_module: str, log_event: str, **kwargs: Dict) -> Non
         log_event: string describing the log event
         **kwargs: dictionary of additional logging context
     """
-    log_level_llm = structlog.stdlib._NAME_TO_LEVEL[
+    log_level_llm = LOG_LEVEL_NAME_TO_LEVEL[
         os.environ.get(ENV_LOG_LEVEL_LLM, DEFAULT_LOG_LEVEL_LLM).lower()
     ]
 
