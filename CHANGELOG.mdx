@@ -1,3 +1,18 @@
+## [3.7.6] - 2024-02-01
+                       
+Rasa 3.7.6 (2024-02-01)                        
+### Bugfixes
+- [#144](https://github.com/rasahq/rasa/issues/144): Fix reported issue, e.g. https://github.com/RasaHQ/rasa/issues/5461 in Rasa Pro:
+  Do not unpack json payload if `data` key is not present in the response custom output payloads when using socketio channel.
+  This allows assistants which use custom output payloads to work with the Rasa Inspector debugging tool.
+- [#206](https://github.com/rasahq/rasa/issues/206): Make flow description a required property in the flow json schema.
+- [#778](https://github.com/rasahq/rasa/issues/778): Fix training the enterprise search policy multiple times with a different 
+  source folder name than the default name "docs".
+
+### Miscellaneous internal changes
+- [#223](https://github.com/rasahq/rasa/issues/223)
+
+
 ## [3.7.5] - 2024-01-24
 
 Rasa 3.7.5 (2024-01-24)
