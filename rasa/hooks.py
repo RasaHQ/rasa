@@ -25,7 +25,7 @@ hookimpl = pluggy.HookimplMarker("rasa")
 logger = logging.getLogger(__name__)
 
 
-@hookimpl
+@hookimpl  # type: ignore[misc]
 def refine_cli(
     subparsers: SubParsersAction,
     parent_parsers: List[argparse.ArgumentParser],
@@ -43,7 +43,7 @@ def refine_cli(
     return None
 
 
-@hookimpl
+@hookimpl  # type: ignore[misc]
 def configure_commandline(cmdline_arguments: argparse.Namespace) -> Optional[Text]:
     endpoints_file = None
 
@@ -61,19 +61,19 @@ def configure_commandline(cmdline_arguments: argparse.Namespace) -> Optional[Tex
     return endpoints_file
 
 
-@hookimpl
+@hookimpl  # type: ignore[misc]
 def init_telemetry(endpoints_file: Optional[Text]) -> None:
     import rasa.telemetry
 
     rasa.telemetry.identify_endpoint_config_traits(endpoints_file)
 
 
-@hookimpl
+@hookimpl  # type: ignore[misc]
 def init_managers(endpoints_file: Optional[Text]) -> None:
     load_secret_manager(endpoints_file)
 
 
-@hookimpl
+@hookimpl  # type: ignore[misc]
 def create_tracker_store(
     endpoint_config: Union["TrackerStore", "EndpointConfig"],
     domain: "Domain",
@@ -87,7 +87,7 @@ def create_tracker_store(
     return endpoint_config
 
 
-@hookimpl
+@hookimpl  # type: ignore[misc]
 def init_anonymization_pipeline(endpoints_file: Optional[Text]) -> None:
     """Hook implementation for initializing the anonymization pipeline."""
     from rasa.anonymization.anonymization_pipeline import load_anonymization_pipeline
@@ -95,7 +95,7 @@ def init_anonymization_pipeline(endpoints_file: Optional[Text]) -> None:
     load_anonymization_pipeline(endpoints_file)
 
 
-@hookimpl
+@hookimpl  # type: ignore[misc]
 def get_anonymization_pipeline() -> Optional["AnonymizationPipeline"]:
     """Hook implementation for getting the anonymization pipeline."""
     from rasa.anonymization.anonymization_pipeline import AnonymizationPipelineProvider
@@ -103,14 +103,14 @@ def get_anonymization_pipeline() -> Optional["AnonymizationPipeline"]:
     return AnonymizationPipelineProvider().get_anonymization_pipeline()
 
 
-@hookimpl
+@hookimpl  # type: ignore[misc]
 def get_license_hash() -> Optional[Text]:
     """Hook implementation for getting the license hash."""
     license_value = retrieve_license_from_env()
     return hashlib.sha256(license_value.encode("utf-8")).hexdigest()
 
 
-@hookimpl
+@hookimpl  # type: ignore[misc]
 def after_server_stop() -> None:
     """Hook implementation for stopping the anonymization pipeline."""
     from rasa.anonymization.anonymization_pipeline import AnonymizationPipelineProvider
