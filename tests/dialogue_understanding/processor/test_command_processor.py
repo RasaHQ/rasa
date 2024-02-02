@@ -54,6 +54,7 @@ def collect_info_flow() -> FlowsList:
         """
         flows:
           spam:
+            description: "This flow collects information."
             steps:
             - id: collect_ham
               collect: ham

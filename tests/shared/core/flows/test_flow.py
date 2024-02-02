@@ -25,10 +25,12 @@ def user_flows_and_patterns() -> FlowsList:
         """
         flows:
           foo:
+            description: a test flow
             steps:
               - id: first
                 action: action_listen
           pattern_bar:
+            description: a test pattern
             steps:
             - id: first
               action: action_listen
@@ -42,6 +44,7 @@ def only_patterns() -> FlowsList:
         """
         flows:
           pattern_bar:
+            description: a test pattern
             steps:
             - id: first
               action: action_listen
@@ -118,7 +121,15 @@ def test_user_flow_ids_handles_patterns_only(only_patterns: FlowsList):
 def test_user_flows(user_flows_and_patterns: FlowsList):
     user_flows = user_flows_and_patterns.user_flows
     expected_user_flows = FlowsList(
-        [Flow.from_json("foo", {"steps": [{"id": "first", "action": "action_listen"}]})]
+        [
+            Flow.from_json(
+                "foo",
+                {
+                    "description": "a test flow",
+                    "steps": [{"id": "first", "action": "action_listen"}],
+                },
+            )
+        ]
     )
     assert user_flows == expected_user_flows
 
@@ -138,6 +149,7 @@ def test_collecting_flow_utterances():
         """
         flows:
           foo:
+            description: a test flow
             steps:
               - action: utter_welcome
               - action: setup
@@ -148,6 +160,7 @@ def test_collecting_flow_utterances():
                   - if: age>100
                     utter: utter_too_old
           bar:
+            description: a test bar flow
             steps:
               - action: utter_hello
               - collect: income
@@ -169,6 +182,7 @@ def test_link_step_doesnt_get_assigned_default_next():
         """
         flows:
           foo:
+            description: a test flow
             steps:
               - collect: age
                 next:
@@ -355,6 +369,7 @@ def test_flow_step_iteration_in_deeply_nested_flow():
         """
             flows:
               deep_flow:
+                description: a test flow
                 steps:
                   - collect: x
                     next:
@@ -452,6 +467,7 @@ def test_get_trigger_intents(nlu_trigger_config, actual_intents):
         f"""
         flows:
           foo:
+            description: a test flow
             {nlu_trigger_config}
             steps:
               - action: utter_welcome

@@ -164,6 +164,7 @@ def test_select_next_step_static_link():
         """
         flows:
           my_flow:
+            description: flow my_flow
             steps:
             - id: collect_foo
               collect: foo
@@ -192,6 +193,7 @@ def test_select_next_step_branch_if():
         """
         flows:
           my_flow:
+            description: flow my_flow
             steps:
             - id: collect_foo
               collect: foo
@@ -226,6 +228,7 @@ def test_select_next_step_branch_else():
         """
         flows:
           my_flow:
+            description: flow my_flow
             steps:
             - id: collect_foo
               collect: foo
@@ -261,6 +264,7 @@ def test_select_next_step_branch_not_possible():
         """
         flows:
           my_flow:
+            description: flow my_flow
             steps:
             - id: collect_foo
               collect: foo
@@ -301,6 +305,7 @@ def test_select_handles_END_next():
         """
         flows:
           my_flow:
+            description: flow my_flow
             steps:
             - id: collect_foo
               collect: foo
@@ -326,6 +331,7 @@ def test_select_handles_no_next():
         """
         flows:
           my_flow:
+            description: flow my_flow
             steps:
             - id: collect_foo
               collect: foo
@@ -356,6 +362,7 @@ def test_select_handles_current_node_being_END():
         """
         flows:
           my_flow:
+            description: flow my_flow
             steps:
             - id: collect_foo
               collect: foo
@@ -381,6 +388,7 @@ def test_select_handles_current_node_being_link():
         """
         flows:
           my_flow:
+            description: flow my_flow
             steps:
             - id: link_to_foo
               link: foo
@@ -430,10 +438,12 @@ def test_trigger_pattern_continue_interrupted_adds_stackframe():
         """
         flows:
           foo_flow:
+            description: flow foo
             steps:
             - id: "1"
               collect: foo
           bar_flow:
+            description: flow bar
             name: bar flow
             steps:
             - id: "2"
@@ -465,10 +475,12 @@ def test_trigger_pattern_continue_interrupted_does_not_trigger_if_no_interrupt()
         """
         flows:
           foo_flow:
+            description: flow foo
             steps:
             - id: "1"
               collect: foo
           bar_flow:
+            description: flow bar
             name: bar flow
             steps:
             - id: "2"
@@ -497,10 +509,12 @@ def test_trigger_pattern_continue_interrupted_does_not_trigger_if_finished():
         """
         flows:
           foo_flow:
+            description: flow foo
             steps:
             - id: "1"
               collect: foo
           bar_flow:
+            description: flow bar
             name: bar flow
             steps:
             - id: "2"
@@ -534,10 +548,12 @@ def test_trigger_pattern_continue_interrupted_does_not_trigger_if_not_user_frame
         """
         flows:
           foo_flow:
+            description: flow foo
             steps:
             - id: "1"
               collect: foo
           bar_flow:
+            description: flow bar
             name: bar flow
             steps:
             - id: "2"
@@ -562,6 +578,7 @@ def test_trigger_pattern_completed():
         """
         flows:
           foo_flow:
+            description: flow foo
             name: foo flow
             steps:
             - id: "1"
@@ -588,6 +605,7 @@ def test_trigger_pattern_completed_does_not_trigger_if_stack_not_empty():
         """
         flows:
           foo_flow:
+            description: flow foo
             name: foo flow
             steps:
             - id: "1"
@@ -612,6 +630,7 @@ def test_trigger_pattern_completed_does_not_trigger_if_not_user_frame():
         """
         flows:
           foo_flow:
+            description: flow foo
             name: foo flow
             steps:
             - id: "1"
@@ -655,6 +674,7 @@ def test_reset_scoped_slots():
         """
         flows:
           foo_flow:
+            description: flow foo
             name: foo flow
             steps:
             - id: "1"
@@ -687,6 +707,7 @@ def test_reset_scoped_slots_uses_initial_value():
         """
         flows:
           foo_flow:
+            description: flow foo
             name: foo flow
             steps:
             - collect: foo
@@ -710,6 +731,7 @@ def test_reset_scoped_slots_resets_set_slots():
         """
         flows:
           foo_flow:
+            description: flow foo
             name: foo flow
             steps:
             - set_slots:
@@ -729,6 +751,7 @@ def test_reset_scoped_slots_does_not_reset_set_slots_if_collect_forbids_it():
         """
         flows:
           foo_flow:
+            description: flow foo
             name: foo flow
             steps:
             - collect: foo
@@ -748,6 +771,7 @@ def test_run_step_collect():
         """
         flows:
           my_flow:
+            description: flow my_flow
             steps:
             - id: collect_foo
               collect: foo
@@ -794,6 +818,7 @@ def test_run_step_action():
         """
         flows:
           my_flow:
+            description: flow my_flow
             steps:
             - id: action
               action: utter_ask_foo
@@ -824,6 +849,7 @@ def test_run_step_link():
         """
         flows:
           my_flow:
+            description: flow my_flow
             steps:
             - id: link
               link: bar_flow
@@ -862,6 +888,7 @@ def test_run_step_set_slot():
         """
         flows:
           my_flow:
+            description: flow my_flow
             steps:
             - id: set_slot
               set_slots:
@@ -893,6 +920,7 @@ def test_run_step_end():
         """
         flows:
           my_flow:
+            description: flow my_flow
             steps:
             - id: collect
               collect: bar
@@ -923,6 +951,7 @@ def test_executor_does_not_get_tripped_if_an_action_is_predicted_in_loop():
         """
         flows:
           foo_flow:
+            description: flow foo
             steps:
             - id: "1"
               set_slots:
@@ -961,6 +990,7 @@ def test_executor_trips_internal_circuit_breaker():
         """
         flows:
           foo_flow:
+            description: flow foo
             steps:
             - id: "1"
               set_slots:
@@ -1000,6 +1030,7 @@ def test_executor_raises_no_next_step_in_flow_exception():
         """
         flows:
           foo_flow:
+            description: flow foo
             steps:
             - id: "1"
               set_slots:
@@ -1044,6 +1075,7 @@ def test_advance_flows_empty_stack():
         """
         flows:
           foo_flow:
+            description: flow foo
             steps:
             - id: "1"
               set_slots:
@@ -1071,6 +1103,7 @@ def test_advance_flows_selects_next_action():
         """
         flows:
           foo_flow:
+            description: flow foo
             steps:
             - id: "1"
               collect: foo
@@ -1134,6 +1167,7 @@ def test_flow_policy_events_after_flow_starts() -> None:
         """
         flows:
           search_hotels:
+            description: flow search_hotels
             steps:
             - id: "1_collect_num_rooms"
               collect: num_rooms
@@ -1174,6 +1208,7 @@ def test_flow_policy_events_after_flow_ends() -> None:
         """
         flows:
           search_hotels:
+            description: flow search_hotels
             steps:
             - id: "1_collect_num_rooms"
               collect: num_rooms
@@ -1182,6 +1217,7 @@ def test_flow_policy_events_after_flow_ends() -> None:
             - id: "2_action_search_hotels"
               action: action_search_hotels
           pattern_completed:
+            description: flow pattern_completed
             steps:
             - action: utter_completed
         """
@@ -1235,6 +1271,7 @@ def test_flow_policy_events_after_interruption() -> None:
         """
         flows:
           search_hotels:
+            description: flow search_hotels
             steps:
             - id: "1_collect_num_rooms"
               collect: num_rooms
@@ -1242,20 +1279,24 @@ def test_flow_policy_events_after_interruption() -> None:
             - collect: end_date
             - action: action_search_hotels
           check_balance:
+            description: flow check_balance
             steps:
             - id: "1_check_balance"
               action: action_check_balance
             - id: "2_utter_current_balance"
               action: utter_current_balance
           pattern_continue_interrupted:
+            description: flow pattern_continue_interrupted
             steps:
             - action: utter_continue_interrupted
           pattern_collect_information:
+            description: flow pattern_collect_information
             steps:
             - action: utter_collect_information
             - id: "listen"
               action: action_listen
           pattern_completed:
+            description: flow pattern_completed
             steps:
             - action: utter_how_else_can_i_help
         """

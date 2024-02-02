@@ -448,6 +448,7 @@ flows:
           action: action_transfer_money""",
         """flows:
   setup_recurrent_payment:
+    description: This flow lets users set up a recurrent payment.
     name: setup recurrent payment
     steps:
       - collect: recurrent_payment_type
@@ -496,6 +497,7 @@ flows:
         """
         flows:
           foo_flow:
+            description: Test flow foo
             steps:
             - id: "1"
               set_slots:
@@ -539,6 +541,7 @@ def test_next_without_then():
         """
       flows:
         test:
+          description: Test flow
           steps:
             - action: xyz
               next:
@@ -568,6 +571,7 @@ def test_flow_without_steps():
         """
       flows:
         test:
+          description: Test flow
           name: test
           steps:
     """
@@ -597,6 +601,7 @@ def test_flow_with_boolean_as_next():
         """
       flows:
         test:
+          description: Test flow
           name: test
           steps:
             - collect: confirm_correct_card
@@ -621,6 +626,7 @@ def test_flow_with_a_step_without_a_type():
         """
       flows:
         test:
+          description: Test flow
           name: test
           steps:
             - ask_before_filling: true
@@ -645,6 +651,7 @@ def test_flow_with_a_step_with_ambiguous_type():
         """
       flows:
         test:
+          description: Test flow
           steps:
             - collect: confirm_correct_card
               action: utter_xyz
@@ -663,6 +670,7 @@ def test_flow_random_unexpected_property_on_action_step():
         """
       flows:
         test:
+          description: Test flow
           steps:
             - action: utter_xyz
               random_xyz: true
@@ -680,6 +688,7 @@ def test_flow_random_unexpected_property_on_collect():
         """
       flows:
         test:
+          description: Test flow
           steps:
             - collect: confirm_correct_card
               random_xyz: utter_xyz
@@ -697,6 +706,7 @@ def test_flow_random_unexpected_property_on_flow():
         """
       flows:
         test:
+          description: Test flow
           random_xyz: True
           steps:
             - action: utter_xyz
@@ -714,6 +724,7 @@ def test_flow_with_invalid_type_for_action():
         """
       flows:
         test:
+          description: Test flow
           steps:
             - action: True
               next: id-2132
@@ -727,6 +738,7 @@ def test_flow_next_is_not_a_step():
         """
       flows:
         test:
+          description: Test flow
           steps:
             - action: xyz
               next:

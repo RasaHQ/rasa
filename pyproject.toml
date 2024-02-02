@@ -9,7 +9,7 @@ exclude = "((.eggs | .git | .pytest_cache | build | dist))"
 
 [tool.poetry]
 name = "rasa"
-version = "3.7.2"
+version = "3.7.6"
 description = "State-of-the-art open-core Conversational AI framework for Enterprises that natively leverages generative AI for effortless assistant development."
 authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
 maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
@@ -151,9 +151,9 @@ slack-sdk = "^3.19.2"
 confluent-kafka = ">=1.9.2,<3.0.0"
 portalocker = "^2.7.0"
 pypred = "^0.4.0"
-structlog = "^23.1.0"
+structlog = ">=23.1.0,<23.2.0"
 structlog-sentry = "^2.0.2"
-langchain = "^0.0.325"
+langchain = "^0.0.329"
 jinja2 = "^3.0.0"
 openai = "^0.28.1"
 dnspython = "2.3.0"

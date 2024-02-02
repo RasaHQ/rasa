@@ -210,6 +210,8 @@ def embedder_factory(
         CohereEmbeddings,
         HuggingFaceHubEmbeddings,
         HuggingFaceInstructEmbeddings,
+        HuggingFaceEmbeddings,
+        HuggingFaceBgeEmbeddings,
         LlamaCppEmbeddings,
         OpenAIEmbeddings,
         SpacyEmbeddings,
@@ -217,12 +219,15 @@ def embedder_factory(
     )
 
     type_to_embedding_cls_dict: Dict[str, Type[Embeddings]] = {
+        "azure": OpenAIEmbeddings,
         "openai": OpenAIEmbeddings,
         "cohere": CohereEmbeddings,
         "spacy": SpacyEmbeddings,
         "vertexai": VertexAIEmbeddings,
         "huggingface_instruct": HuggingFaceInstructEmbeddings,
         "huggingface_hub": HuggingFaceHubEmbeddings,
+        "huggingface_bge": HuggingFaceBgeEmbeddings,
+        "huggingface": HuggingFaceEmbeddings,
         "llamacpp": LlamaCppEmbeddings,
     }
 

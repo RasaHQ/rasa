@@ -15,6 +15,7 @@ def test_valid_flow_with_nlu_triggers():
         """
         flows:
           foo:
+            description: flow foo
             nlu_trigger:
               - intent: foo
               - intent:
@@ -77,6 +78,7 @@ def test_nlu_trigger_is_triggered(intent, is_triggered):
         """
         flows:
           foo:
+            description: flow foo
             nlu_trigger:
               - intent:
                   name: bar

@@ -20,6 +20,7 @@ def flow_with_all_steps() -> Flow:
         """
             flows:
               test_flow:
+                description: test flow
                 steps:
                   - id: action_step
                     action: utter_greet

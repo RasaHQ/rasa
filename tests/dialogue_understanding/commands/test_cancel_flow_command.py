@@ -33,6 +33,7 @@ def test_run_command_on_tracker():
         """
         flows:
           foo:
+            description: flow foo
             name: foo flow
             steps:
             - id: first_step

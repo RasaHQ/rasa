@@ -31,6 +31,7 @@ def test_run_command_on_tracker():
         """
         flows:
             my_flow:
+                description: test my flow
                 steps:
                 - id: collect_foo
                   collect: foo

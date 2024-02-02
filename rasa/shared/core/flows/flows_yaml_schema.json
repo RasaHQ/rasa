@@ -176,7 +176,7 @@
       }
     },
     "flow": {
-      "required": ["steps"],
+      "required": ["steps", "description"],
       "type": "object",
       "additionalProperties": false,
       "schema_name": "dictionary with flow properties",
