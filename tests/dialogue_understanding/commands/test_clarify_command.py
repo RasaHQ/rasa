@@ -35,6 +35,7 @@ def test_run_command_skips_if_only_non_existant_flows():
         """
         flows:
           foo:
+            description: flow foo
             steps:
             - id: first_step
               action: action_listen
@@ -52,6 +53,7 @@ def test_run_command_ignores_non_existant_flows():
         """
         flows:
           foo:
+            description: flow foo
             steps:
             - id: first_step
               action: action_listen
@@ -83,6 +85,7 @@ def test_run_command_uses_name_of_flow():
         """
         flows:
           foo:
+            description: flow foo
             name: some foo
             steps:
             - id: first_step

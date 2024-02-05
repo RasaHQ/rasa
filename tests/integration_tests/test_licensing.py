@@ -113,7 +113,7 @@ def test_license_scope_voice_scope_ok(
     )
 
     # sleep some time to let the time for the server to start
-    time.sleep(6)
+    time.sleep(10)
     # send CTR-C to the process
     popen.send_signal(signal.SIGINT)
 

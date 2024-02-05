@@ -54,6 +54,7 @@ def default_flows() -> FlowsList:
         """
         flows:
           foo_flow:
+            description: flow foo
             steps:
             - id: "1"
               action: action_listen
@@ -61,6 +62,7 @@ def default_flows() -> FlowsList:
             - id: "2"
               action: action_unlikely_intent   # some action that exists by default
           bar_flow:
+            description: flow bar
             steps:
             - id: first_step
               action: action_listen
@@ -156,6 +158,7 @@ def test_policy_triggers_error_pattern_if_internal_circuit_breaker_is_tripped(
         """
         flows:
           foo_flow:
+            description: flow foo
             steps:
             - id: "1"
               set_slots:

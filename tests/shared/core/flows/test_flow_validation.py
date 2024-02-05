@@ -316,11 +316,13 @@ def test_validation_fails_on_multiple_flows_with_same_nlu_triggers():
     flow_config = """
         flows:
           foo:
+            description: test foo flow
             nlu_trigger:
               - intent: foo
             steps:
               - action: utter_welcome
           bar:
+            description: test bar flow
             nlu_trigger:
               - intent: foo
             steps:
@@ -335,6 +337,7 @@ def test_validation_fails_slot_name_does_not_adhere_to_pattern():
     flow_config = """
         flows:
           abc:
+            description: test flow
             steps:
               - collect: $welcome
         """

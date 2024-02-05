@@ -301,3 +301,46 @@ flows:
     Path("domain.yml").write_text(domain_yaml)
     result = run_in_simple_project("data", "validate", "flows")
     assert result.ret == 0
+
+
+def test_rasa_data_validate_link_invalid_flow(
+    run_in_simple_project: Callable[..., RunResult]
+) -> None:
+    """Test that a flow with a link to a non-existent flow is not validated."""
+    flows_yaml = f"""
+version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+flows:
+    transfer_money:
+        description: This flow lets users send money.
+        name: transfer money
+        steps:
+        - id: "ask_recipient"
+          collect: "transfer_recipient"
+          next: "ask_amount"
+        - id: "ask_amount"
+          collect: "transfer_amount"
+          next: "execute_transfer"
+        - id: "execute_transfer"
+          action: action_transfer_money
+        - id: "link_to_non_existent_flow"
+          link: "non_existent_flow"
+        """
+
+    Path("data/flows.yml").write_text(flows_yaml)
+
+    domain_yaml = """
+    actions:
+    - action_transfer_money
+    intents:
+    - transfer_money
+    slots:
+      transfer_recipient:
+        type: text
+        mappings: []
+      transfer_amount:
+        type: float
+        mappings: []"""
+    Path("domain.yml").write_text(domain_yaml)
+    result = run_in_simple_project("data", "validate", "flows")
+    assert "The flow 'non_existent_flow' is used in the step" in str(result.errlines)
+    assert result.ret != 0

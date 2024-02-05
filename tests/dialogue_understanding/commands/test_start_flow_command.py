@@ -27,6 +27,7 @@ def test_run_command_on_tracker():
         """
         flows:
           foo:
+            description: flow foo
             steps:
             - id: first_step
               action: action_listen
@@ -59,6 +60,7 @@ def test_run_start_flow_that_does_not_exist():
         """
         flows:
           foo:
+            description: flow foo
             steps:
             - id: first_step
               action: action_listen
@@ -77,6 +79,7 @@ def test_run_start_flow_that_is_already_on_the_stack():
         """
         flows:
           foo:
+            description: flow foo
             steps:
             - id: first_step
               action: action_listen
@@ -108,6 +111,7 @@ def test_run_start_flow_which_is_a_pattern():
         """
         flows:
           pattern_foo:
+            description: pattern foo
             steps:
             - id: first_step
               action: action_listen
@@ -126,10 +130,12 @@ def test_run_start_flow_interrupting_existing_flow():
         """
         flows:
           foo:
+            description: flow foo
             steps:
             - id: first_step
               action: action_listen
           bar:
+            description: flow bar
             steps:
             - id: first_step
               action: action_listen
@@ -180,10 +186,12 @@ def test_run_start_flow_with_multiple_flows():
         """
         flows:
           foo:
+            description: flow foo
             steps:
             - id: first_step
               action: action_listen
           bar:
+            description: flow bar
             steps:
             - id: first_step
               action: action_listen

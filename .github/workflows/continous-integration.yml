@@ -305,6 +305,12 @@ jobs:
         run: |
           poetry self add setuptools
 
+      - name: Prevent race condition in poetry build
+        # More context about race condition during poetry build can be found here:
+        # https://github.com/python-poetry/poetry/issues/7611#issuecomment-1747836233
+        run: |
+          poetry config installer.max-workers 1
+
       - name: Load Poetry Cached Libraries ⬇
         id: cache-poetry
         if: needs.changes.outputs.backend == 'true'
@@ -594,9 +600,9 @@ jobs:
         if: needs.changes.outputs.backend == 'true'
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
         with:
-          name: ${{ matrix.test }}-coverage
+          name: test-flaky-coverage
           path: |
-            ${{ github.workspace }}/${{ matrix.test }}-coverage
+            ${{ github.workspace }}/test-flaky-coverage
 
   integration_test:
     name: Run Non-Sequential Integration Tests
@@ -611,10 +617,6 @@ jobs:
       POSTGRES_PORT: 5432
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      RABBITMQ_HOST: localhost
-      RABBITMQ_PORT: 5672
-      RABBITMQ_USER: guest
-      RABBITMQ_PASSWORD: guest
 
     services:
       redis:
@@ -645,12 +647,6 @@ jobs:
           # FIXME: cannot use ${{ env.POSTGRES_PORT }} here
           # mapping container ports to the host
           - 5432:5432
-
-      rabbitmq:
-        # see https://github.com/docker-library/healthcheck/blob/master/rabbitmq/docker-healthcheck
-        image: healthcheck/rabbitmq
-        ports:
-          - 5672:5672
 
       mongodb:
         image: mongodb/mongodb-community-server:6.0.4-ubuntu2204

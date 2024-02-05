@@ -6,6 +6,7 @@ def test_depth_in_tree():
         """
             flows:
               flow_1:
+                description: flow 1
                 steps:
                   - id: step_1
                     collect: slot

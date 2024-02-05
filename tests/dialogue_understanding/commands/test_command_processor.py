@@ -49,10 +49,12 @@ def test_detects_no_changes_for_not_started_flows(
         """
         flows:
           foo:
+            description: flow foo
             steps:
             - id: first_step
               action: action_listen
           bar:
+            description: flow bar
             steps:
             - id: also_first_step_BUT_CHANGED
               action: action_listen
@@ -65,10 +67,12 @@ change_cases = {
     "step_id_changed": """
         flows:
           foo:
+            description: flow foo
             steps:
             - id: first_step_id_BUT_CHANGED
               action: action_listen
           bar:
+            description: flow bar
             steps:
             - id: also_first_step
               action: action_listen
@@ -76,10 +80,12 @@ change_cases = {
     "action_changed": """
         flows:
           foo:
+            description: flow foo
             steps:
             - id: first_step_id
               action: action_CHANGED
           bar:
+            description: flow bar
             steps:
             - id: also_first_step
               action: action_listen
@@ -87,6 +93,7 @@ change_cases = {
     "new_step": """
         flows:
           foo:
+            description: flow foo
             steps:
             - id: first_step_id
               action: action_listen
@@ -94,6 +101,7 @@ change_cases = {
             - id: second_step_id
               action: action_cool_stuff
           bar:
+            description: flow bar
             steps:
             - id: also_first_step
               action: action_listen
@@ -101,6 +109,7 @@ change_cases = {
     "flow_removed": """
         flows:
           bar:
+            description: flow bar
             steps:
             - id: also_first_step
               action: action_listen
