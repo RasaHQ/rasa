@@ -1,3 +1,4 @@
+import inspect
 import copy
 import logging
 import structlog
@@ -62,6 +63,9 @@ import rasa.core.tracker_store
 import rasa.core.actions.action
 import rasa.shared.core.trackers
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
+from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
+    YAMLStoryReader,
+)
 from rasa.shared.nlu.constants import (
     ENTITIES,
     INTENT,
@@ -73,6 +77,7 @@ from rasa.shared.nlu.constants import (
     RESPONSE,
     TEXT,
 )
+from rasa.shared.nlu.training_data.message import Message
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
@@ -719,11 +724,23 @@ class MessageProcessor:
         if self.http_interpreter:
             parse_data = await self.http_interpreter.parse(message)
         else:
-            if tracker is None:
-                tracker = DialogueStateTracker.from_events(message.sender_id, [])
-            parse_data = self._parse_message_with_graph(
-                message, tracker, only_output_properties
+            msg = YAMLStoryReader.unpack_regex_message(
+                message=Message({TEXT: message.text})
             )
+            # Intent is not explicitly present. Pass message to graph.
+            if msg.data.get(INTENT) is None:
+                parse_data = self._parse_message_with_graph(
+                    message, tracker, only_output_properties
+                )
+            else:
+                parse_data = {
+                    TEXT: "",
+                    INTENT: {INTENT_NAME_KEY: None, PREDICTED_CONFIDENCE_KEY: 0.0},
+                    ENTITIES: [],
+                }
+                parse_data.update(
+                    msg.as_dict(only_output_properties=only_output_properties)
+                )
 
         self._update_full_retrieval_intent(parse_data)
         structlogger.debug(
@@ -757,7 +774,7 @@ class MessageProcessor:
     def _parse_message_with_graph(
         self,
         message: UserMessage,
-        tracker: DialogueStateTracker,
+        tracker: Optional[DialogueStateTracker] = None,
         only_output_properties: bool = True,
     ) -> Dict[Text, Any]:
         """Interprets the passed message.
@@ -979,9 +996,20 @@ class MessageProcessor:
             # case of a rejection.
             temporary_tracker = tracker.copy()
             temporary_tracker.update_with_events(prediction.events, self.domain)
-            events = await action.run(
-                output_channel, nlg, temporary_tracker, self.domain
-            )
+
+            run_args = inspect.getfullargspec(action.run).args
+            if "metadata" in run_args:
+                events = await action.run(
+                    output_channel,
+                    nlg,
+                    temporary_tracker,
+                    self.domain,
+                    metadata=prediction.action_metadata,
+                )
+            else:
+                events = await action.run(
+                    output_channel, nlg, temporary_tracker, self.domain
+                )
         except rasa.core.actions.action.ActionExecutionRejection:
             events = [
                 ActionExecutionRejected(

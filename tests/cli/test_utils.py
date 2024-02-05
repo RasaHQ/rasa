@@ -319,7 +319,7 @@ def test_validate_assistant_id_in_config(config_file: Text) -> None:
     copy_config_data = copy.deepcopy(rasa.shared.utils.io.read_yaml_file(config_file))
 
     warning_message = (
-        f"The config file '{str(config_file)}' is missing a "
+        f"The config file '{config_file!s}' is missing a "
         f"unique value for the '{ASSISTANT_ID_KEY}' mandatory key."
     )
     with pytest.warns(UserWarning, match=warning_message):

@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import List, TYPE_CHECKING
+from typing import Any, Dict, List, TYPE_CHECKING, Optional, Text
 
 from rasa.core.actions.action import Action
 from rasa.shared.core.events import Event, ActiveLoop
@@ -18,6 +18,7 @@ class LoopAction(Action, ABC):
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
+        metadata: Optional[Dict[Text, Any]] = None,
     ) -> List[Event]:
         events: List[Event] = []
 
