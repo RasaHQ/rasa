@@ -47,7 +47,7 @@ async def test_tracing_for_handle_message(
         "input_channel": expected_channel,
         "sender_id": expected_sender_id,
         "model_id": agent.model_id,
-        "model_name": agent.model_name,
+        "model_name": agent.processor.model_filename,
     }
 
 
@@ -84,7 +84,7 @@ async def test_tracing_for_handle_message_with_headers(
         "input_channel": expected_channel,
         "sender_id": expected_sender_id,
         "model_id": agent.model_id,
-        "model_name": agent.model_name,
+        "model_name": agent.processor.model_filename,
     }
 
     traceparent = headers["traceparent"].split("-")

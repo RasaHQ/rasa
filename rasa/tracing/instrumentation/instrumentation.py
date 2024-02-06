@@ -281,6 +281,9 @@ def instrument(
             attribute_extractors.extract_attrs_for_lock_store,
         )
         lock_store_class.lock = contextlib.asynccontextmanager(traced_lock_method)  # type: ignore[assignment]  # noqa: E501
+
+        logger.debug(f"Instrumented '{lock_store_class.__name__}.lock'.")
+
         mark_class_as_instrumented(lock_store_class)
 
     if graph_trainer_class is not None and not class_is_instrumented(
@@ -302,6 +305,12 @@ def instrument(
             llm_command_generator_class,
             "_generate_action_list_using_llm",
             attribute_extractors.extract_attrs_for_llm_command_generator,
+        )
+        _instrument_method(
+            tracer_provider.get_tracer(llm_command_generator_class.__module__),
+            llm_command_generator_class,
+            "_check_commands_against_startable_flows",
+            attribute_extractors.extract_attrs_for_check_commands_against_startable_flows,
         )
         mark_class_as_instrumented(llm_command_generator_class)
 
@@ -397,6 +406,8 @@ def _instrument_get_tracker(
         processor_class.get_tracker
     )
 
+    logger.debug(f"Instrumented '{processor_class.__name__}.get_tracker'.")
+
 
 def _instrument_command_processor_module(tracer_provider: TracerProvider) -> None:
     _instrument_function(
@@ -439,6 +450,8 @@ def _instrument_method(
     )
     setattr(instrumented_class, method_name, traced_method)
 
+    logger.debug(f"Instrumented '{instrumented_class.__name__}.{method_name}'.")
+
 
 def _instrument_function(
     tracer: Tracer,
@@ -454,6 +467,10 @@ def _instrument_function(
     )
 
     setattr(module, function_name, traced_function)
+
+    logger.debug(
+        f"Instrumented function '{function_name}' in the module '{module_name}'. "
+    )
 
 
 def _wrap_with_tracing_decorator(
@@ -515,6 +532,8 @@ def _instrument_run_action(
     processor_class._run_action = tracing_run_action_wrapper(  # type: ignore[assignment]  # noqa: E501
         processor_class._run_action
     )
+
+    logger.debug(f"Instrumented '{processor_class.__name__}._run_action'.")
 
 
 def _mangled_instrumented_boolean_attribute_name(instrumented_class: Type) -> Text:
