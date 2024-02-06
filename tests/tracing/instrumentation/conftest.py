@@ -84,6 +84,10 @@ class TrackerMock(DialogueStateTracker):
 
 
 class MockAgent(Agent):
+    def __init__(self) -> None:
+        self.processor = Mock(spec=MessageProcessor)
+        self.processor.model_filename = "model_filename"
+
     async def handle_message(
         self, message: UserMessage
     ) -> Optional[List[Dict[Text, Any]]]:
@@ -102,10 +106,6 @@ class MockAgent(Agent):
     @property
     def model_id(self) -> Optional[Text]:
         return "model_id"
-
-    @property
-    def model_name(self) -> Optional[Text]:
-        return "model_name"
 
 
 class MockMessageProcessor(MessageProcessor):

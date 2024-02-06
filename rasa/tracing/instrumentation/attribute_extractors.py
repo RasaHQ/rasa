@@ -22,7 +22,7 @@ from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 
 if TYPE_CHECKING:
-    from rasa.core.policies.flow_policy import FlowPolicy
+    from rasa.core.policies.policy import PolicyPrediction
     from rasa.dialogue_understanding.generator.command_generator import CommandGenerator
 
 # This file contains all attribute extractors for tracing instrumentation.
@@ -47,12 +47,12 @@ def extract_attrs_for_agent(
         "input_channel": message.input_channel,
         "sender_id": message.sender_id,
         "model_id": self.model_id,
-        "model_name": self.model_name,
+        "model_name": self.processor.model_filename if self.processor else "None",
     }
 
 
 def extract_llm_command_generator_attrs(
-    attributes: Dict[str, Any], commands: List[Command]
+    attributes: Dict[str, Any], commands: List[Dict[str, Any]]
 ) -> None:
     """Extract more attributes for `GraphNode` type `LLMCommandGenerator`.
 
@@ -62,39 +62,39 @@ def extract_llm_command_generator_attrs(
     commands_list = []
 
     for command in commands:
-        command_name = command.get("command")  # type: ignore[attr-defined]
+        command_name = command.get("command")
         commands_list.append(command_name)
 
         if command_name == "set slot":
-            attributes["slot_name"] = command.get("name")  # type: ignore[attr-defined]
+            attributes["slot_name"] = command.get("name")
 
         if command_name == "start flow":
-            attributes["flow_name"] = command.get("flow")  # type: ignore[attr-defined]
+            attributes["flow_name"] = command.get("flow")
 
     attributes["commands"] = str(commands_list)
 
 
 def extract_flow_policy_attrs(
-    attributes: Dict[str, Any], flow_policy: "FlowPolicy"
+    attributes: Dict[str, Any], policy_prediction: "PolicyPrediction"
 ) -> None:
     """Extract more attributes for `GraphNode` type `FlowPolicy`.
 
     :param attributes: A dictionary containing attributes.
-    :param commands: The FlowPolicy to use.
+    :param policy_prediction: The PolicyPrediction to use.
     """
-    attributes["policy"] = flow_policy.policy_name  # type: ignore[attr-defined]
+    attributes["policy"] = policy_prediction.policy_name
 
-    if flow_policy.events:  # type: ignore[attr-defined]
+    if policy_prediction.events:
         attributes["events"] = str(
-            [event.__class__.__name__ for event in flow_policy.events]  # type: ignore[attr-defined]  # noqa: E501
+            [event.__class__.__name__ for event in policy_prediction.events]
         )
 
-    if flow_policy.optional_events:  # type: ignore[attr-defined]
+    if policy_prediction.optional_events:
         optional_events_name = []
         flows = []
         utters = []
 
-        for optional_event in flow_policy.optional_events:  # type: ignore[attr-defined]
+        for optional_event in policy_prediction.optional_events:
             optional_events_name.append(optional_event.__class__.__name__)
 
             if (
@@ -146,7 +146,8 @@ def extract_attrs_for_graph_node(
             extract_llm_command_generator_attrs(attributes, commands)
 
         if "FlowPolicy" in input[0]:
-            extract_flow_policy_attrs(attributes, input[1])
+            policy_prediction = input[1]
+            extract_flow_policy_attrs(attributes, policy_prediction)
 
     return attributes
 
