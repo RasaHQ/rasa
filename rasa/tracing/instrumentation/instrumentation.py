@@ -303,6 +303,12 @@ def instrument(
             "_generate_action_list_using_llm",
             attribute_extractors.extract_attrs_for_llm_command_generator,
         )
+        _instrument_method(
+            tracer_provider.get_tracer(llm_command_generator_class.__module__),
+            llm_command_generator_class,
+            "_check_commands_against_startable_flows",
+            attribute_extractors.extract_attrs_for_check_commands_against_startable_flows,
+        )
         mark_class_as_instrumented(llm_command_generator_class)
 
     if command_subclasses:

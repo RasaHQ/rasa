@@ -23,6 +23,7 @@ from rasa.shared.nlu.constants import INTENT_NAME_KEY
 
 if TYPE_CHECKING:
     from rasa.core.policies.flow_policy import FlowPolicy
+    from rasa.dialogue_understanding.generator.command_generator import CommandGenerator
 
 # This file contains all attribute extractors for tracing instrumentation.
 # These are functions that are applied to the arguments of the wrapped function to be
@@ -269,13 +270,36 @@ def extract_attrs_for_llm_command_generator(
     self: LLMCommandGenerator,
     prompt: str,
 ) -> Dict[str, Any]:
-    attribute = {
+    attributes = {
         "class_name": self.__class__.__name__,
-        "llm_model": "None",
+        "llm_model": str(self.config.get("model", "gpt-4")),
+        "llm_type": "openai",
     }
-    if self.config.get("llm") is not None:
-        attribute["llm_model"] = str(self.config.get("llm").get("model_name"))  # type: ignore[union-attr]  # noqa: E501
-    return attribute
+
+    llm_property = self.config.get("llm") or {}
+
+    if llm_property and ("model_name" in llm_property or "model" in llm_property):
+        attributes["llm_model"] = str(
+            llm_property.get("model_name") or llm_property.get("model")
+        )
+
+    attributes["llm_temperature"] = str(llm_property.get("temperature", 0.0))
+    attributes["request_timeout"] = str(llm_property.get("request_timeout", 7))
+
+    if "type" in llm_property:
+        attributes["llm_type"] = str(llm_property.get("type"))
+
+    if "engine" in llm_property:
+        attributes["llm_engine"] = str(llm_property.get("engine"))
+
+    if "deployment" in llm_property:
+        attributes["llm_deployment"] = str(llm_property.get("deployment"))
+    elif "deployment" in llm_property.get("embeddings", {}):
+        attributes["llm_deployment"] = str(
+            llm_property.get("embeddings", {}).get("deployment")
+        )
+
+    return attributes
 
 
 def extract_attrs_for_contextual_response_rephraser(
@@ -390,4 +414,27 @@ def extract_attrs_for_remove_duplicated_set_slots(
     return {
         "resulting_events": str(resulting_events),
         "module_name": "command_processor",
+    }
+
+
+def extract_attrs_for_check_commands_against_startable_flows(
+    self: "CommandGenerator", commands: List[Command], startable_flows: FlowsList
+) -> Dict[str, Any]:
+    commands_list = []
+
+    for command in commands:
+        command_as_dict = command.as_dict()
+        command_type = command.command()
+
+        if command_type == "set slot":
+            slot_value = command_as_dict.pop("value", None)
+            command_as_dict["is_slot_value_missing_or_none"] = slot_value is None
+
+        commands_list.append(command_as_dict)
+
+    startable_flow_ids = [flow.id for flow in startable_flows.underlying_flows]
+
+    return {
+        "commands": json.dumps(commands_list),
+        "startable_flow_ids": json.dumps(startable_flow_ids),
     }
