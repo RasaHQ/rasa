@@ -466,3 +466,26 @@ def extract_attrs_for_run_step(
         "step_description": step.description if step.description else "None",
         "current_flow_id": flow.id,
     }
+
+
+def extract_attrs_for_policy_prediction(
+    self: Any,
+    probabilities: List[float],
+    events: Optional[List[Event]] = None,
+    optional_events: Optional[List[Event]] = None,
+    is_end_to_end_prediction: bool = False,
+    is_no_user_prediction: bool = False,
+    diagnostic_data: Optional[Dict[Text, Any]] = None,
+    action_metadata: Optional[Dict[Text, Any]] = None,
+) -> Dict[str, Any]:
+    return {
+        "priority": self.priority,
+        "events": [event.__class__.__name__ for event in events] if events else "None",
+        "optional_events": [event.__class__.__name__ for event in optional_events]
+        if optional_events
+        else "None",
+        "is_end_to_end_prediction": is_end_to_end_prediction,
+        "is_no_user_prediction": is_no_user_prediction,
+        "diagnostic_data": json.dumps(diagnostic_data),
+        "action_metadata": json.dumps(action_metadata),
+    }

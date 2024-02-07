@@ -27,7 +27,7 @@ from rasa.core.channels import OutputChannel
 from rasa.core.lock_store import LockStore
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.flows.flow_step_result import FlowActionPrediction
-from rasa.core.policies.policy import PolicyPrediction
+from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import TrackerStore
 from rasa.dialogue_understanding.commands import Command
@@ -198,6 +198,7 @@ LockStoreType = TypeVar("LockStoreType", bound=LockStore)
 GraphTrainerType = TypeVar("GraphTrainerType", bound=GraphTrainer)
 LLMCommandGeneratorType = TypeVar("LLMCommandGeneratorType", bound=LLMCommandGenerator)
 CommandType = TypeVar("CommandType", bound=Command)
+PolicyType = TypeVar("PolicyType", bound=Policy)
 
 
 def instrument(
@@ -209,8 +210,9 @@ def instrument(
     lock_store_class: Optional[Type[LockStoreType]] = None,
     graph_trainer_class: Optional[Type[GraphTrainerType]] = None,
     llm_command_generator_class: Optional[Type[LLMCommandGeneratorType]] = None,
-    command_subclasses: Optional[Type[CommandType]] = None,
+    command_subclasses: Optional[List[Type[CommandType]]] = None,
     contextual_response_rephraser_class: Optional[Any] = None,
+    policy_subclasses: Optional[List[Type[PolicyType]]] = None,
 ) -> None:
     """Substitute methods to be traced by their traced counterparts.
 
@@ -239,6 +241,8 @@ def instrument(
     :param contextual_response_rephraser_class: The `ContextualResponseRephraser` to
         be instrumented. If `None` is given, no `ContextualResponseRephraser` will be
         instrumented.
+    :param policy_subclasses: The subclasses of `Policy` to be instrumented. If `None`
+        is given, no subclass of `Policy` will be instrumented.
     """
     if agent_class is not None and not class_is_instrumented(agent_class):
         _instrument_method(
@@ -320,7 +324,7 @@ def instrument(
         mark_class_as_instrumented(llm_command_generator_class)
 
     if command_subclasses:
-        for command_subclass in command_subclasses:  # type: ignore[attr-defined]
+        for command_subclass in command_subclasses:
             if command_subclass is not None and not class_is_instrumented(
                 command_subclass
             ):
@@ -354,6 +358,19 @@ def instrument(
 
     if not module_is_instrumented(FLOW_EXECUTOR_MODULE_NAME):
         _instrument_flow_executor_module(tracer_provider)
+
+    if policy_subclasses:
+        for policy_subclass in policy_subclasses:
+            if policy_subclass is not None and not class_is_instrumented(
+                policy_subclass
+            ):
+                _instrument_method(
+                    tracer_provider.get_tracer(policy_subclass.__module__),
+                    policy_subclass,
+                    "_prediction",
+                    attribute_extractors.extract_attrs_for_policy_prediction,
+                )
+                mark_class_as_instrumented(policy_subclass)
 
 
 def _instrument_processor(

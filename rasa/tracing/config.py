@@ -46,10 +46,19 @@ def configure_tracing(tracer_provider: Optional[TracerProvider]) -> None:
     if tracer_provider is None:
         return None
 
+    from rasa.core.nlg.contextual_response_rephraser import ContextualResponseRephraser
+    from rasa.core.policies.policy import Policy
+    from rasa.engine.recipes.default_components import DEFAULT_COMPONENTS
+
     command_subclasses = [subclass for subclass in Command.__subclasses__()] + [
         subclass for subclass in FreeFormAnswerCommand.__subclasses__()
     ]
-    from rasa.core.nlg.contextual_response_rephraser import ContextualResponseRephraser
+
+    policy_subclasses = [
+        policy_class
+        for policy_class in DEFAULT_COMPONENTS
+        if issubclass(policy_class, Policy)
+    ]
 
     instrumentation.instrument(
         tracer_provider=tracer_provider,
@@ -59,8 +68,9 @@ def configure_tracing(tracer_provider: Optional[TracerProvider]) -> None:
         graph_node_class=GraphNode,
         graph_trainer_class=GraphTrainer,
         llm_command_generator_class=LLMCommandGenerator,
-        command_subclasses=command_subclasses,  # type: ignore[arg-type]
+        command_subclasses=command_subclasses,
         contextual_response_rephraser_class=ContextualResponseRephraser,
+        policy_subclasses=policy_subclasses,
     )
 
 
