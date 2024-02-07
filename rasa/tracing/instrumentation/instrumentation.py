@@ -2,6 +2,7 @@ import contextlib
 import functools
 import importlib
 import inspect
+import json
 import logging
 from typing import (
     Any,
@@ -9,6 +10,7 @@ from typing import (
     Awaitable,
     Callable,
     Dict,
+    List,
     Optional,
     Text,
     Type,
@@ -24,6 +26,7 @@ from rasa.core.agent import Agent
 from rasa.core.channels import OutputChannel
 from rasa.core.lock_store import LockStore
 from rasa.core.nlg import NaturalLanguageGenerator
+from rasa.core.policies.flows.flow_step_result import FlowActionPrediction
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import TrackerStore
@@ -34,6 +37,7 @@ from rasa.dialogue_understanding.generator.llm_command_generator import (
 from rasa.engine.graph import GraphNode
 from rasa.engine.training.graph_trainer import GraphTrainer
 from rasa.shared.constants import DOCS_BASE_URL
+from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig
 
@@ -51,6 +55,7 @@ INSTRUMENTED_MODULE_BOOLEAN_ATTRIBUTE_NAME = "module_has_been_instrumented"
 COMMAND_PROCESSOR_MODULE_NAME = (
     "rasa.dialogue_understanding.processor.command_processor"
 )
+FLOW_EXECUTOR_MODULE_NAME = "rasa.core.policies.flows.flow_executor"
 
 
 def _check_extractor_argument_list(
@@ -102,7 +107,7 @@ def traceable(
             span_name = f"{self.__class__.__name__}." + attrs.get(
                 "component_class", "GraphNode"
             )
-        elif module_name == "command_processor":
+        elif module_name in ["command_processor", FLOW_EXECUTOR_MODULE_NAME]:
             span_name = f"{module_name}.{fn.__name__}"
         else:
             span_name = f"{self.__class__.__name__}.{fn.__name__}"
@@ -347,6 +352,9 @@ def instrument(
     if not module_is_instrumented(COMMAND_PROCESSOR_MODULE_NAME):
         _instrument_command_processor_module(tracer_provider)
 
+    if not module_is_instrumented(FLOW_EXECUTOR_MODULE_NAME):
+        _instrument_flow_executor_module(tracer_provider)
+
 
 def _instrument_processor(
     tracer_provider: TracerProvider, processor_class: Type[ProcessorType]
@@ -435,6 +443,75 @@ def _instrument_command_processor_module(tracer_provider: TracerProvider) -> Non
         attribute_extractors.extract_attrs_for_remove_duplicated_set_slots,
     )
     mark_module_as_instrumented(COMMAND_PROCESSOR_MODULE_NAME)
+
+
+def _instrument_flow_executor_module(tracer_provider: TracerProvider) -> None:
+    _instrument_function(
+        tracer_provider.get_tracer(FLOW_EXECUTOR_MODULE_NAME),
+        FLOW_EXECUTOR_MODULE_NAME,
+        "advance_flows",
+        attribute_extractors.extract_attrs_for_advance_flows,
+    )
+    _instrument_advance_flows_until_next_action(
+        tracer_provider.get_tracer(FLOW_EXECUTOR_MODULE_NAME),
+        FLOW_EXECUTOR_MODULE_NAME,
+        "advance_flows_until_next_action",
+    )
+    _instrument_function(
+        tracer_provider.get_tracer(FLOW_EXECUTOR_MODULE_NAME),
+        FLOW_EXECUTOR_MODULE_NAME,
+        "run_step",
+        attribute_extractors.extract_attrs_for_run_step,
+    )
+    mark_module_as_instrumented(FLOW_EXECUTOR_MODULE_NAME)
+
+
+def _instrument_advance_flows_until_next_action(
+    tracer: Tracer,
+    module_name: str,
+    function_name: str,
+) -> None:
+    def tracing_advance_flows_until_next_action_wrapper(fn: Callable) -> Callable:
+        @functools.wraps(fn)
+        def wrapper(
+            tracker: DialogueStateTracker,
+            available_actions: List[str],
+            flows: FlowsList,
+        ) -> FlowActionPrediction:
+            with tracer.start_as_current_span(f"{module_name}.{fn.__name__}") as span:
+                prediction: FlowActionPrediction = fn(tracker, available_actions, flows)
+
+                span.set_attributes(
+                    {
+                        "action_name": prediction.action_name
+                        if prediction.action_name
+                        else "None",
+                        "score": prediction.score,
+                        "metadata": json.dumps(prediction.metadata)
+                        if prediction.metadata
+                        else "{}",
+                        "events": json.dumps(
+                            [event.__class__.__name__ for event in prediction.events]
+                            if prediction.events
+                            else [],
+                        ),
+                    }
+                )
+
+                return prediction
+
+        return wrapper
+
+    module = importlib.import_module(module_name)
+    function_to_trace = getattr(module, function_name)
+
+    traced_function = tracing_advance_flows_until_next_action_wrapper(function_to_trace)
+
+    setattr(module, function_name, traced_function)
+
+    logger.debug(
+        f"Instrumented function '{function_name}' in the module '{module_name}'. "
+    )
 
 
 def _instrument_method(

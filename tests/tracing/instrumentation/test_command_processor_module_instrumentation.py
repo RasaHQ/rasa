@@ -8,7 +8,6 @@ from rasa.dialogue_understanding.commands.correct_slots_command import (
     CorrectSlotsCommand,
     CorrectedSlot,
 )
-from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.events import UserUttered, DialogueStackUpdated
 from rasa.shared.core.flows import FlowsList, Flow
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -17,7 +16,6 @@ from rasa.tracing.instrumentation.instrumentation import COMMAND_PROCESSOR_MODUL
 
 
 def test_tracing_command_processor_execute_commands(
-    default_model_storage: ModelStorage,
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
     previous_num_captured_spans: int,
@@ -64,7 +62,6 @@ def test_tracing_command_processor_execute_commands(
 
 
 def test_tracing_command_processor_clean_up_commands(
-    default_model_storage: ModelStorage,
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
     previous_num_captured_spans: int,
@@ -112,7 +109,6 @@ def test_tracing_command_processor_clean_up_commands(
 
 
 def test_tracing_command_processor_validate_state_of_commands(
-    default_model_storage: ModelStorage,
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
     previous_num_captured_spans: int,
@@ -146,7 +142,6 @@ def test_tracing_command_processor_validate_state_of_commands(
 
 
 def test_tracing_command_processor_remove_duplicated_set_slots(
-    default_model_storage: ModelStorage,
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
     previous_num_captured_spans: int,

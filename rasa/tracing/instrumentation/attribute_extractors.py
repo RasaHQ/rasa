@@ -12,11 +12,12 @@ from rasa.dialogue_understanding.commands import Command
 from rasa.dialogue_understanding.generator.llm_command_generator import (
     LLMCommandGenerator,
 )
+from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.engine.graph import GraphModelConfiguration, GraphNode
 from rasa.engine.training.graph_trainer import GraphTrainer
 from rasa.shared.core.constants import REQUESTED_SLOT
 from rasa.shared.core.events import DialogueStackUpdated, Event
-from rasa.shared.core.flows import FlowsList
+from rasa.shared.core.flows import Flow, FlowStep, FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
@@ -438,4 +439,30 @@ def extract_attrs_for_check_commands_against_startable_flows(
     return {
         "commands": json.dumps(commands_list),
         "startable_flow_ids": json.dumps(startable_flow_ids),
+    }
+
+
+def extract_attrs_for_advance_flows(
+    tracker: DialogueStateTracker, available_actions: List[str], flows: FlowsList
+) -> Dict[str, Any]:
+    from rasa.tracing.instrumentation.instrumentation import FLOW_EXECUTOR_MODULE_NAME
+
+    return {
+        "module_name": FLOW_EXECUTOR_MODULE_NAME,
+        "available_actions": json.dumps(available_actions),
+    }
+
+
+def extract_attrs_for_run_step(
+    step: FlowStep,
+    flow: Flow,
+    stack: DialogueStack,
+    tracker: DialogueStateTracker,
+    available_actions: List[str],
+    flows: FlowsList,
+) -> Dict[str, Any]:
+    return {
+        "step_custom_id": step.custom_id if step.custom_id else "None",
+        "step_description": step.description if step.description else "None",
+        "current_flow_id": flow.id,
     }
