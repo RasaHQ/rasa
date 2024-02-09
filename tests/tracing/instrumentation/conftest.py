@@ -3,7 +3,17 @@ from __future__ import annotations
 from asyncio import AbstractEventLoop
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Any, AsyncGenerator, Dict, Iterable, List, Optional, Text, Type
+from typing import (
+    Any,
+    AsyncGenerator,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    TYPE_CHECKING,
+    Text,
+    Type,
+)
 from unittest.mock import Mock
 
 import pytest
@@ -18,7 +28,7 @@ from rasa.core.channels import OutputChannel, UserMessage
 from rasa.core.lock import TicketLock
 from rasa.core.lock_store import LockStore
 from rasa.core.nlg import NaturalLanguageGenerator
-from rasa.core.policies.policy import PolicyPrediction
+from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import TrackerStore
 from rasa.dialogue_understanding.commands import Command
@@ -43,11 +53,15 @@ from rasa.engine.training.graph_trainer import GraphTrainer
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import Event, SlotSet, UserUttered
 from rasa.shared.core.flows import FlowsList
+from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.data import TrainingType
 from rasa.utils.endpoints import EndpointConfig
 
 from rasa.core.nlg.contextual_response_rephraser import ContextualResponseRephraser
+
+if TYPE_CHECKING:
+    from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 
 
 @pytest.fixture(scope="session")
@@ -84,6 +98,10 @@ class TrackerMock(DialogueStateTracker):
 
 
 class MockAgent(Agent):
+    def __init__(self) -> None:
+        self.processor = Mock(spec=MessageProcessor)
+        self.processor.model_filename = "model_filename"
+
     async def handle_message(
         self, message: UserMessage
     ) -> Optional[List[Dict[Text, Any]]]:
@@ -102,10 +120,6 @@ class MockAgent(Agent):
     @property
     def model_id(self) -> Optional[Text]:
         return "model_id"
-
-    @property
-    def model_name(self) -> Optional[Text]:
-        return "model_name"
 
 
 class MockMessageProcessor(MessageProcessor):
@@ -395,3 +409,56 @@ def model_configuration(
     )
 
     return model_config
+
+
+class MockPolicy(Policy):
+    def predict_action_probabilities(
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        rule_only_data: Optional[Dict[Text, Any]] = None,
+        **kwargs: Any,
+    ) -> PolicyPrediction:
+        pass
+
+    def train(
+        self,
+        training_trackers: List[TrackerWithCachedStates],
+        domain: Domain,
+        **kwargs: Any,
+    ) -> Resource:
+        pass
+
+    def __init__(
+        self,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+        featurizer: Optional["TrackerFeaturizer"] = None,
+    ) -> None:
+        self.fail_if_undefined("_prediction")
+        super().__init__(config, model_storage, resource, execution_context, featurizer)
+
+    def fail_if_undefined(self, method_name: Text) -> None:
+        if not (
+            hasattr(self.__class__.__base__, method_name)
+            and callable(getattr(self.__class__.__base__, method_name))
+        ):
+            pytest.fail(
+                f"method '{method_name}' not found in {self.__class__.__base__}. "
+                f"This likely means the method was renamed, which means the "
+                f"instrumentation needs to be adapted!"
+            )
+
+    def _prediction(
+        self,
+        probabilities: List[float],
+        events: Optional[List[Event]] = None,
+        optional_events: Optional[List[Event]] = None,
+        is_end_to_end_prediction: bool = False,
+        is_no_user_prediction: bool = False,
+        diagnostic_data: Optional[Dict[Text, Any]] = None,
+        action_metadata: Optional[Dict[Text, Any]] = None,
+    ) -> PolicyPrediction:
+        pass

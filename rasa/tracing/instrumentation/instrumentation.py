@@ -2,6 +2,7 @@ import contextlib
 import functools
 import importlib
 import inspect
+import json
 import logging
 from typing import (
     Any,
@@ -9,6 +10,7 @@ from typing import (
     Awaitable,
     Callable,
     Dict,
+    List,
     Optional,
     Text,
     Type,
@@ -24,7 +26,8 @@ from rasa.core.agent import Agent
 from rasa.core.channels import OutputChannel
 from rasa.core.lock_store import LockStore
 from rasa.core.nlg import NaturalLanguageGenerator
-from rasa.core.policies.policy import PolicyPrediction
+from rasa.core.policies.flows.flow_step_result import FlowActionPrediction
+from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import TrackerStore
 from rasa.dialogue_understanding.commands import Command
@@ -34,7 +37,14 @@ from rasa.dialogue_understanding.generator.llm_command_generator import (
 from rasa.engine.graph import GraphNode
 from rasa.engine.training.graph_trainer import GraphTrainer
 from rasa.shared.constants import DOCS_BASE_URL
+from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.tracing.instrumentation.intentless_policy_instrumentation import (
+    _instrument_extract_ai_responses,
+    _instrument_generate_answer,
+    _instrument_select_few_shot_conversations,
+    _instrument_select_response_examples,
+)
 from rasa.utils.endpoints import EndpointConfig
 
 from rasa.tracing.instrumentation import attribute_extractors
@@ -51,6 +61,7 @@ INSTRUMENTED_MODULE_BOOLEAN_ATTRIBUTE_NAME = "module_has_been_instrumented"
 COMMAND_PROCESSOR_MODULE_NAME = (
     "rasa.dialogue_understanding.processor.command_processor"
 )
+FLOW_EXECUTOR_MODULE_NAME = "rasa.core.policies.flows.flow_executor"
 
 
 def _check_extractor_argument_list(
@@ -102,7 +113,7 @@ def traceable(
             span_name = f"{self.__class__.__name__}." + attrs.get(
                 "component_class", "GraphNode"
             )
-        elif module_name == "command_processor":
+        elif module_name in ["command_processor", FLOW_EXECUTOR_MODULE_NAME]:
             span_name = f"{module_name}.{fn.__name__}"
         else:
             span_name = f"{self.__class__.__name__}.{fn.__name__}"
@@ -193,6 +204,7 @@ LockStoreType = TypeVar("LockStoreType", bound=LockStore)
 GraphTrainerType = TypeVar("GraphTrainerType", bound=GraphTrainer)
 LLMCommandGeneratorType = TypeVar("LLMCommandGeneratorType", bound=LLMCommandGenerator)
 CommandType = TypeVar("CommandType", bound=Command)
+PolicyType = TypeVar("PolicyType", bound=Policy)
 
 
 def instrument(
@@ -204,8 +216,9 @@ def instrument(
     lock_store_class: Optional[Type[LockStoreType]] = None,
     graph_trainer_class: Optional[Type[GraphTrainerType]] = None,
     llm_command_generator_class: Optional[Type[LLMCommandGeneratorType]] = None,
-    command_subclasses: Optional[Type[CommandType]] = None,
+    command_subclasses: Optional[List[Type[CommandType]]] = None,
     contextual_response_rephraser_class: Optional[Any] = None,
+    policy_subclasses: Optional[List[Type[PolicyType]]] = None,
 ) -> None:
     """Substitute methods to be traced by their traced counterparts.
 
@@ -234,6 +247,8 @@ def instrument(
     :param contextual_response_rephraser_class: The `ContextualResponseRephraser` to
         be instrumented. If `None` is given, no `ContextualResponseRephraser` will be
         instrumented.
+    :param policy_subclasses: The subclasses of `Policy` to be instrumented. If `None`
+        is given, no subclass of `Policy` will be instrumented.
     """
     if agent_class is not None and not class_is_instrumented(agent_class):
         _instrument_method(
@@ -281,6 +296,9 @@ def instrument(
             attribute_extractors.extract_attrs_for_lock_store,
         )
         lock_store_class.lock = contextlib.asynccontextmanager(traced_lock_method)  # type: ignore[assignment]  # noqa: E501
+
+        logger.debug(f"Instrumented '{lock_store_class.__name__}.lock'.")
+
         mark_class_as_instrumented(lock_store_class)
 
     if graph_trainer_class is not None and not class_is_instrumented(
@@ -303,10 +321,16 @@ def instrument(
             "_generate_action_list_using_llm",
             attribute_extractors.extract_attrs_for_llm_command_generator,
         )
+        _instrument_method(
+            tracer_provider.get_tracer(llm_command_generator_class.__module__),
+            llm_command_generator_class,
+            "_check_commands_against_startable_flows",
+            attribute_extractors.extract_attrs_for_check_commands_against_startable_flows,
+        )
         mark_class_as_instrumented(llm_command_generator_class)
 
     if command_subclasses:
-        for command_subclass in command_subclasses:  # type: ignore[attr-defined]
+        for command_subclass in command_subclasses:
             if command_subclass is not None and not class_is_instrumented(
                 command_subclass
             ):
@@ -337,6 +361,54 @@ def instrument(
 
     if not module_is_instrumented(COMMAND_PROCESSOR_MODULE_NAME):
         _instrument_command_processor_module(tracer_provider)
+
+    if not module_is_instrumented(FLOW_EXECUTOR_MODULE_NAME):
+        _instrument_flow_executor_module(tracer_provider)
+
+    if policy_subclasses:
+        for policy_subclass in policy_subclasses:
+            if policy_subclass is not None and not class_is_instrumented(
+                policy_subclass
+            ):
+                _instrument_method(
+                    tracer_provider.get_tracer(policy_subclass.__module__),
+                    policy_subclass,
+                    "_prediction",
+                    attribute_extractors.extract_attrs_for_policy_prediction,
+                )
+
+                _instrument_intentless_policy(
+                    tracer_provider,
+                    policy_subclass,
+                )
+
+                mark_class_as_instrumented(policy_subclass)
+
+
+def _instrument_intentless_policy(
+    tracer_provider: TracerProvider, policy_class: Type[PolicyType]
+) -> None:
+    if policy_class.__module__ != "rasa.core.policies.intentless_policy":
+        return None
+
+    tracer = tracer_provider.get_tracer(policy_class.__module__)
+
+    _instrument_method(
+        tracer,
+        policy_class,
+        "_prediction_result",
+        attribute_extractors.extract_attrs_for_intentless_policy_prediction_result,
+    )
+    _instrument_method(
+        tracer,
+        policy_class,
+        "find_closest_response",
+        attribute_extractors.extract_attrs_for_intentless_policy_find_closest_response,
+    )
+    _instrument_select_response_examples(tracer, policy_class)
+    _instrument_select_few_shot_conversations(tracer, policy_class)
+    _instrument_extract_ai_responses(tracer, policy_class)
+    _instrument_generate_answer(tracer, policy_class)
 
 
 def _instrument_processor(
@@ -397,6 +469,8 @@ def _instrument_get_tracker(
         processor_class.get_tracker
     )
 
+    logger.debug(f"Instrumented '{processor_class.__name__}.get_tracker'.")
+
 
 def _instrument_command_processor_module(tracer_provider: TracerProvider) -> None:
     _instrument_function(
@@ -426,6 +500,75 @@ def _instrument_command_processor_module(tracer_provider: TracerProvider) -> Non
     mark_module_as_instrumented(COMMAND_PROCESSOR_MODULE_NAME)
 
 
+def _instrument_flow_executor_module(tracer_provider: TracerProvider) -> None:
+    _instrument_function(
+        tracer_provider.get_tracer(FLOW_EXECUTOR_MODULE_NAME),
+        FLOW_EXECUTOR_MODULE_NAME,
+        "advance_flows",
+        attribute_extractors.extract_attrs_for_advance_flows,
+    )
+    _instrument_advance_flows_until_next_action(
+        tracer_provider.get_tracer(FLOW_EXECUTOR_MODULE_NAME),
+        FLOW_EXECUTOR_MODULE_NAME,
+        "advance_flows_until_next_action",
+    )
+    _instrument_function(
+        tracer_provider.get_tracer(FLOW_EXECUTOR_MODULE_NAME),
+        FLOW_EXECUTOR_MODULE_NAME,
+        "run_step",
+        attribute_extractors.extract_attrs_for_run_step,
+    )
+    mark_module_as_instrumented(FLOW_EXECUTOR_MODULE_NAME)
+
+
+def _instrument_advance_flows_until_next_action(
+    tracer: Tracer,
+    module_name: str,
+    function_name: str,
+) -> None:
+    def tracing_advance_flows_until_next_action_wrapper(fn: Callable) -> Callable:
+        @functools.wraps(fn)
+        def wrapper(
+            tracker: DialogueStateTracker,
+            available_actions: List[str],
+            flows: FlowsList,
+        ) -> FlowActionPrediction:
+            with tracer.start_as_current_span(f"{module_name}.{fn.__name__}") as span:
+                prediction: FlowActionPrediction = fn(tracker, available_actions, flows)
+
+                span.set_attributes(
+                    {
+                        "action_name": prediction.action_name
+                        if prediction.action_name
+                        else "None",
+                        "score": prediction.score,
+                        "metadata": json.dumps(prediction.metadata)
+                        if prediction.metadata
+                        else "{}",
+                        "events": json.dumps(
+                            [event.__class__.__name__ for event in prediction.events]
+                            if prediction.events
+                            else [],
+                        ),
+                    }
+                )
+
+                return prediction
+
+        return wrapper
+
+    module = importlib.import_module(module_name)
+    function_to_trace = getattr(module, function_name)
+
+    traced_function = tracing_advance_flows_until_next_action_wrapper(function_to_trace)
+
+    setattr(module, function_name, traced_function)
+
+    logger.debug(
+        f"Instrumented function '{function_name}' in the module '{module_name}'. "
+    )
+
+
 def _instrument_method(
     tracer: Tracer,
     instrumented_class: Type,
@@ -438,6 +581,8 @@ def _instrument_method(
         method_to_trace, tracer, attr_extractor, header_extractor
     )
     setattr(instrumented_class, method_name, traced_method)
+
+    logger.debug(f"Instrumented '{instrumented_class.__name__}.{method_name}'.")
 
 
 def _instrument_function(
@@ -454,6 +599,10 @@ def _instrument_function(
     )
 
     setattr(module, function_name, traced_function)
+
+    logger.debug(
+        f"Instrumented function '{function_name}' in the module '{module_name}'. "
+    )
 
 
 def _wrap_with_tracing_decorator(
@@ -515,6 +664,8 @@ def _instrument_run_action(
     processor_class._run_action = tracing_run_action_wrapper(  # type: ignore[assignment]  # noqa: E501
         processor_class._run_action
     )
+
+    logger.debug(f"Instrumented '{processor_class.__name__}._run_action'.")
 
 
 def _mangled_instrumented_boolean_attribute_name(instrumented_class: Type) -> Text:

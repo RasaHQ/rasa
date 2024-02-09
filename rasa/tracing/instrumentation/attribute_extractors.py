@@ -12,17 +12,21 @@ from rasa.dialogue_understanding.commands import Command
 from rasa.dialogue_understanding.generator.llm_command_generator import (
     LLMCommandGenerator,
 )
+from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.engine.graph import GraphModelConfiguration, GraphNode
 from rasa.engine.training.graph_trainer import GraphTrainer
 from rasa.shared.core.constants import REQUESTED_SLOT
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import DialogueStackUpdated, Event
-from rasa.shared.core.flows import FlowsList
+from rasa.shared.core.flows import Flow, FlowStep, FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 
 if TYPE_CHECKING:
-    from rasa.core.policies.flow_policy import FlowPolicy
+    from rasa.core.policies.intentless_policy import IntentlessPolicy
+    from rasa.core.policies.policy import PolicyPrediction
+    from rasa.dialogue_understanding.generator.command_generator import CommandGenerator
 
 # This file contains all attribute extractors for tracing instrumentation.
 # These are functions that are applied to the arguments of the wrapped function to be
@@ -46,12 +50,12 @@ def extract_attrs_for_agent(
         "input_channel": message.input_channel,
         "sender_id": message.sender_id,
         "model_id": self.model_id,
-        "model_name": self.model_name,
+        "model_name": self.processor.model_filename if self.processor else "None",
     }
 
 
 def extract_llm_command_generator_attrs(
-    attributes: Dict[str, Any], commands: List[Command]
+    attributes: Dict[str, Any], commands: List[Dict[str, Any]]
 ) -> None:
     """Extract more attributes for `GraphNode` type `LLMCommandGenerator`.
 
@@ -61,39 +65,39 @@ def extract_llm_command_generator_attrs(
     commands_list = []
 
     for command in commands:
-        command_name = command.get("command")  # type: ignore[attr-defined]
+        command_name = command.get("command")
         commands_list.append(command_name)
 
         if command_name == "set slot":
-            attributes["slot_name"] = command.get("name")  # type: ignore[attr-defined]
+            attributes["slot_name"] = command.get("name")
 
         if command_name == "start flow":
-            attributes["flow_name"] = command.get("flow")  # type: ignore[attr-defined]
+            attributes["flow_name"] = command.get("flow")
 
     attributes["commands"] = str(commands_list)
 
 
 def extract_flow_policy_attrs(
-    attributes: Dict[str, Any], flow_policy: "FlowPolicy"
+    attributes: Dict[str, Any], policy_prediction: "PolicyPrediction"
 ) -> None:
     """Extract more attributes for `GraphNode` type `FlowPolicy`.
 
     :param attributes: A dictionary containing attributes.
-    :param commands: The FlowPolicy to use.
+    :param policy_prediction: The PolicyPrediction to use.
     """
-    attributes["policy"] = flow_policy.policy_name  # type: ignore[attr-defined]
+    attributes["policy"] = policy_prediction.policy_name
 
-    if flow_policy.events:  # type: ignore[attr-defined]
+    if policy_prediction.events:
         attributes["events"] = str(
-            [event.__class__.__name__ for event in flow_policy.events]  # type: ignore[attr-defined]  # noqa: E501
+            [event.__class__.__name__ for event in policy_prediction.events]
         )
 
-    if flow_policy.optional_events:  # type: ignore[attr-defined]
+    if policy_prediction.optional_events:
         optional_events_name = []
         flows = []
         utters = []
 
-        for optional_event in flow_policy.optional_events:  # type: ignore[attr-defined]
+        for optional_event in policy_prediction.optional_events:
             optional_events_name.append(optional_event.__class__.__name__)
 
             if (
@@ -145,7 +149,8 @@ def extract_attrs_for_graph_node(
             extract_llm_command_generator_attrs(attributes, commands)
 
         if "FlowPolicy" in input[0]:
-            extract_flow_policy_attrs(attributes, input[1])
+            policy_prediction = input[1]
+            extract_flow_policy_attrs(attributes, policy_prediction)
 
     return attributes
 
@@ -269,13 +274,36 @@ def extract_attrs_for_llm_command_generator(
     self: LLMCommandGenerator,
     prompt: str,
 ) -> Dict[str, Any]:
-    attribute = {
+    attributes = {
         "class_name": self.__class__.__name__,
-        "llm_model": "None",
+        "llm_model": str(self.config.get("model", "gpt-4")),
+        "llm_type": "openai",
     }
-    if self.config.get("llm") is not None:
-        attribute["llm_model"] = str(self.config.get("llm").get("model_name"))  # type: ignore[union-attr]  # noqa: E501
-    return attribute
+
+    llm_property = self.config.get("llm") or {}
+
+    if llm_property and ("model_name" in llm_property or "model" in llm_property):
+        attributes["llm_model"] = str(
+            llm_property.get("model_name") or llm_property.get("model")
+        )
+
+    attributes["llm_temperature"] = str(llm_property.get("temperature", 0.0))
+    attributes["request_timeout"] = str(llm_property.get("request_timeout", 7))
+
+    if "type" in llm_property:
+        attributes["llm_type"] = str(llm_property.get("type"))
+
+    if "engine" in llm_property:
+        attributes["llm_engine"] = str(llm_property.get("engine"))
+
+    if "deployment" in llm_property:
+        attributes["llm_deployment"] = str(llm_property.get("deployment"))
+    elif "deployment" in llm_property.get("embeddings", {}):
+        attributes["llm_deployment"] = str(
+            llm_property.get("embeddings", {}).get("deployment")
+        )
+
+    return attributes
 
 
 def extract_attrs_for_contextual_response_rephraser(
@@ -390,4 +418,97 @@ def extract_attrs_for_remove_duplicated_set_slots(
     return {
         "resulting_events": str(resulting_events),
         "module_name": "command_processor",
+    }
+
+
+def extract_attrs_for_check_commands_against_startable_flows(
+    self: "CommandGenerator", commands: List[Command], startable_flows: FlowsList
+) -> Dict[str, Any]:
+    commands_list = []
+
+    for command in commands:
+        command_as_dict = command.as_dict()
+        command_type = command.command()
+
+        if command_type == "set slot":
+            slot_value = command_as_dict.pop("value", None)
+            command_as_dict["is_slot_value_missing_or_none"] = slot_value is None
+
+        commands_list.append(command_as_dict)
+
+    startable_flow_ids = [flow.id for flow in startable_flows.underlying_flows]
+
+    return {
+        "commands": json.dumps(commands_list),
+        "startable_flow_ids": json.dumps(startable_flow_ids),
+    }
+
+
+def extract_attrs_for_advance_flows(
+    tracker: DialogueStateTracker, available_actions: List[str], flows: FlowsList
+) -> Dict[str, Any]:
+    from rasa.tracing.instrumentation.instrumentation import FLOW_EXECUTOR_MODULE_NAME
+
+    return {
+        "module_name": FLOW_EXECUTOR_MODULE_NAME,
+        "available_actions": json.dumps(available_actions),
+    }
+
+
+def extract_attrs_for_run_step(
+    step: FlowStep,
+    flow: Flow,
+    stack: DialogueStack,
+    tracker: DialogueStateTracker,
+    available_actions: List[str],
+    flows: FlowsList,
+) -> Dict[str, Any]:
+    return {
+        "step_custom_id": step.custom_id if step.custom_id else "None",
+        "step_description": step.description if step.description else "None",
+        "current_flow_id": flow.id,
+    }
+
+
+def extract_attrs_for_policy_prediction(
+    self: Any,
+    probabilities: List[float],
+    events: Optional[List[Event]] = None,
+    optional_events: Optional[List[Event]] = None,
+    is_end_to_end_prediction: bool = False,
+    is_no_user_prediction: bool = False,
+    diagnostic_data: Optional[Dict[Text, Any]] = None,
+    action_metadata: Optional[Dict[Text, Any]] = None,
+) -> Dict[str, Any]:
+    return {
+        "priority": self.priority,
+        "events": [event.__class__.__name__ for event in events] if events else "None",
+        "optional_events": [event.__class__.__name__ for event in optional_events]
+        if optional_events
+        else "None",
+        "is_end_to_end_prediction": is_end_to_end_prediction,
+        "is_no_user_prediction": is_no_user_prediction,
+        "diagnostic_data": json.dumps(diagnostic_data),
+        "action_metadata": json.dumps(action_metadata),
+    }
+
+
+def extract_attrs_for_intentless_policy_prediction_result(
+    self: "IntentlessPolicy",
+    action_name: Optional[Text],
+    domain: Domain,
+    score: Optional[float] = 1.0,
+) -> Dict[str, Any]:
+    return {
+        "action_name": action_name if action_name else "null",
+        "score": score if score else 0.0,
+    }
+
+
+def extract_attrs_for_intentless_policy_find_closest_response(
+    self: "IntentlessPolicy",
+    tracker: DialogueStateTracker,
+) -> Dict[str, Any]:
+    return {
+        "current_context": json.dumps(tracker.stack.current_context()),
     }
