@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Tuple
 from rasa.core.agent import Agent
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels import UserMessage
+from rasa.core.nlg.contextual_response_rephraser import ContextualResponseRephraser
 from rasa.core.lock_store import LOCK_LIFETIME, LockStore
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import TrackerStore
@@ -22,6 +23,7 @@ from rasa.shared.core.flows import Flow, FlowStep, FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.utils.llm import combine_custom_and_default_config
 
 if TYPE_CHECKING:
     from langchain.llms.base import BaseLLM
@@ -273,30 +275,27 @@ def extract_attrs_for_command(
     }
 
 
-def extract_llm_config(
-    self: Any, default_model: str, default_request_timeout: int
-) -> Dict[str, Any]:
-    attributes = {
-        "class_name": self.__class__.__name__,
-        "llm_model": str(self.config.get("model", default_model)),
-        "llm_type": "openai",
-        "embeddings": json.dumps(self.config.get("embeddings", {})),
-    }
+def extract_llm_config(self: Any, default_llm_config: Dict[str, Any]) -> Dict[str, Any]:
+    if isinstance(self, ContextualResponseRephraser):
+        config = self.nlg_endpoint.kwargs
+    else:
+        config = self.config
 
-    llm_property = self.config.get("llm") or {}
-
-    if llm_property and ("model_name" in llm_property or "model" in llm_property):
-        attributes["llm_model"] = str(
-            llm_property.get("model_name") or llm_property.get("model")
-        )
-
-    attributes["llm_temperature"] = str(llm_property.get("temperature", 0.0))
-    attributes["request_timeout"] = str(
-        llm_property.get("request_timeout", default_request_timeout)
+    llm_property = combine_custom_and_default_config(
+        config.get("llm"), default_llm_config
     )
 
-    if "type" in llm_property:
-        attributes["llm_type"] = str(llm_property.get("type"))
+    attributes = {
+        "class_name": self.__class__.__name__,
+        "llm_model": str(config.get("model", llm_property.get("model_name"))),
+        "llm_type": str(llm_property.get("_type")),
+        "embeddings": json.dumps(config.get("embeddings", {})),
+        "llm_temperature": str(llm_property.get("temperature")),
+        "request_timeout": str(llm_property.get("request_timeout")),
+    }
+
+    if "model" in llm_property:
+        attributes["llm_model"] = str(llm_property.get("model"))
 
     if "engine" in llm_property:
         attributes["llm_engine"] = str(llm_property.get("engine"))
@@ -308,23 +307,20 @@ def extract_attrs_for_llm_command_generator(
     self: LLMCommandGenerator,
     prompt: str,
 ) -> Dict[str, Any]:
-    return extract_llm_config(self, default_model="gpt-4", default_request_timeout=7)
+    from rasa.dialogue_understanding.generator.llm_command_generator import (
+        DEFAULT_LLM_CONFIG,
+    )
+
+    return extract_llm_config(self, default_llm_config=DEFAULT_LLM_CONFIG)
 
 
 def extract_attrs_for_contextual_response_rephraser(
     self: Any,
     prompt: str,
 ) -> Dict[str, Any]:
-    attributes = {
-        "class_name": self.__class__.__name__,
-        "llm_type": self.llm_property("_type"),
-    }
+    from rasa.core.nlg.contextual_response_rephraser import DEFAULT_LLM_CONFIG
 
-    if self.llm_property("model_name") or self.llm_property("model"):
-        attributes["llm_model"] = self.llm_property("model_name") or self.llm_property(
-            "model"
-        )
-    return attributes
+    return extract_llm_config(self, default_llm_config=DEFAULT_LLM_CONFIG)
 
 
 def extract_attrs_for_generate(
@@ -534,9 +530,9 @@ def extract_attrs_for_intentless_policy_find_closest_response(
 def extract_attrs_for_enterprise_search_generate_llm_answer(
     self: "EnterpriseSearchPolicy", llm: "BaseLLM", prompt: str
 ) -> Dict[str, Any]:
-    return extract_llm_config(
-        self, default_model="gpt-3.5-turbo", default_request_timeout=5
-    )
+    from rasa.core.policies.enterprise_search_policy import DEFAULT_LLM_CONFIG
+
+    return extract_llm_config(self, default_llm_config=DEFAULT_LLM_CONFIG)
 
 
 def extract_current_context_attribute(stack: DialogueStack) -> Dict[str, Any]:
