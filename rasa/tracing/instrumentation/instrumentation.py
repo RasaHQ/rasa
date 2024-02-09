@@ -39,6 +39,12 @@ from rasa.engine.training.graph_trainer import GraphTrainer
 from rasa.shared.constants import DOCS_BASE_URL
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.tracing.instrumentation.intentless_policy_instrumentation import (
+    _instrument_extract_ai_responses,
+    _instrument_generate_answer,
+    _instrument_select_few_shot_conversations,
+    _instrument_select_response_examples,
+)
 from rasa.utils.endpoints import EndpointConfig
 
 from rasa.tracing.instrumentation import attribute_extractors
@@ -370,7 +376,39 @@ def instrument(
                     "_prediction",
                     attribute_extractors.extract_attrs_for_policy_prediction,
                 )
+
+                _instrument_intentless_policy(
+                    tracer_provider,
+                    policy_subclass,
+                )
+
                 mark_class_as_instrumented(policy_subclass)
+
+
+def _instrument_intentless_policy(
+    tracer_provider: TracerProvider, policy_class: Type[PolicyType]
+) -> None:
+    if policy_class.__module__ != "rasa.core.policies.intentless_policy":
+        return None
+
+    tracer = tracer_provider.get_tracer(policy_class.__module__)
+
+    _instrument_method(
+        tracer,
+        policy_class,
+        "_prediction_result",
+        attribute_extractors.extract_attrs_for_intentless_policy_prediction_result,
+    )
+    _instrument_method(
+        tracer,
+        policy_class,
+        "find_closest_response",
+        attribute_extractors.extract_attrs_for_intentless_policy_find_closest_response,
+    )
+    _instrument_select_response_examples(tracer, policy_class)
+    _instrument_select_few_shot_conversations(tracer, policy_class)
+    _instrument_extract_ai_responses(tracer, policy_class)
+    _instrument_generate_answer(tracer, policy_class)
 
 
 def _instrument_processor(

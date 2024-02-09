@@ -16,6 +16,7 @@ from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.engine.graph import GraphModelConfiguration, GraphNode
 from rasa.engine.training.graph_trainer import GraphTrainer
 from rasa.shared.core.constants import REQUESTED_SLOT
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import DialogueStackUpdated, Event
 from rasa.shared.core.flows import Flow, FlowStep, FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -23,6 +24,7 @@ from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 
 if TYPE_CHECKING:
+    from rasa.core.policies.intentless_policy import IntentlessPolicy
     from rasa.core.policies.policy import PolicyPrediction
     from rasa.dialogue_understanding.generator.command_generator import CommandGenerator
 
@@ -488,4 +490,25 @@ def extract_attrs_for_policy_prediction(
         "is_no_user_prediction": is_no_user_prediction,
         "diagnostic_data": json.dumps(diagnostic_data),
         "action_metadata": json.dumps(action_metadata),
+    }
+
+
+def extract_attrs_for_intentless_policy_prediction_result(
+    self: "IntentlessPolicy",
+    action_name: Optional[Text],
+    domain: Domain,
+    score: Optional[float] = 1.0,
+) -> Dict[str, Any]:
+    return {
+        "action_name": action_name if action_name else "null",
+        "score": score if score else 0.0,
+    }
+
+
+def extract_attrs_for_intentless_policy_find_closest_response(
+    self: "IntentlessPolicy",
+    tracker: DialogueStateTracker,
+) -> Dict[str, Any]:
+    return {
+        "current_context": json.dumps(tracker.stack.current_context()),
     }
