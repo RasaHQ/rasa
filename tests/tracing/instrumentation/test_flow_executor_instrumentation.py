@@ -75,6 +75,7 @@ def test_tracing_flow_executor_advance_flows(
     assert current_span.name == "rasa.core.policies.flows.flow_executor.advance_flows"
     assert current_span.attributes == {
         "available_actions": '["action_listen", "utter_ask_transfer_money_amount_of_money"]',  # noqa: E501
+        "current_context": "{}",
     }
 
 
@@ -115,6 +116,7 @@ def test_tracing_flow_executor_run_step(
         "step_custom_id": "ask_amount",
         "step_description": "ask for the amount of money to transfer",
         "current_flow_id": "transfer_money",
+        "current_context": "{}",
     }
     assert current_span.attributes == expected_attributes
 

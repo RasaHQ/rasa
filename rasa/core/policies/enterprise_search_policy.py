@@ -52,6 +52,7 @@ from rasa.core.information_retrieval.information_retrieval import (
 
 if TYPE_CHECKING:
     from langchain.schema.embeddings import Embeddings
+    from langchain.llms.base import BaseLLM
     from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 
 from rasa.utils.log_utils import log_llm
@@ -343,13 +344,7 @@ class EnterpriseSearchPolicy(Policy):
                 log_event="enterprise_search_policy.predict_action_probabilities.prompt_rendered",
                 prompt=prompt,
             )
-            try:
-                llm_answer = llm(prompt)
-            except Exception as e:
-                # unfortunately, langchain does not wrap LLM exceptions which means
-                # we have to catch all exceptions here
-                structlogger.error("nlg.llm.error", error=e)
-                llm_answer = None
+            llm_answer = self._generate_llm_answer(llm, prompt)
         else:
             structlogger.error(
                 "enterprise_search_policy.predict_action_probabilities.no_vector_store"
@@ -385,6 +380,17 @@ class EnterpriseSearchPolicy(Policy):
             events = []
 
         return self._prediction(result, action_metadata=action_metadata, events=events)
+
+    def _generate_llm_answer(self, llm: "BaseLLM", prompt: Text) -> Optional[Text]:
+        try:
+            llm_answer = llm(prompt)
+        except Exception as e:
+            # unfortunately, langchain does not wrap LLM exceptions which means
+            # we have to catch all exceptions here
+            structlogger.error("nlg.llm.error", error=e)
+            llm_answer = None
+
+        return llm_answer
 
     def _prediction_result(
         self, action_name: Optional[Text], domain: Domain, score: Optional[float] = 1.0
