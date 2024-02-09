@@ -172,7 +172,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         flow_prompt = self.render_template(message, tracker, flows)
         log_llm(
             logger=structlogger,
-            log_module=self.__class__.__name__,
+            log_module="LLMCommandGenerator",
             log_event="llm_command_generator.predict_commands.prompt_rendered",
             prompt=flow_prompt,
         )
@@ -180,7 +180,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         action_list = self._generate_action_list_using_llm(flow_prompt)
         log_llm(
             logger=structlogger,
-            log_module=self.__class__.__name__,
+            log_module="LLMCommandGenerator",
             log_event="llm_command_generator.predict_commands.actions_generated",
             action_list=action_list,
         )

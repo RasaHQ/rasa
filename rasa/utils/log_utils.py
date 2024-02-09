@@ -9,6 +9,7 @@ from structlog_sentry import SentryProcessor
 from structlog.dev import ConsoleRenderer
 from structlog.typing import EventDict, WrappedLogger
 from rasa.shared.constants import (
+    LOG_LEVEL_NAME_TO_LEVEL,
     ENV_LOG_LEVEL,
     DEFAULT_LOG_LEVEL,
     ENV_LOG_LEVEL_LLM,
@@ -157,16 +158,15 @@ def log_llm(logger: Any, log_module: str, log_event: str, **kwargs: Dict) -> Non
         log_event: string describing the log event
         **kwargs: dictionary of additional logging context
     """
-    log_level_llm = structlog.stdlib._NAME_TO_LEVEL[
-        os.environ.get(ENV_LOG_LEVEL_LLM, DEFAULT_LOG_LEVEL_LLM).lower()
+    log_level_llm = LOG_LEVEL_NAME_TO_LEVEL[
+        os.environ.get(ENV_LOG_LEVEL_LLM, DEFAULT_LOG_LEVEL_LLM)
     ]
 
-    log_level_llm_module = structlog.stdlib._NAME_TO_LEVEL[
-        os.environ.get(
-            ENV_LOG_LEVEL_LLM_BY_MODULE[log_module], DEFAULT_LOG_LEVEL_LLM
-        ).lower()
+    log_level_llm_module = LOG_LEVEL_NAME_TO_LEVEL[
+        os.environ.get(ENV_LOG_LEVEL_LLM_BY_MODULE[log_module], DEFAULT_LOG_LEVEL_LLM)
     ]
 
-    log_level = max(log_level_llm, log_level_llm_module)  # DEBUG=10, INFO=20
+    # log at the highest specified level, e.g. max(DEBUG=10, INFO=20)
+    log_level = max(log_level_llm, log_level_llm_module)
 
     logger.log(log_level, log_event, **kwargs)
