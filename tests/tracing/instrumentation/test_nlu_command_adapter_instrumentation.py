@@ -38,7 +38,7 @@ def test_tracing_nlu_command_adapter_predict_commands(
     )
 
     mock_nlu_command_adapter.predict_commands(
-        Message(data={"intent": {"name": "greet"}}),
+        Message(data={"intent": {"name": "health_advice"}}),
         FlowsList(underlying_flows=[]),
         tracker,
     )
@@ -56,5 +56,5 @@ def test_tracing_nlu_command_adapter_predict_commands(
 
     assert captured_span.attributes == {
         "commands": '[{"flow": "health_advice", "command": "start flow"}]',
-        "intent": '"greet"',
+        "intent": '"health_advice"',
     }
