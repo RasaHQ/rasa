@@ -46,6 +46,9 @@ def configure_tracing(tracer_provider: Optional[TracerProvider]) -> None:
     if tracer_provider is None:
         return None
 
+    from rasa.core.information_retrieval.information_retrieval import (
+        InformationRetrieval,
+    )
     from rasa.core.nlg.contextual_response_rephraser import ContextualResponseRephraser
     from rasa.core.policies.policy import Policy
     from rasa.engine.recipes.default_components import DEFAULT_COMPONENTS
@@ -60,6 +63,11 @@ def configure_tracing(tracer_provider: Optional[TracerProvider]) -> None:
         if issubclass(policy_class, Policy)
     ]
 
+    vector_store_subclasses = [
+        vector_store_class
+        for vector_store_class in InformationRetrieval.__subclasses__()
+    ]
+
     instrumentation.instrument(
         tracer_provider=tracer_provider,
         agent_class=Agent,
@@ -71,6 +79,7 @@ def configure_tracing(tracer_provider: Optional[TracerProvider]) -> None:
         command_subclasses=command_subclasses,
         contextual_response_rephraser_class=ContextualResponseRephraser,
         policy_subclasses=policy_subclasses,
+        vector_store_subclasses=vector_store_subclasses,
     )
 
 

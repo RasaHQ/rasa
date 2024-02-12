@@ -20,6 +20,8 @@ from rasa.utils.endpoints import EndpointConfig
 
 from rasa.core.nlg.summarize import summarize_conversation
 
+from rasa.utils.log_utils import log_llm
+
 structlogger = structlog.get_logger()
 
 RESPONSE_REPHRASING_KEY = "rephrase"
@@ -188,7 +190,12 @@ class ContextualResponseRephraser(TemplatedNaturalLanguageGenerator):
             current_input=current_input,
             slots=tracker.current_slot_values(),
         )
-        structlogger.debug("nlg.rephrase.prompt", prompt=prompt)
+        log_llm(
+            logger=structlogger,
+            log_module="ContextualResponseRephraser",
+            log_event="nlg.rephrase.prompt_rendered",
+            prompt=prompt,
+        )
         telemetry.track_response_rephrase(
             rephrase_all=self.rephrase_all,
             custom_prompt_template=self.custom_prompt_template(prompt_template_text),

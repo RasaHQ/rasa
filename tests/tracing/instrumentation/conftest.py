@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from asyncio import AbstractEventLoop
 from contextlib import asynccontextmanager
+from langchain.schema import Document
 from pathlib import Path
 from typing import (
     Any,
@@ -25,6 +26,7 @@ from rasa.core.actions.action import Action
 from rasa.core.agent import Agent
 from rasa.core.brokers.broker import EB, EventBroker
 from rasa.core.channels import OutputChannel, UserMessage
+from rasa.core.information_retrieval.information_retrieval import InformationRetrieval
 from rasa.core.lock import TicketLock
 from rasa.core.lock_store import LockStore
 from rasa.core.nlg import NaturalLanguageGenerator
@@ -462,3 +464,33 @@ class MockPolicy(Policy):
         action_metadata: Optional[Dict[Text, Any]] = None,
     ) -> PolicyPrediction:
         pass
+
+
+class MockInformationRetrieval(InformationRetrieval):
+    def __init__(self) -> None:
+        self.fail_if_undefined("search")
+
+    def fail_if_undefined(self, method_name: Text) -> None:
+        if not (
+            hasattr(self.__class__.__base__, method_name)
+            and callable(getattr(self.__class__.__base__, method_name))
+        ):
+            pytest.fail(
+                f"method '{method_name}' not found in {self.__class__.__base__}. "
+                f"This likely means the method was renamed, which means the "
+                f"instrumentation needs to be adapted!"
+            )
+
+    def connect(
+        self,
+        config: EndpointConfig,
+    ) -> None:
+        pass
+
+    def search(
+        self,
+        query: Text,
+    ) -> List[Document]:
+        return [
+            Document(page_content="Some content", metadata={"source": "docs/test.txt"})
+        ]

@@ -10,6 +10,9 @@ from rasa.dialogue_understanding.commands.correct_slots_command import (
 )
 from rasa.shared.core.events import UserUttered, DialogueStackUpdated
 from rasa.shared.core.flows import FlowsList, Flow
+from rasa.shared.core.flows.flow_step_links import FlowStepLinks
+from rasa.shared.core.flows.flow_step_sequence import FlowStepSequence
+from rasa.shared.core.flows.steps import CollectInformationFlowStep
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.tracing.instrumentation import instrumentation
 from rasa.tracing.instrumentation.instrumentation import COMMAND_PROCESSOR_MODULE_NAME
@@ -77,17 +80,40 @@ def test_tracing_command_processor_clean_up_commands(
             ]
         },
     )
+    dialogue_stack_event = DialogueStackUpdated(
+        update='[{"op": "add", "path": "/0", "value": {"frame_id": "ZG16JCGM", "flow_id": "transfer_money", "step_id": "START", "frame_type": "regular", "type": "flow"}}]'  # noqa: E501
+    )
     instrumentation.instrument(tracer_provider)
 
     module = importlib.import_module(COMMAND_PROCESSOR_MODULE_NAME)
-    tracker = DialogueStateTracker.from_events(sender_id, evts=[user_event])
+    tracker = DialogueStateTracker.from_events(
+        sender_id, evts=[user_event, dialogue_stack_event]
+    )
     commands = module.get_commands_from_tracker(tracker)
+
+    flow_step = CollectInformationFlowStep(
+        idx=1,
+        custom_id="ask_amount",
+        description="ask for the amount of money to transfer",
+        metadata={"channel": "socketio"},
+        next=FlowStepLinks(links=[]),
+        collect="amount",
+        utter="utter_ask_transfer_money_amount_of_money",
+        rejections=[],
+    )
 
     # act
     module.clean_up_commands(
         commands,
         tracker,
-        FlowsList(underlying_flows=[Flow("transfer_money")]),
+        FlowsList(
+            underlying_flows=[
+                Flow(
+                    "transfer_money",
+                    step_sequence=FlowStepSequence(child_steps=[flow_step]),
+                )
+            ]
+        ),
     )
 
     captured_spans: Sequence[
@@ -105,7 +131,10 @@ def test_tracing_command_processor_clean_up_commands(
         {"name": "recipient", "command": "set slot"},
     ]
 
-    assert captured_span.attributes == {"commands": str(expected_values)}
+    assert captured_span.attributes == {
+        "commands": str(expected_values),
+        "current_context": '{"frame_id": "ZG16JCGM", "flow_id": "transfer_money", "step_id": "START", "frame_type": "regular", "type": "flow"}',  # noqa: E501
+    }
 
 
 def test_tracing_command_processor_validate_state_of_commands(

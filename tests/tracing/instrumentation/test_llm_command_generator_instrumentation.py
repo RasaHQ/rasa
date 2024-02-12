@@ -92,6 +92,7 @@ def test_tracing_llm_command_generator_default_attrs(
         "llm_type": "openai",
         "llm_temperature": "0.0",
         "request_timeout": "7",
+        "embeddings": "{}",
     }
     assert captured_span.attributes == expected_attributes
 
@@ -117,8 +118,8 @@ def test_tracing_llm_command_generator_azure_attrs(
             "request_timeout": 15,
             "temperature": 0.3,
             "engine": "azure-test",
-            "embeddings": {"deployment": "test"},
         },
+        "embeddings": {"deployment": "test"},
     }
 
     mock_llm_command_generator = component_class(
@@ -147,7 +148,7 @@ def test_tracing_llm_command_generator_azure_attrs(
         "llm_temperature": "0.3",
         "request_timeout": "15",
         "llm_engine": "azure-test",
-        "llm_deployment": "test",
+        "embeddings": '{"deployment": "test"}',
     }
     assert captured_span.attributes == expected_attributes
 
@@ -174,6 +175,7 @@ def test_tracing_llm_command_generator_non_default_llm_attrs(
             "request_timeout": 10,
             "temperature": 0.7,
         },
+        "embeddings": {"model": "text-embedding-ada-002"},
     }
 
     mock_llm_command_generator = component_class(
@@ -201,6 +203,7 @@ def test_tracing_llm_command_generator_non_default_llm_attrs(
         "llm_type": "cohere",
         "llm_temperature": "0.7",
         "request_timeout": "10",
+        "embeddings": '{"model": "text-embedding-ada-002"}',
     }
     assert captured_span.attributes == expected_attributes
 

@@ -12,6 +12,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    TYPE_CHECKING,
     Text,
     Type,
     TypeVar,
@@ -24,6 +25,7 @@ from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapProp
 from rasa.core.actions.action import Action, RemoteAction
 from rasa.core.agent import Agent
 from rasa.core.channels import OutputChannel
+from rasa.core.information_retrieval.information_retrieval import InformationRetrieval
 from rasa.core.lock_store import LockStore
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.flows.flow_step_result import FlowActionPrediction
@@ -39,9 +41,18 @@ from rasa.engine.training.graph_trainer import GraphTrainer
 from rasa.shared.constants import DOCS_BASE_URL
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.tracing.instrumentation.intentless_policy_instrumentation import (
+    _instrument_extract_ai_responses,
+    _instrument_generate_answer,
+    _instrument_select_few_shot_conversations,
+    _instrument_select_response_examples,
+)
 from rasa.utils.endpoints import EndpointConfig
 
 from rasa.tracing.instrumentation import attribute_extractors
+
+if TYPE_CHECKING:
+    from langchain.schema import Document
 
 # The `TypeVar` representing the return type for a function to be wrapped.
 S = TypeVar("S")
@@ -199,6 +210,9 @@ GraphTrainerType = TypeVar("GraphTrainerType", bound=GraphTrainer)
 LLMCommandGeneratorType = TypeVar("LLMCommandGeneratorType", bound=LLMCommandGenerator)
 CommandType = TypeVar("CommandType", bound=Command)
 PolicyType = TypeVar("PolicyType", bound=Policy)
+InformationRetrievalType = TypeVar(
+    "InformationRetrievalType", bound=InformationRetrieval
+)
 
 
 def instrument(
@@ -213,6 +227,7 @@ def instrument(
     command_subclasses: Optional[List[Type[CommandType]]] = None,
     contextual_response_rephraser_class: Optional[Any] = None,
     policy_subclasses: Optional[List[Type[PolicyType]]] = None,
+    vector_store_subclasses: Optional[List[Type[InformationRetrievalType]]] = None,
 ) -> None:
     """Substitute methods to be traced by their traced counterparts.
 
@@ -243,6 +258,9 @@ def instrument(
         instrumented.
     :param policy_subclasses: The subclasses of `Policy` to be instrumented. If `None`
         is given, no subclass of `Policy` will be instrumented.
+    :param vector_store_subclasses: The subclasses of `InformationRetrieval` to be
+        instrumented. If `None` is given, no subclass of `InformationRetrieval` will be
+        instrumented.
     """
     if agent_class is not None and not class_is_instrumented(agent_class):
         _instrument_method(
@@ -370,7 +388,100 @@ def instrument(
                     "_prediction",
                     attribute_extractors.extract_attrs_for_policy_prediction,
                 )
+
+                _instrument_intentless_policy(
+                    tracer_provider,
+                    policy_subclass,
+                )
+
+                _instrument_enterprise_search_policy(
+                    tracer_provider,
+                    policy_subclass,
+                )
+
                 mark_class_as_instrumented(policy_subclass)
+
+    if vector_store_subclasses:
+        for vector_store_subclass in vector_store_subclasses:
+            if vector_store_subclass is not None and not class_is_instrumented(
+                vector_store_subclass
+            ):
+                _instrument_information_retrieval_search(
+                    tracer_provider.get_tracer(vector_store_subclass.__module__),
+                    vector_store_subclass,
+                )
+                mark_class_as_instrumented(vector_store_subclass)
+
+
+def _instrument_information_retrieval_search(
+    tracer: Tracer, vector_store_class: Type[InformationRetrievalType]
+) -> None:
+    def tracing_information_retrieval_search_wrapper(fn: Callable) -> Callable:
+        @functools.wraps(fn)
+        def wrapper(self: InformationRetrieval, query: Text) -> List["Document"]:
+            with tracer.start_as_current_span(
+                f"{self.__class__.__name__}.{fn.__name__}"
+            ) as span:
+                documents = fn(self, query)
+                span.set_attributes(
+                    {
+                        "query": query,
+                        "document_metadata": json.dumps(
+                            [document.metadata for document in documents]
+                        ),
+                    }
+                )
+                return documents
+
+        return wrapper
+
+    vector_store_class.search = tracing_information_retrieval_search_wrapper(  # type: ignore[assignment]  # noqa: E501
+        vector_store_class.search
+    )
+
+    logger.debug(f"Instrumented '{vector_store_class.__name__}.search' method.")
+
+
+def _instrument_enterprise_search_policy(
+    tracer_provider: TracerProvider, policy_class: Type[PolicyType]
+) -> None:
+    if policy_class.__module__ != "rasa.core.policies.enterprise_search_policy":
+        return None
+
+    tracer = tracer_provider.get_tracer(policy_class.__module__)
+
+    _instrument_method(
+        tracer,
+        policy_class,
+        "_generate_llm_answer",
+        attribute_extractors.extract_attrs_for_enterprise_search_generate_llm_answer,
+    )
+
+
+def _instrument_intentless_policy(
+    tracer_provider: TracerProvider, policy_class: Type[PolicyType]
+) -> None:
+    if policy_class.__module__ != "rasa.core.policies.intentless_policy":
+        return None
+
+    tracer = tracer_provider.get_tracer(policy_class.__module__)
+
+    _instrument_method(
+        tracer,
+        policy_class,
+        "_prediction_result",
+        attribute_extractors.extract_attrs_for_intentless_policy_prediction_result,
+    )
+    _instrument_method(
+        tracer,
+        policy_class,
+        "find_closest_response",
+        attribute_extractors.extract_attrs_for_intentless_policy_find_closest_response,
+    )
+    _instrument_select_response_examples(tracer, policy_class)
+    _instrument_select_few_shot_conversations(tracer, policy_class)
+    _instrument_extract_ai_responses(tracer, policy_class)
+    _instrument_generate_answer(tracer, policy_class)
 
 
 def _instrument_processor(

@@ -16,6 +16,7 @@ from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.engine.graph import GraphModelConfiguration, GraphNode
 from rasa.engine.training.graph_trainer import GraphTrainer
 from rasa.shared.core.constants import REQUESTED_SLOT
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import DialogueStackUpdated, Event
 from rasa.shared.core.flows import Flow, FlowStep, FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -23,6 +24,9 @@ from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 
 if TYPE_CHECKING:
+    from langchain.llms.base import BaseLLM
+    from rasa.core.policies.enterprise_search_policy import EnterpriseSearchPolicy
+    from rasa.core.policies.intentless_policy import IntentlessPolicy
     from rasa.core.policies.policy import PolicyPrediction
     from rasa.dialogue_understanding.generator.command_generator import CommandGenerator
 
@@ -141,13 +145,13 @@ def extract_attrs_for_graph_node(
         "fn_name": self._fn_name,
     }
 
-    for input in inputs_from_previous_nodes:
-        if "LLMCommandGenerator" in input[0]:
-            commands = input[1][0].data.get("commands")
+    for node_input in inputs_from_previous_nodes:
+        if "LLMCommandGenerator" in node_input[0]:
+            commands = node_input[1][0].data.get("commands")
             extract_llm_command_generator_attrs(attributes, commands)
 
-        if "FlowPolicy" in input[0]:
-            policy_prediction = input[1]
+        if "FlowPolicy" in node_input[0]:
+            policy_prediction = node_input[1]
             extract_flow_policy_attrs(attributes, policy_prediction)
 
     return attributes
@@ -174,9 +178,9 @@ def extract_attrs_for_tracker_store(
     """Extract the attributes for `TrackerStore.stream_events`.
 
     :param self: The `TrackerStore` on which `stream_events` is called.
-    :param _event_broker: The `EventBroker` on which the new events are published.
+    :param event_broker: The `EventBroker` on which the new events are published.
     :param new_events: List of new events to stream.
-    :param _sender_id: The sender id of the tracker to which the new events were added.
+    :param sender_id: The sender id of the tracker to which the new events were added.
     """
     return {
         "number_of_streamed_events": len(new_events),
@@ -193,8 +197,9 @@ def extract_attrs_for_lock_store(
     """Extract the attributes for `LockStore.lock`.
 
     :param self: the `LockStore` on which `lock` is called.
-    :param _args: Unused additional parameters.
-    :param _kwargs: Unused additional parameters.
+    :param conversation_id: The conversation id for which the lock is acquired.
+    :param lock_lifetime: The lifetime of the lock.
+    :param wait_time_in_seconds: The time to wait for the lock.
     :return: A dictionary containing the attributes.
     """
     return {"lock_store_class": self.__class__.__name__}
@@ -210,12 +215,12 @@ def extract_attrs_for_graph_trainer(
 ) -> Dict[str, Any]:
     """Extract the attributes for `GraphTrainer.train`.
 
-    :param _graph_trainer_class: the `GraphTrainer` on which `train` is called.
-    :param model_configuration: The model configuration (training_type, language etc).
+    :param self: the `GraphTrainer` on which `train` is called.
+    :param model_configuration: The model configuration (training_type, language etc.).
     :param importer: The importer which provides the training data for the training.
     :param output_filename: The location where the packaged model is saved.
     :param is_finetuning: Boolean argument, if `True` enables incremental training.
-    :param _force_retraining: Unused boolean argument,i.e, if `True` then the cache
+    :param force_retraining: Unused boolean argument,i.e, if `True` then the cache
     is skipped and all components are retrained.
     :return: A dictionary containing the attributes.
     """
@@ -268,14 +273,14 @@ def extract_attrs_for_command(
     }
 
 
-def extract_attrs_for_llm_command_generator(
-    self: LLMCommandGenerator,
-    prompt: str,
+def extract_llm_config(
+    self: Any, default_model: str, default_request_timeout: int
 ) -> Dict[str, Any]:
     attributes = {
         "class_name": self.__class__.__name__,
-        "llm_model": str(self.config.get("model", "gpt-4")),
+        "llm_model": str(self.config.get("model", default_model)),
         "llm_type": "openai",
+        "embeddings": json.dumps(self.config.get("embeddings", {})),
     }
 
     llm_property = self.config.get("llm") or {}
@@ -286,7 +291,9 @@ def extract_attrs_for_llm_command_generator(
         )
 
     attributes["llm_temperature"] = str(llm_property.get("temperature", 0.0))
-    attributes["request_timeout"] = str(llm_property.get("request_timeout", 7))
+    attributes["request_timeout"] = str(
+        llm_property.get("request_timeout", default_request_timeout)
+    )
 
     if "type" in llm_property:
         attributes["llm_type"] = str(llm_property.get("type"))
@@ -294,14 +301,14 @@ def extract_attrs_for_llm_command_generator(
     if "engine" in llm_property:
         attributes["llm_engine"] = str(llm_property.get("engine"))
 
-    if "deployment" in llm_property:
-        attributes["llm_deployment"] = str(llm_property.get("deployment"))
-    elif "deployment" in llm_property.get("embeddings", {}):
-        attributes["llm_deployment"] = str(
-            llm_property.get("embeddings", {}).get("deployment")
-        )
-
     return attributes
+
+
+def extract_attrs_for_llm_command_generator(
+    self: LLMCommandGenerator,
+    prompt: str,
+) -> Dict[str, Any]:
+    return extract_llm_config(self, default_model="gpt-4", default_request_timeout=7)
 
 
 def extract_attrs_for_contextual_response_rephraser(
@@ -386,7 +393,13 @@ def extract_attrs_for_clean_up_commands(
 
         commands_list.append(command_as_dict)
 
-    return {"commands": str(commands_list), "module_name": "command_processor"}
+    current_context = extract_current_context_attribute(tracker.stack)
+
+    return {
+        "commands": str(commands_list),
+        "module_name": "command_processor",
+        "current_context": json.dumps(current_context),
+    }
 
 
 def extract_attrs_for_remove_duplicated_set_slots(
@@ -447,9 +460,12 @@ def extract_attrs_for_advance_flows(
 ) -> Dict[str, Any]:
     from rasa.tracing.instrumentation.instrumentation import FLOW_EXECUTOR_MODULE_NAME
 
+    current_context = extract_current_context_attribute(tracker.stack)
+
     return {
         "module_name": FLOW_EXECUTOR_MODULE_NAME,
         "available_actions": json.dumps(available_actions),
+        "current_context": json.dumps(current_context),
     }
 
 
@@ -461,10 +477,13 @@ def extract_attrs_for_run_step(
     available_actions: List[str],
     flows: FlowsList,
 ) -> Dict[str, Any]:
+    current_context = extract_current_context_attribute(stack)
+
     return {
         "step_custom_id": step.custom_id if step.custom_id else "None",
         "step_description": step.description if step.description else "None",
         "current_flow_id": flow.id,
+        "current_context": json.dumps(current_context),
     }
 
 
@@ -489,3 +508,44 @@ def extract_attrs_for_policy_prediction(
         "diagnostic_data": json.dumps(diagnostic_data),
         "action_metadata": json.dumps(action_metadata),
     }
+
+
+def extract_attrs_for_intentless_policy_prediction_result(
+    self: "IntentlessPolicy",
+    action_name: Optional[Text],
+    domain: Domain,
+    score: Optional[float] = 1.0,
+) -> Dict[str, Any]:
+    return {
+        "action_name": action_name if action_name else "null",
+        "score": score if score else 0.0,
+    }
+
+
+def extract_attrs_for_intentless_policy_find_closest_response(
+    self: "IntentlessPolicy",
+    tracker: DialogueStateTracker,
+) -> Dict[str, Any]:
+    return {
+        "current_context": json.dumps(tracker.stack.current_context()),
+    }
+
+
+def extract_attrs_for_enterprise_search_generate_llm_answer(
+    self: "EnterpriseSearchPolicy", llm: "BaseLLM", prompt: str
+) -> Dict[str, Any]:
+    return extract_llm_config(
+        self, default_model="gpt-3.5-turbo", default_request_timeout=5
+    )
+
+
+def extract_current_context_attribute(stack: DialogueStack) -> Dict[str, Any]:
+    """Utility function to extract the current context from the dialogue stack."""
+    current_context = stack.current_context()
+
+    if "corrected_slots" in current_context:
+        current_context["corrected_slots"] = list(
+            current_context["corrected_slots"].keys()
+        )
+
+    return current_context
