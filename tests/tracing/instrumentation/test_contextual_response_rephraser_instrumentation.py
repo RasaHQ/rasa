@@ -1,4 +1,4 @@
-from typing import Any, Dict, Sequence, Text
+from typing import Any, Dict, Sequence
 
 import pytest
 from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
@@ -71,30 +71,40 @@ def greet_tracker() -> DialogueStateTracker:
     [
         (
             {
-                "_type": "test",
+                "type": "openai",
                 "model_name": DEFAULT_OPENAI_GENERATE_MODEL_NAME,
             },
             {
                 "llm_model": DEFAULT_OPENAI_GENERATE_MODEL_NAME,
-                "llm_type": "test",
+                "llm_type": "openai",
             },
         ),
         (
             {
-                "_type": "test",
-                "model": None,
+                "type": "cohere",
+                "model": "gptd-instruct-tft",
+                "temperature": 0.7,
+                "request_timeout": 10,
             },
             {
-                "llm_type": "test",
+                "llm_type": "cohere",
+                "llm_model": "gptd-instruct-tft",
+                "llm_temperature": "0.7",
+                "request_timeout": "10",
             },
         ),
         (
             {
-                "_type": "test",
+                "type": "test",
                 "model_name": None,
+                "temperature": 0.7,
+                "request_timeout": 10,
             },
             {
                 "llm_type": "test",
+                "llm_model": "None",
+                "llm_temperature": "0.7",
+                "request_timeout": "10",
             },
         ),
         (
@@ -113,14 +123,13 @@ def greet_tracker() -> DialogueStateTracker:
         ),
     ],
 )
-@pytest.mark.asyncio
-async def test_tracing_contextual_response_rephrasal(
+def test_tracing_contextual_response_rephraser_generate_llm_response(
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
     previous_num_captured_spans: int,
     domain_with_responses: Domain,
     llm_config: Dict[str, Any],
-    expected: Text,
+    expected: Dict[str, Any],
 ) -> None:
     component_class = MockContextualResponseRephraser
 
@@ -130,11 +139,11 @@ async def test_tracing_contextual_response_rephrasal(
     )
 
     endpoint_config = EndpointConfig.from_dict({"llm": llm_config})
-    mock_command = component_class(
+    mock_rephraser = component_class(
         endpoint_config=endpoint_config, domain=domain_with_responses
     )
 
-    mock_command._generate_llm_response("some text")
+    mock_rephraser._generate_llm_response("some text")
 
     captured_spans: Sequence[
         ReadableSpan
@@ -151,12 +160,15 @@ async def test_tracing_contextual_response_rephrasal(
 
     expected_attributes = {
         "class_name": component_class.__name__,
+        "embeddings": "{}",
+        "llm_temperature": "0.3",
+        "request_timeout": "5",
     }
-    expected_attributes.update(expected)  # type: ignore[arg-type]
+    expected_attributes.update(expected)
     assert captured_span.attributes == expected_attributes
 
 
-async def test_tracing_contextual_response_rephrasal_rephrase(
+async def test_tracing_contextual_response_rephraser_rephrase(
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
     previous_num_captured_spans: int,
@@ -171,11 +183,11 @@ async def test_tracing_contextual_response_rephrasal_rephrase(
     )
 
     endpoint_config = EndpointConfig.from_dict({})
-    mock_command = component_class(
+    mock_rephraser = component_class(
         endpoint_config=endpoint_config, domain=domain_with_responses
     )
 
-    await mock_command.generate(
+    await mock_rephraser.generate(
         "utter_allows_rephrasing",
         greet_tracker,
         output_channel="callback",
