@@ -1352,7 +1352,7 @@ jobs:
       BASE_BUILDER_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_builder_image_hash }}
     strategy:
       matrix:
-        image: [default, full, mitie-en, spacy-de, spacy-it, spacy-en]
+        image: [default, full, mitie-en]
 
     steps:
       # Due to an issue with checking out a wrong commit, we make sure
