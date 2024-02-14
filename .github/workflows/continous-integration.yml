@@ -1145,7 +1145,6 @@ jobs:
     runs-on: ubuntu-22.04
     outputs:
       base_image_hash: ${{ steps.check_image.outputs.base_image_hash }}
-      base_mitie_image_hash: ${{ steps.check_image.outputs.base_mitie_image_hash }}
       base_builder_image_hash: ${{ steps.check_image.outputs.base_builder_image_hash }}
       # Tag name used for images created during Docker image builds, e.g. 3886 - a PR number
       image_tag: ${{ steps.set_output.outputs.image_tag }}
@@ -1326,9 +1325,6 @@ jobs:
       TARGET_IMAGE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-docker"
       BASE_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_image_hash }}
       BASE_BUILDER_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_builder_image_hash }}
-    strategy:
-      matrix:
-        image: [default]
 
     steps:
       # Due to an issue with checking out a wrong commit, we make sure
@@ -1396,7 +1392,7 @@ jobs:
       - name: Build Docker image
         if: needs.changes.outputs.docker == 'true'
         run: |
-          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }}
+          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl default
 
       - name: Check how much space is left after Docker build
         run: df -h
@@ -1404,28 +1400,23 @@ jobs:
       - name: Push image with main tag 📦
         if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'RasaHQ/rasa-private'
         run: |
-          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }} --push
+          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl default --push
 
       - name: Push image with ${{github.ref}} tag 📦
         if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && env.IS_TAG_BUILD == 'true' && github.repository == 'RasaHQ/rasa-private'
         run: |
-          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }} --push
+          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl default --push
 
       - name: Push image with latest tag 📦
         if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && env.IS_TAG_BUILD == 'true' && github.repository == 'RasaHQ/rasa-private' && needs.build_docker_base_images_and_set_env.outputs.is_newest_version == 'true'
         run: |
-          if [[ "${{ matrix.image }}" == "default" ]]; then
-            RELEASE_TAG="${IMAGE_TAG}"
-          else
-            RELEASE_TAG="${IMAGE_TAG}-${{ matrix.image }}"
-          fi
-
+          RELEASE_TAG="${IMAGE_TAG}"
           LATEST_TAG=$(echo $RELEASE_TAG | sed 's/'$IMAGE_TAG'/latest/g')
 
           # This will not build the image from ground up, but will only tag the existing image with LATEST_TAG
-          IMAGE_TAG=${LATEST_TAG} docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }}
+          IMAGE_TAG=${LATEST_TAG} docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl default
           # Push tagged image
-          IMAGE_TAG=${LATEST_TAG} docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }} --push
+          IMAGE_TAG=${LATEST_TAG} docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl default --push
 
   deploy:
     name: Deploy to PyPI
