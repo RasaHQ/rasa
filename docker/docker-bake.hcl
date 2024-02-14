@@ -18,10 +18,6 @@ variable "BASE_IMAGE_HASH" {
   default = "localdev"
 }
 
-variable "BASE_MITIE_IMAGE_HASH" {
-  default = "localdev"
-}
-
 variable "BASE_BUILDER_IMAGE_HASH" {
   default = "localdev"
 }
@@ -33,18 +29,12 @@ variable "POETRY_VERSION" {
 }
 
 group "base-images" {
-  targets = ["base", "base-poetry", "base-mitie"]
+  targets = ["base", "base-poetry"]
 }
 
 target "base" {
   dockerfile = "docker/Dockerfile.base"
   tags       = ["${BASE_IMAGE_NAME}:base-${IMAGE_TAG}"]
-  cache-to   = ["type=inline"]
-}
-
-target "base-mitie" {
-  dockerfile = "docker/Dockerfile.base-mitie"
-  tags       = ["${BASE_IMAGE_NAME}:base-mitie-${IMAGE_TAG}"]
   cache-to   = ["type=inline"]
 }
 
@@ -93,25 +83,5 @@ target "default" {
     "type=registry,ref=${BASE_IMAGE_NAME}:base-${BASE_IMAGE_HASH}",
     "type=registry,ref=${BASE_IMAGE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH}",
     "type=registry,ref=${TARGET_IMAGE_NAME}:latest",
-  ]
-}
-
-target "full" {
-  dockerfile = "docker/Dockerfile.full"
-  tags       = ["${TARGET_IMAGE_NAME}:${IMAGE_TAG}-full"]
-
-  args = {
-    IMAGE_BASE_NAME         = "${BASE_IMAGE_NAME}"
-    BASE_IMAGE_HASH         = "${BASE_IMAGE_HASH}"
-    BASE_MITIE_IMAGE_HASH   = "${BASE_MITIE_IMAGE_HASH}"
-    BASE_BUILDER_IMAGE_HASH = "${BASE_BUILDER_IMAGE_HASH}"
-  }
-
-  cache-to = ["type=inline"]
-
-  cache-from = [
-    "type=registry,ref=${BASE_IMAGE_NAME}:base-${BASE_IMAGE_HASH}",
-    "type=registry,ref=${BASE_IMAGE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH}",
-    "type=registry,ref=${TARGET_IMAGE_NAME}:latest-full",
   ]
 }

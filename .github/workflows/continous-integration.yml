@@ -1029,7 +1029,6 @@ jobs:
       IMAGE_TAG: ${{ needs.build_docker_base_images_and_set_env.outputs.image_tag }}
       TARGET_IMAGE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-docker"
       BASE_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_image_hash }}
-      BASE_MITIE_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_mitie_image_hash }}
       BASE_BUILDER_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_builder_image_hash }}
 
     steps:
@@ -1222,14 +1221,6 @@ jobs:
           BASE_IMAGE_EXISTS=$((docker manifest inspect ${{ env.TARGET_IMAGE_REGISTRY }}/rasa:base-${BASE_IMAGE_HASH} &> /dev/null && echo true || echo false) || true)
           echo "base_exists=${BASE_IMAGE_EXISTS}" >> $GITHUB_OUTPUT
 
-          # Base MITIE image
-          BASE_MITIE_IMAGE_HASH=${{ hashFiles('docker/Dockerfile.base-mitie') }}
-          MAKEFILE_MITIE_HASH=${{ hashFiles('Makefile') }}
-          echo "base_mitie_image_hash=${BASE_MITIE_IMAGE_HASH:0:50}-${MAKEFILE_MITIE_HASH:0:50}" >> $GITHUB_OUTPUT
-
-          BASE_IMAGE_MITIE_EXISTS=$((docker manifest inspect ${{ env.TARGET_IMAGE_REGISTRY }}/rasa:base-mitie-${BASE_MITIE_IMAGE_HASH:0:50}-${MAKEFILE_MITIE_HASH:0:50} &> /dev/null && echo true || echo false) || true)
-          echo "base_mitie_exists=${BASE_IMAGE_MITIE_EXISTS}" >> $GITHUB_OUTPUT
-
           # Base poetry image
           BASE_IMAGE_POETRY_EXISTS=$((docker manifest inspect ${{ env.TARGET_IMAGE_REGISTRY }}/rasa:base-poetry-${{ env.POETRY_VERSION }} &> /dev/null && echo true || echo false) || true)
           echo "base_poetry_exists=${BASE_IMAGE_POETRY_EXISTS}" >> $GITHUB_OUTPUT
@@ -1254,20 +1245,6 @@ jobs:
           export IMAGE_TAG=${{ steps.check_image.outputs.base_image_hash }}
           export TARGET_IMAGE_REGISTRY=${{ env.TARGET_IMAGE_REGISTRY }}
           docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl base --push
-
-      - name: Build Docker mitie base image 🛠
-        if: steps.check_image.outputs.base_mitie_exists == 'false' || steps.check_image.outputs.base_exists == 'false'
-        run: |
-          export IMAGE_TAG=${{ steps.check_image.outputs.base_mitie_image_hash }}
-          export TARGET_IMAGE_REGISTRY=${{ env.TARGET_IMAGE_REGISTRY }}
-          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl base-mitie
-
-      - name: Push Docker mitie base image if it's not building from a fork ⬆
-        if: (steps.check_image.outputs.base_mitie_exists == 'false' || steps.check_image.outputs.base_exists == 'false') && github.event.pull_request.head.repo.owner.login == 'RasaHQ'
-        run: |
-          export IMAGE_TAG=${{ steps.check_image.outputs.base_mitie_image_hash }}
-          export TARGET_IMAGE_REGISTRY=${{ env.TARGET_IMAGE_REGISTRY }}
-          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl base-mitie --push
 
       - name: Build Docker poetry base image 🛠
         if: steps.check_image.outputs.base_poetry_exists == 'false' || steps.check_image.outputs.base_exists == 'false'
@@ -1348,11 +1325,10 @@ jobs:
       IMAGE_TAG: ${{ needs.build_docker_base_images_and_set_env.outputs.image_tag }}
       TARGET_IMAGE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-docker"
       BASE_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_image_hash }}
-      BASE_MITIE_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_mitie_image_hash }}
       BASE_BUILDER_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_builder_image_hash }}
     strategy:
       matrix:
-        image: [default, full]
+        image: [default]
 
     steps:
       # Due to an issue with checking out a wrong commit, we make sure
