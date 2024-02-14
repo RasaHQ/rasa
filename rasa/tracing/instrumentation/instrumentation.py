@@ -534,6 +534,12 @@ def _instrument_intentless_policy(
     _instrument_select_few_shot_conversations(tracer, policy_class)
     _instrument_extract_ai_responses(tracer, policy_class)
     _instrument_generate_answer(tracer, policy_class)
+    _instrument_method(
+        tracer,
+        policy_class,
+        "_generate_llm_answer",
+        attribute_extractors.extract_attrs_for_intentless_policy_generate_llm_answer,
+    )
 
 
 def _instrument_processor(

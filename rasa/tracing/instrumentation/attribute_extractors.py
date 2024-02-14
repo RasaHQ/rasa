@@ -1,6 +1,9 @@
 import json
+import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Tuple
+
+import tiktoken
 
 from rasa.core.agent import Agent
 from rasa.core.brokers.broker import EventBroker
@@ -38,6 +41,8 @@ if TYPE_CHECKING:
 # Note that we always mirror the argument lists of the wrapped functions, as our
 # wrapping mechanism always passes in the original arguments unchanged for further
 # processing.
+
+logger = logging.getLogger(__name__)
 
 
 def extract_attrs_for_agent(
@@ -311,7 +316,9 @@ def extract_attrs_for_llm_command_generator(
         DEFAULT_LLM_CONFIG,
     )
 
-    return extract_llm_config(self, default_llm_config=DEFAULT_LLM_CONFIG)
+    attributes = extract_llm_config(self, default_llm_config=DEFAULT_LLM_CONFIG)
+
+    return extend_attributes_with_prompt_tokens_length(self, attributes, prompt)
 
 
 def extract_attrs_for_contextual_response_rephraser(
@@ -320,7 +327,9 @@ def extract_attrs_for_contextual_response_rephraser(
 ) -> Dict[str, Any]:
     from rasa.core.nlg.contextual_response_rephraser import DEFAULT_LLM_CONFIG
 
-    return extract_llm_config(self, default_llm_config=DEFAULT_LLM_CONFIG)
+    attributes = extract_llm_config(self, default_llm_config=DEFAULT_LLM_CONFIG)
+
+    return extend_attributes_with_prompt_tokens_length(self, attributes, prompt)
 
 
 def extract_attrs_for_generate(
@@ -527,12 +536,24 @@ def extract_attrs_for_intentless_policy_find_closest_response(
     }
 
 
+def extract_attrs_for_intentless_policy_generate_llm_answer(
+    self: "IntentlessPolicy", llm: "BaseLLM", prompt: str
+) -> Dict[str, Any]:
+    from rasa.core.policies.intentless_policy import DEFAULT_LLM_CONFIG
+
+    attributes = extract_llm_config(self, default_llm_config=DEFAULT_LLM_CONFIG)
+
+    return extend_attributes_with_prompt_tokens_length(self, attributes, prompt)
+
+
 def extract_attrs_for_enterprise_search_generate_llm_answer(
     self: "EnterpriseSearchPolicy", llm: "BaseLLM", prompt: str
 ) -> Dict[str, Any]:
     from rasa.core.policies.enterprise_search_policy import DEFAULT_LLM_CONFIG
 
-    return extract_llm_config(self, default_llm_config=DEFAULT_LLM_CONFIG)
+    attributes = extract_llm_config(self, default_llm_config=DEFAULT_LLM_CONFIG)
+
+    return extend_attributes_with_prompt_tokens_length(self, attributes, prompt)
 
 
 def extract_current_context_attribute(stack: DialogueStack) -> Dict[str, Any]:
@@ -545,3 +566,43 @@ def extract_current_context_attribute(stack: DialogueStack) -> Dict[str, Any]:
         )
 
     return current_context
+
+
+def compute_prompt_tokens_length(
+    model_type: str, model_name: str, prompt: str
+) -> Optional[int]:
+    """Utility function to compute the length of the prompt tokens for OpenAI models."""
+    if model_type != "openai":
+        logger.warning(
+            "Tracing prompt tokens is only supported for OpenAI models. Skipping."
+        )
+        return None
+
+    if model_name in ["gpt-3.5-turbo", "gpt-4"]:
+        logger.debug(
+            f"Model {model_name} may update over time. "
+            f"Returning num tokens assuming model '{model_name}-0613.'"
+        )
+        model_name = f"{model_name}-0613"
+
+    encoding = tiktoken.encoding_for_model(model_name)
+    return len(encoding.encode(prompt))
+
+
+def extend_attributes_with_prompt_tokens_length(
+    self: Any,
+    attributes: Dict[str, Any],
+    prompt: str,
+) -> Dict[str, Any]:
+    if not self.trace_prompt_tokens:
+        return attributes
+
+    len_prompt_tokens = compute_prompt_tokens_length(
+        model_type=attributes["llm_type"],
+        model_name=attributes["llm_model"],
+        prompt=prompt,
+    )
+
+    attributes["len_prompt_tokens"] = str(len_prompt_tokens)
+
+    return attributes

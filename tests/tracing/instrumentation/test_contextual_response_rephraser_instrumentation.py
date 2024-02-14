@@ -1,6 +1,8 @@
+import logging
 from typing import Any, Dict, Sequence
 
 import pytest
+from pytest import LogCaptureFixture
 from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 from rasa.shared.core.domain import Domain
@@ -209,3 +211,92 @@ async def test_tracing_contextual_response_rephraser_rephrase(
         "utter": "utter_allows_rephrasing",
     }
     assert captured_span.attributes == expected_attributes
+
+
+def test_tracing_contextual_response_rephraser_len_prompt_tokens(
+    tracer_provider: TracerProvider,
+    span_exporter: InMemorySpanExporter,
+    previous_num_captured_spans: int,
+    domain_with_responses: Domain,
+) -> None:
+    component_class = MockContextualResponseRephraser
+
+    instrumentation.instrument(
+        tracer_provider,
+        contextual_response_rephraser_class=component_class,
+    )
+
+    endpoint_config = EndpointConfig.from_dict({"trace_prompt_tokens": True})
+    mock_rephraser = component_class(
+        endpoint_config=endpoint_config, domain=domain_with_responses
+    )
+
+    mock_rephraser._generate_llm_response("This is a test prompt.")
+
+    captured_spans: Sequence[
+        ReadableSpan
+    ] = span_exporter.get_finished_spans()  # type: ignore
+
+    num_captured_spans = len(captured_spans) - previous_num_captured_spans
+    assert num_captured_spans == 1
+
+    captured_span = captured_spans[-1]
+
+    assert (
+        captured_span.name == "MockContextualResponseRephraser._generate_llm_response"
+    )
+
+    expected_attributes = {
+        "class_name": component_class.__name__,
+        "embeddings": "{}",
+        "llm_temperature": "0.3",
+        "request_timeout": "5",
+        "len_prompt_tokens": "6",
+        "llm_model": DEFAULT_OPENAI_GENERATE_MODEL_NAME,
+        "llm_type": "openai",
+    }
+    assert captured_span.attributes == expected_attributes
+
+
+def test_tracing_contextual_response_rephraser_len_prompt_tokens_non_openai(
+    tracer_provider: TracerProvider,
+    span_exporter: InMemorySpanExporter,
+    previous_num_captured_spans: int,
+    domain_with_responses: Domain,
+    caplog: LogCaptureFixture,
+) -> None:
+    component_class = MockContextualResponseRephraser
+
+    instrumentation.instrument(
+        tracer_provider,
+        contextual_response_rephraser_class=component_class,
+    )
+
+    endpoint_config = EndpointConfig.from_dict(
+        {"trace_prompt_tokens": True, "llm": {"type": "cohere", "model": "command"}}
+    )
+    mock_rephraser = component_class(
+        endpoint_config=endpoint_config, domain=domain_with_responses
+    )
+
+    with caplog.at_level(logging.WARNING):
+        mock_rephraser._generate_llm_response("This is a test prompt.")
+        assert (
+            "Tracing prompt tokens is only supported for OpenAI models. Skipping."
+            in caplog.text
+        )
+
+    captured_spans: Sequence[
+        ReadableSpan
+    ] = span_exporter.get_finished_spans()  # type: ignore
+
+    num_captured_spans = len(captured_spans) - previous_num_captured_spans
+    assert num_captured_spans == 1
+
+    captured_span = captured_spans[-1]
+
+    assert (
+        captured_span.name == "MockContextualResponseRephraser._generate_llm_response"
+    )
+
+    assert captured_span.attributes["len_prompt_tokens"] == "None"

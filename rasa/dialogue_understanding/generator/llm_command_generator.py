@@ -101,6 +101,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         )
         self._model_storage = model_storage
         self._resource = resource
+        self.trace_prompt_tokens = self.config.get("trace_prompt_tokens", False)
 
     @classmethod
     def create(

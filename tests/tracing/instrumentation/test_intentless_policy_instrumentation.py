@@ -1,7 +1,9 @@
+import logging
 from typing import Any, Dict, Generator, Optional, Sequence
 from unittest.mock import Mock, patch
 
 import pytest
+from pytest import LogCaptureFixture
 from langchain.embeddings import FakeEmbeddings
 from langchain.llms.fake import FakeListLLM
 from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
@@ -63,7 +65,8 @@ def test_tracing_intentless_policy_generate_answer(
     ] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
-    assert num_captured_spans == 1
+    # includes the child span for `_generate_llm_answer` method call
+    assert num_captured_spans == 2
 
     captured_span = captured_spans[-1]
 
@@ -280,3 +283,82 @@ def test_tracing_intentless_policy_prediction_result(
     assert captured_span.name == "IntentlessPolicy._prediction_result"
 
     assert captured_span.attributes == expected_attributes
+
+
+def test_tracing_intentless_policy_generate_llm_answer_len_prompt_tokens(
+    intentless_policy_generator: IntentlessPolicy,
+    tracer_provider: TracerProvider,
+    span_exporter: InMemorySpanExporter,
+    previous_num_captured_spans: int,
+) -> None:
+    component_class = IntentlessPolicy
+
+    instrumentation.instrument(
+        tracer_provider,
+        policy_subclasses=[component_class],
+    )
+
+    intentless_policy_generator.trace_prompt_tokens = True
+
+    intentless_policy_generator._generate_llm_answer(Mock(), "This is a test prompt.")
+
+    captured_spans: Sequence[
+        ReadableSpan
+    ] = span_exporter.get_finished_spans()  # type: ignore
+
+    num_captured_spans = len(captured_spans) - previous_num_captured_spans
+    assert num_captured_spans == 1
+
+    captured_span = captured_spans[-1]
+
+    assert captured_span.name == "IntentlessPolicy._generate_llm_answer"
+
+    assert captured_span.attributes == {
+        "class_name": "IntentlessPolicy",
+        "llm_model": "gpt-3.5-turbo",
+        "llm_type": "openai",
+        "embeddings": '{"_type": "openai", "model": "text-embedding-ada-002"}',
+        "llm_temperature": "0.0",
+        "request_timeout": "5",
+        "len_prompt_tokens": "6",
+    }
+
+
+def test_tracing_intentless_policy_generate_llm_answer_len_prompt_tokens_non_openai(
+    intentless_policy_generator: IntentlessPolicy,
+    tracer_provider: TracerProvider,
+    span_exporter: InMemorySpanExporter,
+    previous_num_captured_spans: int,
+    caplog: LogCaptureFixture,
+) -> None:
+    component_class = IntentlessPolicy
+
+    instrumentation.instrument(
+        tracer_provider,
+        policy_subclasses=[component_class],
+    )
+
+    intentless_policy_generator.trace_prompt_tokens = True
+    intentless_policy_generator.config = {"llm": {"type": "cohere", "model": "command"}}
+
+    with caplog.at_level(logging.WARNING):
+        intentless_policy_generator._generate_llm_answer(
+            Mock(), "This is a test prompt."
+        )
+        assert (
+            "Tracing prompt tokens is only supported for OpenAI models. Skipping."
+            in caplog.text
+        )
+
+    captured_spans: Sequence[
+        ReadableSpan
+    ] = span_exporter.get_finished_spans()  # type: ignore
+
+    num_captured_spans = len(captured_spans) - previous_num_captured_spans
+    assert num_captured_spans == 1
+
+    captured_span = captured_spans[-1]
+
+    assert captured_span.name == "IntentlessPolicy._generate_llm_answer"
+
+    assert captured_span.attributes["len_prompt_tokens"] == "None"
