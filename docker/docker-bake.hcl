@@ -115,24 +115,3 @@ target "full" {
     "type=registry,ref=${TARGET_IMAGE_NAME}:latest-full",
   ]
 }
-
-target "mitie-en" {
-  dockerfile = "docker/Dockerfile.pretrained_embeddings_mitie_en"
-  tags       = ["${TARGET_IMAGE_NAME}:${IMAGE_TAG}-mitie-en"]
-
-  args = {
-    IMAGE_BASE_NAME         = "${BASE_IMAGE_NAME}"
-    BASE_IMAGE_HASH         = "${BASE_IMAGE_HASH}"
-    BASE_MITIE_IMAGE_HASH   = "${BASE_MITIE_IMAGE_HASH}"
-    BASE_BUILDER_IMAGE_HASH = "${BASE_BUILDER_IMAGE_HASH}"
-  }
-
-  cache-to = ["type=inline"]
-
-  cache-from = [
-    "type=registry,ref=${BASE_IMAGE_NAME}:base-${BASE_IMAGE_HASH}",
-    "type=registry,ref=${BASE_IMAGE_NAME}:base-mitie-${BASE_MITIE_IMAGE_HASH}",
-    "type=registry,ref=${BASE_IMAGE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH}",
-    "type=registry,ref=${TARGET_IMAGE_NAME}:latest-mitie-en",
-  ]
-}
