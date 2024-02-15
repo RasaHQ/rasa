@@ -32,6 +32,8 @@ REPO_BASE_URL = "https://github.com/RasaHQ/rasa-private"
 
 RELEASE_BRANCH_PREFIX = "prepare-release-"
 
+PRE_RELEASE_BRANCH_PREFIX = "prepare-release-pre-"
+
 PRERELEASE_FLAVORS = ("alpha", "beta", "rc")
 
 RELEASE_BRANCH_PATTERN = re.compile(r"^\d+\.\d+\.x$")
@@ -273,8 +275,11 @@ def git_current_branch_is_main_or_release() -> bool:
 
 def create_release_branch(version: Version) -> Text:
     """Create a new branch for this release. Returns the branch name."""
+    if version.pre or version.dev:
+        branch = f"{PRE_RELEASE_BRANCH_PREFIX}{version}"
+    else:
+        branch = f"{RELEASE_BRANCH_PREFIX}{version}"
 
-    branch = f"{RELEASE_BRANCH_PREFIX}{version}"
     check_call(["git", "checkout", "-b", branch])
     return branch
 
@@ -411,7 +416,7 @@ def prepare_release(args: argparse.Namespace) -> None:
         write_version_file(version)
         write_version_to_pyproject(version)
 
-        if not version.pre:
+        if not version.pre and not version.dev:
             # never update changelog on a pre-release version
             generate_changelog(version)
 

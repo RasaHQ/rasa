@@ -87,7 +87,7 @@ jobs:
 
   quality:
     name: Code Quality
-    if: github.ref_type != 'tag'
+    if: github.ref_type != 'tag' && startsWith(github.ref, 'refs/heads/prepare-release-pre-') != true
     runs-on: ubuntu-22.04
     needs: [changes]
 
@@ -259,7 +259,7 @@ jobs:
 
   test:
     name: Run Tests
-    if: github.ref_type != 'tag'
+    if: github.ref_type != 'tag' && startsWith(github.ref, 'refs/heads/prepare-release-pre-') != true
     runs-on: ubuntu-22.04-8core
     timeout-minutes: 60
     needs: [changes]
@@ -384,7 +384,7 @@ jobs:
 
   test-anonymization:
     name: Run Anonymization Unit Tests
-    if: github.ref_type != 'tag'
+    if: github.ref_type != 'tag' && startsWith(github.ref, 'refs/heads/prepare-release-pre-') != true
     runs-on: ubuntu-22.04-8core
     timeout-minutes: 60
     needs: [changes]
@@ -498,7 +498,7 @@ jobs:
 
   test-flaky:
     name: Run Flaky Tests
-    if: github.ref_type != 'tag'
+    if: github.ref_type != 'tag' && startsWith(github.ref, 'refs/heads/prepare-release-pre-') != true
     runs-on: ubuntu-22.04-8core
     timeout-minutes: 60
     needs: [changes]
@@ -606,7 +606,7 @@ jobs:
 
   integration_test:
     name: Run Non-Sequential Integration Tests
-    if: github.ref_type != 'tag'
+    if: github.ref_type != 'tag' && startsWith(github.ref, 'refs/heads/prepare-release-pre-') != true
     runs-on: ubuntu-22.04-8core
     timeout-minutes: 60
     needs: [changes]
@@ -732,7 +732,7 @@ jobs:
 
   broker_integration_test:
     name: Run Broker Integration Tests
-    if: github.ref_type != 'tag'
+    if: github.ref_type != 'tag' && startsWith(github.ref, 'refs/heads/prepare-release-pre-') != true
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     needs: [changes]
@@ -830,7 +830,7 @@ jobs:
 
   sequential_integration_test:
     name: Run Sequential Integration Tests
-    if: github.ref_type != 'tag'
+    if: github.ref_type != 'tag' && startsWith(github.ref, 'refs/heads/prepare-release-pre-') != true
     runs-on: ubuntu-20.04
     timeout-minutes: 60
     needs: [changes]
@@ -929,7 +929,7 @@ jobs:
 
   concurrent_lockstore_integration_test:
     name: Run Concurrent LockStore Integration Tests
-    if: github.ref_type != 'tag'
+    if: github.ref_type != 'tag' && startsWith(github.ref, 'refs/heads/prepare-release-pre-') != true
     runs-on: ubuntu-20.04
     timeout-minutes: 60
     needs: [changes]
@@ -1022,7 +1022,7 @@ jobs:
 
   tracing_integration_test:
     name: Run Tracing Integration Tests
-    if: github.ref_type != 'tag'
+    if: github.ref_type != 'tag' && startsWith(github.ref, 'refs/heads/prepare-release-pre-') != true
     runs-on: ubuntu-22.04
     needs: [ changes, build_docker_base_images_and_set_env ]
     env:
