@@ -150,6 +150,7 @@ class EnterpriseSearchPolicy(Policy):
             self.config.get("prompt"),
             DEFAULT_ENTERPRISE_SEARCH_PROMPT_TEMPLATE,
         )
+        self.trace_prompt_tokens = self.config.get("trace_prompt_tokens", False)
 
     @classmethod
     def _create_plain_embedder(cls, config: Dict[Text, Any]) -> "Embeddings":

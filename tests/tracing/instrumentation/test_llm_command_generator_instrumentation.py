@@ -1,6 +1,8 @@
+import logging
 from typing import Any, Dict, Sequence, Text
 
 import pytest
+from pytest import LogCaptureFixture
 from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 
@@ -8,6 +10,7 @@ from rasa.dialogue_understanding.commands import (
     SetSlotCommand,
     StartFlowCommand,
 )
+from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.flows import Flow, FlowsList
 
@@ -255,3 +258,94 @@ def test_tracing_llm_command_generator_check_commands_against_startable_flows(
         "startable_flow_ids": '["transfer_money"]',
     }
     assert captured_span.attributes == expected_attributes
+
+
+def test_tracing_llm_command_generator_prompt_tokens(
+    default_model_storage: ModelStorage,
+    tracer_provider: TracerProvider,
+    span_exporter: InMemorySpanExporter,
+    previous_num_captured_spans: int,
+) -> None:
+    component_class = MockLLMCommandgenerator
+
+    instrumentation.instrument(
+        tracer_provider,
+        llm_command_generator_class=component_class,
+    )
+
+    mock_llm_command_generator = component_class(
+        config={"trace_prompt_tokens": True},
+        model_storage=default_model_storage,
+        resource=Resource("llm-command-generator"),
+    )
+    mock_llm_command_generator._generate_action_list_using_llm("This is a test prompt.")
+
+    captured_spans: Sequence[
+        ReadableSpan
+    ] = span_exporter.get_finished_spans()  # type: ignore
+
+    num_captured_spans = len(captured_spans) - previous_num_captured_spans
+    assert num_captured_spans == 1
+
+    captured_span = captured_spans[-1]
+    assert (
+        captured_span.name == "MockLLMCommandgenerator._generate_action_list_using_llm"
+    )
+
+    expected_attributes = {
+        "class_name": component_class.__name__,
+        "llm_model": "gpt-4",
+        "llm_type": "openai",
+        "llm_temperature": "0.0",
+        "request_timeout": "7",
+        "embeddings": "{}",
+        "len_prompt_tokens": "6",
+    }
+    assert captured_span.attributes == expected_attributes
+
+
+def test_tracing_llm_command_generator_prompt_tokens_non_openai(
+    default_model_storage: ModelStorage,
+    tracer_provider: TracerProvider,
+    span_exporter: InMemorySpanExporter,
+    previous_num_captured_spans: int,
+    caplog: LogCaptureFixture,
+) -> None:
+    component_class = MockLLMCommandgenerator
+
+    instrumentation.instrument(
+        tracer_provider,
+        llm_command_generator_class=component_class,
+    )
+
+    mock_llm_command_generator = component_class(
+        config={
+            "trace_prompt_tokens": True,
+            "llm": {"type": "cohere", "model": "command"},
+        },
+        model_storage=default_model_storage,
+        resource=Resource("llm-command-generator"),
+    )
+
+    with caplog.at_level(logging.WARNING):
+        mock_llm_command_generator._generate_action_list_using_llm(
+            "This is a test prompt."
+        )
+        assert (
+            "Tracing prompt tokens is only supported for OpenAI models. Skipping."
+            in caplog.text
+        )
+
+    captured_spans: Sequence[
+        ReadableSpan
+    ] = span_exporter.get_finished_spans()  # type: ignore
+
+    num_captured_spans = len(captured_spans) - previous_num_captured_spans
+    assert num_captured_spans == 1
+
+    captured_span = captured_spans[-1]
+    assert (
+        captured_span.name == "MockLLMCommandgenerator._generate_action_list_using_llm"
+    )
+
+    assert captured_span.attributes["len_prompt_tokens"] == "None"
