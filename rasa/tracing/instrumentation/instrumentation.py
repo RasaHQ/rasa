@@ -36,11 +36,13 @@ from rasa.dialogue_understanding.commands import Command
 from rasa.dialogue_understanding.generator.llm_command_generator import (
     LLMCommandGenerator,
 )
+from rasa.dialogue_understanding.generator.nlu_command_adapter import NLUCommandAdapter
 from rasa.engine.graph import GraphNode
 from rasa.engine.training.graph_trainer import GraphTrainer
 from rasa.shared.constants import DOCS_BASE_URL
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.nlu.training_data.message import Message
 from rasa.tracing.instrumentation.intentless_policy_instrumentation import (
     _instrument_extract_ai_responses,
     _instrument_generate_answer,
@@ -213,6 +215,7 @@ PolicyType = TypeVar("PolicyType", bound=Policy)
 InformationRetrievalType = TypeVar(
     "InformationRetrievalType", bound=InformationRetrieval
 )
+NLUCommandAdapterType = TypeVar("NLUCommandAdapterType", bound=NLUCommandAdapter)
 
 
 def instrument(
@@ -228,6 +231,7 @@ def instrument(
     contextual_response_rephraser_class: Optional[Any] = None,
     policy_subclasses: Optional[List[Type[PolicyType]]] = None,
     vector_store_subclasses: Optional[List[Type[InformationRetrievalType]]] = None,
+    nlu_command_adapter_class: Optional[Type[NLUCommandAdapterType]] = None,
 ) -> None:
     """Substitute methods to be traced by their traced counterparts.
 
@@ -261,6 +265,8 @@ def instrument(
     :param vector_store_subclasses: The subclasses of `InformationRetrieval` to be
         instrumented. If `None` is given, no subclass of `InformationRetrieval` will be
         instrumented.
+    :param nlu_command_adapter_class: The `NLUCommandAdapter` to be instrumented. If
+        `None` is given, no `NLUCommandAdapter` will be instrumented.
     """
     if agent_class is not None and not class_is_instrumented(agent_class):
         _instrument_method(
@@ -412,6 +418,52 @@ def instrument(
                 )
                 mark_class_as_instrumented(vector_store_subclass)
 
+    if nlu_command_adapter_class is not None and not class_is_instrumented(
+        nlu_command_adapter_class
+    ):
+        _instrument_nlu_command_adapter_predict_commands(
+            tracer_provider.get_tracer(nlu_command_adapter_class.__module__),
+            nlu_command_adapter_class,
+        )
+        mark_class_as_instrumented(nlu_command_adapter_class)
+
+
+def _instrument_nlu_command_adapter_predict_commands(
+    tracer: Tracer, nlu_command_adapter_class: Type[NLUCommandAdapterType]
+) -> None:
+    def tracing_nlu_command_adapter_predict_commands_wrapper(fn: Callable) -> Callable:
+        @functools.wraps(fn)
+        def wrapper(
+            self: NLUCommandAdapter,
+            message: Message,
+            flows: FlowsList,
+            tracker: Optional[DialogueStateTracker] = None,
+        ) -> List[Command]:
+            with tracer.start_as_current_span(
+                f"{self.__class__.__name__}.{fn.__name__}"
+            ) as span:
+                commands = fn(self, message, flows, tracker)
+
+                span.set_attributes(
+                    {
+                        "commands": json.dumps(
+                            [command.as_dict() for command in commands]
+                        ),
+                        "intent": json.dumps(message.get("intent", {}).get("name")),
+                    }
+                )
+                return commands
+
+        return wrapper
+
+    nlu_command_adapter_class.predict_commands = tracing_nlu_command_adapter_predict_commands_wrapper(  # type: ignore[assignment]  # noqa: E501
+        nlu_command_adapter_class.predict_commands
+    )
+
+    logger.debug(
+        f"Instrumented '{nlu_command_adapter_class.__name__}.predict_commands'."
+    )
+
 
 def _instrument_information_retrieval_search(
     tracer: Tracer, vector_store_class: Type[InformationRetrievalType]
@@ -482,6 +534,12 @@ def _instrument_intentless_policy(
     _instrument_select_few_shot_conversations(tracer, policy_class)
     _instrument_extract_ai_responses(tracer, policy_class)
     _instrument_generate_answer(tracer, policy_class)
+    _instrument_method(
+        tracer,
+        policy_class,
+        "_generate_llm_answer",
+        attribute_extractors.extract_attrs_for_intentless_policy_generate_llm_answer,
+    )
 
 
 def _instrument_processor(

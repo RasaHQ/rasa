@@ -1,10 +1,14 @@
 import json
+import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Tuple
+
+import tiktoken
 
 from rasa.core.agent import Agent
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels import UserMessage
+from rasa.core.nlg.contextual_response_rephraser import ContextualResponseRephraser
 from rasa.core.lock_store import LOCK_LIFETIME, LockStore
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import TrackerStore
@@ -22,6 +26,7 @@ from rasa.shared.core.flows import Flow, FlowStep, FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.utils.llm import combine_custom_and_default_config
 
 if TYPE_CHECKING:
     from langchain.llms.base import BaseLLM
@@ -36,6 +41,8 @@ if TYPE_CHECKING:
 # Note that we always mirror the argument lists of the wrapped functions, as our
 # wrapping mechanism always passes in the original arguments unchanged for further
 # processing.
+
+logger = logging.getLogger(__name__)
 
 
 def extract_attrs_for_agent(
@@ -273,30 +280,27 @@ def extract_attrs_for_command(
     }
 
 
-def extract_llm_config(
-    self: Any, default_model: str, default_request_timeout: int
-) -> Dict[str, Any]:
-    attributes = {
-        "class_name": self.__class__.__name__,
-        "llm_model": str(self.config.get("model", default_model)),
-        "llm_type": "openai",
-        "embeddings": json.dumps(self.config.get("embeddings", {})),
-    }
+def extract_llm_config(self: Any, default_llm_config: Dict[str, Any]) -> Dict[str, Any]:
+    if isinstance(self, ContextualResponseRephraser):
+        config = self.nlg_endpoint.kwargs
+    else:
+        config = self.config
 
-    llm_property = self.config.get("llm") or {}
-
-    if llm_property and ("model_name" in llm_property or "model" in llm_property):
-        attributes["llm_model"] = str(
-            llm_property.get("model_name") or llm_property.get("model")
-        )
-
-    attributes["llm_temperature"] = str(llm_property.get("temperature", 0.0))
-    attributes["request_timeout"] = str(
-        llm_property.get("request_timeout", default_request_timeout)
+    llm_property = combine_custom_and_default_config(
+        config.get("llm"), default_llm_config
     )
 
-    if "type" in llm_property:
-        attributes["llm_type"] = str(llm_property.get("type"))
+    attributes = {
+        "class_name": self.__class__.__name__,
+        "llm_model": str(config.get("model", llm_property.get("model_name"))),
+        "llm_type": str(llm_property.get("_type")),
+        "embeddings": json.dumps(config.get("embeddings", {})),
+        "llm_temperature": str(llm_property.get("temperature")),
+        "request_timeout": str(llm_property.get("request_timeout")),
+    }
+
+    if "model" in llm_property:
+        attributes["llm_model"] = str(llm_property.get("model"))
 
     if "engine" in llm_property:
         attributes["llm_engine"] = str(llm_property.get("engine"))
@@ -308,23 +312,24 @@ def extract_attrs_for_llm_command_generator(
     self: LLMCommandGenerator,
     prompt: str,
 ) -> Dict[str, Any]:
-    return extract_llm_config(self, default_model="gpt-4", default_request_timeout=7)
+    from rasa.dialogue_understanding.generator.llm_command_generator import (
+        DEFAULT_LLM_CONFIG,
+    )
+
+    attributes = extract_llm_config(self, default_llm_config=DEFAULT_LLM_CONFIG)
+
+    return extend_attributes_with_prompt_tokens_length(self, attributes, prompt)
 
 
 def extract_attrs_for_contextual_response_rephraser(
     self: Any,
     prompt: str,
 ) -> Dict[str, Any]:
-    attributes = {
-        "class_name": self.__class__.__name__,
-        "llm_type": self.llm_property("_type"),
-    }
+    from rasa.core.nlg.contextual_response_rephraser import DEFAULT_LLM_CONFIG
 
-    if self.llm_property("model_name") or self.llm_property("model"):
-        attributes["llm_model"] = self.llm_property("model_name") or self.llm_property(
-            "model"
-        )
-    return attributes
+    attributes = extract_llm_config(self, default_llm_config=DEFAULT_LLM_CONFIG)
+
+    return extend_attributes_with_prompt_tokens_length(self, attributes, prompt)
 
 
 def extract_attrs_for_generate(
@@ -531,12 +536,24 @@ def extract_attrs_for_intentless_policy_find_closest_response(
     }
 
 
+def extract_attrs_for_intentless_policy_generate_llm_answer(
+    self: "IntentlessPolicy", llm: "BaseLLM", prompt: str
+) -> Dict[str, Any]:
+    from rasa.core.policies.intentless_policy import DEFAULT_LLM_CONFIG
+
+    attributes = extract_llm_config(self, default_llm_config=DEFAULT_LLM_CONFIG)
+
+    return extend_attributes_with_prompt_tokens_length(self, attributes, prompt)
+
+
 def extract_attrs_for_enterprise_search_generate_llm_answer(
     self: "EnterpriseSearchPolicy", llm: "BaseLLM", prompt: str
 ) -> Dict[str, Any]:
-    return extract_llm_config(
-        self, default_model="gpt-3.5-turbo", default_request_timeout=5
-    )
+    from rasa.core.policies.enterprise_search_policy import DEFAULT_LLM_CONFIG
+
+    attributes = extract_llm_config(self, default_llm_config=DEFAULT_LLM_CONFIG)
+
+    return extend_attributes_with_prompt_tokens_length(self, attributes, prompt)
 
 
 def extract_current_context_attribute(stack: DialogueStack) -> Dict[str, Any]:
@@ -549,3 +566,43 @@ def extract_current_context_attribute(stack: DialogueStack) -> Dict[str, Any]:
         )
 
     return current_context
+
+
+def compute_prompt_tokens_length(
+    model_type: str, model_name: str, prompt: str
+) -> Optional[int]:
+    """Utility function to compute the length of the prompt tokens for OpenAI models."""
+    if model_type != "openai":
+        logger.warning(
+            "Tracing prompt tokens is only supported for OpenAI models. Skipping."
+        )
+        return None
+
+    if model_name in ["gpt-3.5-turbo", "gpt-4"]:
+        logger.debug(
+            f"Model {model_name} may update over time. "
+            f"Returning num tokens assuming model '{model_name}-0613.'"
+        )
+        model_name = f"{model_name}-0613"
+
+    encoding = tiktoken.encoding_for_model(model_name)
+    return len(encoding.encode(prompt))
+
+
+def extend_attributes_with_prompt_tokens_length(
+    self: Any,
+    attributes: Dict[str, Any],
+    prompt: str,
+) -> Dict[str, Any]:
+    if not self.trace_prompt_tokens:
+        return attributes
+
+    len_prompt_tokens = compute_prompt_tokens_length(
+        model_type=attributes["llm_type"],
+        model_name=attributes["llm_model"],
+        prompt=prompt,
+    )
+
+    attributes["len_prompt_tokens"] = str(len_prompt_tokens)
+
+    return attributes

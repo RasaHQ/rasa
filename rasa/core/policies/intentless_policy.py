@@ -70,6 +70,7 @@ from rasa.utils.log_utils import log_llm
 
 if TYPE_CHECKING:
     from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
+    from langchain.llms.base import BaseLLM
 
 structlogger = structlog.get_logger()
 
@@ -408,6 +409,7 @@ class IntentlessPolicy(Policy):
         self.prompt_template = prompt_template or rasa.shared.utils.io.read_file(
             self.config[PROMPT]
         )
+        self.trace_prompt_tokens = self.config.get("trace_prompt_tokens", False)
 
     @classmethod
     def _create_plain_embedder(cls, config: Dict[Text, Any]) -> Embeddings:
@@ -615,6 +617,9 @@ class IntentlessPolicy(Policy):
             log_event="intentless_policy.generate_answer.prompt_rendered",
             prompt=prompt,
         )
+        return self._generate_llm_answer(llm, prompt)
+
+    def _generate_llm_answer(self, llm: "BaseLLM", prompt: str) -> Optional[str]:
         try:
             return llm(prompt)
         except Exception as e:

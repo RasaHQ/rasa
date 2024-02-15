@@ -84,6 +84,9 @@ class ContextualResponseRephraser(TemplatedNaturalLanguageGenerator):
         self.rephrase_all = self.nlg_endpoint.kwargs.get(
             "rephrase_all", DEFAULT_REPHRASE_ALL
         )
+        self.trace_prompt_tokens = self.nlg_endpoint.kwargs.get(
+            "trace_prompt_tokens", False
+        )
 
     def _last_message_if_human(self, tracker: DialogueStateTracker) -> Optional[str]:
         """Returns the latest message from the tracker.
