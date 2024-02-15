@@ -1319,6 +1319,9 @@ jobs:
   docker:
     name: Build Docker
     runs-on: ubuntu-22.04
+
+    # docker will only be run when there is a tag available
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && github.repository == 'RasaHQ/rasa-private'
     needs: [changes, build_docker_base_images_and_set_env]
     env:
       IMAGE_TAG: ${{ needs.build_docker_base_images_and_set_env.outputs.image_tag }}
