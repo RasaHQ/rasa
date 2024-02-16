@@ -1,4 +1,4 @@
-.PHONY: clean test lint init docs format formatter build-docker build-docker-full build-docker-mitie-en build-docker-spacy-en build-docker-spacy-de
+.PHONY: clean test lint init docs format formatter build-docker
 
 JOBS ?= 1
 INTEGRATION_TEST_FOLDER = tests/integration_tests/
@@ -210,44 +210,6 @@ build-docker:
 	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl base-poetry && \
 	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl base-builder && \
 	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl default
-
-build-docker-full:
-	export IMAGE_NAME=rasa && \
-	docker buildx use default && \
-	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl base-images && \
-	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl base-builder && \
-	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl full
-
-build-docker-mitie-en:
-	export IMAGE_NAME=rasa && \
-	docker buildx use default && \
-	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl base-images && \
-	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl base-builder && \
-	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl mitie-en
-
-build-docker-spacy-en:
-	export IMAGE_NAME=rasa && \
-	docker buildx use default && \
-	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl base && \
-	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl base-poetry && \
-	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl base-builder && \
-	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl spacy-en
-
-build-docker-spacy-de:
-	export IMAGE_NAME=rasa && \
-	docker buildx use default && \
-	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl base && \
-	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl base-poetry && \
-	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl base-builder && \
-	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl spacy-de
-
-build-docker-spacy-it:
-	export IMAGE_NAME=rasa && \
-	docker buildx use default && \
-	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl base && \
-	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl base-poetry && \
-	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl base-builder && \
-	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl spacy-it
 
 build-tests-deployment-env: ## Create environment files (.env) for docker-compose.
 	cd tests_deployment && \

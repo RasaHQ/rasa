@@ -1029,7 +1029,6 @@ jobs:
       IMAGE_TAG: ${{ needs.build_docker_base_images_and_set_env.outputs.image_tag }}
       TARGET_IMAGE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-docker"
       BASE_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_image_hash }}
-      BASE_MITIE_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_mitie_image_hash }}
       BASE_BUILDER_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_builder_image_hash }}
 
     steps:
@@ -1146,7 +1145,6 @@ jobs:
     runs-on: ubuntu-22.04
     outputs:
       base_image_hash: ${{ steps.check_image.outputs.base_image_hash }}
-      base_mitie_image_hash: ${{ steps.check_image.outputs.base_mitie_image_hash }}
       base_builder_image_hash: ${{ steps.check_image.outputs.base_builder_image_hash }}
       # Tag name used for images created during Docker image builds, e.g. 3886 - a PR number
       image_tag: ${{ steps.set_output.outputs.image_tag }}
@@ -1222,14 +1220,6 @@ jobs:
           BASE_IMAGE_EXISTS=$((docker manifest inspect ${{ env.TARGET_IMAGE_REGISTRY }}/rasa:base-${BASE_IMAGE_HASH} &> /dev/null && echo true || echo false) || true)
           echo "base_exists=${BASE_IMAGE_EXISTS}" >> $GITHUB_OUTPUT
 
-          # Base MITIE image
-          BASE_MITIE_IMAGE_HASH=${{ hashFiles('docker/Dockerfile.base-mitie') }}
-          MAKEFILE_MITIE_HASH=${{ hashFiles('Makefile') }}
-          echo "base_mitie_image_hash=${BASE_MITIE_IMAGE_HASH:0:50}-${MAKEFILE_MITIE_HASH:0:50}" >> $GITHUB_OUTPUT
-
-          BASE_IMAGE_MITIE_EXISTS=$((docker manifest inspect ${{ env.TARGET_IMAGE_REGISTRY }}/rasa:base-mitie-${BASE_MITIE_IMAGE_HASH:0:50}-${MAKEFILE_MITIE_HASH:0:50} &> /dev/null && echo true || echo false) || true)
-          echo "base_mitie_exists=${BASE_IMAGE_MITIE_EXISTS}" >> $GITHUB_OUTPUT
-
           # Base poetry image
           BASE_IMAGE_POETRY_EXISTS=$((docker manifest inspect ${{ env.TARGET_IMAGE_REGISTRY }}/rasa:base-poetry-${{ env.POETRY_VERSION }} &> /dev/null && echo true || echo false) || true)
           echo "base_poetry_exists=${BASE_IMAGE_POETRY_EXISTS}" >> $GITHUB_OUTPUT
@@ -1254,20 +1244,6 @@ jobs:
           export IMAGE_TAG=${{ steps.check_image.outputs.base_image_hash }}
           export TARGET_IMAGE_REGISTRY=${{ env.TARGET_IMAGE_REGISTRY }}
           docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl base --push
-
-      - name: Build Docker mitie base image 🛠
-        if: steps.check_image.outputs.base_mitie_exists == 'false' || steps.check_image.outputs.base_exists == 'false'
-        run: |
-          export IMAGE_TAG=${{ steps.check_image.outputs.base_mitie_image_hash }}
-          export TARGET_IMAGE_REGISTRY=${{ env.TARGET_IMAGE_REGISTRY }}
-          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl base-mitie
-
-      - name: Push Docker mitie base image if it's not building from a fork ⬆
-        if: (steps.check_image.outputs.base_mitie_exists == 'false' || steps.check_image.outputs.base_exists == 'false') && github.event.pull_request.head.repo.owner.login == 'RasaHQ'
-        run: |
-          export IMAGE_TAG=${{ steps.check_image.outputs.base_mitie_image_hash }}
-          export TARGET_IMAGE_REGISTRY=${{ env.TARGET_IMAGE_REGISTRY }}
-          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl base-mitie --push
 
       - name: Build Docker poetry base image 🛠
         if: steps.check_image.outputs.base_poetry_exists == 'false' || steps.check_image.outputs.base_exists == 'false'
@@ -1348,11 +1324,7 @@ jobs:
       IMAGE_TAG: ${{ needs.build_docker_base_images_and_set_env.outputs.image_tag }}
       TARGET_IMAGE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-docker"
       BASE_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_image_hash }}
-      BASE_MITIE_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_mitie_image_hash }}
       BASE_BUILDER_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_builder_image_hash }}
-    strategy:
-      matrix:
-        image: [default, full, mitie-en, spacy-de, spacy-it, spacy-en]
 
     steps:
       # Due to an issue with checking out a wrong commit, we make sure
@@ -1420,7 +1392,7 @@ jobs:
       - name: Build Docker image
         if: needs.changes.outputs.docker == 'true'
         run: |
-          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }}
+          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl default
 
       - name: Check how much space is left after Docker build
         run: df -h
@@ -1428,28 +1400,23 @@ jobs:
       - name: Push image with main tag 📦
         if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'RasaHQ/rasa-private'
         run: |
-          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }} --push
+          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl default --push
 
       - name: Push image with ${{github.ref}} tag 📦
         if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && env.IS_TAG_BUILD == 'true' && github.repository == 'RasaHQ/rasa-private'
         run: |
-          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }} --push
+          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl default --push
 
       - name: Push image with latest tag 📦
         if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && env.IS_TAG_BUILD == 'true' && github.repository == 'RasaHQ/rasa-private' && needs.build_docker_base_images_and_set_env.outputs.is_newest_version == 'true'
         run: |
-          if [[ "${{ matrix.image }}" == "default" ]]; then
-            RELEASE_TAG="${IMAGE_TAG}"
-          else
-            RELEASE_TAG="${IMAGE_TAG}-${{ matrix.image }}"
-          fi
-
+          RELEASE_TAG="${IMAGE_TAG}"
           LATEST_TAG=$(echo $RELEASE_TAG | sed 's/'$IMAGE_TAG'/latest/g')
 
           # This will not build the image from ground up, but will only tag the existing image with LATEST_TAG
-          IMAGE_TAG=${LATEST_TAG} docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }}
+          IMAGE_TAG=${LATEST_TAG} docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl default
           # Push tagged image
-          IMAGE_TAG=${LATEST_TAG} docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }} --push
+          IMAGE_TAG=${LATEST_TAG} docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl default --push
 
   deploy:
     name: Deploy to PyPI
