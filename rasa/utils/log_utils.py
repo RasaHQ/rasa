@@ -12,7 +12,7 @@ from rasa.shared.constants import (
     ENV_LOG_LEVEL,
     DEFAULT_LOG_LEVEL,
     ENV_LOG_LEVEL_LLM,
-    ENV_LOG_LEVEL_LLM_BY_MODULE,
+    ENV_LOG_LEVEL_LLM_MODULE_NAMES,
     DEFAULT_LOG_LEVEL_LLM,
 )
 from rasa.plugin import plugin_manager
@@ -147,7 +147,7 @@ def configure_structlog(
 
 def log_llm(logger: Any, log_module: str, log_event: str, **kwargs: Dict) -> None:
     """Logs LLM-specific events depending on a flag passed through an environment
-    variable. If the the module's flag is set to INFO (e.g.
+    variable. If the module's flag is set to INFO (e.g.
     LOG_PROMPT_LLM_COMMAND_GENERATOR=INFO), its prompt is logged at INFO level,
     overriding the general log level setting.
 
@@ -157,15 +157,16 @@ def log_llm(logger: Any, log_module: str, log_event: str, **kwargs: Dict) -> Non
         log_event: string describing the log event
         **kwargs: dictionary of additional logging context
     """
-    log_level_llm = structlog.stdlib._NAME_TO_LEVEL[
-        os.environ.get(ENV_LOG_LEVEL_LLM, DEFAULT_LOG_LEVEL_LLM).lower()
-    ]
+    log_level_llm_name = os.environ.get(ENV_LOG_LEVEL_LLM, DEFAULT_LOG_LEVEL_LLM)
+    log_level_llm = logging.getLevelName(log_level_llm_name.upper())
 
-    log_level_llm_module = structlog.stdlib._NAME_TO_LEVEL[
-        os.environ.get(
-            ENV_LOG_LEVEL_LLM_BY_MODULE[log_module], DEFAULT_LOG_LEVEL_LLM
-        ).lower()
-    ]
+    module_env_variable = ENV_LOG_LEVEL_LLM_MODULE_NAMES.get(
+        log_module, "LOG_LEVEL_LLM_" + log_module.upper()
+    )
+    log_level_llm_module_name = os.environ.get(
+        module_env_variable, DEFAULT_LOG_LEVEL_LLM
+    )
+    log_level_llm_module = logging.getLevelName(log_level_llm_module_name.upper())
 
     log_level = max(log_level_llm, log_level_llm_module)  # DEBUG=10, INFO=20
 
