@@ -4,13 +4,7 @@
 name: CI - Model Regression
 
 on:
-  push:
-    branches:
-      - "[0-9]+.[0-9]+.x"
-    tags:
-      - "**"
-  pull_request:
-    types: [opened, synchronize, labeled]
+  workflow_dispatch:
 
 concurrency:
   group: ci-model-regression-${{ github.ref }} # branch or tag name
