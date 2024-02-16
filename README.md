@@ -348,6 +348,23 @@ steps + get the PR merged.
 
 Make sure to merge the branch `3.7.x` after your PR with `main`. This needs to be done manually until Roberto is added (see [ATO-2091](https://rasahq.atlassian.net/browse/ATO-2091))
 
+### Cutting a Pre release version
+
+A Pre release version is an alpha, beta, dev or rc version. For more details on which version you require refer to the [Rasa Software Release Lifecycle](https://www.notion.so/rasa/Rasa-Software-Release-Lifecycle-eb704d75f87646a9a9aca1f3fbe71fb3#6e26ac9a15b64f91bb94d6bfea9306a0)
+
+1. Make sure you are using the right branch for the release, for instance pre releases are always made from either the main or a feature branch (especially for a dev release)
+2. Once you're ready to release, checkout the branch, run `make release` and follow the
+steps.
+3. Only in case of a pre release, the release branch created will be named with 'prepare-release-pre-'
+4. Note that when releasing from a feature branch the 'prepare-release-pre' branch will not be created automatically and has to be done manually. This is done to ensure all major/minor/patch releases only happens from the correct branches.
+   (In this case the version updates will be added to the same branch as a commit, and you will have to manually create a `prepare-release-pre-' branch and push to remote)
+5. Only in case of a pre release, we currently skip all test runs and docker image builds on a 'prepare-release-pre-' PR. This was done to speed up the pre release process.
+6. Once your PR gets merged, the [tag release workflow](https://github.com/RasaHQ/rasa-private/actions/workflows/tag-release.yml) will create the tag.
+7. After this you should see the CI workflow "Continuous Integration" in the Actions tab with the relevant tag name. Keep an eye on it to make sure it is successful as sometimes retries might be required. 
+8. After all the steps are completed and if everything goes well then we should see a message automatically posted in the company's Slack (`product` channel) like this [one](https://rasa-hq.slack.com/archives/C7B08Q5FX/p1614354499046600)
+9. If however an error occurs in the build, then we should see a failure message automatically posted in the company's Slack (`atom-squad-alerts` channel) like this [one](https://rasa-hq.slack.com/archives/C01M5TAHDHA/p1701444735622919)
+
+
 ### Actively maintained versions
 
 Please refer to the [Rasa Product Release and Maintenance Policy](https://rasa.com/rasa-product-release-and-maintenance-policy/) page.
