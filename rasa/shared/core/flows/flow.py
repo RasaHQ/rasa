@@ -24,6 +24,7 @@ from rasa.shared.core.flows.steps import (
     StartFlowStep,
 )
 from rasa.shared.core.flows.flow_step_sequence import FlowStepSequence
+from rasa.shared.utils.pypred import get_case_insensitive_predicate_given_slot_instance
 
 
 structlogger = structlog.get_logger()
@@ -276,7 +277,14 @@ class Flow:
             return True
 
         try:
-            predicate = Predicate(self.guard_condition)
+            assert data is not None
+            case_insensitive_guard_condition = (
+                get_case_insensitive_predicate_given_slot_instance(
+                    self.guard_condition, data.get("slots", {})
+                )
+            )
+
+            predicate = Predicate(case_insensitive_guard_condition)
             is_startable = predicate.evaluate(data)
             structlogger.debug(
                 "command_generator.validate_flow_starting_conditions.result",

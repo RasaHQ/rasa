@@ -155,7 +155,7 @@ class CommandGenerator:
         # Get current context and slots to prepare document for flow guard check.
         return {
             "context": tracker.stack.current_context(),
-            "slots": tracker.current_slot_values(),
+            "slots": tracker.slots,
         }
 
     def _check_commands_against_startable_flows(
