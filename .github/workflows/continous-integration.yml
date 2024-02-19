@@ -588,20 +588,6 @@ jobs:
           coverage combine "${final_dir}/"*
           coverage xml
 
-      - name: Analyse code with SonarCloud
-        uses: sonarsource/sonarcloud-github-action@5875562561d22a34be0c657405578705a169af6c
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          args: >
-            -Dsonar.organization=rasahq
-            -Dsonar.projectKey=RasaHQ_rasa
-            -Dsonar.sources=.
-            -Dsonar.python.coverage.reportPaths=${{ github.workspace }}/tests_coverage
-            -Dsonar.host.url=https://sonarcloud.io
-            -Dsonar.verbose=true
-
   integration_test:
     name: Run Non-Sequential Integration Tests
     if: github.ref_type != 'tag'
