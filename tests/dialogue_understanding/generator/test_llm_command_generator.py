@@ -280,15 +280,6 @@ class TestLLMCommandGenerator:
             ("SkipQuestion()", [SkipQuestionCommand()]),
             ("SearchAndReply()", [KnowledgeAnswerCommand()]),
             ("HumanHandoff()", [HumanHandoffCommand()]),
-            ("Clarify(transfer_money)", [ClarifyCommand(options=["transfer_money"])]),
-            (
-                "Clarify(list_contacts, add_contact, remove_contact)",
-                [
-                    ClarifyCommand(
-                        options=["list_contacts", "add_contact", "remove_contact"]
-                    )
-                ],
-            ),
             (
                 "Here is a list of commands:\nSetSlot(flow_name, some_flow)\n",
                 [StartFlowCommand(flow="some_flow")],
@@ -300,6 +291,13 @@ class TestLLMCommandGenerator:
                     StartFlowCommand(flow="some_flow"),
                     SetSlotCommand(name="transfer_money_amount_of_money", value=None),
                 ],
+            ),
+            # Clarify of non-existent option is dropped
+            ("Clarify(transfer_money)", []),
+            # Clarify orders options
+            (
+                "Clarify(some_flow, 02_benefits_learning_days)",
+                [ClarifyCommand(options=["02_benefits_learning_days", "some_flow"])],
             ),
         ],
     )
