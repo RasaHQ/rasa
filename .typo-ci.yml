@@ -29,7 +29,7 @@ excluded_files:
   - "*.ts"
   - "*.tsx"
   - "*.md"
-  - "CHANGELOG.mdx"
+  - "CHANGELOG.md"
   - "CODE_OF_CONDUCT.md"
   - "CONTRIBUTING.md"
   - "Dockerfile"
