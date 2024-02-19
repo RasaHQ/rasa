@@ -355,7 +355,7 @@ A Pre release version is an alpha, beta, dev or rc version. For more details on 
 1. Make sure you are using the right branch for the release, for instance pre releases are always made from either the main or a feature branch (especially for a dev release)
 2. Once you're ready to release, checkout the branch, run `make release` and follow the
 steps.
-3. Only in case of a pre release, the release branch created will be named with 'prepare-release-pre-'
+3. Only in case of a pre release, the release branch created will be prefixed with 'prepare-release-pre-'
 4. Note that when releasing from a feature branch the 'prepare-release-pre' branch will not be created automatically and has to be done manually. This is done to ensure all major/minor/patch releases only happens from the correct branches.
    (In this case the version updates will be added to the same branch as a commit, and you will have to manually create a `prepare-release-pre-' branch and push to remote)
 5. Only in case of a pre release, we currently skip all test runs and docker image builds on a 'prepare-release-pre-' PR. This was done to speed up the pre release process.
