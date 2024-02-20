@@ -9,7 +9,6 @@ from structlog_sentry import SentryProcessor
 from structlog.dev import ConsoleRenderer
 from structlog.typing import EventDict, WrappedLogger
 from rasa.shared.constants import (
-    LOG_LEVEL_NAME_TO_LEVEL,
     ENV_LOG_LEVEL,
     DEFAULT_LOG_LEVEL,
     ENV_LOG_LEVEL_LLM,
