@@ -6,8 +6,6 @@ actions:
 slots:
   contacts_list:
     type: text
-    mappings:
-      - type: custom
 
 responses:
   utter_no_contacts:

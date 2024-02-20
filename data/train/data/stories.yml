@@ -1,0 +1,16 @@
+version: "3.1"
+
+stories:
+  - story: how are you
+    steps:
+    - intent: greet
+    - action: utter_how_are_you
+    - intent: feel_great
+    - action: utter_great_to_hear
+
+  - story: how are you
+    steps:
+    - intent: greet 
+    - action: utter_how_are_you
+    - intent: feel_great
+    - action: utter_sorry_to_hear_that

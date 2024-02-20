@@ -1,15 +1,31 @@
+import hashlib
 import json
+import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, Generator, Text
+from typing import Any, Dict, Generator, List, Optional, Text
 
-from _pytest.monkeypatch import MonkeyPatch
-from unittest.mock import MagicMock, Mock
+from pytest import MonkeyPatch, LogCaptureFixture
+from unittest.mock import MagicMock, Mock, patch
 import pytest
 import responses
 
 from rasa import telemetry
 import rasa.constants
+import rasa.utils.licensing
+from rasa.e2e_test.e2e_test_case import TestCase, Fixture
+from rasa.telemetry import (
+    SEGMENT_IDENTIFY_ENDPOINT,
+    SEGMENT_REQUEST_TIMEOUT,
+    SEGMENT_TRACK_ENDPOINT,
+    TELEMETRY_E2E_TEST_RUN_STARTED_EVENT,
+    TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE,
+    TELEMETRY_ID,
+    TELEMETRY_WRITE_KEY_ENVIRONMENT_VARIABLE,
+    TRACING_BACKEND,
+)
+from rasa.utils.licensing import LICENSE_ENV_VAR
+from tests.tracing.conftest import TRACING_TESTS_FIXTURES_DIRECTORY
 
 TELEMETRY_TEST_USER = "083642a3e448423ca652134f00e7fc76"  # just some random static id
 TELEMETRY_TEST_KEY = "5640e893c1324090bff26f655456caf3"  # just some random static id
@@ -110,7 +126,7 @@ def test_not_in_ci_if_not_in_ci(monkeypatch: MonkeyPatch):
 
 
 def test_in_ci_if_in_ci(monkeypatch: MonkeyPatch):
-    monkeypatch.setenv("CI", True)
+    monkeypatch.setenv("CI", "true")
 
     assert telemetry.in_continuous_integration()
 
@@ -202,6 +218,19 @@ def test_segment_does_not_raise_exception_on_failure(monkeypatch: MonkeyPatch):
 def test_segment_does_not_get_called_without_license(monkeypatch: MonkeyPatch):
     monkeypatch.setenv("RASA_TELEMETRY_ENABLED", "true")
     monkeypatch.setenv("RASA_TELEMETRY_WRITE_KEY", "foobar")
+
+    def mock_get_license_hash(*args, **kwargs):
+        return None
+
+    monkeypatch.setattr(
+        rasa.telemetry.plugin_manager().hook, "get_license_hash", mock_get_license_hash
+    )
+
+    mock_license_property = MagicMock(return_value=None)
+    monkeypatch.setattr(
+        rasa.telemetry, "property_of_active_license", mock_license_property
+    )
+
     telemetry.initialize_telemetry()
 
     with responses.RequestsMock(assert_all_requests_are_fired=False) as rsps:
@@ -453,3 +482,563 @@ def test_context_does_not_contain_license_hash(monkeypatch: MonkeyPatch) -> None
 
     assert "license_hash" not in context
     assert mock.return_value.hook.get_license_hash.called
+
+
+def test_segment_identify_payload() -> None:
+    assert telemetry.segment_identify_request_payload(
+        TELEMETRY_TEST_USER, {"foo": "bar"}, {}
+    ) == {
+        "userId": TELEMETRY_TEST_USER,
+        "traits": {"foo": "bar"},
+        "context": {},
+    }
+
+
+def test_identify_ignore_exception(monkeypatch: MonkeyPatch) -> None:
+    monkeypatch.setattr(telemetry, "_send_traits", _mock_track_internal_exception)
+
+    # If the test finishes without raising any exceptions, then it's successful
+    try:
+        telemetry._identify({})
+    except Exception:
+        pytest.fail("Exception was not ignored during a telemetry identify call.")
+
+
+def test_identify_sends_telemetry_id(monkeypatch: MonkeyPatch) -> None:
+    monkeypatch.setenv(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE, "true")
+    telemetry.initialize_telemetry()
+
+    mock = Mock()
+    monkeypatch.setattr(telemetry, "_send_traits", mock)
+    telemetry._identify({"foo": "bar"}, {"baz": "foo"})
+
+    assert telemetry.get_telemetry_id() is not None
+
+    mock.assert_called_once()
+    call_args = mock.call_args[0]
+
+    assert call_args[0] == telemetry.get_telemetry_id()
+    assert call_args[1]["foo"] == "bar"
+    assert call_args[2]["baz"] == "foo"
+
+
+@pytest.mark.parametrize(
+    "tracing_backend, endpoints_file",
+    [
+        (
+            "jaeger",
+            "jaeger_endpoints.yml",
+        )
+    ],
+)
+def test_segment_gets_called_for_identify(
+    tracing_backend: Text,
+    endpoints_file: Text,
+    valid_license: Text,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(LICENSE_ENV_VAR, valid_license)
+    monkeypatch.setenv(TELEMETRY_WRITE_KEY_ENVIRONMENT_VARIABLE, "foobar")
+    monkeypatch.setenv(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE, "true")
+    endpoints_file = str(TRACING_TESTS_FIXTURES_DIRECTORY / endpoints_file)
+    telemetry.initialize_telemetry()
+
+    with responses.RequestsMock() as rsps:
+        rsps.add(responses.POST, SEGMENT_IDENTIFY_ENDPOINT, body="", json={})
+
+        telemetry.identify_endpoint_config_traits(
+            endpoints_file, context={"foobar": "baz"}
+        )
+
+        assert len(rsps.calls) == 1
+        r = rsps.calls[0]
+
+        assert r
+        assert isinstance(r, responses.Call)
+
+        assert r.request.body is not None
+        b = json.loads(r.request.body)
+
+        assert "userId" in b
+        assert b["traits"][TRACING_BACKEND] == tracing_backend
+        assert (
+            b["context"]["license_hash"]
+            == hashlib.sha256(valid_license.encode("utf-8")).hexdigest()
+        )
+        assert b["context"].get("foobar") == "baz"
+
+
+def test_segment_identify_does_not_raise_exception_on_failure(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE, "true")
+    monkeypatch.setenv(TELEMETRY_WRITE_KEY_ENVIRONMENT_VARIABLE, "foobar")
+    telemetry.initialize_telemetry()
+
+    with responses.RequestsMock() as rsps:
+        rsps.add(responses.POST, SEGMENT_IDENTIFY_ENDPOINT, body="", status=505)
+
+        # this call should complete without throwing an exception
+        telemetry._identify({"foo": "bar"}, {"foobar": "baz"})
+
+        assert rsps.assert_call_count(SEGMENT_IDENTIFY_ENDPOINT, 1)
+
+
+def test_identify_sets_default_traits(
+    monkeypatch: MonkeyPatch, valid_license: Text
+) -> None:
+    monkeypatch.setenv(LICENSE_ENV_VAR, valid_license)
+    monkeypatch.setenv(TELEMETRY_WRITE_KEY_ENVIRONMENT_VARIABLE, "default")
+    monkeypatch.setenv(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE, "true")
+    telemetry.initialize_telemetry()
+
+    with responses.RequestsMock() as rsps:
+        rsps.add(responses.POST, SEGMENT_IDENTIFY_ENDPOINT, body="", json={})
+
+        telemetry.identify_endpoint_config_traits(None)
+
+        assert len(rsps.calls) == 1
+        r = rsps.calls[0]
+
+        assert r
+        assert isinstance(r, responses.Call)
+
+        assert r.request.body is not None
+        b = json.loads(r.request.body)
+
+        assert "userId" in b
+        assert b["traits"][TRACING_BACKEND] is None
+        assert (
+            b["context"]["license_hash"]
+            == hashlib.sha256(valid_license.encode("utf-8")).hexdigest()
+        )
+
+
+def test_get_telemetry_id_valid(monkeypatch: MonkeyPatch, valid_license: Text) -> None:
+    monkeypatch.setenv(LICENSE_ENV_VAR, valid_license)
+
+    assert telemetry.get_telemetry_id() is not None
+
+
+def test_get_telemetry_id_no_license(monkeypatch: MonkeyPatch) -> None:
+    monkeypatch.delenv(LICENSE_ENV_VAR)
+
+    assert telemetry.get_telemetry_id() is None
+
+
+def test_get_telemetry_id_invalid(
+    monkeypatch: MonkeyPatch, caplog: LogCaptureFixture
+) -> None:
+    monkeypatch.setenv(LICENSE_ENV_VAR, "some_invalid_string")
+
+    with caplog.at_level(logging.WARNING):
+        assert telemetry.get_telemetry_id() is None
+
+    assert all(
+        ["The provided license is invalid" in message for message in caplog.messages]
+    )
+
+
+@pytest.mark.parametrize(
+    "input_test_cases, input_fixtures, expected_number_of_test_cases, "
+    "expected_number_of_fixtures, expected_uses_fixtures",
+    [
+        (
+            [
+                TestCase(name="case 1", steps=[]),
+                TestCase(name="case 2", steps=[]),
+                TestCase(name="case 3", steps=[]),
+            ],
+            [
+                Fixture(name="fixture 1", slots_set={}),
+                Fixture(name="fixture 2", slots_set={}),
+            ],
+            3,
+            2,
+            True,
+        ),
+        (
+            [],
+            [
+                Fixture(name="fixture 1", slots_set={}),
+                Fixture(name="fixture 2", slots_set={}),
+            ],
+            0,
+            2,
+            True,
+        ),
+        (
+            [
+                TestCase(name="case 1", steps=[]),
+                TestCase(name="case 2", steps=[]),
+                TestCase(name="case 3", steps=[]),
+            ],
+            [],
+            3,
+            0,
+            False,
+        ),
+    ],
+)
+@patch("rasa.telemetry._track")
+def test_track_e2e_test_run(
+    mock_track: MagicMock,
+    input_test_cases: List["TestCase"],
+    input_fixtures: List["Fixture"],
+    expected_number_of_test_cases: int,
+    expected_number_of_fixtures: int,
+    expected_uses_fixtures: bool,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE, "true")
+
+    telemetry.track_e2e_test_run(input_test_cases, input_fixtures)
+
+    mock_track.assert_called_once_with(
+        TELEMETRY_E2E_TEST_RUN_STARTED_EVENT,
+        {
+            "number_of_test_cases": expected_number_of_test_cases,
+            "number_of_fixtures": expected_number_of_fixtures,
+            "uses_fixtures": expected_uses_fixtures,
+        },
+    )
+
+
+@pytest.mark.parametrize(
+    "event_name, properties, context, telemetry_id, expected_properties",
+    [
+        (
+            "event",
+            {"foo": "bar"},
+            {"some_ctx_field_1": "some_ctx_value_1"},
+            "some_id",
+            {"foo": "bar", TELEMETRY_ID: "some_id"},
+        ),
+        (
+            "event",
+            {},
+            {"some_ctx_field_1": "some_ctx_value_1"},
+            "some_id",
+            {TELEMETRY_ID: "some_id"},
+        ),
+    ],
+)
+@patch("rasa.telemetry.with_default_context_fields")
+@patch("rasa.telemetry._send_event")
+@patch("rasa.telemetry.get_telemetry_id")
+def test_track(
+    mock_get_telemetry_id: MagicMock,
+    mock_send_event: MagicMock,
+    mock_with_default_context_fields: MagicMock,
+    event_name: Text,
+    properties: Dict[Text, Any],
+    context: Dict[Text, Any],
+    telemetry_id: Optional[Text],
+    expected_properties: Dict[Text, Any],
+) -> None:
+    mock_get_telemetry_id.return_value = telemetry_id
+    mock_with_default_context_fields.return_value = context
+    telemetry._track(event_name=event_name, properties=properties, context=context)
+
+    mock_get_telemetry_id.assert_called_once()
+    mock_send_event.assert_called_once_with(
+        telemetry_id,
+        event_name,
+        expected_properties,
+        context,
+    )
+
+
+@pytest.fixture
+def mock_get_telemetry_id(monkeypatch: MonkeyPatch) -> MagicMock:
+    mock_get_telemetry_id = MagicMock()
+    mock_get_telemetry_id.return_value = None
+    monkeypatch.setattr("rasa.telemetry.get_telemetry_id", mock_get_telemetry_id)
+    return mock_get_telemetry_id
+
+
+@pytest.fixture
+def mock_send_event(monkeypatch: MonkeyPatch) -> MagicMock:
+    mock_send_event = MagicMock()
+    monkeypatch.setattr("rasa.telemetry._send_event", mock_send_event)
+    return mock_send_event
+
+
+@pytest.fixture
+def mock_with_default_context_fields(monkeypatch: MonkeyPatch) -> MagicMock:
+    mock_with_default_context_fields = MagicMock()
+    monkeypatch.setattr(
+        "rasa.telemetry.with_default_context_fields",
+        mock_with_default_context_fields,
+    )
+    return mock_with_default_context_fields
+
+
+def test_track_no_event_name(
+    mock_send_event: MagicMock,
+    mock_with_default_context_fields: MagicMock,
+    mock_get_telemetry_id: MagicMock,
+    caplog: LogCaptureFixture,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    mock_get_telemetry_id.return_value = None
+
+    with caplog.at_level(logging.DEBUG):
+        telemetry._track(event_name="event", properties={}, context={})
+
+    mock_get_telemetry_id.assert_called_once()
+    mock_send_event.assert_not_called()
+    mock_with_default_context_fields.assert_not_called()
+
+    log_msg = "Will not report telemetry events as no ID was found."
+    assert log_msg in caplog.text
+
+
+@pytest.fixture
+def mock_segment_track_request_payload(monkeypatch: MonkeyPatch) -> MagicMock:
+    mock_segment_track_request_payload = MagicMock()
+    monkeypatch.setattr(
+        "rasa.telemetry.segment_request_payload",
+        mock_segment_track_request_payload,
+    )
+    return mock_segment_track_request_payload
+
+
+@pytest.fixture
+def mock_send_request(
+    monkeypatch: MonkeyPatch,
+) -> MagicMock:
+    mock_send_request = MagicMock()
+    monkeypatch.setattr("rasa.telemetry._send_request", mock_send_request)
+    return mock_send_request
+
+
+def test_send_event(
+    mock_segment_track_request_payload: MagicMock,
+    mock_send_request: MagicMock,
+) -> None:
+    payload = {
+        "event": "some_event",
+        "properties": {"some_prop": "some_value"},
+        "context": {"some_ctx_field": "some_ctx_value"},
+    }
+
+    mock_segment_track_request_payload.return_value = payload
+    telemetry._send_event(
+        distinct_id="some_id",
+        event_name="some_event",
+        properties={"some_prop": "some_value"},
+        context={"some_ctx_field": "some_ctx_value"},
+    )
+
+    mock_segment_track_request_payload.assert_called_once_with(
+        "some_id",
+        "some_event",
+        {"some_prop": "some_value"},
+        {"some_ctx_field": "some_ctx_value"},
+    )
+
+    mock_send_request.assert_called_once_with(SEGMENT_TRACK_ENDPOINT, payload)
+
+
+@pytest.fixture
+def mock_is_telemetry_debug_enabled(monkeypatch: MonkeyPatch) -> MagicMock:
+    mock_is_telemetry_debug_enabled = MagicMock()
+    monkeypatch.setattr(
+        "rasa.telemetry._is_telemetry_debug_enabled",
+        mock_is_telemetry_debug_enabled,
+    )
+    return mock_is_telemetry_debug_enabled
+
+
+@pytest.fixture
+def mock_print_telemetry_payload(monkeypatch: MonkeyPatch) -> MagicMock:
+    mock_print_telemetry_payload = MagicMock()
+    monkeypatch.setattr(
+        "rasa.telemetry.print_telemetry_payload",
+        mock_print_telemetry_payload,
+    )
+    return mock_print_telemetry_payload
+
+
+@pytest.fixture
+def mock_get_telemetry_write_key(monkeypatch: MonkeyPatch) -> MagicMock:
+    mock_get_telemetry_write_key = MagicMock()
+    monkeypatch.setattr(
+        "rasa.telemetry._get_telemetry_write_key", mock_get_telemetry_write_key
+    )
+    return mock_get_telemetry_write_key
+
+
+@pytest.fixture
+def mock_segment_request_header(monkeypatch: MonkeyPatch) -> MagicMock:
+    mock_segment_request_header = MagicMock()
+    monkeypatch.setattr(
+        "rasa.telemetry.segment_request_header", mock_segment_request_header
+    )
+    return mock_segment_request_header
+
+
+@pytest.fixture
+def mock_requests_post(monkeypatch: MonkeyPatch) -> MagicMock:
+    mock_requests_post = MagicMock()
+    monkeypatch.setattr("rasa.telemetry.requests.post", mock_requests_post)
+    return mock_requests_post
+
+
+def test_send_request(
+    mock_is_telemetry_debug_enabled: MagicMock,
+    mock_print_telemetry_payload: MagicMock,
+    mock_get_telemetry_write_key: MagicMock,
+    mock_segment_request_header: MagicMock,
+    mock_requests_post: MagicMock,
+) -> None:
+    mock_is_telemetry_debug_enabled.return_value = False
+    telemetry_key = "some_key"
+    mock_get_telemetry_write_key.return_value = telemetry_key
+    headers = {"some": "header"}
+    mock_segment_request_header.return_value = headers
+    mock_response = MagicMock()
+    mock_response.json = MagicMock()
+    mock_response.json.return_value = {"success": "ok"}
+    mock_response.status_code = 200
+    mock_requests_post.return_value = mock_response
+
+    url = "some_url"
+    payload = {"some": "payload"}
+    telemetry._send_request(url, payload)
+
+    mock_is_telemetry_debug_enabled.assert_called_once()
+    mock_print_telemetry_payload.assert_not_called()
+    mock_get_telemetry_write_key.assert_called_once()
+    mock_segment_request_header.assert_called_once_with(telemetry_key)
+    mock_requests_post.assert_called_once_with(
+        url=url,
+        json=payload,
+        headers=headers,
+        timeout=SEGMENT_REQUEST_TIMEOUT,
+    )
+    mock_response.json.assert_called_once()
+
+
+def test_send_request_telemetry_debug_enabled(
+    mock_is_telemetry_debug_enabled: MagicMock,
+    mock_print_telemetry_payload: MagicMock,
+    mock_get_telemetry_write_key: MagicMock,
+    mock_segment_request_header: MagicMock,
+    mock_requests_post: MagicMock,
+) -> None:
+    mock_is_telemetry_debug_enabled.return_value = True
+
+    payload = {"some": "payload"}
+    telemetry._send_request("some_url", payload)
+
+    mock_is_telemetry_debug_enabled.assert_called_once()
+    mock_print_telemetry_payload.assert_called_once_with(payload)
+    mock_get_telemetry_write_key.assert_not_called()
+    mock_segment_request_header.assert_not_called()
+    mock_requests_post.assert_not_called()
+
+
+def test_send_request_with_invalid_write_key(
+    mock_is_telemetry_debug_enabled: MagicMock,
+    mock_print_telemetry_payload: MagicMock,
+    mock_get_telemetry_write_key: MagicMock,
+    mock_segment_request_header: MagicMock,
+    mock_requests_post: MagicMock,
+    caplog: LogCaptureFixture,
+) -> None:
+    mock_is_telemetry_debug_enabled.return_value = False
+    telemetry_key = None
+    mock_get_telemetry_write_key.return_value = telemetry_key
+
+    with caplog.at_level(logging.DEBUG):
+        telemetry._send_request("some_url", {"some": "payload"})
+
+    mock_is_telemetry_debug_enabled.assert_called_once()
+    mock_print_telemetry_payload.assert_not_called()
+    mock_get_telemetry_write_key.assert_called_once()
+    mock_segment_request_header.assert_not_called()
+    mock_requests_post.assert_not_called()
+
+    log_msg = "Skipping request to external service: telemetry key not set."
+    assert log_msg in caplog.text
+
+
+def test_send_request_received_unsuccessful_response(
+    mock_is_telemetry_debug_enabled: MagicMock,
+    mock_print_telemetry_payload: MagicMock,
+    mock_get_telemetry_write_key: MagicMock,
+    mock_segment_request_header: MagicMock,
+    mock_requests_post: MagicMock,
+    caplog: LogCaptureFixture,
+) -> None:
+    mock_is_telemetry_debug_enabled.return_value = False
+    telemetry_key = "some_key"
+    mock_get_telemetry_write_key.return_value = telemetry_key
+    headers = {"some": "header"}
+    mock_segment_request_header.return_value = headers
+    mock_response = MagicMock()
+    mock_response.text = "some error"
+    mock_response.status_code = 400
+    mock_requests_post.return_value = mock_response
+
+    url = "some_url"
+    payload = {"some": "payload"}
+    with caplog.at_level(logging.DEBUG):
+        telemetry._send_request(url, payload)
+
+    mock_is_telemetry_debug_enabled.assert_called_once()
+    mock_print_telemetry_payload.assert_not_called()
+    mock_get_telemetry_write_key.assert_called_once()
+    mock_segment_request_header.assert_called_once_with(telemetry_key)
+    mock_requests_post.assert_called_once_with(
+        url=url,
+        json=payload,
+        headers=headers,
+        timeout=SEGMENT_REQUEST_TIMEOUT,
+    )
+
+    log_msg = "Segment telemetry request returned a 400 response. Body: some error"
+    assert log_msg in caplog.text
+
+
+def test_send_request_succeeds_without_success_field_in_response(
+    mock_is_telemetry_debug_enabled: MagicMock,
+    mock_print_telemetry_payload: MagicMock,
+    mock_get_telemetry_write_key: MagicMock,
+    mock_segment_request_header: MagicMock,
+    mock_requests_post: MagicMock,
+    caplog: LogCaptureFixture,
+) -> None:
+    mock_is_telemetry_debug_enabled.return_value = False
+    telemetry_key = "some_key"
+    mock_get_telemetry_write_key.return_value = telemetry_key
+    headers = {"some": "header"}
+    mock_segment_request_header.return_value = headers
+    mock_response = MagicMock()
+    mock_response.json = MagicMock()
+    json_data = {"missing_success": "missing"}
+    mock_response.json.return_value = json_data
+    mock_response.status_code = 200
+    mock_requests_post.return_value = mock_response
+
+    url = "some_url"
+    payload = {"some": "payload"}
+    with caplog.at_level(logging.DEBUG):
+        telemetry._send_request(url, payload)
+
+    mock_is_telemetry_debug_enabled.assert_called_once()
+    mock_print_telemetry_payload.assert_not_called()
+    mock_get_telemetry_write_key.assert_called_once()
+    mock_segment_request_header.assert_called_once_with(telemetry_key)
+    mock_requests_post.assert_called_once_with(
+        url=url,
+        json=payload,
+        headers=headers,
+        timeout=SEGMENT_REQUEST_TIMEOUT,
+    )
+    mock_response.json.assert_called_once()
+
+    log_msg = f"Segment telemetry request returned a failure. Response: {json_data}"
+    assert log_msg in caplog.text

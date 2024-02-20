@@ -25,6 +25,9 @@ concurrency:
 #                                 Key can be found at https://sentry.io/settings/rasahq/projects/rasa-open-source/install/python/
 # - SENTRY_AUTH_TOKEN: authentication used to tell Sentry about any new releases
 #                      created at https://sentry.io/settings/account/api/auth-tokens/
+# - RASA_PRO_LICENSE: license key for Rasa Pro. Used to run tests for Rasa Pro.
+# - INTEGRATION_TESTS_STUDIO_LICENSE: license key for Studio. Used in integration tests. Expires in 2034.
+# - INTEGRATION_TESTS_PRO_LICENSE: license key for Pro. Used in integration tests. Expires in 2034.
 
 env:
   # needed to fix issues with boto during testing:
@@ -35,10 +38,13 @@ env:
   DOCKERHUB_USERNAME: tmbo
   DEFAULT_PYTHON_VERSION: "3.10"
   TARGET_IMAGE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-docker"
+  NODE_VERSION_INSPECTOR_BUILD: 16
 
   # for wait_for_xx jobs
   WAIT_TIMEOUT_SECS: 3000
   WAIT_INTERVAL_SECS: 60
+  RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+  POETRY_VERSION: 1.4.2
 
 jobs:
   changes:
@@ -50,7 +56,7 @@ jobs:
       docker: ${{ steps.changed-files.outputs.docker || steps.run-all.outputs.docker }}
       is_pre_release_version: ${{ steps.rasa_check_version_type.outputs.is_pre_release_version }}
     steps:
-      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - uses: dorny/paths-filter@4512585405083f25c027a35db413c2b3b9006d50
         # Run the normal filters if the all-tests-required label is not set
         id: changed-files
@@ -81,18 +87,18 @@ jobs:
 
   quality:
     name: Code Quality
-    if: github.ref_type != 'tag'
+    if: github.ref_type != 'tag' && startsWith(github.ref, 'refs/heads/prepare-release-pre-') != true
     runs-on: ubuntu-22.04
     needs: [changes]
 
     steps:
       - name: Checkout git repository 🕝
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
       - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c
         with:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
@@ -186,7 +192,7 @@ jobs:
 
     steps:
       - name: Checkout git repository 🕝
-        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
       - name: Assert release includes all changelog entries
         # check changelog folder only when we create pull request preparing release
@@ -203,10 +209,58 @@ jobs:
           exit 1 || \
           echo "Release includes all changelog entries."
 
+  inspector_build:
+    name: Check Inspector Build
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        shell: bash
+        working-directory: rasa/core/channels/inspector
+
+    steps:
+    - name: Checkout git repository 🕝
+      uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab
+
+    - name: Set up Node.js
+      uses: actions/setup-node@8c91899e586c5b171469028077307d293428b516 #v3.5.1
+      with:
+        node-version: ${{ env.NODE_VERSION_INSPECTOR_BUILD }}
+
+    - name: Cache node modules
+      uses: actions/cache@9b0c1fce7a93df8e3bb8926b0d6e9d89e92f20a7 #v3.0.11
+      id: yarn-cache
+      with:
+        path: "**/inspector/node_modules"
+        key: ${{ runner.os }}-modules-${{ hashFiles('**/inspector/yarn.lock') }}
+
+    - name: Install dependencies
+      if: steps.yarn-cache.outputs.cache-hit != 'true'
+      run: |
+        yarn install --frozen-lockfile
+
+    - name: Build Inspector
+      run: |
+        yarn build
+
+    - name: Store build output
+      uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3.1.3
+      with:
+        name: inspector-build
+        path: rasa/core/channels/inspector/dist
+
+    - name: Compare build output
+      run: |
+        if git diff --quiet -- dist; then
+          echo "No changes in the Inspector build output."
+        else
+          echo "Detected changes in the Inspector build output. Please build the Inspector and commit the contents of rasa/core/channels/inspector/dist/ ."
+          exit 1
+        fi
+
   test:
     name: Run Tests
-    if: github.ref_type != 'tag'
-    runs-on: ${{ matrix.os }}
+    if: github.ref_type != 'tag' && startsWith(github.ref, 'refs/heads/prepare-release-pre-') != true
+    runs-on: ubuntu-22.04-8core
     timeout-minutes: 60
     needs: [changes]
     strategy:
@@ -221,17 +275,16 @@ jobs:
           - test-full-model-training
           - test-other-unit-tests
           - test-performance
-        os: [ubuntu-22.04, windows-2019]
         python-version: [3.8, 3.9, "3.10"]
 
     steps:
       - name: Checkout git repository 🕝
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
       - name: Set up Python ${{ matrix.python-version }} 🐍
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -287,7 +340,7 @@ jobs:
         run: poetry config virtualenvs.in-project true
 
       - name: Install Dependencies (Linux) 📦
-        if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-22.04'
+        if: needs.changes.outputs.backend == 'true'
         # Poetry intermittently fails to install dependency if it is not PEP 517 compliant
         # This is a workaround for that issue
         run: |
@@ -296,70 +349,147 @@ jobs:
           if grep 'The lock file is not up to date' .output; then exit 1; fi
           make prepare-tests-ubuntu
 
-      - name: Install Dependencies (Windows) 📦
-        if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-2019'
-        # Restoring cache doesn't work properly on Windows due to symlinks.
-        # We create symlinks for spacy models, that's why we need to clean them up
-        # before caching the dependencies directory.
-        # More information: https://github.com/actions/cache/issues/120
-        # Poetry intermittently fails to install dependency if it is not PEP 517 compliant
-        # This is a workaround for that issue
-        run: |
-          $spacy_data_dir = ".venv\lib\site-packages\spacy\data"
-          if (Test-Path $spacy_data_dir) {
-            Get-ChildItem -Force -ErrorAction Stop $spacy_data_dir | Where-Object { if($_.Attributes -match "ReparsePoint"){$_.Delete()} }
-            Remove-Item -Force -Recurse $spacy_data_dir
-            New-Item -Path $spacy_data_dir -Type Directory
-          }
-          make install-full
-          make prepare-tests-windows-gha
-
       - name: Add github workflow problem matchers
-        if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.7 && matrix.os == 'ubuntu-22.04'
+        if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.7
         # only annotate based on test runs on ubuntu: otherwise
         # all errors will be duplicated for each python / os combination
         # therefore, we only enable for the one where most tests are run
         # (tests will still run in other envs, they will just not create annotations)
         run: pip install pytest-github-actions-annotate-failures
 
-      - name: Disable "LongPathsEnabled" option on Windows
-        if: matrix.os == 'windows-2019'
-        # On Windows laptops, a default preset prevents path names from being longer than
-        # 260 characters. Some of our users can't enable this setting due to company policies.
-        # We implemented a fix for model storage. The Windows container in GitHub
-        # comes with the setting enabled, so we disable it here in order to ensure our tests
-        # are running in an environment where long path names are prevented.
-        run: |
-          (Get-ItemProperty "HKLM:System\CurrentControlSet\Control\FileSystem").LongPathsEnabled
-          Set-ItemProperty 'HKLM:\System\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -value 0
-
       - name: Install ddtrace on Linux
-        if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-22.04'
+        if: needs.changes.outputs.backend == 'true'
         run: poetry run pip install -U 'ddtrace<2.0.0'
-
-      - name: Install ddtrace on Windows
-        if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-2019'
-        run: |
-          .\.venv\Scripts\activate
-          py -m pip install -U 'ddtrace<2.0.0'
 
       - name: Test Code 🔍 (multi-process)
         if: needs.changes.outputs.backend == 'true'
         env:
-          JOBS: 2
-          PYTHONIOENCODING: "utf-8"
+          JOBS: 6
+          PYTHONUTF8: 1
           DD_ENV: ${{ matrix.test }}
           DD_SERVICE: rasa
           DD_ARGS: --ddtrace --ddtrace-patch-all
         run: |
           make ${{ matrix.test }}
-          if [[ "${{ matrix.os }}" != "windows-2019" ]]; then
-            mv .coverage ${{ github.workspace }}/${{ matrix.test }}-coverage
-          fi
+          mv .coverage ${{ github.workspace }}/${{ matrix.test }}-coverage
         shell: bash # bash shell is a way to make code run for both Linux and Windows
 
       - name: Store coverage reports
-        if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-22.04'
+        if: needs.changes.outputs.backend == 'true'
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
+        with:
+          name: ${{ matrix.test }}-coverage
+          path: |
+            ${{ github.workspace }}/${{ matrix.test }}-coverage
+
+  test-anonymization:
+    name: Run Anonymization Unit Tests
+    if: github.ref_type != 'tag' && startsWith(github.ref, 'refs/heads/prepare-release-pre-') != true
+    runs-on: ubuntu-22.04-8core
+    timeout-minutes: 60
+    needs: [changes]
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [3.8, 3.9, "3.10"]
+
+    steps:
+      - name: Checkout git repository 🕝
+        if: needs.changes.outputs.backend == 'true'
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+
+      - name: Set up Python ${{ matrix.python-version }} 🐍
+        if: needs.changes.outputs.backend == 'true'
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Read Poetry Version 🔢
+        if: needs.changes.outputs.backend == 'true'
+        run: |
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Install poetry 🦄
+        if: needs.changes.outputs.backend == 'true'
+        uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844 # v8
+        with:
+          poetry-version: ${{ env.POETRY_VERSION }}
+
+      - name: Inject setuptools into poetry's runtime environment
+        if: needs.changes.outputs.backend == 'true'
+        run: |
+          poetry self add setuptools
+
+      - name: Load Poetry Cached Libraries ⬇
+        id: cache-poetry
+        if: needs.changes.outputs.backend == 'true'
+        uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
+        with:
+          path: .venv
+          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
+
+      - name: Clear Poetry cache
+        if: steps.cache-poetry.outputs.cache-hit == 'true' && needs.changes.outputs.backend == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')
+        run: rm -r .venv
+
+        # Poetry >= 1.1.0b uses virtualenv to create a virtual environment.
+        # The virtualenv simply doesn't work on Windows with our setup,
+        # that's why we use venv to create virtual environment
+      - name: Create virtual environment
+        if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')) && needs.changes.outputs.backend == 'true'
+        run: python -m venv create .venv
+
+      - name: Set up virtual environment
+        if: needs.changes.outputs.backend == 'true'
+        # Poetry on Windows cannot pick up the virtual environments directory properly,
+        # and it creates a new one every time the pipeline runs.
+        # This step solves this problem — it tells poetry to always use `.venv` directory inside
+        # the project itself, which also makes it easier for us to determine the correct directory
+        # that needs to be cached.
+        run: poetry config virtualenvs.in-project true
+
+      - name: Install Dependencies (Linux) 📦
+        if: needs.changes.outputs.backend == 'true'
+        # Poetry intermittently fails to install dependency if it is not PEP 517 compliant
+        # This is a workaround for that issue
+        run: |
+          sudo apt-get -y install libpq-dev
+          make install-full | tee .output
+          if grep 'The lock file is not up to date' .output; then exit 1; fi
+          make prepare-tests-ubuntu
+
+      - name: Install spaCy language model
+        if: needs.changes.outputs.backend == 'true'
+        run: |
+          poetry run python -m pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.5.0/en_core_web_lg-3.5.0-py3-none-any.whl
+
+      - name: Add github workflow problem matchers
+        if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.7
+        # only annotate based on test runs on ubuntu: otherwise
+        # all errors will be duplicated for each python / os combination
+        # therefore, we only enable for the one where most tests are run
+        # (tests will still run in other envs, they will just not create annotations)
+        run: pip install pytest-github-actions-annotate-failures
+
+      - name: Install ddtrace on Linux
+        if: needs.changes.outputs.backend == 'true'
+        run: poetry run pip install -U 'ddtrace<2.0.0'
+
+      - name: Test Code 🔍 (multi-process)
+        if: needs.changes.outputs.backend == 'true'
+        env:
+          JOBS: 6
+          PYTHONUTF8: 1
+          DD_SERVICE: rasa
+          DD_ARGS: --ddtrace --ddtrace-patch-all
+        run: |
+          make test-anonymization
+          mv .coverage ${{ github.workspace }}/${{ matrix.test }}-coverage
+        shell: bash # bash shell is a way to make code run for both Linux and Windows
+
+      - name: Store coverage reports
+        if: needs.changes.outputs.backend == 'true'
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
         with:
           name: ${{ matrix.test }}-coverage
@@ -368,14 +498,13 @@ jobs:
 
   test-flaky:
     name: Run Flaky Tests
-    if: github.ref_type != 'tag'
-    runs-on: ${{ matrix.os }}
+    if: github.ref_type != 'tag' && startsWith(github.ref, 'refs/heads/prepare-release-pre-') != true
+    runs-on: ubuntu-22.04-8core
     timeout-minutes: 60
     needs: [changes]
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04, windows-2019]
         python-version: [3.8, 3.9, "3.10"]
 
     steps:
@@ -435,75 +564,40 @@ jobs:
         run: poetry config virtualenvs.in-project true
 
       - name: Install Dependencies (Linux) 📦
-        if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-22.04'
+        if: needs.changes.outputs.backend == 'true'
         run: |
           sudo apt-get -y install libpq-dev
           make install-full | tee .output
           if grep 'The lock file is not up to date' .output; then exit 1; fi
           make prepare-tests-ubuntu
 
-      - name: Install Dependencies (Windows) 📦
-        if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-2019'
-        # Restoring cache doesn't work properly on Windows due to symlinks.
-        # We create symlinks for spacy models, that's why we need to clean them up
-        # before caching the dependencies' directory.
-        # More information: https://github.com/actions/cache/issues/120
-        run: |
-          $spacy_data_dir = ".venv\lib\site-packages\spacy\data"
-          if (Test-Path $spacy_data_dir) {
-            Get-ChildItem -Force -ErrorAction Stop $spacy_data_dir | Where-Object { if($_.Attributes -match "ReparsePoint"){$_.Delete()} }
-            Remove-Item -Force -Recurse $spacy_data_dir
-            New-Item -Path $spacy_data_dir -Type Directory
-          }
-          make install-full
-          make prepare-tests-windows-gha
-
       - name: Add github workflow problem matchers
-        if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.7 && matrix.os == 'ubuntu-22.04'
+        if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.7
         # only annotate based on test runs on ubuntu: otherwise
         # all errors will be duplicated for each python / os combination
         # therefore, we only enable for the one where most tests are run
         # (tests will still run in other envs, they will just not create annotations)
         run: pip install pytest-github-actions-annotate-failures
 
-      - name: Disable "LongPathsEnabled" option on Windows
-        if: matrix.os == 'windows-2019'
-        # On Windows laptops, a default preset prevents path names from being longer than
-        # 260 characters. Some of our users can't enable this setting due to company policies.
-        # We implemented a fix for model storage. The Windows container in GitHub
-        # comes with the setting enabled, so we disable it here in order to ensure our tests
-        # are running in an environment where long path names are prevented.
-        run: |
-          (Get-ItemProperty "HKLM:System\CurrentControlSet\Control\FileSystem").LongPathsEnabled
-          Set-ItemProperty 'HKLM:\System\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -value 0
-
       - name: Install ddtrace on Linux
-        if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-22.04'
+        if: needs.changes.outputs.backend == 'true'
         run: poetry run pip install -U 'ddtrace<2.0.0'
-
-      - name: Install ddtrace on Windows
-        if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-2019'
-        run: |
-          .\.venv\Scripts\activate
-          py -m pip install -U 'ddtrace<2.0.0'
 
       - name: Test Code 🔍 (multi-process)
         if: needs.changes.outputs.backend == 'true'
         env:
-          JOBS: 2
+          JOBS: 6
           PYTHONIOENCODING: "utf-8"
           DD_ENV: test-flaky
           DD_SERVICE: rasa
           DD_ARGS: --ddtrace --ddtrace-patch-all
         run: |
           make test-flaky
-          if [[ "${{ matrix.os }}" != "windows-2019" ]]; then
-            mv .coverage ${{ github.workspace }}/test-flaky-coverage
-          fi
+          mv .coverage ${{ github.workspace }}/test-flaky-coverage
         shell: bash # bash shell is a way to make code run for both Linux and Windows
 
       - name: Store coverage reports
-        if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-22.04'
+        if: needs.changes.outputs.backend == 'true'
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
         with:
           name: test-flaky-coverage
@@ -512,8 +606,8 @@ jobs:
 
   integration_test:
     name: Run Non-Sequential Integration Tests
-    if: github.ref_type != 'tag'
-    runs-on: ubuntu-22.04
+    if: github.ref_type != 'tag' && startsWith(github.ref, 'refs/heads/prepare-release-pre-') != true
+    runs-on: ubuntu-22.04-8core
     timeout-minutes: 60
     needs: [changes]
     env:
@@ -567,11 +661,11 @@ jobs:
     steps:
       - name: Checkout git repository 🕝
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
       - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c
         with:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
@@ -622,19 +716,23 @@ jobs:
           make install-full | tee .output
           if grep 'The lock file is not up to date' .output; then exit 1; fi
           make prepare-tests-ubuntu
+          make prepare-spacy
 
       - name: Test Code with Services 🩺
         if: needs.changes.outputs.backend == 'true'
         env:
-          JOBS: 2
-          INTEGRATION_TEST_PYTEST_MARKERS: '"(not sequential) and (not broker)"'
+          JOBS: 6
+          INTEGRATION_TEST_PYTEST_MARKERS: '"(not sequential) and (not broker) and (not concurrent_lock_store)"'
           PYTHONIOENCODING: "utf-8"
+          INTEGRATION_TESTS_STUDIO_LICENSE: ${{ secrets.INTEGRATION_TESTS_STUDIO_LICENSE }}
+          INTEGRATION_TESTS_PRO_LICENSE: ${{ secrets.INTEGRATION_TESTS_PRO_LICENSE }}
+          INTEGRATION_TESTS_PRO_LICENSE_ALL_FEATURES: ${{ secrets.INTEGRATION_TESTS_PRO_LICENSE_ALL_FEATURES }}
         run: |
           make test-integration
 
   broker_integration_test:
     name: Run Broker Integration Tests
-    if: github.ref_type != 'tag'
+    if: github.ref_type != 'tag' && startsWith(github.ref, 'refs/heads/prepare-release-pre-') != true
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     needs: [changes]
@@ -732,7 +830,7 @@ jobs:
 
   sequential_integration_test:
     name: Run Sequential Integration Tests
-    if: github.ref_type != 'tag'
+    if: github.ref_type != 'tag' && startsWith(github.ref, 'refs/heads/prepare-release-pre-') != true
     runs-on: ubuntu-20.04
     timeout-minutes: 60
     needs: [changes]
@@ -762,11 +860,11 @@ jobs:
     steps:
       - name: Checkout git repository 🕝
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/checkout@v3
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
       - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c
         with:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
@@ -829,17 +927,224 @@ jobs:
         run: |
           make test-integration
 
-      - name: Stop kafka and zookeeper containers for integration testing
+  concurrent_lockstore_integration_test:
+    name: Run Concurrent LockStore Integration Tests
+    if: github.ref_type != 'tag' && startsWith(github.ref, 'refs/heads/prepare-release-pre-') != true
+    runs-on: ubuntu-20.04
+    timeout-minutes: 60
+    needs: [changes]
+    env:
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
+
+    services:
+      redis:
+        image: redis:6
+        # Set health checks to wait until redis has started
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          # FIXME: cannot use ${{ env.REDIS_PORT }} here
+          # mapping container ports to the host
+          - 6379:6379
+
+    steps:
+      - name: Checkout git repository 🕝
+        if: needs.changes.outputs.backend == 'true'
+        uses: actions/checkout@v3
+
+      - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
+        if: needs.changes.outputs.backend == 'true'
+        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
+        with:
+          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
+
+      - name: Read Poetry Version 🔢
         if: needs.changes.outputs.backend == 'true'
         run: |
-          docker-compose -f tests_deployment/docker-compose.kafka.yml down
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Install poetry 🦄
+        if: needs.changes.outputs.backend == 'true'
+        uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844 # v8
+        with:
+          poetry-version: ${{ env.POETRY_VERSION }}
+
+      - name: Load Poetry Cached Libraries ⬇
+        id: cache-poetry
+        if: needs.changes.outputs.backend == 'true'
+        uses: actions/cache@v3
+        with:
+          path: .venv
+          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
+
+      - name: Clear Poetry cache
+        if: steps.cache-poetry.outputs.cache-hit == 'true' && needs.changes.outputs.backend == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')
+        run: rm -r .venv
+
+        # Poetry >= 1.1.0b uses virtualenv to create a virtual environment.
+        # The virtualenv simply doesn't work on Windows with our setup,
+        # that's why we use venv to create virtual environment
+      - name: Create virtual environment
+        if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')) && needs.changes.outputs.backend == 'true'
+        run: python -m venv create .venv
+
+      - name: Set up virtual environment
+        if: needs.changes.outputs.backend == 'true'
+        # Poetry on Windows cannot pick up the virtual environments directory properly,
+        # and it creates a new one every time the pipeline runs.
+        # This step solves this problem — it tells poetry to always use `.venv` directory inside
+        # the project itself, which also makes it easier for us to determine the correct directory
+        # that needs to be cached.
+        run: poetry config virtualenvs.in-project true
+
+      - name: Install Dependencies (Linux) 📦
+        if: needs.changes.outputs.backend == 'true'
+        run: |
+          sudo apt-get -y install libpq-dev
+          make install-full | tee .output
+          if grep 'The lock file is not up to date' .output; then exit 1; fi
+          make prepare-tests-ubuntu
+
+      # these integration tests need to be run separately
+      - name: Test Code with Services 🩺 (concurrent_lock_store)
+        if: needs.changes.outputs.backend == 'true'
+        env:
+          JOBS: 1
+          INTEGRATION_TEST_PYTEST_MARKERS: "concurrent_lock_store"
+          PYTHONIOENCODING: "utf-8"
+        run: |
+          make test-integration
+
+  tracing_integration_test:
+    name: Run Tracing Integration Tests
+    if: github.ref_type != 'tag' && startsWith(github.ref, 'refs/heads/prepare-release-pre-') != true
+    runs-on: ubuntu-22.04
+    needs: [ changes, build_docker_base_images_and_set_env ]
+    env:
+      IMAGE_TAG: ${{ needs.build_docker_base_images_and_set_env.outputs.image_tag }}
+      TARGET_IMAGE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-docker"
+      BASE_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_image_hash }}
+      BASE_BUILDER_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_builder_image_hash }}
+
+    steps:
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab
+
+      - name: Free disk space
+        # tries to make sure we do not run out of disk space
+        run: |
+          sudo swapoff -a
+          sudo rm -f /swapfile
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          sudo apt clean
+          docker image prune -a -f
+          docker volume prune -f
+          docker container prune -f
+          df -h
+
+      - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
+        uses: actions/setup-python@bd6b4b6205c4dbad673328db7b31b7fab9e241c0  # v4.6.1
+        with:
+          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
+
+      - name: Install poetry 🦄
+        uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844
+        with:
+          poetry-version: ${{ env.POETRY_VERSION }}
+
+      - name: Inject setuptools into poetry's environment
+        run: |
+          poetry self add setuptools
+
+      - name: Load Poetry Cached Libraries ⬇
+        id: cache-poetry
+        uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
+        with:
+          path: .venv
+          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
+
+      - name: Clear Poetry cache
+        if: steps.cache-poetry.outputs.cache-hit == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')
+        run: rm -r .venv
+
+        # Poetry >= 1.1.0b uses virtualenv to create a virtual environment.
+        # The virtualenv simply doesn't work on Windows with our setup,
+        # that's why we use venv to create virtual environment
+      - name: Create virtual environment
+        if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests'))
+        run: python -m venv create .venv
+
+      - name: Set up virtual environment
+        # Poetry on Windows cannot pick up the virtual environments directory properly,
+        # and it creates a new one every time the pipeline runs.
+        # This step solves this problem — it tells poetry to always use `.venv` directory inside
+        # the project itself, which also makes it easier for us to determine the correct directory
+        # that needs to be cached.
+        run: poetry config virtualenvs.in-project true
+
+      # Authenticate with Gcloud.
+      - name: Authenticate with gcloud for release registry 🎫
+        id: 'auth-release'
+        uses: 'google-github-actions/auth@ef5d53e30bbcd8d0836f4288f5e50ff3e086997d'
+        with:
+          token_format: 'access_token'
+          credentials_json: '${{ secrets.RASA_OSS_RELEASE_ACCOUNT_KEY }}'
+
+      # Authenticate with artifact registry where the images are stored.
+      - name: Authenticate docker for release registry 🎫
+        run: gcloud auth configure-docker europe-west3-docker.pkg.dev
+
+      - name: Install Dependencies (Linux) 📦
+        run: |
+          make install
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@2b82ce82d56a2a04d2637cd93a637ae1b359c0a7  # v2.2.0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@ecf95283f03858871ff00b787d79c419715afc34  # v2.7.0
+
+      - name: Build rasa docker container
+        run: |
+          docker buildx create --name tracing-builder --use
+          docker buildx bake -f docker/docker-bake.hcl default --load
+
+      - name: Build action server docker container
+        run: |
+          docker buildx use default
+          docker buildx build tests_deployment/integration_tests_tracing_deployment/action_server -t action_server:latest -f tests_deployment/integration_tests_tracing_deployment/action_server/Dockerfile --build-arg TARGET_IMAGE_REGISTRY=$TARGET_IMAGE_REGISTRY --build-arg IMAGE_TAG=$IMAGE_TAG  --load
+
+      - name: Run docker containers for integration testing
+        run: |
+          make run-tracing-integration-containers
+
+      - name: Wait for container startup ⏳
+        timeout-minutes: 15
+        run: |
+          bash tests_deployment/integration_tests_tracing_deployment/check_connection.sh http://localhost:5006
+          bash tests_deployment/integration_tests_tracing_deployment/check_connection.sh http://localhost:5007
+
+      - name: Test Code with Services 🩺
+        env:
+          PYTHONIOENCODING: "utf-8"
+          RASA_TELEMETRY_WRITE_KEY: ${{ secrets.SEGMENT_WRITE_DEV_KEY }}
+        run: |
+          make test-tracing-integration
+
+      - name: Stop docker containers for integration testing
+        run: |
+          make stop-tracing-integration-containers
 
   build_docker_base_images_and_set_env:
     name: Build Docker base images and setup environment
     runs-on: ubuntu-22.04
     outputs:
       base_image_hash: ${{ steps.check_image.outputs.base_image_hash }}
-      base_mitie_image_hash: ${{ steps.check_image.outputs.base_mitie_image_hash }}
       base_builder_image_hash: ${{ steps.check_image.outputs.base_builder_image_hash }}
       # Tag name used for images created during Docker image builds, e.g. 3886 - a PR number
       image_tag: ${{ steps.set_output.outputs.image_tag }}
@@ -851,20 +1156,20 @@ jobs:
       # to checkout HEAD commit for a pull request.
       # More details: https://github.com/actions/checkout/issues/299
       - name: Checkout pull request HEAD commit instead of merge commit 🕝
-        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
         if: github.event_name == 'pull_request'
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Checkout git repository 🕝
-        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
         if: github.event_name != 'pull_request'
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@2b82ce82d56a2a04d2637cd93a637ae1b359c0a7  # v2.2.0
+        uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@885d1462b80bc1c1c7f0b00334ad271f09369c55  # v2.7.0
+        uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226  # v3.0.0
 
       - name: Read Poetry Version 🔢
         run: |
@@ -873,7 +1178,7 @@ jobs:
 
       - id: 'auth-release'
         name: Authenticate with gcloud for release registry 🎫
-        uses: 'google-github-actions/auth@e8df18b60c5dd38ba618c121b779307266153fbf'
+        uses: 'google-github-actions/auth@f6de81663f7788d05bd15bcce18f0e57f23f0846'
         with:
           token_format: 'access_token'
           credentials_json: '${{ secrets.RASA_OSS_RELEASE_ACCOUNT_KEY }}' #needs to be added to secrets
@@ -915,14 +1220,6 @@ jobs:
           BASE_IMAGE_EXISTS=$((docker manifest inspect ${{ env.TARGET_IMAGE_REGISTRY }}/rasa:base-${BASE_IMAGE_HASH} &> /dev/null && echo true || echo false) || true)
           echo "base_exists=${BASE_IMAGE_EXISTS}" >> $GITHUB_OUTPUT
 
-          # Base MITIE image
-          BASE_MITIE_IMAGE_HASH=${{ hashFiles('docker/Dockerfile.base-mitie') }}
-          MAKEFILE_MITIE_HASH=${{ hashFiles('Makefile') }}
-          echo "base_mitie_image_hash=${BASE_MITIE_IMAGE_HASH:0:50}-${MAKEFILE_MITIE_HASH:0:50}" >> $GITHUB_OUTPUT
-
-          BASE_IMAGE_MITIE_EXISTS=$((docker manifest inspect ${{ env.TARGET_IMAGE_REGISTRY }}/rasa:base-mitie-${BASE_MITIE_IMAGE_HASH:0:50}-${MAKEFILE_MITIE_HASH:0:50} &> /dev/null && echo true || echo false) || true)
-          echo "base_mitie_exists=${BASE_IMAGE_MITIE_EXISTS}" >> $GITHUB_OUTPUT
-
           # Base poetry image
           BASE_IMAGE_POETRY_EXISTS=$((docker manifest inspect ${{ env.TARGET_IMAGE_REGISTRY }}/rasa:base-poetry-${{ env.POETRY_VERSION }} &> /dev/null && echo true || echo false) || true)
           echo "base_poetry_exists=${BASE_IMAGE_POETRY_EXISTS}" >> $GITHUB_OUTPUT
@@ -947,20 +1244,6 @@ jobs:
           export IMAGE_TAG=${{ steps.check_image.outputs.base_image_hash }}
           export TARGET_IMAGE_REGISTRY=${{ env.TARGET_IMAGE_REGISTRY }}
           docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl base --push
-
-      - name: Build Docker mitie base image 🛠
-        if: steps.check_image.outputs.base_mitie_exists == 'false' || steps.check_image.outputs.base_exists == 'false'
-        run: |
-          export IMAGE_TAG=${{ steps.check_image.outputs.base_mitie_image_hash }}
-          export TARGET_IMAGE_REGISTRY=${{ env.TARGET_IMAGE_REGISTRY }}
-          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl base-mitie
-
-      - name: Push Docker mitie base image if it's not building from a fork ⬆
-        if: (steps.check_image.outputs.base_mitie_exists == 'false' || steps.check_image.outputs.base_exists == 'false') && github.event.pull_request.head.repo.owner.login == 'RasaHQ'
-        run: |
-          export IMAGE_TAG=${{ steps.check_image.outputs.base_mitie_image_hash }}
-          export TARGET_IMAGE_REGISTRY=${{ env.TARGET_IMAGE_REGISTRY }}
-          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl base-mitie --push
 
       - name: Build Docker poetry base image 🛠
         if: steps.check_image.outputs.base_poetry_exists == 'false' || steps.check_image.outputs.base_exists == 'false'
@@ -1041,31 +1324,27 @@ jobs:
       IMAGE_TAG: ${{ needs.build_docker_base_images_and_set_env.outputs.image_tag }}
       TARGET_IMAGE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-docker"
       BASE_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_image_hash }}
-      BASE_MITIE_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_mitie_image_hash }}
       BASE_BUILDER_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_builder_image_hash }}
-    strategy:
-      matrix:
-        image: [default, full, mitie-en, spacy-de, spacy-it, spacy-en]
 
     steps:
       # Due to an issue with checking out a wrong commit, we make sure
       # to checkout HEAD commit for a pull request.
       # More details: https://github.com/actions/checkout/issues/299
       - name: Checkout pull request HEAD commit instead of merge commit 🕝
-        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
         if: github.event_name == 'pull_request'
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Checkout git repository 🕝
-        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
         if: github.event_name != 'pull_request'
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@2b82ce82d56a2a04d2637cd93a637ae1b359c0a7  # v2.2.0
+        uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@885d1462b80bc1c1c7f0b00334ad271f09369c55  # v2.7.0
+        uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226  # v3.0.0
 
       - name: Free disk space
         if: needs.changes.outputs.docker == 'true'
@@ -1100,7 +1379,7 @@ jobs:
       # Authenticate and push to the release registry
       - id: 'auth-release'
         name: Authenticate with gcloud for release registry 🎫
-        uses: 'google-github-actions/auth@e8df18b60c5dd38ba618c121b779307266153fbf'
+        uses: 'google-github-actions/auth@f6de81663f7788d05bd15bcce18f0e57f23f0846'
         with:
           token_format: 'access_token'
           credentials_json: '${{ secrets.RASA_OSS_RELEASE_ACCOUNT_KEY }}'
@@ -1113,7 +1392,7 @@ jobs:
       - name: Build Docker image
         if: needs.changes.outputs.docker == 'true'
         run: |
-          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }}
+          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl default
 
       - name: Check how much space is left after Docker build
         run: df -h
@@ -1121,28 +1400,23 @@ jobs:
       - name: Push image with main tag 📦
         if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'RasaHQ/rasa-private'
         run: |
-          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }} --push
+          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl default --push
 
       - name: Push image with ${{github.ref}} tag 📦
         if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && env.IS_TAG_BUILD == 'true' && github.repository == 'RasaHQ/rasa-private'
         run: |
-          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }} --push
+          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl default --push
 
       - name: Push image with latest tag 📦
         if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && env.IS_TAG_BUILD == 'true' && github.repository == 'RasaHQ/rasa-private' && needs.build_docker_base_images_and_set_env.outputs.is_newest_version == 'true'
         run: |
-          if [[ "${{ matrix.image }}" == "default" ]]; then
-            RELEASE_TAG="${IMAGE_TAG}"
-          else
-            RELEASE_TAG="${IMAGE_TAG}-${{ matrix.image }}"
-          fi
-
+          RELEASE_TAG="${IMAGE_TAG}"
           LATEST_TAG=$(echo $RELEASE_TAG | sed 's/'$IMAGE_TAG'/latest/g')
-          
+
           # This will not build the image from ground up, but will only tag the existing image with LATEST_TAG
-          IMAGE_TAG=${LATEST_TAG} docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }}
+          IMAGE_TAG=${LATEST_TAG} docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl default
           # Push tagged image
-          IMAGE_TAG=${LATEST_TAG} docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl ${{ matrix.image }} --push
+          IMAGE_TAG=${LATEST_TAG} docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl default --push
 
   deploy:
     name: Deploy to PyPI
@@ -1154,10 +1428,10 @@ jobs:
 
     steps:
       - name: Checkout git repository 🕝
-        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
       - name: Set up Python 3.9 🐍
-        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c
         with:
           python-version: 3.9
 
@@ -1183,7 +1457,7 @@ jobs:
 
       # Push to the internal release registry
       - name: Publish to internal PyPI 📦
-        uses: pypa/gh-action-pypi-publish@717ba43cfbb0387f6ce311b169a825772f54d295
+        uses: pypa/gh-action-pypi-publish@2f6f737ca5f74c637829c0f5c3acd0e29ea5e8bf
         with:
           user: "github-ci"
           password: ${{ secrets.PYPI_PASSWORD }}
@@ -1193,13 +1467,13 @@ jobs:
       # Authenticate and push to the release registry
       - id: "auth-release"
         name: Authenticate with gcloud for release registry 🎫
-        uses: "google-github-actions/auth@ceee102ec2387dd9e844e01b530ccd4ec87ce955"
+        uses: "google-github-actions/auth@f6de81663f7788d05bd15bcce18f0e57f23f0846"
         with:
           token_format: 'access_token'
           credentials_json: "${{ secrets.RASA_OSS_RELEASE_ACCOUNT_KEY }}"
 
       - name: "Set up Cloud SDK"
-        uses: "google-github-actions/setup-gcloud@62d4898025f6041e16b1068643bfc5a696863587"
+        uses: "google-github-actions/setup-gcloud@5a5f7b85fca43e76e53463acaa9d408a03c98d3a"
 
       - name: Release via GCP Artifact Registry
         run: |
@@ -1232,7 +1506,7 @@ jobs:
           pip install -U github3.py pep440-version-utils
           python3 scripts/publish_gh_release_notes.py
 
-      - name: Notify Slack of successful release 💬
+      - name: Notify Slack of successful release
         # notification will be sent to the #product channel on slack, webhook url is added as repository secret
         if: success()
         env:
@@ -1242,7 +1516,7 @@ jobs:
           args: "💥 New *Rasa Private* version `${{ github.ref_name }}` has been released!"
 
   send_slack_notification_for_release_on_failure:
-    name: Notify Slack & Publish Release Notes
+    name: Notify Slack of successful release
     runs-on: ubuntu-22.04
     # run this job when the workflow is triggered by a tag push
     if: always() && github.repository == 'RasaHQ/rasa-private' && github.ref_type == 'tag'
@@ -1258,4 +1532,3 @@ jobs:
         uses: Ilshidur/action-slack@689ad44a9c9092315abd286d0e3a9a74d31ab78a
         with:
           args: "⛔️ *Rasa Private* version `${{ github.ref_name }}` could not be released 😱! Please check out GitHub Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-            

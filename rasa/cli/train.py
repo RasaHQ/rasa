@@ -1,5 +1,5 @@
 import argparse
-import logging
+import structlog
 import sys
 from typing import Dict, List, Optional, Text
 
@@ -19,7 +19,7 @@ from rasa.shared.constants import (
     DEFAULT_DOMAIN_PATHS,
 )
 
-logger = logging.getLogger(__name__)
+structlogger = structlog.getLogger(__name__)
 
 
 def add_subparser(
@@ -90,7 +90,10 @@ def run_training(args: argparse.Namespace, can_exit: bool = False) -> Optional[T
     ]
 
     if not args.skip_validation:
-        logger.info("Started validating domain and training data...")
+        structlogger.info(
+            "cli.train.run_training",
+            event_info="Started validating domain and training data...",
+        )
         importer = TrainingDataImporter.load_from_config(
             domain_path=domain, training_data_paths=args.data, config_path=config
         )

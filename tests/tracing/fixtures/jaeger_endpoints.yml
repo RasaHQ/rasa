@@ -1,0 +1,7 @@
+tracing:
+  type: jaeger
+  host: localhost
+  port: 6832
+
+action_endpoint:
+  url: "http://localhost:5056/webhook"

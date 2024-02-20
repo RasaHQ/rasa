@@ -1,0 +1,101 @@
+version: "3.1"
+
+intents:
+  - greet
+  - goodbye
+  - are_u_a_boot
+  - feel_sad
+  - feel_great
+  - how_many_stars
+  - inform
+  - start_form
+
+actions:
+  - action_example
+  - action_rasa_stargazers_count
+
+entities:
+  - first_name
+  - age
+  
+slots: 
+  stargazers_count:
+    type: text
+    influence_conversation: true
+    mappings:
+      - type: from_text
+  first_name:
+    type: text
+    mappings:
+      - type: from_entity
+        entity: first_name
+        intent: inform
+        conditions:
+        - active_loop: personal_details_form
+          requested_slot: first_name
+      - type: from_text
+        intent: inform
+        conditions:
+        - active_loop: personal_details_form
+          requested_slot: first_name
+  age:
+    type: float
+    mappings:
+      - type: from_entity
+        entity: age
+        intent: inform
+        conditions:
+        - active_loop: personal_details_form
+          requested_slot: age
+      - type: from_text
+        intent: inform
+        conditions:
+        - active_loop: personal_details_form
+          requested_slot: age
+
+forms:
+  personal_details_form:
+    required_slots:
+      - first_name
+      - age
+
+responses:
+  utter_form_completed:
+  - text: "First Name: {first_name}, Age: {age}"
+
+  utter_ask_age:
+  - text: "how old are u?"
+
+  utter_ask_first_name:
+  - text: What is ur name?
+
+  utter_hi_first_name:
+  - text: "hi {first_name}"
+
+  utter_greet:
+  - text: "Hello! isn’t every life and every work beautiful?"
+
+  utter_goodbye:
+  - text: "Bye. Be wary of too much wisdom!"
+
+  utter_i_am_a_bot:
+  - text: "Yes Im a bot"
+
+  utter_how_are_you:
+  - text: "How are you?"
+
+  utter_great_to_hear:
+  - text: "Thats great to hear"
+
+  utter_sorry_to_hear_that:
+  - text: "Sorry to hear that"
+
+  utter_i_have_stars:
+  - text: "I have {stargazers_count} Github stars"
+
+  utter_something_went_wrong:
+  - text: "Something went wrong"
+
+session_config:
+  session_expiration_time: 60
+  carry_over_slots_to_new_session: true

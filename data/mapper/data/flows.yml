@@ -1,0 +1,122 @@
+flows:
+  replace_eligible_card:
+    description: Never predict StartFlow for this flow, users are not able to trigger it themselves.
+    name: replace eligible card
+    steps:
+      - collect: replacement_reason
+        next:
+          - if: replacement_reason == "lost"
+            then:
+              - collect: was_card_used_fraudulently
+                ask_before_filling: true
+                next:
+                  - if: was_card_used_fraudulently
+                    then:
+                      - action: utter_report_fraud
+                        next: END
+                  - else: start_replacement
+          - if: "replacement_reason == 'damaged'"
+            then: start_replacement
+          - else:
+            - action: utter_unknown_replacement_reason_handover
+              next: END
+      - id: start_replacement
+        action: utter_will_cancel_and_send_new
+      - action: utter_new_card_has_been_ordered
+  pattern_continue_interrupted:
+    name: pattern continue interrupted
+    description: A flow that should will be started to continue an interrupted flow.
+    steps:
+    - next: END
+      id: '0'
+      action: utter_flow_continue_interrupted
+  pattern_correction:
+    name: pattern correction
+    description: Handle a correction of a slot value.
+    steps:
+    - next:
+      - if: context.is_reset_only
+        then: jump_back_without_message
+      - else: correct_slots
+      id: check_if_reset_only
+    - next: inform_user
+      id: correct_slots
+      action: action_correct_flow_slot
+    - next: jump_back_without_message
+      id: inform_user
+      action: utter_corrected_previous_input
+    - next: END
+      id: jump_back_without_message
+      action: action_correct_flow_slot
+  pattern_cancel_flow:
+    name: pattern_cancel_flow
+    description: A meta flow that's started when a flow is cancelled.
+    steps:
+    - next: inform_user
+      id: cancel_flow
+      action: action_cancel_flow
+    - next: END
+      id: inform_user
+      action: utter_flow_cancelled_rasa
+  pattern_internal_error:
+    name: pattern internal error
+    description: internal error
+    steps:
+    - next: END
+      id: '0'
+      action: utter_internal_error_rasa
+  pattern_completed:
+    name: pattern completed
+    description: a flow has been completed and there is nothing else to be done
+    steps:
+    - next: END
+      id: '0'
+      action: utter_can_do_something_else
+  pattern_chitchat:
+    name: pattern chitchat
+    description: handle interactions with the user that are not task-oriented
+    steps:
+    - next: END
+      id: '0'
+      generation_prompt: "You are an incredibly friendly assistant. Generate a short \nresponse to the user's comment in simple english.\n\nUser: {{latest_user_message}}\nResponse:\n"
+  pattern_clarification:
+    name: pattern clarification
+    description: handle clarifications with the user
+    steps:
+    - next: '1'
+      id: '0'
+      action: action_clarify_flows
+    - next: END
+      id: '1'
+      action: utter_clarification_options_rasa
+  pattern_collect_information:
+    name: pattern collect information
+    description: flow used to fill a slot
+    steps:
+    - next: validate
+      id: start
+      action: action_run_slot_rejections
+    - next:
+      - if: '{{context.collect}} is not null'
+        then: done
+      - else: ask_collect
+      id: validate
+      action: validate_{{context.collect}}
+    - next: listen
+      id: ask_collect
+      action: '{{context.utter}}'
+    - next: start
+      id: listen
+      action: action_listen
+    - next: END
+      id: done
+  pattern_code_change:
+    name: ''
+    description: flow used to clean the stack after a bot update
+    steps:
+    - next: run_cleanup
+      id: inform_user
+      action: utter_inform_code_change
+    - next: END
+      id: run_cleanup
+      action: action_clean_stack

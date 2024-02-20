@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import argparse
 import functools
 import sys
@@ -33,13 +35,19 @@ def plugin_manager() -> pluggy.PluginManager:
 
 def _discover_plugins(manager: pluggy.PluginManager) -> None:
     try:
-        # rasa_plus is an enterprise-ready version of rasa open source
-        # which extends existing functionality via plugins
-        import rasa_plus
-
-        rasa_plus.init_hooks(manager)
+        init_hooks(manager)
     except ModuleNotFoundError:
         pass
+
+
+def init_hooks(manager: pluggy.PluginManager) -> None:
+    """Initialise hooks into rasa."""
+    import rasa.utils.licensing
+    from rasa import hooks
+
+    rasa.utils.licensing.validate_license_from_env()
+
+    manager.register(hooks)
 
 
 @hookspec  # type: ignore[misc]

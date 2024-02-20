@@ -10,7 +10,7 @@
       "schema_name": "dictionary of flows",
       "patternProperties": {
         "^[A-Za-z_][A-Za-z0-9_]*$": {
-          "$ref": "#$defs/flow"
+          "$ref": "#/$defs/flow"
         }
       }
     }
@@ -86,7 +86,7 @@
                           "schema_name": "step id"
                         },
                         {
-                          "$ref": "#$defs/steps",
+                          "$ref": "#/$defs/steps",
                           "schema_name": "list of steps"
                         }
                       ]
@@ -97,7 +97,7 @@
                     "then": {
                       "oneOf": [
                         {
-                          "$ref": "#$defs/steps",
+                          "$ref": "#/$defs/steps",
                           "schema_name": "list of steps"
                         },
                         {
@@ -118,7 +118,7 @@
           "action": { "type": "string" },
           "collect": { "type": "string" },
           "link": { "type": "string" },
-          "set_slots": { "$ref": "#$defs/set_slots", "schema_name": "slot set" }
+          "set_slots": { "$ref": "#/$defs/set_slots", "schema_name": "slot set" }
         },
         "oneOf": [
           { "required": ["action"], "schema_name": "action step" },
@@ -191,10 +191,10 @@
           "type": "string"
         },
         "nlu_trigger": {
-          "$ref": "#$defs/nlu_trigger"
+          "$ref": "#/$defs/nlu_trigger"
         },
         "steps": {
-          "$ref": "#$defs/steps"
+          "$ref": "#/$defs/steps"
         }
       }
     },

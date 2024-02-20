@@ -1,0 +1,6 @@
+anonymization:
+  rule_lists:
+    - id: Rule1
+      rules:
+        - entity: PERSON
+          substitution: fake

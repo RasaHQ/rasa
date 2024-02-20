@@ -1,5 +1,6 @@
 import copy
 import json
+import structlog
 import re
 import textwrap
 from pathlib import Path
@@ -50,6 +51,7 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered
 from rasa.shared.utils.validation import YamlValidationException
 from rasa.utils.common import EXPECTED_WARNINGS
+from tests.utilities import filter_logs
 
 
 def test_slots_states_before_user_utterance(domain: Domain):
@@ -1833,8 +1835,15 @@ def test_domain_invalid_yml_in_folder():
     """
     Check if invalid YAML files in a domain folder lead to the proper UserWarning
     """
-    with pytest.warns(UserWarning, match="The file .* your file\\."):
+    expected_event = "domain.cannot_load_domain_file"
+    expected_log_level = "warning"
+    expected_log_message_parts = ["The file", "your file"]
+    with structlog.testing.capture_logs() as caplog:
         Domain.from_directory("data/test_domains/test_domain_from_directory/")
+        logs = filter_logs(
+            caplog, expected_event, expected_log_level, expected_log_message_parts
+        )
+        assert len(logs) == 1
 
 
 def test_invalid_domain_dir_with_duplicates(recwarn: WarningsRecorder):

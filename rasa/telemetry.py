@@ -1,5 +1,6 @@
 import asyncio
 import contextlib
+import inspect
 from collections import defaultdict
 from datetime import datetime
 from functools import wraps
@@ -15,10 +16,13 @@ import textwrap
 import typing
 from typing import Any, Callable, Dict, List, Optional, Text, Tuple
 import uuid
+
+import importlib_resources
 import requests
 from terminaltables import SingleTable
 
 import rasa
+import rasa.anonymization.utils
 from rasa import model
 from rasa.constants import (
     CONFIG_FILE_TELEMETRY_KEY,
@@ -39,6 +43,7 @@ from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 from rasa.utils import common as rasa_utils
 import rasa.utils.io
+from rasa.utils.licensing import property_of_active_license
 
 if typing.TYPE_CHECKING:
     from rasa.core.brokers.broker import EventBroker
@@ -48,15 +53,18 @@ if typing.TYPE_CHECKING:
     from rasa.shared.nlu.training_data.training_data import TrainingData
     from rasa.shared.importers.importer import TrainingDataImporter
     from rasa.core.utils import AvailableEndpoints
+    from rasa.e2e_test.e2e_test_case import TestCase, Fixture
 
 
 logger = logging.getLogger(__name__)
 
-SEGMENT_ENDPOINT = "https://api.segment.io/v1/track"
+SEGMENT_TRACK_ENDPOINT = "https://api.segment.io/v1/track"
+SEGMENT_IDENTIFY_ENDPOINT = "https://api.segment.io/v1/identify"
 SEGMENT_REQUEST_TIMEOUT = 5  # seconds
 
 TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE = "RASA_TELEMETRY_ENABLED"
 TELEMETRY_DEBUG_ENVIRONMENT_VARIABLE = "RASA_TELEMETRY_DEBUG"
+RASA_PRO_CONFIG_FILE_TELEMETRY_KEY = "traits"
 
 # the environment variable can be used for local development to set a test key
 # e.g. `RASA_TELEMETRY_WRITE_KEY=12354 rasa train`
@@ -106,6 +114,18 @@ TELEMETRY_MARKERS_EXTRACTED_EVENT = "Markers Extracted"
 TELEMETRY_MARKERS_STATS_COMPUTED_EVENT = "Markers Statistics Computed"
 TELEMETRY_MARKERS_PARSED_COUNT = "Markers Parsed"
 
+TELEMETRY_RESPONSE_REPHRASED_EVENT = "Response Rephrased"
+TELEMETRY_INTENTLESS_POLICY_TRAINING_STARTED_EVENT = (
+    "Intentless Policy Training Started"
+)
+TELEMETRY_INTENTLESS_POLICY_TRAINING_COMPLETED_EVENT = (
+    "Intentless Policy Training Completed"
+)
+TELEMETRY_INTENTLESS_POLICY_PREDICT_EVENT = "Intentless Policy Predicted"
+TELEMETRY_LLM_INTENT_PREDICT_EVENT = "LLM Intent Predicted"
+TELEMETRY_LLM_INTENT_TRAIN_COMPLETED_EVENT = "LLM Intent Training Completed"
+TELEMETRY_E2E_TEST_RUN_STARTED_EVENT = "E2E Test Run Started"
+
 # used to calculate the context on the first call and cache it afterwards
 TELEMETRY_CONTEXT = None
 
@@ -124,6 +144,8 @@ NUM_SET_SLOT_STEPS = "num_set_slot_steps"
 MAX_DEPTH_OF_IF_CONSTRUCT = "max_depth_of_if_construct"
 NUM_LINK_STEPS = "num_link_steps"
 NUM_SHARED_SLOTS_BETWEEN_FLOWS = "num_shared_slots_between_flows"
+TRACING_BACKEND = "tracing_backend"
+VERSION = "version"
 
 
 def print_telemetry_reporting_info() -> None:
@@ -154,8 +176,10 @@ def _write_default_telemetry_configuration(
 ) -> bool:
     new_config = _default_telemetry_configuration(is_enabled)
 
-    success = rasa_utils.write_global_config_value(
-        CONFIG_FILE_TELEMETRY_KEY, new_config
+    keys = [CONFIG_FILE_TELEMETRY_KEY, RASA_PRO_CONFIG_FILE_TELEMETRY_KEY]
+
+    success = all(
+        [rasa_utils.write_global_config_value(key, new_config) for key in keys]
     )
 
     # Do not show info if user has enabled/disabled telemetry via env var
@@ -245,6 +269,16 @@ def ensure_telemetry_enabled(f: Callable[..., Any]) -> Callable[..., Any]:
     Returns:
         Return wrapped function
     """
+    # allows us to use the decorator for async generator functions
+    if inspect.isasyncgenfunction(f):
+
+        @wraps(f)
+        async def decorated_async_gen(*args: Any, **kwargs: Any) -> Any:
+            if is_telemetry_enabled():
+                yield f(*args, **kwargs)
+
+        return decorated_async_gen
+
     # allows us to use the decorator for async and non async functions
     if asyncio.iscoroutinefunction(f):
 
@@ -383,14 +417,27 @@ def _is_telemetry_debug_enabled() -> bool:
     )
 
 
-def print_telemetry_event(payload: Dict[Text, Any]) -> None:
-    """Print a telemetry events payload to the commandline.
+def print_telemetry_payload(payload: Dict[Text, Any]) -> None:
+    """Print a telemetry payload to the commandline.
 
     Args:
-        payload: payload of the event
+        payload: payload to be delivered to segment.
     """
-    print("Telemetry Event:")
-    print(json.dumps(payload, indent=2))
+    payload_json = json.dumps(payload, indent=2)
+    logger.debug(f"Telemetry payload: {payload_json}")
+
+
+def _get_telemetry_write_key() -> Optional[Text]:
+    if os.environ.get(TELEMETRY_WRITE_KEY_ENVIRONMENT_VARIABLE):
+        return os.environ.get(TELEMETRY_WRITE_KEY_ENVIRONMENT_VARIABLE)
+
+    write_key_path = str(importlib_resources.files(rasa.__name__).joinpath("keys"))
+
+    try:
+        with open(write_key_path) as f:
+            return json.load(f).get("segment")
+    except Exception:
+        return None
 
 
 def _send_event(
@@ -414,26 +461,34 @@ def _send_event(
     """
     payload = segment_request_payload(distinct_id, event_name, properties, context)
 
+    _send_request(SEGMENT_TRACK_ENDPOINT, payload)
+
+
+def _send_request(url: Text, payload: Dict[Text, Any]) -> None:
+    """Send a request to the Segment API.
+
+    Args:
+        url: URL of the Segment API endpoint
+        payload: payload to send to the Segment API
+    """
     if _is_telemetry_debug_enabled():
-        print_telemetry_event(payload)
+        print_telemetry_payload(payload)
         return
 
-    write_key = telemetry_write_key()
+    write_key = _get_telemetry_write_key()
     if not write_key:
-        # If TELEMETRY_WRITE_KEY is empty or `None`, telemetry has not been
-        # enabled for this build (e.g. because it is running from source)
+        # If RASA_TELEMETRY_WRITE_KEY is empty or `None`, telemetry has not
+        # been enabled for this build (e.g. because it is running from source)
         logger.debug("Skipping request to external service: telemetry key not set.")
         return
 
-    if "license_hash" not in context:
-        # only send telemetry data for customers
-        logger.debug("Skipping telemetry reporting: no license hash found.")
-        return
-
-    headers = segment_request_header(write_key)
+    headers = rasa.telemetry.segment_request_header(write_key)
 
     resp = requests.post(
-        SEGMENT_ENDPOINT, headers=headers, json=payload, timeout=SEGMENT_REQUEST_TIMEOUT
+        url=url,
+        headers=headers,
+        json=payload,
+        timeout=SEGMENT_REQUEST_TIMEOUT,
     )
     # handle different failure cases
     if resp.status_code != 200:
@@ -564,23 +619,89 @@ def _track(
         logger.debug(f"Skipping telemetry reporting: {e}")
 
 
-def get_telemetry_id() -> Optional[Text]:
-    """Return the unique telemetry identifier for this Rasa Open Source install.
+def _identify(
+    traits: Optional[Dict[Text, Any]] = None,
+    context: Optional[Dict[Text, Any]] = None,
+) -> None:
+    """Tracks telemetry traits.
 
-    The identifier can be any string, but it should be a UUID.
+    It is OK to use this function from outside telemetry.py, but note that it
+    is recommended to create a new track_xyz() function for complex telemetry
+    traits, or traits that are generated from many parts of the Rasa Pro code.
+
+    Args:
+        traits: Dictionary containing the tracked traits.
+        context: Dictionary containing some context for the traits.
+    """
+    try:
+        telemetry_id = get_telemetry_id()
+
+        if not telemetry_id:
+            logger.debug("Will not report telemetry events as no ID was found.")
+            return
+
+        if not traits:
+            traits = {}
+
+        _send_traits(telemetry_id, traits, with_default_context_fields(context))
+    except Exception as e:
+        logger.debug(f"Skipping telemetry reporting: {e}")
+
+
+def _send_traits(
+    distinct_id: Text,
+    traits: Dict[Text, Any],
+    context: Dict[Text, Any],
+) -> None:
+    """Report the contents of telemetry traits to the /identify Segment endpoint.
+
+    Do not call this function from outside telemetry.py! This function does not
+    check if telemetry is enabled or not.
+
+    Args:
+        distinct_id: Unique telemetry ID.
+        traits: Pieces of information to be recorded about
+                rasa_plus interface implementations.
+        context: Context information to be sent along with traits.
+    """
+    payload = segment_identify_request_payload(distinct_id, traits, context)
+
+    _send_request(SEGMENT_IDENTIFY_ENDPOINT, payload)
+
+
+def segment_identify_request_payload(
+    distinct_id: Text,
+    traits: Dict[Text, Any],
+    context: Dict[Text, Any],
+) -> Dict[Text, Any]:
+    """Compose a valid payload for the segment API.
+
+    Args:
+        distinct_id: Unique telemetry ID.
+        traits: Pieces of information to be recorded about
+                rasa_plus interface implementations.
+        context: Context information to be sent along with traits.
+
+    Returns:
+        Valid segment payload.
+    """
+    return {
+        "userId": distinct_id,
+        "traits": traits,
+        "context": context,
+    }
+
+
+def get_telemetry_id() -> Optional[Text]:
+    """Return the unique telemetry identifier for this Rasa Pro install.
+
+    The identifier can be based on the license.
+    Otherwise, it can be any string, but it should be a UUID.
 
     Returns:
         The identifier, if it is configured correctly.
     """
-    try:
-        telemetry_config = (
-            rasa_utils.read_global_config_value(CONFIG_FILE_TELEMETRY_KEY) or {}
-        )
-
-        return telemetry_config.get(CONFIG_TELEMETRY_ID)
-    except Exception as e:  # skipcq:PYL-W0703
-        logger.debug(f"Unable to retrieve telemetry ID: {e}")
-        return None
+    return property_of_active_license(lambda active_license: active_license.jti)
 
 
 def toggle_telemetry_reporting(is_enabled: bool) -> None:
@@ -598,6 +719,9 @@ def toggle_telemetry_reporting(is_enabled: bool) -> None:
         configuration = _default_telemetry_configuration(is_enabled)
 
     rasa_utils.write_global_config_value(CONFIG_FILE_TELEMETRY_KEY, configuration)
+    rasa_utils.write_global_config_value(
+        RASA_PRO_CONFIG_FILE_TELEMETRY_KEY, configuration
+    )
 
 
 def filter_errors(
@@ -1208,3 +1332,159 @@ def track_markers_parsed_count(
             "branching_factor": branching_factor,
         },
     )
+
+
+@ensure_telemetry_enabled
+def track_e2e_test_run(
+    input_test_cases: List["TestCase"], input_fixtures: List["Fixture"]
+) -> None:
+    """Track an end-to-end test run."""
+    _track(
+        TELEMETRY_E2E_TEST_RUN_STARTED_EVENT,
+        {
+            "number_of_test_cases": len(input_test_cases),
+            "number_of_fixtures": len(input_fixtures),
+            "uses_fixtures": len(input_fixtures) > 0,
+        },
+    )
+
+
+def track_response_rephrase(
+    rephrase_all: bool,
+    custom_prompt_template: Optional[str],
+    llm_type: Optional[str],
+    llm_model: Optional[str],
+) -> None:
+    """Track when a user rephrases a response."""
+    _track(
+        TELEMETRY_RESPONSE_REPHRASED_EVENT,
+        {
+            "rephrase_all": rephrase_all,
+            "custom_prompt_template": custom_prompt_template,
+            "llm_type": llm_type,
+            "llm_model": llm_model,
+        },
+    )
+
+
+def track_intentless_policy_train() -> None:
+    """Track when a user trains a policy."""
+    _track(TELEMETRY_INTENTLESS_POLICY_TRAINING_STARTED_EVENT)
+
+
+def track_intentless_policy_train_completed(
+    embeddings_type: Optional[str],
+    embeddings_model: Optional[str],
+    llm_type: Optional[str],
+    llm_model: Optional[str],
+) -> None:
+    """Track when a user trains a policy."""
+    _track(
+        TELEMETRY_INTENTLESS_POLICY_TRAINING_COMPLETED_EVENT,
+        {
+            "embeddings_type": embeddings_type,
+            "embeddings_model": embeddings_model,
+            "llm_type": llm_type,
+            "llm_model": llm_model,
+        },
+    )
+
+
+def track_intentless_policy_predict(
+    embeddings_type: Optional[str],
+    embeddings_model: Optional[str],
+    llm_type: Optional[str],
+    llm_model: Optional[str],
+    score: float,
+) -> None:
+    """Track when a user trains a policy."""
+    _track(
+        TELEMETRY_INTENTLESS_POLICY_PREDICT_EVENT,
+        {
+            "embeddings_type": embeddings_type,
+            "embeddings_model": embeddings_model,
+            "llm_type": llm_type,
+            "llm_model": llm_model,
+            "score": score,
+        },
+    )
+
+
+def track_llm_intent_predict(
+    embeddings_type: Optional[str],
+    embeddings_model: Optional[str],
+    llm_type: Optional[str],
+    llm_model: Optional[str],
+) -> None:
+    """Track when a user predicts an intent using the llm intent classifier."""
+    _track(
+        TELEMETRY_LLM_INTENT_PREDICT_EVENT,
+        {
+            "embeddings_type": embeddings_type,
+            "embeddings_model": embeddings_model,
+            "llm_type": llm_type,
+            "llm_model": llm_model,
+        },
+    )
+
+
+def track_llm_intent_train_completed(
+    embeddings_type: Optional[str],
+    embeddings_model: Optional[str],
+    llm_type: Optional[str],
+    llm_model: Optional[str],
+    fallback_intent: Optional[str],
+    custom_prompt_template: Optional[str],
+    number_of_examples: int,
+    number_of_available_intents: int,
+) -> None:
+    """Track when a user trains the llm intent classifier."""
+    _track(
+        TELEMETRY_LLM_INTENT_TRAIN_COMPLETED_EVENT,
+        {
+            "embeddings_type": embeddings_type,
+            "embeddings_model": embeddings_model,
+            "llm_type": llm_type,
+            "llm_model": llm_model,
+            "fallback_intent": fallback_intent,
+            "custom_prompt_template": custom_prompt_template,
+            "number_of_examples": number_of_examples,
+            "number_of_available_intents": number_of_available_intents,
+        },
+    )
+
+
+@ensure_telemetry_enabled
+def identify_endpoint_config_traits(
+    endpoints_file: Optional[Text],
+    context: Optional[Dict[Text, Any]] = None,
+) -> None:
+    """Collect traits if enabled.
+
+    Otherwise, sets traits to None.
+    """
+    import rasa.utils.endpoints
+    from rasa.anonymization.anonymisation_rule_yaml_reader import (
+        KEY_ANONYMIZATION_RULES,
+    )
+    from rasa.tracing.config import ENDPOINTS_TRACING_KEY
+
+    traits = {}
+
+    tracing_config = rasa.utils.endpoints.read_endpoint_config(
+        endpoints_file, ENDPOINTS_TRACING_KEY
+    )
+
+    anonymization_config = rasa.anonymization.utils.read_endpoint_config(
+        endpoints_file, KEY_ANONYMIZATION_RULES
+    )
+
+    traits[
+        KEY_ANONYMIZATION_RULES
+    ] = rasa.anonymization.utils.extract_anonymization_traits(
+        anonymization_config, KEY_ANONYMIZATION_RULES
+    )
+    traits[TRACING_BACKEND] = (
+        tracing_config.type if tracing_config is not None else None
+    )
+    _identify(traits, context)

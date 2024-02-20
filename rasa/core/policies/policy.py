@@ -23,10 +23,6 @@ from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.core.featurizers.precomputation import MessageContainerForCoreFeaturization
-from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
-from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
-from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
-from rasa.core.featurizers.tracker_featurizers import FEATURIZER_FILE
 import rasa.utils.common
 import rasa.shared.utils.io
 from rasa.shared.exceptions import RasaException, FileIOException
@@ -45,6 +41,8 @@ import rasa.shared.utils.common
 
 if TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
+    from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
+    from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
     from rasa.dialogue_understanding.stack.frames import DialogueStackFrame
 
 
@@ -140,7 +138,7 @@ class Policy(GraphComponent):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-        featurizer: Optional[TrackerFeaturizer] = None,
+        featurizer: Optional["TrackerFeaturizer"] = None,
     ) -> None:
         """Constructs a new Policy object."""
         self.config = config
@@ -166,7 +164,11 @@ class Policy(GraphComponent):
         """Creates a new untrained policy (see parent class for full docstring)."""
         return cls(config, model_storage, resource, execution_context)
 
-    def _create_featurizer(self) -> TrackerFeaturizer:
+    def _create_featurizer(self) -> "TrackerFeaturizer":
+        from rasa.core.featurizers.tracker_featurizers import (
+            MaxHistoryTrackerFeaturizer,
+        )
+
         policy_config = copy.deepcopy(self.config)
 
         featurizer_configs = policy_config.get("featurizer")
@@ -203,14 +205,19 @@ class Policy(GraphComponent):
             featurizer.max_history = policy_config[POLICY_MAX_HISTORY]
         return featurizer
 
-    def _standard_featurizer(self) -> MaxHistoryTrackerFeaturizer:
+    def _standard_featurizer(self) -> "MaxHistoryTrackerFeaturizer":
         """Initializes the standard featurizer for this policy."""
+        from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
+        from rasa.core.featurizers.tracker_featurizers import (
+            MaxHistoryTrackerFeaturizer,
+        )
+
         return MaxHistoryTrackerFeaturizer(
             SingleStateFeaturizer(), self.config.get(POLICY_MAX_HISTORY)
         )
 
     @property
-    def featurizer(self) -> TrackerFeaturizer:
+    def featurizer(self) -> "TrackerFeaturizer":
         """Returns the policy's featurizer."""
         return self.__featurizer
 
@@ -434,6 +441,11 @@ class Policy(GraphComponent):
         **kwargs: Any,
     ) -> Policy:
         """Loads a trained policy (see parent class for full docstring)."""
+        from rasa.core.featurizers.tracker_featurizers import (
+            TrackerFeaturizer,
+            FEATURIZER_FILE,
+        )
+
         featurizer = None
 
         try:
@@ -667,7 +679,7 @@ class InvalidPolicyConfig(RasaException):
 
 def _get_featurizer_from_config(
     config: List[Dict[Text, Any]], policy_name: Text, lookup_path: Text
-) -> Callable[..., TrackerFeaturizer]:
+) -> Callable[..., "TrackerFeaturizer"]:
     """Gets the featurizer initializer and its arguments from a policy config."""
     # Only 1 featurizer is allowed
     if len(config) > 1:

@@ -176,7 +176,7 @@ def test_class_from_module_path_not_found(
 
 
 def test_class_from_module_path_fails():
-    module_path = "rasa.shared.core.domain.logger"
+    module_path = "rasa.shared.core.domain.structlogger"
     with pytest.raises(RasaException):
         rasa.shared.utils.common.class_from_module_path(module_path)
 

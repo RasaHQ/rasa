@@ -1,6 +1,7 @@
 import json
 import argparse
-import logging
+import structlog
+import importlib
 import os
 import sys
 import time
@@ -17,7 +18,6 @@ from rasa.shared.constants import (
     ASSISTANT_ID_KEY,
     DEFAULT_CONFIG_PATH,
 )
-from rasa.shared.utils.cli import print_error
 from rasa import telemetry
 
 if TYPE_CHECKING:
@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from typing_extensions import Literal
     from rasa.validator import Validator
 
-logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger()
 
 FREE_TEXT_INPUT_PROMPT = "Type out your own message..."
 
@@ -90,10 +90,18 @@ def get_validated_path(
     if chosen_option:
         shared_info = f"Using default location '{chosen_option}' instead."
         if current is None:
-            logger.debug(f"Parameter '{parameter}' was not set. {shared_info}")
+            structlogger.debug(
+                "cli.get_validated_path.parameter_not_set",
+                parameter=parameter,
+                event_info=(f"Parameter '{parameter}' was not set. {shared_info}"),
+            )
         else:
-            rasa.shared.utils.io.raise_warning(
-                f"The path '{current}' does not seem to exist. {shared_info}"
+            structlogger.warn(
+                "cli.get_validated_path.path_does_not_exists",
+                path=current,
+                event_info=(
+                    f"The path '{current}' does not seem to exist. {shared_info}"
+                ),
             )
 
     if chosen_option is None and not none_is_valid:
@@ -136,10 +144,18 @@ def validate_assistant_id_in_config(config_file: Union["Path", Text]) -> None:
     assistant_id = config_data.get(ASSISTANT_ID_KEY)
 
     if assistant_id is None or assistant_id == ASSISTANT_ID_DEFAULT_VALUE:
-        rasa.shared.utils.io.raise_warning(
-            f"The config file '{config_file!s}' is missing a unique value for the "
-            f"'{ASSISTANT_ID_KEY}' mandatory key. Proceeding with generating a random "
-            f"value and overwriting the '{ASSISTANT_ID_KEY}' in the config file."
+        structlogger.warn(
+            "cli.validate_assistant_id_in_config.missing_unique_assistant_id_key",
+            config=config_file,
+            missing_key=ASSISTANT_ID_KEY,
+            event_info=(
+                f"The config file '{config_file!s}' is "
+                f"missing a unique value for the "
+                f"'{ASSISTANT_ID_KEY}' mandatory key. "
+                f"Proceeding with generating a random "
+                f"value and overwriting the '{ASSISTANT_ID_KEY}'"
+                f" in the config file."
+            ),
         )
 
         # add random value for assistant id, overwrite config file
@@ -172,10 +188,13 @@ def validate_config_path(
     config = rasa.cli.utils.get_validated_path(config, "config", default_config)
 
     if not config or not os.path.exists(config):
-        print_error(
-            "The config file '{}' does not exist. Use '--config' to specify a "
-            "valid config file."
-            "".format(config)
+        structlogger.error(
+            "cli.validate_config_path.does_not_exists",
+            config=config,
+            event_info=(
+                f"The config file '{config}' does not exist. "
+                f"Use '--config' to specify a valid config file."
+            ),
         )
         sys.exit(1)
 
@@ -198,10 +217,16 @@ def validate_mandatory_config_keys(
     """
     missing_keys = set(rasa.cli.utils.missing_config_keys(config, mandatory_keys))
     if missing_keys:
-        print_error(
-            "The config file '{}' is missing mandatory parameters: "
-            "'{}'. Add missing parameters to config file and try again."
-            "".format(config, "', '".join(missing_keys))
+        structlogger.error(
+            "cli.validate_mandatory_config_keys.missing_keys",
+            config=config,
+            missing_keys=missing_keys,
+            event_info=(
+                "The config file '{}' is missing mandatory parameters: "
+                "'{}'. Add missing parameters to config file and try again.".format(
+                    config, "', '".join(missing_keys)
+                )
+            ),
         )
         sys.exit(1)
 
@@ -248,9 +273,11 @@ def validate_files(
         all_good = validator.verify_flows()
     else:
         if importer.get_domain().is_empty():
-            rasa.shared.utils.cli.print_error_and_exit(
-                "Encountered empty domain during validation."
+            structlogger.error(
+                "cli.validate_files.empty_domain",
+                event_info="Encountered empty domain during validation.",
             )
+            sys.exit(1)
 
         valid_domain = _validate_domain(validator)
         valid_nlu = _validate_nlu(validator, fail_on_warnings)
@@ -265,9 +292,11 @@ def validate_files(
 
     telemetry.track_validate_files(all_good)
     if not all_good:
-        rasa.shared.utils.cli.print_error_and_exit(
-            "Project validation completed with errors."
+        structlogger.error(
+            "cli.validate_files.project_validation_error",
+            event_info="Project validation completed with errors.",
         )
+        sys.exit(1)
 
 
 def _validate_domain(validator: "Validator") -> bool:
@@ -322,10 +351,14 @@ def cancel_cause_not_found(
     elif default and isinstance(default, list):
         default_clause = f"use one of the default locations ({', '.join(default)}) or"
 
-    rasa.shared.utils.cli.print_error(
-        f"The path '{current}' does not exist. "
-        f"Please make sure to {default_clause} specify it "
-        f"with '--{parameter}'."
+    structlogger.error(
+        "cli.path_does_not_exist",
+        path=current,
+        event_info=(
+            f"The path '{current}' does not exist. "
+            f"Please make sure to {default_clause} specify it "
+            f"with '--{parameter}'."
+        ),
     )
     sys.exit(1)
 
@@ -409,3 +442,14 @@ def signal_handler(_: int, __: FrameType) -> None:
     """Kills Rasa when OS signal is received."""
     print("Goodbye 👋")
     sys.exit(0)
+
+
+def warn_if_rasa_plus_package_installed() -> None:
+    """Issue a user warning in case the `rasa_plus` package is installed."""
+    rasa_plus_package = "rasa_plus"
+    if importlib.util.find_spec(rasa_plus_package) is not None:
+        rasa.shared.utils.io.raise_warning(
+            f"{rasa_plus_package} python package is no longer necessary "
+            f"for using Rasa Pro. Please uninstall it.",
+            UserWarning,
+        )

@@ -1,7 +1,7 @@
 import copy
 import collections
 import json
-import logging
+import structlog
 import os
 from pathlib import Path
 from typing import (
@@ -117,7 +117,7 @@ SubStateValue = Union[Text, Tuple[Union[float, Text], ...]]
 SubState = MutableMapping[Text, SubStateValue]
 State = Dict[Text, SubState]
 
-logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger(__name__)
 
 
 class InvalidDomain(RasaException):
@@ -493,9 +493,12 @@ class Domain:
             slot_class = Slot.resolve_by_type(slot_type)
 
             if SLOT_MAPPINGS not in slot_dict[slot_name]:
-                logger.debug(
-                    f"Slot '{slot_name}' has no mappings defined. "
-                    f"We will continue with an empty list of mappings."
+                structlogger.debug(
+                    "domain.collect_slots.no_mappings_defined",
+                    event_info=(
+                        f"Slot '{slot_name}' has no mappings defined. "
+                        f"We will continue with an empty list of mappings."
+                    ),
                 )
                 slot_dict[slot_name][SLOT_MAPPINGS] = []
 
@@ -589,11 +592,16 @@ class Domain:
         explicitly_included = isinstance(properties[USE_ENTITIES_KEY], list)
         ambiguous_entities = included_entities.intersection(excluded_entities)
         if explicitly_included and ambiguous_entities:
-            rasa.shared.utils.io.raise_warning(
-                f"Entities: '{ambiguous_entities}' are explicitly included and"
-                f" excluded for intent '{name}'."
-                f"Excluding takes precedence in this case. "
-                f"Please resolve that ambiguity.",
+            structlogger.warning(
+                "domain.ambiguous_entities",
+                intent=name,
+                entities=ambiguous_entities,
+                event_info=(
+                    f"Entities: '{ambiguous_entities}' are "
+                    f"explicitly included and excluded for "
+                    f"intent '{name}'. Excluding takes precedence "
+                    f"in this case. Please resolve that ambiguity."
+                ),
                 docs=f"{DOCS_URL_DOMAINS}",
             )
 
@@ -999,9 +1007,12 @@ class Domain:
                 )
             else:
                 # TODO: in the future we need to prevent this entirely.
-                logger.error(
-                    f"Slot {flow_slot} is reserved for Rasa internal usage, "
-                    f"but it already exists. This might lead to bad outcomes."
+                structlogger.error(
+                    "domain.add_flow_slots.slot_reserved_for_internal_usage",
+                    event_info=(
+                        f"Slot {flow_slot} is reserved for Rasa internal usage, "
+                        f"but it already exists. This might lead to bad outcomes."
+                    ),
                 )
 
     def _add_requested_slot(self) -> None:
@@ -1035,10 +1046,13 @@ class Domain:
             rasa.shared.core.constants.DEFAULT_KNOWLEDGE_BASE_ACTION
             in self.action_names_or_texts
         ):
-            logger.warning(
-                "You are using an experimental feature: Action '{}'!".format(
-                    rasa.shared.core.constants.DEFAULT_KNOWLEDGE_BASE_ACTION
-                )
+            structlogger.warning(
+                "domain.add_knowledge_base_slots.use_of_experimental_feature",
+                event_info=(
+                    "You are using an experimental feature: Action '{}'!".format(
+                        rasa.shared.core.constants.DEFAULT_KNOWLEDGE_BASE_ACTION
+                    )
+                ),
             )
             slot_names = [slot.name for slot in self.slots]
             for slot in KNOWLEDGE_BASE_SLOT_NAMES:
@@ -1827,10 +1841,14 @@ class Domain:
         missing_responses = self.utterances_for_response - set(self.responses)
 
         for response in missing_responses:
-            rasa.shared.utils.io.raise_warning(
-                f"Action '{response}' is listed as a "
-                f"response action in the domain file, but there is "
-                f"no matching response defined. Please check your domain.",
+            structlogger.warning(
+                "domain.check_missing_response",
+                response=response,
+                event_info=(
+                    f"Action '{response}' is listed as a "
+                    f"response action in the domain file, but there is "
+                    f"no matching response defined. Please check your domain."
+                ),
                 docs=DOCS_URL_RESPONSES,
             )
 
@@ -1860,11 +1878,14 @@ class Domain:
         try:
             content = rasa.shared.utils.io.read_yaml_file(filename)
         except (RasaException, YamlSyntaxException):
-            rasa.shared.utils.io.raise_warning(
-                message=f"The file {filename} could not be loaded as domain file. "
-                + "You can use https://yamlchecker.com/ to validate "
-                + "the YAML syntax of your file.",
-                category=UserWarning,
+            structlogger.warning(
+                "domain.cannot_load_domain_file",
+                file=filename,
+                event_info=(
+                    f"The file {filename} could not be loaded as domain file. "
+                    f"You can use https://yamlchecker.com/ to validate "
+                    f"the YAML syntax of your file."
+                ),
             )
             return False
 
@@ -1989,7 +2010,9 @@ def warn_about_duplicates_found_during_domain_merging(
                 f"across multiple domain files: {duplicates_per_key_str}"
             )
 
-    rasa.shared.utils.io.raise_warning(message, docs=DOCS_URL_DOMAINS)
+    structlogger.warning(
+        "domain.duplicates_found", event_info=message, docs=DOCS_URL_DOMAINS
+    )
     return None
 
 

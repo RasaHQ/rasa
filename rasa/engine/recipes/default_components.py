@@ -1,4 +1,6 @@
+from rasa.core.policies.enterprise_search_policy import EnterpriseSearchPolicy
 from rasa.core.policies.flow_policy import FlowPolicy
+from rasa.core.policies.intentless_policy import IntentlessPolicy
 from rasa.dialogue_understanding.generator.nlu_command_adapter import NLUCommandAdapter
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.classifiers.fallback_classifier import FallbackClassifier
@@ -6,6 +8,7 @@ from rasa.nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifi
 from rasa.dialogue_understanding.generator.llm_command_generator import (
     LLMCommandGenerator,
 )
+from rasa.nlu.classifiers.llm_intent_classifier import LLMIntentClassifier
 from rasa.nlu.classifiers.logistic_regression_classifier import (
     LogisticRegressionClassifier,
 )
@@ -52,6 +55,7 @@ DEFAULT_COMPONENTS = [
     LogisticRegressionClassifier,
     NLUCommandAdapter,
     LLMCommandGenerator,
+    LLMIntentClassifier,
     # Response Selectors
     ResponseSelector,
     # Message Entity Extractors
@@ -84,4 +88,6 @@ DEFAULT_COMPONENTS = [
     MemoizationPolicy,
     AugmentedMemoizationPolicy,
     FlowPolicy,
+    EnterpriseSearchPolicy,
+    IntentlessPolicy,
 ]

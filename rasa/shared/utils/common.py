@@ -3,8 +3,11 @@ import functools
 import importlib
 import inspect
 import logging
+import sys
 from typing import Text, Dict, Optional, Any, List, Callable, Collection, Type
 
+import rasa.shared.utils.io
+from rasa.shared.constants import DOCS_URL_MIGRATION_GUIDE
 from rasa.shared.exceptions import RasaException
 
 logger = logging.getLogger(__name__)
@@ -30,6 +33,8 @@ def class_from_module_path(
         ImportError, in case the Python class cannot be found.
         RasaException, in case the imported result is something other than a class
     """
+    warn_and_exit_if_module_path_contains_rasa_plus(module_path, lookup_path)
+
     klass = None
     if "." in module_path:
         module_name, _, class_name = module_path.rpartition(".")
@@ -268,3 +273,25 @@ def merge_lists_of_dicts(
     }
     merged_dicts = merge_dicts(dict1, dict2, override_existing_values)
     return list(merged_dicts.values())
+
+
+def warn_and_exit_if_module_path_contains_rasa_plus(
+    module_path: Text, lookup_path: Optional[str] = None
+) -> None:
+    """Warns and exits if the module path contains `rasa_plus`.
+
+    Args:
+        module_path: The module path to check.
+        lookup_path: The lookup path to check.
+    """
+    if "rasa_plus" in module_path.lower() or (
+        lookup_path and "rasa_plus" in lookup_path.lower()
+    ):
+        rasa.shared.utils.io.raise_warning(
+            f"Your module path '{module_path}' contains 'rasa_plus'. "
+            f"The path to this Rasa Pro component has changed, please "
+            f"follow the migration guide in the official documentation "
+            f"to update your code: ",
+            docs=DOCS_URL_MIGRATION_GUIDE,
+        )
+        sys.exit(1)

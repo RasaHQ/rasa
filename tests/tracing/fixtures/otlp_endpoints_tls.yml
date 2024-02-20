@@ -1,0 +1,5 @@
+tracing:
+  type: otlp
+  endpoint: https://localhost:4318
+  insecure: false
+  root_certificates: ./tests/unit/tracing/fixtures/ca.pem

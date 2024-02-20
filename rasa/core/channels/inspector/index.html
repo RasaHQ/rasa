@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="/assets/favicon.ico" sizes="32x32">
+  <title>Rasa inspector</title>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+  <div id="rasa-chat-widget" data-websocket-url="" data-default-open="true"></div>
+  <script>
+    const chatDiv = document.getElementById("rasa-chat-widget");
+    const websocketUrl = window.location.origin.replace("http", "ws");
+    const maxHeight = document.documentElement.scrollHeight - 130;
+    // 21 and 25 are the rem number we're using for the columns. We add 0.75rem for the padding
+    // A potential improvement would be to add a onresize event for both width and height
+    let remReference = 21.75;
+    if (document.documentElement.clientWidth > 1631) {
+      remReference = 25.75;
+    }
+
+    const columnWidth = remReference * parseFloat(getComputedStyle(document.documentElement).fontSize);
+
+    chatDiv.setAttribute("data-websocket-url", websocketUrl);
+    chatDiv.setAttribute("data-height", maxHeight);
+    chatDiv.setAttribute("data-width", columnWidth);
+  </script>
+  <!-- downloaded from https://unpkg.com/@rasahq/rasa-chat -->
+  <script src="/assets/rasa-chat.js" type="module" ></script>
+</body>
+
+</html>

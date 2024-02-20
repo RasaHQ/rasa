@@ -3,6 +3,7 @@ import shutil
 from pathlib import Path
 from shutil import copyfile
 
+import pytest
 from pytest import Testdir, Pytester, ExitCode
 from _pytest.pytester import RunResult
 
@@ -30,6 +31,7 @@ def test_test_core_no_plot(run_in_simple_project: Callable[..., RunResult]):
     assert not os.path.exists(f"results/{CONFUSION_MATRIX_STORIES_FILE}")
 
 
+@pytest.mark.timeout(180, func_only=True)
 def test_test_core_warnings(run_in_simple_project_with_model: Callable[..., RunResult]):
     write_yaml(
         {
@@ -281,7 +283,7 @@ def test_test_help(run: Callable[..., RunResult]):
                  [-f FOLDS] [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]]
                  [--no-plot] [--successes] [--no-errors] [--no-warnings]
                  [--out OUT]
-                 {{core,nlu}} ..."""
+                 {{core,nlu,e2e}} ..."""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output

@@ -210,8 +210,8 @@ async def test_postgres_tracker_store_retrieve(
 
 
 async def test_redis_tracker_store_retrieve_full_tracker(
-    redis_tracker_store: RedisTrackerStore,
     tracker_with_restarted_event: DialogueStateTracker,
+    redis_tracker_store: RedisTrackerStore,
 ) -> None:
     sender_id = tracker_with_restarted_event.sender_id
 

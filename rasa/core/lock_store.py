@@ -315,6 +315,10 @@ def _create_from_endpoint_config(
         lock_store: LockStore = InMemoryLockStore()
     elif endpoint_config.type == "redis":
         lock_store = RedisLockStore(host=endpoint_config.url, **endpoint_config.kwargs)
+    elif endpoint_config.type == "concurrent_redis":
+        from rasa.core.concurrent_lock_store import ConcurrentRedisLockStore
+
+        lock_store = ConcurrentRedisLockStore(endpoint_config=endpoint_config)
     else:
         lock_store = _load_from_module_name_in_endpoint_config(endpoint_config)
 

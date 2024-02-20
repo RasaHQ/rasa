@@ -1,0 +1,9 @@
+recipe: default.v1
+
+language: en
+
+pipeline:
+  - name: KeywordIntentClassifier
+
+policies:
+  - name: RulePolicy

@@ -221,8 +221,13 @@ def test_data_validate_failed_to_load_domain(
         "--domain",
         "not-existing-domain.yml",
     )
+    logs = result.outlines + result.errlines
 
-    assert "The path 'not-existing-domain.yml' does not exist." in str(result.outlines)
+    assert [
+        log
+        for log in logs
+        if "The path 'not-existing-domain.yml' does not exist." in log
+    ]
     assert result.ret == 1
 
 
