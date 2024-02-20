@@ -1386,3 +1386,120 @@ def test_flow_executor_is_condition_satisfied_with_slots_namespace(
     result = flow_executor.is_condition_satisfied(predicate, context, tracker)
 
     assert result is expected
+
+
+@pytest.mark.parametrize(
+    "predicate, expected",
+    [
+        ("slots.payment_type == 'Direct Debit'", True),
+        ("slots.payment_type == 'Direct debit'", True),
+        ("slots.payment_type == 'direct debit'", True),
+        ("slots.payment_type == 'DIRECT DEBIT'", True),
+        ("slots.payment_type == 'Direct Debit' and slots.user_type == 'PREMIUM'", True),
+        (
+            "slots.payment_type == 'Direct Debit' and slots.user_type != 'Standard'",
+            True,
+        ),
+        ("slots.payment_type == 'direct_debit'", False),
+        ("slots.payment_type == 'Credit card'", False),
+    ],
+)
+def test_flow_executor_is_condition_satisfied_with_categorical_slots(
+    predicate: str,
+    expected: bool,
+) -> None:
+    test_domain = Domain.from_yaml(
+        """
+        slots:
+            payment_type:
+              type: categorical
+              values:
+                - Direct Debit
+                - Credit card
+                - international transfer
+            user_type:
+              type: categorical
+              values:
+                - Premium
+                - Standard
+        """
+    )
+
+    tracker = DialogueStateTracker.from_events(
+        sender_id=uuid.uuid4().hex,
+        evts=[SlotSet("payment_type", "direct debit"), SlotSet("user_type", "premium")],
+        slots=test_domain.slots,
+    )
+
+    context = {}
+    assert flow_executor.is_condition_satisfied(predicate, context, tracker) == expected
+
+
+@pytest.mark.parametrize(
+    "predicate, expected",
+    [
+        ("slots.bar > 10", "slots.bar > 10"),
+        (
+            "slots.bar > 10 and slots.foo == 'bar'",
+            "slots.bar > 10 and slots.foo == 'bar'",
+        ),
+        ("slots.user_type == 'Premium'", "slots.user_type == 'premium'"),
+        ("slots.user_type == 'Premium Temp'", "slots.user_type == 'Premium Temp'"),
+        (
+            "slots.user_type == 'Standard' and slots.user_type == 'STANDARD'",
+            "slots.user_type == 'standard' and slots.user_type == 'standard'",
+        ),
+        (
+            "slots.user_type == 'STANDARD' and slots.user_type != 'Premium'",
+            "slots.user_type == 'standard' and slots.user_type != 'premium'",
+        ),
+        (
+            "slots.user_type == 'Standard' and slots.foo != 'BAR'",
+            "slots.user_type == 'standard' and slots.foo != 'BAR'",
+        ),
+        (
+            "slots.user_type == 'Standard' and slots.STANDARD == 'hello'",
+            "slots.user_type == 'standard' and slots.STANDARD == 'hello'",
+        ),
+        (
+            "slots.user_type == 'STANDARD-User' and slots.user_type == 'STANDARD'",
+            "slots.user_type == 'STANDARD-User' and slots.user_type == 'standard'",
+        ),
+    ],
+)
+def test_flow_executor_get_case_insensitive_predicate(
+    predicate: str,
+    expected: bool,
+):
+    test_domain = Domain.from_yaml(
+        """
+        slots:
+            bar:
+              type: float
+              initial_value: 0.0
+            foo:
+              type: text
+              initial_value: bar
+            user_type:
+              type: categorical
+              values:
+                - Premium
+                - Standard
+            STANDARD:
+              type: text
+              initial_value: dummy
+        """
+    )
+
+    tracker = DialogueStateTracker.from_events(
+        sender_id=uuid.uuid4().hex,
+        evts=[],
+        slots=test_domain.slots,
+    )
+
+    assert (
+        flow_executor.get_case_insensitive_predicate(
+            predicate, ["bar", "foo", "user_type", "STANDARD"], tracker
+        )
+        == expected
+    )

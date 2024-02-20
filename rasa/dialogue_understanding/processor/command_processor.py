@@ -3,6 +3,7 @@ from typing import List, Optional, Type, Set, Dict
 import structlog
 from rasa.dialogue_understanding.commands import (
     CancelFlowCommand,
+    ClarifyCommand,
     Command,
     CorrectSlotsCommand,
     CorrectedSlot,
@@ -343,6 +344,19 @@ def clean_up_commands(
                 command=command,
             )
             clean_commands.insert(0, command)
+        # drop all clarify commands if there are more commands. Otherwise, we might
+        # get a situation where two questions are asked at once.
+        elif isinstance(command, ClarifyCommand) and len(commands) > 1:
+            # if there are multiple clarify commands, do add the first one
+            if (
+                all([isinstance(c, ClarifyCommand) for c in commands])
+                and len(clean_commands) == 0
+            ):
+                clean_commands.append(command)
+            structlogger.debug(
+                "command_processor.clean_up_commands.drop_clarify_given_other_commands",
+                command=command,
+            )
         else:
             clean_commands.append(command)
     return clean_commands

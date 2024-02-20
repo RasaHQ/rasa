@@ -10,6 +10,62 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.7.7] - 2024-02-06
+
+Rasa 3.7.7 (2024-02-06)
+### Bugfixes
+- [#232](https://github.com/rasahq/rasa/issues/232): Updated pillow and jinja2 packages to address security vulnerabilities.
+
+
+## [3.7.6] - 2024-02-01
+
+Rasa 3.7.6 (2024-02-01)
+### Bugfixes
+- [#144](https://github.com/rasahq/rasa/issues/144): Fix reported issue, e.g. https://github.com/RasaHQ/rasa/issues/5461 in Rasa Pro:
+  Do not unpack json payload if `data` key is not present in the response custom output payloads when using socketio channel.
+  This allows assistants which use custom output payloads to work with the Rasa Inspector debugging tool.
+- [#206](https://github.com/rasahq/rasa/issues/206): Make flow description a required property in the flow json schema.
+- [#778](https://github.com/rasahq/rasa/issues/778): Fix training the enterprise search policy multiple times with a different
+  source folder name than the default name "docs".
+
+### Miscellaneous internal changes
+- [#223](https://github.com/rasahq/rasa/issues/223)
+
+
+## [3.7.5] - 2024-01-24
+
+Rasa 3.7.5 (2024-01-24)
+### Improvements
+- [#193](https://github.com/rasahq/rasa/issues/193): Add new embedding types: `huggingface` and `huggingface_bge`. These new types import the `HuggingFaceEmbeddings` and `HuggingFaceBgeEmbeddings` embedding classes from Langchain.
+
+### Bugfixes
+- [#189](https://github.com/rasahq/rasa/issues/189): Fixes a bug that caused the `full_retrieval_intent_name` key to be missing in the published event. Rasa Analytics makes use of this key to get the Retrieval Intent Name
+- [#196](https://github.com/rasahq/rasa/issues/196): Pin `grpcio` indirect dependency to `1.56.2` to address [CVE-2023-33953](https://www.cve.org/CVERecord?id=CVE-2023-33953)
+  Pin `aiohttp` to version `3.9.0` to address [CVE-2023-49081](https://www.cve.org/CVERecord?id=CVE-2023-49081)
+- [#771](https://github.com/rasahq/rasa/issues/771): Fixes the bug that resulted in an infinite loop on a collect step in a flow with a flow guard set to `if: False`.
+
+
+## [3.7.4] - 2024-01-03
+
+Rasa 3.7.4 (2024-01-03)
+### Improvements
+- [#142](https://github.com/rasahq/rasa/issues/142): Add embeddings type `azure` to simplify azure configurations, particularly when using Enterprise Search Policy
+
+### Bugfixes
+- [#161](https://github.com/rasahq/rasa/issues/161): Add a validation in `rasa data validate` to check the LinkFlowStep refers to a valid flow ID
+
+
+## [3.7.3] - 2023-12-21
+
+Rasa 3.7.3 (2023-12-21)
+### Improvements
+- [#133](https://github.com/rasahq/rasa/issues/133): Persist prompt as part of the model and reread prompt from the model storage instead of original file path during loading. Impacts LLMCommandGenerator.
+- [#141](https://github.com/rasahq/rasa/issues/141): Replaced soon to be depracted text-davinci-003 model with gpt-3.5-turbo. Affects components - LLM Intent Classifier and Contextual Response Rephraser.
+
+### Miscellaneous internal changes
+- [#140](https://github.com/rasahq/rasa/issues/140), [#143](https://github.com/rasahq/rasa/issues/143), [#149](https://github.com/rasahq/rasa/issues/149), [#712](https://github.com/rasahq/rasa/issues/712)
+
+
 ## [3.7.2] - 2023-12-07
 
 Rasa 3.7.2 (2023-12-07)
@@ -101,6 +157,13 @@ Rasa 3.7.0 (2023-11-22)
   the new python-socketio version.
 
   https://github.com/miguelgrinberg/python-socketio/blob/main/CHANGES.md
+
+### Improved Documentation
+- [#12371](https://github.com/rasahq/rasa/issues/12371): Update wording in Rasa Pro installation page.
+- [#12677](https://github.com/rasahq/rasa/issues/12677): Updated docs on sending Conversation Events to Multiple DBs.
+- [#12685](https://github.com/rasahq/rasa/issues/12685): Corrected [action server api](https://rasa.com/docs/rasa/pages/action-server-api/) sample in docs.
+- [#12703](https://github.com/rasahq/rasa/issues/12703): Document support for Vault namespaces.
+- [#12721](https://github.com/rasahq/rasa/issues/12721): Updated tracing documentation to include tracing in the action server and the REST Channel.
 
 
 ## [3.6.13] - 2023-10-23

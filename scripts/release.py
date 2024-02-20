@@ -2,7 +2,7 @@
 
 When run with `prepare`:
 - creates a release branch
-- creates a new changelog section in CHANGELOG.mdx based on all collected changes
+- creates a new changelog section in CHANGELOG.md based on all collected changes
 - increases the version number
 - pushes the new branch to GitHub
 

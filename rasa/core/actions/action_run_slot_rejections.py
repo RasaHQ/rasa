@@ -18,6 +18,7 @@ from rasa.shared.core.slots import (
     Slot,
     bool_from_any,
 )
+from rasa.shared.utils.pypred import get_case_insensitive_predicate
 
 if TYPE_CHECKING:
     from rasa.core.nlg import NaturalLanguageGenerator
@@ -92,6 +93,7 @@ def run_rejections(
     slot_value: Union[str, bool, float, None],
     slot_name: str,
     rejections: List[SlotRejection],
+    tracker: "DialogueStateTracker",
 ) -> Optional[str]:
     """Run the predicate checks under rejections."""
     violation = False
@@ -106,6 +108,7 @@ def run_rejections(
         utterance = rejection.utter
 
         try:
+            condition = get_case_insensitive_predicate(condition, [slot_name], tracker)
             rendered_template = Template(condition).render(current_context)
             predicate = Predicate(rendered_template)
             violation = predicate.evaluate(document)
@@ -182,7 +185,7 @@ class ActionRunSlotRejections(Action):
         elif top_frame.rejections:
             # run the predicate checks under rejections
             utterance = run_rejections(
-                typed_slot_value, slot_name, top_frame.rejections
+                typed_slot_value, slot_name, top_frame.rejections, tracker
             )
 
         events: List[Event] = []
