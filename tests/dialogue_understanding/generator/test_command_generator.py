@@ -75,7 +75,7 @@ def test_get_context_and_slots():
     assert "context" in document
     for slot, event in zip(test_slots, test_events):
         assert slot.name in document["slots"]
-        assert event.value in document["slots"][slot.name]
+        assert event.value == document["slots"][slot.name].value
 
 
 @pytest.mark.parametrize(
