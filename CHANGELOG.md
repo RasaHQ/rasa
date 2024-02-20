@@ -158,7 +158,6 @@ Rasa 3.7.0 (2023-11-22)
 
   https://github.com/miguelgrinberg/python-socketio/blob/main/CHANGES.md
 
-<<<<<<< HEAD
 ### Improved Documentation
 - [#12371](https://github.com/rasahq/rasa/issues/12371): Update wording in Rasa Pro installation page.
 - [#12677](https://github.com/rasahq/rasa/issues/12677): Updated docs on sending Conversation Events to Multiple DBs.
@@ -166,8 +165,6 @@ Rasa 3.7.0 (2023-11-22)
 - [#12703](https://github.com/rasahq/rasa/issues/12703): Document support for Vault namespaces.
 - [#12721](https://github.com/rasahq/rasa/issues/12721): Updated tracing documentation to include tracing in the action server and the REST Channel.
 
-=======
->>>>>>> main
 
 ## [3.6.13] - 2023-10-23
 
