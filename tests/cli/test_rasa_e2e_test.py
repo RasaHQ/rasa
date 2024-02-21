@@ -30,6 +30,8 @@ from rasa.cli.e2e_test import (
     validate_model_path,
     validate_path_to_test_cases,
     write_test_results_to_file,
+    extract_test_case_from_path,
+    validate_test_case,
 )
 from rasa.e2e_test.e2e_test_case import Fixture, TestCase, TestStep
 from rasa.e2e_test.e2e_test_result import TestResult
@@ -547,3 +549,52 @@ def test_validate_path_to_test_cases(tmp_path: Path) -> None:
     with pytest.warns(UserWarning, match=match_msg):
         with pytest.raises(SystemExit):
             validate_path_to_test_cases(str(path_to_test_cases))
+
+
+@pytest.mark.parametrize(
+    "tmp_path, expected_path_to_test_cases, expected_test_case",
+    [
+        ("some/file/path/e2e_one_test.yml", "some/file/path/e2e_one_test.yml", ""),
+        (
+            "some/file/path/e2e_one_test.yml::test_case1",
+            "some/file/path/e2e_one_test.yml",
+            "test_case1",
+        ),
+    ],
+)
+def test_extract_test_case_from_path(
+    tmp_path: str, expected_path_to_test_cases: Path, expected_test_case: str
+) -> None:
+    """Test that test case are correctly extracted from the path to test cases."""
+    path_to_test_cases, test_case = extract_test_case_from_path(str(tmp_path))
+    assert path_to_test_cases == expected_path_to_test_cases
+    assert test_case == expected_test_case
+
+
+def test_validate_test_case() -> None:
+    """Test that a path to a test case which doesn't exist is validated correctly.
+
+    The tested function should raise a UserWarning and exit the program.
+    """
+    test_case = "test_case1"
+    match_msg = f"Test case does not exist: {test_case!s}."
+
+    with pytest.warns(UserWarning, match=match_msg):
+        with pytest.raises(SystemExit):
+            validate_test_case(test_case, [])
+
+
+@pytest.mark.parametrize(
+    "test_case, number_of_steps",
+    [("test_booking", 6), ("test_mood_great", 4)],
+)
+def test_read_single_test_case(
+    e2e_input_folder: Path, test_case: str, number_of_steps: int
+) -> None:
+    path_to_test_case = str(e2e_input_folder / f"e2e_test_cases.yml::{test_case}")
+    input_test_cases, _ = read_test_cases(path_to_test_case)
+
+    print(input_test_cases)
+    assert len(input_test_cases) == 1
+    assert input_test_cases[0].name == test_case
+    assert len(input_test_cases[0].steps) == number_of_steps
