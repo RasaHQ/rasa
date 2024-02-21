@@ -169,24 +169,24 @@ def extract_test_case_from_path(path: Text) -> Tuple[Text, Text]:
         path: Path to the file or folder containing test cases.
 
     Returns:
-        Tuple consisting of the path to test cases and the extracted test case.
+        Tuple consisting of the path to test cases and the extracted test case name.
     """
-    test_case = ""
+    test_case_name = ""
 
     if "::" in str(path):
         splitted_path = path.split("::")
-        test_case = splitted_path[-1]
+        test_case_name = splitted_path[-1]
         path = splitted_path[0]
 
-    return path, test_case
+    return path, test_case_name
 
 
-def validate_test_case(test_case: Text, input_test_cases: List[TestCase]) -> None:
+def validate_test_case(test_case_name: Text, input_test_cases: List[TestCase]) -> None:
     """Validate that test case exists."""
-    if test_case and not input_test_cases:
+    if test_case_name and not input_test_cases:
         rasa.shared.utils.io.raise_warning(
-            f"Test case does not exist: {test_case}. "
-            f"Please provide a valid test cases. "
+            f"Test case does not exist: {test_case_name}. "
+            f"Please check for typos and provide a valid test case name. "
             f"Exiting...",
             UserWarning,
         )
@@ -203,7 +203,7 @@ def read_test_cases(path: Text) -> Tuple[List[TestCase], List[Fixture]]:
         Tuple consisting of the list of all test cases and the
         list of all global fixtures found in the file or folder.
     """
-    path, test_case = extract_test_case_from_path(path)
+    path, test_case_name = extract_test_case_from_path(path)
     validate_path_to_test_cases(path)
 
     test_files = rasa.shared.data.get_data_files([path], is_test_case_file)
@@ -217,14 +217,20 @@ def read_test_cases(path: Text) -> Tuple[List[TestCase], List[Fixture]]:
         validate_yaml_content(test_file_content, e2e_test_schema)
 
         test_cases_content = test_file_content.get(KEY_TEST_CASES) or []
-        for d in test_cases_content:
-            if test_case:
-                if test_case == d.get(KEY_TEST_CASE):
-                    input_test_cases.append(TestCase.from_dict(d, file=test_file))
-                    break
-                continue
-            input_test_cases.append(TestCase.from_dict(d, file=test_file))
 
+        if test_case_name:
+            test_cases = [
+                TestCase.from_dict(test_case_dict, file=test_file)
+                for test_case_dict in test_cases_content
+                if test_case_name == test_case_dict.get(KEY_TEST_CASE)
+            ]
+        else:
+            test_cases = [
+                TestCase.from_dict(test_case_dict, file=test_file)
+                for test_case_dict in test_cases_content
+            ]
+
+        input_test_cases.extend(test_cases)
         fixtures_content = test_file_content.get(KEY_FIXTURES) or []
         for fixture in fixtures_content:
             fixture_obj = Fixture.from_dict(fixture_dict=fixture)
@@ -233,7 +239,7 @@ def read_test_cases(path: Text) -> Tuple[List[TestCase], List[Fixture]]:
             if fixtures.get(fixture_obj.name) is None:
                 fixtures[fixture_obj.name] = fixture_obj
 
-    validate_test_case(test_case, input_test_cases)
+    validate_test_case(test_case_name, input_test_cases)
     return input_test_cases, list(fixtures.values())
 
 

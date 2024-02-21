@@ -552,7 +552,7 @@ def test_validate_path_to_test_cases(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    "tmp_path, expected_path_to_test_cases, expected_test_case",
+    "full_path_to_test_case, expected_path_to_test_cases, expected_test_case",
     [
         ("some/file/path/e2e_one_test.yml", "some/file/path/e2e_one_test.yml", ""),
         (
@@ -563,10 +563,14 @@ def test_validate_path_to_test_cases(tmp_path: Path) -> None:
     ],
 )
 def test_extract_test_case_from_path(
-    tmp_path: str, expected_path_to_test_cases: Path, expected_test_case: str
+    full_path_to_test_case: str,
+    expected_path_to_test_cases: Path,
+    expected_test_case: str,
 ) -> None:
     """Test that test case are correctly extracted from the path to test cases."""
-    path_to_test_cases, test_case = extract_test_case_from_path(str(tmp_path))
+    path_to_test_cases, test_case = extract_test_case_from_path(
+        str(full_path_to_test_case)
+    )
     assert path_to_test_cases == expected_path_to_test_cases
     assert test_case == expected_test_case
 
@@ -585,13 +589,18 @@ def test_validate_test_case() -> None:
 
 
 @pytest.mark.parametrize(
-    "test_case, number_of_steps",
-    [("test_booking", 6), ("test_mood_great", 4)],
+    "test_cases_file, test_case, number_of_steps",
+    [
+        ("e2e_test_cases.yml", "test_booking", 6),
+        ("e2e_test_cases.yml", "test_mood_great", 4),
+        ("", "test_booking", 6),
+        ("", "test_standard_booking", 8),
+    ],
 )
 def test_read_single_test_case(
-    e2e_input_folder: Path, test_case: str, number_of_steps: int
+    e2e_input_folder: Path, test_cases_file: str, test_case: str, number_of_steps: int
 ) -> None:
-    path_to_test_case = str(e2e_input_folder / f"e2e_test_cases.yml::{test_case}")
+    path_to_test_case = str(e2e_input_folder / f"{test_cases_file}::{test_case}")
     input_test_cases, _ = read_test_cases(path_to_test_case)
 
     print(input_test_cases)
