@@ -136,6 +136,9 @@
               "action": {}
             }
           },
+          "noop": {
+            "required": ["next"]
+          },
           "collect": {
             "additionalProperties": false,
             "properties": {
