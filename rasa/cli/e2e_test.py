@@ -21,7 +21,7 @@ from rasa.core.utils import AvailableEndpoints
 from rasa.exceptions import RasaException
 from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH, DEFAULT_MODELS_PATH
 
-from rasa.e2e_test.constants import SCHEMA_FILE_PATH
+from rasa.e2e_test.constants import SCHEMA_FILE_PATH, KEY_TEST_CASE
 from rasa.e2e_test.e2e_test_case import KEY_FIXTURES, Fixture, TestCase
 from rasa.e2e_test.e2e_test_result import TestResult
 from rasa.e2e_test.e2e_test_runner import E2ETestRunner
@@ -162,6 +162,37 @@ def validate_path_to_test_cases(path: Text) -> None:
         sys.exit(1)
 
 
+def extract_test_case_from_path(path: Text) -> Tuple[Text, Text]:
+    """Extract test case from path if specified.
+
+    Args:
+        path: Path to the file or folder containing test cases.
+
+    Returns:
+        Tuple consisting of the path to test cases and the extracted test case.
+    """
+    test_case = ""
+
+    if "::" in str(path):
+        splitted_path = path.split("::")
+        test_case = splitted_path[-1]
+        path = splitted_path[0]
+
+    return path, test_case
+
+
+def validate_test_case(test_case: Text, input_test_cases: List[TestCase]) -> None:
+    """Validate that test case exists."""
+    if test_case and not input_test_cases:
+        rasa.shared.utils.io.raise_warning(
+            f"Test case does not exist: {test_case}. "
+            f"Please provide a valid test cases. "
+            f"Exiting...",
+            UserWarning,
+        )
+        sys.exit(1)
+
+
 def read_test_cases(path: Text) -> Tuple[List[TestCase], List[Fixture]]:
     """Read test cases from the given path.
 
@@ -172,6 +203,7 @@ def read_test_cases(path: Text) -> Tuple[List[TestCase], List[Fixture]]:
         Tuple consisting of the list of all test cases and the
         list of all global fixtures found in the file or folder.
     """
+    path, test_case = extract_test_case_from_path(path)
     validate_path_to_test_cases(path)
 
     test_files = rasa.shared.data.get_data_files([path], is_test_case_file)
@@ -186,6 +218,11 @@ def read_test_cases(path: Text) -> Tuple[List[TestCase], List[Fixture]]:
 
         test_cases_content = test_file_content.get(KEY_TEST_CASES) or []
         for d in test_cases_content:
+            if test_case:
+                if test_case == d.get(KEY_TEST_CASE):
+                    input_test_cases.append(TestCase.from_dict(d, file=test_file))
+                    break
+                continue
             input_test_cases.append(TestCase.from_dict(d, file=test_file))
 
         fixtures_content = test_file_content.get(KEY_FIXTURES) or []
@@ -196,6 +233,7 @@ def read_test_cases(path: Text) -> Tuple[List[TestCase], List[Fixture]]:
             if fixtures.get(fixture_obj.name) is None:
                 fixtures[fixture_obj.name] = fixture_obj
 
+    validate_test_case(test_case, input_test_cases)
     return input_test_cases, list(fixtures.values())
 
 
