@@ -54,7 +54,7 @@ def test_tracing_enterprise_search_policy_generate_llm_answer_default_config(
         "llm_type": "openai",
         "embeddings": "{}",
         "llm_temperature": "0.0",
-        "request_timeout": "5",
+        "request_timeout": "10",
     }
 
 
@@ -148,7 +148,7 @@ def test_tracing_enterprise_search_policy_generate_llm_answer_len_prompt_tokens(
         "llm_model": "gpt-3.5-turbo",
         "llm_type": "openai",
         "llm_temperature": "0.0",
-        "request_timeout": "5",
+        "request_timeout": "10",
         "embeddings": "{}",
         "len_prompt_tokens": "6",
     }
