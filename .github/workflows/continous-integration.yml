@@ -617,10 +617,6 @@ jobs:
       POSTGRES_PORT: 5432
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      RABBITMQ_HOST: localhost
-      RABBITMQ_PORT: 5672
-      RABBITMQ_USER: guest
-      RABBITMQ_PASSWORD: guest
 
     services:
       redis:
@@ -651,12 +647,6 @@ jobs:
           # FIXME: cannot use ${{ env.POSTGRES_PORT }} here
           # mapping container ports to the host
           - 5432:5432
-
-      rabbitmq:
-        # see https://github.com/docker-library/healthcheck/blob/master/rabbitmq/docker-healthcheck
-        image: healthcheck/rabbitmq
-        ports:
-          - 5672:5672
 
       mongodb:
         image: mongodb/mongodb-community-server:6.0.4-ubuntu2204
@@ -727,6 +717,94 @@ jobs:
           if grep 'The lock file is not up to date' .output; then exit 1; fi
           make prepare-tests-ubuntu
 
+      - name: Test Code with Services 🩺
+        if: needs.changes.outputs.backend == 'true'
+        env:
+          JOBS: 2
+          INTEGRATION_TEST_PYTEST_MARKERS: '"(not sequential) and (not broker)"'
+          PYTHONIOENCODING: "utf-8"
+        run: |
+          make test-integration
+
+  broker_integration_test:
+    name: Run Broker Integration Tests
+    if: github.ref_type != 'tag'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    needs: [changes]
+    env:
+      RABBITMQ_HOST: localhost
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASSWORD: guest
+
+    services:
+      rabbitmq:
+        # see https://github.com/docker-library/healthcheck/blob/master/rabbitmq/docker-healthcheck
+        image: healthcheck/rabbitmq
+        ports:
+          - 5672:5672
+
+    steps:
+      - name: Checkout git repository 🕝
+        if: needs.changes.outputs.backend == 'true'
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+
+      - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
+        if: needs.changes.outputs.backend == 'true'
+        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
+        with:
+          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
+
+      - name: Read Poetry Version 🔢
+        if: needs.changes.outputs.backend == 'true'
+        run: |
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Install poetry 🦄
+        if: needs.changes.outputs.backend == 'true'
+        uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844 # v8
+        with:
+          poetry-version: ${{ env.POETRY_VERSION }}
+
+      - name: Load Poetry Cached Libraries ⬇
+        id: cache-poetry
+        if: needs.changes.outputs.backend == 'true'
+        uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
+        with:
+          path: .venv
+          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
+
+      - name: Clear Poetry cache
+        if: steps.cache-poetry.outputs.cache-hit == 'true' && needs.changes.outputs.backend == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')
+        run: rm -r .venv
+
+        # Poetry >= 1.1.0b uses virtualenv to create a virtual environment.
+        # The virtualenv simply doesn't work on Windows with our setup,
+        # that's why we use venv to create virtual environment
+      - name: Create virtual environment
+        if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')) && needs.changes.outputs.backend == 'true'
+        run: python -m venv create .venv
+
+      - name: Set up virtual environment
+        if: needs.changes.outputs.backend == 'true'
+        # Poetry on Windows cannot pick up the virtual environments directory properly,
+        # and it creates a new one every time the pipeline runs.
+        # This step solves this problem — it tells poetry to always use `.venv` directory inside
+        # the project itself, which also makes it easier for us to determine the correct directory
+        # that needs to be cached.
+        run: poetry config virtualenvs.in-project true
+
+      - name: Install Dependencies (Linux) 📦
+        if: needs.changes.outputs.backend == 'true'
+        run: |
+          sudo apt-get -y install libpq-dev
+          make install-full | tee .output
+          if grep 'The lock file is not up to date' .output; then exit 1; fi
+          make prepare-tests-ubuntu
+          make prepare-spacy
+
       - name: Run kafka and zookeeper containers for integration testing
         if: needs.changes.outputs.backend == 'true'
         run: |
@@ -736,10 +814,15 @@ jobs:
         if: needs.changes.outputs.backend == 'true'
         env:
           JOBS: 2
-          INTEGRATION_TEST_PYTEST_MARKERS: '"not sequential"'
+          INTEGRATION_TEST_PYTEST_MARKERS: "broker"
           PYTHONIOENCODING: "utf-8"
         run: |
           make test-integration
+
+      - name: Stop kafka and zookeeper containers for integration testing
+        if: needs.changes.outputs.backend == 'true'
+        run: |
+          docker-compose -f tests_deployment/docker-compose.kafka.yml down
 
   sequential_integration_test:
     name: Run Sequential Integration Tests
@@ -839,11 +922,6 @@ jobs:
           PYTHONIOENCODING: "utf-8"
         run: |
           make test-integration
-
-      - name: Stop kafka and zookeeper containers for integration testing
-        if: needs.changes.outputs.backend == 'true'
-        run: |
-          docker-compose -f tests_deployment/docker-compose.kafka.yml down
 
   build_docker_base_images_and_set_env:
     name: Build Docker base images and setup environment
