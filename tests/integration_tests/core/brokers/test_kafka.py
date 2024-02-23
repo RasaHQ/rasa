@@ -6,7 +6,7 @@ import logging.config
 
 
 @pytest.mark.broker
-def test_kafka_event_broker_valid():
+async def test_kafka_event_broker_valid():
     broker = KafkaEventBroker(
         url="localhost",
         topic="rasa",
@@ -22,12 +22,11 @@ def test_kafka_event_broker_valid():
         )
         assert broker.producer.poll() == 1
     finally:
-        broker.producer.flush()
-        broker._close()
+        await broker.close()
 
 
 @pytest.mark.broker
-def test_kafka_event_broker_buffer_error_is_handled(caplog: LogCaptureFixture):
+async def test_kafka_event_broker_buffer_error_is_handled(caplog: LogCaptureFixture):
     broker = KafkaEventBroker(
         url="localhost",
         topic="rasa",
@@ -52,5 +51,4 @@ def test_kafka_event_broker_buffer_error_is_handled(caplog: LogCaptureFixture):
         assert "Queue full" in caplog.text
         assert broker.producer.poll() == 1
     finally:
-        broker.producer.flush()
-        broker._close()
+        await broker.close()

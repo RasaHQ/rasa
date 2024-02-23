@@ -263,3 +263,10 @@ def test_merge_lists_of_dicts(override_existing_values):
     )
 
     assert result == expected
+
+
+def test_import_package_modules():
+    package = "rasa.dialogue_understanding.patterns"
+    result = rasa.shared.utils.common.import_package_modules(package)
+    for module in result:
+        assert module.__name__.startswith(package)

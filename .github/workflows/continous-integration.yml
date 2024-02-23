@@ -829,11 +829,6 @@ jobs:
         run: |
           make test-integration
 
-      - name: Stop kafka and zookeeper containers for integration testing
-        if: needs.changes.outputs.backend == 'true'
-        run: |
-          docker-compose -f tests_deployment/docker-compose.kafka.yml down
-
   build_docker_base_images_and_set_env:
     name: Build Docker base images and setup environment
     runs-on: ubuntu-22.04
