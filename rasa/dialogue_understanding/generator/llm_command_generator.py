@@ -17,7 +17,9 @@ from rasa.dialogue_understanding.commands import (
     SkipQuestionCommand,
     KnowledgeAnswerCommand,
     ClarifyCommand,
+    CannotHandleCommand,
 )
+
 from rasa.dialogue_understanding.generator import CommandGenerator
 from rasa.dialogue_understanding.stack.utils import top_flow_frame
 from rasa.engine.graph import GraphComponent, ExecutionContext
@@ -185,7 +187,17 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             action_list=action_list,
         )
 
-        commands = self.parse_commands(action_list, tracker, flows)
+        commands: List[Command]
+
+        if action_list is None:
+            # if action_list is None, we couldn't get any response from the LLM
+            commands = [ErrorCommand()]
+        else:
+            commands = self.parse_commands(action_list, tracker, flows)
+        if not commands:
+            # no commands couldn't be parsed or there's an invalid command
+            commands = [CannotHandleCommand()]
+
         structlogger.info(
             "llm_command_generator.predict_commands.finished",
             commands=commands,
@@ -264,8 +276,8 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         Returns:
             The parsed commands.
         """
-        if not actions:
-            return [ErrorCommand()]
+        if actions is None:
+            return []
 
         commands: List[Command] = []
 

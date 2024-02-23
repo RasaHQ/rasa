@@ -1,7 +1,11 @@
 from rasa.dialogue_understanding.commands.can_not_handle_command import (
     CannotHandleCommand,
 )
-from rasa.shared.core.events import UserUttered
+from rasa.dialogue_understanding.patterns.cannot_handle import (
+    FLOW_PATTERN_CANNOT_HANDLE,
+    CannotHandlePatternFlowStackFrame,
+)
+from rasa.shared.core.events import UserUttered, DialogueStackUpdated
 from rasa.shared.core.trackers import DialogueStateTracker
 
 
@@ -24,4 +28,16 @@ def test_run_command_on_tracker():
     )
     command = CannotHandleCommand()
 
-    assert command.run_command_on_tracker(tracker, [], tracker) == []
+    events = command.run_command_on_tracker(tracker, [], tracker)
+    assert len(events) == 1
+
+    dialogue_stack_event = events[0]
+    assert isinstance(dialogue_stack_event, DialogueStackUpdated)
+    updated_stack = tracker.stack.update_from_patch(dialogue_stack_event.update)
+
+    assert len(updated_stack.frames) == 1
+
+    frame = updated_stack.frames[0]
+    assert isinstance(frame, CannotHandlePatternFlowStackFrame)
+    assert frame.type() == FLOW_PATTERN_CANNOT_HANDLE
+    assert frame.step_id == "START"
