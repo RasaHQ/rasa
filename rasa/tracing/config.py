@@ -3,11 +3,13 @@ from __future__ import annotations
 import abc
 import logging
 import os
-from typing import Any, Dict, Optional, Text
+from typing import Any, Dict, Optional, Text, ClassVar
 
 import grpc
 from opentelemetry.exporter.jaeger.thrift import JaegerExporter
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.metrics import get_meter_provider
+from opentelemetry.sdk.metrics import Meter
 from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
@@ -24,9 +26,21 @@ from rasa.dialogue_understanding.generator.llm_command_generator import (
 from rasa.dialogue_understanding.generator.nlu_command_adapter import NLUCommandAdapter
 from rasa.engine.graph import GraphNode
 from rasa.engine.training.graph_trainer import GraphTrainer
+from rasa.tracing.constants import (
+    LLM_COMMAND_GENERATOR_CPU_USAGE_INSTRUMENT_NAME,
+    LLM_COMMAND_GENERATOR_MEMORY_USAGE_INSTRUMENT_NAME,
+    LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_INSTRUMENT_NAME,
+    LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_INSTRUMENT_NAME,
+    ENTERPRISE_SEARCH_POLICY_LLM_RESPONSE_DURATION_INSTRUMENT_NAME,
+    INTENTLESS_POLICY_LLM_RESPONSE_DURATION_INSTRUMENT_NAME,
+    CONTEXTUAL_RESPONSE_REPHRASER_LLM_RESPONSE_DURATION_INSTRUMENT_NAME,
+    ACTION_SERVER_RASA_CLIENT_REQUEST_DURATION_INSTRUMENT_NAME,
+    ACTION_SERVER_RASA_CLIENT_REQUEST_BODY_SIZE_INSTRUMENT_NAME,
+)
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 
 from rasa.tracing.instrumentation import instrumentation
+from rasa.utils.singleton import Singleton
 
 TRACING_SERVICE_NAME = os.environ.get("TRACING_SERVICE_NAME", "rasa")
 
@@ -228,3 +242,109 @@ class OTLPCollectorConfigurer(TracerConfigurer):
                 root_cert = f.read()
             credentials = grpc.ssl_channel_credentials(root_certificates=root_cert)
         return credentials
+
+
+class MetricInstrumentProvider(metaclass=Singleton):
+    """Singleton provider class of metric instruments."""
+
+    instruments: ClassVar[Dict[str, Any]] = {}
+
+    def register_instruments(self) -> None:
+        """Update instruments class attribute.
+
+        The registered instruments are subclasses of the
+        opentelemetry.metrics._internal.instrument.Instrument interface.
+        """
+        meter = get_meter_provider().get_meter(__name__)
+
+        instruments = {
+            **self._create_llm_command_generator_instruments(meter),
+            **self._create_llm_response_duration_instruments(meter),
+            **self._create_action_server_client_request_instruments(meter),
+        }
+
+        self.instruments.update(instruments)
+
+    def get_instrument(self, name: str) -> Any:
+        """Get the instrument mapped to the provided name."""
+        return self.instruments.get(name)
+
+    @staticmethod
+    def _create_llm_command_generator_instruments(meter: Meter) -> Dict[str, Any]:
+        llm_command_generator_cpu_usage = meter.create_histogram(
+            name=LLM_COMMAND_GENERATOR_CPU_USAGE_INSTRUMENT_NAME,
+            description="cpu percentage for LLMCommandGenerator",
+            unit="%",
+        )
+
+        llm_command_generator_memory_usage = meter.create_histogram(
+            name=LLM_COMMAND_GENERATOR_MEMORY_USAGE_INSTRUMENT_NAME,
+            description="RAM memory usage for LLMCommandGenerator",
+            unit="%",
+        )
+
+        llm_command_generator_prompt_token_usage = meter.create_histogram(
+            name=LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_INSTRUMENT_NAME,
+            description="LLMCommandGenerator prompt token length",
+            unit="1",
+        )
+
+        llm_response_duration_llm_command_generator = meter.create_histogram(
+            name=LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_INSTRUMENT_NAME,
+            description="The duration of LLMCommandGenerator's LLM call",
+            unit="ms",
+        )
+
+        return {
+            LLM_COMMAND_GENERATOR_CPU_USAGE_INSTRUMENT_NAME: llm_command_generator_cpu_usage,  # noqa: E501
+            LLM_COMMAND_GENERATOR_MEMORY_USAGE_INSTRUMENT_NAME: llm_command_generator_memory_usage,  # noqa: E501
+            LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_INSTRUMENT_NAME: llm_command_generator_prompt_token_usage,  # noqa: E501
+            LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_INSTRUMENT_NAME: llm_response_duration_llm_command_generator,  # noqa: E501
+        }
+
+    @staticmethod
+    def _create_llm_response_duration_instruments(meter: Meter) -> Dict[str, Any]:
+        llm_response_duration_enterprise_search = meter.create_histogram(
+            name=ENTERPRISE_SEARCH_POLICY_LLM_RESPONSE_DURATION_INSTRUMENT_NAME,
+            description="The duration of EnterpriseSearchPolicy's LLM call",
+            unit="ms",
+        )
+
+        llm_response_duration_intentless = meter.create_histogram(
+            name=INTENTLESS_POLICY_LLM_RESPONSE_DURATION_INSTRUMENT_NAME,
+            description="The duration of IntentlessPolicy's LLM call",
+            unit="ms",
+        )
+
+        llm_response_duration_contextual_nlg = meter.create_histogram(
+            name=CONTEXTUAL_RESPONSE_REPHRASER_LLM_RESPONSE_DURATION_INSTRUMENT_NAME,
+            description="The duration of ContextualResponseRephraser's LLM call",
+            unit="ms",
+        )
+
+        return {
+            ENTERPRISE_SEARCH_POLICY_LLM_RESPONSE_DURATION_INSTRUMENT_NAME: llm_response_duration_enterprise_search,  # noqa: E501
+            INTENTLESS_POLICY_LLM_RESPONSE_DURATION_INSTRUMENT_NAME: llm_response_duration_intentless,  # noqa: E501
+            CONTEXTUAL_RESPONSE_REPHRASER_LLM_RESPONSE_DURATION_INSTRUMENT_NAME: llm_response_duration_contextual_nlg,  # noqa: E501
+        }
+
+    @staticmethod
+    def _create_action_server_client_request_instruments(
+        meter: Meter,
+    ) -> Dict[str, Any]:
+        action_server_client_request_duration = meter.create_histogram(
+            name=ACTION_SERVER_RASA_CLIENT_REQUEST_DURATION_INSTRUMENT_NAME,
+            description="The duration of the rasa client request to the action server",
+            unit="ms",
+        )
+
+        action_server_client_request_body_size = meter.create_histogram(
+            name=ACTION_SERVER_RASA_CLIENT_REQUEST_BODY_SIZE_INSTRUMENT_NAME,
+            description="The rasa client request's body size to the action server",
+            unit="byte",
+        )
+
+        return {
+            ACTION_SERVER_RASA_CLIENT_REQUEST_DURATION_INSTRUMENT_NAME: action_server_client_request_duration,  # noqa: E501
+            ACTION_SERVER_RASA_CLIENT_REQUEST_BODY_SIZE_INSTRUMENT_NAME: action_server_client_request_body_size,  # noqa: E501
+        }

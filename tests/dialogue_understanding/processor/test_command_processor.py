@@ -4,6 +4,7 @@ from unittest.mock import Mock, patch
 
 from rasa.dialogue_understanding.commands import (
     CancelFlowCommand,
+    ClarifyCommand,
     Command,
     CorrectSlotsCommand,
     FreeFormAnswerCommand,
@@ -333,6 +334,17 @@ def test_get_current_collect_step_returns_none(
         ),
         ([CancelFlowCommand()], [CancelFlowCommand()]),
         ([CancelFlowCommand(), CancelFlowCommand()], [CancelFlowCommand()]),
+        # keep only first if there are multiple clarify commands
+        (
+            [ClarifyCommand(["a", "b", "c"]), ClarifyCommand(["d", "e"])],
+            [ClarifyCommand(["a", "b", "c"])],
+        ),
+        # drop clarify command if there are other commands
+        (
+            [StartFlowCommand("flow_name"), ClarifyCommand(["x", "y"])],
+            [StartFlowCommand("flow_name")],
+        ),
+        # drop clarify command of flow that is already on the tracker
     ],
 )
 def test_clean_up_commands(

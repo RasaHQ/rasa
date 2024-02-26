@@ -23,6 +23,7 @@ from rasa.core.information_retrieval.information_retrieval import InformationRet
 from rasa.core.policies.enterprise_search_policy import (
     LLM_CONFIG_KEY,
     EnterpriseSearchPolicy,
+    VectorStoreConfigurationError,
 )
 
 
@@ -48,6 +49,54 @@ def default_enterprise_search_policy(
         resource=resource,
         execution_context=default_execution_context,
     )
+
+
+@pytest.fixture()
+def enterprise_search_tracker() -> DialogueStateTracker:
+    domain = Domain.empty()
+    dialogue_stack = DialogueStack(
+        frames=[
+            SearchStackFrame(frame_id="foobar"),
+        ]
+    )
+    # create a tracker with the stack set
+    tracker = DialogueStateTracker.from_events(
+        "test policy prediction",
+        domain=domain,
+        slots=domain.slots,
+        evts=[ActionExecuted(action_name="action_listen")],
+    )
+    tracker.update_stack(dialogue_stack)
+    return tracker
+
+
+@pytest.fixture
+def mocked_enterprise_search_policy(
+    monkeypatch,
+    resource: Resource,
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    vector_store: InformationRetrieval,
+):
+    monkeypatch.setenv("OPENAI_API_KEY", "test")
+    policy = EnterpriseSearchPolicy(
+        config={},
+        model_storage=default_model_storage,
+        resource=resource,
+        execution_context=default_execution_context,
+    )
+    policy.vector_store = vector_store
+    return policy
+
+
+@pytest.fixture
+def mock_create_prediction_internal_error():
+    with patch.object(
+        EnterpriseSearchPolicy,
+        "_create_prediction_internal_error",
+        return_value=MagicMock(),
+    ) as mock_create_prediction_internal_error:
+        yield mock_create_prediction_internal_error
 
 
 @pytest.mark.parametrize(
@@ -173,7 +222,7 @@ def test_search_policy_abstains(
     )
 
 
-async def test_enterprise_search_policy_llm_config(
+def test_enterprise_search_policy_llm_config(
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
     vector_store: InformationRetrieval,
@@ -182,6 +231,8 @@ async def test_enterprise_search_policy_llm_config(
         config={
             "llm": {
                 "model": "gpt-4",
+                "request_timeout": 100,
+                "max_tokens": 20,
             }
         },
         model_storage=default_model_storage,
@@ -190,9 +241,32 @@ async def test_enterprise_search_policy_llm_config(
         vector_store=vector_store,
     )
     assert policy.config.get(LLM_CONFIG_KEY, {}).get("model") == "gpt-4"
+    assert policy.config.get(LLM_CONFIG_KEY, {}).get("request_timeout") == 100
+    assert policy.config.get(LLM_CONFIG_KEY, {}).get("max_tokens") == 20
 
 
-async def test_enterprise_search_policy_vector_store_config(
+def test_enterprise_search_policy_embeddings_config(
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    vector_store: InformationRetrieval,
+) -> None:
+    policy = EnterpriseSearchPolicy(
+        config={
+            "embeddings": {
+                "type": "cohere",
+                "model": "embed-english-v2.0",
+            }
+        },
+        model_storage=default_model_storage,
+        resource=Resource("enterprisesearchpolicy"),
+        execution_context=default_execution_context,
+        vector_store=vector_store,
+    )
+    assert policy.config.get("embeddings", {}).get("type") == "cohere"
+    assert policy.config.get("embeddings", {}).get("model") == "embed-english-v2.0"
+
+
+def test_enterprise_search_policy_vector_store_config(
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
     vector_store: InformationRetrieval,
@@ -337,7 +411,7 @@ def test_enterprise_search_policy_fingerprint_addon_faiss_different_fingerprints
     assert fingerprint_1 != fingerprint_2
 
 
-async def test_enterprise_search_policy_fingerprint_addon_diff_in_prompt_template(
+def test_enterprise_search_policy_fingerprint_addon_diff_in_prompt_template(
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
     vector_store: InformationRetrieval,
@@ -366,7 +440,7 @@ async def test_enterprise_search_policy_fingerprint_addon_diff_in_prompt_templat
     assert fingerprint_1 != fingerprint_2
 
 
-async def test_enterprise_search_policy_fingerprint_addon_no_diff_in_prompt_template(
+def test_enterprise_search_policy_fingerprint_addon_no_diff_in_prompt_template(
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
     vector_store: InformationRetrieval,
@@ -393,7 +467,7 @@ async def test_enterprise_search_policy_fingerprint_addon_no_diff_in_prompt_temp
     assert fingerprint_1 == fingerprint_2
 
 
-async def test_enterprise_search_policy_fingerprint_addon_default_prompt_template(
+def test_enterprise_search_policy_fingerprint_addon_default_prompt_template(
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
     vector_store: InformationRetrieval,
@@ -410,3 +484,84 @@ async def test_enterprise_search_policy_fingerprint_addon_default_prompt_templat
     fingerprint_2 = policy.fingerprint_addon(config)
     assert fingerprint_1 is not None
     assert fingerprint_1 == fingerprint_2
+
+
+def test_enterprise_search_policy_vector_store_config_error(
+    mocked_enterprise_search_policy: EnterpriseSearchPolicy,
+    enterprise_search_tracker: DialogueStateTracker,
+    mock_create_prediction_internal_error: MagicMock,
+) -> None:
+    tracker = enterprise_search_tracker
+
+    with patch("rasa.shared.utils.llm.llm_factory") as mock_llm_factory:
+        mock_llm = MagicMock()
+        mock_llm_factory.return_value = mock_llm.return_value
+        # Mock _connect_vector_store_or_raise
+        # to raise a VectorStoreConfigurationError
+        with patch.object(
+            mocked_enterprise_search_policy,
+            "_connect_vector_store_or_raise",
+            side_effect=VectorStoreConfigurationError("Mocked error"),
+        ):
+            mocked_enterprise_search_policy.predict_action_probabilities(
+                tracker=tracker,
+                domain=Domain.empty(),
+                endpoints=None,
+            )
+
+            # assert _create_prediction_internal_error was called
+            mock_create_prediction_internal_error.assert_called_once()
+
+
+def test_enterprise_search_policy_vector_store_search_error(
+    mocked_enterprise_search_policy: EnterpriseSearchPolicy,
+    enterprise_search_tracker: DialogueStateTracker,
+    mock_create_prediction_internal_error: MagicMock,
+) -> None:
+    tracker = enterprise_search_tracker
+
+    with patch("rasa.shared.utils.llm.llm_factory") as mock_llm_factory:
+        mock_llm = MagicMock()
+        mock_llm_factory.return_value = mock_llm.return_value
+        # Mock `self.vector_store.search(search_query)`
+        # to raise Exception
+        with patch.object(
+            mocked_enterprise_search_policy.vector_store,
+            "search",
+            side_effect=Exception("Mocked error"),
+        ):
+            mocked_enterprise_search_policy.predict_action_probabilities(
+                tracker=tracker,
+                domain=Domain.empty(),
+                endpoints=None,
+            )
+
+            # assert _create_prediction_internal_error was called
+            mock_create_prediction_internal_error.assert_called_once()
+
+
+def test_enterprise_search_policy_none_llm_answer(
+    mocked_enterprise_search_policy: EnterpriseSearchPolicy,
+    enterprise_search_tracker: DialogueStateTracker,
+    mock_create_prediction_internal_error: MagicMock,
+) -> None:
+    tracker = enterprise_search_tracker
+
+    with patch("rasa.shared.utils.llm.llm_factory") as mock_llm_factory:
+        mock_llm = MagicMock()
+        mock_llm_factory.return_value = mock_llm.return_value
+
+        # mock self._generate_llm_answer(llm, prompt) to return None
+        with patch.object(
+            mocked_enterprise_search_policy,
+            "_generate_llm_answer",
+            return_value=None,
+        ):
+            mocked_enterprise_search_policy.predict_action_probabilities(
+                tracker=tracker,
+                domain=Domain.empty(),
+                endpoints=None,
+            )
+
+            # assert _create_prediction_internal_error was called
+            mock_create_prediction_internal_error.assert_called_once()

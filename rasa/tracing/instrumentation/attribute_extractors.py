@@ -56,9 +56,9 @@ def extract_attrs_for_agent(
     :return: A dictionary containing the attributes.
     """
     return {
-        "input_channel": message.input_channel,
+        "input_channel": str(message.input_channel),
         "sender_id": message.sender_id,
-        "model_id": self.model_id,
+        "model_id": str(self.model_id),
         "model_name": self.processor.model_filename if self.processor else "None",
     }
 

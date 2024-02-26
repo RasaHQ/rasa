@@ -305,8 +305,12 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             elif humand_handoff_re.search(action):
                 commands.append(HumanHandoffCommand())
             elif match := clarify_re.search(action):
-                options = [opt.strip() for opt in match.group(1).split(",")]
-                commands.append(ClarifyCommand(options))
+                options = sorted([opt.strip() for opt in match.group(1).split(",")])
+                valid_options = [
+                    flow for flow in options if flow in flows.user_flow_ids
+                ]
+                if len(valid_options) >= 1:
+                    commands.append(ClarifyCommand(valid_options))
 
         return commands
 
