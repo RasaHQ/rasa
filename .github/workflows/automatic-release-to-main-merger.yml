@@ -79,7 +79,7 @@ jobs:
         if: always()
         uses: repo-sync/pull-request@7e79a9f5dc3ad0ce53138f01df2fad14a04831c5
         with:
-          # using this token to make sure it triggers other actions
+          # This PAT has permissions to only open PRs on this repo, should not be used for anything else
           github_token: ${{ secrets.RASABOT_GITHUB_TOKEN }}
           source_branch: ${{ steps.get-branch-name.outputs.new_branch }}
           destination_branch: main
