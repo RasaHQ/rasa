@@ -7,6 +7,7 @@ import rasa.shared.utils.io
 import structlog
 from jinja2 import Template
 from pydantic.error_wrappers import ValidationError
+from rasa.shared.exceptions import RasaException
 from rasa.core.constants import (
     POLICY_MAX_HISTORY,
     POLICY_PRIORITY,
@@ -14,6 +15,9 @@ from rasa.core.constants import (
 )
 from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.core.utils import AvailableEndpoints
+from rasa.dialogue_understanding.patterns.internal_error import (
+    InternalErrorPatternFlowStackFrame,
+)
 from rasa.dialogue_understanding.stack.frames import (
     DialogueStackFrame,
     SearchStackFrame,
@@ -25,6 +29,7 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.graph_components.providers.forms_provider import Forms
 from rasa.graph_components.providers.responses_provider import Responses
 from rasa.shared.core.constants import (
+    ACTION_CANCEL_FLOW,
     ACTION_SEND_TEXT_NAME,
     DEFAULT_SLOT_NAMES,
 )
@@ -73,9 +78,11 @@ DEFAULT_VECTOR_STORE = {
 
 DEFAULT_LLM_CONFIG = {
     "_type": "openai",
-    "request_timeout": 5,
+    "request_timeout": 10,
     "temperature": 0.0,
+    "max_tokens": 256,
     "model_name": DEFAULT_OPENAI_CHAT_MODEL_NAME,
+    "max_retries": 1,
 }
 
 DEFAULT_EMBEDDINGS_CONFIG = {
@@ -90,6 +97,14 @@ ENTERPRISE_SEARCH_PROMPT_FILE_NAME = "enterprise_search_policy_prompt.jinja2"
 DEFAULT_ENTERPRISE_SEARCH_PROMPT_TEMPLATE = importlib.resources.read_text(
     "rasa.core.policies", "enterprise_search_prompt_template.jinja2"
 )
+
+
+class VectorStoreConnectionError(RasaException):
+    """Exception raised for errors in connecting to the vector store."""
+
+
+class VectorStoreConfigurationError(RasaException):
+    """Exception raised for errors in vector store configuration."""
 
 
 @DefaultV1Recipe.register(
@@ -288,7 +303,7 @@ class EnterpriseSearchPolicy(Policy):
             structlogger.error(
                 "enterprise_search_policy._connect_vector_store_or_raise.no_config"
             )
-            raise ValueError(
+            raise VectorStoreConfigurationError(
                 """No vector store specified. Please specify a vector
                 store in the endpoints configuration"""
             )
@@ -299,7 +314,9 @@ class EnterpriseSearchPolicy(Policy):
                 "enterprise_search_policy._connect_vector_store_or_raise.connect_error",
                 error=e,
             )
-            raise ValueError(f"Unable to connect to the vector store. Error: {e}")
+            raise VectorStoreConnectionError(
+                f"Unable to connect to the vector store. Error: {e}"
+            )
 
     def predict_action_probabilities(  # type: ignore[override]
         self,
@@ -327,52 +344,99 @@ class EnterpriseSearchPolicy(Policy):
         if not self.supports_current_stack_frame(tracker, False, False):
             return self._prediction(self._default_predictions(domain))
 
-        if self.vector_store is not None:
-            search_query = tracker_as_readable_transcript(tracker, max_turns=1)
-            self._connect_vector_store_or_raise(endpoints)
-            documents = self.vector_store.search(search_query)
-            inputs = {
-                "current_conversation": tracker_as_readable_transcript(
-                    tracker, max_turns=self.max_history
-                ),
-                "docs": documents,
-                "slots": self._prepare_slots_for_template(tracker),
-            }
-            prompt = Template(self.prompt_template).render(**inputs)
-            log_llm(
-                logger=structlogger,
-                log_module="EnterpriseSearchPolicy",
-                log_event="enterprise_search_policy.predict_action_probabilities.prompt_rendered",
-                prompt=prompt,
-            )
-            llm_answer = self._generate_llm_answer(llm, prompt)
-        else:
+        if not self.vector_store:
             structlogger.error(
                 "enterprise_search_policy.predict_action_probabilities.no_vector_store"
             )
-            llm_answer = None
+            return self._create_prediction_internal_error(domain, tracker)
+
+        search_query = tracker_as_readable_transcript(tracker, max_turns=1)
+        try:
+            self._connect_vector_store_or_raise(endpoints)
+        except (VectorStoreConfigurationError, VectorStoreConnectionError) as e:
+            structlogger.error(
+                "enterprise_search_policy.predict_action_probabilities.connection_error",
+                error=e,
+            )
+            return self._create_prediction_internal_error(domain, tracker)
+
+        try:
+            documents = self.vector_store.search(search_query)
+        except Exception as e:
+            structlogger.error(
+                "enterprise_search_policy.predict_action_probabilities.search_error",
+                error=e,
+            )
+            return self._create_prediction_internal_error(domain, tracker)
+
+        inputs = {
+            "current_conversation": tracker_as_readable_transcript(
+                tracker, max_turns=self.max_history
+            ),
+            "docs": documents,
+            "slots": self._prepare_slots_for_template(tracker),
+        }
+        prompt = Template(self.prompt_template).render(**inputs)
+        log_llm(
+            logger=structlogger,
+            log_module="EnterpriseSearchPolicy",
+            log_event="enterprise_search_policy.predict_action_probabilities.prompt_rendered",
+            prompt=prompt,
+        )
+        llm_answer = self._generate_llm_answer(llm, prompt)
+        if llm_answer is None:
+            return self._create_prediction_internal_error(domain, tracker)
 
         structlogger.debug(
             "enterprise_search_policy.predict_action_probabilities.llm_answer",
             llm_answer=llm_answer,
         )
-        if llm_answer:
-            predicted_action_name = ACTION_SEND_TEXT_NAME
-            action_metadata = {
-                "message": {
-                    "text": llm_answer,
-                }
+
+        predicted_action_name = ACTION_SEND_TEXT_NAME
+        action_metadata = {
+            "message": {
+                "text": llm_answer,
             }
-        else:
-            predicted_action_name = None
-            action_metadata = None
+        }
 
         structlogger.debug(
             "enterprise_search_policy.predict_action_probabilities.predicted_action_name",
             predicted_action_name=predicted_action_name,
         )
-        result = self._prediction_result(predicted_action_name, domain)
 
+        return self._create_prediction(
+            domain=domain, tracker=tracker, action_metadata=action_metadata
+        )
+
+    def _generate_llm_answer(self, llm: "BaseLLM", prompt: Text) -> Optional[Text]:
+        try:
+            llm_answer = llm(prompt)
+        except Exception as e:
+            # unfortunately, langchain does not wrap LLM exceptions which means
+            # we have to catch all exceptions here
+            structlogger.error(
+                "enterprise_search_policy.predict_action_probabilities.llm_error",
+                error=e,
+            )
+            llm_answer = None
+
+        return llm_answer
+
+    def _create_prediction(
+        self,
+        domain: Domain,
+        tracker: DialogueStateTracker,
+        action_metadata: Dict[Text, Any],
+    ) -> PolicyPrediction:
+        """Create a policy prediction result with ACTION_SEND_TEXT_NAME.
+        Args:
+            domain: The model's domain.
+            tracker: The tracker containing the conversation history up to now.
+            action_metadata: The metadata for the predicted action.
+        Returns:
+            The prediction.
+        """
+        result = self._prediction_result(ACTION_SEND_TEXT_NAME, domain)
         stack = tracker.stack
         if not stack.is_empty():
             stack.pop()
@@ -382,16 +446,26 @@ class EnterpriseSearchPolicy(Policy):
 
         return self._prediction(result, action_metadata=action_metadata, events=events)
 
-    def _generate_llm_answer(self, llm: "BaseLLM", prompt: Text) -> Optional[Text]:
-        try:
-            llm_answer = llm(prompt)
-        except Exception as e:
-            # unfortunately, langchain does not wrap LLM exceptions which means
-            # we have to catch all exceptions here
-            structlogger.error("nlg.llm.error", error=e)
-            llm_answer = None
-
-        return llm_answer
+    def _create_prediction_internal_error(
+        self, domain: Domain, tracker: DialogueStateTracker
+    ) -> PolicyPrediction:
+        """Create a policy prediction result for an internal error.
+        We should cancel the current flow (hence ACTION_CANCEL_FLOW) and push an
+        InternalErrorPatternFlowStackFrame to start the internal error pattern.
+        Args:
+            domain: The model's domain.
+            tracker: The tracker containing the conversation history up to now.
+        Returns:
+            The prediction.
+        """
+        # TODO: replace ACTION_CANCEL_FLOW (ATO-2097)
+        result = self._prediction_result(ACTION_CANCEL_FLOW, domain)
+        stack = tracker.stack
+        if not stack.is_empty():
+            stack.pop()
+            stack.push(InternalErrorPatternFlowStackFrame())
+        events: List[Event] = tracker.create_stack_updated_events(stack)
+        return self._prediction(result, action_metadata=None, events=events)
 
     def _prediction_result(
         self, action_name: Optional[Text], domain: Domain, score: Optional[float] = 1.0
