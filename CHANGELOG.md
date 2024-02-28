@@ -10,6 +10,21 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.7.8] - 2024-02-28
+                       
+Rasa 3.7.8 (2024-02-28)                        
+### Improvements
+- [#259](https://github.com/rasahq/rasa/issues/259): Improved UX around ClarifyCommand by checking options for existence and ordering them. Also, now dropping Clarify commands if there are any other commands to prevent two questions or statements to be uttered at the same time.
+- [#266](https://github.com/rasahq/rasa/issues/266): LLMCommandGenerator returns CannotHandle() command when is encountered with scenarios where
+  it is unable to predict a valid command.
+
+### Bugfixes
+- [#228](https://github.com/rasahq/rasa/issues/228): Replace categorical slot values in a predicate with lower case replacements. This fixes the case sensitive slot comparisons in flow guards, branches in flows and slot rejections.
+- [#270](https://github.com/rasahq/rasa/issues/270): Modify flows YAML schema to make next step mandatory to noop step.
+- [#272](https://github.com/rasahq/rasa/issues/272): Flush messages when Kafka producer is closed. This is to ensure that all messages in the producer's internal queue are sent to the broker.
+  Ensure to import all pattern stack frame subclasses of `DialogueStackFrame` when retrieving tracker from the tracker store, a required step during `rasa export`.
+
+
 ## [3.7.7] - 2024-02-06
 
 Rasa 3.7.7 (2024-02-06)
