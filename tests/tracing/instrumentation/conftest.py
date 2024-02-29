@@ -523,3 +523,42 @@ class MockNLUCommandAdapter(NLUCommandAdapter):
                 f"This likely means the method was renamed, which means the "
                 f"instrumentation needs to be adapted!"
             )
+
+
+class MockEndpointConfig(EndpointConfig):
+    def __init__(
+        self,
+        url: Optional[str] = None,
+        params: Optional[Dict[str, Any]] = None,
+        headers: Optional[Dict[str, Any]] = None,
+        basic_auth: Optional[Dict[str, str]] = None,
+        token: Optional[str] = None,
+        token_name: str = "token",
+        cafile: Optional[str] = None,
+        **kwargs: Any,
+    ) -> None:
+        self.fail_if_undefined("request")
+        super().__init__(
+            url, params, headers, basic_auth, token, token_name, cafile, **kwargs
+        )
+
+    async def request(
+        self,
+        method: Text = "post",
+        subpath: Optional[Text] = None,
+        content_type: Optional[Text] = "application/json",
+        compress: bool = False,
+        **kwargs: Any,
+    ) -> Optional[Any]:
+        return None
+
+    def fail_if_undefined(self, method_name: Text) -> None:
+        if not (
+            hasattr(self.__class__.__base__, method_name)
+            and callable(getattr(self.__class__.__base__, method_name))
+        ):
+            pytest.fail(
+                f"method '{method_name}' not found in {self.__class__.__base__}. "
+                f"This likely means the method was renamed, which means the "
+                f"instrumentation needs to be adapted!"
+            )

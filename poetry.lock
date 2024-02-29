@@ -4497,7 +4497,7 @@ files = [
 name = "psutil"
 version = "5.9.5"
 description = "Cross-platform lib for process and system monitoring in Python."
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 files = [
@@ -8381,4 +8381,4 @@ transformers = ["sentencepiece", "transformers"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8.1,<3.11"
-content-hash = "dfd49de73364ff2efa3d3115feda891713697050311e76d4355a762956d11dd1"
+content-hash = "b15de6bd8f398a13fc785835d0869c4c3569c9ac692baf3a2f2b7dfbad944c94"

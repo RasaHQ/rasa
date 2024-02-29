@@ -4,6 +4,7 @@ import importlib
 import inspect
 import json
 import logging
+import time
 from typing import (
     Any,
     AsyncIterator,
@@ -48,6 +49,11 @@ from rasa.tracing.instrumentation.intentless_policy_instrumentation import (
     _instrument_generate_answer,
     _instrument_select_few_shot_conversations,
     _instrument_select_response_examples,
+)
+from rasa.tracing.instrumentation.metrics import (
+    record_llm_command_generator_metrics,
+    record_callable_duration_metrics,
+    record_request_size_in_bytes,
 )
 from rasa.utils.endpoints import EndpointConfig
 
@@ -96,6 +102,7 @@ def traceable(
     fn: Callable[[T, Any, Any], S],
     tracer: Tracer,
     attr_extractor: Optional[Callable[[T, Any, Any], Dict[str, Any]]],
+    metrics_recorder: Optional[Callable],
 ) -> Callable[[T, Any, Any], S]:
     """Wrap a non-`async` function by tracing functionality.
 
@@ -103,6 +110,7 @@ def traceable(
     :param tracer: The `Tracer` that shall be used for tracing this function.
     :param attr_extractor: A function that is applied to the function's instance and
         the function's arguments.
+    :param metrics_recorder: A function that records metric measurements.
     :return: The wrapped function.
     """
     should_extract_args = _check_extractor_argument_list(fn, attr_extractor)
@@ -125,7 +133,17 @@ def traceable(
         else:
             span_name = f"{self.__class__.__name__}.{fn.__name__}"
         with tracer.start_as_current_span(span_name, attributes=attrs):
-            return fn(self, *args, **kwargs)
+            start_time = time.process_time_ns()
+
+            result = fn(self, *args, **kwargs)
+
+            end_time = time.process_time_ns()
+            record_callable_duration_metrics(self, start_time, end_time)
+
+            if metrics_recorder:
+                metrics_recorder(attrs)
+
+            return result
 
     return wrapper
 
@@ -135,6 +153,7 @@ def traceable_async(
     tracer: Tracer,
     attr_extractor: Optional[Callable[[T, Any, Any], Dict[str, Any]]],
     header_extractor: Optional[Callable[[T, Any, Any], Dict[str, Any]]],
+    metrics_recorder: Optional[Callable],
 ) -> Callable[[T, Any, Any], Awaitable[S]]:
     """Wrap an `async` function by tracing functionality.
 
@@ -143,6 +162,7 @@ def traceable_async(
     :param attr_extractor: A function that is applied to the function's instance and
         the function's arguments.
     :param header_extractor: A function that is applied to the function's arguments
+    :param metrics_recorder: A function that records metric measurements.
     :return: The wrapped function.
     """
     should_extract_args = _check_extractor_argument_list(fn, attr_extractor)
@@ -161,7 +181,18 @@ def traceable_async(
             attributes=attrs,
         ):
             TraceContextTextMapPropagator().inject(headers)
-            return await fn(self, *args, **kwargs)
+
+            start_time = time.process_time_ns()
+
+            result = await fn(self, *args, **kwargs)
+
+            end_time = time.process_time_ns()
+            record_callable_duration_metrics(self, start_time, end_time, **attrs)
+
+            if metrics_recorder:
+                metrics_recorder(attrs)
+
+            return result
 
     return async_wrapper
 
@@ -216,6 +247,7 @@ InformationRetrievalType = TypeVar(
     "InformationRetrievalType", bound=InformationRetrieval
 )
 NLUCommandAdapterType = TypeVar("NLUCommandAdapterType", bound=NLUCommandAdapter)
+EndpointConfigType = TypeVar("EndpointConfigType", bound=EndpointConfig)
 
 
 def instrument(
@@ -232,6 +264,7 @@ def instrument(
     policy_subclasses: Optional[List[Type[PolicyType]]] = None,
     vector_store_subclasses: Optional[List[Type[InformationRetrievalType]]] = None,
     nlu_command_adapter_class: Optional[Type[NLUCommandAdapterType]] = None,
+    endpoint_config_class: Optional[Type[EndpointConfigType]] = None,
 ) -> None:
     """Substitute methods to be traced by their traced counterparts.
 
@@ -267,6 +300,8 @@ def instrument(
         instrumented.
     :param nlu_command_adapter_class: The `NLUCommandAdapter` to be instrumented. If
         `None` is given, no `NLUCommandAdapter` will be instrumented.
+    :param endpoint_config_class: The `EndpointConfig` to be instrumented. If
+        `None` is given, no `EndpointConfig` will be instrumented.
     """
     if agent_class is not None and not class_is_instrumented(agent_class):
         _instrument_method(
@@ -338,6 +373,7 @@ def instrument(
             llm_command_generator_class,
             "_generate_action_list_using_llm",
             attribute_extractors.extract_attrs_for_llm_command_generator,
+            metrics_recorder=record_llm_command_generator_metrics,
         )
         _instrument_method(
             tracer_provider.get_tracer(llm_command_generator_class.__module__),
@@ -426,6 +462,17 @@ def instrument(
             nlu_command_adapter_class,
         )
         mark_class_as_instrumented(nlu_command_adapter_class)
+
+    if endpoint_config_class is not None and not class_is_instrumented(
+        endpoint_config_class
+    ):
+        _instrument_method(
+            tracer_provider.get_tracer(endpoint_config_class.__module__),
+            endpoint_config_class,
+            "request",
+            attribute_extractors.extract_attrs_for_endpoint_config,
+            metrics_recorder=record_request_size_in_bytes,
+        )
 
 
 def _instrument_nlu_command_adapter_predict_commands(
@@ -706,10 +753,11 @@ def _instrument_method(
     method_name: Text,
     attr_extractor: Optional[Callable],
     header_extractor: Optional[Callable] = None,
+    metrics_recorder: Optional[Callable] = None,
 ) -> None:
     method_to_trace = getattr(instrumented_class, method_name)
     traced_method = _wrap_with_tracing_decorator(
-        method_to_trace, tracer, attr_extractor, header_extractor
+        method_to_trace, tracer, attr_extractor, header_extractor, metrics_recorder
     )
     setattr(instrumented_class, method_name, traced_method)
 
@@ -741,13 +789,20 @@ def _wrap_with_tracing_decorator(
     tracer: Tracer,
     attr_extractor: Optional[Callable],
     header_extractor: Optional[Callable] = None,
+    metrics_recorder: Optional[Callable] = None,
 ) -> Callable:
     if inspect.iscoroutinefunction(callable_to_trace):
         traced_callable = traceable_async(
-            callable_to_trace, tracer, attr_extractor, header_extractor
+            callable_to_trace,
+            tracer,
+            attr_extractor,
+            header_extractor,
+            metrics_recorder,
         )
     else:
-        traced_callable = traceable(callable_to_trace, tracer, attr_extractor)
+        traced_callable = traceable(
+            callable_to_trace, tracer, attr_extractor, metrics_recorder
+        )
 
     return traced_callable
 

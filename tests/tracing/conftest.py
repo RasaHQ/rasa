@@ -5,6 +5,7 @@ from concurrent import futures
 from typing import Callable, Generator, Optional, Text
 
 import grpc
+import opentelemetry.metrics
 import opentelemetry.proto.collector.trace.v1.trace_service_pb2_grpc as trace_service
 import pytest
 from google.protobuf.internal.containers import RepeatedCompositeFieldContainer
@@ -15,10 +16,17 @@ from opentelemetry.proto.collector.trace.v1.trace_service_pb2 import (
     ExportTraceServiceResponse,
 )
 from opentelemetry.proto.trace.v1.trace_pb2 import ResourceSpans
+from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.sdk.metrics.export import (
+    PeriodicExportingMetricReader,
+    ConsoleMetricExporter,
+    MetricReader,
+)
 from pytest import MonkeyPatch
 from rasa.engine.caching import LocalTrainingCache
 from thrift.protocol.TCompactProtocol import TCompactProtocol
 from thrift.transport.TTransport import TMemoryBuffer
+
 
 TRACING_TESTS_FIXTURES_DIRECTORY = pathlib.Path(__file__).parent / "fixtures"
 
@@ -136,3 +144,17 @@ def temp_cache(
 @pytest.fixture
 def result_available_event() -> threading.Event:
     return threading.Event()
+
+
+@pytest.fixture
+def periodic_exporting_metric_reader() -> PeriodicExportingMetricReader:
+    return PeriodicExportingMetricReader(ConsoleMetricExporter())
+
+
+def set_up_test_meter_provider(
+    metric_reader: MetricReader,
+) -> Generator[MeterProvider, None, None]:
+    meter_provider = MeterProvider(metric_readers=[metric_reader])
+    opentelemetry.metrics.set_meter_provider(meter_provider)
+    yield meter_provider
+    meter_provider.shutdown()
