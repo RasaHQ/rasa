@@ -3,7 +3,9 @@ import functools
 import importlib
 import inspect
 import logging
+import pkgutil
 import sys
+from types import ModuleType
 from typing import Text, Dict, Optional, Any, List, Callable, Collection, Type
 
 import rasa.shared.utils.io
@@ -54,6 +56,15 @@ def class_from_module_path(
             f"but for {module_path} we got a {type(klass)}."
         )
     return klass
+
+
+def import_package_modules(package_name: str) -> List[ModuleType]:
+    """Import all modules in a package."""
+    package = importlib.import_module(package_name)
+    return [
+        importlib.import_module(f"{package_name}.{module_name}")
+        for _, module_name, _ in pkgutil.iter_modules(package.__path__)
+    ]
 
 
 def all_subclasses(cls: Any) -> List[Any]:

@@ -11,6 +11,9 @@ responses:
       metadata:
         rephrase: True
 
+  utter_cannot_handle:
+    - text: I’m sorry I am unable to understand you, could you please rephrase?
+
   utter_categorical_slot_rejection:
     - text: "Sorry, you responded with an invalid value - `{{value}}`. Please select one of the available options."
       metadata:
@@ -102,6 +105,12 @@ flows:
     steps:
       - action: action_cancel_flow
       - action: utter_flow_cancelled_rasa
+
+  pattern_cannot_handle:
+    description: pattern that is triggered when the command generators fail to create any valid commands
+    name: pattern cannot handle
+    steps:
+      - action: utter_cannot_handle
 
   pattern_chitchat:
     description: handle interactions with the user that are not task-oriented

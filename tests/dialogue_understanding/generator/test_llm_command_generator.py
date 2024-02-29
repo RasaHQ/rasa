@@ -18,6 +18,7 @@ from rasa.dialogue_understanding.commands import (
     SkipQuestionCommand,
     KnowledgeAnswerCommand,
     ClarifyCommand,
+    CannotHandleCommand,
 )
 from rasa.dialogue_understanding.generator.llm_command_generator import (
     LLMCommandGenerator,
@@ -164,6 +165,51 @@ class TestLLMCommandGenerator:
         # Then
         assert not predicted_commands
 
+    @pytest.mark.parametrize(
+        "llm_response, expected_commands",
+        [
+            (None, [ErrorCommand()]),
+            ("StartFlow(this_flow_does_not_exists)", [CannotHandleCommand()]),
+            ("A random response from LLM", [CannotHandleCommand()]),
+            ("SetSlot(flow_name, some_flow)", [StartFlowCommand(flow="some_flow")]),
+        ],
+    )
+    @patch(
+        "rasa.dialogue_understanding.generator.llm_command_generator."
+        "LLMCommandGenerator._generate_action_list_using_llm"
+    )
+    @patch(
+        "rasa.dialogue_understanding.generator.llm_command_generator."
+        "LLMCommandGenerator.render_template"
+    )
+    def test_predict_commands(
+        self,
+        mock_render_template: Mock,
+        mock_generate_action_list_using_llm: Mock,
+        llm_response: Text,
+        expected_commands: Command,
+        command_generator: LLMCommandGenerator,
+    ):
+        # Given
+        test_flows = flows_from_str(
+            """
+            flows:
+              some_flow:
+                description: some description
+                steps:
+                - id: first_step
+                  collect: test_slot
+            """
+        )
+        mock_render_template.return_value = "some_template"
+        mock_generate_action_list_using_llm.return_value = llm_response
+        # When
+        predicted_commands = command_generator.predict_commands(
+            message=Mock(), flows=test_flows, tracker=Mock()
+        )
+        # Then
+        assert predicted_commands == expected_commands
+
     def test_generate_action_list_calls_llm_factory_correctly(
         self,
         command_generator: LLMCommandGenerator,
@@ -263,7 +309,7 @@ class TestLLMCommandGenerator:
     @pytest.mark.parametrize(
         "input_action, expected_command",
         [
-            (None, [ErrorCommand()]),
+            (None, []),
             (
                 "SetSlot(transfer_money_amount_of_money, )",
                 [SetSlotCommand(name="transfer_money_amount_of_money", value=None)],
@@ -575,6 +621,7 @@ class TestLLMCommandGenerator:
         assert exceeds_limit == expected_exceeds_limit
 
     async def test_llm_command_generator_fingerprint_addon_diff_in_prompt_template(
+        self,
         model_storage: ModelStorage,
         tmp_path: Path,
     ) -> None:
@@ -592,6 +639,7 @@ class TestLLMCommandGenerator:
         assert fingerprint_1 != fingerprint_2
 
     async def test_llm_command_generator_fingerprint_addon_no_diff_in_prompt_template(
+        self,
         model_storage: ModelStorage,
         tmp_path: Path,
     ) -> None:
@@ -609,6 +657,7 @@ class TestLLMCommandGenerator:
         assert fingerprint_1 == fingerprint_2
 
     async def test_llm_command_generator_fingerprint_addon_default_prompt_template(
+        self,
         model_storage: ModelStorage,
     ) -> None:
         generator = LLMCommandGenerator({}, model_storage, Resource("llmcmdgen"))

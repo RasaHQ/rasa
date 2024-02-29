@@ -2,6 +2,13 @@ from dataclasses import dataclass
 from typing import Any, Dict
 
 import pytest
+
+from rasa.dialogue_understanding.patterns.completed import (
+    CompletedPatternFlowStackFrame,
+)
+from rasa.dialogue_understanding.patterns.correction import (
+    CorrectionPatternFlowStackFrame,
+)
 from rasa.dialogue_understanding.stack.frames.dialogue_stack_frame import (
     DialogueStackFrame,
     InvalidStackFrameType,
@@ -72,3 +79,45 @@ def test_create_typed_frame_with_unknown_type():
 
     with pytest.raises(InvalidStackFrameType):
         DialogueStackFrame.create_typed_frame({"type": "unknown"})
+
+
+@pytest.mark.parametrize(
+    "data, expected_frame",
+    [
+        (
+            {
+                "frame_id": "test",
+                "type": "pattern_completed",
+                "step_id": "bye",
+                "previous_flow_name": "transfer_money",
+            },
+            CompletedPatternFlowStackFrame(
+                frame_id="test", step_id="bye", previous_flow_name="transfer_money"
+            ),
+        ),
+        (
+            {
+                "frame_id": "test",
+                "type": "pattern_correction",
+                "step_id": "bye",
+                "is_reset_only": True,
+                "corrected_slots": {},
+                "reset_flow_id": "test",
+                "reset_step_id": "bye",
+            },
+            CorrectionPatternFlowStackFrame(
+                frame_id="test",
+                step_id="bye",
+                is_reset_only=True,
+                corrected_slots={},
+                reset_flow_id="test",
+                reset_step_id="bye",
+            ),
+        ),
+    ],
+)
+def test_create_typed_frame_for_pattern_frames(
+    data: Dict[str, Any],
+    expected_frame: DialogueStackFrame,
+) -> None:
+    assert DialogueStackFrame.create_typed_frame(data) == expected_frame
