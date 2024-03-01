@@ -14,7 +14,7 @@ WORKDIR /build
 RUN python -m venv /opt/venv && \
   . /opt/venv/bin/activate && \
   pip install --no-cache-dir -U "pip==22.*" -U "wheel>0.38.0" && \
-  poetry install --no-dev --no-root --no-interaction && \
+  poetry install --only main --no-root --no-interaction && \
   poetry build -f wheel -n && \
   pip install --no-deps dist/*.whl && \
   rm -rf dist *.egg-info
