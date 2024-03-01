@@ -308,6 +308,7 @@ jobs:
       - name: Prevent race condition in poetry build
         # More context about race condition during poetry build can be found here:
         # https://github.com/python-poetry/poetry/issues/7611#issuecomment-1747836233
+        if: needs.changes.outputs.backend == 'true'
         run: |
           poetry config installer.max-workers 1
 
