@@ -800,6 +800,43 @@ def test_run_step_collect():
     assert isinstance(stack.frames[1], CollectInformationPatternFlowStackFrame)
 
 
+@pytest.mark.parametrize("ask_before_filling", [True, False])
+def test_run_step_collect_with_ask_before_filling(ask_before_filling: bool):
+    flows = flows_from_str(
+        f"""
+        flows:
+          my_flow:
+            description: flow my_flow
+            steps:
+            - id: collect_foo
+              collect: foo
+              ask_before_filling: {ask_before_filling}
+        """
+    )
+    slots = [TextSlot("foo", [], initial_value="some value")]
+    actions = ["utter_ask_foo"]
+
+    user_flow_frame = UserFlowStackFrame(
+        flow_id="my_flow", step_id="collect_foo", frame_id="some-frame-id"
+    )
+    stack = DialogueStack(frames=[user_flow_frame])
+    tracker = DialogueStateTracker.from_events("test", [], slots=slots)
+    tracker.update_stack(stack)
+    step = user_flow_frame.step(flows)
+    flow = user_flow_frame.flow(flows)
+
+    result = flow_executor.run_step(step, flow, stack, tracker, actions, flows)
+    expected_events = [FlowStarted(flow_id="my_flow")]
+    if ask_before_filling:
+        expected_events.append(SlotSet("foo", None))
+
+    assert isinstance(result, ContinueFlowWithNextStep)
+    assert result.events == expected_events
+    assert len(stack.frames) == 2
+    assert isinstance(stack.frames[0], UserFlowStackFrame)
+    assert isinstance(stack.frames[1], CollectInformationPatternFlowStackFrame)
+
+
 def test_trigger_pattern_ask_collect_information():
     stack = DialogueStack.empty()
     flow_executor.trigger_pattern_ask_collect_information(

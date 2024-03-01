@@ -3,6 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict, List
 from rasa.dialogue_understanding.commands import Command
+from rasa.dialogue_understanding.patterns.cannot_handle import (
+    CannotHandlePatternFlowStackFrame,
+)
 from rasa.shared.core.events import Event
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -42,4 +45,6 @@ class CannotHandleCommand(Command):
         Returns:
             The events to apply to the tracker.
         """
-        return []
+        stack = tracker.stack
+        stack.push(CannotHandlePatternFlowStackFrame())
+        return tracker.create_stack_updated_events(stack)

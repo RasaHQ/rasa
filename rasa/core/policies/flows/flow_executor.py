@@ -204,12 +204,11 @@ def events_for_collect_step_execution(
     step: CollectInformationFlowStep, tracker: DialogueStateTracker
 ) -> List[Event]:
     """Create the events needed to prepare for the execution of a collect step"""
-    # reset the slot if its already filled and the collect information shouldn't
-    # be skipped
+    # reset the slots that always need to be explicitly collected
     slot = tracker.slots.get(step.collect, None)
 
-    if slot and slot.has_been_set and step.ask_before_filling:
-        return [SlotSet(step.collect, slot.initial_value)]
+    if slot and step.ask_before_filling:
+        return [SlotSet(step.collect, None)]
     else:
         return []
 

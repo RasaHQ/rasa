@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 from dataclasses import dataclass, field
 import dataclasses
 from enum import Enum
@@ -101,7 +102,26 @@ class DialogueStackFrame:
             The created `DialogueStackFrame`.
         """
         typ = data.get("type")
-        for clazz in rasa.shared.utils.common.all_subclasses(DialogueStackFrame):
+        stack_frame_subclasses = rasa.shared.utils.common.all_subclasses(
+            DialogueStackFrame
+        )
+
+        # Get all the subclasses of DialogueStackFrame from the patterns package
+        # in case these are not all imported at runtime
+        modules = rasa.shared.utils.common.import_package_modules(
+            "rasa.dialogue_understanding.patterns"
+        )
+        extra_subclasses = [
+            clazz
+            for module in modules
+            for _, clazz in inspect.getmembers(module, inspect.isclass)
+            if issubclass(clazz, DialogueStackFrame)
+            and clazz not in stack_frame_subclasses
+        ]
+
+        stack_frame_subclasses.extend(extra_subclasses)
+
+        for clazz in stack_frame_subclasses:
             try:
                 if typ == clazz.type():
                     return clazz.from_dict(data)

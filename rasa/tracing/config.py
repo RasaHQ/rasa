@@ -82,6 +82,7 @@ def configure_tracing(tracer_provider: Optional[TracerProvider]) -> None:
         policy_subclasses=policy_subclasses,
         vector_store_subclasses=vector_store_subclasses,
         nlu_command_adapter_class=NLUCommandAdapter,
+        endpoint_config_class=EndpointConfig,
     )
 
 
