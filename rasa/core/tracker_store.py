@@ -1325,7 +1325,7 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
                 )
             )
 
-        return event_query.order_by(self.SQLEvent.id)
+        return event_query.order_by(self.SQLEvent.timestamp, self.SQLEvent.id)
 
     async def save(self, tracker: DialogueStateTracker) -> None:
         """Update database with events from the current conversation."""
