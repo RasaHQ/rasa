@@ -12,7 +12,6 @@ on:
 
 env:
   LABEL_TYPE: type:release-branch-port
-  LABEL_STATUS: status:ready-to-merge
 
 jobs:
   update_merge_pr:
@@ -34,22 +33,6 @@ jobs:
           GITHUB_BRANCH=${GITHUB_REF/refs\/heads\//}
           echo "release_branch=${GITHUB_BRANCH}" >> $GITHUB_OUTPUT
           echo "new_branch=merge-${GITHUB_BRANCH}-main-${GITHUB_SHA:0:7}" >> $GITHUB_OUTPUT
-
-      - name: Get GitHub labels 🏷
-        id: get-github-labels
-        run: |
-          LATEST_RASA_MINOR=$(git tag --list | grep -P '^\d+\.\d+\.\d+$' | tail -n1 | sed -e 's/.\([0-9]\)*$/.0/g')
-          echo "Latest minor: ${LATEST_RASA_MINOR}"
-          # bash doesn't support nested variable access
-          CURRENT_RASA_MINOR=${GITHUB_REF/refs\/heads\//}
-          CURRENT_RASA_MINOR=${CURRENT_RASA_MINOR/\.x/\.0}
-
-          if [[ ${LATEST_RASA_MINOR} == ${CURRENT_RASA_MINOR} ]]
-          then
-            echo "labels=${LABEL_TYPE},${LABEL_STATUS}" >> $GITHUB_OUTPUT
-          else
-            echo "labels=${LABEL_TYPE}" >> $GITHUB_OUTPUT
-          fi
 
       - name: Close outdated release-merge PRs 🧹
         run: |
@@ -85,5 +68,5 @@ jobs:
           destination_branch: main
           pr_title: Merge ${{ steps.get-branch-name.outputs.release_branch }} into main
           pr_template: .github/PULL_REQUEST_AUTOMATIC_TEMPLATE.md
-          pr_label: ${{ steps.get-github-labels.outputs.labels }}
+          pr_label: ${LABEL_TYPE}
           pr_reviewer: ${{ github.event.pull_request.user.login }}
