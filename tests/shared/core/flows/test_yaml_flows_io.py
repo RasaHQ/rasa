@@ -226,9 +226,24 @@ def test_flow_validates_true_flow_guard():
                 description: add a contact to your contact list
                 steps:
                 - noop: true
+                  next: END
         """
     )
     assert YAMLFlowsReader.read_from_string(data)
+
+
+def test_flow_invalidates_noop_step():
+    data = textwrap.dedent(
+        """
+        flows:
+            add_contact:
+                description: add a contact to your contact list
+                steps:
+                - noop: true
+        """
+    )
+    with pytest.raises(YamlValidationException):
+        YAMLFlowsReader.read_from_string(data)
 
 
 def test_flow_validates_missing_flow_description() -> None:

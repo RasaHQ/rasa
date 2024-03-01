@@ -37,6 +37,7 @@ from rasa.shared.core.constants import (
 from rasa.core.constants import POSTGRESQL_SCHEMA
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
+    DialogueStackUpdated,
     SlotSet,
     ActionExecuted,
     Restarted,
@@ -1360,3 +1361,24 @@ async def test_tracker_event_diff_engine_event_difference() -> None:
     event_diff = TrackerEventDiffEngine.event_difference(prior_tracker, new_tracker)
 
     assert new_events == event_diff
+
+
+async def test_tracker_store_retrieve_stack_events():
+    tracker_store = InMemoryTrackerStore(domain=Domain.empty())
+    tracker = DialogueStateTracker.from_events(
+        "test_patterns",
+        [
+            DialogueStackUpdated(
+                update='[{"op": "add", "path": "/0", "value": {"frame_id": "PWF4YX9P", "flow_id": "list_contacts", "step_id": "START", "frame_type": "regular", "type": "flow"}}]'  # noqa: E501
+            ),
+            DialogueStackUpdated(
+                update='[{"op": "add", "path": "/0/previous_flow_name", "value": "list your contacts"}, {"op": "replace", "path": "/0/type", "value": "pattern_completed"}]'  # noqa: E501
+            ),
+        ],
+    )
+
+    await tracker_store.save(tracker)
+
+    retrieved_tracker = await tracker_store.retrieve_full_tracker(tracker.sender_id)
+
+    assert retrieved_tracker == tracker
