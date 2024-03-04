@@ -1291,6 +1291,9 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
         self, session: "Session", sender_id: Text, fetch_events_from_all_sessions: bool
     ) -> "Query":
         """Provide the query to retrieve the conversation events for a specific sender.
+        The events are ordered by ID to ensure correct sequence of events.
+        As `timestamp` is not guaranteed to be unique and low-precision (float), it
+        cannot be used to order the events.
 
         Args:
             session: Current database session.
