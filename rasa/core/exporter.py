@@ -160,7 +160,7 @@ class Exporter:
         self, conversation_ids_in_tracker_store: Set[Text]
     ) -> None:
         """Warn user if `self.requested_conversation_ids` contains IDs not found in
-        `conversation_ids_in_tracker_store`
+        `conversation_ids_in_tracker_store`.
 
         Args:
             conversation_ids_in_tracker_store: Set of conversation IDs contained in
