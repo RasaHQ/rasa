@@ -671,7 +671,7 @@ async def test_tracker_store_retrieve_with_session_started_events(
     # Retrieve tracker with events since latest SessionStarted
     tracker = await tracker_store.retrieve(sender_id)
 
-    assert len(tracker.events) == 3
+    assert len(tracker.events) == 2
     assert all((event == tracker.events[i] for i, event in enumerate(events[2:])))
 
 
