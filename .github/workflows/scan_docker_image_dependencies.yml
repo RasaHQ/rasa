@@ -1,0 +1,99 @@
+name: Scan Rasa Private App Dependencies
+
+on:
+    schedule:
+      - cron: '0 8 * * MON'
+    workflow_dispatch:
+
+env:
+  # Registry used to store Docker images used for release purposes
+  RELEASE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-docker/rasa"
+  REPORT_BUCKET: "rasa-container-scan-reports"
+
+jobs:
+  scan_and_alert:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: Checkout repository to check tags
+      uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab
+
+    - name: Get latest tagged release
+      id: find-tag
+      run: |
+        git fetch --depth=1 origin "+refs/tags/*:refs/tags/*"
+        echo "tag=$(git tag | sort -r -V | grep -E "^[0-9]+.[0-9]+.[0-9]+$" | head -n1)" >> $GITHUB_OUTPUT
+    
+    - id: 'auth-release'
+      name: Authenticate with gcloud for release registry 🎫
+      uses: 'google-github-actions/auth@ef5d53e30bbcd8d0836f4288f5e50ff3e086997d'
+      with:
+        token_format: 'access_token'
+        credentials_json: '${{ secrets.RASA_PLUS_RELEASE_ACCOUNT_KEY }}'
+
+    - name: Authenticate docker for release registry 🎫
+      run: |
+          # Set up docker to authenticate via gcloud command-line tool.
+          gcloud auth configure-docker europe-west3-docker.pkg.dev
+
+    - name: Scan image for language dependency vulnerabilities
+      id: trivy
+      uses: aquasecurity/trivy-action@d63413b0a4a4482237085319f7f4a1ce99a8f2ac
+      continue-on-error: true
+      with:
+        exit-code: '1'
+        format: 'table'
+        severity: 'MEDIUM,HIGH,CRITICAL'
+        ignore-unfixed: true
+        security-checks: 'vuln'
+        image-ref: '${{env.RELEASE_REGISTRY}}:${{ steps.find-tag.outputs.tag }}-full'
+        vuln-type: 'library'
+        scan-type: 'image'
+        output: scan-result.txt  
+    
+    - id: auth-security-reports
+      name: Authenticate with gcloud for saving report 🎫
+      uses: 'google-github-actions/auth@ef5d53e30bbcd8d0836f4288f5e50ff3e086997d'
+      with:
+        token_format: 'access_token'
+        credentials_json: '${{ secrets.GCP_WRITE_PUBLIC_SECURITY_REPORTS_KEY }}'
+    
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@d51b5346f85640ec2aa2fa057354d2b82c2fcbce
+
+    - name: Get current date
+      id: date
+      run: echo "date=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
+
+    - name: Upload scan report to GCS
+      run: |
+        gsutil -h "Content-Type:text/plain; charset=utf-8" -h "Cache-Control:public, max-age=0, no-transform" cp scan-result.txt gs://${{ env.REPORT_BUCKET }}/rasa-private-dependency-report-${{ steps.find-tag.outputs.tag }}-${{ steps.date.outputs.date }}.txt
+
+    - name: Alert Slack on findings
+      if: steps.trivy.outcome == 'failure'
+      uses: slackapi/slack-github-action@007b2c3c751a190b6f0f040e47ed024deaa72844
+      with:
+        # atom-sqad-alert and engine-squad-alert channels
+        channel-id: 'C01M5TAHDHA,C04Q26JSD6U'
+        payload: |
+          {
+            "text": "Dependency vulnerabilities have been found in the Docker image for Rasa Private ${{ steps.find-tag.outputs.tag }} that could impact customer deployments. Please schedule these for resolution.",
+            "blocks": [
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "Dependency vulnerabilities have been found in the Docker image for Rasa Private ${{ steps.find-tag.outputs.tag }} that could impact customer deployments. Please schedule these for resolution depending on their severity:\n - Critical: This sprint. \n - High: Next sprint. \n - Medium or Low: Add to backlog."
+                }
+              },
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "<https://storage.googleapis.com/${{ env.REPORT_BUCKET }}/rasa-private-dependency-report-${{ steps.find-tag.outputs.tag }}-${{ steps.date.outputs.date }}.txt|View Scan Report>"
+                }
+              }
+            ]
+          }
+      env:
+        SLACK_BOT_TOKEN: ${{ secrets.SLACK_CODESECURITY_BOT_TOKEN }}
