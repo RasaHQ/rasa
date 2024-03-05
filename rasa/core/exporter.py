@@ -241,6 +241,12 @@ class Exporter:
                 continue
 
             events = self._get_events_for_conversation_id(_events, conversation_id)
+
+            # the order of events was changed after ATO-2192
+            # more context: https://github.com/RasaHQ/rasa/pull/13019
+            # we should sort the events by timestamp to keep the order
+            events.sort(key=lambda x: x["timestamp"])
+
             # the conversation IDs are needed in the event publishing
             for event in events:
                 if (
