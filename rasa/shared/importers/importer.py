@@ -398,7 +398,9 @@ class FlowSyncImporter(PassThroughImporter):
             )
         )
 
-        return YAMLFlowsReader.read_from_file(default_flows_file)
+        flows = YAMLFlowsReader.read_from_file(default_flows_file)
+        flows.validate()
+        return flows
 
     @staticmethod
     def load_default_pattern_flows_domain() -> Domain:

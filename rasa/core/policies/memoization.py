@@ -252,6 +252,8 @@ class MemoizationPolicy(Policy):
              The policy's prediction (e.g. the probabilities for the actions).
         """
         result = self._default_predictions(domain)
+        if self.should_abstain_in_coexistence(tracker, False):
+            return self._prediction(result)
 
         states = self._prediction_states(tracker, domain, rule_only_data=rule_only_data)
         structlogger.debug(
@@ -362,7 +364,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         idx_of_first_action = None
         idx_of_second_action = None
 
-        applied_events = tracker.applied_events()
+        applied_events = tracker.applied_events(True)
 
         # we need to find second executed action
         for e_i, event in enumerate(applied_events):
@@ -502,7 +504,7 @@ def _get_max_applied_events_for_max_history(
         return None
     num_events = 0
     num_actions = 0
-    for event in reversed(tracker.applied_events()):
+    for event in reversed(tracker.applied_events(True)):
         num_events += 1
         if isinstance(event, ActionExecuted):
             num_actions += 1
@@ -528,7 +530,7 @@ def _trim_tracker_by_max_history(
     if not max_applied_events:
         return tracker
 
-    applied_events = tracker.applied_events()[-max_applied_events:]
+    applied_events = tracker.applied_events(True)[-max_applied_events:]
     new_tracker = tracker.init_copy()
     for event in applied_events:
         new_tracker.update(event)

@@ -49,7 +49,7 @@ class Flow:
 
     @staticmethod
     def from_json(flow_id: Text, data: Dict[Text, Any]) -> Flow:
-        """Create a Flow object from serialized data
+        """Create a Flow object from serialized data.
 
         Args:
             data: data for a Flow object in a serialized format.
@@ -160,56 +160,14 @@ class Flow:
 
     def first_step_in_flow(self) -> FlowStep:
         """Returns the start step of this flow."""
-        if len(self.steps) == 0:
+        if not (steps := self.steps):
             raise RuntimeError(
                 f"Flow {self.id} is empty despite validation that this cannot happen."
             )
-        return self.steps[0]
-
-    def previous_collect_steps(
-        self, step_id: Optional[str]
-    ) -> List[CollectInformationFlowStep]:
-        """Return the CollectInformationFlowSteps asked before the given step.
-
-        CollectInformationFlowSteps are returned roughly in reverse order,
-        i.e. the first step in the list is the one that was asked last. However,
-        due to circles in the flow, the order is not guaranteed to be exactly reverse.
-        """
-
-        def _previously_asked_collect(
-            current_step_id: str, visited_steps: Set[str]
-        ) -> List[CollectInformationFlowStep]:
-            """Returns the collect information steps asked before the given step.
-
-            Keeps track of the steps that have been visited to avoid circles.
-            """
-            current_step = self.step_by_id(current_step_id)
-
-            collects: List[CollectInformationFlowStep] = []
-
-            if not current_step:
-                return collects
-
-            if isinstance(current_step, CollectInformationFlowStep):
-                collects.append(current_step)
-
-            visited_steps.add(current_step.id)
-
-            for previous_step in self.steps:
-                for next_link in previous_step.next.links:
-                    if next_link.target != current_step_id:
-                        continue
-                    if previous_step.id in visited_steps:
-                        continue
-                    collects.extend(
-                        _previously_asked_collect(previous_step.id, visited_steps)
-                    )
-            return collects
-
-        return _previously_asked_collect(step_id or START_STEP, set())
+        return steps[0]
 
     def get_trigger_intents(self) -> Set[str]:
-        """Returns the trigger intents of the flow"""
+        """Returns the trigger intents of the flow."""
         results: Set[str] = set()
 
         if not self.nlu_triggers:
@@ -228,14 +186,19 @@ class Flow:
     def get_collect_steps(self) -> List[CollectInformationFlowStep]:
         """Return all CollectInformationFlowSteps in the flow."""
         collect_steps = []
-        for step in self.steps:
+        for step in self.steps_with_calls_resolved:
             if isinstance(step, CollectInformationFlowStep):
                 collect_steps.append(step)
         return collect_steps
 
     @property
+    def steps_with_calls_resolved(self) -> List[FlowStep]:
+        """Return the steps of the flow including steps of called flows."""
+        return self.step_sequence.steps_with_calls_resolved
+
+    @property
     def steps(self) -> List[FlowStep]:
-        """Return the steps of the flow."""
+        """Return the steps of the flow without steps of called flows."""
         return self.step_sequence.steps
 
     @cached_property
@@ -245,8 +208,10 @@ class Flow:
 
     @property
     def utterances(self) -> Set[str]:
-        """Retrieve all utterances of this flow"""
-        return set().union(*[step.utterances for step in self.step_sequence.steps])
+        """Retrieve all utterances of this flow."""
+        return set().union(
+            *[step.utterances for step in self.step_sequence.steps_with_calls_resolved]
+        )
 
     @property
     def name(self) -> str:

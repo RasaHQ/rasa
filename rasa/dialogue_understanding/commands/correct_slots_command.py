@@ -13,12 +13,12 @@ from rasa.dialogue_understanding.patterns.correction import (
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
     BaseFlowStackFrame,
-    UserFlowStackFrame,
 )
 from rasa.shared.core.events import Event
+from rasa.shared.core.flows.flow_step import FlowStepWithFlowReference
 from rasa.shared.core.flows.steps.constants import END_STEP
 from rasa.shared.core.flows.steps.continuation import ContinueFlowStep
-from rasa.shared.core.flows import FlowsList, FlowStep
+from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 import rasa.dialogue_understanding.stack.utils as utils
 
@@ -92,11 +92,10 @@ class CorrectSlotsCommand(Command):
 
     @staticmethod
     def find_earliest_updated_collect_info(
-        user_frame: UserFlowStackFrame,
         updated_slots: Dict[str, Any],
         all_flows: FlowsList,
         tracker: DialogueStateTracker,
-    ) -> Optional[FlowStep]:
+    ) -> Optional[FlowStepWithFlowReference]:
         """Find the earliest collect information step that fills one of the slots.
 
         When we update slots, we need to reset a flow to the question when the slot
@@ -105,28 +104,21 @@ class CorrectSlotsCommand(Command):
         the other updated slots.
 
         Args:
-            user_frame: The current user flow frame.
             updated_slots: The slots that were updated.
             all_flows: All flows.
             tracker: The dialogue state tracker.
 
         Returns:
-        The earliest collect information step that fills one of the slots.
+        The earliest collect information step that fills one of the slots and
+        the  flow id of that step.
         """
-        flow = user_frame.flow(all_flows)
-        step = user_frame.step(all_flows)
 
-        asked_collect_steps = flow.previous_collect_steps(step.id)
-        previously_updated_slots = tracker.get_previously_updated_slots(all_flows)
+        collect_steps = utils.previous_collect_steps_for_active_flow(tracker, all_flows)
 
-        for collect_step in reversed(asked_collect_steps):
-            # make sure the collect step belongs to the active flow and
-            # was already asked for previously in the active flow conversation
-            if (
-                collect_step.collect in updated_slots
-                and collect_step.collect in previously_updated_slots
-            ):
-                return collect_step
+        for collect_step, flow_id in collect_steps:
+            if collect_step.collect in updated_slots:
+                return FlowStepWithFlowReference(collect_step, flow_id)
+
         return None
 
     def corrected_slots_dict(self, tracker: DialogueStateTracker) -> Dict[str, Any]:
@@ -151,7 +143,7 @@ class CorrectSlotsCommand(Command):
         return proposed_slots
 
     @staticmethod
-    def index_for_correction_frame(
+    def determine_index_for_new_correction_frame(
         top_flow_frame: BaseFlowStackFrame, stack: DialogueStack
     ) -> int:
         """Returns the index for the correction frame.
@@ -210,7 +202,6 @@ class CorrectSlotsCommand(Command):
     @classmethod
     def create_correction_frame(
         cls,
-        user_frame: Optional[UserFlowStackFrame],
         proposed_slots: Dict[str, Any],
         all_flows: FlowsList,
         tracker: DialogueStateTracker,
@@ -218,7 +209,6 @@ class CorrectSlotsCommand(Command):
         """Creates a correction frame.
 
         Args:
-            user_frame: The user frame.
             proposed_slots: The proposed slots.
             all_flows: All flows in the assistant.
             tracker: The dialogue state tracker.
@@ -226,36 +216,30 @@ class CorrectSlotsCommand(Command):
         Returns:
             The correction frame.
         """
-        if user_frame:
-            # check if all corrected slots have ask_before_filling=True
-            # if this is a case, we are not correcting a value but we
-            # are resetting the slots and jumping back to the first question
-            is_reset_only = cls.are_all_slots_reset_only(proposed_slots, all_flows)
+        # check if all corrected slots have ask_before_filling=True
+        # if this is a case, we are not correcting a value but we
+        # are resetting the slots and jumping back to the first question
+        is_reset_only = cls.are_all_slots_reset_only(proposed_slots, all_flows)
 
-            reset_step = cls.find_earliest_updated_collect_info(
-                user_frame, proposed_slots, all_flows, tracker
-            )
+        earliest_collect = cls.find_earliest_updated_collect_info(
+            proposed_slots, all_flows, tracker
+        )
 
+        if not earliest_collect and not is_reset_only:
             # if we could not find any step in the flow, where the slots were
             # previously set, and we also don't want to reset the slots, do
             # not correct the slots.
-            if not reset_step and not is_reset_only:
-                structlogger.debug(
-                    "command_executor.skip_correction",
-                    reset_step=reset_step,
-                    is_reset_only=is_reset_only,
-                )
-                return None
-
-            return CorrectionPatternFlowStackFrame(
+            structlogger.debug(
+                "command_executor.skip_correction",
                 is_reset_only=is_reset_only,
-                corrected_slots=proposed_slots,
-                reset_flow_id=user_frame.flow_id,
-                reset_step_id=reset_step.id if reset_step else None,
             )
+            return None
 
         return CorrectionPatternFlowStackFrame(
+            is_reset_only=is_reset_only,
             corrected_slots=proposed_slots,
+            reset_flow_id=earliest_collect.flow_id if earliest_collect else None,
+            reset_step_id=earliest_collect.step.id if earliest_collect else None,
         )
 
     def run_command_on_tracker(
@@ -275,7 +259,6 @@ class CorrectSlotsCommand(Command):
             The events to apply to the tracker.
         """
         stack = tracker.stack
-        user_frame = utils.top_user_flow_frame(stack)
 
         top_flow_frame = utils.top_flow_frame(stack)
         if not top_flow_frame:
@@ -291,12 +274,14 @@ class CorrectSlotsCommand(Command):
         proposed_slots = self.corrected_slots_dict(tracker)
 
         correction_frame = self.create_correction_frame(
-            user_frame, proposed_slots, all_flows, tracker
+            proposed_slots, all_flows, tracker
         )
         if not correction_frame:
             return []
 
-        insertion_index = self.index_for_correction_frame(top_flow_frame, stack)
+        insertion_index = self.determine_index_for_new_correction_frame(
+            top_flow_frame, stack
+        )
         self.end_previous_correction(top_flow_frame, stack)
 
         stack.push(correction_frame, index=insertion_index)

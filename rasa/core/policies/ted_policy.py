@@ -823,7 +823,7 @@ class TEDPolicy(Policy):
         **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action (see parent class for full docstring)."""
-        if self.model is None:
+        if self.model is None or self.should_abstain_in_coexistence(tracker, False):
             return self._prediction(self._default_predictions(domain))
 
         # create model data from tracker

@@ -265,7 +265,7 @@ convention = "google"
 
 [tool.pytest.ini_options]
 python_functions = "test_"
-filterwarnings = [ "ignore::ResourceWarning:ruamel[.*]",  "ignore:.*Create unlinked descriptors is going to go away.*:DeprecationWarning", "ignore:.*the imp module.*:DeprecationWarning",]
+filterwarnings = [ "ignore::ResourceWarning:ruamel[.*]", "ignore:.*Create unlinked descriptors is going to go away.*:DeprecationWarning", "ignore:.*the imp module.*:DeprecationWarning",]
 log_cli_level = "WARNING"
 log_cli = true
 markers = [ "skip_on_windows", "skip_on_ci", "sequential", "category_cli", "category_core_featurizers", "category_policies", "category_nlu_featurizers", "category_nlu_predictors", "category_full_model_training", "category_other_unit_tests", "category_performance", "flaky",]

@@ -26,6 +26,7 @@ from rasa.dialogue_understanding.generator.llm_command_generator import (
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.shared.constants import ROUTE_TO_CALM_SLOT
 from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.flows.steps.collect import (
@@ -64,6 +65,7 @@ class TestLLMCommandGenerator:
             """
             flows:
               test_flow:
+                description: some test flow
                 steps:
                 - id: first_step
                   action: action_listen
@@ -165,13 +167,60 @@ class TestLLMCommandGenerator:
         # Then
         assert not predicted_commands
 
+    def test_predict_commands_sets_routing_slot(
+        self, command_generator: LLMCommandGenerator, flows: FlowsList
+    ):
+        """Test that predict_commands sets the routing slot to True."""
+        # When
+        with patch(
+            "rasa.dialogue_understanding.generator.llm_command_generator.llm_factory",
+            Mock(),
+        ) as mock_llm_factory:
+            mock_llm_factory.return_value = Mock(return_value="StartFlow(test_flow)")
+            predicted_commands = command_generator.predict_commands(
+                Message.build(text="start test_flow"),
+                flows=flows,
+                tracker=DialogueStateTracker(
+                    "sender_id",
+                    [BooleanSlot(ROUTE_TO_CALM_SLOT, mappings=[], initial_value=True)],
+                ),
+            )
+
+        # Then
+        assert StartFlowCommand("test_flow") in predicted_commands
+        assert SetSlotCommand(ROUTE_TO_CALM_SLOT, True) in predicted_commands
+
     @pytest.mark.parametrize(
         "llm_response, expected_commands",
         [
-            (None, [ErrorCommand()]),
-            ("StartFlow(this_flow_does_not_exists)", [CannotHandleCommand()]),
-            ("A random response from LLM", [CannotHandleCommand()]),
-            ("SetSlot(flow_name, some_flow)", [StartFlowCommand(flow="some_flow")]),
+            (
+                None,
+                [
+                    ErrorCommand(),
+                    SetSlotCommand(ROUTE_TO_CALM_SLOT, True),
+                ],
+            ),
+            (
+                "StartFlow(this_flow_does_not_exists)",
+                [
+                    CannotHandleCommand(),
+                    SetSlotCommand(ROUTE_TO_CALM_SLOT, True),
+                ],
+            ),
+            (
+                "A random response from LLM",
+                [
+                    CannotHandleCommand(),
+                    SetSlotCommand(ROUTE_TO_CALM_SLOT, True),
+                ],
+            ),
+            (
+                "SetSlot(flow_name, some_flow)",
+                [
+                    StartFlowCommand(flow="some_flow"),
+                    SetSlotCommand(ROUTE_TO_CALM_SLOT, True),
+                ],
+            ),
         ],
     )
     @patch(
@@ -373,7 +422,7 @@ class TestLLMCommandGenerator:
             LLMCommandGenerator, "get_nullable_slot_value", Mock(return_value=None)
         ):
             parsed_commands = LLMCommandGenerator.parse_commands(
-                input_action, Mock(), test_flows
+                input_action, test_flows
             )
         # Then
         assert parsed_commands == expected_command
@@ -413,9 +462,7 @@ class TestLLMCommandGenerator:
                   collect: some_slot
             """
         )
-        parsed_commands = LLMCommandGenerator.parse_commands(
-            input_action, Mock(), test_flows
-        )
+        parsed_commands = LLMCommandGenerator.parse_commands(input_action, test_flows)
         # Then
         assert parsed_commands == expected_command
 

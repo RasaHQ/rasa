@@ -212,7 +212,8 @@ def test_flow_validates_invalid_step_content():
         YAMLFlowsReader.read_from_string(data)
     expected_error = (
         "Not a valid 'steps' definition. Expected action step "
-        "or collect step or link step or slot set step."
+        "or call step or collect step or link step "
+        "or slot set step."
     )
     assert expected_error in str(e.value)
 

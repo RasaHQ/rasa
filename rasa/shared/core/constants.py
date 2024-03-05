@@ -44,6 +44,7 @@ ACTION_RUN_SLOT_REJECTIONS_NAME = "action_run_slot_rejections"
 ACTION_CLEAN_STACK = "action_clean_stack"
 ACTION_TRIGGER_SEARCH = "action_trigger_search"
 ACTION_TRIGGER_CHITCHAT = "action_trigger_chitchat"
+ACTION_RESET_ROUTING = "action_reset_routing"
 
 
 DEFAULT_ACTION_NAMES = [
@@ -68,6 +69,7 @@ DEFAULT_ACTION_NAMES = [
     ACTION_CLEAN_STACK,
     ACTION_TRIGGER_SEARCH,
     ACTION_TRIGGER_CHITCHAT,
+    ACTION_RESET_ROUTING,
 ]
 
 ACTION_SHOULD_SEND_DOMAIN = "send_domain"

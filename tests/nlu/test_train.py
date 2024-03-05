@@ -5,6 +5,7 @@ from _pytest.tmpdir import TempPathFactory
 
 from rasa.core.agent import Agent
 from rasa.core.policies.policy import Policy
+from rasa.dialogue_understanding.coexistence.coexistence_router import CALM_CAPABILITIES
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.shared.nlu.training_data.formats import RasaYAMLReader
 from rasa.utils.tensorflow.constants import EPOCHS, RUN_EAGERLY
@@ -91,6 +92,21 @@ def pipelines_for_tests() -> List[Tuple[Text, List[Dict[Text, Any]]]]:
         ),
         ("fallback", as_pipeline("KeywordIntentClassifier", "FallbackClassifier")),
         ("calm", as_pipeline("NLUCommandAdapter", "LLMCommandGenerator")),
+        (
+            "coexistence",
+            as_pipeline(
+                {
+                    "name": "CoexistenceRouter",
+                    CALM_CAPABILITIES: "handles everything around contacts",
+                },
+                "WhitespaceTokenizer",
+                "CountVectorsFeaturizer",
+                "LogisticRegressionClassifier",
+                "CRFEntityExtractor",
+                "NLUCommandAdapter",
+                "LLMCommandGenerator",
+            ),
+        ),
     ]
 
 

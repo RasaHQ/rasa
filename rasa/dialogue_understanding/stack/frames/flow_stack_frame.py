@@ -33,6 +33,10 @@ class FlowStackFrameType(str, Enum):
     """The frame is a link frame.
 
     This means that the previous flow linked to this flow."""
+
+    CALL = "call"
+    """The frame is a flow that is called from another flow."""
+
     REGULAR = "regular"
     """The frame is a regular frame.
 
@@ -51,6 +55,8 @@ class FlowStackFrameType(str, Enum):
             return FlowStackFrameType.REGULAR
         elif typ == FlowStackFrameType.INTERRUPT.value:
             return FlowStackFrameType.INTERRUPT
+        elif typ == FlowStackFrameType.CALL.value:
+            return FlowStackFrameType.CALL
         elif typ == FlowStackFrameType.LINK.value:
             return FlowStackFrameType.LINK
         elif typ == FlowStackFrameType.REGULAR.value:

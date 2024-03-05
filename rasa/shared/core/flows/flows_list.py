@@ -4,7 +4,16 @@ from typing import List, Generator, Any, Optional, Dict, Text, Set
 
 import rasa.shared.utils.io
 from rasa.shared.core.flows import Flow
-from rasa.shared.core.flows.validation import validate_flow, validate_nlu_trigger
+from rasa.shared.core.flows.validation import (
+    validate_flow,
+    validate_link_in_call_restriction,
+    validate_called_flows_exists,
+    validate_linked_flows_exists,
+    validate_nlu_trigger,
+    validate_patterns_are_not_called_or_linked,
+    validate_patterns_are_not_calling_or_linking_other_flows,
+    validate_step_ids_are_unique,
+)
 
 
 @dataclass
@@ -18,6 +27,10 @@ class FlowsList:
 
     underlying_flows: List[Flow]
     """The flows contained in this FlowsList."""
+
+    def __post_init__(self) -> None:
+        """Initializes the FlowsList object."""
+        self._resolve_called_flows()
 
     def __iter__(self) -> Generator[Flow, None, None]:
         """Iterates over the flows."""
@@ -50,6 +63,16 @@ class FlowsList:
                 for flow_id, flow_config in data.items()
             ]
         )
+
+    def _resolve_called_flows(self) -> None:
+        """Resolves the called flows."""
+        from rasa.shared.core.flows.steps import CallFlowStep
+
+        for flow in self.underlying_flows:
+            for step in flow.steps:
+                if isinstance(step, CallFlowStep) and not step.called_flow_reference:
+                    # only resolve the reference, if it isn't already resolved
+                    step.called_flow_reference = self.flow_by_id(step.call)
 
     def as_json_list(self) -> List[Dict[Text, Any]]:
         """Serialize the FlowsList object to list format and not to the original dict.
@@ -85,6 +108,12 @@ class FlowsList:
         for flow in self.underlying_flows:
             validate_flow(flow)
         validate_nlu_trigger(self.underlying_flows)
+        validate_link_in_call_restriction(self)
+        validate_called_flows_exists(self)
+        validate_linked_flows_exists(self)
+        validate_patterns_are_not_called_or_linked(self)
+        validate_patterns_are_not_calling_or_linking_other_flows(self)
+        validate_step_ids_are_unique(self)
 
     @property
     def user_flow_ids(self) -> Set[str]:

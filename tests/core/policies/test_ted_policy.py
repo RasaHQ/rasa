@@ -28,6 +28,7 @@ from rasa.shared.core.events import (
     EntitiesAdded,
     ActiveLoop,
 )
+from rasa.shared.core.slots import BooleanSlot
 from rasa.shared.exceptions import RasaException, InvalidConfigException
 from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -54,8 +55,13 @@ from rasa.utils.tensorflow.constants import (
 )
 from rasa.shared.nlu.constants import ACTION_NAME
 from rasa.utils.tensorflow import model_data_utils
+from rasa.utils.tensorflow.models import RasaModel
 from tests.core.test_policies import PolicyTestCollection
-from rasa.shared.constants import DEFAULT_SENDER_ID, LATEST_TRAINING_DATA_FORMAT_VERSION
+from rasa.shared.constants import (
+    DEFAULT_SENDER_ID,
+    LATEST_TRAINING_DATA_FORMAT_VERSION,
+    ROUTE_TO_CALM_SLOT,
+)
 
 UTTER_GREET_ACTION = "utter_greet"
 GREET_INTENT_NAME = "greet"
@@ -96,6 +102,29 @@ def test_diagnostics(
     assert prediction.diagnostic_data
     assert "attention_weights" in prediction.diagnostic_data
     assert isinstance(prediction.diagnostic_data.get("attention_weights"), np.ndarray)
+
+
+def test_predict_action_probabilities_abstains_in_coexistence(
+    default_model_storage: ModelStorage, default_execution_context: ExecutionContext
+):
+    domain = Domain.from_yaml(DOMAIN_YAML)
+    policy = TEDPolicy(
+        TEDPolicy.get_default_config(),
+        default_model_storage,
+        Resource("TEDPolicy"),
+        default_execution_context,
+        RasaModel(),
+    )
+    tracker = DialogueStateTracker.from_events(
+        "greet rule",
+        slots=[BooleanSlot(ROUTE_TO_CALM_SLOT, mappings=[{}], initial_value=True)],
+        evts=[],
+    )
+
+    prediction = policy.predict_action_probabilities(tracker, domain, None)
+
+    # check that the policy didn't predict anything
+    assert prediction.max_confidence == 0.0
 
 
 class TestTEDPolicy(PolicyTestCollection):

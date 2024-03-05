@@ -9,6 +9,7 @@ from rasa.dialogue_understanding.commands import Command
 from rasa.dialogue_understanding.patterns.cancel import CancelPatternFlowStackFrame
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
+from rasa.dialogue_understanding.stack.frames.flow_stack_frame import FlowStackFrameType
 from rasa.shared.core.events import Event, FlowCancelled
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -53,7 +54,10 @@ class CancelFlowCommand(Command):
         # e.g. corrections.
         for frame in reversed(stack.frames):
             canceled_frames.append(frame.frame_id)
-            if isinstance(frame, UserFlowStackFrame):
+            if (
+                isinstance(frame, UserFlowStackFrame)
+                and frame.frame_type != FlowStackFrameType.CALL
+            ):
                 return canceled_frames
         else:
             # we should never get here as we should always find the user flow

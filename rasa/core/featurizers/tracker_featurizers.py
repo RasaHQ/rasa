@@ -552,7 +552,7 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
             states = self._create_states(
                 tracker, domain, omit_unset_slots=omit_unset_slots
             )
-            events = tracker.applied_events()
+            events = tracker.applied_events(True)
 
             if ignore_action_unlikely_intent:
                 states = self._remove_action_unlikely_intent_from_states(states)
@@ -801,7 +801,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         tracker_states = self._create_states(
             tracker, domain, omit_unset_slots=omit_unset_slots
         )
-        events = tracker.applied_events()
+        events = tracker.applied_events(True)
 
         if ignore_action_unlikely_intent:
             tracker_states = self._remove_action_unlikely_intent_from_states(
@@ -1055,7 +1055,7 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         tracker_states = self._create_states(
             tracker, domain, omit_unset_slots=omit_unset_slots
         )
-        events = tracker.applied_events()
+        events = tracker.applied_events(True)
 
         if ignore_action_unlikely_intent:
             tracker_states = self._remove_action_unlikely_intent_from_states(

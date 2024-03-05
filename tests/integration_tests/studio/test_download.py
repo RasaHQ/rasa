@@ -112,7 +112,13 @@ def test_sample_flows() -> str:
               - link: "replace_eligible_card"
           - else:
               - action: utter_relevant_card_not_linked
-                next: END"""
+                next: END
+  replace_eligible_card:
+    description: replace eligible card
+    name: replace_eligible_card
+    steps:
+      - action: utter_replacing_eligible_card
+        next: END"""
 
 
 @pytest.fixture

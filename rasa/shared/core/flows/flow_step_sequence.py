@@ -40,14 +40,25 @@ class FlowStepSequence:
             if not isinstance(step, InternalFlowStep)
         ]
 
-    @property
-    def steps(self) -> List[FlowStep]:
-        """Return all steps in this step sequence and their sub steps."""
+    def _resolve_steps(self, should_resolve_calls: bool) -> List[FlowStep]:
+        """Resolves the steps of the flow."""
         return [
             step
             for child_step in self.child_steps
-            for step in child_step.steps_in_tree()
+            for step in child_step.steps_in_tree(
+                should_resolve_calls=should_resolve_calls
+            )
         ]
+
+    @property
+    def steps_with_calls_resolved(self) -> List[FlowStep]:
+        """Return all steps in this step sequence and their sub steps."""
+        return self._resolve_steps(should_resolve_calls=True)
+
+    @property
+    def steps(self) -> List[FlowStep]:
+        """Return the steps of the flow without steps of called flows"""
+        return self._resolve_steps(should_resolve_calls=False)
 
     def first(self) -> Optional[FlowStep]:
         """Return the first step of the sequence."""

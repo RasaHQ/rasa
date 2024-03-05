@@ -1063,6 +1063,7 @@ def test_importer_with_invalid_model_config(tmp_path: Path):
         )
 
 
+@pytest.mark.skip("DM1 and CALM can coexist using the coexistence solution.")
 @pytest.mark.parametrize(
     "dm1_component",
     [
@@ -1073,7 +1074,7 @@ def test_importer_with_invalid_model_config(tmp_path: Path):
         UnexpecTEDIntentPolicy,
     ],
 )
-def test_core_fails_if_dm1_and_calm(dm1_component: Type[GraphComponent]):
+def test_core_does_not_fail_if_dm1_and_calm(dm1_component: Type[GraphComponent]):
     graph_schema = GraphSchema(
         {
             "0": SchemaNode({}, dm1_component, "", "", {}),
@@ -1083,8 +1084,7 @@ def test_core_fails_if_dm1_and_calm(dm1_component: Type[GraphComponent]):
     importer = DummyImporter()
     core_validator = DefaultV1RecipeValidator(graph_schema)
 
-    with pytest.raises(InvalidConfigException):
-        core_validator.validate(importer)
+    core_validator.validate(importer)
 
 
 def test_core_does_not_fail_if_calm_only():

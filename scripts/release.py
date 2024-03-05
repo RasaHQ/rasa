@@ -57,8 +57,7 @@ def create_argument_parser() -> argparse.ArgumentParser:
         help=(
             "Either next version number or 'major', "
             "'minor', 'micro', 'alpha', 'beta', 'rc'"
-
-        )
+        ),
     )
     prepare_subparser.add_argument(
         "--interactive",
@@ -92,7 +91,6 @@ def pyproject_file_path() -> Path:
 
 def write_version_file(version: Version) -> None:
     """Dump a new version into the python version file."""
-
     with version_file_path().open("w") as f:
         f.write(
             f"# this file will automatically be changed,\n"
@@ -123,7 +121,6 @@ def write_version_to_pyproject(version: Version) -> None:
 
 def get_current_version() -> Text:
     """Return the current library version."""
-
     if not version_file_path().is_file():
         raise FileNotFoundError(
             f"Failed to find version file at {version_file_path().absolute()}"
@@ -141,7 +138,6 @@ def get_current_version() -> Text:
 
 def confirm_version(version: Version) -> bool:
     """Allow the user to confirm the version number."""
-
     if str(version) in git_existing_tags():
         confirmed = questionary.confirm(
             f"Tag with version '{version}' already exists, overwrite?", default=False
@@ -163,7 +159,14 @@ def ask_version() -> Text:
     """Allow the user to confirm the version number."""
 
     def is_valid_version_number(v: Text) -> bool:
-        return v in {"major", "minor", "micro", "alpha", "beta", "rc"} or is_valid_version(v)
+        return v in {
+            "major",
+            "minor",
+            "micro",
+            "alpha",
+            "beta",
+            "rc",
+        } or is_valid_version(v)
 
     current_version = Version(get_current_version())
     next_micro_version = str(current_version.next_micro())
@@ -211,7 +214,6 @@ def ask_version() -> Text:
 
 def get_rasa_sdk_version() -> Text:
     """Find out what the referenced version of the Rasa SDK is."""
-
     dependencies_filename = "pyproject.toml"
     toml_data = toml.load(project_root() / dependencies_filename)
     try:
@@ -226,7 +228,6 @@ def get_rasa_sdk_version() -> Text:
 
 def validate_code_is_release_ready(version: Version) -> None:
     """Make sure the code base is valid (e.g. Rasa SDK is up to date)."""
-
     sdk = Version(get_rasa_sdk_version())
     sdk_version = (sdk.major, sdk.minor)
     rasa_version = (version.major, version.minor)
@@ -245,14 +246,12 @@ def validate_code_is_release_ready(version: Version) -> None:
 
 def git_existing_tags() -> Set[Text]:
     """Return all existing tags in the local git repo."""
-
     stdout = check_output(["git", "tag"])
     return set(stdout.decode().split("\n"))
 
 
 def git_current_branch() -> Text:
     """Returns the current git branch of the local repo."""
-
     try:
         output = check_output(["git", "symbolic-ref", "--short", "HEAD"])
         return output.decode().strip()
@@ -262,14 +261,13 @@ def git_current_branch() -> Text:
 
 
 def git_current_branch_is_main_or_release() -> bool:
-    """
-    Returns True if the current local git
-    branch is main or a release branch e.g. 1.10.x
+    """Returns True if the current local git
+    branch is main or a release branch e.g. 1.10.x.
     """
     current_branch = git_current_branch()
     return (
-            current_branch == "main"
-            or RELEASE_BRANCH_PATTERN.match(current_branch) is not None
+        current_branch == "main"
+        or RELEASE_BRANCH_PATTERN.match(current_branch) is not None
     )
 
 
@@ -296,7 +294,6 @@ def push_changes() -> None:
 
 def ensure_clean_git() -> None:
     """Makes sure the current working git copy is clean."""
-
     try:
         check_call(["git", "diff-index", "--quiet", "HEAD", "--"])
     except CalledProcessError:
@@ -339,7 +336,6 @@ def generate_changelog(version: Version) -> None:
 
 def print_done_message(branch: Text, base: Text, version: Version) -> None:
     """Print final information for the user on what to do next."""
-
     pull_request_url = f"{REPO_BASE_URL}/compare/{base}...{branch}?expand=1"
 
     print()
@@ -349,11 +345,9 @@ def print_done_message(branch: Text, base: Text, version: Version) -> None:
 
 
 def print_done_message_same_branch(version: Version) -> None:
-    """
-    Print final information for the user in case changes
+    """Print final information for the user in case changes
     are directly committed on this branch.
     """
-
     print()
     print(
         f"\033[94m All done - changes for version {version} where committed on this branch \033[0m"
@@ -402,7 +396,6 @@ def confirm_tag_version(version: Version) -> bool:
 
 def prepare_release(args: argparse.Namespace) -> None:
     """Start a release preparation."""
-
     if args.interactive:
         print(
             "The release script will increase the version number, "
@@ -421,7 +414,9 @@ def prepare_release(args: argparse.Namespace) -> None:
             generate_changelog(version)
 
         # alpha or beta workflow on feature branch when a version bump is required
-        if (version.is_alpha or version.is_beta) and not git_current_branch_is_main_or_release():
+        if (
+            version.is_alpha or version.is_beta
+        ) and not git_current_branch_is_main_or_release():
             create_commit(version)
             push_changes()
 
@@ -450,7 +445,11 @@ def tag_release(args: argparse.Namespace) -> None:
     branch = git_current_branch()
     version = Version(get_current_version())
 
-    if not version.is_alpha and not version.is_beta and not git_current_branch_is_main_or_release():
+    if (
+        not version.is_alpha
+        and not version.is_beta
+        and not git_current_branch_is_main_or_release()
+    ):
         print(
             f"""
     You are currently on branch {branch}.

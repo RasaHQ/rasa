@@ -1,4 +1,4 @@
-from typing import Optional, Set
+from typing import List, Optional, Set, Tuple
 import typing
 from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
@@ -6,6 +6,9 @@ from rasa.dialogue_understanding.patterns.collect_information import (
 from rasa.dialogue_understanding.stack.frames import BaseFlowStackFrame
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
+from rasa.dialogue_understanding.stack.frames.flow_stack_frame import FlowStackFrameType
+from rasa.dialogue_understanding.stack.frames.pattern_frame import PatternFlowStackFrame
+from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
 from rasa.shared.core.flows.steps.constants import END_STEP
 from rasa.shared.core.flows.steps.continuation import ContinueFlowStep
 from rasa.shared.core.flows import FlowsList
@@ -24,6 +27,9 @@ def top_flow_frame(
     is a special flow frame that is used to collect information from the user
     and commonly, is not what you are looking for when you want the topmost frame.
 
+    Also excludes frames created by a call step. They are treated as if they are
+    directly part of the flow that called them.
+
     Args:
         dialogue_stack: The dialogue stack to use.
         ignore_collect_information_pattern: Whether to ignore the
@@ -39,6 +45,11 @@ def top_flow_frame(
             frame, CollectInformationPatternFlowStackFrame
         ):
             continue
+        if (
+            isinstance(frame, UserFlowStackFrame)
+            and frame.frame_type == FlowStackFrameType.CALL
+        ):
+            continue
         if isinstance(frame, BaseFlowStackFrame):
             return frame
     return None
@@ -47,18 +58,23 @@ def top_flow_frame(
 def top_user_flow_frame(dialogue_stack: DialogueStack) -> Optional[UserFlowStackFrame]:
     """Returns the topmost user flow frame from the tracker.
 
-    A user flow frame is a flow defined by a bot builder. Other frame types
-    (e.g. patterns, search frames, chitchat, ...) are ignored when looking
-    for the topmost frame.
+    User flows are flows that are created by developers of an assistant and
+    describe tasks the assistant can fulfil. The topmost user flow frame is
+    the topmost frame on the stack for one of these user flows. While looking
+    for this topmost user flow, other frame types such as PatternFrames,
+    SearchFrames, ChitchatFrames, and user flows started through call steps
+    are skipped. The latter are treated as part of the calling user flow.
 
     Args:
-        tracker: The tracker to use.
-
+        dialogue_stack: The dialogue stack to use.
 
     Returns:
         The topmost user flow frame from the tracker."""
     for frame in reversed(dialogue_stack.frames):
-        if isinstance(frame, UserFlowStackFrame):
+        if (
+            isinstance(frame, UserFlowStackFrame)
+            and frame.frame_type != FlowStackFrameType.CALL
+        ):
             return frame
     return None
 
@@ -68,10 +84,11 @@ def filled_slots_for_active_flow(
 ) -> Set[str]:
     """Get all slots that have been filled for the 'current user flow'.
 
-    The 'current user flow' is the top-most flow that is user created. All
-    patterns that sit ontop of that user flow, are also included. So any
-    collect information step that is part of a pattern that is part of the
-    current user flow is also included.
+    All patterns that sit ontop of that user flow as well as
+    flows called by this flow, are also included.
+
+    Any collect information step that is part of a pattern on top of the current
+    user flow are also included.
 
     Args:
         tracker: The tracker to get the filled slots from.
@@ -82,29 +99,49 @@ def filled_slots_for_active_flow(
     """
     filled_slots = set()
 
-    dialogue_stack = tracker.stack
-    previously_filled_slots = tracker.get_previously_updated_slots(all_flows)
-
-    for frame in reversed(dialogue_stack.frames):
-        if not isinstance(frame, BaseFlowStackFrame):
-            # we skip all frames that are not flows, e.g. chitchat / search
-            # frames, because they don't have slots.
-            continue
-        flow = frame.flow(all_flows)
-        for q in flow.previous_collect_steps(frame.step_id):
-            # verify that the collect step of the flow was actually reached
-            # previously in the conversation
-            if q.collect in previously_filled_slots:
-                filled_slots.add(q.collect)
-
-        if isinstance(frame, UserFlowStackFrame):
-            # as soon as we hit the first stack frame that is a "normal"
-            # user defined flow we stop looking for previously asked collect infos
-            # because we only want to ask collect infos that are part of the
-            # current flow.
-            break
-
+    for collect_step, _ in previous_collect_steps_for_active_flow(tracker, all_flows):
+        filled_slots.add(collect_step.collect)
     return filled_slots
+
+
+def previous_collect_steps_for_active_flow(
+    tracker: "DialogueStateTracker", all_flows: FlowsList
+) -> List[Tuple[CollectInformationFlowStep, str]]:
+    stack = tracker.stack
+    user_frame = top_user_flow_frame(stack)
+
+    if not user_frame:
+        return []
+
+    collect_steps: List[Tuple[CollectInformationFlowStep, str]] = []
+
+    active_frames = {frame.frame_id for frame in stack.frames}
+
+    for previous_stack in tracker.previous_stack_states():
+        active_frame = top_user_flow_frame(previous_stack)
+        if not active_frame or active_frame.frame_id != user_frame.frame_id:
+            continue
+
+        top_frame = previous_stack.top()
+        if not isinstance(top_frame, BaseFlowStackFrame):
+            continue
+
+        step = top_frame.step(all_flows)
+        if not isinstance(step, CollectInformationFlowStep):
+            continue
+
+        if isinstance(top_frame, UserFlowStackFrame):
+            collect_steps.append((step, top_frame.flow_id))
+        elif (
+            isinstance(top_frame, PatternFlowStackFrame)
+            and top_frame.frame_id in active_frames
+        ):
+            # if this is a pattern, it is only relevant if it is still
+            # active in the current state of the conversation.
+            # completed patterns in the past are not relevant
+            collect_steps.append((step, top_frame.flow_id))
+
+    return collect_steps
 
 
 def user_flows_on_the_stack(dialogue_stack: DialogueStack) -> Set[str]:

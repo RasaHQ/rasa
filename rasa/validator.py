@@ -23,6 +23,7 @@ from rasa.shared.constants import (
     CONFIG_MANDATORY_KEYS,
     DOCS_URL_DOMAINS,
     DOCS_URL_FORMS,
+    ROUTE_TO_CALM_SLOT,
     UTTER_PREFIX,
     DOCS_URL_ACTIONS,
     REQUIRED_SLOTS_KEY,
@@ -68,6 +69,32 @@ class Validator:
         self.story_graph = story_graph
         self.flows = flows
         self.config = config or {}
+
+    def validate_routing_setup(self) -> bool:
+        component_names = {c["name"] for c in self.config["pipeline"]}
+        routing_slot = [s for s in self.domain.slots if s.name == ROUTE_TO_CALM_SLOT]
+
+        if "CoexistenceRouter" in component_names and (
+            len(routing_slot) == 0 or routing_slot[0].type_name != "bool"
+        ):
+            rasa.shared.utils.io.raise_warning(
+                f"CoexistenceRouter is in the config, but the slot {ROUTE_TO_CALM_SLOT}"
+                f"is not in the domain or not of type bool."
+            )
+            return False
+
+        if len(routing_slot) > 0 and (
+            "CoexistenceRouter" not in component_names
+            or routing_slot[0].type_name != "bool"
+        ):
+            rasa.shared.utils.io.raise_warning(
+                f"The slot {ROUTE_TO_CALM_SLOT} is in the domain but the "
+                f"CoexistenceRouter is not in the config or "
+                f"the type of the slot is not bool."
+            )
+            return False
+
+        return True
 
     @classmethod
     def from_importer(cls, importer: TrainingDataImporter) -> "Validator":
@@ -631,7 +658,7 @@ class Validator:
         flow_ids = [flow.id for flow in self.flows.underlying_flows]
 
         for flow in self.flows.underlying_flows:
-            for step in flow.steps:
+            for step in flow.steps_with_calls_resolved:
                 if isinstance(step, CollectInformationFlowStep):
                     all_good = self._log_error_if_slot_not_in_domain(
                         step.collect, domain_slots, step.id, flow.id, all_good
@@ -832,7 +859,7 @@ class Validator:
                         ),
                     )
                     all_good = False
-            for step in flow.steps:
+            for step in flow.steps_with_calls_resolved:
                 for link in step.next.links:
                     if isinstance(link, IfFlowStepLink):
                         all_good = self._verify_namespaces(

@@ -14,7 +14,10 @@ from rasa.core.featurizers.single_state_featurizer import (
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 from rasa.core.featurizers.tracker_featurizers import IntentMaxHistoryTrackerFeaturizer
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
-from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
+from rasa.shared.constants import (
+    LATEST_TRAINING_DATA_FORMAT_VERSION,
+    ROUTE_TO_CALM_SLOT,
+)
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core.policies.ted_policy import PREDICTION_FEATURES
 from rasa.core.policies.unexpected_intent_policy import (
@@ -34,6 +37,7 @@ from rasa.shared.core.events import (
     ActionExecutionRejected,
     ActiveLoop,
 )
+from rasa.shared.core.slots import BooleanSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.tensorflow.constants import (
     IGNORE_INTENTS_LIST,
@@ -49,6 +53,7 @@ from rasa.utils.tensorflow.constants import (
 from rasa.shared.nlu.constants import INTENT
 from rasa.shared.core.events import Event
 from rasa.utils.tensorflow import model_data_utils
+from rasa.utils.tensorflow.models import RasaModel
 from tests.core.test_policies import train_trackers
 from tests.core.policies.test_ted_policy import TestTEDPolicy
 
@@ -1097,6 +1102,30 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         ):
             collected_tracker_events = list(collected_tracker.events)
             assert collected_tracker_events == expected_tracker_events
+
+    def test_predict_action_probabilities_abstains_in_coexistence(
+        self,
+        default_model_storage: ModelStorage,
+        default_execution_context: ExecutionContext,
+        default_domain: Domain,
+    ):
+        policy = UnexpecTEDIntentPolicy(
+            UnexpecTEDIntentPolicy.get_default_config(),
+            default_model_storage,
+            Resource("TEDPolicy"),
+            default_execution_context,
+            RasaModel(),
+        )
+        tracker = DialogueStateTracker.from_events(
+            "greet story",
+            slots=[BooleanSlot(ROUTE_TO_CALM_SLOT, mappings=[{}], initial_value=True)],
+            evts=[],
+        )
+
+        prediction = policy.predict_action_probabilities(tracker, default_domain, None)
+
+        # check that the policy didn't predict anything
+        assert prediction.max_confidence == 0.0
 
 
 @pytest.mark.parametrize(

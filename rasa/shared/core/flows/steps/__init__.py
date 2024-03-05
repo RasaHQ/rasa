@@ -7,6 +7,7 @@ from .internal import InternalFlowStep
 from .link import LinkFlowStep
 from .set_slots import SetSlotsFlowStep
 from .start import StartFlowStep
+from .call import CallFlowStep
 
 # to make ruff happy and use the imported names
 all_steps = [
@@ -19,4 +20,5 @@ all_steps = [
     SetSlotsFlowStep,
     StartFlowStep,
     NoOperationFlowStep,
+    CallFlowStep,
 ]

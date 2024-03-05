@@ -5,15 +5,23 @@ from rasa.shared.core.flows.steps.constants import (
     END_STEP,
     CONTINUE_STEP_PREFIX,
 )
-from rasa.shared.core.flows.yaml_flows_io import flows_from_str
+from rasa.shared.core.flows.yaml_flows_io import (
+    flows_from_str,
+    flows_from_str_including_defaults,
+)
 from rasa.shared.core.flows.validation import (
+    DuplicatedStepIdException,
     EmptyFlowException,
     EmptyStepSequenceException,
     MissingElseBranchException,
+    NoLinkAllowedInCalledFlowException,
+    PatternReferencedFlowException,
+    ReferenceToPatternException,
     UnreachableFlowStepException,
     MissingNextLinkException,
     ReservedFlowStepIdException,
     NoNextAllowedForLinkException,
+    UnresolvedFlowException,
     UnresolvedFlowStepIdException,
     DuplicateNLUTriggerException,
     SlotNamingException,
@@ -330,6 +338,131 @@ def test_validation_fails_on_multiple_flows_with_same_nlu_triggers():
         """
 
     with pytest.raises(DuplicateNLUTriggerException):
+        flows_from_str(flow_config)
+
+
+def test_validation_fails_for_a_called_flow_with_a_link():
+    flow_config = """
+        flows:
+          foo:
+            description: foo flow
+            steps:
+              - call: bar
+          bar:
+            description: bar flow
+            steps:
+              - link: baz
+          baz:
+            description: baz flow
+            steps:
+              - action: action_listen
+        """
+
+    with pytest.raises(NoLinkAllowedInCalledFlowException):
+        flows_from_str(flow_config)
+
+
+def test_validation_fails_for_a_called_flow_that_does_not_exist():
+    flow_config = """
+        flows:
+          foo:
+            description: foo flow
+            steps:
+              - call: bar
+        """
+
+    with pytest.raises(UnresolvedFlowException):
+        flows_from_str(flow_config)
+
+
+def test_validation_fails_for_a_linked_flow_that_does_not_exist():
+    flow_config = """
+        flows:
+          foo:
+            description: foo flow
+            steps:
+              - link: bar
+        """
+
+    with pytest.raises(UnresolvedFlowException):
+        flows_from_str(flow_config)
+
+
+def test_validation_fails_for_a_linked_pattern():
+    flow_config = """
+        flows:
+          foo:
+            description: foo flow
+            steps:
+              - link: pattern_correction
+        """
+
+    with pytest.raises(ReferenceToPatternException):
+        flows_from_str_including_defaults(flow_config)
+
+
+def test_validation_fails_for_a_called_pattern():
+    flow_config = """
+        flows:
+          foo:
+            description: foo flow
+            steps:
+              - call: pattern_correction
+        """
+
+    with pytest.raises(ReferenceToPatternException):
+        flows_from_str_including_defaults(flow_config)
+
+
+def test_validation_fails_for_pattern_with_a_link_step():
+    flow_config = """
+        flows:
+          foo:
+            description: foo flow
+            steps:
+              - action: action_listen
+
+          pattern_correction:
+            description: pattern correction
+            steps:
+              - link: foo
+        """
+
+    with pytest.raises(PatternReferencedFlowException):
+        flows_from_str(flow_config)
+
+
+def test_validation_fails_for_pattern_with_a_call_step():
+    flow_config = """
+        flows:
+          foo:
+            description: foo flow
+            steps:
+              - action: action_listen
+
+          pattern_correction:
+            description: pattern correction
+            steps:
+              - call: foo
+        """
+
+    with pytest.raises(PatternReferencedFlowException):
+        flows_from_str(flow_config)
+
+
+def test_validate_step_ids_are_unique_fails_for_duplicate_ids():
+    flow_config = """
+        flows:
+          foo:
+            description: foo flow
+            steps:
+              - id: "1"
+                action: action_listen
+              - id: "1"
+                action: utter_greet
+        """
+
+    with pytest.raises(DuplicatedStepIdException):
         flows_from_str(flow_config)
 
 

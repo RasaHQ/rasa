@@ -31,6 +31,7 @@ from rasa.shared.constants import (
     ASSISTANT_ID_KEY,
     DEFAULT_SENDER_ID,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
+    ROUTE_TO_CALM_SLOT,
 )
 from rasa.core.agent import Agent
 from rasa.shared.core.domain import Domain
@@ -58,11 +59,9 @@ from rasa.shared.core.events import (
     LoopInterrupted,
     DefinePrevUserUtteredFeaturization,
     EntitiesAdded,
-    FlowStarted,
-    FlowCompleted,
     DialogueStackUpdated,
+    RoutingSessionEnded,
 )
-from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.slots import (
     FloatSlot,
     BooleanSlot,
@@ -70,6 +69,7 @@ from rasa.shared.core.slots import (
     TextSlot,
     Slot,
     AnySlot,
+    CategoricalSlot,
 )
 from rasa.core.tracker_store import (
     InMemoryTrackerStore,
@@ -1674,150 +1674,6 @@ def test_assistant_id_is_not_added_to_events_with_assistant_id():
     assert tracker.events[-1].metadata[ASSISTANT_ID_KEY] == "old_name"
 
 
-# TODO: ENG-687 need to change this test, probably need some way to simulate
-#  conversations and create real event streams in trackers to test this usefully
-
-
-@pytest.mark.skip
-@pytest.mark.parametrize(
-    "events, dialogue_stack, expected_slots",
-    [
-        (
-            [
-                FlowStarted("my_flow"),
-                ActionExecuted(ACTION_LISTEN_NAME),
-                user_uttered("transfer 10 to john"),
-                SlotSet("money", "10"),
-                SlotSet("recipient", "john"),
-            ],
-            {
-                "type": "flow",
-                "frame_type": "regular",
-                "flow_id": "my_flow",
-                "step_id": "END",
-                "frame_id": "some-frame-id",
-            },
-            ["recipient", "money"],
-        ),
-        (
-            [
-                FlowStarted("flow_1"),
-                ActionExecuted(ACTION_LISTEN_NAME),
-                user_uttered("transfer 10 to john"),
-                FlowStarted("patter_collect_information"),
-                SlotSet("money", "10"),
-                SlotSet("recipient", "john"),
-                FlowCompleted("patter_collect_information", "step_1"),
-                FlowCompleted("flow_1", "step_1"),
-                FlowStarted("flow_2"),
-                ActionExecuted(ACTION_LISTEN_NAME),
-                user_uttered("add max to my contacts"),
-                SlotSet("name", "max"),
-            ],
-            {
-                "type": "flow",
-                "frame_type": "regular",
-                "flow_id": "flow_2",
-                "step_id": "END",
-                "frame_id": "some-frame-id",
-            },
-            ["name"],
-        ),
-        (
-            [
-                user_uttered("transfer 10 to john"),
-                FlowStarted("transfer_money"),
-                FlowStarted("pattern_collect_information"),
-                SlotSet("money", "10"),
-                SlotSet("recipient", "john"),
-                FlowCompleted("pattern_collect_information", "step_1"),
-                ActionExecuted(ACTION_LISTEN_NAME),
-                user_uttered("I want to book a restaurant for 4"),
-                FlowStarted("book_restaurant"),
-                SlotSet("person_count", "4"),
-                ActionExecuted(ACTION_LISTEN_NAME),
-                user_uttered("wait, transfer the money first"),
-                FlowCompleted("book_restaurant", "step_1"),
-                user_uttered("oh wait I meant alex"),
-                SlotSet("recipient", "alex"),
-            ],
-            {
-                "type": "flow",
-                "frame_type": "regular",
-                "flow_id": "transfer_money",
-                "step_id": "collect_money",
-                "frame_id": "some-frame-id",
-            },
-            ["money", "recipient"],
-        ),
-        (
-            [
-                user_uttered("transfer 10 to john"),
-                FlowStarted("transfer_money"),
-                FlowStarted("pattern_collect_information"),
-                SlotSet("money", "10"),
-                SlotSet("recipient", "john"),
-                FlowCompleted("pattern_collect_information", "step_1"),
-                FlowStarted("interrupted_flow_1"),
-                SlotSet("slot_1", "value"),
-                FlowStarted("interrupted_flow_2"),
-                SlotSet("slot_2", "value"),
-                FlowCompleted("interrupted_flow_2", "END"),
-                FlowCompleted("interrupted_flow_1", "END"),
-                user_uttered("oh wait I meant alex"),
-                SlotSet("recipient", "alex"),
-            ],
-            {
-                "type": "flow",
-                "frame_type": "regular",
-                "flow_id": "transfer_money",
-                "step_id": "some-step",
-                "frame_id": "some-frame-id",
-            },
-            ["money", "recipient"],
-        ),
-        (
-            [
-                FlowStarted("flow_1"),
-                SlotSet("money", "10"),
-                SlotSet("recipient", "john"),
-                FlowCompleted("flow_1", "step_1"),
-            ],
-            {
-                "type": "flow",
-                "frame_type": "regular",
-                "flow_id": "flow_2",
-                "step_id": "START",
-                "frame_id": "some-frame-id",
-            },
-            [],
-        ),
-        (
-            [],
-            {
-                "type": "flow",
-                "frame_type": "regular",
-                "flow_id": "flow_1",
-                "step_id": "START",
-                "frame_id": "some-frame-id",
-            },
-            [],
-        ),
-    ],
-)
-def test_get_previously_updated_slots(
-    events: List[Event], dialogue_stack: Dict[str, str], expected_slots: List[str]
-):
-    tracker = DialogueStateTracker.from_events("👋", events)
-    tracker.update_stack(DialogueStack.from_dict([dialogue_stack]))
-
-    actual_slots = tracker.get_previously_updated_slots(FlowsList([]))
-
-    assert len(actual_slots) == len(expected_slots) and sorted(actual_slots) == sorted(
-        expected_slots
-    )
-
-
 def test_update_stack_event_applies():
     patch = (
         '[{"op": "add", "path": "/0", "value": '
@@ -1899,3 +1755,167 @@ def test_tracker_resets_stack_on_restart():
 
     tracker.update(Restarted())
     assert tracker.stack == DialogueStack.empty()
+
+
+@pytest.mark.parametrize(
+    "slots, result",
+    [
+        ([BooleanSlot(ROUTE_TO_CALM_SLOT, [], initial_value=None)], True),
+        ([TextSlot("some slot", [])], False),
+        ([], False),
+        (None, False),
+    ],
+)
+def test_has_coexistence_routing_slot(slots: List[Slot], result: bool):
+    tracker = DialogueStateTracker("default", slots)
+    assert tracker.has_coexistence_routing_slot == result
+
+
+@pytest.mark.parametrize(
+    "events, slots, expected_applied_events",
+    [
+        (
+            [
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("greet"),
+                SlotSet("slot-1", "value-1"),
+                ActionExecuted("greet user"),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("chitchat"),
+                ActionExecuted("handling chitchat"),
+                RoutingSessionEnded(),
+            ],
+            [
+                TextSlot("slot-1", [], shared_for_coexistence=False),
+            ],
+            [],
+        ),
+        (
+            [
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("greet"),
+                SlotSet("slot-1", 3.4),
+                SlotSet("slot-2", "value-2"),
+                SlotSet("slot-3", False),
+                SlotSet("slot-4", "value-4"),
+                SlotSet("slot-5", ["value-5"]),
+                SlotSet("slot-6", "value-6"),
+                ActionExecuted("greet user"),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("chitchat"),
+                ActionExecuted("handling chitchat"),
+                RoutingSessionEnded(),
+            ],
+            [
+                FloatSlot("slot-1", [], shared_for_coexistence=True),
+                CategoricalSlot("slot-2", [], shared_for_coexistence=True),
+                BooleanSlot("slot-3", [], shared_for_coexistence=True),
+                TextSlot("slot-4", [], shared_for_coexistence=True),
+                ListSlot("slot-5", [], shared_for_coexistence=True),
+                AnySlot("slot-6", [], shared_for_coexistence=True),
+            ],
+            [
+                SlotSet("slot-1", 3.4),
+                SlotSet("slot-2", "value-2"),
+                SlotSet("slot-3", False),
+                SlotSet("slot-4", "value-4"),
+                SlotSet("slot-5", ["value-5"]),
+                SlotSet("slot-6", "value-6"),
+            ],
+        ),
+        (
+            [
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("greet"),
+                SlotSet("slot-1", "value-1"),
+                SlotSet("slot-2", "value-2"),
+                ActionExecuted("greet user"),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("chitchat"),
+                ActionExecuted("handling chitchat"),
+                RoutingSessionEnded(),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("chitchat"),
+                SlotSet("slot-3", "value-3"),
+            ],
+            [
+                BooleanSlot("slot-1", [], shared_for_coexistence=True),
+                AnySlot("slot-2", [], shared_for_coexistence=False),
+                AnySlot("slot-3", [], shared_for_coexistence=False),
+            ],
+            [
+                SlotSet("slot-1", "value-1"),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("chitchat"),
+                SlotSet("slot-3", "value-3"),
+            ],
+        ),
+    ],
+)
+def test_applied_events_with_featurization_for_policies(
+    events: List[Event], slots: List[Slot], expected_applied_events: List[Event]
+):
+    tracker = DialogueStateTracker.from_events("👋", events, slots)
+    applied = tracker.applied_events(True)
+
+    assert applied == expected_applied_events
+
+    for event in expected_applied_events:
+        if isinstance(event, SlotSet):
+            slot = tracker.slots.get(event.as_dict()["name"])
+            assert slot is not None
+            assert slot.value == event.as_dict()["value"]
+
+
+def test_tracker_previous_stack_states_on_empty():
+    tracker = get_tracker([])
+    assert list(tracker.previous_stack_states()) == [DialogueStack.empty()]
+
+
+def test_tracker_previous_stack_states_on_no_stack_events():
+    tracker = get_tracker([SessionStarted()])
+    assert list(tracker.previous_stack_states()) == [DialogueStack.empty()]
+
+
+def test_tracker_previous_stack_states():
+    tracker = get_tracker([])
+
+    user_frame = UserFlowStackFrame(
+        flow_id="foo", step_id="first_step", frame_id="some-frame-id"
+    )
+    stack = DialogueStack(frames=[user_frame])
+
+    tracker.update_stack(stack)
+    first_stack_state = stack.copy()
+    stack.push(
+        UserFlowStackFrame(
+            flow_id="bar", step_id="second_step", frame_id="some-frame-id"
+        )
+    )
+    tracker.update_stack(stack)
+
+    assert tracker.stack == stack
+
+    assert list(tracker.previous_stack_states()) == [
+        DialogueStack.empty(),
+        first_stack_state,
+        stack,
+    ]
+
+
+def test_tracker_previous_stack_state_resets_on_restart():
+    tracker = get_tracker([])
+
+    user_frame = UserFlowStackFrame(
+        flow_id="foo", step_id="first_step", frame_id="some-frame-id"
+    )
+    stack = DialogueStack(frames=[user_frame])
+
+    tracker.update_stack(stack)
+
+    assert tracker.stack == stack
+
+    tracker.update(Restarted())
+    assert tracker.stack == DialogueStack.empty()
+
+    assert list(tracker.previous_stack_states()) == [DialogueStack.empty()]
