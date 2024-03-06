@@ -59,8 +59,7 @@ module.exports = {
   themeConfig: {
     announcementBar: {
       id: 'rasa_oss_docs_change', // Any value that will identify this message.
-      content: 'This is the documentation for <strong>Rasa Open Source</strong>. If you\'re looking for <strong>Rasa Pro</strong> documentation, please visit <a href="https://rasa.com/docs/rasa-pro/">this page</a>.',
-
+      content: 'Want to try CALM? We just announced the <a href="https://rasa.com/docs/rasa-pro/developer-edition">Rasa Pro Developer Edition</a>.',
       backgroundColor: '#6200F5', // Defaults to `#fff`.
       textColor: '#fff', // Defaults to `#000`.
       // isCloseable: false, // Defaults to `true`.
