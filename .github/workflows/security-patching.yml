@@ -166,7 +166,7 @@ jobs:
           gsutil -h "Content-Type:text/plain; charset=utf-8" -h "Cache-Control:public, max-age=0, no-transform" cp trivy-results.txt gs://${{ env.REPORT_BUCKET }}/rasa-private-report-${{ matrix.supported_tag }}-${{ steps.date.outputs.date }}.txt
       
       - name: Alert Slack on findings
-        if: steps.trivy.outcome == 'failure' && matrix.supported_tag != '3.3.10'
+        if: steps.trivy.outcome == 'failure'
         uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 # v1.25.0
         with:
           payload: |
