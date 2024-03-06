@@ -145,7 +145,7 @@ def configure_structlog(
     )
 
 
-def log_llm(logger: Any, log_module: str, log_event: str, **kwargs: Dict) -> None:
+def log_llm(logger: Any, log_module: str, log_event: str, **kwargs: Any) -> None:
     """Logs LLM-specific events depending on a flag passed through an environment
     variable. If the module's flag is set to INFO (e.g.
     LOG_PROMPT_LLM_COMMAND_GENERATOR=INFO), its prompt is logged at INFO level,

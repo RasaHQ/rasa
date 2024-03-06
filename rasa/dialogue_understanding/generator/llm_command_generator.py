@@ -198,8 +198,10 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             # no commands couldn't be parsed or there's an invalid command
             commands = [CannotHandleCommand()]
 
-        structlogger.info(
-            "llm_command_generator.predict_commands.finished",
+        log_llm(
+            logger=structlogger,
+            log_module=self.__class__.__name__,
+            log_event="llm_command_generator.predict_commands.finished",
             commands=commands,
         )
 
