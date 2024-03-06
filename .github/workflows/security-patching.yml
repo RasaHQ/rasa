@@ -46,7 +46,7 @@ jobs:
       
       - name: Alert Slack if get_tags step fails
         if: steps.get_branches.outcome == 'failure' || steps.tags.outcome == 'failure' 
-        uses: slackapi/slack-github-action@007b2c3c751a190b6f0f040e47ed024deaa72844
+        uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 # v1.25.0
         with:
           payload: |
             {
@@ -115,7 +115,7 @@ jobs:
       
       - name: Alert Slack if build fails
         if: steps.build.outcome == 'failure'
-        uses: slackapi/slack-github-action@007b2c3c751a190b6f0f040e47ed024deaa72844
+        uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 # v1.25.0
         with:
           payload: |
             {
@@ -153,13 +153,13 @@ jobs:
 
       - id: auth-security-reports
         name: Authenticate with gcloud for saving report 🎫
-        uses: 'google-github-actions/auth@55bd3a7c6e2ae7cf1877fd1ccb9d54c0503c457c' #v2.1.2
+        uses: 'google-github-actions/auth@55bd3a7c6e2ae7cf1877fd1ccb9d54c0503c457c' # v2.1.2
         with:
           token_format: 'access_token'
           credentials_json: '${{ secrets.GCP_WRITE_PUBLIC_SECURITY_REPORTS_KEY }}'
 
       - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@98ddc00a17442e89a24bbf282954a3b65ce6d200 #v2.1.0
+        uses: google-github-actions/setup-gcloud@98ddc00a17442e89a24bbf282954a3b65ce6d200 # v2.1.0
 
       - name: Upload scan report to GCS
         run: |
@@ -167,7 +167,7 @@ jobs:
       
       - name: Alert Slack on findings
         if: steps.trivy.outcome == 'failure' && matrix.supported_tag != '3.3.10'
-        uses: slackapi/slack-github-action@007b2c3c751a190b6f0f040e47ed024deaa72844
+        uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 # v1.25.0
         with:
           payload: |
             {
