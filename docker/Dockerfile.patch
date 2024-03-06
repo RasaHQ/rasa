@@ -1,0 +1,8 @@
+ARG VERSION_NUMBER
+
+FROM europe-west3-docker.pkg.dev/rasa-releases/rasa-docker/rasa:${VERSION_NUMBER}-full
+
+USER root
+RUN apt-get update && apt-get -y upgrade
+
+USER 1001

@@ -1,0 +1,194 @@
+name: Security Patching for Rasa Private
+
+on:
+  schedule:
+    # Run cron job at 8AM Monday to Sunday.
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+
+env:
+  # Registry used to store Docker images used for release purposes.
+  RELEASE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-docker/rasa"
+  GITHUB_WORKFLOW_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+  REPORT_BUCKET: "rasa-container-scan-reports"
+
+jobs:
+  get_tags:
+    runs-on: ubuntu-22.04
+    continue-on-error: true
+    outputs:
+      tags: ${{ steps.tags.outputs.tags }}
+    steps:
+      # We have to check out the repo to be able to list the tags.
+      - name: Checkout repository to check tags
+        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac
+        with:
+            fetch-depth: 0
+
+      - name: Set up Python 
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c
+        with:
+          python-version: '3.9'
+
+      - name: Run action to get records
+        uses: RasaHQ/get-release-records-from-datocms-gha@69bf862bbbca46174cd9c8747a61a1d6c7e20cb9
+        id: get_branches
+        with:
+          dato-cms-api-key: ${{ secrets.DATO_CMS_API_KEY }}
+          product-name: Rasa Open Source / Rasa Plus
+          status: supported
+
+      - name: Run Python script
+        id: tags
+        # Filter out tags inside get_tags_from_branch.py lower than '3.7.8'
+        run: |
+          python scripts/get_tags_from_branch.py '${{ steps.get_branches.outputs.records }}'
+      
+      - name: Alert Slack if get_tags step fails
+        if: steps.get_branches.outcome == 'failure' || steps.tags.outcome == 'failure' 
+        uses: slackapi/slack-github-action@007b2c3c751a190b6f0f040e47ed024deaa72844
+        with:
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "The setup process failed while initialising the Rasa Private Docker Image Security Patching workflow. Please check the <${{ env.GITHUB_WORKFLOW_URL }}|workflow log> for more information."
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CODESECURITY_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+      - name: Show tags
+        run: |
+          echo "Tags: ${{ steps.tags.outputs.tags }}"
+  build:
+    runs-on: ubuntu-22.04
+    needs: get_tags
+    # Don't allow a single image failure to block all the image builds.
+    continue-on-error: true
+    # Run the following steps on each supported tag.
+    strategy:
+        matrix:
+          supported_tag: ${{ fromJson(needs.get_tags.outputs.tags) }}
+
+    steps:
+      - name: Checkout repository to check tags
+        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac
+
+      # Determine the date in the right format for us to tag the image.
+      - name: Get current date
+        id: date
+        run: echo "date=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3  # v3.0.0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@0d103c3126aa41d772a8362f6aa67afac040f80c  # v3.1.0
+
+      # Authenticate with Gcloud.
+      - name: Authenticate with gcloud for release registry 🎫
+        id: 'auth-release'
+        uses: 'google-github-actions/auth@55bd3a7c6e2ae7cf1877fd1ccb9d54c0503c457c' # v2.1.2
+        with:
+          token_format: 'access_token'
+          credentials_json: '${{ secrets.RASA_PLUS_RELEASE_ACCOUNT_KEY }}'
+          cleanup_credentials: true
+
+      # Authenticate with artifact registry where the images are stored.
+      - name: Authenticate docker for release registry 🎫
+        run: gcloud auth configure-docker europe-west3-docker.pkg.dev
+
+      # Rebuild the Docker image for this micro. A line contained in the Dockerfile ensures that the latest OS patches are applied.
+      # VERSION_NUMBER is passed into the build command to determine which Rasa OSS container image is used as the base for the Rasa Private container.
+      - name: Build and tag security patched image
+        id: build
+        continue-on-error: true
+        run: |
+          docker buildx build . --platform=linux/arm64,linux/amd64 -t ${{env.RELEASE_REGISTRY}}:${{ matrix.supported_tag }}-${{ steps.date.outputs.date }} --build-arg VERSION_NUMBER=${{ matrix.supported_tag }} -f docker/Dockerfile.patch --push
+      
+      - name: Alert Slack if build fails
+        if: steps.build.outcome == 'failure'
+        uses: slackapi/slack-github-action@007b2c3c751a190b6f0f040e47ed024deaa72844
+        with:
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Docker image security patch for Rasa Private version `${{ matrix.supported_tag }}` failed. Please check the <${{ env.GITHUB_WORKFLOW_URL }}|workflow log> for more information."
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CODESECURITY_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+      - name: Fail pushing the patch if the build is not a success
+        if: steps.build.outcome == 'failure'
+        run: exit 1
+
+      - name: Vulnerablity Scanning
+        id: trivy
+        uses: aquasecurity/trivy-action@d63413b0a4a4482237085319f7f4a1ce99a8f2ac
+        continue-on-error: true
+        with:
+          exit-code: '1'
+          format: 'table'
+          output: 'trivy-results.txt'
+          severity: 'HIGH,CRITICAL'
+          ignore-unfixed: true
+          security-checks: 'vuln'
+          image-ref: '${{env.RELEASE_REGISTRY}}:${{ matrix.supported_tag }}-${{ steps.date.outputs.date }}'  
+          vuln-type: 'os'
+
+      - id: auth-security-reports
+        name: Authenticate with gcloud for saving report 🎫
+        uses: 'google-github-actions/auth@55bd3a7c6e2ae7cf1877fd1ccb9d54c0503c457c' #v2.1.2
+        with:
+          token_format: 'access_token'
+          credentials_json: '${{ secrets.GCP_WRITE_PUBLIC_SECURITY_REPORTS_KEY }}'
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@98ddc00a17442e89a24bbf282954a3b65ce6d200 #v2.1.0
+
+      - name: Upload scan report to GCS
+        run: |
+          gsutil -h "Content-Type:text/plain; charset=utf-8" -h "Cache-Control:public, max-age=0, no-transform" cp trivy-results.txt gs://${{ env.REPORT_BUCKET }}/rasa-private-report-${{ matrix.supported_tag }}-${{ steps.date.outputs.date }}.txt
+      
+      - name: Alert Slack on findings
+        if: steps.trivy.outcome == 'failure' && matrix.supported_tag != '3.3.10'
+        uses: slackapi/slack-github-action@007b2c3c751a190b6f0f040e47ed024deaa72844
+        with:
+          payload: |
+            {
+              "text": "Critical or High vulnerabilities have been found in the Docker image for Rasa Private ${{ matrix.supported_tag }} that could impact customer deployments. Please schedule these for resolution in the next sprint. <https://storage.googleapis.com/${{ env.REPORT_BUCKET }}/rasa-private-report-${{ matrix.supported_tag }}-${{ steps.date.outputs.date }}.txt|View Scan Report>",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Critical or High vulnerabilities have been found in the Docker image for Rasa Private ${{ matrix.supported_tag }} that could impact customer deployments. Please schedule these for resolution in the next sprint."
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "<https://storage.googleapis.com/${{ env.REPORT_BUCKET }}/rasa-private-report-${{ matrix.supported_tag }}-${{ steps.date.outputs.date }}.txt|View Scan Report>"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CODESECURITY_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
