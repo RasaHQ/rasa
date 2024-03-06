@@ -85,7 +85,7 @@ module.exports = {
           target: "_self",
           label: "Rasa Studio",
           position: "left",
-          href: `${SITE_URL}/docs/rasa-studio/`,
+          href: `${SITE_URL}/docs/studio/`,
         },
         {
           label: "Rasa Open Source",
