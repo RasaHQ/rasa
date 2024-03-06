@@ -70,7 +70,7 @@ def test_depth_in_tree():
     """
     )
 
-    steps = flows.underlying_flows[0].steps
+    steps = flows.underlying_flows[0].steps_with_calls_resolved
 
     assert steps[0].custom_id == "step_1"
     assert steps[0].next.depth_in_tree() == 2

@@ -6,6 +6,7 @@ import structlog
 from jinja2 import Template
 
 import rasa.shared.utils.io
+from rasa.shared.constants import ROUTE_TO_CALM_SLOT
 from rasa.dialogue_understanding.commands import (
     Command,
     ErrorCommand,
@@ -194,7 +195,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             # if action_list is None, we couldn't get any response from the LLM
             commands = [ErrorCommand()]
         else:
-            commands = self.parse_commands(action_list, tracker, flows)
+            commands = self.parse_commands(action_list, flows)
         if not commands:
             # no commands couldn't be parsed or there's an invalid command
             commands = [CannotHandleCommand()]
@@ -204,6 +205,8 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             commands=commands,
         )
 
+        if tracker.has_coexistence_routing_slot:
+            commands += [SetSlotCommand(ROUTE_TO_CALM_SLOT, True)]
         return commands
 
     def render_template(
@@ -265,14 +268,12 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             return None
 
     @classmethod
-    def parse_commands(
-        cls, actions: Optional[str], tracker: DialogueStateTracker, flows: FlowsList
-    ) -> List[Command]:
+    def parse_commands(cls, actions: Optional[str], flows: FlowsList) -> List[Command]:
         """Parse the actions returned by the llm into intent and entities.
 
         Args:
             actions: The actions returned by the llm.
-            tracker: The tracker containing the current state of the conversation.
+            flows: the list of flows
 
         Returns:
             The parsed commands.
@@ -330,7 +331,8 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
     def start_flow_by_name(flow_name: str, flows: FlowsList) -> List[Command]:
         """Start a flow by name.
 
-        If the flow does not exist, no command is returned."""
+        If the flow does not exist, no command is returned.
+        """
         if flow_name in flows.user_flow_ids:
             return [StartFlowCommand(flow=flow_name)]
         else:

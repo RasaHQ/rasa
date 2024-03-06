@@ -10,6 +10,7 @@ from rasa.shared.core.flows.steps import (
     SetSlotsFlowStep,
 )
 from rasa.shared.core.flows.flow_step_links import FlowStepLinks
+from rasa.shared.core.flows.steps.call import CallFlowStep
 from rasa.shared.core.flows.steps.no_operation import NoOperationFlowStep
 from rasa.shared.core.flows.yaml_flows_io import flows_from_str
 
@@ -37,10 +38,19 @@ def flow_with_all_steps() -> Flow:
                         utter: utter_too_boring
                   - id: noop_step
                     noop: true
+                    next: call_step
+                  - id: call_step
+                    call: other_flow
                     next: link_step
                   - id: link_step
-                    link: test_flow
-                  """
+                    link: other_flow
+              other_flow:
+                description: other flow
+                steps:
+                  - id: noop
+                    noop: true
+                    next: END
+        """
     )
     return flows.flow_by_id("test_flow")
 
@@ -60,8 +70,6 @@ def test_flow_step_serialization(
 ):
     """Testing for all flow steps that serialization does not add or remove data."""
     step = flow_with_all_steps.step_by_id(flow_step_id)
-    # using exact type check because FlowStep, the superclass, is also one of
-    # the classes tested
     assert isinstance(step, flow_step_class)
     step_data = step.as_json()
     step_from_data = flow_step_class.from_json(step_data)
@@ -69,6 +77,21 @@ def test_flow_step_serialization(
     # when reading entire flows
     step_from_data.idx = step.idx
     assert step == step_from_data
+
+
+def test_flow_step_serialization_for_call_step(flow_with_all_steps: Flow):
+    # need to test the call step separately, as it contains a reference to
+    # another flow, which is not serializable and therefore won't
+    # be part of the serialized data.
+    step = flow_with_all_steps.step_by_id("call_step")
+    assert isinstance(step, CallFlowStep)
+    step_data = step.as_json()
+    step_from_data = CallFlowStep.from_json(step_data)
+    # overwriting idx of the re-serialized class as this is normally only happening
+    # when reading entire flows
+    step_from_data.idx = step.idx
+    assert isinstance(step_from_data, CallFlowStep)
+    assert step.call == step_from_data.call
 
 
 def test_action_flow_step_attributes(flow_with_all_steps: Flow):
@@ -101,13 +124,19 @@ def test_noop_step_attributes(flow_with_all_steps: Flow):
     step = flow_with_all_steps.step_by_id("noop_step")
     assert isinstance(step, NoOperationFlowStep)
     assert len(step.next.links) == 1
-    assert step.next.links[0].target == "link_step"
+    assert step.next.links[0].target == "call_step"
 
 
 def test_link_step_attributes(flow_with_all_steps: Flow):
     step = flow_with_all_steps.step_by_id("link_step")
     assert isinstance(step, LinkFlowStep)
-    assert step.link == "test_flow"
+    assert step.link == "other_flow"
+
+
+def test_call_step_attributes(flow_with_all_steps: Flow):
+    step = flow_with_all_steps.step_by_id("call_step")
+    assert isinstance(step, CallFlowStep)
+    assert step.call == "other_flow"
 
 
 def test_flow_step_always_has_an_id_even_if_not_set():

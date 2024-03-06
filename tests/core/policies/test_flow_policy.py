@@ -10,6 +10,7 @@ from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.shared.constants import ROUTE_TO_CALM_SLOT
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     ActionExecuted,
@@ -17,6 +18,7 @@ from rasa.shared.core.events import (
     FlowStarted,
 )
 from rasa.shared.core.flows import FlowsList
+from rasa.shared.core.slots import BooleanSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.dialogue_understanding.stack.frames import (
     UserFlowStackFrame,
@@ -84,6 +86,32 @@ def test_flow_policy_does_not_support_search_frame():
 
 def test_get_default_config():
     assert FlowPolicy.get_default_config() == {"priority": 7, "max_history": None}
+
+
+def test_predict_action_probabilities_abstains_in_coexistence(
+    default_flow_policy: FlowPolicy, default_flows: FlowsList
+):
+    domain = Domain.empty()
+
+    stack = DialogueStack(
+        frames=[UserFlowStackFrame(flow_id="foo_flow", step_id="1", frame_id="some-id")]
+    )
+    # create a tracker with the stack set
+    tracker = DialogueStateTracker.from_events(
+        "test abstain",
+        domain=domain,
+        slots=domain.slots
+        + [BooleanSlot(ROUTE_TO_CALM_SLOT, mappings=[{}], initial_value=False)],
+        evts=[ActionExecuted(action_name="action_listen")],
+    )
+    tracker.update_stack(stack)
+
+    prediction = default_flow_policy.predict_action_probabilities(
+        tracker=tracker, domain=Domain.empty(), flows=default_flows
+    )
+
+    # check that the policy didn't predict anything
+    assert prediction.max_confidence == 0.0
 
 
 def test_predict_action_probabilities_abstains_from_unsupported_frame(

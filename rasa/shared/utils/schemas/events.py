@@ -159,10 +159,13 @@ FLOW_CANCELLED = {
         "step_id": {"type": "string"},
     }
 }
-
 DIALOGUE_STACK_UPDATED = {
     "properties": {"event": {"const": "stack"}, "update": {"type": "array"}}
 }
+ROUTING_SESSION_ENDED = {"properties": {"event": {"const": "routing_session_ended"}}}
+
+
+ROUTING_SESSION_ENDED = {"properties": {"event": {"const": "routing_session_ended"}}}
 
 EVENT_SCHEMA = {
     "type": "object",
@@ -202,6 +205,7 @@ EVENT_SCHEMA = {
         FLOW_COMPLETED,
         FLOW_CANCELLED,
         DIALOGUE_STACK_UPDATED,
+        ROUTING_SESSION_ENDED,
     ],
 }
 

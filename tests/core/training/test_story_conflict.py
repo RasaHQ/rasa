@@ -82,7 +82,9 @@ async def test_find_conflicts_checkpoints():
     conflicts = find_story_conflicts(trackers, domain, 5)
 
     assert len(conflicts) == 1
-    assert conflicts[0].conflicting_actions == ["utter_goodbye", "utter_default"]
+    assert set(conflicts[0].conflicting_actions) == set(
+        ["utter_goodbye", "utter_default"]
+    )
 
 
 async def test_find_conflicts_or():

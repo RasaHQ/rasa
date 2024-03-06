@@ -627,7 +627,7 @@ class RulePolicy(MemoizationPolicy):
             running_tracker.sender_id = tracker.sender_id
             # the first action is always unpredictable
             next_action_is_unpredictable = True
-            for event in tracker.applied_events():
+            for event in tracker.applied_events(True):
                 if not isinstance(event, ActionExecuted):
                     running_tracker.update(event)
                     continue

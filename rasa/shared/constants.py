@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import List, Text
 
 
@@ -143,3 +145,4 @@ RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG = (
 RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY = (
     RASA_INTERNAL_ERROR_PREFIX + "user_input_empty"
 )
+ROUTE_TO_CALM_SLOT = "route_session_to_calm"

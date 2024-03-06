@@ -311,6 +311,7 @@ def _validate_domain(validator: "Validator") -> bool:
         and valid_forms_in_stories_rules
         and valid_form_slots
         and valid_slot_mappings
+        and validator.validate_routing_setup()
     )
 
 

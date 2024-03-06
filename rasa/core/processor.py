@@ -10,6 +10,7 @@ from types import LambdaType
 from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Tuple, Union
 
 from rasa.core.http_interpreter import RasaNLUHttpInterpreter
+from rasa.dialogue_understanding.commands import SetSlotCommand
 from rasa.engine import loader
 from rasa.engine.constants import (
     PLACEHOLDER_MESSAGE,
@@ -59,6 +60,7 @@ from rasa.shared.constants import (
     ASSISTANT_ID_KEY,
     DOCS_URL_DOMAINS,
     DEFAULT_SENDER_ID,
+    ROUTE_TO_CALM_SLOT,
     DOCS_URL_NLU_BASED_POLICIES,
     UTTER_PREFIX,
 )
@@ -749,7 +751,26 @@ class MessageProcessor:
                 parse_data.update(
                     msg.as_dict(only_output_properties=only_output_properties)
                 )
-                parse_data[COMMANDS] = self._nlu_to_commands(parse_data, tracker)
+
+                commands = []
+
+                if tracker:
+                    commands = self._nlu_to_commands(parse_data, tracker)
+                    if (
+                        tracker.has_coexistence_routing_slot
+                        and tracker.get_slot(ROUTE_TO_CALM_SLOT) is None
+                    ):
+                        # if we are currently not routing to either CALM or dm1
+                        # we make a sticky routing to CALM if there are any commands
+                        # from the trigger intent parsing
+                        # or a sticky routing to dm1 if there are no commands
+                        commands = commands + [
+                            SetSlotCommand(
+                                ROUTE_TO_CALM_SLOT, len(commands) > 0
+                            ).as_dict()
+                        ]
+
+                parse_data[COMMANDS] = commands
 
         self._update_full_retrieval_intent(parse_data)
         structlogger.debug(

@@ -32,10 +32,12 @@ from rasa.plugin import plugin_manager
 from rasa.shared.constants import (
     DOCS_BASE_URL,
     DEFAULT_NLU_FALLBACK_INTENT_NAME,
+    ROUTE_TO_CALM_SLOT,
     UTTER_PREFIX,
     FLOW_PREFIX,
 )
 from rasa.shared.core.constants import (
+    ACTION_RESET_ROUTING,
     USER_INTENT_OUT_OF_SCOPE,
     ACTION_LISTEN_NAME,
     ACTION_RESTART_NAME,
@@ -60,6 +62,7 @@ from rasa.shared.core.constants import (
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
+    RoutingSessionEnded,
     UserUtteranceReverted,
     UserUttered,
     ActionExecuted,
@@ -126,6 +129,7 @@ def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["A
         ActionCleanStack(),
         ActionTriggerSearch(),
         ActionTriggerChitchat(),
+        ActionResetRouting(),
     ]
 
 
@@ -557,6 +561,30 @@ class ActionListen(Action):
     ) -> List[Event]:
         """Runs action. Please see parent class for the full docstring."""
         return []
+
+
+class ActionResetRouting(Action):
+    """Resets the tracker to its initial state.
+
+    Utters the restart response if available.
+    """
+
+    def name(self) -> Text:
+        """Returns action restart name."""
+        return ACTION_RESET_ROUTING
+
+    async def run(
+        self,
+        output_channel: "OutputChannel",
+        nlg: "NaturalLanguageGenerator",
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+        metadata: Optional[Dict[Text, Any]] = None,
+    ) -> List[Event]:
+        """Runs action. Please see parent class for the full docstring."""
+        # SlotSet(ROUTE_TO_CALM_SLOT, None) is needed to ensure the routing slot
+        # is really reset to None and not just reset to an initial value
+        return [RoutingSessionEnded(), SlotSet(ROUTE_TO_CALM_SLOT, None)]
 
 
 class ActionRestart(ActionBotResponse):

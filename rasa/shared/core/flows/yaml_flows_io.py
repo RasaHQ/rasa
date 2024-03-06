@@ -6,6 +6,7 @@ import jsonschema
 
 import rasa.shared
 import rasa.shared.data
+from rasa.shared.importers.importer import FlowSyncImporter
 import rasa.shared.utils.io
 import rasa.shared.utils.validation
 from rasa.shared.exceptions import RasaException, YamlException
@@ -21,15 +22,11 @@ class YAMLFlowsReader:
     """Class that reads flows information in YAML format."""
 
     @classmethod
-    def read_from_file(
-        cls, filename: Union[Text, Path], skip_validation: bool = False
-    ) -> FlowsList:
+    def read_from_file(cls, filename: Union[Text, Path]) -> FlowsList:
         """Read flows from file.
 
         Args:
             filename: Path to the flows file.
-            skip_validation: `True` if the file was already validated
-                e.g. when it was stored in the database.
 
         Returns:
             `Flow`s read from `filename`.
@@ -39,7 +36,6 @@ class YAMLFlowsReader:
                 rasa.shared.utils.io.read_file(
                     filename, rasa.shared.utils.io.DEFAULT_ENCODING
                 ),
-                skip_validation,
             )
         except YamlException as e:
             e.filename = str(filename)
@@ -111,7 +107,8 @@ class YAMLFlowsReader:
             and therefore less usefull than the handcrafted `schema_name`.
 
             If a schema does not have a `schema_name` set, we will use the
-            `type` instead as a fallback."""
+            `type` instead as a fallback.
+            """
             return schema.get("schema_name", schema.get("type"))
 
         def schema_names(schemas: List[Dict[str, Any]]) -> List[str]:
@@ -193,28 +190,22 @@ class YAMLFlowsReader:
         )
 
     @classmethod
-    def read_from_string(cls, string: Text, skip_validation: bool = False) -> FlowsList:
+    def read_from_string(cls, string: Text) -> FlowsList:
         """Read flows from a string.
 
         Args:
             string: Unprocessed YAML file content.
-            skip_validation: `True` if the string was already validated
-                e.g. when it was stored in the database.
 
         Returns:
             `Flow`s read from `string`.
         """
-        if not skip_validation:
-            rasa.shared.utils.validation.validate_yaml_with_jsonschema(
-                string, FLOWS_SCHEMA_FILE, humanize_error=cls.humanize_flow_error
-            )
+        rasa.shared.utils.validation.validate_yaml_with_jsonschema(
+            string, FLOWS_SCHEMA_FILE, humanize_error=cls.humanize_flow_error
+        )
 
         yaml_content = rasa.shared.utils.io.read_yaml(string)
 
-        flows = FlowsList.from_json(yaml_content.get(KEY_FLOWS, {}))
-        if not skip_validation:
-            flows.validate()
-        return flows
+        return FlowsList.from_json(yaml_content.get(KEY_FLOWS, {}))
 
 
 class YamlFlowsWriter:
@@ -250,7 +241,17 @@ class YamlFlowsWriter:
 
 def flows_from_str(yaml_str: str) -> FlowsList:
     """Reads flows from a YAML string."""
-    return YAMLFlowsReader.read_from_string(textwrap.dedent(yaml_str))
+    flows = YAMLFlowsReader.read_from_string(textwrap.dedent(yaml_str))
+    flows.validate()
+    return flows
+
+
+def flows_from_str_including_defaults(yaml_str: str) -> FlowsList:
+    """Reads flows from a YAML string and combine them with default flows."""
+    flows = YAMLFlowsReader.read_from_string(textwrap.dedent(yaml_str))
+    all_flows = FlowSyncImporter.merge_with_default_flows(flows)
+    all_flows.validate()
+    return all_flows
 
 
 def is_flows_file(file_path: Union[Text, Path]) -> bool:

@@ -27,6 +27,7 @@ from rasa.core.actions.action import (
     ActionEndToEndResponse,
     ActionExtractSlots,
     default_actions,
+    ActionResetRouting,
 )
 from rasa.core.actions.forms import FormAction
 from rasa.core.channels import CollectingOutputChannel, OutputChannel
@@ -37,6 +38,7 @@ from rasa.shared.constants import (
     LATEST_TRAINING_DATA_FORMAT_VERSION,
     UTTER_PREFIX,
     REQUIRED_SLOTS_KEY,
+    ROUTE_TO_CALM_SLOT,
 )
 from rasa.shared.core.domain import (
     ActionNotFoundException,
@@ -69,6 +71,7 @@ from rasa.shared.core.events import (
     ActionExecutionRejected,
     LegacyFormValidation,
     LegacyForm,
+    RoutingSessionEnded,
 )
 import rasa.shared.utils.common
 from rasa.core.nlg.response import TemplatedNaturalLanguageGenerator
@@ -852,6 +855,19 @@ async def test_action_restart(
             "congrats, you've restarted me!", metadata={"utter_action": "utter_restart"}
         ),
         Restarted(),
+    ]
+
+
+async def test_action_reset_routing(
+    default_channel, template_nlg, template_sender_tracker, domain: Domain
+):
+    events = await ActionResetRouting().run(
+        default_channel, template_nlg, template_sender_tracker, domain
+    )
+
+    assert events == [
+        RoutingSessionEnded(),
+        SlotSet(ROUTE_TO_CALM_SLOT, None),
     ]
 
 

@@ -52,6 +52,7 @@ class FlowsProvider(GraphComponent):
             flows = YAMLFlowsReader.read_from_file(
                 resource_directory / FLOWS_PERSISTENCE_FILE_NAME
             )
+        flows.validate()
         return cls(model_storage, resource, flows)
 
     def _persist(self, flows: FlowsList) -> None:

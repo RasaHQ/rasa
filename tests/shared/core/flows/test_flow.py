@@ -1,6 +1,9 @@
 from typing import Tuple
 
 import pytest
+from rasa.dialogue_understanding.stack.utils import (
+    previous_collect_steps_for_active_flow,
+)
 
 from rasa.shared.core.flows import Flow, FlowsList
 from rasa.shared.core.flows.flow_step_links import StaticFlowStepLink
@@ -15,7 +18,12 @@ from rasa.shared.core.flows.steps.constants import (
     END_STEP,
     START_STEP,
 )
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.importers.importer import FlowSyncImporter
+from tests.dialogue_understanding.conftest import (
+    advance_top_tracker_flow,
+    update_tracker_with_path_through_flow,
+)
 from tests.utilities import flows_from_str
 
 
@@ -182,7 +190,7 @@ def test_link_step_doesnt_get_assigned_default_next():
         """
         flows:
           foo:
-            description: a test flow
+            description: foo flow
             steps:
               - collect: age
                 next:
@@ -195,6 +203,16 @@ def test_link_step_doesnt_get_assigned_default_next():
                 link: young_flow
               - id: old_flow
                 link: old_flow
+
+          young_flow:
+            description: young flow
+            steps:
+              - action: utter_too_young
+
+          old_flow:
+            description: old flow
+            steps:
+              - action: utter_too_old
         """
     )
     flow = all_flows.flow_by_id("foo")
@@ -277,7 +295,7 @@ def test_create_default_name(user_flows_and_patterns: FlowsList):
 
 
 def test_assignment_of_default_ids(add_contact_flow: Flow):
-    assert [s.default_id for s in add_contact_flow.steps] == [
+    assert [s.default_id for s in add_contact_flow.steps_with_calls_resolved] == [
         "0_collect_add_contact_handle",
         "1_collect_add_contact_name",
         "2_collect_add_contact_confirmation",
@@ -349,19 +367,30 @@ def test_get_collect_steps(add_contact_flow: Flow):
     assert set(add_contact_flow_collects) == {s.collect for s in collect_steps}
 
 
-@pytest.mark.parametrize(
-    "step_id, expected_collects",
-    [
-        ("0_collect_add_contact_handle", add_contact_flow_collects[:1]),
-        ("1_collect_add_contact_name", add_contact_flow_collects[:2]),
-        ("2_collect_add_contact_confirmation", add_contact_flow_collects[:3]),
-    ],
-)
-def test_basic_previous_collect_steps(
-    step_id: str, expected_collects: Tuple[str, ...], add_contact_flow: Flow
-):
-    collects = add_contact_flow.previous_collect_steps(step_id)
-    assert [s.collect for s in collects] == list(reversed(expected_collects))
+def test_previous_collect_steps_collect(add_contact_flow: Flow):
+    all_flows = FlowsList(underlying_flows=[add_contact_flow])
+    tracker = DialogueStateTracker.from_events("test", evts=[])
+    update_tracker_with_path_through_flow(
+        tracker, "add_contact", ["0_collect_add_contact_handle"]
+    )
+
+    collects = previous_collect_steps_for_active_flow(tracker, all_flows)
+
+    assert len(collects) == 1
+    assert collects[0][0].collect == "add_contact_handle"
+    assert collects[0][1] == "add_contact"
+
+    advance_top_tracker_flow(tracker, "1_collect_add_contact_name")
+    collects_second = previous_collect_steps_for_active_flow(tracker, all_flows)
+    assert len(collects_second) == 2
+    assert collects_second[:1] == collects
+    assert collects_second[1][0].collect == "add_contact_name"
+
+    advance_top_tracker_flow(tracker, "2_collect_add_contact_confirmation")
+    collects_third = previous_collect_steps_for_active_flow(tracker, all_flows)
+    assert len(collects_third) == 3
+    assert collects_third[:2] == collects_second
+    assert collects_third[2][0].collect == "add_contact_confirmation"
 
 
 def test_flow_step_iteration_in_deeply_nested_flow():
@@ -399,7 +428,89 @@ def test_flow_step_iteration_in_deeply_nested_flow():
     )
     flow = flows.flow_by_id("deep_flow")
     assert flow is not None
-    assert len(flow.steps) == 7
+    assert len(flow.steps_with_calls_resolved) == 7
+
+
+def test_flow_step_iteration_contains_called_flows():
+    flows = flows_from_str(
+        """
+            flows:
+              foo_flow:
+                description: foo flow
+                steps:
+                  - id: "1"
+                    collect: x
+                  - id: "2"
+                    call: bar_flow
+              bar_flow:
+                description: bar flow
+                steps:
+                  - id: "3"
+                    call: baz_flow
+                  - id: "5"
+                    collect: y
+              baz_flow:
+                description: baz flow
+                steps:
+                  - id: "4"
+                    collect: z
+            """
+    )
+    foo_flow = flows.flow_by_id("foo_flow")
+    assert foo_flow is not None
+    assert [step.id for step in foo_flow.steps_with_calls_resolved] == [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+    ]
+
+    bar_flow = flows.flow_by_id("bar_flow")
+    assert bar_flow is not None
+    assert [step.id for step in bar_flow.steps_with_calls_resolved] == ["3", "4", "5"]
+
+    baz_flow = flows.flow_by_id("baz_flow")
+    assert baz_flow is not None
+    assert [step.id for step in baz_flow.steps_with_calls_resolved] == ["4"]
+
+
+def test_flow_step_without_flows_iteration_doesnt_contain_flows():
+    flows = flows_from_str(
+        """
+            flows:
+              foo_flow:
+                description: foo flow
+                steps:
+                  - id: "1"
+                    collect: x
+                  - id: "2"
+                    call: bar_flow
+              bar_flow:
+                description: bar flow
+                steps:
+                  - id: "3"
+                    call: baz_flow
+                  - id: "5"
+                    collect: y
+              baz_flow:
+                description: baz flow
+                steps:
+                  - id: "4"
+                    collect: z
+            """
+    )
+    foo_flow = flows.flow_by_id("foo_flow")
+    assert foo_flow is not None
+    assert [step.id for step in foo_flow.steps] == ["1", "2"]
+
+    bar_flow = flows.flow_by_id("bar_flow")
+    assert bar_flow is not None
+    assert [step.id for step in bar_flow.steps] == ["3", "5"]
+
+    baz_flow = flows.flow_by_id("baz_flow")
+    assert baz_flow is not None
+    assert [step.id for step in baz_flow.steps] == ["4"]
 
 
 @pytest.mark.parametrize(

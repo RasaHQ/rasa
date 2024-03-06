@@ -36,6 +36,7 @@ class Slot(ABC):
         value_reset_delay: Optional[int] = None,
         influence_conversation: bool = True,
         is_builtin: bool = False,
+        shared_for_coexistence: bool = False,
     ) -> None:
         """Create a Slot.
 
@@ -50,6 +51,8 @@ class Slot(ABC):
             is_builtin: `True` if the slot is a built-in slot, `False` otherwise.
                 Built-in slots also encompass user writable slots (via custom actions),
                 such as `return_value`.
+            shared_for_coexistence: If `True` the slot is not forgotten after either
+                dm1 or CALM finishes.
         """
         self.name = name
         self.mappings = mappings
@@ -59,6 +62,7 @@ class Slot(ABC):
         self.influence_conversation = influence_conversation
         self._has_been_set = False
         self.is_builtin = is_builtin
+        self.shared_for_coexistence = shared_for_coexistence
 
     def feature_dimensionality(self) -> int:
         """How many features this single slot creates.
@@ -186,6 +190,7 @@ class FloatSlot(Slot):
         min_value: float = 0.0,
         influence_conversation: bool = True,
         is_builtin: bool = False,
+        shared_for_coexistence: bool = False,
     ) -> None:
         """Creates a FloatSlot.
 
@@ -200,6 +205,7 @@ class FloatSlot(Slot):
             value_reset_delay,
             influence_conversation,
             is_builtin,
+            shared_for_coexistence,
         )
         self.max_value = max_value
         self.min_value = min_value
@@ -330,6 +336,7 @@ class CategoricalSlot(Slot):
         value_reset_delay: Optional[int] = None,
         influence_conversation: bool = True,
         is_builtin: bool = False,
+        shared_for_coexistence: bool = False,
     ) -> None:
         """Creates a `Categorical  Slot` (see parent class for detailed docstring)."""
         super().__init__(
@@ -339,6 +346,7 @@ class CategoricalSlot(Slot):
             value_reset_delay,
             influence_conversation,
             is_builtin,
+            shared_for_coexistence,
         )
         if values and None in values:
             rasa.shared.utils.io.raise_warning(
@@ -435,6 +443,7 @@ class AnySlot(Slot):
         value_reset_delay: Optional[int] = None,
         influence_conversation: bool = False,
         is_builtin: bool = False,
+        shared_for_coexistence: bool = False,
     ) -> None:
         """Creates an `Any  Slot` (see parent class for detailed docstring).
 
@@ -457,6 +466,7 @@ class AnySlot(Slot):
             value_reset_delay,
             influence_conversation,
             is_builtin,
+            shared_for_coexistence,
         )
 
     def __eq__(self, other: Any) -> bool:

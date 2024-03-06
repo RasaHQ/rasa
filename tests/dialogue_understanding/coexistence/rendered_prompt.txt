@@ -1,0 +1,12 @@
+You have to forward the user message to the right assistant.
+
+The following assistants are available:
+
+Assistant A: handles transactions
+Assistant B: handles chitchat
+Assistant C: handles everything else
+
+The user said: """some message"""
+
+Answer which assistant needs to get this message:
+The message is for the assistant with the letter

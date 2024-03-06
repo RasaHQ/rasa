@@ -25,17 +25,12 @@ from typing import (
     cast,
 )
 
-from rasa.dialogue_understanding.patterns.collect_information import (
-    FLOW_PATTERN_COLLECT_INFORMATION,
-)
-from rasa.dialogue_understanding.stack.utils import top_user_flow_frame
-
 import rasa.shared.utils.io
 from rasa.shared.constants import (
     ASSISTANT_ID_KEY,
     DEFAULT_SENDER_ID,
+    ROUTE_TO_CALM_SLOT,
 )
-from rasa.shared.core.flows import FlowsList
 from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_VALUE,
     ENTITY_ATTRIBUTE_TYPE,
@@ -59,6 +54,8 @@ from rasa.shared.core.constants import (
 from rasa.shared.core.conversation import Dialogue
 from rasa.shared.core.events import (
     DialogueStackUpdated,
+    RoutingSessionEnded,
+    SlotSet,
     UserUttered,
     ActionExecuted,
     Event,
@@ -422,13 +419,35 @@ class DialogueStateTracker:
     def apply_stack_update(self, update: str) -> None:
         self._underlying_stack = self._underlying_stack.update_from_patch(update)
 
+    def previous_stack_states(self) -> Generator["DialogueStack", None, None]:
+        """Generates the previous stack states of this tracker."""
+        from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
+
+        tracker = self.init_copy()
+        previous_stack = DialogueStack.empty()
+        yield previous_stack
+        for event in self.applied_events():
+            tracker.update(event)
+            stack = tracker.stack
+            if stack != previous_stack:
+                previous_stack = stack
+                yield stack
+
     @property
     def stack(self) -> "DialogueStack":
         """Returns the current stack as a copy.
 
         Important, modifying the returned stack does not modify the stack
-        stored on the tracker."""
+        stored on the tracker.
+        """
         return self._underlying_stack.copy()
+
+    @property
+    def has_coexistence_routing_slot(self) -> bool:
+        """Returns whether the coexistence routing slot is present."""
+        if self.slots:
+            return ROUTE_TO_CALM_SLOT in self.slots
+        return False
 
     def has_bot_message_after_latest_user_message(self) -> bool:
         """Checks if there is a bot message after the most recent user message.
@@ -535,7 +554,7 @@ class DialogueStateTracker:
         """
         tracker = self.init_copy()
 
-        for event in self.applied_events():
+        for event in self.applied_events(True):
 
             if isinstance(event, ActionExecuted):
                 yield tracker, event.hide_rule_turn
@@ -544,7 +563,7 @@ class DialogueStateTracker:
 
         yield tracker, False
 
-    def applied_events(self) -> List[Event]:
+    def applied_events(self, featurization_for_policies: bool = False) -> List[Event]:
         """Returns all actions that should be applied - w/o reverted events.
 
         Returns:
@@ -561,6 +580,16 @@ class DialogueStateTracker:
         for event in self.events:
             if isinstance(event, (Restarted, SessionStarted)):
                 applied_events = []
+            elif isinstance(event, RoutingSessionEnded) and featurization_for_policies:
+                # remove all events but the set slots events for the slots that are
+                # shared for coexistence.
+                applied_events = [
+                    e
+                    for e in applied_events
+                    if isinstance(e, SlotSet)
+                    and (slot := self.slots.get(e.key)) is not None
+                    and slot.shared_for_coexistence
+                ]
             elif isinstance(event, ActionReverted):
                 self._undo_till_previous(ActionExecuted, applied_events)
             elif isinstance(event, UserUtteranceReverted):
@@ -852,11 +881,11 @@ class DialogueStateTracker:
     # only be called by events, not directly. Rather update the tracker
     # with an event that in its ``apply_to`` method modifies the tracker.
     ###
-    def _reset(self) -> None:
+    def _reset(self, is_coexistence_reset: bool = False) -> None:
         """Reset tracker to initial state - doesn't delete events though!."""
         from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 
-        self._reset_slots()
+        self._reset_slots(is_coexistence_reset)
         self._paused = False
         self.latest_action = {}
         self.latest_message = UserUttered.empty()
@@ -865,9 +894,12 @@ class DialogueStateTracker:
         self.active_loop = None
         self._underlying_stack = DialogueStack.empty()
 
-    def _reset_slots(self) -> None:
+    def _reset_slots(self, is_coexistence_reset: bool = False) -> None:
         """Set all the slots to their initial value."""
         for slot in self.slots.values():
+            # skip slots with shared_for_coexistence during this reset
+            if is_coexistence_reset and slot.shared_for_coexistence:
+                continue
             slot.reset()
 
     def _set_slot(self, key: Text, value: Any) -> None:
@@ -960,51 +992,6 @@ class DialogueStateTracker:
             data["events"] = list(self.events)
 
         return rasa.shared.utils.io.get_dictionary_fingerprint(data)
-
-    def get_previously_updated_slots(self, all_flows: FlowsList) -> List[str]:
-        """Returns the slot names that were previously set in the active flow."""
-        previously_updated_slots = set()
-
-        top_frame = top_user_flow_frame(self.stack)
-        if not top_frame:
-            # we are currently in no flow
-            return []
-
-        current_flow = all_flows.flow_by_id(top_frame.flow_id)
-        if not current_flow:
-            return []
-
-        collect_steps_of_flow = current_flow.get_collect_steps()
-        slots_names_of_flow = {step.collect for step in collect_steps_of_flow}
-
-        hit_start_of_current_flow = False
-
-        for event in reversed(self.events):
-            # stop once we have hit the start of the current flow
-            if hit_start_of_current_flow:
-                break
-            # skip any non dialogue stack update events
-            if not isinstance(event, DialogueStackUpdated):
-                continue
-
-            stack_updates = event.update_as_json()
-            add_frame_updates = [
-                update
-                for update in stack_updates
-                if update["op"] == "add" and isinstance(update["value"], dict)
-            ]
-            for update in add_frame_updates:
-                added_flow = update["value"].get("flow_id")
-                if added_flow == current_flow.id:
-                    # exiting the loop upon finding start of the current flow
-                    hit_start_of_current_flow = True
-                    break
-                elif added_flow == FLOW_PATTERN_COLLECT_INFORMATION:
-                    slot = update["value"]["collect"]
-                    if slot in slots_names_of_flow:
-                        previously_updated_slots.add(slot)
-
-        return list(previously_updated_slots)
 
 
 class TrackerEventDiffEngine:

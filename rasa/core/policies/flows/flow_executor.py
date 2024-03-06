@@ -17,6 +17,7 @@ from rasa.core.policies.flows.flow_step_result import (
     FlowStepResult,
     PauseFlowReturnPrediction,
 )
+from rasa.dialogue_understanding.patterns.search import SearchPatternFlowStackFrame
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import (
     BaseFlowStackFrame,
@@ -61,6 +62,7 @@ from rasa.shared.core.flows.steps import (
     LinkFlowStep,
     ContinueFlowStep,
     EndFlowStep,
+    CallFlowStep,
     CollectInformationFlowStep,
     NoOperationFlowStep,
 )
@@ -203,7 +205,7 @@ def events_from_set_slots_step(step: SetSlotsFlowStep) -> List[Event]:
 def events_for_collect_step_execution(
     step: CollectInformationFlowStep, tracker: DialogueStateTracker
 ) -> List[Event]:
-    """Create the events needed to prepare for the execution of a collect step"""
+    """Create the events needed to prepare for the execution of a collect step."""
     # reset the slots that always need to be explicitly collected
     slot = tracker.slots.get(step.collect, None)
 
@@ -251,16 +253,19 @@ def trigger_pattern_completed(
     current_frame: DialogueStackFrame, stack: DialogueStack, flows: FlowsList
 ) -> None:
     """Trigger the pattern indicating that the stack is empty, if needed."""
-    if not stack.is_empty() or not isinstance(current_frame, UserFlowStackFrame):
-        return
-
-    completed_flow = current_frame.flow(flows)
-    completed_flow_name = completed_flow.readable_name() if completed_flow else None
-    stack.push(
-        CompletedPatternFlowStackFrame(
-            previous_flow_name=completed_flow_name,
+    # trigger pattern if the stack is empty and the last frame was either a user flow
+    # frame or a search frame
+    if stack.is_empty() and (
+        isinstance(current_frame, UserFlowStackFrame)
+        or isinstance(current_frame, SearchPatternFlowStackFrame)
+    ):
+        completed_flow = current_frame.flow(flows)
+        completed_flow_name = completed_flow.readable_name() if completed_flow else None
+        stack.push(
+            CompletedPatternFlowStackFrame(
+                previous_flow_name=completed_flow_name,
+            )
         )
-    )
 
 
 def trigger_pattern_ask_collect_information(
@@ -280,7 +285,7 @@ def trigger_pattern_ask_collect_information(
 
 
 def reset_scoped_slots(
-    current_flow: Flow, tracker: DialogueStateTracker
+    current_frame: DialogueStackFrame, current_flow: Flow, tracker: DialogueStateTracker
 ) -> List[Event]:
     """Reset all scoped slots."""
 
@@ -289,11 +294,20 @@ def reset_scoped_slots(
         initial_value = slot.initial_value if slot else None
         events.append(SlotSet(slot_name, initial_value))
 
+    if (
+        isinstance(current_frame, UserFlowStackFrame)
+        and current_frame.frame_type == FlowStackFrameType.CALL
+    ):
+        # if a called frame is completed, we don't reset the slots
+        # as they are scoped to the called flow. resetting will happen as part
+        # of the flow that contained the call step triggering this called flow
+        return []
+
     events: List[Event] = []
 
     not_resettable_slot_names = set()
 
-    for step in current_flow.steps:
+    for step in current_flow.steps_with_calls_resolved:
         if isinstance(step, CollectInformationFlowStep):
             # reset all slots scoped to the flow
             if step.reset_after_flow_ends:
@@ -306,7 +320,7 @@ def reset_scoped_slots(
     # is set to `False`
     resettable_set_slots = [
         slot["key"]
-        for step in current_flow.steps
+        for step in current_flow.steps_with_calls_resolved
         if isinstance(step, SetSlotsFlowStep)
         for slot in step.slots
         if slot["key"] not in not_resettable_slot_names
@@ -512,6 +526,16 @@ def run_step(
         )
         return ContinueFlowWithNextStep(events=initial_events)
 
+    elif isinstance(step, CallFlowStep):
+        structlogger.debug("flow.step.run.call")
+        stack.push(
+            UserFlowStackFrame(
+                flow_id=step.call,
+                frame_type=FlowStackFrameType.CALL,
+            ),
+        )
+        return ContinueFlowWithNextStep()
+
     elif isinstance(step, SetSlotsFlowStep):
         structlogger.debug("flow.step.run.slot")
         slot_events: List[Event] = events_from_set_slots_step(step)
@@ -529,7 +553,7 @@ def run_step(
         resumed_events = trigger_pattern_continue_interrupted(
             current_frame, stack, flows
         )
-        reset_events: List[Event] = reset_scoped_slots(flow, tracker)
+        reset_events: List[Event] = reset_scoped_slots(current_frame, flow, tracker)
         return ContinueFlowWithNextStep(
             events=initial_events + reset_events + resumed_events, has_flow_ended=True
         )

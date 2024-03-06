@@ -4,6 +4,8 @@ import copy
 import logging
 from enum import Enum
 from pathlib import Path
+
+from rasa.shared.constants import ROUTE_TO_CALM_SLOT
 from rasa.shared.core.events import Event
 from typing import (
     Any,
@@ -131,6 +133,15 @@ class Policy(GraphComponent):
             return not tracker.has_action_after_latest_user_message()
         else:
             return empty_stack_behavior
+
+    def should_abstain_in_coexistence(
+        self, tracker: DialogueStateTracker, is_calm_policy: bool
+    ) -> bool:
+        """Whether a policy should abstain making predictions in coexistence."""
+        return (
+            tracker.has_coexistence_routing_slot
+            and tracker.get_slot(ROUTE_TO_CALM_SLOT) != is_calm_policy
+        )
 
     def __init__(
         self,

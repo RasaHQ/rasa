@@ -118,12 +118,14 @@
           "action": { "type": "string" },
           "collect": { "type": "string" },
           "link": { "type": "string" },
+          "call": { "type": "string" },
           "set_slots": { "$ref": "#/$defs/set_slots", "schema_name": "slot set" }
         },
         "oneOf": [
           { "required": ["action"], "schema_name": "action step" },
           { "required": ["collect"], "schema_name": "collect step" },
           { "required": ["link"], "schema_name": "link step" },
+          { "required": ["call"], "schema_name": "call step" },
           { "required": ["set_slots"], "schema_name": "slot set step" },
           { "required": ["noop"], "schema_name": "" }
         ],

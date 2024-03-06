@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 import pytest
 from rasa.dialogue_understanding.commands.correct_slots_command import (
     CorrectSlotsCommand,
@@ -11,12 +11,19 @@ from rasa.dialogue_understanding.patterns.correction import (
     CorrectionPatternFlowStackFrame,
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
-from rasa.dialogue_understanding.stack.frames.flow_stack_frame import UserFlowStackFrame
+from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
+    FlowStackFrameType,
+    UserFlowStackFrame,
+)
 from rasa.shared.core.events import Event
+from tests.dialogue_understanding.conftest import update_tracker_with_path_through_flow
 from tests.utilities import flows_from_str_with_defaults
 from rasa.shared.core.events import DialogueStackUpdated, SlotSet
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.core.flows.yaml_flows_io import flows_from_str
+from rasa.shared.core.flows.yaml_flows_io import (
+    flows_from_str,
+    flows_from_str_including_defaults,
+)
 import jsonpatch
 
 
@@ -80,7 +87,7 @@ def collect_bar_tracker_update() -> Dict[str, Any]:
     }
 
 
-def test_run_command_on_tracker_correcting_previous_flow(collect_foo_tracker_update):
+def test_run_command_on_tracker_correcting_previous_flow():
     all_flows = flows_from_str(
         """
         flows:
@@ -97,19 +104,8 @@ def test_run_command_on_tracker_correcting_previous_flow(collect_foo_tracker_upd
     )
 
     tracker = DialogueStateTracker.from_events("test", evts=[])
-    tracker.update_stack(
-        DialogueStack.from_dict(
-            [
-                collect_foo_tracker_update,
-                {
-                    "type": "flow",
-                    "frame_type": "regular",
-                    "flow_id": "my_flow",
-                    "step_id": "collect_bar",
-                    "frame_id": "some-frame-id",
-                },
-            ]
-        )
+    update_tracker_with_path_through_flow(
+        tracker, "my_flow", ["collect_foo", "collect_bar"]
     )
     command = CorrectSlotsCommand(
         corrected_slots=[CorrectedSlot(name="foo", value="not-foofoo")]
@@ -125,15 +121,15 @@ def test_run_command_on_tracker_correcting_previous_flow(collect_foo_tracker_upd
     dialogue_stack_dump = patch.apply(tracker.stack.as_dict())
 
     # flow should still be on the stack and a correction pattern should have been added
-    assert isinstance(dialogue_stack_dump, list) and len(dialogue_stack_dump) == 3
+    assert isinstance(dialogue_stack_dump, list) and len(dialogue_stack_dump) == 2
 
-    assert dialogue_stack_dump[2]["type"] == "pattern_correction"
-    assert dialogue_stack_dump[2]["flow_id"] == "pattern_correction"
-    assert dialogue_stack_dump[2]["step_id"] == "START"
-    assert dialogue_stack_dump[2]["corrected_slots"] == {"foo": "not-foofoo"}
-    assert dialogue_stack_dump[2]["reset_flow_id"] == "my_flow"
-    assert dialogue_stack_dump[2]["reset_step_id"] == "collect_foo"
-    assert dialogue_stack_dump[2]["is_reset_only"] is False
+    assert dialogue_stack_dump[1]["type"] == "pattern_correction"
+    assert dialogue_stack_dump[1]["flow_id"] == "pattern_correction"
+    assert dialogue_stack_dump[1]["step_id"] == "START"
+    assert dialogue_stack_dump[1]["corrected_slots"] == {"foo": "not-foofoo"}
+    assert dialogue_stack_dump[1]["reset_flow_id"] == "my_flow"
+    assert dialogue_stack_dump[1]["reset_step_id"] == "collect_foo"
+    assert dialogue_stack_dump[1]["is_reset_only"] is False
 
 
 def test_run_command_on_tracker_correcting_current_flow(
@@ -294,50 +290,7 @@ def test_run_command_on_tracker_correcting_invalid_slot(
     assert len(events) == 0
 
 
-@pytest.mark.parametrize(
-    "dialogue_stack, expected_reset_step",
-    [
-        # TODO: This test case needs splitting out from the test case below
-        # since the stack is a different length which messes all the asserts.
-        # Commented out in https://rasahq.atlassian.net/browse/ENG-687
-        # to be fixed in https://rasahq.atlassian.net/browse/ENG-690
-        #  (
-        #     [{
-        #         "type": "flow",
-        #         "frame_type": "regular",
-        #         "flow_id": "my_flow",
-        #         "step_id": "collect_bar",
-        #         "frame_id": "some-frame-id",
-        #     }],
-        #     None,
-        # ),
-        (
-            [
-                {
-                    "frame_id": "PCF1",
-                    "flow_id": "pattern_collect_information",
-                    "step_id": "START",
-                    "collect": "foo",
-                    "utter": "utter_ask_foo",
-                    "rejections": [],
-                    "type": "pattern_collect_information",
-                },
-                {
-                    "type": "flow",
-                    "frame_type": "regular",
-                    "flow_id": "my_flow",
-                    "step_id": "collect_bar",
-                    "frame_id": "some-frame-id",
-                },
-            ],
-            "collect_foo",
-        ),
-    ],
-)
-def test_run_command_on_tracker_correcting_slot_with_asked_before_filling(
-    dialogue_stack: List[Dict[str, str]],
-    expected_reset_step: Optional[str],
-):
+def test_run_command_on_tracker_correcting_slot_with_asked_before_filling():
     all_flows = flows_from_str_with_defaults(
         """
         flows:
@@ -355,7 +308,9 @@ def test_run_command_on_tracker_correcting_slot_with_asked_before_filling(
     )
 
     tracker = DialogueStateTracker.from_events("test", evts=[])
-    tracker.update_stack(DialogueStack.from_dict(dialogue_stack))
+    update_tracker_with_path_through_flow(
+        tracker, "my_flow", ["collect_foo", "collect_bar"]
+    )
     command = CorrectSlotsCommand(
         corrected_slots=[CorrectedSlot(name="foo", value="foofoo")]
     )
@@ -368,24 +323,19 @@ def test_run_command_on_tracker_correcting_slot_with_asked_before_filling(
 
     updated_stack = tracker.stack.update_from_patch(dialogue_stack_event.update)
 
-    assert len(updated_stack.frames) == 3
+    assert len(updated_stack.frames) == 2
 
-    frame = updated_stack.frames[2]
+    frame = updated_stack.frames[1]
     assert isinstance(frame, CorrectionPatternFlowStackFrame)
     assert frame.flow_id == "pattern_correction"
     assert frame.is_reset_only
     assert frame.corrected_slots == {"foo": "foofoo"}
     assert frame.step_id == "START"
-    if expected_reset_step:
-        assert frame.reset_step_id == expected_reset_step
-    else:
-        assert frame.reset_step_id is None
+    assert frame.reset_step_id == "collect_foo"
 
 
-def test_run_command_on_tracker_correcting_during_a_correction(
-    collect_bar_tracker_update: Dict[str, Any]
-):
-    all_flows = flows_from_str(
+def test_run_command_on_tracker_correcting_during_a_correction():
+    all_flows = flows_from_str_including_defaults(
         """
         flows:
           my_flow:
@@ -401,30 +351,22 @@ def test_run_command_on_tracker_correcting_during_a_correction(
     )
 
     tracker = DialogueStateTracker.from_events("test", evts=[])
-    tracker.update_stack(
-        DialogueStack.from_dict(
-            [
-                collect_bar_tracker_update,
-                {
-                    "type": "flow",
-                    "frame_type": "regular",
-                    "flow_id": "my_flow",
-                    "step_id": "collect_bar",
-                    "frame_id": "some-frame-id",
-                },
-                {
-                    "type": "pattern_correction",
-                    "flow_id": "pattern_correction",
-                    "step_id": "collect_bar",
-                    "frame_id": "some-other-id",
-                    "corrected_slots": {"foo": "not-foofoo"},
-                    "reset_flow_id": "my_flow",
-                    "reset_step_id": "collect_foo",
-                    "is_reset_only": False,
-                },
-            ]
+    update_tracker_with_path_through_flow(
+        tracker, "my_flow", ["collect_foo", "collect_bar"]
+    )
+    stack = tracker.stack
+    stack.push(
+        CorrectionPatternFlowStackFrame(
+            corrected_slots={"foo": "not-foofoo"},
+            step_id="0_action_correct_flow_slot",
+            reset_flow_id="my_flow",
+            reset_step_id="collect_foo",
+            is_reset_only=False,
+            frame_id="some-other-id",
         )
     )
+    tracker.update_stack(stack)
+
     command = CorrectSlotsCommand(
         corrected_slots=[CorrectedSlot(name="bar", value="barbar")]
     )
@@ -438,26 +380,30 @@ def test_run_command_on_tracker_correcting_during_a_correction(
     patch = jsonpatch.JsonPatch.from_string(dialogue_stack_event.update)
     dialogue_stack_dump = patch.apply(tracker.stack.as_dict())
 
-    # flow should still be on the stack and a correction flow should have been added
-    assert isinstance(dialogue_stack_dump, list) and len(dialogue_stack_dump) == 4
+    assert isinstance(dialogue_stack_dump, list) and len(dialogue_stack_dump) == 3
+
+    assert dialogue_stack_dump[1]["type"] == "pattern_correction"
+    assert dialogue_stack_dump[1]["flow_id"] == "pattern_correction"
+    assert dialogue_stack_dump[1]["step_id"] == "START"
+    assert dialogue_stack_dump[1]["corrected_slots"] == {"bar": "barbar"}
+    assert dialogue_stack_dump[1]["reset_flow_id"] == "my_flow"
+    assert dialogue_stack_dump[1]["reset_step_id"] == "collect_bar"
 
     assert dialogue_stack_dump[2]["type"] == "pattern_correction"
-    assert dialogue_stack_dump[2]["flow_id"] == "pattern_correction"
-    assert dialogue_stack_dump[2]["step_id"] == "START"
-    assert dialogue_stack_dump[2]["corrected_slots"] == {"bar": "barbar"}
-    assert dialogue_stack_dump[2]["reset_flow_id"] == "my_flow"
-    assert dialogue_stack_dump[2]["reset_step_id"] == "collect_bar"
-
-    assert dialogue_stack_dump[3]["type"] == "pattern_correction"
-    assert dialogue_stack_dump[3]["corrected_slots"] == {"foo": "not-foofoo"}
+    assert dialogue_stack_dump[2]["corrected_slots"] == {"foo": "not-foofoo"}
 
 
-def test_index_for_correction_frame_handles_empty_stack():
+def test_determine_index_for_new_correction_frame_handles_empty_stack():
     stack = DialogueStack.empty()
     top_flow_frame = UserFlowStackFrame(
         flow_id="foo", step_id="first_step", frame_id="some-frame-id"
     )
-    assert CorrectSlotsCommand.index_for_correction_frame(top_flow_frame, stack) == 0
+    assert (
+        CorrectSlotsCommand.determine_index_for_new_correction_frame(
+            top_flow_frame, stack
+        )
+        == 0
+    )
 
 
 def test_index_for_correction_handles_non_correction_pattern_at_the_top_of_stack():
@@ -472,7 +418,12 @@ def test_index_for_correction_handles_non_correction_pattern_at_the_top_of_stack
             top_flow_frame,
         ]
     )
-    assert CorrectSlotsCommand.index_for_correction_frame(top_flow_frame, stack) == 2
+    assert (
+        CorrectSlotsCommand.determine_index_for_new_correction_frame(
+            top_flow_frame, stack
+        )
+        == 2
+    )
 
 
 def test_index_for_correction_handles_correction_pattern_at_the_top_of_stack():
@@ -488,7 +439,39 @@ def test_index_for_correction_handles_correction_pattern_at_the_top_of_stack():
         ]
     )
     # new correction pattern should be inserted "under" the existing correction pattern
-    assert CorrectSlotsCommand.index_for_correction_frame(top_flow_frame, stack) == 1
+    assert (
+        CorrectSlotsCommand.determine_index_for_new_correction_frame(
+            top_flow_frame, stack
+        )
+        == 1
+    )
+
+
+def test_index_for_correction_handles_call_and_existing_correction_pattern():
+    top_flow_frame = CorrectionPatternFlowStackFrame(
+        corrected_slots={"foo": "not-foofoo"},
+    )
+    stack = DialogueStack(
+        frames=[
+            UserFlowStackFrame(
+                flow_id="foo", step_id="first_step", frame_id="some-frame-id"
+            ),
+            UserFlowStackFrame(
+                flow_id="bar",
+                step_id="first_step",
+                frame_id="some-call-id",
+                frame_type=FlowStackFrameType.CALL,
+            ),
+            top_flow_frame,
+        ]
+    )
+    # new correction pattern should be inserted "under" the existing correction pattern
+    assert (
+        CorrectSlotsCommand.determine_index_for_new_correction_frame(
+            top_flow_frame, stack
+        )
+        == 2
+    )
 
 
 def test_end_previous_correction():
@@ -548,15 +531,13 @@ def test_end_previous_correction_no_correction_present():
 def test_find_earliest_updated_collect_info(
     updated_slots: List[str],
     expected_step_id: str,
-    collect_foo_tracker_update: Dict[str, Any],
-    collect_bar_tracker_update: Dict[str, Any],
 ):
     all_flows = flows_from_str(
         """
         flows:
           my_flow:
-            description: test my flow
             name: foo flow
+            description: foo flow
             steps:
             - id: collect_foo
               collect: foo
@@ -570,99 +551,16 @@ def test_find_earliest_updated_collect_info(
     )
 
     tracker = DialogueStateTracker.from_events("bot", evts=[])
-    tracker.update_stack(
-        DialogueStack.from_dict(
-            [
-                collect_foo_tracker_update,
-                collect_bar_tracker_update,
-                {
-                    "type": "flow",
-                    "flow_id": "my_flow",
-                    "step_id": "collect_foo",
-                    "frame_id": "some-frame-id",
-                },
-            ]
-        )
+    update_tracker_with_path_through_flow(
+        tracker, "my_flow", ["collect_foo", "collect_bar"]
     )
 
-    user_frame = UserFlowStackFrame(
-        flow_id="my_flow", step_id="collect_bar", frame_id="some-frame-id"
-    )
     step = CorrectSlotsCommand.find_earliest_updated_collect_info(
-        user_frame, updated_slots, all_flows, tracker
+        updated_slots, all_flows, tracker
     )
     if expected_step_id is not None:
-        assert step.id == expected_step_id
-    else:
-        assert step is None
-
-
-@pytest.mark.parametrize(
-    "updated_slots, expected_step_id",
-    [
-        (
-            ["foo", "bar"],
-            "collect_bar",
-        ),
-        # TODO: Fix or move this test case.
-        # Commented out in https://rasahq.atlassian.net/browse/ENG-687
-        # to be fixed in https://rasahq.atlassian.net/browse/ENG-690
-        # (
-        #     ["foo", "bar"],
-        #     None,
-        # ),
-        (
-            ["foo"],
-            None,
-        ),
-    ],
-)
-def test_find_earliest_updated_collect_info_todo(
-    updated_slots: List[str],
-    expected_step_id: str,
-    collect_bar_tracker_update: Dict[str, Any],
-):
-    all_flows = flows_from_str(
-        """
-        flows:
-          my_flow:
-            description: test my flow
-            name: foo flow
-            steps:
-            - id: collect_foo
-              collect: foo
-              next: collect_bar
-            - id: collect_bar
-              collect: bar
-              next: collect_baz
-            - id: collect_baz
-              collect: baz
-        """
-    )
-
-    tracker = DialogueStateTracker.from_events("bot", evts=[])
-    tracker.update_stack(
-        DialogueStack.from_dict(
-            [
-                collect_bar_tracker_update,
-                {
-                    "type": "flow",
-                    "flow_id": "my_flow",
-                    "step_id": "collect_foo",
-                    "frame_id": "some-frame-id",
-                },
-            ]
-        )
-    )
-
-    user_frame = UserFlowStackFrame(
-        flow_id="my_flow", step_id="collect_bar", frame_id="some-frame-id"
-    )
-    step = CorrectSlotsCommand.find_earliest_updated_collect_info(
-        user_frame, updated_slots, all_flows, tracker
-    )
-    if expected_step_id is not None:
-        assert step.id == expected_step_id
+        assert step is not None
+        assert step.step.id == expected_step_id
     else:
         assert step is None
 

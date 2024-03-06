@@ -11,6 +11,7 @@ from rasa.dialogue_understanding.patterns.collect_information import (
 from rasa.dialogue_understanding.stack.utils import (
     get_collect_steps_excluding_ask_before_filling_for_active_flow,
 )
+from rasa.shared.constants import ROUTE_TO_CALM_SLOT
 from rasa.shared.core.events import Event, SlotSet
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -99,7 +100,7 @@ class SetSlotCommand(Command):
         if isinstance(top_frame, CollectInformationPatternFlowStackFrame):
             slots_of_active_flow.add(top_frame.collect)
 
-        if self.name not in slots_of_active_flow:
+        if self.name not in slots_of_active_flow and self.name != ROUTE_TO_CALM_SLOT:
             # Get the other predicted flows from the most recent message on the tracker.
             predicted_flows = get_flows_predicted_to_start_from_tracker(tracker)
             use_slot_fill = any(

@@ -3,6 +3,8 @@ from __future__ import annotations
 from collections import defaultdict
 import re
 from typing import Optional, Set, Text, List
+import typing
+from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
 
 from rasa.shared.core.flows.flow_step import (
     FlowStep,
@@ -14,10 +16,14 @@ from rasa.shared.core.flows.flow_step_links import (
 )
 from rasa.shared.core.flows.flow_step_sequence import FlowStepSequence
 from rasa.shared.core.flows.steps.constants import CONTINUE_STEP_PREFIX, DEFAULT_STEPS
+from rasa.shared.core.flows.steps.call import CallFlowStep
 from rasa.shared.core.flows.steps.link import LinkFlowStep
 from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
 from rasa.shared.core.flows.flow import Flow
 from rasa.shared.exceptions import RasaException
+
+if typing.TYPE_CHECKING:
+    from rasa.shared.core.flows.flows_list import FlowsList
 
 
 class UnreachableFlowStepException(RasaException):
@@ -70,6 +76,23 @@ class ReservedFlowStepIdException(RasaException):
         )
 
 
+class DuplicatedStepIdException(RasaException):
+    """Raised when a flow step is using the same id as another step."""
+
+    def __init__(self, step_id: str, flow_id: str) -> None:
+        """Initializes the exception."""
+        self.step_id = step_id
+        self.flow_id = flow_id
+
+    def __str__(self) -> str:
+        """Return a string representation of the exception."""
+        return (
+            f"Step '{self.step_id}' in flow '{self.flow_id}' is using the same id as "
+            f"another step. Step ids must be unique across all steps of a flow. "
+            f"Please use a different id for your step."
+        )
+
+
 class MissingElseBranchException(RasaException):
     """Raised when a flow step is missing an else branch."""
 
@@ -100,6 +123,80 @@ class NoNextAllowedForLinkException(RasaException):
         return (
             f"Link step '{self.step_id}' in flow '{self.flow_id}' has a `next` but "
             f"as a link step is not allowed to have one."
+        )
+
+
+class ReferenceToPatternException(RasaException):
+    """Raised when a flow step is referencing a pattern, which is not allowed."""
+
+    def __init__(self, referenced_pattern: str, flow_id: str, step_id: str) -> None:
+        """Initializes the exception."""
+        self.step_id = step_id
+        self.flow_id = flow_id
+        self.referenced_pattern = referenced_pattern
+
+    def __str__(self) -> str:
+        """Return a string representation of the exception."""
+        return (
+            f"Step '{self.step_id}' in flow '{self.flow_id}' is referencing a pattern "
+            f"'{self.referenced_pattern}', which is not allowed. "
+            f"Patterns can not be used as a target for a link or call step."
+        )
+
+
+class PatternReferencedFlowException(RasaException):
+    """Raised when a pattern is referencing a flow, which is not allowed."""
+
+    def __init__(self, flow_id: str, step_id: str) -> None:
+        """Initializes the exception."""
+        self.step_id = step_id
+        self.flow_id = flow_id
+
+    def __str__(self) -> str:
+        """Return a string representation of the exception."""
+        return (
+            f"Step '{self.step_id}' in flow '{self.flow_id}' is referencing a flow "
+            f"which is not allowed. "
+            f"Patterns can not use link or call steps."
+        )
+
+
+class NoLinkAllowedInCalledFlowException(RasaException):
+    """Raised when a flow is called from another flow but is also using a link."""
+
+    def __init__(self, step_id: str, flow_id: str, called_flow_id: str) -> None:
+        """Initializes the exception."""
+        self.step_id = step_id
+        self.flow_id = flow_id
+        self.called_flow_id = called_flow_id
+
+    def __str__(self) -> str:
+        """Return a string representation of the exception."""
+        return (
+            f"Flow '{self.flow_id}' is calling another flow (call step). "
+            f"The flow that is getting called ('{self.called_flow_id}') is "
+            f"using a link step, which is not allowed. "
+            f"Either this flow can not be called or the link step in {self.step_id} "
+            f"needs to be removed."
+        )
+
+
+class UnresolvedFlowException(RasaException):
+    """Raised when a flow is called or linked from another flow but doesn't exist."""
+
+    def __init__(self, flow_id: str, calling_flow_id: str, step_id: str) -> None:
+        """Initializes the exception."""
+        self.flow_id = flow_id
+        self.calling_flow_id = calling_flow_id
+        self.step_id = step_id
+
+    def __str__(self) -> str:
+        """Return a string representation of the exception."""
+        return (
+            f"Flow '{self.flow_id}' is called or linked from flow "
+            f"'{self.calling_flow_id}' in step '{self.step_id}', "
+            f"but it doesn't exist. "
+            f"Please make sure that a flow with id '{self.flow_id}' exists."
         )
 
 
@@ -172,7 +269,7 @@ class DuplicateNLUTriggerException(RasaException):
         """Return a string representation of the exception."""
         return (
             f"The intent '{self.intent}' is used as 'nlu_trigger' "
-            f"in multiple flows: {self.flow_names}."
+            f"in multiple flows: {self.flow_names}. "
             f"An intent should just trigger one flow, not multiple."
         )
 
@@ -307,6 +404,84 @@ def validate_nlu_trigger(flows: List[Flow]) -> None:
     for intent, flow_names in nlu_trigger_to_flows.items():
         if len(flow_names) > 1:
             raise DuplicateNLUTriggerException(intent, flow_names)
+
+
+def validate_link_in_call_restriction(flows: "FlowsList") -> None:
+    """Validates that a flow is not called from another flow and uses a link step."""
+
+    def does_flow_use_link(flow_id: str) -> bool:
+        if flow := flows.flow_by_id(flow_id):
+            for step in flow.steps:
+                if isinstance(step, LinkFlowStep):
+                    return True
+        return False
+
+    for flow in flows.underlying_flows:
+        for step in flow.steps:
+            if isinstance(step, CallFlowStep) and does_flow_use_link(step.call):
+                raise NoLinkAllowedInCalledFlowException(step.id, flow.id, step.call)
+
+
+def validate_called_flows_exists(flows: "FlowsList") -> None:
+    """Validates that all called flows exist."""
+    for flow in flows.underlying_flows:
+        for step in flow.steps:
+            if not isinstance(step, CallFlowStep):
+                continue
+
+            if flows.flow_by_id(step.call) is None:
+                raise UnresolvedFlowException(step.call, flow.id, step.id)
+
+
+def validate_linked_flows_exists(flows: "FlowsList") -> None:
+    """Validates that all linked flows exist."""
+    for flow in flows.underlying_flows:
+        for step in flow.steps:
+            if not isinstance(step, LinkFlowStep):
+                continue
+
+            if flows.flow_by_id(step.link) is None:
+                raise UnresolvedFlowException(step.link, flow.id, step.id)
+
+
+def validate_patterns_are_not_called_or_linked(flows: "FlowsList") -> None:
+    """Validates that patterns are never called or linked."""
+    for flow in flows.underlying_flows:
+        for step in flow.steps:
+            if isinstance(step, LinkFlowStep) and step.link.startswith(
+                RASA_DEFAULT_FLOW_PATTERN_PREFIX
+            ):
+                raise ReferenceToPatternException(step.link, flow.id, step.id)
+
+            if isinstance(step, CallFlowStep) and step.call.startswith(
+                RASA_DEFAULT_FLOW_PATTERN_PREFIX
+            ):
+                raise ReferenceToPatternException(step.call, flow.id, step.id)
+
+
+def validate_patterns_are_not_calling_or_linking_other_flows(
+    flows: "FlowsList",
+) -> None:
+    """Validates that patterns do not contain call or link steps."""
+    for flow in flows.underlying_flows:
+        if not flow.is_rasa_default_flow:
+            continue
+        for step in flow.steps:
+            if isinstance(step, (LinkFlowStep, CallFlowStep)):
+                raise PatternReferencedFlowException(flow.id, step.id)
+
+
+def validate_step_ids_are_unique(flows: "FlowsList") -> None:
+    """Validates that step ids are unique within a flow and any called flows."""
+    for flow in flows.underlying_flows:
+        used_ids: Set[str] = set()
+
+        # check that the ids used in the flow are unique
+        for step in flow.steps:
+            if step.id in used_ids:
+                raise DuplicatedStepIdException(step.id, flow.id)
+
+            used_ids.add(step.id)
 
 
 def validate_slot_names_to_be_collected(flow: Flow) -> None:

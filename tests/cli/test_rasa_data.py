@@ -342,5 +342,8 @@ flows:
         mappings: []"""
     Path("domain.yml").write_text(domain_yaml)
     result = run_in_simple_project("data", "validate", "flows")
-    assert "The flow 'non_existent_flow' is used in the step" in str(result.errlines)
+    assert (
+        "Flow 'non_existent_flow' is called or linked from flow "
+        "'transfer_money' in step" in str(result.errlines)
+    )
     assert result.ret != 0

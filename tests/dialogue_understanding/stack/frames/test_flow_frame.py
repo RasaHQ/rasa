@@ -35,6 +35,7 @@ def test_flow_frame_from_dict():
         ("regular", FlowStackFrameType.REGULAR),
         ("link", FlowStackFrameType.LINK),
         ("interrupt", FlowStackFrameType.INTERRUPT),
+        ("call", FlowStackFrameType.CALL),
     ],
 )
 def test_flow_stack_frame_type_from_str(typ: str, expected_type: FlowStackFrameType):

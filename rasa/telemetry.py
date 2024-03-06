@@ -965,7 +965,8 @@ def track_model_training(
 
 def _get_llm_config(config: Dict[str, Any]) -> Tuple[Optional[str], Optional[bool]]:
     """Returns the model name used for the LLMCommandGenerator and
-    whether a custom prompt is used or not."""
+    whether a custom prompt is used or not.
+    """
     from rasa.dialogue_understanding.generator import LLMCommandGenerator
     from rasa.dialogue_understanding.generator.llm_command_generator import (
         LLM_CONFIG_KEY,
@@ -1024,7 +1025,7 @@ def _collect_flow_statistics(flows: List[Flow]) -> Dict[str, Any]:
         if flow.nlu_triggers:
             data[NUM_FLOWS_WITH_NLU_TRIGGER] += 1
 
-        for step in flow.steps:
+        for step in flow.steps_with_calls_resolved:
             if isinstance(step, CollectInformationFlowStep):
                 slots_used_in_different_flows[step.collect].add(flow.id)
                 data[NUM_COLLECT_STEPS] += 1

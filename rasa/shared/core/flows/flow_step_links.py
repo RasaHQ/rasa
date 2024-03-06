@@ -58,10 +58,12 @@ class FlowStepLinks:
         """Returns whether no link is available."""
         return len(self.links) == 0
 
-    def steps_in_tree(self) -> Generator[FlowStep, None, None]:
+    def steps_in_tree(
+        self, should_resolve_calls: bool = True
+    ) -> Generator[FlowStep, None, None]:
         """Returns the steps in the tree of the flow step links."""
         for link in self.links:
-            yield from link.steps_in_tree()
+            yield from link.steps_in_tree(should_resolve_calls)
 
     def depth_in_tree(self) -> int:
         """Returns the max depth in the tree of the flow step links."""
@@ -103,7 +105,9 @@ class FlowStepLink:
         """
         raise NotImplementedError()
 
-    def steps_in_tree(self) -> Generator[FlowStep, None, None]:
+    def steps_in_tree(
+        self, should_resolve_calls: bool = True
+    ) -> Generator[FlowStep, None, None]:
         """Recursively generates the steps in the tree."""
         raise NotImplementedError()
 
@@ -121,12 +125,17 @@ class BranchingFlowStepLink(FlowStepLink):
     target_reference: Union[Text, FlowStepSequence]
     """The id of the linked step or a sequence of steps."""
 
-    def steps_in_tree(self) -> Generator[FlowStep, None, None]:
+    def steps_in_tree(
+        self, should_resolve_calls: bool = True
+    ) -> Generator[FlowStep, None, None]:
         """Recursively generates the steps in the tree."""
         from rasa.shared.core.flows.flow_step_sequence import FlowStepSequence
 
         if isinstance(self.target_reference, FlowStepSequence):
-            yield from self.target_reference.steps
+            if should_resolve_calls:
+                yield from self.target_reference.steps_with_calls_resolved
+            else:
+                yield from self.target_reference.steps
 
     def child_steps(self) -> List[FlowStep]:
         """Returns the steps of the linked flow step sequence if any."""
@@ -174,7 +183,7 @@ class BranchingFlowStepLink(FlowStepLink):
 
         if isinstance(self.target_reference, FlowStepSequence):
             depth = 0
-            for step in self.target_reference.steps:
+            for step in self.target_reference.steps_with_calls_resolved:
                 if isinstance(step.next, FlowStepLinks):
                     depth = max(depth, step.next.depth_in_tree())
             return depth + 1
@@ -289,7 +298,9 @@ class StaticFlowStepLink(FlowStepLink):
         """
         return self.target
 
-    def steps_in_tree(self) -> Generator[FlowStep, None, None]:
+    def steps_in_tree(
+        self, should_resolve_calls: bool = True
+    ) -> Generator[FlowStep, None, None]:
         """Recursively generates the steps in the tree."""
         # static links do not have any child steps
         yield from []

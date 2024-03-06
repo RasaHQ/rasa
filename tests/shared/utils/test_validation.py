@@ -640,8 +640,8 @@ def test_flow_with_a_step_without_a_type():
     """
     )
     expected_error = (
-        "Not a valid 'steps' definition. Expected action step or collect "
-        "step or link step or slot set step."
+        "Not a valid 'steps' definition. Expected action step or call step or "
+        "collect step or link step or slot set step."
     )
     assert expected_error in validate_and_return_error_msg(flow)
 

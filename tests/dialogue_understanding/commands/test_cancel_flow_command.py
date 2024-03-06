@@ -4,7 +4,10 @@ from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
-from rasa.dialogue_understanding.stack.frames.flow_stack_frame import UserFlowStackFrame
+from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
+    FlowStackFrameType,
+    UserFlowStackFrame,
+)
 from rasa.shared.core.events import DialogueStackUpdated, FlowCancelled
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.flows.yaml_flows_io import flows_from_str
@@ -99,6 +102,31 @@ def test_select_canceled_frames_cancels_patterns():
     assert len(canceled_frames) == 2
     assert canceled_frames[0] == "some-other-id"
     assert canceled_frames[1] == "some-frame-id"
+
+
+def test_select_canceled_frames_cancels_calls():
+    stack = DialogueStack(
+        frames=[
+            UserFlowStackFrame(
+                flow_id="foo", step_id="first_step", frame_id="some-frame-id"
+            ),
+            UserFlowStackFrame(
+                flow_id="bar",
+                step_id="collect_bar",
+                frame_id="some-call-id",
+                frame_type=FlowStackFrameType.CALL,
+            ),
+            CollectInformationPatternFlowStackFrame(
+                collect="bar", frame_id="some-other-id"
+            ),
+        ]
+    )
+
+    canceled_frames = CancelFlowCommand.select_canceled_frames(stack)
+    assert len(canceled_frames) == 3
+    assert canceled_frames[0] == "some-other-id"
+    assert canceled_frames[1] == "some-call-id"
+    assert canceled_frames[2] == "some-frame-id"
 
 
 def test_select_canceled_frames_cancels_only_top_user_flow():

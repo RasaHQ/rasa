@@ -127,7 +127,9 @@ class FlowPolicy(Policy):
         Returns:
              The prediction.
         """
-        if not self.supports_current_stack_frame(tracker):
+        if not self.supports_current_stack_frame(
+            tracker
+        ) or self.should_abstain_in_coexistence(tracker, True):
             # if the policy doesn't support the current stack frame, we'll abstain
             return self._prediction(self._default_predictions(domain))
 

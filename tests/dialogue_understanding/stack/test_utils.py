@@ -4,7 +4,10 @@ from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
-from rasa.dialogue_understanding.stack.frames.flow_stack_frame import UserFlowStackFrame
+from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
+    FlowStackFrameType,
+    UserFlowStackFrame,
+)
 from rasa.dialogue_understanding.stack.utils import (
     end_top_user_flow,
     filled_slots_for_active_flow,
@@ -13,9 +16,10 @@ from rasa.dialogue_understanding.stack.utils import (
     top_user_flow_frame,
     user_flows_on_the_stack,
 )
-from rasa.shared.core.events import SlotSet, UserUttered, FlowCompleted, FlowStarted
+from rasa.shared.core.events import SlotSet, UserUttered, FlowStarted
 from rasa.shared.core.flows.yaml_flows_io import flows_from_str
 from rasa.shared.core.trackers import DialogueStateTracker
+from tests.dialogue_understanding.conftest import update_tracker_with_path_through_flow
 
 
 def test_top_flow_frame_ignores_pattern():
@@ -33,6 +37,26 @@ def test_top_flow_frame_ignores_pattern():
     )
 
     assert top_flow_frame(stack, ignore_collect_information_pattern=True) == user_frame
+
+
+def test_top_flow_frame_ignores_call():
+    call_frame = UserFlowStackFrame(
+        flow_id="bar",
+        step_id="first_step",
+        frame_id="some-call-id",
+        frame_type=FlowStackFrameType.CALL,
+    )
+    user_frame = UserFlowStackFrame(
+        flow_id="foo", step_id="first_step", frame_id="some-frame-id"
+    )
+    stack = DialogueStack(
+        frames=[
+            user_frame,
+            call_frame,
+        ]
+    )
+
+    assert top_flow_frame(stack) == user_frame
 
 
 def test_top_flow_frame_uses_pattern():
@@ -101,34 +125,21 @@ def test_filled_slots_for_active_flow_start():
             steps:
             - id: collect_foo
               collect: foo
-              next: collect_bar
             - id: collect_bar
               collect: bar
-              next: collect_baz
             - id: collect_baz
               collect: baz
         """
     )
 
     tracker = DialogueStateTracker.from_events("test", [])
-    tracker.update_stack(
-        DialogueStack.from_dict(
-            [
-                {
-                    "type": "flow",
-                    "flow_id": "my_flow",
-                    "step_id": "collect_foo",
-                    "frame_id": "some-frame-id",
-                }
-            ]
-        )
+    update_tracker_with_path_through_flow(
+        tracker, flow_id="my_flow", step_ids=["START"]
     )
 
     assert filled_slots_for_active_flow(tracker, all_flows) == set()
 
 
-# TODO: ENG-687 fix this test by adding an abstraction for creating proper trackers
-@pytest.mark.skip
 def test_filled_slots_for_active_flow_end():
     all_flows = flows_from_str(
         """
@@ -155,20 +166,12 @@ def test_filled_slots_for_active_flow_end():
             SlotSet("bar", "barbar"),
         ],
     )
-    tracker.update_stack(
-        DialogueStack.from_dict(
-            [
-                {
-                    "type": "flow",
-                    "flow_id": "my_flow",
-                    "step_id": "collect_baz",
-                    "frame_id": "some-frame-id",
-                }
-            ]
-        )
+    update_tracker_with_path_through_flow(
+        tracker,
+        flow_id="my_flow",
+        step_ids=["collect_foo", "collect_bar", "collect_baz"],
     )
-
-    assert filled_slots_for_active_flow(tracker, all_flows) == {"foo", "bar"}
+    assert filled_slots_for_active_flow(tracker, all_flows) == {"foo", "bar", "baz"}
 
 
 def test_filled_slots_for_active_flow_handles_empty():
@@ -272,33 +275,21 @@ def test_filled_slots_for_active_flow_only_collects_till_top_most_user_flow_fram
         """
     )
 
-    tracker = DialogueStateTracker.from_events(
-        "test",
-        evts=[
-            FlowStarted("my_flow"),
-            SlotSet("foo", "foofoo"),
-            SlotSet("bar", "barbar"),
-            SlotSet("baz", "bazbaz"),
-            FlowCompleted("my_flow", "step_id"),
-            FlowStarted("my_other_flow"),
-            UserUttered("some message"),
-            SlotSet("foo2", "foofoo2"),
-        ],
+    tracker = DialogueStateTracker.from_events("test", evts=[])
+    update_tracker_with_path_through_flow(
+        tracker,
+        flow_id="my_flow",
+        step_ids=["collect_foo", "collect_bar", "collect_baz"],
+        frame_id="some-frame-id",
     )
-    tracker.update_stack(
-        DialogueStack.from_dict(
-            [
-                {
-                    "type": "flow",
-                    "flow_id": "my_other_flow",
-                    "step_id": "collect_bar2",
-                    "frame_id": "some-frame-id",
-                }
-            ]
-        )
+    update_tracker_with_path_through_flow(
+        tracker,
+        flow_id="my_other_flow",
+        step_ids=["collect_foo2", "collect_bar2"],
+        frame_id="some-other-id",
     )
 
-    assert filled_slots_for_active_flow(tracker, all_flows) == {"foo2"}
+    assert filled_slots_for_active_flow(tracker, all_flows) == {"foo2", "bar2"}
 
 
 def test_end_top_user_flow():

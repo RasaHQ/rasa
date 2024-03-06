@@ -385,7 +385,7 @@ class DefaultV1RecipeValidator(GraphComponent):
         if not self._policy_schema_nodes:
             return
 
-        self._raise_if_dm1_and_calm_policies_used_at_the_same_time()
+        # self._raise_if_dm1_and_calm_policies_used_at_the_same_time()
         self._warn_if_no_policy_handles_default_intents()
         self._raise_if_domain_contains_form_names_but_no_rule_policy_given(domain)
         self._raise_if_a_rule_policy_is_incompatible_with_domain(domain)

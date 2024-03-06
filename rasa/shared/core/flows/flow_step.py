@@ -35,6 +35,7 @@ def step_from_json(data: Dict[Text, Any]) -> FlowStep:
         LinkFlowStep,
         SetSlotsFlowStep,
         NoOperationFlowStep,
+        CallFlowStep,
     )
 
     if "action" in data:
@@ -43,6 +44,8 @@ def step_from_json(data: Dict[Text, Any]) -> FlowStep:
         return CollectInformationFlowStep.from_json(data)
     if "link" in data:
         return LinkFlowStep.from_json(data)
+    if "call" in data:
+        return CallFlowStep.from_json(data)
     if "set_slots" in data:
         return SetSlotsFlowStep.from_json(data)
     if "noop" in data:
@@ -107,10 +110,12 @@ class FlowStep:
             data["metadata"] = self.metadata
         return data
 
-    def steps_in_tree(self) -> Generator[FlowStep, None, None]:
+    def steps_in_tree(
+        self, should_resolve_calls: bool = True
+    ) -> Generator[FlowStep, None, None]:
         """Recursively generates the steps in the tree."""
         yield self
-        yield from self.next.steps_in_tree()
+        yield from self.next.steps_in_tree(should_resolve_calls)
 
     @property
     def id(self) -> Text:
@@ -131,3 +136,11 @@ class FlowStep:
     def utterances(self) -> Set[str]:
         """Return all the utterances used in this step"""
         return set()
+
+
+@dataclass
+class FlowStepWithFlowReference:
+    step: FlowStep
+    """The step."""
+    flow_id: str
+    """The id of the flow that contains the step."""

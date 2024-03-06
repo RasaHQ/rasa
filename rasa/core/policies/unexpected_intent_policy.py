@@ -459,7 +459,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         trackers_for_training = []
         for tracker in trackers:
             tracker_compatible = True
-            for event in tracker.applied_events():
+            for event in tracker.applied_events(True):
                 if (isinstance(event, UserUttered) and event.intent_name is None) or (
                     isinstance(event, ActionExecuted) and event.action_name is None
                 ):
@@ -582,7 +582,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         Returns:
              The policy's prediction (e.g. the probabilities for the actions).
         """
-        if self.model is None:
+        if self.model is None or self.should_abstain_in_coexistence(tracker, False):
             return self._prediction(self._default_predictions(domain))
 
         # Prediction through the policy is skipped if:
@@ -664,7 +664,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         Returns:
             Whether prediction should be skipped.
         """
-        applied_events = tracker.applied_events()
+        applied_events = tracker.applied_events(True)
 
         for event in reversed(applied_events):
             if isinstance(event, ActionExecuted):

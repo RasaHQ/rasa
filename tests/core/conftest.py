@@ -199,7 +199,28 @@ async def trained_flow_policy_bot(trained_async: Callable) -> Text:
     )
 
 
+@pytest.fixture(scope="session")
+async def trained_nlu_trigger_flow_policy_bot(trained_async: Callable) -> Text:
+    return await trained_async(
+        domain="data/test_nlu_trigger_flow_policy_bot/domain.yml",
+        config="data/test_nlu_trigger_flow_policy_bot/config.yml",
+        training_files=[
+            "data/test_nlu_trigger_flow_policy_bot/data/flows.yml",
+        ],
+    )
+
+
 @pytest.fixture
 async def flow_policy_bot_agent(trained_flow_policy_bot: Text) -> Agent:
     endpoint = EndpointConfig("https://example.com/webhooks/actions")
     return Agent.load(model_path=trained_flow_policy_bot, action_endpoint=endpoint)
+
+
+@pytest.fixture
+async def nlu_trigger_flow_policy_bot_agent(
+    trained_nlu_trigger_flow_policy_bot: Text,
+) -> Agent:
+    endpoint = EndpointConfig("https://example.com/webhooks/actions")
+    return Agent.load(
+        model_path=trained_nlu_trigger_flow_policy_bot, action_endpoint=endpoint
+    )

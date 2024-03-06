@@ -15,6 +15,8 @@ from unittest.mock import MagicMock
 
 import freezegun
 import pytest
+
+from rasa.dialogue_understanding.commands import SetSlotCommand, StartFlowCommand
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 import rasa.shared.utils.io
 import tests.utilities
@@ -51,7 +53,11 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.exceptions import ActionLimitReached
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.plugin import plugin_manager
-from rasa.shared.constants import ASSISTANT_ID_KEY, LATEST_TRAINING_DATA_FORMAT_VERSION
+from rasa.shared.constants import (
+    ASSISTANT_ID_KEY,
+    LATEST_TRAINING_DATA_FORMAT_VERSION,
+    ROUTE_TO_CALM_SLOT,
+)
 from rasa.shared.core.constants import (
     ACTION_CORRECT_FLOW_SLOT,
     ACTION_EXTRACT_SLOTS,
@@ -83,12 +89,14 @@ from rasa.shared.core.events import (
     ActionExecutionRejected,
     LoopInterrupted,
 )
+from rasa.shared.core.slots import BooleanSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import (
     INTENT,
     INTENT_NAME_KEY,
     FULL_RETRIEVAL_INTENT_NAME_KEY,
     METADATA_MODEL_ID,
+    COMMANDS,
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.utils.endpoints import EndpointConfig
@@ -2105,6 +2113,35 @@ async def test_run_command_processor_setting_a_slot(
     assert tracker.events[4].key == "foo_slot_a"
     assert tracker.events[4].type_name == "slot"
     assert tracker.events[4].value == "Foooo"
+
+
+async def test_handle_message_with_intent_trigger_and_no_nlu_trigger(
+    flow_policy_bot_agent: Agent,
+):
+    processor = flow_policy_bot_agent.processor
+    sender_id = uuid.uuid4().hex
+    tracker = await processor.tracker_store.get_or_create_tracker(sender_id)
+    tracker.slots[ROUTE_TO_CALM_SLOT] = BooleanSlot(ROUTE_TO_CALM_SLOT, [{}])
+
+    parse_data = await processor.parse_message(UserMessage("/welcome"), tracker)
+
+    assert len(parse_data[COMMANDS]) == 1
+    assert SetSlotCommand(ROUTE_TO_CALM_SLOT, False).as_dict() in parse_data[COMMANDS]
+
+
+async def test_handle_message_with_intent_trigger_and_nlu_trigger(
+    nlu_trigger_flow_policy_bot_agent: Agent,
+):
+    processor = nlu_trigger_flow_policy_bot_agent.processor
+    sender_id = uuid.uuid4().hex
+    tracker = await processor.tracker_store.get_or_create_tracker(sender_id)
+    tracker.slots[ROUTE_TO_CALM_SLOT] = BooleanSlot(ROUTE_TO_CALM_SLOT, [{}])
+
+    parse_data = await processor.parse_message(UserMessage("/bar"), tracker)
+
+    assert len(parse_data[COMMANDS]) == 2
+    assert SetSlotCommand(ROUTE_TO_CALM_SLOT, True).as_dict() in parse_data[COMMANDS]
+    assert StartFlowCommand("bar").as_dict() in parse_data[COMMANDS]
 
 
 async def test_update_full_retrieval_intent(

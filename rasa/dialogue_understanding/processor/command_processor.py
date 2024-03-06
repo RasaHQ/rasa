@@ -28,6 +28,7 @@ from rasa.dialogue_understanding.stack.utils import (
     filled_slots_for_active_flow,
     top_flow_frame,
 )
+from rasa.shared.constants import ROUTE_TO_CALM_SLOT
 from rasa.shared.core.constants import FLOW_HASHES_SLOT
 from rasa.shared.core.events import Event, SlotSet
 from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
@@ -174,7 +175,6 @@ def execute_commands(
     """
     commands: List[Command] = get_commands_from_tracker(tracker)
     original_tracker = tracker.copy()
-
     commands = clean_up_commands(commands, tracker, all_flows)
 
     updated_flows = find_updated_flows(tracker, all_flows)
@@ -386,7 +386,7 @@ def clean_up_slot_command(
         The cleaned up commands.
     """
     resulting_commands = commands_so_far[:]
-    if command.name in slots_so_far:
+    if command.name in slots_so_far and command.name != ROUTE_TO_CALM_SLOT:
         current_collect_info = get_current_collect_step(stack, all_flows)
 
         if current_collect_info and current_collect_info.collect == command.name:
