@@ -18,6 +18,10 @@ from rasa.core.utils import AvailableEndpoints
 from rasa.dialogue_understanding.patterns.internal_error import (
     InternalErrorPatternFlowStackFrame,
 )
+from rasa.dialogue_understanding.patterns.cannot_handle import (
+    CannotHandlePatternFlowStackFrame,
+)
+from rasa.dialogue_understanding.stack.frames import PatternFlowStackFrame
 from rasa.dialogue_understanding.stack.frames import (
     DialogueStackFrame,
     SearchStackFrame,
@@ -56,24 +60,28 @@ from rasa.core.information_retrieval.information_retrieval import (
 )
 
 if TYPE_CHECKING:
+    from langchain.schema import Document
     from langchain.schema.embeddings import Embeddings
     from langchain.llms.base import BaseLLM
     from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 
 from rasa.utils.log_utils import log_llm
 
-structlogger = structlog.get_logger()
+logger = structlog.get_logger()
 
 dotenv.load_dotenv("./.env")
 
 SOURCE_PROPERTY = "source"
 VECTOR_STORE_TYPE_PROPERTY = "type"
 VECTOR_STORE_PROPERTY = "vector_store"
+VECTOR_STORE_THRESHOLD_PROPERTY = "threshold"
 
 DEFAULT_VECTOR_STORE_TYPE = "faiss"
+DEFAULT_VECTOR_STORE_THRESHOLD = 0.0
 DEFAULT_VECTOR_STORE = {
     VECTOR_STORE_TYPE_PROPERTY: DEFAULT_VECTOR_STORE_TYPE,
     SOURCE_PROPERTY: "./docs",
+    VECTOR_STORE_THRESHOLD_PROPERTY: DEFAULT_VECTOR_STORE_THRESHOLD,
 }
 
 DEFAULT_LLM_CONFIG = {
@@ -223,7 +231,7 @@ class EnterpriseSearchPolicy(Policy):
             print_error_and_exit(f"Unable to create LLM. Error: {e}")
 
         if store_type == DEFAULT_VECTOR_STORE_TYPE:
-            structlogger.info("enterprise_search_policy.train.faiss")
+            logger.info("enterprise_search_policy.train.faiss")
             with self._model_storage.write_to(self._resource) as path:
                 self.vector_store = FAISS_Store(
                     docs_folder=self.vector_store_config.get(SOURCE_PROPERTY),
@@ -232,9 +240,7 @@ class EnterpriseSearchPolicy(Policy):
                     create_index=True,
                 )
         else:
-            structlogger.info(
-                "enterprise_search_policy.train.custom", store_type=store_type
-            )
+            logger.info("enterprise_search_policy.train.custom", store_type=store_type)
 
         self.persist()
         return self._resource
@@ -245,22 +251,6 @@ class EnterpriseSearchPolicy(Policy):
             rasa.shared.utils.io.write_text_file(
                 self.prompt_template, path / ENTERPRISE_SEARCH_PROMPT_FILE_NAME
             )
-
-    def _create_return_message(self, text: Text, domain: Domain) -> PolicyPrediction:
-        """Creates a message which can be returned by the policy.
-
-        Args:
-            text: The text of the message.
-            domain: The model's domain.
-
-        Returns:
-            The message.
-        """
-        message = {
-            "text": text,
-        }
-        result = self._prediction_result(ACTION_SEND_TEXT_NAME, domain)
-        return self._prediction(result, action_metadata={"message": message})
 
     def _prepare_slots_for_template(
         self, tracker: DialogueStateTracker
@@ -300,7 +290,7 @@ class EnterpriseSearchPolicy(Policy):
         config = endpoints.vector_store if endpoints else None
         store_type = self.vector_store_config.get(VECTOR_STORE_TYPE_PROPERTY)
         if config is None and store_type != DEFAULT_VECTOR_STORE_TYPE:
-            structlogger.error(
+            logger.error(
                 "enterprise_search_policy._connect_vector_store_or_raise.no_config"
             )
             raise VectorStoreConfigurationError(
@@ -310,7 +300,7 @@ class EnterpriseSearchPolicy(Policy):
         try:
             self.vector_store.connect(config)  # type: ignore
         except Exception as e:
-            structlogger.error(
+            logger.error(
                 "enterprise_search_policy._connect_vector_store_or_raise.connect_error",
                 error=e,
             )
@@ -340,35 +330,69 @@ class EnterpriseSearchPolicy(Policy):
         Returns:
              The prediction.
         """
+        logger_key = "enterprise_search_policy.predict_action_probabilities"
+        vector_search_threshold = self.vector_store_config.get(
+            VECTOR_STORE_THRESHOLD_PROPERTY, DEFAULT_VECTOR_STORE_THRESHOLD
+        )
         llm = llm_factory(self.config.get(LLM_CONFIG_KEY), DEFAULT_LLM_CONFIG)
         if not self.supports_current_stack_frame(tracker, False, False):
             return self._prediction(self._default_predictions(domain))
 
         if not self.vector_store:
-            structlogger.error(
-                "enterprise_search_policy.predict_action_probabilities.no_vector_store"
-            )
+            logger.error(f"{logger_key}.no_vector_store")
             return self._create_prediction_internal_error(domain, tracker)
 
-        search_query = tracker_as_readable_transcript(tracker, max_turns=1)
         try:
             self._connect_vector_store_or_raise(endpoints)
         except (VectorStoreConfigurationError, VectorStoreConnectionError) as e:
-            structlogger.error(
-                "enterprise_search_policy.predict_action_probabilities.connection_error",
-                error=e,
-            )
+            logger.error(f"{logger_key}.connection_error", error=e)
             return self._create_prediction_internal_error(domain, tracker)
 
+        search_query = tracker_as_readable_transcript(tracker, max_turns=1)
+        # TODO: these try-catch should be inside the vector store
+        #    which raises a RasaException in case of failure
         try:
-            documents = self.vector_store.search(search_query)
-        except Exception as e:
-            structlogger.error(
-                "enterprise_search_policy.predict_action_probabilities.search_error",
-                error=e,
+            documents = self.vector_store.search(
+                query=search_query,
+                threshold=vector_search_threshold,
             )
+        except Exception as e:
+            logger.error(f"{logger_key}.search_error", error=e)
             return self._create_prediction_internal_error(domain, tracker)
 
+        if not documents:
+            logger.info(f"{logger_key}.no_documents")
+            return self._create_prediction_cannot_handle(domain, tracker)
+
+        logger.debug(f"{logger_key}.documents", num_documents=len(documents))
+        prompt = self._render_prompt(tracker, documents)
+        llm_answer = self._generate_llm_answer(llm, prompt)
+        if llm_answer is None:
+            return self._create_prediction_internal_error(domain, tracker)
+
+        logger.debug(f"{logger_key}.llm_answer", llm_answer=llm_answer)
+        action_metadata = {
+            "message": {
+                "text": llm_answer,
+            }
+        }
+
+        return self._create_prediction(
+            domain=domain, tracker=tracker, action_metadata=action_metadata
+        )
+
+    def _render_prompt(
+        self, tracker: DialogueStateTracker, documents: List["Document"]
+    ) -> Text:
+        """Renders the prompt from the template.
+
+        Args:
+            tracker: The tracker containing the conversation history up to now.
+            documents: The documents retrieved from the vector store.
+
+        Returns:
+            The rendered prompt.
+        """
         inputs = {
             "current_conversation": tracker_as_readable_transcript(
                 tracker, max_turns=self.max_history
@@ -378,35 +402,12 @@ class EnterpriseSearchPolicy(Policy):
         }
         prompt = Template(self.prompt_template).render(**inputs)
         log_llm(
-            logger=structlogger,
+            logger=logger,
             log_module="EnterpriseSearchPolicy",
-            log_event="enterprise_search_policy.predict_action_probabilities.prompt_rendered",
+            log_event="enterprise_search_policy._render_prompt.prompt_rendered",
             prompt=prompt,
         )
-        llm_answer = self._generate_llm_answer(llm, prompt)
-        if llm_answer is None:
-            return self._create_prediction_internal_error(domain, tracker)
-
-        structlogger.debug(
-            "enterprise_search_policy.predict_action_probabilities.llm_answer",
-            llm_answer=llm_answer,
-        )
-
-        predicted_action_name = ACTION_SEND_TEXT_NAME
-        action_metadata = {
-            "message": {
-                "text": llm_answer,
-            }
-        }
-
-        structlogger.debug(
-            "enterprise_search_policy.predict_action_probabilities.predicted_action_name",
-            predicted_action_name=predicted_action_name,
-        )
-
-        return self._create_prediction(
-            domain=domain, tracker=tracker, action_metadata=action_metadata
-        )
+        return prompt
 
     def _generate_llm_answer(self, llm: "BaseLLM", prompt: Text) -> Optional[Text]:
         try:
@@ -414,8 +415,8 @@ class EnterpriseSearchPolicy(Policy):
         except Exception as e:
             # unfortunately, langchain does not wrap LLM exceptions which means
             # we have to catch all exceptions here
-            structlogger.error(
-                "enterprise_search_policy.predict_action_probabilities.llm_error",
+            logger.error(
+                "enterprise_search_policy._generate_llm_answer.llm_error",
                 error=e,
             )
             llm_answer = None
@@ -449,9 +450,27 @@ class EnterpriseSearchPolicy(Policy):
     def _create_prediction_internal_error(
         self, domain: Domain, tracker: DialogueStateTracker
     ) -> PolicyPrediction:
-        """Create a policy prediction result for an internal error.
-        We should cancel the current flow (hence ACTION_CANCEL_FLOW) and push an
-        InternalErrorPatternFlowStackFrame to start the internal error pattern.
+        return self._create_prediction_for_pattern(
+            domain, tracker, InternalErrorPatternFlowStackFrame()
+        )
+
+    def _create_prediction_cannot_handle(
+        self, domain: Domain, tracker: DialogueStackFrame
+    ) -> PolicyPrediction:
+        return self._create_prediction_for_pattern(
+            domain, tracker, CannotHandlePatternFlowStackFrame()
+        )
+
+    def _create_prediction_for_pattern(
+        self,
+        domain: Domain,
+        tracker: DialogueStateTracker,
+        pattern_stack_frame: PatternFlowStackFrame,
+    ) -> PolicyPrediction:
+        """Create a policy prediction result for error.
+        We should cancel the current flow (hence ACTION_CANCEL_FLOW) and push a
+        pattern stack frame (Internal Error Pattern by default) to start the pattern.
+
         Args:
             domain: The model's domain.
             tracker: The tracker containing the conversation history up to now.
@@ -463,7 +482,7 @@ class EnterpriseSearchPolicy(Policy):
         stack = tracker.stack
         if not stack.is_empty():
             stack.pop()
-            stack.push(InternalErrorPatternFlowStackFrame())
+            stack.push(pattern_stack_frame)
         events: List[Event] = tracker.create_stack_updated_events(stack)
         return self._prediction(result, action_metadata=None, events=events)
 
@@ -501,7 +520,7 @@ class EnterpriseSearchPolicy(Policy):
         )
 
         embeddings = cls._create_plain_embedder(config)
-        structlogger.info("enterprise_search_policy.load", config=config)
+        logger.info("enterprise_search_policy.load", config=config)
         if store_type == DEFAULT_VECTOR_STORE_TYPE:
             # if a vector store is not specified,
             # default to using FAISS with the index stored in the model
@@ -525,7 +544,7 @@ class EnterpriseSearchPolicy(Policy):
                 )
 
         except (FileNotFoundError, FileNotFoundError) as e:
-            structlogger.warning(
+            logger.warning(
                 "enterprise_search_policy.load.failed", error=e, resource=resource.name
             )
 

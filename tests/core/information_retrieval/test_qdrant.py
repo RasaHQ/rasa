@@ -1,17 +1,7 @@
-import pytest
-from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.schema.embeddings import Embeddings
 from langchain.vectorstores.qdrant import Qdrant
-from pytest import MonkeyPatch
 from rasa.utils.endpoints import EndpointConfig
-
 from rasa.core.information_retrieval.qdrant import Qdrant_Store
-
-
-@pytest.fixture
-def embeddings(monkeypatch: MonkeyPatch) -> Embeddings:
-    monkeypatch.setenv("OPENAI_API_KEY", "test")
-    return OpenAIEmbeddings()
 
 
 def test_qdrant_store(embeddings: Embeddings) -> None:

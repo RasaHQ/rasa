@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from langchain.schema.embeddings import Embeddings
 
 
-structlogger = structlog.get_logger()
+logger = structlog.get_logger()
 
 
 class InformationRetrieval:
@@ -28,6 +28,7 @@ class InformationRetrieval:
     def search(
         self,
         query: Text,
+        threshold: float = 0.0,
     ) -> List["Document"]:
         """Search for a document in the InformationRetrieval system."""
         raise NotImplementedError(
@@ -40,7 +41,7 @@ def create_from_endpoint_config(
     embeddings: "Embeddings",
 ) -> InformationRetrieval:
     """Instantiate a vector store based on its configuration."""
-    structlogger.debug(
+    logger.debug(
         "information_retrieval.create_from_endpoint_config", config_type=config_type
     )
     if config_type == "milvus":
@@ -52,7 +53,7 @@ def create_from_endpoint_config(
 
         return Qdrant_Store(embeddings=embeddings)
     else:
-        structlogger.error(
+        logger.error(
             "information_retrieval.create_from_endpoint_config.unknown_type",
             config_type=config_type,
         )

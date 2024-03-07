@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from langchain.schema import Document
     from langchain.schema.embeddings import Embeddings
 
-structlogger = structlog.get_logger()
+logger = structlog.get_logger()
 
 
 class Milvus_Store(InformationRetrieval):
@@ -36,6 +36,16 @@ class Milvus_Store(InformationRetrieval):
             collection_name=str(params.get("collection")),
         )
 
-    def search(self, query: Text) -> List["Document"]:
-        structlogger.debug("information_retrieval.milvus_store.search", query=query)
-        return self.client.similarity_search(query, k=4)
+    def search(self, query: Text, threshold: float = 0.0) -> List["Document"]:
+        """Search for documents in the Milvus store.
+
+        Args:
+            query: The query to search for.
+            threshold: minimum similarity score to consider a document a match.
+
+        Returns:
+        A list of documents that match the query."""
+        logger.debug("information_retrieval.milvus_store.search", query=query)
+        hits = self.client.similarity_search_with_score(query, k=4)
+        filtered_hits = [doc for doc, score in hits if score >= threshold]
+        return filtered_hits

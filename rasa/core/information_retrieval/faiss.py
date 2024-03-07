@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from langchain.schema import Document
     from langchain.schema.embeddings import Embeddings
 
-structlogger = structlog.get_logger()
+logger = structlog.get_logger()
 
 
 class FAISS_Store(InformationRetrieval):
@@ -33,13 +33,13 @@ class FAISS_Store(InformationRetrieval):
 
         path = Path(index_path) / "documents_faiss"
         if create_index:
-            structlogger.info(
+            logger.info(
                 "information_retrieval.faiss_store.create_index", path=path.absolute()
             )
             self.index = self._create_document_index(docs_folder, embeddings)
             self._persist(path)
         else:
-            structlogger.info(
+            logger.info(
                 "information_retrieval.faiss_store.load_index", path=path.absolute()
             )
             self.index = FAISS.load_local(str(path), embeddings)
@@ -54,7 +54,7 @@ class FAISS_Store(InformationRetrieval):
         Returns:
             the list of documents
         """
-        structlogger.info(
+        logger.info(
             "information_retrieval.faiss_store.load_documents",
             docs_folder=Path(docs_folder).absolute(),
         )
@@ -87,7 +87,7 @@ class FAISS_Store(InformationRetrieval):
         )
         doc_chunks = splitter.split_documents(docs)
 
-        structlogger.info(
+        logger.info(
             "information_retrieval.faiss_store._create_document_index",
             len_chunks=len(doc_chunks),
         )
@@ -105,6 +105,6 @@ class FAISS_Store(InformationRetrieval):
         """Faiss does not need to connect to a server."""
         pass
 
-    def search(self, query: Text) -> List["Document"]:
-        structlogger.debug("information_retrieval.faiss_store.search", query=query)
+    def search(self, query: Text, threshold: float = 0.0) -> List["Document"]:
+        logger.debug("information_retrieval.faiss_store.search", query=query)
         return self.index.as_retriever().get_relevant_documents(query)

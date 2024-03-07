@@ -99,6 +99,16 @@ def mock_create_prediction_internal_error():
         yield mock_create_prediction_internal_error
 
 
+@pytest.fixture
+def mock_create_prediction_cannot_handle():
+    with patch.object(
+        EnterpriseSearchPolicy,
+        "_create_prediction_cannot_handle",
+        return_value=MagicMock(),
+    ) as mock_create_prediction_cannot_handle:
+        yield mock_create_prediction_cannot_handle
+
+
 @pytest.mark.parametrize(
     "config,prompt_starts_with",
     [
@@ -565,3 +575,29 @@ def test_enterprise_search_policy_none_llm_answer(
 
             # assert _create_prediction_internal_error was called
             mock_create_prediction_internal_error.assert_called_once()
+
+
+def test_enterprise_search_policy_no_retrieval(
+    mocked_enterprise_search_policy: EnterpriseSearchPolicy,
+    enterprise_search_tracker: DialogueStateTracker,
+    mock_create_prediction_cannot_handle: MagicMock,
+) -> None:
+    tracker = enterprise_search_tracker
+
+    with patch("rasa.shared.utils.llm.llm_factory") as mock_llm_factory:
+        mock_llm = MagicMock()
+        mock_llm_factory.return_value = mock_llm.return_value
+
+        # mock self.vector_store.search() to return []
+        with patch.object(
+            mocked_enterprise_search_policy.vector_store,
+            "search",
+            return_value=[],
+        ):
+            mocked_enterprise_search_policy.predict_action_probabilities(
+                tracker=tracker,
+                domain=Domain.empty(),
+                endpoints=None,
+            )
+
+            mock_create_prediction_cannot_handle.assert_called_once()

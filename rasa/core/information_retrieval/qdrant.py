@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from langchain.schema import Document
     from langchain.schema.embeddings import Embeddings
 
-structlogger = structlog.get_logger()
+logger = structlog.get_logger()
 
 
 class PayloadNotFoundException(Exception):
@@ -52,11 +52,18 @@ class Qdrant_Store(InformationRetrieval):
             metadata_payload_key=params.get("metadata_payload_key", "metadata"),
         )
 
-    def search(self, query: Text) -> List["Document"]:
-        """Search for a document in the vector store."""
-        structlogger.info("information_retrieval.qdrant_store.search", query=query)
+    def search(self, query: Text, threshold: float = 0.0) -> List["Document"]:
+        """Search for a document in the Qdrant vector store.
+
+        Args:
+            query: The query to search for.
+            threshold: minimum similarity score to consider a document a match.
+
+        Returns:
+        A list of documents that match the query."""
+        logger.info("information_retrieval.qdrant_store.search", query=query)
         try:
-            hits = self.client.similarity_search(query, k=4)
+            hits = self.client.similarity_search(query, k=4, score_threshold=threshold)
         except ValidationError as e:
             raise PayloadNotFoundException(
                 f"""Payload not found in the Qdrant response. Please make sure
