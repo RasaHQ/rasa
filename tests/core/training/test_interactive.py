@@ -5,6 +5,8 @@ import uuid
 from collections import deque
 from pathlib import Path
 from typing import Any, Dict, List, Text, Tuple
+
+from rasa.shared.utils.yaml import read_config_file
 from tests.conftest import AsyncMock
 
 import pytest
@@ -211,7 +213,6 @@ def all_events_before_latest_user_msg(
     events: List[Dict[Text, Any]]
 ) -> List[Dict[Text, Any]]:
     """Return all events that happened before the most recent user message."""
-
     for i, e in enumerate(reversed(events)):
         if e.get("event") == UserUttered.type_name:
             return events[: -(i + 1)]
@@ -595,7 +596,7 @@ async def test_interactive_domain_persistence(
 
         interactive._write_domain_to_file(domain_path, events, old_domain)
 
-    saved_domain = rasa.shared.utils.io.read_config_file(domain_path)
+    saved_domain = read_config_file(domain_path)
 
     for default_action in action.default_actions():
         assert default_action.name() not in saved_domain["actions"]
@@ -862,7 +863,8 @@ def test_no_chat_history_overflow() -> None:
     """Should run without crashing.
 
     originally the long chinese utterance lead to a table width overflow and
-    available width for new utterances being < 0."""
+    available width for new utterances being < 0.
+    """
     events = [
         {
             "event": "action",

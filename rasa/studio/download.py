@@ -9,7 +9,7 @@ from rasa.shared.constants import DEFAULT_DATA_PATH, DEFAULT_DOMAIN_PATH
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows.yaml_flows_io import YamlFlowsWriter
 from rasa.shared.importers.importer import TrainingDataImporter
-from rasa.shared.utils.io import read_yaml
+from rasa.shared.utils.yaml import read_yaml
 
 from rasa.studio.config import StudioConfig
 from rasa.studio.constants import (

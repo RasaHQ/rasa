@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional, Text, Union
 import jwt
 from keycloak import KeycloakOpenID
 from rasa.shared.exceptions import RasaException
-from rasa.shared.utils.io import read_yaml_file, write_yaml
+from rasa.shared.utils.yaml import read_yaml_file, write_yaml
 
 from rasa.studio.config import StudioConfig
 from rasa.studio.constants import (

@@ -8,7 +8,7 @@ from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import UserUttered, ActiveLoop
 from rasa.shared.core.slot_mappings import SlotMapping
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.utils.validation import YamlValidationException
+from rasa.shared.utils.yaml import YamlValidationException
 
 
 @pytest.mark.parametrize(

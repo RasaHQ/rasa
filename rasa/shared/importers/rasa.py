@@ -16,6 +16,7 @@ from rasa.shared.core.domain import InvalidDomain, Domain
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     YAMLStoryReader,
 )
+from rasa.shared.utils.yaml import read_model_configuration
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +54,7 @@ class RasaFileImporter(TrainingDataImporter):
             logger.debug("No configuration file was provided to the RasaFileImporter.")
             return {}
 
-        config = rasa.shared.utils.io.read_model_configuration(self.config_file)
+        config = read_model_configuration(self.config_file)
         return config
 
     @rasa.shared.utils.common.cached_method

@@ -65,6 +65,7 @@ from rasa.model_training import train, train_nlu
 from rasa.shared.exceptions import RasaException
 import rasa.utils.common
 import rasa.utils.io
+from rasa.shared.utils.yaml import read_yaml_file, write_yaml
 
 # we reuse a bit of pytest's own testing machinery, this should eventually come
 # from a separately installable pytest-cli plugin.
@@ -120,7 +121,7 @@ def config_path() -> Text:
 
 @pytest.fixture(scope="session")
 def default_config(config_path: Text) -> Dict[Text, Any]:
-    return rasa.shared.utils.io.read_yaml_file(config_path)
+    return read_yaml_file(config_path)
 
 
 @pytest.fixture(scope="session")
@@ -720,7 +721,7 @@ def write_endpoint_config_to_yaml(
     endpoints_path = path / endpoints_filename
 
     # write endpoints config to file
-    rasa.shared.utils.io.write_yaml(data, endpoints_path)
+    write_yaml(data, endpoints_path)
     return endpoints_path
 
 
@@ -995,7 +996,7 @@ def create_simple_project(path: Path):
     # create a config file
     # for the cli test the resulting model is not important, use components that are
     # fast to train
-    rasa.shared.utils.io.write_yaml(
+    write_yaml(
         {
             "assistant_id": "placeholder_default",
             "language": "en",

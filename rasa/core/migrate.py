@@ -18,7 +18,12 @@ from rasa.shared.core.constants import (
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.domain import KEY_ENTITIES, KEY_SLOTS, KEY_FORMS, Domain
 from rasa.shared.exceptions import RasaException
-from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
+from rasa.shared.utils.yaml import (
+    KEY_TRAINING_DATA_FORMAT_VERSION,
+    read_yaml,
+    write_yaml,
+    read_yaml_file,
+)
 
 ORIGINAL_DOMAIN = "original_domain"  # not a default, fixed
 DEFAULT_NEW_DOMAIN = "new_domain"
@@ -27,12 +32,8 @@ YML_SUFFIX = ".yml"
 
 def _create_back_up(domain_file: Path, backup_location: Path) -> Dict[Text, Any]:
     """Makes a backup and returns the content of the file."""
-    original_content = rasa.shared.utils.io.read_yaml(
-        rasa.shared.utils.io.read_file(domain_file)
-    )
-    rasa.shared.utils.io.write_yaml(
-        original_content, backup_location, should_preserve_key_order=True
-    )
+    original_content = read_yaml(rasa.shared.utils.io.read_file(domain_file))
+    write_yaml(original_content, backup_location, should_preserve_key_order=True)
     return original_content
 
 
@@ -168,9 +169,7 @@ def _migrate_auto_fill_and_custom_slots(
 def _assemble_new_domain(
     domain_file: Path, new_forms: Dict[Text, Any], new_slots: Dict[Text, Any]
 ) -> Dict[Text, Any]:
-    original_content = rasa.shared.utils.io.read_yaml(
-        rasa.shared.utils.io.read_file(domain_file)
-    )
+    original_content = read_yaml(rasa.shared.utils.io.read_file(domain_file))
     new_domain: Dict[Text, Any] = {}
     for key, value in original_content.items():
         if key == KEY_SLOTS:
@@ -194,10 +193,10 @@ def _write_final_domain(
             if not Domain.is_domain_file(file):
                 continue
             new_domain = _assemble_new_domain(file, new_forms, new_slots)
-            rasa.shared.utils.io.write_yaml(new_domain, out_file / file.name, True)
+            write_yaml(new_domain, out_file / file.name, True)
     else:
         new_domain = _assemble_new_domain(domain_file, new_forms, new_slots)
-        rasa.shared.utils.io.write_yaml(new_domain, out_file, True)
+        write_yaml(new_domain, out_file, True)
 
 
 def _migrate_domain_files(
@@ -245,9 +244,7 @@ def _migrate_domain_files(
 
             # this is done so that the other domain files can be moved
             # in the migrated directory
-            rasa.shared.utils.io.write_yaml(
-                original_content, out_path / file.name, True
-            )
+            write_yaml(original_content, out_path / file.name, True)
         elif KEY_SLOTS in original_content and slots:
             raise RasaException(
                 f"Domain files with multiple '{KEY_SLOTS}' "
@@ -331,12 +328,12 @@ def migrate_domain_format(
     # migrate-able domain files are among these files later
     original_files = (
         {
-            file: rasa.shared.utils.io.read_yaml_file(file)
+            file: read_yaml_file(file)
             for file in domain_path.iterdir()
             if Domain.is_domain_file(file)
         }
         if domain_path.is_dir()
-        else {domain_path: rasa.shared.utils.io.read_yaml_file(domain_path)}
+        else {domain_path: read_yaml_file(domain_path)}
     )
     migrated_files = []
 

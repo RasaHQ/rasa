@@ -7,7 +7,7 @@ from rasa.shared.core.flows.yaml_flows_io import (
     YAMLFlowsReader,
     YamlFlowsWriter,
 )
-from rasa.shared.utils.validation import YamlValidationException
+from rasa.shared.utils.yaml import YamlValidationException
 
 
 @pytest.fixture(scope="module")

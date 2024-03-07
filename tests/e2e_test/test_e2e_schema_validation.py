@@ -1,10 +1,13 @@
 from typing import Any, Dict, List, Text, Union
 
 import pytest
-from rasa.shared.utils.validation import YamlValidationException
+from rasa.shared.utils.yaml import (
+    parse_raw_yaml,
+    YamlValidationException,
+    validate_yaml_content_using_schema,
+)
 
 from rasa.cli.e2e_test import read_e2e_test_schema
-from rasa.utils.validation import read_yaml, validate_yaml_content
 
 
 @pytest.mark.parametrize(
@@ -27,13 +30,13 @@ def test_e2e_test_cases_schema_with_multiple_test_cases(
     test_case_file_content: Text,
     e2e_schema: Union[List[Any], Dict[Text, Any]],
 ) -> None:
-    parsed_yaml_content = read_yaml(test_case_file_content)
+    parsed_yaml_content = parse_raw_yaml(test_case_file_content)
     try:
-        validate_yaml_content(
-            yaml_file_content=parsed_yaml_content, schema_content=e2e_schema
+        validate_yaml_content_using_schema(
+            yaml_content=parsed_yaml_content, schema_content=e2e_schema
         )
     except YamlValidationException as exc:
-        assert False, f"'validate_yaml_content' raised an exception {exc}"
+        assert False, f"'validate_yaml_content_using_schema' raised an exception {exc}"
 
 
 @pytest.mark.parametrize(
@@ -60,13 +63,13 @@ def test_e2e_test_cases_schema_with_global_fixtures(
     e2e_schema: Union[List[Any], Dict[Text, Any]],
 ) -> None:
     e2e_schema = read_e2e_test_schema()
-    parsed_yaml_content = read_yaml(test_case_file_content)
+    parsed_yaml_content = parse_raw_yaml(test_case_file_content)
     try:
-        validate_yaml_content(
-            yaml_file_content=parsed_yaml_content, schema_content=e2e_schema
+        validate_yaml_content_using_schema(
+            yaml_content=parsed_yaml_content, schema_content=e2e_schema
         )
     except YamlValidationException as exc:
-        assert False, f"'validate_yaml_content' raised an exception {exc}"
+        assert False, f"'validate_yaml_content_using_schema' raised an exception {exc}"
 
 
 @pytest.mark.parametrize(
@@ -91,10 +94,10 @@ def test_e2e_test_cases_schema_global_fixture_name_must_not_start_with_number(
     e2e_schema: Union[List[Any], Dict[Text, Any]],
 ) -> None:
     e2e_schema = read_e2e_test_schema()
-    parsed_yaml_content = read_yaml(test_case_file_content)
+    parsed_yaml_content = parse_raw_yaml(test_case_file_content)
     with pytest.raises(YamlValidationException):
-        validate_yaml_content(
-            yaml_file_content=parsed_yaml_content, schema_content=e2e_schema
+        validate_yaml_content_using_schema(
+            yaml_content=parsed_yaml_content, schema_content=e2e_schema
         )
 
 
@@ -117,13 +120,13 @@ def test_e2e_test_cases_schema_with_multiple_step_in_test_case(
     e2e_schema: Union[List[Any], Dict[Text, Any]],
 ) -> None:
     e2e_schema = read_e2e_test_schema()
-    parsed_yaml_content = read_yaml(test_case_file_content)
+    parsed_yaml_content = parse_raw_yaml(test_case_file_content)
     try:
-        validate_yaml_content(
-            yaml_file_content=parsed_yaml_content, schema_content=e2e_schema
+        validate_yaml_content_using_schema(
+            yaml_content=parsed_yaml_content, schema_content=e2e_schema
         )
     except YamlValidationException as exc:
-        assert False, f"'validate_yaml_content' raised an exception {exc}"
+        assert False, f"'validate_yaml_content_using_schema' raised an exception {exc}"
 
 
 @pytest.mark.parametrize(
@@ -147,13 +150,13 @@ def test_e2e_test_cases_schema_with_fixtures_in_test_case(
     e2e_schema: Union[List[Any], Dict[Text, Any]],
 ) -> None:
     e2e_schema = read_e2e_test_schema()
-    parsed_yaml_content = read_yaml(test_case_file_content)
+    parsed_yaml_content = parse_raw_yaml(test_case_file_content)
     try:
-        validate_yaml_content(
-            yaml_file_content=parsed_yaml_content, schema_content=e2e_schema
+        validate_yaml_content_using_schema(
+            yaml_content=parsed_yaml_content, schema_content=e2e_schema
         )
     except YamlValidationException as exc:
-        assert False, f"'validate_yaml_content' raised an exception {exc}"
+        assert False, f"'validate_yaml_content_using_schema' raised an exception {exc}"
 
 
 @pytest.mark.parametrize(
@@ -176,10 +179,10 @@ def test_e2e_test_cases_schema_fixture_name_in_test_case_must_not_start_with_num
     e2e_schema: Union[List[Any], Dict[Text, Any]],
 ) -> None:
     e2e_schema = read_e2e_test_schema()
-    parsed_yaml_content = read_yaml(test_case_file_content)
+    parsed_yaml_content = parse_raw_yaml(test_case_file_content)
     with pytest.raises(YamlValidationException):
-        validate_yaml_content(
-            yaml_file_content=parsed_yaml_content, schema_content=e2e_schema
+        validate_yaml_content_using_schema(
+            yaml_content=parsed_yaml_content, schema_content=e2e_schema
         )
 
 
@@ -202,13 +205,13 @@ def test_e2e_test_cases_schema_without_fixtures(
     e2e_schema: Union[List[Any], Dict[Text, Any]],
 ) -> None:
     e2e_schema = read_e2e_test_schema()
-    parsed_yaml_content = read_yaml(test_case_file_content)
+    parsed_yaml_content = parse_raw_yaml(test_case_file_content)
     try:
-        validate_yaml_content(
-            yaml_file_content=parsed_yaml_content, schema_content=e2e_schema
+        validate_yaml_content_using_schema(
+            yaml_content=parsed_yaml_content, schema_content=e2e_schema
         )
     except YamlValidationException as exc:
-        assert False, f"'validate_yaml_content' raised an exception {exc}"
+        assert False, f"'validate_yaml_content_using_schema' raised an exception {exc}"
 
 
 @pytest.mark.parametrize(
@@ -231,13 +234,13 @@ def test_e2e_test_cases_schema_slot_name_without_number(
     e2e_schema: Union[List[Any], Dict[Text, Any]],
 ) -> None:
     e2e_schema = read_e2e_test_schema()
-    parsed_yaml_content = read_yaml(test_case_file_content)
+    parsed_yaml_content = parse_raw_yaml(test_case_file_content)
     try:
-        validate_yaml_content(
-            yaml_file_content=parsed_yaml_content, schema_content=e2e_schema
+        validate_yaml_content_using_schema(
+            yaml_content=parsed_yaml_content, schema_content=e2e_schema
         )
     except YamlValidationException as exc:
-        assert False, f"'validate_yaml_content' raised an exception {exc}"
+        assert False, f"'validate_yaml_content_using_schema' raised an exception {exc}"
 
 
 @pytest.mark.parametrize(
@@ -260,13 +263,13 @@ def test_e2e_test_cases_schema_slot_name_contains_number(
     e2e_schema: Union[List[Any], Dict[Text, Any]],
 ) -> None:
     e2e_schema = read_e2e_test_schema()
-    parsed_yaml_content = read_yaml(test_case_file_content)
+    parsed_yaml_content = parse_raw_yaml(test_case_file_content)
     try:
-        validate_yaml_content(
-            yaml_file_content=parsed_yaml_content, schema_content=e2e_schema
+        validate_yaml_content_using_schema(
+            yaml_content=parsed_yaml_content, schema_content=e2e_schema
         )
     except YamlValidationException as exc:
-        assert False, f"'validate_yaml_content' raised an exception {exc}"
+        assert False, f"'validate_yaml_content_using_schema' raised an exception {exc}"
 
 
 @pytest.mark.parametrize(
@@ -289,10 +292,10 @@ def test_e2e_test_cases_schema_slot_name_must_not_start_with_number(
     e2e_schema: Union[List[Any], Dict[Text, Any]],
 ) -> None:
     e2e_schema = read_e2e_test_schema()
-    parsed_yaml_content = read_yaml(test_case_file_content)
+    parsed_yaml_content = parse_raw_yaml(test_case_file_content)
     with pytest.raises(YamlValidationException):
-        validate_yaml_content(
-            yaml_file_content=parsed_yaml_content, schema_content=e2e_schema
+        validate_yaml_content_using_schema(
+            yaml_content=parsed_yaml_content, schema_content=e2e_schema
         )
 
 
@@ -356,13 +359,13 @@ def test_e2e_test_cases_schema_slot_with_number_value(
     e2e_schema: Union[List[Any], Dict[Text, Any]],
 ) -> None:
     e2e_schema = read_e2e_test_schema()
-    parsed_yaml_content = read_yaml(test_case_file_content)
+    parsed_yaml_content = parse_raw_yaml(test_case_file_content)
     try:
-        validate_yaml_content(
-            yaml_file_content=parsed_yaml_content, schema_content=e2e_schema
+        validate_yaml_content_using_schema(
+            yaml_content=parsed_yaml_content, schema_content=e2e_schema
         )
     except YamlValidationException as exc:
-        assert False, f"'validate_yaml_content' raised an exception {exc}"
+        assert False, f"'validate_yaml_content_using_schema' raised an exception {exc}"
 
 
 @pytest.mark.parametrize(
@@ -385,13 +388,13 @@ def test_e2e_test_cases_schema_slot_with_value_none(
     e2e_schema: Union[List[Any], Dict[Text, Any]],
 ) -> None:
     e2e_schema = read_e2e_test_schema()
-    parsed_yaml_content = read_yaml(test_case_file_content)
+    parsed_yaml_content = parse_raw_yaml(test_case_file_content)
     try:
-        validate_yaml_content(
-            yaml_file_content=parsed_yaml_content, schema_content=e2e_schema
+        validate_yaml_content_using_schema(
+            yaml_content=parsed_yaml_content, schema_content=e2e_schema
         )
     except YamlValidationException as exc:
-        assert False, f"'validate_yaml_content' raised an exception {exc}"
+        assert False, f"'validate_yaml_content_using_schema' raised an exception {exc}"
 
 
 @pytest.mark.parametrize(
@@ -414,13 +417,13 @@ def test_e2e_test_cases_schema_slot_with_string_value(
     e2e_schema: Union[List[Any], Dict[Text, Any]],
 ) -> None:
     e2e_schema = read_e2e_test_schema()
-    parsed_yaml_content = read_yaml(test_case_file_content)
+    parsed_yaml_content = parse_raw_yaml(test_case_file_content)
     try:
-        validate_yaml_content(
-            yaml_file_content=parsed_yaml_content, schema_content=e2e_schema
+        validate_yaml_content_using_schema(
+            yaml_content=parsed_yaml_content, schema_content=e2e_schema
         )
     except YamlValidationException as exc:
-        assert False, f"'validate_yaml_content' raised an exception {exc}"
+        assert False, f"'validate_yaml_content_using_schema' raised an exception {exc}"
 
 
 @pytest.mark.parametrize(
@@ -443,13 +446,13 @@ def test_e2e_test_cases_schema_slot_with_bool_value(
     e2e_schema: Union[List[Any], Dict[Text, Any]],
 ) -> None:
     e2e_schema = read_e2e_test_schema()
-    parsed_yaml_content = read_yaml(test_case_file_content)
+    parsed_yaml_content = parse_raw_yaml(test_case_file_content)
     try:
-        validate_yaml_content(
-            yaml_file_content=parsed_yaml_content, schema_content=e2e_schema
+        validate_yaml_content_using_schema(
+            yaml_content=parsed_yaml_content, schema_content=e2e_schema
         )
     except YamlValidationException as exc:
-        assert False, f"'validate_yaml_content' raised an exception {exc}"
+        assert False, f"'validate_yaml_content_using_schema' raised an exception {exc}"
 
 
 @pytest.mark.parametrize(
@@ -472,10 +475,10 @@ def test_e2e_test_cases_schema_just_slot_name(
     e2e_schema: Union[List[Any], Dict[Text, Any]],
 ) -> None:
     e2e_schema = read_e2e_test_schema()
-    parsed_yaml_content = read_yaml(test_case_file_content)
+    parsed_yaml_content = parse_raw_yaml(test_case_file_content)
     try:
-        validate_yaml_content(
-            yaml_file_content=parsed_yaml_content, schema_content=e2e_schema
+        validate_yaml_content_using_schema(
+            yaml_content=parsed_yaml_content, schema_content=e2e_schema
         )
     except YamlValidationException as exc:
-        assert False, f"'validate_yaml_content' raised an exception {exc}"
+        assert False, f"'validate_yaml_content_using_schema' raised an exception {exc}"

@@ -19,6 +19,8 @@ from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
 )
 from rasa import telemetry
+from rasa.shared.utils.yaml import read_config_file
+from rasa.utils.io import write_yaml
 
 if TYPE_CHECKING:
 
@@ -122,12 +124,10 @@ def missing_config_keys(
     Returns:
         The list of missing config keys.
     """
-    import rasa.utils.io
-
     if not os.path.exists(path):
         return mandatory_keys
 
-    config_data = rasa.shared.utils.io.read_config_file(path)
+    config_data = read_config_file(path)
 
     return [k for k in mandatory_keys if k not in config_data or config_data[k] is None]
 
@@ -138,9 +138,7 @@ def validate_assistant_id_in_config(config_file: Union["Path", Text]) -> None:
     Issues a warning if the key does not exist or has the default value and replaces it
     with a pseudo-random string value.
     """
-    config_data = rasa.shared.utils.io.read_config_file(
-        config_file, reader_type=["safe", "rt"]
-    )
+    config_data = read_config_file(config_file, reader_type=["safe", "rt"])
     assistant_id = config_data.get(ASSISTANT_ID_KEY)
 
     if assistant_id is None or assistant_id == ASSISTANT_ID_DEFAULT_VALUE:
@@ -164,9 +162,7 @@ def validate_assistant_id_in_config(config_file: Union["Path", Text]) -> None:
             ASSISTANT_ID_KEY
         ] = f"{time.strftime(time_format)}-{randomname.get_name()}"
 
-        rasa.shared.utils.io.write_yaml(
-            data=config_data, target=config_file, should_preserve_key_order=True
-        )
+        write_yaml(data=config_data, target=config_file, should_preserve_key_order=True)
 
     return
 

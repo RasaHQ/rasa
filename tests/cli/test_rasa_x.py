@@ -11,6 +11,7 @@ from aioresponses import aioresponses
 
 import rasa.shared.utils.io
 from rasa.cli import x
+from rasa.shared.utils.yaml import write_yaml, read_config_file
 from rasa.utils.endpoints import EndpointConfig
 from rasa.core.utils import AvailableEndpoints
 import rasa.version
@@ -84,13 +85,13 @@ def test_x_help(run: Callable[..., RunResult]):
 def test_prepare_credentials_for_rasa_x_if_rasa_channel_not_given(tmpdir: Path):
     credentials_path = str(tmpdir / "credentials.yml")
 
-    rasa.shared.utils.io.write_yaml({}, credentials_path)
+    write_yaml({}, credentials_path)
 
     tmp_credentials = x._prepare_credentials_for_rasa_x(
         credentials_path, "http://localhost:5002"
     )
 
-    actual = rasa.shared.utils.io.read_config_file(tmp_credentials)
+    actual = read_config_file(tmp_credentials)
 
     assert actual["rasa"]["url"] == "http://localhost:5002"
 
@@ -102,11 +103,11 @@ def test_prepare_credentials_if_already_valid(tmpdir: Path):
         "rasa": {"url": "my-custom-url"},
         "another-channel": {"url": "some-url"},
     }
-    rasa.shared.utils.io.write_yaml(credentials, credentials_path)
+    write_yaml(credentials, credentials_path)
 
     x._prepare_credentials_for_rasa_x(credentials_path)
 
-    actual = rasa.shared.utils.io.read_config_file(credentials_path)
+    actual = read_config_file(credentials_path)
 
     assert actual == credentials
 
