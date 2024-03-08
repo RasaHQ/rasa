@@ -21,12 +21,12 @@ jobs:
     steps:
       # We have to check out the repo to be able to list the tags.
       - name: Checkout repository to check tags
-        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
         with:
             fetch-depth: 0
 
       - name: Set up Python 
-        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
         with:
           python-version: '3.9'
 
@@ -79,7 +79,7 @@ jobs:
 
     steps:
       - name: Checkout repository to check tags
-        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
 
       # Determine the date in the right format for us to tag the image.
       - name: Get current date
