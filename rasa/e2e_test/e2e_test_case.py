@@ -83,7 +83,7 @@ class TestStep:
             slot_instance = test_step_dict.get(KEY_SLOT_NOT_SET)
 
         return TestStep(
-            text=test_step_dict.get(KEY_USER_INPUT, test_step_dict.get(KEY_BOT_INPUT)),
+            text=test_step_dict.get(KEY_USER_INPUT, test_step_dict.get(KEY_BOT_INPUT, '')).strip() or None,
             template=test_step_dict.get(KEY_BOT_UTTERED),
             actor=KEY_USER_INPUT if KEY_USER_INPUT in test_step_dict else KEY_BOT_INPUT,
             line=test_step_dict.lc.line + 1 if hasattr(test_step_dict, "lc") else None,
@@ -141,8 +141,8 @@ class TestStep:
         return False
 
     def _do_utterances_match(self, other: BotUttered) -> bool:
-        if self.text and isinstance(other.text, str):
-            return other.text.strip() == self.text
+        if self.text:
+            return other.text == self.text
         elif self.template:
             # we do set this utter_action metadata in the `ActionBotResponse`
             # action, so we can check if the template is the same
