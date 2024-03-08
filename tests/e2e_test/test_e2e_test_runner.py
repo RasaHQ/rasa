@@ -1577,13 +1577,13 @@ def test_bot_event_text_message_formatting() -> None:
                 BotUttered("Hey! How are you?"),
             ],
         ),
-        1: TestStep.from_dict({"bot": "Hey! How are you?"})
+        1: TestStep.from_dict({"bot": "Hey! How are you?"}),
     }
 
     test_case = TestCase(
         steps=[
             TestStep.from_dict({"user": "Hi!"}),
-            TestStep.from_dict({"bot": "\nHey! How are you?\n"})
+            TestStep.from_dict({"bot": "\nHey! How are you?\n"}),
         ],
         name="bot_message_formatting",
     )
