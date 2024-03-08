@@ -204,12 +204,14 @@ release:
 	poetry run python scripts/release.py prepare --interactive
 
 build-docker:
-	export IMAGE_NAME=rasa && \
-	docker buildx use default && \
-	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl base && \
-	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl base-poetry && \
-	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl base-builder && \
-	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl default
+    # Build base image
+	docker build . -t rasa-private:base-localdev -f docker/Dockerfile.base --platform=linux/amd64
+    # Build base poetry image
+	docker build . -t rasa-private:base-poetry-localdev -f docker/Dockerfile.base-poetry --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_IMAGE_HASH=localdev --build-arg POETRY_VERSION=1.4.2 --platform=linux/amd64
+    # Build base builder image
+	docker build . -t rasa-private:base-builder-localdev -f docker/Dockerfile.base-builder --build-arg IMAGE_BASE_NAME=rasa-private --build-arg POETRY_VERSION=localdev --platform=linux/amd64
+    # Build Rasa Private image
+	docker build . -t rasa-private:rasa-private-dev -f Dockerfile --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_IMAGE_HASH=localdev --build-arg BASE_BUILDER_IMAGE_HASH=localdev --platform=linux/amd64
 
 build-tests-deployment-env: ## Create environment files (.env) for docker-compose.
 	cd tests_deployment && \
