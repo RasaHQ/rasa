@@ -6,7 +6,10 @@ from pydantic import ValidationError
 from qdrant_client import QdrantClient
 from rasa.utils.endpoints import EndpointConfig
 
-from rasa.core.information_retrieval.information_retrieval import InformationRetrieval
+from rasa.core.information_retrieval.information_retrieval import (
+    InformationRetrieval,
+    InformationRetrievalException,
+)
 
 if TYPE_CHECKING:
     from langchain.schema import Document
@@ -15,8 +18,15 @@ if TYPE_CHECKING:
 logger = structlog.get_logger()
 
 
-class PayloadNotFoundException(Exception):
+class PayloadNotFoundException(InformationRetrievalException):
     """Exception raised for errors in missing payloads."""
+
+    def __init__(self, message: str) -> None:
+        self.message = message
+        super().__init__()
+
+    def __str__(self) -> str:
+        return self.base_message + self.message + f"{self.__cause__}"
 
 
 class Qdrant_Store(InformationRetrieval):
@@ -66,8 +76,9 @@ class Qdrant_Store(InformationRetrieval):
             hits = self.client.similarity_search(query, k=4, score_threshold=threshold)
         except ValidationError as e:
             raise PayloadNotFoundException(
-                f"""Payload not found in the Qdrant response. Please make sure
-                the `content_payload_key`and `metadata_payload_key` are correct in
-                the Qdrant configuration. Error: {e}"""
+                "Payload not found in the Qdrant response. Please make sure "
+                "the `content_payload_key`and `metadata_payload_key` are correct in "
+                "the Qdrant configuration. Error: "
+                ""
             ) from e
         return hits

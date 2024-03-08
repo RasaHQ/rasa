@@ -3,6 +3,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, List, Text
 
 import structlog
+
+from rasa.shared.exceptions import RasaException
 from rasa.utils.endpoints import EndpointConfig
 
 if TYPE_CHECKING:
@@ -11,6 +13,16 @@ if TYPE_CHECKING:
 
 
 logger = structlog.get_logger()
+
+
+class InformationRetrievalException(RasaException):
+    """Base class for exceptions raised by InformationRetrieval operations."""
+
+    def __init__(self) -> None:
+        self.base_message = "An error occurred while searching for documents: "
+
+    def __str__(self) -> str:
+        return self.base_message + f"{self.__cause__}"
 
 
 class InformationRetrieval:

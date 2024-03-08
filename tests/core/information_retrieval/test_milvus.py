@@ -1,7 +1,14 @@
+from typing import Any
+
+from pytest import MonkeyPatch
+
+from rasa.core.information_retrieval.information_retrieval import (
+    InformationRetrievalException,
+)
 from rasa.core.information_retrieval.milvus import Milvus_Store
 from langchain.schema.embeddings import Embeddings
 from langchain.schema import Document
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 import pytest
 from unittest.mock import MagicMock
 from langchain.vectorstores.milvus import Milvus
@@ -49,3 +56,34 @@ def test_milvus_store_search(
         assert len(hits) == expected_count
         if hits:
             assert hits[0].metadata["id"] == expected_id
+
+
+def test_milvus_search_raises_custom_exception(
+    monkeypatch: MonkeyPatch,
+    embeddings: Embeddings,
+) -> None:
+    def mock_init(self, embeddings: Any):
+        self.embeddings = embeddings
+        self.client = MagicMock()
+
+    monkeypatch.setattr(
+        "rasa.core.information_retrieval.milvus.Milvus_Store.__init__",
+        mock_init,
+    )
+    milvus_store = Milvus_Store(embeddings=embeddings)
+
+    base_exception_msg = "An error occurred"
+
+    monkeypatch.setattr(
+        milvus_store.client,
+        "similarity_search_with_score",
+        Mock(side_effect=Exception(base_exception_msg)),
+    )
+
+    with pytest.raises(InformationRetrievalException) as e:
+        milvus_store.search("test")
+
+    assert (
+        f"An error occurred while searching for documents: {base_exception_msg}"
+        in str(e.value)
+    )

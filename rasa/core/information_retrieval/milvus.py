@@ -4,7 +4,10 @@ import structlog
 from langchain.vectorstores.milvus import Milvus
 from rasa.utils.endpoints import EndpointConfig
 
-from rasa.core.information_retrieval.information_retrieval import InformationRetrieval
+from rasa.core.information_retrieval.information_retrieval import (
+    InformationRetrieval,
+    InformationRetrievalException,
+)
 
 if TYPE_CHECKING:
     from langchain.schema import Document
@@ -46,6 +49,10 @@ class Milvus_Store(InformationRetrieval):
         Returns:
         A list of documents that match the query."""
         logger.debug("information_retrieval.milvus_store.search", query=query)
-        hits = self.client.similarity_search_with_score(query, k=4)
+        try:
+            hits = self.client.similarity_search_with_score(query, k=4)
+        except Exception as exc:
+            raise InformationRetrievalException from exc
+
         filtered_hits = [doc for doc, score in hits if score >= threshold]
         return filtered_hits
