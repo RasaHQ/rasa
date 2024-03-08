@@ -141,7 +141,7 @@ class TestStep:
         return False
 
     def _do_utterances_match(self, other: BotUttered) -> bool:
-        if self.text:
+        if self.text and isinstance(other.text, str):
             return other.text.strip() == self.text
         elif self.template:
             # we do set this utter_action metadata in the `ActionBotResponse`
