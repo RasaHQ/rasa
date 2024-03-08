@@ -1562,3 +1562,33 @@ def test_action_server_is_not_reachable_action_not_defined(
         "No action endpoint configured. Skipping the health check of the "
         "action server." in caplog.text
     )
+
+
+def test_bot_event_text_message_formatting() -> None:
+    test_turns: TEST_TURNS_TYPE = {
+        -1: ActualStepOutput.from_test_step(
+            TestStep.from_dict({"bot": "Test"}),
+            [],
+        ),
+        0: ActualStepOutput.from_test_step(
+            TestStep.from_dict({"user": "Hi!"}),
+            [
+                UserUttered("Hi!"),
+                BotUttered("Hey! How are you?"),
+            ],
+        ),
+        1: TestStep.from_dict({"bot": "Hey! How are you?"})
+    }
+
+    test_case = TestCase(
+        steps=[
+            TestStep.from_dict({"user": "Hi!"}),
+            TestStep.from_dict({"bot": "\nHey! How are you?\n"})
+        ],
+        name="bot_message_formatting",
+    )
+
+    result = E2ETestRunner.generate_test_result(test_turns, test_case)
+    assert result.pass_status is True
+
+    assert result.difference == []
