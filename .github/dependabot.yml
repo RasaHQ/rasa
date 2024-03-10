@@ -1,21 +1,34 @@
 version: 2
 updates:
-- package-ecosystem: pip
-  directory: "/"
-  schedule:
-    interval: monthly
-    time: '13:00'
-  pull-request-branch-name:
-    separator: "-"
-  open-pull-requests-limit: 10
-  reviewers:
-  - RasaHQ/enable-squad
-  labels:
-  - type:dependencies
-  ignore:
-  - dependency-name: prompt-toolkit
-    versions:
-    - "> 2.0.10"
-  - dependency-name: pytest-asyncio
-    versions:
-    - "> 0.10.0"
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: weekly
+      time: "13:00"
+    pull-request-branch-name:
+      separator: "-"
+    open-pull-requests-limit: 10
+    labels:
+      - type:dependencies
+      - release:main
+    ignore:
+      - dependency-name: prompt-toolkit
+        versions:
+          - "> 2.0.10"
+      - dependency-name: pytest-asyncio
+        versions:
+          - "> 0.10.0"
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "12:00"
+    pull-request-branch-name:
+      separator: "-"
+    open-pull-requests-limit: 10
+    reviewers:
+      - RasaHQ/infrastructure-squad
+    labels:
+      - type:dependencies

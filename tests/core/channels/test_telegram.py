@@ -1,8 +1,11 @@
+# file deepcode ignore HardcodedNonCryptoSecret/test: Secrets are all just examples for tests. # noqa: E501
+# file deepcode ignore NoHardcodedCredentials/test: Secrets are all just examples for tests. # noqa: E501
+
 import json
 import logging
 from unittest.mock import patch
 
-import rasa
+import rasa.core.run
 from rasa.core.channels import TelegramInput
 from rasa.core.channels.telegram import TelegramOutput
 from rasa.core.agent import Agent
@@ -10,12 +13,12 @@ from rasa.core.agent import Agent
 logger = logging.getLogger(__name__)
 
 
-def noop(*args, **kwargs):
+async def noop(*args, **kwargs):
     """Just do nothing."""
     pass
 
 
-def mock_get_me(self):
+async def mock_get_me(self):
     self.username = "YOUR_TELEGRAM_BOT"
     return self
 
@@ -56,7 +59,7 @@ def test_telegram_edit_message():
     )
 
     app = rasa.core.run.configure_app([input_channel], port=5004)
-    app.agent = Agent()
+    app.ctx.agent = Agent()
     _, res = app.test_client.post(
         "/webhooks/telegram/webhook", json=json.dumps(telegram_test_edited_message)
     )

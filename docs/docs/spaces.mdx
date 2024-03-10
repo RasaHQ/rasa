@@ -1,0 +1,267 @@
+---
+id: spaces
+sidebar_label: Spaces
+title: Spaces
+description: Learn about Spaces for Rasa.
+abstract: Spaces are a way to modularize your assistant that increases isolation between subparts and classification performance for intents and entities that are only relevant in specific contexts.
+---
+
+import RasaProLabel from "@theme/RasaProLabel";
+import RasaProBanner from "@theme/RasaProBanner";
+import useBaseUrl from '@docusaurus/useBaseUrl';
+
+<RasaProLabel />
+
+<RasaProBanner />
+
+:::caution New in 3.6.0a1
+This is an alpha release.
+This alpha release will allow us to gather feedback from our users and integrate it into future releases. We encourage you to try this out!
+The functionality of this alpha release might change in the future.
+If you have feedback (positive or negative) please share it with us via your support contact.
+
+:::
+
+Spaces are a way to modularize your assistant. As assistants grow in scale and scope, the
+potential for conflicts between intents, entities, and other [primitives](./glossary.mdx#rasa-primitive) grows as well.
+That is because in a regular rasa assistant all intents, entities, and actions are
+available at any time, giving the assistant more choices to distinguish between the more that gets
+added. Spaces provide a basic separation between parts of the bot through the activation
+and deactivation of groups of [rasa primitives](./glossary.mdx#rasa-primitive). Each of these groups is called a Space.
+Spaces are activated when certain designated intents, called entry intents, are
+predicted. With the activation of a Space, all the primitives for the Space become
+available for subsequent interactions with the user. Good ways to think about spaces are
+
+* that they allow you to specify follow-up primitives, which only become accessible after another intent has come beforehand
+* that they are like multiple sub-bots merged into one with the possibility of sharing primitives
+
+
+## When to use Spaces
+
+Spaces can be helpful when you are dealing with multiple domains of your business in
+a single assistant. Oftentimes, this leads to multitude of forms, entities, and inform
+intents that start to overlap at some point. Form filling and inform intents are a
+typical case of having this follow-up structure mentioned above. Another good case is
+when you want to be able to define different behavior for help- or clarification
+requests based on the subdomain or process the user is in. This is technically possible
+today with stories, but it can be cumbersome to describe the full event horizon
+for every interaction route.
+
+## When not to use Spaces / Limitations
+
+Because spaces split a rasa bot into multiple parts, it is interacting with almost
+every of the existing features of rasa. We made it work with almost all of them, but
+there are some exceptions. This means, however, if you have created
+customization beyond components that are aligned with the way rasa normally
+works, spaces might not work for you.
+
+Another important limitation is that spaces currently do not support stories. We know
+this is a big limitations for many existing bots. However, because stories and their
+existing policies work with a fixed event horizon (`max_history`), they are at this
+point not compatible with the idea of being able to describe encapsulated units of logic
+well.
+
+Currently, the only entity extractor that is works with the boundaries that spaces
+create, is an adapted version of the `CRFEntityExtractor`. You can find more on this
+in the following sections.
+
+
+## An example spaces bot
+We have created a bot using spaces for you to look at, learn from and experiment with.
+It features three different spaces in the financial domain. [Here is the repository](https://github.com/RasaHQ/financial-spaces-bot)
+
+
+## How to use spaces
+
+Spaces are defined by separate sets of domain, nlu, and rule files. These separate
+sets are then assembled to create a unified assistant. The assembly plan needs to be
+added to the `config.yml` using the newly introduces `spaces` key. Second, you need
+to use a special data importer that reads and enacts the assembly plan. Third, you need
+to add some specific space-aware components to your NLU pipeline. The following is the
+`config.yml` of the financial spaces bot linked above:
+
+```yaml
+# https://rasa.com/docs/rasa/model-configuration/
+recipe: default.v1
+
+# Configuration for Rasa NLU.
+# https://rasa.com/docs/rasa/nlu/components/
+language: en
+
+spaces:
+  - name: main
+    domain: main/domain.yml
+    nlu: main/nlu/training_data.yml
+    nlu_test: main/nlu/test_data.yml
+    rules: main/rules.yml
+  - name: transfer_money
+    domain: transfer_money/domain.yml
+    nlu: transfer_money/nlu/training_data.yml
+    nlu_test: transfer_money/nlu/test_data.yml
+    rules: transfer_money/rules.yml
+    entry_intents:
+      - transfer_money
+  - name: investment
+    domain: investment/domain.yml
+    nlu: investment/nlu/training_data.yml
+    nlu_test: investment/nlu/test_data.yml
+    rules: investment/rules.yml
+    entry_intents:
+      - buy_stock
+  - name: pay_cc
+    domain: pay_cc/domain.yml
+    nlu: pay_cc/nlu/training_data.yml
+    nlu_test: pay_cc/nlu/test_data.yml
+    rules: pay_cc/rules.yml
+    entry_intents:
+      - pay_cc
+
+importers:
+  - name: "rasa_plus.spaces.space_data_importer.SpaceDataImporter"
+    temporary_working_directory: spaces
+
+pipeline:
+  - name: WhitespaceTokenizer
+  - name: RegexFeaturizer
+  - name: LexicalSyntacticFeaturizer
+  - name: CountVectorsFeaturizer
+  - name: CountVectorsFeaturizer
+    analyzer: char_wb
+    min_ngram: 1
+    max_ngram: 4
+  - name: rasa_plus.spaces.components.spaces_crf_entity_extractor.SpacesCRFEntityExtractor
+  - name: EntitySynonymMapper
+  - name: DIETClassifier
+    epochs: 100
+    ranking_length: 0
+    entity_recognition: false
+    BILOU_flag: false
+  - name: rasa_plus.spaces.components.filter_and_rerank.FilterAndRerank
+  - name: FallbackClassifier
+    threshold: 0.3
+    ambiguity_threshold: 0.1
+
+policies:
+  - name: RulePolicy
+
+```
+
+In the above config file, you can see the Spaces definition with the main space, which
+is a designated name for a space for shared primitives, and the three
+subspaces for transferring money, investment, and credit card payments. The main space
+is not required, but the only way to share primitives between spaces. Each path value
+can either point to a single file or a directory.
+
+Second, you can also see the importer
+`rasa_plus.spaces.space_data_importer.SpaceDataImporter` being used. This importer
+reads the above spaces definition and assembles the bot. The results can be seen in the
+temporary working directory.
+
+Third, you can see the specific NLU components that are necessary to make spaces work.
+The most important is the `FilterAndRerank` component which is central to make spaces
+work by post-processing intent rankings and entity extractions. If you also need entity
+extraction you need to use the `SpacesCRFEntityExtractor` to make that work with spaces.
+
+Finally, you can see that we are only using the `RulePolicy` here.
+
+After you have created your spaces and made adjustments to the `config.yml`, you can
+train your new assistant using `rasa train -c config.yml` and start it afterward with
+`rasa shell`.
+
+### Training only a specific subspace
+
+We have added `--space` argument to the rasa train command to give you the option to
+only train one specific subspace:
+
+`rasa train` -> trains the full assistant with all spaces
+`rasa train --space investment` -> trains an assistant only containing the investment and the main space
+
+Other commands were not adjusted as they use trained assistants as inputs.
+
+## How do spaces work?
+In the following we'll look at how things work under the hood in spaces to give you a
+better understanding of what is happening in case you should need it.
+
+One of the most aspects is that spaces form a hierarchy with two layers. At the top
+is the main space which contains shared primitives that should be usable by all spaces.
+The main space is always active. Anything that is defined in a subspace, can
+only be used by that space and not by other subspaces or the main space.
+
+<img alt="two layer space hierarchy" src={useBaseUrl("/img/spaces_hierarchy.png")} />
+
+### What happens during the assembly?
+
+The most important step during the assembly is the prefixing. During this step every
+intent, entity, slot, action, form, utterance that is defined in a space's domain file
+is prefixed (infixed for utterances) with this space's name. For example, an intent
+`ask_transfer_charge` in the `transfer_money` domain would become
+`transfer_money.ask_transfer_charge` and every reference of this intent would be
+adjusted. The final assistant then works on the prefixed data.
+
+An exception to this is the main space. Anything in the main space and all its
+primitives that are used in other spaces, will not be prefixed.
+
+Another exception are rules. They don't have a name that can be prefixed. Instead,
+we add a condition to each rule that it is only applicable while it's space is active.
+
+### How is space activation tracked?
+
+A space is activated when any of their entry intents is predicted. A space can have
+multiple entry intents. However, only a single space can be active at a given time.
+So when space A is active and an entry intent of space B
+is predicted, space A will be deactivated and space B is active from now on.
+
+Space activation is tracked through slots that are automatically
+generated during assembly.
+
+### How does filter and rerank work?
+
+The filter and rerank component post-processes the intent ranking of the [intent
+classification components](./components.mdx#intent-classifiers). It accesses the [tracker](./action-server/sdk-tracker.mdx)
+and checks which space are active or would be activated, in case an entry intent is at the top.
+
+It then removes any intents from the ranking that are not possible. Further it also
+removes any entities that are not possible given the space activation status or
+about to be predicted entry intents.
+
+### How does entity recognition work differently?
+
+Usually, entity recognizers in Rasa only return a single label per token in a message.
+Thus, there is no ranking, that could be post-processed as in the case of intents. We
+have built our `SpacesCRFEntityExtractor` in a way that it creates multiple extractors.
+One for each space. Now, during the post-processing step, we can filter out the
+extractor of the spaces that are not activated.
+
+### Custom Actions
+
+Custom actions work as before. However, the tracker, the domain, and slots
+will be stripped of any information from other spaces before being handed to your
+action. Additionally, every event such as slot sets, will be prefixed after they are
+returned by your action. All of this ensures that from the view point of your custom
+action, you don't need to worry about the other spaces and accidentally leaking
+or altering information. This warrants isolation between your Spaces. Note that
+custom actions from the main spaces are not inherited by subspaces.
+
+### Response Selection
+
+Response selection works as before. The only small difference is that in your
+`config.yaml` you'll need to specify the retrieval intent including it's final prefix.
+If your retrieval intent is `investment_faq` in the `investment` space, then in your
+config you'll need to set `investment.investment_faq` as the retrieval intent. If the
+retrieval intent belongs to the main space, no prefix is added. That's why
+, in this case, during the definition of the retrieval intent, no prefixing is necessary.
+
+
+### Lookup tables and Synonyms
+
+[Lookup Tables](./training-data-format.mdx#lookup-tables) and
+[Synonyms](./training-data-format.mdx#synonyms) work with spaces. However, they are not
+truly isolated between spaces. So there can be some unanticipated interactions.
+For synonyms, specifically:
+* Assume two spaces define the same synonym. Space A: "IB" -> "Instant banking".
+Space B: "IB"-> "iron bank". A warning is given that one value overwrites the other.
+* A similar thing can happen if "IB" is an entity in both spaces but only one
+defines it a synonym. Any entity with value IB will always be mapped to that synonym
+no matter which space is active.
+
+For lookup tables no adverse interactions are known.

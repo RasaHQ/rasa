@@ -1,9 +1,9 @@
 ---
 id: http-api
 sidebar_label: HTTP API
-title: Rasa Open Source HTTP API
+title: Rasa HTTP API
 description: Read about Rasa's HTTP API that has endpoints for conversations, training models, and configuring your bot.
-abstract: You can use the HTTP API to interact with a running Rasa Open Source server. With the API, you can train models,
+abstract: You can use the HTTP API to interact with a running Rasa server. With the API, you can train models,
   send messages, run tests, and more.
 ---
 
@@ -50,27 +50,36 @@ The [SocketIO channel](./connectors/your-own-website.mdx#websocket-channel) does
 
 ## Security Considerations
 
-We recommend to not expose the Rasa Server to the outside world, but
-rather connect to it from your backend over a private connection (e.g.
-between docker containers).
+We recommend that you don't expose the Rasa Server to the outside world directly, but
+rather connect to it via e.g. Nginx.
 
 Nevertheless, there are two authentication methods built in:
 
 ### Token Based Auth
 
-Pass in the token using `--auth-token thisismysecret` when starting
+To use a plaintext token to secure your server, specify the token in the argument `--auth-token thisismysecret` when starting
 the server:
 
 ```bash
 rasa run \
-    -m models \
     --enable-api \
-    --log-file out.log \
     --auth-token thisismysecret
 ```
 
-Your requests should pass the token, in our case `thisismysecret`,
-as a parameter:
+You can also use environment variable `AUTH_TOKEN` to set the auth token:
+```
+AUTH_TOKEN=thisismysecret
+```
+
+:::tip Security best practice
+
+We recommend that you use environment variables to store
+and share sensitive information such as tokens and secrets
+when deploying Rasa as Docker container as they will not be stored in your shell history.
+:::
+
+Any clients sending requests to the server must pass the token
+as a query parameter, or the request will be rejected. For example, to fetch a tracker from the server:
 
 ```bash
 curl -XGET localhost:5005/conversations/default/tracker?token=thisismysecret
@@ -78,26 +87,57 @@ curl -XGET localhost:5005/conversations/default/tracker?token=thisismysecret
 
 ### JWT Based Auth
 
-Enable JWT based authentication using `--jwt-secret thisismysecret`.
-Requests to the server need to contain a valid JWT token in
-the `Authorization` header that is signed using this secret
-and the `HS256` algorithm.
+To use JWT based authentication, specify the JWT secret in the argument `--jwt-secret thisismysecret`
+on startup of the server:
 
-The token's payload must contain an object under the `user` key,
-which in turn must contain the `username` and `role` attributes.
-If the `role` is `admin`, all endpoints are accessible.
-If the `role` is `user`, endpoints with a `sender_id` parameter are only accessible
-if the `sender_id` matches the payload's `username` property.
 
 ```bash
 rasa run \
-    -m models \
     --enable-api \
-    --log-file out.log \
     --jwt-secret thisismysecret
 ```
 
-Your requests should have set a proper JWT header:
+You can also use environment variable `JWT_SECRET` to set the JWT secret:
+```
+JWT_SECRET=thisismysecret
+```
+
+:::tip Security best practice
+
+We recommend that you use environment variables to store
+and share sensitive information such as tokens and secrets
+when deploying Rasa as Docker container as they will not be stored in your shell history.
+:::
+
+If you want to sign a JWT token with asymmetric algorithms, you can specify the JWT private key to the `--jwt-private-key`
+CLI argument. You must pass the public key to the `--jwt-secret` argument, and also specify the algorithm to the
+`--jwt-method` argument:
+
+```bash
+rasa run \
+    --enable-api \
+    --jwt-secret <public_key> \
+    --jwt-private-key <private_key> \
+    --jwt-method RS512
+```
+
+You can also use environment variables to configure JWT:
+```
+JWT_SECRET=<public_key>
+JWT_PRIVATE_KEY=<private_key>
+JWT_METHOD=RS512
+```
+
+:::tip Security best practice
+
+We recommend that you use environment variables to store
+and share sensitive information such as tokens and secrets
+when deploying Rasa as Docker container as they will not be stored in your shell history.
+:::
+
+Client requests to the server will need to contain a valid JWT token in
+the `Authorization` header that is signed using this secret
+and the `HS256` algorithm e.g.
 
 ```text
 "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ"
@@ -106,6 +146,8 @@ Your requests should have set a proper JWT header:
                  "Gl8eZFVfKXA6jhncgRn-I"
 ```
 
+The token's payload must contain an object under the `user` key,
+which in turn must contain the `username` and `role` attributes.
 The following is an example payload for a JWT token:
 
 ```json
@@ -115,6 +157,17 @@ The following is an example payload for a JWT token:
         "role": "user"
     }
 }
+```
+
+If the `role` is `admin`, all endpoints are accessible.
+If the `role` is `user`, endpoints with a `sender_id` parameter are only accessible
+if the `sender_id` matches the payload's `username` property.
+
+```bash
+rasa run \
+    -m models \
+    --enable-api \
+    --jwt-secret thisismysecret
 ```
 
 To create and encode the token, you can use tools such as the [JWT Debugger](https://jwt.io/), or a Python module such as [PyJWT](https://pyjwt.readthedocs.io/en/latest/).

@@ -36,7 +36,7 @@ See the [training data format](./training-data-format.mdx) for details on how to
 
 ## Synonyms
 
-Synonyms map extracted entities to a value other than the literal text extracted. 
+Synonyms map extracted entities to a value other than the literal text extracted in a case-insensitive manner. 
 You can use synonyms when there are multiple ways users refer to the same
 thing. Think of the end goal of extracting an entity, and figure out from there which values should be considered equivalent. 
 
@@ -55,7 +55,7 @@ nlu:
 ```
 
 Then, if either of these phrases is extracted as an entity, it will be
-mapped to the value `credit`.
+mapped to the value `credit`. Any alternate casing of these phrases (e.g. `CREDIT`, `credit ACCOUNT`) will also be mapped to the synonym.
 
 :::note Provide Training Examples
 Synonym mapping only happens **after** entities have been extracted.
@@ -104,7 +104,7 @@ If your entity has a deterministic structure, you can use regular expressions in
 
 #### Regular Expressions as Features
 
-You can use regular expressions to create features for the [`RegexFeaturizer`](components.mdx#regexfeaturizer) component in you NLU pipeline.
+You can use regular expressions to create features for the [`RegexFeaturizer`](components.mdx#regexfeaturizer) component in your NLU pipeline.
 
 When using a regular expression with the  `RegexFeaturizer`, the
 name of the regular expression does not matter.
@@ -167,14 +167,6 @@ When using lookup tables with `RegexFeaturizer`, provide enough examples for the
 
 
 ## Entities Roles and Groups
-
-:::caution
-This feature is experimental.
-We introduce experimental features to get feedback from our community, so we encourage you to try it out!
-However, the functionality might be changed or removed in the future.
-If you have feedback (positive or negative) please share it with us on the [Rasa Forum](https://forum.rasa.com).
-
-:::
 
 Annotating words as custom entities allows you to define certain concepts in your training data.
 For example, you can identify cities by annotating them:
@@ -243,8 +235,30 @@ examples for every combination of entity and role or group label.
 To enable the model to generalize, make sure to have some variation in your training examples.
 For example, you should  include examples like `fly TO y FROM x`, not only `fly FROM x TO y`.
 
-To fill slots from entities with a specific role/group, you need to either define a custom slot mappings using
-[forms](forms.mdx) or use [custom actions](custom-actions.mdx) to extract the corresponding entity directly from the tracker.
+To fill slots from entities with a specific role/group, you need to define a `from_entity` [slot mapping](./domain.mdx#slot-mappings)
+for the slot and specify the role/group that is required. For example:
+
+```yaml-rasa
+entities:
+   - city:
+       roles:
+       - departure
+       - destination
+
+slots:
+  departure:
+    type: any
+    mappings:
+    - type: from_entity
+      entity: city
+      role: departure
+  destination:
+    type: any
+    mappings:
+    - type: from_entity
+      entity: city
+      role: destination
+```
 
 ### Entity Roles and Groups influencing dialogue predictions
 
@@ -314,6 +328,6 @@ performance of the machine learning model when predicting entities.
 
 :::note inconsistent BILOU tags
 When the option `BILOU_flag` is set to `True`, the model may predict inconsistent BILOU tags, e.g.
-`B-person I-location L-person`. Rasa Open Source uses some heuristics to clean up the inconsistent BILOU tags.
+`B-person I-location L-person`. Rasa uses some heuristics to clean up the inconsistent BILOU tags.
 For example, `B-person I-location L-person` would be changed into `B-person I-person L-person`.
 :::

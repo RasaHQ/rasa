@@ -1,14 +1,21 @@
+import builtins
+import sys
 import os
 import string
 import textwrap
 import uuid
 from collections import OrderedDict
-from pathlib import Path
 from typing import Callable, Text, List, Set, Any, Dict
+import copy
 
+from pathlib import Path
+import numpy as np
 import pytest
+from _pytest.monkeypatch import MonkeyPatch
+from unittest.mock import MagicMock
 
 import rasa.shared
+from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.exceptions import FileIOException, FileNotFoundException, RasaException
 import rasa.shared.utils.io
 import rasa.shared.utils.validation
@@ -17,6 +24,18 @@ from rasa.utils import io as io_utils
 
 os.environ["USER_NAME"] = "user"
 os.environ["PASS"] = "pass"
+
+
+@pytest.mark.parametrize("file, parents", [("A/test.yml", "A"), ("A", "A")])
+def test_file_in_path(file, parents):
+    assert rasa.shared.utils.io.is_subdirectory(file, parents)
+
+
+@pytest.mark.parametrize(
+    "file, parents", [("A", "A/B"), ("B", "A"), ("A/test.yml", "A/B"), (None, "A")]
+)
+def test_file_not_in_path(file, parents):
+    assert not rasa.shared.utils.io.is_subdirectory(file, parents)
 
 
 def test_raise_user_warning():
@@ -343,6 +362,17 @@ def test_create_directory_for_file(tmp_path: Path):
     assert os.path.exists(os.path.dirname(file))
 
 
+def test_write_utf_8_yaml_file(tmp_path: Path):
+    """This test makes sure that dumping a yaml doesn't result in Uxxxx sequences
+    but rather directly dumps the unicode character."""
+
+    file_path = str(tmp_path / "test.yml")
+    data = {"data": "amazing 🌈"}
+
+    rasa.shared.utils.io.write_yaml(data, file_path)
+    assert rasa.shared.utils.io.read_file(file_path) == "data: amazing 🌈\n"
+
+
 def test_write_json_file(tmp_path: Path):
     expected = {"abc": "dasds", "list": [1, 2, 3, 4], "nested": {"a": "b"}}
     file_path = str(tmp_path / "abc.txt")
@@ -418,6 +448,7 @@ def test_validate_config_file(config_file: Path):
 def test_validate_config_file_with_extra_keys(tmp_path: Path):
     content = textwrap.dedent(
         """
+        recipe: default.v1
         language: en
         pipeline:
         policies:
@@ -545,7 +576,6 @@ def test_read_invalid_config_file(tmp_path: Path, content: Text):
         ),
         ("data/test_yaml_stories/rules_without_stories.yml", ["rules"], True),
         ("data/test_yaml_stories/rules_without_stories.yml", ["stories"], False),
-        ("data/test_stories/stories.md", ["something"], False),
     ],
 )
 async def test_is_key_in_yaml(file: Text, keys: List[Text], expected_result: bool):
@@ -557,3 +587,80 @@ async def test_is_key_in_yaml_with_unicode_files():
     assert rasa.shared.utils.io.is_key_in_yaml(
         "./data/test_nlu_no_responses/nlu_with_unicode.yml", "nlu"
     )
+
+
+@pytest.mark.parametrize("length", [4, 8, 16, 32])
+def test_random_string(length):
+
+    s = rasa.shared.utils.io.random_string(length)
+    s2 = rasa.shared.utils.io.random_string(length)
+
+    assert len(s) == length
+    assert len(s2) == length
+    assert s != s2
+
+
+@pytest.mark.parametrize(
+    "container",
+    [
+        {},
+        {"hello": "world"},
+        {1: 2},
+        {"foo": ["bar"]},
+        {"a": []},
+        [],
+        ["a"],
+        [{}],
+        [None],
+    ],
+)
+def test_fingerprint_containers(container):
+    assert rasa.shared.utils.io.deep_container_fingerprint(
+        container
+    ) == rasa.shared.utils.io.deep_container_fingerprint(copy.deepcopy(container))
+
+
+def test_deep_container_fingerprint_can_use_instance_fingerprint():
+    m1 = np.asarray([[0.5, 3.1, 3.0], [1.1, 1.2, 1.3], [4.7, 0.3, 2.7]])
+    f = Features(m1, "sentence", "text", "CountVectorsFeaturizer")
+    assert rasa.shared.utils.io.deep_container_fingerprint(f) == f.fingerprint()
+
+
+@pytest.mark.skip_on_windows
+def test_handle_print_blocking(monkeypatch: MonkeyPatch):
+    mock = MagicMock()
+    monkeypatch.setattr(rasa.shared.utils.io, "portalocker", mock)
+
+    print_output = "Test block handling"
+    rasa.shared.utils.io.handle_print_blocking(print_output)
+
+    assert mock.Lock.called
+    assert mock.Lock.call_args[0][0] == sys.stdout
+
+    # print specific calls
+    # STDOUT write call
+    assert mock.mock_calls[2][1][0] == print_output
+    # STDOUT was flushed before __exit__
+    assert "flush" in mock.mock_calls[-2][0]
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows only test")
+def test_handle_print_blocking_windows(monkeypatch: MonkeyPatch):
+    mock = MagicMock()
+    mock_print = MagicMock()
+    monkeypatch.setattr(rasa.shared.utils.io, "portalocker", mock)
+    monkeypatch.setattr(builtins, "print", mock_print)
+
+    print_output = "Test block handling"
+    rasa.shared.utils.io.handle_print_blocking(print_output)
+
+    assert mock.Lock.called
+    assert mock.Lock.call_args[0][0] == sys.stdout
+
+    assert mock_print.called
+    assert mock_print.call_args[0][0] == print_output
+
+    from colorama import ansitowin32
+
+    assert isinstance(mock_print.call_args[1]["file"], ansitowin32.StreamWrapper)
+    assert mock_print.call_args[1]["flush"]

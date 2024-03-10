@@ -177,7 +177,7 @@ fallback, so it will not influence the prediction of future actions.
 
 #### 3. Customizing the default action (optional)
 
-`action_default_fallback` is a default action in Rasa Open Source that sends the
+`action_default_fallback` is a default action in Rasa that sends the
 `utter_default` response to the user. You can create your own custom action to use as a
 fallback (see [Custom Actions](./actions.mdx#custom-actions) for more info on custom actions).
 The following snippet is an implementation of a custom action which does the same as
@@ -244,6 +244,7 @@ Add FallbackClassifier to your pipeline and the [RulePolicy](./policies.mdx#rule
 to your policy configuration:
 
 ```yaml title="config.yml"
+recipe: default.v1
 pipeline:
 # other components
 - name: FallbackClassifier
@@ -328,13 +329,13 @@ class ActionDefaultFallback(Action):
         return [ConversationPaused(), UserUtteranceReverted()]
 ```
 
-  :::caution Events Returned By A Custom Ultimate Fallback Action
-    You should include `UserUtteranceReverted()` as one of the events returned by your custom
-    `action_default_fallback`. Not including this event will cause the tracker to include all events that happened
-    during the Two-Stage Fallback process which could interfere with subsequent action predictions from the bot's policy
-    pipeline. It is better to treat events that occurred during the Two-Stage Fallback process as if they did not happen
-    so that your bot can apply its rules or memorized stories to correctly predict the next action.
-  :::
+:::caution Events Returned By A Custom Ultimate Fallback Action
+  You should include `UserUtteranceReverted()` as one of the events returned by your custom
+  `action_default_fallback`. Not including this event will cause the tracker to include all events that happened
+  during the Two-Stage Fallback process which could interfere with subsequent action predictions from the bot's policy
+  pipeline. It is better to treat events that occurred during the Two-Stage Fallback process as if they did not happen
+  so that your bot can apply its rules or memorized stories to correctly predict the next action.
+:::
 
 
 ## Human Handoff

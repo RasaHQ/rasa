@@ -16,7 +16,7 @@ You need to set up a Telegram bot.
 1. To create the bot, go to [Bot Father](https://web.telegram.org/#/im?p=@BotFather),
    enter `/newbot` and follow the instructions. The URL that Telegram should send messages to will look like
    `http://<host>:<port>/webhooks/telegram/webhook`, replacing
-   the host and port with the appropriate values from your running Rasa X or Rasa Open Source server.
+   the host and port with the appropriate values from your running Rasa server.
 
 2. At the end you should get your `access_token` and the username you
    set will be your `verify`.
@@ -39,8 +39,17 @@ telegram:
 ```
 
 
-Restart your Rasa X or Rasa Open Source server
+Restart your Rasa server
 to make the new channel endpoint available for Telegram to send messages to.
+
+:::note Handling `/start` message
+
+At the beginning of a conversation, the user will press the 'Start' button in Telegram.
+This will trigger a message with the content */start* to be sent.
+Make sure your bot can handle this intro message by designing a specific intent in the nlu training data file.
+Then add this `start` intent to the domain alongside a story or rule to handle it.
+
+:::
 
 
 ## Supported Response Attachments

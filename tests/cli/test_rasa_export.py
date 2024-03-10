@@ -18,22 +18,28 @@ from tests.conftest import (
     MockExporter,
     random_user_uttered_event,
     write_endpoint_config_to_yaml,
+    AsyncMock,
 )
+
+from tests.cli.conftest import RASA_EXE
 
 
 def test_export_help(run: Callable[..., RunResult]):
     output = run("export", "--help")
 
-    help_text = """usage: rasa export [-h] [-v] [-vv] [--quiet] [--endpoints ENDPOINTS]
+    help_text = f"""usage: {RASA_EXE} export [-h] [-v] [-vv] [--quiet]
+                   [--logging-config-file LOGGING_CONFIG_FILE]
+                   [--endpoints ENDPOINTS]
                    [--minimum-timestamp MINIMUM_TIMESTAMP]
                    [--maximum-timestamp MAXIMUM_TIMESTAMP]
+                   [--offset-timestamps-by-seconds OFFSET_TIMESTAMPS_BY_SECONDS]
                    [--conversation-ids CONVERSATION_IDS]"""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
-    printed_help = set(output.outlines)
+    printed_help = {line.strip() for line in output.outlines}
     for line in lines:
-        assert line in printed_help
+        assert line.strip() in printed_help
 
 
 @pytest.mark.parametrize(
@@ -64,7 +70,7 @@ def test_validate_timestamp_options_with_invalid_timestamps():
 
 
 # noinspection PyProtectedMember
-def test_get_event_broker_and_tracker_store_from_endpoint_config(tmp_path: Path):
+async def test_get_event_broker_and_tracker_store_from_endpoint_config(tmp_path: Path):
     # write valid config to file
     endpoints_path = write_endpoint_config_to_yaml(
         tmp_path,
@@ -80,7 +86,7 @@ def test_get_event_broker_and_tracker_store_from_endpoint_config(tmp_path: Path)
     available_endpoints = rasa_core_utils.read_endpoints_from_path(endpoints_path)
 
     # fetching the event broker is successful
-    assert export._get_event_broker(available_endpoints)
+    assert await export._get_event_broker(available_endpoints)
     assert export._get_tracker_store(available_endpoints)
 
 
@@ -197,6 +203,7 @@ def prepare_namespace_and_mocked_tracker_store_with_events(
         conversation_ids=",".join(requested_conversation_ids),
         minimum_timestamp=1.0,
         maximum_timestamp=10.0,
+        offset_timestamps_by_seconds=100,
     )
 
     # prepare events from different senders and different timestamps
@@ -207,22 +214,22 @@ def prepare_namespace_and_mocked_tracker_store_with_events(
         all_conversation_ids[2]: [events[5]],
     }
 
-    def _get_tracker(conversation_id: Text) -> DialogueStateTracker:
+    async def _get_tracker(conversation_id: Text) -> DialogueStateTracker:
         return DialogueStateTracker.from_events(
             conversation_id, events_for_conversation_id[conversation_id]
         )
 
     # mock tracker store
     tracker_store = Mock()
-    tracker_store.keys.return_value = all_conversation_ids
-    tracker_store.retrieve_full_tracker.side_effect = _get_tracker
+    tracker_store.keys = AsyncMock(return_value=all_conversation_ids)
+    tracker_store.retrieve_full_tracker = _get_tracker
 
     monkeypatch.setattr(export, "_get_tracker_store", lambda _: tracker_store)
 
     return events, namespace
 
 
-def test_export_trackers(tmp_path: Path, monkeypatch: MonkeyPatch):
+def test_export_trackers_with_offset(tmp_path: Path, monkeypatch: MonkeyPatch):
     events, namespace = prepare_namespace_and_mocked_tracker_store_with_events(
         tmp_path, monkeypatch
     )
@@ -255,6 +262,12 @@ def test_export_trackers(tmp_path: Path, monkeypatch: MonkeyPatch):
     # check that events 1-4 were published
     assert all(
         any(call[1][0]["text"] == event.text for call in calls) for event in events[:4]
+    )
+
+    # check that the timestamps of the published events are offset by 100 seconds
+    assert all(
+        any(call[1][0]["timestamp"] == event.timestamp + 100 for call in calls)
+        for event in events[:4]
     )
 
 

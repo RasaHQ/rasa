@@ -1,14 +1,19 @@
-from typing import Dict, List, Text, Any
+from typing import Dict, List, Text, Any, TYPE_CHECKING
 
-from rasa.shared.core.events import Event
+import rasa.shared.core.events
+
+
+if TYPE_CHECKING:
+    from rasa.shared.core.events import Event
 
 
 class Dialogue:
-    """A dialogue comprises a list of Turn objects"""
+    """A dialogue comprises a list of Turn objects."""
 
     def __init__(self, name: Text, events: List["Event"]) -> None:
         """This function initialises the dialogue with the dialogue name and the event
-        list."""
+        list.
+        """
         self.name = name
         self.events = events
 
@@ -20,7 +25,8 @@ class Dialogue:
 
     def as_dict(self) -> Dict:
         """This function returns the dialogue as a dictionary to assist in
-        serialization."""
+        serialization.
+        """
         return {"events": [event.as_dict() for event in self.events], "name": self.name}
 
     @classmethod
@@ -34,8 +40,7 @@ class Dialogue:
             Deserialised `Dialogue`.
 
         """
-
         return cls(
             parameters.get("name"),
-            [Event.from_parameters(evt) for evt in parameters.get("events")],
+            rasa.shared.core.events.deserialise_events(parameters.get("events", [])),
         )

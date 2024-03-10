@@ -1,3 +1,5 @@
+recipe: default.v1
+assistant_id: placeholder_default
 language: en
 pipeline:
 policies:
@@ -6,6 +8,9 @@ policies:
 # # See https://rasa.com/docs/rasa/policies for more information.
 #   - name: MemoizationPolicy
 #   - name: RulePolicy
+#   - name: UnexpecTEDIntentPolicy
+#     max_history: 5
+#     epochs: 100
 #   - name: TEDPolicy
 #     max_history: 5
 #     epochs: 100

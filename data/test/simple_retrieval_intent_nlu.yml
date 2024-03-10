@@ -1,0 +1,10 @@
+version: "3.1"
+nlu:
+- intent: chitchat/hello
+  examples: |
+    - hey
+    - hello
+    - hi
+    - good morning
+    - good evening
+    - hey there

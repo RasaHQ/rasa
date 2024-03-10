@@ -1,0 +1,15 @@
+recipe: default.v1
+language: en
+
+pipeline:
+
+policies:
+  - name: MemoizationPolicy
+  - name: UnexpecTEDIntentPolicy
+    max_history: 5
+    epochs: 1
+  - name: TEDPolicy
+    max_history: 5
+    epochs: 1
+    constrain_similarities: true
+  - name: RulePolicy

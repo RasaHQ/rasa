@@ -1,9 +1,13 @@
 from typing import Optional, Text, Tuple, Union
-import tensorflow as tf
-import tensorflow_addons as tfa
-from tensorflow.python.keras.utils import tf_utils
-from tensorflow.python.keras import backend as K
+
 import numpy as np
+import tensorflow as tf
+
+# TODO: The following is not (yet) available via tf.keras
+from keras.utils.control_flow_util import smart_cond
+from tensorflow.keras import backend as K
+
+import rasa.shared.utils.cli
 from rasa.utils.tensorflow.layers import RandomlyConnectedDense
 
 
@@ -38,15 +42,15 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         unidirectional: bool = False,
         use_key_relative_position: bool = False,
         use_value_relative_position: bool = False,
-        max_relative_position: Optional[int] = None,
+        max_relative_position: int = 5,
         heads_share_relative_embedding: bool = False,
     ) -> None:
         super().__init__()
 
         if units % num_heads != 0:
-            raise ValueError(
-                f"number of units {units} should be proportional to "
-                f"number of attention heads {num_heads}."
+            rasa.shared.utils.cli.print_error_and_exit(
+                f"Value Error: The given transformer size {units} should be a "
+                f"multiple of the number of attention heads {num_heads}."
             )
 
         self.num_heads = num_heads
@@ -56,8 +60,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         self.use_key_relative_position = use_key_relative_position
         self.use_value_relative_position = use_value_relative_position
         self.relative_length = max_relative_position
-        if self.relative_length is not None:
-            self.relative_length += 1  # include current time
+        self.relative_length += 1  # include current time
         self.heads_share_relative_embedding = heads_share_relative_embedding
 
         self._depth = units // self.num_heads
@@ -81,8 +84,9 @@ class MultiHeadAttention(tf.keras.layers.Layer):
 
     def _create_relative_embeddings(self) -> None:
         """Create relative embeddings."""
-
-        relative_embedding_shape = None
+        relative_embedding_shape: Optional[
+            Union[Tuple[int, int], Tuple[int, int, int]]
+        ] = None
         self.key_relative_embeddings = None
         self.value_relative_embeddings = None
 
@@ -157,7 +161,6 @@ class MultiHeadAttention(tf.keras.layers.Layer):
             A tensor of shape (batch, num_heads, length, length, depth)
             or (batch, num_heads, length, length)
         """
-
         x_dim = len(x.shape)
 
         if x_dim < 4 or x_dim > 5:
@@ -253,7 +256,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
 
             return logits + drop_mask * -1e9
 
-        return tf_utils.smart_cond(training, droped_logits, lambda: tf.identity(logits))
+        return smart_cond(training, droped_logits, lambda: tf.identity(logits))
 
     def _scaled_dot_product_attention(
         self,
@@ -282,7 +285,6 @@ class MultiHeadAttention(tf.keras.layers.Layer):
             output: A tensor with shape (..., length, depth).
             attention_weights: A tensor with shape (..., length, length).
         """
-
         matmul_qk = tf.matmul(query, key, transpose_b=True)  # (..., length, length)
 
         if self.use_key_relative_position:
@@ -316,7 +318,6 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         Transpose the result such that the shape is
         (batch_size, num_heads, length, depth)
         """
-
         x = tf.reshape(x, (tf.shape(x)[0], -1, self.num_heads, self._depth))
         return tf.transpose(x, perm=[0, 2, 1, 3])
 
@@ -329,7 +330,6 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         Returns:
             A Tensor with shape [batch, length, units]
         """
-
         # (batch_size, length, num_heads, depth)
         x = tf.transpose(x, perm=[0, 2, 1, 3])
         # (batch_size, length, units)
@@ -414,7 +414,7 @@ class TransformerEncoderLayer(tf.keras.layers.Layer):
         unidirectional: bool = False,
         use_key_relative_position: bool = False,
         use_value_relative_position: bool = False,
-        max_relative_position: Optional[int] = None,
+        max_relative_position: int = 5,
         heads_share_relative_embedding: bool = False,
     ) -> None:
         super().__init__()
@@ -436,7 +436,7 @@ class TransformerEncoderLayer(tf.keras.layers.Layer):
         self._ffn_layers = [
             tf.keras.layers.LayerNormalization(epsilon=1e-6),
             RandomlyConnectedDense(
-                units=filter_units, activation=tfa.activations.gelu, density=density
+                units=filter_units, activation=tf.nn.gelu, density=density
             ),  # (batch_size, length, filter_units)
             tf.keras.layers.Dropout(dropout_rate),
             RandomlyConnectedDense(
@@ -521,7 +521,7 @@ class TransformerEncoder(tf.keras.layers.Layer):
         unidirectional: bool = False,
         use_key_relative_position: bool = False,
         use_value_relative_position: bool = False,
-        max_relative_position: Optional[int] = None,
+        max_relative_position: int = 5,
         heads_share_relative_embedding: bool = False,
         name: Optional[Text] = None,
     ) -> None:

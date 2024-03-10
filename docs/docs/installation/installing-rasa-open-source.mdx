@@ -1,0 +1,180 @@
+---
+sidebar_label: Installing Rasa Open Source
+title: Installing Rasa Open Source
+description: Install Rasa Open Source on premises to enable local and customizable Natural Language Understanding and Dialogue Management.
+---
+
+import useBaseUrl from "@docusaurus/useBaseUrl";
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+import { Button } from "@theme/Button";
+
+## Install Rasa Open Source
+
+<Tabs values={[{"label": "Ubuntu / macOS / Windows", "value": "ubuntu/macos/windows"}]} defaultValue="ubuntu/macos/windows">
+  <TabItem value="ubuntu/macos/windows">
+
+First make sure your `pip` version is up to date:
+
+```bash
+pip3 install -U pip
+```
+
+To install Rasa Open Source:
+
+```bash
+pip3 install rasa
+```
+
+  </TabItem>
+</Tabs>
+
+:::note Telemetry reporting
+When you run Rasa Open Source for the first time, you’ll see a
+message notifying you about anonymous usage data that is being collected.
+You can read more about how that data is pulled out and what it is used for in the
+[telemetry documentation](../telemetry/telemetry.mdx).
+:::
+
+**Congratulations! You have successfully installed Rasa Open Source!**
+
+You can now create a new project with:
+
+```bash
+rasa init
+```
+
+You can learn about the most important Rasa commands in the [Command Line Interface](../command-line-interface.mdx).
+
+## Building from Source
+
+If you want to use the development version of Rasa Open Source, you can get it from GitHub:
+
+```bash
+curl -sSL https://install.python-poetry.org | python3 -
+git clone https://github.com/RasaHQ/rasa.git
+cd rasa
+poetry install
+```
+
+## Additional dependencies
+
+For some machine learning algorithms you need to install additional python packages.
+They aren't installed by default to keep the footprint small.
+
+The page on [Tuning Your Model](../tuning-your-model.mdx) will help you pick the right
+configuration for your assistant and alert you to additional dependencies.
+
+:::tip Just give me everything!
+If you don't mind the additional dependencies lying around, you can use
+
+```bash
+pip3 install 'rasa[full]'
+```
+
+to install all needed dependencies for every configuration.
+
+:::
+
+### Python 3.10 requirements
+
+_If you are using Linux_, installing `rasa[full]` could result in a failure while installing `tokenizers` and
+`cryptography`.
+
+In order to resolve it, you must follow these steps to install a Rust compiler:
+
+```bash
+apt install rustc && apt install cargo
+```
+
+After initializing the Rust compiler, you should restart the console and check its installation:
+
+```bash
+rustc --version
+```
+
+In case the PATH variable had not been automatically setup, run:
+
+```bash
+export PATH="$HOME/.cargo/bin:$PATH"
+```
+
+_If you are using macOS_, note that installing `rasa[full]` (either via pip or from source) could result in a failure
+while installing `tokenizers` (issue described in depth [here](https://github.com/huggingface/tokenizers/issues/1050)).
+
+In order to resolve it, you must follow these steps to install a Rust compiler:
+
+```bash
+brew install rustup
+rustup-init
+```
+
+After initializing the Rust compiler, you should restart the console and check its installation:
+
+```bash
+rustc --version
+```
+
+In case the PATH variable had not been automatically setup, run:
+
+```bash
+export PATH="$HOME/.cargo/bin:$PATH"
+```
+
+### Dependencies for spaCy
+
+For more information on spaCy models, check out the [spaCy docs](https://spacy.io/usage/models).
+
+You can install it with the following commands:
+
+```bash
+pip3 install 'rasa[spacy]'
+python3 -m spacy download en_core_web_md
+```
+
+:::tip Using `zsh`?
+
+In zsh, square brackets are interpreted as patterns on the command line.
+To run commands with square brackets, you can either enclose the arguments
+with square brackets in quotes, like `pip3 install 'rasa[spacy]'`, or escape
+the square brackets using backslashes, like `pip3 install rasa\[spacy\]`.
+We recommend using the former method (`pip3 install 'rasa[spacy]'`) in our
+documentation because it works as expected across any shell
+
+:::
+
+This will install Rasa Open Source as well as spaCy and its language model
+for the English language, but many other languages are available too.
+We recommend using at least the "medium" sized models (`_md`) instead of the spaCy's
+default small `en_core_web_sm` model. Small models require less
+memory to run, but will likely reduce intent classification performance.
+
+### Dependencies for MITIE
+
+First, run
+
+```bash
+pip3 install git+https://github.com/mit-nlp/MITIE.git
+pip3 install 'rasa[mitie]'
+```
+
+and then download the
+[MITIE models](https://github.com/mit-nlp/MITIE/releases/download/v0.4/MITIE-models-v0.2.tar.bz2).
+The file you need is `total_word_feature_extractor.dat`. Save this
+anywhere. If you want to use MITIE, you need to
+tell it where to find this file (in this example it was saved in the
+`data` folder of the project directory).
+
+## Upgrading Versions
+
+To upgrade your installed version of Rasa Open Source to the latest version from PyPI:
+
+```bash
+pip3 install --upgrade rasa
+```
+
+To download a specific version, specify the version number:
+
+```bash
+pip3 install rasa==3.0
+```

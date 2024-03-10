@@ -1,0 +1,45 @@
+---
+id: introduction
+sidebar_label: Introduction
+title: Deploying a Rasa Assistant
+description: How to deploy your Rasa Assistant with Kubernetes/Openshift
+abstract: This section explains when and how to deploy an assistant built with Rasa.
+  It will allow you to make your assistant available to users and set you up with a production-ready environment.
+---
+<!-- this file is version specific, do not use `@site/...` syntax -->
+import variables from './../variables.json';
+
+:::note
+Are you unfamiliar with Docker, Kubernetes and Helm? Check out "[Understanding Rasa Deployments](https://www.youtube.com/watch?v=aAs_RS0ueEw&list=PL75e0qA87dlHmfmu7oPPYA22fmc6GJ2aW)" on our [YouTube channel](https://www.youtube.com/channel/UCJ0V6493mLvqdiVwOKWBODQ).
+:::
+
+## When to Deploy Your Assistant
+
+The best time to deploy your assistant and make it available to test users is once it can handle the most
+important happy paths or is what we call a [minimum viable assistant](../glossary.mdx). Then you can use incoming
+conversations to inform further development of your assistant.
+
+
+## Recommended Deployment Method
+The [Rasa Helm Chart](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa) is the production ready method to deploy
+your assistant on a Kubernetes or Openshift cluster. For details, see the [deployment instructions](./deploy-rasa.mdx).
+
+### Cluster Requirements
+
+To install the Rasa Helm Chart, you need an existing
+[Kubernetes cluster](https://kubernetes.io/) or [OpenShift cluster](https://www.openshift.com/).
+If you don't have one yet, you can get a managed cluster from a cloud provider like:
+* [Google Cloud](https://cloud.google.com/kubernetes-engine),
+* [DigitalOcean](https://www.digitalocean.com/products/kubernetes/),
+* [Microsoft Azure](https://azure.microsoft.com/en-us/services/kubernetes-service/), or
+* [Amazon EKS](https://aws.amazon.com/eks/).
+
+## Alternative Deployment Methods
+
+The following deployment methods are not suited to a production deployment, but can be useful for development and testing:
+
+* [Running an assistant locally on the command line](../command-line-interface.mdx#rasa-run)
+
+* [Developing an assistant in a Docker container](../docker/building-in-docker.mdx)
+
+* [Deploying an assistant with Docker Compose](../docker/deploying-in-docker-compose.mdx)

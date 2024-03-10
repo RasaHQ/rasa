@@ -1,0 +1,27 @@
+version: "3.1"
+
+assistant_id: placeholder_default
+
+pipeline:
+  - name: WhitespaceTokenizer
+  - name: RegexFeaturizer
+  - name: LexicalSyntacticFeaturizer
+  - name: CountVectorsFeaturizer
+  - name: CountVectorsFeaturizer
+    analyzer: char_wb
+    min_ngram: 1
+    max_ngram: 4
+  - name: DIETClassifier
+    epochs: 15
+    constrain_similarities: true
+    run_eagerly: true
+  - name: EntitySynonymMapper
+
+policies:
+  - name: AugmentedMemoizationPolicy
+    max_history: 6
+  - name: RulePolicy
+    core_fallback_threshold: 0.4
+    core_fallback_action_name: "action_fallback_universal_search"
+    enable_fallback_prediction: True
+    check_for_contradictions: True

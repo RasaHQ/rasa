@@ -1,0 +1,71 @@
+version: '3.1'
+
+intents:
+- affirm
+- bot_challenge
+- deny
+- goodbye
+- greet
+- mood_great
+- mood_unhappy
+- switch_another_form
+slots:
+  test_trigger:
+    type: text
+    influence_conversation: false
+    mappings:
+    - type: from_trigger_intent
+      value: testing123
+      intent: mood_great
+      conditions:
+      - active_loop: test_form
+  question1:
+    type: text
+    influence_conversation: false
+    mappings:
+    - type: from_text
+      conditions:
+      - active_loop: test_form
+        requested_slot: question1
+  q2:
+    type: text
+    influence_conversation: false
+    mappings:
+    - type: from_text
+      conditions:
+      - active_loop: another_form
+        requested_slot: q2
+forms:
+  test_form:
+    required_slots:
+    - question1
+  another_form:
+    required_slots:
+    - q2
+responses:
+  utter_greet:
+  - text: Hey! How are you?
+  utter_cheer_up:
+  - text: 'Here is something to cheer you up:'
+    image: https://i.imgur.com/nGF1K8f.jpg
+  utter_did_that_help:
+  - text: Did that help you?
+  utter_happy:
+  - text: Great, carry on!
+  utter_test_trigger:
+  - text: "The value of test_trigger slot is: {test_trigger}"
+  utter_goodbye:
+  - text: Bye
+  utter_activate_another:
+  - text: Ok. going to another_form flow. sound good?
+  utter_iamabot:
+  - text: I am a bot, powered by Rasa.
+  utter_ask_test_form_question1:
+  - text: test form - question 1
+  utter_ask_another_form_q2:
+  - text: another form - q2
+  utter_submit_test_form:
+  - text: Submit test form
+session_config:
+  session_expiration_time: 60
+  carry_over_slots_to_new_session: true

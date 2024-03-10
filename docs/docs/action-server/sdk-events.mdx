@@ -1,0 +1,360 @@
+---
+id: sdk-events
+sidebar_label: Events
+title: Events
+---
+
+Internally, Rasa conversations are represented as 
+a list of [events](events.mdx). Rasa SDK provides classes 
+for each event, and takes care of turning instances of event classes into properly formatted 
+event payloads.
+
+This page is about the event classes in `rasa_sdk`.
+The side effects of events and their underlying 
+payloads are identical regardless of whether you use `rasa_sdk` or another action
+server.
+For details about the side effects of an event, its underlying
+ payload and the class in Rasa it is translated to
+see the [documentation for events for all action servers](events.mdx)
+(also linked to in each section).
+
+:::tip Importing events
+All events written in a Rasa SDK action server need to be imported from `rasa_sdk.events`.
+:::
+
+
+## Event Classes
+
+### SlotSet
+
+```python
+rasa_sdk.events.SlotSet(
+    key: Text, 
+    value: Any = None, 
+    timestamp: Optional[float] = None
+)
+```
+
+**Underlying event**: [`slot`](events.mdx#slot)
+
+**Parameters**:
+
+* `key`: Name of the slot to set
+* `value`: Value to set the slot to. The datatype must match the [type](../domain.mdx#slot-types)
+   of the slot
+* `timestamp`: Optional timestamp of the event
+
+**Example**
+
+```python
+evt = SlotSet(key = "name", value = "Mary")
+```
+
+
+### AllSlotsReset
+
+```python
+rasa_sdk.events.AllSlotsReset(timestamp: Optional[float] = None)
+```
+
+**Underlying event**: [`reset_slots`](events.mdx#reset_slots)
+
+**Parameters**:
+
+* `timestamp`: Optional timestamp of the event
+
+**Example**:
+
+```python
+evt = AllSlotsReset()
+```
+
+
+### ReminderScheduled
+
+```python
+rasa_sdk.events.ReminderScheduled(
+    intent_name: Text,
+    trigger_date_time: datetime.datetime,
+    entities: Optional[Union[List[Dict[Text, Any]], Dict[Text, Text]]] = None,
+    name: Optional[Text] = None,
+    kill_on_user_message: bool = True,
+    timestamp: Optional[float] = None,
+)
+```
+
+**Underlying event**: [`reminder`](events.mdx#reminder)
+
+
+**Parameters**:
+
+* `intent_name`: Intent which the reminder will trigger 
+* `trigger_date_time`: Datetime at which the execution of the action should be triggered. 
+* `entities`: Entities to send with the intent
+* `name`: ID of the reminder. If there are multiple reminders with the same id only the last will be run.
+* `kill_on_user_message`: Whether a user message before the trigger time will abort the reminder
+* `timestamp`: Optional timestamp of the event
+
+
+**Example**:
+
+```python
+from datetime import datetime
+
+evt = ReminderScheduled(
+    intent_name = "EXTERNAL_dry_plant",
+    trigger_date_time = datetime(2020, 9, 15, 0, 36, 0, 851609),
+    entities = [{"name": "plant","value":"orchid"}], 
+    name = "remind_water_plants",
+)
+```
+
+
+### ReminderCancelled
+
+```python
+ReminderCancelled(
+    name: Optional[Text] = None,
+    intent_name: Optional[Text] = None,
+    entities: Optional[Union[List[Dict[Text, Any]], Dict[Text, Text]]] = None,
+    timestamp: Optional[float] = None,
+) 
+```
+
+**Underlying event**: [`cancel_reminder`](events.mdx#cancel_reminder)
+
+**Parameters**:
+
+* `name`: ID of the reminder.
+* `intent_name`: Intent which the reminder triggers 
+* `entities`: Entities sent with the intent
+* `timestamp`: Optional timestamp of the event
+
+**Example**:
+
+```python
+evt = ReminderCancelled(name = "remind_water_plants") 
+```
+
+
+
+### ConversationPaused
+
+```python
+ConversationPaused(timestamp: Optional[float] = None)
+```
+**Underlying event**: [`pause`](events.mdx#slot)
+
+**Parameters**:
+
+* `timestamp`: Optional timestamp of the event
+
+**Example**:
+
+```python
+evt = ConversationPaused()
+```
+
+
+
+### ConversationResumed
+
+```python
+ConversationResumed(timestamp: Optional[float] = None)
+```
+
+**Underlying event**: [`resume`](events.mdx#resume)
+
+**Parameters**:
+
+* `timestamp`: Optional timestamp of the event
+
+**Example**:
+
+```python
+evt = ConversationResumed()
+```
+
+
+
+### FollowupAction
+
+```python
+FollowupAction(
+    name: Text, 
+    timestamp: Optional[float] = None
+)
+```
+
+**Underlying event**: [`followup`](events.mdx#followup)
+
+**Parameters**:
+
+* `name`: The name of the follow up action that will be executed.
+* `timestamp`: Optional timestamp of the event
+
+**Example**:
+
+```python
+evt = FollowupAction(name = "action_say_goodbye")
+```
+
+
+
+### UserUtteranceReverted
+
+```python
+UserUtteranceReverted(timestamp: Optional[float] = None)
+```
+**Underlying event**: [`rewind`](events.mdx#rewind)
+
+**Parameters**:
+
+* `timestamp`: Optional timestamp of the event
+
+**Example**:
+
+```python
+evt = UserUtteranceReverted()
+```
+
+
+
+### ActionReverted
+
+```python
+ActionReverted(timestamp: Optional[float] = None)
+```
+
+**Underlying event**: [`undo`](events.mdx#undo)
+
+**Parameters**:
+
+* `timestamp`: Optional timestamp of the event
+
+**Example**:
+
+```python
+evt = ActionReverted()
+```
+
+
+
+### Restarted
+
+```python
+Restarted(timestamp: Optional[float] = None) 
+```
+
+**Underlying event**: [`restart`](events.mdx#restart)
+
+**Parameters**:
+
+* `timestamp`: Optional timestamp of the event
+
+**Example**:
+
+```python
+evt = Restarted()
+```
+
+
+
+### SessionStarted
+
+```python
+SessionStarted(timestamp: Optional[float] = None)
+```
+
+**Underlying event**: [`session_started`](events.mdx#session_started)
+
+**Parameters**:
+
+* `timestamp`: Optional timestamp of the event
+
+**Example**:
+
+```python
+evt = SessionStarted()
+```
+
+
+
+### UserUttered
+
+```python
+UserUttered(
+    text: Optional[Text],
+    parse_data: Optional[Dict[Text, Any]] = None,
+    timestamp: Optional[float] = None,
+    input_channel: Optional[Text] = None,
+)
+```
+
+**Underlying event**: [`user`](events.mdx#user)
+
+**Parameters**:
+
+* `text`: Text of the user message
+* `parse_data`: Parsed data of user message. This is ordinarily filled by NLU.
+* `input_channel`: The channel on which the message was received
+* `timestamp`: Optional timestamp of the event
+
+**Example**:
+
+```python
+evt = UserUttered(text = "Hallo bot")
+```
+
+
+### BotUttered
+
+```python
+BotUttered(
+    text: Optional[Text] = None,
+    data: Optional[Dict[Text, Any]] = None,
+    metadata: Optional[Dict[Text, Any]] = None,
+    timestamp: Optional[float] = None,
+)
+```
+
+**Underlying event**: [`bot`](events.mdx#bot)
+
+**Parameters**:
+
+* `text`: The text the bot sends to the user
+* `data`: Any non-text elements of the bot response. The structure of `data` matches that of `responses` given in the [API spec](/pages/action-server-api).
+* `metadata`: Arbitrary key-value metadata
+* `timestamp`: Optional timestamp of the event
+
+**Example**:
+
+```python
+evt = BotUttered(text = "Hallo user")
+```
+
+
+### ActionExecuted
+
+```python
+ActionExecuted(
+    action_name,
+    policy=None,
+    confidence: Optional[float] = None,
+    timestamp: Optional[float] = None,
+)
+```
+**Underlying event**: [`action`](events.mdx#action)
+
+**Parameters**:
+
+* `action_name`: Name of the action that was called
+* `policy`: The policy used to predict the action
+* `confidence`: The confidence with which the action was predicted
+* `timestamp`: Optional timestamp of the event
+
+**Example**:
+
+```python
+evt = ActionExecuted("action_greet_user")
+```

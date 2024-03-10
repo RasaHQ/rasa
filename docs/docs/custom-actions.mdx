@@ -5,10 +5,9 @@ title: Custom Actions
 abstract: A custom action can run any code you want, including API calls, database queries etc. They can turn on the lights, add an event to a calendar, check a user's bank balance, or anything else you can imagine.
 ---
 
-For details on how to implement a custom action, see the [SDK documentation](https://rasa.com/docs/action-server/running-action-server).
+For details on how to implement a custom action, see the [SDK documentation](./action-server/running-action-server.mdx).
 Any custom action that you want to use in your stories should be added into the
 actions section of your [domain](./domain.mdx).
-
 
 When the dialogue engine predicts a custom action to be executed, it will call
 the action server, with the following information:
@@ -16,9 +15,9 @@ the action server, with the following information:
 ```json
 {
   "next_action": "string",
-  "sender_id": "string",
   "tracker": {
     "conversation_id": "default",
+    "sender_id": "string",
     "slots": {},
     "latest_message": {},
     "latest_event_time": 1537645578.314389,
@@ -27,9 +26,9 @@ the action server, with the following information:
     "events": [],
     "latest_input_channel": "rest",
     "active_loop": {},
-    "latest_action": {},
+    "latest_action": {}
   },
-"domain": {
+  "domain": {
     "config": {},
     "session_config": {},
     "intents": [],

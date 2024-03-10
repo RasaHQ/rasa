@@ -2,7 +2,7 @@ from typing import Dict, Text, Any
 
 
 def entity_dict_schema() -> Dict[Text, Any]:
-    """Returns: schema for defining entities in Markdown format."""
+    """Returns: schema for defining entities."""
     return {
         "type": "object",
         "properties": _common_entity_properties(),

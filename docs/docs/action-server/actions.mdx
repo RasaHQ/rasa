@@ -1,0 +1,330 @@
+---
+id: actions
+sidebar_label: Actions
+title: Actions
+---
+
+When a Rasa assistant calls a custom action, it sends a request to the action server. 
+Rasa only knows about whatever events and responses come back in the request response;
+it's up to the action server to call the correct code based on the action name that Rasa provides.
+
+To better understand what happens when Rasa calls a custom action, consider 
+the following example:
+
+You have deployed a weather bot to both Facebook and Slack. The user
+can ask for the weather with the intent `ask_weather`. There is a slot `location`
+which will be filled if the user has specified a location.
+The action `action_tell_weather` will use an API to get the weather forecast ,
+using a default location if the user doesn't specify one. 
+The action will set the `temperature` to the maximum temperature of the weather forecast.
+The message returned will differ according to the channel they are using. 
+
+
+:::info Compressed body in HTTP requests
+Rasa has the capability to compress the HTTP request body for custom actions.
+By default, this option is off to keep backward compatibility with older versions of
+custom action servers which did not receive the compressed body in the HTTP request for custom actions.
+To enable this option, set environment variable COMPRESS_ACTION_SERVER_REQUEST to `True`.
+
+Rasa SDK versions `3.2.2`, `3.3.1`, `3.4.1` and upwards,
+support both compressed and non-compressed body in the HTTP request for
+running custom action server. There is no additional setup required.
+:::
+
+## Custom Action Input
+
+Your action server receives the following payload from the Rasa server: 
+
+```json
+{
+    "next_action": "action_tell_weather",
+    "sender_id": "2687378567977106",
+    "tracker": {
+        "sender_id": "2687378567977106",
+        "slots": {
+            "location": null,
+            "temperature": null
+        },
+        "latest_message": {
+            "text": "/ask_weather",
+            "intent": {
+                "name": "ask_weather",
+                "confidence": 1
+            },
+            "intent_ranking": [
+                {
+                    "name": "ask_weather",
+                    "confidence": 1
+                }
+            ],
+            "entities": []
+        },
+        "latest_event_time": 1599850576.655345,
+        "followup_action": null,
+        "paused": false,
+        "events": [
+            {
+                "event": "action",
+                "timestamp": 1599850576.654908,
+                "name": "action_session_start",
+                "policy": null,
+                "confidence": null
+            },
+            {
+                "event": "session_started",
+                "timestamp": 1599850576.654916
+            },
+            {
+                "event": "action",
+                "timestamp": 1599850576.654928,
+                "name": "action_listen",
+                "policy": null,
+                "confidence": null
+            },
+            {
+                "event": "user",
+                "timestamp": 1599850576.655345,
+                "text": "/ask_weather",
+                "parse_data": {
+                    "text": "/ask_weather",
+                    "intent": {
+                        "name": "ask_weather",
+                        "confidence": 1
+                    },
+                    "intent_ranking": [
+                        {
+                            "name": "ask_weather",
+                            "confidence": 1
+                        }
+                    ],
+                    "entities": []
+                },
+                "input_channel": "facebook",
+                "message_id": "3f2f2317dada4908b7a841fd3eab6bf9",
+                "metadata": {}
+            }
+        ],
+        "latest_input_channel": "facebook",
+        "active_form": {},
+        "latest_action_name": "action_listen"
+    },
+    "domain": {
+        "config": {
+            "store_entities_as_slots": true
+        },
+        "session_config": {
+            "session_expiration_time": 60,
+            "carry_over_slots_to_new_session": true
+        },
+        "intents": [
+            {
+                "greet": {
+                    "use_entities": true
+                }
+            },
+            {
+                "ask_weather": {
+                    "use_entities": true
+                }
+            }
+        ],
+        "entities": [],
+        "slots": {
+            "location": {
+                "type": "rasa.core.slots.UnfeaturizedSlot",
+                "initial_value": null,
+                "auto_fill": true
+            },
+            "temperature": {
+                "type": "rasa.core.slots.UnfeaturizedSlot",
+                "initial_value": null,
+                "auto_fill": true
+            }
+        },
+        "responses": {
+            "utter_greet": [
+                {
+                    "text": "Hey! How are you?"
+                }
+            ]
+        },
+        "actions": [
+            "action_tell_weather",
+            "utter_greet"
+        ],
+        "forms": []
+    },
+    "version": "2.0.0"
+}
+```
+
+
+### `next_action`
+
+The `next_action` field tells your action server what action to run. 
+Your actions don't have to be implemented as classes, but they do have
+to be callable by name. 
+
+In the example case, your action server should run the action `action_tell_weather`.
+
+### `sender_id`
+
+The `sender_id` tells you the unique ID of the 
+user having the conversation. Its format varies according to the input channel.
+What it tells you about the user also depends on the input channel and how
+the user is identified by the channel. 
+
+In the example case, the `sender_id` is not used for anything.
+
+### `tracker`
+
+The `tracker` contains information about the conversation, including a history of events
+and a record of all slots:
+
+- `sender_id`: The same `sender_id` as is available in the top level of the payload
+- `slots`: Each slot in your bot's domain and its value at the current time
+- `latest_message`: The attributes of the latest message
+- `latest_event_time`: The timestamp at which the last event was added to the tracker
+- `followup_action`: The action called was a forced follow up action
+- `paused`: Whether the conversation is currently paused
+- `events`: A list of all previous [events](./events.mdx)
+- `latest_input_channel`: The input channel from which the last user message was received
+- `active_form`: The name of the currently active form, if any
+- `latest_action_name`: The name of the last action the bot executed
+
+In the example case, your custom action uses the value of the `location` slot (if it is set)
+to get the weather forecast. It also checks the `latest_input_channel` property
+and formats the message payload so that it will display correctly in Facebook Messenger.
+
+### `domain`
+
+The `domain` is a json representation of your `domain.yaml` file.
+It is unlikely that a custom action
+will refer to its contents, as they are static and do not indicate the state
+of the conversation. 
+
+You can control if an action should receive a domain or not.
+Visit [selective-domain](../domain.mdx#select-which-actions-should-receive-domain)
+
+### `version`
+
+This is the version of the Rasa server. A custom action
+is also unlikely to refer to this, although you might use it in a 
+verification step if your action server
+is only compatible with certain Rasa versions.
+
+
+## Custom Action Output
+
+The Rasa server expects a dictionary of `events` and `responses` as a response
+to a custom action call. 
+
+### `events`
+
+[Events](./events.mdx) are how your action server can influence the conversation.
+In the example case, your custom action should store the maximum temperature 
+in the `temperature` slot, so it needs to return a [`slot` event](./events.mdx#slot). To set the
+slot and do nothing else, your response payload would look like this:
+
+```json
+    {
+        "events": [
+            {
+                "event": "slot",
+                "timestamp": null,
+                "name": "temperature",
+                "value": "30"
+            }
+        ],
+        "responses": []
+    }
+```
+
+Note that events will be applied to the tracker in the order you list them; with `slot`
+events, the order won't matter, but with other event types it can.
+
+### `responses`
+
+A response can be of any of the response types described in the
+[documentation on rich responses](../responses.mdx#rich-responses).
+See the response sample of the [API spec](/pages/action-server-api) for the expected formats. 
+
+In the example case, you want to send the user a message with the weather forecast. 
+To send a regular text message, the response payload would look like this:
+
+```json
+    {
+        "events": [
+            {
+                "event": "slot",
+                "timestamp": null,
+                "name": "temperature",
+                "value": "30"
+            }
+        ],
+        "responses": [
+            {
+                "text": "This is your weather forecast!"
+            }
+        ]
+    }
+```
+
+
+
+However, you want to make use of your channels' specific capabilities. Since 
+the `latest_input_channel` was Facebook, you add a response with
+a custom payload that will be rendered as a media message according to Facebook's API spec.
+Your response payload then looks like this:
+
+
+```json
+    {
+        "events": [
+            {
+                "event": "slot",
+                "timestamp": null,
+                "name": "temperature",
+                "value": "30"
+            }
+        ],
+        "responses": [
+            {
+                "text": "This is your weather forecast!"
+            },
+            {
+                "attachment": {
+                    "type": "template",
+                    "payload": {
+                        "template_type": "media",
+                        "elements": [
+                            {
+                                "media_type": "weather_forcast.gif",
+                                "attachment_id": "<id from facebook upload endpoint>"
+                            }
+                        ]
+                    }
+                }
+            }
+        ]
+    }
+```
+
+When this response is sent back to 
+the Rasa server, Rasa will apply the `slot` event and two responses to the tracker, 
+and return both messages to the user.
+
+## Special Action Types
+
+There are special action types that are automatically triggered under certain circumstances, namely [default actions](../default-actions.mdx)
+and  [slot validation actions](../slot-validation-actions.mdx).
+These special action types have predefined naming conventions that must be followed to maintain the automatic triggering behavior.
+
+You can customize a default action by implementing a custom action with exactly the same name.
+Please see the [docs on default actions](../default-actions.mdx) for the expected behavior of each action.
+
+Slot validation actions are run on every user turn, depending on whether a form is active or not.
+A slot validation action that should run when a form is not active must be called `action_validate_slot_mappings`.
+A slot validation action that should run when a form is active must be called `validate_<form name>`.
+These actions are expected to return `SlotSet` events only and to behave like the Rasa SDK [`ValidationAction` class](./validation-action.mdx#validationaction-class-implementation)
+and [`FormValidationAction` class](./validation-action.mdx#formvalidationaction-class-implementation) respectively.

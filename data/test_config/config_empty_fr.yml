@@ -1,3 +1,4 @@
 language: fr
+assistant_id: placeholder_default
 pipeline:
 policies:

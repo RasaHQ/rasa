@@ -9,9 +9,10 @@ import useBaseUrl from '@docusaurus/useBaseUrl';
 <!-- this file is version specific, do not use `@site/...` syntax -->
 import variables from '../variables.json';
 
-If you don't have a Rasa project yet, you can build one in Docker without having to install Rasa Open Source
+If you don't have a Rasa project yet, you can build one in Docker without having to install Rasa
 on your local machine. If you already have a model you're satisfied with, see
-[Deploying Your Rasa Assistant](../how-to-deploy.mdx) to learn how to deploy your model.
+[Deploying a Rasa Assistant](../deploy/introduction.mdx) to learn how to deploy your model.
+
 
 ## Installing Docker
 
@@ -124,6 +125,8 @@ You can also leave these out, since we are passing the default values.
 
 * `{version}-spacy-de`
 
+* `{version}-spacy-it`
+
 * `{version}-mitie-en`
 
 The `{version}-full` tag includes all possible pipeline dependencies, allowing you to change your `config.yml`
@@ -131,7 +134,7 @@ as you like without worrying about missing dependencies. The plain `{version}` t
 dependencies you need to run the default pipeline created by `rasa init`.
 
 To keep images as small as possible, we also publish different tags of the `rasa/rasa` image
-with different dependencies installed. See [Additional Dependencies](../installation.mdx#additional-dependencies) for more dependency information
+with different dependencies installed. See [Additional Dependencies](../installation/installing-rasa-open-source.mdx#additional-dependencies) for more dependency information
 specific to your pipeline. For example, if you are using components with pre-trained word vectors from spaCy or
 MITIE, you should choose the corresponding tag.
 
@@ -139,7 +142,7 @@ If your model has a dependency that is not included in any of the tags (for exam
 you can build a docker image that extends the `rasa/rasa` image.
 
 :::note
-You can see a list of all the versions and tags of the Rasa Open Source
+You can see a list of all the versions and tags of the Rasa
 Docker image on [DockerHub](https://hub.docker.com/r/rasa/rasa/).
 
 :::
@@ -261,5 +264,4 @@ docker rm action-server
 
 Work on your bot until you have a minimum viable assistant that can handle your happy paths. After
 that, you'll want to deploy your model to get feedback from real test users. To do so, you can deploy the
-model you created with Rasa X via one of our [recommended deployment methods](../how-to-deploy.mdx#recommended-deployment-methods).
-Or, you can do a [Rasa-only deployment in Docker Compose](./deploying-in-docker-compose.mdx).
+model you created via one of our [recommended deployment methods](../deploy/introduction.mdx#recommended-deployment-method).

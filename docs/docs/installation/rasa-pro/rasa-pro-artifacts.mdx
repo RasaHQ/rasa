@@ -1,0 +1,30 @@
+---
+sidebar_label: Rasa Pro Artifacts
+title: Rasa Pro Artifacts
+description: artifacts that ship with Rasa Pro.
+---
+
+import useBaseUrl from "@docusaurus/useBaseUrl";
+import RasaProLabel from "@theme/RasaProLabel";
+import RasaProBanner from "@theme/RasaProBanner";
+
+<RasaProLabel />
+
+<RasaProBanner />
+
+- **Rasa Pro**, a drop-in replacement for Rasa Open Source
+- **Rasa Pro Services**, flexible infrastructure and APIs on top of Rasa
+  Open Source. Rasa Pro Services should be deployed alongside, but separately
+  from your production assistant.
+
+Rasa Pro includes the Rasa Plus Python package, which is a drop-in replacement for Rasa Open Source that includes all the functionality of Rasa Open Source as well as additional features.
+Rasa Pro features are built on a plugin architecture that is seamlessly integrated with Rasa Open Source.
+
+For example, in the below diagram, tracing is run as a hook implementation in Rasa Plus, whose specification is defined and registered in Rasa Open Source.
+
+<img alt="image" src={useBaseUrl("/img/rasa-plus-architecture.png")} />
+
+The hook configures the tracing backend as specified in the `endpoints.yml` and instruments model training and message handling actions.
+The hook is then called within the Rasa Open Source main module, which is the entry point for the Rasa Open Source command line.
+
+The plugin architecture enables Rasa Pro to continue enhancing the Rasa Open Source argument parser while maintaining the same runnable command name (`rasa`).

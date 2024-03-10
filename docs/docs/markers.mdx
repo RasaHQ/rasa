@@ -1,0 +1,351 @@
+---
+id: markers
+sidebar_label: Markers
+title: Markers
+description: Find out how to mark points of interest in dialogues using Marker conditions.
+abstract: Markers are conditions used to describe and mark points of interest in dialogues.
+---
+
+
+
+:::caution
+
+This feature is currently experimental and might change or be removed in the future. Share your feedback in the forum to help us make it production-ready.
+
+:::
+
+:::danger Deprecated
+
+In the upcoming release version 3.7 of Rasa Open Source, we’re removing this experimental feature. For documentation on the markers feature in Rasa Pro, please [click here](./monitoring/analytics/realtime-markers.mdx)
+
+:::
+
+## Overview
+
+Markers are conditions that allow you to describe and mark points of interest in dialogues for evaluating your bot.
+
+In Rasa, a dialogue is represented as a sequence of events,
+which include bot actions that were executed, intents that were detected, and slots that were set.
+Markers allow you to describe conditions over such events. When the conditions are met, the relevant events are marked for further analysis or inspection.
+
+There are several downstream applications for Markers. For example, they can be used to define and measure your bot's **Key Performance Indicators (KPIs)**,
+such as **dialogue completion** or **task success**. Take [Carbon Bot](https://rasa.com/blog/using-conversation-tags-to-measure-carbon-bots-success-rate/)
+for example, which helps users offset their carbon emissions from flying. For Carbon Bot, you can define dialogue completion as "all mandatory slots have been filled",
+and task success as "all mandatory slots have been filled and a carbon estimate has been successfully computed".
+Marking when these important events occur allows you to measure Carbon Bot's success rate.
+
+Markers also allow you to **diagnose your dialogues** by surfacing important events for further inspection.
+For example, you might observe that Carbon Bot tends to successfully set the `travel_departure` and `travel_destination` slots,
+but fails to set the `travel_flight_class` slot. You can define a marker to quantify how often this behavior occurs
+and surface relevant dialogues for review as part of
+[Conversation Driven Development (CDD)](./conversation-driven-development.mdx).
+
+Marker definitions are written in `YAML` in a marker configuration file. For example, here are the markers that define dialogue completion and task success for Carbon Bot:
+
+```yaml
+marker_dialogue_completion:
+  and:
+    - slot_was_set: travel_departure
+    - slot_was_set: travel_destination
+    - slot_was_set: travel_flight_class
+
+marker_task_success:
+  description: "Measure task success where all required slots are set and the custom action was triggered"
+  and:
+    - slot_was_set: travel_departure
+    - slot_was_set: travel_destination
+    - slot_was_set: travel_flight_class
+    - action: provide_carbon_estimate
+```
+
+And here is the marker for surfacing dialogues where all mandatory slots are set except `travel_flight_class`:
+
+```yaml
+marker_dialogue_mandatory_slot_failure:
+  and:
+    - slot_was_set: travel_departure
+    - slot_was_set: travel_destination
+    - not:
+      - slot_was_set: travel_flight_class
+```
+
+The next sections explain how to write marker definitions, how to apply them to your existing dialogues, and what the output format looks like.
+
+## Defining Markers
+
+Markers should be defined in a marker configuration file written in `YAML`.
+Each marker should have a **unique identifier**, and consists of at least one **event condition**.
+Markers can also contain **operators**, which allow you to express more nuanced behavior or
+combine event conditions.
+
+Consider the following marker definition:
+```yaml
+marker_mood_expressed:
+  description: "Mood expressed was either unhappy or great"
+  or:
+    - intent: mood_unhappy
+    - intent: mood_great
+```
+The unique marker identifier is `marker_mood_expressed`. This marker definition contains one operator `or`,
+and two event conditions `intent: mood_unhappy` and `intent: mood_great`.
+
+This markers will be true at every point in the dialogue where the user
+expressed either a `mood_unhappy` or a `mood_great`. More precisely, the marker will be true for every event
+which is a `UserUttered()` with the `intent` equal to `mood_unhappy` or a `mood_great`.
+
+### Event Conditions
+
+The following event condition labels are supported:
+
+- `action`: the specified bot action was executed.
+- `intent`: the specified user intent was detected.
+- `slot_was_set`: the specified slot was set.
+
+The negated forms of the labels are also supported:
+
+- `not_action`: the event is not the specified bot action.
+- `not_intent`: the event is not the specified user intent.
+- `slot_was_not_set`: the specified slot has not been set.
+
+### Operators
+
+The following operators are supported:
+
+- `and`: all listed conditions applied.
+- `or`: any of the listed conditions applied.
+- `not`: the condition did not apply. This operator only accepts 1 condition.
+- `seq`: the list of conditions applied in the specified order, with any number of events occurring in-between.
+- `at_least_once`: the listed marker definitions occurred at least once. Only the first occurrence will be marked.
+- `never`: the listed marker definitions never occurred.
+
+### Marker Configuration
+
+Here is an example of a marker configuration file containing several marker definitions. The example is created for mood bot,
+with a new slot `name` to illustrate the use of the label `slot_was_set`:
+
+```yaml
+marker_name_provided:
+  description: "slot `name` was provided"
+  slot_was_set: name
+
+marker_mood_expressed:
+  or:
+    - intent: mood_unhappy
+    - intent: mood_great
+
+marker_cheer_up_failed:
+  seq:
+    - intent: mood_unhappy
+    - action: utter_cheer_up
+    - action: utter_did_that_help
+    - intent: deny
+
+marker_bot_not_challenged:
+  description: "Example of a negated marker, it can be used to surface conversations without bot_challenge intent"
+  never:
+    - intent: bot_challenge
+
+marker_cheer_up_attempted:
+  at_least_once:
+    - action: utter_cheer_up
+
+marker_mood_expressed_and_name_not_provided:
+  and:
+    - or:
+      - intent: mood_unhappy
+      - intent: mood_great
+    - not:
+      - slot_was_set: name
+```
+Note the following:
+
+- Each marker has a unique identifier (or name) such as `marker_name_provided`.
+
+- Each marker can have an optional `description` key that can be used for documentation.
+
+- A marker definition can contain a single condition, as shown in `marker_name_provided`.
+
+- A marker definition can contain a single operator with a list of conditions, as shown in `marker_mood_expressed`,
+`marker_cheer_up_failed`, `marker_bot_not_challenged`, and `marker_cheer_up_attempted`.
+
+- A marker definition can contain nested operators, as shown in `marker_mood_expressed_and_name_not_provided`.
+
+- The values assigned to event conditions must be valid according to your bot's `domain.yml` file. For example, in
+`marker_mood_expressed`, the intents `mood_unhappy` and `mood_unhappy` are both intents listed in the mood bot's `domain.yml` file.
+
+:::note
+You cannot reuse an existing marker name in the definition of another marker.
+:::
+
+## Extracting Markers
+
+:::info
+
+Rasa Pro supports real-time processing of markers, Read more about [Real-Time Markers](monitoring/analytics/realtime-markers.mdx)
+
+:::
+
+Markers are extracted from dialogues already stored in a tracker store. To learn how to store interactions with your bot in a tracker store,
+read the [Tracker Store](./tracker-stores.mdx) page.
+
+Once you've created your marker definitions in the marker configuration file, and have stored some dialogues in your tracker store,
+you can apply your markers to your trackers by running the following command:
+
+```bash
+rasa evaluate markers all --config markers.yml extracted_markers.csv
+```
+This script will process the marker definitions you provide in the marker configuration file: `markers.yml`.
+The script will output the extracted markers in the specified output file: `extracted_markers.csv`.
+It will also produce two summary statistics files. The format of the output files are described in the next section.
+
+By default, the script will validate your marker definitions against your bot's `domain.yml` file. To specify a different
+domain file, use the optional `--domain` argument.
+
+By default, the script will process the tracker store in your bot's `endpoint.yml`. However, you can specify a different
+endpoint file using the optional `--endpoint` argument.
+
+Three different tracker loading strategies are supported: `all`, `sample_n`, and `first_n`. The option `all` will process
+all the trackers in your tracker store. The other two strategies process a subset of `N` trackers, either sequentially
+(by using `first_n`), or by sampling uniformly without replacement (using `sample_n`). The sampling strategy also allows you to set the random seed.
+For more information on the usage of each strategy, type the following command, replacing `<strategy>` with one of: `all`, `first_n`, and `sample_n`:
+```bash
+rasa evaluate markers <strategy> --help
+```
+
+:::note
+Each tracker in the tracker store can contain multiple sessions. The script will process each session separately, indexing them by `session_idx`.
+:::
+The next two sections describe the formats of the extracted markers and computed statistics.
+
+
+### Extracted Markers
+
+For each marker defined in your marker configuration file, the following information is extracted:
+1. **The index of the event** at which the marker applied.
+2. **The number of user turns preceding the event** at which the marker applied. Each `UserUttered` event is treated as a user turn.
+
+The **index of the event** and the **number of preceding user turns** both give an indication of how
+long it took to reach an important event, such as task success.
+The index of the event will count all events, including ones that are not part of the dialogue,
+such as starting a new session or executing a custom action.
+The number of preceding user turns, on the other hand, gives you a more intuitive indication of the dialogue length,
+and in particular from the perspective of your end user.
+
+The number of preceding user turns can be used to evaluate and improve your bot.
+For example, suppose a user had to rephrase their utterances multiple times, which caused their dialogue to become longer.
+The dialogue may eventually reach task success, however, surfacing it would allow you identify utterances that your bot failed to understand.
+You can then use these challenging utterances as additional training data to further improve your bot as part of
+[Conversation Driven Development (CDD)](./conversation-driven-development.mdx).
+
+:::note
+For markers defined using the `at_least_once` operator, the information above will only be extracted for the first occurrence.
+:::
+
+The extracted markers are stored in a tabular format in the `.csv` file you specify in the script, for example, `extracted_markers.csv`.
+The extracted markers output file contains the following columns:
+
+- `sender_id`: taken from the trackers.
+- `session_idx`: an integer indexing sessions, starting with `0`.
+- `marker`: the unique marker identifier.
+- `event_idx`: an integer indexing events, starting with `0`.
+- `num_preceding_user_turns`: an integer indicating the number of user turns preceding the event at which the marker applied.
+
+Here is an example of the extracted markers output file (for a marker configuration file containing two markers: `marker_mood_expressed` and `marker_cheer_up_failed`):
+
+```
+sender_id,session_idx,marker,event_idx,num_preceding_user_turns
+3c1afa1ed72c4116ba6670a1668f1b4a,0,marker_mood_expressed,2,0
+4d55093e9696452c8d1157fa33fd54b2,0,marker_mood_expressed,7,1
+4d55093e9696452c8d1157fa33fd54b2,0,marker_cheer_up_failed,14,2
+c00b3de97713427d85524c4374125db1,0,marker_mood_expressed,2,0
+```
+Each row represents an occurrence of the marker specified under the `marker` column, for each `sender_id` and `session_idx`.
+
+### Computed Statistics
+
+By default, the command computes summary statistics about the information gathered. To disable the statistics computation, use the optional flag `--no-stats`.
+
+The script computes the following statistics:
+
+1. **For each session and each marker**: "per-session statistics" which include the arithmetic mean, median, minimum, and maximum number of user turns preceding the event at which the marker applied.
+2. **For all sessions and for each marker**:
+    1. Overall statistics including the arithmetic mean, median, minimum, and maximum number of user turns preceding the event where the marker applied in any session.
+    2. The number of sessions and the percentage of sessions where each marker applied at least once.
+
+The results are stored in a tabular format in `stats-overall.csv` and `stats-per-session.csv`. You can change prefix `stats` in the file names using the optional argument `--stats-file-prefix `.
+For example, the following script will produce the files: `my-statistics-overall.csv` and `my-statistics-per-session.csv`:
+```bash
+rasa evaluate markers all --stats-file-prefix "my-statistics" extracted_markers.csv
+```
+
+The two statistics files contain the following columns:
+
+- `sender_id`: taken from the trackers. If the statistic is computed over all sessions this will be equal to `all`.
+- `session_idx`: an integer indexing sessions, starting with `0`. If the statistic is computed over all sessions, this will be equal to `nan` (not a number).
+- `marker`: the unique marker identifier.
+- `statistic`: a description of the statistic computed.
+- `value`: an integer or float value of the computed statistic. If the statistic is not available then `value` will be equal to `nan` (not a number).
+
+Here is a sample `stats-per-session.csv` output:
+```
+sender_id,session_idx,marker,statistic,value
+3c1afa1ed72c4116ba6670a1668f1b4a,0,marker_cheer_up_failed,count(number of preceding user turns),0
+4d55093e9696452c8d1157fa33fd54b2,0,marker_cheer_up_failed,count(number of preceding user turns),1
+c00b3de97713427d85524c4374125db1,0,marker_cheer_up_failed,count(number of preceding user turns),0
+3c1afa1ed72c4116ba6670a1668f1b4a,0,marker_cheer_up_failed,max(number of preceding user turns),nan
+4d55093e9696452c8d1157fa33fd54b2,0,marker_cheer_up_failed,max(number of preceding user turns),2
+c00b3de97713427d85524c4374125db1,0,marker_cheer_up_failed,max(number of preceding user turns),nan
+3c1afa1ed72c4116ba6670a1668f1b4a,0,marker_cheer_up_failed,mean(number of preceding user turns),nan
+4d55093e9696452c8d1157fa33fd54b2,0,marker_cheer_up_failed,mean(number of preceding user turns),2.0
+c00b3de97713427d85524c4374125db1,0,marker_cheer_up_failed,mean(number of preceding user turns),nan
+3c1afa1ed72c4116ba6670a1668f1b4a,0,marker_cheer_up_failed,median(number of preceding user turns),nan
+4d55093e9696452c8d1157fa33fd54b2,0,marker_cheer_up_failed,median(number of preceding user turns),2.0
+c00b3de97713427d85524c4374125db1,0,marker_cheer_up_failed,median(number of preceding user turns),nan
+3c1afa1ed72c4116ba6670a1668f1b4a,0,marker_cheer_up_failed,min(number of preceding user turns),nan
+4d55093e9696452c8d1157fa33fd54b2,0,marker_cheer_up_failed,min(number of preceding user turns),2
+c00b3de97713427d85524c4374125db1,0,marker_cheer_up_failed,min(number of preceding user turns),nan
+3c1afa1ed72c4116ba6670a1668f1b4a,0,marker_mood_expressed,count(number of preceding user turns),1
+4d55093e9696452c8d1157fa33fd54b2,0,marker_mood_expressed,count(number of preceding user turns),1
+c00b3de97713427d85524c4374125db1,0,marker_mood_expressed,count(number of preceding user turns),1
+3c1afa1ed72c4116ba6670a1668f1b4a,0,marker_mood_expressed,max(number of preceding user turns),0
+4d55093e9696452c8d1157fa33fd54b2,0,marker_mood_expressed,max(number of preceding user turns),1
+c00b3de97713427d85524c4374125db1,0,marker_mood_expressed,max(number of preceding user turns),0
+3c1afa1ed72c4116ba6670a1668f1b4a,0,marker_mood_expressed,mean(number of preceding user turns),0.0
+4d55093e9696452c8d1157fa33fd54b2,0,marker_mood_expressed,mean(number of preceding user turns),1.0
+c00b3de97713427d85524c4374125db1,0,marker_mood_expressed,mean(number of preceding user turns),0.0
+3c1afa1ed72c4116ba6670a1668f1b4a,0,marker_mood_expressed,median(number of preceding user turns),0.0
+4d55093e9696452c8d1157fa33fd54b2,0,marker_mood_expressed,median(number of preceding user turns),1.0
+c00b3de97713427d85524c4374125db1,0,marker_mood_expressed,median(number of preceding user turns),0.0
+3c1afa1ed72c4116ba6670a1668f1b4a,0,marker_mood_expressed,min(number of preceding user turns),0
+4d55093e9696452c8d1157fa33fd54b2,0,marker_mood_expressed,min(number of preceding user turns),1
+c00b3de97713427d85524c4374125db1,0,marker_mood_expressed,min(number of preceding user turns),0
+```
+Note that the value for unavailable statistics is `nan`. For example, because `marker_cheer_up_failed` never occurred in
+ tracker `3c1afa1ed72c4116ba6670a1668f1b4a` session `0`, then the `min`, `max`, `median`, and `mean` number of preceding user turns
+ are equal to `nan`.
+
+Here is a sample `stats-overall.csv` output:
+```
+sender_id,session_idx,marker,statistic,value
+all,nan,-,total_number_of_sessions,3
+all,nan,marker_cheer_up_failed,number_of_sessions_where_marker_applied_at_least_once,1
+all,nan,marker_cheer_up_failed,percentage_of_sessions_where_marker_applied_at_least_once,33.333
+all,nan,marker_mood_expressed,number_of_sessions_where_marker_applied_at_least_once,3
+all,nan,marker_mood_expressed,percentage_of_sessions_where_marker_applied_at_least_once,100.0
+all,nan,marker_cheer_up_failed,count(number of preceding user turns),1
+all,nan,marker_cheer_up_failed,mean(number of preceding user turns),2.0
+all,nan,marker_cheer_up_failed,median(number of preceding user turns),2.0
+all,nan,marker_cheer_up_failed,min(number of preceding user turns),2
+all,nan,marker_cheer_up_failed,max(number of preceding user turns),2
+all,nan,marker_mood_expressed,count(number of preceding user turns),3
+all,nan,marker_mood_expressed,mean(number of preceding user turns),0.333
+all,nan,marker_mood_expressed,median(number of preceding user turns),0.0
+all,nan,marker_mood_expressed,min(number of preceding user turns),0
+all,nan,marker_mood_expressed,max(number of preceding user turns),1
+```
+Note that because each row computes a statistic over all sessions, the `sender_id` is equal to `all`,
+and the `session_idx` is equal to `nan`.
+
+## Configuring the CLI command
+
+Visit our [CLI page](./command-line-interface.mdx#rasa-evaluate-markers) for more information on configuring the marker extraction and statistics computation process.

@@ -1,0 +1,139 @@
+---
+id: sdk-tracker
+sidebar_label: Tracker
+title: Tracker
+---
+
+The `Tracker` class represents a Rasa conversation tracker. 
+It lets you access your bot's memory in your custom
+actions. You can get information about past events and the current state of the
+conversation through `Tracker` attributes and methods.
+
+
+## Attributes
+
+The following are available as attributes of a `Tracker` object:
+
+* `sender_id` - The unique ID of person talking to the bot.
+
+* `slots` - The list of slots that can be filled as defined in the
+  “ref”domains.
+
+* `latest_message` - A dictionary containing the attributes of the latest
+  message: `intent`, `entities` and `text`.
+
+* `events` - A list of all previous events.
+
+* `active_loop` - The name of the currently active loop.
+
+* `latest_action_name` - The name of the last action the bot executed.
+
+## Methods
+
+The available methods from the `Tracker` are:
+
+### Tracker.current_state
+
+Return the current tracker state as an object.
+
+  * **Return type**
+
+  `Dict[str, Any]`
+
+
+### Tracker.is_paused
+
+State whether the tracker is currently paused.
+
+  * **Return type**
+
+  `bool`
+
+
+### Tracker.get_latest_entity_values
+
+Get entity values found for the passed entity type and optional role and
+group in latest message.
+If you are only interested in the first entity of a given type use:
+
+```python
+next(tracker.get_latest_entity_values(“my_entity_name”), None)
+```
+
+If no entity is found, then `None` is the default result.
+
+
+  * **Parameters**
+
+    * `entity_type` – the entity type of interest
+
+    * `entity_role` – optional entity role of interest
+
+    * `entity_group` – optional entity group of interest
+
+
+
+  * **Returns**
+
+  List of entity values.
+
+
+
+  * **Return type**
+
+  `Iterator[str]`
+
+
+
+### Tracker.get_latest_input_channel
+
+Get the name of the input_channel of the latest UserUttered event
+
+
+  * **Return type**
+
+  `Optional[str]`
+
+
+
+### Tracker.events_after_latest_restart
+
+Return a list of events after the most recent restart.
+
+
+  * **Return type**
+
+  `List[Dict]`
+
+
+
+### Tracker.get_slot
+
+  Retrieves the value of a slot.
+
+  * **Parameters**
+
+    * `key` – the name of the slot of which to retrieve the value
+
+
+  * **Return type**
+
+  `Optional[Any]`
+
+### Tracker.get_intent_of_latest_message
+
+  Retrieves the user's latest intent.
+
+  * **Parameters**
+
+    * `skip_fallback_intent` (default: `True`) – Optionally skip the `nlu_fallback` intent and return the next highest ranked.
+
+
+  * **Returns**
+
+  The intent of the latest message if available.
+
+
+  * **Return type**
+
+  `Optional[Text]`

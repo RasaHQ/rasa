@@ -1,0 +1,16 @@
+version: "3.1"
+
+intents:
+  - tell_joke
+  - bot_challenge
+
+responses:
+  utter_joke:
+    - text: "Ups, mein Ball ist umgekippt."
+
+  utter_iamabot:
+    - text: "I am a bot, powered by Rasa."
+
+session_config:
+  session_expiration_time: 60  # value in minutes
+  carry_over_slots_to_new_session: true

@@ -160,7 +160,7 @@ def ask_version() -> Text:
                 str(current_version.next_release_candidate("major")),
             ]
         version = questionary.select(
-            f"Which {version} do you want to release?", choices=choices,
+            f"Which {version} do you want to release?", choices=choices
         ).ask()
 
     if version:
@@ -175,10 +175,12 @@ def get_rasa_sdk_version() -> Text:
 
     dependencies_filename = "pyproject.toml"
     toml_data = toml.load(project_root() / dependencies_filename)
-
     try:
         sdk_version = toml_data["tool"]["poetry"]["dependencies"]["rasa-sdk"]
-        return sdk_version[1:].strip()
+        if isinstance(sdk_version, str):
+            return sdk_version[1:].strip()
+        else:
+            return sdk_version["version"][1:].strip()
     except AttributeError:
         raise Exception(f"Failed to find Rasa SDK version in {dependencies_filename}")
 
@@ -286,7 +288,8 @@ def next_version(args: argparse.Namespace) -> Version:
 def generate_changelog(version: Version) -> None:
     """Call tonwcrier and create a changelog from all available changelog entries."""
     check_call(
-        ["towncrier", "--yes", "--version", str(version)], cwd=str(project_root())
+        ["towncrier", "build", "--yes", "--version", str(version)],
+        cwd=str(project_root()),
     )
 
 

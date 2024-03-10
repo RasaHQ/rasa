@@ -12,7 +12,7 @@ import useBaseUrl from '@docusaurus/useBaseUrl';
 
 ## Overview
 
-Continous Integration (CI) is the practice of merging in code changes
+Continuous Integration (CI) is the practice of merging in code changes
 frequently and automatically testing changes as they are committed. Continuous
 Deployment (CD) means automatically deploying integrated changes to a staging
 or production environment. Together, they allow you to make more frequent improvements
@@ -22,12 +22,12 @@ This guide will cover what should go in a CI/CD pipeline, specific to a
 Rasa project. How you implement that pipeline is up to you.
 There are many CI/CD tools out there, such as [GitHub Actions](https://github.com/features/actions),
 [GitLab CI/CD](https://docs.gitlab.com/ee/ci/), [Jenkins](https://www.jenkins.io/doc/), and
-[CircleCI](https://circleci.com/docs/2.0/). We recommend choosing a tool that integrates with
+[CircleCI](https://circleci.com/docs/). We recommend choosing a tool that integrates with
 whatever Git repository you use.
 
 ## Continuous Integration (CI)
 
-The best way to improve an assistant is with frequent [incremental updates](https://rasa.com/docs/rasa-x/user-guide/fix-problems).
+The best way to improve an assistant is with frequent [incremental updates](https://rasa.com/docs/rasa-enterprise/user-guide/fix-problems).
 No matter how small a change is, you want to be sure that it doesn't introduce
 new problems or negatively impact the performance of your assistant.
 
@@ -68,7 +68,6 @@ jobs:
       - name: Rasa Train and Test GitHub Action
         uses: RasaHQ/rasa-train-test-gha@main
         with:
-          requirements_file: requirements.txt
           data_validate: true
           rasa_train: true
           cross_validation: true
@@ -110,14 +109,14 @@ succeeded.
 
 If you ran [test stories](./testing-your-assistant.mdx) in your CI pipeline,
 you'll already have a trained model. You can set up your CD pipeline to upload the trained model to your
-Rasa server if the CI results are satisfactory. For example, to upload a model to Rasa X:
+Rasa server if the CI results are satisfactory. For example, to upload a model to Rasa X/Enterprise:
 
 ```bash
 curl -k -F "model=@models/my_model.tar.gz" "https://example.rasa.com/api/projects/default/models?api_token={your_api_token}"
 ```
 
-If you are using Rasa X, you can also [tag the uploaded model](https://rasa.com/docs/rasa-x/pages/http-api/#tag/Models/paths/~1projects~1{project_id}~1models~1{model}~1tags~1{tag}/put)
-as production (or whichever deployment you want to tag if using multiple [deployment environments](https://rasa.com/docs/rasa-x/enterprise/deployment-environments/#)):
+If you are using Rasa X/Enterprise, you can also [tag the uploaded model](https://rasa.com/docs/rasa-enterprise/pages/http-api/#tag/Models/paths/~1projects~1{project_id}~1models~1{model}~1tags~1{tag}/put)
+as production (or whichever deployment you want to tag if using multiple [deployment environments](https://rasa.com/docs/rasa-enterprise/enterprise/deployment-environments/#)):
 
 ```bash
 curl -X PUT "https://example.rasa.com/api/projects/default/models/my_model/tags/production"
@@ -131,11 +130,10 @@ deploy your updated action server, so that the new model won't e.g. call
 actions that don't exist in the pre-update action server.
 :::
 
-
 ### Deploying Your Action Server
 
 You can automate
-[building and uploading a new image for your action server](./how-to-deploy.mdx#building-an-action-server-image)
+[building and uploading a new image for your action server](./deploy/deploy-action-server.mdx#building-an-action-server-image)
 to an image repository for each
 update to your action code. As noted above, be careful with
 automatically deploying a new image tag to production if the action server

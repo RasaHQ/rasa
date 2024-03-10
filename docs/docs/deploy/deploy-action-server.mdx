@@ -1,0 +1,380 @@
+---
+id: deploy-action-server
+sidebar_label: Deploy Action Server
+title: Deploy Rasa Action Server
+abstract: This page explains how to build an Action Server Image and deploy a Rasa Action Server using Helm. The second of three steps in deploying your Rasa assistant.
+---
+<!-- this file is version specific, do not use `@site/...` syntax -->
+import variables from '../variables.json';
+
+:::note
+The [Rasa Action Server chart](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa-action-server) is open source and available in the
+[helm-charts repository](https://github.com/rasahq/helm-charts).
+Please
+[create an issue](https://github.com/RasaHQ/helm-charts/issues/new) in this
+repository if you discover bugs or have suggestions for improvements.
+
+:::
+
+In the sections below you can learn how to deploy Rasa Action Server by using helm, and how to connect an Action Server deployment to a Rasa deployment.
+
+## Installation Requirements
+
+1. Check that you have installed the Kubernetes or OpenShift command line
+   interface (CLI). You can check this using the following command:
+
+   <Tabs groupId="kubernetes-dist" values={[{"label": "Kubernetes", "value": "kubernetes"}, {"label": "OpenShift", "value": "openshift"}]} defaultValue="kubernetes">
+     <TabItem value="kubernetes">
+
+     ```bash
+     kubectl version --short --client
+
+     # The output should be similar to this
+     # Client Version: v1.19.11
+     ```
+
+     </TabItem>
+     <TabItem value="openshift">
+
+     ```bash
+     oc version --client
+
+     # The output should be similar to this
+     # Client Version: 4.7.13
+     ```
+
+     </TabItem>
+   </Tabs>
+
+   If this command resulted in an error, please install the
+   [Kubernetes CLI](https://kubernetes.io/docs/tasks/tools/install-kubectl/) or the
+   [OpenShift CLI](https://docs.openshift.com/container-platform/4.7/cli_reference/openshift_cli/getting-started-cli.html#installing-openshift-cli)
+   depending on the cluster you’re using.
+
+2. Make sure that the Kubernetes / OpenShift CLI is correctly connected to
+   your cluster. You can do so by using the following commands:
+
+   <Tabs groupId="kubernetes-dist" values={[{"label": "Kubernetes", "value": "kubernetes"}, {"label": "OpenShift", "value": "openshift"}]} defaultValue="kubernetes">
+     <TabItem value="kubernetes">
+
+     ```bash
+     kubectl version --short
+
+     # The output should be similar to this
+     # Client Version: v1.19.11
+     # Server Version: v1.19.10
+     ```
+
+     </TabItem>
+     <TabItem value="openshift">
+
+     ```bash
+     oc version
+
+     # The output should be similar to this
+     # Client Version: 4.7.13
+     # Kubernetes Version: v1.20.0+df9c838
+     ```
+
+     </TabItem>
+   </Tabs>
+
+   If you get an error when executing the command, you are not connected to your
+   cluster. To get the command to connect to the cluster please consult your cluster’s
+   admin or the documentation of your cloud provider.
+
+3. Make sure you have the [Helm CLI](https://helm.sh/docs/intro/install/)
+   installed. To check this, run:
+
+   ```bash
+   helm version --short
+
+   # The output should be similar to this
+   # v3.6.0+g7f2df64
+   ```
+
+   If this command leads to an error, please install the
+   [Helm CLI](https://helm.sh/docs/intro/install/).
+
+   In case you are using a version `<3.5` of Helm, please update to Helm version
+   `>=3.5`.
+
+## 1. Installation
+
+### a. Create Namespace
+
+We recommend installing Rasa Action Server in a separate
+[namespace](https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/)
+to avoid interfering with existing cluster deployments. To create a new namespace
+run the following command:
+
+<Tabs groupId="kubernetes-dist" values={[{"label": "Kubernetes", "value": "kubernetes"}, {"label": "OpenShift", "value": "openshift"}]} defaultValue="kubernetes">
+  <TabItem value="kubernetes">
+
+  ```bash
+  kubectl create namespace <your namespace>
+  ```
+
+  </TabItem>
+  <TabItem value="openshift">
+
+  ```bash
+  oc create namespace <your namespace>
+  ```
+
+  </TabItem>
+</Tabs>
+
+### b. Deploy Rasa Action Server
+
+Run the following commands:
+
+```bash
+# Add the repository which contains the Rasa Action Server Helm chart
+helm repo add rasa https://helm.rasa.com
+
+# Deploy Rasa Action Server
+helm install \
+    --namespace <your namespace> \
+    <release name> \
+    rasa/rasa-action-server
+```
+
+
+### c. Access Rasa Action Server
+
+By default the Rasa Action Server deployment is exposed via the `rasa-action-server` (`<release name>`) service and accessible only within a Kubernetes cluster. You can get
+the IP address using this command:
+
+<Tabs groupId="kubernetes-dist" values={[{"label": "Kubernetes", "value": "kubernetes"}, {"label": "OpenShift", "value": "openshift"}]} defaultValue="kubernetes">
+  <TabItem value="kubernetes">
+
+  ```bash
+    export SERVICE_PORT=$(kubectl get --namespace <your namespace> -o jsonpath="{.spec.ports[0].port}" services <release name>)
+    kubectl port-forward --namespace <your namespace> svc/<release name> ${SERVICE_PORT}:${SERVICE_PORT} &
+  ```
+
+  </TabItem>
+  <TabItem value="openshift">
+
+  ```bash
+    export SERVICE_PORT=$(oc get --namespace <your namespace> -o jsonpath="{.spec.ports[0].port}" services <release name>)
+    oc port-forward --namespace <your namespace> svc/<release name> ${SERVICE_PORT}:${SERVICE_PORT} &
+  ```
+
+  </TabItem>
+</Tabs>
+
+You can then access the deployment on `http://127.0.0.1:${SERVICE_PORT}`
+
+:::note
+The Rasa Action Server Helm chart uses the [rasa-x-demo](https://github.com/RasaHQ/rasa-x-demo) Docker image as default. In the [Building an Action Server Image](#building-an-action-server-image)
+you can learn how to build and use your custom Action Server image.
+:::
+
+## Building an Action Server Image
+
+If you build an image that includes your action code and store it in a container registry, you can run it
+as part of your deployment, without having to move code between servers.
+In addition, you can add any additional dependencies of systems or Python libraries
+that are part of your action code but not included in the base `rasa/rasa-sdk` image.
+
+### Automating your Action Server Image Builds
+
+In addition to a manually creating a new Action Server image, you can use the [Rasa Action Server GitHub Action](https://github.com/RasaHQ/action-server-gha) to automate image builds.
+If GitHub Actions are new to you, it might be helpful to get familiar with [GitHub Actions Documentation](https://docs.github.com/en/actions).
+
+The following steps assume that you already created a GitHub repository and you have a DockerHub account.
+
+To create a workflow for building and pushing a Docker image into a DockerHub registry:
+
+1. Add GitHub Secrets with your DockerHub login name and password.
+   You can find details on how to create encrypted secrets for a repository
+   in the [Github docs](https://docs.github.com/en/actions/configuring-and-managing-workflows/creating-and-storing-encrypted-secrets#creating-encrypted-secrets-for-a-repository)
+
+   The example uses the following secrets:
+   - `DOCKER_HUB_LOGIN` - a login name for DockerHub
+   - `DOCKER_HUB_PASSWORD` - a password for DockerHub
+
+2. In your GitHub repository create a file [`.github/workflows/action_server.yml`](https://github.com/RasaHQ/action-server-gha/blob/master/examples/action_server.yml).
+
+The GitHub Action workflow below builds a new docker image every time files inside the `actions/` directory have changed and the changes are pushed into the `main` branch.
+
+```yaml
+on:
+  push:
+    branches:
+      - main
+    paths:
+    - 'actions/**'
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    name: Build Action Server image and upgrade Rasa X/Enterprise deployment
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - id: action_server
+      name: Build an action server with custom actions
+      uses: RasaHQ/action-server-gha@main
+      # Full list of parameters: https://github.com/RasaHQ/action-server-gha/tree/master#input-arguments
+      with:
+        docker_image_name: 'account_username/repository_name'
+        docker_registry_login: ${{ secrets.DOCKER_HUB_LOGIN }}
+        docker_registry_password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+        # More details about github context:
+        # https://docs.github.com/en/actions/reference/context-and-expression-syntax-for-github-actions#github-context
+        #
+        # github.sha - The commit SHA that triggered the workflow run
+        docker_image_tag: ${{ github.sha }}
+```
+
+3. Push your changes to the `main` branch. After changes are pushed, the workflow will build and push a new image into the DockerHub registry.
+
+4. Now, you can use your new brand docker image.
+
+5. You can also extend your workflow, so that you do not have to manually update your Rasa X/Enterprise deployment. The example below shows how to extend your workflow with an additional step that updates a Rasa X/Enterprise Helm Chart deployment.
+
+```yaml
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    name: Build Action Server image and upgrade Rasa X/Enterprise deployment
+    steps:
+    [..]
+
+    # This step shows only the example of output parameter usage
+    # and it's not focused on deployment itself.
+    - name: "Upgrade a Rasa Action Server deployment"
+      run: |
+        helm upgrade --install --reuse-values \
+          --set image.name=${{ steps.action_server.outputs.docker_image_name }} \
+          --set image.tag=${{ steps.action_server.outputs.docker_image_tag }} rasa-action-server rasa/rasa-action-server
+```
+
+As you can see it's possible to use output variables from the `action_server` step. The `steps.action_server.outputs.docker_image_name` variable returns
+a Docker image name and the `steps.action_server.outputs.docker_image_tag` variable returns a Docker image tag.
+
+More examples on how to use and customize [Rasa GitHub Actions](https://github.com/RasaHQ/action-server-gha) you can find in the [Rasa GitHub Actions](https://github.com/RasaHQ/action-server-gha) repository.
+
+#### Manually Building an Action Server
+
+To create your image:
+
+1. Make sure your actions are defined in `actions/actions.py`. The `rasa/rasa-sdk`
+  image will automatically look for the actions in this file.
+
+2. If your actions have any extra dependencies, create a list of them in a file,
+   `actions/requirements-actions.txt`.
+
+3. Create a file named `Dockerfile` in your project directory,
+   in which you'll extend the official SDK image, copy over your code, and add any custom dependencies (if necessary).
+   For example:
+
+   <pre><code parentName="pre" className="language-python">
+   {`# Extend the official Rasa SDK image
+   FROM rasa/rasa-sdk:${variables.rasa_sdk_version}
+
+   # Use subdirectory as working directory
+   WORKDIR /app
+
+   # Copy any additional custom requirements, if necessary (uncomment next line)
+   # COPY actions/requirements-actions.txt ./
+
+   # Change back to root user to install dependencies
+   USER root
+
+   # Install extra requirements for actions code, if necessary (uncomment next line)
+   # RUN pip install -r requirements-actions.txt
+
+   # Copy actions folder to working directory
+   COPY ./actions /app/actions
+
+   # By best practices, don't run the code with root user
+   USER 1001`}</code></pre>
+
+You can then build the image via the following command:
+
+```bash
+docker build . -t <account_username>/<repository_name>:<custom_image_tag>
+```
+
+The `<custom_image_tag>` should reference how this image will be different from others. For
+example, you could version or date your tags, as well as create different tags that have different code for production
+and development servers. You should create a new tag any time you update your code and want to re-deploy it.
+
+### Using your Custom Action Server Image
+
+If you're building this image to make it available from another server, you should push the image to a cloud repository.
+
+This documentation assumes you are pushing your images to [DockerHub](https://hub.docker.com/).
+DockerHub will let you host multiple public repositories and
+one private repository for free. Be sure to first [create an account](https://hub.docker.com/signup/)
+and [create a repository](https://hub.docker.com/signup/) to store your images. You could also push images to
+a different Docker registry, such as [Google Container Registry](https://cloud.google.com/container-registry),
+[Amazon Elastic Container Registry](https://aws.amazon.com/ecr/), or
+[Azure Container Registry](https://azure.microsoft.com/en-us/services/container-registry/).
+
+You can push the image to DockerHub via:
+
+```bash
+docker login --username <account_username> --password <account_password>
+docker push <account_username>/<repository_name>:<custom_image_tag>
+```
+
+To authenticate and push images to a different container registry, please refer to the documentation of
+your chosen container registry.
+
+
+## Setting a Custom Action Server Image
+
+In order to use a Custom Action Server image along with the Rasa Action Server deployment, you have to
+use the following values for your deployment.
+
+```yaml
+# values.yaml
+image:
+  name: "image_name"
+  tag: "image_tag"
+```
+
+then upgrade your deployment by executing the command:
+
+```text
+helm upgrade --namespace <namespace> --reuse-values \
+  -f values.yaml <release name> rasa/rasa-action-server
+```
+
+## 2. Connect Rasa Action Server to a Rasa deployment
+
+If you have deployed your assistant using the Rasa Helm chart, and you have deployed your Rasa Action Server as well.
+Now it's time to connect them together. You can do this easily by following the steps:
+
+a. Create a `rasa-values.yaml` file which will include configuration for the Rasa deployment.
+
+  ```yaml
+  # rasa-values.yaml
+  rasa-action-server:
+    external:
+      # -- Determine if external URL is used
+      enabled: true
+      # -- URL to Rasa Action Server
+      url: "http://rasa-action-server/webhook"
+  ```
+
+  The configuration above tells Rasa which Rasa Action Server to use. In the example the `http://rasa-action-server/webhook` URL is used,
+  the URL indicates that Rasa Action Server is deployed with release name `rasa-action-server`, and is located in the same namespace as Rasa server deployment.
+
+b. Upgrade the Rasa deployment
+
+  ```text
+  helm upgrade -n <namespace> --reuse-values -f rasa-values.yaml \
+    <release name> rasa/rasa
+  ```

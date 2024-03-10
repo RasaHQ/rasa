@@ -1,38 +1,84 @@
 from pathlib import Path
+import sys
+import argparse
 
 import pytest
-from typing import Callable, Dict
+from typing import Callable
+
+from _pytest.monkeypatch import MonkeyPatch
 from _pytest.pytester import RunResult
-
-
 from aioresponses import aioresponses
 
 import rasa.shared.utils.io
 from rasa.cli import x
 from rasa.utils.endpoints import EndpointConfig
 from rasa.core.utils import AvailableEndpoints
+import rasa.version
+
+from tests.cli.conftest import RASA_EXE
 
 
 def test_x_help(run: Callable[..., RunResult]):
     output = run("x", "--help")
 
-    help_text = """usage: rasa x [-h] [-v] [-vv] [--quiet] [-m MODEL] [--data DATA [DATA ...]]
-              [-c CONFIG] [-d DOMAIN] [--no-prompt] [--production]
-              [--rasa-x-port RASA_X_PORT] [--config-endpoint CONFIG_ENDPOINT]
-              [--log-file LOG_FILE] [--endpoints ENDPOINTS] [-p PORT]
-              [-t AUTH_TOKEN] [--cors [CORS [CORS ...]]] [--enable-api]
-              [--response-timeout RESPONSE_TIMEOUT]
-              [--remote-storage REMOTE_STORAGE]
-              [--ssl-certificate SSL_CERTIFICATE] [--ssl-keyfile SSL_KEYFILE]
-              [--ssl-ca-file SSL_CA_FILE] [--ssl-password SSL_PASSWORD]
-              [--credentials CREDENTIALS] [--connector CONNECTOR]
-              [--jwt-secret JWT_SECRET] [--jwt-method JWT_METHOD]"""
+    if sys.version_info.minor >= 9:
+        # This is required because `argparse` behaves differently on
+        # Python 3.9 and above. The difference is the changed formatting of help
+        # output for CLI arguments with `nargs="*"
+        version_dependent = [
+            "[-i INTERFACE]",
+            "[-p PORT]",
+            "[-t AUTH_TOKEN]",
+            "[--cors [CORS ...]]",
+            "[--enable-api]",
+            "[--response-timeout RESPONSE_TIMEOUT]",
+        ]
+    else:
+        version_dependent = [
+            "[-i INTERFACE]",
+            "[-p PORT]",
+            "[-t AUTH_TOKEN]",
+            "[--cors [CORS [CORS ...]]]",
+            "[--enable-api]",
+            "[--response-timeout RESPONSE_TIMEOUT]",
+        ]
 
-    lines = help_text.split("\n")
+    help_text = (
+        [
+            f"{RASA_EXE} x",
+            "[-h]",
+            "[-v]",
+            "[-vv]",
+            "[--quiet]",
+            "[-m MODEL]",
+            "[--no-prompt]",
+            "[--production]",
+            "[--config-endpoint CONFIG_ENDPOINT]",
+            "[--log-file LOG_FILE]",
+            "[--use-syslog]",
+            "[--syslog-address SYSLOG_ADDRESS]",
+            "[--syslog-port SYSLOG_PORT]",
+            "[--syslog-protocol SYSLOG_PROTOCOL]",
+            "[--endpoints ENDPOINTS]",
+        ]
+        + version_dependent
+        + [
+            "--remote-storage REMOTE_STORAGE]",
+            "[--ssl-certificate SSL_CERTIFICATE]",
+            "[--ssl-keyfile SSL_KEYFILE]",
+            "[--ssl-ca-file SSL_CA_FILE]",
+            "[--ssl-password SSL_PASSWORD]",
+            "[--credentials CREDENTIALS]",
+            "[--connector CONNECTOR]",
+            "[--jwt-secret JWT_SECRET]",
+            "[--jwt-method JWT_METHOD]",
+        ]
+    )
+
     # expected help text lines should appear somewhere in the output
-    printed_help = set(output.outlines)
-    for line in lines:
-        assert line in printed_help
+    printed_help = " ".join(output.outlines)
+    for item in help_text:
+        assert item in printed_help
 
 
 def test_prepare_credentials_for_rasa_x_if_rasa_channel_not_given(tmpdir: Path):
@@ -65,44 +111,6 @@ def test_prepare_credentials_if_already_valid(tmpdir: Path):
     assert actual == credentials
 
 
-def test_if_default_endpoint_config_is_valid_in_local_mode():
-    event_broker_endpoint = x._get_event_broker_endpoint(None)
-
-    assert x._is_correct_event_broker(event_broker_endpoint)
-
-
-@pytest.mark.parametrize(
-    "kwargs",
-    [
-        {"type": "mongo", "url": "mongodb://localhost:27017"},
-        {"type": "sql", "dialect": "postgresql"},
-        {"type": "sql", "dialect": "sqlite", "db": "some.db"},
-    ],
-)
-def test_if_endpoint_config_is_invalid_in_local_mode(kwargs: Dict):
-    config = EndpointConfig(**kwargs)
-    assert not x._is_correct_event_broker(config)
-
-
-def test_overwrite_model_server_url():
-    endpoint_config = EndpointConfig(url="http://testserver:5002/models/default@latest")
-    endpoints = AvailableEndpoints(model=endpoint_config)
-    x._overwrite_endpoints_for_local_x(endpoints, "test", "http://localhost")
-    assert (
-        endpoints.model.url
-        == "http://localhost/projects/default/models/tags/production"
-    )
-
-
-def test_overwrite_model_server_url_with_no_model_endpoint():
-    endpoints = AvailableEndpoints()
-    x._overwrite_endpoints_for_local_x(endpoints, "test", "http://localhost")
-    assert (
-        endpoints.model.url
-        == "http://localhost/projects/default/models/tags/production"
-    )
-
-
 def test_reuse_wait_time_between_pulls():
     test_wait_time = 5
     endpoint_config = EndpointConfig(
@@ -111,23 +119,6 @@ def test_reuse_wait_time_between_pulls():
     )
     endpoints = AvailableEndpoints(model=endpoint_config)
     assert endpoints.model.kwargs["wait_time_between_pulls"] == test_wait_time
-
-
-def test_default_wait_time_between_pulls():
-    endpoint_config = EndpointConfig(url="http://localhost:5002/models/default@latest")
-    endpoints = AvailableEndpoints(model=endpoint_config)
-    x._overwrite_endpoints_for_local_x(endpoints, "test", "http://localhost")
-    assert endpoints.model.kwargs["wait_time_between_pulls"] == 2
-
-
-def test_default_model_server_url():
-    endpoint_config = EndpointConfig()
-    endpoints = AvailableEndpoints(model=endpoint_config)
-    x._overwrite_endpoints_for_local_x(endpoints, "test", "http://localhost")
-    assert (
-        endpoints.model.url
-        == "http://localhost/projects/default/models/tags/production"
-    )
 
 
 async def test_pull_runtime_config_from_server():
@@ -152,3 +143,33 @@ async def test_pull_runtime_config_from_server():
 
         assert rasa.shared.utils.io.read_file(endpoints_path) == endpoint_config
         assert rasa.shared.utils.io.read_file(credentials_path) == credentials
+
+
+def test_rasa_x_raises_warning_and_exits_without_production_flag():
+
+    args = argparse.Namespace(loglevel=None, log_file=None, production=None)
+    with pytest.raises(SystemExit):
+        with pytest.warns(
+            UserWarning,
+            match="Running Rasa X in local mode is no longer supported as Rasa has "
+            "stopped supporting the Community Edition (free version) of ‘Rasa X’. "
+            "For more information please see "
+            "https://rasa.com/blog/rasa-x-community-edition-changes/",
+        ):
+            x.rasa_x(args)
+
+
+def test_rasa_x_does_not_raise_warning_with_production_flag(
+    monkeypatch: MonkeyPatch,
+):
+    def mock_run_in_enterprise_connection_mode(args):
+        return None
+
+    monkeypatch.setattr(
+        x, "run_in_enterprise_connection_mode", mock_run_in_enterprise_connection_mode
+    )
+
+    args = argparse.Namespace(loglevel=None, log_file=None, production=True)
+
+    with pytest.warns(None):
+        x.rasa_x(args)

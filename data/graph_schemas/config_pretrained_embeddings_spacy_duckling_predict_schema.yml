@@ -1,0 +1,129 @@
+nodes:
+  nlu_message_converter:
+    needs:
+      messages: __message__
+    uses: rasa.graph_components.converters.nlu_message_converter.NLUMessageConverter
+    constructor_name: load
+    fn: convert_user_message
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource: null
+  provide_SpacyNLP0:
+    needs: {}
+    uses: rasa.nlu.utils.spacy_utils.SpacyNLP
+    constructor_name: load
+    fn: provide
+    config:
+      model: en_core_web_md
+    eager: true
+    is_target: false
+    is_input: false
+    resource: null
+  run_SpacyNLP0:
+    needs:
+      messages: nlu_message_converter
+      model: provide_SpacyNLP0
+    uses: rasa.nlu.utils.spacy_utils.SpacyNLP
+    constructor_name: load
+    fn: process
+    config:
+      model: en_core_web_md
+    eager: true
+    is_target: false
+    is_input: false
+    resource: null
+  run_SpacyTokenizer1:
+    needs:
+      messages: run_SpacyNLP0
+    uses: rasa.nlu.tokenizers.spacy_tokenizer.SpacyTokenizer
+    constructor_name: load
+    fn: process
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource: null
+  run_RegexFeaturizer2:
+    needs:
+      messages: run_SpacyTokenizer1
+    uses: rasa.nlu.featurizers.sparse_featurizer.regex_featurizer.RegexFeaturizer
+    constructor_name: load
+    fn: process
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource:
+      name: train_RegexFeaturizer2
+  run_SpacyFeaturizer3:
+    needs:
+      messages: run_RegexFeaturizer2
+    uses: rasa.nlu.featurizers.dense_featurizer.spacy_featurizer.SpacyFeaturizer
+    constructor_name: load
+    fn: process
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource: null
+  run_CRFEntityExtractor4:
+    needs:
+      messages: run_SpacyFeaturizer3
+    uses: rasa.nlu.extractors.crf_entity_extractor.CRFEntityExtractor
+    constructor_name: load
+    fn: process
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource:
+      name: train_CRFEntityExtractor4
+  run_EntitySynonymMapper5:
+    needs:
+      messages: run_CRFEntityExtractor4
+    uses: rasa.nlu.extractors.entity_synonyms.EntitySynonymMapper
+    constructor_name: load
+    fn: process
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource:
+      name: train_EntitySynonymMapper5
+  run_SklearnIntentClassifier6:
+    needs:
+      messages: run_EntitySynonymMapper5
+    uses: rasa.nlu.classifiers.sklearn_intent_classifier.SklearnIntentClassifier
+    constructor_name: load
+    fn: process
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource:
+      name: train_SklearnIntentClassifier6
+  run_DucklingEntityExtractor7:
+    needs:
+      messages: run_SklearnIntentClassifier6
+    uses: rasa.nlu.extractors.duckling_entity_extractor.DucklingEntityExtractor
+    constructor_name: load
+    fn: process
+    config:
+      url: http://duckling:8000
+    eager: true
+    is_target: false
+    is_input: false
+    resource: null
+  run_RegexMessageHandler:
+    needs:
+      messages: run_DucklingEntityExtractor7
+    uses: rasa.nlu.classifiers.regex_message_handler.RegexMessageHandler
+    constructor_name: load
+    fn: process
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource: null

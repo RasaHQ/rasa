@@ -117,13 +117,16 @@ class YamlValidationException(YamlException, ValueError):
         return self._line_number_for_path(current, tail) or this_line
 
 
-def validate_yaml_schema(yaml_file_content: Text, schema_path: Text) -> None:
-    """
-    Validate yaml content.
+def validate_yaml_schema(
+    yaml_file_content: Text, schema_path: Text, package_name: Text = PACKAGE_NAME
+) -> None:
+    """Validate yaml content.
 
     Args:
         yaml_file_content: the content of the yaml file to be validated
         schema_path: the schema of the yaml file
+        package_name: the name of the package the schema is located in. defaults
+            to `rasa`.
     """
     from pykwalify.core import Core
     from pykwalify.errors import SchemaError
@@ -146,7 +149,7 @@ def validate_yaml_schema(yaml_file_content: Text, schema_path: Text) -> None:
     except (YAMLError, DuplicateKeyError) as e:
         raise YamlSyntaxException(underlying_yaml_exception=e)
 
-    schema_file = pkg_resources.resource_filename(PACKAGE_NAME, schema_path)
+    schema_file = pkg_resources.resource_filename(package_name, schema_path)
     schema_utils_file = pkg_resources.resource_filename(
         PACKAGE_NAME, RESPONSES_SCHEMA_FILE
     )
@@ -217,7 +220,6 @@ def validate_training_data_format_version(
         `True` if the file can be processed by current version of Rasa Open Source,
         `False` otherwise.
     """
-
     if filename:
         filename = os.path.abspath(filename)
 
@@ -242,18 +244,36 @@ def validate_training_data_format_version(
         return True
 
     try:
+        if isinstance(version_value, str):
+            version_value = version_value.strip("\"'")
         parsed_version = version.parse(version_value)
+        latest_version = version.parse(LATEST_TRAINING_DATA_FORMAT_VERSION)
+
         if isinstance(parsed_version, LegacyVersion):
             raise TypeError
 
-        if version.parse(LATEST_TRAINING_DATA_FORMAT_VERSION) >= parsed_version:
+        if parsed_version < latest_version:
+            rasa.shared.utils.io.raise_warning(
+                f"Training data file {filename} has a lower "
+                f"format version than your Rasa Open Source installation: "
+                f"{version_value} < {LATEST_TRAINING_DATA_FORMAT_VERSION}. "
+                f"Rasa Open Source will read the file as a version "
+                f"{LATEST_TRAINING_DATA_FORMAT_VERSION} file. "
+                f"Please update your version key to "
+                f"{LATEST_TRAINING_DATA_FORMAT_VERSION}. "
+                f"See {DOCS_URL_TRAINING_DATA}."
+            )
+
+        if latest_version >= parsed_version:
+
             return True
 
     except TypeError:
         rasa.shared.utils.io.raise_warning(
             f"Training data file {filename} must specify "
             f"'{KEY_TRAINING_DATA_FORMAT_VERSION}' as string, for example:\n"
-            f"{KEY_TRAINING_DATA_FORMAT_VERSION}: '{LATEST_TRAINING_DATA_FORMAT_VERSION}'\n"
+            f"{KEY_TRAINING_DATA_FORMAT_VERSION}: "
+            f"'{LATEST_TRAINING_DATA_FORMAT_VERSION}'\n"
             f"Rasa Open Source will read the file as a "
             f"version '{LATEST_TRAINING_DATA_FORMAT_VERSION}' file.",
             docs=DOCS_URL_TRAINING_DATA,

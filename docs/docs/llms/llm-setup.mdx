@@ -1,0 +1,358 @@
+---
+id: llm-setup
+sidebar_label: Setting up LLMs
+title: Setting up LLMs
+abstract: |
+  Instructions on how to setup and configure Large Language Models from
+  OpenAI, Cohere, and other providers.
+  Here you'll learn what you need to configure and how you can customize LLMs to work
+  efficiently with your specific use case.
+---
+
+import RasaProLabel from "@theme/RasaProLabel";
+import RasaLabsLabel from "@theme/RasaLabsLabel";
+import RasaLabsBanner from "@theme/RasaLabsBanner";
+
+<RasaProLabel />
+
+<RasaLabsLabel />
+
+<RasaLabsBanner version="3.7.0b1" />
+
+## Overview
+
+This guide will walk you through the process of configuring Rasa to use OpenAI
+LLMs, including deployments that rely on the Azure OpenAI service.
+Instructions for other LLM providers are further down the page. 
+
+
+## Prerequisites
+
+Before beginning, make sure that you have:
+
+- Access to OpenAI's services
+- Ability to generate API keys for OpenAI
+
+## Configuration
+
+Configuring LLMs to work with OpenAI involves several steps. The following
+sub-sections outline each of these steps and what you need to do.
+
+### API Token
+
+The API token is a key element that allows your Rasa instance to connect and
+communicate with OpenAI. This needs to be configured correctly to ensure seamless
+interaction between the two.
+
+To configure the API token, follow these steps:
+
+1. If you haven't already, sign up for an account on the OpenAI platform.
+
+2. Navigate to the OpenAI Key Management page,
+   and click on the "Create New Secret Key" button to initiate the process of
+   obtaining your API key.
+
+3. To set the API key as an environment variable, you can use the following command in a
+   terminal or command prompt:
+
+   <Tabs groupId="os-dist-api-key" values={[{"label": "Linux/MacOS", "value": "unix"}, {"label": "Windows", "value": "windows"}]} defaultValue="unix">
+     <TabItem value="unix">
+
+     ```shell
+     export OPENAI_API_KEY=<your-api-key>
+     ```
+
+     </TabItem>
+     <TabItem value="windows">
+
+      ```shell
+      setx OPENAI_API_KEY <your-api-key>
+      ```
+
+      This will apply to future cmd prompt window, so you will need to open a new one to use that variable
+
+     </TabItem>
+   </Tabs>
+
+   Replace `<your-api-key>` with the actual API key you obtained from the OpenAI platform.
+
+### Model Configuration
+
+Rasa allow you to use different models for different components. For example,
+you might use one model for intent classification and another for rephrasing.
+
+To configure models per component, follow these steps described on the
+pages for each component:
+
+1. [Instructions to configure models for intent classification](./llm-intent.mdx)
+2. [Instructions to configure models for rephrasing](./llm-nlg.mdx)
+
+### Additional Configuration for Azure OpenAI Service
+
+For those using Azure OpenAI Service, there are additional parameters that need
+to be configured:
+
+- `openai.api_type`: This should be set to "azure" to indicate the use of Azure
+  OpenAI Service.
+- `openai.api_base`: This should be the URL for your Azure OpenAI instance. An
+  example might look like this: "https://docs-test-001.openai.azure.com/".
+
+
+To configure these parameters, follow these steps:
+
+1. To configure the `openai.api_type` as an environment variable:
+
+   <Tabs groupId="os-dist-api-type" values={[{"label": "Linux/MacOS", "value": "unix"}, {"label": "Windows", "value": "windows"}]} defaultValue="unix">
+     <TabItem value="unix">
+
+     ```shell
+     export OPENAI_API_TYPE="azure"
+     ```
+
+     </TabItem>
+     <TabItem value="windows">
+
+      ```shell
+      setx OPENAI_API_TYPE "azure"
+      ```
+
+      This will apply to future cmd prompt window, so you will need to open a new one to use that variable
+
+     </TabItem>
+   </Tabs>
+
+2. To configure the `openai.api_base` as an environment variable:
+
+   <Tabs groupId="os-dist-api-base" values={[{"label": "Linux/MacOS", "value": "unix"}, {"label": "Windows", "value": "windows"}]} defaultValue="unix">
+     <TabItem value="unix">
+
+      ```shell
+      export OPENAI_API_BASE=<your-azure-openai-instance-url>
+      ```
+
+     </TabItem>
+     <TabItem value="windows">
+
+      ```shell
+      setx OPENAI_API_BASE <your-azure-openai-instance-url>
+      ```
+
+      This will apply to future cmd prompt window, so you will need to open a new one to use that variable
+
+     </TabItem>
+   </Tabs>
+
+
+## Other LLMs & Embeddings
+
+The LLM and embeddings provider can be configured separately for each 
+component. All components default to using OpenAI.
+
+:::important
+
+If you switch to a different LLM / embedding provider, you need to go through 
+additional installation and setup. Please note the mentioned
+additional requirements for each provider in their respective section.
+
+:::
+
+:::caution
+
+We are currently working on adding support for other LLM providers. We support
+configuring alternative LLM and embedding providers, but we have tested the 
+functionality with OpenAI only. 
+
+:::
+
+### Configuring an LLM provider
+The LLM provider can be configured using the `llm` property of each component. 
+The `llm.type` property specifies the LLM provider to use.
+
+```yaml title="config.yml"
+pipeline:
+  - name: "rasa_plus.ml.LLMIntentClassifier"
+    llm:
+      type: "cohere"
+```
+
+The above configuration specifies that the [LLMIntentClassifier](./llm-intent.mdx)
+should use the [Cohere](https://cohere.ai/) LLM provider rather than OpenAI.
+
+The following LLM providers are supported:
+
+#### OpenAI
+Default LLM provider. Requires the `OPENAI_API_KEY` environment variable to be set.
+The model cam be configured as an optional parameter
+
+```yaml
+llm:
+  type: "openai"
+  model_name: "text-davinci-003"
+  temperature: 0.7
+```
+
+
+#### Cohere
+
+Support for Cohere needs to be installed, e.g. using `pip install cohere`.
+Additionally, requires the `COHERE_API_KEY` environment variable to be set.
+
+```yaml
+llm:
+  type: "cohere"
+  model: "gptd-instruct-tft"
+  temperature: 0.7
+```
+
+#### Vertex AI
+
+To use Vertex AI you need to install `pip install google-cloud-aiplatform` 
+The credentials for Vertex AI can be configured as described in the 
+[google auth documentation](https://googleapis.dev/python/google-auth/latest/reference/google.auth.html#module-google.auth).
+
+```yaml
+llm:
+  type: "vertexai"
+  model_name: "text-bison"
+  temperature: 0.7
+```
+
+#### Hugging Face Hub
+
+The Hugging Face Hub LLM uses models from Hugging Face.
+It requires additional packages to be installed: `pip install huggingface_hub`.
+The environment variable `HUGGINGFACEHUB_API_TOKEN` needs to be set to a 
+valid API token.
+
+```yaml
+llm:
+  type: "huggingface_hub"
+  repo_id: "gpt2"
+  task: "text-generation"
+```
+
+#### llama-cpp
+
+To use the llama-cpp language model, you should install the required python library
+`pip install llama-cpp-python`. A path to the Llama model must be provided.
+For more details, check out the [llama-cpp project]( 
+https://github.com/abetlen/llama-cpp-python).
+
+```yaml
+llm:
+  type: "llamacpp"
+  model_path: "/path/to/model.bin"
+  temperature: 0.7
+```
+
+#### Other LLM providers
+
+If you want to use a different LLM provider, you can specify the name of the
+provider in the `llm.type` property accoring to [this mapping](https://github.com/hwchase17/langchain/blob/ecee4d6e9268d71322bbf31fd16c228be304d45d/langchain/llms/__init__.py#L110). 
+
+### Configuring an embeddings provider
+The embeddings provider can be configured using the `embeddings` property of each
+component. The `embeddings.type` property specifies the embeddings provider to use.
+
+```yaml title="config.yml"
+pipeline:
+  - name: "rasa_plus.ml.LLMIntentClassifier"
+    embeddings:
+      type: "cohere"
+```
+
+The above configuration specifies that the [LLMIntentClassifier](./llm-intent.mdx)
+should use the [Cohere](https://cohere.ai/) embeddings provider rather than OpenAI.
+
+:::note Only Some Components need Embeddings
+
+Not every component uses embeddings. For example, the 
+[LLMResponseRephraser](./llm-nlg.mdx) component does not use embeddings. 
+For these components, no `embeddings` property is needed.
+
+:::
+
+The following embeddings providers are supported:
+
+#### OpenAI
+Default embeddings. Requires the `OPENAI_API_KEY` environment variable to be set.
+The model cam be configured as an optional parameter
+
+```yaml
+embeddings:
+  type: "openai"
+  model: "text-embedding-ada-002"
+```
+
+#### Cohere
+
+Embeddings from [Cohere](https://cohere.ai/). Requires the python package
+for cohere to be installed, e.g. uing `pip install cohere`. The 
+`COHERE_API_KEY` environment variable must be set. The model 
+can be configured as an optional parameter.
+
+```yaml
+embeddings:
+  type: "cohere"
+  model: "embed-english-v2.0"
+```
+
+#### spaCy
+
+The spacy embeddings provider uses `en_core_web_sm` model to generate 
+embeddings. The model needs to be installed separately, e.g. using
+`python -m spacy download en_core_web_sm`.
+
+```yaml
+embeddings:
+  type: "spacy"
+```
+
+#### Vertex AI
+
+To use Vertex AI you need to install `pip install google-cloud-aiplatform` 
+The credentials for Vertex AI can be configured as described in the 
+[google auth documentation](https://googleapis.dev/python/google-auth/latest/reference/google.auth.html#module-google.auth).
+
+```yaml
+embeddings:
+  type: "vertexai"
+  model_name: "textembedding-gecko"
+```
+
+#### Hugging Face Instruct
+
+The Hugging Face Instruct embeddings provider uses sentence transformers
+and requires additional packages to be installed: `pip install sentence_transformers InstructorEmbedding`
+
+```yaml
+embeddings:
+  type: "huggingface_instruct"
+  model_name: "hkunlp/instructor-large"
+```
+
+#### Hugging Face Hub
+
+The Hugging Face Hub embeddings provider uses models from Hugging Face.
+It requires additional packages to be installed: `pip install huggingface_hub`.
+The environment variable `HUGGINGFACEHUB_API_TOKEN` needs to be set to a 
+valid API token.
+
+```yaml
+embeddings:
+  type: "huggingface_hub"
+  repo_id: "sentence-transformers/all-mpnet-base-v2"
+  task: "feature-extraction"
+```
+
+#### llama-cpp
+To use the llama-cpp embeddings, you should install the required python library
+`pip install llama-cpp-python`. A path to the Llama model must be provided.
+For more details, check out the [llama-cpp project]( 
+https://github.com/abetlen/llama-cpp-python).
+
+```yaml
+embeddings:
+  type: "llamacpp"
+  model_path: "/path/to/model.bin"
+```

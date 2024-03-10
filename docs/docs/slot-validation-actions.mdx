@@ -1,0 +1,48 @@
+---
+id: slot-validation-actions
+sidebar_label: Slot Validation Actions
+title: Slot Validation Actions
+abstract: A slot validation action is a special type of custom action, designed to handle custom extraction and/or validation of slot values. This can be used to validate slots with predefined mappings or extract slots with custom mappings.
+---
+
+You can do custom extraction and validation of slot values by writing custom actions in three different ways.
+
+## `action_validate_slot_mappings`
+
+You can use the `action_validate_slot_mappings` action to define custom extraction and / or validation of slots that
+can be set or updated outside of a form context.
+
+This action is called automatically at the end of the default action [`action_extract_slots`](./default-actions.mdx#action_extract_slots),
+so the name must not be changed. If you are using Rasa SDK, you should extend the Rasa SDK [`ValidationAction` class](./action-server/validation-action.mdx#how-to-subclass-validationaction).
+If you are using a different action server, you will need to implement an action class with equivalent functionality to
+the Rasa SDK class. Please see [the action server docs](./action-server/validation-action.mdx#validationaction-class-implementation) for details.
+
+With this option, you do not need to specify the `action` key in the [custom slot mapping](./domain.mdx#custom-slot-mappings),
+since the default action [`action_extract_slots`](./default-actions.mdx#action_extract_slots) runs `action_validate_slot_mappings`
+automatically if present in the `actions` section of the domain.
+
+## `validate_<form name>`
+
+Custom actions named `validate_<form name>` will run automatically if the form it specifies in its name is activated.
+If you are using Rasa SDK, the custom action should inherit from the Rasa SDK [`FormValidationAction` class](./action-server/validation-action.mdx#formvalidationaction-class).
+If you are not using Rasa SDK, you will need to implement an action or action class with equivalent functionality to the
+`FormValidationClass` in your custom action server. Please see [the action server docs](./action-server/validation-action.mdx#formvalidationaction-class-implementation) for details.
+
+## Regular Custom Action
+
+You can use a regular custom action [custom action](./custom-actions.mdx) that returns [`slot`](./action-server/events.mdx#slot)
+events for custom slot extraction. Use this option if neither [`action_validate_slot_mappings`](#action_validate_slot_mappings) or
+[`validate_<form name>`](#validate_form-name) meet your needs.
+For example, if you want to reuse the same custom action explicitly in a story or rule, you should use a regular custom
+action for custom slot extraction.
+A slot validation action should only return `slot` and [`bot`](./action-server/events.mdx#bot) events.
+Any other event type will be filtered out by the default action [`action_extract_slots`](./default-actions.mdx#action_extract_slots).
+The name of the custom action must be specified in the `action` key of the relevant [custom slot mapping](./domain.mdx#custom-slot-mappings)
+in the domain.
+Note that the action name must be listed in the domain `actions` section too.
+
+:::note Using different actions for extraction and validation
+
+You can use both a regular custom action and `action_validate_slot_mappings` together to extract and validate a slot. For example, you can specify a regular custom action as the `action` for a `custom` slot mapping, and also add validation logic for the same slot to `action_validate_slot_mappings`. The custom action specified in the custom slot mapping will be called first, and `action_validate_slot_mappings` will be called afterwards.
+
+:::

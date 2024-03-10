@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Text
+from typing import Any, Dict, Text
 
 from rasa.nlu.emulators.emulator import Emulator
 from rasa.shared.nlu.constants import (
@@ -37,13 +37,11 @@ class LUISEmulator(Emulator):
 
         return {top[INTENT_NAME_KEY]: {"score": top[PREDICTED_CONFIDENCE_KEY]}}
 
-    def _entities(
-        self, data: Dict[Text, Any]
-    ) -> Dict[Text, Dict[Text, List[Dict[Text, Any]]]]:
+    def _entities(self, data: Dict[Text, Any]) -> Dict[Text, Any]:
         if ENTITIES not in data:
             return {}
 
-        entities = {"$instance": {}}
+        entities: Dict[Text, Any] = {"$instance": {}}
         for e in data[ENTITIES]:
             # LUIS API v3 uses entity roles instead of entity names
             # (it's possible because its roles are unique):

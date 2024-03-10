@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 import textwrap
@@ -15,6 +16,7 @@ from typing import (
     Tuple,
     Union,
     Set,
+    cast,
 )
 
 from sanic import Sanic, response
@@ -35,7 +37,7 @@ import rasa.shared.utils.io
 import rasa.cli.utils
 import rasa.shared.data
 from rasa.shared.nlu.constants import TEXT, INTENT_NAME_KEY
-from rasa.shared.nlu.training_data.loading import MARKDOWN, RASA, RASA_YAML
+from rasa.shared.nlu.training_data.loading import RASA, RASA_YAML
 from rasa.shared.core.constants import (
     USER_INTENT_RESTART,
     ACTION_LISTEN_NAME,
@@ -44,11 +46,19 @@ from rasa.shared.core.constants import (
     LOOP_REJECTED,
     REQUESTED_SLOT,
     LOOP_INTERRUPTED,
+    ACTION_UNLIKELY_INTENT_NAME,
 )
 from rasa.core import run, utils
 import rasa.core.train
 from rasa.core.constants import DEFAULT_SERVER_FORMAT, DEFAULT_SERVER_PORT
-from rasa.shared.core.domain import Domain
+from rasa.shared.core.domain import (
+    Domain,
+    KEY_INTENTS,
+    KEY_ENTITIES,
+    KEY_RESPONSES,
+    KEY_ACTIONS,
+    KEY_RESPONSES_TEXT,
+)
 import rasa.shared.core.events
 from rasa.shared.core.events import (
     ActionExecuted,
@@ -59,8 +69,12 @@ from rasa.shared.core.events import (
     UserUttered,
     UserUtteranceReverted,
 )
-import rasa.core.interpreter
-from rasa.shared.constants import INTENT_MESSAGE_PREFIX, DEFAULT_SENDER_ID, UTTER_PREFIX
+from rasa.shared.constants import (
+    INTENT_MESSAGE_PREFIX,
+    DEFAULT_SENDER_ID,
+    UTTER_PREFIX,
+    DOCS_URL_POLICIES,
+)
 from rasa.shared.core.trackers import EventVerbosity, DialogueStateTracker
 from rasa.shared.core.training_data import visualization
 from rasa.shared.core.training_data.visualization import (
@@ -71,6 +85,7 @@ from rasa.core.utils import AvailableEndpoints
 from rasa.shared.importers.rasa import TrainingDataImporter
 from rasa.utils.common import update_sanic_log_level
 from rasa.utils.endpoints import EndpointConfig
+from rasa.shared.exceptions import InvalidConfigException
 
 # noinspection PyProtectedMember
 from rasa.shared.nlu.training_data import loading
@@ -82,6 +97,8 @@ from rasa.shared.nlu.training_data.message import Message
 # run the interactive learning and check if your part of the "ui"
 # still works.
 import rasa.utils.io as io_utils
+
+from rasa.shared.core.generator import TrackerWithCachedStates
 
 logger = logging.getLogger(__name__)
 
@@ -99,7 +116,7 @@ OTHER_INTENT = uuid.uuid4().hex
 OTHER_ACTION = uuid.uuid4().hex
 NEW_ACTION = uuid.uuid4().hex
 
-NEW_RESPONSES = {}
+NEW_RESPONSES: Dict[Text, List[Dict[Text, Any]]] = {}
 
 MAX_NUMBER_OF_TRAINING_STORIES_FOR_VISUALIZATION = 200
 
@@ -116,7 +133,8 @@ class ForkTracker(Exception):
     """Exception used to break out the flow and fork at a previous step.
 
     The tracker will be reset to the selected point in the past and the
-    conversation will continue from there."""
+    conversation will continue from there.
+    """
 
     pass
 
@@ -125,7 +143,8 @@ class UndoLastStep(Exception):
     """Exception used to break out the flow and undo the last step.
 
     The last step is either the most recent user message or the most
-    recent action run by the bot."""
+    recent action run by the bot.
+    """
 
     pass
 
@@ -141,9 +160,8 @@ async def send_message(
     conversation_id: Text,
     message: Text,
     parse_data: Optional[Dict[Text, Any]] = None,
-) -> Dict[Text, Any]:
+) -> Optional[Any]:
     """Send a user message to a conversation."""
-
     payload = {
         "sender": UserUttered.type_name,
         "text": message,
@@ -159,25 +177,22 @@ async def send_message(
 
 async def request_prediction(
     endpoint: EndpointConfig, conversation_id: Text
-) -> Dict[Text, Any]:
+) -> Optional[Any]:
     """Request the next action prediction from core."""
-
     return await endpoint.request(
         method="post", subpath=f"/conversations/{conversation_id}/predict"
     )
 
 
-async def retrieve_domain(endpoint: EndpointConfig) -> Dict[Text, Any]:
+async def retrieve_domain(endpoint: EndpointConfig) -> Optional[Any]:
     """Retrieve the domain from core."""
-
     return await endpoint.request(
         method="get", subpath="/domain", headers={"Accept": "application/json"}
     )
 
 
-async def retrieve_status(endpoint: EndpointConfig) -> Dict[Text, Any]:
+async def retrieve_status(endpoint: EndpointConfig) -> Optional[Any]:
     """Retrieve the status from core."""
-
     return await endpoint.request(method="get", subpath="/status")
 
 
@@ -187,11 +202,14 @@ async def retrieve_tracker(
     verbosity: EventVerbosity = EventVerbosity.ALL,
 ) -> Dict[Text, Any]:
     """Retrieve a tracker from core."""
-
     path = f"/conversations/{conversation_id}/tracker?include_events={verbosity.name}"
-    return await endpoint.request(
+    result = await endpoint.request(
         method="get", subpath=path, headers={"Accept": "application/json"}
     )
+
+    # If the request wasn't successful the previous call had already raised. Hence,
+    # we can be sure we have the tracker in the right format.
+    return cast(Dict[Text, Any], result)
 
 
 async def send_action(
@@ -201,9 +219,8 @@ async def send_action(
     policy: Optional[Text] = None,
     confidence: Optional[float] = None,
     is_new_action: bool = False,
-) -> Dict[Text, Any]:
+) -> Optional[Any]:
     """Log an action to a conversation."""
-
     payload = ActionExecuted(action_name, policy, confidence).as_dict()
 
     subpath = f"/conversations/{conversation_id}/execute"
@@ -215,7 +232,8 @@ async def send_action(
             if action_name in NEW_RESPONSES:
                 warning_questions = questionary.confirm(
                     f"WARNING: You have created a new action: '{action_name}', "
-                    f"with matching response: '{[*NEW_RESPONSES[action_name]][0]}'. "
+                    f"with matching response: "
+                    f"'{NEW_RESPONSES[action_name][0][KEY_RESPONSES_TEXT]}'. "
                     f"This action will not return its message in this session, "
                     f"but the new response will be saved to your domain file "
                     f"when you exit and save this session. "
@@ -245,9 +263,8 @@ async def send_event(
     endpoint: EndpointConfig,
     conversation_id: Text,
     evt: Union[List[Dict[Text, Any]], Dict[Text, Any]],
-) -> Dict[Text, Any]:
+) -> Optional[Any]:
     """Log an event to a conversation."""
-
     subpath = f"/conversations/{conversation_id}/tracker/events"
 
     return await endpoint.request(json=evt, method="post", subpath=subpath)
@@ -255,7 +272,6 @@ async def send_event(
 
 def format_bot_output(message: BotUttered) -> Text:
     """Format a bot response to be displayed in the history table."""
-
     # First, add text to output
     output = message.text or ""
 
@@ -264,13 +280,13 @@ def format_bot_output(message: BotUttered) -> Text:
     if not data:
         return output
 
-    if data.get("image"):
-        output += "\nImage: " + data.get("image")
+    if "image" in data and data["image"] is not None:
+        output += "\nImage: " + data["image"]
 
-    if data.get("attachment"):
-        output += "\nAttachment: " + data.get("attachment")
+    if "attachment" in data and data["attachment"] is not None:
+        output += "\nAttachment: " + data["attachment"]
 
-    if data.get("buttons"):
+    if "buttons" in data and data["buttons"] is not None:
         output += "\nButtons:"
         choices = rasa.cli.utils.button_choices_from_message_data(
             data, allow_free_text_input=True
@@ -278,15 +294,15 @@ def format_bot_output(message: BotUttered) -> Text:
         for choice in choices:
             output += "\n" + choice
 
-    if data.get("elements"):
+    if "elements" in data and data["elements"] is not None:
         output += "\nElements:"
-        for idx, element in enumerate(data.get("elements")):
+        for idx, element in enumerate(data["elements"]):
             element_str = rasa.cli.utils.element_to_string(element, idx)
             output += "\n" + element_str
 
-    if data.get("quick_replies"):
+    if "quick_replies" in data and data["quick_replies"] is not None:
         output += "\nQuick replies:"
-        for idx, element in enumerate(data.get("quick_replies")):
+        for idx, element in enumerate(data["quick_replies"]):
             element_str = rasa.cli.utils.element_to_string(element, idx)
             output += "\n" + element_str
     return output
@@ -294,7 +310,6 @@ def format_bot_output(message: BotUttered) -> Text:
 
 def latest_user_message(events: List[Dict[Text, Any]]) -> Optional[Dict[Text, Any]]:
     """Return most recent user message."""
-
     for i, e in enumerate(reversed(events)):
         if e.get("event") == UserUttered.type_name:
             return e
@@ -308,12 +323,11 @@ async def _ask_questions(
     is_abort: Callable[[Dict[Text, Any]], bool] = lambda x: False,
 ) -> Any:
     """Ask the user a question, if Ctrl-C is pressed provide user with menu."""
-
     should_retry = True
-    answers = {}
+    answers: Any = {}
 
     while should_retry:
-        answers = questions.ask()
+        answers = await questions.ask_async()
         if answers is None or is_abort(answers):
             should_retry = await _ask_if_quit(conversation_id, endpoint)
         else:
@@ -325,7 +339,6 @@ def _selection_choices_from_intent_prediction(
     predictions: List[Dict[Text, Any]]
 ) -> List[Dict[Text, Any]]:
     """Given a list of ML predictions create a UI choice list."""
-
     sorted_intents = sorted(
         predictions, key=lambda k: (-k["confidence"], k[INTENT_NAME_KEY])
     )
@@ -367,7 +380,6 @@ async def _request_free_text_action(
 async def _request_free_text_utterance(
     conversation_id: Text, endpoint: EndpointConfig, action: Text
 ) -> Text:
-
     question = questionary.text(
         message=(f"Please type the message for your new bot response '{action}':"),
         validate=io_utils.not_empty_validator("Please enter a response"),
@@ -397,8 +409,8 @@ async def _request_fork_from_user(
     """Take in a conversation and ask at which point to fork the conversation.
 
     Returns the list of events that should be kept. Forking means, the
-    conversation will be reset and continued from this previous point."""
-
+    conversation will be reset and continued from this previous point.
+    """
     tracker = await retrieve_tracker(
         endpoint, conversation_id, EventVerbosity.AFTER_RESTART
     )
@@ -426,8 +438,8 @@ async def _request_intent_from_user(
 ) -> Dict[Text, Any]:
     """Take in latest message and ask which intent it should have been.
 
-    Returns the intent dict that has been selected by the user."""
-
+    Returns the intent dict that has been selected by the user.
+    """
     predictions = latest_message.get("parse_data", {}).get("intent_ranking", [])
 
     predicted_intents = {p[INTENT_NAME_KEY] for p in predictions}
@@ -460,7 +472,6 @@ async def _request_intent_from_user(
 
 async def _print_history(conversation_id: Text, endpoint: EndpointConfig) -> None:
     """Print information about the conversation for the user."""
-
     tracker_dump = await retrieve_tracker(
         endpoint, conversation_id, EventVerbosity.AFTER_RESTART
     )
@@ -471,20 +482,23 @@ async def _print_history(conversation_id: Text, endpoint: EndpointConfig) -> Non
 
     print("------")
     print("Chat History\n")
-    print(table)
+    loop = asyncio.get_running_loop()
+    loop.run_in_executor(None, print, table)
 
     if slot_strings:
         print("\n")
-        print(f"Current slots: \n\t{', '.join(slot_strings)}\n")
+        slots_info = f"Current slots: \n\t{', '.join(slot_strings)}\n"
+        loop.run_in_executor(None, print, slots_info)
 
-    print("------")
+    loop.run_in_executor(None, print, "------")
 
 
 def _chat_history_table(events: List[Dict[Text, Any]]) -> Text:
     """Create a table containing bot and user messages.
 
     Also includes additional information, like any events and
-    prediction probabilities."""
+    prediction probabilities.
+    """
 
     def wrap(txt: Text, max_width: int) -> Text:
         true_wrapping_width = calc_true_wrapping_width(txt, max_width)
@@ -539,6 +553,11 @@ def _chat_history_table(events: List[Dict[Text, Any]]) -> Text:
 
     for idx, event in enumerate(applied_events):
         if isinstance(event, ActionExecuted):
+            if (
+                event.action_name == ACTION_UNLIKELY_INTENT_NAME
+                and event.confidence == 0
+            ):
+                continue
             bot_column.append(colored(str(event), "autocyan"))
             if event.confidence is not None:
                 bot_column[-1] += colored(f" {event.confidence:03.2f}", "autowhite")
@@ -575,7 +594,6 @@ def _chat_history_table(events: List[Dict[Text, Any]]) -> Text:
 
 def _slot_history(tracker_dump: Dict[Text, Any]) -> List[Text]:
     """Create an array of slot representations to be displayed."""
-
     slot_strings = []
     for k, s in tracker_dump.get("slots", {}).items():
         colored_value = rasa.shared.utils.io.wrap_with_color(
@@ -585,25 +603,24 @@ def _slot_history(tracker_dump: Dict[Text, Any]) -> List[Text]:
     return slot_strings
 
 
-def _retry_on_error(
+async def _retry_on_error(
     func: Callable, export_path: Text, *args: Any, **kwargs: Any
 ) -> None:
     while True:
         try:
             return func(export_path, *args, **kwargs)
         except OSError as e:
-            answer = questionary.confirm(
+            answer = await questionary.confirm(
                 f"Failed to export '{export_path}': {e}. Please make sure 'rasa' "
                 f"has read and write access to this file. Would you like to retry?"
-            ).ask()
+            ).ask_async()
             if not answer:
                 raise e
 
 
 async def _write_data_to_file(conversation_id: Text, endpoint: EndpointConfig) -> None:
     """Write stories and nlu data to file."""
-
-    story_path, nlu_path, domain_path = _request_export_info()
+    story_path, nlu_path, domain_path = await _request_export_info()
 
     tracker = await retrieve_tracker(endpoint, conversation_id)
     events = tracker.get("events", [])
@@ -611,9 +628,9 @@ async def _write_data_to_file(conversation_id: Text, endpoint: EndpointConfig) -
     serialised_domain = await retrieve_domain(endpoint)
     domain = Domain.from_dict(serialised_domain)
 
-    _retry_on_error(_write_stories_to_file, story_path, events, domain)
-    _retry_on_error(_write_nlu_to_file, nlu_path, events)
-    _retry_on_error(_write_domain_to_file, domain_path, events, domain)
+    await _retry_on_error(_write_stories_to_file, story_path, events, domain)
+    await _retry_on_error(_write_nlu_to_file, nlu_path, events)
+    await _retry_on_error(_write_domain_to_file, domain_path, events, domain)
 
     logger.info("Successfully wrote stories and NLU data")
 
@@ -621,9 +638,9 @@ async def _write_data_to_file(conversation_id: Text, endpoint: EndpointConfig) -
 async def _ask_if_quit(conversation_id: Text, endpoint: EndpointConfig) -> bool:
     """Display the exit menu.
 
-    Return `True` if the previous question should be retried."""
-
-    answer = questionary.select(
+    Return `True` if the previous question should be retried.
+    """
+    answer = await questionary.select(
         message="Do you want to stop?",
         choices=[
             Choice("Continue", "continue"),
@@ -632,36 +649,32 @@ async def _ask_if_quit(conversation_id: Text, endpoint: EndpointConfig) -> bool:
             Choice("Start Fresh", "restart"),
             Choice("Export & Quit", "quit"),
         ],
-    ).ask()
+    ).ask_async()
 
     if not answer or answer == "quit":
         # this is also the default answer if the user presses Ctrl-C
         await _write_data_to_file(conversation_id, endpoint)
         raise Abort()
-    elif answer == "continue":
-        # in this case we will just return, and the original
-        # question will get asked again
-        return True
     elif answer == "undo":
         raise UndoLastStep()
     elif answer == "fork":
         raise ForkTracker()
     elif answer == "restart":
         raise RestartConversation()
+    else:  # `continue` or no answer
+        # in this case we will just return, and the original
+        # question will get asked again
+        return True
 
 
 async def _request_action_from_user(
     predictions: List[Dict[Text, Any]], conversation_id: Text, endpoint: EndpointConfig
 ) -> Tuple[Text, bool]:
     """Ask the user to correct an action prediction."""
-
     await _print_history(conversation_id, endpoint)
 
     choices = [
-        {
-            "name": f'{a.get("score"):03.2f} {a.get("action"):40}',
-            "value": a.get("action"),
-        }
+        {"name": f'{a["score"]:03.2f} {a["action"]:40}', "value": a["action"]}
         for a in predictions
     ]
 
@@ -691,7 +704,7 @@ async def _request_action_from_user(
             utter_message = await _request_free_text_utterance(
                 conversation_id, endpoint, action_name
             )
-            NEW_RESPONSES[action_name] = {utter_message: ""}
+            NEW_RESPONSES[action_name] = [{KEY_RESPONSES_TEXT: utter_message}]
 
     elif action_name[:32] == OTHER_ACTION:
         # action was newly created in the session, but not this turn
@@ -702,7 +715,7 @@ async def _request_action_from_user(
     return action_name, is_new_action
 
 
-def _request_export_info() -> Tuple[Text, Text, Text]:
+async def _request_export_info() -> Tuple[Text, Text, Text]:
     import rasa.shared.data
 
     """Request file path and export stories & nlu data to that path"""
@@ -714,8 +727,7 @@ def _request_export_info() -> Tuple[Text, Text, Text]:
             "will append the stories)",
             default=PATHS["stories"],
             validate=io_utils.file_type_validator(
-                rasa.shared.data.MARKDOWN_FILE_EXTENSIONS
-                + rasa.shared.data.YAML_FILE_EXTENSIONS,
+                rasa.shared.data.YAML_FILE_EXTENSIONS,
                 "Please provide a valid export path for the stories, "
                 "e.g. 'stories.yml'.",
             ),
@@ -742,7 +754,7 @@ def _request_export_info() -> Tuple[Text, Text, Text]:
         ),
     )
 
-    answers = questions.ask()
+    answers = await questions.ask_async()
     if not answers:
         raise Abort()
 
@@ -754,7 +766,8 @@ def _split_conversation_at_restarts(
 ) -> List[List[Dict[Text, Any]]]:
     """Split a conversation at restart events.
 
-    Returns an array of event lists, without the restart events."""
+    Returns an array of event lists, without the restart events.
+    """
     deserialized_events = [Event.from_parameters(event) for event in events]
     split_events = rasa.shared.core.events.split_events(
         deserialized_events, Restarted, include_splitting_event=False
@@ -765,8 +778,8 @@ def _split_conversation_at_restarts(
 
 def _collect_messages(events: List[Dict[Text, Any]]) -> List[Message]:
     """Collect the message text and parsed data from the UserMessage events
-    into a list"""
-
+    into a list.
+    """
     import rasa.shared.nlu.training_data.util as rasa_nlu_training_data_utils
 
     messages = []
@@ -787,7 +800,6 @@ def _collect_messages(events: List[Dict[Text, Any]]) -> List[Message]:
 
 def _collect_actions(events: List[Dict[Text, Any]]) -> List[Dict[Text, Any]]:
     """Collect all the `ActionExecuted` events into a list."""
-
     return [evt for evt in events if evt.get("event") == ActionExecuted.type_name]
 
 
@@ -798,18 +810,12 @@ def _write_stories_to_file(
     from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
         YAMLStoryWriter,
     )
-    from rasa.shared.core.training_data.story_writer.markdown_story_writer import (
-        MarkdownStoryWriter,
-    )
 
     sub_conversations = _split_conversation_at_restarts(events)
-
     io_utils.create_path(export_story_path)
 
     if rasa.shared.data.is_likely_yaml_file(export_story_path):
         writer = YAMLStoryWriter()
-    else:
-        writer = MarkdownStoryWriter()
 
     should_append_stories = False
     if os.path.exists(export_story_path):
@@ -845,8 +851,7 @@ def _write_stories_to_file(
 
 
 def _filter_messages(msgs: List[Message]) -> List[Message]:
-    """Filter messages removing those that start with INTENT_MESSAGE_PREFIX"""
-
+    """Filter messages removing those that start with INTENT_MESSAGE_PREFIX."""
     filtered_messages = []
     for msg in msgs:
         if not msg.get(TEXT).startswith(INTENT_MESSAGE_PREFIX):
@@ -865,9 +870,7 @@ def _write_nlu_to_file(export_nlu_path: Text, events: List[Dict[Text, Any]]) -> 
     try:
         previous_examples = loading.load_data(export_nlu_path)
     except Exception as e:
-        logger.debug(
-            f"An exception occurred while trying to load the NLU data. {str(e)}"
-        )
+        logger.debug(f"An exception occurred while trying to load the NLU data. {e!s}")
         # No previous file exists, use empty training data as replacement.
         previous_examples = TrainingData()
 
@@ -878,8 +881,6 @@ def _write_nlu_to_file(export_nlu_path: Text, events: List[Dict[Text, Any]]) -> 
     nlu_format = _get_nlu_target_format(export_nlu_path)
     if nlu_format == RASA_YAML:
         stringified_training_data = nlu_data.nlu_as_yaml()
-    elif nlu_format == MARKDOWN:
-        stringified_training_data = nlu_data.nlu_as_markdown()
     else:
         stringified_training_data = nlu_data.nlu_as_json()
 
@@ -889,11 +890,9 @@ def _write_nlu_to_file(export_nlu_path: Text, events: List[Dict[Text, Any]]) -> 
 def _get_nlu_target_format(export_path: Text) -> Text:
     guessed_format = loading.guess_format(export_path)
 
-    if guessed_format not in {MARKDOWN, RASA, RASA_YAML}:
+    if guessed_format not in {RASA, RASA_YAML}:
         if rasa.shared.data.is_likely_json_file(export_path):
             guessed_format = RASA
-        elif rasa.shared.data.is_likely_markdown_file(export_path):
-            guessed_format = MARKDOWN
         elif rasa.shared.data.is_likely_yaml_file(export_path):
             guessed_format = RASA_YAML
 
@@ -907,7 +906,6 @@ def _entities_from_messages(messages: List[Message]) -> List[Text]:
 
 def _intents_from_messages(messages: List[Message]) -> Set[Text]:
     """Return all intents that occur in at least one of the messages."""
-
     # set of distinct intents
     distinct_intents = {m.data["intent"] for m in messages if "intent" in m.data}
 
@@ -918,12 +916,11 @@ def _write_domain_to_file(
     domain_path: Text, events: List[Dict[Text, Any]], old_domain: Domain
 ) -> None:
     """Write an updated domain file to the file path."""
-
     io_utils.create_path(domain_path)
 
     messages = _collect_messages(events)
     actions = _collect_actions(events)
-    responses = NEW_RESPONSES  # type: Dict[Text, List[Dict[Text, Any]]]
+    responses = NEW_RESPONSES
 
     # TODO for now there is no way to distinguish between action and form
     collected_actions = list(
@@ -935,16 +932,16 @@ def _write_domain_to_file(
         }
     )
 
-    new_domain = Domain(
-        intents=_intents_from_messages(messages),
-        entities=_entities_from_messages(messages),
-        slots=[],
-        responses=responses,
-        action_names=collected_actions,
-        forms={},
+    new_domain = Domain.from_dict(
+        {
+            KEY_INTENTS: list(_intents_from_messages(messages)),
+            KEY_ENTITIES: _entities_from_messages(messages),
+            KEY_RESPONSES: responses,
+            KEY_ACTIONS: collected_actions,
+        }
     )
 
-    old_domain.merge(new_domain).persist_clean(domain_path)
+    old_domain.merge(new_domain).persist(domain_path)
 
 
 async def _predict_till_next_listen(
@@ -954,11 +951,21 @@ async def _predict_till_next_listen(
     plot_file: Optional[Text],
 ) -> None:
     """Predict and validate actions until we need to wait for a user message."""
-
     listen = False
     while not listen:
         result = await request_prediction(endpoint, conversation_id)
-        predictions = result.get("scores")
+        if result is None:
+            result = {}
+
+        predictions = result.get("scores", [])
+        if not predictions:
+            raise InvalidConfigException(
+                "Cannot continue as no action was predicted by the dialogue manager. "
+                "This can happen if you trained the assistant with no policy included "
+                "in the configuration. If so, please re-train the assistant with at "
+                f"least one policy ({DOCS_URL_POLICIES}) included in the configuration."
+            )
+
         probabilities = [prediction["score"] for prediction in predictions]
         pred_out = int(np.argmax(probabilities))
         action_name = predictions[pred_out].get("action")
@@ -992,12 +999,12 @@ async def _predict_till_next_listen(
         if last_event.get("event") == BotUttered.type_name and last_event["data"].get(
             "buttons", None
         ):
-            user_selection = _get_button_choice(last_event)
+            user_selection = await _get_button_choice(last_event)
             if user_selection != rasa.cli.utils.FREE_TEXT_INPUT_PROMPT:
                 await send_message(endpoint, conversation_id, user_selection)
 
 
-def _get_button_choice(last_event: Dict[Text, Any]) -> Text:
+async def _get_button_choice(last_event: Dict[Text, Any]) -> Text:
     data = last_event["data"]
     message = last_event.get("text", "")
 
@@ -1005,7 +1012,7 @@ def _get_button_choice(last_event: Dict[Text, Any]) -> Text:
         data, allow_free_text_input=True
     )
     question = questionary.select(message, choices)
-    return rasa.cli.utils.payload_from_button_question(question)
+    return await rasa.cli.utils.payload_from_button_question(question)
 
 
 async def _correct_wrong_nlu(
@@ -1015,7 +1022,6 @@ async def _correct_wrong_nlu(
     conversation_id: Text,
 ) -> None:
     """A wrong NLU prediction got corrected, update core's tracker."""
-
     revert_latest_user_utterance = UserUtteranceReverted().as_dict()
     # `UserUtteranceReverted` also removes the `ACTION_LISTEN` event before, hence we
     # have to replay it.
@@ -1040,7 +1046,6 @@ async def _correct_wrong_action(
     is_new_action: bool = False,
 ) -> None:
     """A wrong action prediction got corrected, update core's tracker."""
-
     await send_action(
         endpoint, conversation_id, corrected_action, is_new_action=is_new_action
     )
@@ -1072,8 +1077,8 @@ async def _confirm_form_validation(
 ) -> None:
     """Ask a user whether an input for a form should be validated.
 
-    Previous to this call, the active form was chosen after it was rejected."""
-
+    Previous to this call, the active form was chosen after it was rejected.
+    """
     requested_slot = tracker.get("slots", {}).get(REQUESTED_SLOT)
 
     validation_questions = questionary.confirm(
@@ -1128,13 +1133,25 @@ async def _validate_action(
 ) -> bool:
     """Query the user to validate if an action prediction is correct.
 
-    Returns `True` if the prediction is correct, `False` otherwise."""
-
-    question = questionary.confirm(f"The bot wants to run '{action_name}', correct?")
+    Returns `True` if the prediction is correct, `False` otherwise.
+    """
+    if action_name == ACTION_UNLIKELY_INTENT_NAME:
+        question = questionary.confirm(
+            f"The bot wants to run '{action_name}' "
+            f"to indicate that the last user message was unexpected "
+            f"at this point in the conversation. "
+            f"Check out UnexpecTEDIntentPolicy "
+            f"({DOCS_URL_POLICIES}#unexpected-intent-policy) "
+            f"to learn more. Is that correct?"
+        )
+    else:
+        question = questionary.confirm(
+            f"The bot wants to run '{action_name}', correct?"
+        )
 
     is_correct = await _ask_questions(question, conversation_id, endpoint)
 
-    if not is_correct:
+    if not is_correct and action_name != ACTION_UNLIKELY_INTENT_NAME:
         action_name, is_new_action = await _request_action_from_user(
             predictions, conversation_id, endpoint
         )
@@ -1186,8 +1203,8 @@ def _validate_user_regex(latest_message: Dict[Text, Any], intents: List[Text]) -
     """Validate if a users message input is correct.
 
     This assumes the user entered an intent directly, e.g. using
-    `/greet`. Return `True` if the intent is a known one."""
-
+    `/greet`. Return `True` if the intent is a known one.
+    """
     parse_data = latest_message.get("parse_data", {})
     intent = parse_data.get("intent", {}).get(INTENT_NAME_KEY)
 
@@ -1202,8 +1219,8 @@ async def _validate_user_text(
 ) -> bool:
     """Validate a user message input as free text.
 
-    This assumes the user message is a text message (so NOT `/greet`)."""
-
+    This assumes the user message is a text message (so NOT `/greet`).
+    """
     parse_data = latest_message.get("parse_data", {})
     text = _as_md_message(parse_data)
     intent = parse_data.get("intent", {}).get(INTENT_NAME_KEY)
@@ -1234,8 +1251,8 @@ async def _validate_nlu(
     """Validate if a user message, either text or intent is correct.
 
     If the prediction of the latest user message is incorrect,
-    the tracker will be corrected with the correct intent / entities."""
-
+    the tracker will be corrected with the correct intent / entities.
+    """
     tracker = await retrieve_tracker(
         endpoint, conversation_id, EventVerbosity.AFTER_RESTART
     )
@@ -1271,7 +1288,8 @@ async def _correct_entities(
 ) -> List[Dict[Text, Any]]:
     """Validate the entities of a user message.
 
-    Returns the corrected entities"""
+    Returns the corrected entities.
+    """
     from rasa.shared.nlu.training_data import entities_parser
 
     parse_original = latest_message.get("parse_data", {})
@@ -1316,7 +1334,6 @@ def _is_same_entity_annotation(entity: Dict[Text, Any], other: Dict[Text, Any]) 
 
 async def _enter_user_message(conversation_id: Text, endpoint: EndpointConfig) -> None:
     """Request a new message from the user."""
-
     question = questionary.text("Your input ->")
 
     message = await _ask_questions(question, conversation_id, endpoint, lambda a: not a)
@@ -1331,7 +1348,6 @@ async def is_listening_for_message(
     conversation_id: Text, endpoint: EndpointConfig
 ) -> bool:
     """Check if the conversation is in need for a user message."""
-
     tracker = await retrieve_tracker(endpoint, conversation_id, EventVerbosity.APPLIED)
 
     for i, e in enumerate(reversed(tracker.get("events", []))):
@@ -1344,7 +1360,6 @@ async def is_listening_for_message(
 
 async def _undo_latest(conversation_id: Text, endpoint: EndpointConfig) -> None:
     """Undo either the latest bot action or user message, whatever is last."""
-
     tracker = await retrieve_tracker(endpoint, conversation_id, EventVerbosity.ALL)
 
     # Get latest `UserUtterance` or `ActionExecuted` event.
@@ -1372,7 +1387,6 @@ async def _fetch_events(
     conversation_ids: List[Union[Text, List[Event]]], endpoint: EndpointConfig
 ) -> List[List[Event]]:
     """Retrieve all event trackers from the endpoint for all conversation ids."""
-
     event_sequences = []
     for conversation_id in conversation_ids:
         if isinstance(conversation_id, str):
@@ -1398,8 +1412,8 @@ async def _plot_trackers(
     This assumes that the last conversation id is the conversation we are currently
     working on. If there are events that are not part of this active tracker
     yet, they can be passed as part of `unconfirmed`. They will be appended
-    to the currently active conversation."""
-
+    to the currently active conversation.
+    """
     if not output_file or not conversation_ids:
         # if there is no output file provided, we are going to skip plotting
         # same happens if there are no conversation ids
@@ -1410,7 +1424,7 @@ async def _plot_trackers(
     if unconfirmed:
         event_sequences[-1].extend(unconfirmed)
 
-    graph = await visualize_neighborhood(
+    graph = visualize_neighborhood(
         event_sequences[-1], event_sequences, output_file=None, max_history=2
     )
 
@@ -1422,7 +1436,6 @@ async def _plot_trackers(
 
 def _print_help(skip_visualization: bool) -> None:
     """Print some initial help message for the user."""
-
     if not skip_visualization:
         visualization_url = DEFAULT_SERVER_FORMAT.format(
             "http", DEFAULT_SERVER_PORT + 1
@@ -1440,6 +1453,20 @@ def _print_help(skip_visualization: bool) -> None:
     )
 
 
+def intent_names_from_domain(domain: Any) -> List[Text]:
+    """Get a list of the possible intents names from the domain specification.
+
+    This is its own function as intents are non-trivial to unpack and this
+    warrants testing.
+    """
+    domain_intents = domain.get("intents", []) if domain is not None else []
+
+    # intents with properties such as `use_entities` or `ignore_entities`
+    # are a dictionary which needs unpacking. Other intents are strings
+    # and can be used as-is.
+    return [next(iter(i)) if isinstance(i, dict) else i for i in domain_intents]
+
+
 async def record_messages(
     endpoint: EndpointConfig,
     file_importer: TrainingDataImporter,
@@ -1448,7 +1475,6 @@ async def record_messages(
     skip_visualization: bool = False,
 ) -> None:
     """Read messages from the command line and print bot responses."""
-
     try:
         try:
             domain = await retrieve_domain(endpoint)
@@ -1459,12 +1485,12 @@ async def record_messages(
             )
             return
 
-        intents = [next(iter(i)) for i in (domain.get("intents") or [])]
+        intents = intent_names_from_domain(domain)
 
         num_messages = 0
 
         if not skip_visualization:
-            events_including_current_user_id = await _get_tracker_events_to_plot(
+            events_including_current_user_id = _get_tracker_events_to_plot(
                 domain, file_importer, conversation_id
             )
 
@@ -1529,10 +1555,10 @@ async def record_messages(
         raise
 
 
-async def _get_tracker_events_to_plot(
+def _get_tracker_events_to_plot(
     domain: Dict[Text, Any], file_importer: TrainingDataImporter, conversation_id: Text
 ) -> List[Union[Text, Deque[Event]]]:
-    training_trackers = await _get_training_trackers(file_importer, domain)
+    training_trackers = _get_training_trackers(file_importer, domain)
     number_of_trackers = len(training_trackers)
     if number_of_trackers > MAX_NUMBER_OF_TRAINING_STORIES_FOR_VISUALIZATION:
         rasa.shared.utils.cli.print_warning(
@@ -1550,12 +1576,12 @@ async def _get_tracker_events_to_plot(
     return training_data_events + [conversation_id]
 
 
-async def _get_training_trackers(
+def _get_training_trackers(
     file_importer: TrainingDataImporter, domain: Dict[str, Any]
-) -> List[DialogueStateTracker]:
+) -> List[TrackerWithCachedStates]:
     from rasa.core import training
 
-    return await training.load_data(
+    return training.load_data(
         file_importer,
         Domain.from_dict(domain),
         augmentation_factor=0,
@@ -1571,12 +1597,10 @@ def _serve_application(
     port: int,
 ) -> Sanic:
     """Start a core server and attach the interactive learning IO."""
-
     endpoint = EndpointConfig(url=DEFAULT_SERVER_FORMAT.format("http", port))
 
     async def run_interactive_io(running_app: Sanic) -> None:
         """Small wrapper to shut down the server once cmd io is done."""
-
         await record_messages(
             endpoint=endpoint,
             file_importer=file_importer,
@@ -1599,8 +1623,7 @@ def _serve_application(
 
 def start_visualization(image_path: Text, port: int) -> None:
     """Add routes to serve the conversation visualization files."""
-
-    app = Sanic(__name__)
+    app = Sanic("rasa_interactive")
 
     # noinspection PyUnusedLocal
     @app.exception(NotFound)
@@ -1609,15 +1632,15 @@ def start_visualization(image_path: Text, port: int) -> None:
 
     # noinspection PyUnusedLocal
     @app.route(VISUALIZATION_TEMPLATE_PATH, methods=["GET"])
-    def visualisation_html(request: Request) -> HTTPResponse:
-        return response.file(visualization.visualization_html_path())
+    async def visualisation_html(request: Request) -> HTTPResponse:
+        return await response.file(visualization.visualization_html_path())
 
     # noinspection PyUnusedLocal
     @app.route("/visualization.dot", methods=["GET"])
-    def visualisation_png(request: Request,) -> HTTPResponse:
+    async def visualisation_png(request: Request) -> HTTPResponse:
         try:
             headers = {"Cache-Control": "no-cache"}
-            return response.file(os.path.abspath(image_path), headers=headers)
+            return await response.file(os.path.abspath(image_path), headers=headers)
         except FileNotFoundError:
             return response.text("", 404)
 
@@ -1630,7 +1653,7 @@ def run_interactive_learning(
     file_importer: TrainingDataImporter,
     skip_visualization: bool = False,
     conversation_id: Text = uuid.uuid4().hex,
-    server_args: Dict[Text, Any] = None,
+    server_args: Optional[Dict[Text, Any]] = None,
 ) -> None:
     """Start the interactive learning with the model of the agent."""
     global SAVE_IN_E2E
@@ -1685,7 +1708,7 @@ def calc_true_wrapping_width(text: Text, monospace_wrapping_width: int) -> int:
     Chinese, Japanese and Korean characters are often broader than ascii
     characters:
     abcdefgh (8 chars)
-    我要去北京 (5 chars, roughly same visible width)
+    æˆ‘è¦åŽ»åŒ—äº¬ (5 chars, roughly same visible width)
 
     We need to account for that otherwise the wrapping doesn't work
     appropriately for long strings and the table overflows and creates

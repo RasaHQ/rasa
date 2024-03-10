@@ -1,12 +1,10 @@
 import argparse
 import logging
 import os
-from typing import List, Text, NoReturn
+from typing import List, Text
 
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import run as arguments
-import rasa.cli.utils
-import rasa.shared.utils.cli  # noqa: F401
 from rasa.shared.constants import (
     DOCS_BASE_URL,
     DEFAULT_ENDPOINTS_PATH,
@@ -74,7 +72,7 @@ def _validate_model_path(model_path: Text, parameter: Text, default: Text) -> Te
     return model_path
 
 
-def run(args: argparse.Namespace) -> NoReturn:
+def run(args: argparse.Namespace) -> None:
     """Entrypoint for `rasa run`.
 
     Args:

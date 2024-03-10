@@ -1,0 +1,214 @@
+---
+sidebar_label: Rasa Pro Installation
+title: Rasa Pro Installation
+description: Install Rasa Pro in your production environment to create an enterprise ready Rasa deployment.
+---
+
+import useBaseUrl from "@docusaurus/useBaseUrl";
+import RasaProLabel from "@theme/RasaProLabel";
+import RasaProBanner from "@theme/RasaProBanner";
+
+<RasaProLabel />
+
+<RasaProBanner />
+
+In this section you will learn how to install **Rasa Pro**, a drop-in replacement enterprise-ready version of Rasa Open Source, on your development environment.
+
+To learn more about deployments, please visit the following sections:
+
+- [Deploying Rasa Pro in production](../../deploy/deploy-rasa)
+- [Deploying Rasa Pro Services in production](../../deploy/deploy-rasa-pro-services)
+
+To learn more about compatibility between different versions of Rasa Pro and Rasa Pro Services, please see
+[compatibility matrix](../../compatibility-matrix.mdx).
+
+## Rasa Pro Setup
+
+Rasa Pro requires access credentials to install and a license to use. The instructions below assume you have
+credentials and a license.
+
+Rasa Pro is a drop-in replacement and enterprise-ready version of Rasa Open Source.
+Additional functionality is provided through plugins while allowing you to continue using the existing Rasa Open Source CLI commands and parameters as you used to.
+
+Installing Rasa Pro instead of Rasa Open Source will not break any existing scripts, automation or functionality you have built around Rasa Open Source.
+
+### Python Package Installation
+
+The Rasa Pro python package is named `rasa-plus`. The `rasa-plus` python packages as well as the Docker containers are hosted on our GCP Artifact Registry.
+As a prerequisite, you will need:
+
+- to [install](https://cloud.google.com/sdk/docs/install) the Google Cloud CLI.
+- to verify that the user or service account you are using has the required permissions to access the repository.
+
+#### Authentication Set-Up
+To authenticate you need use a service account key file provided by Rasa to authenticate with Google Cloud.
+
+Authenticate with GCP using the service account key.
+
+```sh
+gcloud auth activate-service-account --key-file=service-account.json
+```
+
+Set up keyring to allow Pip to authenticate with GCP Artifact Registry by installing keyring and then the backend that supports GCP Artifact Registry
+
+```sh
+pip install keyring
+pip install keyrings.google-artifactregistry-auth
+```
+
+Verify that the backends have been installed correctly
+
+```sh
+keyring --list-backends
+```
+
+The results should include `ChainerBackend` and `GooglePythonAuth`.
+
+
+#### Installing with `pip`
+
+Enter the following settings to the `.pypirc` file. This can be found:
+
+- Linux and MacOS: `$HOME/.pypirc`
+- Windows: `%USERPROFILE%\.pypirc`
+
+
+```
+[distutils]
+index-servers =
+    rasa-plus-py
+
+[rasa-plus-py]
+repository: https://europe-west3-python.pkg.dev/rasa-releases/rasa-plus-py/
+
+```
+
+Next, add these specific settings to the pip configuration file. The location for this depends on whether you want to update the per-user file or the file specific to a virtual environment that you are using.
+
+For the file associated with your operating system user:
+
+- Linux: `$HOME/.config/pip/pip.conf` or `$HOME/.pip/pip.conf`
+- MacOS: `/Library/Application Support/pip/pip.conf` or `$HOME/.config/pip/pip.conf`
+- Windows: `%APPDATA%\pip\pip.ini` or `%USERPROFILE%\pip\pip.ini`
+
+For virtual environments:
+
+- Linux and macOS: `$VIRTUAL_ENV/pip.conf`
+- Windows: `%VIRTUAL_ENV%\pip.ini`
+
+
+```
+[global]
+extra-index-url = https://europe-west3-python.pkg.dev/rasa-releases/rasa-plus-py/simple/
+
+```
+
+Finally, you should be able to run `pip install rasa-plus`.
+
+#### Installing with `poetry`
+
+To install `rasa-plus` with `poetry`, you will need to associate the Artifact Registry URL with `rasa-plus` before installing it.
+Note that you must upgrade poetry to the latest minor (`1.2.0`) in order for `poetry` to work with the GCP authentication set-up.
+Proceed with the following steps:
+
+1. Run `poetry self add "keyrings.google-artifactregistry-auth"`
+2. Add this section to `pyproject.toml`:
+
+```toml
+[[tool.poetry.source]]
+name = "rasa-plus"
+url = "https://europe-west3-python.pkg.dev/rasa-releases/rasa-plus-py/simple"
+default = false
+secondary = true
+
+```
+
+3. Run `poetry install`.
+
+
+### Docker Image Installation
+
+The Rasa Pro Docker image is named `rasa-plus`. The Docker images are hosted on our GCP Artifact Registry.
+As a prerequisite, you will need:
+
+- to [install](https://cloud.google.com/sdk/docs/install) the Google Cloud CLI.
+- to verify that the user or service account you are using has the required permissions to access the repository.
+
+To authenticate you need use a service account key file provided by Rasa to authenticate with Google Cloud.
+
+```bash
+gcloud auth activate-service-account --key-file=${KEYFILE}
+gcloud auth configure-docker europe-west3-docker.pkg.dev
+docker pull europe-west3-docker.pkg.dev/rasa-releases/rasa-plus/rasa-plus
+```
+
+### Using An Intermediate Repository
+If you are using your own intermediate repository to cache libraries or dependencies (such as Artifactory or Nexus Repository Manager), you may need to generate a set of static credentials that allow you to authenticate with GCP Artifact Registry.
+
+As a prerequisite, you will need:
+
+- to [install](https://cloud.google.com/sdk/docs/install) the Google Cloud CLI.
+- to verify that the user or service account you are using has the required permissions to access the repository.
+
+To generate your credentials, run:
+
+```sh
+gcloud artifacts print-settings python \
+    --project=rasa-releases \
+    --repository=rasa-plus-py \
+    --location=europe-west3 \
+    --json-key=service-account.json
+```
+
+Your credentials can be found in the output. The username will be `_json_key_base64` and the password will be a long, base64 encoded string.
+
+### Runtime Configuration
+
+Rasa Pro will look for your license in the env var `RASA_PRO_LICENSE`.
+You can set this env var temporarily in your terminal, but it is recommended
+to set it persistently so that you don't have to set it every time you run
+Rasa Pro.
+
+Bash:
+
+```sh
+## Temporary
+export RASA_PRO_LICENSE=<your-license-string>
+
+## Persistent
+echo "export RASA_PRO_LICENSE=<your-license-string>" >> ~/.bashrc
+## If you're using a different flavor of bash e.g. Zsh, replace .bashrc with your shell's initialization script e.g. ~/.zshrc
+```
+
+Windows Powershell:
+
+```powershell
+## Temporary
+$env: RASA_PRO_LICENSE=<your-license-string>
+
+## Persistent
+[System.Environment]::SetEnvironmentVariable('RASA_PRO_LICENSE','<your-license-string>')
+```
+
+Then you can use the [`rasa` CLI](https://rasa.com/docs/rasa/command-line-interface) as usual, for example:
+
+```sh
+rasa init
+```
+
+:::note
+
+If you run `rasa train` or `rasa run` after you’ve enabled tracing using Jaeger as a backend in your local development environment,
+you might come across this error `OSError: [Errno 40] Message too long`.
+
+This could be caused by the OS of your local development environment restricting UDP packet size.
+You can find out the current UDP packet size by running `sysctl net.inet.udp.maxdgram` on macOS.
+You can increase UDP packet size by running `sudo sysctl -w net.inet.udp.maxdgram=65535`.
+
+:::
+
+Congratulations! You have now successfully installed Rasa Pro on your development environment.
+To learn more about production deployments, visit:
+
+- [Deploying Rasa Pro in production](../../deploy/deploy-rasa)
+- [Deploying Rasa Pro Services in production](../../deploy/deploy-rasa-pro-services)

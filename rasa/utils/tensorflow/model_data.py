@@ -1,12 +1,9 @@
 import logging
-
-import numpy as np
-import scipy.sparse
-
-from sklearn.model_selection import train_test_split
 from typing import (
     Optional,
+    DefaultDict,
     Dict,
+    Iterable,
     Text,
     List,
     Tuple,
@@ -14,10 +11,30 @@ from typing import (
     Union,
     NamedTuple,
     ItemsView,
+    overload,
+    cast,
 )
 from collections import defaultdict, OrderedDict
 
+import numpy as np
+import scipy.sparse
+from sklearn.model_selection import train_test_split
+
 logger = logging.getLogger(__name__)
+
+
+def ragged_array_to_ndarray(ragged_array: Iterable[np.ndarray]) -> np.ndarray:
+    """Converts ragged array to numpy array.
+
+    Ragged array, also known as a jagged array, irregular array is an array of
+    arrays of which the member arrays can be of different lengths.
+    Try to convert as is (preserves type), if it fails because not all numpy arrays have
+    the same shape, then creates numpy array of objects.
+    """
+    try:
+        return np.array(ragged_array)
+    except ValueError:
+        return np.array(ragged_array, dtype=object)
 
 
 class FeatureArray(np.ndarray):
@@ -76,7 +93,7 @@ class FeatureArray(np.ndarray):
         super().__init__(**kwargs)
         self.number_of_dimensions = number_of_dimensions
 
-    def __array_finalize__(self, obj: Any) -> None:
+    def __array_finalize__(self, obj: Optional[np.ndarray]) -> None:
         """This method is called when the system allocates a new array from obj.
 
         Args:
@@ -86,7 +103,7 @@ class FeatureArray(np.ndarray):
             return
 
         self.units = getattr(obj, "units", None)
-        self.number_of_dimensions = getattr(obj, "number_of_dimensions", None)
+        self.number_of_dimensions = getattr(obj, "number_of_dimensions", None)  # type: ignore[assignment] # noqa:E501
         self.is_sparse = getattr(obj, "is_sparse", None)
 
         default_attributes = {
@@ -137,6 +154,8 @@ class FeatureArray(np.ndarray):
             A tuple.
         """
         pickled_state = super(FeatureArray, self).__reduce__()
+        if isinstance(pickled_state, str):
+            raise TypeError("np array __reduce__ returned string instead of tuple.")
         new_state = pickled_state[2] + (
             self.number_of_dimensions,
             self.is_sparse,
@@ -251,8 +270,7 @@ class RasaModelData:
         label_sub_key: Optional[Text] = None,
         data: Optional[Data] = None,
     ) -> None:
-        """
-        Initializes the RasaModelData object.
+        """Initializes the RasaModelData object.
 
         Args:
             label_key: the key of a label used for balancing, etc.
@@ -264,6 +282,15 @@ class RasaModelData:
         self.label_sub_key = label_sub_key
         # should be updated when features are added
         self.num_examples = self.number_of_examples()
+        self.sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]] = {}
+
+    @overload
+    def get(self, key: Text, sub_key: Text) -> List[FeatureArray]:
+        ...
+
+    @overload
+    def get(self, key: Text, sub_key: None = ...) -> Dict[Text, List[FeatureArray]]:
+        ...
 
     def get(
         self, key: Text, sub_key: Optional[Text] = None
@@ -330,11 +357,12 @@ class RasaModelData:
         Returns:
             The simplified data.
         """
-        out_data = {}
+        out_data: Data = {}
         for key, attribute_data in self.data.items():
             out_data[key] = {}
             for sub_key, features in attribute_data.items():
-                out_data[key][sub_key] = [feature[:1] for feature in features]
+                feature_slices = [feature[:1] for feature in features]
+                out_data[key][sub_key] = cast(List[FeatureArray], feature_slices)
         return out_data
 
     def does_feature_exist(self, key: Text, sub_key: Optional[Text] = None) -> bool:
@@ -371,7 +399,6 @@ class RasaModelData:
 
     def is_empty(self) -> bool:
         """Checks if data is set."""
-
         return not self.data
 
     def number_of_examples(self, data: Optional[Data] = None) -> int:
@@ -426,7 +453,7 @@ class RasaModelData:
         units = 0
         for features in self.data[key][sub_key]:
             if len(features) > 0:
-                units += features.units
+                units += features.units  # type: ignore[operator]
 
         return units
 
@@ -515,7 +542,7 @@ class RasaModelData:
 
             if features.number_of_dimensions == 4:
                 lengths = FeatureArray(
-                    np.array(
+                    ragged_array_to_ndarray(
                         [
                             # add one more dim so that dialogue dim
                             # would be a sequence
@@ -531,6 +558,30 @@ class RasaModelData:
                 )
             self.data[key][sub_key].extend([lengths])
             break
+
+    def add_sparse_feature_sizes(
+        self, sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]]
+    ) -> None:
+        """Adds a dictionary of feature sizes for different attributes.
+
+        Args:
+            sparse_feature_sizes: a dictionary of attribute that has sparse
+                           features to a dictionary of a feature type
+                           to a list of different sparse feature sizes.
+        """
+        self.sparse_feature_sizes = sparse_feature_sizes
+
+    def get_sparse_feature_sizes(self) -> Dict[Text, Dict[Text, List[int]]]:
+        """Get feature sizes of the model.
+
+        sparse_feature_sizes is a dictionary of attribute that has sparse features to
+        a dictionary of a feature type to a list of different sparse feature sizes.
+
+        Returns:
+            A dictionary of key and sub-key to a list of feature signatures
+            (same structure as the data attribute).
+        """
+        return self.sparse_feature_sizes
 
     def split(
         self, number_of_test_examples: int, random_seed: int
@@ -554,7 +605,7 @@ class RasaModelData:
                 for data in attribute_data.values()
                 for v in data
             ]
-            solo_values = [
+            solo_values: List[Any] = [
                 []
                 for attribute_data in self.data.values()
                 for data in attribute_data.values()
@@ -566,7 +617,15 @@ class RasaModelData:
             label_ids = self._create_label_ids(
                 self.data[self.label_key][self.label_sub_key][0]
             )
-            label_counts = dict(zip(*np.unique(label_ids, return_counts=True, axis=0)))
+            label_counts: Dict[int, int] = dict(
+                zip(
+                    *np.unique(
+                        label_ids,
+                        return_counts=True,
+                        axis=0,
+                    )
+                )
+            )
 
             self._check_train_test_sizes(number_of_test_examples, label_counts)
 
@@ -576,7 +635,7 @@ class RasaModelData:
             # this operation can be performed only for labels
             # that contain several data points
             multi_values = [
-                f[counts > 1]
+                f[counts > 1].view(FeatureArray)
                 for attribute_data in self.data.values()
                 for features in attribute_data.values()
                 for f in features
@@ -680,13 +739,15 @@ class RasaModelData:
         # if a label was skipped in current batch
         skipped = [False] * num_label_ids
 
-        new_data = defaultdict(lambda: defaultdict(list))
+        new_data: DefaultDict[
+            Text, DefaultDict[Text, List[List[FeatureArray]]]
+        ] = defaultdict(lambda: defaultdict(list))
 
         while min(num_data_cycles) == 0:
             if shuffle:
                 indices_of_labels = np.random.permutation(num_label_ids)
             else:
-                indices_of_labels = range(num_label_ids)
+                indices_of_labels = np.asarray(range(num_label_ids))
 
             for index in indices_of_labels:
                 if num_data_cycles[index] > 0 and not skipped[index]:
@@ -716,13 +777,13 @@ class RasaModelData:
                 if min(num_data_cycles) > 0:
                     break
 
-        final_data = defaultdict(lambda: defaultdict(list))
+        final_data: Data = defaultdict(lambda: defaultdict(list))
         for key, attribute_data in new_data.items():
             for sub_key, features in attribute_data.items():
                 for f in features:
                     final_data[key][sub_key].append(
                         FeatureArray(
-                            np.concatenate(np.array(f)),
+                            np.concatenate(f),
                             number_of_dimensions=f[0].number_of_dimensions,
                         )
                     )
@@ -764,7 +825,7 @@ class RasaModelData:
         Returns:
             The filtered data
         """
-        new_data = defaultdict(lambda: defaultdict(list))
+        new_data: Data = defaultdict(lambda: defaultdict(list))
 
         if data is None:
             return new_data
@@ -831,8 +892,12 @@ class RasaModelData:
         Returns:
             The test and train RasaModelData
         """
-        data_train = defaultdict(lambda: defaultdict(list))
-        data_val = defaultdict(lambda: defaultdict(list))
+        data_train: DefaultDict[
+            Text, DefaultDict[Text, List[FeatureArray]]
+        ] = defaultdict(lambda: defaultdict(list))
+        data_val: DefaultDict[Text, DefaultDict[Text, List[Any]]] = defaultdict(
+            lambda: defaultdict(list)
+        )
 
         # output_values = x_train, x_val, y_train, y_val, z_train, z_val, etc.
         # order is kept, e.g. same order as model data keys
@@ -889,9 +954,9 @@ class RasaModelData:
             return FeatureArray(
                 scipy.sparse.vstack([feature_1, feature_2]), number_of_dimensions
             )
-
         return FeatureArray(
-            np.concatenate([feature_1, feature_2]), number_of_dimensions
+            np.concatenate([feature_1, feature_2]),
+            number_of_dimensions,
         )
 
     @staticmethod

@@ -1,13 +1,10 @@
 import logging
 import uuid
+import json
 from typing import Any, Awaitable, Callable, Dict, Iterable, List, Optional, Text
 
 import rasa.core.channels.channel
-from rasa.core.channels.channel import (
-    InputChannel,
-    OutputChannel,
-    UserMessage,
-)
+from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
 import rasa.shared.utils.io
 from sanic import Blueprint, response, Sanic
 from sanic.request import Request
@@ -21,12 +18,23 @@ class SocketBlueprint(Blueprint):
     def __init__(
         self, sio: AsyncServer, socketio_path: Text, *args: Any, **kwargs: Any
     ) -> None:
-        self.sio = sio
-        self.socketio_path = socketio_path
+        """Creates a :class:`sanic.Blueprint` for routing socketio connenctions.
+
+        :param sio: Instance of :class:`socketio.AsyncServer` class
+        :param socketio_path: string indicating the route to accept requests on.
+        """
         super().__init__(*args, **kwargs)
+        self.ctx.sio = sio
+        self.ctx.socketio_path = socketio_path
 
     def register(self, app: Sanic, options: Dict[Text, Any]) -> None:
-        self.sio.attach(app, self.socketio_path)
+        """Attach the Socket.IO webserver to the given Sanic instance.
+
+        :param app: Instance of :class:`sanic.app.Sanic` class
+        :param options: Options to be used while registering the
+            blueprint into the app.
+        """
+        self.ctx.sio.attach(app, self.ctx.socketio_path)
         super().register(app, options)
 
 
@@ -41,22 +49,19 @@ class SocketIOOutput(OutputChannel):
 
     async def _send_message(self, socket_id: Text, response: Any) -> None:
         """Sends a message to the recipient using the bot event."""
-
         await self.sio.emit(self.bot_message_evt, response, room=socket_id)
 
     async def send_text_message(
         self, recipient_id: Text, text: Text, **kwargs: Any
     ) -> None:
         """Send a message through this channel."""
-
         for message_part in text.strip().split("\n\n"):
             await self._send_message(recipient_id, {"text": message_part})
 
     async def send_image_url(
         self, recipient_id: Text, image: Text, **kwargs: Any
     ) -> None:
-        """Sends an image to the output"""
-
+        """Sends an image to the output."""
         message = {"attachment": {"type": "image", "payload": {"src": image}}}
         await self._send_message(recipient_id, message)
 
@@ -68,22 +73,23 @@ class SocketIOOutput(OutputChannel):
         **kwargs: Any,
     ) -> None:
         """Sends buttons to the output."""
-
         # split text and create a message for each text fragment
         # the `or` makes sure there is at least one message we can attach the quick
         # replies to
         message_parts = text.strip().split("\n\n") or [text]
-        messages = [{"text": message, "quick_replies": []} for message in message_parts]
+        messages: List[Dict[Text, Any]] = [
+            {"text": message, "quick_replies": []} for message in message_parts
+        ]
 
         # attach all buttons to the last text fragment
-        for button in buttons:
-            messages[-1]["quick_replies"].append(
-                {
-                    "content_type": "text",
-                    "title": button["title"],
-                    "payload": button["payload"],
-                }
-            )
+        messages[-1]["quick_replies"] = [
+            {
+                "content_type": "text",
+                "title": button["title"],
+                "payload": button["payload"],
+            }
+            for button in buttons
+        ]
 
         for message in messages:
             await self._send_message(recipient_id, message)
@@ -92,7 +98,6 @@ class SocketIOOutput(OutputChannel):
         self, recipient_id: Text, elements: Iterable[Dict[Text, Any]], **kwargs: Any
     ) -> None:
         """Sends elements to the output."""
-
         for element in elements:
             message = {
                 "attachment": {
@@ -106,13 +111,12 @@ class SocketIOOutput(OutputChannel):
     async def send_custom_json(
         self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
     ) -> None:
-        """Sends custom json to the output"""
-
+        """Sends custom json to the output."""
         json_message.setdefault("room", recipient_id)
 
         await self.sio.emit(self.bot_message_evt, **json_message)
 
-    async def send_attachment(
+    async def send_attachment(  # type: ignore[override]
         self, recipient_id: Text, attachment: Dict[Text, Any], **kwargs: Any
     ) -> None:
         """Sends an attachment to the user."""
@@ -137,6 +141,7 @@ class SocketIOInput(InputChannel):
             credentials.get("socketio_path", "/socket.io"),
             credentials.get("jwt_key"),
             credentials.get("jwt_method", "HS256"),
+            credentials.get("metadata_key", "metadata"),
         )
 
     def __init__(
@@ -148,6 +153,7 @@ class SocketIOInput(InputChannel):
         socketio_path: Optional[Text] = "/socket.io",
         jwt_key: Optional[Text] = None,
         jwt_method: Optional[Text] = "HS256",
+        metadata_key: Optional[Text] = "metadata",
     ):
         """Creates a ``SocketIOInput`` object."""
         self.bot_message_evt = bot_message_evt
@@ -155,7 +161,8 @@ class SocketIOInput(InputChannel):
         self.user_message_evt = user_message_evt
         self.namespace = namespace
         self.socketio_path = socketio_path
-        self.sio = None
+        self.sio: Optional[AsyncServer] = None
+        self.metadata_key = metadata_key
 
         self.jwt_key = jwt_key
         self.jwt_algorithm = jwt_method
@@ -170,12 +177,13 @@ class SocketIOInput(InputChannel):
                 "Please use a different channel for external events in these "
                 "scenarios."
             )
-            return
+            return None
         return SocketIOOutput(self.sio, self.bot_message_evt)
 
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
     ) -> Blueprint:
+        """Defines a Sanic blueprint."""
         # Workaround so that socketio works with requests from other origins.
         # https://github.com/miguelgrinberg/python-socketio/issues/205#issuecomment-493769183
         sio = AsyncServer(async_mode="sanic", cors_allowed_origins=[])
@@ -191,22 +199,22 @@ class SocketIOInput(InputChannel):
             return response.json({"status": "ok"})
 
         @sio.on("connect", namespace=self.namespace)
-        async def connect(
-            sid: Text, environ: Dict, auth: Optional[Dict]
-        ) -> Optional[bool]:
+        async def connect(sid: Text, environ: Dict, auth: Optional[Dict]) -> bool:
             if self.jwt_key:
                 jwt_payload = None
                 if auth and auth.get("token"):
                     jwt_payload = rasa.core.channels.channel.decode_bearer_token(
-                        auth.get("token"), self.jwt_key, self.jwt_algorithm,
+                        auth.get("token"), self.jwt_key, self.jwt_algorithm
                     )
 
                 if jwt_payload:
                     logger.debug(f"User {sid} connected to socketIO endpoint.")
+                    return True
                 else:
                     return False
             else:
                 logger.debug(f"User {sid} connected to socketIO endpoint.")
+                return True
 
         @sio.on("disconnect", namespace=self.namespace)
         async def disconnect(sid: Text) -> None:
@@ -241,8 +249,15 @@ class SocketIOInput(InputChannel):
             else:
                 sender_id = sid
 
+            metadata = data.get(self.metadata_key, {})
+            if isinstance(metadata, Text):
+                metadata = json.loads(metadata)
             message = UserMessage(
-                data["message"], output_channel, sender_id, input_channel=self.name()
+                data.get("message", ""),
+                output_channel,
+                sender_id,
+                input_channel=self.name(),
+                metadata=metadata,
             )
             await on_new_message(message)
 

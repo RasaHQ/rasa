@@ -1,5 +1,5 @@
-from rasa.nlu.components import Component
+class IntentClassifier:
+    """An intent classifier."""
 
-
-class IntentClassifier(Component):
+    # TODO: move "add intent / rankings to message" functions here
     pass

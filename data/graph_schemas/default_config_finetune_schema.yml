@@ -1,0 +1,305 @@
+nodes:
+  schema_validator:
+    needs:
+      importer: __importer__
+    uses: rasa.graph_components.validators.default_recipe_validator.DefaultV1RecipeValidator
+    constructor_name: create
+    fn: validate
+    config: {}
+    eager: false
+    is_target: false
+    is_input: true
+    resource: null
+  finetuning_validator:
+    needs:
+      importer: schema_validator
+    uses: rasa.graph_components.validators.finetuning_validator.FinetuningValidator
+    constructor_name: load
+    fn: validate
+    config:
+      validate_core: true
+      validate_nlu: true
+    eager: false
+    is_target: false
+    is_input: true
+    resource: null
+  nlu_training_data_provider:
+    needs:
+      importer: finetuning_validator
+    uses: rasa.graph_components.providers.nlu_training_data_provider.NLUTrainingDataProvider
+    constructor_name: create
+    fn: provide
+    config:
+      language: en
+      persist: false
+    eager: false
+    is_target: false
+    is_input: true
+    resource: null
+  run_WhitespaceTokenizer0:
+    needs:
+      training_data: nlu_training_data_provider
+    uses: rasa.nlu.tokenizers.whitespace_tokenizer.WhitespaceTokenizer
+    constructor_name: load
+    fn: process_training_data
+    config: {}
+    eager: false
+    is_target: false
+    is_input: false
+    resource: null
+  train_RegexFeaturizer1:
+    needs:
+      training_data: run_WhitespaceTokenizer0
+    uses: rasa.nlu.featurizers.sparse_featurizer.regex_featurizer.RegexFeaturizer
+    constructor_name: load
+    fn: train
+    config: {}
+    eager: false
+    is_target: true
+    is_input: false
+    resource: null
+  run_RegexFeaturizer1:
+    needs:
+      training_data: run_WhitespaceTokenizer0
+      resource: train_RegexFeaturizer1
+    uses: rasa.nlu.featurizers.sparse_featurizer.regex_featurizer.RegexFeaturizer
+    constructor_name: load
+    fn: process_training_data
+    config: {}
+    eager: false
+    is_target: false
+    is_input: false
+    resource: null
+  train_LexicalSyntacticFeaturizer2:
+    needs:
+      training_data: run_RegexFeaturizer1
+    uses: rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer.LexicalSyntacticFeaturizer
+    constructor_name: load
+    fn: train
+    config: {}
+    eager: false
+    is_target: true
+    is_input: false
+    resource: null
+  run_LexicalSyntacticFeaturizer2:
+    needs:
+      training_data: run_RegexFeaturizer1
+      resource: train_LexicalSyntacticFeaturizer2
+    uses: rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer.LexicalSyntacticFeaturizer
+    constructor_name: load
+    fn: process_training_data
+    config: {}
+    eager: false
+    is_target: false
+    is_input: false
+    resource: null
+  train_CountVectorsFeaturizer3:
+    needs:
+      training_data: run_LexicalSyntacticFeaturizer2
+    uses: rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer.CountVectorsFeaturizer
+    constructor_name: load
+    fn: train
+    config: {}
+    eager: false
+    is_target: true
+    is_input: false
+    resource: null
+  run_CountVectorsFeaturizer3:
+    needs:
+      training_data: run_LexicalSyntacticFeaturizer2
+      resource: train_CountVectorsFeaturizer3
+    uses: rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer.CountVectorsFeaturizer
+    constructor_name: load
+    fn: process_training_data
+    config: {}
+    eager: false
+    is_target: false
+    is_input: false
+    resource: null
+  train_CountVectorsFeaturizer4:
+    needs:
+      training_data: run_CountVectorsFeaturizer3
+    uses: rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer.CountVectorsFeaturizer
+    constructor_name: load
+    fn: train
+    config:
+      analyzer: char_wb
+      min_ngram: 1
+      max_ngram: 4
+    eager: false
+    is_target: true
+    is_input: false
+    resource: null
+  run_CountVectorsFeaturizer4:
+    needs:
+      training_data: run_CountVectorsFeaturizer3
+      resource: train_CountVectorsFeaturizer4
+    uses: rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer.CountVectorsFeaturizer
+    constructor_name: load
+    fn: process_training_data
+    config:
+      analyzer: char_wb
+      min_ngram: 1
+      max_ngram: 4
+    eager: false
+    is_target: false
+    is_input: false
+    resource: null
+  train_DIETClassifier5:
+    needs:
+      training_data: run_CountVectorsFeaturizer4
+    uses: rasa.nlu.classifiers.diet_classifier.DIETClassifier
+    constructor_name: load
+    fn: train
+    config:
+      epochs: 100
+      constrain_similarities: true
+    eager: false
+    is_target: true
+    is_input: false
+    resource: null
+  train_EntitySynonymMapper6:
+    needs:
+      training_data: run_CountVectorsFeaturizer4
+    uses: rasa.nlu.extractors.entity_synonyms.EntitySynonymMapper
+    constructor_name: load
+    fn: train
+    config: {}
+    eager: false
+    is_target: true
+    is_input: false
+    resource: null
+  train_ResponseSelector7:
+    needs:
+      training_data: run_CountVectorsFeaturizer4
+    uses: rasa.nlu.selectors.response_selector.ResponseSelector
+    constructor_name: load
+    fn: train
+    config:
+      epochs: 100
+      constrain_similarities: true
+    eager: false
+    is_target: true
+    is_input: false
+    resource: null
+  domain_provider:
+    needs:
+      importer: finetuning_validator
+    uses: rasa.graph_components.providers.domain_provider.DomainProvider
+    constructor_name: create
+    fn: provide_train
+    config: {}
+    eager: false
+    is_target: true
+    is_input: true
+    resource: null
+  domain_for_core_training_provider:
+    needs:
+      domain: domain_provider
+    uses: rasa.graph_components.providers.domain_for_core_training_provider.DomainForCoreTrainingProvider
+    constructor_name: create
+    fn: provide
+    config: {}
+    eager: false
+    is_target: false
+    is_input: true
+    resource: null
+  forms_provider:
+    needs:
+      domain: domain_provider
+    uses: rasa.graph_components.providers.forms_provider.FormsProvider
+    constructor_name: create
+    fn: provide
+    config: {}
+    eager: false
+    is_target: false
+    is_input: true
+    resource: null
+  responses_provider:
+    needs:
+      domain: domain_provider
+    uses: rasa.graph_components.providers.responses_provider.ResponsesProvider
+    constructor_name: create
+    fn: provide
+    config: {}
+    eager: false
+    is_target: false
+    is_input: true
+    resource: null
+  story_graph_provider:
+    needs:
+      importer: finetuning_validator
+    uses: rasa.graph_components.providers.story_graph_provider.StoryGraphProvider
+    constructor_name: create
+    fn: provide
+    config:
+      exclusion_percentage: null
+    eager: false
+    is_target: false
+    is_input: true
+    resource: null
+  training_tracker_provider:
+    needs:
+      story_graph: story_graph_provider
+      domain: domain_for_core_training_provider
+    uses: rasa.graph_components.providers.training_tracker_provider.TrainingTrackerProvider
+    constructor_name: create
+    fn: provide
+    config: {}
+    eager: false
+    is_target: false
+    is_input: false
+    resource: null
+  train_MemoizationPolicy0:
+    needs:
+      training_trackers: training_tracker_provider
+      domain: domain_for_core_training_provider
+    uses: rasa.core.policies.memoization.MemoizationPolicy
+    constructor_name: load
+    fn: train
+    config: {}
+    eager: false
+    is_target: true
+    is_input: false
+    resource: null
+  train_RulePolicy1:
+    needs:
+      training_trackers: training_tracker_provider
+      domain: domain_for_core_training_provider
+    uses: rasa.core.policies.rule_policy.RulePolicy
+    constructor_name: load
+    fn: train
+    config: {}
+    eager: false
+    is_target: true
+    is_input: false
+    resource: null
+  train_UnexpecTEDIntentPolicy2:
+    needs:
+      training_trackers: training_tracker_provider
+      domain: domain_for_core_training_provider
+    uses: rasa.core.policies.unexpected_intent_policy.UnexpecTEDIntentPolicy
+    constructor_name: load
+    fn: train
+    config:
+      max_history: 5
+      epochs: 100
+    eager: false
+    is_target: true
+    is_input: false
+    resource: null
+  train_TEDPolicy3:
+    needs:
+      training_trackers: training_tracker_provider
+      domain: domain_for_core_training_provider
+    uses: rasa.core.policies.ted_policy.TEDPolicy
+    constructor_name: load
+    fn: train
+    config:
+      max_history: 5
+      epochs: 100
+      constrain_similarities: true
+    eager: false
+    is_target: true
+    is_input: false
+    resource: null

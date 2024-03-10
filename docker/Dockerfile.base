@@ -1,5 +1,5 @@
 # The base image used for all images
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND="noninteractive"
 
@@ -13,6 +13,9 @@ RUN apt-get update -qq && \
   libpq-dev \
   # required for health check
   curl \
+  # required for some Python package builds with Ubuntu 22.04
+  cargo \
+  rustc \
   && apt-get autoremove -y
 
 # Make sure that all security updates are installed

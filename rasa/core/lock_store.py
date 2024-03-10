@@ -1,10 +1,11 @@
+from __future__ import annotations
 import asyncio
+from contextlib import asynccontextmanager
 import json
 import logging
 import os
 
-from async_generator import asynccontextmanager
-from typing import Text, Union, Optional, AsyncGenerator
+from typing import AsyncGenerator, Dict, Optional, Text, Union
 
 from rasa.shared.exceptions import RasaException, ConnectionException
 import rasa.shared.utils.common
@@ -37,10 +38,11 @@ class LockError(RasaException):
 
 
 class LockStore:
-    @staticmethod
-    def create(obj: Union["LockStore", EndpointConfig, None]) -> "LockStore":
-        """Factory to create a lock store."""
+    """Base class for ticket locks."""
 
+    @staticmethod
+    def create(obj: Union[LockStore, EndpointConfig, None]) -> LockStore:
+        """Factory to create a lock store."""
         if isinstance(obj, LockStore):
             return obj
 
@@ -52,22 +54,18 @@ class LockStore:
     @staticmethod
     def create_lock(conversation_id: Text) -> TicketLock:
         """Create a new `TicketLock` for `conversation_id`."""
-
         return TicketLock(conversation_id)
 
     def get_lock(self, conversation_id: Text) -> Optional[TicketLock]:
         """Fetch lock for `conversation_id` from storage."""
-
         raise NotImplementedError
 
     def delete_lock(self, conversation_id: Text) -> None:
         """Delete lock for `conversation_id` from storage."""
-
         raise NotImplementedError
 
     def save_lock(self, lock: TicketLock) -> None:
         """Commit `lock` to storage."""
-
         raise NotImplementedError
 
     def issue_ticket(
@@ -145,16 +143,16 @@ class LockStore:
 
     def update_lock(self, conversation_id: Text) -> None:
         """Fetch lock for `conversation_id`, remove expired tickets and save lock."""
-
         lock = self.get_lock(conversation_id)
         if lock:
             lock.remove_expired_tickets()
             self.save_lock(lock)
 
     def get_or_create_lock(self, conversation_id: Text) -> TicketLock:
-        """Fetch existing lock for `conversation_id` or create a new one if
-        it doesn't exist."""
+        """Fetch existing lock for `conversation_id`.
 
+        Alternatively, create a new one if it doesn't exist.
+        """
         existing_lock = self.get_lock(conversation_id)
 
         if existing_lock:
@@ -163,9 +161,7 @@ class LockStore:
         return self.create_lock(conversation_id)
 
     def is_someone_waiting(self, conversation_id: Text) -> bool:
-        """Return whether someone is waiting for lock associated with
-        `conversation_id`."""
-
+        """Return whether someone is waiting for lock for this `conversation_id`."""
         lock = self.get_lock(conversation_id)
         if lock:
             return lock.is_someone_waiting()
@@ -177,7 +173,6 @@ class LockStore:
 
         Removes ticket from lock and saves lock.
         """
-
         lock = self.get_lock(conversation_id)
         if lock:
             lock.remove_ticket_for(ticket_number)
@@ -185,7 +180,6 @@ class LockStore:
 
     def cleanup(self, conversation_id: Text, ticket_number: int) -> None:
         """Remove lock for `conversation_id` if no one is waiting."""
-
         self.finish_serving(conversation_id, ticket_number)
         if not self.is_someone_waiting(conversation_id):
             self.delete_lock(conversation_id)
@@ -206,8 +200,12 @@ class RedisLockStore(LockStore):
         host: Text = "localhost",
         port: int = 6379,
         db: int = 1,
+        username: Optional[Text] = None,
         password: Optional[Text] = None,
         use_ssl: bool = False,
+        ssl_certfile: Optional[Text] = None,
+        ssl_keyfile: Optional[Text] = None,
+        ssl_ca_certs: Optional[Text] = None,
         key_prefix: Optional[Text] = None,
         socket_timeout: float = DEFAULT_SOCKET_TIMEOUT_IN_SECONDS,
     ) -> None:
@@ -218,9 +216,14 @@ class RedisLockStore(LockStore):
             port: The port of the redis server.
             db: The name of the database within Redis which should be used by Rasa
                 Open Source.
+            username: The username which should be used for authentication with the
+                Redis database.
             password: The password which should be used for authentication with the
                 Redis database.
             use_ssl: `True` if SSL should be used for the connection to Redis.
+            ssl_certfile: Path to the SSL certificate file.
+            ssl_keyfile: Path to the SSL private key file.
+            ssl_ca_certs: Path to the SSL CA certificate file.
             key_prefix: prefix to prepend to all keys used by the lock store. Must be
                 alphanumeric.
             socket_timeout: Timeout in seconds after which an exception will be raised
@@ -232,8 +235,12 @@ class RedisLockStore(LockStore):
             host=host,
             port=int(port),
             db=int(db),
+            username=username,
             password=password,
             ssl=use_ssl,
+            ssl_certfile=ssl_certfile,
+            ssl_keyfile=ssl_keyfile,
+            ssl_ca_certs=ssl_ca_certs,
             socket_timeout=socket_timeout,
         )
 
@@ -249,7 +256,8 @@ class RedisLockStore(LockStore):
             self.key_prefix = key_prefix + ":" + DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX
         else:
             logger.warning(
-                f"Omitting provided non-alphanumeric redis key prefix: '{key_prefix}'. Using default '{self.key_prefix}' instead."
+                f"Omitting provided non-alphanumeric redis key prefix: '{key_prefix}'. "
+                f"Using default '{self.key_prefix}' instead."
             )
 
     def get_lock(self, conversation_id: Text) -> Optional[TicketLock]:
@@ -258,7 +266,10 @@ class RedisLockStore(LockStore):
         if serialised_lock:
             return TicketLock.from_dict(json.loads(serialised_lock))
 
+        return None
+
     def delete_lock(self, conversation_id: Text) -> None:
+        """Deletes lock for conversation ID."""
         deletion_successful = self.red.delete(self.key_prefix + conversation_id)
         self._log_deletion(conversation_id, deletion_successful)
 
@@ -270,27 +281,30 @@ class InMemoryLockStore(LockStore):
     """In-memory store for ticket locks."""
 
     def __init__(self) -> None:
-        self.conversation_locks = {}
+        """Initialise dictionary of locks."""
+        self.conversation_locks: Dict[Text, TicketLock] = {}
         super().__init__()
 
     def get_lock(self, conversation_id: Text) -> Optional[TicketLock]:
+        """Get lock for conversation if it exists."""
         return self.conversation_locks.get(conversation_id)
 
     def delete_lock(self, conversation_id: Text) -> None:
+        """Delete lock for conversation."""
         deleted_lock = self.conversation_locks.pop(conversation_id, None)
         self._log_deletion(
             conversation_id, deletion_successful=deleted_lock is not None
         )
 
     def save_lock(self, lock: TicketLock) -> None:
+        """Save lock in store."""
         self.conversation_locks[lock.conversation_id] = lock
 
 
 def _create_from_endpoint_config(
     endpoint_config: Optional[EndpointConfig] = None,
-) -> "LockStore":
+) -> LockStore:
     """Given an endpoint configuration, create a proper `LockStore` object."""
-
     if (
         endpoint_config is None
         or endpoint_config.type is None
@@ -298,7 +312,7 @@ def _create_from_endpoint_config(
     ):
         # this is the default type if no lock store type is set
 
-        lock_store = InMemoryLockStore()
+        lock_store: LockStore = InMemoryLockStore()
     elif endpoint_config.type == "redis":
         lock_store = RedisLockStore(host=endpoint_config.url, **endpoint_config.kwargs)
     else:
@@ -311,9 +325,8 @@ def _create_from_endpoint_config(
 
 def _load_from_module_name_in_endpoint_config(
     endpoint_config: EndpointConfig,
-) -> "LockStore":
+) -> LockStore:
     """Retrieve a `LockStore` based on its class name."""
-
     try:
         lock_store_class = rasa.shared.utils.common.class_from_module_path(
             endpoint_config.type

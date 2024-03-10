@@ -1,3 +1,4 @@
+assistant_id: default_spacy_bot
 language: "fr"  # your two-letter language code
 
 pipeline:

@@ -1,0 +1,215 @@
+---
+id: example-queries
+sidebar_label: Example queries
+title: Example queries
+description:
+---
+
+import useBaseUrl from "@docusaurus/useBaseUrl";
+
+This section helps you get started with analyzing your assistant's conversations.
+The examples use SQL queries together with an example visualization in Metabase.
+
+For more metrics and categories of conversations,
+see [Types of metrics](./getting-started-with-analytics.mdx#types-of-metrics).
+
+
+<!--
+The queries below are taken from a dashboard in Metabase:
+https://rasa-technologies-gmbh.metabaseapp.com/dashboard/3-example-queries-for-the-docs
+
+Please note that, given the data in the Metabase instance, we had to cheat and modify
+the HTML of the graphs before taking the screenshots, otherwise we'd have data from
+2020 instead of 2022.
+
+Please also note that some SQL queries in this page are not simple copy-paste from
+Metabase queries because we used filters in Metabase to remove the noise and make
+the graphs look nice.
+
+Please make sure that these SQL queries are kept in sync with the dashboard, it'll
+make your colleagues' work next time easier :).
+
+-->
+
+## Number of sessions per month
+
+A common high-level usage metric of your assistant is the number of
+sessions per month. Here is how it would look as an SQL query:
+
+```sql
+SELECT
+  date_trunc('month', "public"."rasa_session"."timestamp") AS "first_seen",
+  count(*) AS "count"
+FROM "public"."rasa_session"
+GROUP BY 1
+ORDER BY 1 ASC
+```
+
+<figure align="center">
+  <img
+    alt="Number of sessions per month visualized in Metabase."
+    src={useBaseUrl("/img/analytics/graph-number-sessions-month.png")}
+    width="100%"
+  />
+  <figcaption>Number of sessions per month visualized in Metabase.</figcaption>
+</figure>
+
+## Number of sessions per channel
+
+If you're connecting your assistant to multiple channels, it could be
+useful to look at the number of sessions per channel, let's say per week.
+The query you would need for this metric is:
+
+```sql
+SELECT
+  "public"."rasa_sender"."channel" AS "channel",
+  "public"."rasa_sender"."first_seen" AS "timestamp",
+  count(distinct "public"."rasa_sender"."sender_key") AS "count"
+FROM "public"."rasa_sender"
+GROUP BY 1, 2
+ORDER BY 1 ASC, 2 ASC
+```
+
+<figure align="center">
+  <img
+    alt="Number of sessions per channel visualized in Metabase."
+    src={useBaseUrl("/img/analytics/graph-number-sessions-channel.png")}
+    width="100%"
+  />
+  <figcaption>
+    The number of sessions per channel as visualized in Metabase.
+  </figcaption>
+</figure>
+
+## Top N intents
+
+To improve your assistant, you could look into the variety of intents
+your users express. The query below selects the top 5 intents which
+could help you have a good perspective on that topic:
+
+```sql
+SELECT
+  "public"."rasa_user_message"."intent" AS "intent",
+  count(*) AS "count"
+FROM "public"."rasa_user_message"
+GROUP BY 1
+ORDER BY 2 DESC, 1 ASC
+LIMIT 5
+```
+
+<figure align="center">
+  <img
+    alt="Top 5 intents visualized in Metabase."
+    src={useBaseUrl("/img/analytics/graph-top-5-intents.png")}
+    width="100%"
+  />
+  <figcaption>Top 5 intents visualized in Metabase.</figcaption>
+</figure>
+
+Moreover, you can look for the intent distribution over time:
+
+```sql
+SELECT
+  "public"."rasa_user_message"."intent" AS "intent",
+  date_trunc('month', "public"."rasa_user_message"."timestamp") AS "timestamp",
+  count(*) AS "count" FROM "public"."rasa_user_message"
+GROUP BY 1, 2
+ORDER BY 1 ASC, 2 ASC
+```
+
+<figure align="center">
+  <img
+    alt="Intent distribution over time visualized in Metabase."
+    src={useBaseUrl("/img/analytics/graph-intent-distribution.png")}
+    width="100%"
+  />
+  <figcaption>Intent distribution over time visualized in Metabase.</figcaption>
+</figure>
+
+## Escalation rate
+
+The escalation rate or human hand-off rate is a measure of the number of
+conversations the assistant passes to a human agent. This metric can
+help you gain a better understanding of what happens during a conversation.
+Let's say you have an intent named `handoff_to_support`. You'll get the
+escalation rate over time with this sample query:
+
+```sql
+WITH "sessions" AS (
+    SELECT
+        "public"."rasa_user_message"."session_id" AS "session_id",
+        date_trunc('month', "public"."rasa_user_message"."timestamp") AS "timestamp",
+        (
+          CASE "public"."rasa_user_message"."intent"
+            WHEN 'handoff_to_support'
+            THEN 1 ELSE 0
+          END
+        ) AS "has_handoff_to_support"
+    FROM "public"."rasa_user_message"
+),
+"sessions_with_handoff" AS (
+    SELECT
+      "session_id",
+      "timestamp",
+      SUM("has_handoff_to_support") AS "has_handoff_to_support"
+    FROM "sessions"
+    GROUP BY 1, 2
+)
+SELECT
+  "timestamp",
+  SUM("has_handoff_to_support") / count(*) AS "escalation_rate"
+FROM "sessions_with_handoff"
+GROUP BY 1 ASC
+ORDER BY 1 ASC
+```
+
+<figure align="center">
+  <img
+    alt="Escalation rate visualized in Metabase."
+    src={useBaseUrl("/img/analytics/graph-escalation-rate.png")}
+    width="100%"
+  />
+  <figcaption>Escalation rate visualized in Metabase.</figcaption>
+</figure>
+
+## Abandonment rate
+
+Abandonment rate can be defined in many different custom ways,
+however here we'll define it as a session ending without a user message
+after a specific message was uttered by the bot, e.g. `utter_ask_name`.
+You could adapt the metric to detect sessions ending without a user
+message after a specific set of intents. The SQL query would look like this:
+
+```sql
+WITH "sessions" AS (
+    SELECT
+        DISTINCT ON ("public"."rasa_event"."session_id") "public"."rasa_event"."session_id",
+        "public"."rasa_event"."timestamp" AS "timestamp",
+        (
+            CASE
+                WHEN "public"."rasa_bot_message"."template_name" = 'utter_ask_name'
+                THEN 1 ELSE 0
+            END
+        ) AS "is_abandonned"
+    FROM "public"."rasa_event"
+    INNER JOIN "public"."rasa_bot_message"
+      ON "public"."rasa_event"."id" = "public"."rasa_bot_message"."event_id"
+    WHERE "public"."rasa_event"."event_type" = 'bot'
+    ORDER BY 1, 2 DESC
+)
+SELECT
+  date_trunc('month', "timestamp") AS "timestamp",
+  SUM("is_abandonned")::float / count(*) AS "abandonment_rate"
+FROM "sessions"
+GROUP BY 1
+ORDER BY 1 ASC
+```
+
+<figure align="center">
+  <img
+    alt="Abandonment rate visualized in Metabase."
+    src={useBaseUrl("/img/analytics/graph-abandonment-rate.png")}
+    width="100%"
+  />
+  <figcaption>Abandonment rate visualized in Metabase.</figcaption>
+</figure>

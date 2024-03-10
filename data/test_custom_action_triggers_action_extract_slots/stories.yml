@@ -1,0 +1,15 @@
+version: "3.1"
+
+stories:
+
+- story: happy path
+  steps:
+  - intent: activate_flow
+  - action: action_force_next_utter
+
+- story: test next action
+  steps:
+  - intent: mood_great
+    entities:
+    - mood: happy
+  - action: utter_happy

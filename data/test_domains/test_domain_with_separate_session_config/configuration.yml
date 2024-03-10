@@ -1,0 +1,5 @@
+version: "3.1"
+
+session_config:
+  session_expiration_time: 1
+  carry_over_slots_to_new_session: true

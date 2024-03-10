@@ -1,0 +1,5 @@
+version: '3.0'
+intents: ['does_not_matter']
+responses:
+  greet:
+  - text: hey there!

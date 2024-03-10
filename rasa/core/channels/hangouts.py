@@ -1,29 +1,42 @@
+import copy
 import logging
+import structlog
+import google.auth.transport.requests
+import cachecontrol
+import requests
+
 from asyncio import CancelledError
 from sanic import Blueprint, response
 from sanic.request import Request
 from typing import Text, List, Dict, Any, Optional, Callable, Iterable, Awaitable, Union
 
+from google.oauth2 import id_token
 from sanic.response import HTTPResponse
-from sanic.exceptions import abort
-from oauth2client import client
-from oauth2client.crypt import AppIdentityError
+from sanic.exceptions import SanicException
 
 from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
 
 logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger()
 
 CHANNEL_NAME = "hangouts"
-CERT_URI = "https://www.googleapis.com/service_accounts/v1/metadata/x509/chat@system.gserviceaccount.com"
+CERTS_URL = (
+    "https://www.googleapis.com/service_accounts/"
+    "v1/metadata/x509/chat@system.gserviceaccount.com"
+)
 
 
 class HangoutsOutput(OutputChannel):
+    """A Hangouts communication channel."""
+
     @classmethod
     def name(cls) -> Text:
+        """Return channel name."""
         return CHANNEL_NAME
 
     def __init__(self) -> None:
-        self.messages = {}
+        """Starts messages as empty dictionary."""
+        self.messages: Dict[Text, Any] = {}
 
     @staticmethod
     def _text_card(message: Dict[Text, Any]) -> Dict:
@@ -56,7 +69,7 @@ class HangoutsOutput(OutputChannel):
                 logger.error(
                     "Buttons must be a list of dicts with 'title' and 'payload' as keys"
                 )
-                return
+                return None
 
             hangouts_buttons.append(
                 {
@@ -92,8 +105,8 @@ class HangoutsOutput(OutputChannel):
         for simple text messages. All other responses must be sent as cards.
 
         In case the bot sends multiple messages, all are transformed to either
-        cards or text output"""
-
+        cards or text output
+        """
         # check whether current and previous message will send 'text' or 'card'
         if self.messages.get("text"):
             msg_state = "text"
@@ -169,15 +182,14 @@ class HangoutsOutput(OutputChannel):
     ) -> None:
         """Custom json payload is simply forwarded to Google Hangouts without
         any modifications. Use this for more complex cards, which can be created
-        in actions.py."""
+        in actions.py.
+        """
         await self._persist_message(json_message)
 
 
 # Google Hangouts input channel
 class HangoutsInput(InputChannel):
-    """
-    Channel that uses Google Hangouts Chat API to communicate.
-    """
+    """Channel that uses Google Hangouts Chat API to communicate."""
 
     @classmethod
     def from_credentials(cls, credentials: Optional[Dict[Text, Any]]) -> InputChannel:
@@ -200,8 +212,19 @@ class HangoutsInput(InputChannel):
         self.hangouts_room_added_intent_name = hangouts_room_added_intent_name
         self.hangouts_user_added_intent_name = hangouts_removed_intent_name
 
+        # Google's Request obj (this is used to make HTTP requests) uses cached
+        # session to fetch Google's service certs. Certs don't change frequently,
+        # so it makes sense to cache request body, rather than getting it again
+        # every message. Actual caching depends on response headers.
+        # see: https://github.com/googleapis/google-auth-library-python/blob/main/google/oauth2/id_token.py#L15 # noqa: E501
+        cached_session = cachecontrol.CacheControl(requests.session())
+        self.google_request = google.auth.transport.requests.Request(
+            session=cached_session
+        )
+
     @classmethod
     def name(cls) -> Text:
+        """Returns channel name."""
         return CHANNEL_NAME
 
     @staticmethod
@@ -239,29 +262,33 @@ class HangoutsInput(InputChannel):
 
     @staticmethod
     def _extract_room(req: Request) -> Union[Text, None]:
-
         if req.json["space"]["type"] == "ROOM":
             return req.json["space"]["displayName"]
+
+        return None
 
     def _extract_input_channel(self) -> Text:
         return self.name()
 
     def _check_token(self, bot_token: Text) -> None:
-        # see https://developers.google.com/hangouts/chat/how-tos/bots-develop#verifying_bot_authenticity # noqa: W505
+        # see https://developers.google.com/chat/how-tos/bots-develop#verifying_bot_authenticity # noqa: E501
+        # and https://google-auth.readthedocs.io/en/latest/user-guide.html#identity-tokens # noqa: E501
         try:
-            token = client.verify_id_token(
-                bot_token, self.project_id, cert_uri=CERT_URI
+            decoded_token = id_token.verify_token(
+                bot_token,
+                self.google_request,
+                audience=self.project_id,
+                certs_url=CERTS_URL,
             )
-
-            if token["iss"] != "chat@system.gserviceaccount.com":
-                abort(401)
-        except AppIdentityError:
-            abort(401)
+        except ValueError:
+            raise SanicException(status_code=401)
+        if decoded_token["iss"] != "chat@system.gserviceaccount.com":
+            raise SanicException(status_code=401)
 
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[None]]
     ) -> Blueprint:
-
+        """API configuration for the channel webhook."""
         custom_webhook = Blueprint("hangouts_webhook", __name__)
 
         @custom_webhook.route("/", methods=["GET"])
@@ -272,7 +299,7 @@ class HangoutsInput(InputChannel):
         async def receive(request: Request) -> HTTPResponse:
 
             if self.project_id:
-                token = request.headers.get("Authorization").replace("Bearer ", "")
+                token = request.headers.get("Authorization", "").replace("Bearer ", "")
                 self._check_token(token)
 
             sender_id = self._extract_sender(request)
@@ -295,13 +322,12 @@ class HangoutsInput(InputChannel):
                     )
                 )
             except CancelledError:
-                logger.error(
-                    "Message handling timed out for " "user message '{}'.".format(text)
+                structlogger.error(
+                    "hangouts.message.blueprint.timeout", text=copy.deepcopy(text)
                 )
-            except Exception as e:
-                logger.exception(
-                    f"An exception occurred while handling user message: {e}, "
-                    f"text: {text}"
+            except Exception:
+                structlogger.exception(
+                    "hangouts.message.blueprint.failure", text=copy.deepcopy(text)
                 )
 
             return response.json(collector.messages)

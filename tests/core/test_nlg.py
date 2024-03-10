@@ -13,7 +13,7 @@ from rasa.core.agent import Agent
 
 def nlg_app(base_url="/"):
 
-    app = Sanic(__name__)
+    app = Sanic("test_nlg")
 
     @app.route(base_url, methods=["POST"])
     async def generate(request):
@@ -24,6 +24,7 @@ def nlg_app(base_url="/"):
             "type": "object",
             "properties": {
                 "response": {"type": "string"},
+                "id": {"type": ["string", "null"]},
                 "arguments": {"type": "object"},
                 "tracker": {
                     "type": "object",
@@ -62,11 +63,11 @@ def http_nlg(loop, sanic_client):
     return loop.run_until_complete(sanic_client(nlg_app()))
 
 
-async def test_nlg(http_nlg, trained_rasa_model):
+async def test_nlg(http_nlg, trained_rasa_model: Text):
     sender = str(uuid.uuid1())
 
     nlg_endpoint = EndpointConfig.from_dict({"url": http_nlg.make_url("/")})
-    agent = Agent.load(trained_rasa_model, None, generator=nlg_endpoint)
+    agent = Agent.load(trained_rasa_model, generator=nlg_endpoint)
 
     response = await agent.handle_text("/greet", sender_id=sender)
     assert len(response) == 1
@@ -272,7 +273,7 @@ def test_nlg_fill_response_text_and_custom(
         "text": str(text_slot_value),
         "custom": {
             "field": str(cust_slot_value),
-            "properties": {"field_prefixed": f"prefix_{str(cust_slot_value)}"},
+            "properties": {"field_prefixed": f"prefix_{cust_slot_value!s}"},
         },
     }
 

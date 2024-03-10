@@ -33,10 +33,10 @@ a directory instead of a file:
 rasa run --model models/
 ```
 
-Rasa Open Source will check all the models in that directory and load the one that was trained
+Rasa will check all the models in that directory and load the one that was trained
 most recently.
 
-If you don't specify a `--model` argument, Rasa Open Source will look for models in the  `models/` directory. The two following calls
+If you don't specify a `--model` argument, Rasa will look for models in the  `models/` directory. The two following calls
 will load the same model:
 
 ```bash
@@ -48,10 +48,10 @@ rasa run
 
 ## Load Model from Server
 
-You can configure the Rasa Open Source server to regularly fetch
+You can configure the Rasa server to regularly fetch
 a model from a server and deploy it.
 
-### How to Configure Rasa Open Source
+### How to Configure Rasa
 
 You can configure the HTTP server to fetch models from another URL
 by adding it to your `endpoints.yml`:
@@ -75,7 +75,7 @@ models:
 
 ### How to Configure Your Server
 
-Rasa Open Source will send a `GET` request to the URL you specified in the
+Rasa will send a `GET` request to the URL you specified in the
 `endpoints.yml`, e.g. `http://my-server.com/models/default` in the above examples.
 You can use any URL.
 The `GET` request will contain an `If-None-Match` header that contains the
@@ -92,7 +92,7 @@ The response of your server to this `GET` request should be one of these:
 - a status code of `304` and an empty response if the `If-None-Match`
   header of the request matches the model you want your server to return.
 
-Rasa Open Source uses the `If-None-Match` and `ETag` headers for caching. Setting
+Rasa uses the `If-None-Match` and `ETag` headers for caching. Setting
 the headers will avoid re-downloading the same model over and over, saving
 bandwidth and compute resources.
 
@@ -135,7 +135,9 @@ following environment variables before running any command requiring the storage
 * `BUCKET_NAME`: environment variable specifying the S3 bucket
 
 * `AWS_ENDPOINT_URL`: The complete URL to use for the AWS S3 requests. You need to
-  specify a complete URL (including the "http/https" scheme).
+  specify a complete URL (including the "http/https" scheme), for example: `https://s3.amazonaws.com`.
+  Note that by setting the bucket name to `BUCKET_NAME` environment variable, you should not provide the bucket or
+  object URL to `AWS_ENDPOINT_URL`.
 
 
 Once all environment variables are set, you can start the Rasa server with

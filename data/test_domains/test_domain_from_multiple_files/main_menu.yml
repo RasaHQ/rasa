@@ -1,0 +1,16 @@
+version: "3.1"
+
+intents:
+- main_menu
+- self_selection
+
+actions:
+- action_utter_main_menu
+
+responses:
+  utter_greet:
+    - text: hey there!
+  utter_goodbye:
+    - text: goodbye :(
+  utter_default:
+    - text: default message

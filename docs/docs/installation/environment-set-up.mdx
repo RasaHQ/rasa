@@ -1,0 +1,144 @@
+---
+sidebar_label: Setting up your environment
+title: Setting up your environment
+description: How to set up your environment before installing Rasa
+---
+
+## 1. Python Environment Setup
+
+Check if your Python environment is already configured:
+
+```bash
+python3 --version
+pip3 --version
+```
+
+:::note Python3 Supported Versions
+
+Currently, rasa supports the following Python versions: `3.7`, `3.8`, `3.9` and `3.10`.
+Note that Python `3.10` is only supported for versions `3.4.x` and upwards.
+Additionally, rasa installation on Apple Silicon with Python `3.10` is not functional in `3.4.x` but will be supported starting from `3.5.x`.
+
+:::
+
+
+If these packages are already installed, these commands should display version
+numbers for each step, and you can skip to the next step.
+
+Otherwise, proceed with the instructions below to install them.
+
+<Tabs values={[{"label": "Ubuntu", "value": "ubuntu"}, {"label": "macOS", "value": "macos"}, {"label": "Windows", "value": "windows"}]}  groupId="operating-systems" defaultValue="ubuntu">
+  <TabItem value="ubuntu">
+
+Fetch the relevant packages using `apt`, and install virtualenv using `pip`.
+
+```bash
+sudo apt update
+sudo apt install python3-dev python3-pip
+```
+
+  </TabItem>
+  <TabItem value="macos">
+
+Install the [Homebrew](https://brew.sh) package manager if you haven't already.
+
+Once you're done, you can install Python3.
+
+```bash
+brew update
+brew install python
+```
+
+  </TabItem>
+  <TabItem value="windows">
+
+Make sure the Microsoft VC++ Compiler is installed, so python can compile
+any dependencies. You can get the compiler from <a className="reference external"
+  href="https://visualstudio.microsoft.com/visual-cpp-build-tools/"
+  target="_blank">Visual Studio</a>. Download the installer and select
+VC++ Build tools in the list.Install [Python 3](https://www.python.org/downloads/windows/) (64-bit version) for Windows.
+
+```bat
+C:\> pip3 install -U pip
+```
+
+  </TabItem>
+</Tabs>
+
+## 2. Virtual Environment Setup
+
+This step is optional, but we strongly recommend isolating python projects
+using virtual environments. Tools like
+[virtualenv](https://virtualenv.pypa.io/en/latest/) and
+[virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/) provide
+isolated Python environments, which are cleaner than installing packages system-wide
+(as they prevent dependency conflicts). They also let you install packages
+without root privileges.
+
+<Tabs values={[{"label": "Ubuntu", "value": "ubuntu"}, {"label": "macOS", "value": "macos"}, {"label": "Windows", "value": "windows"}]}  groupId="operating-systems" defaultValue="ubuntu">
+  <TabItem value="ubuntu">
+
+Create a new virtual environment by choosing a Python interpreter and making a `./venv` directory to hold it:
+
+```bash
+python3 -m venv ./venv
+```
+
+Activate the virtual environment:
+
+```bash
+source ./venv/bin/activate
+```
+
+  </TabItem>
+  <TabItem value="macos">
+
+Create a new virtual environment by choosing a Python interpreter and making a `./venv` directory to hold it:
+
+```bash
+python3 -m venv ./venv
+```
+
+Activate the virtual environment:
+
+```bash
+source ./venv/bin/activate
+```
+
+  </TabItem>
+  <TabItem value="windows">
+
+Create a new virtual environment by choosing a Python interpreter and making a `.\\venv` directory to hold it:
+
+```bat
+C:\> python3 -m venv ./venv
+```
+
+Activate the virtual environment:
+
+```bat
+C:\> .\venv\Scripts\activate
+```
+
+  </TabItem>
+</Tabs>
+
+## M1 / M2 (Apple Silicon) Limitations
+
+Rasa installations on Apple Silicon _don't_ use [Apple Metal](https://developer.apple.com/metal/) by default.
+We found that using the GPU on Apple Silicon increased training time for the
+[`DIETClassifier`](../components.mdx#dietclassifier) and [`TEDPolicy`](../policies.mdx#ted-policy) dramatically.
+You can, however, install the optional dependency to test it yourself
+or try it with other components using: `pip3 install 'rasa[metal]'`.
+
+Currently, not all of Rasa's dependencies support Apple Silicon natively. This leads
+to the following restrictions:
+
+- You can not run Duckling as a docker container on Apple Silicon. If you want
+  to use the [duckling entity extractor](../components.mdx#ducklingentityextractor) we recommend a cloud deployment of
+  duckling. Progress on this can be tracked on the
+  [Duckling project](https://github.com/facebook/duckling/issues/695).
+- Rasa on Apple Silicon does not support the [`ConveRTFeaturizer` component](../components.mdx#convertfeaturizer) or pipelines
+  containing it. The component relies on `tensorflow-text` which currently
+  isn't available for Apple Silicon. Progress on this can be tracked on the
+  [Tensorflow Text project](https://github.com/tensorflow/text/issues/823).

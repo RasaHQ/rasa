@@ -1,0 +1,178 @@
+---
+id: deploy-rasa-pro-services
+sidebar_label: "Deploy Rasa Pro Services"
+title: "Deploy Rasa Pro Services"
+description: Deploy Rasa Rasa Pro Services in production
+---
+
+import RasaProLabel from "@theme/RasaProLabel";
+import RasaProBanner from "@theme/RasaProBanner";
+
+<RasaProLabel />
+
+<RasaProBanner />
+
+## Rasa Pro Services Setup
+
+Installing Rasa Pro Services requires the deployment of a docker
+container. The container can be deployed in a different environment than
+Rasa Plus. Both deployments need to be able to connect to the same
+Kafka cluster to communicate.
+
+### Prerequisites
+
+A Rasa Pro Services deployment needs to be connected to
+
+- a message broker (Kafka) and
+- a data warehouse (e.g. PostgreSQL).
+
+The Kafka deployment should be a production deployment. We recommend a
+managed deployment, e.g. using
+[Amazon Managed Streaming for Apache Kafka](https://aws.amazon.com/msk/).
+
+#### System Requirements
+
+The minimum hardware requirements include information about the
+requirements you need to install and use Rasa Pro Services. Hardware
+requirements are dependent on the average number of conversations and
+expected workload. Your exact needs may be more, depending on your workload.
+
+The following is the recommended minimum hardware guidance:
+
+- CPU: 2 vCPU
+- Memory: 4 GB
+- Disk space: 10 GB
+
+These requirements correspond to the `t3.medium` instance type on AWS.
+
+#### License
+
+Running Rasa Pro Services requires a valid license. You need to supply the
+license as an environment variable to the service.
+
+### Installation and Configuration
+
+Rasa Plus streams data to Kafka which gets consumed by Rasa Pro Services.
+These different services need to be run and configured to be able to communicate.
+
+1.  Configure Rasa Plus to stream data to Kafka. The configuration for
+    Kafka should be put in a configuration
+    file `endpoints.yml`:
+
+    ```yaml-rasa title="endpoints.yml"
+    event_broker:
+      type: kafka
+      partition_by_sender: True
+      topic: rasa-events
+      url: <BROKER URL>
+    ```
+
+    The `<BROKER_URL>` needs to be replaced with an address of a bootstrap
+    server of your Kafka cluster. Configuration examples for different
+    security protocols and other parameters can be found in the
+    [Kafka Event Broker](../event-brokers.mdx#kafka-event-broker)
+    documentation.
+
+2.  Rasa Pro Services is a docker image. Authenticate to pull
+    the docker images:
+
+    ```shell
+    gcloud auth configure-docker europe-west3-docker.pkg.dev
+    ```
+
+    Pull the Rasa Pro Services image to your machine:
+
+    ```shell
+    docker pull europe-west3-docker.pkg.dev/rasa-releases/rasa-pro/rasa-pro
+    ```
+
+    :::note
+
+    For a more complete walkthrough on how to manage the authentication
+    credentials and licenses in a production environment, see the
+    [Rasa Plus Deployment Guide](/docs/rasa/deploy/deploy-rasa#4-deploy-rasa-assistant) (select the **Rasa Plus** tab).
+
+    :::
+
+3.  Run the Rasa Pro Services docker image and configure it to receive data
+    from your Rasa Plus assistant connected to Kafka:
+
+    ```shell
+    docker run \
+        -e RASA_PRO_LICENSE=<your_license> \
+        -e KAFKA_BROKER_ADDRESS=<BROKER_URL> \
+        -e KAFKA_TOPIC=rasa-events \
+        europe-west3-docker.pkg.dev/rasa-releases/rasa-pro/rasa-pro
+    ```
+
+    For production deployments, we recommend to us
+    [Amazon Elastic Container Service](https://docs.docker.com/cloud/ecs-integration/).
+
+### Docker Container Configuration (Reference)
+
+The Rasa Pro Services docker container supports configuration through
+several environment variables. The following table lists the available
+environment variables:
+
+| Environment Variable      | Description                                                                                                           | Default            |
+| :------------------------ | :-------------------------------------------------------------------------------------------------------------------- | :----------------- |
+| `RASA_PRO_LICENSE`        | **Required**. The license key for Rasa Pro Services.                                                                  |                    |
+| `KAFKA_BROKER_ADDRESS`    | **Required**. The address of the Kafka broker.                                                                        |                    |
+| `KAFKA_TOPIC`             | **Required**. The topic Rasa Plus publishes events to and Rasa Pro consumes from.                                     | `rasa_core_events` |
+| `LOGGING_LEVEL`           | Set the log level of the application. Valid levels are DEBUG, INFO, WARNING, ERROR, CRITICAL. (Available from 3.0.2)  | `INFO`             |
+| `RASA_ANALYTICS_DB_URL`   | The URL of the data lake to store analytics data in.                                                                  |                    |
+| `KAFKA_SASL_MECHANISM`    | The SASL mechanism to use for authentication. Valid mechanisms are                                                    | `PLAIN`            |
+| `KAFKA_SASL_USERNAME`     | The username for SASL authentication.                                                                                 |                    |
+| `KAFKA_SASL_PASSWORD`     | The password for SASL authentication.                                                                                 |                    |
+| `KAFKA_SECURITY_PROTOCOL` | The security protocol to use for communication with Kafka. Supported mechanisms are `PLAINTEXT` and `SASL_PLAINTEXT`. | `PLAINTEXT`        |
+| `KAFKA_SSL_CA_LOCATION`   | The filepath for SSL CA Certificate that will be used to connect with Kafka (Available from `3.1.0b1`)                |                    |
+
+### Healthcheck Endpoint
+
+Rasa Pro Services exposes a health check endpoint at `/healthcheck`.
+The endpoint will return a `200` status code if the service is healthy.
+If any other status code is returned or if the endpoint is not reachable
+the service is unhealthy.
+
+Example response for `/healthcheck`:
+
+```json
+{
+  "details": {
+    "analytics-consumer": {
+      "alive": 1,
+      "isHealthy": true
+    }
+  },
+  "isHealthy": true
+}
+```
+
+### Connect to a secured Kafka instance
+
+The connection to a secured Kafka instance can be configured by setting the
+following environment variables on the Rasa Pro docker container:
+`KAFKA_SASL_MECHANISM`, `KAFKA_SASL_USERNAME`, `KAFKA_SASL_PASSWORD` and
+`KAFKA_SECURITY_PROTOCOL`. A detailed description of the parameters can
+be found in the
+[environment variable reference](#docker-container-configuration-reference).
+
+The environment variables need to be configured upon startup of the Rasa Pro
+docker container.
+
+Using Kafka `truststores` and `keystores` is currently not supported.
+
+
+### Upgrading Versions
+
+To upgrade to the latest version of Rasa Pro Services, you must follow these steps:
+
+1. Read the changelog documentation on breaking changes.
+2. Download a new docker container and run it.
+
+:::note Container Start-up
+Note that the container might take some time to start-up as it is running
+database schema migrations as part of its start-up.
+
+If the migrations have failed, the container will be shut down.
+:::

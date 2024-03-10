@@ -1,0 +1,31 @@
+version: "3.1"
+
+intents:
+- cure_network
+
+slots:
+  display_method_artwork:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: from_entity
+        entity: other_robot
+  display_cure_method:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: from_entity
+        entity: vanilla_robot
+  display_drum_cure_horns:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: from_entity
+        entity: vanilla_robot
+
+actions:
+- utter_cure_standard
+- utter_cure_specific
+- utter_non_standard
+- action_utter_cure_standard
+

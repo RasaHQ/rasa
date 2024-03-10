@@ -1,0 +1,107 @@
+nodes:
+  nlu_message_converter:
+    needs:
+      messages: __message__
+    uses: rasa.graph_components.converters.nlu_message_converter.NLUMessageConverter
+    constructor_name: load
+    fn: convert_user_message
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource: null
+  provide_MitieNLP0:
+    needs: {}
+    uses: rasa.nlu.utils.mitie_utils.MitieNLP
+    constructor_name: load
+    fn: provide
+    config:
+      model: data/total_word_feature_extractor_zh.dat
+    eager: true
+    is_target: false
+    is_input: false
+    resource: null
+  run_JiebaTokenizer1:
+    needs:
+      messages: nlu_message_converter
+    uses: rasa.nlu.tokenizers.jieba_tokenizer.JiebaTokenizer
+    constructor_name: load
+    fn: process
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource:
+      name: train_JiebaTokenizer1
+  run_MitieEntityExtractor2:
+    needs:
+      messages: run_JiebaTokenizer1
+      model: provide_MitieNLP0
+    uses: rasa.nlu.extractors.mitie_entity_extractor.MitieEntityExtractor
+    constructor_name: load
+    fn: process
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource:
+      name: train_MitieEntityExtractor2
+  run_EntitySynonymMapper3:
+    needs:
+      messages: run_MitieEntityExtractor2
+    uses: rasa.nlu.extractors.entity_synonyms.EntitySynonymMapper
+    constructor_name: load
+    fn: process
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource:
+      name: train_EntitySynonymMapper3
+  run_RegexFeaturizer4:
+    needs:
+      messages: run_EntitySynonymMapper3
+    uses: rasa.nlu.featurizers.sparse_featurizer.regex_featurizer.RegexFeaturizer
+    constructor_name: load
+    fn: process
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource:
+      name: train_RegexFeaturizer4
+  run_MitieFeaturizer5:
+    needs:
+      messages: run_RegexFeaturizer4
+      model: provide_MitieNLP0
+    uses: rasa.nlu.featurizers.dense_featurizer.mitie_featurizer.MitieFeaturizer
+    constructor_name: load
+    fn: process
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource: null
+  run_SklearnIntentClassifier6:
+    needs:
+      messages: run_MitieFeaturizer5
+    uses: rasa.nlu.classifiers.sklearn_intent_classifier.SklearnIntentClassifier
+    constructor_name: load
+    fn: process
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource:
+      name: train_SklearnIntentClassifier6
+  run_RegexMessageHandler:
+    needs:
+      messages: run_SklearnIntentClassifier6
+    uses: rasa.nlu.classifiers.regex_message_handler.RegexMessageHandler
+    constructor_name: load
+    fn: process
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource: null

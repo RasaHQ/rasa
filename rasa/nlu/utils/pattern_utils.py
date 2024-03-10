@@ -3,6 +3,7 @@ from typing import Dict, List, Text, Union
 
 import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.exceptions import InvalidConfigException
 
 
 def _convert_lookup_tables_to_regex(
@@ -152,5 +153,16 @@ def extract_patterns(
                 training_data, use_only_entities, use_word_boundaries
             )
         )
+
+    # validate regexes, raise Error when invalid
+    for pattern in patterns:
+        try:
+            re.compile(pattern["pattern"])
+        except re.error:
+            raise InvalidConfigException(
+                f"Model training failed. '{pattern['pattern']}' "
+                "is not a valid regex. Please update your nlu "
+                f"training data configuration at {pattern}."
+            )
 
     return patterns

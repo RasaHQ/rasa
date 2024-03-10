@@ -1,15 +1,16 @@
 import asyncio
 import json
 import logging
+import structlog
 import os
 import ssl
 from asyncio import AbstractEventLoop
 from collections import deque
-from typing import Deque, Dict, Optional, Text, Union, Any, List, Tuple
+from typing import Deque, Dict, Optional, Text, Union, Any, List, Set, Tuple, cast
+from urllib.parse import urlparse
 
 import aio_pika
 
-from rasa.constants import DEFAULT_LOG_LEVEL_LIBRARIES, ENV_LOG_LEVEL_LIBRARIES
 from rasa.shared.exceptions import RasaException
 from rasa.shared.constants import DOCS_URL_PIKA_EVENT_BROKER
 from rasa.core.brokers.broker import EventBroker
@@ -19,6 +20,7 @@ from rasa.shared.utils.io import DEFAULT_ENCODING
 import rasa.shared.utils.common
 
 logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger()
 
 RABBITMQ_EXCHANGE = "rasa-exchange"
 DEFAULT_QUEUE_NAME = "rasa_core_events"
@@ -33,12 +35,9 @@ class PikaEventBroker(EventBroker):
         username: Text,
         password: Text,
         port: Union[int, Text] = 5672,
-        queues: Union[List[Text], Tuple[Text], Text, None] = None,
+        queues: Union[List[Text], Tuple[Text, ...], Text, None] = None,
         should_keep_unpublished_messages: bool = True,
         raise_on_failure: bool = False,
-        log_level: Union[Text, int] = os.environ.get(
-            ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES
-        ),
         event_loop: Optional[AbstractEventLoop] = None,
         connection_attempts: int = 20,
         retry_delay_in_seconds: float = 5,
@@ -58,7 +57,6 @@ class PikaEventBroker(EventBroker):
                 case of errors.
             raise_on_failure: Whether to raise an exception if publishing fails. If
                 `False`, keep retrying.
-            log_level: Logging level.
             event_loop: The event loop which will be used to run `async` functions. If
                 `None` `asyncio.get_event_loop()` is used to get a loop.
             connection_attempts: Number of attempts for connecting to RabbitMQ before
@@ -68,7 +66,6 @@ class PikaEventBroker(EventBroker):
                 If nothing is mentioned then the default exchange name would be used.
         """
         super().__init__()
-        _set_pika_log_levels(log_level)
 
         self.host = host
         self.username = username
@@ -90,14 +87,15 @@ class PikaEventBroker(EventBroker):
         self.should_keep_unpublished_messages = should_keep_unpublished_messages
 
         self._loop = event_loop or asyncio.get_event_loop()
+        self._background_tasks: Set[asyncio.Task] = set()
 
-        self._connection: Optional[aio_pika.RobustConnection] = None
+        self._connection: Optional[aio_pika.abc.AbstractRobustConnection] = None
         self._exchange: Optional[aio_pika.RobustExchange] = None
 
     @staticmethod
     def _get_queues_from_args(
-        queues_arg: Union[List[Text], Tuple[Text], Text, None]
-    ) -> Union[List[Text], Tuple[Text]]:
+        queues_arg: Union[List[Text], Tuple[Text, ...], Text, None]
+    ) -> Union[List[Text], Tuple[Text, ...]]:
         """Get queues for this event broker.
 
         The preferred argument defining the RabbitMQ queues the `PikaEventBroker` should
@@ -152,27 +150,51 @@ class PikaEventBroker(EventBroker):
     async def connect(self) -> None:
         """Connects to RabbitMQ."""
         self._connection = await self._connect()
-        self._connection.add_reconnect_callback(self._publish_unpublished_messages)
+        self._connection.reconnect_callbacks.add(self._publish_unpublished_messages)
         logger.info(f"RabbitMQ connection to '{self.host}' was established.")
 
         channel = await self._connection.channel()
         logger.debug(
-            f"RabbitMQ channel was opened. Declaring fanout exchange '{self.exchange_name}'."
+            f"RabbitMQ channel was opened. "
+            f"Declaring fanout exchange '{self.exchange_name}'."
         )
 
         self._exchange = await self._set_up_exchange(channel)
 
-    async def _connect(self) -> aio_pika.RobustConnection:
+    def _configure_url(self) -> Optional[Text]:
+        """Configures the URL to connect to RabbitMQ."""
         url = None
+
+        if self.host.startswith("amqp"):
+
+            parsed_host = urlparse(self.host)
+
+            amqp_user = f"{self.username}:{self.password}"
+            if amqp_user not in parsed_host.netloc:
+                url = f"{parsed_host.scheme}://{amqp_user}@{parsed_host.netloc}"
+            else:
+                url = f"{parsed_host.scheme}://{parsed_host.netloc}"
+
+            if str(self.port) not in url:
+                url = f"{url}:{self.port}"
+
+            if parsed_host.path:
+                url = f"{url}{parsed_host.path}"
+
+            if parsed_host.query:
+                url = f"{url}?{parsed_host.query}"
+
+        return url
+
+    async def _connect(self) -> aio_pika.abc.AbstractRobustConnection:
         # The `url` parameter will take precedence over parameters like `login` or
         # `password`.
-        if self.host.startswith("amqp"):
-            url = self.host
+        url = self._configure_url()
 
         ssl_options = _create_rabbitmq_ssl_options(self.host)
         logger.info("Connecting to RabbitMQ ...")
 
-        last_exception = None
+        last_exception: Optional[Exception] = None
         for _ in range(self._connection_attempts):
             try:
                 return await aio_pika.connect_robust(
@@ -194,6 +216,7 @@ class PikaEventBroker(EventBroker):
                 )
                 await asyncio.sleep(self._retry_delay_in_seconds)
 
+        last_exception = cast(Exception, last_exception)
         logger.error(
             f"Connecting to '{self.host}' failed with error '{last_exception}'."
         )
@@ -211,7 +234,7 @@ class PikaEventBroker(EventBroker):
 
     async def _set_up_exchange(
         self, channel: aio_pika.RobustChannel
-    ) -> aio_pika.Exchange:
+    ) -> aio_pika.RobustExchange:
         exchange = await channel.declare_exchange(
             self.exchange_name, type=aio_pika.ExchangeType.FANOUT
         )
@@ -245,6 +268,9 @@ class PikaEventBroker(EventBroker):
 
     def is_ready(self) -> bool:
         """Return `True` if a connection was established."""
+        if self._connection is None:
+            return False
+
         return not self._connection.is_closed
 
     def publish(
@@ -258,28 +284,43 @@ class PikaEventBroker(EventBroker):
                 can be retrieved in the consumer from the `headers` attribute of the
                 message's `BasicProperties`.
         """
-        self._loop.create_task(self._publish(event, headers))
+        # We need to save a reference to this background task to
+        # make sure it doesn't disappear. See:
+        # https://docs.python.org/3/library/asyncio-task.html#asyncio.create_task
+        task: asyncio.Task = self._loop.create_task(self._publish(event, headers))
+        self._background_tasks.add(task)
+        task.add_done_callback(self._background_tasks.discard)
 
     async def _publish(
         self, event: Dict[Text, Any], headers: Optional[Dict[Text, Text]] = None
     ) -> None:
+        if self._exchange is None:
+            return
+
+        reduced_event = rasa.shared.core.events.remove_parse_data(event)
+
         try:
             await self._exchange.publish(self._message(event, headers), "")
 
-            logger.debug(
-                f"Published Pika events to exchange '{RABBITMQ_EXCHANGE}' on host "
-                f"'{self.host}':\n{event}"
+            structlogger.debug(
+                "pika.events.publish",
+                event_info="Logging a reduced version of the Pika event",
+                rabbitmq_exchange=RABBITMQ_EXCHANGE,
+                host=self.host,
+                rasa_event=reduced_event,
             )
         except Exception as e:
-            logger.error(
-                f"Failed to publish Pika event on host '{self.host}' due to "
-                f"error '{e}'. The message was: \n{event}"
+            structlogger.error(
+                "pika.events.publish.failed",
+                event_info="Logging a reduced version of the failed Pika event",
+                host=self.host,
+                rasa_event=reduced_event,
             )
             if self.should_keep_unpublished_messages:
                 self._unpublished_events.append(event)
 
             if self.raise_on_failure:
-                self.close()
+                self.close()  # type: ignore[unused-coroutine]
                 raise e
 
     def _message(
@@ -344,9 +385,3 @@ def _create_rabbitmq_ssl_options(
         }
 
     return None
-
-
-def _set_pika_log_levels(log_level: Union[Text, int]) -> None:
-    pika_loggers = ["aio_pika", "aiormq"]
-    for logger_name in pika_loggers:
-        logging.getLogger(logger_name).setLevel(log_level)

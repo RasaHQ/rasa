@@ -3,35 +3,34 @@ import os
 from typing import Text
 
 from rasa import telemetry
+from rasa.shared.core.training_data import loading
 from rasa.shared.utils.cli import print_error
-
-from rasa.shared.core.domain import InvalidDomain
+from rasa.shared.core.domain import InvalidDomain, Domain
 
 logger = logging.getLogger(__name__)
 
 
-async def visualize(
-    config_path: Text,
+def visualize(
     domain_path: Text,
     stories_path: Text,
     nlu_data_path: Text,
     output_path: Text,
     max_history: int,
 ) -> None:
-    from rasa.core.agent import Agent
-    from rasa.core import config
+    """Visualizes stories as graph.
+
+    Args:
+        domain_path: Path to the domain file.
+        stories_path: Path to the stories files.
+        nlu_data_path: Path to the NLU training data which can be used to interpolate
+            intents with actual examples in the graph.
+        output_path: Path where the created graph should be persisted.
+        max_history: Max history to use for the story visualization.
+    """
+    import rasa.shared.core.training_data.visualization
 
     try:
-        policies = config.load(config_path)
-    except Exception as e:
-        print_error(
-            f"Could not load config due to: '{e}'. To specify a valid config file use "
-            f"the '--config' argument."
-        )
-        return
-
-    try:
-        agent = Agent(domain=domain_path, policies=policies)
+        domain = Domain.load(domain_path)
     except InvalidDomain as e:
         print_error(
             f"Could not load domain due to: '{e}'. To specify a valid domain path use "
@@ -53,8 +52,14 @@ async def visualize(
 
     logger.info("Starting to visualize stories...")
     telemetry.track_visualization()
-    await agent.visualize(
-        stories_path, output_path, max_history, nlu_training_data=nlu_training_data
+
+    story_steps = loading.load_data_from_resource(stories_path, domain)
+    rasa.shared.core.training_data.visualization.visualize_stories(
+        story_steps,
+        domain,
+        output_path,
+        max_history,
+        nlu_training_data=nlu_training_data,
     )
 
     full_output_path = "file://{}".format(os.path.abspath(output_path))

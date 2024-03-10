@@ -6,6 +6,8 @@ backend:
   - 'data/**/*'
   - 'examples/**/*'
   - 'Makefile'
+  - '.github/workflows/continous-integration.yml'
+  - '.github/workflows/security-scans.yml'
 
 docker:
   - 'pyproject.toml'
@@ -22,3 +24,5 @@ docs:
   - 'data/**/*'
   - 'examples/**/*'
   - 'Makefile'
+  - '.github/workflows/documentation.yml'
+  - '.github/workflows/ci-docs-tests.yml'

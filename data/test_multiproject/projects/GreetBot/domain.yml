@@ -1,0 +1,16 @@
+version: "3.1"
+
+intents:
+  - greet
+  - goodbye
+
+responses:
+  utter_greet:
+  - text: "Hey! How are you?"
+
+  utter_goodbye:
+  - text: "Bye"
+
+session_config:
+  session_expiration_time: 60  # value in minutes
+  carry_over_slots_to_new_session: true

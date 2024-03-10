@@ -30,12 +30,7 @@ To train and chat with `reminderbot`, execute the following steps:
     rasa run actions
     ```
 
-3. (Option 1) Run Rasa X to talk to your bot. In a separate console window from where you ran the step 2 command:
-    ```
-    rasa x
-    ```
-
-3. (Option 2) To test this example without Rasa X, run a
+3. To test this example, run a
    [callback channel](https://rasa.com/docs/rasa/connectors/your-own-website#callbackinput).
    In a separate console window from where you ran the step 2 command:
     ```

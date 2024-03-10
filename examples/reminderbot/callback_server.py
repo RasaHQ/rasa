@@ -5,7 +5,7 @@ from sanic.response import HTTPResponse
 
 def create_app() -> Sanic:
 
-    bot_app = Sanic(__name__, configure_logging=False)
+    bot_app = Sanic("callback_server", configure_logging=False)
 
     @bot_app.post("/bot")
     def print_response(request: Request) -> HTTPResponse:

@@ -12,32 +12,37 @@ from rasa.core.training import interactive as interactive_learning
 from rasa.cli import interactive, train
 from rasa.model_training import TrainingResult
 
+from tests.cli.conftest import RASA_EXE
+
 
 def test_interactive_help(run: Callable[..., RunResult]):
     output = run("interactive", "--help")
 
-    help_text = """usage: rasa interactive [-h] [-v] [-vv] [--quiet] [--e2e] [-p PORT] [-m MODEL]
-                        [--data DATA [DATA ...]] [--skip-visualization]
+    help_text = f"""usage: {RASA_EXE} interactive [-h] [-v] [-vv] [--quiet]
+                        [--logging-config-file LOGGING_CONFIG_FILE] [--e2e]
+                        [-p PORT] [-m MODEL] [--data DATA [DATA ...]]
+                        [--skip-visualization]
                         [--conversation-id CONVERSATION_ID]
                         [--endpoints ENDPOINTS] [-c CONFIG] [-d DOMAIN]
                         [--out OUT] [--augmentation AUGMENTATION]
                         [--debug-plots] [--finetune [FINETUNE]]
                         [--epoch-fraction EPOCH_FRACTION] [--force]
                         [--persist-nlu-data]
-                        {core} ... [model-as-positional-argument]"""
+                        {{core}} ... [model-as-positional-argument]"""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
-    printed_help = set(output.outlines)
+    printed_help = {line.strip() for line in output.outlines}
     for line in lines:
-        assert line in printed_help
+        assert line.strip() in printed_help
 
 
 def test_interactive_core_help(run: Callable[..., RunResult]):
     output = run("interactive", "core", "--help")
 
-    help_text = """usage: rasa interactive core [-h] [-v] [-vv] [--quiet] [-m MODEL] [-s STORIES]
-                             [--skip-visualization]
+    help_text = f"""usage: {RASA_EXE} interactive core [-h] [-v] [-vv] [--quiet]
+                             [--logging-config-file LOGGING_CONFIG_FILE]
+                             [-m MODEL] [-s STORIES] [--skip-visualization]
                              [--conversation-id CONVERSATION_ID]
                              [--endpoints ENDPOINTS] [-c CONFIG] [-d DOMAIN]
                              [--out OUT] [--augmentation AUGMENTATION]
@@ -47,9 +52,9 @@ def test_interactive_core_help(run: Callable[..., RunResult]):
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
-    printed_help = set(output.outlines)
+    printed_help = {line.strip() for line in output.outlines}
     for line in lines:
-        assert line in printed_help
+        assert line.strip() in printed_help
 
 
 def test_pass_arguments_to_rasa_train(

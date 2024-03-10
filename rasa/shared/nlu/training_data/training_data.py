@@ -67,7 +67,7 @@ class TrainingData:
         Checks if the specified lookup table contains a filename in
         `elements` and replaces it with actual elements from the file.
         Returns the unchanged lookup table otherwise.
-        It works with Markdown and JSON training data.
+        It works with JSON training data.
 
         Params:
             lookup_table: A lookup table.
@@ -171,7 +171,6 @@ class TrainingData:
         Returns:
             TrainingData: A TrainingData with filtered training examples.
         """
-
         return TrainingData(
             list(filter(condition, self.training_examples)),
             self.entity_synonyms,
@@ -195,7 +194,6 @@ class TrainingData:
         Remove trailing whitespaces from intent and response annotations and drop
         duplicate examples.
         """
-
         for ex in examples:
             if ex.get(INTENT):
                 ex.set(INTENT, ex.get(INTENT).strip())
@@ -305,7 +303,6 @@ class TrainingData:
     @lazy_property
     def number_of_examples_per_entity(self) -> Dict[Text, int]:
         """Calculates the number of examples per entity."""
-
         entities = []
 
         def _append_entity(entity: Dict[Text, Any], attribute: Text) -> None:
@@ -322,7 +319,7 @@ class TrainingData:
         return dict(Counter(entities))
 
     def sort_regex_features(self) -> None:
-        """Sorts regex features lexicographically by name+pattern"""
+        """Sorts regex features lexicographically by name+pattern."""
         self.regex_features = sorted(
             self.regex_features, key=lambda e: "{}+{}".format(e["name"], e["pattern"])
         )
@@ -358,14 +355,6 @@ class TrainingData:
 
         return RasaWriter().dumps(self, **kwargs)
 
-    def nlg_as_markdown(self) -> Text:
-        """Generates the markdown representation of the response phrases (NLG) of
-        TrainingData."""
-
-        from rasa.shared.nlu.training_data.formats import NLGMarkdownWriter
-
-        return NLGMarkdownWriter().dumps(self)
-
     def nlg_as_yaml(self) -> Text:
         """Generates yaml representation of the response phrases (NLG) of TrainingData.
 
@@ -379,13 +368,12 @@ class TrainingData:
         # can't do that until after we remove markdown support.
         return RasaYAMLWriter().dumps(TrainingData(responses=self.responses))
 
-    def nlu_as_markdown(self) -> Text:
-        """Generates the markdown representation of the NLU part of TrainingData."""
-        from rasa.shared.nlu.training_data.formats import MarkdownWriter
-
-        return MarkdownWriter().dumps(self)
-
     def nlu_as_yaml(self) -> Text:
+        """Generates YAML representation of NLU of TrainingData.
+
+        Returns:
+            data in YAML format as a string
+        """
         from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
 
         # avoid dumping NLG data (responses). this is a workaround until we
@@ -397,42 +385,39 @@ class TrainingData:
         return RasaYAMLWriter().dumps(no_responses_training_data)
 
     def persist_nlu(self, filename: Text = DEFAULT_TRAINING_DATA_OUTPUT_PATH) -> None:
+        """Saves NLU to a file."""
         if rasa.shared.data.is_likely_json_file(filename):
             rasa.shared.utils.io.write_text_file(self.nlu_as_json(indent=2), filename)
-        elif rasa.shared.data.is_likely_markdown_file(filename):
-            rasa.shared.utils.io.write_text_file(self.nlu_as_markdown(), filename)
         elif rasa.shared.data.is_likely_yaml_file(filename):
             rasa.shared.utils.io.write_text_file(self.nlu_as_yaml(), filename)
         else:
             raise ValueError(
-                "Unsupported file format detected. Supported file formats are 'json', 'yml' "
+                "Unsupported file format detected. "
+                "Supported file formats are 'json', 'yml' "
                 "and 'md'."
             )
 
     def persist_nlg(self, filename: Text) -> None:
+        """Saves NLG to a file."""
         if rasa.shared.data.is_likely_yaml_file(filename):
             rasa.shared.utils.io.write_text_file(self.nlg_as_yaml(), filename)
-        elif rasa.shared.data.is_likely_markdown_file(filename):
-            nlg_serialized_data = self.nlg_as_markdown()
-            if nlg_serialized_data:
-                rasa.shared.utils.io.write_text_file(nlg_serialized_data, filename)
         else:
             raise ValueError(
-                "Unsupported file format detected. Supported file formats are 'md' "
-                "and 'yml'."
+                "Unsupported file format detected. 'yml' is the only "
+                "supported file format."
             )
 
     @staticmethod
     def get_nlg_persist_filename(nlu_filename: Text) -> Text:
-
+        """Returns the full filename to persist NLG data."""
         extension = Path(nlu_filename).suffix
         if rasa.shared.data.is_likely_json_file(nlu_filename):
             # backwards compatibility: previously NLG was always dumped as md. now
             # we are going to dump in the same format as the NLU data. unfortunately
             # there is a special case: NLU is in json format, in this case we use
-            # md as we do not have a NLG json format
-            extension = rasa.shared.data.markdown_file_extension()
-        # Add nlg_ as prefix and change extension to .md
+            # YAML as we do not have a NLG json format
+            extension = rasa.shared.data.yaml_file_extension()
+        # Add nlg_ as prefix and change extension to the correct one
         filename = (
             Path(nlu_filename)
             .with_name("nlg_" + Path(nlu_filename).name)
@@ -444,8 +429,8 @@ class TrainingData:
         self, dir_name: Text, filename: Text = DEFAULT_TRAINING_DATA_OUTPUT_PATH
     ) -> Dict[Text, Any]:
         """Persists this training data to disk and returns necessary
-        information to load it again."""
-
+        information to load it again.
+        """
         if not os.path.exists(dir_name):
             os.makedirs(dir_name)
 
@@ -457,29 +442,16 @@ class TrainingData:
 
     def sorted_entities(self) -> List[Any]:
         """Extract all entities from examples and sorts them by entity type."""
-
         entity_examples = [
             entity for ex in self.entity_examples for entity in ex.get("entities")
         ]
         return sorted(entity_examples, key=lambda e: e["entity"])
 
-    def sorted_intent_examples(self) -> List[Message]:
-        """Sorts the intent examples by the name of the intent and then response."""
-        rasa.shared.utils.io.raise_warning(
-            "`sorted_intent_examples` is deprecated and will be removed in Rasa "
-            "3.0.0.",
-            category=DeprecationWarning,
-        )
-        return sorted(
-            self.intent_examples,
-            key=lambda e: (e.get(INTENT), e.get(INTENT_RESPONSE_KEY)),
-        )
-
     def validate(self) -> None:
         """Ensures that the loaded training data is valid.
 
-        Checks that the data has a minimum of certain training examples."""
-
+        Checks that the data has a minimum of certain training examples.
+        """
         logger.debug("Validating training data...")
         if "" in self.intents:
             rasa.shared.utils.io.raise_warning(
@@ -518,7 +490,7 @@ class TrainingData:
                 rasa.shared.utils.io.raise_warning(
                     f"Your training data contains an example "
                     f"'{example.get(TEXT)[:20]}...' "
-                    f"for the {example.get_full_intent()} intent. "
+                    f"for the '{example.get_full_intent()}' intent. "
                     f"You either need to add a response phrase or correct the "
                     f"intent for this example in your training data. "
                     f"If you intend to use Response Selector in the pipeline, the "
@@ -529,8 +501,8 @@ class TrainingData:
         self, train_frac: float = 0.8, random_seed: Optional[int] = None
     ) -> Tuple["TrainingData", "TrainingData"]:
         """Split into a training and test dataset,
-        preserving the fraction of examples per intent."""
-
+        preserving the fraction of examples per intent.
+        """
         # collect all nlu data
         test, train = self.split_nlu_examples(train_frac, random_seed)
 
@@ -567,7 +539,6 @@ class TrainingData:
         Returns:
             All responses that appear at least once in the list of examples.
         """
-
         responses = {}
         for ex in examples:
             if ex.get(INTENT_RESPONSE_KEY) and ex.get(RESPONSE):
@@ -587,7 +558,6 @@ class TrainingData:
         Returns:
             Test and training examples.
         """
-
         self.validate()
 
         # Stratified split: both test and train should have (approximately) the

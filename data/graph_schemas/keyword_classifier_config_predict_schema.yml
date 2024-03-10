@@ -1,0 +1,35 @@
+nodes:
+  nlu_message_converter:
+    needs:
+      messages: __message__
+    uses: rasa.graph_components.converters.nlu_message_converter.NLUMessageConverter
+    constructor_name: load
+    fn: convert_user_message
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource: null
+  run_KeywordIntentClassifier0:
+    needs:
+      messages: nlu_message_converter
+    uses: rasa.nlu.classifiers.keyword_intent_classifier.KeywordIntentClassifier
+    constructor_name: load
+    fn: process
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource:
+      name: train_KeywordIntentClassifier0
+  run_RegexMessageHandler:
+    needs:
+      messages: run_KeywordIntentClassifier0
+    uses: rasa.nlu.classifiers.regex_message_handler.RegexMessageHandler
+    constructor_name: load
+    fn: process
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource: null

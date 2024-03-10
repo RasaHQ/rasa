@@ -1,0 +1,324 @@
+nodes:
+  nlu_message_converter:
+    needs:
+      messages: __message__
+    uses: rasa.graph_components.converters.nlu_message_converter.NLUMessageConverter
+    constructor_name: load
+    fn: convert_user_message
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource: null
+  run_WhitespaceTokenizer0:
+    needs:
+      messages: nlu_message_converter
+    uses: rasa.nlu.tokenizers.whitespace_tokenizer.WhitespaceTokenizer
+    constructor_name: load
+    fn: process
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource: null
+  run_RegexFeaturizer1:
+    needs:
+      messages: run_WhitespaceTokenizer0
+    uses: rasa.nlu.featurizers.sparse_featurizer.regex_featurizer.RegexFeaturizer
+    constructor_name: load
+    fn: process
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource:
+      name: train_RegexFeaturizer1
+  run_LexicalSyntacticFeaturizer2:
+    needs:
+      messages: run_RegexFeaturizer1
+    uses: rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer.LexicalSyntacticFeaturizer
+    constructor_name: load
+    fn: process
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource:
+      name: train_LexicalSyntacticFeaturizer2
+  run_CountVectorsFeaturizer3:
+    needs:
+      messages: run_LexicalSyntacticFeaturizer2
+    uses: rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer.CountVectorsFeaturizer
+    constructor_name: load
+    fn: process
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource:
+      name: train_CountVectorsFeaturizer3
+  run_CountVectorsFeaturizer4:
+    needs:
+      messages: run_CountVectorsFeaturizer3
+    uses: rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer.CountVectorsFeaturizer
+    constructor_name: load
+    fn: process
+    config:
+      analyzer: char_wb
+      min_ngram: 1
+      max_ngram: 4
+    eager: true
+    is_target: false
+    is_input: false
+    resource:
+      name: train_CountVectorsFeaturizer4
+  run_DIETClassifier5:
+    needs:
+      messages: run_CountVectorsFeaturizer4
+    uses: rasa.nlu.classifiers.diet_classifier.DIETClassifier
+    constructor_name: load
+    fn: process
+    config:
+      epochs: 100
+      constrain_similarities: true
+    eager: true
+    is_target: false
+    is_input: false
+    resource:
+      name: train_DIETClassifier5
+  run_EntitySynonymMapper6:
+    needs:
+      messages: run_DIETClassifier5
+    uses: rasa.nlu.extractors.entity_synonyms.EntitySynonymMapper
+    constructor_name: load
+    fn: process
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource:
+      name: train_EntitySynonymMapper6
+  run_ResponseSelector7:
+    needs:
+      messages: run_EntitySynonymMapper6
+    uses: rasa.nlu.selectors.response_selector.ResponseSelector
+    constructor_name: load
+    fn: process
+    config:
+      epochs: 100
+      constrain_similarities: true
+    eager: true
+    is_target: false
+    is_input: false
+    resource:
+      name: train_ResponseSelector7
+  run_FallbackClassifier8:
+    needs:
+      messages: run_ResponseSelector7
+    uses: rasa.nlu.classifiers.fallback_classifier.FallbackClassifier
+    constructor_name: load
+    fn: process
+    config:
+      threshold: 0.3
+      ambiguity_threshold: 0.1
+    eager: true
+    is_target: false
+    is_input: false
+    resource: null
+  run_RegexMessageHandler:
+    needs:
+      messages: run_FallbackClassifier8
+      domain: domain_provider
+    uses: rasa.nlu.classifiers.regex_message_handler.RegexMessageHandler
+    constructor_name: load
+    fn: process
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource: null
+  domain_provider:
+    needs: {}
+    uses: rasa.graph_components.providers.domain_provider.DomainProvider
+    constructor_name: load
+    fn: provide_inference
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource:
+      name: domain_provider
+  tracker_to_message_converter:
+    needs:
+      tracker: __tracker__
+    uses: rasa.core.featurizers.precomputation.CoreFeaturizationInputConverter
+    constructor_name: load
+    fn: convert_for_inference
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource: null
+  e2e_run_WhitespaceTokenizer0:
+    needs:
+      messages: tracker_to_message_converter
+    uses: rasa.nlu.tokenizers.whitespace_tokenizer.WhitespaceTokenizer
+    constructor_name: load
+    fn: process
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource: null
+  e2e_run_RegexFeaturizer1:
+    needs:
+      messages: e2e_run_WhitespaceTokenizer0
+    uses: rasa.nlu.featurizers.sparse_featurizer.regex_featurizer.RegexFeaturizer
+    constructor_name: load
+    fn: process
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource:
+      name: train_RegexFeaturizer1
+  e2e_run_LexicalSyntacticFeaturizer2:
+    needs:
+      messages: e2e_run_RegexFeaturizer1
+    uses: rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer.LexicalSyntacticFeaturizer
+    constructor_name: load
+    fn: process
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource:
+      name: train_LexicalSyntacticFeaturizer2
+  e2e_run_CountVectorsFeaturizer3:
+    needs:
+      messages: e2e_run_LexicalSyntacticFeaturizer2
+    uses: rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer.CountVectorsFeaturizer
+    constructor_name: load
+    fn: process
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource:
+      name: train_CountVectorsFeaturizer3
+  e2e_run_CountVectorsFeaturizer4:
+    needs:
+      messages: e2e_run_CountVectorsFeaturizer3
+    uses: rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer.CountVectorsFeaturizer
+    constructor_name: load
+    fn: process
+    config:
+      analyzer: char_wb
+      min_ngram: 1
+      max_ngram: 4
+    eager: true
+    is_target: false
+    is_input: false
+    resource:
+      name: train_CountVectorsFeaturizer4
+  end_to_end_features_provider:
+    needs:
+      messages: e2e_run_CountVectorsFeaturizer4
+    uses: rasa.core.featurizers.precomputation.CoreFeaturizationCollector
+    constructor_name: load
+    fn: collect
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource: null
+  run_MemoizationPolicy0:
+    needs:
+      tracker: __tracker__
+      domain: domain_provider
+      rule_only_data: rule_only_data_provider
+    uses: rasa.core.policies.memoization.MemoizationPolicy
+    constructor_name: load
+    fn: predict_action_probabilities
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource:
+      name: train_MemoizationPolicy0
+  run_RulePolicy1:
+    needs:
+      tracker: __tracker__
+      domain: domain_provider
+      rule_only_data: rule_only_data_provider
+    uses: rasa.core.policies.rule_policy.RulePolicy
+    constructor_name: load
+    fn: predict_action_probabilities
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource:
+      name: train_RulePolicy1
+  run_UnexpecTEDIntentPolicy2:
+    needs:
+      tracker: __tracker__
+      domain: domain_provider
+      precomputations: end_to_end_features_provider
+      rule_only_data: rule_only_data_provider
+    uses: rasa.core.policies.unexpected_intent_policy.UnexpecTEDIntentPolicy
+    constructor_name: load
+    fn: predict_action_probabilities
+    config:
+      epochs: 100
+      max_history: 5
+    eager: true
+    is_target: false
+    is_input: false
+    resource:
+      name: train_UnexpecTEDIntentPolicy2
+  run_TEDPolicy3:
+    needs:
+      tracker: __tracker__
+      domain: domain_provider
+      precomputations: end_to_end_features_provider
+      rule_only_data: rule_only_data_provider
+    uses: rasa.core.policies.ted_policy.TEDPolicy
+    constructor_name: load
+    fn: predict_action_probabilities
+    config:
+      epochs: 100
+      max_history: 5
+      constrain_similarities: true
+    eager: true
+    is_target: false
+    is_input: false
+    resource:
+      name: train_TEDPolicy3
+  rule_only_data_provider:
+    needs: {}
+    uses: rasa.graph_components.providers.rule_only_provider.RuleOnlyDataProvider
+    constructor_name: load
+    fn: provide
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource:
+      name: train_RulePolicy1
+  select_prediction:
+    needs:
+      policy0: run_MemoizationPolicy0
+      policy1: run_RulePolicy1
+      policy2: run_UnexpecTEDIntentPolicy2
+      policy3: run_TEDPolicy3
+      domain: domain_provider
+      tracker: __tracker__
+    uses: rasa.core.policies.ensemble.DefaultPolicyPredictionEnsemble
+    constructor_name: load
+    fn: combine_predictions_from_kwargs
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource: null

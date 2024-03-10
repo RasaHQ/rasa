@@ -1,3 +1,4 @@
+assistant_id: placeholder_default
 policies:
   - name: MemoizationPolicy
     max_history: 5

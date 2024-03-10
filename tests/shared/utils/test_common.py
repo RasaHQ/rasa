@@ -1,12 +1,12 @@
 import asyncio
-from typing import Any, Collection, List, Optional, Text
+from typing import Collection, List, Optional, Text
 from unittest.mock import Mock
 
 import pytest
-from _pytest.recwarn import WarningsRecorder
 
 import rasa.shared.core.domain
 import rasa.shared.utils.common
+from rasa.shared.exceptions import RasaException
 
 
 def test_all_subclasses():
@@ -175,17 +175,91 @@ def test_class_from_module_path_not_found(
         rasa.shared.utils.common.class_from_module_path(module_path, lookup_path)
 
 
-@pytest.mark.parametrize(
-    "module_path, result, outcome",
-    [
-        ("rasa.shared.core.domain.Domain", rasa.shared.core.domain.Domain, True),
-        ("rasa.shared.core.domain.logger", rasa.shared.core.domain.logger, False),
-    ],
-)
-def test_class_from_module_path_ensure_class(
-    module_path: Text, outcome: bool, result: Any, recwarn: WarningsRecorder
-):
-    klass = rasa.shared.utils.common.class_from_module_path(module_path)
-    assert klass is result
+def test_class_from_module_path_fails():
+    module_path = "rasa.shared.core.domain.logger"
+    with pytest.raises(RasaException):
+        rasa.shared.utils.common.class_from_module_path(module_path)
 
-    assert bool(len(recwarn)) is not outcome
+
+def test_extract_duplicates():
+    list_one = ["greet", {"inform": {"use_entities": []}}, "start_form", "goodbye"]
+    list_two = ["goodbye", {"inform": {"use_entities": ["destination"]}}]
+
+    expected = ["goodbye", "inform"]
+    result = rasa.shared.utils.common.extract_duplicates(list_one, list_two)
+
+    assert result == expected
+
+
+def test_extract_duplicates_with_unique_lists():
+    list_one = ["greet", {"inform": {"use_entities": []}}, "start_form", "goodbye"]
+    list_two = ["bot_challenge", {"mood_sad": {"ignore_entities": []}}]
+
+    result = rasa.shared.utils.common.extract_duplicates(list_one, list_two)
+    assert result == []
+
+
+def test_clean_duplicates():
+    duplicates = {"intents": ["goodbye", "inform"], "entities": []}
+    expected = {"intents": ["goodbye", "inform"]}
+    result = rasa.shared.utils.common.clean_duplicates(duplicates)
+    assert result == expected
+
+
+def test_merge_lists():
+    list_one = ["greet", "start_form", "goodbye"]
+    list_two = ["goodbye", "bot_challenge", "greet"]
+    expected = ["bot_challenge", "goodbye", "greet", "start_form"]
+    result = rasa.shared.utils.common.merge_lists(list_one, list_two)
+
+    assert result == expected
+
+
+@pytest.mark.parametrize("override_existing_values", [False, True])
+def test_merge_dicts(override_existing_values):
+    dict_1 = {"intents": ["greet", "goodbye"], "entities": ["name"]}
+    dict_2 = {
+        "responses": {"utter_greet": [{"text": "Hi"}]},
+        "intents": ["bot_challenge"],
+    }
+
+    if override_existing_values:
+        expected = {
+            "entities": ["name"],
+            "intents": ["bot_challenge"],
+            "responses": {"utter_greet": [{"text": "Hi"}]},
+        }
+    else:
+        expected = {
+            "entities": ["name"],
+            "intents": ["greet", "goodbye"],
+            "responses": {"utter_greet": [{"text": "Hi"}]},
+        }
+
+    result = rasa.shared.utils.common.merge_dicts(
+        dict_1, dict_2, override_existing_values
+    )
+
+    assert result == expected
+
+
+@pytest.mark.parametrize("override_existing_values", [False, True])
+def test_merge_lists_of_dicts(override_existing_values):
+    list_one = ["greet", {"inform": {"use_entities": []}}, "start_form", "goodbye"]
+    list_two = ["goodbye", {"inform": {"use_entities": ["destination"]}}]
+
+    if override_existing_values:
+        expected = [
+            "greet",
+            {"inform": {"use_entities": ["destination"]}},
+            "start_form",
+            "goodbye",
+        ]
+    else:
+        expected = ["goodbye", {"inform": {"use_entities": []}}, "greet", "start_form"]
+
+    result = rasa.shared.utils.common.merge_lists_of_dicts(
+        list_one, list_two, override_existing_values
+    )
+
+    assert result == expected

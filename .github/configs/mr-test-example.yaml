@@ -32,6 +32,12 @@
 ## include:
 ##  - dataset: ["Carbon Bot", "Sara"]
 ##    config: ["all"]
+#
+## Example: Define number of repetitions. This will inform how often to repeat all runs defined in the include section. Default is 1
+## num_repetitions: 2
+## include:
+##  - dataset: ["Carbon Bot", "Sara"]
+##    config: ["Sparse + DIET(seq) + ResponseSelector(t2t)"]
 ##
 ## Shortcuts:
 ## You can use the "all" shortcut to include all available configurations or datasets.

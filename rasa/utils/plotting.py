@@ -32,7 +32,7 @@ def _fix_matplotlib_backend() -> None:
         try:
             # on OSX sometimes the tkinter package is broken and can't be imported.
             # we'll try to import it and if it fails we will use a different backend
-            import tkinter  # noqa: 401
+            import tkinter
         except (ImportError, ModuleNotFoundError):
             logger.debug("Setting matplotlib backend to 'agg'")
             matplotlib.use("agg")
@@ -41,7 +41,7 @@ def _fix_matplotlib_backend() -> None:
     elif backend is None:  # pragma: no cover
         try:
             # If the `tkinter` package is available, we can use the `TkAgg` backend
-            import tkinter  # noqa: 401
+            import tkinter  # noqa: F401
 
             logger.debug("Setting matplotlib backend to 'TkAgg'")
             matplotlib.use("TkAgg")
@@ -59,7 +59,7 @@ def _needs_matplotlib_backend(func: FuncType) -> FuncType:
     """Decorator to fix matplotlib backend before calling a function."""
 
     @wraps(func)
-    def inner(*args: Any, **kwargs: Any) -> ReturnType:
+    def inner(*args: Any, **kwargs: Any) -> ReturnType:  # type: ignore
         """Replacement function that fixes matplotlib backend."""
         global _MATPLOTLIB_BACKEND_FIXED
         if not _MATPLOTLIB_BACKEND_FIXED:
@@ -80,8 +80,7 @@ def plot_confusion_matrix(
     zmin: int = 1,
     output_file: Optional[Text] = None,
 ) -> None:
-    """
-    Print and plot the provided confusion matrix.
+    """Print and plot the provided confusion matrix.
     Normalization can be applied by setting `normalize=True`.
 
     Args:
@@ -170,8 +169,8 @@ def _extract_paired_histogram_specification(
     if not histogram_data or not np.concatenate(histogram_data).size:
         rasa.shared.utils.io.raise_warning("No data to plot paired histogram.")
         raise ValueError("No data to plot paired histogram.")
-    min_data_value = np.min(np.concatenate(histogram_data))
-    max_data_value = np.max(np.concatenate(histogram_data))
+    min_data_value: float = np.min(np.concatenate(histogram_data))
+    max_data_value: float = np.max(np.concatenate(histogram_data))
     bin_width = (max_data_value - min_data_value) / num_bins
     bins = [
         min_data_value + i * bin_width
@@ -181,7 +180,7 @@ def _extract_paired_histogram_specification(
     ]
     histograms = [
         # A list of counts - how often a value in `data` falls into a particular bin
-        np.histogram(data, bins=bins, density=density)[0]
+        list(np.histogram(data, bins=bins, density=density)[0])
         for data in histogram_data
     ]
 
@@ -199,9 +198,12 @@ def _extract_paired_histogram_specification(
         # by `x_pad_fraction` to get the maximum x-values displayed
         x_ranges = [(1.0 + x_pad_fraction) * max(histogram) for histogram in histograms]
 
-    bin_of_first_non_zero_tally = min(
-        [(histogram != 0).argmax(axis=0) for histogram in histograms]
-    )
+    try:
+        bin_of_first_non_zero_tally = min(
+            [[bool(v) for v in histogram].index(True) for histogram in histograms]
+        )
+    except ValueError:
+        bin_of_first_non_zero_tally = 0
 
     y_range = (
         # Start plotting where the data starts (ignore empty bins at the low end)
@@ -221,7 +223,7 @@ def plot_paired_histogram(
     title: Text,
     output_file: Optional[Text] = None,
     num_bins: int = 25,
-    colors: Tuple[Text, Text] = ("#009292", "#920000",),  # (dark cyan, dark red)
+    colors: Tuple[Text, Text] = ("#009292", "#920000"),  # (dark cyan, dark red)
     axes_label: Tuple[Text, Text] = ("Correct", "Wrong"),
     frame_label: Tuple[Text, Text] = ("Number of Samples", "Confidence"),
     density: bool = False,
@@ -258,7 +260,7 @@ def plot_paired_histogram(
             x_pad_fraction=x_pad_fraction,
             y_pad_fraction=y_pad_fraction,
         )
-    except ValueError as e:
+    except (ValueError, TypeError) as e:
         rasa.shared.utils.io.raise_warning(
             f"Unable to plot paired histogram '{title}': {e}"
         )

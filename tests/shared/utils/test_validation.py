@@ -33,6 +33,115 @@ def test_validate_yaml_schema(file, schema):
     validation_utils.validate_yaml_schema(rasa.shared.utils.io.read_file(file), schema)
 
 
+def test_validate_yaml_schema_with_package_name():
+    # should raise no exception
+    file = "data/test_moodbot/domain.yml"
+    schema = DOMAIN_SCHEMA_FILE
+    validation_utils.validate_yaml_schema(
+        rasa.shared.utils.io.read_file(file), schema, package_name="rasa"
+    )
+
+
+def test_validate_yaml_schema_with_random_package_name_fails():
+    # should raise no exception
+    file = "data/test_moodbot/domain.yml"
+    schema = DOMAIN_SCHEMA_FILE
+
+    with pytest.raises(ModuleNotFoundError):
+        validation_utils.validate_yaml_schema(
+            rasa.shared.utils.io.read_file(file), schema, package_name="rasa_foo_bar_42"
+        )
+
+
+@pytest.mark.parametrize(
+    "file, schema",
+    [
+        ("data/test_domains/valid_actions.yml", DOMAIN_SCHEMA_FILE),
+    ],
+)
+def test_validate_yaml_schema_actions(file: Text, schema: Text):
+    # should raise no exception
+    validation_utils.validate_yaml_schema(rasa.shared.utils.io.read_file(file), schema)
+
+
+@pytest.mark.parametrize(
+    "content, schema",
+    [
+        (
+            """
+        intents:
+            - greet
+
+        entities:
+            - name
+
+        responses:
+            utter_greet:
+                - text: hey there!
+
+        actions:
+          - utter_default: {send_domain: 1}
+        """,
+            DOMAIN_SCHEMA_FILE,
+        ),
+        (
+            """
+        intents:
+            - greet
+
+        entities:
+            - name
+
+        responses:
+            utter_greet:
+                - text: hey there!
+
+        actions:
+          - utter_default: {send_domain: 0}
+        """,
+            DOMAIN_SCHEMA_FILE,
+        ),
+        (
+            """
+        intents:
+            - greet
+
+        entities:
+            - name
+
+        responses:
+            utter_greet:
+                - text: hey there!
+
+        actions:
+          - utter_default: {send_domain: Ttrue}
+        """,
+            DOMAIN_SCHEMA_FILE,
+        ),
+        (
+            """
+        intents:
+            - greet
+
+        entities:
+            - name
+
+        responses:
+            utter_greet:
+                - text: hey there!
+
+        actions:
+          - utter_default: {send_domain: ""}
+        """,
+            DOMAIN_SCHEMA_FILE,
+        ),
+    ],
+)
+def test_invalid_send_domain_value_in_actions(content: Text, schema: Text):
+    with pytest.raises(validation_utils.YamlValidationException):
+        validation_utils.validate_yaml_schema(content, schema)
+
+
 @pytest.mark.parametrize(
     "file, schema",
     [
@@ -50,8 +159,8 @@ def test_validate_yaml_schema_raise_exception(file: Text, schema: Text):
 
 
 def test_validate_yaml_schema_raise_exception_null_text():
-    domain = """
-    version: "2.0"
+    domain = f"""
+    version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
     responses:
       utter_ask_email:
       - text: What is your email ID?
@@ -68,8 +177,8 @@ def test_validate_yaml_schema_raise_exception_null_text():
 
 
 def test_validate_yaml_schema_raise_exception_extra_hyphen_for_image():
-    domain = """
-        version: "2.0"
+    domain = f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         responses:
           utter_cheer_up:
           - image: https://i.imgur.com/nGF1K8f.jpg
@@ -225,8 +334,8 @@ def test_concurrent_schema_validation():
     successful_results = []
 
     def validate() -> None:
-        payload = """
-version: "2.0"
+        payload = f"""
+version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 nlu:
 - intent: greet
   examples: |

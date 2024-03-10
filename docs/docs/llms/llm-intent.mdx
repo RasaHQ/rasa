@@ -1,0 +1,272 @@
+---
+id: llm-intent
+sidebar_label: Intent Classification with LLMs
+title: Using LLMs for Intent Classification
+abstract: |
+  Intent classification using Large Language Models (LLM) and
+  a method called retrieval augmented generation (RAG).
+---
+
+import RasaProLabel from "@theme/RasaProLabel";
+import RasaLabsLabel from "@theme/RasaLabsLabel";
+import RasaLabsBanner from "@theme/RasaLabsBanner";
+import LLMIntentClassifierImg from "./llm-IntentClassifier-docs.jpg";
+
+<RasaProLabel />
+
+<RasaLabsLabel />
+
+<RasaLabsBanner version="3.7.0b1" />
+
+## Key Features
+
+1. **Few shot learning**: The intent classifier can be trained with only a few
+   examples per intent. New intents can be bootstrapped and integrated even if
+   there are only a handful of training examples available.
+2. **Fast Training**: The intent classifier is very quick to train.
+3. **Multilingual**: The intent classifier can be trained on multilingual data
+   and can classify messages in many languages, though performance will vary across LLMs.
+
+## Overview
+
+The LLM-based intent classifier is a new intent classifier that uses large
+language models (LLMs) to classify intents. The LLM-based intent classifier
+relies on a method called retrieval augmented generation (RAG), which combines
+the benefits of retrieval-based and generation-based approaches. 
+
+<Image
+  img={LLMIntentClassifierImg}
+  caption="LLM Intent Classifier Overview"
+  alt="Description of the steps of the LLM Intent Classifier."
+/>
+
+During trainin the classifier
+
+1. embeds all intent examples and 
+2. stores their embeddings in a vector store.
+
+During prediction the classifier
+
+1. embeds the current message and
+2. uses the embedding to find similar intent examples in the vector store.
+3. The retrieved examples are ranked based on similarity to the current message and
+4. the most similar ones are included in an LLM prompt. The prompt guides the LLM to
+   predict the intent of the message.
+5. LLM predicts an intent label. 
+6. The generated label is mapped to an intent of the domain. The LLM can also
+   predict a label that is not part of the training data. In this case, the
+   intent from the domain with the most similar embedding is predicted.
+
+## Using the LLM-based Intent Classifier in Your Bot
+
+To use the LLM-based intent classifier in your bot, you need to add the
+`LLMIntentClassifier` to your NLU pipeline in the `config.yml` file.
+
+```yaml-rasa title="config.yml"
+pipeline:
+# - ...
+  - name: rasa_plus.ml.LLMIntentClassifier
+# - ...
+```
+
+The LLM-based intent classifier requires access to an LLM model API. You can use any
+OpenAI model that supports the `/completions` endpoint. 
+We are working on expanding the list of supported
+models and model providers.
+
+## Customizing
+
+You can customize the LLM by modifying the following parameters in the
+`config.yml` file. **All of the parameters are optional.**
+
+### Fallback Intent
+
+The fallback intent is used when the LLM predicts an intent that wasn't part of
+the training data. You can set the fallback intent by adding the following
+parameter to the `config.yml` file.
+
+```yaml-rasa title="config.yml"
+pipeline:
+# - ...
+  - name: rasa_plus.ml.LLMIntentClassifier
+    fallback_intent: "out_of_scope"
+# - ...
+```
+
+Defaults to `out_of_scope`.
+
+### LLM / Embeddings
+
+You can choose the OpenAI model that is used for the LLM by adding the `llm.model_name`
+parameter to the `config.yml` file.
+
+```yaml-rasa title="config.yml"
+pipeline:
+# - ...
+  - name: rasa_plus.ml.LLMIntentClassifier
+    llm:
+      model_name: "text-davinci-003"
+# - ...
+```
+
+Defaults to `text-davinci-003`. The model name needs to be set to a generative
+model using the completions API of
+[OpenAI](https://platform.openai.com/docs/guides/text-generation/chat-completions-api).
+
+If you want to use Azure OpenAI Service, you can configure the necessary 
+parameters as described in the 
+[Azure OpenAI Service](./llm-setup.mdx#additional-configuration-for-azure-openai-service) 
+section.
+
+:::info Using Other LLMs / Embeddings
+
+By default, OpenAI is used as the underlying LLM and embedding provider. 
+
+The used LLM provider and embeddings provider can be configured in the
+`config.yml` file to use another provider, e.g. `cohere`: 
+
+```yaml-rasa title="config.yml"
+pipeline:
+# - ...
+  - name: rasa_plus.ml.LLMIntentClassifier
+    llm:
+      type: "cohere"
+    embeddings:
+      type: "cohere"
+# - ...
+```
+
+For more information, see the
+[LLM setup page on llms and embeddings](./llm-setup.mdx#other-llms--embeddings)
+
+:::
+
+### Temperature
+
+The temperature parameter controls the randomness of the LLM predictions. You
+can set the temperature by adding the `llm.temperature` parameter to the `config.yml`
+file.
+
+```yaml-rasa title="config.yml"
+pipeline:
+# - ...
+  - name: rasa_plus.ml.LLMIntentClassifier
+    llm:
+      temperature: 0.7
+# - ...
+```
+
+Defaults to `0.7`. The temperature needs to be a float between 0 and 2. The
+higher the temperature, the more random the predictions will be. The lower the
+temperature, the more likely the LLM will predict the same intent for the same
+message.
+
+### Prompt
+
+The prompt is the text that is used to guide the LLM to predict the intent of
+the message. You can customize the prompt by adding the following parameter to
+the `config.yml` file.
+
+```yaml-rasa title="config.yml"
+pipeline:
+# - ...
+  - name: rasa_plus.ml.LLMIntentClassifier
+    prompt: |
+      Label a users message from a
+      conversation with an intent. Reply ONLY with the name of the intent.
+
+      The intent should be one of the following:
+      {% for intent in intents %}- {{intent}}
+      {% endfor %}
+      {% for example in examples %}
+      Message: {{example['text']}}
+      Intent: {{example['intent']}}
+      {% endfor %}
+      Message: {{message}}
+      Intent:
+```
+
+The prompt is a [Jinja2](https://jinja.palletsprojects.com/en/3.0.x/) template
+that can be used to customize the prompt. The following variables are available
+in the prompt:
+
+- `examples`: A list of the closest examples from the training data. Each
+  example is a dictionary with the keys `text` and `intent`.
+- `message`: The message that needs to be classified.
+- `intents`: A list of all intents in the training data.
+
+The default prompt template results in the following prompt:
+
+```
+Label a users message from a
+conversation with an intent. Reply ONLY with 
+the name of the intent.
+
+The intent should be one of the following:
+- affirm
+- greet
+
+Message: Hello
+Intent: greet
+
+Message: Yes, I am
+Intent: affirm
+
+Message: hey there
+Intent:
+```
+
+### Number of Intent Examples
+
+The number of examples that are used to guide the LLM to predict the intent of
+the message can be customized by adding the `number_of_examples` parameter to the
+`config.yml` file:
+
+```yaml-rasa title="config.yml"
+pipeline:
+# - ...
+  - name: rasa_plus.ml.LLMIntentClassifier
+    number_of_examples: 3
+# - ...
+```
+
+Defaults to `10`. The examples are selected based on their similarity to the
+current message. By default, the examples are included in the prompt like this:
+```
+Message: Hello
+Intent: greet
+
+Message: Yes, I am
+Intent: affirm
+```
+
+## Security Considerations
+
+The intent classifier uses the OpenAI API to classify intents. 
+This means that your users conversations are sent to OpenAI's servers for 
+classification.
+
+The response generated by OpenAI is not send back to the bot's user. However, 
+the user can craft messages that will lead the classification to 
+fail for their message.
+
+The prompt used for classification won't be exposed to the user using prompt
+injection. This is because the generated response from the LLM is mapped to
+one of the existing intents, preventing any leakage of the prompt to the user.
+
+
+More detailed information can be found in Rasa's webinar on
+[LLM Security in the Enterprise](https://info.rasa.com/webinars/llm-security-in-the-enterprise-replay).
+
+## Evaluating Performance
+
+1. Run an evaluation by splitting the NLU data into training and testing sets
+   and comparing the performance of the current pipeline with the LLM-based
+   pipeline.
+2. Run cross-validation on all of the data to get a more robust estimate of the
+   performance of the LLM-based pipeline.
+3. Use the `rasa test nlu` command with multiple configurations (e.g., one with
+   the current pipeline and one with the LLM-based pipeline) to compare their
+   performance.
+4. Compare the latency of the LLM-based pipeline with that of the current
+   pipeline to see if there are any significant differences in speed.

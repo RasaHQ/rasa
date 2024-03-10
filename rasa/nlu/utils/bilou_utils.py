@@ -252,8 +252,7 @@ def _add_bilou_tags_to_entities(
 def ensure_consistent_bilou_tagging(
     predicted_tags: List[Text], predicted_confidences: List[float]
 ) -> Tuple[List[Text], List[float]]:
-    """
-    Ensure predicted tags follow the BILOU tagging schema.
+    """Ensure predicted tags follow the BILOU tagging schema.
 
     We assume that starting B- tags are correct. Followed tags that belong to start
     tag but have a different entity type are updated considering also the confidence
@@ -269,7 +268,6 @@ def ensure_consistent_bilou_tagging(
         List of tags.
         List of confidences.
     """
-
     for idx, predicted_tag in enumerate(predicted_tags):
         prefix = bilou_prefix_from_tag(predicted_tag)
         tag = tag_without_prefix(predicted_tag)
@@ -338,8 +336,9 @@ def _tag_to_use(
         relevant_tags, relevant_confidences
     )
     # Calculate the percentage of tokens assigned to a tag per tag.
-    token_percentage_per_tag = Counter(relevant_tags)
-    for tag, count in token_percentage_per_tag.items():
+    tag_counts = Counter(relevant_tags)
+    token_percentage_per_tag: Dict[Text, float] = {}
+    for tag, count in tag_counts.items():
         token_percentage_per_tag[tag] = round(count / len(relevant_tags), 2)
 
     # Calculate the harmonic mean between the two metrics per tag.

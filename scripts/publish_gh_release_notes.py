@@ -10,7 +10,7 @@ The script also requires ``pandoc`` to be previously installed in the system.
 Requires Python3.6+.
 
 Based on code from pytest.
-https://github.com/pytest-dev/pytest/blob/master/scripts/publish-gh-release-notes.py
+https://github.com/pytest-dev/pytest/blob/master/scripts/publish_gh_release_notes.py
 Copyright Holger Krekel and others, 2004-2019.
 
 Distributed under the terms of the MIT license, pytest is free and open source software.
@@ -57,8 +57,11 @@ def parse_changelog(tag_name: Text) -> Text:
         if consuming_version:
             version_lines.append(line)
 
-    # drop the first lines (version headline, not needed for GH)
-    return "\n".join(version_lines[2:]).strip()
+    if consuming_version:
+        # drop the first lines (version headline, not needed for GH)
+        return "\n".join(version_lines[2:]).strip()
+    else:
+        return None
 
 
 def main():
@@ -83,7 +86,7 @@ def main():
     else:
         md_body = parse_changelog(tag_name)
 
-    if not md_body:
+    if md_body is None:
         print("Failed to extract changelog entries for version from changelog.")
         return 2
 

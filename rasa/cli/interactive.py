@@ -1,17 +1,26 @@
 import argparse
 import logging
 import os
-from typing import List, Optional, Text
+from pathlib import Path
+from typing import List, Optional, Text, Union
 
 from rasa import model
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import interactive as arguments
 import rasa.cli.train as train
 import rasa.cli.utils
-from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH, DEFAULT_MODELS_PATH
+from rasa.engine.storage.local_model_storage import LocalModelStorage
+from rasa.shared.constants import (
+    ASSISTANT_ID_DEFAULT_VALUE,
+    ASSISTANT_ID_KEY,
+    DEFAULT_ENDPOINTS_PATH,
+    DEFAULT_MODELS_PATH,
+)
+from rasa.shared.data import TrainingType
 from rasa.shared.importers.importer import TrainingDataImporter
 import rasa.shared.utils.cli
 import rasa.utils.common
+
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +51,7 @@ def add_subparser(
         parents=parents,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         help="Starts an interactive learning session model to create new training data "
-        "for a Rasa Core model by chatting. Uses the 'RegexInterpreter', i.e. "
+        "for a Rasa Core model by chatting. Uses the 'RegexMessageHandler', i.e. "
         "`/<intent>` input format.",
     )
     interactive_core_parser.set_defaults(func=interactive, core_only=True)
@@ -58,14 +67,14 @@ def interactive(args: argparse.Namespace) -> None:
     )
 
     if args.model is None:
-        story_graph = rasa.utils.common.run_in_loop(file_importer.get_stories())
+        story_graph = file_importer.get_stories()
         if not story_graph or story_graph.is_empty():
             rasa.shared.utils.cli.print_error_and_exit(
                 "Could not run interactive learning without either core "
                 "data or a model containing core data."
             )
 
-        zipped_model = (
+        zipped_model: Optional[Union[Text, Path]] = (
             train.run_core_training(args)
             if args.core_only
             else train.run_training(args)
@@ -77,6 +86,8 @@ def interactive(args: argparse.Namespace) -> None:
                 "or use 'rasa train' to train a model."
             )
     else:
+        validate_assistant_id_key_in_config(file_importer)
+
         zipped_model = get_provided_model(args.model)
         if not (zipped_model and os.path.exists(zipped_model)):
             rasa.shared.utils.cli.print_error_and_exit(
@@ -94,10 +105,15 @@ def _set_not_required_args(args: argparse.Namespace) -> None:
     args.fixed_model_name = None
     args.store_uncompressed = False
     args.dry_run = False
+    args.skip_validation = True
+    args.fail_on_validation_warnings = False
+    args.validation_max_history = None
 
 
 def perform_interactive_learning(
-    args: argparse.Namespace, zipped_model: Text, file_importer: TrainingDataImporter
+    args: argparse.Namespace,
+    zipped_model: Union[Text, "Path"],
+    file_importer: TrainingDataImporter,
 ) -> None:
     """Performs interactive learning.
 
@@ -108,28 +124,41 @@ def perform_interactive_learning(
     """
     from rasa.core.train import do_interactive_learning
 
-    args.model = zipped_model
+    args.model = str(zipped_model)
 
-    with model.unpack_model(zipped_model) as model_path:
-        args.core, args.nlu = model.get_model_subdirectories(model_path)
-        if args.core is None:
-            rasa.shared.utils.cli.print_error_and_exit(
-                "Can not run interactive learning on an NLU-only model."
-            )
-
-        args.endpoints = rasa.cli.utils.get_validated_path(
-            args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
+    metadata = LocalModelStorage.metadata_from_archive(zipped_model)
+    if metadata.training_type == TrainingType.NLU:
+        rasa.shared.utils.cli.print_error_and_exit(
+            "Can not run interactive learning on an NLU-only model."
         )
 
-        do_interactive_learning(args, file_importer)
+    args.endpoints = rasa.cli.utils.get_validated_path(
+        args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
+    )
+
+    do_interactive_learning(args, file_importer)
 
 
-def get_provided_model(arg_model: Text) -> Optional[Text]:
+def get_provided_model(arg_model: Text) -> Optional[Union[Text, Path]]:
+    """Checks model path input and selects model from it."""
     model_path = rasa.cli.utils.get_validated_path(
         arg_model, "model", DEFAULT_MODELS_PATH
     )
 
-    if os.path.isdir(model_path):
-        model_path = model.get_latest_model(model_path)
+    return (
+        model.get_latest_model(model_path) if os.path.isdir(model_path) else model_path
+    )
 
-    return model_path
+
+def validate_assistant_id_key_in_config(file_importer: TrainingDataImporter) -> None:
+    """Verifies that config contains a unique value for assistant identifier."""
+    config_data = file_importer.get_config()
+    assistant_id = config_data.get(ASSISTANT_ID_KEY)
+
+    if assistant_id is None or assistant_id == ASSISTANT_ID_DEFAULT_VALUE:
+        rasa.shared.utils.cli.print_error_and_exit(
+            f"The '{ASSISTANT_ID_KEY}' key in the config file is either missing or "
+            f"is set to the default value. Please replace the placeholder default "
+            f"value and re-train the model."
+        )
+    return None

@@ -52,7 +52,7 @@ async def generate_response(nlg_call, domain):
     sender_id = nlg_call.get("tracker", {}).get("sender_id")
     events = nlg_call.get("tracker", {}).get("events")
     tracker = DialogueStateTracker.from_dict(sender_id, events, domain.slots)
-    channel_name = nlg_call.get("channel")
+    channel_name = nlg_call.get("channel", {}).get("name")
 
     return await TemplatedNaturalLanguageGenerator(domain.responses).generate(
         response, tracker, channel_name, **kwargs
@@ -60,7 +60,7 @@ async def generate_response(nlg_call, domain):
 
 
 def run_server(domain, port, workers):
-    app = Sanic(__name__)
+    app = Sanic("nlg_server")
 
     @app.route("/nlg", methods=["POST", "OPTIONS"])
     async def nlg(request):

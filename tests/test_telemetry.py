@@ -6,7 +6,7 @@ from typing import Any, Dict, Generator, Text
 
 from _pytest.monkeypatch import MonkeyPatch
 import jsonschema
-from mock import Mock
+from unittest.mock import MagicMock, Mock
 import pytest
 import responses
 
@@ -34,6 +34,15 @@ def patch_global_config_path(tmp_path: Path) -> Generator[None, None, None]:
     rasa.constants.GLOBAL_USER_CONFIG_PATH = default_location
 
 
+@pytest.fixture(autouse=True)
+def patch_telemetry_context() -> Generator[None, None, None]:
+    """Use a new telemetry context for each test to avoid tests influencing each other."""
+    defaut_context = telemetry.TELEMETRY_CONTEXT
+    telemetry.TELEMETRY_CONTEXT = None
+    yield
+    telemetry.TELEMETRY_CONTEXT = defaut_context
+
+
 async def test_events_schema(
     monkeypatch: MonkeyPatch, default_agent: Agent, config_path: Text
 ):
@@ -47,16 +56,13 @@ async def test_events_schema(
 
     with open(TELEMETRY_EVENTS_JSON) as f:
         schemas = json.load(f)["events"]
-    # fallback for python 3.6, which doesn't have asyncio.all_tasks
-    try:
-        initial = asyncio.all_tasks()
-    except AttributeError:
-        initial = asyncio.Task.all_tasks()
+    initial = asyncio.all_tasks()
     # Generate all known backend telemetry events, and then use events.json to
     # validate their schema.
     training_data = TrainingDataImporter.load_from_config(config_path)
-    async with telemetry.track_model_training(training_data, "rasa"):
-        await asyncio.sleep(1)
+
+    with telemetry.track_model_training(training_data, "rasa"):
+        pass
 
     telemetry.track_telemetry_disabled()
 
@@ -76,25 +82,34 @@ async def test_events_schema(
 
     telemetry.track_shell_started("nlu")
 
-    telemetry.track_rasa_x_local()
-
     telemetry.track_visualization()
 
     telemetry.track_core_model_test(5, True, default_agent)
 
     telemetry.track_nlu_model_test(TrainingData())
 
-    # fallback for python 3.6, which doesn't have asyncio.all_tasks
-    try:
-        pending = asyncio.all_tasks() - initial
-    except AttributeError:
-        pending = asyncio.Task.all_tasks() - initial
+    telemetry.track_markers_extraction_initiated("all", False, False, None)
+
+    telemetry.track_markers_extracted(1)
+
+    telemetry.track_markers_stats_computed(1)
+
+    telemetry.track_markers_parsed_count(1, 1, 1)
+
+    # Also track train started for a graph config
+    training_data = TrainingDataImporter.load_from_config(
+        "data/test_config/graph_config.yml"
+    )
+    with telemetry.track_model_training(training_data, "rasa"):
+        pass
+
+    pending = asyncio.all_tasks() - initial
     await asyncio.gather(*pending)
 
-    assert mock.call_count == 15
+    assert mock.call_count == 20
 
-    for call in mock.call_args_list:
-        event = call.args[0]
+    for args, _ in mock.call_args_list:
+        event = args[0]
         # `metrics_id` automatically gets added to all event but is
         # not part of the schema so we need to remove it before validation
         del event["properties"]["metrics_id"]
@@ -236,7 +251,9 @@ def test_segment_gets_called(monkeypatch: MonkeyPatch):
     with responses.RequestsMock() as rsps:
         rsps.add(responses.POST, "https://api.segment.io/v1/track", json={})
 
-        telemetry._track("test event", {"foo": "bar"}, {"foobar": "baz"})
+        telemetry._track(
+            "test event", {"foo": "bar"}, {"foobar": "baz", "license_hash": "foobar"}
+        )
 
         assert len(rsps.calls) == 1
         r = rsps.calls[0]
@@ -259,9 +276,25 @@ def test_segment_does_not_raise_exception_on_failure(monkeypatch: MonkeyPatch):
         rsps.add(responses.POST, "https://api.segment.io/v1/track", body="", status=505)
 
         # this call should complete without throwing an exception
-        telemetry._track("test event", {"foo": "bar"}, {"foobar": "baz"})
+        telemetry._track(
+            "test event", {"foo": "bar"}, {"foobar": "baz", "license_hash": "foobar"}
+        )
 
         assert rsps.assert_call_count("https://api.segment.io/v1/track", 1)
+
+
+def test_segment_does_not_get_called_without_license(monkeypatch: MonkeyPatch):
+    monkeypatch.setenv("RASA_TELEMETRY_ENABLED", "true")
+    monkeypatch.setenv("RASA_TELEMETRY_WRITE_KEY", "foobar")
+    telemetry.initialize_telemetry()
+
+    with responses.RequestsMock(assert_all_requests_are_fired=False) as rsps:
+        rsps.add(responses.POST, "https://api.segment.io/v1/track", body="", status=505)
+
+        # this call should complete without throwing an exception
+        telemetry._track("test event", {"foo": "bar"}, {"foobar": "baz"})
+
+        assert rsps.assert_call_count("https://api.segment.io/v1/track", 0)
 
 
 def test_environment_write_key_overwrites_key_file(monkeypatch: MonkeyPatch):
@@ -408,7 +441,7 @@ def _create_exception_event_in_file(filename: Text) -> Dict[Text, Any]:
                                 ],
                                 "context_line": "    sys.exit(load_entry_point('rasa', 'console_scripts', 'rasa')())",
                                 "post_context": [],
-                            },
+                            }
                         ]
                     },
                 }
@@ -479,3 +512,28 @@ def test_context_contains_os():
     context.pop("os")
 
     assert "os" in telemetry._default_context_fields()
+
+
+def test_context_contains_license_hash(monkeypatch: MonkeyPatch) -> None:
+    mock = MagicMock()
+    mock.return_value.hook.get_license_hash.return_value = "1234567890"
+    monkeypatch.setattr("rasa.telemetry.plugin_manager", mock)
+    context = telemetry._default_context_fields()
+
+    assert "license_hash" in context
+    assert mock.return_value.hook.get_license_hash.called
+    assert context["license_hash"] == "1234567890"
+
+    # make sure it is still there after removing it
+    context.pop("license_hash")
+    assert "license_hash" in telemetry._default_context_fields()
+
+
+def test_context_does_not_contain_license_hash(monkeypatch: MonkeyPatch) -> None:
+    mock = MagicMock()
+    mock.return_value.hook.get_license_hash.return_value = None
+    monkeypatch.setattr("rasa.telemetry.plugin_manager", mock)
+    context = telemetry._default_context_fields()
+
+    assert "license_hash" not in context
+    assert mock.return_value.hook.get_license_hash.called

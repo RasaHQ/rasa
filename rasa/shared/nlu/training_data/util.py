@@ -4,6 +4,7 @@ import os
 import re
 from typing import Any, Dict, Optional, Text, Match, List
 
+import scipy.sparse
 from rasa.shared.nlu.constants import (
     ENTITIES,
     EXTRACTOR,
@@ -32,7 +33,7 @@ GROUP_COMPLETE_MATCH = 0
 def transform_entity_synonyms(
     synonyms: List[Dict[Text, Any]], known_synonyms: Optional[Dict[Text, Any]] = None
 ) -> Dict[Text, Any]:
-    """Transforms the entity synonyms into a text->value dictionary"""
+    """Transforms the entity synonyms into a text->value dictionary."""
     entity_synonyms = known_synonyms if known_synonyms else {}
     for s in synonyms:
         if "value" in s and "synonyms" in s:
@@ -53,8 +54,7 @@ def check_duplicate_synonym(
 
 
 def get_file_format_extension(resource_name: Text) -> Text:
-    """
-    Get the file extension based on training data format. It supports both a folder and
+    """Get the file extension based on training data format. It supports both a folder and
     a file, and tries to guess the format as follows:
 
     - if the resource is a file and has a known format, return this format's extension
@@ -64,9 +64,10 @@ def get_file_format_extension(resource_name: Text) -> Text:
 
     Args:
         resource_name: The name of the resource, can be a file or a folder.
+
     Returns:
         The resource file format.
-    """
+    """  # noqa: E501
     from rasa.shared.nlu.training_data import loading
 
     if resource_name is None or not os.path.exists(resource_name):
@@ -79,10 +80,7 @@ def get_file_format_extension(resource_name: Text) -> Text:
     if not file_formats:
         return rasa.shared.data.yaml_file_extension()
 
-    known_file_formats = {
-        loading.MARKDOWN: rasa.shared.data.markdown_file_extension(),
-        loading.RASA_YAML: rasa.shared.data.yaml_file_extension(),
-    }
+    known_file_formats = {loading.RASA_YAML: rasa.shared.data.yaml_file_extension()}
     fformat = file_formats[0]
     if all(f == fformat for f in file_formats):
         return known_file_formats.get(fformat, rasa.shared.data.yaml_file_extension())
@@ -99,7 +97,6 @@ def remove_untrainable_entities_from(example: Dict[Text, Any]) -> None:
     Args:
         example: Serialised training example to inspect.
     """
-
     example_entities = example.get(ENTITIES)
 
     if not example_entities:
@@ -195,7 +192,6 @@ def build_entity(
     Returns:
         an entity dictionary
     """
-
     entity = {
         ENTITY_ATTRIBUTE_START: start,
         ENTITY_ATTRIBUTE_END: end,
@@ -210,3 +206,18 @@ def build_entity(
 
     entity.update(kwargs)
     return entity
+
+
+def sparse_matrix_to_string(m: scipy.sparse.spmatrix) -> Text:
+    """Turns a sparse matrix into a string.
+
+    Will return a line "(i,j)  v" for each value in the matrix.
+
+    taken from official scipy source to operate on full sparse matrix to not have
+    to change the `maxprint` property in-place.
+    https://github.com/scipy/scipy/blob/v1.7.0/scipy/sparse/base.py#L258
+    """
+    # make sure sparse matrix is in COOrdinate format
+    m_coo = m.tocoo()
+    triples = zip(list(zip(m_coo.row, m_coo.col)), m_coo.data)
+    return "\n".join([("  %s\t%s" % t) for t in triples])

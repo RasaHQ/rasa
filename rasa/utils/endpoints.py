@@ -1,3 +1,6 @@
+import ssl
+from functools import cached_property
+
 import aiohttp
 import logging
 import os
@@ -5,9 +8,10 @@ from aiohttp.client_exceptions import ContentTypeError
 from sanic.request import Request
 from typing import Any, Optional, Text, Dict
 
+from rasa.shared.exceptions import FileNotFoundException
 import rasa.shared.utils.io
 import rasa.utils.io
-from rasa.constants import DEFAULT_REQUEST_TIMEOUT
+from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 
 
 logger = logging.getLogger(__name__)
@@ -16,9 +20,7 @@ logger = logging.getLogger(__name__)
 def read_endpoint_config(
     filename: Text, endpoint_type: Text
 ) -> Optional["EndpointConfig"]:
-    """Read an endpoint configuration file from disk and extract one
-
-    config."""
+    """Read an endpoint configuration file from disk and extract one config."""  # noqa: E501
     if not filename:
         return None
 
@@ -73,24 +75,29 @@ class EndpointConfig:
 
     def __init__(
         self,
-        url: Text = None,
-        params: Dict[Text, Any] = None,
-        headers: Dict[Text, Any] = None,
-        basic_auth: Dict[Text, Text] = None,
+        url: Optional[Text] = None,
+        params: Optional[Dict[Text, Any]] = None,
+        headers: Optional[Dict[Text, Any]] = None,
+        basic_auth: Optional[Dict[Text, Text]] = None,
         token: Optional[Text] = None,
         token_name: Text = "token",
+        cafile: Optional[Text] = None,
         **kwargs: Any,
     ) -> None:
+        """Creates an `EndpointConfig` instance."""
         self.url = url
-        self.params = params if params else {}
-        self.headers = headers if headers else {}
-        self.basic_auth = basic_auth
+        self.params = params or {}
+        self.headers = headers or {}
+        self.basic_auth = basic_auth or {}
         self.token = token
         self.token_name = token_name
         self.type = kwargs.pop("store_type", kwargs.pop("type", None))
+        self.cafile = cafile
         self.kwargs = kwargs
 
+    @cached_property
     def session(self) -> aiohttp.ClientSession:
+        """Creates and returns a configured aiohttp client session."""
         # create authentication parameters
         if self.basic_auth:
             auth = aiohttp.BasicAuth(
@@ -125,13 +132,14 @@ class EndpointConfig:
         method: Text = "post",
         subpath: Optional[Text] = None,
         content_type: Optional[Text] = "application/json",
+        compress: bool = False,
         **kwargs: Any,
     ) -> Optional[Any]:
         """Send a HTTP request to the endpoint. Return json response, if available.
 
         All additional arguments will get passed through
-        to aiohttp's `session.request`."""
-
+        to aiohttp's `session.request`.
+        """
         # create the appropriate headers
         headers = {}
         if content_type:
@@ -141,23 +149,38 @@ class EndpointConfig:
             headers.update(kwargs["headers"])
             del kwargs["headers"]
 
+        if self.headers:
+            headers.update(self.headers)
+
         url = concat_url(self.url, subpath)
-        async with self.session() as session:
-            async with session.request(
-                method,
-                url,
-                headers=headers,
-                params=self.combine_parameters(kwargs),
-                **kwargs,
-            ) as response:
-                if response.status >= 400:
-                    raise ClientResponseError(
-                        response.status, response.reason, await response.content.read()
-                    )
-                try:
-                    return await response.json()
-                except ContentTypeError:
-                    return None
+
+        sslcontext = None
+        if self.cafile:
+            try:
+                sslcontext = ssl.create_default_context(cafile=self.cafile)
+            except FileNotFoundError as e:
+                raise FileNotFoundException(
+                    f"Failed to find certificate file, "
+                    f"'{os.path.abspath(self.cafile)}' does not exist."
+                ) from e
+
+        async with self.session.request(
+            method,
+            url,
+            headers=headers,
+            params=self.combine_parameters(kwargs),
+            compress=compress,
+            ssl=sslcontext,
+            **kwargs,
+        ) as response:
+            if response.status >= 400:
+                raise ClientResponseError(
+                    response.status, response.reason, await response.content.read()
+                )
+            try:
+                return await response.json()
+            except ContentTypeError:
+                return None
 
     @classmethod
     def from_dict(cls, data: Dict[Text, Any]) -> "EndpointConfig":

@@ -1,0 +1,73 @@
+version: "3.1"
+nlu:
+- intent: bot_challenge
+  examples: |
+    - are you a bot?
+    - am I talking to a bot?
+    - are you a human?
+- intent: affirm
+  examples: |
+    - y
+    - that sounds good
+    - correct
+    - yes
+    - of course
+- intent: deny
+  examples: |
+    - n
+    - I don't think so
+    - don't like that
+    - no way
+- intent: goodbye
+  examples: |
+    - cu
+    - cee you later
+    - have a nice day
+    - bye bye
+    - good night
+    - see you around
+    - see you later
+    - good by
+    - goodbye
+- intent: greet
+  examples: |
+    - hi
+    - let's go
+    - goodmorning
+    - hey
+    - hello
+    - good morning
+    - goodevening
+    - good evening
+    - hey dude
+    - moin
+    - hello there
+- intent: mood/great
+  examples: |
+    - I am feeling very good
+    - extremely good
+    - I am amazing
+    - so perfect
+    - I am great
+    - great
+    - so so perfect
+    - feeling like a king
+    - so good
+    - wonderful
+    - I am going to save the world
+- intent: mood/unhappy
+  examples: |
+    - very sad
+    - so saad
+    - sad
+    - I don't feel very well
+    - my day was horrible
+    - not good
+    - super sad
+    - I am disappointed
+    - so sad
+    - I am sad
+    - I'm so sad
+- regex: greet
+  examples: |
+    - hey[^\s]*

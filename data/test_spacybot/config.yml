@@ -1,7 +1,10 @@
+recipe: default.v1
+assistant_id: test_spacy_bot
 language: en
 
 pipeline:
   - name: "SpacyNLP"
+    model: "en_core_web_md"
   - name: "SpacyTokenizer"
   - name: "SpacyFeaturizer"
   - name: "DIETClassifier"

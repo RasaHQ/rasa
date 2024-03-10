@@ -1,3 +1,5 @@
+recipe: default.v1
+assistant_id: test_e2e_bot
 language: en
 pipeline:
   - name: WhitespaceTokenizer
@@ -11,7 +13,9 @@ pipeline:
     max_ngram: 4
   - name: DIETClassifier
     epochs: 1
+    run_eagerly: True
 policies:
 - name: TEDPolicy
   random_seed: 42
   epochs: 5
+- name: RulePolicy

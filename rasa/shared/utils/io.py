@@ -5,10 +5,14 @@ from hashlib import md5
 from io import StringIO
 import json
 import os
+import sys
 from pathlib import Path
 import re
 from typing import Any, Dict, List, Optional, Text, Type, Union
 import warnings
+import random
+import string
+import portalocker
 
 from ruamel import yaml as yaml
 from ruamel.yaml import RoundTripRepresenter, YAMLError
@@ -55,7 +59,6 @@ def raise_warning(
     **kwargs: Any,
 ) -> None:
     """Emit a `warnings.warn` with sensible defaults and a colored warning msg."""
-
     original_formatter = warnings.formatwarning
 
     def should_show_source_line() -> bool:
@@ -67,14 +70,13 @@ def raise_warning(
         return True
 
     def formatwarning(
-        message: Text,
-        category: Optional[Type[Warning]],
+        message: Union[Warning, Text],
+        category: Type[Warning],
         filename: Text,
-        lineno: Optional[int],
+        lineno: int,
         line: Optional[Text] = None,
     ) -> Text:
         """Function to format a warning the standard way."""
-
         if not should_show_source_line():
             if docs:
                 line = f"More info at {docs}"
@@ -120,7 +122,6 @@ def write_text_file(
 
 def read_file(filename: Union[Text, Path], encoding: Text = DEFAULT_ENCODING) -> Any:
     """Read text from a file."""
-
     try:
         with open(filename, encoding=encoding) as f:
             return f.read()
@@ -152,8 +153,8 @@ def list_directory(path: Text) -> List[Text]:
     """Returns all files and folders excluding hidden files.
 
     If the path points to a file, returns the file. This is a recursive
-    implementation returning files in any depth of the path."""
-
+    implementation returning files in any depth of the path.
+    """
     if not isinstance(path, str):
         raise ValueError(
             f"`resource_name` must be a string type. " f"Got `{type(path)}` instead"
@@ -162,7 +163,7 @@ def list_directory(path: Text) -> List[Text]:
     if os.path.isfile(path):
         return [path]
     elif os.path.isdir(path):
-        results = []
+        results: List[Text] = []
         for base, dirs, files in os.walk(path, followlinks=True):
             # sort files for same order across runs
             files = sorted(files, key=_filename_without_prefix)
@@ -180,8 +181,8 @@ def list_directory(path: Text) -> List[Text]:
 def list_files(path: Text) -> List[Text]:
     """Returns all files excluding hidden files.
 
-    If the path points to a file, returns the file."""
-
+    If the path points to a file, returns the file.
+    """
     return [fn for fn in list_directory(path) if os.path.isfile(fn)]
 
 
@@ -193,19 +194,20 @@ def _filename_without_prefix(file: Text) -> Text:
 def list_subdirectories(path: Text) -> List[Text]:
     """Returns all folders excluding hidden files.
 
-    If the path points to a file, returns an empty list."""
-
+    If the path points to a file, returns an empty list.
+    """
     return [fn for fn in glob.glob(os.path.join(path, "*")) if os.path.isdir(fn)]
 
 
 def deep_container_fingerprint(
-    obj: Union[List[Any], Dict[Any, Any]], encoding: Text = DEFAULT_ENCODING
+    obj: Union[List[Any], Dict[Any, Any], Any], encoding: Text = DEFAULT_ENCODING
 ) -> Text:
-    """Calculate a hash which is stable, independent of a containers key order.
+    """Calculate a hash which is stable.
 
     Works for lists and dictionaries. For keys and values, we recursively call
-    `hash(...)` on them. Keep in mind that a list with keys in a different order
-    will create the same hash!
+    `hash(...)` on them. In case of a dict, the hash is independent of the containers
+    key order. Keep in mind that a list with items in a different order
+    will not create the same hash!
 
     Args:
         obj: dictionary or list to be hashed.
@@ -216,8 +218,10 @@ def deep_container_fingerprint(
     """
     if isinstance(obj, dict):
         return get_dictionary_fingerprint(obj, encoding)
-    if isinstance(obj, list):
+    elif isinstance(obj, list):
         return get_list_fingerprint(obj, encoding)
+    elif hasattr(obj, "fingerprint") and callable(obj.fingerprint):
+        return obj.fingerprint()
     else:
         return get_text_hash(str(obj), encoding)
 
@@ -269,6 +273,7 @@ def get_list_fingerprint(
 
 def get_text_hash(text: Text, encoding: Text = DEFAULT_ENCODING) -> Text:
     """Calculate the md5 hash for a text."""
+    # deepcode ignore InsecureHash: Not used for a cryptographic purpose
     return md5(text.encode(encoding)).hexdigest()  # nosec
 
 
@@ -298,7 +303,6 @@ def fix_yaml_loader() -> None:
 
     yaml.Loader.add_constructor("tag:yaml.org,2002:str", construct_yaml_str)
     yaml.SafeLoader.add_constructor("tag:yaml.org,2002:str", construct_yaml_str)
-    yaml.allow_duplicate_keys = False
 
 
 def replace_environment_variables() -> None:
@@ -316,8 +320,10 @@ def replace_environment_variables() -> None:
         ]
         if not_expanded:
             raise RasaException(
-                f"Error when trying to expand the environment variables in '{value}'. "
-                f"Please make sure to also set these environment variables: '{not_expanded}'."
+                f"Error when trying to expand the "
+                f"environment variables in '{value}'. "
+                f"Please make sure to also set these "
+                f"environment variables: '{not_expanded}'."
             )
         return expanded_vars
 
@@ -348,8 +354,8 @@ def read_yaml(content: Text, reader_type: Union[Text, List[Text]] = "safe") -> A
         )
 
     yaml_parser = yaml.YAML(typ=reader_type)
-    yaml_parser.version = YAML_VERSION
-    yaml_parser.preserve_quotes = True
+    yaml_parser.version = YAML_VERSION  # type: ignore[assignment]
+    yaml_parser.preserve_quotes = True  # type: ignore[assignment]
 
     return yaml_parser.load(content) or {}
 
@@ -358,19 +364,22 @@ def _is_ascii(text: Text) -> bool:
     return all(ord(character) < 128 for character in text)
 
 
-def read_yaml_file(filename: Union[Text, Path]) -> Union[List[Any], Dict[Text, Any]]:
+def read_yaml_file(
+    filename: Union[Text, Path], reader_type: Union[Text, List[Text]] = "safe"
+) -> Union[List[Any], Dict[Text, Any]]:
     """Parses a yaml file.
 
     Raises an exception if the content of the file can not be parsed as YAML.
 
     Args:
         filename: The path to the file which should be read.
+        reader_type: Reader type to use. By default "safe" will be used.
 
     Returns:
         Parsed content of the file.
     """
     try:
-        return read_yaml(read_file(filename, DEFAULT_ENCODING))
+        return read_yaml(read_file(filename, DEFAULT_ENCODING), reader_type)
     except (YAMLError, DuplicateKeyError) as e:
         raise YamlSyntaxException(filename, e)
 
@@ -380,7 +389,7 @@ def write_yaml(
     target: Union[Text, Path, StringIO],
     should_preserve_key_order: bool = False,
 ) -> None:
-    """Writes a yaml to the file or to the stream
+    """Writes a yaml to the file or to the stream.
 
     Args:
         data: The data to write.
@@ -394,7 +403,7 @@ def write_yaml(
 
     dumper = yaml.YAML()
     # no wrap lines
-    dumper.width = YAML_LINE_MAX_WIDTH
+    dumper.width = YAML_LINE_MAX_WIDTH  # type: ignore[assignment]
 
     # use `null` to represent `None`
     dumper.representer.add_representer(
@@ -484,7 +493,6 @@ def is_logging_disabled() -> bool:
 
 def create_directory_for_file(file_path: Union[Text, Path]) -> None:
     """Creates any missing parent directories of this file path."""
-
     create_directory(os.path.dirname(file_path))
 
 
@@ -515,8 +523,8 @@ def dump_obj_as_yaml_to_string(
 def create_directory(directory_path: Text) -> None:
     """Creates a directory and its super paths.
 
-    Succeeds even if the path already exists."""
-
+    Succeeds even if the path already exists.
+    """
     try:
         os.makedirs(directory_path)
     except OSError as e:
@@ -531,8 +539,7 @@ def raise_deprecation_warning(
     docs: Optional[Text] = None,
     **kwargs: Any,
 ) -> None:
-    """
-    Thin wrapper around `raise_warning()` to raise a deprecation warning. It requires
+    """Thin wrapper around `raise_warning()` to raise a deprecation warning. It requires
     a version until which we'll warn, and after which the support for the feature will
     be removed.
     """
@@ -547,13 +554,18 @@ def raise_deprecation_warning(
     raise_warning(message, FutureWarning, docs, **kwargs)
 
 
-def read_validated_yaml(filename: Union[Text, Path], schema: Text) -> Any:
+def read_validated_yaml(
+    filename: Union[Text, Path],
+    schema: Text,
+    reader_type: Union[Text, List[Text]] = "safe",
+) -> Any:
     """Validates YAML file content and returns parsed content.
 
     Args:
         filename: The path to the file which should be read.
         schema: The path to the schema file which should be used for validating the
             file content.
+        reader_type: Reader type to use. By default "safe" will be used.
 
     Returns:
         The parsed file content.
@@ -565,14 +577,17 @@ def read_validated_yaml(filename: Union[Text, Path], schema: Text) -> Any:
     content = read_file(filename)
 
     rasa.shared.utils.validation.validate_yaml_schema(content, schema)
-    return read_yaml(content)
+    return read_yaml(content, reader_type)
 
 
-def read_config_file(filename: Union[Path, Text]) -> Dict[Text, Any]:
+def read_config_file(
+    filename: Union[Path, Text], reader_type: Union[Text, List[Text]] = "safe"
+) -> Dict[Text, Any]:
     """Parses a yaml configuration file. Content needs to be a dictionary.
 
     Args:
         filename: The path to the file which should be read.
+        reader_type: Reader type to use. By default "safe" will be used.
 
     Raises:
         YamlValidationException: In case file content is not a `Dict`.
@@ -580,7 +595,7 @@ def read_config_file(filename: Union[Path, Text]) -> Dict[Text, Any]:
     Returns:
         Parsed config file.
     """
-    return read_validated_yaml(filename, CONFIG_SCHEMA_FILE)
+    return read_validated_yaml(filename, CONFIG_SCHEMA_FILE, reader_type)
 
 
 def read_model_configuration(filename: Union[Path, Text]) -> Dict[Text, Any]:
@@ -616,3 +631,26 @@ def is_subdirectory(path: Text, potential_parent_directory: Text) -> bool:
     potential_parent_directory = os.path.abspath(potential_parent_directory)
 
     return potential_parent_directory in path
+
+
+def random_string(length: int) -> Text:
+    """Returns a random string of given length."""
+    return "".join(random.choices(string.ascii_uppercase + string.digits, k=length))
+
+
+def handle_print_blocking(output: Text) -> None:
+    """Handle print blocking (BlockingIOError) by getting the STDOUT lock.
+
+    Args:
+        output: Text to be printed to STDOUT.
+    """
+    # Locking again to obtain STDOUT with a lock.
+    with portalocker.Lock(sys.stdout) as lock:
+        if sys.platform == "win32":
+            # colorama is used to fix a regression where colors can not be printed on
+            # windows. https://github.com/RasaHQ/rasa/issues/7053
+            from colorama import AnsiToWin32
+
+            lock = AnsiToWin32(lock).stream
+
+        print(output, file=lock, flush=True)

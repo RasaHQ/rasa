@@ -1,0 +1,25 @@
+{
+  "default_image_tag": "latest",
+  "config": [
+    {
+      "TF": "2.3",
+      "IMAGE_TAG": "cuda-10.1-cudnn7"
+    },
+    {
+      "TF": "2.5",
+      "IMAGE_TAG": "cuda-11.2.0-cudnn8"
+    },
+    {
+      "TF": "2.6",
+      "IMAGE_TAG": "cuda-11.2.0-cudnn8"
+    },
+    {
+      "TF": "2.7",
+      "IMAGE_TAG": "cuda-11.2.0-cudnn8"
+    },
+    {
+      "TF": "2.11",
+      "IMAGE_TAG": "cuda-11.2.0-cudnn8"
+    }
+  ]
+}

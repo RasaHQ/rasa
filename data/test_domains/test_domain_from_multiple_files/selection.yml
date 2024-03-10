@@ -1,0 +1,42 @@
+version: "3.1"
+
+intents:
+- finish_selection
+- humble_selection
+- selection_troubleshooting
+- device_selection_scaffold
+- humble_selection_scaffold
+- unsure_selection_scaffold
+- finish_humble_selection
+- finish_selection_line
+
+
+slots:
+  humbleSelection:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: from_entity
+        entity: vanilla_robot
+  humbleSelectionManagement:
+    type: text
+    influence_conversation: false
+    mappings:
+    - type: from_entity
+      entity: some_slot
+  humbleSelectionStatus:
+    type: text
+    influence_conversation: false
+    mappings:
+    - type: from_entity
+      entity: some_slot
+
+
+actions:
+- utter_humble_selection
+- utter_selection_issues
+- utter_horn_selection_scaffold
+- utter_humble_selection_scaffold
+- utter_finish_selection
+- utter_finish_humble_selection
+- utter_finish_selection_line

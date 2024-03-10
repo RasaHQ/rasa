@@ -32,17 +32,19 @@ logger = logging.getLogger(__name__)
 class UserMessage:
     """Represents an incoming message.
 
-    Includes the channel the responses should be sent to."""
+    Includes the channel the responses should be sent to.
+    """
 
     def __init__(
         self,
         text: Optional[Text] = None,
         output_channel: Optional["OutputChannel"] = None,
         sender_id: Optional[Text] = None,
-        parse_data: Dict[Text, Any] = None,
+        parse_data: Optional[Dict[Text, Any]] = None,
         input_channel: Optional[Text] = None,
         message_id: Optional[Text] = None,
         metadata: Optional[Dict] = None,
+        **kwargs: Any,
     ) -> None:
         """Creates a ``UserMessage`` object.
 
@@ -78,6 +80,7 @@ class UserMessage:
 
         self.parse_data = parse_data
         self.metadata = metadata
+        self.headers = kwargs.get("headers", None)
 
 
 def register(
@@ -86,7 +89,7 @@ def register(
     """Registers input channel blueprints with Sanic."""
 
     async def handler(message: UserMessage) -> None:
-        await app.agent.handle_message(message)
+        await app.ctx.agent.handle_message(message)
 
     for channel in input_channels:
         if route:
@@ -95,7 +98,7 @@ def register(
             p = None
         app.blueprint(channel.blueprint(handler), url_prefix=p)
 
-    app.input_channels = input_channels
+    app.ctx.input_channels = input_channels
 
 
 class InputChannel:
@@ -119,7 +122,8 @@ class InputChannel:
         """Defines a Sanic blueprint.
 
         The blueprint will be attached to a running sanic server and handle
-        incoming routes it registered for."""
+        incoming routes it registered for.
+        """
         raise NotImplementedError("Component listener needs to provide blueprint.")
 
     @classmethod
@@ -200,6 +204,8 @@ def decode_bearer_token(
     except Exception:
         logger.exception("Failed to decode bearer token.")
 
+    return None
+
 
 class OutputChannel:
     """Output channel base class.
@@ -215,7 +221,6 @@ class OutputChannel:
 
     async def send_response(self, recipient_id: Text, message: Dict[Text, Any]) -> None:
         """Send a message to the client."""
-
         if message.get("quick_replies"):
             await self.send_quick_replies(
                 recipient_id,
@@ -249,7 +254,6 @@ class OutputChannel:
         self, recipient_id: Text, text: Text, **kwargs: Any
     ) -> None:
         """Send a message through this channel."""
-
         raise NotImplementedError(
             "Output channel needs to implement a send message for simple texts."
         )
@@ -258,14 +262,12 @@ class OutputChannel:
         self, recipient_id: Text, image: Text, **kwargs: Any
     ) -> None:
         """Sends an image. Default will just post the url as a string."""
-
         await self.send_text_message(recipient_id, f"Image: {image}")
 
     async def send_attachment(
         self, recipient_id: Text, attachment: Text, **kwargs: Any
     ) -> None:
         """Sends an attachment. Default will just post as a string."""
-
         await self.send_text_message(recipient_id, f"Attachment: {attachment}")
 
     async def send_text_with_buttons(
@@ -277,8 +279,8 @@ class OutputChannel:
     ) -> None:
         """Sends buttons to the output.
 
-        Default implementation will just post the buttons as a string."""
-
+        Default implementation will just post the buttons as a string.
+        """
         await self.send_text_message(recipient_id, text)
         for idx, button in enumerate(buttons):
             button_msg = cli_utils.button_to_string(button, idx)
@@ -293,17 +295,16 @@ class OutputChannel:
     ) -> None:
         """Sends quick replies to the output.
 
-        Default implementation will just send as buttons."""
-
+        Default implementation will just send as buttons.
+        """
         await self.send_text_with_buttons(recipient_id, text, quick_replies)
 
     async def send_elements(
         self, recipient_id: Text, elements: Iterable[Dict[Text, Any]], **kwargs: Any
     ) -> None:
         """Sends elements to the output.
-
-        Default implementation will just post the elements as a string."""
-
+        Default implementation will just post the elements as a string.
+        """
         for element in elements:
             element_msg = "{title} : {subtitle}".format(
                 title=element.get("title", ""), subtitle=element.get("subtitle", "")
@@ -316,35 +317,36 @@ class OutputChannel:
         self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
     ) -> None:
         """Sends json dict to the output channel.
-
-        Default implementation will just post the json contents as a string."""
-
+        Default implementation will just post the json contents as a string.
+        """
         await self.send_text_message(recipient_id, json.dumps(json_message))
 
 
 class CollectingOutputChannel(OutputChannel):
-    """Output channel that collects send messages in a list
+    """Output channel that collects send messages in a list.
 
-    (doesn't send them anywhere, just collects them)."""
+    (doesn't send them anywhere, just collects them).
+    """
 
     def __init__(self) -> None:
-        self.messages = []
+        """Initialise list to collect messages."""
+        self.messages: List[Dict[Text, Any]] = []
 
     @classmethod
     def name(cls) -> Text:
+        """Name of the channel."""
         return "collector"
 
     @staticmethod
     def _message(
         recipient_id: Text,
-        text: Text = None,
-        image: Text = None,
-        buttons: List[Dict[Text, Any]] = None,
-        attachment: Text = None,
-        custom: Dict[Text, Any] = None,
+        text: Optional[Text] = None,
+        image: Optional[Text] = None,
+        buttons: Optional[List[Dict[Text, Any]]] = None,
+        attachment: Optional[Text] = None,
+        custom: Optional[Dict[Text, Any]] = None,
     ) -> Dict:
         """Create a message object that will be stored."""
-
         obj = {
             "recipient_id": recipient_id,
             "text": text,
@@ -376,14 +378,12 @@ class CollectingOutputChannel(OutputChannel):
         self, recipient_id: Text, image: Text, **kwargs: Any
     ) -> None:
         """Sends an image. Default will just post the url as a string."""
-
         await self._persist_message(self._message(recipient_id, image=image))
 
     async def send_attachment(
         self, recipient_id: Text, attachment: Text, **kwargs: Any
     ) -> None:
         """Sends an attachment. Default will just post as a string."""
-
         await self._persist_message(self._message(recipient_id, attachment=attachment))
 
     async def send_text_with_buttons(

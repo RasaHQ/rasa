@@ -1,0 +1,98 @@
+{
+  "RasaHQ/financial-demo": {
+    "BERT + DIET(seq) + ResponseSelector(t2t)": [{
+      "accelerator_type": "CPU",
+      "config_repository": "training-data",
+      "config_repository_branch": "main",
+      "dataset_commit": "52a3ad3eb5292d56542687e23b06703431f15ead",
+      "dataset_repository_branch": "fix-model-regression-tests",
+      "entity_prediction": {
+        "macro avg": {
+          "f1-score": 0.7333333333333333,
+          "precision": 0.8,
+          "recall": 0.7,
+          "support": 14
+        },
+        "micro avg": {
+          "f1-score": 0.8333333333333333,
+          "precision": 1.0,
+          "recall": 0.7142857142857143,
+          "support": 14
+        },
+        "weighted avg": {
+          "f1-score": 0.738095238095238,
+          "precision": 0.7857142857142857,
+          "recall": 0.7142857142857143,
+          "support": 14
+        }
+      },
+      "external_dataset_repository": true,
+      "intent_classification": {
+        "accuracy": 1.0,
+        "macro avg": {
+          "f1-score": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 28
+        },
+        "weighted avg": {
+          "f1-score": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 28
+        }
+      },
+      "test_run_time": "1m29s",
+      "total_run_time": "4m24s",
+      "train_run_time": "2m55s",
+      "type": "nlu"
+    },
+    {
+      "accelerator_type": "CPU",
+      "config_repository": "training-data",
+      "config_repository_branch": "main",
+      "dataset_commit": "52a3ad3eb5292d56542687e23b06703431f15ead",
+      "dataset_repository_branch": "fix-model-regression-tests",
+      "entity_prediction": {
+        "macro avg": {
+          "f1-score": 0.7333333333333333,
+          "precision": 0.8,
+          "recall": 0.7,
+          "support": 14
+        },
+        "micro avg": {
+          "f1-score": 0.8333333333333333,
+          "precision": 1.0,
+          "recall": 0.7142857142857143,
+          "support": 14
+        },
+        "weighted avg": {
+          "f1-score": 0.738095238095238,
+          "precision": 0.7857142857142857,
+          "recall": 0.7142857142857143,
+          "support": 14
+        }
+      },
+      "external_dataset_repository": true,
+      "intent_classification": {
+        "accuracy": 1.0,
+        "macro avg": {
+          "f1-score": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 28
+        },
+        "weighted avg": {
+          "f1-score": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 28
+        }
+      },
+      "test_run_time": "2m29s",
+      "total_run_time": "5m24s",
+      "train_run_time": "3m55s",
+      "type": "nlu"
+    }]
+  }
+}

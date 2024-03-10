@@ -32,7 +32,7 @@ const { readFile, writeFile } = fs.promises;
 
 const PROGRAM_OUTPUT_RE = /```[a-z]+ \[([^\]]+)\]\n```/;
 
-const VERSIONED_DOCS_PATH_RE = /(\/versioned_docs\/version-\d+\.\d+\.x)\//;
+const VERSIONED_DOCS_PATH_RE = /(\/versioned_docs\/version-\d+\.x)\//;
 
 const defaultOptions = {
     docsDir: './docs',

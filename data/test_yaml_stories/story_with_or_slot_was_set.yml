@@ -1,0 +1,11 @@
+stories:
+  - story: simple_story_with_or_slot_was_set
+    steps:
+      - intent: hello
+      - action: utter_greet
+      - or:
+        - slot_was_set:
+          - name: peter
+        - slot_was_set:
+          - name: bob
+      - checkpoint: check_greet

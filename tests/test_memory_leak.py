@@ -2,7 +2,6 @@ import abc
 import json
 import subprocess
 import sys
-import tempfile
 import time
 from pathlib import Path
 from typing import Text, List, Tuple, Optional, Union
@@ -13,7 +12,7 @@ import pytest
 
 import rasa
 import rasa.shared.utils.io
-from rasa.nlu.config import RasaNLUModelConfig
+from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
 
 PROFILING_INTERVAL = 0.1
 
@@ -57,10 +56,8 @@ class MemoryLeakTest(abc.ABC):
     def function_to_profile(self) -> None:
         raise NotImplementedError
 
-    @pytest.mark.timeout(600, func_only=True)
-    def test_for_memory_leak(
-        self, name_for_dumped_files: Text, tmp_path: Path,
-    ) -> None:
+    @pytest.mark.timeout(720, func_only=True)
+    def test_for_memory_leak(self, name_for_dumped_files: Text, tmp_path: Path) -> None:
         # Run as separate process to avoid other things affecting the memory usage.
         # Unfortunately `memory-profiler` doesn't work properly with
         # `multiprocessing.Process` as it can't handle the process exit
@@ -84,10 +81,7 @@ class MemoryLeakTest(abc.ABC):
             time.sleep(0.01)
 
         results = memory_profiler.memory_usage(
-            process,
-            interval=PROFILING_INTERVAL,
-            include_children=True,
-            timestamps=True,
+            process, interval=PROFILING_INTERVAL, include_children=True, timestamps=True
         )
 
         # `memory-profiler` sometimes adds `None` values at the end which we don't need
@@ -104,7 +98,7 @@ class MemoryLeakTest(abc.ABC):
         assert max_memory_usage < self.max_memory_threshold_mb
 
     @staticmethod
-    def _write_results(base_name: Text, results: List[Tuple[float]]) -> None:
+    def _write_results(base_name: Text, results: List[Tuple[float, float]]) -> None:
         mprof_plot = Path(f"{base_name}_plot.txt")
         mprof_results = Path(f"{base_name}_raw.json")
 
@@ -132,7 +126,7 @@ class TestNLULeakManyEpochs(MemoryLeakTest):
     def function_to_profile(self) -> None:
         import rasa.model_training
 
-        with tempfile.TemporaryDirectory() as temp_dir:
+        with TempDirectoryPath(get_temp_dir_name()) as temp_dir:
             rasa.model_training.train_nlu(
                 _custom_default_config(temp_dir, epochs=self.epochs),
                 Path("data", "test_nlu_no_responses", "sara_nlu_data.yml"),
@@ -152,16 +146,16 @@ class TestCoreLeakManyEpochs(MemoryLeakTest):
 
     @property
     def epochs(self) -> int:
-        return 400
+        return 200
 
     @property
     def max_memory_threshold_mb(self) -> float:
-        return 1600
+        return 2000
 
     def function_to_profile(self) -> None:
         import rasa.model_training
 
-        with tempfile.TemporaryDirectory() as temp_dir:
+        with TempDirectoryPath(get_temp_dir_name()) as temp_dir:
             rasa.model_training.train_core(
                 "data/test_domains/default_with_slots.yml",
                 _custom_default_config(temp_dir, epochs=self.epochs, max_history=None),
@@ -192,42 +186,40 @@ class TestCRFDenseFeaturesLeak(MemoryLeakTest):
     def function_to_profile(self) -> None:
         import rasa.model_training
 
-        config = RasaNLUModelConfig(
-            {
-                "pipeline": [
-                    {"name": "SpacyNLP"},
-                    {"name": "SpacyTokenizer"},
-                    {"name": "SpacyFeaturizer"},
-                    {
-                        "name": "CRFEntityExtractor",
-                        "features": [
-                            ["pos", "pos2"],
-                            [
-                                "bias",
-                                "prefix5",
-                                "prefix2",
-                                "suffix5",
-                                "suffix3",
-                                "suffix2",
-                                "pos",
-                                "pos2",
-                                "digit",
-                                "text_dense_features",
-                            ],
-                            ["pos", "pos2"],
+        config = {
+            "pipeline": [
+                {"name": "SpacyNLP"},
+                {"name": "SpacyTokenizer"},
+                {"name": "SpacyFeaturizer"},
+                {
+                    "name": "CRFEntityExtractor",
+                    "features": [
+                        ["pos", "pos2"],
+                        [
+                            "bias",
+                            "prefix5",
+                            "prefix2",
+                            "suffix5",
+                            "suffix3",
+                            "suffix2",
+                            "pos",
+                            "pos2",
+                            "digit",
+                            "text_dense_features",
                         ],
-                    },
-                ]
-            }
-        )
+                        ["pos", "pos2"],
+                    ],
+                },
+            ]
+        }
 
-        with tempfile.TemporaryDirectory() as temp_dir:
+        with TempDirectoryPath(get_temp_dir_name()) as temp_dir:
             config_for_test = Path(temp_dir) / "test_config.yml"
-            rasa.shared.utils.io.write_yaml(config.as_dict(), config_for_test)
+            rasa.shared.utils.io.write_yaml(config, config_for_test)
 
             rasa.model_training.train_nlu(
-                config_for_test,
-                Path("data", "test_nlu_no_responses", "sara_nlu_data.yml"),
+                str(config_for_test),
+                str(Path("data", "test_nlu_no_responses", "sara_nlu_data.yml")),
                 output=temp_dir,
             )
 

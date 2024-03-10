@@ -1,0 +1,18 @@
+intents:
+ - inform
+ - greet
+
+entities:
+  - limit
+
+slots:
+  limit:
+    type: data.test_classes.custom_slots.LimitSlot
+    limit: 1000
+    mappings:
+    - type: from_entity
+      entity: limit
+
+actions:
+- action_greet
+

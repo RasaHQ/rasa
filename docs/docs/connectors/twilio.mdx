@@ -2,7 +2,7 @@
 id: twilio
 sidebar_label: Twilio
 title: Twilio
-description: Deploy a Rasa Open Source assistant through text message or WhatsApp via the Twilio connector
+description: Deploy a Rasa assistant through text message or WhatsApp via the Twilio connector
 ---
 
 You can use the Twilio connector to deploy an assistant that is available over text message.
@@ -30,14 +30,14 @@ You need to set up a Twilio account.
    [Phone Numbers](https://www.twilio.com/console/phone-numbers/incoming) in the Twilio
    dashboard and selecting your phone number. Find the `Messaging` section and add
    your webhook URL (e.g. `https://<host>:<port>/webhooks/twilio/webhook`,
-   replacing the host and port with the appropriate values from your running Rasa X or Rasa Open Source server)
+   replacing the host and port with the appropriate values from your running Rasa server)
    to the `A MESSAGE COMES IN` setting.
 
 For more information, see the [Twilio REST API](https://www.twilio.com/docs/iam/api).
 
 ### Connecting to WhatsApp
 
-You can deploy a Rasa Open Source assistant to WhatsApp through Twilio. However, to do so, you have
+You can deploy a Rasa assistant to WhatsApp through Twilio. However, to do so, you have
 to have a [WhatsApp Business](https://www.whatsapp.com/business/) profile. Associate
 your Whatsapp Business profile with the phone number you purchased through Twilio to
 access the [Twilio API for WhatsApp](https://www.twilio.com/docs/whatsapp/api).
@@ -57,5 +57,37 @@ twilio:
   twilio_number: "+440123456789"  # if using WhatsApp: "whatsapp:+440123456789"
 ```
 
-Restart your Rasa X or Rasa Open Source server
+Restart your Rasa server
 to make the new channel endpoint available for Twilio to send messages to.
+
+
+### Receiving Location Data from Whatsapp with Twilio connector
+
+This is how you can receive location data (WhatsApp Location) from a user on this channel:
+
+1. Create an intent named "locationData" and define two entities and slots for Latitude and Longitude respectively.
+
+```yaml-rasa title="domain.yml"
+intents:
+  - locationData
+
+slots:
+   Latitude:
+     type: text
+     mappings:
+     - type: from_entity
+       entity: Latitude
+
+   Longitude:
+     type: text
+     mappings:
+     - type: from_entity
+       entity: Longitude
+
+entities:
+  - Latitude
+  - Longitude
+
+```
+
+2. When the user sends a location message, the locationData intent will be triggered and the slots will be set from the entities. Note that you do not need to provide training data for the entities as they are handled by the channel.

@@ -5,6 +5,10 @@ title: Lock Stores
 description: Messages that are being processed lock Rasa for a given conversation ID to ensure that multiple incoming messages for that conversation do not interfere with each other. Rasa provides multiple implementations to maintain conversation locks.
 ---
 
+
+import RasaProLabel from '@theme/RasaProLabel';
+import RasaProBanner from '@theme/RasaProBanner';
+
 Rasa uses a ticket lock mechanism to ensure that incoming messages for a given
 conversation ID are processed in the right order, and locks conversations while
 messages are actively processed. This means multiple Rasa servers can
@@ -13,8 +17,7 @@ address the same node when sending messages for a given conversation ID.
 
 ## InMemoryLockStore (default)
 
-
-* **Description**
+- **Description**
 
   `InMemoryLockStore` is the default lock store. It maintains conversation locks
   within a single process.
@@ -25,24 +28,99 @@ address the same node when sending messages for a given conversation ID.
 
   :::
 
-
-
-* **Configuration**
+- **Configuration**
 
   To use the `InMemoryTrackerStore` no configuration is needed.
 
+## ConcurrentRedisLockStore
+
+<RasaProLabel/>
+
+<RasaProBanner/>
+
+`ConcurrentRedisLockStore` is a new lock store that uses Redis as a persistence layer and is safe for use with multiple Rasa server replicas.
+See the [migration section](#migration-guide) to learn how to switch to this lock store.
+
+### Description
+
+The `ConcurrentRedisLockStore` uses Redis as a persistence layer for instances of issued [tickets](https://rasa.com/docs/rasa/reference/rasa/core/lock/#ticket-objects) and the last issued ticket number.
+
+The ticket number initialization begins at 1, in contrast to that of the`RedisLockStore` which begins at 0.
+If the ticket expires, the ticket number will not be reassigned to future tickets; as a result ticket numbers are unique to ticket instances.
+Ticket numbers are incremented using the Redis atomic transaction INCR on the persisted last issued ticket number.
+
+The `ConcurrentRedisLockStore` ensures that only one Rasa instance can handle a conversation at any point in time.
+Therefore, this Redis implementation of the `LockStore` can handle messages received in parallel for the same conversation by different Rasa servers
+This is the recommended lock store for running a replicated set of Rasa servers.
+
+### Configuration
+
+To set up Rasa with Redis the following steps are required:
+
+1. Start your Redis instance
+
+2. Add required configuration to your `endpoints.yml`
+
+```yaml-rasa
+lock_store:
+    type: rasa_plus.components.concurrent_lock_store.ConcurrentRedisLockStore
+    host: <host of the redis instance, e.g. localhost>
+    port: <port of your redis instance, usually 6379>
+    password: <password used for authentication>
+    db: <number of your database within redis, e.g. 0>
+    key_prefix: <alphanumeric value to prepend to lock store keys>
+```
+
+3. To start the Rasa Core server using your Redis backend, add the `--endpoints`
+   flag, e.g.:
+
+    ```bash
+    rasa run -m models --endpoints endpoints.yml
+    ```
+
+### Parameters
+
+- `url` (default: `localhost`): The url of your redis instance
+- `port` (default: `6379`): The port which redis is running on
+- `db` (default: `1`): The number of your redis database
+- `key_prefix` (default: `None`): The prefix to prepend to lock store keys. Must
+  be alphanumeric
+- `password` (default: `None`): Password used for authentication
+  (`None` equals no authentication)
+- `use_ssl` (default: `False`): Whether or not the communication is encrypted -`socket_timeout` (default: `10`): Time in seconds after which an
+  error is raised if Redis doesn't answer
+
+### Migration Guide
+
+To switch from the `RedisLockStore` to the `ConcurrentRedisLockStore`, specify the complete module path to the `ConcurrentRedisLockStore` class as `type` in `endpoints.yml`:
+
+```yaml-rasa
+lock_store:
+    type: rasa_plus.components.concurrent_lock_store.ConcurrentRedisLockStore
+    host: <host of the redis instance, e.g. localhost>
+    port: <port of your redis instance, usually 6379>
+    password: <password used for authentication>
+    db: <number of your database within redis, e.g. 0>
+    key_prefix: <alphanumeric value to prepend to lock store keys>
+```
+
+You must replace the `url` field in the redis lock store configuration with a field `host` containing the hostname of the redis instance.
+
+No database migration is required when switching to the `ConcurrentRedisLockStore`. You can use the same Redis instance and database number as you did previously when using the `RedisLockStore`.
+You may want to delete all the preexisting keys if using the same Redis database number.
+These former key-value items are no longer required by the `ConcurrentRedisLockStore` and the database can be cleared.
+
+There is no overlap in key-value items stored when using the `RedisLockStore` and the `ConcurrentRedisLockStore`, because the `RedisLockStore` persists serialized [TicketLock](https://rasa.com/docs/rasa/reference/rasa/core/lock/#ticketlock-objects) instances while the `ConcurrentRedisLockStore` instead stores individual [`Ticket`](https://rasa.com/docs/rasa/reference/rasa/core/lock/#ticket-objects) instances, as well as the last issued ticket number.
+The `ConcurrentRedisLockStore` recreates the `TicketLock` from the persisted `Ticket` instances, which allows it to handle concurrent messages for the same conversation ID.
 
 ## RedisLockStore
 
-
-* **Description**
+- **Description**
 
   `RedisLockStore` maintains conversation locks using Redis as a persistence layer.
   This is the recommended lock store for running a replicated set of Rasa servers.
 
-
-
-* **Configuration**
+- **Configuration**
 
   To set up Rasa with Redis the following steps are required:
 
@@ -50,40 +128,72 @@ address the same node when sending messages for a given conversation ID.
 
   2. Add required configuration to your `endpoints.yml`
 
-     ```yaml-rasa
-     lock_store:
-         type: "redis"
-         url: <url of the redis instance, e.g. localhost>
-         port: <port of your redis instance, usually 6379>
-         password: <password used for authentication>
-         db: <number of your database within redis, e.g. 0>
-         key_prefix: <alphanumeric value to prepend to lock store keys>
-     ```
+      ```yaml-rasa
+      lock_store:
+          type: "redis"
+          url: <url of the redis instance, e.g. localhost>
+          port: <port of your redis instance, usually 6379>
+          password: <password used for authentication>
+          db: <number of your database within redis, e.g. 0>
+          key_prefix: <alphanumeric value to prepend to lock store keys>
+      ```
 
   3. To start the Rasa Core server using your Redis backend, add the `--endpoints`
-  flag, e.g.:
+     flag, e.g.:
 
-  ```bash
-  rasa run -m models --endpoints endpoints.yml
-  ```
+    ```bash
+    rasa run -m models --endpoints endpoints.yml
+    ```
 
+- **Parameters**
 
+  - `url` (default: `localhost`): The url of your redis instance
 
-* **Parameters**
+  - `port` (default: `6379`): The port which redis is running on
 
-  * `url` (default: `localhost`): The url of your redis instance
+  - `db` (default: `1`): The number of your redis database
 
-  * `port` (default: `6379`): The port which redis is running on
+  - `key_prefix` (default: `None`): The prefix to prepend to lock store keys. Must
+    be alphanumeric
 
-  * `db` (default: `1`): The number of your redis database
+  - `username` (default: `None`): Username used for authentication
 
-  * `key_prefix` (default: `None`): The prefix to prepend to lock store keys. Must
-     be alphanumeric
-
-  * `password` (default: `None`): Password used for authentication
+  - `password` (default: `None`): Password used for authentication
     (`None` equals no authentication)
 
-  * `use_ssl` (default: `False`): Whether or not the communication is encrypted
+  - `use_ssl` (default: `False`): Whether or not the communication is encrypted
 
-  * `socket_timeout` (default: `10`): Time in seconds after which an
-     error is raised if Redis doesn't answer
+  - `ssl_keyfile` (default: `None`): Path to an ssl private key
+
+  - `ssl_certfile` (default: `None`): Path to an ssl certificate
+
+  - `ssl_ca_certs` (default: `None`): The path to a file of concatenated CA certificates in PEM format
+
+  - `socket_timeout` (default: `10`): Time in seconds after which an
+    error is raised if Redis doesn't answer
+
+## Custom Lock Store
+
+If you need a lock store which is not available out of the box, you can implement your own.
+This is done by extending the base class `LockStore`.
+
+Your custom lock store class must also implement the following methods:
+
+- `get_lock`: fetches lock for `conversation_id` from storage; requires `conversation_id` text parameter and returns `TicketLock` instance.
+  [(source code - see for signature)](https://github.com/RasaHQ/rasa/blob/main/rasa/core/lock_store.py#L59).
+- `save_lock`: commit `lock` object to storage; requires `lock` parameter which is of type `TicketLock`and returns `None`.
+  [(source code - see for signature)](https://github.com/RasaHQ/rasa/blob/main/rasa/core/lock_store.py#L67).
+- `delete_lock`: deletes lock for `conversation_id` from storage; requires `conversation_id` text parameter and returns `None`.
+  [(source code - see for signature)](https://github.com/RasaHQ/rasa/blob/main/rasa/core/lock_store.py#L63).
+
+### Configuration
+
+Put the module path to your custom event broker and the parameters you require in your `endpoints.yml`:
+
+```yaml-rasa title="endpoints.yml"
+lock_store:
+  type: path.to.your.module.Class
+  url: localhost
+  a_parameter: a value
+  another_parameter: another value
+```

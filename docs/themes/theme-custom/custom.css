@@ -1,0 +1,39 @@
+.admonition-info, .alert--info {
+    color: rgb(25, 60, 71) !important;
+    background-color: rgb(238, 249, 253) !important;
+    border-left: 8px solid rgb(76, 179, 212) !important;
+}
+
+
+@media (max-width: 996px) {
+    .dropdown {
+        display: none !important;
+    }
+}
+
+/* Override Tabula so column width are stricly determined by content width */
+.prose table, [class^=prose-] table, [class*=" prose-"] table, .prose thead, [class^=prose-] thead, [class*=" prose-"] thead, .prose tbody,  [class^=prose-] tbody, [class*=" prose-"] tbody  {
+    width: auto !important;
+}
+
+/* Make sure header and body columns share same width */
+.prose thead, [class^=prose-] thead, [class*=" prose-"] thead, .prose tbody,  [class^=prose-] tbody, [class*=" prose-"] tbody {
+    display: table-header-group !important;
+}
+
+.prose th,  [class^=prose-] th, [class*=" prose-"] th, .prose td,  [class^=prose-] td, [class*=" prose-"] td {
+    padding: 5px !important;
+    border-style: solid;
+    border-color: rgb(221, 221, 221);
+    border-width: 0.75px;
+}
+
+/* The th bottom border is not needed because the td below will have a top border */
+.prose tr:last-child>th,  [class^=prose-] tr:last-child>th, [class*=" prose-"] tr:last-child>th {
+    border-bottom-style: none;
+}
+
+/* Tables without headers */
+.prose th:empty,  [class^=prose-] th:empty, [class*=" prose-"] th:empty {
+    border-style: none;
+}

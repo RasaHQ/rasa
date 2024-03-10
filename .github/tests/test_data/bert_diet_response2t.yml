@@ -1,0 +1,23 @@
+# Configuration for Rasa NLU.
+# https://rasa.com/docs/rasa/nlu/components/
+language: en
+pipeline:
+  - name: WhitespaceTokenizer
+  - name: LanguageModelFeaturizer
+    alias: "lmf"
+  - name: RegexFeaturizer
+    alias: "rf"
+  - name: LexicalSyntacticFeaturizer
+    alias: "lsf"
+  - name: DIETClassifier
+    epochs: 50
+    random_seed: 42
+  - name: ResponseSelector
+    epochs: 100
+    num_transformer_layers: 2
+    transformer_size: 256
+    hidden_layers_size:
+      text: []
+      label: []
+    random_seed: 42
+    featurizers: ["lmf"]

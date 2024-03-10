@@ -7,6 +7,10 @@ from typing import List
 from rasa import telemetry
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import shell as arguments
+from rasa.engine.storage.local_model_storage import LocalModelStorage
+from rasa.model import get_local_model
+from rasa.shared.constants import ASSISTANT_ID_KEY
+from rasa.shared.data import TrainingType
 from rasa.shared.utils.cli import print_error
 from rasa.exceptions import ModelNotFound
 
@@ -58,17 +62,17 @@ def add_subparser(
 
 
 def shell_nlu(args: argparse.Namespace) -> None:
+    """Talk with an NLU only bot though the command line."""
     from rasa.cli.utils import get_validated_path
     from rasa.shared.constants import DEFAULT_MODELS_PATH
-    from rasa.model import get_model, get_model_subdirectories
     import rasa.nlu.run
 
     args.connector = "cmdline"
 
-    model = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
+    model_path = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
 
     try:
-        model_path = get_model(model)
+        model = get_local_model(model_path)
     except ModelNotFound:
         print_error(
             "No model found. Train a model before running the "
@@ -76,9 +80,16 @@ def shell_nlu(args: argparse.Namespace) -> None:
         )
         return
 
-    _, nlu_model = get_model_subdirectories(model_path)
+    metadata = LocalModelStorage.metadata_from_archive(model)
 
-    if not nlu_model:
+    if metadata.assistant_id is None:
+        print_error(
+            f"The model metadata does not contain a value for the '{ASSISTANT_ID_KEY}' "
+            f"attribute. Check that 'config.yml' file contains a value for "
+            f"the '{ASSISTANT_ID_KEY}' key and re-train the model.",
+        )
+
+    if metadata.training_type == TrainingType.CORE:
         print_error(
             "No NLU model found. Train a model before running the "
             "server using `rasa train nlu`."
@@ -86,20 +97,20 @@ def shell_nlu(args: argparse.Namespace) -> None:
         return
 
     telemetry.track_shell_started("nlu")
-    rasa.nlu.run.run_cmdline(nlu_model)
+    rasa.nlu.run.run_cmdline(model)
 
 
 def shell(args: argparse.Namespace) -> None:
+    """Talk with a bot though the command line."""
     from rasa.cli.utils import get_validated_path
     from rasa.shared.constants import DEFAULT_MODELS_PATH
-    from rasa.model import get_model, get_model_subdirectories
 
     args.connector = "cmdline"
 
     model = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
 
     try:
-        model_path = get_model(model)
+        model = get_local_model(model)
     except ModelNotFound:
         print_error(
             "No model found. Train a model before running the "
@@ -107,14 +118,21 @@ def shell(args: argparse.Namespace) -> None:
         )
         return
 
-    core_model, nlu_model = get_model_subdirectories(model_path)
+    metadata = LocalModelStorage.metadata_from_archive(model)
 
-    if not core_model:
+    if metadata.assistant_id is None:
+        print_error(
+            f"The model metadata does not contain a value for the '{ASSISTANT_ID_KEY}' "
+            f"attribute. Check that 'config.yml' file contains a value for "
+            f"the '{ASSISTANT_ID_KEY}' key and re-train the model.",
+        )
+
+    if metadata.training_type == TrainingType.NLU:
         import rasa.nlu.run
 
         telemetry.track_shell_started("nlu")
 
-        rasa.nlu.run.run_cmdline(nlu_model)
+        rasa.nlu.run.run_cmdline(model)
     else:
         import rasa.cli.run
 
