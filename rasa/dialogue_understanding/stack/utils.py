@@ -1,4 +1,4 @@
-from typing import Optional, Set
+from typing import Optional, Set, Tuple
 import typing
 from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
@@ -65,7 +65,7 @@ def top_user_flow_frame(dialogue_stack: DialogueStack) -> Optional[UserFlowStack
 
 def filled_slots_for_active_flow(
     tracker: "DialogueStateTracker", all_flows: FlowsList
-) -> Set[str]:
+) -> Tuple[Set[str], Optional[str]]:
     """Get all slots that have been filled for the 'current user flow'.
 
     The 'current user flow' is the top-most flow that is user created. All
@@ -78,9 +78,11 @@ def filled_slots_for_active_flow(
         all_flows: All flows.
 
     Returns:
-    All slots that have been filled for the current flow.
+    All slots that have been filled for the current flow and the id of the currently
+    active flow.
     """
     filled_slots = set()
+    active_flow = None
 
     dialogue_stack = tracker.stack
     previously_filled_slots = tracker.get_previously_updated_slots(all_flows)
@@ -90,8 +92,10 @@ def filled_slots_for_active_flow(
             # we skip all frames that are not flows, e.g. chitchat / search
             # frames, because they don't have slots.
             continue
-        flow = frame.flow(all_flows)
-        for q in flow.previous_collect_steps(frame.step_id):
+        # fetch the active flow from the current frame making sure it is available in
+        # the provided flows
+        active_flow = frame.flow(all_flows)
+        for q in active_flow.previous_collect_steps(frame.step_id):
             # verify that the collect step of the flow was actually reached
             # previously in the conversation
             if q.collect in previously_filled_slots:
@@ -104,7 +108,10 @@ def filled_slots_for_active_flow(
             # current flow.
             break
 
-    return filled_slots
+    if active_flow:
+        return filled_slots, active_flow.id
+
+    return filled_slots, None
 
 
 def user_flows_on_the_stack(dialogue_stack: DialogueStack) -> Set[str]:

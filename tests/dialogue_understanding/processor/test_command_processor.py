@@ -43,6 +43,7 @@ from rasa.shared.core.events import (
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.flows.steps import CollectInformationFlowStep
 from rasa.shared.core.flows.yaml_flows_io import flows_from_str
+from rasa.shared.core.slots import TextSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import COMMANDS
 from rasa.shared.utils.io import deep_container_fingerprint
@@ -100,7 +101,7 @@ def pattern_frame_collect_eggs() -> CollectInformationPatternFlowStackFrame:
 def pattern_frame_correction() -> CorrectionPatternFlowStackFrame:
     """Return a correction pattern frame."""
     return CorrectionPatternFlowStackFrame(
-        corrected_slots={"ham": "prosciutto"},
+        corrected_slots={"ham": 100},
     )
 
 
@@ -365,7 +366,7 @@ def test_clean_up_commands(
             "rasa.dialogue_understanding.processor."
             "command_processor.filled_slots_for_active_flow"
         ),
-        Mock(return_value={"ham"}),
+        Mock(return_value=({"ham"}, "egg")),
     ):
         clean_commands = clean_up_commands(commands, tracker_eggs, collect_info_flow)
 
@@ -376,12 +377,13 @@ def test_clean_up_commands(
 @pytest.mark.parametrize(
     "commands, expected_clean_commands",
     [
-        ([SetSlotCommand("ham", "prosciutto")], []),
+        ([SetSlotCommand("ham", "100")], []),
+        ([SetSlotCommand("egg", "some_value")], []),
         ([SetSlotCommand("eggs", "scrambled")], [SetSlotCommand("eggs", "scrambled")]),
         (
             [
-                SetSlotCommand("ham", "prosciutto"),
-                SetSlotCommand("ham", "prosciutto"),
+                SetSlotCommand("ham", "100"),
+                SetSlotCommand("ham", 100),
                 SetSlotCommand("eggs", "scrambled"),
             ],
             [SetSlotCommand("eggs", "scrambled")],
@@ -397,6 +399,41 @@ def test_clean_up_commands_with_correction_pattern_on_stack(
 ):
     stack = DialogueStack(frames=[user_frame_collect_eggs, pattern_frame_correction])
 
+    tracker_eggs = DialogueStateTracker.from_events(
+        sender_id="test",
+        evts=[],
+        slots=[TextSlot("egg", mappings=[], initial_value="some_value")],
+    )
+    tracker_eggs.update_stack(stack)
+    # When
+    with patch(
+        (
+            "rasa.dialogue_understanding.processor."
+            "command_processor.filled_slots_for_active_flow"
+        ),
+        Mock(return_value=({"ham", "egg"}, "spam")),
+    ):
+        clean_commands = clean_up_commands(commands, tracker_eggs, collect_info_flow)
+
+    # Then
+    assert clean_commands == expected_clean_commands
+
+
+@pytest.mark.parametrize(
+    "commands, expected_clean_commands",
+    [
+        ([StartFlowCommand("spam")], []),
+        ([StartFlowCommand("eggs")], [StartFlowCommand("eggs")]),
+    ],
+)
+def test_clean_up_commands_with_start_flow(
+    collect_info_flow: FlowsList,
+    user_frame_collect_eggs: CollectInformationPatternFlowStackFrame,
+    commands: List[Command],
+    expected_clean_commands: List[Command],
+):
+    stack = DialogueStack(frames=[user_frame_collect_eggs])
+
     tracker_eggs = DialogueStateTracker.from_events(sender_id="test", evts=[])
     tracker_eggs.update_stack(stack)
     # When
@@ -405,7 +442,7 @@ def test_clean_up_commands_with_correction_pattern_on_stack(
             "rasa.dialogue_understanding.processor."
             "command_processor.filled_slots_for_active_flow"
         ),
-        Mock(return_value={"ham"}),
+        Mock(return_value=({"ham"}, "spam")),
     ):
         clean_commands = clean_up_commands(commands, tracker_eggs, collect_info_flow)
 
