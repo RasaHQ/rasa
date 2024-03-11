@@ -6,11 +6,12 @@ from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import InMemoryMetricReader
 
 from rasa.tracing.constants import (
-    LLM_COMMAND_GENERATOR_CPU_USAGE_INSTRUMENT_NAME,
-    LLM_COMMAND_GENERATOR_MEMORY_USAGE_INSTRUMENT_NAME,
+    LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME,
+    LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME,
     PROMPT_TOKEN_LENGTH_ATTRIBUTE_NAME,
-    LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_INSTRUMENT_NAME,
-    RASA_CLIENT_REQUEST_BODY_SIZE_INSTRUMENT_NAME,
+    LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME,
+    LLM_COMMAND_GENERATOR_CPU_MEMORY_USAGE_UNIT_NAME,
+    RASA_CLIENT_REQUEST_BODY_SIZE_METRIC_NAME,
     ENDPOINT_REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME,
 )
 from rasa.tracing.instrumentation.metrics import (
@@ -55,9 +56,9 @@ def test_record_llm_command_generator_cpu_usage(
     resource_metrics = metrics_data.get("resource_metrics")[0]
     scope_metrics = resource_metrics.get("scope_metrics")[0]
     metrics = scope_metrics.get("metrics")[0]
-    assert metrics.get("name") == LLM_COMMAND_GENERATOR_CPU_USAGE_INSTRUMENT_NAME
+    assert metrics.get("name") == LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME
     assert metrics.get("description") == "CPU percentage for LLMCommandGenerator"
-    assert metrics.get("unit") == "%"
+    assert metrics.get("unit") == LLM_COMMAND_GENERATOR_CPU_MEMORY_USAGE_UNIT_NAME
 
     data_points = metrics.get("data", {}).get("data_points")[0]
     assert data_points.get("count") == 1
@@ -82,9 +83,9 @@ def test_record_llm_command_generator_memory_usage(
     # the first metric in the list was added by the unit test above
     # representing the CPU usage
     metrics = scope_metrics.get("metrics")[1]
-    assert metrics.get("name") == LLM_COMMAND_GENERATOR_MEMORY_USAGE_INSTRUMENT_NAME
+    assert metrics.get("name") == LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME
     assert metrics.get("description") == "RAM memory usage for LLMCommandGenerator"
-    assert metrics.get("unit") == "%"
+    assert metrics.get("unit") == LLM_COMMAND_GENERATOR_CPU_MEMORY_USAGE_UNIT_NAME
 
     data_points = metrics.get("data", {}).get("data_points")[0]
     assert data_points.get("count") == 1
@@ -115,9 +116,7 @@ def test_record_llm_command_generator_prompt_token_exists(
     # the first metrics in the list were added by the unit tests above
     # representing the CPU and memory usage
     metrics = scope_metrics.get("metrics")[2]
-    assert (
-        metrics.get("name") == LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_INSTRUMENT_NAME
-    )
+    assert metrics.get("name") == LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME
     assert metrics.get("description") == "LLMCommandGenerator prompt token length"
     assert metrics.get("unit") == "1"
 
@@ -156,7 +155,7 @@ def test_record_request_size_in_bytes(
     # the first metrics in the list were added by the unit tests above
     # representing the LLMCommandGenerator metrics
     metrics = scope_metrics.get("metrics")[3]
-    assert metrics.get("name") == RASA_CLIENT_REQUEST_BODY_SIZE_INSTRUMENT_NAME
+    assert metrics.get("name") == RASA_CLIENT_REQUEST_BODY_SIZE_METRIC_NAME
     assert metrics.get("description") == "The rasa client request's body size"
     assert metrics.get("unit") == "byte"
 

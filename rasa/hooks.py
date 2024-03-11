@@ -57,6 +57,7 @@ def configure_commandline(cmdline_arguments: argparse.Namespace) -> Optional[Tex
     if endpoints_file is not None:
         tracer_provider = config.get_tracer_provider(endpoints_file)
         config.configure_tracing(tracer_provider)
+        config.configure_metrics(endpoints_file)
 
     return endpoints_file
 

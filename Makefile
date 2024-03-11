@@ -5,6 +5,7 @@ INTEGRATION_TEST_FOLDER = tests/integration_tests/
 INTEGRATION_TEST_PYTEST_MARKERS ?= "sequential or broker or concurrent_lock_store or ((not sequential) and (not broker) and (not concurrent_lock_store))"
 PLATFORM ?= "linux/amd64"
 TRACING_INTEGRATION_TEST_FOLDER = tests/integration_tests/tracing
+METRICS_INTEGRATION_TEST_PATH = tests/integration_tests/tracing/test_metrics.py
 
 help:
 	@echo "make"
@@ -240,4 +241,16 @@ stop-tracing-integration-containers: ## Stop the tracing integration test contai
 	docker-compose -f tests_deployment/integration_tests_tracing_deployment/docker-compose.intg.yml down
 
 test-tracing-integration:
-	PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python PYTHONPATH=./vendor/jaeger-python-proto poetry run pytest $(TRACING_INTEGRATION_TEST_FOLDER) -n $(JOBS)
+	PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python PYTHONPATH=./vendor/jaeger-python-proto poetry run pytest $(TRACING_INTEGRATION_TEST_FOLDER) -n $(JOBS) --ignore $(METRICS_INTEGRATION_TEST_PATH)
+
+train-calm:
+	cd ./tests_deployment/integration_tests_tracing_deployment/metrics_setup/calm_bot && poetry run rasa train --fixed-model-name model
+
+run-metrics-integration-containers: train-calm ## Run the metrics integration test containers.
+	docker compose -f tests_deployment/integration_tests_tracing_deployment/metrics_setup/docker-compose.yml up -d --wait
+
+stop-metrics-integration-containers:
+	docker compose -f tests_deployment/integration_tests_tracing_deployment/metrics_setup/docker-compose.yml down
+
+test-metrics-integration:
+	poetry run pytest $(METRICS_INTEGRATION_TEST_PATH) -n $(JOBS)

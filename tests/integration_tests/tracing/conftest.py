@@ -1,8 +1,10 @@
 import collections
 import typing
+import uuid
 
 import grpc
 import pytest
+import requests
 from google.protobuf.timestamp_pb2 import Timestamp
 
 if typing.TYPE_CHECKING:
@@ -50,3 +52,13 @@ def trace_query_timestamps() -> TraceQueryTimestamps:
     min_time.GetCurrentTime()
     max_time = Timestamp(seconds=min_time.seconds + 5)
     return TraceQueryTimestamps(min_time, max_time)
+
+
+def send_message_to_rasa_server(server_location: str, message: str = "message") -> str:
+    """Send a message to the REST channel and return the sender id."""
+    sender_id = str(uuid.uuid4())
+    requests.post(
+        f"{server_location}/webhooks/rest/webhook",
+        json={"sender": sender_id, "message": message},
+    )
+    return sender_id

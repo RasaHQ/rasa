@@ -7,10 +7,15 @@ from typing import Any, Dict, Optional, Text
 
 import grpc
 from opentelemetry.exporter.jaeger.thrift import JaegerExporter
+from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.metrics import set_meter_provider
+from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
+
 from rasa.core.agent import Agent
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import TrackerStore
@@ -24,13 +29,21 @@ from rasa.dialogue_understanding.generator.llm_command_generator import (
 from rasa.dialogue_understanding.generator.nlu_command_adapter import NLUCommandAdapter
 from rasa.engine.graph import GraphNode
 from rasa.engine.training.graph_trainer import GraphTrainer
+from rasa.tracing.constants import (
+    ENDPOINTS_ENDPOINT_KEY,
+    ENDPOINTS_INSECURE_KEY,
+    ENDPOINTS_OTLP_BACKEND_TYPE,
+    ENDPOINTS_TRACING_KEY,
+    ENDPOINTS_TRACING_SERVICE_NAME_KEY,
+    ENDPOINTS_ROOT_CERTIFICATES_KEY,
+    ENDPOINTS_METRICS_KEY,
+)
+from rasa.tracing.metric_instrument_provider import MetricInstrumentProvider
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 
 from rasa.tracing.instrumentation import instrumentation
 
 TRACING_SERVICE_NAME = os.environ.get("TRACING_SERVICE_NAME", "rasa")
-
-ENDPOINTS_TRACING_KEY = "tracing"
 
 logger = logging.getLogger(__name__)
 
@@ -107,7 +120,7 @@ def get_tracer_provider(endpoints_file: Text) -> Optional[TracerProvider]:
         return None
     if cfg.type == "jaeger":
         tracer_provider = JaegerTracerConfigurer.configure_from_endpoint_config(cfg)
-    elif cfg.type == "otlp":
+    elif cfg.type == ENDPOINTS_OTLP_BACKEND_TYPE:
         tracer_provider = OTLPCollectorConfigurer.configure_from_endpoint_config(cfg)
     else:
         logger.warning(
@@ -156,7 +169,11 @@ class JaegerTracerConfigurer(TracerConfigurer):
         """
         provider = TracerProvider(
             resource=Resource.create(
-                {SERVICE_NAME: cfg.kwargs.get("service_name", TRACING_SERVICE_NAME)}
+                {
+                    SERVICE_NAME: cfg.kwargs.get(
+                        ENDPOINTS_TRACING_SERVICE_NAME_KEY, TRACING_SERVICE_NAME
+                    )
+                }
             )
         )
 
@@ -186,7 +203,7 @@ class OTLPCollectorConfigurer(TracerConfigurer):
 
     @classmethod
     def configure_from_endpoint_config(cls, cfg: EndpointConfig) -> TracerProvider:
-        """Configure tracing for Jaeger.
+        """Configure tracing for OTLP Collector.
 
         This will read the OTLP collector-specific configuration from the
         `EndpointConfig` and create a corresponding `TracerProvider` that exports to
@@ -198,16 +215,20 @@ class OTLPCollectorConfigurer(TracerConfigurer):
         """
         provider = TracerProvider(
             resource=Resource.create(
-                {SERVICE_NAME: cfg.kwargs.get("service_name", TRACING_SERVICE_NAME)}
+                {
+                    SERVICE_NAME: cfg.kwargs.get(
+                        ENDPOINTS_TRACING_SERVICE_NAME_KEY, TRACING_SERVICE_NAME
+                    )
+                }
             )
         )
 
-        insecure = cfg.kwargs.get("insecure")
+        insecure = cfg.kwargs.get(ENDPOINTS_INSECURE_KEY)
 
         credentials = cls._get_credentials(cfg, insecure)
 
         otlp_exporter = OTLPSpanExporter(
-            endpoint=cfg.kwargs["endpoint"],
+            endpoint=cfg.kwargs[ENDPOINTS_ENDPOINT_KEY],
             insecure=insecure,
             credentials=credentials,
         )
@@ -223,9 +244,95 @@ class OTLPCollectorConfigurer(TracerConfigurer):
     def _get_credentials(
         cls, cfg: EndpointConfig, insecure: bool
     ) -> Optional[grpc.ChannelCredentials]:
-        credentials = None
-        if not insecure and "root_certificates" in cfg.kwargs:
-            with open(cfg.kwargs.get("root_certificates"), "rb") as f:
-                root_cert = f.read()
-            credentials = grpc.ssl_channel_credentials(root_certificates=root_cert)
-        return credentials
+        return _get_credentials(cfg, insecure)
+
+
+class OTLPMetricConfigurer:
+    """The metric configurer for the OTLP Collector backend."""
+
+    @classmethod
+    def configure_from_endpoint_config(
+        cls, cfg: EndpointConfig
+    ) -> Optional[OTLPMetricExporter]:
+        """Configure metrics for OTLP Collector.
+
+        This will read the OTLP collector-specific configuration from the
+        `EndpointConfig` and create a corresponding `OTLPMetricExporter` that exports to
+        the given OTLP collector.
+
+        :param cfg: The configuration to be read for configuring metrics.
+        :return: The configured `OTLPMetricExporter`.
+        """
+        insecure = cfg.kwargs.get(ENDPOINTS_INSECURE_KEY)
+
+        credentials = cls._get_credentials(cfg, insecure)
+
+        otlp_metric_exporter = OTLPMetricExporter(
+            endpoint=cfg.kwargs[ENDPOINTS_ENDPOINT_KEY],
+            insecure=insecure,
+            credentials=credentials,
+        )
+        logger.info(
+            f"Registered '{cfg.type}' endpoint for metrics. "
+            f"Metrics will be exported to {cfg.kwargs['endpoint']}."
+        )
+
+        return otlp_metric_exporter
+
+    @classmethod
+    def _get_credentials(
+        cls, cfg: EndpointConfig, insecure: bool
+    ) -> Optional[grpc.ChannelCredentials]:
+        return _get_credentials(cfg, insecure)
+
+
+def configure_metrics(endpoints_file: str) -> None:
+    """Configure metrics export for OTLP Collector.
+
+    :param endpoints_file: The configuration file containing information about the
+        metrics backend.
+    :return: None.
+    """
+    cfg = read_endpoint_config(endpoints_file, ENDPOINTS_METRICS_KEY)
+
+    if not cfg:
+        logger.debug(
+            "The OTLP Collector has not been configured to collect "
+            "metrics. Skipping."
+        )
+        return None
+
+    if cfg.type != ENDPOINTS_OTLP_BACKEND_TYPE:
+        logger.warning(
+            f"Unknown metrics backend type '{cfg.type}' "
+            f"read from '{endpoints_file}', ignoring."
+        )
+        return None
+
+    otlp_exporter = OTLPMetricConfigurer.configure_from_endpoint_config(cfg)
+    metric_reader = PeriodicExportingMetricReader(otlp_exporter)
+    set_meter_provider(
+        MeterProvider(
+            metric_readers=[metric_reader],
+            resource=Resource.create(
+                {
+                    SERVICE_NAME: cfg.kwargs.get(
+                        ENDPOINTS_TRACING_SERVICE_NAME_KEY, TRACING_SERVICE_NAME
+                    )
+                }
+            ),
+        )
+    )
+
+    MetricInstrumentProvider().register_instruments()
+
+
+def _get_credentials(
+    cfg: EndpointConfig, insecure: bool
+) -> Optional[grpc.ChannelCredentials]:
+    credentials = None
+    if not insecure and ENDPOINTS_ROOT_CERTIFICATES_KEY in cfg.kwargs:
+        with open(cfg.kwargs.get(ENDPOINTS_ROOT_CERTIFICATES_KEY), "rb") as f:
+            root_cert = f.read()
+        credentials = grpc.ssl_channel_credentials(root_certificates=root_cert)
+    return credentials
