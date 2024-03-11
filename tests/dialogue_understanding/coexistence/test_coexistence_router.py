@@ -87,14 +87,14 @@ class TestCoexistenceRouter:
     @pytest.mark.parametrize(
         "answer, commands",
         [
-            (None, [NoopCommand()]),
+            (None, [SetSlotCommand(ROUTE_TO_CALM_SLOT, False)]),
             ("A ", []),
             ("B ", [NoopCommand()]),
             ("C ", [SetSlotCommand(ROUTE_TO_CALM_SLOT, False)]),
             ("A", []),
             ("B", [NoopCommand()]),
             ("C", [SetSlotCommand(ROUTE_TO_CALM_SLOT, False)]),
-            ("something else", [NoopCommand()]),
+            ("something else", [SetSlotCommand(ROUTE_TO_CALM_SLOT, False)]),
         ],
     )
     def test_coexistence_parse_answer(

@@ -203,7 +203,7 @@ class CoexistenceRouter(GraphComponent):
             structlogger.warn(
                 "coexistence_router.parse_answer.invalid_answer", answer=answer
             )
-            return [NoopCommand()]
+            return [SetSlotCommand(ROUTE_TO_CALM_SLOT, False)]
 
         # removing any whitespaces from the token
         answer = answer.strip()
@@ -221,7 +221,7 @@ class CoexistenceRouter(GraphComponent):
             structlogger.warn(
                 "coexistence_router.parse_answer.invalid_answer", answer=answer
             )
-            return [NoopCommand()]
+            return [SetSlotCommand(ROUTE_TO_CALM_SLOT, False)]
 
     def render_template(self, message: Message) -> str:
 
