@@ -1,0 +1,69 @@
+name: Build DEV docker image
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+env:
+  AWS_REGION: us-east-1
+  AWS_REPOSITORY_PREF: 329710836760.dkr.ecr.us-east-1.amazonaws.com
+  POETRY_VERSION: 1.4.2
+
+permissions:
+  id-token: write # This is required for requesting the JWT
+  contents: read # This is required for actions/checkout
+
+jobs:
+  rasa-private-dev:
+    name: rasa-private-dev image
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@8c3f20df09ac63af7b3ae3d7c91f105f857d8497 # v3.0.1
+        with:
+          role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@2fc7aceee09e9e4a7105c0d060c656fad0b4f63d # v1.6
+        with:
+          mask-password: "true"
+
+      # Tag in format: pr_number-shortSHA or branch_name-shortSHA
+      - name: Set image tag
+        run: |
+          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+            echo "IMAGE_TAG=pr${{ github.event.number }}-$(git rev-parse --short $(cat $GITHUB_EVENT_PATH | jq -r .pull_request.head.sha))" >> $GITHUB_ENV
+          else
+            echo "IMAGE_TAG=${GITHUB_REF##*/}-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+          fi
+
+      - name: Build base image
+        run: |
+          docker build . -t rasa-private:base-localdev -f docker/Dockerfile.base --platform=linux/amd64
+      
+      - name: Build base poetry image
+        run: |
+          docker build . -t rasa-private:base-poetry-localdev -f docker/Dockerfile.base-poetry --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_IMAGE_HASH=localdev --build-arg POETRY_VERSION=1.4.2 --platform=linux/amd64
+
+      - name: Build base builder image
+        run: |
+          docker build . -t rasa-private:base-builder-localdev -f docker/Dockerfile.base-builder --build-arg IMAGE_BASE_NAME=rasa-private --build-arg POETRY_VERSION=localdev --platform=linux/amd64
+
+      - name: Build, tag, and push image to Amazon ECR
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          REPOSITORY: ${{ env.AWS_REPOSITORY_PREF }}/${{ github.job }}
+          IMAGE_TAG: ${{ env.IMAGE_TAG }}
+          POETRY_VERSION: ${{ env.POETRY_VERSION }}
+        run: |
+          docker build . -t $IMAGE_TAG -f Dockerfile --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_IMAGE_HASH=localdev --build-arg BASE_BUILDER_IMAGE_HASH=localdev --platform=linux/amd64
+          docker tag $IMAGE_TAG $REPOSITORY:$IMAGE_TAG
+          docker push $REPOSITORY:$IMAGE_TAG
