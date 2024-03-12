@@ -12,6 +12,7 @@ from rasa.shared.nlu.training_data.formats import RasaYAMLReader
 import rasa.utils.io
 from rasa.core import utils
 from rasa.shared.importers.multi_project import MultiProjectImporter
+from rasa.shared.utils.yaml import write_yaml
 
 
 def test_load_imports_from_directory_tree(tmp_path: Path):
@@ -235,7 +236,7 @@ def test_single_additional_file(tmp_path: Path):
 
     additional_file = tmp_path / "directory" / "file.yml"
     additional_file.parent.mkdir()
-    rasa.shared.utils.io.write_yaml({}, additional_file)
+    write_yaml({}, additional_file)
 
     selector = MultiProjectImporter(
         config_path, training_data_paths=str(additional_file)

@@ -22,7 +22,6 @@ from dataclasses import dataclass
 
 import rasa.shared.core.constants
 import rasa.shared.nlu.constants
-import rasa.shared.utils.validation
 import rasa.shared.utils.io
 import rasa.shared.utils.common
 from rasa.shared.data import is_likely_yaml_file
@@ -31,6 +30,7 @@ from rasa.shared.core.events import ActionExecuted, UserUttered, Event
 from rasa import telemetry
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.utils.yaml import read_yaml_file
 from rasa.utils.io import WriteRow
 from rasa.shared.constants import DOCS_URL_MARKERS
 
@@ -504,7 +504,7 @@ class Marker(ABC):
         marker_names: Set[Text] = set()
         loaded_configs: Dict[Text, Dict] = {}
         for yaml_file in yaml_files:
-            loaded_config = rasa.shared.utils.io.read_yaml_file(yaml_file)
+            loaded_config = read_yaml_file(yaml_file)
             if not isinstance(loaded_config, dict):
                 raise InvalidMarkerConfig(
                     f"Expected the loaded configurations to be a dictionary "

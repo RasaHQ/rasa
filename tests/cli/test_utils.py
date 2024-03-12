@@ -11,6 +11,7 @@ import tempfile
 from typing import Any, Dict, Text
 from pathlib import Path
 from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.utils.yaml import read_yaml_file, write_yaml
 from rasa.utils.common import EXPECTED_WARNINGS
 from ruamel.yaml import YAML
 
@@ -175,16 +176,16 @@ def test_validate_with_invalid_directory_if_default_is_valid(tmp_path: pathlib.P
 )
 def test_get_validated_config_with_valid_input(parameters: Dict[Text, Any]) -> None:
     config_path = os.path.join(tempfile.mkdtemp(), "config.yml")
-    rasa.shared.utils.io.write_yaml(parameters["config_data"], config_path)
+    write_yaml(parameters["config_data"], config_path)
 
     default_config_path = os.path.join(tempfile.mkdtemp(), "default-config.yml")
-    rasa.shared.utils.io.write_yaml(parameters["default_config"], default_config_path)
+    write_yaml(parameters["default_config"], default_config_path)
 
     config_path = rasa.cli.utils.get_validated_config(
         config_path, parameters["mandatory_keys"], default_config_path
     )
 
-    config_data = rasa.shared.utils.io.read_yaml_file(config_path)
+    config_data = read_yaml_file(config_path)
 
     for k in parameters["mandatory_keys"]:
         assert k in config_data
@@ -216,13 +217,13 @@ def test_get_validated_config_with_default_config(parameters: Dict[Text, Any]) -
     config_path = None
 
     default_config_path = os.path.join(tempfile.mkdtemp(), "default-config.yml")
-    rasa.shared.utils.io.write_yaml(parameters["default_config"], default_config_path)
+    write_yaml(parameters["default_config"], default_config_path)
 
     config_path = rasa.cli.utils.get_validated_config(
         config_path, parameters["mandatory_keys"], default_config_path
     )
 
-    config_data = rasa.shared.utils.io.read_yaml_file(config_path)
+    config_data = read_yaml_file(config_path)
 
     for k in parameters["mandatory_keys"]:
         assert k in config_data
@@ -261,10 +262,10 @@ def test_get_validated_config_with_default_config(parameters: Dict[Text, Any]) -
 )
 def test_get_validated_config_with_invalid_input(parameters: Dict[Text, Any]) -> None:
     config_path = os.path.join(tempfile.mkdtemp(), "config.yml")
-    rasa.shared.utils.io.write_yaml(parameters["config_data"], config_path)
+    write_yaml(parameters["config_data"], config_path)
 
     default_config_path = os.path.join(tempfile.mkdtemp(), "default-config.yml")
-    rasa.shared.utils.io.write_yaml(parameters["default_config"], default_config_path)
+    write_yaml(parameters["default_config"], default_config_path)
 
     with pytest.raises(SystemExit):
         rasa.cli.utils.get_validated_config(
@@ -298,7 +299,7 @@ def test_get_validated_config_with_default_and_no_config(
     mandatory_keys = CONFIG_MANDATORY_KEYS_NLU
 
     default_config_path = os.path.join(tempfile.mkdtemp(), "default-config.yml")
-    rasa.shared.utils.io.write_yaml(default_config_content, default_config_path)
+    write_yaml(default_config_content, default_config_path)
 
     with pytest.raises(SystemExit):
         rasa.cli.utils.get_validated_config(
@@ -342,7 +343,7 @@ def test_validate_assistant_id_in_config(
     expected_log_event: Text,
     expected_log_message: Text,
 ) -> None:
-    copy_config_data = copy.deepcopy(rasa.shared.utils.io.read_yaml_file(config_file))
+    copy_config_data = copy.deepcopy(read_yaml_file(config_file))
 
     expected_log_level = "warning"
 
@@ -353,14 +354,14 @@ def test_validate_assistant_id_in_config(
         )
         assert len(logs) == 1
 
-    config_data = rasa.shared.utils.io.read_yaml_file(config_file)
+    config_data = read_yaml_file(config_file)
     assistant_name = config_data.get(ASSISTANT_ID_KEY)
 
     assert assistant_name is not None
     assert assistant_name != ASSISTANT_ID_DEFAULT_VALUE
 
     # reset input files to original state
-    rasa.shared.utils.io.write_yaml(copy_config_data, config_file, True)
+    write_yaml(copy_config_data, config_file, True)
 
 
 def test_data_validate_stories_with_max_history_zero():
@@ -654,15 +655,13 @@ def test_validate_assistant_id_in_config_preserves_comment() -> None:
     config_file = "data/test_config/config_no_assistant_id_with_comments.yml"
     reader_type = ["safe", "rt"]
     original_config_data = copy.deepcopy(
-        rasa.shared.utils.io.read_yaml_file(config_file, reader_type=reader_type)
+        read_yaml_file(config_file, reader_type=reader_type)
     )
 
     # append assistant_id to the config file
     rasa.cli.utils.validate_assistant_id_in_config(config_file)
 
-    config_data = rasa.shared.utils.io.read_yaml_file(
-        config_file, reader_type=reader_type
-    )
+    config_data = read_yaml_file(config_file, reader_type=reader_type)
 
     assert "assistant_id" in config_data
 
@@ -677,7 +676,7 @@ def test_validate_assistant_id_in_config_preserves_comment() -> None:
         assert comment.format(i) in config_file_content
 
     # reset input files to original state
-    rasa.shared.utils.io.write_yaml(original_config_data, config_file, True)
+    write_yaml(original_config_data, config_file, True)
 
 
 @pytest.mark.parametrize(

@@ -12,6 +12,7 @@ import pytest
 
 import rasa
 import rasa.shared.utils.io
+from rasa.shared.utils.yaml import read_yaml_file, write_yaml
 from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
 
 PROFILING_INTERVAL = 0.1
@@ -25,7 +26,7 @@ def _custom_default_config(
 ) -> Text:
     # Override default config to use custom amount of epochs
     default_config = Path("rasa", "shared", "importers", "default_config.yml")
-    config = rasa.shared.utils.io.read_yaml_file(default_config)
+    config = read_yaml_file(default_config)
 
     for model_part, items in config.items():
         for item in items:
@@ -35,7 +36,7 @@ def _custom_default_config(
                 item["max_history"] = None
 
     config_for_test = Path(tmp_path) / "test_config.yml"
-    rasa.shared.utils.io.write_yaml(config, config_for_test)
+    write_yaml(config, config_for_test)
 
     return str(config_for_test)
 
@@ -215,7 +216,7 @@ class TestCRFDenseFeaturesLeak(MemoryLeakTest):
 
         with TempDirectoryPath(get_temp_dir_name()) as temp_dir:
             config_for_test = Path(temp_dir) / "test_config.yml"
-            rasa.shared.utils.io.write_yaml(config, config_for_test)
+            write_yaml(config, config_for_test)
 
             rasa.model_training.train_nlu(
                 str(config_for_test),

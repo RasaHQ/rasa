@@ -46,6 +46,7 @@ import rasa.shared.utils.io
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.slots import AnySlot
 from rasa.shared.exceptions import InvalidConfigException
+from rasa.shared.utils.yaml import read_yaml_file, write_yaml, read_yaml
 from rasa.utils.tensorflow.constants import EPOCHS
 from tests.utilities import filter_logs
 
@@ -305,11 +306,11 @@ class TestE2e:
         tmp_path: Path,
         trained_e2e_model_cache: Path,
     ):
-        stories_yaml = rasa.shared.utils.io.read_yaml_file(e2e_stories_path)
+        stories_yaml = read_yaml_file(e2e_stories_path)
         stories_yaml["stories"][1]["steps"].append({"user": "new message!"})
 
         new_stories_file = tmp_path / "new_stories.yml"
-        rasa.shared.utils.io.write_yaml(stories_yaml, new_stories_file)
+        write_yaml(stories_yaml, new_stories_file)
 
         result = rasa.train(
             str(moodbot_domain_path),
@@ -338,11 +339,11 @@ class TestE2e:
         tmp_path: Path,
         trained_e2e_model_cache: Path,
     ):
-        stories_yaml = rasa.shared.utils.io.read_yaml_file(e2e_stories_path)
+        stories_yaml = read_yaml_file(e2e_stories_path)
         stories_yaml["stories"][1]["steps"].append({"user": "Yes"})
 
         new_stories_file = tmp_path / "new_stories.yml"
-        rasa.shared.utils.io.write_yaml(stories_yaml, new_stories_file)
+        write_yaml(stories_yaml, new_stories_file)
 
         result = rasa.train(
             str(moodbot_domain_path),
@@ -403,11 +404,11 @@ class TestE2e:
         tmp_path: Path,
         trained_e2e_model_cache: Path,
     ):
-        nlu_yaml = rasa.shared.utils.io.read_yaml_file(nlu_data_path)
+        nlu_yaml = read_yaml_file(nlu_data_path)
         nlu_yaml["nlu"][0]["examples"] += "- surprise!\n"
 
         new_nlu_file = tmp_path / "new_nlu.yml"
-        rasa.shared.utils.io.write_yaml(nlu_yaml, new_nlu_file)
+        write_yaml(nlu_yaml, new_nlu_file)
 
         result = rasa.train(
             str(moodbot_domain_path),
@@ -441,11 +442,11 @@ class TestE2e:
             output=str(tmp_path),
         )
 
-        nlu_yaml = rasa.shared.utils.io.read_yaml_file(nlu_data_path)
+        nlu_yaml = read_yaml_file(nlu_data_path)
         nlu_yaml["nlu"][0]["examples"] += "- surprise!\n"
 
         new_nlu_file = tmp_path / "new_nlu.yml"
-        rasa.shared.utils.io.write_yaml(nlu_yaml, new_nlu_file)
+        write_yaml(nlu_yaml, new_nlu_file)
 
         result = rasa.train(
             str(moodbot_domain_path),
@@ -533,19 +534,17 @@ def test_model_finetuning_core(
     # Typically models will be fine-tuned with a smaller number of epochs than training
     # from scratch.
     # Fine-tuning will use the number of epochs in the new config.
-    old_config = rasa.shared.utils.io.read_yaml_file("data/test_moodbot/config.yml")
+    old_config = read_yaml_file("data/test_moodbot/config.yml")
     old_config["policies"][0]["epochs"] = 10
     new_config_path = tmp_path / "new_config.yml"
-    rasa.shared.utils.io.write_yaml(old_config, new_config_path)
+    write_yaml(old_config, new_config_path)
 
-    old_stories = rasa.shared.utils.io.read_yaml_file(
-        "data/test_moodbot/data/stories.yml"
-    )
+    old_stories = read_yaml_file("data/test_moodbot/data/stories.yml")
     old_stories["stories"].append(
         {"story": "new story", "steps": [{"intent": "greet"}]}
     )
     new_stories_path = tmp_path / "new_stories.yml"
-    rasa.shared.utils.io.write_yaml(old_stories, new_stories_path)
+    write_yaml(old_stories, new_stories_path)
 
     result = rasa.model_training.train_core(
         "data/test_moodbot/domain.yml",
@@ -574,10 +573,10 @@ def test_model_finetuning_core_with_default_epochs(
 
     # Providing a new config with no epochs will mean the default amount are used
     # and then scaled by `finetuning_epoch_fraction`.
-    old_config = rasa.shared.utils.io.read_yaml_file("data/test_moodbot/config.yml")
+    old_config = read_yaml_file("data/test_moodbot/config.yml")
     del old_config["policies"][0]["epochs"]
     new_config_path = tmp_path / "new_config.yml"
-    rasa.shared.utils.io.write_yaml(old_config, new_config_path)
+    write_yaml(old_config, new_config_path)
 
     model_name = rasa.model_training.train_core(
         "data/test_moodbot/domain.yml",
@@ -603,12 +602,10 @@ def test_model_finetuning_core_new_domain_label(
     output = str(tmp_path / "models")
 
     # Simulate addition to training data
-    old_domain = rasa.shared.utils.io.read_yaml_file(
-        "data/test_domains/default_with_slots.yml"
-    )
+    old_domain = read_yaml_file("data/test_domains/default_with_slots.yml")
     old_domain["intents"].append("a_new_one")
     new_domain_path = tmp_path / "new_domain.yml"
-    rasa.shared.utils.io.write_yaml(old_domain, new_domain_path)
+    write_yaml(old_domain, new_domain_path)
 
     with pytest.raises(InvalidConfigException):
         rasa.model_training.train_core(
@@ -626,10 +623,10 @@ def test_model_finetuning_new_domain_label_stops_all_training(
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
 
-    old_domain = rasa.shared.utils.io.read_yaml_file("data/test_moodbot/domain.yml")
+    old_domain = read_yaml_file("data/test_moodbot/domain.yml")
     old_domain["intents"].append("a_new_one")
     new_domain_path = tmp_path / "new_domain.yml"
-    rasa.shared.utils.io.write_yaml(old_domain, new_domain_path)
+    write_yaml(old_domain, new_domain_path)
 
     with pytest.raises(InvalidConfigException):
         rasa.train(
@@ -661,15 +658,15 @@ def test_model_finetuning_nlu(
     # Typically models will be fine-tuned with a smaller number of epochs than training
     # from scratch.
     # Fine-tuning will use the number of epochs in the new config.
-    old_config = rasa.shared.utils.io.read_yaml_file("data/test_moodbot/config.yml")
+    old_config = read_yaml_file("data/test_moodbot/config.yml")
     old_config["pipeline"][-1][EPOCHS] = 10
     new_config_path = tmp_path / "new_config.yml"
-    rasa.shared.utils.io.write_yaml(old_config, new_config_path)
+    write_yaml(old_config, new_config_path)
 
-    old_nlu = rasa.shared.utils.io.read_yaml_file("data/test_moodbot/data/nlu.yml")
+    old_nlu = read_yaml_file("data/test_moodbot/data/nlu.yml")
     old_nlu["nlu"][-1]["examples"] += "- perfect\n"
     new_nlu_path = tmp_path / "new_nlu.yml"
-    rasa.shared.utils.io.write_yaml(old_nlu, new_nlu_path)
+    write_yaml(old_nlu, new_nlu_path)
 
     model_name = rasa.model_training.train_nlu(
         str(new_config_path),
@@ -691,10 +688,10 @@ def test_model_finetuning_nlu_new_label(tmp_path: Path, trained_nlu_moodbot_path
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
 
-    old_nlu = rasa.shared.utils.io.read_yaml_file("data/test_moodbot/data/nlu.yml")
+    old_nlu = read_yaml_file("data/test_moodbot/data/nlu.yml")
     old_nlu["nlu"].append({"intent": "a_new_one", "examples": "-blah"})
     new_nlu_path = tmp_path / "new_nlu.yml"
-    rasa.shared.utils.io.write_yaml(old_nlu, new_nlu_path)
+    write_yaml(old_nlu, new_nlu_path)
 
     with pytest.raises(InvalidConfigException):
         rasa.model_training.train_nlu(
@@ -712,10 +709,10 @@ def test_model_finetuning_nlu_new_entity(
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
 
-    old_nlu = rasa.shared.utils.io.read_yaml_file("data/test_moodbot/data/nlu.yml")
+    old_nlu = read_yaml_file("data/test_moodbot/data/nlu.yml")
     old_nlu["nlu"][-1]["examples"] = "-[blah](something)"
     new_nlu_path = tmp_path / "new_nlu.yml"
-    rasa.shared.utils.io.write_yaml(old_nlu, new_nlu_path)
+    write_yaml(old_nlu, new_nlu_path)
 
     with pytest.raises(InvalidConfigException):
         rasa.model_training.train_nlu(
@@ -737,11 +734,11 @@ def test_model_finetuning_nlu_new_label_already_in_domain(
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
 
-    old_nlu = rasa.shared.utils.io.read_yaml_file(nlu_data_path)
+    old_nlu = read_yaml_file(nlu_data_path)
     # This intent exists in `domain_path` but not yet in the nlu data
     old_nlu["nlu"].append({"intent": "why", "examples": "whyy??"})
     new_nlu_path = tmp_path / "new_nlu.yml"
-    rasa.shared.utils.io.write_yaml(old_nlu, new_nlu_path)
+    write_yaml(old_nlu, new_nlu_path)
 
     with pytest.raises(InvalidConfigException):
         rasa.model_training.train_nlu(
@@ -759,10 +756,10 @@ def test_model_finetuning_nlu_new_label_to_domain_only(
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
 
-    old_domain = rasa.shared.utils.io.read_yaml_file("data/test_moodbot/domain.yml")
+    old_domain = read_yaml_file("data/test_moodbot/domain.yml")
     old_domain["intents"].append("a_new_one")
     new_domain_path = tmp_path / "new_domain.yml"
-    rasa.shared.utils.io.write_yaml(old_domain, new_domain_path)
+    write_yaml(old_domain, new_domain_path)
 
     result = rasa.model_training.train_nlu(
         "data/test_moodbot/config.yml",
@@ -787,10 +784,10 @@ def test_model_finetuning_nlu_with_default_epochs(
 
     # Providing a new config with no epochs will mean the default amount are used
     # and then scaled by `finetuning_epoch_fraction`.
-    old_config = rasa.shared.utils.io.read_yaml_file("data/test_moodbot/config.yml")
+    old_config = read_yaml_file("data/test_moodbot/config.yml")
     del old_config["pipeline"][-1][EPOCHS]
     new_config_path = tmp_path / "new_config.yml"
-    rasa.shared.utils.io.write_yaml(old_config, new_config_path)
+    write_yaml(old_config, new_config_path)
 
     model_name = rasa.model_training.train_nlu(
         str(new_config_path),
@@ -905,7 +902,7 @@ def test_models_not_retrained_if_only_new_action(
 
     new_domain = domain.merge(Domain.from_yaml(domain_with_extra_response))
     new_domain_path = tmp_path / "domain.yml"
-    rasa.shared.utils.io.write_yaml(new_domain.as_dict(), new_domain_path)
+    write_yaml(new_domain.as_dict(), new_domain_path)
 
     result = rasa.train(
         str(new_domain_path),
@@ -934,9 +931,7 @@ def test_invalid_graph_schema(
     )
 
     new_config_path = tmp_path / "config.yml"
-    rasa.shared.utils.io.write_yaml(
-        rasa.shared.utils.io.read_yaml(config), new_config_path
-    )
+    write_yaml(read_yaml(config), new_config_path)
 
     with pytest.raises(InvalidConfigException) as captured_exception:
         rasa.train(
@@ -977,9 +972,7 @@ def test_fingerprint_changes_if_module_changes(
     monkeypatch.syspath_prepend(tmp_path)
 
     new_config_path = tmp_path / "config.yml"
-    rasa.shared.utils.io.write_yaml(
-        rasa.shared.utils.io.read_yaml(config), new_config_path
-    )
+    write_yaml(read_yaml(config), new_config_path)
 
     # Train to initialize cache
     rasa.train(domain_path, str(new_config_path), [stories_path], output=str(tmp_path))

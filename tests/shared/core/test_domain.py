@@ -49,7 +49,7 @@ from rasa.shared.core.domain import (
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered
-from rasa.shared.utils.validation import YamlValidationException
+from rasa.shared.utils.yaml import YamlValidationException, read_yaml
 from rasa.utils.common import EXPECTED_WARNINGS
 from tests.utilities import filter_logs
 
@@ -388,8 +388,8 @@ session_config:
   session_expiration_time: {DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES}
 """
 
-    actual = rasa.shared.utils.io.read_yaml(actual_yaml)
-    expected = rasa.shared.utils.io.read_yaml(expected_yaml)
+    actual = read_yaml(actual_yaml)
+    expected = read_yaml(expected_yaml)
     assert actual == expected
 
 
@@ -1832,9 +1832,7 @@ def test_domain_with_empty_required_slots():
 
 
 def test_domain_invalid_yml_in_folder():
-    """
-    Check if invalid YAML files in a domain folder lead to the proper UserWarning
-    """
+    """Check if invalid YAML files in a domain folder lead to the proper UserWarning."""
     expected_event = "domain.cannot_load_domain_file"
     expected_log_level = "warning"
     expected_log_message_parts = ["The file", "your file"]
@@ -1847,8 +1845,7 @@ def test_domain_invalid_yml_in_folder():
 
 
 def test_invalid_domain_dir_with_duplicates(recwarn: WarningsRecorder):
-    """
-    Raises InvalidDomain if a domain is loaded from a directory with duplicated slots,
+    """Raises InvalidDomain if a domain is loaded from a directory with duplicated slots,
     responses and intents in domain files.
     """
     Domain.from_directory("data/test_domains/test_domain_with_duplicates/")

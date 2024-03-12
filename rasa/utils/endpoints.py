@@ -7,11 +7,9 @@ from sanic.request import Request
 from typing import Any, Optional, Text, Dict
 
 from rasa.shared.exceptions import FileNotFoundException
-import rasa.shared.utils.io
-import rasa.utils.io
 import structlog
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
-
+from rasa.shared.utils.yaml import read_config_file
 
 structlogger = structlog.get_logger()
 
@@ -24,7 +22,7 @@ def read_endpoint_config(
         return None
 
     try:
-        content = rasa.shared.utils.io.read_config_file(filename)
+        content = read_config_file(filename)
 
         if content.get(endpoint_type) is None:
             return None

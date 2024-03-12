@@ -1,77 +1,194 @@
+import os
 import textwrap
-from typing import Text
+from pathlib import Path
+from typing import Text, Dict, Any
 from threading import Thread
+from unittest.mock import MagicMock, patch
 
 import pytest
+from _pytest.monkeypatch import MonkeyPatch
 
 from pep440_version_utils import Version
+from pykwalify.errors import SchemaError
+
 from rasa.shared.core.flows.yaml_flows_io import FLOWS_SCHEMA_FILE, YAMLFlowsReader
 
 from rasa.shared.exceptions import YamlException, SchemaValidationError
 import rasa.shared.utils.io
-import rasa.shared.utils.validation as validation_utils
 import rasa.utils.io as io_utils
 import rasa.shared.nlu.training_data.schemas.data_schema as schema
 from rasa.shared.constants import (
     CONFIG_SCHEMA_FILE,
     DOMAIN_SCHEMA_FILE,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
+    PACKAGE_NAME,
 )
 from rasa.shared.nlu.training_data.formats.rasa_yaml import NLU_SCHEMA_FILE
-from rasa.shared.utils.validation import (
+from rasa.shared.utils.yaml import (
     KEY_TRAINING_DATA_FORMAT_VERSION,
     YamlValidationException,
+    read_schema_file,
     validate_yaml_with_jsonschema,
+    validate_yaml_content_using_schema,
+    validate_raw_yaml_using_schema_file,
+    validate_raw_yaml_using_schema_file_with_responses,
+    validate_training_data,
+    validate_training_data_format_version,
 )
+
+python_module_path = "rasa.shared.utils.yaml"
+
+
+@pytest.fixture
+def set_mock_read_yaml_file(
+    monkeypatch: MonkeyPatch, mock_read_yaml_file: MagicMock
+) -> None:
+    monkeypatch.setattr(f"{python_module_path}.read_yaml_file", mock_read_yaml_file)
+
+
+def test_read_schema_file(
+    set_mock_read_yaml_file: None,
+    mock_read_yaml_file: MagicMock,
+) -> None:
+    # Given
+    package_path = os.path.join("canonical", "path", "to")
+    input_schema_file = os.path.join("tests", "data", "test_schema.yml")
+    full_path = os.path.join(package_path, input_schema_file)
+
+    with patch(f"{python_module_path}.files") as mock_importlib_resources_files:
+        mock_importlib_resources_files.return_value = Path(package_path)
+
+        # When
+        read_schema_file(input_schema_file)
+
+    # Then
+    mock_importlib_resources_files.assert_called_with(PACKAGE_NAME)
+    mock_read_yaml_file.assert_called_with(full_path)
+
+
+@pytest.fixture
+def mock_read_yaml_file(monkeypatch: MonkeyPatch) -> MagicMock:
+    return MagicMock()
+
+
+@pytest.fixture
+def mock_read_yaml(mock_read_yaml_file: MagicMock) -> MagicMock:
+    return MagicMock()
+
+
+@pytest.fixture
+def set_mock_read_yaml(monkeypatch: MonkeyPatch, mock_read_yaml: MagicMock) -> None:
+    monkeypatch.setattr(f"{python_module_path}.read_yaml", mock_read_yaml)
+
+
+@pytest.fixture
+def mock_pykwalify_core_instance() -> MagicMock:
+    return MagicMock()
+
+
+@pytest.fixture
+def mock_pykwalify_core(
+    monkeypatch: MonkeyPatch, mock_pykwalify_core_instance: MagicMock
+) -> MagicMock:
+    core = MagicMock()
+    core.return_value = mock_pykwalify_core_instance
+    return core
+
+
+@pytest.fixture
+def pykwalify_core(monkeypatch: MonkeyPatch, mock_pykwalify_core: MagicMock) -> None:
+    monkeypatch.setattr(f"{python_module_path}.Core", mock_pykwalify_core)
+
+
+def test_validate_yaml_content_using_schema(
+    mock_pykwalify_core: MagicMock,
+    mock_pykwalify_core_instance: MagicMock,
+    pykwalify_core: None,
+) -> None:
+    test_case_file_content: Dict[Text, Any] = {}
+    mock_pykwalify_core_instance.validate.return_value = None
+    e2e_test_schema = {}
+
+    try:
+        validate_yaml_content_using_schema(test_case_file_content, e2e_test_schema)
+    except YamlValidationException as exc:
+        assert (
+            False
+        ), f"'validate_yaml_content' should not have raised an exception {exc}"
+
+    mock_pykwalify_core.assert_called_with(
+        source_data=test_case_file_content, schema_data=e2e_test_schema, extensions=None
+    )
+    mock_pykwalify_core_instance.validate.assert_called_with(raise_exception=True)
+
+
+def test_validate_yaml_content_using_schema_with_invalid_yaml(
+    set_mock_read_yaml: None,
+    mock_read_yaml: MagicMock,
+    mock_pykwalify_core: MagicMock,
+    mock_pykwalify_core_instance: MagicMock,
+    pykwalify_core: None,
+) -> None:
+    mock_pykwalify_core_instance.validate.side_effect = SchemaError("Invalid YAML")
+
+    with pytest.raises(YamlValidationException):
+        validate_yaml_content_using_schema({}, ["some test schema"])
 
 
 @pytest.mark.parametrize(
-    "file, schema",
+    "file, schema_path",
     [
-        ("data/test_moodbot/domain.yml", DOMAIN_SCHEMA_FILE),
         ("data/test_config/config_defaults.yml", CONFIG_SCHEMA_FILE),
         ("data/test_config/config_supervised_embeddings.yml", CONFIG_SCHEMA_FILE),
         ("data/test_config/config_crf_custom_features.yml", CONFIG_SCHEMA_FILE),
     ],
 )
-def test_validate_yaml_schema(file, schema):
+def test_validate_raw_yaml_using_schema_file(file, schema_path):
     # should raise no exception
-    validation_utils.validate_yaml_schema(rasa.shared.utils.io.read_file(file), schema)
-
-
-def test_validate_yaml_schema_with_package_name():
-    # should raise no exception
-    file = "data/test_moodbot/domain.yml"
-    schema = DOMAIN_SCHEMA_FILE
-    validation_utils.validate_yaml_schema(
-        rasa.shared.utils.io.read_file(file), schema, package_name="rasa"
+    validate_raw_yaml_using_schema_file(
+        rasa.shared.utils.io.read_file(file), schema_path
     )
 
 
-def test_validate_yaml_schema_with_random_package_name_fails():
+def test_validate_raw_yaml_using_schema_file_with_responses():
     # should raise no exception
     file = "data/test_moodbot/domain.yml"
-    schema = DOMAIN_SCHEMA_FILE
+    schema_path = DOMAIN_SCHEMA_FILE
+    validate_raw_yaml_using_schema_file_with_responses(
+        rasa.shared.utils.io.read_file(file), schema_path, package_name="rasa"
+    )
+
+
+def test_validate_raw_yaml_using_schema_file_with_responses_with_random_package_name_fails():  # noqa: E501
+    # should raise no exception
+    file = "data/test_moodbot/domain.yml"
+    schema_file = DOMAIN_SCHEMA_FILE
 
     with pytest.raises(ModuleNotFoundError):
-        validation_utils.validate_yaml_schema(
-            rasa.shared.utils.io.read_file(file), schema, package_name="rasa_foo_bar_42"
+        validate_raw_yaml_using_schema_file_with_responses(
+            rasa.shared.utils.io.read_file(file),
+            schema_file,
+            package_name="rasa_foo_bar_42",
         )
 
 
 @pytest.mark.parametrize(
-    "file, schema",
+    "file, schema_path",
     [
         ("data/test_domains/valid_actions.yml", DOMAIN_SCHEMA_FILE),
     ],
 )
-def test_validate_yaml_schema_actions(file: Text, schema: Text):
+def test_validate_raw_yaml_using_schema_file_with_responses_on_valid_actions(
+    file: Text, schema_path: Text
+):
     # should raise no exception
-    validation_utils.validate_yaml_schema(rasa.shared.utils.io.read_file(file), schema)
+    validate_raw_yaml_using_schema_file_with_responses(
+        rasa.shared.utils.io.read_file(file), schema_path
+    )
 
 
 @pytest.mark.parametrize(
-    "content, schema",
+    "content, schema_path",
     [
         (
             """
@@ -143,13 +260,13 @@ def test_validate_yaml_schema_actions(file: Text, schema: Text):
         ),
     ],
 )
-def test_invalid_send_domain_value_in_actions(content: Text, schema: Text):
-    with pytest.raises(validation_utils.YamlValidationException):
-        validation_utils.validate_yaml_schema(content, schema)
+def test_invalid_send_domain_value_in_actions(content: Text, schema_path: Text):
+    with pytest.raises(YamlValidationException):
+        validate_raw_yaml_using_schema_file_with_responses(content, schema_path)
 
 
 @pytest.mark.parametrize(
-    "file, schema",
+    "file, schema_path",
     [
         ("data/test_domains/invalid_format.yml", DOMAIN_SCHEMA_FILE),
         ("data/test_domains/wrong_response_format.yml", DOMAIN_SCHEMA_FILE),
@@ -157,14 +274,16 @@ def test_invalid_send_domain_value_in_actions(content: Text, schema: Text):
         ("data/test_domains/empty_response_format.yml", DOMAIN_SCHEMA_FILE),
     ],
 )
-def test_validate_yaml_schema_raise_exception(file: Text, schema: Text):
+def test_validate_raw_yaml_using_schema_file_with_responses_raise_exception(
+    file: Text, schema_path: Text
+):
     with pytest.raises(YamlException):
-        validation_utils.validate_yaml_schema(
-            rasa.shared.utils.io.read_file(file), schema
+        validate_raw_yaml_using_schema_file_with_responses(
+            rasa.shared.utils.io.read_file(file), schema_path
         )
 
 
-def test_validate_yaml_schema_raise_exception_null_text():
+def test_validate_raw_yaml_using_schema_file_with_responses_raise_exception_null_text():
     domain = f"""
     version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
     responses:
@@ -173,8 +292,8 @@ def test_validate_yaml_schema_raise_exception_null_text():
       utter_ask_name:
       - text: null
     """
-    with pytest.raises(validation_utils.YamlValidationException) as e:
-        validation_utils.validate_yaml_schema(domain, DOMAIN_SCHEMA_FILE)
+    with pytest.raises(YamlValidationException) as e:
+        validate_raw_yaml_using_schema_file_with_responses(domain, DOMAIN_SCHEMA_FILE)
 
     assert (
         "Missing 'text' or 'custom' key in response or null 'text' value in response."
@@ -182,7 +301,7 @@ def test_validate_yaml_schema_raise_exception_null_text():
     )
 
 
-def test_validate_yaml_schema_raise_exception_extra_hyphen_for_image():
+def test_validate_raw_yaml_using_schema_file_with_responses_raise_exception_extra_hyphen_for_image():  # noqa: E501
     domain = f"""
         version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         responses:
@@ -190,8 +309,8 @@ def test_validate_yaml_schema_raise_exception_extra_hyphen_for_image():
           - image: https://i.imgur.com/nGF1K8f.jpg
           - text: Here is something to cheer you up
         """
-    with pytest.raises(validation_utils.YamlValidationException) as e:
-        validation_utils.validate_yaml_schema(domain, DOMAIN_SCHEMA_FILE)
+    with pytest.raises(YamlValidationException) as e:
+        validate_raw_yaml_using_schema_file_with_responses(domain, DOMAIN_SCHEMA_FILE)
 
     assert (
         "Missing 'text' or 'custom' key in response or null 'text' value in response."
@@ -202,7 +321,7 @@ def test_validate_yaml_schema_raise_exception_extra_hyphen_for_image():
 def test_example_training_data_is_valid():
     demo_json = "data/examples/rasa/demo-rasa.json"
     data = rasa.shared.utils.io.read_json_file(demo_json)
-    validation_utils.validate_training_data(data, schema.rasa_nlu_data_schema())
+    validate_training_data(data, schema.rasa_nlu_data_schema())
 
 
 @pytest.mark.parametrize(
@@ -224,9 +343,7 @@ def test_example_training_data_is_valid():
 )
 def test_validate_training_data_is_throwing_exceptions(invalid_data):
     with pytest.raises(SchemaValidationError):
-        validation_utils.validate_training_data(
-            invalid_data, schema.rasa_nlu_data_schema()
-        )
+        validate_training_data(invalid_data, schema.rasa_nlu_data_schema())
 
 
 def test_url_data_format():
@@ -262,7 +379,7 @@ def test_url_data_format():
     )
     data = rasa.shared.utils.io.read_json_file(fname)
     assert data is not None
-    validation_utils.validate_training_data(data, schema.rasa_nlu_data_schema())
+    validate_training_data(data, schema.rasa_nlu_data_schema())
 
 
 @pytest.mark.parametrize(
@@ -276,9 +393,7 @@ def test_url_data_format():
 )
 def test_validate_entity_dict_is_throwing_exceptions(invalid_data):
     with pytest.raises(SchemaValidationError):
-        validation_utils.validate_training_data(
-            invalid_data, schema.entity_dict_schema()
-        )
+        validate_training_data(invalid_data, schema.entity_dict_schema())
 
 
 @pytest.mark.parametrize(
@@ -297,7 +412,7 @@ def test_validate_entity_dict_is_throwing_exceptions(invalid_data):
     ],
 )
 def test_entity_dict_is_valid(data):
-    validation_utils.validate_training_data(data, schema.entity_dict_schema())
+    validate_training_data(data, schema.entity_dict_schema())
 
 
 async def test_future_training_data_format_version_not_compatible():
@@ -307,9 +422,7 @@ async def test_future_training_data_format_version_not_compatible():
     incompatible_version = {KEY_TRAINING_DATA_FORMAT_VERSION: next_minor}
 
     with pytest.warns(UserWarning):
-        assert not validation_utils.validate_training_data_format_version(
-            incompatible_version, ""
-        )
+        assert not validate_training_data_format_version(incompatible_version, "")
 
 
 async def test_compatible_training_data_format_version():
@@ -323,7 +436,7 @@ async def test_compatible_training_data_format_version():
 
     for version in [compatible_version_1, compatible_version_2]:
         with pytest.warns(None):
-            assert validation_utils.validate_training_data_format_version(version, "")
+            assert validate_training_data_format_version(version, "")
 
 
 async def test_invalid_training_data_format_version_warns():
@@ -333,7 +446,7 @@ async def test_invalid_training_data_format_version_warns():
 
     for version in [invalid_version_1, invalid_version_2]:
         with pytest.warns(UserWarning):
-            assert validation_utils.validate_training_data_format_version(version, "")
+            assert validate_training_data_format_version(version, "")
 
 
 def test_concurrent_schema_validation():
@@ -372,7 +485,7 @@ nlu:
     - bye bye
     - see you later
         """
-        rasa.shared.utils.validation.validate_yaml_schema(payload, NLU_SCHEMA_FILE)
+        validate_raw_yaml_using_schema_file(payload, NLU_SCHEMA_FILE)
         successful_results.append(True)
 
     threads = []
@@ -528,7 +641,7 @@ def test_flow_validation_pass(flow_yaml: str) -> None:
 
 def validate_and_return_error_msg(flow_yaml: str) -> str:
     with pytest.raises(YamlValidationException) as e:
-        rasa.shared.utils.validation.validate_yaml_with_jsonschema(
+        validate_yaml_with_jsonschema(
             flow_yaml,
             FLOWS_SCHEMA_FILE,
             humanize_error=YAMLFlowsReader.humanize_flow_error,

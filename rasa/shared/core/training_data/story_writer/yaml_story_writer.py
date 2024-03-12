@@ -51,6 +51,7 @@ from rasa.shared.core.training_data.structures import (
     STORY_START,
     RuleStep,
 )
+from rasa.shared.utils.yaml import write_yaml
 
 
 class YAMLStoryWriter(StoryWriter):
@@ -100,7 +101,7 @@ class YAMLStoryWriter(StoryWriter):
         result = self.stories_to_yaml(story_steps, is_test_story)
         if is_appendable and KEY_STORIES in result:
             result = result[KEY_STORIES]
-        rasa.shared.utils.io.write_yaml(result, target, True)
+        write_yaml(result, target, True)
 
     def stories_to_yaml(
         self, story_steps: List[StoryStep], is_test_story: bool = False
@@ -111,7 +112,7 @@ class YAMLStoryWriter(StoryWriter):
             story_steps: Original story steps to be converted to the YAML.
             is_test_story: `True` if the story is an end-to-end conversation test story.
         """
-        from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
+        from rasa.shared.utils.yaml import KEY_TRAINING_DATA_FORMAT_VERSION
 
         self._is_test_story = is_test_story
 

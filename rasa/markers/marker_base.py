@@ -25,7 +25,6 @@ import rasa.shared.core.constants
 import rasa.shared.nlu.constants
 import rasa.shared.utils.common
 import rasa.shared.utils.io
-import rasa.shared.utils.validation
 from rasa.shared.constants import DOCS_URL_MARKERS
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, Event, UserUttered

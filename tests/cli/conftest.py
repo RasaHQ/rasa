@@ -12,7 +12,7 @@ from pytest import TempPathFactory, Testdir
 from _pytest.pytester import RunResult
 
 from rasa.cli import scaffold
-from rasa.shared.utils.io import write_yaml
+from rasa.shared.utils.yaml import write_yaml
 from tests.conftest import create_simple_project
 
 RASA_EXE = os.environ.get("RASA_EXECUTABLE", "rasa")

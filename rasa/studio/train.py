@@ -18,7 +18,7 @@ from rasa.shared.constants import (
 )
 from rasa.shared.core.flows.yaml_flows_io import YamlFlowsWriter
 from rasa.shared.importers.importer import TrainingDataImporter
-from rasa.shared.utils.io import read_yaml, write_yaml
+from rasa.shared.utils.yaml import read_yaml, write_yaml
 from rasa.utils.common import get_temp_dir_name
 
 from rasa.studio.config import StudioConfig

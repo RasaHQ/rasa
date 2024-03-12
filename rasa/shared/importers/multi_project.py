@@ -14,6 +14,7 @@ from rasa.shared.utils.common import mark_as_experimental_feature
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     YAMLStoryReader,
 )
+from rasa.shared.utils.yaml import read_config_file, read_model_configuration
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,7 @@ class MultiProjectImporter(TrainingDataImporter):
         training_data_paths: Optional[Union[List[Text], Text]] = None,
         project_directory: Optional[Text] = None,
     ):
-        self.config = rasa.shared.utils.io.read_model_configuration(config_file)
+        self.config = read_model_configuration(config_file)
         if domain_path:
             self._domain_paths = [domain_path]
         else:
@@ -68,7 +69,7 @@ class MultiProjectImporter(TrainingDataImporter):
     def _init_from_file(self, path: Text) -> None:
         path = os.path.abspath(path)
         if os.path.exists(path) and rasa.shared.data.is_config_file(path):
-            config = rasa.shared.utils.io.read_config_file(path)
+            config = read_config_file(path)
 
             parent_directory = os.path.dirname(path)
             self._init_from_dict(config, parent_directory)

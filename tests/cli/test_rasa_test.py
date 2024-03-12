@@ -13,7 +13,8 @@ from rasa.core.constants import (
 )
 from rasa.constants import RESULTS_FILE
 from rasa.shared.constants import DEFAULT_RESULTS_PATH
-from rasa.shared.utils.io import list_files, write_yaml, write_text_file
+from rasa.shared.utils.io import list_files, write_text_file
+from rasa.shared.utils.yaml import write_yaml
 from typing import Callable
 
 from tests.cli.conftest import RASA_EXE

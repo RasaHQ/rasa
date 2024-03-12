@@ -33,6 +33,7 @@ import rasa.shared.utils.io
 from sanic import Sanic
 from asyncio import AbstractEventLoop
 
+from rasa.shared.utils.yaml import read_config_file
 
 logger = logging.getLogger()  # get the root logger
 
@@ -42,7 +43,7 @@ def create_http_input_channels(
 ) -> List["InputChannel"]:
     """Instantiate the chosen input channel."""
     if credentials_file:
-        all_credentials = rasa.shared.utils.io.read_config_file(credentials_file)
+        all_credentials = read_config_file(credentials_file)
     else:
         all_credentials = {}
 
