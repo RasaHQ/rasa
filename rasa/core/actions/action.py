@@ -28,7 +28,6 @@ from rasa.nlu.constants import (
     RESPONSE_SELECTOR_PREDICTION_KEY,
     RESPONSE_SELECTOR_UTTER_ACTION_KEY,
 )
-from rasa.plugin import plugin_manager
 from rasa.shared.constants import (
     DOCS_BASE_URL,
     DEFAULT_NLU_FALLBACK_INTENT_NAME,
@@ -279,6 +278,7 @@ class Action:
                 ``tracker.get_slot(slot_name)`` and the most recent user
                 message is ``tracker.latest_message.text``.
             domain (Domain): the bot's domain
+            metadata: Additional information for the action.
 
         Returns:
             A list of :class:`rasa.core.events.Event` instances
@@ -834,19 +834,12 @@ class RemoteAction(Action):
                 DEFAULT_COMPRESS_ACTION_SERVER_REQUEST,
             )
 
-            modified_json = plugin_manager().hook.prefix_stripping_for_custom_actions(
-                json_body=json_body
-            )
             response: Any = await self.action_endpoint.request(
-                json=modified_json if modified_json else json_body,
+                json=json_body,
                 method="post",
                 timeout=DEFAULT_REQUEST_TIMEOUT,
                 compress=should_compress,
             )
-            if modified_json:
-                plugin_manager().hook.prefixing_custom_actions_response(
-                    json_body=json_body, response=response
-                )
             self._validate_action_result(response)
 
             events_json = response.get("events", [])
@@ -902,9 +895,7 @@ class RemoteAction(Action):
 
 
 class ActionExecutionRejection(RasaException):
-    """Raising this exception will allow other policies
-    to predict a different action.
-    """
+    """Raising this exception allows other policies to predict a different action."""
 
     def __init__(self, action_name: Text, message: Optional[Text] = None) -> None:
         """Create a new ActionExecutionRejection exception."""

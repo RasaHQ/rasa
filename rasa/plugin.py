@@ -64,12 +64,6 @@ def init_telemetry(endpoints_file: Optional[Text]) -> None:
     """Hook specification for initialising plugin telemetry."""
 
 
-@hookspec(firstresult=True)  # type: ignore[misc]
-def prefix_stripping_for_custom_actions(json_body: Dict[Text, Any]) -> Dict[Text, Any]:
-    """Remove namespacing introduced by spaces before custom actions call."""
-    return {}
-
-
 @hookspec  # type: ignore[misc]
 def prefixing_custom_actions_response(
     json_body: Dict[Text, Any], response: Dict[Text, Any]
