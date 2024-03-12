@@ -64,14 +64,6 @@ def init_telemetry(endpoints_file: Optional[Text]) -> None:
     """Hook specification for initialising plugin telemetry."""
 
 
-@hookspec  # type: ignore[misc]
-def clean_entity_targets_for_evaluation(
-    merged_targets: List[str], extractor: str
-) -> List[str]:
-    """Remove entity targets for space-based entity extractors."""
-    return []
-
-
 @hookspec(firstresult=True)  # type: ignore[misc]
 def prefix_stripping_for_custom_actions(json_body: Dict[Text, Any]) -> Dict[Text, Any]:
     """Remove namespacing introduced by spaces before custom actions call."""
