@@ -7,7 +7,7 @@ import pytest
 import structlog
 
 
-from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION, ACTION_ASK_PREFIX
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows.yaml_flows_io import flows_from_str
 from rasa.shared.core.training_data.structures import StoryGraph
@@ -1756,5 +1756,62 @@ def test_verify_namespaces_reference_slots_not_in_the_domain() -> None:
         assert not validator.verify_predicates()
         logs = filter_logs(
             caplog, expected_log_event, expected_log_level, [expected_log_message]
+        )
+        assert len(logs) == 1
+
+
+def test_verify_flow_steps_against_domain_disallows_collect_step_with_action_utterance(
+    tmp_path: Path,
+    nlu_data_path: Path,
+) -> None:
+    flows_file = tmp_path / "flows.yml"
+    with open(flows_file, "w") as file:
+        file.write(
+            f"""
+                version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                flows:
+                  order_pizza:
+                    description: This flow lets users order their favourite pizza.
+                    name: order pizza
+                    steps:
+                    - id: "ask_pizza_toppings"
+                      collect: pizza_toppings
+                      next: END
+                """
+        )
+    domain_file = tmp_path / "domain.yml"
+    with open(domain_file, "w") as file:
+        file.write(
+            f"""
+                version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+                actions:
+                    - {ACTION_ASK_PREFIX}_pizza_toppings
+                responses:
+                  utter_ask_pizza_toppings:
+                    - text: "What toppings do you want?"
+                """
+        )
+    importer = RasaFileImporter(
+        config_file="data/test_moodbot/config.yml",
+        domain_path=str(domain_file),
+        training_data_paths=[str(flows_file), str(nlu_data_path)],
+    )
+
+    validator = Validator.from_importer(importer)
+
+    expected_event = "validator.verify_flows_steps_against_domain.collect_step"
+    expected_log_level = "error"
+    expected_log_message = (
+        "The collect step 'pizza_toppings' has an utterance "
+        "'utter_ask_pizza_toppings' as well as an action "
+        "'action_ask_pizza_toppings' defined. "
+        "You can just have one of them! "
+        "Please remove either the utterance or the action."
+    )
+
+    with structlog.testing.capture_logs() as caplog:
+        assert not validator.verify_flows_steps_against_domain()
+        logs = filter_logs(
+            caplog, expected_event, expected_log_level, [expected_log_message]
         )
         assert len(logs) == 1

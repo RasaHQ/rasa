@@ -688,10 +688,11 @@ def test_pattern_ask_collect_information():
 
     collect = "foo"
     utter = "utter_ask_foo"
+    collect_action = "action_ask_foo"
     rejections = [SlotRejection(if_="1 > 2", utter="42")]
 
     flow_executor.trigger_pattern_ask_collect_information(
-        collect, stack, rejections, utter
+        collect, stack, rejections, utter, collect_action
     )
 
     top = stack.top()
@@ -700,6 +701,7 @@ def test_pattern_ask_collect_information():
     assert top.collect == collect
     assert top.utter == utter
     assert top.rejections == rejections
+    assert top.collect_action == collect_action
 
 
 def test_reset_scoped_slots():
@@ -893,7 +895,7 @@ def test_run_step_collect_with_ask_before_filling(ask_before_filling: bool):
 def test_trigger_pattern_ask_collect_information():
     stack = DialogueStack.empty()
     flow_executor.trigger_pattern_ask_collect_information(
-        "collect_foo", stack, [], "utter_ask_foo"
+        "collect_foo", stack, [], "utter_ask_foo", "action_ask_foo"
     )
 
     assert len(stack.frames) == 1
@@ -901,6 +903,7 @@ def test_trigger_pattern_ask_collect_information():
     data = stack.frames[0].as_dict()
     assert data["collect"] == "collect_foo"
     assert data["utter"] == "utter_ask_foo"
+    assert data["collect_action"] == "action_ask_foo"
 
 
 def test_run_step_action():
@@ -1471,6 +1474,7 @@ def test_flow_policy_events_after_interruption() -> None:
                 "step_id": "listen",
                 "type": "pattern_collect_information",
                 "utter": "utter_ask_num_rooms",
+                "collect_action": "action_ask_num_rooms",
             },
             {
                 "flow_id": "check_balance",

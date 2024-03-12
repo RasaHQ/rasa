@@ -273,12 +273,14 @@ def trigger_pattern_ask_collect_information(
     stack: DialogueStack,
     rejections: List[SlotRejection],
     utter: str,
+    collect_action: str,
 ) -> None:
     """Trigger the pattern to ask for a slot value."""
     stack.push(
         CollectInformationPatternFlowStackFrame(
             collect=collect,
             utter=utter,
+            collect_action=collect_action,
             rejections=rejections,
         )
     )
@@ -488,7 +490,7 @@ def run_step(
     if isinstance(step, CollectInformationFlowStep):
         structlogger.debug("flow.step.run.collect")
         trigger_pattern_ask_collect_information(
-            step.collect, stack, step.rejections, step.utter
+            step.collect, stack, step.rejections, step.utter, step.collect_action
         )
 
         events: List[Event] = events_for_collect_step_execution(step, tracker)

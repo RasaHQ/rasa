@@ -168,6 +168,7 @@ async def test_action_run_slot_rejections_top_frame_none_rejections(
                 "step_id": "start",
                 "collect": "payment_recipient",
                 "utter": "utter_ask_payment_recipient",
+                "collect_action": "action_ask_payment_recipient",
                 "rejections": [],
                 "type": "pattern_collect_information",
             },
@@ -217,6 +218,7 @@ async def test_action_run_slot_rejections_top_frame_slot_not_been_set(
                 "step_id": "start",
                 "collect": "recurrent_payment_type",
                 "utter": "utter_ask_recurrent_payment_type",
+                "collect_action": "action_ask_recurrent_payment_type",
                 "rejections": [
                     {
                         "if": 'not ({"direct debit" "standing order"} contains slots.recurrent_payment_type)',  # noqa: E501
@@ -270,6 +272,7 @@ async def test_action_run_slot_rejections_run_success(
                 "step_id": "start",
                 "collect": "recurrent_payment_type",
                 "utter": "utter_ask_recurrent_payment_type",
+                "collect_action": "action_ask_recurrent_payment_type",
                 "rejections": [
                     {
                         "if": 'not ({"direct debit" "standing order"} contains slots.recurrent_payment_type)',  # noqa: E501
@@ -335,6 +338,7 @@ async def test_action_run_slot_rejections_internal_error(
                 "step_id": "start",
                 "collect": "recurrent_payment_type",
                 "utter": "utter_ask_recurrent_payment_type",
+                "collect_action": "action_ask_recurrent_payment_type",
                 "rejections": [
                     {
                         "if": predicate,
@@ -397,6 +401,7 @@ async def test_action_run_slot_rejections_collect_missing_utter(
                 "step_id": "start",
                 "collect": "recurrent_payment_type",
                 "utter": "utter_ask_recurrent_payment_type",
+                "collect_action": "action_ask_recurrent_payment_type",
                 "rejections": [
                     {
                         "if": 'not ({"direct debit" "standing order"} contains slots.recurrent_payment_type)',  # noqa: E501
@@ -456,6 +461,7 @@ async def test_action_run_slot_rejections_not_found_utter(
                 "step_id": "start",
                 "collect": "recurrent_payment_type",
                 "utter": "utter_ask_recurrent_payment_type",
+                "collect_action": "action_ask_recurrent_payment_type",
                 "rejections": [
                     {
                         "if": 'not ({"direct debit" "standing order"} contains slots.recurrent_payment_type)',  # noqa: E501
@@ -515,6 +521,7 @@ async def test_action_run_slot_rejections_pass_multiple_rejection_checks(
                 "step_id": "start",
                 "collect": "payment_amount",
                 "utter": "utter_ask_payment_amount",
+                "collect_action": "action_ask_payment_amount",
                 "rejections": [
                     {
                         "if": "slots.payment_amount > 1000",
@@ -575,6 +582,7 @@ async def test_action_run_slot_rejections_fails_multiple_rejection_checks(
                 "step_id": "start",
                 "collect": "payment_amount",
                 "utter": "utter_ask_payment_amount",
+                "collect_action": "action_ask_payment_amount",
                 "rejections": [
                     {
                         "if": "slots.payment_amount > 1000",
@@ -632,6 +640,7 @@ async def test_invalid_categorical_slot_using_coercion(
                 "step_id": "start",
                 "collect": "payment_execution_mode",
                 "utter": "utter_ask_payment_execution_mode",
+                "collect_action": "action_ask_payment_execution_mode",
                 "type": "pattern_collect_information",
             },
         ]
@@ -676,6 +685,7 @@ async def test_valid_categorical_slot(
                 "step_id": "start",
                 "collect": "payment_execution_mode",
                 "utter": "utter_ask_payment_execution_mode",
+                "collect_action": "action_ask_payment_execution_mode",
                 "type": "pattern_collect_information",
             },
         ]
@@ -714,6 +724,7 @@ async def test_invalid_boolean_slot_using_coercion(
                 "step_id": "start",
                 "collect": "payment_confirmation",
                 "utter": "utter_ask_payment_confirmation",
+                "collect_action": "action_ask_payment_confirmation",
                 "type": "pattern_collect_information",
             },
         ]
@@ -758,6 +769,7 @@ async def test_valid_boolean_slot_coercion_changes_value(
                 "step_id": "start",
                 "collect": "payment_confirmation",
                 "utter": "utter_ask_payment_confirmation",
+                "collect_action": "action_ask_payment_confirmation",
                 "type": "pattern_collect_information",
             },
         ]
@@ -799,6 +811,7 @@ async def test_valid_boolean_slot(
                 "step_id": "start",
                 "collect": "payment_confirmation",
                 "utter": "utter_ask_payment_confirmation",
+                "collect_action": "action_ask_payment_confirmation",
                 "type": "pattern_collect_information",
             },
         ]
@@ -836,6 +849,7 @@ async def test_invalid_float_slot_using_coercion(
                 "step_id": "start",
                 "collect": "payment_amount",
                 "utter": "utter_ask_payment_amount",
+                "collect_action": "action_ask_payment_amount",
                 "type": "pattern_collect_information",
             },
         ]
@@ -880,6 +894,7 @@ async def test_valid_float_slot_coercion_changes_value(
                 "step_id": "start",
                 "collect": "payment_amount",
                 "utter": "utter_ask_payment_amount",
+                "collect_action": "action_ask_payment_amount",
                 "type": "pattern_collect_information",
             },
         ]
@@ -921,6 +936,7 @@ async def test_valid_float_slot(
                 "step_id": "start",
                 "collect": "payment_amount",
                 "utter": "utter_ask_payment_amount",
+                "collect_action": "action_ask_payment_amount",
                 "type": "pattern_collect_information",
             },
         ]
@@ -958,6 +974,7 @@ async def test_action_run_slot_rejections_with_text_slot(
                 "step_id": "start",
                 "collect": "payment_recipient",
                 "utter": "utter_payment_recipient",
+                "collect_action": "action_ask_payment_recipient",
                 "type": "pattern_collect_information",
             },
         ]
@@ -995,6 +1012,7 @@ async def test_action_run_slot_rejections_with_existing_slot_set_to_none(
                 "step_id": "start",
                 "collect": "payment_recipient",
                 "utter": "utter_payment_recipient",
+                "collect_action": "action_ask_payment_recipient",
                 "type": "pattern_collect_information",
             },
         ]

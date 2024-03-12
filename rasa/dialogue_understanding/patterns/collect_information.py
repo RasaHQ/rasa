@@ -24,6 +24,9 @@ class CollectInformationPatternFlowStackFrame(PatternFlowStackFrame):
     utter: str = ""
     """The utter action that should be executed to ask the user for the
     information."""
+    collect_action: str = ""
+    """The action that should be executed to ask the user for the
+    information."""
     rejections: Optional[List[SlotRejection]] = None
     """The predicate check that should be applied to the collected information.
     If a predicate check fails, its `utter` action indicated under rejections
@@ -55,6 +58,7 @@ class CollectInformationPatternFlowStackFrame(PatternFlowStackFrame):
             frame_id=data["frame_id"],
             step_id=data["step_id"],
             collect=data["collect"],
+            collect_action=data["collect_action"],
             utter=data["utter"],
             rejections=rejections,
         )

@@ -134,7 +134,7 @@ class FlowStep:
 
     @property
     def utterances(self) -> Set[str]:
-        """Return all the utterances used in this step"""
+        """Return all the utterances used in this step."""
         return set()
 
 

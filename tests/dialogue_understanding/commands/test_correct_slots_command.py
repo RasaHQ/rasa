@@ -69,6 +69,7 @@ def collect_foo_tracker_update() -> Dict[str, Any]:
         "step_id": "START",
         "collect": "foo",
         "utter": "utter_ask_foo",
+        "collect_action": "action_ask_foo",
         "rejections": [],
         "type": "pattern_collect_information",
     }
@@ -82,6 +83,7 @@ def collect_bar_tracker_update() -> Dict[str, Any]:
         "step_id": "START",
         "collect": "bar",
         "utter": "utter_ask_bar",
+        "collect_action": "action_ask_bar",
         "rejections": [],
         "type": "pattern_collect_information",
     }

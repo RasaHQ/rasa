@@ -85,6 +85,7 @@ TCP_PROTOCOL = "TCP"
 DEFAULT_SENDER_ID = "default"
 UTTER_PREFIX = "utter_"
 UTTER_ASK_PREFIX = "utter_ask_"
+ACTION_ASK_PREFIX = "action_ask_"
 FLOW_PREFIX = "flow_"
 
 ASSISTANT_ID_KEY = "assistant_id"

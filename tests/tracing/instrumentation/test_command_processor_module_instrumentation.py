@@ -99,6 +99,7 @@ def test_tracing_command_processor_clean_up_commands(
         next=FlowStepLinks(links=[]),
         collect="amount",
         utter="utter_ask_transfer_money_amount_of_money",
+        collect_action="action_ask_transfer_money_amount_of_money",
         rejections=[],
     )
 
