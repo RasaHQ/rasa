@@ -24,16 +24,9 @@ def plugin_manager() -> pluggy.PluginManager:
     """Initialises a plugin manager which registers hook implementations."""
     _plugin_manager = pluggy.PluginManager("rasa")
     _plugin_manager.add_hookspecs(sys.modules["rasa.plugin"])
-    _discover_plugins(_plugin_manager)
+    init_hooks(_plugin_manager)
 
     return _plugin_manager
-
-
-def _discover_plugins(manager: pluggy.PluginManager) -> None:
-    try:
-        init_hooks(manager)
-    except ModuleNotFoundError:
-        pass
 
 
 def init_hooks(manager: pluggy.PluginManager) -> None:
