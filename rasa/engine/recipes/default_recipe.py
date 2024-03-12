@@ -290,11 +290,6 @@ class DefaultV1Recipe(Recipe):
         train_nodes: Dict[Text, SchemaNode],
         cli_parameters: Dict[Text, Any],
     ) -> List[Text]:
-        plugin_manager().hook.modify_default_recipe_graph_train_nodes(
-            train_config=train_config,
-            train_nodes=train_nodes,
-            cli_parameters=cli_parameters,
-        )
         train_nodes["flows_provider"] = SchemaNode(
             needs={
                 "importer": "finetuning_validator",
@@ -566,11 +561,6 @@ class DefaultV1Recipe(Recipe):
         preprocessors: List[Text],
         cli_parameters: Dict[Text, Any],
     ) -> None:
-        plugin_manager().hook.modify_default_recipe_graph_train_nodes(
-            train_config=train_config,
-            train_nodes=train_nodes,
-            cli_parameters=cli_parameters,
-        )
         train_nodes["domain_provider"] = SchemaNode(
             needs={"importer": "finetuning_validator"},
             uses=DomainProvider,

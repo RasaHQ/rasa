@@ -65,18 +65,6 @@ def handle_space_args(args: argparse.Namespace) -> Dict[Text, Any]:
 
 
 @hookspec  # type: ignore[misc]
-def modify_default_recipe_graph_train_nodes(
-    train_config: Dict[Text, Any],
-    train_nodes: Dict[Text, "SchemaNode"],
-    cli_parameters: Dict[Text, Any],
-) -> None:
-    """Hook specification to modify the default recipe graph for training.
-
-    Modifications are made in-place.
-    """
-
-
-@hookspec  # type: ignore[misc]
 def modify_default_recipe_graph_predict_nodes(
     predict_nodes: Dict[Text, "SchemaNode"]
 ) -> None:
