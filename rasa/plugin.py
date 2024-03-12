@@ -57,12 +57,6 @@ def refine_cli(
     """Customizable hook for adding CLI commands."""
 
 
-@hookspec(firstresult=True)  # type: ignore[misc]
-def handle_space_args(args: argparse.Namespace) -> Dict[Text, Any]:
-    """Extracts space from the command line arguments."""
-    return {}
-
-
 @hookspec  # type: ignore[misc]
 def configure_commandline(cmdline_arguments: argparse.Namespace) -> Optional[Text]:
     """Hook specification for configuring plugin CLI."""
