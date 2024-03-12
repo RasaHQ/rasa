@@ -12,7 +12,6 @@ from rasa.cli import SubParsersAction
 if TYPE_CHECKING:
     from rasa.core.brokers.broker import EventBroker
     from rasa.core.tracker_store import TrackerStore
-    from rasa.engine.graph import SchemaNode
     from rasa.engine.storage.storage import ModelMetadata
     from rasa.shared.core.domain import Domain
     from rasa.shared.core.trackers import DialogueStateTracker
@@ -62,16 +61,6 @@ def refine_cli(
 def handle_space_args(args: argparse.Namespace) -> Dict[Text, Any]:
     """Extracts space from the command line arguments."""
     return {}
-
-
-@hookspec  # type: ignore[misc]
-def modify_default_recipe_graph_predict_nodes(
-    predict_nodes: Dict[Text, "SchemaNode"]
-) -> None:
-    """Hook specification to modify the default recipe graph for prediction.
-
-    Modifications are made in-place.
-    """
 
 
 @hookspec  # type: ignore[misc]
