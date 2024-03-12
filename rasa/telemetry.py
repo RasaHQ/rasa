@@ -133,6 +133,7 @@ TELEMETRY_CONTEXT = None
 NUM_FLOWS = "num_flows"
 NUM_FLOWS_WITH_NLU_TRIGGER = "num_flows_with_nlu_trigger"
 NUM_FLOWS_WITH_FLOW_GUARDS = "num_flows_with_flow_guards"
+NUM_FLOWS_ALWAYS_INCLUDED_IN_PROMPT = "num_flows_always_included_in_prompt"
 NUM_FLOWS_WITH_NOT_STARTABLE_FLOW_GUARDS = "num_flows_with_not_startable_flow_guards"
 NUM_COLLECT_STEPS = "num_collect_steps"
 NUM_COLLECT_STEPS_WITH_SEPARATE_UTTER = "num_collect_steps_with_separate_utter"
@@ -1003,6 +1004,7 @@ def _collect_flow_statistics(flows: List[Flow]) -> Dict[str, Any]:
         NUM_FLOWS: len(flows),
         NUM_FLOWS_WITH_NLU_TRIGGER: 0,
         NUM_FLOWS_WITH_FLOW_GUARDS: 0,
+        NUM_FLOWS_ALWAYS_INCLUDED_IN_PROMPT: 0,
         NUM_FLOWS_WITH_NOT_STARTABLE_FLOW_GUARDS: 0,
         NUM_COLLECT_STEPS: 0,
         NUM_COLLECT_STEPS_WITH_SEPARATE_UTTER: 0,
@@ -1021,6 +1023,9 @@ def _collect_flow_statistics(flows: List[Flow]) -> Dict[str, Any]:
             data[NUM_FLOWS_WITH_FLOW_GUARDS] += 1
             if flow.guard_condition.lower() == "false":
                 data[NUM_FLOWS_WITH_NOT_STARTABLE_FLOW_GUARDS] += 1
+
+        if flow.always_include_in_prompt:
+            data[NUM_FLOWS_ALWAYS_INCLUDED_IN_PROMPT] += 1
 
         if flow.nlu_triggers:
             data[NUM_FLOWS_WITH_NLU_TRIGGER] += 1

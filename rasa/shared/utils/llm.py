@@ -1,11 +1,11 @@
-from typing import Any, Dict, Optional, Text, Type, TYPE_CHECKING
 import warnings
+from typing import Any, Dict, Optional, Text, Type, TYPE_CHECKING, Union
 
-import structlog
-
-from rasa.shared.core.events import BotUttered, UserUttered
-from rasa.shared.engine.caching import get_local_cache_location
 import rasa.shared.utils.io
+import structlog
+from rasa.shared.core.events import BotUttered, UserUttered
+from rasa.shared.core.slots import Slot, BooleanSlot, CategoricalSlot
+from rasa.shared.engine.caching import get_local_cache_location
 
 if TYPE_CHECKING:
     from langchain.schema.embeddings import Embeddings
@@ -36,7 +36,6 @@ DEFAULT_OPENAI_TEMPERATURE = 0.7
 DEFAULT_OPENAI_MAX_GENERATED_TOKENS = 256
 
 DEFAULT_MAX_USER_INPUT_CHARACTERS = 420
-
 
 # Placeholder messages used in the transcript for
 # instances where user input results in an error
@@ -249,7 +248,7 @@ def embedder_factory(
 def get_prompt_template(
     jinja_file_path: Optional[Text], default_prompt_template: Text
 ) -> Text:
-    """Returns the prompt template.
+    """Returns the jinja template.
 
     Args:
         jinja_file_path: the path to the jinja file
@@ -263,3 +262,13 @@ def get_prompt_template(
         if jinja_file_path is not None
         else default_prompt_template
     )
+
+
+def allowed_values_for_slot(slot: Slot) -> Union[str, None]:
+    """Get the allowed values for a slot."""
+    if isinstance(slot, BooleanSlot):
+        return str([True, False])
+    if isinstance(slot, CategoricalSlot):
+        return str([v for v in slot.values if v != "__other__"])
+    else:
+        return None

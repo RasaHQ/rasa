@@ -31,16 +31,6 @@ from rasa.shared.constants import (
     DEFAULT_SENDER_ID,
     ROUTE_TO_CALM_SLOT,
 )
-from rasa.shared.nlu.constants import (
-    ENTITY_ATTRIBUTE_VALUE,
-    ENTITY_ATTRIBUTE_TYPE,
-    ENTITY_ATTRIBUTE_GROUP,
-    ENTITY_ATTRIBUTE_ROLE,
-    ACTION_TEXT,
-    ACTION_NAME,
-    ENTITIES,
-    METADATA_MODEL_ID,
-)
 from rasa.shared.core import events
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
@@ -52,6 +42,7 @@ from rasa.shared.core.constants import (
     FOLLOWUP_ACTION,
 )
 from rasa.shared.core.conversation import Dialogue
+from rasa.shared.core.domain import Domain, State
 from rasa.shared.core.events import (
     DialogueStackUpdated,
     RoutingSessionEnded,
@@ -67,10 +58,20 @@ from rasa.shared.core.events import (
     SessionStarted,
     ActionExecutionRejected,
     DefinePrevUserUtteredFeaturization,
+    FlowStarted,
 )
-from rasa.shared.core.domain import Domain, State
+from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.slots import AnySlot, Slot
-
+from rasa.shared.nlu.constants import (
+    ENTITY_ATTRIBUTE_VALUE,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_GROUP,
+    ENTITY_ATTRIBUTE_ROLE,
+    ACTION_TEXT,
+    ACTION_NAME,
+    ENTITIES,
+    METADATA_MODEL_ID,
+)
 
 if TYPE_CHECKING:
     from rasa.shared.core.events import NLUPredictionData
@@ -992,6 +993,63 @@ class DialogueStateTracker:
             data["events"] = list(self.events)
 
         return rasa.shared.utils.io.get_dictionary_fingerprint(data)
+
+    def get_previously_started_flows(
+        self,
+        flows: FlowsList,
+        max_turns: Optional[int] = 20,
+    ) -> FlowsList:
+        """
+        Retrieves a list of flows that have been started in the past within a given
+        number of conversation turns.
+
+        Args:
+            flows: list of flows to check against for started flows.
+            max_turns: the maximum number of turns to include in the transcript.
+
+        Returns:
+            List of flows that have been started within the specified number of turns
+        """
+        previously_started_flows = dict()
+        turn_counter = 0
+
+        # cycle through events in reverse order (newest events are appended at the end)
+        for event in reversed(self.events):
+
+            # check for FlowStarted event and append flow if it's in the flows lists
+            if (
+                isinstance(event, FlowStarted)
+                and event.flow_id not in previously_started_flows
+                and (flow := flows.flow_by_id(event.flow_id))
+            ):
+                previously_started_flows[event.flow_id] = flow
+
+            # count turns only for user or bot utterances
+            if isinstance(event, (UserUttered, BotUttered)):
+                turn_counter += 1
+                if max_turns is not None and turn_counter > max_turns:
+                    break
+
+        return FlowsList(underlying_flows=list(previously_started_flows.values()))
+
+    def get_startable_flows(self, flows: FlowsList) -> FlowsList:
+        """
+        Retrieves a list of flows that are startable given the current
+        state (context and slot values) of the tracker.
+
+        Args:
+            flows: list of flows to check against for startable flows.
+
+        Returns:
+            List of flows that are startable within the current state of the tracker
+        """
+        # get the current context and slot values
+        context_and_slots = self.get_context_and_slots()
+        return flows.get_startable_flows(context_and_slots)
+
+    def get_context_and_slots(self) -> Optional[Dict[str, Any]]:
+        """Get the context document for the flow guard check."""
+        return {"context": self.stack.current_context(), "slots": self.slots}
 
 
 class TrackerEventDiffEngine:

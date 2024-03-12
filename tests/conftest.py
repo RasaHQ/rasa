@@ -1022,3 +1022,8 @@ def run_in_simple_project(pytester: Pytester) -> Callable[..., RunResult]:
         return pytester.run(*args)
 
     return do_run
+
+
+@pytest.fixture(scope="session", autouse=True)
+def set_open_ai_env_variable():
+    os.environ["OPENAI_API_KEY"] = "test"

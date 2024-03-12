@@ -351,7 +351,7 @@ def test_metrics_get_sent_to_prometheus(
     send_user_message: str,
 ) -> None:
     # make sure that Prometheus has collected the metrics
-    time.sleep(10)
+    time.sleep(30)
     while True:
         prometheus_response = requests.get(PROMETHEUS_METRICS_QUERY_TEST_URL)
         assert prometheus_response.status_code == 200

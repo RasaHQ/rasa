@@ -1,4 +1,4 @@
-from typing import Tuple, List, Dict, Text
+from typing import Tuple, List, Optional, Text, Union, Dict
 
 import pytest
 from rasa.dialogue_understanding.stack.utils import (
@@ -234,6 +234,31 @@ def test_flows_list_length(user_flows_and_patterns: FlowsList):
 def test_flows_list_is_empty(user_flows_and_patterns: FlowsList):
     assert not user_flows_and_patterns.is_empty()
     assert FlowsList(underlying_flows=[]).is_empty()
+
+
+@pytest.mark.parametrize(
+    "flows, expected_ids",
+    [
+        (
+            [
+                FlowsList([Flow(id="A"), Flow(id="B")]),
+                FlowsList([Flow(id="B"), Flow(id="C")]),
+                FlowsList([Flow(id="C"), Flow(id="D")]),
+                FlowsList([Flow(id="E"), Flow(id="F")]),
+            ],
+            ["A", "B", "C", "D", "E", "F"],
+        ),
+    ],
+)
+def test_create_flows_list_by_merging_multiple_flows_lists(
+    flows: List[FlowsList],
+    expected_ids: List,
+):
+    # When
+    merged = FlowsList.from_multiple_flows_lists(*flows)
+    # Then
+    assert len(merged) == len(expected_ids)
+    assert list(sorted([f.id for f in merged])) == expected_ids
 
 
 def test_flows_list_as_json_list(user_flows_and_patterns: FlowsList):
@@ -600,6 +625,42 @@ def test_has_action_step(
     has_action_step = flow.has_action_step(action)
     # Then
     assert has_action_step == expected_has_action_step
+
+
+@pytest.mark.parametrize(
+    "guard_condition, expected_startable_only_via_link",
+    [
+        (None, False),
+        ("True", False),
+        ("False", True),
+        (True, False),
+        (False, True),
+        ("True and False", True),
+        ("True or False", False),
+        ("18 < 10", True),
+        ("10 < 12", False),
+        ("context.x > 0", False),
+        ("context.x < 0", False),
+        ("slots.spam is not null", False),
+        ("slots.spam is 'eggs'", False),
+        ("slots.spam is 'ham'", False),
+        ("slots.authenticated AND slots.email_verified", False),
+        ("slots.some_missing_slot is 'available'", False),
+    ],
+)
+def test_is_startable_only_via_link(
+    guard_condition: Optional[Union[Text, bool]], expected_startable_only_via_link: bool
+):
+    # Given
+    json_flow = {"steps": [{"id": "first", "action": "action_listen"}]}
+    if guard_condition is not None:
+        json_flow["if"] = guard_condition
+    flow = Flow.from_json("foo", json_flow)
+
+    # When
+    is_startable_only_via_link = flow.is_startable_only_via_link()
+    # Then
+    assert is_startable_only_via_link == expected_startable_only_via_link
 
 
 @pytest.mark.parametrize(

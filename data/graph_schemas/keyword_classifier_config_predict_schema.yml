@@ -21,6 +21,17 @@ nodes:
     is_input: false
     resource:
       name: flows_provider
+  domain_provider:
+    needs: {}
+    uses: rasa.graph_components.providers.domain_provider.DomainProvider
+    constructor_name: load
+    fn: provide_inference
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource:
+      name: domain_provider
   run_KeywordIntentClassifier0:
     needs:
       messages: nlu_message_converter

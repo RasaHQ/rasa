@@ -47,6 +47,10 @@ class Flow:
     """The steps of the flow."""
     nlu_triggers: Optional[NLUTriggers] = None
     """The list of intents, e.g. nlu triggers, that start the flow."""
+    always_include_in_prompt: Optional[bool] = None
+    """
+    A flag that checks whether the flow should always be included in the prompt or not.
+    """
 
     @staticmethod
     def from_json(flow_id: Text, data: Dict[Text, Any]) -> Flow:
@@ -66,6 +70,7 @@ class Flow:
             id=flow_id,
             custom_name=data.get("name"),
             description=data.get("description"),
+            always_include_in_prompt=data.get("always_include_in_prompt"),
             # str or bool are permitted in the flow schema but internally we want a str
             guard_condition=str(data["if"]) if "if" in data else None,
             step_sequence=Flow.resolve_default_ids(step_sequence),
@@ -121,7 +126,7 @@ class Flow:
         Returns:
             The Flow object as serialized data.
         """
-        data = {
+        data: Dict[Text, Any] = {
             "id": self.id,
             "steps": self.step_sequence.as_json(),
         }
@@ -131,6 +136,8 @@ class Flow:
             data["description"] = self.description
         if self.guard_condition is not None:
             data["if"] = self.guard_condition
+        if self.always_include_in_prompt is not None:
+            data["always_include_in_prompt"] = self.always_include_in_prompt
         if self.nlu_triggers:
             data["nlu_trigger"] = self.nlu_triggers.as_json()
 
@@ -273,4 +280,68 @@ class Flow:
         for step in self.steps:
             if isinstance(step, ActionFlowStep) and step.action == action:
                 return True
+        return False
+
+    def is_startable_only_via_link(self) -> bool:
+        """Determines if the flow can be initiated exclusively through a link. This
+        condition is met when a guard condition exists and is consistently evaluated
+        to `False` (e.g. `if: False`).
+
+        Returns:
+            A boolean indicating if the flow initiation is link-based only.
+        """
+        if (
+            self.guard_condition is None
+            or self._contains_variables_in_guard_condition()
+        ):
+            return False
+
+        try:
+            predicate = Predicate(self.guard_condition)
+            is_startable_via_link = not predicate.evaluate({})
+            structlogger.debug(
+                "flow.is_startable_only_via_link.result",
+                predicate=self.guard_condition,
+                is_startable_via_link=is_startable_via_link,
+            )
+            return is_startable_via_link
+        # if there is any kind of exception when evaluating the predicate, the flow
+        # is not startable by link or by any other means.
+        except (TypeError, Exception) as e:
+            structlogger.error(
+                "flow.is_startable_only_via_link.error",
+                predicate=self.guard_condition,
+                error=str(e),
+            )
+            return False
+
+    def _contains_variables_in_guard_condition(self) -> bool:
+        """
+        Determines if the guard condition contains dynamic literals i.e. literals that
+        cannot be statically resolved, indicating a variable.
+
+        Returns:
+            True if dynamic literals are present, False otherwise.
+        """
+        from pypred import ast
+        from pypred.tiler import tile, SimplePattern
+
+        if not self.guard_condition:
+            return False
+
+        predicate = Predicate(self.guard_condition)
+
+        # find all literals in the AST tree
+        literals = []
+        tile(
+            ast=predicate.ast,
+            patterns=[SimplePattern("types:Literal")],
+            func=lambda _, literal: literals.append(literal),
+        )
+
+        # check if there is a literal that cannot be statically resolved (variable)
+        for literal in literals:
+            if type(predicate.static_resolve(literal.value)) == ast.Undefined:
+                return True
+
         return False

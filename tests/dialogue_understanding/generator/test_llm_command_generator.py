@@ -1,3 +1,4 @@
+import os.path
 import uuid
 from pathlib import Path
 from typing import Optional, Dict, Text, Any
@@ -5,8 +6,6 @@ from unittest.mock import Mock, patch
 
 import pytest
 from _pytest.tmpdir import TempPathFactory
-from structlog.testing import capture_logs
-
 from rasa.dialogue_understanding.commands import (
     Command,
     ErrorCommand,
@@ -20,8 +19,11 @@ from rasa.dialogue_understanding.commands import (
     ClarifyCommand,
     CannotHandleCommand,
 )
+from rasa.dialogue_understanding.generator.flow_retrieval import FlowRetrieval
 from rasa.dialogue_understanding.generator.llm_command_generator import (
     LLMCommandGenerator,
+    FLOW_RETRIEVAL_KEY,
+    FLOW_RETRIEVAL_ACTIVE_KEY,
 )
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
@@ -36,16 +38,22 @@ from rasa.shared.core.flows.steps.collect import (
 from rasa.shared.core.slots import (
     Slot,
     BooleanSlot,
-    CategoricalSlot,
-    FloatSlot,
     TextSlot,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.message import Message
-from rasa.shared.utils.llm import DEFAULT_MAX_USER_INPUT_CHARACTERS
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.utils.llm import (
+    DEFAULT_MAX_USER_INPUT_CHARACTERS,
+)
+from structlog.testing import capture_logs
 from tests.utilities import flows_from_str
 
 EXPECTED_PROMPT_PATH = "./tests/dialogue_understanding/generator/rendered_prompt.txt"
+EXPECTED_RENDERED_FLOW_DESCRIPTION_PATH = (
+    "./tests/dialogue_understanding/generator/rendered_flow.txt"
+)
 
 
 class TestLLMCommandGenerator:
@@ -65,6 +73,7 @@ class TestLLMCommandGenerator:
             """
             flows:
               test_flow:
+                name: a test flow
                 description: some test flow
                 steps:
                 - id: first_step
@@ -96,28 +105,32 @@ class TestLLMCommandGenerator:
             ],
         )
 
-    async def test_llm_command_generator_prompt_init_custom(
+    async def test_llm_command_generator_init_custom(
         self,
         model_storage: ModelStorage,
     ) -> None:
+        # Given
+        resource = Resource("llmcmdgen")
+        # When
         generator = LLMCommandGenerator(
             {
                 "prompt": "data/test_prompt_templates/test_prompt.jinja2",
+                FLOW_RETRIEVAL_KEY: {FLOW_RETRIEVAL_ACTIVE_KEY: False},
             },
             model_storage,
-            Resource("llmcmdgen"),
+            resource,
         )
+        # Then
         assert generator.prompt_template.startswith("This is a test prompt.")
+        assert generator.flow_retrieval is None
 
-        resource = generator.train([])
-        loaded = LLMCommandGenerator.load({}, model_storage, resource, None)
-        assert loaded.prompt_template.startswith("This is a test prompt.")
-
-    async def test_llm_command_generator_prompt_init_default(
+    async def test_llm_command_generator_init_default(
         self,
         model_storage: ModelStorage,
     ) -> None:
+        # When
         generator = LLMCommandGenerator({}, model_storage, Resource("llmcmdgen"))
+        # Then
         assert generator.prompt_template.startswith(
             "Your task is to analyze the current conversation"
         )
@@ -125,12 +138,7 @@ class TestLLMCommandGenerator:
             generator.user_input_config.max_characters
             == DEFAULT_MAX_USER_INPUT_CHARACTERS
         )
-
-        resource = generator.train([])
-        loaded = LLMCommandGenerator.load({}, model_storage, resource, None)
-        assert loaded.prompt_template.startswith(
-            "Your task is to analyze the current conversation"
-        )
+        assert generator.flow_retrieval is not None
 
     @pytest.mark.parametrize(
         "config, expected_limit",
@@ -244,8 +252,12 @@ class TestLLMCommandGenerator:
         "rasa.dialogue_understanding.generator.llm_command_generator."
         "LLMCommandGenerator.render_template"
     )
+    @patch(
+        "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.filter_flows"
+    )
     def test_predict_commands(
         self,
+        mock_flow_retrieval_filter_flows: Mock,
         mock_render_template: Mock,
         mock_generate_action_list_using_llm: Mock,
         llm_response: Text,
@@ -266,11 +278,15 @@ class TestLLMCommandGenerator:
         )
         mock_render_template.return_value = "some_template"
         mock_generate_action_list_using_llm.return_value = llm_response
+        mock_flow_retrieval_filter_flows.return_value = FlowsList(underlying_flows=[])
+        mock_message = Mock()
+        mock_message.data = {TEXT: "some_message"}
         # When
         predicted_commands = command_generator.predict_commands(
-            message=Mock(), flows=test_flows, tracker=tracker_with_routing_slot
+            message=mock_message, flows=test_flows, tracker=tracker_with_routing_slot
         )
         # Then
+        mock_flow_retrieval_filter_flows.assert_called_once()
         assert predicted_commands == expected_commands
 
     def test_generate_action_list_calls_llm_factory_correctly(
@@ -395,7 +411,7 @@ class TestLLMCommandGenerator:
             ),
             (
                 """SetSlot(flow_name, some_flow)
-                   SetSlot(transfer_money_amount_of_money,)""",
+                       SetSlot(transfer_money_amount_of_money,)""",
                 [
                     StartFlowCommand(flow="some_flow"),
                     SetSlotCommand(name="transfer_money_amount_of_money", value=None),
@@ -533,30 +549,6 @@ class TestLLMCommandGenerator:
         slot_value = LLMCommandGenerator.get_slot_value(tracker, slot_name)
 
         assert slot_value == expected_output
-
-    @pytest.mark.parametrize(
-        "input_slot, expected_slot_values",
-        [
-            (FloatSlot("test_slot", []), None),
-            (TextSlot("test_slot", []), None),
-            (BooleanSlot("test_slot", []), "[True, False]"),
-            (
-                CategoricalSlot("test_slot", [], values=["Value1", "Value2"]),
-                "['value1', 'value2']",
-            ),
-        ],
-    )
-    def test_allowed_values_for_slot(
-        self,
-        command_generator: LLMCommandGenerator,
-        input_slot: Slot,
-        expected_slot_values: Optional[str],
-    ):
-        """Test that allowed_values_for_slot returns the correct values."""
-        # When
-        allowed_values = command_generator.allowed_values_for_slot(input_slot)
-        # Then
-        assert allowed_values == expected_slot_values
 
     @pytest.fixture
     def collect_info_step(self) -> CollectInformationFlowStep:
@@ -728,3 +720,155 @@ class TestLLMCommandGenerator:
         fingerprint_2 = generator.fingerprint_addon({})
         assert fingerprint_1 is not None
         assert fingerprint_1 == fingerprint_2
+
+    def test_train_with_flow_retrieval_disabled(
+        self,
+        model_storage: ModelStorage,
+        flows: FlowsList,
+        resource: Resource,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        # Given
+        generator = LLMCommandGenerator(
+            {FLOW_RETRIEVAL_KEY: {FLOW_RETRIEVAL_ACTIVE_KEY: False}},
+            model_storage,
+            resource,
+        )
+        # When
+        generator.train(TrainingData(), flows, Mock())
+        # Then
+        assert generator.flow_retrieval is None
+
+    @patch(
+        "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.populate"
+    )
+    def test_train_with_flow_retrieval_enabled(
+        self,
+        mock_flow_search_populate: Mock,
+        model_storage: ModelStorage,
+        flows: FlowsList,
+        resource: Resource,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        # Given
+        generator = LLMCommandGenerator(
+            {},
+            model_storage,
+            resource,
+        )
+        domain = Mock()
+        # When
+        generator.train(TrainingData(), flows, domain)
+        # Then
+        mock_flow_search_populate.assert_called_once_with(flows, domain)
+
+    def test_load_with_flow_retrieval_disabled(
+        self,
+        model_storage: ModelStorage,
+        flows: FlowsList,
+        resource: Resource,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        # Given
+        generator = LLMCommandGenerator(
+            {FLOW_RETRIEVAL_KEY: {FLOW_RETRIEVAL_ACTIVE_KEY: False}},
+            model_storage,
+            resource,
+        )
+        domain = Mock()
+        domain.slots = []
+        train_resource = generator.train(TrainingData(), flows, domain)
+        # When
+        loaded = LLMCommandGenerator.load(
+            generator.config,
+            model_storage,
+            train_resource,
+            Mock(),
+        )
+        # Then
+        assert loaded is not None
+        assert loaded.flow_retrieval is None
+        assert not loaded.config[FLOW_RETRIEVAL_KEY][FLOW_RETRIEVAL_ACTIVE_KEY]
+
+    @patch(
+        "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.populate"
+    )
+    @patch("rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.load")
+    def test_load_with_flow_retrieval_enabled(
+        self,
+        mock_flow_retrieval_load: Mock,
+        mock_flow_retrieval_populate: Mock,
+        model_storage: ModelStorage,
+        flows: FlowsList,
+        resource: Resource,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        # Given
+        config = {FLOW_RETRIEVAL_KEY: FlowRetrieval.get_default_config()}
+        generator = LLMCommandGenerator(
+            config,
+            model_storage,
+            resource,
+        )
+        domain = Mock()
+        train_resource = generator.train(TrainingData(), flows, domain)
+        # When
+        loaded = LLMCommandGenerator.load(
+            generator.config,
+            model_storage,
+            train_resource,
+            Mock(),
+        )
+        # Then
+        mock_flow_retrieval_load.assert_called_once_with(
+            config=config[FLOW_RETRIEVAL_KEY],
+            model_storage=model_storage,
+            resource=resource,
+        )
+        assert loaded is not None
+        assert loaded.flow_retrieval is not None
+
+    @patch(
+        "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.populate"
+    )
+    @patch("rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.load")
+    def test_load_with_custom_prompt(
+        self,
+        mock_flow_retrieval_load: Mock,
+        mock_flow_retrieval_populate: Mock,
+        model_storage: ModelStorage,
+    ):
+        # Given
+        resource = Resource("llmcmdgen")
+        config = {
+            "prompt": os.path.join(
+                "data", "test_prompt_templates", "test_prompt.jinja2"
+            )
+        }
+        generator = LLMCommandGenerator(config, model_storage, resource)
+        resource = generator.train(Mock(), FlowsList(underlying_flows=[]), Mock())
+        # When
+        loaded = LLMCommandGenerator.load({}, model_storage, resource, Mock())
+        # Then
+        assert loaded.prompt_template.startswith("This is a test prompt.")
+
+    @patch(
+        "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.populate"
+    )
+    @patch("rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.load")
+    def test_load_with_default_prompt(
+        self,
+        mock_flow_retrieval_load: Mock,
+        mock_flow_retrieval_populate: Mock,
+        model_storage: ModelStorage,
+    ):
+        # Given
+        resource = Resource("llmcmdgen")
+        generator = LLMCommandGenerator({}, model_storage, resource)
+        resource = generator.train(Mock(), FlowsList(underlying_flows=[]), Mock())
+        # When
+        loaded = LLMCommandGenerator.load({}, model_storage, resource, Mock())
+        # Then
+        assert loaded.prompt_template.startswith(
+            "Your task is to analyze the current conversation"
+        )

@@ -45,6 +45,24 @@ class FlowsList:
         return len(self.underlying_flows) == 0
 
     @classmethod
+    def from_multiple_flows_lists(cls, *other: FlowsList) -> FlowsList:
+        """Merges multiple lists of flows into a single flow ensuring each flow is
+        unique, based on its ID.
+
+        Args:
+            other: Variable number of flow lists instances to be merged.
+
+        Returns:
+            Merged flow list.
+        """
+        merged_flows = dict()
+        for flow_list in other:
+            for flow in flow_list:
+                if flow.id not in merged_flows:
+                    merged_flows[flow.id] = flow
+        return FlowsList(list(merged_flows.values()))
+
+    @classmethod
     def from_json(cls, data: Optional[Dict[Text, Dict[Text, Any]]]) -> FlowsList:
         """Create a FlowsList object from serialized data
 
@@ -93,7 +111,7 @@ class FlowsList:
 
     def merge(self, other: FlowsList) -> FlowsList:
         """Merges two lists of flows together."""
-        return FlowsList(self.underlying_flows + other.underlying_flows)
+        return FlowsList.from_multiple_flows_lists(self, other)
 
     def flow_by_id(self, flow_id: Text) -> Optional[Flow]:
         """Return the flow with the given id."""
@@ -148,7 +166,7 @@ class FlowsList:
             utterance for flow in self.underlying_flows for utterance in flow.utterances
         }
 
-    def startable_flows(self, data: Optional[Dict[str, Any]] = None) -> FlowsList:
+    def get_startable_flows(self, data: Optional[Dict[str, Any]] = None) -> FlowsList:
         """Get all flows for which the starting conditions are met.
 
         Args:
@@ -157,3 +175,29 @@ class FlowsList:
         Returns:
             All flows for which the starting conditions are met."""
         return FlowsList([f for f in self.underlying_flows if f.is_startable(data)])
+
+    def get_flows_always_included_in_prompt(self) -> FlowsList:
+        """
+        Gets all flows based on their inclusion status in prompts.
+
+        Args:
+            always_included: Inclusion status.
+
+        Returns:
+            All flows with the given inclusion status.
+        """
+        return FlowsList(
+            [f for f in self.underlying_flows if f.always_include_in_prompt]
+        )
+
+    def exclude_link_only_flows(self) -> FlowsList:
+        """Filter the given flows and exclude the flows that can
+        be started only via link (flow guard evaluates to `False`).
+
+        Returns:
+            List of flows that doesn't contain flows that are
+            only startable via link (another flow).
+        """
+        return FlowsList(
+            [f for f in self.underlying_flows if not f.is_startable_only_via_link()]
+        )

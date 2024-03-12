@@ -1,10 +1,22 @@
-from typing import Text, Any, Dict
+from typing import Text, Any, Dict, Optional
+
+import pytest
+from langchain import OpenAI
+from langchain.embeddings import OpenAIEmbeddings
+from pytest import MonkeyPatch
 from rasa.shared.constants import (
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import BotUttered, UserUttered
+from rasa.shared.core.slots import (
+    FloatSlot,
+    TextSlot,
+    BooleanSlot,
+    CategoricalSlot,
+    Slot,
+)
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.utils.llm import (
     sanitize_message_for_prompt,
@@ -12,11 +24,8 @@ from rasa.shared.utils.llm import (
     embedder_factory,
     llm_factory,
     ERROR_PLACEHOLDER,
+    allowed_values_for_slot,
 )
-from langchain import OpenAI
-from langchain.embeddings import OpenAIEmbeddings
-import pytest
-from pytest import MonkeyPatch
 
 
 def test_tracker_as_readable_transcript_handles_empty_tracker():
@@ -253,3 +262,26 @@ def test_embedder_factory_ignores_irrelevant_default_args(
     # embedders don't expect args, they should just be ignored
     embedder = embedder_factory({"type": "openai"}, {"_type": "foobar", "foo": "bar"})
     assert isinstance(embedder, OpenAIEmbeddings)
+
+
+@pytest.mark.parametrize(
+    "input_slot, expected_slot_values",
+    [
+        (FloatSlot("test_slot", []), None),
+        (TextSlot("test_slot", []), None),
+        (BooleanSlot("test_slot", []), "[True, False]"),
+        (
+            CategoricalSlot("test_slot", [], values=["Value1", "Value2"]),
+            "['value1', 'value2']",
+        ),
+    ],
+)
+def test_allowed_values_for_slot(
+    input_slot: Slot,
+    expected_slot_values: Optional[str],
+):
+    """Test that allowed_values_for_slot returns the correct values."""
+    # When
+    allowed_values = allowed_values_for_slot(input_slot)
+    # Then
+    assert allowed_values == expected_slot_values
