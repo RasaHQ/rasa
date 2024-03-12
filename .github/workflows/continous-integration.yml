@@ -1634,7 +1634,7 @@ jobs:
         # notification will be sent to the #product channel on slack, webhook url is added as repository secret
         if: success()
         env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_RELEASE_ASSISTANT_PRODUCT_WEBHOOK }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_RELEASE_ASSISTANT_RELEASE_WEBHOOK }}
         uses: Ilshidur/action-slack@689ad44a9c9092315abd286d0e3a9a74d31ab78a
         with:
           args: "💥 New *Rasa Private* version `${{ github.ref_name }}` has been released!"
@@ -1652,7 +1652,7 @@ jobs:
         # send notification if 'deploy' is skipped (previous needed job failed) or failed
         if: needs.deploy.result != 'success'
         env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_RELEASE_ASSISTANT_ATOM_ALERTS_WEBHOOK }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_RELEASE_ASSISTANT_DEV_TRIBE_WEBHOOK }}
         uses: Ilshidur/action-slack@689ad44a9c9092315abd286d0e3a9a74d31ab78a
         with:
           args: "⛔️ *Rasa Private* version `${{ github.ref_name }}` could not be released 😱! Please check out GitHub Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"

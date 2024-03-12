@@ -314,8 +314,8 @@ Releasing a new version is quite simple, as the packages are build and distribut
     git push origin 3.8.0 --tags
     ```
     GitHub will build this tag and publish the build artifacts.
-8. After all the steps are completed and if everything goes well then we should see a message automatically posted in the company's Slack (`product` channel) like this [one](https://rasa-hq.slack.com/archives/C7B08Q5FX/p1614354499046600)
-9. If however an error occurs in the build, then we should see a failure message automatically posted in the company's Slack (`atom-squad-alerts` channel) like this [one](https://rasa-hq.slack.com/archives/C01M5TAHDHA/p1701444735622919)
+8. After all the steps are completed and if everything goes well then we should see a message automatically posted in the company's Slack (`release` channel) like this [one](https://rasa-hq.slack.com/archives/C7B08Q5FX/p1614354499046600)
+9. If however an error occurs in the build, then we should see a failure message automatically posted in the company's Slack (`dev-tribe` channel) like this [one](https://rasa-hq.slack.com/archives/C01M5TAHDHA/p1701444735622919)
    (In this case do the following checks):
     - Check the workflows in [Github Actions](https://github.com/RasaHQ/rasa-private/actions) and make sure that the merged PR of the current release is completed successfully. To easily find your PR you can use the filters `event: push` and `branch: <version number>` (example on release 2.4 you can see [here](https://github.com/RasaHQ/rasa/actions/runs/643344876))
     - If the workflow is not completed, then try to re run the workflow in case that solves the problem
@@ -343,8 +343,8 @@ steps + get the PR merged.
     git push origin 3.8.0 --tags
     ```
 5. After this you should see the CI workflow "Continuous Integration" in the Actions tab with the relevant tag name. Keep an eye on it to make sure it is successful as sometimes retries might be required. 
-6. After all the steps are completed and if everything goes well then we should see a message automatically posted in the company's Slack (`product` channel) like this [one](https://rasa-hq.slack.com/archives/C7B08Q5FX/p1614354499046600)
-7. If however an error occurs in the build, then we should see a failure message automatically posted in the company's Slack (`atom-squad-alerts` channel) like this [one](https://rasa-hq.slack.com/archives/C01M5TAHDHA/p1701444735622919)
+6. After all the steps are completed and if everything goes well then we should see a message automatically posted in the company's Slack (`release` channel) like this [one](https://rasa-hq.slack.com/archives/C7B08Q5FX/p1614354499046600)
+7. If however an error occurs in the build, then we should see a failure message automatically posted in the company's Slack (`dev-tribe` channel) like this [one](https://rasa-hq.slack.com/archives/C01M5TAHDHA/p1701444735622919)
 
 Make sure to merge the branch `3.7.x` after your PR with `main`. This needs to be done manually until Roberto is added (see [ATO-2091](https://rasahq.atlassian.net/browse/ATO-2091))
 
@@ -361,8 +361,8 @@ steps.
 5. Only in case of a pre release, we currently skip all test runs and docker image builds on a 'prepare-release-pre-' PR. This was done to speed up the pre release process.
 6. Once your PR gets merged, the [tag release workflow](https://github.com/RasaHQ/rasa-private/actions/workflows/tag-release.yml) will create the tag.
 7. After this you should see the CI workflow "Continuous Integration" in the Actions tab with the relevant tag name. Keep an eye on it to make sure it is successful as sometimes retries might be required. 
-8. After all the steps are completed and if everything goes well then we should see a message automatically posted in the company's Slack (`product` channel) like this [one](https://rasa-hq.slack.com/archives/C7B08Q5FX/p1614354499046600)
-9. If however an error occurs in the build, then we should see a failure message automatically posted in the company's Slack (`atom-squad-alerts` channel) like this [one](https://rasa-hq.slack.com/archives/C01M5TAHDHA/p1701444735622919)
+8. After all the steps are completed and if everything goes well then we should see a message automatically posted in the company's Slack (`release` channel) like this [one](https://rasa-hq.slack.com/archives/C7B08Q5FX/p1614354499046600)
+9. If however an error occurs in the build, then we should see a failure message automatically posted in the company's Slack (`dev-tribe` channel) like this [one](https://rasa-hq.slack.com/archives/C01M5TAHDHA/p1701444735622919)
 
 
 ### Actively maintained versions
