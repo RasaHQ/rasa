@@ -17,6 +17,8 @@ permissions:
 
 jobs:
   rasa-private-dev:
+    # Skip any PR created by dependabot to avoid permission issues:
+    if: (github.actor != 'dependabot[bot]')
     name: rasa-private-dev image
     runs-on: ubuntu-22.04
 
