@@ -152,8 +152,8 @@ def upload_calm_assistant(
         graphql_req = build_import_request(
             assistant_name,
             flows_yaml=YamlFlowsWriter().dumps(flows),
-            domain_yaml=rasa.shared.utils.io.dump_obj_as_yaml_to_string(domain),
-            config_yaml=rasa.shared.utils.io.dump_obj_as_yaml_to_string(config),
+            domain_yaml=dump_obj_as_yaml_to_string(domain),
+            config_yaml=dump_obj_as_yaml_to_string(config),
         )
 
         logger.info("Uploading to Rasa Studio...")
