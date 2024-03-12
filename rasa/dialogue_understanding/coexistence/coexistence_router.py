@@ -30,9 +30,10 @@ DEFAULT_COMMAND_PROMPT_TEMPLATE = importlib.resources.read_text(
     "rasa.dialogue_understanding.coexistence", "router_template.jinja2"
 )
 
-CALM_CAPABILITIES = "calm_capabilities"
-NON_STICKY_DM1_CAPABILITIES = "non_sticky_dm1_capabilities"
-DM1_CAPABILITIES = "dm1_capabilities"
+CALM_ENTRY = "calm_entry"
+NLU_ENTRY = "nlu_entry"
+STICKY = "sticky"
+NON_STICKY = "non_sticky"
 
 
 # Token ids for gpt 3.5 and gpt 4 corresponding to space + capitalized Letter
@@ -66,9 +67,11 @@ class CoexistenceRouter(GraphComponent):
         """The component's default config (see parent class for full docstring)."""
         return {
             "prompt": None,
-            CALM_CAPABILITIES: None,
-            NON_STICKY_DM1_CAPABILITIES: "handles chitchat",
-            DM1_CAPABILITIES: "handles everything else",
+            CALM_ENTRY: {STICKY: None},
+            NLU_ENTRY: {
+                NON_STICKY: "handles chitchat",
+                STICKY: "handles everything else",
+            },
             LLM_CONFIG_KEY: None,
         }
 
@@ -95,7 +98,11 @@ class CoexistenceRouter(GraphComponent):
 
     def validate_config(self) -> None:
         """Validate the config of the router."""
-        if self.config[CALM_CAPABILITIES] is None:
+        if (
+            self.config[CALM_ENTRY] is None
+            or STICKY not in self.config[CALM_ENTRY]
+            or self.config[CALM_ENTRY][STICKY] is None
+        ):
             raise ValueError(
                 "The CoexistenceRouter component needs a proper "
                 "description of the capabilities implemented in the CALM "
@@ -227,9 +234,9 @@ class CoexistenceRouter(GraphComponent):
 
         inputs = {
             "user_message": message.get(TEXT),
-            CALM_CAPABILITIES: self.config[CALM_CAPABILITIES],
-            NON_STICKY_DM1_CAPABILITIES: self.config[NON_STICKY_DM1_CAPABILITIES],
-            DM1_CAPABILITIES: self.config[DM1_CAPABILITIES],
+            f"{CALM_ENTRY}_{STICKY}": self.config[CALM_ENTRY][STICKY],
+            f"{NLU_ENTRY}_{STICKY}": self.config[NLU_ENTRY][STICKY],
+            f"{NLU_ENTRY}_{NON_STICKY}": self.config[NLU_ENTRY][NON_STICKY],
         }
 
         return Template(self.prompt_template).render(**inputs)
