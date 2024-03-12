@@ -12,6 +12,8 @@ permissions:
 
 jobs:  
   aws-ecr:
+    # Skip any PR created by dependabot to avoid permission issues
+    if: (github.actor != 'dependabot[bot]')
     name: Delete PR docker images
     runs-on: ubuntu-22.04
     steps:
