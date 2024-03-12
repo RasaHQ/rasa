@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import functools
 import sys
-from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Union
+from typing import Any, List, Optional, TYPE_CHECKING, Text, Union
 
 import pluggy
 
@@ -62,13 +62,6 @@ def configure_commandline(cmdline_arguments: argparse.Namespace) -> Optional[Tex
 @hookspec  # type: ignore[misc]
 def init_telemetry(endpoints_file: Optional[Text]) -> None:
     """Hook specification for initialising plugin telemetry."""
-
-
-@hookspec  # type: ignore[misc]
-def prefixing_custom_actions_response(
-    json_body: Dict[Text, Any], response: Dict[Text, Any]
-) -> None:
-    """Add namespacing to the response from custom actions."""
 
 
 @hookspec  # type: ignore[misc]
