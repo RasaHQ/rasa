@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import functools
 import sys
-from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Tuple, Union
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Union
 
 import pluggy
 
@@ -61,11 +61,6 @@ def refine_cli(
 def handle_space_args(args: argparse.Namespace) -> Dict[Text, Any]:
     """Extracts space from the command line arguments."""
     return {}
-
-
-@hookspec  # type: ignore[misc]
-def get_version_info() -> Tuple[Text, Text]:  # type: ignore[empty-body]
-    """Hook specification for getting plugin version info."""
 
 
 @hookspec  # type: ignore[misc]
