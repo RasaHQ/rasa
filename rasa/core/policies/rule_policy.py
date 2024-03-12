@@ -1110,6 +1110,12 @@ class RulePolicy(MemoizationPolicy):
         **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action (see parent class for more information)."""
+        if self.should_abstain_in_coexistence(tracker, False):
+            # don't use self._default_predictions as this might have a different
+            # probability for the fallback action, and we want to have all probabilities
+            # set to 0.0
+            return self._prediction(super()._default_predictions(domain))
+
         prediction, _ = self._predict(tracker, domain)
         return prediction
 
@@ -1238,6 +1244,7 @@ class RulePolicy(MemoizationPolicy):
             result[domain.index_for_action(self._fallback_action_name)] = self.config[
                 "core_fallback_threshold"
             ]
+
         return result
 
     def persist(self) -> None:

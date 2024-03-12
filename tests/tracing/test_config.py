@@ -1,12 +1,22 @@
+import logging
 import socket
+import textwrap
 import threading
+from pathlib import Path
 
 import grpc
 import pytest
-from rasa.utils.endpoints import EndpointConfig
+from pytest import LogCaptureFixture
+from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
+from rasa.tracing.constants import ENDPOINTS_METRICS_KEY
+from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 
 from rasa.tracing import config
-from rasa.tracing.config import JaegerTracerConfigurer
+from rasa.tracing.config import (
+    JaegerTracerConfigurer,
+    OTLPMetricConfigurer,
+    configure_metrics,
+)
 from tests.conftest import wait
 from tests.tracing import conftest
 from tests.tracing.conftest import (
@@ -124,3 +134,57 @@ def test_get_tracer_provider_jaeger(udp_server: socket.socket) -> None:
 
     assert len(batch.spans) == 1
     assert batch.spans[0].operationName == "jaeger_test_span"
+
+
+def test_configure_otlp_metric_exporter() -> None:
+    endpoints_file = str(
+        TRACING_TESTS_FIXTURES_DIRECTORY / "metrics_otlp_endpoints.yml"
+    )
+    cfg = read_endpoint_config(endpoints_file, ENDPOINTS_METRICS_KEY)
+
+    otlp_metric_exporter = OTLPMetricConfigurer.configure_from_endpoint_config(cfg)
+    assert isinstance(otlp_metric_exporter, OTLPMetricExporter)
+
+
+def test_log_warning_with_non_otlp_backend(
+    tmp_path: Path, caplog: LogCaptureFixture
+) -> None:
+    test_metrics_type = "unsupported"
+    endpoints_file = tmp_path / "metrics_endpoints.yml"
+    endpoints_file.write_text(
+        textwrap.dedent(
+            f"""
+            metrics:
+                type: {test_metrics_type}
+            """
+        )
+    )
+
+    with caplog.at_level(logging.WARNING):
+        configure_metrics(str(endpoints_file))
+
+    assert (
+        f"Unknown metrics backend type '{test_metrics_type}' "
+        f"read from '{endpoints_file!s}', ignoring."
+    ) in caplog.text
+
+
+def test_log_debug_with_no_metrics_configured(
+    tmp_path: Path, caplog: LogCaptureFixture
+) -> None:
+    endpoints_file = tmp_path / "endpoints.yml"
+    endpoints_file.write_text(
+        textwrap.dedent(
+            """
+            action_endpoint:
+                url: "http://localhost:5056/webhook"
+            """
+        )
+    )
+
+    with caplog.at_level(logging.DEBUG):
+        configure_metrics(str(endpoints_file))
+
+    assert (
+        "The OTLP Collector has not been configured to collect " "metrics. Skipping."
+    ) in caplog.text

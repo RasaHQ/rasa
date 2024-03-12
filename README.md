@@ -208,7 +208,7 @@ In order to build a Docker image on your local machine execute the following com
 make build-docker
 ```
 
-The Docker image is available on your local machine as `rasa:localdev`.
+The Docker image is available on your local machine as `rasa-private-dev`.
 
 ### Code Style
 

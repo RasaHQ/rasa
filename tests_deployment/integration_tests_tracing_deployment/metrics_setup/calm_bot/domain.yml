@@ -1,0 +1,22 @@
+version: "3.1"
+
+actions:
+  - action_list_contacts
+
+slots:
+  transfer_money_recipient:
+    type: text
+    mappings:
+      - type: custom
+  transfer_money_amount_of_money:
+    type: text
+    mappings:
+      - type: custom
+
+responses:
+  utter_ask_transfer_money_amount_of_money:
+    - text: How much money do you want to transfer?
+  utter_ask_transfer_money_recipient:
+    - text: Who do you want to transfer money to?
+  utter_transfer_complete:
+    - text: Successfully transferred {transfer_money_amount_of_money} to {transfer_money_recipient}.

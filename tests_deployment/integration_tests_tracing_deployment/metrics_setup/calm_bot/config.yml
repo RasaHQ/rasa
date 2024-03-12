@@ -1,0 +1,15 @@
+recipe: default.v1
+language: en
+pipeline:
+- name: LLMCommandGenerator
+  trace_prompt_tokens: true
+  llm:
+    model_name: gpt-4
+    request_timeout: 7
+
+policies:
+- name: FlowPolicy
+- name: EnterpriseSearchPolicy
+- name: IntentlessPolicy
+
+assistant_id: 20240219-110701-dichotomic-inference

@@ -44,6 +44,7 @@ env:
   WAIT_TIMEOUT_SECS: 3000
   WAIT_INTERVAL_SECS: 60
   RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
   POETRY_VERSION: 1.4.2
 
 jobs:
@@ -56,7 +57,7 @@ jobs:
       docker: ${{ steps.changed-files.outputs.docker || steps.run-all.outputs.docker }}
       is_pre_release_version: ${{ steps.rasa_check_version_type.outputs.is_pre_release_version }}
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
       - uses: dorny/paths-filter@4512585405083f25c027a35db413c2b3b9006d50
         # Run the normal filters if the all-tests-required label is not set
         id: changed-files
@@ -94,11 +95,11 @@ jobs:
     steps:
       - name: Checkout git repository 🕝
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
 
       - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
         with:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
@@ -122,7 +123,7 @@ jobs:
       - name: Load Poetry Cached Libraries ⬇
         id: cache-poetry
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
+        uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 #v4.0.0
         with:
           path: .venv
           key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
@@ -192,7 +193,7 @@ jobs:
 
     steps:
       - name: Checkout git repository 🕝
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
 
       - name: Assert release includes all changelog entries
         # check changelog folder only when we create pull request preparing release
@@ -219,15 +220,15 @@ jobs:
 
     steps:
     - name: Checkout git repository 🕝
-      uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab
+      uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
 
     - name: Set up Node.js
-      uses: actions/setup-node@8c91899e586c5b171469028077307d293428b516 #v3.5.1
+      uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 #v4.0.2
       with:
         node-version: ${{ env.NODE_VERSION_INSPECTOR_BUILD }}
 
     - name: Cache node modules
-      uses: actions/cache@9b0c1fce7a93df8e3bb8926b0d6e9d89e92f20a7 #v3.0.11
+      uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 #v4.0.0
       id: yarn-cache
       with:
         path: "**/inspector/node_modules"
@@ -280,11 +281,11 @@ jobs:
     steps:
       - name: Checkout git repository 🕝
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
 
       - name: Set up Python ${{ matrix.python-version }} 🐍
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -315,7 +316,7 @@ jobs:
       - name: Load Poetry Cached Libraries ⬇
         id: cache-poetry
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
+        uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 #v4.0.0
         with:
           path: .venv
           key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
@@ -377,7 +378,7 @@ jobs:
 
       - name: Store coverage reports
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3.1.3
         with:
           name: ${{ matrix.test }}-coverage
           path: |
@@ -397,11 +398,11 @@ jobs:
     steps:
       - name: Checkout git repository 🕝
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
 
       - name: Set up Python ${{ matrix.python-version }} 🐍
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -425,7 +426,7 @@ jobs:
       - name: Load Poetry Cached Libraries ⬇
         id: cache-poetry
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
+        uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 #v4.0.0
         with:
           path: .venv
           key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
@@ -491,7 +492,7 @@ jobs:
 
       - name: Store coverage reports
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3.1.3
         with:
           name: ${{ matrix.test }}-coverage
           path: |
@@ -515,7 +516,7 @@ jobs:
 
       - name: Set up Python ${{ matrix.python-version }} 🐍
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -539,7 +540,7 @@ jobs:
       - name: Load Poetry Cached Libraries ⬇
         id: cache-poetry
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
+        uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 #v4.0.0
         with:
           path: .venv
           key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
@@ -599,7 +600,7 @@ jobs:
 
       - name: Store coverage reports
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3.1.3
         with:
           name: test-flaky-coverage
           path: |
@@ -662,11 +663,11 @@ jobs:
     steps:
       - name: Checkout git repository 🕝
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
 
       - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
         with:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
@@ -685,7 +686,7 @@ jobs:
       - name: Load Poetry Cached Libraries ⬇
         id: cache-poetry
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
+        uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 #v4.0.0
         with:
           path: .venv
           key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
@@ -757,7 +758,7 @@ jobs:
 
       - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
         with:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
@@ -776,7 +777,7 @@ jobs:
       - name: Load Poetry Cached Libraries ⬇
         id: cache-poetry
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
+        uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 #v4.0.0
         with:
           path: .venv
           key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
@@ -861,11 +862,11 @@ jobs:
     steps:
       - name: Checkout git repository 🕝
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
 
       - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
         with:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
@@ -884,7 +885,7 @@ jobs:
       - name: Load Poetry Cached Libraries ⬇
         id: cache-poetry
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/cache@v3
+        uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 #v4.0.0
         with:
           path: .venv
           key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
@@ -955,11 +956,11 @@ jobs:
     steps:
       - name: Checkout git repository 🕝
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/checkout@v3
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
 
       - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
         with:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
@@ -978,7 +979,7 @@ jobs:
       - name: Load Poetry Cached Libraries ⬇
         id: cache-poetry
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/cache@v3
+        uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 #v4.0.0
         with:
           path: .venv
           key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
@@ -1023,6 +1024,126 @@ jobs:
 
   tracing_integration_test:
     name: Run Tracing Integration Tests
+    if: github.ref_type != 'tag' && startsWith(github.ref, 'refs/heads/prepare-release-pre-') != true
+    runs-on: ubuntu-22.04
+    needs: [ changes, build_docker_base_images_and_set_env ]
+    env:
+      IMAGE_TAG: ${{ needs.build_docker_base_images_and_set_env.outputs.image_tag }}
+      TARGET_IMAGE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-docker"
+      BASE_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_image_hash }}
+      BASE_BUILDER_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_builder_image_hash }}
+
+    steps:
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+
+      - name: Free disk space
+        # tries to make sure we do not run out of disk space
+        run: |
+          sudo swapoff -a
+          sudo rm -f /swapfile
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          sudo apt clean
+          docker image prune -a -f
+          docker volume prune -f
+          docker container prune -f
+          df -h
+
+      - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
+        with:
+          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
+
+      - name: Install poetry 🦄
+        uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844
+        with:
+          poetry-version: ${{ env.POETRY_VERSION }}
+
+      - name: Inject setuptools into poetry's environment
+        run: |
+          poetry self add setuptools
+
+      - name: Load Poetry Cached Libraries ⬇
+        id: cache-poetry
+        uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 #v4.0.0
+        with:
+          path: .venv
+          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
+
+      - name: Clear Poetry cache
+        if: steps.cache-poetry.outputs.cache-hit == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')
+        run: rm -r .venv
+
+        # Poetry >= 1.1.0b uses virtualenv to create a virtual environment.
+        # The virtualenv simply doesn't work on Windows with our setup,
+        # that's why we use venv to create virtual environment
+      - name: Create virtual environment
+        if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests'))
+        run: python -m venv create .venv
+
+      - name: Set up virtual environment
+        # Poetry on Windows cannot pick up the virtual environments directory properly,
+        # and it creates a new one every time the pipeline runs.
+        # This step solves this problem — it tells poetry to always use `.venv` directory inside
+        # the project itself, which also makes it easier for us to determine the correct directory
+        # that needs to be cached.
+        run: poetry config virtualenvs.in-project true
+
+      # Authenticate with Gcloud.
+      - name: Authenticate with gcloud for release registry 🎫
+        id: 'auth-release'
+        uses: google-github-actions/auth@55bd3a7c6e2ae7cf1877fd1ccb9d54c0503c457c # v2.1.2
+        with:
+          token_format: 'access_token'
+          credentials_json: '${{ secrets.RASA_OSS_RELEASE_ACCOUNT_KEY }}'
+
+      # Authenticate with artifact registry where the images are stored.
+      - name: Authenticate docker for release registry 🎫
+        run: gcloud auth configure-docker europe-west3-docker.pkg.dev
+
+      - name: Install Dependencies (Linux) 📦
+        run: |
+          make install
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@2b82ce82d56a2a04d2637cd93a637ae1b359c0a7  # v2.2.0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@0d103c3126aa41d772a8362f6aa67afac040f80c  # v3.1.0
+
+      - name: Build rasa docker container
+        run: |
+          docker buildx create --name tracing-builder --use
+          docker buildx bake -f docker/docker-bake.hcl default --load
+
+      - name: Build action server docker container
+        run: |
+          docker buildx use default
+          docker buildx build tests_deployment/integration_tests_tracing_deployment/action_server -t action_server:latest -f tests_deployment/integration_tests_tracing_deployment/action_server/Dockerfile --build-arg TARGET_IMAGE_REGISTRY=$TARGET_IMAGE_REGISTRY --build-arg IMAGE_TAG=$IMAGE_TAG  --load
+
+      - name: Run docker containers for integration testing
+        run: |
+          make run-tracing-integration-containers
+
+      - name: Wait for container startup ⏳
+        timeout-minutes: 15
+        run: |
+          bash tests_deployment/integration_tests_tracing_deployment/check_connection.sh http://localhost:5006
+          bash tests_deployment/integration_tests_tracing_deployment/check_connection.sh http://localhost:5007
+
+      - name: Test Code with Services 🩺
+        env:
+          PYTHONIOENCODING: "utf-8"
+          RASA_TELEMETRY_WRITE_KEY: ${{ secrets.SEGMENT_WRITE_DEV_KEY }}
+        run: |
+          make test-tracing-integration
+
+      - name: Stop docker containers for integration testing
+        run: |
+          make stop-tracing-integration-containers
+
+  metrics_integration_test:
+    name: Run Metrics Integration Tests
     if: github.ref_type != 'tag' && startsWith(github.ref, 'refs/heads/prepare-release-pre-') != true
     runs-on: ubuntu-22.04
     needs: [ changes, build_docker_base_images_and_set_env ]
@@ -1112,34 +1233,33 @@ jobs:
 
       - name: Build rasa docker container
         run: |
-          docker buildx create --name tracing-builder --use
+          docker buildx create --name metrics-builder --use
           docker buildx bake -f docker/docker-bake.hcl default --load
-
-      - name: Build action server docker container
-        run: |
-          docker buildx use default
-          docker buildx build tests_deployment/integration_tests_tracing_deployment/action_server -t action_server:latest -f tests_deployment/integration_tests_tracing_deployment/action_server/Dockerfile --build-arg TARGET_IMAGE_REGISTRY=$TARGET_IMAGE_REGISTRY --build-arg IMAGE_TAG=$IMAGE_TAG  --load
 
       - name: Run docker containers for integration testing
         run: |
-          make run-tracing-integration-containers
+          make run-metrics-integration-containers
+
+      - name: Check container logs
+        if: always()
+        run: |
+          docker compose -f tests_deployment/integration_tests_tracing_deployment/metrics_setup/docker-compose.yml logs otlp-collector
 
       - name: Wait for container startup ⏳
         timeout-minutes: 15
         run: |
-          bash tests_deployment/integration_tests_tracing_deployment/check_connection.sh http://localhost:5006
-          bash tests_deployment/integration_tests_tracing_deployment/check_connection.sh http://localhost:5007
+          bash tests_deployment/integration_tests_tracing_deployment/check_connection.sh http://localhost:5005
 
       - name: Test Code with Services 🩺
         env:
           PYTHONIOENCODING: "utf-8"
           RASA_TELEMETRY_WRITE_KEY: ${{ secrets.SEGMENT_WRITE_DEV_KEY }}
         run: |
-          make test-tracing-integration
+          make test-metrics-integration
 
       - name: Stop docker containers for integration testing
         run: |
-          make stop-tracing-integration-containers
+          make stop-metrics-integration-containers
 
   build_docker_base_images_and_set_env:
     name: Build Docker base images and setup environment
@@ -1157,20 +1277,20 @@ jobs:
       # to checkout HEAD commit for a pull request.
       # More details: https://github.com/actions/checkout/issues/299
       - name: Checkout pull request HEAD commit instead of merge commit 🕝
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
         if: github.event_name == 'pull_request'
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Checkout git repository 🕝
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
         if: github.event_name != 'pull_request'
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226  # v3.0.0
+        uses: docker/setup-buildx-action@0d103c3126aa41d772a8362f6aa67afac040f80c  # v3.1.0
 
       - name: Read Poetry Version 🔢
         run: |
@@ -1179,7 +1299,7 @@ jobs:
 
       - id: 'auth-release'
         name: Authenticate with gcloud for release registry 🎫
-        uses: 'google-github-actions/auth@f6de81663f7788d05bd15bcce18f0e57f23f0846'
+        uses: google-github-actions/auth@55bd3a7c6e2ae7cf1877fd1ccb9d54c0503c457c # v2.1.2
         with:
           token_format: 'access_token'
           credentials_json: '${{ secrets.RASA_OSS_RELEASE_ACCOUNT_KEY }}' #needs to be added to secrets
@@ -1335,20 +1455,20 @@ jobs:
       # to checkout HEAD commit for a pull request.
       # More details: https://github.com/actions/checkout/issues/299
       - name: Checkout pull request HEAD commit instead of merge commit 🕝
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
         if: github.event_name == 'pull_request'
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Checkout git repository 🕝
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
         if: github.event_name != 'pull_request'
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226  # v3.0.0
+        uses: docker/setup-buildx-action@0d103c3126aa41d772a8362f6aa67afac040f80c  # v3.1.0
 
       - name: Free disk space
         if: needs.changes.outputs.docker == 'true'
@@ -1383,7 +1503,7 @@ jobs:
       # Authenticate and push to the release registry
       - id: 'auth-release'
         name: Authenticate with gcloud for release registry 🎫
-        uses: 'google-github-actions/auth@f6de81663f7788d05bd15bcce18f0e57f23f0846'
+        uses: google-github-actions/auth@55bd3a7c6e2ae7cf1877fd1ccb9d54c0503c457c # v2.1.2
         with:
           token_format: 'access_token'
           credentials_json: '${{ secrets.RASA_OSS_RELEASE_ACCOUNT_KEY }}'
@@ -1432,10 +1552,10 @@ jobs:
 
     steps:
       - name: Checkout git repository 🕝
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
 
       - name: Set up Python 3.9 🐍
-        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
         with:
           python-version: 3.9
 
@@ -1461,7 +1581,7 @@ jobs:
 
       # Push to the internal release registry
       - name: Publish to internal PyPI 📦
-        uses: pypa/gh-action-pypi-publish@2f6f737ca5f74c637829c0f5c3acd0e29ea5e8bf
+        uses: pypa/gh-action-pypi-publish@e53eb8b103ffcb59469888563dc324e3c8ba6f06
         with:
           user: "github-ci"
           password: ${{ secrets.PYPI_PASSWORD }}
@@ -1471,7 +1591,7 @@ jobs:
       # Authenticate and push to the release registry
       - id: "auth-release"
         name: Authenticate with gcloud for release registry 🎫
-        uses: "google-github-actions/auth@f6de81663f7788d05bd15bcce18f0e57f23f0846"
+        uses: google-github-actions/auth@55bd3a7c6e2ae7cf1877fd1ccb9d54c0503c457c # v2.1.2
         with:
           token_format: 'access_token'
           credentials_json: "${{ secrets.RASA_OSS_RELEASE_ACCOUNT_KEY }}"

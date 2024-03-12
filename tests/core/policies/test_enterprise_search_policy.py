@@ -19,7 +19,10 @@ from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted
 from rasa.shared.core.trackers import DialogueStateTracker
 
-from rasa.core.information_retrieval.information_retrieval import InformationRetrieval
+from rasa.core.information_retrieval.information_retrieval import (
+    InformationRetrieval,
+    InformationRetrievalException,
+)
 from rasa.core.policies.enterprise_search_policy import (
     LLM_CONFIG_KEY,
     EnterpriseSearchPolicy,
@@ -538,7 +541,7 @@ def test_enterprise_search_policy_vector_store_search_error(
         with patch.object(
             mocked_enterprise_search_policy.vector_store,
             "search",
-            side_effect=Exception("Mocked error"),
+            side_effect=InformationRetrievalException,
         ):
             mocked_enterprise_search_policy.predict_action_probabilities(
                 tracker=tracker,

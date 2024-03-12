@@ -56,6 +56,7 @@ from rasa.shared.utils.llm import (
 from rasa.core.information_retrieval.faiss import FAISS_Store
 from rasa.core.information_retrieval.information_retrieval import (
     InformationRetrieval,
+    InformationRetrievalException,
     create_from_endpoint_config,
 )
 
@@ -349,14 +350,13 @@ class EnterpriseSearchPolicy(Policy):
             return self._create_prediction_internal_error(domain, tracker)
 
         search_query = tracker_as_readable_transcript(tracker, max_turns=1)
-        # TODO: these try-catch should be inside the vector store
-        #    which raises a RasaException in case of failure
+
         try:
             documents = self.vector_store.search(
                 query=search_query,
                 threshold=vector_search_threshold,
             )
-        except Exception as e:
+        except InformationRetrievalException as e:
             logger.error(f"{logger_key}.search_error", error=e)
             return self._create_prediction_internal_error(domain, tracker)
 

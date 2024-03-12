@@ -1,7 +1,6 @@
 import functools
 import threading
 import typing
-import uuid
 from typing import Any, Callable, Dict, List, Text
 
 import pytest
@@ -26,6 +25,7 @@ from tests.integration_tests.tracing.conftest import (
     RASA_SERVER_PROCESSOR_SUB_SPAN_NAME,
     RASA_SERVER_TRIGGER_MESSAGE,
     TraceQueryTimestamps,
+    send_message_to_rasa_server,
 )
 
 if typing.TYPE_CHECKING:
@@ -55,7 +55,7 @@ def test_traces_get_sent_to_backend(
     from api_v3.query_service_pb2 import TraceQueryParameters
     from model_pb2 import Span
 
-    sender_id = _send_message(rasa_server_endpoint)
+    sender_id = send_message_to_rasa_server(rasa_server_endpoint)
     params = TraceQueryParameters(
         service_name=tracing_service_name,
         operation_name="Agent.handle_message",
@@ -97,7 +97,9 @@ def test_trace_context_propagated_to_action_server(
     from api_v3.query_service_pb2 import TraceQueryParameters
     from model_pb2 import Span
 
-    sender_id = _send_message(rasa_server_endpoint, ACTION_SERVER_TRIGGER_MESSAGE)
+    sender_id = send_message_to_rasa_server(
+        rasa_server_endpoint, ACTION_SERVER_TRIGGER_MESSAGE
+    )
     tracker = _fetch_tracker(server_location=rasa_server_endpoint, sender_id=sender_id)
     message_id = tracker.get("latest_message", {}).get("message_id")
 
@@ -158,7 +160,9 @@ def test_missing_action_server_endpoint_does_not_stop_tracing(
     from api_v3.query_service_pb2 import TraceQueryParameters
     from model_pb2 import Span
 
-    sender_id = _send_message(rasa_server_endpoint, ACTION_SERVER_TRIGGER_MESSAGE)
+    sender_id = send_message_to_rasa_server(
+        rasa_server_endpoint, ACTION_SERVER_TRIGGER_MESSAGE
+    )
     tracker = _fetch_tracker(server_location=rasa_server_endpoint, sender_id=sender_id)
     message_id = tracker.get("latest_message", {}).get("message_id")
 
@@ -216,7 +220,7 @@ def test_context_propagated_to_subspans_in_rasa_server(
     from api_v3.query_service_pb2 import TraceQueryParameters
     from model_pb2 import Span
 
-    _send_message(rasa_server_endpoint, RASA_SERVER_TRIGGER_MESSAGE)
+    send_message_to_rasa_server(rasa_server_endpoint, RASA_SERVER_TRIGGER_MESSAGE)
 
     params = TraceQueryParameters(
         service_name=tracing_service_name,
@@ -256,15 +260,6 @@ def _fetch_tracker(server_location: Text, sender_id: Text = "test") -> Dict[str,
         f"{server_location}/conversations/{sender_id}/tracker"
     )
     return tracker_response.json()
-
-
-def _send_message(server_location: Text, message: Text = "message") -> Text:
-    sender_id = str(uuid.uuid4())
-    requests.post(
-        f"{server_location}/webhooks/rest/webhook",
-        json={"sender": sender_id, "message": message},
-    )
-    return sender_id
 
 
 def wait_for_spans(span_query_function: Callable) -> Callable:

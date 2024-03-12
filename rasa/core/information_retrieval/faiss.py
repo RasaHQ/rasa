@@ -7,7 +7,10 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores.faiss import FAISS
 from rasa.utils.endpoints import EndpointConfig
 
-from rasa.core.information_retrieval.information_retrieval import InformationRetrieval
+from rasa.core.information_retrieval.information_retrieval import (
+    InformationRetrieval,
+    InformationRetrievalException,
+)
 from rasa.utils.ml_utils import persist_faiss_vector_store
 
 if TYPE_CHECKING:
@@ -77,7 +80,7 @@ class FAISS_Store(InformationRetrieval):
             The document index.
         """
         if not docs_folder:
-            raise ValueError("paramter `docs_folder` needs to be specified")
+            raise ValueError("parameter `docs_folder` needs to be specified")
 
         docs = self.load_documents(docs_folder)
         splitter = RecursiveCharacterTextSplitter(
@@ -107,4 +110,7 @@ class FAISS_Store(InformationRetrieval):
 
     def search(self, query: Text, threshold: float = 0.0) -> List["Document"]:
         logger.debug("information_retrieval.faiss_store.search", query=query)
-        return self.index.as_retriever().get_relevant_documents(query)
+        try:
+            return self.index.as_retriever().get_relevant_documents(query)
+        except Exception as exc:
+            raise InformationRetrievalException from exc

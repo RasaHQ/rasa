@@ -7,16 +7,16 @@ from rasa.core.policies.enterprise_search_policy import EnterpriseSearchPolicy
 from rasa.core.policies.intentless_policy import IntentlessPolicy
 from rasa.dialogue_understanding.generator import LLMCommandGenerator
 from rasa.tracing.constants import (
-    LLM_COMMAND_GENERATOR_CPU_USAGE_INSTRUMENT_NAME,
-    LLM_COMMAND_GENERATOR_MEMORY_USAGE_INSTRUMENT_NAME,
-    LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_INSTRUMENT_NAME,
+    LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME,
+    LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME,
+    LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME,
     PROMPT_TOKEN_LENGTH_ATTRIBUTE_NAME,
-    LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_INSTRUMENT_NAME,
-    ENTERPRISE_SEARCH_POLICY_LLM_RESPONSE_DURATION_INSTRUMENT_NAME,
-    INTENTLESS_POLICY_LLM_RESPONSE_DURATION_INSTRUMENT_NAME,
-    CONTEXTUAL_RESPONSE_REPHRASER_LLM_RESPONSE_DURATION_INSTRUMENT_NAME,
-    RASA_CLIENT_REQUEST_BODY_SIZE_INSTRUMENT_NAME,
-    RASA_CLIENT_REQUEST_DURATION_INSTRUMENT_NAME,
+    LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME,
+    ENTERPRISE_SEARCH_POLICY_LLM_RESPONSE_DURATION_METRIC_NAME,
+    INTENTLESS_POLICY_LLM_RESPONSE_DURATION_METRIC_NAME,
+    CONTEXTUAL_RESPONSE_REPHRASER_LLM_RESPONSE_DURATION_METRIC_NAME,
+    RASA_CLIENT_REQUEST_BODY_SIZE_METRIC_NAME,
+    RASA_CLIENT_REQUEST_DURATION_METRIC_NAME,
     ENDPOINT_REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME,
 )
 from rasa.tracing.metric_instrument_provider import MetricInstrumentProvider
@@ -35,7 +35,7 @@ def record_llm_command_generator_cpu_usage(
     :return: None
     """
     metric_instrument = metric_instrument_provider.get_instrument(
-        LLM_COMMAND_GENERATOR_CPU_USAGE_INSTRUMENT_NAME
+        LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME
     )
     if not metric_instrument:
         return None
@@ -56,7 +56,7 @@ def record_llm_command_generator_memory_usage(
     :return: None
     """
     metric_instrument = metric_instrument_provider.get_instrument(
-        LLM_COMMAND_GENERATOR_MEMORY_USAGE_INSTRUMENT_NAME
+        LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME
     )
     if not metric_instrument:
         return None
@@ -83,12 +83,17 @@ def record_llm_command_generator_prompt_token(
         return None
 
     metric_instrument = metric_instrument_provider.get_instrument(
-        LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_INSTRUMENT_NAME
+        LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME
     )
     if not metric_instrument:
         return None
 
     prompt_tokens_len = attributes[PROMPT_TOKEN_LENGTH_ATTRIBUTE_NAME]
+
+    try:
+        prompt_tokens_len = int(prompt_tokens_len)
+    except ValueError:
+        return None
 
     metric_instrument.record(
         amount=prompt_tokens_len,
@@ -142,27 +147,27 @@ def record_callable_duration_metrics(
 
     if isinstance(self, LLMCommandGenerator):
         metric_instrument = instrument_provider.get_instrument(
-            LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_INSTRUMENT_NAME
+            LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME
         )
 
     if isinstance(self, EnterpriseSearchPolicy):
         metric_instrument = instrument_provider.get_instrument(
-            ENTERPRISE_SEARCH_POLICY_LLM_RESPONSE_DURATION_INSTRUMENT_NAME
+            ENTERPRISE_SEARCH_POLICY_LLM_RESPONSE_DURATION_METRIC_NAME
         )
 
     if isinstance(self, IntentlessPolicy):
         metric_instrument = instrument_provider.get_instrument(
-            INTENTLESS_POLICY_LLM_RESPONSE_DURATION_INSTRUMENT_NAME
+            INTENTLESS_POLICY_LLM_RESPONSE_DURATION_METRIC_NAME
         )
 
     if isinstance(self, ContextualResponseRephraser):
         metric_instrument = instrument_provider.get_instrument(
-            CONTEXTUAL_RESPONSE_REPHRASER_LLM_RESPONSE_DURATION_INSTRUMENT_NAME
+            CONTEXTUAL_RESPONSE_REPHRASER_LLM_RESPONSE_DURATION_METRIC_NAME
         )
 
     if isinstance(self, EndpointConfig):
         metric_instrument = instrument_provider.get_instrument(
-            RASA_CLIENT_REQUEST_DURATION_INSTRUMENT_NAME
+            RASA_CLIENT_REQUEST_DURATION_METRIC_NAME
         )
         attributes = {"url": kwargs.get("url")}
 
@@ -190,7 +195,7 @@ def record_request_size_in_bytes(attributes: Dict[str, Any]) -> None:
         return None
 
     metric_instrument = metric_instrument_provider.get_instrument(
-        RASA_CLIENT_REQUEST_BODY_SIZE_INSTRUMENT_NAME
+        RASA_CLIENT_REQUEST_BODY_SIZE_METRIC_NAME
     )
     if not metric_instrument:
         return None

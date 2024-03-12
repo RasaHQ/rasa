@@ -5,6 +5,7 @@ INTEGRATION_TEST_FOLDER = tests/integration_tests/
 INTEGRATION_TEST_PYTEST_MARKERS ?= "sequential or broker or concurrent_lock_store or ((not sequential) and (not broker) and (not concurrent_lock_store))"
 PLATFORM ?= "linux/amd64"
 TRACING_INTEGRATION_TEST_FOLDER = tests/integration_tests/tracing
+METRICS_INTEGRATION_TEST_PATH = tests/integration_tests/tracing/test_metrics.py
 
 help:
 	@echo "make"
@@ -204,12 +205,14 @@ release:
 	poetry run python scripts/release.py prepare --interactive
 
 build-docker:
-	export IMAGE_NAME=rasa && \
-	docker buildx use default && \
-	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl base && \
-	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl base-poetry && \
-	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl base-builder && \
-	docker buildx bake --set default.platform=${PLATFORM} -f docker/docker-bake.hcl default
+    	# Build base image
+	docker build . -t rasa-private:base-localdev -f docker/Dockerfile.base --platform=linux/amd64
+    	# Build base poetry image
+	docker build . -t rasa-private:base-poetry-localdev -f docker/Dockerfile.base-poetry --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_IMAGE_HASH=localdev --build-arg POETRY_VERSION=1.4.2 --platform=linux/amd64
+    	# Build base builder image
+	docker build . -t rasa-private:base-builder-localdev -f docker/Dockerfile.base-builder --build-arg IMAGE_BASE_NAME=rasa-private --build-arg POETRY_VERSION=localdev --platform=linux/amd64
+    	# Build Rasa Private image
+	docker build . -t rasa-private:rasa-private-dev -f Dockerfile --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_IMAGE_HASH=localdev --build-arg BASE_BUILDER_IMAGE_HASH=localdev --platform=linux/amd64
 
 build-tests-deployment-env: ## Create environment files (.env) for docker-compose.
 	cd tests_deployment && \
@@ -238,4 +241,16 @@ stop-tracing-integration-containers: ## Stop the tracing integration test contai
 	docker-compose -f tests_deployment/integration_tests_tracing_deployment/docker-compose.intg.yml down
 
 test-tracing-integration:
-	PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python PYTHONPATH=./vendor/jaeger-python-proto poetry run pytest $(TRACING_INTEGRATION_TEST_FOLDER) -n $(JOBS)
+	PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python PYTHONPATH=./vendor/jaeger-python-proto poetry run pytest $(TRACING_INTEGRATION_TEST_FOLDER) -n $(JOBS) --ignore $(METRICS_INTEGRATION_TEST_PATH)
+
+train-calm:
+	cd ./tests_deployment/integration_tests_tracing_deployment/metrics_setup/calm_bot && poetry run rasa train --fixed-model-name model
+
+run-metrics-integration-containers: train-calm ## Run the metrics integration test containers.
+	docker compose -f tests_deployment/integration_tests_tracing_deployment/metrics_setup/docker-compose.yml up -d --wait
+
+stop-metrics-integration-containers:
+	docker compose -f tests_deployment/integration_tests_tracing_deployment/metrics_setup/docker-compose.yml down
+
+test-metrics-integration:
+	poetry run pytest $(METRICS_INTEGRATION_TEST_PATH) -n $(JOBS)
