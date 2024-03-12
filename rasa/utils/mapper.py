@@ -24,6 +24,7 @@ from rasa.shared.nlu.training_data.formats.rasa_yaml import (
     KEY_INTENT,
     KEY_NLU,
 )
+from rasa.shared.utils.yaml import read_yaml_file
 
 
 class RasaPrimitiveStorageMapper:
@@ -100,7 +101,7 @@ class RasaPrimitiveStorageMapper:
 
     def _parse_domain_files(self) -> None:
         for domain_file in self._domain_files:
-            content = rasa.shared.utils.io.read_yaml_file(domain_file)
+            content = read_yaml_file(domain_file)
             for entity in content.get(KEY_ENTITIES, []):  # type: ignore[union-attr]
                 self._assign_value(
                     self._primitives["entities"], "domain", domain_file, entity
@@ -129,7 +130,7 @@ class RasaPrimitiveStorageMapper:
     def _parse_nlu_data(self) -> None:
         """Parses the nlu data and extracts the intents."""
         for nlu_file in self._nlu_files:
-            content = rasa.shared.utils.io.read_yaml_file(nlu_file)
+            content = read_yaml_file(nlu_file)
             for intent in content.get(KEY_NLU, []):  # type: ignore[union-attr]
                 if KEY_INTENT in intent:
                     self._assign_value(
@@ -142,7 +143,7 @@ class RasaPrimitiveStorageMapper:
     def _parse_story_data(self) -> None:
         """Parses the story data and extracts the stories and rules."""
         for story_file in self._story_files:
-            content = rasa.shared.utils.io.read_yaml_file(story_file)
+            content = read_yaml_file(story_file)
             for story in content.get(KEY_STORIES, []):  # type: ignore[union-attr]
                 self._assign_value(
                     self._primitives["stories"],
@@ -161,7 +162,7 @@ class RasaPrimitiveStorageMapper:
     def _parse_flow_data(self) -> None:
         """Parses the flow data and extracts the flow ids."""
         for flow_file in self._flow_files:
-            content = rasa.shared.utils.io.read_yaml_file(flow_file)
+            content = read_yaml_file(flow_file)
             for flow in content.get(KEY_FLOWS, []):  # type: ignore[union-attr]
                 self._assign_value(
                     self._primitives["flows"],

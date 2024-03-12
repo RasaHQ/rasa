@@ -16,6 +16,7 @@ import rasa.cli.shell
 import rasa.shared.utils.io
 from rasa.shared.constants import ASSISTANT_ID_KEY
 from rasa.utils.common import EXPECTED_WARNINGS
+from rasa.utils.io import write_yaml
 
 
 @pytest.mark.timeout(300, func_only=True)
@@ -34,7 +35,7 @@ def test_default_project_has_no_warnings(
                 item["epochs"] = 1
                 item["evaluate_every_number_of_epochs"] = -1
 
-    rasa.shared.utils.io.write_yaml(config, "config.yml")
+    write_yaml(config, "config.yml")
 
     with pytest.warns() as warning_recorder:
         arg_namespace = parser.parse_args(["data", "validate"])

@@ -58,7 +58,7 @@ from rasa.shared.nlu.constants import (
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.importers.importer import TrainingDataImporter
-from rasa.shared.utils.validation import YamlValidationException
+from rasa.shared.utils.yaml import YamlValidationException, read_yaml_file, write_yaml
 import rasa.utils.common
 from tests.conftest import filter_expected_warnings
 
@@ -466,9 +466,7 @@ def test_nlu_raise_if_more_than_one_tokenizer(nodes: Dict[Text, SchemaNode]):
 
 
 def test_nlu_do_not_raise_if_two_tokenizers_with_end_to_end():
-    config = rasa.shared.utils.io.read_yaml_file(
-        "rasa/engine/recipes/config_files/default_config.yml"
-    )
+    config = read_yaml_file("rasa/engine/recipes/config_files/default_config.yml")
     graph_config = DefaultV1Recipe().graph_config_for_recipe(
         config, cli_parameters={}, training_type=TrainingType.END_TO_END
     )
@@ -481,7 +479,7 @@ def test_nlu_do_not_raise_if_two_tokenizers_with_end_to_end():
 
 
 def test_nlu_do_not_raise_if_trainable_tokenizer():
-    config = rasa.shared.utils.io.read_yaml_file(
+    config = read_yaml_file(
         "data/test_config/config_pretrained_embeddings_mitie_zh.yml"
     )
     graph_config = DefaultV1Recipe().graph_config_for_recipe(config, cli_parameters={})
@@ -1052,7 +1050,7 @@ def test_no_warnings_with_default_project(tmp_path: Path):
 def test_importer_with_invalid_model_config(tmp_path: Path):
     invalid = {"version": "2.0", "policies": ["name"]}
     config_file = tmp_path / "config.yml"
-    rasa.shared.utils.io.write_yaml(invalid, config_file)
+    write_yaml(invalid, config_file)
 
     with pytest.raises(YamlValidationException):
         importer = TrainingDataImporter.load_from_config(str(config_file))

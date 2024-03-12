@@ -6,7 +6,6 @@ from pathlib import Path
 import pytest
 import numpy as np
 
-import rasa.shared.utils.io
 from rasa.core.evaluation.marker import (
     IntentDetectedMarker,
     SlotSetMarker,
@@ -31,6 +30,7 @@ from rasa.core.evaluation.marker_tracker_loader import MarkerTrackerLoader
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.shared.core.domain import Domain
+from rasa.shared.utils.yaml import write_yaml
 
 CONDITION_MARKERS = [ActionExecutedMarker, SlotSetMarker, IntentDetectedMarker]
 OPERATOR_MARKERS = [AndMarker, OrMarker, SequenceMarker, OccurrenceMarker]
@@ -452,7 +452,6 @@ def test_operator_nested_randomly_all_sub_markers_track_events_and_apply_at_some
 
 def test_sessions_evaluated_separately():
     """Each marker applies an exact number of times (slots are immediately un-set)."""
-
     events = [
         ActionExecuted(ACTION_SESSION_START_NAME),
         UserUttered(intent={INTENT_NAME_KEY: "ignored"}),
@@ -630,7 +629,7 @@ def test_marker_from_path_only_reads_yamls(tmp_path: Path):
     for idx, (suffix, allowed) in enumerate(suffixes):
         config = {f"marker-{idx}": {IntentDetectedMarker.positive_tag(): "intent"}}
         config_file = tmp_path / f"config-{idx}.{suffix}"
-        rasa.shared.utils.io.write_yaml(data=config, target=config_file)
+        write_yaml(data=config, target=config_file)
     loaded = Marker.from_path(tmp_path)
     assert len(loaded.sub_markers) == sum(allowed for _, allowed in suffixes)
     assert set(sub_marker.name for sub_marker in loaded.sub_markers) == set(
@@ -651,7 +650,7 @@ def test_marker_from_path_only_reads_yamls(tmp_path: Path):
 def test_marker_from_path_adds_special_or_marker(tmp_path: Path, configs: Any):
 
     yaml_file = tmp_path / "config.yml"
-    rasa.shared.utils.io.write_yaml(data=configs, target=yaml_file)
+    write_yaml(data=configs, target=yaml_file)
     loaded = Marker.from_path(tmp_path)
     assert isinstance(loaded, OrMarker)
     assert loaded.name == Marker.ANY_MARKER
@@ -697,7 +696,7 @@ def test_marker_from_path_raises(
         folder = full_path.parents[0]
         if folder != tmp_path:
             Path.mkdir(folder, exist_ok=False)
-        rasa.shared.utils.io.write_yaml(data=config, target=full_path)
+        write_yaml(data=config, target=full_path)
     with pytest.raises(InvalidMarkerConfig):
         Marker.from_path(tmp_path)
 
@@ -724,7 +723,6 @@ def test_marker_depth(marker: Marker, expected_depth: int):
 
 def test_split_sessions(tmp_path):
     """Tests loading a tracker with multiple sessions."""
-
     events = [
         ActionExecuted(ACTION_SESSION_START_NAME),
         SessionStarted(),

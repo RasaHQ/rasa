@@ -51,7 +51,6 @@ from rasa.shared.exceptions import (
     YamlException,
     YamlSyntaxException,
 )
-import rasa.shared.utils.validation
 import rasa.shared.utils.io
 import rasa.shared.utils.common
 import rasa.shared.core.slot_mappings
@@ -63,7 +62,14 @@ from rasa.shared.core.slots import (
     AnySlot,
     ListSlot,
 )
-from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
+from rasa.shared.utils.yaml import (
+    KEY_TRAINING_DATA_FORMAT_VERSION,
+    read_yaml,
+    validate_training_data_format_version,
+    read_yaml_file,
+    dump_obj_as_yaml_to_string,
+    validate_raw_yaml_using_schema_file_with_responses,
+)
 from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_ROLE,
@@ -220,12 +226,10 @@ class Domain:
     def from_yaml(cls, yaml: Text, original_filename: Text = "") -> "Domain":
         """Loads the `Domain` from YAML text after validating it."""
         try:
-            rasa.shared.utils.validation.validate_yaml_schema(yaml, DOMAIN_SCHEMA_FILE)
+            validate_raw_yaml_using_schema_file_with_responses(yaml, DOMAIN_SCHEMA_FILE)
 
-            data = rasa.shared.utils.io.read_yaml(yaml)
-            if not rasa.shared.utils.validation.validate_training_data_format_version(
-                data, original_filename
-            ):
+            data = read_yaml(yaml)
+            if not validate_training_data_format_version(data, original_filename):
                 return Domain.empty()
             return cls.from_dict(data)
         except YamlException as e:
@@ -302,9 +306,7 @@ class Domain:
                 full_path = os.path.join(root, file)
                 if Domain.is_domain_file(full_path):
                     _ = Domain.from_file(full_path)  # does the validation here only
-                    other_dict = rasa.shared.utils.io.read_yaml(
-                        rasa.shared.utils.io.read_file(full_path)
-                    )
+                    other_dict = read_yaml(rasa.shared.utils.io.read_file(full_path))
                     combined = Domain.merge_domain_dicts(other_dict, combined)
 
         domain = Domain.from_dict(combined)
@@ -776,6 +778,7 @@ class Domain:
                 events for entities if there are slots with the same name as the entity.
             session_config: Configuration for conversation sessions. Conversations are
                 restarted at the end of a session.
+            kwargs: Additional arguments.
         """
         self.entity_properties = self.collect_entity_properties(entities)
         self.intent_properties = self.collect_intent_properties(
@@ -1606,9 +1609,7 @@ class Domain:
                 domain_data[KEY_RESPONSES]
             )
 
-        return rasa.shared.utils.io.dump_obj_as_yaml_to_string(
-            domain_data, should_preserve_key_order=True
-        )
+        return dump_obj_as_yaml_to_string(domain_data, should_preserve_key_order=True)
 
     def intent_config(self, intent_name: Text) -> Dict[Text, Any]:
         """Return the configuration for an intent."""
@@ -1876,7 +1877,7 @@ class Domain:
             return False
 
         try:
-            content = rasa.shared.utils.io.read_yaml_file(filename)
+            content = read_yaml_file(filename)
         except (RasaException, YamlSyntaxException):
             structlogger.warning(
                 "domain.cannot_load_domain_file",

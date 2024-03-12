@@ -23,7 +23,7 @@ from rasa.shared.constants import (
     DEFAULT_DATA_PATH,
     DEFAULT_RESULTS_PATH,
 )
-import rasa.shared.utils.validation as validation_utils
+from rasa.shared.utils.yaml import validate_raw_yaml_using_schema_file
 import rasa.cli.utils
 import rasa.utils.common
 from rasa.shared.importers.importer import TrainingDataImporter
@@ -207,7 +207,7 @@ async def run_nlu_test_async(
         config_files = []
         for file in config:
             try:
-                validation_utils.validate_yaml_schema(
+                validate_raw_yaml_using_schema_file(
                     rasa.shared.utils.io.read_file(file), CONFIG_SCHEMA_FILE
                 )
                 config_files.append(file)

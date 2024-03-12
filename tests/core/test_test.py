@@ -12,6 +12,7 @@ from rasa.shared.core.events import UserUttered
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.capture import CaptureFixture
 from rasa.core.agent import Agent, load_agent
+from rasa.shared.utils.yaml import read_yaml_file
 from rasa.utils.tensorflow.constants import (
     QUERY_INTENT_KEY,
     NAME,
@@ -27,7 +28,8 @@ from rasa.shared.core.domain import Domain
 from rasa.core.policies.rule_policy import RulePolicy
 from rasa.shared.core.domain import State
 from rasa.core.policies.policy import SupportedData
-from rasa.shared.utils.io import read_file, read_yaml
+from rasa.shared.utils.io import read_file
+from rasa.shared.utils.yaml import read_yaml
 
 
 def _probabilities_with_action_unlikely_intent_for(
@@ -673,7 +675,7 @@ async def test_multiple_warnings_sorted_on_severity(
     )
 
     warnings_file = tmp_path / STORIES_WITH_WARNINGS_FILE
-    warnings_data = rasa.shared.utils.io.read_yaml_file(warnings_file)
+    warnings_data = read_yaml_file(warnings_file)
 
     for index, story_name in enumerate(story_order):
         assert warnings_data["stories"][index]["story"].startswith(story_name)

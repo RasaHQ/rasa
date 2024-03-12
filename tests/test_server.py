@@ -75,6 +75,7 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.model_training import TrainingResult
+from rasa.shared.utils.yaml import read_yaml_file, write_yaml
 from rasa.utils.endpoints import EndpointConfig
 from tests.conftest import (
     AsyncMock,
@@ -334,9 +335,9 @@ async def test_train_nlu_success(
     domain_path: Text,
     tmp_path_factory: TempPathFactory,
 ):
-    domain_data = rasa.shared.utils.io.read_yaml_file(domain_path)
-    config_data = rasa.shared.utils.io.read_yaml_file(stack_config_path)
-    nlu_data = rasa.shared.utils.io.read_yaml_file(nlu_data_path)
+    domain_data = read_yaml_file(domain_path)
+    config_data = read_yaml_file(stack_config_path)
+    nlu_data = read_yaml_file(nlu_data_path)
 
     # combine all data into our payload
     payload = {
@@ -344,7 +345,7 @@ async def test_train_nlu_success(
     }
 
     data = StringIO()
-    rasa.shared.utils.io.write_yaml(payload, data)
+    write_yaml(payload, data)
 
     _, response = await rasa_app.post(
         "/model/train",
@@ -415,11 +416,11 @@ async def test_train_with_retrieval_events_success(
     ]:
         # Read in as dictionaries to avoid that keys, which are specified in
         # multiple files (such as 'version'), clash.
-        content = rasa.shared.utils.io.read_yaml_file(file)
+        content = read_yaml_file(file)
         payload.update(content)
 
         concatenated_payload_file = tmp_path / "concatenated.yml"
-        rasa.shared.utils.io.write_yaml(payload, concatenated_payload_file)
+        write_yaml(payload, concatenated_payload_file)
 
         payload_as_yaml = concatenated_payload_file.read_text()
 

@@ -16,7 +16,7 @@ from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 from sanic import Sanic
 from socket import SOCK_DGRAM, SOCK_STREAM
 import rasa.cli.utils as cli_utils
-
+from rasa.utils.io import write_yaml
 
 logger = logging.getLogger(__name__)
 
@@ -91,9 +91,7 @@ def dump_obj_as_yaml_to_file(
         obj: Object to dump.
         should_preserve_key_order: Whether to preserve key order in `obj`.
     """
-    rasa.shared.utils.io.write_yaml(
-        obj, filename, should_preserve_key_order=should_preserve_key_order
-    )
+    write_yaml(obj, filename, should_preserve_key_order=should_preserve_key_order)
 
 
 def list_routes(app: Sanic) -> Dict[Text, Text]:

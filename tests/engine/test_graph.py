@@ -6,9 +6,10 @@ from typing import Dict, Text
 import pytest
 
 from rasa.engine.storage.resource import Resource
-import rasa.shared.utils.io
 from rasa.engine.exceptions import GraphSchemaException
 from rasa.engine.graph import SchemaNode, GraphSchema
+from rasa.shared.utils.yaml import read_yaml_file
+from rasa.utils.io import write_yaml
 from tests.engine.graph_components_test_classes import PersistableTestComponent
 
 
@@ -38,9 +39,9 @@ def test_serialize_graph_schema(tmp_path: Path):
 
     # Dump it to make sure it's actually serializable
     file_path = tmp_path / "my_graph.yml"
-    rasa.shared.utils.io.write_yaml(serialized, file_path)
+    write_yaml(serialized, file_path)
 
-    serialized_graph_schema_from_file = rasa.shared.utils.io.read_yaml_file(file_path)
+    serialized_graph_schema_from_file = read_yaml_file(file_path)
     graph_schema_from_file = GraphSchema.from_dict(serialized_graph_schema_from_file)
 
     assert graph_schema_from_file == graph_schema
@@ -66,9 +67,9 @@ def test_invalid_module_error_when_deserializing_schemas(tmp_path: Path):
 
     # Dump it to make sure it's actually serializable
     file_path = tmp_path / "my_graph.yml"
-    rasa.shared.utils.io.write_yaml(serialized, file_path)
+    write_yaml(serialized, file_path)
 
-    serialized_graph_schema_from_file = rasa.shared.utils.io.read_yaml_file(file_path)
+    serialized_graph_schema_from_file = read_yaml_file(file_path)
 
     with pytest.raises(GraphSchemaException):
         _ = GraphSchema.from_dict(serialized_graph_schema_from_file)

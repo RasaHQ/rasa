@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Text, Union
 
 from rasa.shared.data import is_likely_yaml_file
 from rasa.shared.exceptions import RasaException, YamlSyntaxException
-from rasa.shared.utils.io import read_yaml_file
+from rasa.shared.utils.yaml import read_yaml_file
 
 
 def collect_yaml_files_from_path(path: Union[Text, Path]) -> List[Text]:

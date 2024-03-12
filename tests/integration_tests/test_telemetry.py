@@ -2,12 +2,12 @@ from pathlib import Path
 from typing import Callable
 
 import pytest
-import rasa.shared.utils.io
 from pytest import RunResult
 from rasa.constants import (
     CONFIG_TELEMETRY_DATE as RASA_CONFIG_TELEMETRY_DATE,
     CONFIG_TELEMETRY_ENABLED as RASA_CONFIG_TELEMETRY_ENABLED,
 )
+from rasa.shared.utils.yaml import read_yaml_file
 
 from rasa.telemetry import (
     RASA_PRO_CONFIG_FILE_TELEMETRY_KEY,
@@ -38,7 +38,7 @@ def test_telemetry_config_file_gets_written_with_default_telemetry_settings(
     global_config_path = Path("~/.config/rasa/global.yml").expanduser()
     assert global_config_path.exists()
 
-    config_content = rasa.shared.utils.io.read_yaml_file(global_config_path)
+    config_content = read_yaml_file(global_config_path)
 
     rasa_config = config_content.get("metrics")
     assert rasa_config is not None
@@ -71,7 +71,7 @@ def test_telemetry_config_file_when_telemetry_is_disabled(
     global_config_path = Path("~/.config/rasa/global.yml").expanduser()
     assert global_config_path.exists()
 
-    config_content = rasa.shared.utils.io.read_yaml_file(global_config_path)
+    config_content = read_yaml_file(global_config_path)
 
     rasa_config = config_content.get("metrics")
     assert rasa_config is not None

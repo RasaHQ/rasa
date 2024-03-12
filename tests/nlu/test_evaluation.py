@@ -177,7 +177,7 @@ N_FOLDS = 2
 def mocks_for_test_cross_validate(monkeypatch: MonkeyPatch):
     mock_write_yaml = MagicMock()
     mock_write_yaml.return_value = "write yaml"
-    monkeypatch.setattr("rasa.shared.utils.io.write_yaml", mock_write_yaml)
+    monkeypatch.setattr("rasa.nlu.test.write_yaml", mock_write_yaml)
 
     mock_train_nlu = MagicMock()
     mock_train_nlu.return_value = "train nlu"

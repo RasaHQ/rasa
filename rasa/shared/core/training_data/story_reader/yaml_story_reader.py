@@ -31,7 +31,6 @@ from rasa.shared.nlu.constants import (
     EXTRACTOR,
 )
 from rasa.shared.nlu.training_data import entities_parser
-import rasa.shared.utils.validation
 
 from rasa.shared.constants import (
     INTENT_MESSAGE_PREFIX,
@@ -51,6 +50,12 @@ from rasa.shared.core.events import (
 from rasa.shared.core.training_data.story_reader.story_reader import StoryReader
 from rasa.shared.core.training_data.structures import StoryStep
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.utils.yaml import (
+    validate_raw_yaml_using_schema_file,
+    read_yaml,
+    validate_training_data_format_version,
+    is_key_in_yaml,
+)
 
 logger = logging.getLogger(__name__)
 structlogger = structlog.get_logger()
@@ -137,9 +142,9 @@ class YAMLStoryReader(StoryReader):
             `StoryStep`s read from `string`.
         """
         if not skip_validation:
-            rasa.shared.utils.validation.validate_yaml_schema(string, CORE_SCHEMA_FILE)
+            validate_raw_yaml_using_schema_file(string, CORE_SCHEMA_FILE)
 
-        yaml_content = rasa.shared.utils.io.read_yaml(string)
+        yaml_content = read_yaml(string)
 
         return self.read_from_parsed_yaml(yaml_content)
 
@@ -154,9 +159,7 @@ class YAMLStoryReader(StoryReader):
         Returns:
             The parsed stories or rules.
         """
-        if not rasa.shared.utils.validation.validate_training_data_format_version(
-            parsed_content, self.source_name
-        ):
+        if not validate_training_data_format_version(parsed_content, self.source_name):
             return []
 
         for key, parser_class in {
@@ -185,9 +188,9 @@ class YAMLStoryReader(StoryReader):
             YamlException: if the file seems to be a YAML file (extension) but
                 can not be read / parsed.
         """
-        return rasa.shared.data.is_likely_yaml_file(
-            file_path
-        ) and rasa.shared.utils.io.is_key_in_yaml(file_path, KEY_STORIES, KEY_RULES)
+        return rasa.shared.data.is_likely_yaml_file(file_path) and is_key_in_yaml(
+            file_path, KEY_STORIES, KEY_RULES
+        )
 
     @classmethod
     def _has_test_prefix(cls, file_path: Text) -> bool:

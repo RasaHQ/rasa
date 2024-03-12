@@ -20,6 +20,7 @@ import rasa.shared.utils.cli
 import rasa.shared.utils.io
 import rasa.utils.common
 import rasa.utils.io
+from rasa.shared.utils.yaml import read_config_file
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +94,7 @@ def _prepare_credentials_for_rasa_x(
                 credentials_path, "credentials", DEFAULT_CREDENTIALS_PATH, True
             )
         )
-        credentials = rasa.shared.utils.io.read_config_file(credentials_path)
+        credentials = read_config_file(credentials_path)
     else:
         credentials = {}
 
