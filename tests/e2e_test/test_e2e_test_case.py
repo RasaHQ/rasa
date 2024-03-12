@@ -49,6 +49,23 @@ def test_create_test_step_bot_from_dict() -> None:
     assert result.actor == "bot"
 
 
+@pytest.mark.parametrize(
+    "input",
+    [
+        {"utter": "utter_greet"},
+        {"slot_was_set": {"slot_a": 1}},
+        {"slot_was_not_set": {"slot_a": 1}},
+    ],
+)
+def test_create_test_step_from_dict_text_is_none(input: Dict) -> None:
+    """Test creating a test step from a dictionary.
+
+    When "user" or "bot" keys are omitted, `text` property should be None.
+    """
+    result = TestStep.from_dict(input)
+    assert result.text is None
+
+
 def test_create_test_step_utter_from_dict() -> None:
     """Test creating a test step from a dictionary."""
     result = TestStep.from_dict({"utter": "utter_greet"})
