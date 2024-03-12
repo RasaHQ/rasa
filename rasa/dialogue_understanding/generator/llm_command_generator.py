@@ -196,17 +196,21 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             commands = [ErrorCommand()]
         else:
             commands = self.parse_commands(action_list, flows)
-        if not commands:
-            # no commands couldn't be parsed or there's an invalid command
-            commands = [CannotHandleCommand()]
+
+            if not commands:
+                # no commands couldn't be parsed or there's an invalid command
+                commands = [CannotHandleCommand()]
+            else:
+                # if the LLM command generator predicted valid commands and the
+                # coexistence feature is used, set the routing slot
+                if tracker.has_coexistence_routing_slot:
+                    commands += [SetSlotCommand(ROUTE_TO_CALM_SLOT, True)]
 
         structlogger.info(
             "llm_command_generator.predict_commands.finished",
             commands=commands,
         )
 
-        if tracker.has_coexistence_routing_slot:
-            commands += [SetSlotCommand(ROUTE_TO_CALM_SLOT, True)]
         return commands
 
     def render_template(
