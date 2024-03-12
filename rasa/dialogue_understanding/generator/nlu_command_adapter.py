@@ -2,12 +2,17 @@ from typing import Dict, Text, Any, Optional, List
 
 import structlog
 
-from rasa.dialogue_understanding.commands import Command, StartFlowCommand
+from rasa.dialogue_understanding.commands import (
+    Command,
+    StartFlowCommand,
+    SetSlotCommand,
+)
 from rasa.dialogue_understanding.generator import CommandGenerator
 from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.shared.constants import ROUTE_TO_CALM_SLOT
 from rasa.shared.core.flows.flows_list import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import INTENT
@@ -77,7 +82,18 @@ class NLUCommandAdapter(GraphComponent, CommandGenerator):
         Returns:
             The commands triggered by NLU.
         """
-        return self.convert_nlu_to_commands(message, tracker, flows)
+        if tracker is None or flows.is_empty():
+            # cannot do anything if there are no flows or no tracker
+            return []
+
+        commands = self.convert_nlu_to_commands(message, tracker, flows)
+
+        if commands and len(commands) >= 1 and tracker.has_coexistence_routing_slot:
+            # if the nlu command adapter will start a flow and the coexistence feature
+            # is used, make sure to set the routing slot
+            commands += [SetSlotCommand(ROUTE_TO_CALM_SLOT, True)]
+
+        return commands
 
     @staticmethod
     def convert_nlu_to_commands(

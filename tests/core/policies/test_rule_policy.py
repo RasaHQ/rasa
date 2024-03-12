@@ -13,6 +13,7 @@ from rasa.graph_components.providers.training_tracker_provider import (
 from rasa.shared.constants import (
     DEFAULT_NLU_FALLBACK_INTENT_NAME,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
+    ROUTE_TO_CALM_SLOT,
 )
 
 from rasa.core import training
@@ -37,6 +38,7 @@ from rasa.shared.core.constants import (
     RULE_ONLY_LOOPS,
     ACTION_UNLIKELY_INTENT_NAME,
 )
+from rasa.shared.core.slots import BooleanSlot
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     YAMLStoryReader,
 )
@@ -3169,3 +3171,30 @@ def test_initial_values_are_not_incorporated_into_rule_policy(
     policy.train(trackers, domain)
 
     assert not any(["has_said_hi" in rule for rule in policy.lookup[RULES]])
+
+
+def test_predict_action_probabilities_abstains_in_coexistence(policy: RulePolicy):
+    domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        intents:
+        - {GREET_INTENT_NAME}
+        actions:
+        - {UTTER_GREET_ACTION}
+        """
+    )
+
+    policy.train([GREET_RULE], domain)
+    # remove first ... action and utter_greet and last action_listen from greet rule
+    new_conversation = DialogueStateTracker.from_events(
+        "simple greet",
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered("haha", {"name": GREET_INTENT_NAME}),
+        ],
+        slots=[BooleanSlot(ROUTE_TO_CALM_SLOT, mappings=[{}], initial_value=True)],
+    )
+    prediction = policy.predict_action_probabilities(new_conversation, domain)
+
+    # check that the policy didn't predict anything
+    assert prediction.max_confidence == 0.0
