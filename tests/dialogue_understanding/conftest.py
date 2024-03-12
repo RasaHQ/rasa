@@ -1,15 +1,16 @@
+from unittest.mock import Mock
 from typing import List
-import pytest
 
+import pytest
 from rasa.dialogue_understanding.commands import StartFlowCommand
 from rasa.dialogue_understanding.processor.command_processor import execute_commands
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import UserFlowStackFrame
 from rasa.shared.core.events import UserUttered
 from rasa.shared.core.flows import FlowsList
+from rasa.shared.core.flows.yaml_flows_io import flows_from_str
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import COMMANDS
-from rasa.shared.core.flows.yaml_flows_io import flows_from_str
 
 
 @pytest.fixture
@@ -44,7 +45,7 @@ start_bar_user_uttered = UserUttered(
 def tracker(all_flows: FlowsList) -> DialogueStateTracker:
     # Creates a useful tracker that has a started flow and the current flows hashed
     tracker = DialogueStateTracker.from_events("test", evts=[start_foo_user_uttered])
-    execute_commands(tracker, all_flows)
+    execute_commands(tracker, all_flows, Mock())
     return tracker
 
 

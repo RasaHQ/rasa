@@ -1,5 +1,9 @@
 version: "3.1"
 responses:
+
+  utter_ask_rephrase:
+    - text: I’m sorry I am unable to understand you, could you please rephrase?
+
   utter_boolean_slot_rejection:
     - text: "Sorry, the value you provided, `{{value}}`, is not valid. Please respond with a valid value."
       metadata:
@@ -12,7 +16,7 @@ responses:
         rephrase: True
 
   utter_cannot_handle:
-    - text: I’m sorry I am unable to understand you, could you please rephrase?
+    - text: I'm sorry, I'm not trained to help with that.
 
   utter_categorical_slot_rejection:
     - text: "Sorry, you responded with an invalid value - `{{value}}`. Please select one of the available options."
@@ -107,16 +111,27 @@ flows:
       - action: utter_flow_cancelled_rasa
 
   pattern_cannot_handle:
-    description: pattern that is triggered when the command generators fail to create any valid commands
+    description: |
+      pattern that is triggered when the command generators fail to create (any) valid commands
     name: pattern cannot handle
     steps:
-      - action: utter_cannot_handle
+      - noop: true
+        next:
+          # chitchat fallback
+          - if: "'{{context.reason}}' == 'cannot_handle_chitchat'"
+            then:
+              - action: utter_cannot_handle
+                next: "END"
+          # default
+          - else:
+              - action: utter_ask_rephrase
+                next: "END"
 
   pattern_chitchat:
     description: handle interactions with the user that are not task-oriented
     name: pattern chitchat
     steps:
-      - action: utter_free_chitchat_response
+      - action: action_trigger_chitchat
 
   pattern_clarification:
     description: handle clarifications with the user

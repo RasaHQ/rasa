@@ -10,10 +10,13 @@ from rasa.dialogue_understanding.commands import (
     SetSlotCommand,
     StartFlowCommand,
     FreeFormAnswerCommand,
+    ChitChatAnswerCommand,
+    CannotHandleCommand,
 )
 from rasa.dialogue_understanding.commands.handle_code_change_command import (
     HandleCodeChangeCommand,
 )
+from rasa.dialogue_understanding.patterns.chitchat import FLOW_PATTERN_CHITCHAT
 from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
 )
@@ -28,14 +31,18 @@ from rasa.dialogue_understanding.stack.utils import (
     filled_slots_for_active_flow,
     top_flow_frame,
 )
-from rasa.shared.constants import ROUTE_TO_CALM_SLOT
+from rasa.engine.graph import ExecutionContext
+from rasa.shared.constants import (
+    ROUTE_TO_CALM_SLOT,
+    RASA_PATTERN_CANNOT_HANDLE_CHITCHAT,
+)
+from rasa.shared.core.constants import ACTION_TRIGGER_CHITCHAT
 from rasa.shared.core.constants import FLOW_HASHES_SLOT
 from rasa.shared.core.events import Event, SlotSet
-from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
 from rasa.shared.core.flows import FlowsList
+from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import COMMANDS
-
 
 structlogger = structlog.get_logger()
 
@@ -161,7 +168,9 @@ def calculate_flow_fingerprints(all_flows: FlowsList) -> Dict[str, str]:
 
 
 def execute_commands(
-    tracker: DialogueStateTracker, all_flows: FlowsList
+    tracker: DialogueStateTracker,
+    all_flows: FlowsList,
+    execution_context: ExecutionContext,
 ) -> List[Event]:
     """Executes a list of commands.
 
@@ -169,13 +178,15 @@ def execute_commands(
         commands: The commands to execute.
         tracker: The tracker to execute the commands on.
         all_flows: All flows.
+        execution_context: Information about the single graph run.
 
     Returns:
         A list of the events that were created.
     """
     commands: List[Command] = get_commands_from_tracker(tracker)
     original_tracker = tracker.copy()
-    commands = clean_up_commands(commands, tracker, all_flows)
+
+    commands = clean_up_commands(commands, tracker, all_flows, execution_context)
 
     updated_flows = find_updated_flows(tracker, all_flows)
     if updated_flows:
@@ -303,7 +314,10 @@ def get_current_collect_step(
 
 
 def clean_up_commands(
-    commands: List[Command], tracker: DialogueStateTracker, all_flows: FlowsList
+    commands: List[Command],
+    tracker: DialogueStateTracker,
+    all_flows: FlowsList,
+    execution_context: ExecutionContext,
 ) -> List[Command]:
     """Clean up a list of commands.
 
@@ -317,6 +331,7 @@ def clean_up_commands(
         commands: The commands to clean up.
         tracker: The tracker to clean up the commands for.
         all_flows: All flows.
+        execution_context: Information about a single graph run.
 
     Returns:
     The cleaned up commands.
@@ -327,10 +342,12 @@ def clean_up_commands(
     clean_commands: List[Command] = []
 
     for command in commands:
+
         if isinstance(command, SetSlotCommand):
             clean_commands = clean_up_slot_command(
                 clean_commands, command, stack, all_flows, slots_so_far
             )
+
         elif isinstance(command, CancelFlowCommand) and contains_command(
             clean_commands, CancelFlowCommand
         ):
@@ -338,12 +355,20 @@ def clean_up_commands(
                 "command_processor.clean_up_commands.skip_command_already_cancelled_flow",
                 command=command,
             )
+
+        # handle chitchat command differently from other free-form answer commands
+        elif isinstance(command, ChitChatAnswerCommand):
+            clean_commands = clean_up_chitchat_command(
+                clean_commands, command, all_flows, execution_context
+            )
+
         elif isinstance(command, FreeFormAnswerCommand):
             structlogger.debug(
-                "command_processor.clean_up_commands.prepend_command_free_form_answer",
+                "command_processor.clean_up_commands.prepend_command_freeform_answer",
                 command=command,
             )
             clean_commands.insert(0, command)
+
         # drop all clarify commands if there are more commands. Otherwise, we might
         # get a situation where two questions are asked at once.
         elif isinstance(command, ClarifyCommand) and len(commands) > 1:
@@ -426,5 +451,68 @@ def clean_up_slot_command(
             )
     else:
         resulting_commands.append(command)
+
+    return resulting_commands
+
+
+def clean_up_chitchat_command(
+    commands_so_far: List[Command],
+    command: ChitChatAnswerCommand,
+    flows: FlowsList,
+    execution_context: ExecutionContext,
+) -> List[Command]:
+    """Clean up a chitchat answer command.
+
+    Respond with 'cannot handle' if 'IntentlessPolicy' is unset in
+    model config but 'action_trigger_chitchat' is used within the pattern_chitchat
+
+    Args:
+        commands_so_far: The commands cleaned up so far.
+        command: The command to clean up.
+        flows: All flows.
+        execution_context: Information about a single graph run.
+    Returns:
+        The cleaned up commands.
+    """
+    from rasa.core.policies.intentless_policy import IntentlessPolicy
+
+    resulting_commands = commands_so_far[:]
+
+    pattern_chitchat = flows.flow_by_id(FLOW_PATTERN_CHITCHAT)
+
+    # very unlikely to happen, placed here due to mypy checks
+    if pattern_chitchat is None:
+        resulting_commands.insert(
+            0, CannotHandleCommand(RASA_PATTERN_CANNOT_HANDLE_CHITCHAT)
+        )
+        structlogger.warn(
+            "command_processor.clean_up_chitchat_command.pattern_chitchat_not_found",
+            command=resulting_commands[0],
+        )
+        return resulting_commands
+
+    has_action_trigger_chitchat = pattern_chitchat.has_action_step(
+        ACTION_TRIGGER_CHITCHAT
+    )
+    defines_intentless_policy = execution_context.has_node(IntentlessPolicy)
+
+    if has_action_trigger_chitchat and not defines_intentless_policy:
+        resulting_commands.insert(
+            0, CannotHandleCommand(RASA_PATTERN_CANNOT_HANDLE_CHITCHAT)
+        )
+        structlogger.warn(
+            "command_processor.clean_up_chitchat_command.replace_chitchat_answer_with_cannot_handle",
+            command=resulting_commands[0],
+            pattern_chitchat_uses_action_trigger_chitchat=has_action_trigger_chitchat,
+            defined_intentless_policy_in_config=defines_intentless_policy,
+        )
+    else:
+        resulting_commands.insert(0, command)
+        structlogger.debug(
+            "command_processor.clean_up_commands.prepend_command_chitchat_answer",
+            command=command,
+            pattern_chitchat_uses_action_trigger_chitchat=has_action_trigger_chitchat,
+            defined_intentless_policy_in_config=defines_intentless_policy,
+        )
 
     return resulting_commands

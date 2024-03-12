@@ -5,6 +5,7 @@ from rasa.dialogue_understanding.patterns.cannot_handle import (
     FLOW_PATTERN_CANNOT_HANDLE,
     CannotHandlePatternFlowStackFrame,
 )
+from rasa.shared.constants import RASA_PATTERN_CANNOT_HANDLE_DEFAULT
 from rasa.shared.core.events import UserUttered, DialogueStackUpdated
 from rasa.shared.core.trackers import DialogueStateTracker
 
@@ -15,8 +16,20 @@ def test_name_of_command():
     assert CannotHandleCommand.command() == "cannot handle"
 
 
+def test_default_values():
+    command = CannotHandleCommand()
+    assert command.reason == RASA_PATTERN_CANNOT_HANDLE_DEFAULT
+
+
 def test_from_dict():
     assert CannotHandleCommand.from_dict({}) == CannotHandleCommand()
+
+
+def test_from_dict_reason():
+    test_data = {"reason": "test_reason"}
+    assert CannotHandleCommand.from_dict(test_data) == CannotHandleCommand(
+        "test_reason"
+    )
 
 
 def test_run_command_on_tracker():

@@ -17,7 +17,7 @@ from rasa.dialogue_understanding.generator.llm_command_generator import (
     LLMCommandGenerator,
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
-from rasa.engine.graph import GraphModelConfiguration, GraphNode
+from rasa.engine.graph import GraphModelConfiguration, GraphNode, ExecutionContext
 from rasa.engine.training.graph_trainer import GraphTrainer
 from rasa.shared.core.constants import REQUESTED_SLOT
 from rasa.shared.core.domain import Domain
@@ -352,7 +352,9 @@ def extract_attrs_for_generate(
 
 
 def extract_attrs_for_execute_commands(
-    tracker: DialogueStateTracker, all_flows: FlowsList
+    tracker: DialogueStateTracker,
+    all_flows: FlowsList,
+    execution_context: ExecutionContext,
 ) -> Dict[str, Any]:
     return {
         "number_of_events": len(tracker.events),
@@ -391,7 +393,10 @@ def extract_attrs_for_validate_state_of_commands(
 
 
 def extract_attrs_for_clean_up_commands(
-    commands: List[Command], tracker: DialogueStateTracker, all_flows: FlowsList
+    commands: List[Command],
+    tracker: DialogueStateTracker,
+    all_flows: FlowsList,
+    execution_context: ExecutionContext,
 ) -> Dict[str, Any]:
     commands_list = []
 

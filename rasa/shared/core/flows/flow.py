@@ -22,6 +22,7 @@ from rasa.shared.core.flows.steps import (
     CollectInformationFlowStep,
     EndFlowStep,
     StartFlowStep,
+    ActionFlowStep,
 )
 from rasa.shared.core.flows.flow_step_sequence import FlowStepSequence
 from rasa.shared.utils.pypred import get_case_insensitive_predicate_given_slot_instance
@@ -52,6 +53,7 @@ class Flow:
         """Create a Flow object from serialized data.
 
         Args:
+            flow_id: id of the flow
             data: data for a Flow object in a serialized format.
 
         Returns:
@@ -265,3 +267,10 @@ class Flow:
                 error=str(e),
             )
             return False
+
+    def has_action_step(self, action: Text) -> bool:
+        """Check whether the flow has an action step with the given action."""
+        for step in self.steps:
+            if isinstance(step, ActionFlowStep) and step.action == action:
+                return True
+        return False

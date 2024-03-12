@@ -1,3 +1,5 @@
+from unittest.mock import Mock
+
 import pytest
 
 from rasa.core.channels import CollectingOutputChannel
@@ -58,9 +60,9 @@ def test_run_command_on_tracker(tracker: DialogueStateTracker, all_flows: FlowsL
 @pytest.fixture
 def about_to_be_cleaned_tracker(tracker: DialogueStateTracker, all_flows: FlowsList):
     tracker.update_with_events([start_bar_user_uttered])
-    execute_commands(tracker, all_flows)
+    execute_commands(tracker, all_flows, Mock())
     changed_flows = flows_from_str(change_cases["step_id_changed"])
-    execute_commands(tracker, changed_flows)
+    execute_commands(tracker, changed_flows, Mock())
     stack = tracker.stack
     assert len(stack.frames) == 3
 
