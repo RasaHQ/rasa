@@ -7,6 +7,14 @@ import randomname
 import structlog
 
 import rasa.engine.validation
+import rasa.model
+import rasa.shared.constants
+import rasa.shared.exceptions
+import rasa.shared.utils.cli
+import rasa.shared.utils.common
+import rasa.shared.utils.io
+import rasa.utils.common
+from rasa import telemetry
 from rasa.engine.caching import LocalTrainingCache
 from rasa.engine.recipes.recipe import Recipe
 from rasa.engine.runner.dask import DaskGraphRunner
@@ -14,20 +22,12 @@ from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.training.components import FingerprintStatus
 from rasa.engine.training.graph_trainer import GraphTrainer
+from rasa.shared.constants import CONTEXT
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import SlotSet
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.data import TrainingType
 from rasa.shared.importers.importer import TrainingDataImporter
-from rasa import telemetry
-from rasa.shared.core.domain import Domain
-import rasa.utils.common
-import rasa.shared.utils.common
-import rasa.shared.utils.cli
-import rasa.shared.exceptions
-import rasa.shared.utils.io
-import rasa.shared.constants
-from rasa.shared.constants import CONTEXT
-import rasa.model
 
 CODE_NEEDS_TO_BE_RETRAINED = 0b0001
 CODE_FORCED_TRAINING = 0b1000
@@ -324,6 +324,7 @@ def _train_graph(
         config,
         training_type,
     )
+    flows = file_importer.get_flows()
     model_configuration = recipe.graph_config_for_recipe(
         config,
         kwargs,
@@ -331,6 +332,9 @@ def _train_graph(
         is_finetuning=is_finetuning,
     )
     rasa.engine.validation.validate(model_configuration)
+    rasa.engine.validation.validate_flow_component_dependencies(
+        flows, model_configuration
+    )
 
     tempdir_name = rasa.utils.common.get_temp_dir_name()
     # Use `TempDirectoryPath` instead of `tempfile.TemporaryDirectory` as this

@@ -8,7 +8,7 @@ target-version = [ "py38", "py39", "py310",]
 exclude = "((.eggs | .git | .pytest_cache | build | dist))"
 
 [tool.poetry]
-name = "rasa"
+name = "rasa-pro"
 version = "3.7.8"
 description = "State-of-the-art open-core Conversational AI framework for Enterprises that natively leverages generative AI for effortless assistant development."
 authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
@@ -20,6 +20,7 @@ classifiers = [ "Development Status :: 5 - Production/Stable", "Intended Audienc
 keywords = [ "nlp", "machine-learning", "machine-learning-library", "bot", "bots", "botkit", "rasa conversational-agents", "conversational-ai", "chatbot", "chatbot-framework", "bot-framework",]
 include = [ "LICENSE.txt", "README.md", "rasa/shared/core/training_data/visualization.html", "rasa/cli/default_config.yml", "rasa/shared/importers/*", "rasa/utils/schemas/*", "rasa/keys", "rasa/dialogue_understanding/classifiers/command_prompt_template.jinja2",]
 readme = "README.md"
+packages = [ { include = "rasa" } ]
 [[tool.poetry.source]]
 name = "internal repository mirroring psycopg binary for macos"
 url = "https://europe-west3-python.pkg.dev/rasa-releases/psycopg-binary/simple/"

@@ -7,18 +7,17 @@ from typing import Any, Callable, Dict, List, Optional, Text, Type, Tuple, Union
 
 import structlog
 
+import rasa.shared.utils.common
+import rasa.utils.common
 from rasa.engine.exceptions import (
     GraphComponentException,
     GraphRunError,
     GraphSchemaException,
 )
-import rasa.shared.utils.common
-import rasa.utils.common
 from rasa.engine.storage.resource import Resource
-
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.exceptions import InvalidConfigException, RasaException
 from rasa.shared.data import TrainingType
+from rasa.shared.exceptions import InvalidConfigException, RasaException
 
 structlogger = structlog.get_logger()
 
@@ -160,6 +159,13 @@ class GraphSchema:
                 required += self._all_dependencies_schema([dependency])
 
         return required
+
+    def has_node(self, node_type: Type) -> bool:
+        """Checks if the graph schema contains a node of the specified node type."""
+        for node in self.nodes.values():
+            if node.uses is node_type:
+                return True
+        return False
 
 
 class GraphComponent(ABC):
@@ -321,6 +327,10 @@ class ExecutionContext:
     is_finetuning: bool = False
     # This is set by the `GraphNode` before it is passed to the `GraphComponent`.
     node_name: Optional[Text] = None
+
+    def has_node(self, node_type: Type) -> bool:
+        """Checks if the graph node of the given type is present in the graph schema."""
+        return self.graph_schema.has_node(node_type)
 
 
 class GraphNode:

@@ -1,3 +1,4 @@
+import dataclasses
 import inspect
 import logging
 import typing
@@ -15,13 +16,15 @@ from typing import (
     List,
 )
 
-import dataclasses
-
-from rasa.core.policies.policy import PolicyPrediction
-from rasa.engine.training.fingerprinting import Fingerprintable
-import rasa.utils.common
+import structlog
 import typing_utils
 
+import rasa.utils.common
+from rasa.core import IntentlessPolicy
+from rasa.core.policies.policy import PolicyPrediction
+from rasa.core.utils import AvailableEndpoints
+from rasa.dialogue_understanding.patterns.chitchat import FLOW_PATTERN_CHITCHAT
+from rasa.engine.constants import RESERVED_PLACEHOLDERS
 from rasa.engine.exceptions import GraphSchemaValidationException
 from rasa.engine.graph import (
     GraphSchema,
@@ -30,15 +33,18 @@ from rasa.engine.graph import (
     ExecutionContext,
     GraphModelConfiguration,
 )
-from rasa.engine.constants import RESERVED_PLACEHOLDERS
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.engine.training.fingerprinting import Fingerprintable
 from rasa.shared.constants import DOCS_URL_GRAPH_COMPONENTS
+from rasa.shared.core.constants import ACTION_TRIGGER_CHITCHAT
+from rasa.shared.core.flows import FlowsList, Flow
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.training_data.message import Message
-from rasa.core.utils import AvailableEndpoints
 
 TypeAnnotation = Union[TypeVar, Text, Type, Optional[AvailableEndpoints]]
+
+structlogger = structlog.get_logger()
 
 
 @dataclasses.dataclass
@@ -585,3 +591,37 @@ def _recursively_check_required_components(
     component_types.add(schema_node.uses)
 
     return unmet_requirements, component_types
+
+
+def validate_flow_component_dependencies(
+    flows: FlowsList, model_configuration: GraphModelConfiguration
+) -> None:
+
+    if (pattern_chitchat := flows.flow_by_id(FLOW_PATTERN_CHITCHAT)) is not None:
+        _validate_chitchat_dependencies(pattern_chitchat, model_configuration)
+
+
+def _validate_chitchat_dependencies(
+    pattern_chitchat: Flow, model_configuration: GraphModelConfiguration
+) -> None:
+    """Validate that the IntentlessPolicy is configured if the pattern_chitchat
+    is using action_trigger_chitchat.
+    """
+    has_action_trigger_chitchat = pattern_chitchat.has_action_step(
+        ACTION_TRIGGER_CHITCHAT
+    )
+    has_intentless_policy_configured = model_configuration.predict_schema.has_node(
+        IntentlessPolicy
+    )
+
+    if has_action_trigger_chitchat and not has_intentless_policy_configured:
+        structlogger.warn(
+            f"flow_component_dependencies"
+            f".{FLOW_PATTERN_CHITCHAT}"
+            f".intentless_policy_not_configured",
+            event_info=(
+                f"`{FLOW_PATTERN_CHITCHAT}` has an action step with "
+                f"`{ACTION_TRIGGER_CHITCHAT}`, but `IntentlessPolicy` is not "
+                f"configured."
+            ),
+        )

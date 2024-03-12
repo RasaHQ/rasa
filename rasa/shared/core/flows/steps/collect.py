@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, Any, List, Set
 
-from rasa.shared.constants import UTTER_ASK_PREFIX
+from rasa.shared.constants import UTTER_ASK_PREFIX, ACTION_ASK_PREFIX
 from rasa.shared.core.flows.flow_step import FlowStep
 
 
@@ -18,7 +18,7 @@ class SlotRejection:
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> SlotRejection:
-        """Create a SlotRejection object from serialized data
+        """Create a SlotRejection object from serialized data.
 
         Args:
             data: data for a SlotRejection object in a serialized format
@@ -32,7 +32,7 @@ class SlotRejection:
         )
 
     def as_dict(self) -> Dict[str, Any]:
-        """Serialize the SlotRejection object
+        """Serialize the SlotRejection object.
 
         Returns:
             the SlotRejection object as serialized data
@@ -51,6 +51,8 @@ class CollectInformationFlowStep(FlowStep):
     """The collect information of the flow step."""
     utter: str
     """The utterance that the assistant uses to ask for the slot."""
+    collect_action: str
+    """The action that the assistant uses to ask for the slot."""
     rejections: List[SlotRejection]
     """how the slot value is validated using predicate evaluation."""
     ask_before_filling: bool = False
@@ -60,7 +62,7 @@ class CollectInformationFlowStep(FlowStep):
 
     @classmethod
     def from_json(cls, data: Dict[str, Any]) -> CollectInformationFlowStep:
-        """Create a CollectInformationFlowStep object from serialized data
+        """Create a CollectInformationFlowStep object from serialized data.
 
         Args:
             data: data for a CollectInformationFlowStep object in a serialized format
@@ -72,6 +74,9 @@ class CollectInformationFlowStep(FlowStep):
         return CollectInformationFlowStep(
             collect=data["collect"],
             utter=data.get("utter", f"{UTTER_ASK_PREFIX}{data['collect']}"),
+            collect_action=data.get(
+                "collect_action", f"{ACTION_ASK_PREFIX}{data['collect']}"
+            ),
             ask_before_filling=data.get("ask_before_filling", False),
             reset_after_flow_ends=data.get("reset_after_flow_ends", True),
             rejections=[
@@ -90,6 +95,7 @@ class CollectInformationFlowStep(FlowStep):
         data = super().as_json()
         data["collect"] = self.collect
         data["utter"] = self.utter
+        data["collect_action"] = self.collect_action
         data["ask_before_filling"] = self.ask_before_filling
         data["reset_after_flow_ends"] = self.reset_after_flow_ends
         data["rejections"] = [rejection.as_dict() for rejection in self.rejections]
@@ -103,5 +109,5 @@ class CollectInformationFlowStep(FlowStep):
 
     @property
     def utterances(self) -> Set[str]:
-        """Return all the utterances used in this step"""
+        """Return all the utterances used in this step."""
         return {self.utter} | {r.utter for r in self.rejections}

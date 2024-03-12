@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, List, Dict, Text
 
 import pytest
 from rasa.dialogue_understanding.stack.utils import (
@@ -551,6 +551,55 @@ def test_is_startable(
     is_startable = flow.is_startable(document)
     # Then
     assert is_startable == expected_startable
+
+
+@pytest.mark.parametrize(
+    "action_steps, action, expected_has_action_step",
+    [
+        ([], "action_listen", False),
+        (
+            [{"id": "some_action_step", "action": "action_custom"}],
+            "action_custom",
+            True,
+        ),
+        (
+            [
+                {"id": "first_action_step", "action": "action_custom"},
+                {"id": "second_action_step", "action": "action_listen"},
+            ],
+            "action_custom",
+            True,
+        ),
+        (
+            [
+                {"id": "first_action_step", "action": "action_custom"},
+                {"id": "second_action_step", "action": "action_listen"},
+            ],
+            "non_existent_action",
+            False,
+        ),
+    ],
+)
+def test_has_action_step(
+    action_steps: List[Dict], action: Text, expected_has_action_step: bool
+):
+    # Given
+    steps = [
+        *action_steps,
+        {
+            "id": "some_collect_step",
+            "collect": "some_slot",
+            "utter": "utter_collect_some_slot",
+        },
+    ]
+    flow = Flow.from_json(
+        "flow_a",
+        {"steps": steps},
+    )
+    # When
+    has_action_step = flow.has_action_step(action)
+    # Then
+    assert has_action_step == expected_has_action_step
 
 
 @pytest.mark.parametrize(

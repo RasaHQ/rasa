@@ -21,6 +21,7 @@ import rasa.shared.nlu.training_data.util
 import rasa.shared.utils.cli
 import rasa.utils.common
 import rasa.shared.utils.io
+from rasa.shared.utils.yaml import read_yaml_file, write_yaml
 
 logger = logging.getLogger(__name__)
 
@@ -227,7 +228,7 @@ def split_stories_data(args: argparse.Namespace) -> None:
 
     # load Yaml stories data
     for file_name in data_files:
-        file_data = rasa.shared.utils.io.read_yaml_file(file_name)
+        file_data = read_yaml_file(file_name)
         assert isinstance(file_data, dict)
         stories = file_data.get(KEY_STORIES, [])
         if not stories:
@@ -245,10 +246,10 @@ def split_stories_data(args: argparse.Namespace) -> None:
 
         # train file contains everything else from the file + train stories
         file_data[KEY_STORIES] = train
-        rasa.shared.utils.io.write_yaml(file_data, out_file_train)
+        write_yaml(file_data, out_file_train)
 
         # test file contains just test stories
-        rasa.shared.utils.io.write_yaml({KEY_STORIES: test}, out_file_test)
+        write_yaml({KEY_STORIES: test}, out_file_test)
         logger.info(
             f"From {file_name} we produced {out_file_train} "
             f"with {len(train)} stories and {out_file_test} "

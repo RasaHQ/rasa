@@ -29,6 +29,7 @@ from rasa.core.channels import UserMessage
 from rasa.core.processor import MessageProcessor
 from rasa.plugin import plugin_manager
 from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.utils.yaml import write_yaml
 from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
 import rasa.shared.utils.io
 import rasa.utils.plotting as plot_utils
@@ -1612,7 +1613,7 @@ async def cross_validate(
 
         if isinstance(nlu_config, Dict):
             config_path = tmp_path / "config.yml"
-            rasa.shared.utils.io.write_yaml(nlu_config, config_path)
+            write_yaml(nlu_config, config_path)
             nlu_config = str(config_path)
 
         if output:

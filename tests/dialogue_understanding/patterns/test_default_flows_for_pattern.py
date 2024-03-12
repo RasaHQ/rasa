@@ -1,8 +1,8 @@
-import rasa.shared.utils.io
+from rasa.shared.utils.yaml import read_yaml_file
 
 
 async def test_alphabetical_order_default_responses() -> None:
-    default_flows_responses = rasa.shared.utils.io.read_yaml_file(
+    default_flows_responses = read_yaml_file(
         "rasa/dialogue_understanding/patterns/default_flows_for_patterns.yml"
     )
     responses = list(default_flows_responses["responses"].keys())
@@ -12,7 +12,7 @@ async def test_alphabetical_order_default_responses() -> None:
 
 
 async def test_alphabetical_order_default_flows() -> None:
-    default_flows_responses = rasa.shared.utils.io.read_yaml_file(
+    default_flows_responses = read_yaml_file(
         "rasa/dialogue_understanding/patterns/default_flows_for_patterns.yml"
     )
     default_flows = list(default_flows_responses["flows"].keys())

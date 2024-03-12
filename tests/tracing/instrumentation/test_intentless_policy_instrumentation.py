@@ -205,7 +205,7 @@ def test_tracing_intentless_policy_find_closest_response(
                 update='[{"op": "replace", "path": "/0/step_id", "value": "0_collect_confirm_correct_card"}]'  # noqa: E501
             ),
             DialogueStackUpdated(
-                update='[{"op": "add", "path": "/1", "value": {"frame_id": "ORK38NAU", "flow_id": "pattern_collect_information", "step_id": "START", "collect": "confirm_correct_card", "utter": "utter_ask_confirm_correct_card", "rejections": [], "type": "pattern_collect_information"}}]'  # noqa: E501
+                update='[{"op": "add", "path": "/1", "value": {"frame_id": "ORK38NAU", "flow_id": "pattern_collect_information", "step_id": "START", "collect": "confirm_correct_card", "utter": "utter_ask_confirm_correct_card",  "collect_action": "action_ask_confirm_correct_card", "rejections": [], "type": "pattern_collect_information"}}]'  # noqa: E501
             ),
             DialogueStackUpdated(
                 update='[{"op": "replace", "path": "/1/step_id", "value": "start"}]'

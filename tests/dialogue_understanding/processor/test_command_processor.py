@@ -1,7 +1,7 @@
 from typing import List, Optional
-import pytest
 from unittest.mock import Mock, patch
 
+import pytest
 from rasa.dialogue_understanding.commands import (
     CancelFlowCommand,
     ClarifyCommand,
@@ -10,6 +10,8 @@ from rasa.dialogue_understanding.commands import (
     FreeFormAnswerCommand,
     SetSlotCommand,
     StartFlowCommand,
+    ChitChatAnswerCommand,
+    CannotHandleCommand,
 )
 from rasa.dialogue_understanding.commands.correct_slots_command import CorrectedSlot
 from rasa.dialogue_understanding.patterns.collect_information import (
@@ -33,6 +35,9 @@ from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
     BaseFlowStackFrame,
     UserFlowStackFrame,
 )
+from rasa.engine.graph import ExecutionContext
+from rasa.shared.constants import RASA_PATTERN_CANNOT_HANDLE_CHITCHAT
+from rasa.shared.core.constants import ACTION_TRIGGER_CHITCHAT
 from rasa.shared.core.events import (
     BotUttered,
     DialogueStackUpdated,
@@ -210,7 +215,7 @@ def test_execute_commands(all_flows: FlowsList):
         ],
     )
     # When
-    events = execute_commands(tracker, all_flows)
+    events = execute_commands(tracker, all_flows, Mock())
     # Then
     assert len(events) == 2
 
@@ -367,7 +372,9 @@ def test_clean_up_commands(
         ),
         Mock(return_value={"ham"}),
     ):
-        clean_commands = clean_up_commands(commands, tracker_eggs, collect_info_flow)
+        clean_commands = clean_up_commands(
+            commands, tracker_eggs, collect_info_flow, Mock()
+        )
 
     # Then
     assert clean_commands == expected_clean_commands
@@ -407,7 +414,63 @@ def test_clean_up_commands_with_correction_pattern_on_stack(
         ),
         Mock(return_value={"ham"}),
     ):
-        clean_commands = clean_up_commands(commands, tracker_eggs, collect_info_flow)
+        clean_commands = clean_up_commands(
+            commands, tracker_eggs, collect_info_flow, Mock()
+        )
 
     # Then
+    assert clean_commands == expected_clean_commands
+
+
+@pytest.mark.parametrize(
+    (
+        "commands,"
+        "expected_clean_commands,"
+        "defines_intentless_policy,"
+        "uses_action_trigger_chitchat"
+    ),
+    [
+        ([ChitChatAnswerCommand()], [ChitChatAnswerCommand()], True, True),
+        ([ChitChatAnswerCommand()], [ChitChatAnswerCommand()], False, False),
+        (
+            [ChitChatAnswerCommand()],
+            [CannotHandleCommand(RASA_PATTERN_CANNOT_HANDLE_CHITCHAT)],
+            False,
+            True,
+        ),
+        ([ChitChatAnswerCommand()], [ChitChatAnswerCommand()], True, False),
+    ],
+)
+@patch("rasa.shared.core.flows.flows_list.FlowsList.flow_by_id")
+@patch("rasa.engine.graph.ExecutionContext.has_node")
+def test_clean_up_chitchat_commands(
+    mock_execution_context_has_node: Mock,
+    mock_flow_by_id: Mock,
+    commands,
+    expected_clean_commands,
+    defines_intentless_policy,
+    uses_action_trigger_chitchat,
+):
+    # Given
+    # mock getting the pattern_chitchat flow
+    flows = FlowsList(underlying_flows=[])
+    mock_pattern_chitchat = Mock()
+    mock_pattern_chitchat.has_action_step = Mock(
+        return_value=uses_action_trigger_chitchat
+    )
+    mock_flow_by_id.return_value = mock_pattern_chitchat
+    # mock the presence of the intentless policy in the execution context
+    execution_context = ExecutionContext(Mock())
+    mock_execution_context_has_node.return_value = defines_intentless_policy
+    # mock the tracker
+    tracker = DialogueStateTracker.from_events(sender_id="test", evts=[])
+
+    # When
+    clean_commands = clean_up_commands(commands, tracker, flows, execution_context)
+
+    # Then
+    mock_execution_context_has_node.assert_called_once()
+    mock_pattern_chitchat.has_action_step.assert_called_once_with(
+        ACTION_TRIGGER_CHITCHAT
+    )
     assert clean_commands == expected_clean_commands

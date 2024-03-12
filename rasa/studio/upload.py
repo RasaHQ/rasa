@@ -13,6 +13,7 @@ from rasa.shared.core.flows.yaml_flows_io import YamlFlowsWriter
 from rasa.shared.exceptions import RasaException
 from rasa.shared.importers.importer import TrainingDataImporter, FlowSyncImporter
 from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
+from rasa.shared.utils.yaml import dump_obj_as_yaml_to_string
 
 from rasa.studio.auth import KeycloakTokenReader
 from rasa.studio.config import StudioConfig
@@ -209,7 +210,7 @@ def upload_classic_assistant(
     nlu_examples_yaml = RasaYAMLWriter().dumps(nlu_examples)
 
     domain = _filter_domain(all_entities, intents, importer.get_domain().as_dict())
-    domain_yaml = rasa.shared.utils.io.dump_obj_as_yaml_to_string(domain)
+    domain_yaml = dump_obj_as_yaml_to_string(domain)
 
     graphql_req = build_request(assistant_name, nlu_examples_yaml, domain_yaml)
 

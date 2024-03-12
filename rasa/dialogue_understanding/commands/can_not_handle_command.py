@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional, Text
+
 from rasa.dialogue_understanding.commands import Command
 from rasa.dialogue_understanding.patterns.cannot_handle import (
     CannotHandlePatternFlowStackFrame,
 )
+from rasa.shared.constants import RASA_PATTERN_CANNOT_HANDLE_DEFAULT
 from rasa.shared.core.events import Event
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -14,6 +16,10 @@ from rasa.shared.core.trackers import DialogueStateTracker
 @dataclass
 class CannotHandleCommand(Command):
     """A command to indicate that the bot can't handle the user's input."""
+
+    reason: Optional[Text] = RASA_PATTERN_CANNOT_HANDLE_DEFAULT
+    """Reason for cannot handle used in switch-case of the
+    cannot handle pattern flow."""
 
     @classmethod
     def command(cls) -> str:
@@ -27,7 +33,9 @@ class CannotHandleCommand(Command):
         Returns:
             The converted dictionary.
         """
-        return CannotHandleCommand()
+        return CannotHandleCommand(
+            data.get("reason", RASA_PATTERN_CANNOT_HANDLE_DEFAULT)
+        )
 
     def run_command_on_tracker(
         self,
@@ -46,5 +54,8 @@ class CannotHandleCommand(Command):
             The events to apply to the tracker.
         """
         stack = tracker.stack
-        stack.push(CannotHandlePatternFlowStackFrame())
+        if self.reason is not None:
+            stack.push(CannotHandlePatternFlowStackFrame(reason=self.reason))
+        else:
+            stack.push(CannotHandlePatternFlowStackFrame())
         return tracker.create_stack_updated_events(stack)

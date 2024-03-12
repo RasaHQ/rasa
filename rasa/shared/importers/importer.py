@@ -23,6 +23,7 @@ from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.constants import ENTITIES, ACTION_NAME
 from rasa.shared.core.domain import IS_RETRIEVAL_INTENT_KEY
+from rasa.shared.utils.yaml import read_config_file
 
 logger = logging.getLogger(__name__)
 
@@ -115,7 +116,7 @@ class TrainingDataImporter(ABC):
         args: Optional[Dict[Text, Any]] = {},
     ) -> "TrainingDataImporter":
         """Loads a `TrainingDataImporter` instance from a configuration file."""
-        config = rasa.shared.utils.io.read_config_file(config_path)
+        config = read_config_file(config_path)
         return TrainingDataImporter.load_from_dict(
             config, config_path, domain_path, training_data_paths, args
         )
@@ -424,7 +425,8 @@ class FlowSyncImporter(PassThroughImporter):
             flows: user defined flows.
 
         Returns:
-            Merged flows."""
+        Merged flows.
+        """
         default_flows = cls.load_default_pattern_flows()
 
         user_flow_ids = [flow.id for flow in flows.underlying_flows]

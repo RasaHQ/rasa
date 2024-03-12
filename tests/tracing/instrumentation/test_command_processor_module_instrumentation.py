@@ -1,5 +1,6 @@
 import importlib
 from typing import Sequence
+from unittest.mock import Mock
 
 from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
@@ -28,10 +29,7 @@ def test_tracing_command_processor_execute_commands(
 
     module = importlib.import_module(COMMAND_PROCESSOR_MODULE_NAME)
     tracker = DialogueStateTracker.from_events(sender_id, evts=[])
-    module.execute_commands(
-        tracker,
-        FlowsList(underlying_flows=[]),
-    )
+    module.execute_commands(tracker, FlowsList(underlying_flows=[]), Mock())
 
     captured_spans: Sequence[
         ReadableSpan
@@ -99,6 +97,7 @@ def test_tracing_command_processor_clean_up_commands(
         next=FlowStepLinks(links=[]),
         collect="amount",
         utter="utter_ask_transfer_money_amount_of_money",
+        collect_action="action_ask_transfer_money_amount_of_money",
         rejections=[],
     )
 
@@ -114,6 +113,7 @@ def test_tracing_command_processor_clean_up_commands(
                 )
             ]
         ),
+        Mock(),
     )
 
     captured_spans: Sequence[

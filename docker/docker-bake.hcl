@@ -3,7 +3,7 @@ variable "TARGET_IMAGE_REGISTRY" {
 }
 
 variable "TARGET_IMAGE_NAME" {
-  default = "${TARGET_IMAGE_REGISTRY}/rasa"
+  default = "${TARGET_IMAGE_REGISTRY}/rasa-pro"
 }
 
 variable "BASE_IMAGE_NAME" {

@@ -32,7 +32,6 @@ import rasa.shared.core.events
 import rasa.shared.nlu.training_data.schemas.data_schema
 import rasa.shared.utils.common
 import rasa.shared.utils.io
-import rasa.shared.utils.validation
 import rasa.utils.common
 import rasa.utils.endpoints
 import rasa.utils.io
@@ -68,6 +67,7 @@ from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.training_data.formats import RasaYAMLReader
 from rasa.shared.utils.schemas.events import EVENTS_SCHEMA
+from rasa.shared.utils.yaml import validate_training_data
 from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
 from rasa.utils.endpoints import EndpointConfig
 from sanic import Sanic, response
@@ -302,7 +302,7 @@ async def get_test_stories(
     fetch_all_sessions: bool = False,
 ) -> Text:
     """Retrieves test stories from `processor` for all conversation sessions for
-    `conversation_id`.
+       `conversation_id`.
 
     Args:
         processor: An instance of `MessageProcessor`.
@@ -1491,7 +1491,7 @@ def _nlu_training_payload_from_json(
 ) -> Dict[Text, Any]:
     logger.debug("Extracting JSON training data from request body.")
 
-    rasa.shared.utils.validation.validate_training_data(
+    validate_training_data(
         request.json,
         rasa.shared.nlu.training_data.schemas.data_schema.rasa_nlu_data_schema(),
     )

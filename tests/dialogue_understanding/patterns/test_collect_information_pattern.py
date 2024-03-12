@@ -15,14 +15,16 @@ async def test_collect_information_pattern_flow_stack_frame_from_dict() -> None:
         {
             "frame_id": "test_id",
             "step_id": "test_step_id",
-            "utter": "test_utter",
+            "utter": "utter_ask_test_slot",
+            "collect_action": "action_ask_test_slot",
             "collect": "test_slot",
             "rejections": [{"if": "condition", "utter": "sample_a"}],
         }
     )
     assert frame.frame_id == "test_id"
     assert frame.step_id == "test_step_id"
-    assert frame.utter == "test_utter"
+    assert frame.utter == "utter_ask_test_slot"
+    assert frame.collect_action == "action_ask_test_slot"
     assert frame.collect == "test_slot"
     assert frame.rejections == [
         SlotRejection.from_dict({"if": "condition", "utter": "sample_a"})
@@ -35,15 +37,17 @@ async def test_collect_information_pattern_flow_stack_context_as_dict_empty() ->
     frame = CollectInformationPatternFlowStackFrame(
         frame_id="test_id",
         step_id="test_step_id",
-        utter="test_utter",
+        utter="utter_ask_test_slot",
+        collect_action="action_ask_test_slot",
         collect="test_slot",
         rejections=[SlotRejection.from_dict({"if": "condition", "utter": "sample_a"})],
     )
     assert frame.context_as_dict([]) == {
         "frame_id": "test_id",
         "step_id": "test_step_id",
-        "utter": "test_utter",
+        "utter": "utter_ask_test_slot",
         "collect": "test_slot",
+        "collect_action": "action_ask_test_slot",
         "rejections": [{"if": "condition", "utter": "sample_a"}],
         "type": "pattern_collect_information",
         "flow_id": "pattern_collect_information",
@@ -54,7 +58,8 @@ async def test_collect_information_pattern_flow_stack_context_as_dict() -> None:
     frame = CollectInformationPatternFlowStackFrame(
         frame_id="test_id",
         step_id="test_step_id",
-        utter="test_utter",
+        utter="utter_ask_test_slot",
+        collect_action="action_ask_test_slot",
         collect="test_slot",
         rejections=[SlotRejection.from_dict({"if": "condition", "utter": "sample_a"})],
     )
@@ -67,7 +72,8 @@ async def test_collect_information_pattern_flow_stack_context_as_dict() -> None:
             )
         ]
     ) == {
-        "utter": "test_utter",
+        "utter": "utter_ask_test_slot",
+        "collect_action": "action_ask_test_slot",
         "collect": "test_slot",
         "rejections": [{"if": "condition", "utter": "sample_a"}],
         "type": "flow",

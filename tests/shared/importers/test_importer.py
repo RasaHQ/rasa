@@ -26,6 +26,7 @@ from rasa.shared.nlu.constants import ACTION_TEXT, ACTION_NAME, INTENT, TEXT
 from rasa.shared.nlu.training_data.message import Message
 import structlog
 
+from rasa.shared.utils.yaml import write_yaml
 from tests.utilities import filter_logs
 
 
@@ -89,9 +90,7 @@ def test_load_from_dict(
 def test_load_from_config(tmpdir: Path):
     config_path = str(tmpdir / "config.yml")
 
-    rasa.shared.utils.io.write_yaml(
-        {"importers": [{"name": "MultiProjectImporter"}]}, config_path
-    )
+    write_yaml({"importers": [{"name": "MultiProjectImporter"}]}, config_path)
 
     importer = TrainingDataImporter.load_from_config(config_path)
     assert isinstance(importer, E2EImporter)

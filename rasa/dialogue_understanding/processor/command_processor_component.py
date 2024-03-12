@@ -16,6 +16,9 @@ class CommandProcessorComponent(GraphComponent):
 
     Minimal component that applies commands to a tracker."""
 
+    def __init__(self, execution_context: ExecutionContext):
+        self._execution_context = execution_context
+
     @classmethod
     def create(
         cls,
@@ -25,12 +28,12 @@ class CommandProcessorComponent(GraphComponent):
         execution_context: ExecutionContext,
     ) -> CommandProcessorComponent:
         """Creates component (see parent class for full docstring)."""
-        return cls()
+        return cls(execution_context)
 
     def execute_commands(
         self, tracker: DialogueStateTracker, flows: FlowsList
     ) -> List[Event]:
         """Execute commands to update tracker state."""
         return rasa.dialogue_understanding.processor.command_processor.execute_commands(
-            tracker, flows
+            tracker, flows, self._execution_context
         )

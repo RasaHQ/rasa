@@ -1,0 +1,51 @@
+name: CI On Pull Request Closure
+on:
+  pull_request:
+    types: [closed]
+
+env:
+  AWS_REGION: us-east-1
+
+permissions:
+  id-token: write # This is required for requesting the JWT
+  contents: read # This is required for actions/checkout
+
+jobs:  
+  aws-ecr:
+    # Skip any PR created by dependabot to avoid permission issues
+    if: (github.actor != 'dependabot[bot]')
+    name: Delete PR docker images
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@8c3f20df09ac63af7b3ae3d7c91f105f857d8497 #v3.0.1
+        with:
+          role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@2fc7aceee09e9e4a7105c0d060c656fad0b4f63d #v1.6
+        with:
+          mask-password: "true"
+
+      - name: Remove docker images from all ECR repositories
+        run: |
+          REPO_NAMES=("rasa-private-dev")
+          SEARCH_STRING="pr${{ github.event.number }}"
+          # Iterate through each repository
+          for REPO_NAME in "${REPO_NAMES[@]}"
+          do
+            # List all image tags in the repository that match the search string
+            # Escape empty strings and null character
+            IMAGES=$(aws ecr list-images --repository-name $REPO_NAME --query "imageIds[?imageTag!=null&&imageTag!=''&&contains(imageTag, '$SEARCH_STRING')].imageTag" --output text)
+            
+            # Print the image tags
+            echo "Images to be deleted in repository $REPO_NAME:"
+            echo "$IMAGES"
+            # Delete each image by its tag
+            for IMAGE in $IMAGES
+            do
+              aws ecr batch-delete-image --repository-name $REPO_NAME --image-ids imageTag=$IMAGE
+            done
+          done

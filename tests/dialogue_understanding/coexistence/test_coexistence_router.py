@@ -13,8 +13,9 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.dialogue_understanding.coexistence.coexistence_router import (
     CoexistenceRouter,
-    CALM_CAPABILITIES,
     DEFAULT_LLM_CONFIG,
+    STICKY,
+    CALM_ENTRY,
 )
 from rasa.shared.constants import ROUTE_TO_CALM_SLOT
 from rasa.shared.core.slots import BooleanSlot
@@ -31,7 +32,7 @@ class TestCoexistenceRouter:
     def coexistence_router(self):
         """Create an LLMCommandGenerator."""
         return CoexistenceRouter.create(
-            config={CALM_CAPABILITIES: "handles transactions"},
+            config={CALM_ENTRY: {STICKY: "handles transactions"}},
             resource=Mock(),
             model_storage=Mock(),
             execution_context=Mock(),
@@ -51,7 +52,7 @@ class TestCoexistenceRouter:
         coexistence_router = CoexistenceRouter(
             {
                 "prompt": "data/test_prompt_templates/test_prompt.jinja2",
-                CALM_CAPABILITIES: "handles transactions",
+                CALM_ENTRY: {STICKY: "handles transactions"},
             },
             model_storage,
             resource,
@@ -60,7 +61,10 @@ class TestCoexistenceRouter:
 
         resource = coexistence_router.train(TrainingData())
         loaded = CoexistenceRouter.load(
-            {CALM_CAPABILITIES: "handles transactions"}, model_storage, resource, None
+            {CALM_ENTRY: {STICKY: "handles transactions"}},
+            model_storage,
+            resource,
+            None,
         )
         assert loaded.prompt_template.startswith("This is a test prompt.")
 
@@ -71,6 +75,13 @@ class TestCoexistenceRouter:
         with pytest.raises(ValueError):
             CoexistenceRouter(
                 {},
+                model_storage,
+                resource,
+            )
+
+        with pytest.raises(ValueError):
+            CoexistenceRouter(
+                {CALM_ENTRY: {}},
                 model_storage,
                 resource,
             )

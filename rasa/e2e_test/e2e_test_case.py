@@ -83,7 +83,10 @@ class TestStep:
             slot_instance = test_step_dict.get(KEY_SLOT_NOT_SET)
 
         return TestStep(
-            text=test_step_dict.get(KEY_USER_INPUT, test_step_dict.get(KEY_BOT_INPUT)),
+            text=test_step_dict.get(
+                KEY_USER_INPUT, test_step_dict.get(KEY_BOT_INPUT, "")
+            ).strip()
+            or None,
             template=test_step_dict.get(KEY_BOT_UTTERED),
             actor=KEY_USER_INPUT if KEY_USER_INPUT in test_step_dict else KEY_BOT_INPUT,
             line=test_step_dict.lc.line + 1 if hasattr(test_step_dict, "lc") else None,

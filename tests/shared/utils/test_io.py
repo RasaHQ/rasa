@@ -18,8 +18,16 @@ import rasa.shared
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.exceptions import FileIOException, FileNotFoundException, RasaException
 import rasa.shared.utils.io
-import rasa.shared.utils.validation
 from rasa.shared.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
+from rasa.shared.utils.yaml import (
+    read_yaml,
+    read_yaml_file,
+    write_yaml,
+    read_model_configuration,
+    YamlValidationException,
+    read_config_file,
+    is_key_in_yaml,
+)
 from rasa.utils import io as io_utils
 
 os.environ["USER_NAME"] = "user"
@@ -110,7 +118,7 @@ def test_read_yaml_string():
     user: user
     password: pass
     """
-    content = rasa.shared.utils.io.read_yaml(config_without_env_var)
+    content = read_yaml(config_without_env_var)
     assert content["user"] == "user" and content["password"] == "pass"
 
 
@@ -119,7 +127,7 @@ def test_read_yaml_string_with_env_var():
     user: ${USER_NAME}
     password: ${PASS}
     """
-    content = rasa.shared.utils.io.read_yaml(config_with_env_var)
+    content = read_yaml(config_with_env_var)
     assert content["user"] == "user" and content["password"] == "pass"
 
 
@@ -128,7 +136,7 @@ def test_read_yaml_string_with_multiple_env_vars_per_line():
     user: ${USER_NAME} ${PASS}
     password: ${PASS}
     """
-    content = rasa.shared.utils.io.read_yaml(config_with_env_var)
+    content = read_yaml(config_with_env_var)
     assert content["user"] == "user pass" and content["password"] == "pass"
 
 
@@ -137,7 +145,7 @@ def test_read_yaml_string_with_env_var_prefix():
     user: db_${USER_NAME}
     password: db_${PASS}
     """
-    content = rasa.shared.utils.io.read_yaml(config_with_env_var_prefix)
+    content = read_yaml(config_with_env_var_prefix)
     assert content["user"] == "db_user" and content["password"] == "db_pass"
 
 
@@ -146,7 +154,7 @@ def test_read_yaml_string_with_env_var_postfix():
     user: ${USER_NAME}_admin
     password: ${PASS}_admin
     """
-    content = rasa.shared.utils.io.read_yaml(config_with_env_var_postfix)
+    content = read_yaml(config_with_env_var_postfix)
     assert content["user"] == "user_admin" and content["password"] == "pass_admin"
 
 
@@ -155,7 +163,7 @@ def test_read_yaml_string_with_env_var_infix():
     user: db_${USER_NAME}_admin
     password: db_${PASS}_admin
     """
-    content = rasa.shared.utils.io.read_yaml(config_with_env_var_infix)
+    content = read_yaml(config_with_env_var_infix)
     assert content["user"] == "db_user_admin" and content["password"] == "db_pass_admin"
 
 
@@ -165,20 +173,20 @@ def test_read_yaml_string_with_env_var_not_exist():
     password: ${PASSWORD}
     """
     with pytest.raises(RasaException):
-        rasa.shared.utils.io.read_yaml(config_with_env_var_not_exist)
+        read_yaml(config_with_env_var_not_exist)
 
 
 def test_environment_variable_not_existing():
     content = "model: \n  test: ${variable}"
     with pytest.raises(RasaException):
-        rasa.shared.utils.io.read_yaml(content)
+        read_yaml(content)
 
 
 def test_environment_variable_dict_without_prefix_and_postfix():
     os.environ["variable"] = "test"
     content = "model: \n  test: ${variable}"
 
-    content = rasa.shared.utils.io.read_yaml(content)
+    content = read_yaml(content)
 
     assert content["model"]["test"] == "test"
 
@@ -187,7 +195,7 @@ def test_environment_variable_in_list():
     os.environ["variable"] = "test"
     content = "model: \n  - value\n  - ${variable}"
 
-    content = rasa.shared.utils.io.read_yaml(content)
+    content = read_yaml(content)
 
     assert content["model"][1] == "test"
 
@@ -196,7 +204,7 @@ def test_environment_variable_dict_with_prefix():
     os.environ["variable"] = "test"
     content = "model: \n  test: dir/${variable}"
 
-    content = rasa.shared.utils.io.read_yaml(content)
+    content = read_yaml(content)
 
     assert content["model"]["test"] == "dir/test"
 
@@ -205,7 +213,7 @@ def test_environment_variable_dict_with_postfix():
     os.environ["variable"] = "test"
     content = "model: \n  test: ${variable}/dir"
 
-    content = rasa.shared.utils.io.read_yaml(content)
+    content = read_yaml(content)
 
     assert content["model"]["test"] == "test/dir"
 
@@ -214,7 +222,7 @@ def test_environment_variable_dict_with_prefix_and_with_postfix():
     os.environ["variable"] = "test"
     content = "model: \n  test: dir/${variable}/dir"
 
-    content = rasa.shared.utils.io.read_yaml(content)
+    content = read_yaml(content)
 
     assert content["model"]["test"] == "dir/test/dir"
 
@@ -224,7 +232,7 @@ def test_environment_variable_with_dollar_char():
     os.environ["variable2"] = "test2"
     content = "model: \n  test1: ${variable1}\n  test2: ${variable2}"
 
-    content = rasa.shared.utils.io.read_yaml(content)
+    content = read_yaml(content)
 
     assert content["model"]["test1"] == "$test1"
     assert content["model"]["test2"] == "test2"
@@ -234,7 +242,7 @@ def test_environment_variable_with_dollar_char_in_the_middle():
     os.environ["variable1"] = "test$123"
     content = "model: \n  test1: ${variable1}"
 
-    content = rasa.shared.utils.io.read_yaml(content)
+    content = read_yaml(content)
 
     assert content["model"]["test1"] == "test$123"
 
@@ -245,7 +253,7 @@ def test_emojis_in_yaml():
         - one 😁💯 👩🏿‍💻👨🏿‍💻
         - two £ (?u)\\b\\w+\\b f\u00fcr
     """
-    content = rasa.shared.utils.io.read_yaml(test_data)
+    content = read_yaml(test_data)
 
     assert content["data"][0] == "one 😁💯 👩🏿‍💻👨🏿‍💻"
     assert content["data"][1] == "two £ (?u)\\b\\w+\\b für"
@@ -258,7 +266,7 @@ def test_emojis_in_tmp_file():
             - two £ (?u)\\b\\w+\\b f\u00fcr
         """
     test_file = io_utils.create_temporary_file(test_data)
-    content = rasa.shared.utils.io.read_yaml_file(test_file)
+    content = read_yaml_file(test_file)
 
     assert content["data"][0] == "one 😁💯 👩🏿‍💻👨🏿‍💻"
     assert content["data"][1] == "two £ (?u)\\b\\w+\\b für"
@@ -270,7 +278,7 @@ def test_read_emojis_from_json():
     d = {"text": "hey 😁💯 👩🏿‍💻👨🏿‍💻🧜‍♂️(?u)\\b\\w+\\b} f\u00fcr"}
     json_string = json.dumps(d, indent=2)
 
-    content = rasa.shared.utils.io.read_yaml(json_string)
+    content = read_yaml(json_string)
 
     expected = "hey 😁💯 👩🏿‍💻👨🏿‍💻🧜‍♂️(?u)\\b\\w+\\b} für"
     assert content.get("text") == expected
@@ -283,7 +291,7 @@ def test_bool_str():
     three: "True"
     """
 
-    content = rasa.shared.utils.io.read_yaml(test_data)
+    content = read_yaml(test_data)
 
     assert content["one"] == "yes"
     assert content["two"] == "true"
@@ -307,14 +315,12 @@ def test_dump_yaml_key_order(
     file.write_text(content)
 
     # load this file and ensure keys are in correct reverse-alphabetical order
-    data = rasa.shared.utils.io.read_yaml_file(file)
+    data = read_yaml_file(file)
     assert list(data.keys()) == list(reversed(string.ascii_lowercase))
 
     # dumping `data` will result in alphabetical or reverse-alphabetical list of keys,
     # depending on the value of `should_preserve_key_order`
-    rasa.shared.utils.io.write_yaml(
-        data, file, should_preserve_key_order=should_preserve_key_order
-    )
+    write_yaml(data, file, should_preserve_key_order=should_preserve_key_order)
     with file.open() as f:
         keys = [line.split(":")[0] for line in f.readlines()]
 
@@ -364,12 +370,12 @@ def test_create_directory_for_file(tmp_path: Path):
 
 def test_write_utf_8_yaml_file(tmp_path: Path):
     """This test makes sure that dumping a yaml doesn't result in Uxxxx sequences
-    but rather directly dumps the unicode character."""
-
+    but rather directly dumps the unicode character.
+    """
     file_path = str(tmp_path / "test.yml")
     data = {"data": "amazing 🌈"}
 
-    rasa.shared.utils.io.write_yaml(data, file_path)
+    write_yaml(data, file_path)
     assert rasa.shared.utils.io.read_file(file_path) == "data: amazing 🌈\n"
 
 
@@ -442,7 +448,7 @@ def test_read_file_with_wrong_encoding(tmp_path: Path):
 @pytest.mark.parametrize("config_file", Path("data", "configs_for_docs").glob("*.yml"))
 def test_validate_config_file(config_file: Path):
     # does not raise
-    rasa.shared.utils.io.read_model_configuration(config_file)
+    read_model_configuration(config_file)
 
 
 def test_validate_config_file_with_extra_keys(tmp_path: Path):
@@ -460,7 +466,7 @@ def test_validate_config_file_with_extra_keys(tmp_path: Path):
     config_file = tmp_path / "config.yml"
     config_file.write_text(content)
 
-    rasa.shared.utils.io.read_model_configuration(config_file)
+    read_model_configuration(config_file)
 
 
 @pytest.mark.parametrize(
@@ -517,8 +523,8 @@ def test_validate_config_file_with_extra_keys(tmp_path: Path):
 def test_invalid_config_files(config: Text, tmp_path: Path):
     config_file = tmp_path / "config.yml"
     config_file.write_text(config)
-    with pytest.raises(rasa.shared.utils.validation.YamlValidationException):
-        rasa.shared.utils.io.read_model_configuration(config_file)
+    with pytest.raises(YamlValidationException):
+        read_model_configuration(config_file)
 
 
 @pytest.mark.parametrize(
@@ -540,7 +546,7 @@ def test_read_config_file(tmp_path: Path, content: Text, expected: Dict):
     config_file = tmp_path / "file.yml"
     config_file.write_text(content)
 
-    assert rasa.shared.utils.io.read_config_file(config_file) == expected
+    assert read_config_file(config_file) == expected
 
 
 @pytest.mark.parametrize(
@@ -559,8 +565,8 @@ def test_read_invalid_config_file(tmp_path: Path, content: Text):
     config_file = tmp_path / "file.yml"
     config_file.write_text(content)
 
-    with pytest.raises(rasa.shared.utils.validation.YamlValidationException):
-        rasa.shared.utils.io.read_model_configuration(config_file)
+    with pytest.raises(YamlValidationException):
+        read_model_configuration(config_file)
 
 
 @pytest.mark.parametrize(
@@ -579,14 +585,12 @@ def test_read_invalid_config_file(tmp_path: Path, content: Text):
     ],
 )
 async def test_is_key_in_yaml(file: Text, keys: List[Text], expected_result: bool):
-    assert rasa.shared.utils.io.is_key_in_yaml(file, *keys) == expected_result
+    assert is_key_in_yaml(file, *keys) == expected_result
 
 
 async def test_is_key_in_yaml_with_unicode_files():
     # This shouldn't raise
-    assert rasa.shared.utils.io.is_key_in_yaml(
-        "./data/test_nlu_no_responses/nlu_with_unicode.yml", "nlu"
-    )
+    assert is_key_in_yaml("./data/test_nlu_no_responses/nlu_with_unicode.yml", "nlu")
 
 
 @pytest.mark.parametrize("length", [4, 8, 16, 32])

@@ -80,6 +80,22 @@ class TestLLMCommandGenerator:
     def model_storage(self, tmp_path_factory: TempPathFactory) -> ModelStorage:
         return LocalModelStorage(tmp_path_factory.mktemp(uuid.uuid4().hex))
 
+    @pytest.fixture
+    def tracker(self):
+        """Create a Tracker."""
+        return DialogueStateTracker.from_events("", [])
+
+    @pytest.fixture
+    def tracker_with_routing_slot(self):
+        """Create a Tracker."""
+        return DialogueStateTracker.from_events(
+            sender_id="",
+            evts=[],
+            slots=[
+                BooleanSlot(ROUTE_TO_CALM_SLOT, mappings=[], initial_value=True),
+            ],
+        )
+
     async def test_llm_command_generator_prompt_init_custom(
         self,
         model_storage: ModelStorage,
@@ -144,14 +160,14 @@ class TestLLMCommandGenerator:
         assert generator.user_input_config.max_characters == expected_limit
 
     def test_predict_commands_with_no_flows(
-        self, command_generator: LLMCommandGenerator
+        self, command_generator: LLMCommandGenerator, tracker: DialogueStateTracker
     ):
         """Test that predict_commands returns an empty list when flows is None."""
         # Given
         empty_flows = FlowsList(underlying_flows=[])
         # When
         predicted_commands = command_generator.predict_commands(
-            Mock(), flows=empty_flows, tracker=Mock()
+            Mock(), flows=empty_flows, tracker=tracker
         )
         # Then
         assert not predicted_commands
@@ -168,7 +184,10 @@ class TestLLMCommandGenerator:
         assert not predicted_commands
 
     def test_predict_commands_sets_routing_slot(
-        self, command_generator: LLMCommandGenerator, flows: FlowsList
+        self,
+        command_generator: LLMCommandGenerator,
+        flows: FlowsList,
+        tracker_with_routing_slot: DialogueStateTracker,
     ):
         """Test that predict_commands sets the routing slot to True."""
         # When
@@ -180,10 +199,7 @@ class TestLLMCommandGenerator:
             predicted_commands = command_generator.predict_commands(
                 Message.build(text="start test_flow"),
                 flows=flows,
-                tracker=DialogueStateTracker(
-                    "sender_id",
-                    [BooleanSlot(ROUTE_TO_CALM_SLOT, mappings=[], initial_value=True)],
-                ),
+                tracker=tracker_with_routing_slot,
             )
 
         # Then
@@ -197,21 +213,18 @@ class TestLLMCommandGenerator:
                 None,
                 [
                     ErrorCommand(),
-                    SetSlotCommand(ROUTE_TO_CALM_SLOT, True),
                 ],
             ),
             (
                 "StartFlow(this_flow_does_not_exists)",
                 [
                     CannotHandleCommand(),
-                    SetSlotCommand(ROUTE_TO_CALM_SLOT, True),
                 ],
             ),
             (
                 "A random response from LLM",
                 [
                     CannotHandleCommand(),
-                    SetSlotCommand(ROUTE_TO_CALM_SLOT, True),
                 ],
             ),
             (
@@ -238,6 +251,7 @@ class TestLLMCommandGenerator:
         llm_response: Text,
         expected_commands: Command,
         command_generator: LLMCommandGenerator,
+        tracker_with_routing_slot: DialogueStateTracker,
     ):
         # Given
         test_flows = flows_from_str(
@@ -254,7 +268,7 @@ class TestLLMCommandGenerator:
         mock_generate_action_list_using_llm.return_value = llm_response
         # When
         predicted_commands = command_generator.predict_commands(
-            message=Mock(), flows=test_flows, tracker=Mock()
+            message=Mock(), flows=test_flows, tracker=tracker_with_routing_slot
         )
         # Then
         assert predicted_commands == expected_commands
@@ -552,6 +566,7 @@ class TestLLMCommandGenerator:
             idx=0,
             ask_before_filling=True,
             utter="hello",
+            collect_action="action_ask_hello",
             rejections=[SlotRejection("test_slot", "some rejection")],
             custom_id="collect",
             description="test_slot",
@@ -589,6 +604,7 @@ class TestLLMCommandGenerator:
             collect="test_slot",
             ask_before_filling=False,
             utter="hello",
+            collect_action="action_ask_hello",
             rejections=[SlotRejection("test_slot", "some rejection")],
             custom_id="collect_information",
             idx=0,

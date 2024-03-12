@@ -1,5 +1,9 @@
 version: "3.1"
 responses:
+
+  utter_ask_rephrase:
+    - text: I’m sorry I am unable to understand you, could you please rephrase?
+
   utter_boolean_slot_rejection:
     - text: "Sorry, the value you provided, `{{value}}`, is not valid. Please respond with a valid value."
       metadata:
@@ -12,7 +16,7 @@ responses:
         rephrase: True
 
   utter_cannot_handle:
-    - text: I’m sorry I am unable to understand you, could you please rephrase?
+    - text: I'm sorry, I'm not trained to help with that.
 
   utter_categorical_slot_rejection:
     - text: "Sorry, you responded with an invalid value - `{{value}}`. Please select one of the available options."
@@ -55,11 +59,11 @@ responses:
       metadata:
         rephrase: True
         rephrase_prompt: |
-          You are an incredibly friendly assistant. Generate a short 
+          You are an incredibly friendly assistant. Generate a short
           response to the user's comment in simple english.
 
           User: {{current_input}}
-          Response: 
+          Response:
 
   utter_human_handoff_not_available:
     - text: I understand you want to be connected to a human agent, but that's something I cannot help you with at the moment. Is there something else I can help you with?
@@ -107,16 +111,27 @@ flows:
       - action: utter_flow_cancelled_rasa
 
   pattern_cannot_handle:
-    description: pattern that is triggered when the command generators fail to create any valid commands
+    description: |
+      pattern that is triggered when the command generators fail to create (any) valid commands
     name: pattern cannot handle
     steps:
-      - action: utter_cannot_handle
+      - noop: true
+        next:
+          # chitchat fallback
+          - if: "'{{context.reason}}' == 'cannot_handle_chitchat'"
+            then:
+              - action: utter_cannot_handle
+                next: "END"
+          # default
+          - else:
+              - action: utter_ask_rephrase
+                next: "END"
 
   pattern_chitchat:
     description: handle interactions with the user that are not task-oriented
     name: pattern chitchat
     steps:
-      - action: utter_free_chitchat_response
+      - action: action_trigger_chitchat
 
   pattern_clarification:
     description: handle clarifications with the user
@@ -145,6 +160,7 @@ flows:
         - else: "ask_collect"
       - id: "ask_collect"
         action: "{{context.utter}}"
+      - action: "{{context.collect_action}}"
       - action: action_listen
         next: "start"
 

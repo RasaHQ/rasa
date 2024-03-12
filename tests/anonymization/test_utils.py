@@ -9,7 +9,7 @@ from rasa.anonymization.utils import (
     read_endpoint_config,
     validate_anonymization_yaml,
 )
-from rasa.utils.validation import read_yaml
+from rasa.shared.utils.yaml import parse_raw_yaml
 
 
 @pytest.mark.parametrize(
@@ -284,7 +284,7 @@ def test_extract_anonymization_traits(
     ],
 )
 def test_validate_wrong_schema_raises(example: str) -> None:
-    yaml_content = read_yaml(example)
+    yaml_content = parse_raw_yaml(example)
     with pytest.raises(RasaException):
         validate_anonymization_yaml(yaml_content)
 
@@ -328,7 +328,7 @@ def test_validate_wrong_schema_raises(example: str) -> None:
     ],
 )
 def test_validate_right_yaml(example: str) -> None:
-    yaml_content = read_yaml(example)
+    yaml_content = parse_raw_yaml(example)
     try:
         validate_anonymization_yaml(yaml_content)
     except RasaException as exception:

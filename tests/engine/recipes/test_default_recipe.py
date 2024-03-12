@@ -29,7 +29,12 @@ from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.data import TrainingType
 import rasa.engine.validation
 from rasa.shared.importers.rasa import RasaFileImporter
-
+from rasa.shared.utils.yaml import (
+    read_yaml_file,
+    read_yaml,
+    read_model_configuration,
+    read_config_file,
+)
 
 CONFIG_FOLDER = Path("data/test_config")
 
@@ -137,17 +142,13 @@ def test_generate_graphs(
     training_type: TrainingType,
     is_finetuning: bool,
 ):
-    expected_schema_as_dict = rasa.shared.utils.io.read_yaml_file(
-        expected_train_schema_path
-    )
+    expected_schema_as_dict = read_yaml_file(expected_train_schema_path)
     expected_train_schema = GraphSchema.from_dict(expected_schema_as_dict)
 
-    expected_schema_as_dict = rasa.shared.utils.io.read_yaml_file(
-        expected_predict_schema_path
-    )
+    expected_schema_as_dict = read_yaml_file(expected_predict_schema_path)
     expected_predict_schema = GraphSchema.from_dict(expected_schema_as_dict)
 
-    config = rasa.shared.utils.io.read_yaml_file(config_path)
+    config = read_yaml_file(config_path)
 
     recipe = Recipe.recipe_for_name(DefaultV1Recipe.name)
     model_config = recipe.graph_config_for_recipe(
@@ -208,7 +209,7 @@ def test_generate_graphs(
 def test_nlu_config_doesnt_get_overridden(
     cli_parameters: Dict[Text, Any], check_node: Text, expected_config: Dict[Text, Any]
 ):
-    config = rasa.shared.utils.io.read_yaml_file(
+    config = read_yaml_file(
         "data/test_config/config_pretrained_embeddings_mitie_diet.yml"
     )
     recipe = Recipe.recipe_for_name(DefaultV1Recipe.name)
@@ -222,7 +223,7 @@ def test_nlu_config_doesnt_get_overridden(
 
 
 def test_language_returning():
-    config = rasa.shared.utils.io.read_yaml(
+    config = read_yaml(
         """
     language: "xy"
     version: '2.0'
@@ -239,7 +240,7 @@ def test_language_returning():
 
 
 def test_tracker_generator_parameter_interpolation():
-    config = rasa.shared.utils.io.read_yaml(
+    config = read_yaml(
         """
     version: '2.0'
 
@@ -265,7 +266,7 @@ def test_tracker_generator_parameter_interpolation():
 
 
 def test_nlu_training_data_persistence():
-    config = rasa.shared.utils.io.read_yaml(
+    config = read_yaml(
         """
     version: '2.0'
 
@@ -286,12 +287,12 @@ def test_nlu_training_data_persistence():
 
 
 def test_num_threads_interpolation():
-    expected_schema_as_dict = rasa.shared.utils.io.read_yaml_file(
+    expected_schema_as_dict = read_yaml_file(
         "data/graph_schemas/config_pretrained_embeddings_mitie_train_schema.yml"
     )
     expected_train_schema = GraphSchema.from_dict(expected_schema_as_dict)
 
-    expected_schema_as_dict = rasa.shared.utils.io.read_yaml_file(
+    expected_schema_as_dict = read_yaml_file(
         "data/graph_schemas/config_pretrained_embeddings_mitie_predict_schema.yml"
     )
     expected_predict_schema = GraphSchema.from_dict(expected_schema_as_dict)
@@ -303,9 +304,7 @@ def test_num_threads_interpolation():
         ) and node_name.startswith("train_"):
             node.config["num_threads"] = 20
 
-    config = rasa.shared.utils.io.read_yaml_file(
-        "data/test_config/config_pretrained_embeddings_mitie.yml"
-    )
+    config = read_yaml_file("data/test_config/config_pretrained_embeddings_mitie.yml")
 
     recipe = Recipe.recipe_for_name(DefaultV1Recipe.name)
     model_config = recipe.graph_config_for_recipe(config, {"num_threads": 20})
@@ -324,14 +323,12 @@ def test_num_threads_interpolation():
 
 
 def test_epoch_fraction_cli_param():
-    expected_schema_as_dict = rasa.shared.utils.io.read_yaml_file(
+    expected_schema_as_dict = read_yaml_file(
         "data/graph_schemas/default_config_finetune_epoch_fraction_schema.yml"
     )
     expected_train_schema = GraphSchema.from_dict(expected_schema_as_dict)
 
-    config = rasa.shared.utils.io.read_yaml_file(
-        "rasa/engine/recipes/config_files/default_config.yml"
-    )
+    config = read_yaml_file("rasa/engine/recipes/config_files/default_config.yml")
 
     recipe = Recipe.recipe_for_name(DefaultV1Recipe.name)
     model_config = recipe.graph_config_for_recipe(
@@ -347,7 +344,7 @@ def test_epoch_fraction_cli_param():
 
 def test_epoch_fraction_cli_param_unspecified():
     # TODO: enhance testing of cli instead of imitating expected parsed input
-    expected_schema_as_dict = rasa.shared.utils.io.read_yaml_file(
+    expected_schema_as_dict = read_yaml_file(
         "data/graph_schemas/default_config_finetune_epoch_fraction_schema.yml"
     )
     expected_train_schema = GraphSchema.from_dict(expected_schema_as_dict)
@@ -359,9 +356,7 @@ def test_epoch_fraction_cli_param_unspecified():
             if "epochs" in schema_node.config:
                 schema_node.config["epochs"] *= 2
 
-    config = rasa.shared.utils.io.read_yaml_file(
-        "rasa/engine/recipes/config_files/default_config.yml"
-    )
+    config = read_yaml_file("rasa/engine/recipes/config_files/default_config.yml")
 
     recipe = Recipe.recipe_for_name(DefaultV1Recipe.name)
     model_config = recipe.graph_config_for_recipe(
@@ -415,7 +410,7 @@ def test_register_component_using_tracker():
         ) -> List[Message]:
             ...
 
-    config = rasa.shared.utils.io.read_yaml(
+    config = read_yaml(
         """
         language: "xy"
         version: '2.0'
@@ -545,7 +540,7 @@ def test_get_configuration(
     new_config_file = tmp_path / "new_config.yml"
     shutil.copyfile(config_path, new_config_file)
 
-    config = rasa.shared.utils.io.read_model_configuration(new_config_file)
+    config = read_model_configuration(new_config_file)
     _config, _missing_keys, configured_keys = DefaultV1Recipe.auto_configure(
         new_config_file, config
     )
@@ -563,7 +558,7 @@ def test_get_configuration(
     ],
 )
 def test_auto_configure(language: Text, keys_to_configure: Set[Text]):
-    expected_config = rasa.shared.utils.io.read_config_file(DEFAULT_CONFIG)
+    expected_config = read_config_file(DEFAULT_CONFIG)
 
     config = DefaultV1Recipe.complete_config({"language": language}, keys_to_configure)
 
@@ -592,7 +587,7 @@ def test_add_missing_config_keys_to_file(
 
     DefaultV1Recipe._add_missing_config_keys_to_file(config_file, missing_keys)
 
-    config_after_addition = rasa.shared.utils.io.read_config_file(config_file)
+    config_after_addition = read_config_file(config_file)
 
     assert all(key in config_after_addition for key in missing_keys)
 
@@ -601,7 +596,7 @@ def test_dump_config_missing_file(tmp_path: Path, capsys: CaptureFixture):
 
     config_path = tmp_path / "non_existent_config.yml"
 
-    config = rasa.shared.utils.io.read_config_file(str(SOME_CONFIG))
+    config = read_config_file(str(SOME_CONFIG))
 
     DefaultV1Recipe._dump_config(config, str(config_path), set(), {"policies"})
 
@@ -646,13 +641,11 @@ def test_dump_config(
 ):
     config_file = str(tmp_path / "config.yml")
     shutil.copyfile(str(CONFIG_FOLDER / input_file), config_file)
-    old_config = rasa.shared.utils.io.read_model_configuration(config_file)
+    old_config = read_model_configuration(config_file)
     DefaultV1Recipe.auto_configure(config_file, old_config)
-    new_config = rasa.shared.utils.io.read_model_configuration(config_file)
+    new_config = read_model_configuration(config_file)
 
-    expected = rasa.shared.utils.io.read_model_configuration(
-        CONFIG_FOLDER / expected_file
-    )
+    expected = read_model_configuration(CONFIG_FOLDER / expected_file)
 
     assert new_config == expected
 
@@ -694,7 +687,7 @@ def test_get_configuration_for_different_training_types(
 ):
     config_file = str(tmp_path / "config.yml")
     shutil.copyfile(str(CONFIG_FOLDER / input_file), config_file)
-    config = rasa.shared.utils.io.read_model_configuration(config_file)
+    config = read_model_configuration(config_file)
 
     DefaultV1Recipe.auto_configure(config_file, config, training_type)
 
@@ -711,12 +704,12 @@ def test_comment_causing_invalid_autoconfig(tmp_path: Path):
     shutil.copyfile(
         str(CONFIG_FOLDER / "config_with_comment_between_suggestions.yml"), config_file
     )
-    config = rasa.shared.utils.io.read_model_configuration(config_file)
+    config = read_model_configuration(config_file)
 
     _ = DefaultV1Recipe.auto_configure(str(config_file), config)
 
     # This should not throw
-    dumped = rasa.shared.utils.io.read_yaml_file(config_file)
+    dumped = read_yaml_file(config_file)
 
     assert dumped
 
@@ -758,7 +751,7 @@ def test_needs_from_args():
     ],
 )
 def test_graph_config_for_recipe_with_assistant_id(config_file):
-    config = rasa.shared.utils.io.read_model_configuration(config_file)
+    config = read_model_configuration(config_file)
 
     recipe = Recipe.recipe_for_name(DefaultV1Recipe.name)
     model_config = recipe.graph_config_for_recipe(config, {})

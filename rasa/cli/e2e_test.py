@@ -26,10 +26,11 @@ from rasa.e2e_test.e2e_test_case import KEY_FIXTURES, Fixture, TestCase
 from rasa.e2e_test.e2e_test_result import TestResult
 from rasa.e2e_test.e2e_test_runner import E2ETestRunner
 import rasa.utils.io
-from rasa.utils.validation import (
+from rasa.shared.utils.yaml import (
+    parse_raw_yaml,
     read_schema_file,
-    read_yaml,
-    validate_yaml_content,
+    validate_yaml_content_using_schema,
+    is_key_in_yaml,
 )
 
 DEFAULT_E2E_INPUT_TESTS_PATH = "tests/e2e_test_cases.yml"
@@ -145,9 +146,9 @@ def is_test_case_file(file_path: Union[Text, Path]) -> bool:
     Returns:
         `True` if the file contains test cases, `False` otherwise.
     """
-    return rasa.shared.data.is_likely_yaml_file(
-        file_path
-    ) and rasa.shared.utils.io.is_key_in_yaml(file_path, KEY_TEST_CASES)
+    return rasa.shared.data.is_likely_yaml_file(file_path) and is_key_in_yaml(
+        file_path, KEY_TEST_CASES
+    )
 
 
 def validate_path_to_test_cases(path: Text) -> None:
@@ -213,8 +214,8 @@ def read_test_cases(path: Text) -> Tuple[List[TestCase], List[Fixture]]:
     fixtures: Dict[Text, Fixture] = {}
 
     for test_file in test_files:
-        test_file_content = read_yaml(Path(test_file).read_text())
-        validate_yaml_content(test_file_content, e2e_test_schema)
+        test_file_content = parse_raw_yaml(Path(test_file).read_text())
+        validate_yaml_content_using_schema(test_file_content, e2e_test_schema)
 
         test_cases_content = test_file_content.get(KEY_TEST_CASES) or []
 

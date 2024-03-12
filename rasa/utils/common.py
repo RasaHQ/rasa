@@ -38,6 +38,7 @@ from rasa.constants import (
 from rasa.shared.constants import DEFAULT_LOG_LEVEL, ENV_LOG_LEVEL, TCP_PROTOCOL
 from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
+from rasa.shared.utils.yaml import read_yaml_file, write_yaml, read_config_file
 
 logger = logging.getLogger(__name__)
 
@@ -153,7 +154,7 @@ def read_global_config(path: Text) -> Dict[Text, Any]:
     """
     # noinspection PyBroadException
     try:
-        return rasa.shared.utils.io.read_config_file(path)
+        return read_config_file(path)
     except Exception:
         # if things go south we pretend there is no config
         return {}
@@ -166,7 +167,7 @@ def configure_logging_from_file(logging_config_file: Text) -> None:
         logging_config_file: YAML file containing logging configuration to handle
             custom formatting
     """
-    logging_config_dict = rasa.shared.utils.io.read_yaml_file(logging_config_file)
+    logging_config_dict = read_yaml_file(logging_config_file)
 
     try:
         logging.config.dictConfig(logging_config_dict)
@@ -423,7 +424,7 @@ def write_global_config_value(name: Text, value: Any) -> bool:
 
         c = read_global_config(config_path)
         c[name] = value
-        rasa.shared.utils.io.write_yaml(c, rasa.constants.GLOBAL_USER_CONFIG_PATH)
+        write_yaml(c, rasa.constants.GLOBAL_USER_CONFIG_PATH)
         return True
     except Exception as e:
         logger.warning(f"Failed to write global config. Error: {e}. Skipping.")

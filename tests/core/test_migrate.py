@@ -13,6 +13,7 @@ from rasa.core import migrate
 from rasa.shared.core.domain import Domain
 from rasa.shared.exceptions import RasaException
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
+from rasa.shared.utils.yaml import read_yaml_file
 
 
 def prepare_domain_path(directory: Path, domain_content: Text, file_name: Text) -> Path:
@@ -78,7 +79,7 @@ def test_migrate_domain_format_with_required_slots(
     old_domain_path = tmp_path / "original_domain.yml"
     assert old_domain_path
 
-    migrated_domain = rasa.shared.utils.io.read_yaml_file(domain_out_file)
+    migrated_domain = read_yaml_file(domain_out_file)
 
     migrated_training_data_version = migrated_domain.get("version")
     assert migrated_training_data_version == LATEST_TRAINING_DATA_FORMAT_VERSION
@@ -183,7 +184,7 @@ def test_migrate_domain_form_without_required_slots(
     old_domain_path = tmp_path / "original_domain.yml"
     assert old_domain_path
 
-    migrated_domain = rasa.shared.utils.io.read_yaml_file(domain_out_file)
+    migrated_domain = read_yaml_file(domain_out_file)
 
     migrated_slots = migrated_domain.get("slots")
     expected_slots = {
@@ -273,7 +274,7 @@ def test_migrate_domain_with_diff_slot_types(
     domain = Domain.from_path(domain_out_file)
     assert domain
 
-    migrated_domain = rasa.shared.utils.io.read_yaml_file(domain_out_file)
+    migrated_domain = read_yaml_file(domain_out_file)
     migrated_slots = migrated_domain.get("slots")
     expected_slots = {
         "outdoor_seating": {
@@ -346,7 +347,7 @@ def test_migrate_domain_format_from_dir(tmp_path: Path):
 
     for file in domain_out_dir.iterdir():
         assert file.name in ["slots.yml", "forms.yml"]
-        migrated_file = rasa.shared.utils.io.read_yaml_file(file)
+        migrated_file = read_yaml_file(file)
 
         migrated_training_data_version = migrated_file.get("version")
         assert migrated_training_data_version == LATEST_TRAINING_DATA_FORMAT_VERSION
@@ -383,7 +384,7 @@ def test_migrate_domain_all_keys(tmp_path: Path, domain_out_file: Path):
     domain = Domain.from_path(domain_out_file)
     assert domain
 
-    migrated_domain = rasa.shared.utils.io.read_yaml_file(domain_out_file)
+    migrated_domain = read_yaml_file(domain_out_file)
     migrated_intents = migrated_domain.get("intents")
     assert "greet" in migrated_intents
 
@@ -444,7 +445,7 @@ def test_migrate_domain_format_with_custom_slot(tmp_path: Path, domain_out_file:
     domain = Domain.from_path(domain_out_file)
     assert domain
 
-    migrated_domain = rasa.shared.utils.io.read_yaml_file(domain_out_file)
+    migrated_domain = read_yaml_file(domain_out_file)
     migrated_slots = migrated_domain.get("slots")
     custom_slot = migrated_slots.get("name")
     assert custom_slot == {
@@ -490,7 +491,7 @@ def test_migrate_domain_with_no_requested_slot_for_from_entity_mappings(
     domain = Domain.from_path(domain_out_file)
     assert domain
 
-    migrated_domain = rasa.shared.utils.io.read_yaml_file(domain_out_file)
+    migrated_domain = read_yaml_file(domain_out_file)
     migrated_slots = migrated_domain.get("slots")
     location_slot = migrated_slots.get("location")
     mappings = location_slot.get("mappings")
@@ -554,7 +555,7 @@ def test_migrate_domain_format_duplicated_slots_in_forms(
     domain = Domain.from_path(domain_out_file)
     assert domain
 
-    migrated_domain = rasa.shared.utils.io.read_yaml_file(domain_out_file)
+    migrated_domain = read_yaml_file(domain_out_file)
     migrated_slots = migrated_domain.get("slots")
     slot_with_duplicate_mappings = migrated_slots.get("name")
     assert slot_with_duplicate_mappings == {
@@ -765,7 +766,7 @@ def test_migrate_domain_from_dir_with_other_sections(tmp_path: Path):
     assert domain
 
     for file in new_domain_dir.iterdir():
-        migrated = rasa.shared.utils.io.read_yaml_file(file)
+        migrated = read_yaml_file(file)
 
         migrated_training_data_version = migrated.get("version")
         assert migrated_training_data_version == LATEST_TRAINING_DATA_FORMAT_VERSION

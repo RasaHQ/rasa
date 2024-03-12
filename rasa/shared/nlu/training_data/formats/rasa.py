@@ -14,6 +14,7 @@ from rasa.shared.utils.io import json_to_string
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 import rasa.shared.utils.io
+from rasa.shared.utils.yaml import validate_training_data
 
 logger = logging.getLogger(__name__)
 
@@ -65,9 +66,8 @@ class RasaReader(JsonTrainingDataReader):
     def read_from_json(self, js: Dict[Text, Any], **_: Any) -> "TrainingData":
         """Loads training data stored in the rasa NLU data format."""
         import rasa.shared.nlu.training_data.schemas.data_schema as schema
-        import rasa.shared.utils.validation as validation_utils
 
-        validation_utils.validate_training_data(js, schema.rasa_nlu_data_schema())
+        validate_training_data(js, schema.rasa_nlu_data_schema())
 
         data = js["rasa_nlu_data"]
         common_examples = data.get("common_examples", [])

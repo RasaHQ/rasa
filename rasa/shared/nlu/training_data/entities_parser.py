@@ -168,7 +168,7 @@ def get_validated_dict(json_str: Text) -> Dict[Text, Text]:
         Deserialized and validated `json_str`.
     """
     import json
-    import rasa.shared.utils.validation as validation_utils
+    from rasa.shared.utils.yaml import validate_training_data
     import rasa.shared.nlu.training_data.schemas.data_schema as schema
 
     # add {} as they are not part of the regex
@@ -181,7 +181,7 @@ def get_validated_dict(json_str: Text) -> Dict[Text, Text]:
             f"More info at {DOCS_URL_TRAINING_DATA_NLU}",
         ) from e
 
-    validation_utils.validate_training_data(data, schema.entity_dict_schema())
+    validate_training_data(data, schema.entity_dict_schema())
 
     return data
 

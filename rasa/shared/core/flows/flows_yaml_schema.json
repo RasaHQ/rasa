@@ -159,6 +159,9 @@
               "utter": {
                 "type": "string"
               },
+              "collect_action": {
+                "type": "string"
+              },
               "rejections": {
                 "type": "array",
                 "schema_name": "list of rejections",
