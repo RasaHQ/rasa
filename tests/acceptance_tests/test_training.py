@@ -5,7 +5,7 @@ from typing import Text
 
 import rasa
 from rasa.shared.core.domain import Domain
-from rasa.shared.utils.io import write_yaml
+from rasa.shared.utils.yaml import write_yaml
 
 
 def _new_model_path_in_same_dir(old_model_path: Text) -> Text:

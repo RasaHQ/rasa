@@ -6,7 +6,6 @@ from typing import Text, Any, List, Dict, Tuple, Union, Iterator, Optional, Call
 import rasa.shared.data
 from rasa.shared.core.domain import Domain
 from rasa.shared.exceptions import YamlException
-from rasa.shared.utils import validation
 from ruamel.yaml import StringIO
 from ruamel.yaml.scalarstring import LiteralScalarString
 
@@ -23,7 +22,13 @@ import rasa.shared.utils.io
 import rasa.shared.nlu.training_data.util
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
-
+from rasa.shared.utils.yaml import (
+    validate_raw_yaml_using_schema_file_with_responses,
+    validate_training_data_format_version,
+    read_yaml,
+    is_key_in_yaml,
+    write_yaml,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +69,7 @@ class RasaYAMLReader(TrainingDataReader):
         If the string is not in the right format, an exception will be raised.
         """
         try:
-            validation.validate_yaml_schema(string, NLU_SCHEMA_FILE)
+            validate_raw_yaml_using_schema_file_with_responses(string, NLU_SCHEMA_FILE)
         except YamlException as e:
             e.filename = self.filename
             raise e
@@ -83,11 +88,9 @@ class RasaYAMLReader(TrainingDataReader):
         """
         self.validate(string)
 
-        yaml_content = rasa.shared.utils.io.read_yaml(string)
+        yaml_content = read_yaml(string)
 
-        if not validation.validate_training_data_format_version(
-            yaml_content, self.filename
-        ):
+        if not validate_training_data_format_version(yaml_content, self.filename):
             return TrainingData()
 
         for key, value in yaml_content.items():
@@ -354,7 +357,7 @@ class RasaYAMLReader(TrainingDataReader):
         if not rasa.shared.data.is_likely_yaml_file(filename):
             return False
 
-        return rasa.shared.utils.io.is_key_in_yaml(filename, KEY_NLU, KEY_RESPONSES)
+        return is_key_in_yaml(filename, KEY_NLU, KEY_RESPONSES)
 
 
 class RasaYAMLWriter(TrainingDataWriter):
@@ -378,7 +381,7 @@ class RasaYAMLWriter(TrainingDataWriter):
         result = self.training_data_to_dict(training_data)
 
         if result:
-            rasa.shared.utils.io.write_yaml(result, target, True)
+            write_yaml(result, target, True)
 
     @classmethod
     def training_data_to_dict(
@@ -393,7 +396,7 @@ class RasaYAMLWriter(TrainingDataWriter):
         Returns:
             `OrderedDict` containing all training data.
         """
-        from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
+        from rasa.shared.utils.yaml import KEY_TRAINING_DATA_FORMAT_VERSION
         from ruamel.yaml.scalarstring import DoubleQuotedScalarString
 
         nlu_items = []

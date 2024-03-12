@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 from rasa.shared.importers.importer import TrainingDataImporter
-from rasa.shared.utils.io import read_yaml_file
+from rasa.shared.utils.yaml import read_yaml_file
 
 from rasa.studio.config import StudioConfig
 from rasa.studio.data_handler import StudioDataHandler

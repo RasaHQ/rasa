@@ -9,7 +9,7 @@ from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.slots import TextSlot, AnySlot, CategoricalSlot, BooleanSlot
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.utils.validation import YamlValidationException
+from rasa.shared.utils.yaml import YamlValidationException
 
 
 async def test_nlg_conditional_response_variations_with_no_slots():

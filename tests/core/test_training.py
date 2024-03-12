@@ -10,6 +10,7 @@ from rasa.shared.core.domain import Domain
 
 import rasa.model_training
 import rasa.shared.utils.io
+from rasa.shared.utils.yaml import write_yaml
 
 
 def test_load_training_data_reader_not_found_throws(tmp_path: Path, domain: Domain):
@@ -40,7 +41,7 @@ async def test_random_seed(
         "policies": [{"name": "TEDPolicy", "random_seed": 42}, {"name": "RulePolicy"}],
     }
     config_file = tmp_path / "config.yml"
-    rasa.shared.utils.io.write_yaml(policies_config, config_file)
+    write_yaml(policies_config, config_file)
 
     model_file_1 = rasa.model_training.train_core(
         domain_path,

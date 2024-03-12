@@ -12,6 +12,7 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.constants import ACTION_SESSION_START_NAME
 from rasa.core.tracker_store import SQLTrackerStore
 from rasa.cli.evaluate import STATS_SESSION_SUFFIX, STATS_OVERALL_SUFFIX
+from rasa.shared.utils.yaml import write_yaml
 from tests.conftest import write_endpoint_config_to_yaml
 
 from tests.cli.conftest import RASA_EXE
@@ -38,7 +39,7 @@ def write_markers_config_to_yaml(
     markers_path = path / markers_filename
 
     # write markers config to file
-    rasa.shared.utils.io.write_yaml(data, markers_path)
+    write_yaml(data, markers_path)
     return markers_path
 
 

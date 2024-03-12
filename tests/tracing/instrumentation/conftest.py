@@ -18,7 +18,6 @@ from typing import (
 from unittest.mock import Mock
 
 import pytest
-import rasa.shared.utils.io
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
@@ -60,6 +59,7 @@ from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.data import TrainingType
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.utils.yaml import read_yaml_file
 from rasa.utils.endpoints import EndpointConfig
 
 from rasa.core.nlg.contextual_response_rephraser import ContextualResponseRephraser
@@ -403,7 +403,7 @@ def graph_trainer(
 def model_configuration(
     config_path: Text, training_type: TrainingType
 ) -> GraphModelConfiguration:
-    config = rasa.shared.utils.io.read_yaml_file(config_path)
+    config = read_yaml_file(config_path)
 
     recipe = Recipe.recipe_for_name(GraphV1Recipe.name)
     model_config = recipe.graph_config_for_recipe(

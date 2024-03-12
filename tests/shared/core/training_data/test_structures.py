@@ -18,6 +18,7 @@ from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
 )
 from rasa.shared.core.training_data.structures import Story
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.utils.yaml import read_yaml
 
 domain = Domain.load("data/test_moodbot/domain.yml")
 
@@ -58,7 +59,6 @@ stories:
 
 
 def test_as_story_string_or_statement_with_slot_was_set():
-    import rasa.shared.utils.io
 
     stories = """
     stories:
@@ -73,7 +73,7 @@ def test_as_story_string_or_statement_with_slot_was_set():
     """
 
     reader = YAMLStoryReader()
-    yaml_content = rasa.shared.utils.io.read_yaml(stories)
+    yaml_content = read_yaml(stories)
 
     steps = reader.read_from_parsed_yaml(yaml_content)
 

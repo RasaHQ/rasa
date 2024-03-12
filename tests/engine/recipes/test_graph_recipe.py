@@ -11,7 +11,7 @@ from rasa.engine.recipes.recipe import Recipe
 from rasa.shared.constants import ASSISTANT_ID_KEY
 from rasa.shared.data import TrainingType
 import rasa.engine.validation
-
+from rasa.shared.utils.yaml import read_yaml_file, read_yaml, read_model_configuration
 
 CONFIG_FOLDER = Path("data/test_config")
 # The graph config is equivalent to the default config in graph schema format.
@@ -61,17 +61,13 @@ def test_generate_graphs(
     expected_predict_schema_path: Text,
     training_type: TrainingType,
 ):
-    expected_schema_as_dict = rasa.shared.utils.io.read_yaml_file(
-        expected_train_schema_path
-    )
+    expected_schema_as_dict = read_yaml_file(expected_train_schema_path)
     expected_train_schema = GraphSchema.from_dict(expected_schema_as_dict)
 
-    expected_schema_as_dict = rasa.shared.utils.io.read_yaml_file(
-        expected_predict_schema_path
-    )
+    expected_schema_as_dict = read_yaml_file(expected_predict_schema_path)
     expected_predict_schema = GraphSchema.from_dict(expected_schema_as_dict)
 
-    config = rasa.shared.utils.io.read_yaml_file(config_path)
+    config = read_yaml_file(config_path)
 
     recipe = Recipe.recipe_for_name(GraphV1Recipe.name)
     model_config = recipe.graph_config_for_recipe(
@@ -95,7 +91,7 @@ def test_generate_graphs(
 
 
 def test_language_returning():
-    config = rasa.shared.utils.io.read_yaml(
+    config = read_yaml(
         """
     language: "xy"
     recipe: graph.v1
@@ -165,9 +161,7 @@ def test_is_finetuning_warns():
 
 @pytest.mark.parametrize("assistant_id", ["unique_assistant", "placeholder_default"])
 def test_graph_config_for_recipe_with_assistant_id(assistant_id):
-    config = rasa.shared.utils.io.read_model_configuration(
-        "data/test_config/graph_config_short.yml"
-    )
+    config = read_model_configuration("data/test_config/graph_config_short.yml")
     config[ASSISTANT_ID_KEY] = assistant_id
 
     recipe = Recipe.recipe_for_name(GraphV1Recipe.name)

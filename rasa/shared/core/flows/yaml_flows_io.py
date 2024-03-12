@@ -8,11 +8,16 @@ import rasa.shared
 import rasa.shared.data
 from rasa.shared.importers.importer import FlowSyncImporter
 import rasa.shared.utils.io
-import rasa.shared.utils.validation
 from rasa.shared.exceptions import RasaException, YamlException
 
 from rasa.shared.core.flows.flow import Flow
 from rasa.shared.core.flows.flows_list import FlowsList
+from rasa.shared.utils.yaml import (
+    validate_yaml_with_jsonschema,
+    read_yaml,
+    dump_obj_as_yaml_to_string,
+    is_key_in_yaml,
+)
 
 FLOWS_SCHEMA_FILE = "shared/core/flows/flows_yaml_schema.json"
 KEY_FLOWS = "flows"
@@ -199,11 +204,11 @@ class YAMLFlowsReader:
         Returns:
             `Flow`s read from `string`.
         """
-        rasa.shared.utils.validation.validate_yaml_with_jsonschema(
+        validate_yaml_with_jsonschema(
             string, FLOWS_SCHEMA_FILE, humanize_error=cls.humanize_flow_error
         )
 
-        yaml_content = rasa.shared.utils.io.read_yaml(string)
+        yaml_content = read_yaml(string)
 
         return FlowsList.from_json(yaml_content.get(KEY_FLOWS, {}))
 
@@ -226,7 +231,7 @@ class YamlFlowsWriter:
             dumped_flow = flow.as_json()
             del dumped_flow["id"]
             dump[flow.id] = dumped_flow
-        return rasa.shared.utils.io.dump_obj_as_yaml_to_string({KEY_FLOWS: dump})
+        return dump_obj_as_yaml_to_string({KEY_FLOWS: dump})
 
     @staticmethod
     def dump(flows: List[Flow], filename: Union[Text, Path]) -> None:
@@ -268,6 +273,6 @@ def is_flows_file(file_path: Union[Text, Path]) -> bool:
         YamlException: if the file seems to be a YAML file (extension) but
             can not be read / parsed.
     """
-    return rasa.shared.data.is_likely_yaml_file(
-        file_path
-    ) and rasa.shared.utils.io.is_key_in_yaml(file_path, KEY_FLOWS)
+    return rasa.shared.data.is_likely_yaml_file(file_path) and is_key_in_yaml(
+        file_path, KEY_FLOWS
+    )

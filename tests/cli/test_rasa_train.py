@@ -23,6 +23,7 @@ from rasa.shared.nlu.training_data.training_data import (
     DEFAULT_TRAINING_DATA_OUTPUT_PATH,
 )
 import rasa.utils.io
+from rasa.shared.utils.yaml import read_yaml_file
 from tests.cli.conftest import RASA_EXE
 
 
@@ -355,9 +356,7 @@ def test_train_core_compare(
         assert (tmp_path / f"run_{run}" / "config__percentage__50.tar.gz").exists()
         assert (tmp_path / f"run_{run}" / "config__percentage__100.tar.gz").exists()
 
-    num_stories = rasa.shared.utils.io.read_yaml_file(
-        tmp_path / NUMBER_OF_TRAINING_STORIES_FILE
-    )
+    num_stories = read_yaml_file(tmp_path / NUMBER_OF_TRAINING_STORIES_FILE)
     assert num_stories == [3, 0]
 
 

@@ -14,7 +14,6 @@ from unittest.mock import Mock
 
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.training_data.message import Message
-import rasa.shared.utils.io
 from rasa.shared.exceptions import (
     FileNotFoundException,
     YamlSyntaxException,
@@ -24,6 +23,7 @@ from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core import training
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
+from rasa.shared.utils.yaml import read_yaml_file, read_yaml, write_yaml
 from rasa.utils.tensorflow.model_data_utils import _surface_attributes
 
 from rasa.shared.constants import (
@@ -407,7 +407,7 @@ async def test_warning_if_intent_not_in_domain(domain: Domain):
     """
 
     reader = YAMLStoryReader(domain)
-    yaml_content = rasa.shared.utils.io.read_yaml(stories)
+    yaml_content = read_yaml(stories)
 
     with pytest.warns(UserWarning) as record:
         reader.read_from_parsed_yaml(yaml_content)
@@ -426,7 +426,7 @@ async def test_no_warning_if_intent_in_domain(domain: Domain):
     )
 
     reader = YAMLStoryReader(domain)
-    yaml_content = rasa.shared.utils.io.read_yaml(stories)
+    yaml_content = read_yaml(stories)
 
     with pytest.warns(None) as record:
         reader.read_from_parsed_yaml(yaml_content)
@@ -482,7 +482,7 @@ async def test_active_loop_is_parsed(domain: Domain):
     )
 
     reader = YAMLStoryReader(domain)
-    yaml_content = rasa.shared.utils.io.read_yaml(stories)
+    yaml_content = read_yaml(stories)
 
     with pytest.warns(None) as record:
         reader.read_from_parsed_yaml(yaml_content)
@@ -492,13 +492,13 @@ async def test_active_loop_is_parsed(domain: Domain):
 
 def test_is_test_story_file(tmp_path: Path):
     path = str(tmp_path / "test_stories.yml")
-    rasa.shared.utils.io.write_yaml({"stories": []}, path)
+    write_yaml({"stories": []}, path)
     assert YAMLStoryReader.is_test_stories_file(path)
 
 
 def test_is_not_test_story_file_if_it_doesnt_contain_stories(tmp_path: Path):
     path = str(tmp_path / "test_stories.yml")
-    rasa.shared.utils.io.write_yaml({"nlu": []}, path)
+    write_yaml({"nlu": []}, path)
     assert not YAMLStoryReader.is_test_stories_file(path)
 
 
@@ -510,7 +510,7 @@ def test_is_not_test_story_file_raises_if_file_does_not_exist(tmp_path: Path):
 
 def test_is_not_test_story_file_without_test_prefix(tmp_path: Path):
     path = str(tmp_path / "stories.yml")
-    rasa.shared.utils.io.write_yaml({"stories": []}, path)
+    write_yaml({"stories": []}, path)
     assert not YAMLStoryReader.is_test_stories_file(path)
 
 
@@ -526,7 +526,7 @@ stories:
     intent: {intent}
     """
 
-    story_as_yaml = rasa.shared.utils.io.read_yaml(story)
+    story_as_yaml = read_yaml(story)
     steps = YAMLStoryReader().read_from_parsed_yaml(story_as_yaml)
     user_uttered = steps[0].events[0]
 
@@ -548,7 +548,7 @@ stories:
       role: from
     """
 
-    story_as_yaml = rasa.shared.utils.io.read_yaml(story)
+    story_as_yaml = read_yaml(story)
 
     steps = YAMLStoryReader().read_from_parsed_yaml(story_as_yaml)
     user_uttered = steps[0].events[0]
@@ -564,7 +564,7 @@ def test_read_mixed_training_data_file(domain: Domain):
     training_data_file = "data/test_mixed_yaml_training_data/training_data.yml"
 
     reader = YAMLStoryReader(domain)
-    yaml_content = rasa.shared.utils.io.read_yaml_file(training_data_file)
+    yaml_content = read_yaml_file(training_data_file)
 
     with pytest.warns(None) as record:
         reader.read_from_parsed_yaml(yaml_content)
@@ -589,7 +589,7 @@ def test_or_statement_with_slot_was_set():
     """
 
     reader = YAMLStoryReader()
-    yaml_content = rasa.shared.utils.io.read_yaml(stories)
+    yaml_content = read_yaml(stories)
 
     steps = reader.read_from_parsed_yaml(yaml_content)
 
@@ -665,7 +665,7 @@ def test_handles_mixed_steps_for_test_and_e2e_stories(is_conversation_test):
     """
 
     reader = YAMLStoryReader()
-    yaml_content = rasa.shared.utils.io.read_yaml(stories)
+    yaml_content = read_yaml(stories)
 
     steps = reader.read_from_parsed_yaml(yaml_content)
 
@@ -681,8 +681,8 @@ def test_read_from_file_skip_validation(monkeypatch: MonkeyPatch):
     reader = YAMLStoryReader()
 
     monkeypatch.setattr(
-        sys.modules["rasa.shared.utils.io"],
-        rasa.shared.utils.io.read_yaml.__name__,
+        sys.modules["rasa.shared.core.training_data.story_reader.yaml_story_reader"],
+        read_yaml.__name__,
         Mock(return_value={}),
     )
 

@@ -4,9 +4,11 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Text
 
 from rasa.shared.exceptions import RasaException, YamlException
-from rasa.shared.utils.io import read_config_file, read_yaml_file
-
-from rasa.utils.validation import validate_yaml_content
+from rasa.shared.utils.yaml import (
+    read_config_file,
+    read_yaml_file,
+    validate_yaml_content_using_schema,
+)
 
 logger = logging.getLogger(__name__)
 SCHEMA_FILE = Path(__file__).parent / "schemas" / "config.yml"
@@ -93,7 +95,7 @@ def validate_anonymization_yaml(yaml_content: Dict[Text, Any]) -> None:
     """
     schema = read_yaml_file(SCHEMA_FILE)
     try:
-        validate_yaml_content(yaml_content, schema)
+        validate_yaml_content_using_schema(yaml_content, schema)
     except YamlException as exception:
         raise RasaException(
             f"Invalid configuration for `anonymization_rules` : {exception}"

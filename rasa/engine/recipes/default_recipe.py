@@ -54,6 +54,7 @@ import rasa.shared.constants
 from rasa.shared.exceptions import RasaException, InvalidConfigException
 from rasa.shared.constants import ASSISTANT_ID_KEY
 from rasa.shared.data import TrainingType
+from rasa.shared.utils.yaml import read_config_file
 
 from rasa.utils.tensorflow.constants import EPOCHS
 from rasa.shared.utils.common import (
@@ -1080,7 +1081,7 @@ class DefaultV1Recipe(Recipe):
             .joinpath("config_files")
             .joinpath("default_config.yml")
         )
-        default_config = rasa.shared.utils.io.read_config_file(default_config_file)
+        default_config = read_config_file(default_config_file)
 
         config = copy.deepcopy(config)
         for key in keys_to_configure:
@@ -1160,7 +1161,7 @@ class DefaultV1Recipe(Recipe):
         training_type: Optional[TrainingType] = TrainingType.BOTH,
     ) -> bool:
         try:
-            content = rasa.shared.utils.io.read_config_file(config_file_path)
+            content = read_config_file(config_file_path)
         except FileNotFoundException:
             content = {}
 
