@@ -1,0 +1,157 @@
+version: "3.1"
+flows:
+  "health_advice":
+    name: health_advice
+    description: user asks for health advice
+    steps:
+      - action: utter_cant_advice_on_health
+  add_contact:
+    name: add_contact
+    description: add a contact to your contact list
+    steps:
+      - collect: add_contact_handle
+        description: a user handle starting with @
+      - collect: add_contact_name
+        description: a name of a person
+      - collect: add_contact_confirmation
+        description: a confirmation to add contact
+        next:
+          - if: not slots.add_contact_confirmation
+            then:
+              - action: utter_add_contact_cancelled
+                next: END
+          - else: action_add_contact
+      - id: action_add_contact
+        action: action_add_contact
+        next:
+          - if: slots.return_value is 'already_exists'
+            then:
+              - action: utter_contact_already_exists
+                next: END
+          - if: slots.return_value is 'success'
+            then:
+              - action: utter_contact_added
+                next: END
+          - else:
+              - action: utter_add_contact_error
+                next: END
+  check_balance:
+    name: check_balance
+    description: check the user's account balance.
+    steps:
+      - action: action_check_balance
+      - action: utter_current_balance
+  hotel_search:
+    name: hotel_search
+    description: search for hotels
+    steps:
+      - action: action_search_hotel
+      - action: utter_hotel_inform_rating
+  remove_contact:
+    name: remove_contact
+    description: remove a contact from your contact list
+    steps:
+      - collect: remove_contact_handle
+        description: a contact handle starting with @
+      - collect: remove_contact_confirmation
+        ask_before_filling: true
+        next:
+          - if: not slots.remove_contact_confirmation
+            then:
+              - action: utter_remove_contact_cancelled
+                next: END
+          - else: action_remove_contact
+      - id: action_remove_contact
+        action: action_remove_contact
+        next:
+          - if: slots.return_value is 'not_found'
+            then:
+              - action: utter_contact_not_in_list
+                next: END
+          - if: slots.return_value is 'success'
+            then:
+              - action: utter_remove_contact_success
+                next: END
+          - else:
+              - action: utter_remove_contact_error
+                next: END
+  transaction_search:
+    name: transaction_search
+    description: lists the last transactions of the user account
+    steps:
+      - action: action_transaction_search
+      - action: utter_transactions
+  transfer_money:
+    name: transfer_money
+    description: This flow let's users send money to friends and family.
+    steps:
+      - collect: transfer_money_recipient
+        description: Asks user for the recipient's name.
+      - collect: transfer_money_amount
+        description: Asks user for the amount to transfer.
+      - collect: transfer_money_final_confirmation
+        description: Asks user for final confirmation to transfer money.
+        ask_before_filling: true
+        next:
+          - if: not slots.transfer_money_final_confirmation
+            then:
+              - action: utter_transfer_cancelled
+                next: END
+          - else: action_execute_transfer
+      - id: action_execute_transfer
+        action: action_execute_transfer
+        next:
+          - if: slots.transfer_money_transfer_successful
+            then:
+              - action: utter_transfer_complete
+                next: END
+          - else:
+              - action: utter_transfer_failed
+                next: END
+  verify_account:
+    name: verify_account
+    description: Verify an account for higher transfer limits
+    steps:
+      - collect: verify_account_email
+        description: Asks user for their email address.
+        ask_before_filling: true
+      - collect: based_in_california
+        description: Asks user if they are based in California.
+        ask_before_filling: true
+        next:
+          - if: slots.based_in_california
+            then:
+              - collect: verify_account_sufficient_california_income
+                description: Asks user if they have sufficient income in California.
+                ask_before_filling: true
+                next:
+                  - if: not slots.verify_account_sufficient_california_income
+                    then:
+                      - action: utter_ca_income_insufficient
+                        next: END
+                  - else: collect_verify_account_confirmation_california
+              - id: collect_verify_account_confirmation_california
+                collect: verify_account_confirmation_california
+                description: Asks user for final confirmation to verify their account in California.
+                ask_before_filling: true
+                next:
+                  - if: slots.verify_account_confirmation_california
+                    then:
+                      - action: utter_verify_account_success
+                        next: END
+                  - else:
+                      - action: utter_verify_account_cancelled
+                        next: END
+          - else: collect_verify_account_confirmation
+      - id: collect_verify_account_confirmation
+        collect: verify_account_confirmation
+        description: Asks user for final confirmation to verify their account.
+        ask_before_filling: true
+        next:
+          - if: slots.verify_account_confirmation
+            then:
+              - action: utter_verify_account_success
+                next: END
+          - else:
+              - action: utter_verify_account_cancelled
+                next: END
