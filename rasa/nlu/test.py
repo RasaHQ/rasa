@@ -511,7 +511,7 @@ def _add_confused_labels_to_report(
 
     The value is a dict of {"false_positive_label": false_positive_count} pairs.
     If there are no false positives in the confusion matrix,
-    the dict will be empty. Typically we include the two most
+    the dict will be empty. Typically, we include the two most
     commonly false positive labels, three in the rare case that
     the diagonal element in the confusion matrix is not one of the
     three highest values in the row.
@@ -1286,18 +1286,8 @@ async def get_eval_data(
     should_eval_entities = len(test_data.entity_examples) > 0
 
     for example in tqdm(test_data.nlu_examples):
-        tracker = plugin_manager().hook.mock_tracker_for_evaluation(
-            example=example, model_metadata=processor.model_metadata
-        )
-        # if the user overwrites the default implementation take the last tracker
-        if isinstance(tracker, list):
-            if len(tracker) > 0:
-                tracker = tracker[-1]
-            else:
-                tracker = None
         result = await processor.parse_message(
             UserMessage(text=example.get(TEXT)),
-            tracker=tracker,
             only_output_properties=False,
         )
         _remove_entities_of_extractors(result, PRETRAINED_EXTRACTORS)

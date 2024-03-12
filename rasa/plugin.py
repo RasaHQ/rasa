@@ -12,10 +12,7 @@ from rasa.cli import SubParsersAction
 if TYPE_CHECKING:
     from rasa.core.brokers.broker import EventBroker
     from rasa.core.tracker_store import TrackerStore
-    from rasa.engine.storage.storage import ModelMetadata
     from rasa.shared.core.domain import Domain
-    from rasa.shared.core.trackers import DialogueStateTracker
-    from rasa.shared.nlu.training_data.message import Message
     from rasa.utils.endpoints import EndpointConfig
 
 
@@ -65,13 +62,6 @@ def configure_commandline(cmdline_arguments: argparse.Namespace) -> Optional[Tex
 @hookspec  # type: ignore[misc]
 def init_telemetry(endpoints_file: Optional[Text]) -> None:
     """Hook specification for initialising plugin telemetry."""
-
-
-@hookspec  # type: ignore[misc]
-def mock_tracker_for_evaluation(
-    example: "Message", model_metadata: Optional["ModelMetadata"]
-) -> Optional["DialogueStateTracker"]:
-    """Generate a mocked tracker for NLU evaluation."""
 
 
 @hookspec  # type: ignore[misc]
