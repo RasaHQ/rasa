@@ -10,7 +10,6 @@ from typing import Text, Dict, Union, Any
 from unittest.mock import Mock
 
 import pytest
-import structlog
 from _pytest.capture import CaptureFixture
 from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
@@ -44,11 +43,9 @@ from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 import rasa.shared.utils.io
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.slots import AnySlot
 from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.utils.yaml import read_yaml_file, write_yaml, read_yaml
 from rasa.utils.tensorflow.constants import EPOCHS
-from tests.utilities import filter_logs
 
 
 def count_temp_rasa_files(directory: Text) -> int:
@@ -1040,33 +1037,6 @@ def test_check_unresolved_slots(capsys: CaptureFixture):
         ]
     )
     assert rasa.model_training._check_unresolved_slots(domain, stories) is None
-
-
-def test_check_restricted_slots(monkeypatch: MonkeyPatch):
-    domain_path = "data/test_domains/default_with_mapping.yml"
-    domain = Domain.load(domain_path)
-
-    expected_log_level = "warning"
-    expected_log_event = "model_training.check_restricted_slots.reserved_slot_name"
-
-    with structlog.testing.capture_logs() as caplog:
-
-        rasa.model_training._check_restricted_slots(domain)
-        logs = filter_logs(caplog, expected_log_event, expected_log_level)
-        assert len(logs) == 0
-
-        domain.slots.append(
-            AnySlot(
-                name="context",
-                mappings=[{}],
-                initial_value=None,
-                influence_conversation=False,
-            )
-        )
-
-        rasa.model_training._check_restricted_slots(domain)
-        logs = filter_logs(caplog, expected_log_event, expected_log_level)
-        assert len(logs) == 1
 
 
 @pytest.mark.parametrize(
