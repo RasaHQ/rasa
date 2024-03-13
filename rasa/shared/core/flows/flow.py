@@ -25,6 +25,7 @@ from rasa.shared.core.flows.steps import (
     ActionFlowStep,
 )
 from rasa.shared.core.flows.flow_step_sequence import FlowStepSequence
+from rasa.shared.core.slots import Slot
 from rasa.shared.utils.pypred import get_case_insensitive_predicate_given_slot_instance
 
 
@@ -227,50 +228,57 @@ class Flow:
         """Create a default name if none is present."""
         return self.custom_name or Flow.create_default_name(self.id)
 
-    def is_startable(self, data: Optional[Dict[str, Any]] = None) -> bool:
+    def is_startable(
+        self,
+        context: Optional[Dict[Text, Any]] = None,
+        slots: Optional[Dict[Text, Slot]] = None,
+    ) -> bool:
         """Return whether the start condition is satisfied.
 
         Args:
-            data: The context and slots to evaluate the start condition against.
+            context: The context data to evaluate the starting conditions against.
+            slots: The slots to evaluate the starting conditions against.
 
         Returns:
             Whether the start condition is satisfied.
         """
+        context = context or {}
+        slots = slots or {}
+        simplified_slots = {slot.name: slot.value for slot in slots.values()}
+
         # If no starting condition exists, the flow is always startable.
         if not self.guard_condition:
             return True
 
         # if a flow guard condition exists and the flow was started via a link,
         # e.g. is currently active, the flow is startable
-        if (
-            data
-            and data["context"]
-            and data["context"]["flow_id"]
-            and data["context"]["flow_id"] == self.id
-        ):
+        if context.get("flow_id") == self.id:
             return True
 
         try:
-            assert data is not None
             case_insensitive_guard_condition = (
                 get_case_insensitive_predicate_given_slot_instance(
-                    self.guard_condition, data.get("slots", {})
+                    self.guard_condition, slots
                 )
             )
-
             predicate = Predicate(case_insensitive_guard_condition)
-            is_startable = predicate.evaluate(data)
+            is_startable = predicate.evaluate(
+                {"context": context, "slots": simplified_slots}
+            )
             structlogger.debug(
                 "command_generator.validate_flow_starting_conditions.result",
                 predicate=predicate.description(),
                 is_startable=is_startable,
             )
             return is_startable
+        # if there is any kind of exception when evaluating the predicate, the flow
+        # is not startable
         except (TypeError, Exception) as e:
             structlogger.error(
                 "command_generator.validate_flow_starting_conditions.error",
                 predicate=self.guard_condition,
-                context=data,
+                context=context,
+                slots=slots,
                 error=str(e),
             )
             return False

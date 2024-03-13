@@ -1978,7 +1978,6 @@ def test_get_previously_started_flows(max_turns: Optional[int], expected_flow_id
     assert previously_started_flows.flow_ids == expected_flow_ids
 
 
-@pytest.mark.skip(reason="Bug reported in ENG-921. Update after the bug is fixed")
 @pytest.mark.parametrize(
     "flow_guard_value, expected_flow_ids",
     (
@@ -2024,28 +2023,3 @@ def test_get_startable_flows(flow_guard_value: Any, expected_flow_ids: List[Text
     result_flows = tracker.get_startable_flows(flows)
     # Then
     assert result_flows.flow_ids == expected_flow_ids
-
-
-def test_get_context_and_slots():
-    """Test that context and slots are correctly extracted from tracker and domain."""
-    # Given
-    test_slots = [
-        TextSlot("spam", mappings=[]),
-        AnySlot("eggs", mappings=[]),
-        BooleanSlot("ham", mappings=[]),
-    ]
-    test_events = [
-        SlotSet("spam", "pemmican"),
-        SlotSet("eggs", "scrambled"),
-        SlotSet("ham", "true"),
-    ]
-    tracker = DialogueStateTracker.from_events(
-        "test", evts=test_events, slots=test_slots
-    )
-    # When
-    document = tracker.get_context_and_slots()
-    # Then
-    assert "context" in document
-    for slot, event in zip(test_slots, test_events):
-        assert slot.name in document["slots"]
-        assert event.value in document["slots"][slot.name].value

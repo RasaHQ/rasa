@@ -14,6 +14,7 @@ from rasa.shared.core.flows.validation import (
     validate_patterns_are_not_calling_or_linking_other_flows,
     validate_step_ids_are_unique,
 )
+from rasa.shared.core.slots import Slot
 
 
 @dataclass
@@ -166,15 +167,22 @@ class FlowsList:
             utterance for flow in self.underlying_flows for utterance in flow.utterances
         }
 
-    def get_startable_flows(self, data: Optional[Dict[str, Any]] = None) -> FlowsList:
+    def get_startable_flows(
+        self,
+        context: Optional[Dict[Text, Any]] = None,
+        slots: Optional[Dict[Text, Slot]] = None,
+    ) -> FlowsList:
         """Get all flows for which the starting conditions are met.
 
         Args:
-            data: The context and slots to evaluate the starting conditions against.
+            context: The context data to evaluate the starting conditions against.
+            slots: The slots to evaluate the starting conditions against.
 
         Returns:
             All flows for which the starting conditions are met."""
-        return FlowsList([f for f in self.underlying_flows if f.is_startable(data)])
+        return FlowsList(
+            [f for f in self.underlying_flows if f.is_startable(context, slots)]
+        )
 
     def get_flows_always_included_in_prompt(self) -> FlowsList:
         """
