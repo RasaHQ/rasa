@@ -420,7 +420,9 @@ def test_clean_up_commands_with_correction_pattern_on_stack(
         ),
         Mock(return_value=({"ham", "egg"}, "spam")),
     ):
-        clean_commands = clean_up_commands(commands, tracker_eggs, collect_info_flow)
+        clean_commands = clean_up_commands(
+            commands, tracker_eggs, collect_info_flow, Mock()
+        )
 
     # Then
     assert clean_commands == expected_clean_commands
