@@ -21,6 +21,17 @@ nodes:
     is_target: true
     is_input: true
     resource: null
+  domain_provider:
+    needs:
+      importer: finetuning_validator
+    uses: rasa.graph_components.providers.domain_provider.DomainProvider
+    constructor_name: create
+    fn: provide_train
+    config: {}
+    eager: false
+    is_target: true
+    is_input: true
+    resource: null
   finetuning_validator:
     needs:
       importer: schema_validator

@@ -3,10 +3,10 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
+import rasa.studio.train
+import rasa.dialogue_understanding.generator.flow_retrieval
 from pytest import MonkeyPatch
 from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
-
-import rasa.studio.train
 
 
 @pytest.mark.timeout(120, func_only=True)
@@ -143,6 +143,11 @@ responses:
 actions:
   - check_balance"""
     monkeypatch.setattr(rasa.studio.train, "StudioDataHandler", return_mock)
+    monkeypatch.setattr(
+        rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval,
+        "populate",
+        lambda selff, flows, domain: None,
+    )
 
     with TempDirectoryPath(get_temp_dir_name()) as temp_path:
         args.out = temp_path

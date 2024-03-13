@@ -6,7 +6,7 @@ import textwrap
 import time
 from pathlib import Path
 import tempfile
-from typing import List, Text, Dict, Any, Type
+from typing import List, Text, Dict, Any, Type, Optional, Set
 
 import fakeredis
 import freezegun
@@ -59,9 +59,13 @@ from rasa.shared.core.events import (
     LoopInterrupted,
     DefinePrevUserUtteredFeaturization,
     EntitiesAdded,
+    FlowStarted,
+    FlowCompleted,
     DialogueStackUpdated,
     RoutingSessionEnded,
 )
+from rasa.shared.core.flows import FlowsList, Flow
+from rasa.shared.core.flows.yaml_flows_io import flows_from_str
 from rasa.shared.core.slots import (
     FloatSlot,
     BooleanSlot,
@@ -1919,3 +1923,103 @@ def test_tracker_previous_stack_state_resets_on_restart():
     assert tracker.stack == DialogueStack.empty()
 
     assert list(tracker.previous_stack_states()) == [DialogueStack.empty()]
+
+
+@pytest.mark.parametrize(
+    "max_turns, expected_flow_ids",
+    [
+        (1, {"farewell"}),
+        (None, {"greet", "foo", "bar", "farewell"}),
+        (5, {"foo", "farewell"}),
+    ],
+)
+def test_get_previously_started_flows(max_turns: Optional[int], expected_flow_ids: Set):
+    # Given
+    events = [
+        UserUttered("Hi"),
+        FlowStarted(flow_id="greet"),
+        BotUttered("Hello"),
+        FlowCompleted(flow_id="greet", step_id="0"),
+        UserUttered("Start foo"),
+        FlowStarted(flow_id="foo"),
+        BotUttered("Foo"),
+        FlowCompleted(flow_id="foo", step_id="0"),
+        UserUttered("Start bar"),
+        FlowStarted(flow_id="bar"),
+        BotUttered("Bar"),
+        FlowCompleted(flow_id="bar", step_id="0"),
+        UserUttered("Start foo again"),
+        FlowStarted(flow_id="foo"),
+        FlowStarted(flow_id="foo-link"),
+        BotUttered("Foo link done"),
+        FlowCompleted(flow_id="foo-link", step_id="0"),
+        BotUttered("Foo again completed"),
+        FlowCompleted(flow_id="foo", step_id="0"),
+        UserUttered("Bye"),
+        FlowStarted(flow_id="farewell"),
+        BotUttered("Bye"),
+        FlowCompleted(flow_id="farewell", step_id="0"),
+    ]
+    tracker = DialogueStateTracker.from_events(sender_id="sender_id", evts=events)
+    startable_flows = FlowsList(
+        underlying_flows=[
+            Flow(id="greet"),
+            Flow(id="foo"),
+            Flow(id="bar"),
+            Flow(id="farewell"),
+        ]
+    )
+    # When
+    previously_started_flows = tracker.get_previously_started_flows(
+        startable_flows, max_turns=max_turns
+    )
+    # Then
+    assert len(previously_started_flows) == len(expected_flow_ids)
+    assert previously_started_flows.flow_ids == expected_flow_ids
+
+
+@pytest.mark.parametrize(
+    "flow_guard_value, expected_flow_ids",
+    (
+        (None, {"flow_regular"}),
+        (False, {"flow_regular"}),
+        (True, {"flow_regular", "flow_with_guard"}),
+        ("false", {"flow_regular", "flow_with_guard"}),
+        ("true", {"flow_regular", "flow_with_guard"}),
+    ),
+)
+def test_get_startable_flows(flow_guard_value: Any, expected_flow_ids: List[Text]):
+    # Given
+    flows = flows_from_str(
+        """
+        flows:
+            flow_with_guard:
+                if: slots.some_slot
+                name: flow with guard
+                description: description for flow a
+                steps:
+                    - id: step_a
+                      action: action_listen
+            flow_link:
+                if: False
+                name: flow link
+                description: description for flow b
+                steps:
+                    - id: step_b
+                      action: action_listen
+            flow_regular:
+                name: flow regular
+                description: description for flow b
+                steps:
+                    - id: step_c
+                      action: action_listen
+        """
+    )
+    tracker = DialogueStateTracker.from_events(
+        sender_id="test",
+        evts=[SlotSet(key="some_slot", value=flow_guard_value)],
+    )
+    # When
+    result_flows = tracker.get_startable_flows(flows)
+    # Then
+    assert result_flows.flow_ids == expected_flow_ids

@@ -305,6 +305,17 @@ class DefaultV1Recipe(Recipe):
             is_target=True,
             is_input=True,
         )
+        train_nodes["domain_provider"] = SchemaNode(
+            needs={
+                "importer": "finetuning_validator",
+            },
+            uses=DomainProvider,
+            constructor_name="create",
+            fn="provide_train",
+            config={},
+            is_target=True,
+            is_input=True,
+        )
         persist_nlu_data = bool(cli_parameters.get("persist_nlu_training_data"))
         train_nodes["nlu_training_data_provider"] = SchemaNode(
             needs={"importer": "finetuning_validator"},
@@ -756,6 +767,14 @@ class DefaultV1Recipe(Recipe):
             fn="provide_inference",
             config={},
             resource=Resource("flows_provider"),
+        )
+        predict_nodes["domain_provider"] = SchemaNode(
+            **DEFAULT_PREDICT_KWARGS,
+            needs={},
+            uses=DomainProvider,
+            fn="provide_inference",
+            config={},
+            resource=Resource("domain_provider"),
         )
 
         for idx, config in enumerate(predict_config["pipeline"]):

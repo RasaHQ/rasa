@@ -66,9 +66,8 @@ class CommandGenerator:
         Returns:
         The processed messages (usually this is just one during prediction).
         """
-        context_and_slots = self._get_context_and_slots(tracker)
-        # flow guard check.
-        startable_flows = flows.startable_flows(context_and_slots)
+        # Determines a set of startable flows by evaluating flow guard conditions.
+        startable_flows = self.get_startable_flows(flows, tracker)
 
         for message in messages:
 
@@ -88,6 +87,27 @@ class CommandGenerator:
             message.set(COMMANDS, commands_dicts, add_to_output=True)
 
         return messages
+
+    def get_startable_flows(
+        self, flows: FlowsList, tracker: Optional[DialogueStateTracker] = None
+    ) -> FlowsList:
+        """
+        Determines a set of startable flows by evaluating flow guard conditions.
+
+        Args:
+            flows: Underlying flows.
+            tracker: The tracker containing the conversation history up to now.
+
+        Returns:
+            FlowsList: All flows for which the starting conditions are met.
+        """
+        if tracker is not None:
+            # if tracker is not None, evaluate the flow guard conditions with
+            # the current state of the tracker
+            return tracker.get_startable_flows(flows)
+
+        # else evaluate it without the tracker context
+        return flows.get_startable_flows({})
 
     def _evaluate_and_predict(
         self,
@@ -136,27 +156,6 @@ class CommandGenerator:
         The predicted commands.
         """
         raise NotImplementedError()
-
-    def _get_context_and_slots(
-        self,
-        tracker: Optional[DialogueStateTracker] = None,
-    ) -> Optional[Dict[str, Any]]:
-        """Get the context document for the flow guard check.
-
-        Args:
-            tracker: The tracker containing the conversation history up to now.
-
-        Returns:
-            The startable flows.
-        """
-        if not tracker:
-            return {}
-
-        # Get current context and slots to prepare document for flow guard check.
-        return {
-            "context": tracker.stack.current_context(),
-            "slots": tracker.slots,
-        }
 
     def _check_commands_against_startable_flows(
         self, commands: List[Command], startable_flows: FlowsList

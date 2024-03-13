@@ -1,0 +1,4 @@
+test flow: some description
+    slot: test_slot_1 (A description for the first test slot)
+    slot: test_slot_2 (A description for the second test slot), allowed values: [True, False]
+    slot: test_slot_3 (A description for the third test slot), allowed values: ['a', 'b', 'c']
