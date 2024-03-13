@@ -7,14 +7,6 @@ import randomname
 import structlog
 
 import rasa.engine.validation
-import rasa.model
-import rasa.shared.constants
-import rasa.shared.exceptions
-import rasa.shared.utils.cli
-import rasa.shared.utils.common
-import rasa.shared.utils.io
-import rasa.utils.common
-from rasa import telemetry
 from rasa.engine.caching import LocalTrainingCache
 from rasa.engine.recipes.recipe import Recipe
 from rasa.engine.runner.dask import DaskGraphRunner
@@ -22,12 +14,19 @@ from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.training.components import FingerprintStatus
 from rasa.engine.training.graph_trainer import GraphTrainer
-from rasa.shared.constants import CONTEXT
-from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import SlotSet
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.data import TrainingType
 from rasa.shared.importers.importer import TrainingDataImporter
+from rasa import telemetry
+from rasa.shared.core.domain import Domain
+import rasa.utils.common
+import rasa.shared.utils.common
+import rasa.shared.utils.cli
+import rasa.shared.exceptions
+import rasa.shared.utils.io
+import rasa.shared.constants
+import rasa.model
 
 CODE_NEEDS_TO_BE_RETRAINED = 0b0001
 CODE_FORCED_TRAINING = 0b1000
@@ -141,34 +140,6 @@ def _check_unresolved_slots(domain: Domain, stories: StoryGraph) -> None:
         sys.exit(1)
 
 
-def _check_restricted_slots(domain: Domain) -> None:
-    """Checks if there are any restricted slots.
-
-    Args:
-        domain: The domain.
-
-    Raises:
-        Warn user if there are any restricted slots.
-
-    Returns:
-        `None` if there are no restricted slots.
-    """
-    restricted_slot_names = [CONTEXT]
-    for slot in domain.slots:
-        if slot.name in restricted_slot_names:
-            structlogger.warn(
-                "model_training.check_restricted_slots.reserved_slot_name",
-                slot=slot.name,
-                event_info=(
-                    f"Slot name - '{slot.name}' is reserved "
-                    f"and can not be used. "
-                    f"Please use another slot name."
-                ),
-            )
-            structlogger.error("slots.reserved_slot_redefined", slot_name=slot.name)
-    return None
-
-
 def train(
     domain: Text,
     config: Text,
@@ -270,7 +241,6 @@ def train(
         training_type = TrainingType.CORE
 
     _check_unresolved_slots(domain_object, stories)
-    _check_restricted_slots(domain_object)
 
     with telemetry.track_model_training(file_importer, model_type="rasa"):
         return _train_graph(
@@ -476,7 +446,6 @@ def train_core(
         return None
 
     _check_unresolved_slots(domain, stories_data)
-    _check_restricted_slots(domain)
 
     return _train_graph(
         file_importer,
