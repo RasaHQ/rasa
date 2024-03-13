@@ -1043,13 +1043,10 @@ class DialogueStateTracker:
         Returns:
             List of flows that are startable within the current state of the tracker
         """
-        # get the current context and slot values
-        context_and_slots = self.get_context_and_slots()
-        return flows.get_startable_flows(context_and_slots)
-
-    def get_context_and_slots(self) -> Optional[Dict[str, Any]]:
-        """Get the context document for the flow guard check."""
-        return {"context": self.stack.current_context(), "slots": self.slots}
+        # get the current context and slot values for the flow guard check
+        context = self.stack.current_context()
+        slots = self.slots
+        return flows.get_startable_flows(context, slots)
 
 
 class TrackerEventDiffEngine:

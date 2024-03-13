@@ -18,6 +18,7 @@ from rasa.shared.core.flows.steps.constants import (
     END_STEP,
     START_STEP,
 )
+from rasa.shared.core.slots import TextSlot, BooleanSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.importers.importer import FlowSyncImporter
 from tests.dialogue_understanding.conftest import (
@@ -568,12 +569,16 @@ def test_is_startable(
         flow_id,
         {"if": guard_condition, "steps": [{"id": "first", "action": "action_listen"}]},
     )
-    document = {
-        "context": {"x": 2, "flow_id": "active_flow"},
-        "slots": {"spam": "eggs", "authenticated": True, "email_verified": True},
+    context = {"x": 2, "flow_id": "active_flow"}
+    slots = {
+        "spam": TextSlot("spam", mappings=[], initial_value="eggs"),
+        "authenticated": BooleanSlot("authenticated", mappings=[], initial_value=True),
+        "email_verified": BooleanSlot(
+            "email_verified", mappings=[], initial_value=True
+        ),
     }
     # When
-    is_startable = flow.is_startable(document)
+    is_startable = flow.is_startable(context, slots)
     # Then
     assert is_startable == expected_startable
 
