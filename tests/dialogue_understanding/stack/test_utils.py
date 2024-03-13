@@ -173,14 +173,10 @@ def test_filled_slots_for_active_flow_end():
         flow_id="my_flow",
         step_ids=["collect_foo", "collect_bar", "collect_baz"],
     )
-<<<<<<< HEAD
-    assert filled_slots_for_active_flow(tracker, all_flows) == {"foo", "bar", "baz"}
-=======
 
     slots_so_far, active_flow = filled_slots_for_active_flow(tracker, all_flows)
-    assert slots_so_far == {"foo", "bar"}
+    assert slots_so_far == {"foo", "bar", "baz"}
     assert active_flow == "my_flow"
->>>>>>> 3.7.x
 
 
 def test_filled_slots_for_active_flow_handles_empty():
@@ -303,13 +299,9 @@ def test_filled_slots_for_active_flow_only_collects_till_top_most_user_flow_fram
         frame_id="some-other-id",
     )
 
-<<<<<<< HEAD
-    assert filled_slots_for_active_flow(tracker, all_flows) == {"foo2", "bar2"}
-=======
     slots_so_far, active_flow = filled_slots_for_active_flow(tracker, all_flows)
-    assert slots_so_far == {"foo2"}
+    assert slots_so_far == {"foo2", "bar2"}
     assert active_flow == "my_other_flow"
->>>>>>> 3.7.x
 
 
 def test_end_top_user_flow():

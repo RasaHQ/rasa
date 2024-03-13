@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 from typing import List, Optional, Set, Tuple
-=======
-from typing import Optional, Set, Tuple
->>>>>>> 3.7.x
 import typing
 from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
@@ -43,7 +39,6 @@ def top_flow_frame(
         The topmost flow frame from the tracker. `None` if there
         is no frame on the stack.
     """
-
     for frame in reversed(dialogue_stack.frames):
         if ignore_collect_information_pattern and isinstance(
             frame, CollectInformationPatternFlowStackFrame
@@ -73,7 +68,8 @@ def top_user_flow_frame(dialogue_stack: DialogueStack) -> Optional[UserFlowStack
         dialogue_stack: The dialogue stack to use.
 
     Returns:
-        The topmost user flow frame from the tracker."""
+    The topmost user flow frame from the tracker.
+    """
     for frame in reversed(dialogue_stack.frames):
         if (
             isinstance(frame, UserFlowStackFrame)
@@ -102,43 +98,15 @@ def filled_slots_for_active_flow(
     All slots that have been filled for the current flow and the id of the currently
     active flow.
     """
-    filled_slots = set()
-    active_flow = None
+    stack = tracker.stack
+    user_frame = top_user_flow_frame(stack)
+    active_flow = user_frame.flow_id if user_frame else None
 
-<<<<<<< HEAD
+    filled_slots = set()
     for collect_step, _ in previous_collect_steps_for_active_flow(tracker, all_flows):
         filled_slots.add(collect_step.collect)
-    return filled_slots
-=======
-    dialogue_stack = tracker.stack
-    previously_filled_slots = tracker.get_previously_updated_slots(all_flows)
 
-    for frame in reversed(dialogue_stack.frames):
-        if not isinstance(frame, BaseFlowStackFrame):
-            # we skip all frames that are not flows, e.g. chitchat / search
-            # frames, because they don't have slots.
-            continue
-        # fetch the active flow from the current frame making sure it is available in
-        # the provided flows
-        active_flow = frame.flow(all_flows)
-        for q in active_flow.previous_collect_steps(frame.step_id):
-            # verify that the collect step of the flow was actually reached
-            # previously in the conversation
-            if q.collect in previously_filled_slots:
-                filled_slots.add(q.collect)
-
-        if isinstance(frame, UserFlowStackFrame):
-            # as soon as we hit the first stack frame that is a "normal"
-            # user defined flow we stop looking for previously asked collect infos
-            # because we only want to ask collect infos that are part of the
-            # current flow.
-            break
-
-    if active_flow:
-        return filled_slots, active_flow.id
-
-    return filled_slots, None
->>>>>>> 3.7.x
+    return filled_slots, active_flow
 
 
 def previous_collect_steps_for_active_flow(
@@ -188,7 +156,8 @@ def user_flows_on_the_stack(dialogue_stack: DialogueStack) -> Set[str]:
         dialogue_stack: The dialogue stack.
 
     Returns:
-        All user flows that are currently on the stack."""
+    All user flows that are currently on the stack.
+    """
     return {
         f.flow_id for f in dialogue_stack.frames if isinstance(f, UserFlowStackFrame)
     }
@@ -204,7 +173,6 @@ def end_top_user_flow(stack: DialogueStack) -> DialogueStack:
     Args:
         stack: The dialogue stack.
     """
-
     updated_stack = stack.copy()
 
     for frame in reversed(updated_stack.frames):
