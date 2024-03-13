@@ -82,7 +82,7 @@ base64_calm_flows_yaml = base64.b64encode(calm_flows_yaml.encode("utf-8")).decod
                 domain="data/upload/calm/domain.yml",
                 data=["data/upload/calm/"],
                 config="data/upload/calm/config.yml",
-                flows="data/upload/flows.yml"
+                flows="data/upload/flows.yml",
             ),
             "http://studio.amazonaws.com/api/graphql",
             {
