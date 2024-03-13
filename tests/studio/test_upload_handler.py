@@ -362,7 +362,6 @@ def test_handle_upload(
     expected: Dict[str, Any],
 ) -> None:
     mock = MagicMock()
-    mock.reset_mock()
     mock_token = MagicMock()
     mock_config = MagicMock()
     mock_config.read_config.return_value = StudioConfig(
