@@ -134,7 +134,7 @@ def upload_calm_assistant(
         training_data_paths = args.data
 
         if isinstance(training_data_paths, list):
-            training_data_paths.extend(args.flows)
+            training_data_paths.append(args.flows)
         elif isinstance(training_data_paths, str):
             training_data_paths = [training_data_paths, args.flows]
 
