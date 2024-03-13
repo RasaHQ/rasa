@@ -50,6 +50,7 @@ from rasa.shared.utils.llm import (
     embedder_factory,
     get_prompt_template,
     llm_factory,
+    sanitize_message_for_prompt,
     tracker_as_readable_transcript,
 )
 
@@ -309,6 +310,20 @@ class EnterpriseSearchPolicy(Policy):
                 f"Unable to connect to the vector store. Error: {e}"
             )
 
+    def _get_last_user_message(self, tracker: DialogueStateTracker) -> str:
+        """Get the last user message from the tracker.
+
+        Args:
+            tracker: The tracker containing the conversation history up to now.
+
+        Returns:
+            The last user message.
+        """
+        for event in reversed(tracker.events):
+            if isinstance(event, rasa.shared.core.events.UserUttered):
+                return sanitize_message_for_prompt(event.text)
+        return ""
+
     def predict_action_probabilities(  # type: ignore[override]
         self,
         tracker: DialogueStateTracker,
@@ -349,7 +364,7 @@ class EnterpriseSearchPolicy(Policy):
             logger.error(f"{logger_key}.connection_error", error=e)
             return self._create_prediction_internal_error(domain, tracker)
 
-        search_query = tracker_as_readable_transcript(tracker, max_turns=1)
+        search_query = self._get_last_user_message(tracker)
 
         try:
             documents = self.vector_store.search(
@@ -430,10 +445,12 @@ class EnterpriseSearchPolicy(Policy):
         action_metadata: Dict[Text, Any],
     ) -> PolicyPrediction:
         """Create a policy prediction result with ACTION_SEND_TEXT_NAME.
+
         Args:
             domain: The model's domain.
             tracker: The tracker containing the conversation history up to now.
             action_metadata: The metadata for the predicted action.
+
         Returns:
             The prediction.
         """
@@ -474,6 +491,7 @@ class EnterpriseSearchPolicy(Policy):
         Args:
             domain: The model's domain.
             tracker: The tracker containing the conversation history up to now.
+
         Returns:
             The prediction.
         """

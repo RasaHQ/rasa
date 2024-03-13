@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import List
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
@@ -16,7 +17,7 @@ from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import ActionExecuted
+from rasa.shared.core.events import ActionExecuted, UserUttered, BotUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 
 from rasa.core.information_retrieval.information_retrieval import (
@@ -64,10 +65,10 @@ def enterprise_search_tracker() -> DialogueStateTracker:
     )
     # create a tracker with the stack set
     tracker = DialogueStateTracker.from_events(
-        "test policy prediction",
+        "test_policy_prediction",
         domain=domain,
         slots=domain.slots,
-        evts=[ActionExecuted(action_name="action_listen")],
+        evts=[UserUttered("what is the meaning of life?")],
     )
     tracker.update_stack(dialogue_stack)
     return tracker
@@ -604,3 +605,42 @@ def test_enterprise_search_policy_no_retrieval(
             )
 
             mock_create_prediction_cannot_handle.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    "events,search_query",
+    [
+        ([UserUttered("search")], "search"),
+        ([BotUttered("Hi, I am a bot")], ""),
+        ([UserUttered("\nsearch\n\nthis query")], " search  this query"),
+        (
+            [
+                UserUttered("why is the sky blue?"),
+                BotUttered("let me find out the answer for you..."),
+            ],
+            "why is the sky blue?",
+        ),
+        (
+            [
+                UserUttered("search"),
+                BotUttered("first message after query..."),
+                BotUttered("second message after query..."),
+            ],
+            "search",
+        ),
+    ],
+)
+def test_get_last_user_message(
+    default_enterprise_search_policy: EnterpriseSearchPolicy,
+    events: List,
+    search_query: str,
+) -> None:
+    tracker = DialogueStateTracker.from_events(
+        sender_id="test_policy_prediction",
+        slots=[],
+        evts=events,
+    )
+
+    assert (
+        default_enterprise_search_policy._get_last_user_message(tracker) == search_query
+    )
