@@ -137,7 +137,9 @@ def test_filled_slots_for_active_flow_start():
         tracker, flow_id="my_flow", step_ids=["START"]
     )
 
-    assert filled_slots_for_active_flow(tracker, all_flows) == set()
+    slots_so_far, active_flow = filled_slots_for_active_flow(tracker, all_flows)
+    assert slots_so_far == set()
+    assert active_flow == "my_flow"
 
 
 def test_filled_slots_for_active_flow_end():
@@ -171,7 +173,10 @@ def test_filled_slots_for_active_flow_end():
         flow_id="my_flow",
         step_ids=["collect_foo", "collect_bar", "collect_baz"],
     )
-    assert filled_slots_for_active_flow(tracker, all_flows) == {"foo", "bar", "baz"}
+
+    slots_so_far, active_flow = filled_slots_for_active_flow(tracker, all_flows)
+    assert slots_so_far == {"foo", "bar", "baz"}
+    assert active_flow == "my_flow"
 
 
 def test_filled_slots_for_active_flow_handles_empty():
@@ -194,7 +199,9 @@ def test_filled_slots_for_active_flow_handles_empty():
     )
 
     tracker = DialogueStateTracker.from_events("test", [])
-    assert filled_slots_for_active_flow(tracker, all_flows) == set()
+    slots_so_far, active_flow = filled_slots_for_active_flow(tracker, all_flows)
+    assert slots_so_far == set()
+    assert active_flow is None
 
 
 # TODO: ENG-687 fix this test by adding an abstraction for creating proper trackers
@@ -240,7 +247,9 @@ def test_filled_slots_for_active_flow_skips_user_uttered():
         )
     )
 
-    assert filled_slots_for_active_flow(tracker, all_flows) == {"foo"}
+    slots_so_far, active_flow = filled_slots_for_active_flow(tracker, all_flows)
+    assert slots_so_far == {"foo"}
+    assert active_flow == "my_flow"
 
 
 # TODO: ENG-687 fix this test by adding an abstraction for creating proper trackers
@@ -263,6 +272,7 @@ def test_filled_slots_for_active_flow_only_collects_till_top_most_user_flow_fram
               collect: baz
           my_other_flow:
             name: foo flow
+            description: foo flow
             steps:
             - id: collect_foo2
               collect: foo2
@@ -289,7 +299,9 @@ def test_filled_slots_for_active_flow_only_collects_till_top_most_user_flow_fram
         frame_id="some-other-id",
     )
 
-    assert filled_slots_for_active_flow(tracker, all_flows) == {"foo2", "bar2"}
+    slots_so_far, active_flow = filled_slots_for_active_flow(tracker, all_flows)
+    assert slots_so_far == {"foo2", "bar2"}
+    assert active_flow == "my_other_flow"
 
 
 def test_end_top_user_flow():
