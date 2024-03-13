@@ -1,0 +1,4 @@
+{{ flow.name }}: {{ flow.description }}
+    {% for slot in flow.slots -%}
+    {{ slot.name }}: {% if slot.description %}{{ slot.description }}{% endif %}{% if slot.allowed_values %}, allowed values: {{ slot.allowed_values }}{% endif %}
+    {% endfor %}

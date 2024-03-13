@@ -2,7 +2,6 @@ from typing import Optional, List, Text, Type
 from unittest.mock import Mock, patch
 
 import pytest
-
 from rasa.dialogue_understanding.commands import Command, StartFlowCommand, ErrorCommand
 from rasa.dialogue_understanding.commands.chit_chat_answer_command import (
     ChitChatAnswerCommand,
@@ -12,9 +11,7 @@ from rasa.shared.constants import (
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
 )
-from rasa.shared.core.events import SlotSet
 from rasa.shared.core.flows import Flow, FlowsList
-from rasa.shared.core.slots import AnySlot, BooleanSlot, TextSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import TEXT, COMMANDS
 from rasa.shared.nlu.training_data.message import Message
@@ -51,33 +48,6 @@ def test_command_generator_still_throws_not_implemented_error():
         generator.process([Message.build("test")], FlowsList([]))
 
 
-def test_get_context_and_slots():
-    """Test that context and slots are correctly extracted from tracker and domain."""
-    # Given
-    test_slots = [
-        TextSlot("spam", mappings=[]),
-        AnySlot("eggs", mappings=[]),
-        BooleanSlot("ham", mappings=[]),
-    ]
-    test_events = [
-        SlotSet("spam", "pemmican"),
-        SlotSet("eggs", "scrambled"),
-        SlotSet("ham", "true"),
-    ]
-    tracker = DialogueStateTracker.from_events(
-        "test", evts=test_events, slots=test_slots
-    )
-
-    generator = CommandGenerator({})
-    # When
-    document = generator._get_context_and_slots(tracker)
-    # Then
-    assert "context" in document
-    for slot, event in zip(test_slots, test_events):
-        assert slot.name in document["slots"]
-        assert event.value == document["slots"][slot.name].value
-
-
 @pytest.mark.parametrize(
     "commands, startable_flows, expected_commands",
     [
@@ -111,22 +81,26 @@ def test_check_commands_against_startable_flows(
     assert commands == expected_commands
 
 
-def test_command_processor_checks_flow_guards():
+@patch(
+    "rasa.dialogue_understanding.generator.command_generator"
+    ".CommandGenerator._check_commands_against_startable_flows"
+)
+@patch(
+    "rasa.dialogue_understanding.generator.command_generator"
+    ".CommandGenerator.get_startable_flows"
+)
+def test_command_processor_checks_flow_guards(
+    mock_get_startable_flows: Mock, mock_check_commands_against_startable_flows: Mock
+):
     """Test that the command processor checks flow guards."""
     # Given
-    with patch(
-        "rasa.dialogue_understanding.generator.command_generator.CommandGenerator._get_context_and_slots"
-    ) as get_context_and_slots:
-        with patch(
-            "rasa.dialogue_understanding.generator.command_generator.CommandGenerator._check_commands_against_startable_flows"
-        ) as check_commands_against_startable_flows:
-            generator = WackyCommandGenerator({})
-            messages = [Message.build("What is your purpose?")]
-            # When
-            generator.process(messages, FlowsList([Flow("spam")]))
-            # Then
-            get_context_and_slots.assert_called_once()
-            check_commands_against_startable_flows.assert_called_once()
+    generator = WackyCommandGenerator({})
+    messages = [Message.build("What is your purpose?")]
+    # When
+    generator.process(messages, FlowsList([Flow("spam")]))
+    # Then
+    mock_get_startable_flows.assert_called_once()
+    mock_check_commands_against_startable_flows.assert_called_once()
 
 
 def test_process_does_not_predict_commands_if_commands_already_present():

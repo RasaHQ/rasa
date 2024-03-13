@@ -1,4 +1,5 @@
 from pathlib import Path
+from unittest.mock import Mock, patch
 
 import pytest
 from _pytest.tmpdir import TempPathFactory
@@ -183,13 +184,26 @@ def test_all_components_are_in_at_least_one_test_pipeline():
 @pytest.mark.timeout(600, func_only=True)
 @pytest.mark.parametrize("language, pipeline", pipelines_for_tests())
 @pytest.mark.skip_on_windows
+@patch("langchain.vectorstores.faiss.FAISS.from_documents")
+@patch("langchain.vectorstores.faiss.FAISS.load_local")
+@patch(
+    "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval._create_embedder"
+)
 async def test_train_persist_load_parse(
+    mock_flow_search_create_embedder: Mock,
+    mock_load_local: Mock,
+    mock_from_documents: Mock,
     language: Optional[Text],
     pipeline: List[Dict],
     tmp_path: Path,
     nlu_as_json_path: Text,
 ):
+    mock_from_documents.return_value = Mock()
+    mock_flow_search_create_embedder.return_value = Mock()
+    mock_load_local.return_value = Mock()
+
     config_file = tmp_path / "config.yml"
+    domain_file = tmp_path / "domain.yml"
     rasa.shared.utils.io.dump_obj_as_json_to_file(
         config_file,
         {
@@ -200,7 +214,10 @@ async def test_train_persist_load_parse(
     )
 
     persisted_path = rasa.model_training.train_nlu(
-        str(config_file), nlu_as_json_path, output=str(tmp_path)
+        str(config_file),
+        nlu_as_json_path,
+        output=str(tmp_path),
+        domain=str(domain_file),
     )
 
     assert Path(persisted_path).is_file()

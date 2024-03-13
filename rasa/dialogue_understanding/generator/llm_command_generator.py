@@ -1,12 +1,10 @@
 import importlib.resources
 import re
-from typing import Dict, Any, List, Optional, Text, Tuple, Union
-
-import structlog
-from jinja2 import Template
+from typing import Dict, Any, List, Optional, Tuple, Union, Text
 
 import rasa.shared.utils.io
-from rasa.shared.constants import ROUTE_TO_CALM_SLOT
+import structlog
+from jinja2 import Template
 from rasa.dialogue_understanding.commands import (
     Command,
     ErrorCommand,
@@ -20,22 +18,20 @@ from rasa.dialogue_understanding.commands import (
     ClarifyCommand,
     CannotHandleCommand,
 )
-
 from rasa.dialogue_understanding.generator import CommandGenerator
+from rasa.dialogue_understanding.generator.flow_retrieval import FlowRetrieval
 from rasa.dialogue_understanding.stack.utils import top_flow_frame
 from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.shared.constants import ROUTE_TO_CALM_SLOT
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows import FlowStep, Flow, FlowsList
 from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
-from rasa.shared.core.slots import (
-    BooleanSlot,
-    CategoricalSlot,
-    Slot,
-)
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import FileIOException
+from rasa.shared.nlu.constants import FLOWS_IN_PROMPT
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -47,8 +43,8 @@ from rasa.shared.utils.llm import (
     llm_factory,
     tracker_as_readable_transcript,
     sanitize_message_for_prompt,
+    allowed_values_for_slot,
 )
-
 from rasa.utils.log_utils import log_llm
 
 COMMAND_PROMPT_FILE_NAME = "command_prompt.jinja2"
@@ -67,6 +63,9 @@ DEFAULT_LLM_CONFIG = {
 
 LLM_CONFIG_KEY = "llm"
 USER_INPUT_CONFIG_KEY = "user_input"
+
+FLOW_RETRIEVAL_KEY = "flow_retrieval"
+FLOW_RETRIEVAL_ACTIVE_KEY = "active"
 
 structlogger = structlog.get_logger()
 
@@ -87,6 +86,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             "prompt": None,
             USER_INPUT_CONFIG_KEY: None,
             LLM_CONFIG_KEY: None,
+            FLOW_RETRIEVAL_KEY: FlowRetrieval.get_default_config(),
         }
 
     def __init__(
@@ -98,13 +98,30 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
     ) -> None:
         super().__init__(config)
         self.config = {**self.get_default_config(), **config}
+
         self.prompt_template = prompt_template or get_prompt_template(
             config.get("prompt"),
             DEFAULT_COMMAND_PROMPT_TEMPLATE,
         )
+
         self._model_storage = model_storage
         self._resource = resource
         self.trace_prompt_tokens = self.config.get("trace_prompt_tokens", False)
+
+        self.flow_retrieval: Optional[FlowRetrieval]
+
+        if self.enabled_flow_retrieval:
+            self.flow_retrieval = FlowRetrieval(
+                self.config[FLOW_RETRIEVAL_KEY], model_storage, resource
+            )
+            structlogger.info("llm_command_generator.flow_retrieval.enabled")
+        else:
+            self.flow_retrieval = None
+            structlogger.info("llm_command_generator.flow_retrieval.disabled")
+
+    @property
+    def enabled_flow_retrieval(self) -> bool:
+        return self.config[FLOW_RETRIEVAL_KEY].get(FLOW_RETRIEVAL_ACTIVE_KEY, True)
 
     @classmethod
     def create(
@@ -127,31 +144,70 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         **kwargs: Any,
     ) -> "LLMCommandGenerator":
         """Loads trained component (see parent class for full docstring)."""
-        prompt_template = None
+        # init base command generator
+        command_generator = cls(config, model_storage, resource)
+        # load prompt template
+        if (
+            prompt_template := cls._load_prompt_template(model_storage, resource)
+        ) is not None:
+            command_generator.prompt_template = prompt_template
+        # load flow retrieval if enabled
+        if command_generator.enabled_flow_retrieval:
+            command_generator.flow_retrieval = cls._load_flow_retrival(
+                command_generator.config, model_storage, resource
+            )
+        return command_generator
+
+    @classmethod
+    def _load_prompt_template(
+        cls, model_storage: ModelStorage, resource: Resource
+    ) -> Optional[Text]:
         try:
             with model_storage.read_from(resource) as path:
-                prompt_template = rasa.shared.utils.io.read_file(
-                    path / COMMAND_PROMPT_FILE_NAME
-                )
-
+                return rasa.shared.utils.io.read_file(path / COMMAND_PROMPT_FILE_NAME)
         except (FileNotFoundError, FileIOException) as e:
             structlogger.warning(
-                "llm_command_generator.load.failed", error=e, resource=resource.name
+                "llm_command_generator.load_prompt_template.failed",
+                error=e,
+                resource=resource.name,
             )
+        return None
 
-        return cls(config, model_storage, resource, prompt_template=prompt_template)
+    @classmethod
+    def _load_flow_retrival(
+        cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource
+    ) -> Optional[FlowRetrieval]:
+        enable_flow_retrieval = config.get(FLOW_RETRIEVAL_KEY, {}).get(
+            FLOW_RETRIEVAL_ACTIVE_KEY, True
+        )
+        if enable_flow_retrieval:
+            return FlowRetrieval.load(
+                config=config.get(FLOW_RETRIEVAL_KEY),
+                model_storage=model_storage,
+                resource=resource,
+            )
+        return None
+
+    def train(
+        self, training_data: TrainingData, flows: FlowsList, domain: Domain
+    ) -> Resource:
+        """Train the llm command generator. Stores all flows into a vector store."""
+        if self.flow_retrieval is not None:
+            self.flow_retrieval.populate(flows, domain)
+        self.persist()
+        return self._resource
 
     def persist(self) -> None:
         """Persist this component to disk for future loading."""
+
+        # persist prompt template
         with self._model_storage.write_to(self._resource) as path:
             rasa.shared.utils.io.write_text_file(
                 self.prompt_template, path / COMMAND_PROMPT_FILE_NAME
             )
-
-    def train(self, training_data: TrainingData) -> Resource:
-        """Train the intent classifier on a data set."""
-        self.persist()
-        return self._resource
+        # persist flow retrieval
+        if self.flow_retrieval is not None:
+            self.flow_retrieval.persist()
 
     def predict_commands(
         self,
@@ -173,7 +229,25 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             # cannot do anything if there are no flows or no tracker
             return []
 
-        flow_prompt = self.render_template(message, tracker, flows)
+        filtered_flows = (
+            self.flow_retrieval.filter_flows(tracker, message, flows)
+            if self.flow_retrieval is not None
+            else flows
+        )
+        # add the filtered flows to the message for evaluation purposes
+        message.set(
+            FLOWS_IN_PROMPT, list(filtered_flows.user_flow_ids), add_to_output=True
+        )
+        log_llm(
+            logger=structlogger,
+            log_module="LLMCommandGenerator",
+            log_event="llm_command_generator.predict_commands.filtered_flows",
+            message=message.data[TEXT],
+            enabled_flow_retrieval=self.flow_retrieval is not None,
+            relevant_flows=list(filtered_flows.user_flow_ids),
+        )
+
+        flow_prompt = self.render_template(message, tracker, filtered_flows)
         log_llm(
             logger=structlogger,
             log_module="LLMCommandGenerator",
@@ -198,7 +272,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             commands = self.parse_commands(action_list, flows)
 
             if not commands:
-                # no commands couldn't be parsed or there's an invalid command
+                # no commands are parsed or there's an invalid command
                 commands = [CannotHandleCommand()]
             else:
                 # if the LLM command generator predicted valid commands and the
@@ -206,11 +280,12 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
                 if tracker.has_coexistence_routing_slot:
                     commands += [SetSlotCommand(ROUTE_TO_CALM_SLOT, True)]
 
-        structlogger.info(
-            "llm_command_generator.predict_commands.finished",
+        log_llm(
+            logger=structlogger,
+            log_module="LLMCommandGenerator",
+            log_event="llm_command_generator.predict_commands.finished",
             commands=commands,
         )
-
         return commands
 
     def render_template(
@@ -393,9 +468,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
                 {
                     "name": q.collect,
                     "description": q.description,
-                    "allowed_values": self.allowed_values_for_slot(
-                        tracker.slots[q.collect]
-                    ),
+                    "allowed_values": allowed_values_for_slot(tracker.slots[q.collect]),
                 }
                 for q in flow.get_collect_steps()
                 if self.is_extractable(q, tracker)
@@ -446,15 +519,6 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             )
         )
 
-    def allowed_values_for_slot(self, slot: Slot) -> Union[str, None]:
-        """Get the allowed values for a slot."""
-        if isinstance(slot, BooleanSlot):
-            return str([True, False])
-        if isinstance(slot, CategoricalSlot):
-            return str([v for v in slot.values if v != "__other__"])
-        else:
-            return None
-
     @staticmethod
     def get_slot_value(tracker: DialogueStateTracker, slot_name: str) -> str:
         """Get the slot value from the tracker.
@@ -491,7 +555,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
                     "name": collect_step.collect,
                     "value": self.get_slot_value(tracker, collect_step.collect),
                     "type": tracker.slots[collect_step.collect].type_name,
-                    "allowed_values": self.allowed_values_for_slot(
+                    "allowed_values": allowed_values_for_slot(
                         tracker.slots[collect_step.collect]
                     ),
                     "description": collect_step.description,

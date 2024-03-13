@@ -195,6 +195,9 @@
         "if": {
           "type": ["string", "boolean"]
         },
+        "always_include_in_prompt": {
+          "type": "boolean"
+        },
         "name": {
           "type": "string"
         },
