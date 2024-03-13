@@ -35,7 +35,7 @@ def add_subparser(
 def add_flows_param(
     parser: argparse.ArgumentParser,
     help_text: str = "Name of flows file to upload to Rasa Studio. Works with --calm",
-    default_path: str = "flows.yml"
+    default_path: str = "flows.yml",
 ) -> None:
     parser.add_argument(
         "--flows",
