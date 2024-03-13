@@ -73,7 +73,7 @@ def handle_upload(args: argparse.Namespace) -> None:
         if hasattr(args, "calm") and args.calm:
             upload_calm_assistant(args, assistant_name, endpoint)
         else:
-            upload_classic_assistant(args, assistant_name, endpoint)
+            upload_nlu_assistant(args, assistant_name, endpoint)
 
 
 def extract_values(data: Dict, keys: List[Text]) -> Dict:
@@ -100,12 +100,10 @@ def upload_calm_assistant(
     """
     logger.info("Parsing CALM assistant data...")
 
-    config_path = getattr(args, "config", None)
-
     try:
         importer = TrainingDataImporter.load_from_dict(
             domain_path=args.domain,
-            config_path=config_path,
+            config_path=args.config,
         )
 
         # Prepare config and domain
@@ -134,11 +132,11 @@ def upload_calm_assistant(
         config = extract_values(config_from_files, config_keys)
 
         training_data_paths = args.data
-        if hasattr(args, "flows"):
-            if isinstance(training_data_paths, list):
-                training_data_paths.extend(args.flows)
-            elif isinstance(training_data_paths, str):
-                training_data_paths = [training_data_paths, args.flows]
+
+        if isinstance(training_data_paths, list):
+            training_data_paths.extend(args.flows)
+        elif isinstance(training_data_paths, str):
+            training_data_paths = [training_data_paths, args.flows]
 
         # Prepare flows
         flow_importer = FlowSyncImporter.load_from_dict(
@@ -169,7 +167,7 @@ def upload_calm_assistant(
         logger.error(f"An error occurred while uploading the CALM assistant: {e}")
 
 
-def upload_classic_assistant(
+def upload_nlu_assistant(
     args: argparse.Namespace, assistant_name: str, endpoint: str
 ) -> None:
     """Uploads the classic (dm1) assistant data to Rasa Studio.
