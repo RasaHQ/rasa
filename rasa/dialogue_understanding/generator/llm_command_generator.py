@@ -206,8 +206,10 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
                 if tracker.has_coexistence_routing_slot:
                     commands += [SetSlotCommand(ROUTE_TO_CALM_SLOT, True)]
 
-        structlogger.info(
-            "llm_command_generator.predict_commands.finished",
+        log_llm(
+            logger=structlogger,
+            log_module=self.__class__.__name__,
+            log_event="llm_command_generator.predict_commands.finished",
             commands=commands,
         )
 
