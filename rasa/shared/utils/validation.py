@@ -3,7 +3,7 @@ import os
 from typing import Text, Dict, List, Optional, Any
 
 from packaging import version
-from packaging.version import LegacyVersion
+# from packaging.version import LegacyVersion
 from pykwalify.errors import SchemaError
 
 from ruamel.yaml.constructor import DuplicateKeyError
@@ -249,8 +249,8 @@ def validate_training_data_format_version(
         parsed_version = version.parse(version_value)
         latest_version = version.parse(LATEST_TRAINING_DATA_FORMAT_VERSION)
 
-        if isinstance(parsed_version, LegacyVersion):
-            raise TypeError
+        # if isinstance(parsed_version, LegacyVersion):
+        #     raise TypeError
 
         if parsed_version < latest_version:
             rasa.shared.utils.io.raise_warning(
