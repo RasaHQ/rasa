@@ -8,7 +8,6 @@ import rasa.shared.utils.cli
 import rasa.shared.utils.io
 import requests
 
-from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.flows.yaml_flows_io import YamlFlowsWriter
 from rasa.shared.exceptions import RasaException
 from rasa.shared.importers.importer import TrainingDataImporter, FlowSyncImporter
