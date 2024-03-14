@@ -185,7 +185,7 @@ async def test_rephraser_default_template(
                 "The following is a conversation with\n"
                 "an AI assistant. The assistant is helpful, creative, "
                 "clever, and very friendly.\n"
-                "Rephrase the suggest AI response staying close "
+                "Rephrase the suggested AI response staying close "
                 "to the original message and retaining\n"
                 "its meaning. Use simple english.\n\n"
                 "Context / previous conversation with the user:\n"

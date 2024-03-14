@@ -40,7 +40,7 @@ DEFAULT_LLM_CONFIG = {
 
 DEFAULT_RESPONSE_VARIATION_PROMPT_TEMPLATE = """The following is a conversation with
 an AI assistant. The assistant is helpful, creative, clever, and very friendly.
-Rephrase the suggest AI response staying close to the original message and retaining
+Rephrase the suggested AI response staying close to the original message and retaining
 its meaning. Use simple english.
 
 Context / previous conversation with the user:
