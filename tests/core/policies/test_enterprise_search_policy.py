@@ -644,3 +644,25 @@ def test_get_last_user_message(
     assert (
         default_enterprise_search_policy._get_last_user_message(tracker) == search_query
     )
+
+
+def test_enterprise_search_policy_citation_enabled(
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    vector_store: InformationRetrieval,
+) -> None:
+    policy = EnterpriseSearchPolicy(
+        config={**{"vector_store": {"type": "milvus"}, "citation_enabled": True}},
+        model_storage=default_model_storage,
+        resource=Resource("enterprise_search_policy"),
+        execution_context=default_execution_context,
+        vector_store=vector_store,
+    )
+
+    assert policy.citation_enabled is True
+
+
+def test_enterprise_search_policy_citation_disabled(
+    default_enterprise_search_policy: EnterpriseSearchPolicy,
+) -> None:
+    assert default_enterprise_search_policy.citation_enabled is False

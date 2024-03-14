@@ -176,6 +176,7 @@ class EnterpriseSearchPolicy(Policy):
             DEFAULT_ENTERPRISE_SEARCH_PROMPT_TEMPLATE,
         )
         self.trace_prompt_tokens = self.config.get("trace_prompt_tokens", False)
+        self.citation_enabled = self.config.get("citation_enabled", False)
 
     @classmethod
     def _create_plain_embedder(cls, config: Dict[Text, Any]) -> "Embeddings":
@@ -414,6 +415,7 @@ class EnterpriseSearchPolicy(Policy):
             ),
             "docs": documents,
             "slots": self._prepare_slots_for_template(tracker),
+            "citation_enabled": self.citation_enabled,
         }
         prompt = Template(self.prompt_template).render(**inputs)
         log_llm(
@@ -514,7 +516,7 @@ class EnterpriseSearchPolicy(Policy):
             domain: The model's domain.
             score: The score of the predicted action.
 
-        Resturns:
+        Returns:
         The prediction result where the score is used for one hot encoding.
         """
         result = self._default_predictions(domain)

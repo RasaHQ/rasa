@@ -1,0 +1,15 @@
+# extract all webpages under this URL
+url: "https://www.washjeff.edu/future-students/"
+
+# transform
+embeddings: "huggingface"
+chunk_size: 1000
+chunk_overlap: 20
+
+# load
+destination: "qdrant" 
+connection_args:
+  host: "localhost"
+  port: 6333
+  collection: "rasa"
+  #path: "./qdrant"

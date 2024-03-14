@@ -1,0 +1,17 @@
+# extract
+docs_folder: "/Users/zi/Work/Rasa/financial-demo-flows-llms/docs"
+url: "https://rasa.com/docs/rasa-pro/"
+
+# transform
+embeddings: "openai"
+chunk_size: 1000
+chunk_overlap: 20
+
+# load
+destination: "milvus" 
+connection_args:
+  host: "localhost"
+  port: 19530
+  user: None
+  pass: None
+  collection: "rasa_web"
