@@ -5,6 +5,12 @@ from typing import Any, Dict, List, Optional
 import structlog
 from jinja2 import Template
 
+from rasa.dialogue_understanding.coexistence.constants import (
+    CALM_ENTRY,
+    NLU_ENTRY,
+    STICKY,
+    NON_STICKY,
+)
 from rasa.dialogue_understanding.commands import Command, SetSlotCommand
 from rasa.dialogue_understanding.commands.noop_command import NoopCommand
 from rasa.dialogue_understanding.generator.llm_command_generator import LLM_CONFIG_KEY
@@ -25,15 +31,10 @@ from rasa.shared.utils.llm import (
     llm_factory,
 )
 
-COEXISTENCE_ROUTER_PROMPT_FILE_NAME = "coexistence_router_prompt.jinja2"
+LLM_BASED_ROUTER_PROMPT_FILE_NAME = "llm_based_router_prompt.jinja2"
 DEFAULT_COMMAND_PROMPT_TEMPLATE = importlib.resources.read_text(
     "rasa.dialogue_understanding.coexistence", "router_template.jinja2"
 )
-
-CALM_ENTRY = "calm_entry"
-NLU_ENTRY = "nlu_entry"
-STICKY = "sticky"
-NON_STICKY = "non_sticky"
 
 
 # Token ids for gpt 3.5 and gpt 4 corresponding to space + capitalized Letter
@@ -57,11 +58,11 @@ structlogger = structlog.get_logger()
 
 @DefaultV1Recipe.register(
     [
-        DefaultV1Recipe.ComponentType.COMMAND_GENERATOR,
+        DefaultV1Recipe.ComponentType.COEXISTENCE_ROUTER,
     ],
     is_trainable=True,
 )
-class CoexistenceRouter(GraphComponent):
+class LLMBasedRouter(GraphComponent):
     @staticmethod
     def get_default_config() -> Dict[str, Any]:
         """The component's default config (see parent class for full docstring)."""
@@ -104,7 +105,7 @@ class CoexistenceRouter(GraphComponent):
             or self.config[CALM_ENTRY][STICKY] is None
         ):
             raise ValueError(
-                "The CoexistenceRouter component needs a proper "
+                "The LLMBasedRouter component needs a proper "
                 "description of the capabilities implemented in the CALM "
                 "part of the bot."
             )
@@ -113,7 +114,7 @@ class CoexistenceRouter(GraphComponent):
         """Persist this component to disk for future loading."""
         with self._model_storage.write_to(self._resource) as path:
             rasa.shared.utils.io.write_text_file(
-                self.prompt_template, path / COEXISTENCE_ROUTER_PROMPT_FILE_NAME
+                self.prompt_template, path / LLM_BASED_ROUTER_PROMPT_FILE_NAME
             )
 
     def train(self, training_data: TrainingData) -> Resource:
@@ -129,17 +130,17 @@ class CoexistenceRouter(GraphComponent):
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> "CoexistenceRouter":
+    ) -> "LLMBasedRouter":
         """Loads trained component (see parent class for full docstring)."""
         prompt_template = None
         try:
             with model_storage.read_from(resource) as path:
                 prompt_template = rasa.shared.utils.io.read_file(
-                    path / COEXISTENCE_ROUTER_PROMPT_FILE_NAME
+                    path / LLM_BASED_ROUTER_PROMPT_FILE_NAME
                 )
         except (FileNotFoundError, FileIOException) as e:
             structlogger.warning(
-                "coexistence_router.load.failed", error=e, resource=resource.name
+                "llm_based_router.load.failed", error=e, resource=resource.name
             )
 
         return cls(config, model_storage, resource, prompt_template=prompt_template)
@@ -151,7 +152,7 @@ class CoexistenceRouter(GraphComponent):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> CoexistenceRouter:
+    ) -> LLMBasedRouter:
         """Creates component (see parent class for full docstring)."""
         return cls(config, model_storage, resource)
 
@@ -179,21 +180,19 @@ class CoexistenceRouter(GraphComponent):
     ) -> List[Command]:
         if not tracker.has_coexistence_routing_slot:
             raise InvalidConfigException(
-                f"Tried to run the CoexistenceRouter component "
+                f"Tried to run the LLMBasedRouter component "
                 f"without the slot to track coexistence routing ({ROUTE_TO_CALM_SLOT})."
             )
 
         route_session_to_calm = tracker.get_slot(ROUTE_TO_CALM_SLOT)
         if route_session_to_calm is None:
             prompt = self.render_template(message)
-            structlogger.info("coexistence_router.prompt_rendered", prompt=prompt)
+            structlogger.info("llm_based_router.prompt_rendered", prompt=prompt)
             # generating answer
             answer = self._generate_answer_using_llm(prompt)
-            structlogger.info("coexistence_router.llm_answer", answer=answer)
+            structlogger.info("llm_based_router.llm_answer", answer=answer)
             commands = self.parse_answer(answer)
-            structlogger.info(
-                "coexistence_router.predicated_commands", commands=commands
-            )
+            structlogger.info("llm_based_router.predicated_commands", commands=commands)
             return commands
         elif route_session_to_calm is True:
             # don't set any commands so that the `LLMCommandGenerator` is triggered
@@ -208,7 +207,7 @@ class CoexistenceRouter(GraphComponent):
     def parse_answer(answer: Optional[str]) -> List[Command]:
         if answer is None:
             structlogger.warn(
-                "coexistence_router.parse_answer.invalid_answer", answer=answer
+                "llm_based_router.parse_answer.invalid_answer", answer=answer
             )
             return [SetSlotCommand(ROUTE_TO_CALM_SLOT, False)]
 
@@ -226,7 +225,7 @@ class CoexistenceRouter(GraphComponent):
             return [NoopCommand()]
         else:
             structlogger.warn(
-                "coexistence_router.parse_answer.invalid_answer", answer=answer
+                "llm_based_router.parse_answer.invalid_answer", answer=answer
             )
             return [SetSlotCommand(ROUTE_TO_CALM_SLOT, False)]
 
@@ -257,5 +256,5 @@ class CoexistenceRouter(GraphComponent):
         except Exception as e:
             # unfortunately, langchain does not wrap LLM exceptions which means
             # we have to catch all exceptions here
-            structlogger.error("coexistence_router.llm.error", error=e)
+            structlogger.error("llm_based_router.llm.error", error=e)
             return None

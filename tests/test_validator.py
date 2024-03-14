@@ -11,9 +11,11 @@ from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION, ACTION_AS
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows.yaml_flows_io import flows_from_str
 from rasa.shared.core.training_data.structures import StoryGraph
+from rasa.shared.constants import ROUTE_TO_CALM_SLOT
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.validator import Validator
+from tests.conftest import filter_expected_warnings
 from tests.utilities import filter_logs
 
 
@@ -1815,3 +1817,169 @@ def test_verify_flow_steps_against_domain_disallows_collect_step_with_action_utt
             caplog, expected_event, expected_log_level, [expected_log_message]
         )
         assert len(logs) == 1
+
+
+def test_validate_routing_setup(tmp_path: Path) -> None:
+    config_file_name = tmp_path / "config.yml"
+    with open(config_file_name, "w") as file:
+        file.write(
+            """
+                recipe: default.v1
+                language: en
+                pipeline:
+                - name: WhitespaceTokenizer
+                - name: CountVectorsFeaturizer
+                - name: LogisticRegressionClassifier
+                - name: CRFEntityExtractor
+                - name: IntentBasedRouter
+                - name: LLMCommandGenerator
+            """
+        )
+
+    importer = RasaFileImporter(config_file=config_file_name)
+    domain_yaml = textwrap.dedent(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        slots:
+          {ROUTE_TO_CALM_SLOT}:
+            type: bool
+            mappings: []
+            initial_value: false
+        """
+    )
+
+    validator = Validator.from_importer(importer)
+    validator.domain = Domain.from_yaml(domain_yaml)
+    assert validator.validate_routing_setup() is True
+
+
+def test_validate_routing_setup_with_unrequired_calm_slot(tmp_path: Path) -> None:
+    config_file_name = tmp_path / "config.yml"
+    with open(config_file_name, "w") as file:
+        file.write(
+            """
+                recipe: default.v1
+                language: en
+                pipeline:
+                - name: WhitespaceTokenizer
+                - name: CountVectorsFeaturizer
+                - name: LogisticRegressionClassifier
+                - name: CRFEntityExtractor
+            """
+        )
+
+    importer = RasaFileImporter(config_file=config_file_name)
+    domain_yaml = textwrap.dedent(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        slots:
+          {ROUTE_TO_CALM_SLOT}:
+            type: bool
+            mappings: []
+            initial_value: false
+        """
+    )
+
+    validator = Validator.from_importer(importer)
+    validator.domain = Domain.from_yaml(domain_yaml)
+    with pytest.warns() as warning:
+        result = validator.validate_routing_setup()
+
+    warning = filter_expected_warnings(warning)
+    assert (
+        "LLMBasedRouter or the IntentBasedRouter is not in the config"
+        in warning[0].message.args[0]
+    )
+    assert result is False
+
+
+def test_validate_routing_setup_with_intent_router_and_no_calm_slot(
+    tmp_path: Path,
+) -> None:
+    config_file_name = tmp_path / "config.yml"
+    with open(config_file_name, "w") as file:
+        file.write(
+            """
+                recipe: default.v1
+                language: en
+                pipeline:
+                - name: WhitespaceTokenizer
+                - name: IntentBasedRouter
+            """
+        )
+
+    importer = RasaFileImporter(config_file=config_file_name)
+    validator = Validator.from_importer(importer)
+    with pytest.warns() as warning:
+        result = validator.validate_routing_setup()
+
+    warning = filter_expected_warnings(warning)
+    assert (
+        "IntentBasedRouter is in the config, but the slot" in warning[0].message.args[0]
+    )
+    assert result is False
+
+
+def test_validate_routing_setup_with_llm_router_and_no_calm_slot(
+    tmp_path: Path,
+) -> None:
+    config_file_name = tmp_path / "config.yml"
+    with open(config_file_name, "w") as file:
+        file.write(
+            """
+                recipe: default.v1
+                language: en
+                pipeline:
+                - name: WhitespaceTokenizer
+                - name: LLMBasedRouter
+            """
+        )
+
+    importer = RasaFileImporter(config_file=config_file_name)
+    validator = Validator.from_importer(importer)
+    with pytest.warns() as warning:
+        result = validator.validate_routing_setup()
+
+    warning = filter_expected_warnings(warning)
+    assert "LLMBasedRouter is in the config, but the slot" in warning[0].message.args[0]
+    assert result is False
+
+
+def test_validate_routing_setup_with_wrong_component_order(tmp_path: Path) -> None:
+    config_file_name = tmp_path / "config.yml"
+    with open(config_file_name, "w") as file:
+        file.write(
+            """
+                recipe: default.v1
+                language: en
+                pipeline:
+                - name: LLMCommandGenerator
+                - name: IntentBasedRouter
+            """
+        )
+
+    importer = RasaFileImporter(config_file=config_file_name)
+    validator = Validator.from_importer(importer)
+    with pytest.raises(SystemExit):
+        validator.validate_routing_setup()
+
+
+def test_validate_routing_setup_with_both_coexistence_components(
+    tmp_path: Path,
+) -> None:
+    config_file_name = tmp_path / "config.yml"
+    with open(config_file_name, "w") as file:
+        file.write(
+            """
+                recipe: default.v1
+                language: en
+                pipeline:
+                - name: LLMBasedRouter
+                - name: IntentBasedRouter
+            """
+        )
+
+    importer = RasaFileImporter(config_file=config_file_name)
+    validator = Validator.from_importer(importer)
+    with pytest.raises(SystemExit):
+        validator.validate_routing_setup()
