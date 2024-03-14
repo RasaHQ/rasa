@@ -27,8 +27,6 @@ from rasa.shared.constants import (
     UTTER_PREFIX,
     DOCS_URL_ACTIONS,
     REQUIRED_SLOTS_KEY,
-    UTTER_ASK_PREFIX,
-    ACTION_ASK_PREFIX,
 )
 from rasa.shared.core import constants
 from rasa.shared.core.constants import MAPPING_CONDITIONS, ACTIVE_LOOP
@@ -645,7 +643,7 @@ class Validator:
 
     def _log_error_if_action_and_utterance_defined(
         self,
-        collect: str,
+        collect: CollectInformationFlowStep,
         all_good: bool,
     ) -> bool:
         """Validates that a collect step can just have an utterance or an action
@@ -659,31 +657,27 @@ class Validator:
             False, if validation failed, true, otherwise
         """
         has_utterance_defined = any(
-            [
-                u
-                for u in self.domain.utterances_for_response
-                if u.startswith(UTTER_ASK_PREFIX) and u.endswith(collect)
-            ]
+            [u for u in self.domain.utterances_for_response if u == collect.utter]
         )
 
         has_action_defined = any(
             [
                 a
                 for a in self.domain.action_names_or_texts
-                if a.startswith(ACTION_ASK_PREFIX) and a.endswith(collect)
+                if a == collect.collect_action
             ]
         )
 
         if has_utterance_defined and has_action_defined:
             structlogger.error(
                 "validator.verify_flows_steps_against_domain.collect_step",
-                collect=collect,
+                collect=collect.collect,
                 has_utterance_defined=has_utterance_defined,
                 has_action_defined=has_action_defined,
                 event_info=(
-                    f"The collect step '{collect}' has an utterance "
-                    f"'{UTTER_ASK_PREFIX}{collect}' as well as an action "
-                    f"'{ACTION_ASK_PREFIX}{collect}' defined. "
+                    f"The collect step '{collect.collect}' has an utterance "
+                    f"'{collect.utter}' as well as an action "
+                    f"'{collect.collect_action}' defined. "
                     f"You can just have one of them! "
                     f"Please remove either the utterance or the action."
                 ),
@@ -749,7 +743,7 @@ class Validator:
             for step in flow.steps_with_calls_resolved:
                 if isinstance(step, CollectInformationFlowStep):
                     all_good = self._log_error_if_action_and_utterance_defined(
-                        step.collect, all_good
+                        step, all_good
                     )
 
                     all_good = self._log_error_if_slot_not_in_domain(

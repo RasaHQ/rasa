@@ -7,7 +7,7 @@ import pytest
 import structlog
 
 
-from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION, ACTION_ASK_PREFIX
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows.yaml_flows_io import flows_from_str
 from rasa.shared.core.training_data.structures import StoryGraph
@@ -1787,7 +1787,7 @@ def test_verify_flow_steps_against_domain_disallows_collect_step_with_action_utt
             f"""
                 version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
                 actions:
-                    - {ACTION_ASK_PREFIX}_pizza_toppings
+                    - action_ask_pizza_toppings
                 responses:
                   utter_ask_pizza_toppings:
                     - text: "What toppings do you want?"
