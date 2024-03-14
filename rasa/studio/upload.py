@@ -41,23 +41,6 @@ def _get_selected_entities_and_intents(
     return list(entities), list(intents)
 
 
-def _get_selected_flows(
-    args: argparse.Namespace, flows_from_files: FlowsList
-) -> FlowsList:
-    flows = args.flows
-
-    if flows is None or len(flows) == 0:
-        flows = flows_from_files
-        logger.info("No flows specified. Using all flow from files.")
-
-    if flows is None or len(flows) == 0:
-        rasa.shared.utils.cli.print_error_and_exit(
-            "No flows found in the training data."
-        )
-
-    return flows
-
-
 def handle_upload(args: argparse.Namespace) -> None:
     """Uploads primitives to rasa studio."""
     assistant_name = args.assistant_name[0]
