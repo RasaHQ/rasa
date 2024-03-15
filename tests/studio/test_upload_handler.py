@@ -12,6 +12,14 @@ import rasa.studio.upload
 from rasa.studio.config import StudioConfig
 
 
+def base64_calm_domain_yaml(calm_domain_yaml):
+    return base64.b64encode(calm_domain_yaml.encode("utf-8")).decode("utf-8")
+
+
+def base64_calm_flows_yaml(calm_flows_yaml):
+    return base64.b64encode(calm_flows_yaml.encode("utf-8")).decode("utf-8")
+
+
 @pytest.mark.parametrize(
     "args, endpoint, expected",
     [
@@ -452,15 +460,6 @@ def test_build_import_request(
     assert graphql_req["variables"]["input"]["domain"] == base64_domain
     assert graphql_req["variables"]["input"]["flows"] == base64_flows
     assert graphql_req["variables"]["input"]["assistantName"] == assistant_name
-
-
-def base64_calm_domain_yaml(calm_domain_yaml):
-    return base64.b64encode(calm_domain_yaml.encode("utf-8")).decode("utf-8")
-
-
-def base64_calm_flows_yaml(calm_flows_yaml):
-    return base64.b64encode(calm_flows_yaml.encode("utf-8")).decode("utf-8")
-
 
 @pytest.mark.parametrize(
     "graphQL_req, endpoint, return_value, expected_response, expected_status",
