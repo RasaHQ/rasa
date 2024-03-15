@@ -336,8 +336,7 @@ def clean_up_commands(
     Returns:
     The cleaned up commands.
     """
-    stack = tracker.stack
-    slots_so_far = filled_slots_for_active_flow(tracker, all_flows)
+    slots_so_far, active_flow = filled_slots_for_active_flow(tracker, all_flows)
 
     clean_commands: List[Command] = []
 
@@ -345,14 +344,22 @@ def clean_up_commands(
 
         if isinstance(command, SetSlotCommand):
             clean_commands = clean_up_slot_command(
-                clean_commands, command, stack, all_flows, slots_so_far
+                clean_commands, command, tracker, all_flows, slots_so_far
             )
 
         elif isinstance(command, CancelFlowCommand) and contains_command(
             clean_commands, CancelFlowCommand
         ):
             structlogger.debug(
-                "command_processor.clean_up_commands.skip_command_already_cancelled_flow",
+                "command_processor.clean_up_commands"
+                ".skip_command_flow_already_cancelled",
+                command=command,
+            )
+        elif isinstance(command, StartFlowCommand) and command.flow == active_flow:
+            # drop a start flow command if the starting flow is equal to the currently
+            # active flow
+            structlogger.debug(
+                "command_processor.clean_up_commands.skip_command_flow_already_active",
                 command=command,
             )
 
@@ -384,13 +391,19 @@ def clean_up_commands(
             )
         else:
             clean_commands.append(command)
+
+    structlogger.debug(
+        "command_processor.clean_up_commands.final_commands",
+        command=clean_commands,
+    )
+
     return clean_commands
 
 
 def clean_up_slot_command(
     commands_so_far: List[Command],
     command: SetSlotCommand,
-    stack: DialogueStack,
+    tracker: DialogueStateTracker,
     all_flows: FlowsList,
     slots_so_far: Set[str],
 ) -> List[Command]:
@@ -403,13 +416,15 @@ def clean_up_slot_command(
     Args:
         commands_so_far: The commands cleaned up so far.
         command: The command to clean up.
-        stack: The dialogue stack.
+        tracker: The dialogue state tracker.
         all_flows: All flows.
         slots_so_far: The slots that have been filled so far.
 
     Returns:
         The cleaned up commands.
     """
+    stack = tracker.stack
+
     resulting_commands = commands_so_far[:]
     if command.name in slots_so_far and command.name != ROUTE_TO_CALM_SLOT:
         current_collect_info = get_current_collect_step(stack, all_flows)
@@ -419,25 +434,36 @@ def clean_up_slot_command(
             resulting_commands.append(command)
             return resulting_commands
 
-        structlogger.debug(
-            "command_processor.clean_up_slot_command.convert_command_to_correction",
-            command=command,
-        )
+        if (slot := tracker.slots.get(command.name)) is not None and slot.value == str(
+            command.value
+        ):
+            # the slot is already set, we don't need to set it again
+            structlogger.debug(
+                "command_processor.clean_up_slot_command.skip_command_slot_already_set",
+                command=command,
+            )
+            return resulting_commands
+
         top = top_flow_frame(stack)
         if isinstance(top, CorrectionPatternFlowStackFrame):
             already_corrected_slots = top.corrected_slots
         else:
             already_corrected_slots = {}
 
-        if (
-            command.name in already_corrected_slots
-            and already_corrected_slots[command.name] == command.value
-        ):
+        if command.name in already_corrected_slots and str(
+            already_corrected_slots[command.name]
+        ) == str(command.value):
             structlogger.debug(
-                "command_processor.clean_up_slot_command.skip_command_slot_already_corrected",
+                "command_processor.clean_up_slot_command"
+                ".skip_command_slot_already_corrected",
                 command=command,
             )
             return resulting_commands
+
+        structlogger.debug(
+            "command_processor.clean_up_slot_command.convert_command_to_correction",
+            command=command,
+        )
 
         # Group all corrections into one command
         corrected_slot = CorrectedSlot(command.name, command.value)

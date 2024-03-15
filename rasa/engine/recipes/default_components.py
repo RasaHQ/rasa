@@ -1,6 +1,9 @@
 from rasa.core.policies.enterprise_search_policy import EnterpriseSearchPolicy
 from rasa.core.policies.flow_policy import FlowPolicy
-from rasa.dialogue_understanding.coexistence.coexistence_router import CoexistenceRouter
+from rasa.dialogue_understanding.coexistence.intent_based_router import (
+    IntentBasedRouter,
+)
+from rasa.dialogue_understanding.coexistence.llm_based_router import LLMBasedRouter
 from rasa.core.policies.intentless_policy import IntentlessPolicy
 from rasa.dialogue_understanding.generator.nlu_command_adapter import NLUCommandAdapter
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
@@ -56,8 +59,9 @@ DEFAULT_COMPONENTS = [
     LogisticRegressionClassifier,
     NLUCommandAdapter,
     LLMCommandGenerator,
-    CoexistenceRouter,
+    LLMBasedRouter,
     LLMIntentClassifier,
+    IntentBasedRouter,
     # Response Selectors
     ResponseSelector,
     # Message Entity Extractors

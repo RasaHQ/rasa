@@ -74,9 +74,9 @@ class CollectInformationFlowStep(FlowStep):
         return CollectInformationFlowStep(
             collect=data["collect"],
             utter=data.get("utter", f"{UTTER_ASK_PREFIX}{data['collect']}"),
-            collect_action=data.get(
-                "collect_action", f"{ACTION_ASK_PREFIX}{data['collect']}"
-            ),
+            # as of now it is not possible to define a different name for the
+            # action, always use the default name 'action_ask_<slot_name>'
+            collect_action=f"{ACTION_ASK_PREFIX}{data['collect']}",
             ask_before_filling=data.get("ask_before_filling", False),
             reset_after_flow_ends=data.get("reset_after_flow_ends", True),
             rejections=[
@@ -95,7 +95,6 @@ class CollectInformationFlowStep(FlowStep):
         data = super().as_json()
         data["collect"] = self.collect
         data["utter"] = self.utter
-        data["collect_action"] = self.collect_action
         data["ask_before_filling"] = self.ask_before_filling
         data["reset_after_flow_ends"] = self.reset_after_flow_ends
         data["rejections"] = [rejection.as_dict() for rejection in self.rejections]

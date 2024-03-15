@@ -6,9 +6,11 @@ from _pytest.tmpdir import TempPathFactory
 
 from rasa.core.agent import Agent
 from rasa.core.policies.policy import Policy
-from rasa.dialogue_understanding.coexistence.coexistence_router import (
-    STICKY,
+from rasa.dialogue_understanding.coexistence.constants import (
     CALM_ENTRY,
+    NLU_ENTRY,
+    STICKY,
+    NON_STICKY,
 )
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.shared.nlu.training_data.formats import RasaYAMLReader
@@ -100,8 +102,13 @@ def pipelines_for_tests() -> List[Tuple[Text, List[Dict[Text, Any]]]]:
             "coexistence",
             as_pipeline(
                 {
-                    "name": "CoexistenceRouter",
+                    "name": "LLMBasedRouter",
                     CALM_ENTRY: {STICKY: "handles everything around contacts"},
+                },
+                {
+                    "name": "IntentBasedRouter",
+                    CALM_ENTRY: {STICKY: ["calm_supported"]},
+                    NLU_ENTRY: {STICKY: ["dm1_temp"], NON_STICKY: ["dm1_temp2"]},
                 },
                 "WhitespaceTokenizer",
                 "CountVectorsFeaturizer",

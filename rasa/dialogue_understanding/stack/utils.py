@@ -39,7 +39,6 @@ def top_flow_frame(
         The topmost flow frame from the tracker. `None` if there
         is no frame on the stack.
     """
-
     for frame in reversed(dialogue_stack.frames):
         if ignore_collect_information_pattern and isinstance(
             frame, CollectInformationPatternFlowStackFrame
@@ -69,7 +68,8 @@ def top_user_flow_frame(dialogue_stack: DialogueStack) -> Optional[UserFlowStack
         dialogue_stack: The dialogue stack to use.
 
     Returns:
-        The topmost user flow frame from the tracker."""
+    The topmost user flow frame from the tracker.
+    """
     for frame in reversed(dialogue_stack.frames):
         if (
             isinstance(frame, UserFlowStackFrame)
@@ -81,7 +81,7 @@ def top_user_flow_frame(dialogue_stack: DialogueStack) -> Optional[UserFlowStack
 
 def filled_slots_for_active_flow(
     tracker: "DialogueStateTracker", all_flows: FlowsList
-) -> Set[str]:
+) -> Tuple[Set[str], Optional[str]]:
     """Get all slots that have been filled for the 'current user flow'.
 
     All patterns that sit ontop of that user flow as well as
@@ -95,13 +95,18 @@ def filled_slots_for_active_flow(
         all_flows: All flows.
 
     Returns:
-    All slots that have been filled for the current flow.
+    All slots that have been filled for the current flow and the id of the currently
+    active flow.
     """
-    filled_slots = set()
+    stack = tracker.stack
+    user_frame = top_user_flow_frame(stack)
+    active_flow = user_frame.flow_id if user_frame else None
 
+    filled_slots = set()
     for collect_step, _ in previous_collect_steps_for_active_flow(tracker, all_flows):
         filled_slots.add(collect_step.collect)
-    return filled_slots
+
+    return filled_slots, active_flow
 
 
 def previous_collect_steps_for_active_flow(
@@ -151,7 +156,8 @@ def user_flows_on_the_stack(dialogue_stack: DialogueStack) -> Set[str]:
         dialogue_stack: The dialogue stack.
 
     Returns:
-        All user flows that are currently on the stack."""
+    All user flows that are currently on the stack.
+    """
     return {
         f.flow_id for f in dialogue_stack.frames if isinstance(f, UserFlowStackFrame)
     }
@@ -167,7 +173,6 @@ def end_top_user_flow(stack: DialogueStack) -> DialogueStack:
     Args:
         stack: The dialogue stack.
     """
-
     updated_stack = stack.copy()
 
     for frame in reversed(updated_stack.frames):

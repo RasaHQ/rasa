@@ -27,8 +27,6 @@ from rasa.shared.constants import (
     UTTER_PREFIX,
     DOCS_URL_ACTIONS,
     REQUIRED_SLOTS_KEY,
-    UTTER_ASK_PREFIX,
-    ACTION_ASK_PREFIX,
 )
 from rasa.shared.core import constants
 from rasa.shared.core.constants import MAPPING_CONDITIONS, ACTIVE_LOOP
@@ -41,6 +39,7 @@ from rasa.shared.core.slots import ListSlot, Slot
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.training_data.training_data import TrainingData
+import rasa.shared.utils.cli
 import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
@@ -76,23 +75,58 @@ class Validator:
     def validate_routing_setup(self) -> bool:
         component_names = {c["name"] for c in self.config["pipeline"]}
         routing_slot = [s for s in self.domain.slots if s.name == ROUTE_TO_CALM_SLOT]
+        if (
+            "LLMBasedRouter" in component_names
+            and "IntentBasedRouter" in component_names
+        ):
+            rasa.shared.utils.cli.print_error_and_exit(
+                "Both LLMBasedRouter and IntentBasedRouter are in the config. "
+                "Please use only one of them."
+            )
 
-        if "CoexistenceRouter" in component_names and (
+        if (
+            "IntentBasedRouter" in component_names
+            and "LLMCommandGenerator" in component_names
+        ):
+            for ind, component in enumerate(self.config["pipeline"]):
+                if component["name"] == "IntentBasedRouter":
+                    intent_based_router_pos = ind
+                elif component["name"] == "LLMCommandGenerator":
+                    llm_command_generator_pos = ind
+            if intent_based_router_pos > llm_command_generator_pos:
+                rasa.shared.utils.cli.print_error_and_exit(
+                    "IntentBasedRouter should come before LLMCommandGenerator "
+                    "in the pipeline."
+                )
+
+        if "LLMBasedRouter" in component_names and (
             len(routing_slot) == 0 or routing_slot[0].type_name != "bool"
         ):
             rasa.shared.utils.io.raise_warning(
-                f"CoexistenceRouter is in the config, but the slot {ROUTE_TO_CALM_SLOT}"
-                f"is not in the domain or not of type bool."
+                f"LLMBasedRouter is in the config, but the slot {ROUTE_TO_CALM_SLOT}"
+                f" is not in the domain or not of type bool."
+            )
+            return False
+
+        if "IntentBasedRouter" in component_names and (
+            len(routing_slot) == 0 or routing_slot[0].type_name != "bool"
+        ):
+            rasa.shared.utils.io.raise_warning(
+                f"IntentBasedRouter is in the config, but the slot {ROUTE_TO_CALM_SLOT}"
+                f" is not in the domain or not of type bool."
             )
             return False
 
         if len(routing_slot) > 0 and (
-            "CoexistenceRouter" not in component_names
+            (
+                "LLMBasedRouter" not in component_names
+                and "IntentBasedRouter" not in component_names
+            )
             or routing_slot[0].type_name != "bool"
         ):
             rasa.shared.utils.io.raise_warning(
                 f"The slot {ROUTE_TO_CALM_SLOT} is in the domain but the "
-                f"CoexistenceRouter is not in the config or "
+                f"LLMBasedRouter or the IntentBasedRouter is not in the config or "
                 f"the type of the slot is not bool."
             )
             return False
@@ -609,7 +643,7 @@ class Validator:
 
     def _log_error_if_action_and_utterance_defined(
         self,
-        collect: str,
+        collect: CollectInformationFlowStep,
         all_good: bool,
     ) -> bool:
         """Validates that a collect step can just have an utterance or an action
@@ -623,31 +657,27 @@ class Validator:
             False, if validation failed, true, otherwise
         """
         has_utterance_defined = any(
-            [
-                u
-                for u in self.domain.utterances_for_response
-                if u.startswith(UTTER_ASK_PREFIX) and u.endswith(collect)
-            ]
+            [u for u in self.domain.utterances_for_response if u == collect.utter]
         )
 
         has_action_defined = any(
             [
                 a
                 for a in self.domain.action_names_or_texts
-                if a.startswith(ACTION_ASK_PREFIX) and a.endswith(collect)
+                if a == collect.collect_action
             ]
         )
 
         if has_utterance_defined and has_action_defined:
             structlogger.error(
                 "validator.verify_flows_steps_against_domain.collect_step",
-                collect=collect,
+                collect=collect.collect,
                 has_utterance_defined=has_utterance_defined,
                 has_action_defined=has_action_defined,
                 event_info=(
-                    f"The collect step '{collect}' has an utterance "
-                    f"'{UTTER_ASK_PREFIX}{collect}' as well as an action "
-                    f"'{ACTION_ASK_PREFIX}{collect}' defined. "
+                    f"The collect step '{collect.collect}' has an utterance "
+                    f"'{collect.utter}' as well as an action "
+                    f"'{collect.collect_action}' defined. "
                     f"You can just have one of them! "
                     f"Please remove either the utterance or the action."
                 ),
@@ -713,7 +743,7 @@ class Validator:
             for step in flow.steps_with_calls_resolved:
                 if isinstance(step, CollectInformationFlowStep):
                     all_good = self._log_error_if_action_and_utterance_defined(
-                        step.collect, all_good
+                        step, all_good
                     )
 
                     all_good = self._log_error_if_slot_not_in_domain(

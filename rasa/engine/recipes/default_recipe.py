@@ -104,6 +104,7 @@ class DefaultV1Recipe(Recipe):
         POLICY_WITH_END_TO_END_SUPPORT = 5
         MODEL_LOADER = 6
         COMMAND_GENERATOR = 7
+        COEXISTENCE_ROUTER = 8
 
     name = "default.v1"
     _registered_components: Dict[Text, RegisteredComponent] = {}  # noqa: RUF012
@@ -809,6 +810,7 @@ class DefaultV1Recipe(Recipe):
                     self.ComponentType.INTENT_CLASSIFIER,
                     self.ComponentType.ENTITY_EXTRACTOR,
                     self.ComponentType.COMMAND_GENERATOR,
+                    self.ComponentType.COEXISTENCE_ROUTER,
                 }
             ):
                 if component.is_trainable:

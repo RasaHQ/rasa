@@ -18,6 +18,7 @@ from rasa.core.channels import UserMessage
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.nlu.test import EntityEvaluationResult, evaluate_entities
 from rasa.nlu.tokenizers.tokenizer import Token
+from rasa.shared.constants import ROUTE_TO_CALM_SLOT
 from rasa.shared.core.constants import (
     POLICIES_THAT_EXTRACT_ENTITIES,
     ACTION_UNLIKELY_INTENT_NAME,
@@ -965,6 +966,13 @@ async def _collect_story_predictions(
 
     action_list = []
     entity_results = []
+
+    if agent.domain:
+        for slot in agent.domain.slots:
+            # set the routing slot to False in case the coexistence feature is used
+            # this way the DM1 policies will run and the CALM policies will keep silent
+            if slot.name == ROUTE_TO_CALM_SLOT:
+                slot.initial_value = False
 
     for tracker in tqdm(completed_trackers):
         (
