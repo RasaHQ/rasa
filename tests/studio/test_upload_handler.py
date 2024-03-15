@@ -461,6 +461,7 @@ def test_build_import_request(
     assert graphql_req["variables"]["input"]["flows"] == base64_flows
     assert graphql_req["variables"]["input"]["assistantName"] == assistant_name
 
+
 @pytest.mark.parametrize(
     "graphQL_req, endpoint, return_value, expected_response, expected_status",
     [
