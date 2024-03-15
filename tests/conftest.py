@@ -127,13 +127,13 @@ def default_config(config_path: Text) -> Dict[Text, Any]:
 # Globals for the calm files
 @pytest.fixture(scope="session")
 def calm_domain_yaml():
-    with open(os.path.dirname(__file__) + "/data/upload/calm/domain.yml", "r") as f:
+    with open("data/upload/calm/domain.yml", "r") as f:
         return f.read()
 
 
 @pytest.fixture(scope="session")
 def calm_flows_yaml():
-    with open(os.path.dirname(__file__) + "/data/upload/calm/flows.yml", "r") as f:
+    with open("data/upload/calm/flows.yml", "r") as f:
         return f.read()
 
 
