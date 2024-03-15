@@ -124,6 +124,19 @@ def default_config(config_path: Text) -> Dict[Text, Any]:
     return read_yaml_file(config_path)
 
 
+# Globals for the calm files
+@pytest.fixture(scope="session")
+def calm_domain_yaml():
+    with open(os.path.dirname(__file__) + "data/upload/calm/domain.yml", "r") as f:
+        return f.read()
+
+
+@pytest.fixture(scope="session")
+def calm_flows_yaml():
+    with open(os.path.dirname(__file__) + "data/upload/calm/flows.yml", "r") as f:
+        return f.read()
+
+
 @pytest.fixture(scope="session")
 def domain_with_categorical_slot_path() -> Text:
     return "data/test_domains/domain_with_categorical_slot.yml"

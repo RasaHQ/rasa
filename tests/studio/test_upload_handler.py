@@ -1,6 +1,5 @@
 import argparse
 import base64
-import os
 from textwrap import dedent
 from typing import Any, Dict, List, Set, Text, Union
 from unittest.mock import MagicMock
@@ -11,29 +10,6 @@ from rasa.shared.exceptions import RasaException
 
 import rasa.studio.upload
 from rasa.studio.config import StudioConfig
-
-
-# Globals for the calm files
-@pytest.fixture
-def calm_domain_yaml():
-    with open(os.path.dirname(__file__) + "/../../data/upload/calm/domain.yml", "r") as f:
-        return f.read()
-
-
-@pytest.fixture
-def calm_flows_yaml():
-    with open(os.path.dirname(__file__) + "/../../data/upload/calm/flows.yml", "r") as f:
-        return f.read()
-
-
-@pytest.fixture
-def base64_calm_domain_yaml(calm_domain_yaml: Text) -> Text:
-    return base64.b64encode(calm_domain_yaml.encode("utf-8")).decode("utf-8")
-
-
-@pytest.fixture
-def base64_calm_flows_yaml(calm_flows_yaml: Text) -> Text:
-    return base64.b64encode(calm_flows_yaml.encode("utf-8")).decode("utf-8")
 
 
 @pytest.mark.parametrize(
@@ -456,8 +432,10 @@ def test_build_request(
     assert graphQL_req["variables"]["input"]["assistantName"] == assistant_name
 
 
-@pytest.mark.parametrize("assistant_name", [("test")])
-def test_build_import_request(assistant_name: str) -> None:
+@pytest.mark.parametrize("assistant_name", ["test"])
+def test_build_import_request(
+    assistant_name: str, calm_domain_yaml, calm_flows_yaml
+) -> None:
     """Test the build_import_request function.
 
     :param assistant_name: The name of the assistant
@@ -474,6 +452,14 @@ def test_build_import_request(assistant_name: str) -> None:
     assert graphql_req["variables"]["input"]["domain"] == base64_domain
     assert graphql_req["variables"]["input"]["flows"] == base64_flows
     assert graphql_req["variables"]["input"]["assistantName"] == assistant_name
+
+
+def base64_calm_domain_yaml(calm_domain_yaml):
+    return base64.b64encode(calm_domain_yaml.encode("utf-8")).decode("utf-8")
+
+
+def base64_calm_flows_yaml(calm_flows_yaml):
+    return base64.b64encode(calm_flows_yaml.encode("utf-8")).decode("utf-8")
 
 
 @pytest.mark.parametrize(
@@ -572,7 +558,7 @@ def test_build_import_request(assistant_name: str) -> None:
                     "input": {
                         "assistantName": "test",
                         "domain": base64_calm_domain_yaml,
-                        "nlu": base64_calm_flows_yaml,
+                        "flows": base64_calm_flows_yaml,
                     }
                 },
             },
@@ -615,6 +601,8 @@ def test_make_request(
     expected_response: str,
     expected_status: bool,
     endpoint: str,
+    calm_domain_yaml: str,
+    calm_flows_yaml: str,
 ) -> None:
     return_mock = MagicMock()
     return_mock.status_code = return_value["status_code"]
