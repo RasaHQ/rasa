@@ -12,22 +12,28 @@ from rasa.shared.exceptions import RasaException
 import rasa.studio.upload
 from rasa.studio.config import StudioConfig
 
+
 # Globals for the calm files
-calm_domain_yaml = open(
-    os.path.dirname(__file__) + "/../../data/upload/calm/domain.yml", "r"
-).read()
+@pytest.fixture
+def calm_domain_yaml():
+    with open(os.path.dirname(__file__) + "/../../data/upload/calm/domain.yml", "r") as f:
+        return f.read()
 
-calm_flows_yaml = open(
-    os.path.dirname(__file__) + "/../../data/upload/calm/flows.yml", "r"
-).read()
 
-base64_calm_domain_yaml = base64.b64encode(calm_domain_yaml.encode("utf-8")).decode(
-    "utf-8"
-)
+@pytest.fixture
+def calm_flows_yaml():
+    with open(os.path.dirname(__file__) + "/../../data/upload/calm/flows.yml", "r") as f:
+        return f.read()
 
-base64_calm_flows_yaml = base64.b64encode(calm_flows_yaml.encode("utf-8")).decode(
-    "utf-8"
-)
+
+@pytest.fixture
+def base64_calm_domain_yaml(calm_domain_yaml: Text) -> Text:
+    return base64.b64encode(calm_domain_yaml.encode("utf-8")).decode("utf-8")
+
+
+@pytest.fixture
+def base64_calm_flows_yaml(calm_flows_yaml: Text) -> Text:
+    return base64.b64encode(calm_flows_yaml.encode("utf-8")).decode("utf-8")
 
 
 @pytest.mark.parametrize(
