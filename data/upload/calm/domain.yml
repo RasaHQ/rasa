@@ -1,0 +1,187 @@
+version: "3.1"
+actions:
+  - action_add_contact
+  - action_check_balance
+  - action_execute_transfer
+  - action_remove_contact
+  - action_search_hotel
+  - action_transaction_search
+
+responses:
+  utter_add_contact_cancelled:
+    - text: Okay, I am cancelling this adding of a contact.
+  utter_add_contact_error:
+    - text: Something went wrong, please try again.
+  utter_ca_income_insufficient:
+    - text: Unfortunately, we cannot increase your transfer limits under these circumstances.
+  utter_cant_advice_on_health:
+    - text: I'm sorry, I can't give you advice on your health.
+  utter_contact_added:
+    - text: Contact added successfully.
+  utter_contact_already_exists:
+    - text: There's already a contact with that handle in your list.
+  utter_contact_not_in_list:
+    - text: That contact is not in your list.
+  utter_current_balance:
+    - text: You still have {current_balance} in your account.
+  utter_hotel_inform_rating:
+    - text: The {hotel_name} has an average rating of {hotel_average_rating}
+  utter_remove_contact_cancelled:
+    - text: Okay, I am cancelling this removal of a contact.
+  utter_remove_contact_error:
+    - text: Something went wrong, please try again.
+  utter_remove_contact_success:
+    - text: Removed {remove_contact_handle}({remove_contact_name}) from your contacts.
+  utter_transactions:
+    - text: "Your current transactions are:  {transactions_list}"
+  utter_transfer_cancelled:
+    - text: Transfer cancelled.
+  utter_transfer_complete:
+    - text: Successfully transferred {transfer_money_amount} to {transfer_money_recipient}.
+  utter_transfer_failed:
+    - text: something went wrong transferring the money.
+  utter_verify_account_cancelled:
+    - text: Cancelling account verification...
+      metadata:
+        rephrase: true
+  utter_verify_account_success:
+    - text: Your account was successfully verified
+  utter_ask_add_contact_confirmation:
+    - text: Do you want to add {add_contact_name}({add_contact_handle}) to your contacts?
+  utter_ask_add_contact_handle:
+    - text: What's the handle of the user you want to add?
+  utter_ask_add_contact_name:
+    - text: What's the name of the user you want to add?
+      metadata:
+        rephrase: true
+  utter_ask_based_in_california:
+    - text: Are you based in California?
+      buttons:
+        - title: "Yes"
+          payload: "Yes"
+        - title: "No"
+          payload: "No"
+  utter_ask_remove_contact_confirmation:
+    - text: Should I remove {remove_contact_handle} from your contact list?
+      buttons:
+        - title: "Yes"
+          payload: "Yes"
+        - title: "No"
+          payload: "No"
+  utter_ask_remove_contact_handle:
+    - text: What's the handle of the user you want to remove?
+  utter_ask_transfer_money_amount:
+    - text: How much money do you want to transfer?
+  utter_ask_transfer_money_final_confirmation:
+    - text: Would you like to transfer {transfer_money_amount} to {transfer_money_recipient}?
+      buttons:
+        - title: "Yes"
+          payload: "Yes"
+        - title: "No"
+          payload: "No"
+  utter_ask_transfer_money_recipient:
+    - text: Who do you want to transfer money to?
+  utter_ask_verify_account_confirmation:
+    - text: Your email address is {verify_account_email} and you are not based in California, correct?
+      buttons:
+        - title: "Yes"
+          payload: "Yes"
+        - title: "No"
+          payload: "No"
+  utter_ask_verify_account_confirmation_california:
+    - text: Your email address is {verify_account_email} and you are based in California with a yearly income exceeding 100,000$, correct?
+      buttons:
+        - title: "Yes"
+          payload: "Yes"
+        - title: "No"
+          payload: "No"
+  utter_ask_verify_account_email:
+    - text: What's your email address?
+  utter_ask_verify_account_sufficient_california_income:
+    - text: Does your yearly income exceed 100,000 USD?
+      buttons:
+        - title: "Yes"
+          payload: "Yes"
+        - title: "No"
+          payload: "No"
+slots:
+  add_contact_confirmation:
+    type: bool
+    mappings:
+      - type: custom
+  add_contact_handle:
+    type: text
+    mappings:
+      - type: custom
+  add_contact_name:
+    type: text
+    mappings:
+      - type: custom
+  based_in_california:
+    type: bool
+    mappings:
+      - type: custom
+  current_balance:
+    type: float
+    mappings:
+      - type: custom
+  hotel_average_rating:
+    type: float
+    mappings:
+      - type: custom
+  hotel_name:
+    type: text
+    mappings:
+      - type: custom
+  remove_contact_confirmation:
+    type: bool
+    mappings:
+      - type: custom
+  remove_contact_handle:
+    type: text
+    mappings:
+      - type: custom
+  remove_contact_name:
+    type: text
+    mappings:
+      - type: custom
+  return_value:
+    type: text
+    mappings:
+      - type: custom
+  transactions_list:
+    type: text
+    mappings:
+      - type: custom
+  transfer_money_amount:
+    type: float
+    mappings:
+      - type: custom
+  transfer_money_final_confirmation:
+    type: bool
+    mappings:
+      - type: custom
+  transfer_money_recipient:
+    type: text
+    mappings:
+      - type: custom
+  transfer_money_transfer_successful:
+    type: bool
+    mappings:
+      - type: custom
+  verify_account_confirmation:
+    type: bool
+    mappings:
+      - type: custom
+  verify_account_confirmation_california:
+    type: bool
+    mappings:
+      - type: custom
+  verify_account_email:
+    type: text
+    mappings:
+      - type: custom
+  verify_account_sufficient_california_income:
+    type: bool
+    mappings:
+      - type: custom

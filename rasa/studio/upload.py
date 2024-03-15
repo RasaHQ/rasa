@@ -7,8 +7,10 @@ import rasa.cli.telemetry
 import rasa.shared.utils.cli
 import rasa.shared.utils.io
 import requests
+
+from rasa.shared.core.flows.yaml_flows_io import YamlFlowsWriter
 from rasa.shared.exceptions import RasaException
-from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.importers.importer import TrainingDataImporter, FlowSyncImporter
 from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
 from rasa.shared.utils.yaml import dump_obj_as_yaml_to_string
 
@@ -46,8 +48,124 @@ def handle_upload(args: argparse.Namespace) -> None:
         rasa.shared.utils.cli.print_error_and_exit(
             "No GraphQL endpoint found in config. Please run `rasa studio config`."
         )
+    else:
+        logger.info("Loading data...")
 
-    logger.info("Loading data...")
+        # check safely if args.calm is set and not fail if not
+        if hasattr(args, "calm") and args.calm:
+            upload_calm_assistant(args, assistant_name, endpoint)
+        else:
+            upload_nlu_assistant(args, assistant_name, endpoint)
+
+
+def extract_values(data: Dict, keys: List[Text]) -> Dict:
+    """Extracts values for given keys from a dictionary."""
+    return {key: data.get(key) for key in keys if data.get(key)}
+
+
+def upload_calm_assistant(
+    args: argparse.Namespace, assistant_name: str, endpoint: str
+) -> None:
+    """Uploads the CALM assistant data to Rasa Studio.
+
+    Args:
+        args: The command line arguments
+            - data: The path to the training data
+            - domain: The path to the domain
+            - flows: The path to the flows
+            - endpoints: The path to the endpoints
+            - config: The path to the config
+        assistant_name: The name of the assistant
+        endpoint: The studio endpoint
+    Returns:
+        None
+    """
+    logger.info("Parsing CALM assistant data...")
+
+    try:
+        importer = TrainingDataImporter.load_from_dict(
+            domain_path=args.domain,
+            config_path=args.config,
+        )
+
+        # Prepare config and domain
+        config_from_files = importer.get_config()
+        domain_from_files = importer.get_domain().as_dict()
+
+        # Extract domain and config values
+        domain_keys = [
+            "version",
+            "actions",
+            "responses",
+            "slots",
+            "forms",
+            "session_config",
+        ]
+        config_keys = [
+            "recipe",
+            "language",
+            "pipeline",
+            "llm",
+            "policies",
+            "model_name",
+        ]
+
+        domain = extract_values(domain_from_files, domain_keys)
+        config = extract_values(config_from_files, config_keys)
+
+        training_data_paths = args.data
+
+        if isinstance(training_data_paths, list):
+            training_data_paths.append(args.flows)
+        elif isinstance(training_data_paths, str):
+            training_data_paths = [training_data_paths, args.flows]
+
+        # Prepare flows
+        flow_importer = FlowSyncImporter.load_from_dict(
+            training_data_paths=training_data_paths
+        )
+
+        user_flows = flow_importer.get_flows().user_flows
+        flows = list(user_flows)
+
+        # Build GraphQL request
+        graphql_req = build_import_request(
+            assistant_name,
+            flows_yaml=YamlFlowsWriter().dumps(flows),
+            domain_yaml=dump_obj_as_yaml_to_string(domain),
+            config_yaml=dump_obj_as_yaml_to_string(config),
+        )
+
+        logger.info("Uploading to Rasa Studio...")
+        response, status = make_request(endpoint, graphql_req)
+
+        if status:
+            rasa.shared.utils.cli.print_success(response)
+        else:
+            logger.error(f"Failed to upload to Rasa Studio: {response}")
+            rasa.shared.utils.cli.print_error(response)
+
+    except Exception as e:
+        logger.error(f"An error occurred while uploading the CALM assistant: {e}")
+
+
+def upload_nlu_assistant(
+    args: argparse.Namespace, assistant_name: str, endpoint: str
+) -> None:
+    """Uploads the classic (dm1) assistant data to Rasa Studio.
+
+    Args:
+        args: The command line arguments
+            - data: The path to the training data
+            - domain: The path to the domain
+            - intents: The intents to upload
+            - entities: The entities to upload
+        assistant_name: The name of the assistant
+        endpoint: The studio endpoint
+    Returns:
+        None
+    """
+    logger.info("Found DM1 assistant data, parsing...")
     importer = TrainingDataImporter.load_from_dict(
         domain_path=args.domain, training_data_paths=args.data
     )
@@ -140,6 +258,32 @@ def _add_missing_entities(
             )
             all_entities.append(entity)
     return all_entities
+
+
+def build_import_request(
+    assistant_name: str, flows_yaml: str, domain_yaml: str, config_yaml: str
+) -> Dict:
+    # b64encode expects bytes and returns bytes so we need to decode to string
+    base64_domain = base64.b64encode(domain_yaml.encode("utf-8")).decode("utf-8")
+    base64_flows = base64.b64encode(flows_yaml.encode("utf-8")).decode("utf-8")
+    base64_config = base64.b64encode(config_yaml.encode("utf-8")).decode("utf-8")
+
+    graphql_req = {
+        "query": (
+            "mutation UploadModernAssistant($input: UploadModernAssistantInput!)"
+            "{\n  uploadModernAssistant(input: $input)\n}"
+        ),
+        "variables": {
+            "input": {
+                "assistantName": assistant_name,
+                "domain": base64_domain,
+                "flows": base64_flows,
+                "config": base64_config,
+            }
+        },
+    }
+
+    return graphql_req
 
 
 def build_request(

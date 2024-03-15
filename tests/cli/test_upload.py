@@ -7,8 +7,9 @@ def test_rasa_upload_help(run: Callable[..., RunResult]) -> None:
     help_text = """usage: rasa studio upload [-h] [-v] [-vv] [--quiet]
                 [--logging-config-file LOGGING_CONFIG_FILE]
                 [--data DATA [DATA ...]] [-d DOMAIN]
+                [--flows FLOWS [FLOWS ...]] [-c CONFIG]
                 [--entities ENTITIES [ENTITIES ...]]
-                [--intents INTENTS [INTENTS ...]]
+                [--intents INTENTS [INTENTS ...]] [--calm]
                 assistant_name"""
     lines = help_text.split("\n")
 
