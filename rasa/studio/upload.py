@@ -126,7 +126,7 @@ def upload_calm_assistant(
         )
 
         user_flows = flow_importer.get_flows().user_flows
-        flows = [flow for flow in user_flows]
+        flows = list(user_flows)
 
         # Build GraphQL request
         graphql_req = build_import_request(
