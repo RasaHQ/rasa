@@ -7,7 +7,7 @@ on:
 
 env:
   # Registry used to store Docker images used for release purposes
-  RELEASE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-docker/rasa"
+  RELEASE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-docker/rasa-pro"
   REPORT_BUCKET: "rasa-container-scan-reports"
 
 jobs:
@@ -47,7 +47,7 @@ jobs:
         severity: 'MEDIUM,HIGH,CRITICAL'
         ignore-unfixed: true
         security-checks: 'vuln'
-        image-ref: '${{env.RELEASE_REGISTRY}}:${{ steps.find-tag.outputs.tag }}-full'
+        image-ref: '${{env.RELEASE_REGISTRY}}:${{ steps.find-tag.outputs.tag }}'
         vuln-type: 'library'
         scan-type: 'image'
         output: scan-result.txt  

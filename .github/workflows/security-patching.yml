@@ -8,7 +8,7 @@ on:
 
 env:
   # Registry used to store Docker images used for release purposes.
-  RELEASE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-docker/rasa"
+  RELEASE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-docker/rasa-pro"
   GITHUB_WORKFLOW_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
   REPORT_BUCKET: "rasa-container-scan-reports"
 
