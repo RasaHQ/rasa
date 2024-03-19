@@ -1,3 +1,6 @@
 * -text
 # Reclassifies `Dockerfile*` files as Dockerfile:
 Dockerfile.* linguist-language=Dockerfile
+# hide Inspector dist/ files from diffs
+# ref: https://docs.github.com/en/repositories/working-with-files/managing-files/customizing-how-changed-files-appear-on-github
+rasa/core/channels/inspector/dist/** linguist-generated=true

@@ -13,11 +13,11 @@ A rapid prototyping tool for enterprise developer personas working in Rasa Pro b
 
 ### Installation
 
-`cd rasa_plus/channels/inspector` and then `yarn install`
+`cd rasa/core/channels/inspector` and then `yarn install`
 
 ### Running the stack
 
-- install a local version of the rasa-plus package
+- install a local version of the rasa-pro package
 - run `yarn build:watch` in the `/inspector` folder (this will watch over the React project and re-build it when necessary)
 - run `rasa inspect`
 - head to [http://localhost:5005/webhooks/inspector/inspect.html](http://localhost:5005/webhooks/inspector/inspect.html) - The page needs to be manually refreshed at every build
