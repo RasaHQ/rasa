@@ -43,7 +43,7 @@ export const Welcome = ({ sx, ...props }: FlexProps) => {
         </Text>
         <Link
           sx={linkSx}
-          href="https://rasa.com/docs/rasa-pro/building-assistants/inspect-assistant"
+          href="https://rasa.com/docs/rasa-pro/production/inspect-assistant/"
           target="_blank"
           ml={rasaSpace[0.25]}
         >Browse the docs</Link>
