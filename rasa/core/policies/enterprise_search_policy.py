@@ -474,7 +474,7 @@ class EnterpriseSearchPolicy(Policy):
         )
 
     def _create_prediction_cannot_handle(
-        self, domain: Domain, tracker: DialogueStackFrame
+        self, domain: Domain, tracker: DialogueStateTracker
     ) -> PolicyPrediction:
         return self._create_prediction_for_pattern(
             domain, tracker, CannotHandlePatternFlowStackFrame()
@@ -487,12 +487,14 @@ class EnterpriseSearchPolicy(Policy):
         pattern_stack_frame: PatternFlowStackFrame,
     ) -> PolicyPrediction:
         """Create a policy prediction result for error.
+
         We should cancel the current flow (hence ACTION_CANCEL_FLOW) and push a
         pattern stack frame (Internal Error Pattern by default) to start the pattern.
 
         Args:
             domain: The model's domain.
             tracker: The tracker containing the conversation history up to now.
+            pattern_stack_frame: The pattern stack frame to push.
 
         Returns:
             The prediction.
