@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - main
-    tags:
-      - "*"
   pull_request:
 
 concurrency:
@@ -37,7 +35,6 @@ env:
   IS_TAG_BUILD: ${{ startsWith(github.event.ref, 'refs/tags') }}
   DOCKERHUB_USERNAME: tmbo
   DEFAULT_PYTHON_VERSION: "3.10"
-  TARGET_IMAGE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-docker"
   NODE_VERSION_INSPECTOR_BUILD: 16
 
   # for wait_for_xx jobs
