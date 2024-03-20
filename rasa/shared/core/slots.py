@@ -128,6 +128,21 @@ class Slot(ABC):
         self._value = value
         self._has_been_set = True
 
+    def has_same_coerced_value(self, other_value: Any) -> bool:
+        """Checks if the coerced value of is the same as the slot value.
+
+        Can be used to check if an update with the value would be a no-op.
+        """
+        return self.coerce_value(other_value) == self.value
+
+    def coerce_value(self, value: Any) -> Any:
+        """Coerces the value to the slot's type."""
+        return value
+
+    def is_valid_value(self, value: Any) -> bool:
+        """Checks if the slot contains the value."""
+        return True
+
     @property
     def has_been_set(self) -> bool:
         """Indicates if the slot's value has been set."""
@@ -243,6 +258,18 @@ class FloatSlot(Slot):
         d["min_value"] = self.min_value
         return d
 
+    def coerce_value(self, value: Any) -> Any:
+        """Coerces the value to the slot's type."""
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return value
+
+    def is_valid_value(self, value: Any) -> bool:
+        """Checks if the slot contains the value."""
+        # check that coerced type is float
+        return value is None or isinstance(self.coerce_value(value), float)
+
     def _feature_dimensionality(self) -> int:
         return len(self.as_feature())
 
@@ -264,6 +291,17 @@ class BooleanSlot(Slot):
 
     def _feature_dimensionality(self) -> int:
         return len(self.as_feature())
+
+    def coerce_value(self, value: Any) -> Any:
+        """Coerces the value to the slot's type."""
+        try:
+            return bool_from_any(value)
+        except (ValueError, TypeError):
+            return value
+
+    def is_valid_value(self, value: Any) -> bool:
+        """Checks if the slot contains the value."""
+        return value is None or isinstance(self.coerce_value(value), bool)
 
 
 def bool_from_any(x: Any) -> bool:
@@ -309,17 +347,20 @@ class ListSlot(Slot):
             # we couldn't convert the value to a list - using default value
             return [0.0]
 
+    def coerce_value(self, value: Any) -> Any:
+        """Coerces the value to the slot's type."""
+        if value and not isinstance(value, list):
+            # Make sure we always store list items
+            value = [value]
+        return value
+
     # FIXME: https://github.com/python/mypy/issues/8085
     @Slot.value.setter  # type: ignore[attr-defined,misc]
     def value(self, value: Any) -> None:
         """Sets the slot's value."""
-        if value and not isinstance(value, list):
-            # Make sure we always store list items
-            value = [value]
-
         # Call property setter of superclass
         # FIXME: https://github.com/python/mypy/issues/8085
-        super(ListSlot, self.__class__).value.fset(self, value)  # type: ignore[attr-defined] # noqa: E501
+        super(ListSlot, self.__class__).value.fset(self, self.coerce_value(value))  # type: ignore[attr-defined] # noqa: E501
 
 
 class CategoricalSlot(Slot):
@@ -360,9 +401,51 @@ class CategoricalSlot(Slot):
                 f' using quotation marks: "null".',
                 category=UserWarning,
             )
-        self.values = (
-            [str(v).lower() for v in values if v is not None] if values else []
-        )
+        self.values = [str(v) for v in values if v is not None] if values else []
+        self._warn_for_duplicate_coerced_values(values)
+
+    def _warn_for_duplicate_coerced_values(
+        self, possible_values: Optional[List[Any]]
+    ) -> None:
+        """If multiple values are coerced to the same value, warn the user.
+
+        A warning indicates that multiple values are coerced to the same value
+        which can create unexpected behavior. For example, if the slot is
+        configured with values `["a", "A"]` both of these values are coerced
+        to `"a"`. This can lead to unexpected behavior if the user sets the
+        slot to `"A"` and the slot is later checked for the value `"a"`.
+
+        Args:
+            possible_values: The values for this slot configured in the domain.
+
+        Returns:
+            None
+        """
+        if not possible_values:
+            return
+
+        coerced_values: Dict[str, Any] = {}
+        for value in possible_values:
+            if value is None:
+                continue
+
+            if isinstance(value, Text):
+                coerced_value = value.casefold()
+            else:
+                # Make sure we always store items as strings - though these
+                # could be dicts, so we do not want to lower them
+                coerced_value = str(value)
+
+            if coerced_value in coerced_values:
+                rasa.shared.utils.io.raise_warning(
+                    f"Multiple values are coerced to the same value for the "
+                    f"categorical slot '{self.name}'. "
+                    f"Coerced value '{coerced_value}' is the same for "
+                    f"values '{value}' and '{coerced_values[coerced_value]}'. "
+                    f"Make sure to provide unique values for the slot.",
+                    category=UserWarning,
+                )
+            coerced_values[coerced_value] = value
 
     def add_default_value(self) -> None:
         """Adds the special default value to the list of possible values."""
@@ -395,7 +478,7 @@ class CategoricalSlot(Slot):
 
         try:
             for i, v in enumerate(self.values):
-                if v == str(self.value).lower():
+                if v.lower() == str(self.value).lower():
                     r[i] = 1.0
                     break
             else:
@@ -424,6 +507,75 @@ class CategoricalSlot(Slot):
 
     def _feature_dimensionality(self) -> int:
         return len(self.values)
+
+    def coerce_value(self, value: Any) -> Any:
+        """Coerces the value to the slot's configured values if possible.
+
+        If the value can not be mapped to a configured value, the value
+        is returned as is.
+
+        String values are compared case insensitive. For example, if the
+        slot is configured with values `["a", "b"]` and the value is `"A"`,
+        the value is coerced to `"a"`. One exception is the case where
+        the exact value is configured in the domain. In this case, the value's
+        casing is not changed. For example, if the slot is configured with
+        values `["A", "B"]` and the value is `"A"`, the value is coerced to
+        `"A"`.
+
+        Args:
+            value: The value to coerce.
+
+        Returns:
+            The coerced value or the value as is.
+        """
+        if value and isinstance(value, Text):
+            # Make sure we always store items with the casing
+            # as they are defined in the domain
+            # first, try to find an exact match
+            if value in self.values:
+                return value
+
+            # fallback: try to find a case insensitive match
+            for configured_value in self.values:
+                if value.casefold() == configured_value.casefold():
+                    return configured_value
+        return value
+
+    def is_valid_value(self, value: Any) -> bool:
+        """Checks if the slots configured values contains the value.
+
+        If the value is `None`, it is always considered valid.
+
+        Args:
+            value: The value to check.
+
+        Returns:
+            `True` if the value is valid, `False` otherwise.
+        """
+        if value is None:
+            return True
+        if isinstance(value, Text):
+            # Make sure we always store items with the casing
+            # as they are defined in the domain
+            for configured_value in self.values:
+                if value.casefold() == configured_value.casefold():
+                    return True
+            else:
+                return False
+        else:
+            return str(value) in self.values
+
+    # FIXME: https://github.com/python/mypy/issues/8085
+    @Slot.value.setter  # type: ignore[attr-defined,misc]
+    def value(self, value: Any) -> None:
+        """Sets the slot's value after coercing it to a configured value.
+
+        If the value can not be mapped to a configured value, the value
+        is kept as is.
+        """
+        # Call property setter of superclass
+        # FIXME: https://github.com/python/mypy/issues/8085
+        super(CategoricalSlot, self.__class__).value.fset(self, self.coerce_value(value))  # type: ignore[attr-defined] # noqa: E501
 
 
 class AnySlot(Slot):

@@ -16,7 +16,6 @@ from rasa.shared.core.slots import (
     CategoricalSlot,
     FloatSlot,
     Slot,
-    bool_from_any,
 )
 from rasa.shared.utils.pypred import get_case_insensitive_predicate
 
@@ -51,7 +50,7 @@ def coerce_slot_value(
     conversion fails, `None` is returned.
 
     Args:
-        value: The value to coerce.
+        slot_value: The value to coerce.
         slot_name: The name of the slot.
         tracker: The tracker containing the current state of the conversation.
 
@@ -62,31 +61,14 @@ def coerce_slot_value(
         return slot_value
 
     slot = tracker.slots[slot_name]
-    if isinstance(slot, BooleanSlot):
-        try:
-            return bool_from_any(slot_value)
-        except (ValueError, TypeError):
-            structlogger.debug(
-                "run.rejection.boolean_slot_value_error",
-                rejection=slot_value,
-            )
-            return None
-    elif isinstance(slot, FloatSlot):
-        try:
-            return float(slot_value)
-        except (ValueError, TypeError):
-            structlogger.debug(
-                "run.rejection.float_slot_value_error",
-                rejection=slot_value,
-            )
-            return None
-    elif isinstance(slot, CategoricalSlot) and slot_value not in slot.values:
+    if slot.is_valid_value(slot_value):
+        return slot.coerce_value(slot_value)
+    else:
         structlogger.debug(
-            "run.rejection.categorical_slot_value_not_in_domain",
+            "run.rejection.slot_value_not_not_valid",
             rejection=slot_value,
         )
         return None
-    return slot_value
 
 
 def run_rejections(
@@ -198,7 +180,7 @@ class ActionRunSlotRejections(Action):
             # the slot value has been coerced to the correct type
             return [SlotSet(slot_name, typed_slot_value)]
         elif slot_value == typed_slot_value:
-            # the slot value has not changed and no utterrance present
+            # the slot value has not changed and no utterance present
             return []
 
         if utterance == UTTERANCE_NOT_DEFINED_BY_USER:
