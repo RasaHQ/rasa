@@ -1,0 +1,217 @@
+name: Release artifacts workflow
+
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]*'
+  workflow_dispatch:
+    inputs:
+      tag_version:
+        description: 'Tag version:'
+        required: true
+
+env:
+  TARGET_IMAGE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-docker"
+
+permissions:
+  id-token: write # This is required for requesting the JWT
+  contents: read # This is required for actions/checkout
+
+jobs:
+  release-artifacts-workflow:
+    # Run this workflow on a large runner because ARM64 build consumes disk space
+    # ubuntu-22.04-4core - 4 cores, 16GB of RAM and 150 GB SSD
+    runs-on: ubuntu-22.04-4core
+
+    steps:
+      - name: Set tag version
+        run: |
+          if [[ -n "$GITHUB_REF" && "$GITHUB_REF" == refs/tags/* ]]; then
+            echo "TAG_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+          elif [[ -n "$INPUT_TAG_VERSION" ]]; then
+            echo "TAG_VERSION=$INPUT_TAG_VERSION" >> $GITHUB_ENV
+          else
+            echo "No tag version found."
+            exit 1
+          fi
+        env:
+          INPUT_TAG_VERSION: ${{ github.event.inputs.tag_version }}
+
+      - name: Verify whether the release version already exists
+        run: |
+          version=${{ env.RELEASE_VERSION }}
+          existing_versions=$(git tag -l)
+          echo "Existing release versions:"
+          echo "$existing_versions"
+          if echo "$existing_versions" | grep -q "^$version$"; then
+            echo "Error: Release version $version already exists."
+            exit 1
+          else
+            echo "Release version $version does not exist. Proceeding..."
+          fi
+        env:
+          RELEASE_VERSION: ${{ env.TAG_VERSION }}
+  
+      - name: Check out code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ env.TAG_VERSION }}
+        
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@0d103c3126aa41d772a8362f6aa67afac040f80c  # v3.1.0
+
+      - name: Read Poetry Version 🔢
+        run: |
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Authenticate with Google Cloud
+        id: auth
+        uses: google-github-actions/auth@55bd3a7c6e2ae7cf1877fd1ccb9d54c0503c457c # v2.1.2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER_OIDC}}
+          service_account: "github-actions-oidc-atom@rasa-releases.iam.gserviceaccount.com"
+          token_format: access_token
+
+      - name: "Set up Cloud SDK"
+        uses: "google-github-actions/setup-gcloud@5a5f7b85fca43e76e53463acaa9d408a03c98d3a"
+
+      - name: Authenticate docker for release registry 🎫
+        run: |
+          gcloud auth configure-docker europe-west3-docker.pkg.dev
+
+      - name: Check if base images exists
+        id: check_image
+        env:
+          DOCKER_CLI_EXPERIMENTAL: enabled
+        run: |
+          # Base image
+          BASE_IMAGE_HASH=${{ hashFiles('docker/Dockerfile.base') }}
+          echo "base_image_hash=${BASE_IMAGE_HASH}" >> $GITHUB_OUTPUT
+
+          BASE_IMAGE_EXISTS=$((docker manifest inspect ${{ env.TARGET_IMAGE_REGISTRY }}/rasa:base-${BASE_IMAGE_HASH} &> /dev/null && echo true || echo false) || true)
+          echo "base_exists=${BASE_IMAGE_EXISTS}" >> $GITHUB_OUTPUT
+
+          # Base poetry image
+          BASE_IMAGE_POETRY_EXISTS=$((docker manifest inspect ${{ env.TARGET_IMAGE_REGISTRY }}/rasa:base-poetry-${{ env.POETRY_VERSION }} &> /dev/null && echo true || echo false) || true)
+          echo "base_poetry_exists=${BASE_IMAGE_POETRY_EXISTS}" >> $GITHUB_OUTPUT
+
+          # Base builder image
+          BASE_IMAGE_BUILDER_HASH=${{ hashFiles('docker/Dockerfile.base-builder') }}-poetry-${{ env.POETRY_VERSION }}
+          echo "base_builder_image_hash=${BASE_IMAGE_BUILDER_HASH}" >> $GITHUB_OUTPUT
+
+          BASE_IMAGE_BUILDER_EXISTS=$((docker manifest inspect ${{ env.TARGET_IMAGE_REGISTRY }}/rasa:base-builder-${BASE_IMAGE_BUILDER_HASH} &> /dev/null && echo true || echo false) || true)
+          echo "base_builder_exists=${BASE_IMAGE_BUILDER_EXISTS}" >> $GITHUB_OUTPUT
+
+      - name: Build Docker base image 🛠
+        if: steps.check_image.outputs.base_exists == 'false'
+        run: |
+          export IMAGE_TAG=${{ steps.check_image.outputs.base_image_hash }}
+          export TARGET_IMAGE_REGISTRY=${{ env.TARGET_IMAGE_REGISTRY }}
+          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl base --push
+
+      - name: Build Docker poetry base image 🛠
+        if: steps.check_image.outputs.base_poetry_exists == 'false' || steps.check_image.outputs.base_exists == 'false'
+        run: |
+          export IMAGE_TAG=${{ env.POETRY_VERSION }}
+          export BASE_IMAGE_HASH=${{ steps.check_image.outputs.base_image_hash }}
+          export TARGET_IMAGE_REGISTRY=${{ env.TARGET_IMAGE_REGISTRY }}
+          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl base-poetry --push
+
+      - name: Build Docker builder base image 🛠
+        if: steps.check_image.outputs.base_builder_exists == 'false' || steps.check_image.outputs.base_exists == 'false'
+        run: |
+          export IMAGE_TAG=${{ steps.check_image.outputs.base_builder_image_hash }}
+          export TARGET_IMAGE_REGISTRY=${{ env.TARGET_IMAGE_REGISTRY }}
+          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl base-builder --push
+
+      - name: Copy Segment write key to the package
+        env:
+          RASA_TELEMETRY_WRITE_KEY: ${{ secrets.RASA_OSS_TELEMETRY_WRITE_KEY }}
+          RASA_EXCEPTION_WRITE_KEY: ${{ secrets.RASA_OSS_EXCEPTION_WRITE_KEY }}
+        run: |
+          ./scripts/write_keys_file.sh
+
+      - name: Build and push rasa-pro docker image
+        run: |
+          IMAGE_TAG=${TAG_VERSION} docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl default --push
+        env:
+          BASE_IMAGE_HASH: ${{ steps.check_image.outputs.base_image_hash }}
+          BASE_BUILDER_IMAGE_HASH: ${{ steps.check_image.outputs.base_builder_image_hash }}
+      
+      - name: Set up Python 3.9 🐍
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
+        with:
+          python-version: 3.9
+
+      - name: Install poetry 🦄
+        uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844 # v8
+        with:
+          poetry-version: ${{ env.POETRY_VERSION }}
+      
+      - name: Build ⚒️ Distributions
+        run: poetry build
+
+      # Push to the internal release registry
+      - name: Publish to internal PyPI 📦
+        uses: pypa/gh-action-pypi-publish@e53eb8b103ffcb59469888563dc324e3c8ba6f06
+        with:
+          user: "github-ci"
+          password: ${{ secrets.PYPI_PASSWORD }}
+          repository_url: "https://pypi.rasa.com/simple/"
+          packages_dir: ${{ format('{0}/dist', github.workspace) }}
+    
+      # Push library to GCP Artifact Registry rasa-plus-py
+      - name: Release via GCP Artifact Registry
+        run: |
+          pip install keyring
+          pip install keyrings.google-artifactregistry-auth
+          pip install twine
+          gcloud artifacts print-settings python --project=rasa-releases --repository=rasa-plus-py --location=europe-west3 > ~/.pypirc
+          twine upload --verbose --repository-url https://europe-west3-python.pkg.dev/rasa-releases/rasa-plus-py/ ${{ format('{0}/dist/*', github.workspace) }}
+
+      - name: Notify Sentry about the release
+        env:
+          GITHUB_TAG: ${{ env.GITHUB_TAG }}
+          SENTRY_ORG: rasahq
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        run: |
+          curl -sL https://sentry.io/get-cli/ | bash
+          GITHUB_TAG=${GITHUB_TAG/refs\/tags\//}
+          sentry-cli releases new -p rasa-open-source "rasa-$GITHUB_TAG"
+          sentry-cli releases set-commits "rasa-$GITHUB_TAG" --auto --ignore-missing
+          sentry-cli releases finalize "rasa-$GITHUB_TAG"
+
+      - name: Publish GitHub Release Notes 🗞
+        env:
+          GH_RELEASE_NOTES_TOKEN: ${{ secrets.GH_RELEASE_NOTES_TOKEN }}
+          GITHUB_TAG: ${{ github.ref }}
+          GITHUB_REPO_SLUG: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          GITHUB_TAG=${GITHUB_TAG/refs\/tags\//}
+          pip install -U github3.py pep440-version-utils
+          python3 scripts/publish_gh_release_notes.py
+
+      - name: Notify Slack of successful release 💬
+        if: success()
+        uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 #v 1.25.0
+        with:
+          # Send notication to #release slack channel
+          channel-id: "C024Z61K9QU"
+          slack-message: ":rocket: New *Rasa Private* version `${{ env.TAG_VERSION }}` has been released! More information can be found <https://github.com/RasaHQ/rasa-private/releases/tag/${{ env.TAG_VERSION }}|here>."
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
+      - name: Notify Slack of unsuccessful release ⛔️
+        if: failure()
+        uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 #v 1.25.0
+        with:
+          # Send notication to #devtribe slack channel
+          channel-id: "C061J0LGHU0"
+          slack-message: ":broken_heart: *Rasa Private* release version `${{ env.TAG_VERSION }}` has failed! More information can be found <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|here>."
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
