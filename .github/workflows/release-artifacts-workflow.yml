@@ -12,7 +12,6 @@ on:
 
 env:
   TARGET_IMAGE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-docker"
-  AWS_REGION: us-east-1
 
 permissions:
   id-token: write # This is required for requesting the JWT
