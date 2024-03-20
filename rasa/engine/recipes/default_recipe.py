@@ -17,7 +17,6 @@ from rasa.graph_components.providers.flows_provider import FlowsProvider
 from rasa.dialogue_understanding.processor.command_processor_component import (
     CommandProcessorComponent,
 )
-from rasa.plugin import plugin_manager
 from rasa.shared.exceptions import FileNotFoundException
 from rasa.core.policies.ensemble import DefaultPolicyPredictionEnsemble
 
@@ -290,11 +289,6 @@ class DefaultV1Recipe(Recipe):
         train_nodes: Dict[Text, SchemaNode],
         cli_parameters: Dict[Text, Any],
     ) -> List[Text]:
-        plugin_manager().hook.modify_default_recipe_graph_train_nodes(
-            train_config=train_config,
-            train_nodes=train_nodes,
-            cli_parameters=cli_parameters,
-        )
         train_nodes["flows_provider"] = SchemaNode(
             needs={
                 "importer": "finetuning_validator",
@@ -566,11 +560,6 @@ class DefaultV1Recipe(Recipe):
         preprocessors: List[Text],
         cli_parameters: Dict[Text, Any],
     ) -> None:
-        plugin_manager().hook.modify_default_recipe_graph_train_nodes(
-            train_config=train_config,
-            train_nodes=train_nodes,
-            cli_parameters=cli_parameters,
-        )
         train_nodes["domain_provider"] = SchemaNode(
             needs={"importer": "finetuning_validator"},
             uses=DomainProvider,
@@ -758,9 +747,6 @@ class DefaultV1Recipe(Recipe):
         predict_nodes: Dict[Text, SchemaNode],
         train_nodes: Dict[Text, SchemaNode],
     ) -> Text:
-        plugin_manager().hook.modify_default_recipe_graph_predict_nodes(
-            predict_nodes=predict_nodes
-        )
         predict_nodes["flows_provider"] = SchemaNode(
             **DEFAULT_PREDICT_KWARGS,
             needs={},
@@ -889,9 +875,6 @@ class DefaultV1Recipe(Recipe):
         train_nodes: Dict[Text, SchemaNode],
         preprocessors: List[Text],
     ) -> None:
-        plugin_manager().hook.modify_default_recipe_graph_predict_nodes(
-            predict_nodes=predict_nodes
-        )
         predict_nodes["domain_provider"] = SchemaNode(
             **DEFAULT_PREDICT_KWARGS,
             needs={},
