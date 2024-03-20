@@ -1019,6 +1019,9 @@ jobs:
         run: |
           make test-integration
 
+  # Temporary disable metric and integration test since we need to refactor and improve whole continuous-integration.yml
+  # Details can be found here: https://rasahq.atlassian.net/browse/ATO-2270
+  #
   # tracing_integration_test:
   #   name: Run Tracing Integration Tests
   #   if: github.ref_type != 'tag' && startsWith(github.ref, 'refs/heads/prepare-release-pre-') != true
