@@ -19,6 +19,7 @@ permissions:
 
 jobs:
   release-artifacts-workflow:
+    name: release-artifacts-workflow
     # Run this workflow on a large runner because ARM64 build consumes disk space
     # ubuntu-22.04-4core - 4 cores, 16GB of RAM and 150 GB SSD
     runs-on: ubuntu-22.04-4core
