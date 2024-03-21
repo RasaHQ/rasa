@@ -43,8 +43,8 @@ jobs:
         with:
           ref: ${{ env.TAG_VERSION }}
           
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
+      # - name: Set up QEMU
+      #   uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
 
       # - name: Set up Docker Buildx
       #   uses: docker/setup-buildx-action@0d103c3126aa41d772a8362f6aa67afac040f80c  # v3.1.0
@@ -171,14 +171,14 @@ jobs:
       #     sentry-cli releases set-commits "rasa-$GITHUB_TAG" --auto --ignore-missing
       #     sentry-cli releases finalize "rasa-$GITHUB_TAG"
 
-      - name: Publish GitHub Release Notes 🗞
+      - name: Publish Release Notes 🗞
         env:
           GH_RELEASE_NOTES_TOKEN: ${{ secrets.GH_RELEASE_NOTES_TOKEN }}
-          GITHUB_TAG: ${{ github.ref }}
+          GITHUB_TAG: ${{ env.TAG_VERSION }}
           GITHUB_REPO_SLUG: ${{ github.repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          GITHUB_TAG=${{ env.TAG_VERSION }}
+          GITHUB_TAG=$GITHUB_TAG
           pip install -U github3.py pep440-version-utils
           python3 scripts/publish_gh_release_notes.py
 
