@@ -176,7 +176,7 @@ jobs:
           GH_RELEASE_NOTES_TOKEN: ${{ secrets.GH_RELEASE_NOTES_TOKEN }}
           GITHUB_TAG: ${{ env.TAG_VERSION }}
           GITHUB_REPO_SLUG: ${{ github.repository }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.RELEASE_GITHUB_TOKEN }}
         run: |
           GITHUB_TAG=$GITHUB_TAG
           pip install -U github3.py pep440-version-utils
