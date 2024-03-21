@@ -42,23 +42,7 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           ref: ${{ env.TAG_VERSION }}
-          fetch-depth: '0'
           
-      - name: Verify whether the release version already exists
-        run: |
-          version=${{ env.RELEASE_VERSION }}
-          existing_versions=$(git tag -l)
-          echo "Existing release versions:"
-          echo "$existing_versions"
-          if echo "$existing_versions" | grep -q "^$version$"; then
-            echo "Error: Release version $version already exists."
-            exit 1
-          else
-            echo "Release version $version does not exist. Proceeding..."
-          fi
-        env:
-          RELEASE_VERSION: ${{ env.TAG_VERSION }}
-        
       - name: Set up QEMU
         uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
 
