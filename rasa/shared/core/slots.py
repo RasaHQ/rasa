@@ -6,7 +6,11 @@ import rasa.shared.core.constants
 from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.common
 import rasa.shared.utils.io
-from rasa.shared.constants import DOCS_URL_SLOTS, DOCS_URL_NLU_BASED_SLOTS
+from rasa.shared.constants import (
+    DOCS_URL_SLOTS,
+    DOCS_URL_NLU_BASED_SLOTS,
+    DOCS_URL_CATEGORICAL_SLOTS,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -444,6 +448,7 @@ class CategoricalSlot(Slot):
                     f"values '{value}' and '{coerced_values[coerced_value]}'. "
                     f"Make sure to provide unique values for the slot.",
                     category=UserWarning,
+                    docs=DOCS_URL_CATEGORICAL_SLOTS,
                 )
             coerced_values[coerced_value] = value
 
@@ -560,10 +565,9 @@ class CategoricalSlot(Slot):
             for configured_value in self.values:
                 if value.casefold() == configured_value.casefold():
                     return True
-            else:
-                return False
-        else:
-            return str(value) in self.values
+            return False
+
+        return str(value) in self.values
 
     # FIXME: https://github.com/python/mypy/issues/8085
     @Slot.value.setter  # type: ignore[attr-defined,misc]
