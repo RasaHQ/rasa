@@ -67,6 +67,7 @@ const encodeDoubleQuotes = (str: string) =>
    */
   str.replace(/"/g, `#34;`);
 
+
 export const formatFlow = (
   slots: Slot[],
   currentStack?: Stack,
@@ -98,7 +99,7 @@ classDef active stroke:${rasaColors.rasaOrange[400]},stroke-width:3px,fill:${ras
     mermaidText.push(text);
     return mermaidText.join("");
   } catch (e) {
-    return `${mermaidText}\nA["Something went wrong"]`;
+    return `${mermaidText}\nA["Something went wrong!"]\nB["${e}"]`;
   }
 };
 
@@ -145,7 +146,7 @@ function renderStepSequence(
 
     if (step.collect) {
       const slot = slots.find((slot) => slot.name === step.collect);
-      const slotValue = slot ? `"${encodeDoubleQuotes(truncate(slot.value))}"` : "💬";
+      const slotValue = slot && typeof slot.value === "string" ? `"${encodeDoubleQuotes(truncate(slot.value))}"` : "💬";
       mermaidTextFragment += `${mermaidId}["${encodeDoubleQuotes(truncate(
         parseFieldUsingStack(step.collect, currentStack)
       ))}\n${slotValue}"]:::collect\n`;
