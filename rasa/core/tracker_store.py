@@ -418,8 +418,6 @@ class InMemoryTrackerStore(TrackerStore, SerializedTrackerAsText):
             logger.debug(f"Could not find tracker for conversation ID '{sender_id}'.")
             return None
 
-        logger.debug(f"Recreating tracker for id '{sender_id}'")
-
         tracker = self.deserialise_tracker(sender_id, self.store[sender_id])
 
         if not tracker:
