@@ -63,7 +63,7 @@ def coerce_slot_value(
 
     if not slot.is_valid_value(slot_value):
         structlogger.debug(
-            "run.rejection.slot_value_not_not_valid",
+            "run.rejection.slot_value_not_valid",
             rejection=slot_value,
         )
         return None
