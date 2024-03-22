@@ -155,8 +155,8 @@ jobs:
            pip install keyring
            pip install keyrings.google-artifactregistry-auth
            pip install twine
-           gcloud artifacts print-settings python --project=rasa-releases --repository=rasa-plus-py --location=europe-west3 > ~/.pypirc
-           twine upload --verbose --repository-url https://europe-west3-python.pkg.dev/rasa-releases/rasa-plus-py/ ${{ format('{0}/dist/*', github.workspace) }}
+           gcloud artifacts print-settings python --project=rasa-releases --repository=rasa-pro-python --location=europe-west3 > ~/.pypirc
+           twine upload --verbose --repository-url https://europe-west3-python.pkg.dev/rasa-releases/rasa-pro-python/ ${{ format('{0}/dist/*', github.workspace) }}
 
       - name: Notify Sentry about the release
         env:
