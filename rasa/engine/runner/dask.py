@@ -3,7 +3,9 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, List, Optional, Text
 
-import dask
+import dask.local
+import dask.core
+import asyncio
 
 from rasa.engine.exceptions import GraphRunError
 from rasa.engine.graph import ExecutionContext, GraphNode, GraphNodeHook, GraphSchema
@@ -79,7 +81,7 @@ class DaskGraphRunner(GraphRunner):
         }
         return run_graph
 
-    def run(
+    async def run(
         self,
         inputs: Optional[Dict[Text, Any]] = None,
         targets: Optional[List[Text]] = None,
@@ -98,7 +100,7 @@ class DaskGraphRunner(GraphRunner):
         )
 
         try:
-            dask_result = dask.get(run_graph, run_targets)
+            dask_result = await execute_dask_graph(run_graph, run_targets)
             return dict(dask_result)
         except KeyError as e:
             raise GraphRunError(
@@ -122,3 +124,116 @@ class DaskGraphRunner(GraphRunner):
                     f"same as node names in the graph schema."
                 )
             graph[input_name] = (input_name, input_value)
+
+
+async def _execute_task(arg, cache, dsk=None):
+    """Do the actual work of collecting data and executing a function.
+
+    Examples:
+    --------
+    >>> inc = lambda x: x + 1
+    >>> add = lambda x, y: x + y
+    >>> cache = {'x': 1, 'y': 2}
+
+    Compute tasks against a cache
+    >>> _execute_task((add, 'x', 1), cache)  # Compute task in naive manner
+    2
+    >>> _execute_task((add, (inc, 'x'), 1), cache)  # Support nested computation
+    3
+
+    Also grab data from cache
+    >>> _execute_task('x', cache)
+    1
+
+    Support nested lists
+    >>> list(_execute_task(['x', 'y'], cache))
+    [1, 2]
+
+    >>> list(map(list, _execute_task([['x', 'y'], ['y', 'x']], cache)))
+    [[1, 2], [2, 1]]
+
+    >>> _execute_task('foo', cache)  # Passes through on non-keys
+    'foo'
+    """
+    if isinstance(arg, list):
+        return [await _execute_task(a, cache) for a in arg]
+    elif dask.core.istask(arg):
+        func, args = arg[0], arg[1:]
+        # Note: Don't assign the subtask results to a variable. numpy detects
+        # temporaries by their reference count and can execute certain
+        # operations in-place.
+        awaited_args = await asyncio.gather(*(_execute_task(a, cache) for a in args))
+        if asyncio.iscoroutinefunction(func):
+            return await func(*awaited_args)
+        else:
+            return func(*awaited_args)
+    elif not dask.core.ishashable(arg):
+        return arg
+    elif arg in cache:
+        return cache[arg]
+    else:
+        return arg
+
+
+async def execute_dask_graph(dsk: Dict[str, Any], result: List[str]):
+    """Asynchronous get function.
+
+    This is a general version of various asynchronous schedulers for dask.  It
+    takes a ``concurrent.futures.Executor.submit`` function to form a more
+    specific ``get`` method that walks through the dask array with parallel
+    workers, avoiding repeat computation and minimizing memory use.
+
+    Build on the version of `get_async` in `dask.local`. This version is
+    asynchronous and uses `asyncio` to manage the event loop. It is designed to
+    be used in an `async` function.
+
+    The default dask implementation uses an internal event loop, which means
+    blocking the outer event loop (e.g. sanic or webhooks).
+
+    Parameters
+    ----------
+    dsk : dict
+        A dask dictionary specifying a workflow
+    result : key or list of keys
+        Keys corresponding to desired data
+
+    See Also:
+    --------
+    threaded.get
+    """
+    cache = None
+
+    results = set(result)
+
+    # if start_state_from_dask fails, we will have something
+    # to pass to the final block.
+    state = {}
+    keyorder = dask.local.order(dsk)
+
+    state = dask.local.start_state_from_dask(dsk, cache=cache, sortkey=keyorder.get)
+
+    if state["waiting"] and not state["ready"]:
+        raise ValueError("Found no accessible jobs in dask")
+
+    async def fire_task():
+        """Fire off a task to the thread pool."""
+        # start a new job
+        # Get the next task to compute (most recently added)
+        key = state["ready"].pop()
+        # Notify task is running
+        state["running"].add(key)
+
+        # Prep args to send
+        data = {
+            dep: state["cache"][dep] for dep in dask.local.get_dependencies(dsk, key)
+        }
+
+        result = await _execute_task(dsk[key], data)
+        state["cache"][key] = result
+        dask.local.finish_task(dsk, key, state, results, keyorder.get)
+
+    # Main loop, wait on tasks to finish, insert new ones
+    while state["ready"]:
+        await fire_task()
+
+    return dask.local.nested_get(result, state["cache"])

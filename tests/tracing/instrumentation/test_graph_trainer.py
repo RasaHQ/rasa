@@ -23,7 +23,7 @@ from tests.tracing.instrumentation.conftest import (
         TrainingType.END_TO_END,
     ],
 )
-def test_tracing_for_training_without_finetuning(
+async def test_tracing_for_training_without_finetuning(
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
     graph_trainer: MockGraphTrainer,
@@ -50,7 +50,7 @@ def test_tracing_for_training_without_finetuning(
     )
     output_filename = tmp_path / "test_model.tar.gz"
 
-    graph_trainer.train(
+    await graph_trainer.train(
         graph_model_config,
         importer,
         output_filename,
@@ -85,7 +85,7 @@ def test_tracing_for_training_without_finetuning(
         TrainingType.END_TO_END,
     ],
 )
-def test_tracing_for_training_with_finetuning(
+async def test_tracing_for_training_with_finetuning(
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
     graph_trainer: MockGraphTrainer,
@@ -113,7 +113,7 @@ def test_tracing_for_training_with_finetuning(
     output_filename = tmp_path / "test_model.tar.gz"
 
     # we need to train the model first without finetuning
-    graph_trainer.train(
+    await graph_trainer.train(
         graph_model_config,
         importer,
         output_filename,
@@ -148,7 +148,7 @@ def test_tracing_for_training_with_finetuning(
         "finetuning_validator"
     ] = finetuning_validator_schema_node
 
-    graph_trainer.train(
+    await graph_trainer.train(
         graph_model_config,
         importer,
         output_filename,

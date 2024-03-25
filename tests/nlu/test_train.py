@@ -220,7 +220,7 @@ async def test_train_persist_load_parse(
         },
     )
 
-    persisted_path = rasa.model_training.train_nlu(
+    persisted_path = await rasa.model_training.train_nlu(
         str(config_file),
         nlu_as_json_path,
         output=str(tmp_path),
@@ -244,19 +244,19 @@ def test_train_persist_load_parse_non_windows(
     test_train_persist_load_parse(language, pipeline, tmp_path, nlu_as_json_path)
 
 
-def test_train_model_empty_pipeline(nlu_as_json_path: Text, tmp_path: Path):
+async def test_train_model_empty_pipeline(nlu_as_json_path: Text, tmp_path: Path):
     config_file = tmp_path / "config.yml"
     rasa.shared.utils.io.dump_obj_as_json_to_file(
         config_file, {"pipeline": [], "assistant_id": "placeholder_default"}
     )
 
     with pytest.raises(ValueError):
-        rasa.model_training.train_nlu(
+        await rasa.model_training.train_nlu(
             str(config_file), nlu_as_json_path, output=str(tmp_path)
         )
 
 
-def test_handles_pipeline_with_non_existing_component(
+async def test_handles_pipeline_with_non_existing_component(
     tmp_path: Path, pretrained_embeddings_spacy_config: Dict, nlu_as_json_path: Text
 ):
     pretrained_embeddings_spacy_config["pipeline"].append(
@@ -271,12 +271,12 @@ def test_handles_pipeline_with_non_existing_component(
     with pytest.raises(
         Exception, match="Can't load class for name 'my_made_up_component'"
     ):
-        rasa.model_training.train_nlu(
+        await rasa.model_training.train_nlu(
             str(config_file), nlu_as_json_path, output=str(tmp_path)
         )
 
 
-def test_train_model_training_data_persisted(
+async def test_train_model_training_data_persisted(
     tmp_path: Path, nlu_as_json_path: Text, tmp_path_factory: TempPathFactory
 ):
     config_file = tmp_path / "config.yml"
@@ -289,7 +289,7 @@ def test_train_model_training_data_persisted(
         },
     )
 
-    persisted_path = rasa.model_training.train_nlu(
+    persisted_path = await rasa.model_training.train_nlu(
         str(config_file),
         nlu_as_json_path,
         output=str(tmp_path),
@@ -308,7 +308,7 @@ def test_train_model_training_data_persisted(
     assert not RasaYAMLReader().read(nlu_data_dir / "training_data.yml").is_empty()
 
 
-def test_train_model_no_training_data_persisted(
+async def test_train_model_no_training_data_persisted(
     tmp_path: Path, nlu_as_json_path: Text, tmp_path_factory: TempPathFactory
 ):
     config_file = tmp_path / "config.yml"
@@ -321,7 +321,7 @@ def test_train_model_no_training_data_persisted(
         },
     )
 
-    persisted_path = rasa.model_training.train_nlu(
+    persisted_path = await rasa.model_training.train_nlu(
         str(config_file),
         nlu_as_json_path,
         output=str(tmp_path),

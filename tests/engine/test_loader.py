@@ -20,7 +20,7 @@ from rasa.shared.importers.importer import TrainingDataImporter
 from tests.engine.graph_components_test_classes import PersistableTestComponent
 
 
-def test_loader_loads_graph_runner(
+async def test_loader_loads_graph_runner(
     default_model_storage: ModelStorage,
     temp_cache: TrainingCache,
     tmp_path: Path,
@@ -79,7 +79,7 @@ def test_loader_loads_graph_runner(
 
     trained_at = datetime.utcnow()
     with freezegun.freeze_time(trained_at):
-        model_metadata = graph_trainer.train(
+        model_metadata = await graph_trainer.train(
             GraphModelConfiguration(
                 train_schema=train_schema,
                 predict_schema=predict_schema,

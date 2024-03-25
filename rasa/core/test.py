@@ -248,8 +248,9 @@ class EvaluationStore:
         i_pred: int,
         i_target: int,
     ) -> int:
-        """Compare the current predicted and target entities and decide which one
-        comes first. If the predicted entity comes first it returns -1,
+        """Picks the fist entity from the current predicted and target entities.
+
+        If the predicted entity comes first it returns -1,
         while it returns 1 if the target entity comes first.
         If target and predicted are aligned it returns 0.
         """
@@ -665,7 +666,9 @@ async def _run_action_prediction(
     partial_tracker: DialogueStateTracker,
     expected_action: Text,
 ) -> Tuple[Text, PolicyPrediction, Optional[EntityEvaluationResult]]:
-    action, prediction = processor.predict_next_with_tracker_if_should(partial_tracker)
+    action, prediction = await processor.predict_next_with_tracker_if_should(
+        partial_tracker
+    )
     predicted_action = _get_predicted_action_name(
         action, partial_tracker, expected_action
     )
@@ -684,7 +687,7 @@ async def _run_action_prediction(
         # but it might be Ok if form action is rejected.
         emulate_loop_rejection(partial_tracker)
         # try again
-        action, prediction = processor.predict_next_with_tracker_if_should(
+        action, prediction = await processor.predict_next_with_tracker_if_should(
             partial_tracker
         )
         # Even if the prediction is also wrong, we don't have to undo the emulation

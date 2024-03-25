@@ -35,7 +35,7 @@ from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
         )
     ],
 )
-def test_handle_train(
+async def test_handle_train(
     args: argparse.Namespace,
     monkeypatch: MonkeyPatch,
 ) -> None:
@@ -82,7 +82,7 @@ entities:
 
     with TempDirectoryPath(get_temp_dir_name()) as temp_path:
         args.out = temp_path
-        rasa.studio.train.handle_train(args)
+        await rasa.studio.train.handle_train(args)
         path = Path(temp_path, "test_result.tar.gz")
         assert path.is_file()
         assert path.exists()
@@ -111,7 +111,7 @@ entities:
         )
     ],
 )
-def test_handle_train_with_flows(
+async def test_handle_train_with_flows(
     args: argparse.Namespace,
     monkeypatch: MonkeyPatch,
 ) -> None:
@@ -151,7 +151,7 @@ actions:
 
     with TempDirectoryPath(get_temp_dir_name()) as temp_path:
         args.out = temp_path
-        rasa.studio.train.handle_train(args)
+        await rasa.studio.train.handle_train(args)
         path = Path(temp_path, "test_result_flows.tar.gz")
         assert path.is_file()
         assert path.exists()

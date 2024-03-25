@@ -133,6 +133,7 @@ async def test_message_id_logging(default_processor: MessageProcessor):
 
 
 async def test_parsing(default_processor: MessageProcessor):
+    # TODO: not sure if change is needed to make async
     with mock.patch(
         "rasa.core.processor.MessageProcessor._parse_message_with_graph"
     ) as mocked_function:
@@ -1418,7 +1419,7 @@ async def test_predict_next_action_with_hidden_rules(
         ],
         slots=domain.slots,
     )
-    action, prediction = processor.predict_next_with_tracker_if_should(tracker)
+    action, prediction = await processor.predict_next_with_tracker_if_should(tracker)
     assert action._name == rule_action
     assert prediction.hide_rule_turn
 
@@ -1426,7 +1427,7 @@ async def test_predict_next_action_with_hidden_rules(
         tracker, action, [SlotSet(rule_slot, rule_slot)], prediction
     )
 
-    action, prediction = processor.predict_next_with_tracker_if_should(tracker)
+    action, prediction = await processor.predict_next_with_tracker_if_should(tracker)
     assert isinstance(action, ActionListen)
     assert prediction.hide_rule_turn
 
@@ -1435,7 +1436,7 @@ async def test_predict_next_action_with_hidden_rules(
     tracker.events.append(UserUttered(intent={"name": story_intent}))
 
     # rules are hidden correctly if memo policy predicts next actions correctly
-    action, prediction = processor.predict_next_with_tracker_if_should(tracker)
+    action, prediction = await processor.predict_next_with_tracker_if_should(tracker)
     assert action._name == story_action
     assert not prediction.hide_rule_turn
 
@@ -1443,12 +1444,12 @@ async def test_predict_next_action_with_hidden_rules(
         tracker, action, [SlotSet(story_slot, story_slot)], prediction
     )
 
-    action, prediction = processor.predict_next_with_tracker_if_should(tracker)
+    action, prediction = await processor.predict_next_with_tracker_if_should(tracker)
     assert isinstance(action, ActionListen)
     assert not prediction.hide_rule_turn
 
 
-def test_predict_next_action_raises_limit_reached_exception(
+async def test_predict_next_action_raises_limit_reached_exception(
     default_processor: MessageProcessor,
 ):
     tracker = DialogueStateTracker.from_events(
@@ -1463,10 +1464,10 @@ def test_predict_next_action_raises_limit_reached_exception(
 
     default_processor.max_number_of_predictions = 1
     with pytest.raises(ActionLimitReached):
-        default_processor.predict_next_with_tracker_if_should(tracker)
+        await default_processor.predict_next_with_tracker_if_should(tracker)
 
 
-def test_predict_next_action_raises_limit_reached_later_if_in_correction(
+async def test_predict_next_action_raises_limit_reached_later_if_in_correction(
     default_processor: MessageProcessor,
 ):
     tracker = DialogueStateTracker.from_events(
@@ -1482,13 +1483,13 @@ def test_predict_next_action_raises_limit_reached_later_if_in_correction(
     default_processor.max_number_of_predictions = 1
 
     # should not raise an exception like in the above test
-    default_processor.predict_next_with_tracker_if_should(tracker)
+    await default_processor.predict_next_with_tracker_if_should(tracker)
 
     # exception should be raised if there are already 5 actions (the previous
     # one and another 4)
     tracker.update_with_events([ActionExecuted("test_action")] * 4)
     with pytest.raises(ActionLimitReached):
-        default_processor.predict_next_with_tracker_if_should(tracker)
+        await default_processor.predict_next_with_tracker_if_should(tracker)
 
 
 async def test_processor_logs_text_tokens_in_tracker(
@@ -1574,27 +1575,27 @@ async def test_parse_message_full_model(trained_moodbot_path: Text):
     assert result["intent"]["name"]
 
 
-def test_predict_next_with_tracker_nlu_only(trained_nlu_model: Text):
+async def test_predict_next_with_tracker_nlu_only(trained_nlu_model: Text):
     processor = Agent.load(model_path=trained_nlu_model).processor
     tracker = DialogueStateTracker("some_id", [])
     tracker.followup_action = None
-    result = processor.predict_next_with_tracker(tracker)
+    result = await processor.predict_next_with_tracker(tracker)
     assert result is None
 
 
-def test_predict_next_with_tracker_core_only(trained_core_model: Text):
+async def test_predict_next_with_tracker_core_only(trained_core_model: Text):
     processor = Agent.load(model_path=trained_core_model).processor
     tracker = DialogueStateTracker("some_id", [])
     tracker.followup_action = None
-    result = processor.predict_next_with_tracker(tracker)
+    result = await processor.predict_next_with_tracker(tracker)
     assert result["policy"] == "MemoizationPolicy"
 
 
-def test_predict_next_with_tracker_full_model(trained_rasa_model: Text):
+async def test_predict_next_with_tracker_full_model(trained_rasa_model: Text):
     processor = Agent.load(model_path=trained_rasa_model).processor
     tracker = DialogueStateTracker("some_id", [])
     tracker.followup_action = None
-    result = processor.predict_next_with_tracker(tracker)
+    result = await processor.predict_next_with_tracker(tracker)
     assert result["policy"] == "MemoizationPolicy"
 
 
@@ -2038,7 +2039,7 @@ async def test_run_command_processor_starting_a_flow(
     )
     num_previous_events = len(tracker.events)
     # When
-    tracker = processor.run_command_processor(tracker)
+    tracker = await processor.run_command_processor(tracker)
     num_added_events = len(tracker.events) - num_previous_events
     # Then
     # tracker had two events: action_list and user utterance event
@@ -2091,7 +2092,7 @@ async def test_run_command_processor_setting_a_slot(
     )
     num_previous_events = len(tracker.events)
     # When
-    tracker = processor.run_command_processor(tracker)
+    tracker = await processor.run_command_processor(tracker)
     num_added_events = len(tracker.events) - num_previous_events
     # Then
     # tracker had three events: action_list, dialogue set slot and user utterance events
