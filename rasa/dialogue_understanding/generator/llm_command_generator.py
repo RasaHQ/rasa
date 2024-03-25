@@ -338,7 +338,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         llm = llm_factory(self.config.get(LLM_CONFIG_KEY), DEFAULT_LLM_CONFIG)
 
         try:
-            return await llm.agenerate(prompt)
+            return await llm.apredict(prompt)
         except Exception as e:
             # unfortunately, langchain does not wrap LLM exceptions which means
             # we have to catch all exceptions here

@@ -163,7 +163,10 @@ async def _execute_task(arg, cache, dsk=None):
         # temporaries by their reference count and can execute certain
         # operations in-place.
         awaited_args = await asyncio.gather(*(_execute_task(a, cache) for a in args))
-        if asyncio.iscoroutinefunction(func):
+        if hasattr(func, "__call__") and asyncio.iscoroutinefunction(func.__call__):
+            # in most cases, `func` will be an instance of `GraphNode`. rather
+            # than a function directly. `GraphNode` instances have a `__call__`
+            # method that is a coroutine function and will be called here.
             return await func(*awaited_args)
         else:
             return func(*awaited_args)
