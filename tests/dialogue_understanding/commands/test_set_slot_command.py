@@ -9,6 +9,7 @@ from rasa.dialogue_understanding.commands.set_slot_command import (
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.shared.core.events import SlotSet, UserUttered
 from rasa.shared.core.flows import FlowsList
+from rasa.shared.core.slots import TextSlot
 from rasa.dialogue_understanding.commands.start_flow_command import StartFlowCommand
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.flows.yaml_flows_io import flows_from_str
@@ -53,6 +54,8 @@ def test_run_command_skips_if_slot_is_set_to_same_value():
 
 
 def test_run_command_sets_slot_if_asked_for():
+    slots = [TextSlot(name="foo", mappings=[])]
+
     all_flows = flows_from_str(
         """
         flows:
@@ -67,7 +70,7 @@ def test_run_command_sets_slot_if_asked_for():
         """
     )
 
-    tracker = DialogueStateTracker.from_events("test", evts=[])
+    tracker = DialogueStateTracker.from_events("test", evts=[], slots=slots)
     tracker.update_stack(
         DialogueStack.from_dict(
             [
@@ -123,6 +126,8 @@ def test_run_command_skips_set_slot_if_slot_was_not_asked_for():
 
 
 def test_run_command_can_set_slots_before_asking():
+    slots = [TextSlot(name="bar", mappings=[])]
+
     all_flows = flows_from_str(
         """
         flows:
@@ -137,7 +142,7 @@ def test_run_command_can_set_slots_before_asking():
         """
     )
 
-    tracker = DialogueStateTracker.from_events("test", evts=[])
+    tracker = DialogueStateTracker.from_events("test", evts=[], slots=slots)
     tracker.update_stack(
         DialogueStack.from_dict(
             [
@@ -159,6 +164,8 @@ def test_run_command_can_set_slots_before_asking():
 
 
 def test_run_command_can_set_slot_that_was_already_asked_in_the_past():
+    slots = [TextSlot(name="foo", mappings=[])]
+
     all_flows = flows_from_str(
         """
         flows:
@@ -173,7 +180,7 @@ def test_run_command_can_set_slot_that_was_already_asked_in_the_past():
         """
     )
 
-    tracker = DialogueStateTracker.from_events("test", evts=[])
+    tracker = DialogueStateTracker.from_events("test", evts=[], slots=slots)
     tracker.update_stack(
         DialogueStack.from_dict(
             [
@@ -230,6 +237,8 @@ def test_run_command_skips_setting_unknown_slot():
 
 
 def test_run_command_set_slot_of_startable_flows() -> None:
+    slots = [TextSlot(name="baz", mappings=[])]
+
     all_flows = flows_from_str(
         """
         flows:
@@ -260,6 +269,7 @@ def test_run_command_set_slot_of_startable_flows() -> None:
                 },
             ),
         ],
+        slots=slots,
     )
     command = SetSlotCommand(name="baz", value="bazbaz")
     events = command.run_command_on_tracker(tracker, all_flows, tracker)
@@ -267,6 +277,12 @@ def test_run_command_set_slot_of_startable_flows() -> None:
 
 
 def test_run_command_set_slot_of_startable_flows_and_skip_the_rest() -> None:
+    slots = [
+        TextSlot(name="boom", mappings=[]),
+        TextSlot(name="qux", mappings=[]),
+        TextSlot(name="foo", mappings=[]),
+    ]
+
     all_flows = flows_from_str(
         """
         flows:
@@ -305,6 +321,7 @@ def test_run_command_set_slot_of_startable_flows_and_skip_the_rest() -> None:
                 },
             ),
         ],
+        slots=slots,
     )
     command = SetSlotCommand(name="foo", value="foofoo")
     events = command.run_command_on_tracker(tracker, all_flows, tracker)
