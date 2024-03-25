@@ -41,7 +41,7 @@ def _create_summarization_prompt(
     )
 
 
-def summarize_conversation(
+async def summarize_conversation(
     tracker: DialogueStateTracker,
     llm: BaseLLM,
     max_turns: Optional[int] = MAX_TURNS_DEFAULT,
@@ -58,7 +58,7 @@ def summarize_conversation(
     """
     prompt = _create_summarization_prompt(tracker, max_turns)
     try:
-        summarization = llm(prompt).strip()
+        summarization = (await llm.apredict(prompt)).strip()
         structlogger.debug(
             "summarization.success", summarization=summarization, prompt=prompt
         )
