@@ -364,7 +364,7 @@ Rasa 3.6.0 (2023-06-14)
 - [#12168](https://github.com/rasahq/rasa/issues/12168): Correct docker image name for `deploy-rasa-pro-services` in docs.
 - [#12169](https://github.com/rasahq/rasa/issues/12169): Update Compatibility Matrix.
 - [#12266](https://github.com/rasahq/rasa/issues/12266): Implement `rasa data split stories` to split stories data into train/test parts.
-- [#12362](https://github.com/rasahq/rasa/issues/12362): Updated [knowledge base action docs](./action-server/knowledge-base-actions.mdx) to reflect the improvements made in `knowledge base actions` in Rasa 3.6 version. This enhancement now allows users to query for the `object` attribute without the need for users to request a list of `objects` of a particular `object type` beforehand. The docs update mentions this under `:::info New in 3.6` section.
+- [#12362](https://github.com/rasahq/rasa/issues/12362): Updated [knowledge base action docs](https://rasa.com/docs/rasa-pro/action-server/knowledge-bases) to reflect the improvements made in `knowledge base actions` in Rasa 3.6 version. This enhancement now allows users to query for the `object` attribute without the need for users to request a list of `objects` of a particular `object type` beforehand. The docs update mentions this under `:::info New in 3.6` section.
 - [#12504](https://github.com/rasahq/rasa/issues/12504): Fix dead link in Analytics documentation.
 
 ### Miscellaneous internal changes
@@ -943,7 +943,7 @@ Yanked.
 
 ## [3.2.0] - 2022-06-14
 ### Deprecations and Removals
-- [#10989](https://github.com/rasahq/rasa/issues/10989): [NLU training data](nlu-training-data.mdx) in JSON format is deprecated and will be
+- [#10989](https://github.com/rasahq/rasa/issues/10989): [NLU training data](https://rasa.com/docs/rasa-pro/nlu-based-assistants/nlu-training-data) in JSON format is deprecated and will be
   removed in Rasa Open Source 4.0.
   Please use `rasa data convert nlu -f yaml --data <path to NLU data>` to convert your
   NLU JSON data to YAML format before support for NLU JSON data is removed.
@@ -1204,7 +1204,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 - [#8864](https://github.com/rasahq/rasa/issues/8864): Follow through on deprecation warnings for policies and policy ensembles.
 - [#8867](https://github.com/rasahq/rasa/issues/8867): Follow through on deprecation warnings for `rasa.shared.data`.
 - [#8868](https://github.com/rasahq/rasa/issues/8868): Follow through on deprecation warnings for the `Domain`. Most importantly this will
-  enforce the schema of the [`forms` section](forms.mdx) in the domain file.
+  enforce the schema of the [`forms` section](https://rasa.com/docs/rasa-pro/nlu-based-assistants/forms) in the domain file.
   This further includes the removal of the `UnfeaturizedSlot` type.
 - [#8869](https://github.com/rasahq/rasa/issues/8869): Remove deprecated `change_form_to` and `set_form_validation` methods from `DialogueStateTracker`.
 - [#8870](https://github.com/rasahq/rasa/issues/8870): Remove the support of Markdown training data format. This includes:
@@ -1295,7 +1295,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   `Markers` allow you to define points of interest in conversations as a set of conditions that need to be met.
   A new command `rasa evaluate markers` allows you to apply these conditions to your existing tracker stores
   and outputs the points at which the conditions were satisfied.
-- [#9803](https://github.com/rasahq/rasa/issues/9803): Rasa Open Source now uses the [model configuration](model-configuration.mdx) to build a
+- [#9803](https://github.com/rasahq/rasa/issues/9803): Rasa Open Source now uses the [model configuration](https://rasa.com/docs/rasa-pro/nlu-based-assistants/model-configuration) to build a
 
   [directed acyclic graph](https://en.wikipedia.org/wiki/Directed_acyclic_graph).
   This graph describes the dependencies between the items in your model configuration and
@@ -1311,7 +1311,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
   This change required changes to custom policies and custom NLU components. See the
   documentation for a detailed
-  [migration guide](migration-guide.mdx#custom-policies-and-custom-components).
+  [migration guide](https://rasa.com/docs/rasa-pro/migration-guide#custom-policies-and-custom-components).
 - [#9972](https://github.com/rasahq/rasa/issues/9972): Added explicit mechanism for slot filling that allows slots to be set and/or updated throughout the conversation.
   This mechanism is enabled by defining global slot mappings in the `slots` section of the domain file.
 
@@ -1589,7 +1589,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 ### Improved Documentation
 - [#9780](https://github.com/rasahq/rasa/issues/9780): Removing the experimental feature warning for `conditional response variations` from the Rasa docs.
   The behaviour of the feature remains unchanged.
-- [#9782](https://github.com/rasahq/rasa/issues/9782): Updates [quick install documentation](./installation/installing-rasa-open-source.mdx) with optional venv step, better pip install instructions, & M1 warning
+- [#9782](https://github.com/rasahq/rasa/issues/9782): Updates [quick install documentation](https://rasa.com/docs/rasa-pro/installation/python/installation) with optional venv step, better pip install instructions, & M1 warning
 
 
 ## [2.8.7] - 2021-09-20
@@ -1669,7 +1669,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   Therefore, `model_confidence=linear_norm` is now deprecated and
   will be removed in Rasa Open Source `3.0.0`. If you were using `model_confidence=linear_norm` for any of the mentioned components,
   we recommend to revert it back to `model_confidence=softmax` and re-train the assistant. After re-training,
-  we also recommend to [re-tune the thresholds for fallback components](./fallback-handoff.mdx#fallbacks).
+  we also recommend to [re-tune the thresholds for fallback components](https://rasa.com/docs/rasa-pro/nlu-based-assistants/fallback-handoff#fallbacks).
 - [#9091](https://github.com/rasahq/rasa/issues/9091): The fallback mechanism for spaCy models has now been removed in Rasa `3.0.0`.
 
   Rasa Open Source `2.5.0` introduced support for spaCy 3.0. This introduced a
@@ -1681,15 +1681,15 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   to be passed explicitly.
 
 ### Features
-- [#8724](https://github.com/rasahq/rasa/issues/8724): Added `sasl_mechanism` as an optional configurable parameters for the [Kafka Producer](event-brokers.mdx#kafka-event-broker).
-- [#8913](https://github.com/rasahq/rasa/issues/8913): Introduces a new policy called [`UnexpecTEDIntentPolicy`](./policies.mdx#unexpected-intent-policy).
+- [#8724](https://github.com/rasahq/rasa/issues/8724): Added `sasl_mechanism` as an optional configurable parameters for the [Kafka Producer](https://rasa.com/docs/rasa-pro/production/event-brokers#kafka-event-broker).
+- [#8913](https://github.com/rasahq/rasa/issues/8913): Introduces a new policy called [`UnexpecTEDIntentPolicy`](https://rasa.com/docs/rasa-pro/nlu-based-assistants/policies#unexpected-intent-policy).
 
-  `UnexpecTEDIntentPolicy` helps you [review conversations](./conversation-driven-development.mdx#review)
+  `UnexpecTEDIntentPolicy` helps you review conversations
    and also allows your bot to react to unexpected user turns in conversations.
    It is an auxiliary policy that should only be used in conjunction with
    at least one other policy, as the only action that it can trigger
    is the special and newly introduced
-   [`action_unlikely_intent`](./default-actions.mdx#action_unlikely_intent) action.
+   [`action_unlikely_intent`](https://rasa.com/docs/rasa-pro/nlu-based-assistants/default-actions#action_unlikely_intent) action.
 
    The auto-configuration will include `UnexpecTEDIntentPolicy` in your
    configuration automatically, but you can also include it yourself
@@ -1704,10 +1704,10 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
   As part of the feature, it also introduces:
 
-  - [`IntentMaxHistoryTrackerFeaturizer`](./policies.mdx#3-intent-max-history)
+  - [`IntentMaxHistoryTrackerFeaturizer`](https://rasa.com/docs/rasa-pro/nlu-based-assistants/policies#3-intent-max-history)
     to featurize the trackers for `UnexpecTEDIntentPolicy`.
   - `MultiLabelDotProductLoss` to support `UnexpecTEDIntentPolicy`'s multi-label training objective.
-  - A new default action called [`action_unlikely_intent`](./default-actions.mdx#action_unlikely_intent).
+  - A new default action called [`action_unlikely_intent`](https://rasa.com/docs/rasa-pro/nlu-based-assistants/default-actions#action_unlikely_intent).
 
 
   `rasa test` command has also been adapted to `UnexpecTEDIntentPolicy`:
@@ -1738,8 +1738,8 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   models - `DIETClassifier`, `ResponseSelector`. In other words, no extra buffer is created in
   advance for additional vocabulary items and space will be dynamically allocated for them inside the model.
 
-  This means there's no need to specify `additional_vocabulary_size` for [`CountVectorsFeaturizer`](./components.mdx#countvectorsfeaturizer) or
-  `number_additional_patterns` for [`RegexFeaturizer`](./components.mdx#regexfeaturizer). These parameters are now deprecated.
+  This means there's no need to specify `additional_vocabulary_size` for [`CountVectorsFeaturizer`](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#countvectorsfeaturizer) or
+  `number_additional_patterns` for [`RegexFeaturizer`](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#regexfeaturizer). These parameters are now deprecated.
 
   **Before**
   ```yaml
@@ -1761,9 +1761,9 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
   Also, all custom layers specifically built for machine learning models - `RasaSequenceLayer`, `RasaFeatureCombiningLayer`
   and `ConcatenateSparseDenseFeatures` now inherit from `RasaCustomLayer` so that they support flexible incremental training out of the box.
-- [#8295](https://github.com/rasahq/rasa/issues/8295): Speed up the contradiction check of the [`RulePolicy`](policies.mdx#rule-policy)
+- [#8295](https://github.com/rasahq/rasa/issues/8295): Speed up the contradiction check of the [`RulePolicy`](https://rasa.com/docs/rasa-pro/nlu-based-assistants/policies#rule-policy)
   by a factor of 3.
-- [#8801](https://github.com/rasahq/rasa/issues/8801): Change the confidence score assigned by [`FallbackClassifier`](components.mdx#fallbackclassifier) to fallback intent to be the same as the fallback threshold.
+- [#8801](https://github.com/rasahq/rasa/issues/8801): Change the confidence score assigned by [`FallbackClassifier`](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#fallbackclassifier) to fallback intent to be the same as the fallback threshold.
 - [#8926](https://github.com/rasahq/rasa/issues/8926): Issue a UserWarning if a specified **domain folder** contains files that look like YML files but cannot be parsed successfully.
   Only invoked if user specifies a folder path in `--domain` paramater. Previously those invalid files in the specified folder were silently ignored.
   **Does not apply** to individually specified domain YAML files, e.g. `--domain /some/path/domain.yml`, those being invalid will still raise an exception.
@@ -1836,10 +1836,10 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
 
 ### Bugfixes
-- [#8364](https://github.com/rasahq/rasa/issues/8364): Fixed a bug where [`ListSlot`](domain.mdx#list-slot)s were filled with single items
+- [#8364](https://github.com/rasahq/rasa/issues/8364): Fixed a bug where [`ListSlot`](https://rasa.com/docs/rasa-pro/nlu-based-assistants/domain#list-slot)s were filled with single items
   in case only one matching entity was extracted for this slot.
 
-  Values applied to [`ListSlot`](domain.mdx#list-slot)s will be converted to a `List`
+  Values applied to [`ListSlot`](https://rasa.com/docs/rasa-pro/nlu-based-assistants/domain#list-slot)s will be converted to a `List`
   in case they aren't one.
 - [#8581](https://github.com/rasahq/rasa/issues/8581): Fix bug with false rule conflicts
 
@@ -1874,7 +1874,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
 ### Deprecations and Removals
 - [#261](https://github.com/rasahq/rasa/issues/261): In forms, the keyword `required_slots` should always precede the definition of slot mappings and the lack of it is deprecated.
-  Please see the [migration guide](migration-guide.mdx) for more information.
+  Please see the [migration guide](https://rasa.com/docs/rasa-pro/migration-guide) for more information.
 - [#8428](https://github.com/rasahq/rasa/issues/8428): `rasa.data.get_test_directory`, `rasa.data.get_core_nlu_directories`, and
   `rasa.shared.nlu.training_data.training_data.TrainingData::get_core_nlu_directories`
   are deprecated and will be removed in Rasa Open Source 3.0.0.
@@ -1883,7 +1883,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
 ### Features
 - [#8103](https://github.com/rasahq/rasa/issues/8103): Feature enhancement enabling JWT authentication for the Socket.IO channel. Users can define `jwt_key` and `jwt_method` as parameters in their credentials file for authentication.
-- [#8180](https://github.com/rasahq/rasa/issues/8180): Allows a Rasa bot to be connected to a Twilio Voice channel. More details in the [Twilio Voice docs](connectors/twilio-voice.mdx)
+- [#8180](https://github.com/rasahq/rasa/issues/8180): Allows a Rasa bot to be connected to a Twilio Voice channel. More details in the [Twilio Voice docs](https://rasa.com/docs/rasa-pro/connectors/twilio-voice)
 - [#8532](https://github.com/rasahq/rasa/issues/8532): Conditional response variations are supported in the `domain.yml` without requiring users to write custom actions code.
 
   A condition can be a list of slot-value mapping constraints.
@@ -1891,7 +1891,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 ### Improvements
 - [#261](https://github.com/rasahq/rasa/issues/261): Added an optional `ignored_intents` parameter in forms.
 
-  - To use it, add the `ignored_intents` parameter  in your `domain.yml` file after the forms name and provide a list of intents to ignore. Please see [Forms](forms.mdx) for more information.
+  - To use it, add the `ignored_intents` parameter  in your `domain.yml` file after the forms name and provide a list of intents to ignore. Please see [Forms](https://rasa.com/docs/rasa-pro/nlu-based-assistants/forms) for more information.
   - This can be used in case the user never wants to fill any slots of a form with the specified intent, e.g. chitchat.
 - [#5786](https://github.com/rasahq/rasa/issues/5786): Add function to carry `max_history` to featurizer
 - [#7589](https://github.com/rasahq/rasa/issues/7589): Improved the machine learning models' codebase by factoring out shared feature-processing
@@ -1934,7 +1934,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
 
 ### Features
-- [#8892](https://github.com/rasahq/rasa/issues/8892): Added `sasl_mechanism` as an optional configurable parameters for the [Kafka Producer](event-brokers.mdx#kafka-event-broker).
+- [#8892](https://github.com/rasahq/rasa/issues/8892): Added `sasl_mechanism` as an optional configurable parameters for the [Kafka Producer](https://rasa.com/docs/rasa-pro/production/event-brokers#kafka-event-broker).
 
 
 ## [2.5.1] - 2021-04-28
@@ -1996,7 +1996,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   specify a `model`. This fallback behavior is temporary and will be deprecated in Rasa 3.0.0.
 
   We've updated our docs to reflect these changes. All examples now show a direct link to the
-  correct spaCy model. We've also added a warning to the [SpaCyNLP](components.mdx#spacynlp)
+  correct spaCy model. We've also added a warning to the [SpaCyNLP](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#spacynlp)
   docs that explains the fallback behavior.
 
 ### Improvements
@@ -2018,7 +2018,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
   This information is needed for correct featurization to hide dialogue turns that appear only in rules.
 - [#8208](https://github.com/rasahq/rasa/issues/8208): Faster reading of YAML NLU training data files.
-- [#8335](https://github.com/rasahq/rasa/issues/8335): Added partition_by_sender flag to [Kafka Producer](event-brokers.mdx#kafka-event-broker) to optionally associate events with Kafka partition based on sender_id.
+- [#8335](https://github.com/rasahq/rasa/issues/8335): Added partition_by_sender flag to [Kafka Producer](https://rasa.com/docs/rasa-pro/production/event-brokers#kafka-event-broker) to optionally associate events with Kafka partition based on sender_id.
 
 ### Bugfixes
 - [#7260](https://github.com/rasahq/rasa/issues/7260): Fixed the 'loading model' message which was logged twice when using `rasa run`.
@@ -2065,7 +2065,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
 ### Bugfixes
 - [#7835](https://github.com/rasahq/rasa/issues/7835): Fix `UnicodeException` in `is_key_in_yaml`.
-- [#8258](https://github.com/rasahq/rasa/issues/8258): Fixed the bug that events from previous conversation sessions would be re-saved in the [`SQLTrackerStore`](tracker-stores.mdx#sqltrackerstore) or [`MongoTrackerStore`](tracker-stores.mdx#mongotrackerstore) when `retrieve_events_from_previous_conversation_sessions` was true.
+- [#8258](https://github.com/rasahq/rasa/issues/8258): Fixed the bug that events from previous conversation sessions would be re-saved in the [`SQLTrackerStore`](https://rasa.com/docs/rasa-pro/production/tracker-stores#sqltrackerstore) or [`MongoTrackerStore`](https://rasa.com/docs/rasa-pro/production/tracker-stores#mongotrackerstore) when `retrieve_events_from_previous_conversation_sessions` was true.
 
 
 ## [2.4.1] - 2021-03-23
@@ -2086,7 +2086,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   - Changed request format to send `response` as well as `template` as a field. The `template` field will be removed in Rasa Open Source 3.0.0.
 
   `rasa.core.agent`
-  - The terminology `template` is deprecated and replaced by `response`. Support for `template` from the NLG response will be removed in Rasa Open Source 3.0.0. Please see [here](nlg.mdx) for more details.
+  - The terminology `template` is deprecated and replaced by `response`. Support for `template` from the NLG response will be removed in Rasa Open Source 3.0.0. Please see [here](https://rasa.com/docs/rasa-pro/production/nlg) for more details.
 
   `rasa.core.nlg.generator`
   - `generate()` now takes in  `utter_action` as a parameter.
@@ -2099,8 +2099,8 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   - `check_missing_templates` will be removed in Rasa Open Source 3.0.0. Please use `check_missing_responses` instead.
 
   Response Selector
-  - The field `template_name` will be deprecated in Rasa Open Source 3.0.0. Please use `utter_action` instead. Please see [here](components.mdx#selectors) for more details.
-  - The field `response_templates` will be deprecated in Rasa Open Source 3.0.0. Please use `responses` instead. Please see [here](components.mdx#selectors) for more details.
+  - The field `template_name` will be deprecated in Rasa Open Source 3.0.0. Please use `utter_action` instead. Please see [here](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#selectors) for more details.
+  - The field `response_templates` will be deprecated in Rasa Open Source 3.0.0. Please use `responses` instead. Please see [here](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#selectors) for more details.
 
 ### Improvements
 - [#7022](https://github.com/rasahq/rasa/issues/7022): The following endpoints now require the existence of the conversation for the specified conversation ID, raising an exception and returning a 404 status code.
@@ -2134,7 +2134,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 - [#8000](https://github.com/rasahq/rasa/issues/8000): Remove console logging of conversation level F1-score and precision since these calculations were not meaningful.
 
   Add conversation level accuracy to core policy results logged to file in `story_report.json` after running `rasa test core` or `rasa test`.
-- [#8100](https://github.com/rasahq/rasa/issues/8100): Improved the [lock store](lock-stores.mdx) debug log message when the process has to
+- [#8100](https://github.com/rasahq/rasa/issues/8100): Improved the [lock store](https://rasa.com/docs/rasa-pro/production/lock-stores) debug log message when the process has to
   queue because other messages have to be processed before this item.
 
 ### Bugfixes
@@ -2193,11 +2193,11 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
 
 ### Features
-- [#8860](https://github.com/rasahq/rasa/issues/8860): Added `sasl_mechanism` as an optional configurable parameters for the [Kafka Producer](event-brokers.mdx#kafka-event-broker).
+- [#8860](https://github.com/rasahq/rasa/issues/8860): Added `sasl_mechanism` as an optional configurable parameters for the [Kafka Producer](https://rasa.com/docs/rasa-pro/production/event-brokers#kafka-event-broker).
 
 ### Improvements
 - [#7955](https://github.com/rasahq/rasa/issues/7955): Drastically improved finger printing time for large story graphs
-- [#8100](https://github.com/rasahq/rasa/issues/8100): Improved the [lock store](lock-stores.mdx) debug log message when the process has to
+- [#8100](https://github.com/rasahq/rasa/issues/8100): Improved the [lock store](https://rasa.com/docs/rasa-pro/production/lock-stores) debug log message when the process has to
   queue because other messages have to be processed before this item.
 
 ### Bugfixes
@@ -2222,11 +2222,11 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
     model_confidence: linear_norm
     constrain_similarities: True
   ```
-  This should ease up [tuning fallback thresholds](./fallback-handoff.mdx#fallbacks) as confidences for wrong predictions are better distributed across the range `[0, 1]`.
+  This should ease up [tuning fallback thresholds](https://rasa.com/docs/rasa-pro/nlu-based-assistants/fallback-handoff#fallbacks) as confidences for wrong predictions are better distributed across the range `[0, 1]`.
 
   If you trained a model with `model_confidence=cosine` or `model_confidence=inner` setting using previous versions of Rasa Open Source, please re-train by either removing the `model_confidence` option from the configuration or setting it to `linear_norm`.
 
-  `model_confidence=cosine` is removed from the configuration generated by [auto-configuration](model-configuration.mdx#suggested-config).
+  `model_confidence=cosine` is removed from the configuration generated by [auto-configuration](https://rasa.com/docs/rasa-pro/nlu-based-assistants/model-configuration#suggested-config).
 
 
 ## [2.3.3] - 2021-02-25
@@ -2258,8 +2258,8 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 ### Improvements
 - [#5673](https://github.com/rasahq/rasa/issues/5673): Expose diagnostic data for action and NLU predictions.
 
-  Add `diagnostic_data` field to the [Message](./reference/rasa/shared/nlu/training_data/message.md#message-objects)
-  and [Prediction](./reference/rasa/core/policies/policy.md#policyprediction-objects) objects, which contain
+  Add `diagnostic_data` field to the Message
+  and Prediction objects, which contain
   information about attention weights and other intermediate results of the inference computation.
   This information can be used for debugging and fine-tuning, e.g. with [RasaLit](https://github.com/RasaHQ/rasalit).
 
@@ -2282,7 +2282,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 - [#7303](https://github.com/rasahq/rasa/issues/7303): Allow `PolicyEnsemble` in cases where calling individual policy's `load` method returns `None`.
 - [#7420](https://github.com/rasahq/rasa/issues/7420): User message metadata can now be accessed via the default slot
   `session_started_metadata` during the execution of a
-  [custom `action_session_start`](default-actions.mdx#customization).
+  [custom `action_session_start`](https://rasa.com/docs/rasa-pro/nlu-based-assistants/default-actions#customization).
 
   ```python
   from typing import Any, Text, Dict, List
@@ -2306,7 +2306,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
           return [SessionStarted(), ActionExecuted("action_listen")]
   ```
 - [#7579](https://github.com/rasahq/rasa/issues/7579): Add BILOU tagging schema for entity extraction in end-to-end TEDPolicy.
-- [#7616](https://github.com/rasahq/rasa/issues/7616): Added two new parameters `constrain_similarities` and `model_confidence` to machine learning (ML) components - [DIETClassifier](components.mdx#dietclassifier), [ResponseSelector](components.mdx#dietclassifier) and [TEDPolicy](policies.mdx#ted-policy).
+- [#7616](https://github.com/rasahq/rasa/issues/7616): Added two new parameters `constrain_similarities` and `model_confidence` to machine learning (ML) components - [DIETClassifier](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#dietclassifier), [ResponseSelector](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#dietclassifier) and [TEDPolicy](https://rasa.com/docs/rasa-pro/nlu-based-assistants/policies#ted-policy).
 
   Setting `constrain_similarities=True` adds a sigmoid cross-entropy loss on all similarity values to restrict them to an approximate range in `DotProductLoss`. This should help the models to perform better on real world test sets.
   By default, the parameter is set to `False` to preserve the old behaviour, but users are encouraged to set it to `True` and re-train their assistants as it will be set to `True` by default from Rasa Open Source 3.0.0 onwards.
@@ -2329,13 +2329,13 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
   Configuration option `loss_type=softmax` is now deprecated and will be removed in Rasa Open Source 3.0.0 . Use `loss_type=cross_entropy` instead.
 
-  The default [auto-configuration](model-configuration.mdx#suggested-config) is changed to use `constrain_similarities=True` and `model_confidence=cosine` in ML components so that new users start with the recommended configuration.
+  The default [auto-configuration](https://rasa.com/docs/rasa-pro/nlu-based-assistants/model-configuration#suggested-config) is changed to use `constrain_similarities=True` and `model_confidence=cosine` in ML components so that new users start with the recommended configuration.
 
   **EDIT**: Some post-release experiments revealed that using `model_confidence=cosine` is wrong as it can change the order of predicted labels. That's why this option was removed in Rasa Open Source version `2.3.3`. `model_confidence=inner` is deprecated as it produces an unbounded range of confidences which can break the logic of assistants in various other places. Please use `model_confidence=linear_norm` which will produce a linearly normalized version of dot product similarities with each value in the range `[0,1]`. Please read more about this change under the notes for release `2.3.4`.
 
 - [#7817](https://github.com/rasahq/rasa/issues/7817): Use simple random uniform distribution of integers in negative sampling, because
   negative sampling with `tf.while_loop` and random shuffle inside creates a memory leak.
-- [#7848](https://github.com/rasahq/rasa/issues/7848): Added support to configure `exchange_name` for [pika event broker](event-brokers.mdx#pika-event-broker).
+- [#7848](https://github.com/rasahq/rasa/issues/7848): Added support to configure `exchange_name` for [pika event broker](https://rasa.com/docs/rasa-pro/production/event-brokers#pika-event-broker).
 - [#7867](https://github.com/rasahq/rasa/issues/7867): If `MaxHistoryTrackerFeaturizer` is used, invert the dialogue sequence before passing
   it to the transformer so that the last dialogue input becomes the first one and
   therefore always have the same positional encoding.
@@ -2391,7 +2391,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
 
 ### Bugfixes
-- [#7764](https://github.com/rasahq/rasa/issues/7764): Fixes a bug in [forms](forms.mdx) where the next slot asked was not consistent after returning to a form from an unhappy path.
+- [#7764](https://github.com/rasahq/rasa/issues/7764): Fixes a bug in [forms](https://rasa.com/docs/rasa-pro/nlu-based-assistants/forms) where the next slot asked was not consistent after returning to a form from an unhappy path.
 
 
 ## [2.2.7] - 2021-01-25
@@ -2430,7 +2430,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
 
 ### Improvements
-- [#7520](https://github.com/rasahq/rasa/issues/7520): Improve the warning in case the [RulePolicy](policies.mdx#rule-policy) or the deprecated
+- [#7520](https://github.com/rasahq/rasa/issues/7520): Improve the warning in case the [RulePolicy](https://rasa.com/docs/rasa-pro/nlu-based-assistants/policies#rule-policy) or the deprecated
   [MappingPolicy](https://rasa.com/docs/rasa/2.x/policies#mapping-policy) are missing
   from the model's `policies` configuration. Changed the info log to a warning as one
   of this policies should be added to the model configuration.
@@ -2448,7 +2448,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 - [#7622](https://github.com/rasahq/rasa/issues/7622): Correctly retrieve intent ranking from `UserUttered` even during default affirmation
   action implementation.
 - [#7684](https://github.com/rasahq/rasa/issues/7684): Fixed a problem when using the `POST /model/test/intents` endpoint together with a
-  [model server](model-storage.mdx#load-model-from-server). The error looked as follows:
+  [model server](https://rasa.com/docs/rasa-pro/production/model-storage#load-model-from-server). The error looked as follows:
 
   ```
   ERROR    rasa.core.agent:agent.py:327 Could not load model due to Detected inconsistent loop usage. Trying to schedule a task on a new event loop, but scheduler was created with a different event loop. Make sure there is only one event loop in use and that the scheduler is running on that one.
@@ -2469,9 +2469,9 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
 
 ### Bugfixes
-- [#7557](https://github.com/rasahq/rasa/issues/7557): Fixed a problem where a [form](forms.mdx) wouldn't reject when the
+- [#7557](https://github.com/rasahq/rasa/issues/7557): Fixed a problem where a [form](https://rasa.com/docs/rasa-pro/nlu-based-assistants/forms) wouldn't reject when the
   `FormValidationAction` re-implemented `required_slots`.
-- [#7585](https://github.com/rasahq/rasa/issues/7585): Fixed an error when using the [SQLTrackerStore](tracker-stores.mdx#sqltrackerstore)
+- [#7585](https://github.com/rasahq/rasa/issues/7585): Fixed an error when using the [SQLTrackerStore](https://rasa.com/docs/rasa-pro/production/tracker-stores#sqltrackerstore)
   with a Postgres database and the parameter `login_db` specified.
 
   The error was:
@@ -2492,7 +2492,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   `Domain.action_names` is deprecated and will be removed in Rasa Open Source
   3.0.0. Please use `Domain.action_names_or_texts` instead.
 - [#7458](https://github.com/rasahq/rasa/issues/7458): Interfaces for `Policy.__init__` and `Policy.load` have changed.
-  See [migration guide](./migration-guide.mdx#rasa-21-to-rasa-22) for details.
+  See [migration guide](https://rasa.com/docs/rasa-pro/migration-guide#rasa-21-to-rasa-22) for details.
 - [#7495](https://github.com/rasahq/rasa/issues/7495): Deprecate training and test data in Markdown format. This includes:
   - reading and writing of story files in Markdown format
   - reading and writing of NLU data in Markdown format
@@ -2501,7 +2501,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   Support for Markdown data will be removed entirely in Rasa Open Source 3.0.0.
 
   Please convert your existing Markdown data by using the commands
-  from the [migration guide](./migration-guide.mdx#rasa-21-to-rasa-22):
+  from the [migration guide](https://rasa.com/docs/rasa-pro/migration-guide#rasa-21-to-rasa-22):
 
   ```bash
   rasa data convert nlu -f yaml --data={SOURCE_DIR} --out={TARGET_DIR}
@@ -2522,11 +2522,11 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   and continue finetuning the model on the complete dataset consisting of
   new training examples. To do so, use `rasa train --finetune`. For more
   detailed explanation of the command, check out the docs on [incremental
-  training](./command-line-interface.mdx#incremental-training).
+  training](https://rasa.com/docs/rasa-pro/command-line-interface#incremental-training).
 
   Added a configuration parameter `additional_vocabulary_size` to
-  [`CountVectorsFeaturizer`](./components.mdx#countvectorsfeaturizer)
-  and `number_additional_patterns` to [`RegexFeaturizer`](./components.mdx#regexfeaturizer).
+  [`CountVectorsFeaturizer`](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#countvectorsfeaturizer)
+  and `number_additional_patterns` to [`RegexFeaturizer`](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#regexfeaturizer).
   These parameters are useful to configure when using incremental training for your pipelines.
 - [#7408](https://github.com/rasahq/rasa/issues/7408): Add the option to use cross-validation to the
   [`POST /model/test/intents`](/pages/http-api#operation/testModelIntent) endpoint.
@@ -2540,7 +2540,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   To trigger asynchronous processing specify
   a callback URL in the query parameter `callback_url` which Rasa Open Source should send
   the results to. This URL will also be called in case of errors.
-- [#7496](https://github.com/rasahq/rasa/issues/7496): Make [TED Policy](./policies.mdx#ted-policy) an end-to-end policy. Namely, make it possible to train TED on stories that contain
+- [#7496](https://github.com/rasahq/rasa/issues/7496): Make [TED Policy](https://rasa.com/docs/rasa-pro/nlu-based-assistants/policies#ted-policy) an end-to-end policy. Namely, make it possible to train TED on stories that contain
   intent and entities or user text and bot actions or bot text.
   If you don't have text in your stories, TED will behave the same way as before.
   Add possibility to predict entities using TED.
@@ -2602,7 +2602,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   :::
 - [#7306](https://github.com/rasahq/rasa/issues/7306): Fix an erroneous attribute for Redis key prefix in `rasa.core.tracker_store.RedisTrackerStore`: 'RedisTrackerStore' object has no attribute 'prefix'.
 - [#7407](https://github.com/rasahq/rasa/issues/7407): Remove token when its text (for example, whitespace) can't be tokenized by LM tokenizer (from `LanguageModelFeaturizer`).
-- [#7408](https://github.com/rasahq/rasa/issues/7408): Temporary directories which were created during requests to the [HTTP API](http-api.mdx)
+- [#7408](https://github.com/rasahq/rasa/issues/7408): Temporary directories which were created during requests to the [HTTP API](https://rasa.com/docs/rasa-pro/production/http-api)
   are now cleaned up correctly once the request was processed.
 - [#7422](https://github.com/rasahq/rasa/issues/7422): Add option `use_word_boundaries` for `RegexFeaturizer` and `RegexEntityExtractor`. To correctly process languages such as Chinese that don't use whitespace for word separation, the user needs to add the `use_word_boundaries: False` option to those two components.
 - [#7529](https://github.com/rasahq/rasa/issues/7529): Correctly fingerprint the default domain slots. Previously this led to the issue
@@ -2662,7 +2662,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
 
 ### Deprecations and Removals
-- [#7136](https://github.com/rasahq/rasa/issues/7136): The [`Policy`](policies.mdx) interface was changed to return a `PolicyPrediction` object when
+- [#7136](https://github.com/rasahq/rasa/issues/7136): The [`Policy`](https://rasa.com/docs/rasa-pro/nlu-based-assistants/policies) interface was changed to return a `PolicyPrediction` object when
   `predict_action_probabilities` is called. Returning a list of probabilities directly
   is deprecated and support for this will be removed in Rasa Open Source 3.0.
 
@@ -2693,7 +2693,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   This change is model-breaking. Please retrain your models.
 
   :::
-- [#7263](https://github.com/rasahq/rasa/issues/7263): The [Pika Event Broker](event-brokers.mdx#pika-event-broker) no longer supports
+- [#7263](https://github.com/rasahq/rasa/issues/7263): The [Pika Event Broker](https://rasa.com/docs/rasa-pro/production/event-brokers#pika-event-broker) no longer supports
   the environment variables `RABBITMQ_SSL_CA_FILE` and `RABBITMQ_SSL_KEY_PASSWORD`.
   You can alternatively specify `RABBITMQ_SSL_CA_FILE` in the RabbitMQ connection URL as
   described in the
@@ -2710,7 +2710,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
   Support for `RABBITMQ_SSL_KEY_PASSWORD` was removed entirely.
 
-  The method [`Event Broker.close`](event-brokers.mdx) was changed to be asynchronous.
+  The method [`Event Broker.close`](https://rasa.com/docs/rasa-pro/production/event-brokers) was changed to be asynchronous.
   Support for synchronous implementations will be removed in Rasa Open Source 3.0.0.
   To adapt your implementation add the `async` keyword:
 
@@ -2724,13 +2724,13 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   ```
 
 ### Features
-- [#7136](https://github.com/rasahq/rasa/issues/7136): [Policies](policies.mdx) can now return obligatory and optional events as part of their
+- [#7136](https://github.com/rasahq/rasa/issues/7136): [Policies](https://rasa.com/docs/rasa-pro/nlu-based-assistants/policies) can now return obligatory and optional events as part of their
   prediction. Obligatory events are always applied to the current conversation tracker.
   Optional events are only applied to the conversation tracker in case the policy wins.
 
 ### Improvements
 - [#4341](https://github.com/rasahq/rasa/issues/4341): Changed `Agent.load` method to support `pathlib` paths.
-- [#5715](https://github.com/rasahq/rasa/issues/5715): If you are using the feature [Entity Roles and Groups](nlu-training-data.mdx#entities-roles-and-groups), you should now also list the roles and groups
+- [#5715](https://github.com/rasahq/rasa/issues/5715): If you are using the feature [Entity Roles and Groups](https://rasa.com/docs/rasa-pro/nlu-based-assistants/nlu-training-data#entities-roles-and-groups), you should now also list the roles and groups
   in your domain file if you want roles and groups to influence your conversations. For example:
   ```yaml-rasa
   entities:
@@ -2750,17 +2750,17 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   ```
 
   Entity roles and groups can now influence dialogue predictions. For more information see the section
-  [Entity Roles and Groups influencing dialogue predictions](nlu-training-data.mdx#entity-roles-and-groups-influencing-dialogue-predictions).
-- [#6285](https://github.com/rasahq/rasa/issues/6285): Predictions of the [`FallbackClassifier`](components.mdx#fallbackclassifier) are
+  [Entity Roles and Groups influencing dialogue predictions](https://rasa.com/docs/rasa-pro/nlu-based-assistants/nlu-training-data#entity-roles-and-groups-influencing-dialogue-predictions).
+- [#6285](https://github.com/rasahq/rasa/issues/6285): Predictions of the [`FallbackClassifier`](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#fallbackclassifier) are
   ignored when
-  [evaluating the NLU model](testing-your-assistant.mdx#evaluating-an-nlu-model)
+  [evaluating the NLU model](https://rasa.com/docs/rasa-pro/nlu-based-assistants/testing-your-assistant#evaluating-an-nlu-model)
   Note that the `FallbackClassifier` predictions still apply to
-  [test stories](testing-your-assistant.mdx#writing-test-stories).
+  [test stories](https://rasa.com/docs/rasa-pro/nlu-based-assistants/testing-your-assistant#writing-test-stories).
 - [#6474](https://github.com/rasahq/rasa/issues/6474): Adapt the training data reader and emulator for wit.ai to their latest format.
   Update the instructions in the
-  [migrate from wit.ai documentation](migrate-from/facebook-wit-ai-to-rasa.mdx)
+  migrate from wit.ai documentation
   to run Rasa Open Source in wit.ai emulation mode.
-- [#6498](https://github.com/rasahq/rasa/issues/6498): Adding configurable prefixes to Redis [Tracker](./tracker-stores.mdx) and [Lock Stores](./lock-stores.mdx) so that a single Redis instance (and logical DB) can support multiple conversation trackers and locks.
+- [#6498](https://github.com/rasahq/rasa/issues/6498): Adding configurable prefixes to Redis [Tracker](https://rasa.com/docs/rasa-pro/production/tracker-stores) and [Lock Stores](https://rasa.com/docs/rasa-pro/production/lock-stores) so that a single Redis instance (and logical DB) can support multiple conversation trackers and locks.
   By default, conversations will be prefixed with `tracker:...` and all locks prefixed with `lock:...`. Additionally, you can add an alphanumeric-only `prefix: value` in `endpoints.yml` such that keys in redis will take the form `value:tracker:...` and `value:lock:...` respectively.
 - [#6571](https://github.com/rasahq/rasa/issues/6571): Log the model's relative path when using CLI commands.
 - [#6852](https://github.com/rasahq/rasa/issues/6852): Adds the option to configure whether extracted entities should be split by comma (`","`) or not. The default behaviour is `True` - i.e. split any list of extracted entities by comma. This makes sense for a list of ingredients in a recipie, for example `"avocado, tofu, cauliflower"`, however doesn't make sense for an address such as `"Schönhauser Allee 175, 10119 Berlin, Germany"`.
@@ -2791,10 +2791,10 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 - [#6860](https://github.com/rasahq/rasa/issues/6860): Fetching test stories from the HTTP API endpoint
   `GET /conversations/<conversation_id>/story` no longer triggers an update
   of the
-  [conversation session](./domain.mdx#session-configuration).
+  [conversation session](https://rasa.com/docs/rasa-pro/nlu-based-assistants/domain#session-configuration).
 
   Added a new boolean query parameter `all_sessions` (default: `false`) to the
-  [HTTP API](./http-api.mdx) endpoint for fetching test stories
+  [HTTP API](https://rasa.com/docs/rasa-pro/production/http-api) endpoint for fetching test stories
   (`GET /conversations/<conversation_id>/story`).
 
   When setting `?all_sessions=true`, the endpoint returns test stories for all
@@ -2804,13 +2804,13 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   multiple conversation sessions exist, only the last story is returned.
 
   Specifying the `retrieve_events_from_previous_conversation_sessions`
-  kwarg for the [Tracker Store](./tracker-stores.mdx) class is deprecated and will be
+  kwarg for the [Tracker Store](https://rasa.com/docs/rasa-pro/production/tracker-stores) class is deprecated and will be
   removed in Rasa Open Source 3.0. Please use the `retrieve_full_tracker()` method
   instead.
 - [#6865](https://github.com/rasahq/rasa/issues/6865): Improve the `rasa data convert nlg` command and introduce the `rasa data convert responses` command
   to simplify the migration from pre-2.0 response selector format to the new format.
-- [#6966](https://github.com/rasahq/rasa/issues/6966): Added warning for when an option is provided for a [component](components.mdx) that is not listed as a key in the defaults for that component.
-- [#6977](https://github.com/rasahq/rasa/issues/6977): [Forms](forms.mdx) no longer reject their execution before a potential custom
+- [#6966](https://github.com/rasahq/rasa/issues/6966): Added warning for when an option is provided for a [component](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components) that is not listed as a key in the defaults for that component.
+- [#6977](https://github.com/rasahq/rasa/issues/6977): [Forms](https://rasa.com/docs/rasa-pro/nlu-based-assistants/forms) no longer reject their execution before a potential custom
   action for validating / extracting slots was executed.
   Forms continue to reject in two cases automatically:
   - A slot was requested to be filled, but no slot mapping applied to the latest user
@@ -2828,9 +2828,9 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   `HFTransformersNLP` and `LanguageModelTokenizer` are now deprecated. `LanguageModelFeaturizer` implements the behavior
   of the stack and can be used with any other `Tokenizer`.
 - [#7061](https://github.com/rasahq/rasa/issues/7061): Gray out "Download" button in Rasa Playground when the project is not yet ready to be downloaded.
-- [#7068](https://github.com/rasahq/rasa/issues/7068): Slot mappings for [Forms](forms.mdx) in the domain are now optional. If you do not
+- [#7068](https://github.com/rasahq/rasa/issues/7068): Slot mappings for [Forms](https://rasa.com/docs/rasa-pro/nlu-based-assistants/forms) in the domain are now optional. If you do not
   provide any slot mappings as part of the domain, you need to provide
-  [custom slot mappings](forms.mdx#custom-slot-mappings) through a custom action.
+  [custom slot mappings](https://rasa.com/docs/rasa-pro/nlu-based-assistants/forms#custom-slot-mappings) through a custom action.
   A form without slot mappings is specified as follows:
 
   ```rasa-yaml
@@ -2839,7 +2839,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
       # no mappings
   ```
 
-  The action for [forms](forms.mdx) can now be overridden by defining a custom action
+  The action for [forms](https://rasa.com/docs/rasa-pro/nlu-based-assistants/forms) can now be overridden by defining a custom action
   with the same name as the form. This can be used to keep using the deprecated
   Rasa Open Source `FormAction` which is implemented within the Rasa SDK. Note that it is
   **not** recommended to override the form action for anything else than using the
@@ -2849,21 +2849,21 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   Use a [language agnostic sentence embedding model](https://tfhub.dev/google/LaBSE/1)
   as the default model. These model weights should help improve performance on
   intent classification and response selection.
-- [#7122](https://github.com/rasahq/rasa/issues/7122): Add validations for [slot mappings](forms.mdx#slot-mappings).
+- [#7122](https://github.com/rasahq/rasa/issues/7122): Add validations for [slot mappings](https://rasa.com/docs/rasa-pro/nlu-based-assistants/forms#slot-mappings).
   If a slot mapping is not valid, an `InvalidDomain` error is raised.
 - [#7132](https://github.com/rasahq/rasa/issues/7132): Adapt the training data reader and emulator for LUIS to
   [their latest format](https://westcentralus.dev.cognitive.microsoft.com/docs/services/luis-endpoint-api-v3-0/)
   and add support for roles.
   Update the instructions in the
-  ["Migrate from LUIS" documentation page](migrate-from/microsoft-luis-to-rasa.mdx)
+  "Migrate from LUIS" documentation page
   to reflect the recent changes made to the UI of LUIS.
-- [#7160](https://github.com/rasahq/rasa/issues/7160): Adapt the [training data reader and emulator for DialogFlow](migrate-from/google-dialogflow-to-rasa.mdx) to
+- [#7160](https://github.com/rasahq/rasa/issues/7160): Adapt the training data reader and emulator for DialogFlow to
   [their latest format](https://cloud.google.com/dialogflow/es/docs/reference/rest/v2/DetectIntentResponse)
   and add support for regex entities.
-- [#7263](https://github.com/rasahq/rasa/issues/7263): The [Pika Event Broker](event-brokers.mdx#pika-event-broker) was reimplemented with
+- [#7263](https://github.com/rasahq/rasa/issues/7263): The [Pika Event Broker](https://rasa.com/docs/rasa-pro/production/event-brokers#pika-event-broker) was reimplemented with
   the `[aio-pika` library[(https://aio-pika.readthedocs.io/en/latest/). Messages will
   now be published to RabbitMQ asynchronously which improves the prediction performance.
-- [#7278](https://github.com/rasahq/rasa/issues/7278): The confidence of the [`FallbackClassifier`](components.mdx#fallbackclassifier)
+- [#7278](https://github.com/rasahq/rasa/issues/7278): The confidence of the [`FallbackClassifier`](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#fallbackclassifier)
   predictions is set to `1 - top intent confidence`.
 
 ### Bugfixes
@@ -2874,7 +2874,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 - [#6721](https://github.com/rasahq/rasa/issues/6721): Fixed bug where slots with `influence_conversation=false` affected the action
   prediction if they were set manually using the
   `POST /conversations/<conversation_id/tracker/events` endpoint in the
-  [HTTP API](./http-api.mdx).
+  [HTTP API](https://rasa.com/docs/rasa-pro/production/http-api).
 - [#6760](https://github.com/rasahq/rasa/issues/6760): Update Pika event broker to be a separate process and make it use a
   `multiprocessing.Queue` to send and process messages. This change should help
   avoid situations when events stop being sent after a while.
@@ -2945,8 +2945,8 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
 
 ### Bugfixes
-- [#6629](https://github.com/rasahq/rasa/issues/6629): Fixed a bug that occurred when setting multiple Sanic workers in combination with a custom [Lock Store](lock-stores.mdx). Previously, if the number was set higher than 1 and you were using a custom lock store, it would reject because of a strict check to use a [Redis Lock Store](lock-stores.mdx#redislockstore).
-- [#7176](https://github.com/rasahq/rasa/issues/7176): Fixed a bug in the [`TwoStageFallback`](fallback-handoff.mdx#two-stage-fallback) action which
+- [#6629](https://github.com/rasahq/rasa/issues/6629): Fixed a bug that occurred when setting multiple Sanic workers in combination with a custom [Lock Store](https://rasa.com/docs/rasa-pro/production/lock-stores). Previously, if the number was set higher than 1 and you were using a custom lock store, it would reject because of a strict check to use a [Redis Lock Store](https://rasa.com/docs/rasa-pro/production/lock-stores#redislockstore).
+- [#7176](https://github.com/rasahq/rasa/issues/7176): Fixed a bug in the [`TwoStageFallback`](https://rasa.com/docs/rasa-pro/nlu-based-assistants/fallback-handoff#two-stage-fallback) action which
   reverted too many events after the user successfully rephrased.
 
 
@@ -2999,7 +2999,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
 ### Bugfixes
 - [#7018](https://github.com/rasahq/rasa/issues/7018): Create correct `KafkaProducer` for `PLAINTEXT` and `SASL_SSL` security protocols.
-- [#7033](https://github.com/rasahq/rasa/issues/7033): - Fix `YAMLStoryReader` not being able to represent [`OR` statements](stories.mdx#or-statements) in conversion mode.
+- [#7033](https://github.com/rasahq/rasa/issues/7033): - Fix `YAMLStoryReader` not being able to represent [`OR` statements](https://rasa.com/docs/rasa-pro/nlu-based-assistants/stories#or-statements) in conversion mode.
   - Fix `MarkdownStoryWriter` not being able to write stories with `OR` statements (when loaded in conversion mode).
 
 
@@ -3052,7 +3052,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
   Removed `_guess_format()` utils method from `rasa.nlu.training_data.loading` (use `guess_format` instead).
 
-  Removed several config options for [TED Policy](./policies.mdx#ted-policy), [DIETClassifier](./components.mdx#dietclassifier) and [ResponseSelector](./components.mdx#responseselector):
+  Removed several config options for [TED Policy](https://rasa.com/docs/rasa-pro/nlu-based-assistants/policies#ted-policy), [DIETClassifier](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#dietclassifier) and [ResponseSelector](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#responseselector):
   - `hidden_layers_sizes_pre_dial`
   - `hidden_layers_sizes_bot`
   - `droprate`
@@ -3078,12 +3078,12 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   Rasa Open Source will continue to be able to read and process old `form_validation`
   events.
 - [#6658](https://github.com/rasahq/rasa/issues/6658): `SklearnPolicy` was deprecated. `TEDPolicy` is the preferred machine-learning policy for dialogue models.
-- [#6809](https://github.com/rasahq/rasa/issues/6809): [Slots](domain.mdx#slots) of type `unfeaturized` are
+- [#6809](https://github.com/rasahq/rasa/issues/6809): [Slots](https://rasa.com/docs/rasa-pro/nlu-based-assistants/domain#slots) of type `unfeaturized` are
   now deprecated and will be removed in Rasa Open Source 3.0. Instead you should use
   the property `influence_conversation: false` for every slot type as described in the
-  [migration guide](migration-guide.mdx#unfeaturized-slots).
-- [#6934](https://github.com/rasahq/rasa/issues/6934): [Conversation sessions](domain.mdx#session-configuration) are now enabled by default
-  if your [Domain](domain.mdx) does not contain a session configuration.
+  [migration guide](https://rasa.com/docs/rasa-pro/migration-guide#unfeaturized-slots).
+- [#6934](https://github.com/rasahq/rasa/issues/6934): [Conversation sessions](https://rasa.com/docs/rasa-pro/nlu-based-assistants/domain#session-configuration) are now enabled by default
+  if your [Domain](https://rasa.com/docs/rasa-pro/nlu-based-assistants/domain) does not contain a session configuration.
   Previously a missing session configuration was treated as if conversation sessions
   were disabled. You can explicitly disable conversation sessions using the following
   snippet:
@@ -3094,8 +3094,8 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
     # disables conversation sessions
     session_expiration_time: 0
   ```
-- [#6952](https://github.com/rasahq/rasa/issues/6952): Using the [default action](default-actions.mdx) `action_deactivate_form` to deactivate
-  the currently active loop / [Form](forms.mdx) is deprecated.
+- [#6952](https://github.com/rasahq/rasa/issues/6952): Using the [default action](https://rasa.com/docs/rasa-pro/nlu-based-assistants/default-actions) `action_deactivate_form` to deactivate
+  the currently active loop / [Form](https://rasa.com/docs/rasa-pro/nlu-based-assistants/forms) is deprecated.
   Please use `action_deactivate_loop` instead.
 
 ### Features
@@ -3106,12 +3106,12 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 - [#5086](https://github.com/rasahq/rasa/issues/5086): Added a `--num-threads` CLI argument that can be passed to `rasa train`
   and will be used to train NLU components.
 - [#5510](https://github.com/rasahq/rasa/issues/5510): You can now define what kind of features should be used by what component
-  (see [Choosing a Pipeline](./tuning-your-model.mdx)).
+  (see [Choosing a Pipeline](https://rasa.com/docs/rasa-pro/nlu-based-assistants/tuning-your-model)).
 
   You can set an alias via the option `alias` for every featurizer in your pipeline.
   The `alias` can be anything, by default it is set to the full featurizer class name.
   You can then specify, for example, on the
-  [DIETClassifier](./components.mdx#dietclassifier) what features from which
+  [DIETClassifier](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#dietclassifier) what features from which
   featurizers should be used.
   If you don't set the option `featurizers` all available features will be used.
   This is also the default behavior.
@@ -3154,7 +3154,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 - [#5837](https://github.com/rasahq/rasa/issues/5837): Added `--port` commandline argument to the interactive learning mode to allow
   changing the port for the Rasa server running in the background.
 - [#5957](https://github.com/rasahq/rasa/issues/5957): Add new entity extractor `RegexEntityExtractor`. The entity extractor extracts entities using the lookup tables
-  and regexes defined in the training data. For more information see [RegexEntityExtractor](./components.mdx#regexentityextractor).
+  and regexes defined in the training data. For more information see [RegexEntityExtractor](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#regexentityextractor).
 - [#5996](https://github.com/rasahq/rasa/issues/5996): Introduced a new `YAML` format for Core training data and implemented a parser
   for it. Rasa Open Source can now read stories in both `Markdown` and `YAML` format.
 - [#6020](https://github.com/rasahq/rasa/issues/6020): You can now enable threaded message responses from Rasa through the Slack connector.
@@ -3168,9 +3168,9 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   ```
 
   Button support has also been added in the Slack connector.
-- [#6065](https://github.com/rasahq/rasa/issues/6065): Add support for [rules](./rules.mdx) data and [forms](./forms.mdx) in YAML
+- [#6065](https://github.com/rasahq/rasa/issues/6065): Add support for [rules](https://rasa.com/docs/rasa-pro/nlu-based-assistants/rules) data and [forms](https://rasa.com/docs/rasa-pro/nlu-based-assistants/forms) in YAML
   format.
-- [#6066](https://github.com/rasahq/rasa/issues/6066): The NLU `interpreter` is now passed to the [Policies](./policies.mdx) during training and
+- [#6066](https://github.com/rasahq/rasa/issues/6066): The NLU `interpreter` is now passed to the [Policies](https://rasa.com/docs/rasa-pro/nlu-based-assistants/policies) during training and
   inference time. Note that this requires an additional parameter `interpreter` in the
   method `predict_action_probabilities` of the `Policy` interface. In case a
   custom `Policy` implementation doesn't provide this parameter Rasa Open Source
@@ -3181,9 +3181,9 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   [Two-Stage Fallback Policy](https://rasa.com/docs/rasa/2.x/policies#two-stage-fallback-policy), and
   [Form Policy](https://rasa.com/docs/rasa/2.x/policies#form-policy). These policies are now
   deprecated and will be removed in the future. Please see the
-  [rules documentation](./rules.mdx) for more information.
+  [rules documentation](https://rasa.com/docs/rasa-pro/nlu-based-assistants/rules) for more information.
 
-  Added new NLU component [FallbackClassifier](./components.mdx#fallbackclassifier)
+  Added new NLU component [FallbackClassifier](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#fallbackclassifier)
   which predicts an intent `nlu_fallback` in case the confidence was below a given
   threshold. The intent `nlu_fallback` may
   then be used to write stories / rules to handle the fallback in case of low NLU
@@ -3218,7 +3218,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 ### Improvements
 - [#4536](https://github.com/rasahq/rasa/issues/4536): Add support for Python 3.8.
 - [#5368](https://github.com/rasahq/rasa/issues/5368): Changed the project structure for Rasa projects initialized with the
-  [CLI](./command-line-interface.mdx) (using the `rasa init` command):
+  [CLI](https://rasa.com/docs/rasa-pro/command-line-interface) (using the `rasa init` command):
   `actions.py` -> `actions/actions.py`. `actions` is now a Python package (it contains
   a file `actions/__init__.py`). In addition, the `__init__.py` at the
   root of the project has been removed.
@@ -3256,7 +3256,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   Previously, there could be problems when the input dictionary was re-used for other
   things after creating the `Domain` from it.
 - [#5805](https://github.com/rasahq/rasa/issues/5805): The debug-level logs when instantiating an
-  [SQLTrackerStore](./tracker-stores.mdx#sqltrackerstore)
+  [SQLTrackerStore](https://rasa.com/docs/rasa-pro/production/tracker-stores#sqltrackerstore)
   no longer show the password in plain text. Now, the URL is displayed with the password
   hidden, e.g. `postgresql://username:***@localhost:5432`.
 - [#5855](https://github.com/rasahq/rasa/issues/5855): Shorten the information in tqdm during training ML algorithms based on the log
@@ -3300,7 +3300,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   :::
 - [#6052](https://github.com/rasahq/rasa/issues/6052): Add endpoint kwarg to `rasa.jupyter.chat` to enable using a custom action server while chatting with a model in a jupyter notebook.
 - [#6055](https://github.com/rasahq/rasa/issues/6055): Support for rasa conversation id with special characters on the server side - necessary for some channels (e.g. Viber)
-- [#6123](https://github.com/rasahq/rasa/issues/6123): Add support for proxy use in [slack](./connectors/slack.mdx) input channel.
+- [#6123](https://github.com/rasahq/rasa/issues/6123): Add support for proxy use in [slack](https://rasa.com/docs/rasa-pro/connectors/slack) input channel.
 - [#6134](https://github.com/rasahq/rasa/issues/6134): Log the number of examples per intent during training. Logging can be enabled using `rasa train --debug`.
 - [#6237](https://github.com/rasahq/rasa/issues/6237): Support for other remote storages can be achieved by using an external library.
 - [#6273](https://github.com/rasahq/rasa/issues/6273): Add `output_channel` query param to `/conversations/<conversation_id>/tracker/events` route, along with boolean `execute_side_effects` to optionally schedule/cancel reminders, and forward bot messages to output channel.
@@ -3335,7 +3335,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
   * Default TEDPolicy featurizer changed to `MaxHistoryTrackerFeaturizer` with infinite max history (takes all dialogue turns into account).
   * Default batch size for TED increased from [8,32] to [64, 256]
-- [#6323](https://github.com/rasahq/rasa/issues/6323): [Response selector templates](./components.mdx#responseselector) now support all features that
+- [#6323](https://github.com/rasahq/rasa/issues/6323): [Response selector templates](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#responseselector) now support all features that
   domain utterances do. They use the yaml format instead of markdown now.
   This means you can now use buttons, images, ... in your FAQ or chitchat responses
   (assuming they are using the response selector).
@@ -3343,7 +3343,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   As a consequence, training data form in markdown has to have the file
   suffix `.md` from now on to allow proper file type detection-
 - [#6457](https://github.com/rasahq/rasa/issues/6457): Support for test stories written in yaml format.
-- [#6466](https://github.com/rasahq/rasa/issues/6466): [Response Selectors](./components.mdx#responseselector) are now trained on retrieval intent labels by default instead of the actual response text. For most models, this should improve training time and accuracy of the `ResponseSelector`.
+- [#6466](https://github.com/rasahq/rasa/issues/6466): [Response Selectors](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#responseselector) are now trained on retrieval intent labels by default instead of the actual response text. For most models, this should improve training time and accuracy of the `ResponseSelector`.
 
   If you want to revert to the pre-2.0 default behavior, add the `use_text_as_label=true` parameter to your `ResponseSelector` component.
 
@@ -3394,10 +3394,10 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 - [#6613](https://github.com/rasahq/rasa/issues/6613): Added telemetry reporting. Rasa uses telemetry to report anonymous usage information.
   This information is essential to help improve Rasa Open Source for all users.
   Reporting will be opt-out. More information can be found in our
-  [telemetry documentation](./telemetry/telemetry.mdx).
+  [telemetry documentation](https://rasa.com/docs/rasa-pro/telemetry/telemetry).
 - [#6757](https://github.com/rasahq/rasa/issues/6757): Update `extract_other_slots` method inside `FormAction` to fill a slot from an entity
   with a different name if corresponding slot mapping of `from_entity` type is unique.
-- [#6809](https://github.com/rasahq/rasa/issues/6809): [Slots](domain.mdx#slots) of any type can now be ignored during a conversation.
+- [#6809](https://github.com/rasahq/rasa/issues/6809): [Slots](https://rasa.com/docs/rasa-pro/nlu-based-assistants/domain#slots) of any type can now be ignored during a conversation.
   To do so, specify the property `influence_conversation: false` for the slot.
 
   ```yaml
@@ -3408,9 +3408,9 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   ```
 
   The property `influence_conversation` is set to `true` by default. See the
-  [documentation for slots](domain.mdx#slots) for more information.
+  [documentation for slots](https://rasa.com/docs/rasa-pro/nlu-based-assistants/domain#slots) for more information.
 
-  A new slot type [`any`](domain.mdx#any-slot) was added. Slots of this type can store
+  A new slot type [`any`](https://rasa.com/docs/rasa-pro/nlu-based-assistants/domain#any-slot) was added. Slots of this type can store
   any value. Slots of type `any` are always ignored during conversations.
 - [#6856](https://github.com/rasahq/rasa/issues/6856): Improved exception handling within Rasa Open Source.
 
@@ -3446,7 +3446,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 - [#5617](https://github.com/rasahq/rasa/issues/5617): Don't create TensorBoard log files during prediction.
 - [#5638](https://github.com/rasahq/rasa/issues/5638): Fixed DIET breaking with empty spaCy model.
 - [#5737](https://github.com/rasahq/rasa/issues/5737): Pinned the library version for the Azure
-  [Cloud Storage](./model-storage.mdx#load-model-from-cloud) to 2.1.0 since the
+  [Cloud Storage](https://rasa.com/docs/rasa-pro/production/model-storage#load-model-from-cloud) to 2.1.0 since the
   persistor is currently not compatible with later versions of the azure-storage-blob
   library.
 - [#5755](https://github.com/rasahq/rasa/issues/5755): Remove `clean_up_entities` from extractors that extract pre-defined entities.
@@ -3487,7 +3487,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
   Update default stories and rules on "Prototype an Assistant" page.
 - [#6419](https://github.com/rasahq/rasa/issues/6419): Fixed a bug in the `serialise` method of the `EvaluationStore` class which resulted in a wrong end-to-end evaluation of the predicted entities.
-- [#6535](https://github.com/rasahq/rasa/issues/6535): [Forms](./forms.mdx) with slot mappings defined in `domain.yml` must now be a
+- [#6535](https://github.com/rasahq/rasa/issues/6535): [Forms](https://rasa.com/docs/rasa-pro/nlu-based-assistants/forms) with slot mappings defined in `domain.yml` must now be a
   dictionary (with form names as keys). The previous syntax where `forms` was simply a
   list of form names is still supported.
 - [#6577](https://github.com/rasahq/rasa/issues/6577): Remove BILOU tag prefix from role and group labels when creating entities.
@@ -3523,7 +3523,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 - [#5811](https://github.com/rasahq/rasa/issues/5811): Event brokers documentation should say `url` instead of `host`.
 - [#5952](https://github.com/rasahq/rasa/issues/5952): Update `rasa init` documentation to include `tests/conversation_tests.md`
   in the resulting directory tree.
-- [#6819](https://github.com/rasahq/rasa/issues/6819): Update ["Validating Form Input" section](./forms.mdx#validating-form-input) to include details about
+- [#6819](https://github.com/rasahq/rasa/issues/6819): Update ["Validating Form Input" section](https://rasa.com/docs/rasa-pro/nlu-based-assistants/forms#validating-form-input) to include details about
   how `FormValidationAction` class makes it easier to validate form slots in custom actions and how to use it.
 - [#6823](https://github.com/rasahq/rasa/issues/6823): Update the examples in the API docs to use YAML instead of Markdown
 
@@ -3534,7 +3534,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 ## [1.10.26] - 2021-06-17
 
 ### Features
-- [#8876](https://github.com/rasahq/rasa/issues/8876): Added `sasl_mechanism` as an optional configurable parameter for the [Kafka Producer](event-brokers.mdx#kafka-event-broker).
+- [#8876](https://github.com/rasahq/rasa/issues/8876): Added `sasl_mechanism` as an optional configurable parameter for the [Kafka Producer](https://rasa.com/docs/rasa-pro/production/event-brokers#kafka-event-broker).
 
 
 ## [1.10.25] - 2021-04-14
@@ -3543,7 +3543,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 - [#8429](https://github.com/rasahq/rasa/issues/8429): Added `partition_by_sender` flag to Kafka Producer to optionally associate events with Kafka partition based on sender_id.
 
 ### Improvements
-- [#8345](https://github.com/rasahq/rasa/issues/8345): Improved the [lock store](lock-stores.mdx) debug log message when the process has to queue because other messages have to be processed before this item.
+- [#8345](https://github.com/rasahq/rasa/issues/8345): Improved the [lock store](https://rasa.com/docs/rasa-pro/production/lock-stores) debug log message when the process has to queue because other messages have to be processed before this item.
 
 
 ## [1.10.24] - 2021-03-29
@@ -3571,7 +3571,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   Removed `group_id` because it is not a valid Kafka producer parameter.
 
 ### Bugfixes
-- [#7638](https://github.com/rasahq/rasa/issues/7638): Fixed a bug that occurred when setting multiple Sanic workers in combination with a custom [Lock Store](lock-stores.mdx). Previously, if the number was set higher than 1 and you were using a custom lock store, it would reject because of a strict check to use a [Redis Lock Store](lock-stores.mdx#redislockstore).
+- [#7638](https://github.com/rasahq/rasa/issues/7638): Fixed a bug that occurred when setting multiple Sanic workers in combination with a custom [Lock Store](https://rasa.com/docs/rasa-pro/production/lock-stores). Previously, if the number was set higher than 1 and you were using a custom lock store, it would reject because of a strict check to use a [Redis Lock Store](https://rasa.com/docs/rasa-pro/production/lock-stores#redislockstore).
 - [#7722](https://github.com/rasahq/rasa/issues/7722): Fix a bug where, if a user injects an intent using the HTTP API, slot auto-filling is not performed on the entities provided.
 
 
@@ -3651,7 +3651,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
 - [#6044](https://github.com/rasahq/rasa/issues/6044): Do not deepcopy slots when instantiating trackers. This leads to a significant
   speedup when training on domains with a large number of slots.
-- [#6226](https://github.com/rasahq/rasa/issues/6226): Added more debugging logs to the [Lock Stores](./lock-stores.mdx) to simplify debugging in case of
+- [#6226](https://github.com/rasahq/rasa/issues/6226): Added more debugging logs to the [Lock Stores](https://rasa.com/docs/rasa-pro/production/lock-stores) to simplify debugging in case of
 
   connection problems.
 
@@ -3754,7 +3754,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   entity predictions.
 
 * [#5976](https://github.com/rasahq/rasa/issues/5976): Fix server crashes that occurred when Rasa Open Source pulls a model from a
-  [model server](./model-storage.mdx#load-model-from-server) and an exception was thrown during
+  [model server](https://rasa.com/docs/rasa-pro/production/model-storage#load-model-from-server) and an exception was thrown during
   model loading (such as a domain with invalid YAML).
 
 ## [1.10.2] - 2020-06-03
@@ -3763,7 +3763,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
 * [#5521](https://github.com/rasahq/rasa/issues/5521): Responses used in ResponseSelector now support new lines with explicitly adding `\\n` between them.
 
-* [#5758](https://github.com/rasahq/rasa/issues/5758): Fixed a bug in [`rasa export`](./command-line-interface.mdx#rasa-export)) which caused Rasa Open Source to only migrate conversation events from the last [Session configuration](./domain.mdx#session-configuration).
+* [#5758](https://github.com/rasahq/rasa/issues/5758): Fixed a bug in [`rasa export`](https://rasa.com/docs/rasa-pro/command-line-interface#rasa-export)) which caused Rasa Open Source to only migrate conversation events from the last [Session configuration](https://rasa.com/docs/rasa-pro/nlu-based-assistants/domain#session-configuration).
 
 ## [1.10.1] - 2020-05-15
 
@@ -3803,15 +3803,15 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   The group label can be used to group multiple entities together.
   For example, you could group different pizza orders, so that you know what toppings goes with which pizza and
   what size which pizza has.
-  For more details see [Entities Roles and Groups](./nlu-training-data.mdx#entities-roles-and-groups).
+  For more details see [Entities Roles and Groups](https://rasa.com/docs/rasa-pro/nlu-based-assistants/nlu-training-data#entities-roles-and-groups).
 
   To fill slots from entities with a specific role/group, you need to either use forms or use a custom action.
   We updated the tracker method `get_latest_entity_values` to take an optional role/group label.
   If you want to use a form, you can add the specific role/group label of interest to the slot mapping function
-  `from_entity` (see [Forms](./forms.mdx)).
+  `from_entity` (see [Forms](https://rasa.com/docs/rasa-pro/nlu-based-assistants/forms)).
 
   :::note
-  Composite entities are currently just supported by the [DIETClassifier](./components.mdx#dietclassifier) and [CRFEntityExtractor](./components.mdx#crfentityextractor).
+  Composite entities are currently just supported by the [DIETClassifier](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#dietclassifier) and [CRFEntityExtractor](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#crfentityextractor).
 
   :::
 
@@ -3843,7 +3843,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   execute the following command on the terminal of your choice:
   `sed -i -E 's/\\[([^)]+)\\]\\(([^)]+):([^)]+)\\)/[\\1]{"entity": "\\2", "value": "\\3"}/g' nlu.md`
 
-  For more information about the new data format see [Training Data Format](./training-data-format.mdx).
+  For more information about the new data format see [Training Data Format](https://rasa.com/docs/rasa-pro/nlu-based-assistants/training-data-format).
 
 ### Improvements
 
@@ -3864,7 +3864,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
   If you are using ResponseSelectors, they now produce similiar outputs during NLU evaluation. Misclassfied responses are listed in a “confused_with” attribute in the evaluation report. Similiarily, a confusion matrix of all responses is plotted.
 
-* [#5578](https://github.com/rasahq/rasa/issues/5578): Added `socketio` to the compatible channels for [Reminders and External Events](./reaching-out-to-user.mdx).
+* [#5578](https://github.com/rasahq/rasa/issues/5578): Added `socketio` to the compatible channels for [Reminders and External Events](https://rasa.com/docs/rasa-pro/nlu-based-assistants/reaching-out-to-user).
 
 * [#5595](https://github.com/rasahq/rasa/issues/5595): Update `POST /model/train` endpoint to accept retrieval action responses
   at the `responses` key of the JSON payload.
@@ -3954,7 +3954,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
 * [#5533](https://github.com/rasahq/rasa/issues/5533): Support for
   [PostgreSQL schemas](https://www.postgresql.org/docs/11/ddl-schemas.html) in
-  [SQLTrackerStore](./tracker-stores.mdx#sqltrackerstore). The `SQLTrackerStore`
+  [SQLTrackerStore](https://rasa.com/docs/rasa-pro/production/tracker-stores#sqltrackerstore). The `SQLTrackerStore`
   accesses schemas defined by the `POSTGRESQL_SCHEMA` environment variable if
   connected to a PostgreSQL database.
 
@@ -3999,7 +3999,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
 ### Bugfixes
 
-* [#5492](https://github.com/rasahq/rasa/issues/5492): Fix an issue where the deprecated `queue` parameter for the [Pika Event Broker](./event-brokers.mdx#pika-event-broker)
+* [#5492](https://github.com/rasahq/rasa/issues/5492): Fix an issue where the deprecated `queue` parameter for the [Pika Event Broker](https://rasa.com/docs/rasa-pro/production/event-brokers#pika-event-broker)
   was ignored and Rasa Open Source published the events to the `rasa_core_events`
   queue instead. Note that this does not change the fact that the `queue` argument
   is deprecated in favor of the `queues` argument.
@@ -4036,7 +4036,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   e.g. `faq/which_version` to the prediction, making it accessible
   from the tracker.
 
-* [#5258](https://github.com/rasahq/rasa/issues/5258): Added `PikaEventBroker` ([Pika Event Broker](./event-brokers.mdx#pika-event-broker)) support for publishing to
+* [#5258](https://github.com/rasahq/rasa/issues/5258): Added `PikaEventBroker` ([Pika Event Broker](https://rasa.com/docs/rasa-pro/production/event-brokers#pika-event-broker)) support for publishing to
   multiple queues. Messages are now published to a `fanout` exchange with name
   `rasa-exchange` (see
   [exchange-fanout](https://www.rabbitmq.com/tutorials/amqp-concepts.html#exchange-fanout)
@@ -4062,7 +4062,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
 * [#5446](https://github.com/rasahq/rasa/issues/5446): The endpoint `PUT /conversations/<conversation_id>/tracker/events` no longer
   adds session start events (to learn more about conversation sessions, please
-  see [Session configuration](./domain.mdx#session-configuration)) in addition to the events which were sent in the request
+  see [Session configuration](https://rasa.com/docs/rasa-pro/nlu-based-assistants/domain#session-configuration)) in addition to the events which were sent in the request
   payload. To achieve the old behavior send a
   `GET /conversations/<conversation_id>/tracker`
   request before appending events.
@@ -4081,7 +4081,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   in DynamoDB tracker stores. All `decimal.Decimal` objects are now converted to
   `float` on tracker retrieval.
 
-  Added a new docs section on [DynamoTrackerStore](./tracker-stores.mdx#dynamotrackerstore).
+  Added a new docs section on [DynamoTrackerStore](https://rasa.com/docs/rasa-pro/production/tracker-stores#dynamotrackerstore).
 
 * [#5356](https://github.com/rasahq/rasa/issues/5356): Fixed bug where `FallbackPolicy` would always fall back if the fallback action is
   `action_listen`.
@@ -4095,7 +4095,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
 ### Improved Documentation
 
-* [#2237](https://github.com/rasahq/rasa/issues/2237): Restructure the “Evaluating models” documentation page and rename this page to [Testing Your Assistant](./testing-your-assistant.mdx).
+* [#2237](https://github.com/rasahq/rasa/issues/2237): Restructure the “Evaluating models” documentation page and rename this page to [Testing Your Assistant](https://rasa.com/docs/rasa-pro/nlu-based-assistants/testing-your-assistant).
 
 * [#5302](https://github.com/rasahq/rasa/issues/5302): Improved documentation on how to build and deploy an action server image for use on other servers such as Rasa X deployments.
 
@@ -4135,7 +4135,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   `1.8.0`. Since version `1.8.0` the Rasa SDK Docker images does not longer run as
   `root` user by default. For commands which require `root` user usage, you have to
   switch back to the `root` user in your Docker image as described in
-  [Building an Action Server Image](./deploy/deploy-action-server.mdx#building-an-action-server-image).
+  [Building an Action Server Image](https://rasa.com/docs/rasa-pro/deploy/deploy-action-server#building-an-action-server-image).
 
 * [#5402](https://github.com/RasaHQ/rasa/issues/5402): Made improvements to Building Assistants tutorial
 
@@ -4169,7 +4169,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
 * [#4088](https://github.com/rasahq/rasa/issues/4088): Add story structure validation functionality (e.g. rasa data validate stories –max-history 5).
 
-* [#5065](https://github.com/rasahq/rasa/issues/5065): Add [LexicalSyntacticFeaturizer](./components.mdx#lexicalsyntacticfeaturizer) to sparse featurizers.
+* [#5065](https://github.com/rasahq/rasa/issues/5065): Add [LexicalSyntacticFeaturizer](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#lexicalsyntacticfeaturizer) to sparse featurizers.
 
   `LexicalSyntacticFeaturizer` does the same featurization as the `CRFEntityExtractor`. We extracted the
   featurization into a separate component so that the features can be reused and featurization is independent from the
@@ -4179,17 +4179,17 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
   Add a new NLP component [HFTransformersNLP](https://rasa.com/docs/rasa/2.x/components#hftransformersnlp) which tokenizes and featurizes incoming messages using a specified
   pre-trained model with the Transformers library as the backend.
-  Add [LanguageModelTokenizer](https://rasa.com/docs/rasa/2.x/components#languagemodeltokenizer) and [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer) which use the information from
+  Add [LanguageModelTokenizer](https://rasa.com/docs/rasa/2.x/components#languagemodeltokenizer) and [LanguageModelFeaturizer](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#languagemodelfeaturizer) which use the information from
   [HFTransformersNLP](https://rasa.com/docs/rasa/2.x/components#hftransformersnlp) and sets them correctly for message object.
   Language models currently supported: BERT, OpenAIGPT, GPT-2, XLNet, DistilBert, RoBERTa.
 
 * [#5225](https://github.com/rasahq/rasa/issues/5225): Added a new CLI command `rasa export` to publish tracker events from a persistent
-  tracker store using an event broker. See [Export Conversations to an Event Broker](./command-line-interface.mdx#rasa-export), [Tracker Stores](./tracker-stores.mdx)
-  and [Event Brokers](./event-brokers.mdx) for more details.
+  tracker store using an event broker. See [Export Conversations to an Event Broker](https://rasa.com/docs/rasa-pro/command-line-interface#rasa-export), [Tracker Stores](https://rasa.com/docs/rasa-pro/production/tracker-stores)
+  and [Event Brokers](https://rasa.com/docs/rasa-pro/production/event-brokers) for more details.
 
 * [#5230](https://github.com/rasahq/rasa/issues/5230): Refactor how GPU and CPU environments are configured for TensorFlow 2.0.
 
-  Please refer to the documentation on [Configuring TensorFlow](./tuning-your-model.mdx#configuring-tensorflow) to understand
+  Please refer to the documentation on [Configuring TensorFlow](https://rasa.com/docs/rasa-pro/nlu-based-assistants/tuning-your-model#configuring-tensorflow) to understand
   which environment variables to set in what scenarios. A couple of examples are shown below as well:
 
   ```python
@@ -4203,17 +4203,17 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   TF_INTRA_OP_PARALLELISM_THREADS="2"
   ```
 
-* [#5266](https://github.com/rasahq/rasa/issues/5266): Added a new NLU component [DIETClassifier](./components.mdx#dietclassifier) and a new policy [TEDPolicy](./policies.mdx#ted-policy).
+* [#5266](https://github.com/rasahq/rasa/issues/5266): Added a new NLU component [DIETClassifier](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#dietclassifier) and a new policy [TEDPolicy](https://rasa.com/docs/rasa-pro/nlu-based-assistants/policies#ted-policy).
 
   DIET (Dual Intent and Entity Transformer) is a multi-task architecture for intent classification and entity
-  recognition. You can read more about this component in the [DIETClassifier](./components.mdx#dietclassifier) documentation.
+  recognition. You can read more about this component in the [DIETClassifier](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#dietclassifier) documentation.
   The new component will replace the `EmbeddingIntentClassifier` and the
-  [CRFEntityExtractor](./components.mdx#crfentityextractor) in the future.
+  [CRFEntityExtractor](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#crfentityextractor) in the future.
   Those two components are deprecated from now on.
-  See [migration guide](./migration-guide.mdx#rasa-17-to-rasa-18) for details on how to
+  See [migration guide](https://rasa.com/docs/rasa-pro/migration-guide#rasa-17-to-rasa-18) for details on how to
   switch to the new component.
 
-  [TEDPolicy](./policies.mdx#ted-policy) is the new name for EmbeddingPolicy.
+  [TEDPolicy](https://rasa.com/docs/rasa-pro/nlu-based-assistants/policies#ted-policy) is the new name for EmbeddingPolicy.
   `EmbeddingPolicy` is deprecated from now on.
   The functionality of `TEDPolicy` and `EmbeddingPolicy` is the same.
   Please update your configuration file to use the new name for the policy.
@@ -4242,7 +4242,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 * [#5117](https://github.com/rasahq/rasa/issues/5117): New command-line argument –conversation-id will be added and wiil give the ability to
   set specific conversation ID for each shell session, if not passed will be random.
 
-* [#5211](https://github.com/rasahq/rasa/issues/5211): Messages sent to the [Pika Event Broker](./event-brokers.mdx#pika-event-broker) are now persisted. This guarantees
+* [#5211](https://github.com/rasahq/rasa/issues/5211): Messages sent to the [Pika Event Broker](https://rasa.com/docs/rasa-pro/production/event-brokers#pika-event-broker) are now persisted. This guarantees
   the RabbitMQ will re-send previously received messages after a crash. Note that this
   does not help for the case where messages are sent to an unavailable RabbitMQ instance.
 
@@ -4317,9 +4317,9 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
 ### Bugfixes
 
-* [#5197](https://github.com/rasahq/rasa/issues/5197): Fixed incompatibility of Oracle with the [SQLTrackerStore](./tracker-stores.mdx#sqltrackerstore), by using a `Sequence`
+* [#5197](https://github.com/rasahq/rasa/issues/5197): Fixed incompatibility of Oracle with the [SQLTrackerStore](https://rasa.com/docs/rasa-pro/production/tracker-stores#sqltrackerstore), by using a `Sequence`
   for the primary key columns. This does not change anything for SQL databases other than Oracle.
-  If you are using Oracle, please create a sequence with the instructions in the [SQLTrackerStore](./tracker-stores.mdx#sqltrackerstore) docs.
+  If you are using Oracle, please create a sequence with the instructions in the [SQLTrackerStore](https://rasa.com/docs/rasa-pro/production/tracker-stores#sqltrackerstore) docs.
 
 ### Improved Documentation
 
@@ -4397,7 +4397,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   are `DucklingHTTPExtractor` and `SpacyEntityExtractor`.
 
 * [#4902](https://github.com/rasahq/rasa/issues/4902): The `EmbeddingPolicy`, `EmbeddingIntentClassifier`, and `ResponseSelector` now by default normalize confidence
-  levels over the top 10 results. See [Rasa 1.6 to Rasa 1.7](./migration-guide.mdx#rasa-16-to-rasa-17) for more details.
+  levels over the top 10 results. See [Rasa 1.6 to Rasa 1.7](https://rasa.com/docs/rasa-pro/migration-guide#rasa-16-to-rasa-17) for more details.
 
 * [#4964](https://github.com/rasahq/rasa/issues/4964): `ReminderCancelled` can now cancel multiple reminders if no name is given. It still cancels a single
   reminder if the reminder's name is specified.
@@ -4473,7 +4473,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
     min_df: 5
   ```
 
-* [#4957](https://github.com/rasahq/rasa/issues/4957): To [use custom features in the `CRFEntityExtractor`](./components.mdx#crfentityextractor)
+* [#4957](https://github.com/rasahq/rasa/issues/4957): To [use custom features in the `CRFEntityExtractor`](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#crfentityextractor)
   use `text_dense_features` instead of `ner_features`. If
   `text_dense_features` are present in the feature set, the `CRFEntityExtractor` will automatically make use of
   them. Just make sure to add a dense featurizer in front of the `CRFEntityExtractor` in your pipeline and set the
@@ -4524,13 +4524,13 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
   Add option `return_sequence` to all featurizers. By default all featurizers return a matrix of size
   (1 x feature-dimension). If the option `return_sequence` is set to `True`, the corresponding featurizer will return
-  a matrix of size (token-length x feature-dimension). See [Text Featurizers](./components.mdx#featurizers).
+  a matrix of size (token-length x feature-dimension). See [Text Featurizers](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#featurizers).
   Default value is set to `False`. However, you might want to set it to `True` if you want to use custom features
   in the `CRFEntityExtractor`.
-  See [passing custom features to the `CRFEntityExtractor`](./components.mdx#crfentityextractor)
+  See [passing custom features to the `CRFEntityExtractor`](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#crfentityextractor)
 
   Changed some featurizers to use sparse features, which should reduce memory usage with large amounts of training data significantly.
-  Read more: [Text Featurizers](./components.mdx#featurizers) .
+  Read more: [Text Featurizers](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#featurizers) .
 
   :::caution
   These changes break model compatibility. You will need to retrain your old models!
@@ -4999,7 +4999,7 @@ Regression: changes from `1.2.12` were missing from `1.4.0`, readded them
 
 * experimental training data importer which supports training with data of multiple
   sub bots. Please see the
-  [docs](./training-data-importers.mdx) for more
+  docs for more
   information.
 
 * throw error during training when triggers are defined in the domain without
