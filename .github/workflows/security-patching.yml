@@ -12,6 +12,10 @@ env:
   GITHUB_WORKFLOW_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
   REPORT_BUCKET: "rasa-container-scan-reports"
 
+permissions:
+  id-token: write # This is required for requesting the JWT
+  contents: read # This is required for actions/checkout
+
 jobs:
   get_tags:
     runs-on: ubuntu-22.04
