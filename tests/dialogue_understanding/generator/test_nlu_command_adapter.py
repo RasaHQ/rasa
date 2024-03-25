@@ -64,31 +64,31 @@ class TestNLUCommandAdapter:
             """
         )
 
-    def test_predict_commands_with_no_flows(
+    async def test_predict_commands_with_no_flows(
         self, command_generator: NLUCommandAdapter, tracker: DialogueStateTracker
     ):
         """Test that predict_commands returns an empty list when flows is None."""
         # Given
         empty_flows = FlowsList([])
         # When
-        predicted_commands = command_generator.predict_commands(
+        predicted_commands = await command_generator.predict_commands(
             Message.build("some message"), flows=empty_flows, tracker=tracker
         )
         # Then
         assert not predicted_commands
 
-    def test_predict_commands_with_no_tracker(
+    async def test_predict_commands_with_no_tracker(
         self, command_generator: NLUCommandAdapter, flows: FlowsList
     ):
         """Test that predict_commands returns an empty list when tracker is None."""
         # When
-        predicted_commands = command_generator.predict_commands(
+        predicted_commands = await command_generator.predict_commands(
             Message.build("some message"), flows=flows, tracker=None
         )
         # Then
         assert not predicted_commands
 
-    def test_predict_commands_with_message_without_intent(
+    async def test_predict_commands_with_message_without_intent(
         self,
         command_generator: NLUCommandAdapter,
         flows: FlowsList,
@@ -97,7 +97,7 @@ class TestNLUCommandAdapter:
         """Test that predict_commands returns an empty list when
         message does not have any intents."""
         # When
-        predicted_commands = command_generator.predict_commands(
+        predicted_commands = await command_generator.predict_commands(
             Message(
                 data={
                     TEXT: "some message",
@@ -109,7 +109,7 @@ class TestNLUCommandAdapter:
         # Then
         assert not predicted_commands
 
-    def test_predict_commands_does_not_set_routing_slot_on_no_predicted_commands(
+    async def test_predict_commands_does_not_set_routing_slot_on_no_predicted_commands(
         self,
         command_generator: NLUCommandAdapter,
         flows: FlowsList,
@@ -118,7 +118,7 @@ class TestNLUCommandAdapter:
         """Test that predict_commands returns an empty list when
         message does not have any intents."""
         # When
-        predicted_commands = command_generator.predict_commands(
+        predicted_commands = await command_generator.predict_commands(
             Message(
                 data={
                     TEXT: "some message",
@@ -130,7 +130,7 @@ class TestNLUCommandAdapter:
         # Then
         assert not predicted_commands
 
-    def test_predict_commands_returns_start_flow_command(
+    async def test_predict_commands_returns_start_flow_command(
         self,
         command_generator: NLUCommandAdapter,
         flows: FlowsList,
@@ -145,7 +145,7 @@ class TestNLUCommandAdapter:
                 INTENT: {INTENT_NAME_KEY: "foo", PREDICTED_CONFIDENCE_KEY: 1.0},
             },
         )
-        predicted_commands = command_generator.predict_commands(
+        predicted_commands = await command_generator.predict_commands(
             test_message, flows=flows, tracker=tracker
         )
 
@@ -153,7 +153,7 @@ class TestNLUCommandAdapter:
         assert isinstance(predicted_commands[0], StartFlowCommand)
         assert predicted_commands[0].as_dict()["flow"] == "test_flow"
 
-    def test_predict_commands_returns_start_flow_command_and_set_routing_slot(
+    async def test_predict_commands_returns_start_flow_command_and_set_routing_slot(
         self,
         command_generator: NLUCommandAdapter,
         flows: FlowsList,
@@ -168,7 +168,7 @@ class TestNLUCommandAdapter:
                 INTENT: {INTENT_NAME_KEY: "foo", PREDICTED_CONFIDENCE_KEY: 1.0},
             },
         )
-        predicted_commands = command_generator.predict_commands(
+        predicted_commands = await command_generator.predict_commands(
             test_message, flows=flows, tracker=tracker_with_routing_slot
         )
 
@@ -178,7 +178,7 @@ class TestNLUCommandAdapter:
         assert isinstance(predicted_commands[1], SetSlotCommand)
         assert predicted_commands[1] == SetSlotCommand(ROUTE_TO_CALM_SLOT, True)
 
-    def test_predict_commands_returns_with_multiple_flows_triggered(
+    async def test_predict_commands_returns_with_multiple_flows_triggered(
         self,
         command_generator: NLUCommandAdapter,
         tracker: DialogueStateTracker,
@@ -219,7 +219,7 @@ class TestNLUCommandAdapter:
                 INTENT: {INTENT_NAME_KEY: "foo", PREDICTED_CONFIDENCE_KEY: 1.0},
             },
         )
-        predicted_commands = command_generator.predict_commands(
+        predicted_commands = await command_generator.predict_commands(
             test_message, flows=flows, tracker=tracker
         )
 

@@ -96,15 +96,15 @@ class TestIntentBasedRouter:
         assert len(returned_messages) == 1
         assert returned_messages[0] == message
 
-    def test_intent_based_router_process_with_no_calm_slot(
+    async def test_intent_based_router_process_with_no_calm_slot(
         self, intent_based_router: IntentBasedRouter
     ) -> None:
         message = Message.build(text="some message")
         tracker = DialogueStateTracker("sender_id", [])
         with pytest.raises(InvalidConfigException):
-            intent_based_router.predict_commands(message, None, tracker)
+            await intent_based_router.predict_commands(message, None, tracker)
 
-    def test_intent_based_router_process_with_calm_slot_set_to_true(
+    async def test_intent_based_router_process_with_calm_slot_set_to_true(
         self, intent_based_router: IntentBasedRouter
     ) -> None:
         message = Message.build(text="some message")
@@ -113,10 +113,10 @@ class TestIntentBasedRouter:
             [BooleanSlot(ROUTE_TO_CALM_SLOT, mappings=[], initial_value=True)],
         )
 
-        commands = intent_based_router.predict_commands(message, None, tracker)
+        commands = await intent_based_router.predict_commands(message, None, tracker)
         assert commands == []
 
-    def test_intent_based_router_process_with_calm_slot_set_to_false(
+    async def test_intent_based_router_process_with_calm_slot_set_to_false(
         self, intent_based_router: IntentBasedRouter
     ) -> None:
         message = Message.build(text="some message")
@@ -125,10 +125,10 @@ class TestIntentBasedRouter:
             [BooleanSlot(ROUTE_TO_CALM_SLOT, mappings=[], initial_value=False)],
         )
 
-        commands = intent_based_router.predict_commands(message, None, tracker)
+        commands = await intent_based_router.predict_commands(message, None, tracker)
         assert commands == [NoopCommand()]
 
-    def test_intent_based_router_process_with_no_predicted_intent(
+    async def test_intent_based_router_process_with_no_predicted_intent(
         self, intent_based_router: IntentBasedRouter
     ) -> None:
         message = Message.build(text="some message")
@@ -137,10 +137,10 @@ class TestIntentBasedRouter:
             [BooleanSlot(ROUTE_TO_CALM_SLOT, mappings=[], initial_value=None)],
         )
 
-        commands = intent_based_router.predict_commands(message, None, tracker)
+        commands = await intent_based_router.predict_commands(message, None, tracker)
         assert commands == [SetSlotCommand(ROUTE_TO_CALM_SLOT, False)]
 
-    def test_intent_based_router_process_nlu_entry_sticky(
+    async def test_intent_based_router_process_nlu_entry_sticky(
         self, intent_based_router: IntentBasedRouter
     ) -> None:
         message = Message.build(text="some message")
@@ -150,10 +150,10 @@ class TestIntentBasedRouter:
             [BooleanSlot(ROUTE_TO_CALM_SLOT, mappings=[], initial_value=None)],
         )
 
-        commands = intent_based_router.predict_commands(message, None, tracker)
+        commands = await intent_based_router.predict_commands(message, None, tracker)
         assert commands == [SetSlotCommand(ROUTE_TO_CALM_SLOT, False)]
 
-    def test_intent_based_router_process_nlu_entry_non_sticky(
+    async def test_intent_based_router_process_nlu_entry_non_sticky(
         self, intent_based_router: IntentBasedRouter
     ) -> None:
         message = Message.build(text="some message")
@@ -163,10 +163,10 @@ class TestIntentBasedRouter:
             [BooleanSlot(ROUTE_TO_CALM_SLOT, mappings=[], initial_value=None)],
         )
 
-        commands = intent_based_router.predict_commands(message, None, tracker)
+        commands = await intent_based_router.predict_commands(message, None, tracker)
         assert commands == [NoopCommand()]
 
-    def test_intent_based_router_process_calm_entry_sticky(
+    async def test_intent_based_router_process_calm_entry_sticky(
         self, intent_based_router: IntentBasedRouter
     ) -> None:
         message = Message.build(text="some message")
@@ -176,10 +176,10 @@ class TestIntentBasedRouter:
             [BooleanSlot(ROUTE_TO_CALM_SLOT, mappings=[], initial_value=None)],
         )
 
-        commands = intent_based_router.predict_commands(message, None, tracker)
+        commands = await intent_based_router.predict_commands(message, None, tracker)
         assert commands == []
 
-    def test_intent_based_router_process_intent_in_nlu_trigger(
+    async def test_intent_based_router_process_intent_in_nlu_trigger(
         self, intent_based_router: IntentBasedRouter
     ) -> None:
         message = Message.build(text="some message")
@@ -205,10 +205,10 @@ class TestIntentBasedRouter:
             """
         )
 
-        commands = intent_based_router.predict_commands(message, flows, tracker)
+        commands = await intent_based_router.predict_commands(message, flows, tracker)
         assert commands == []
 
-    def test_intent_based_router_process_intent_not_satisfy_any_condition(
+    async def test_intent_based_router_process_intent_not_satisfy_any_condition(
         self, intent_based_router: IntentBasedRouter
     ) -> None:
         message = Message.build(text="some message")
@@ -234,5 +234,5 @@ class TestIntentBasedRouter:
             """
         )
 
-        commands = intent_based_router.predict_commands(message, flows, tracker)
+        commands = await intent_based_router.predict_commands(message, flows, tracker)
         assert commands == [SetSlotCommand(ROUTE_TO_CALM_SLOT, False)]

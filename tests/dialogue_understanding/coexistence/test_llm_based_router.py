@@ -119,7 +119,7 @@ class TestLLMBasedRouter:
         actual_commands = llm_based_router.parse_answer(answer)
         assert actual_commands == commands
 
-    def test_llm_based_router_predict_commands_without_routing_slot(
+    async def test_llm_based_router_predict_commands_without_routing_slot(
         self, llm_based_router: LLMBasedRouter
     ) -> None:
         message = Message.build(text="some message")
@@ -127,13 +127,13 @@ class TestLLMBasedRouter:
 
         # the routing slot needs to be present in the tracker
         with pytest.raises(InvalidConfigException):
-            llm_based_router.predict_commands(message, tracker)
+            await llm_based_router.predict_commands(message, tracker)
 
     @pytest.mark.parametrize(
         "initial_value, commands",
         [(False, [NoopCommand()]), (True, [])],
     )
-    def test_llm_based_router_predict_commands_with_routing_slot_already_set(
+    async def test_llm_based_router_predict_commands_with_routing_slot_already_set(
         self,
         initial_value: Optional[bool],
         commands: List[Command],
@@ -150,12 +150,12 @@ class TestLLMBasedRouter:
             "rasa.dialogue_understanding.coexistence.llm_based_router.llm_factory",
             Mock(),
         ) as mock_llm_factory:
-            actual_commands = llm_based_router.predict_commands(message, tracker)
+            actual_commands = await llm_based_router.predict_commands(message, tracker)
 
         mock_llm_factory.assert_not_called()
         assert actual_commands == commands
 
-    def test_llm_based_router_predict_commands_with_routing_slot_set_to_none(
+    async def test_llm_based_router_predict_commands_with_routing_slot_set_to_none(
         self,
         llm_based_router: (LLMBasedRouter),
     ) -> None:
@@ -171,12 +171,12 @@ class TestLLMBasedRouter:
             Mock(),
         ) as mock_llm_factory:
             mock_llm_factory.return_value = Mock()
-            llm_based_router.predict_commands(message, tracker)
+            await llm_based_router.predict_commands(message, tracker)
 
             mock_llm_factory.assert_called_once_with(None, DEFAULT_LLM_CONFIG)
             mock_llm_factory.return_value.assert_called_once()
 
-    def test_predict_commands_llm_error(self, llm_based_router: (LLMBasedRouter)):
+    async def test_predict_commands_llm_error(self, llm_based_router: (LLMBasedRouter)):
         message = Message.build(text="some message")
         tracker = DialogueStateTracker(
             "sender_id",
@@ -193,7 +193,7 @@ class TestLLMBasedRouter:
             )
         ):
             with capture_logs() as logs:
-                llm_based_router.predict_commands(message, tracker)
+                await llm_based_router.predict_commands(message, tracker)
                 # Then
                 assert len(logs) == 5
                 assert logs[0]["event"] == "llm_based_router.prompt_rendered"

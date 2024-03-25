@@ -505,7 +505,7 @@ class MockNLUCommandAdapter(NLUCommandAdapter):
         self.fail_if_undefined("predict_commands")
         super().__init__(config, model_storage, resource)
 
-    def predict_commands(
+    async def predict_commands(
         self,
         message: Message,
         flows: FlowsList,

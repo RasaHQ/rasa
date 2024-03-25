@@ -368,7 +368,6 @@ def instrument(
     if llm_command_generator_class is not None and not class_is_instrumented(
         llm_command_generator_class
     ):
-        # TODO: does this need a change or does it work out of the box with async?
         _instrument_method(
             tracer_provider.get_tracer(llm_command_generator_class.__module__),
             llm_command_generator_class,
@@ -481,7 +480,7 @@ def _instrument_nlu_command_adapter_predict_commands(
 ) -> None:
     def tracing_nlu_command_adapter_predict_commands_wrapper(fn: Callable) -> Callable:
         @functools.wraps(fn)
-        def wrapper(
+        async def wrapper(
             self: NLUCommandAdapter,
             message: Message,
             flows: FlowsList,
@@ -490,7 +489,7 @@ def _instrument_nlu_command_adapter_predict_commands(
             with tracer.start_as_current_span(
                 f"{self.__class__.__name__}.{fn.__name__}"
             ) as span:
-                commands = fn(self, message, flows, tracker)
+                commands = await fn(self, message, flows, tracker)
 
                 span.set_attributes(
                     {

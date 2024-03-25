@@ -126,7 +126,7 @@ class DaskGraphRunner(GraphRunner):
             graph[input_name] = (input_name, input_value)
 
 
-async def _execute_task(arg, cache, dsk=None):
+async def _execute_task(arg: Any, cache: Dict[str, Any]) -> Any:
     """Do the actual work of collecting data and executing a function.
 
     Examples:
@@ -157,7 +157,7 @@ async def _execute_task(arg, cache, dsk=None):
     """
     if isinstance(arg, list):
         return [await _execute_task(a, cache) for a in arg]
-    elif dask.core.istask(arg):
+    elif dask.core.istask(arg):  # type:ignore[no-untyped-call]
         func, args = arg[0], arg[1:]
         # Note: Don't assign the subtask results to a variable. numpy detects
         # temporaries by their reference count and can execute certain
@@ -170,7 +170,7 @@ async def _execute_task(arg, cache, dsk=None):
             return await func(*awaited_args)
         else:
             return func(*awaited_args)
-    elif not dask.core.ishashable(arg):
+    elif not dask.core.ishashable(arg):  # type:ignore[no-untyped-call]
         return arg
     elif arg in cache:
         return cache[arg]
@@ -178,7 +178,7 @@ async def _execute_task(arg, cache, dsk=None):
         return arg
 
 
-async def execute_dask_graph(dsk: Dict[str, Any], result: List[str]):
+async def execute_dask_graph(dsk: Dict[str, Any], result: List[str]) -> Any:
     """Asynchronous get function.
 
     This is a general version of various asynchronous schedulers for dask.  It
@@ -211,14 +211,16 @@ async def execute_dask_graph(dsk: Dict[str, Any], result: List[str]):
     # if start_state_from_dask fails, we will have something
     # to pass to the final block.
     state = {}
-    keyorder = dask.local.order(dsk)
+    keyorder = dask.local.order(dsk)  # type:ignore[no-untyped-call]
 
-    state = dask.local.start_state_from_dask(dsk, cache=cache, sortkey=keyorder.get)
+    state = dask.local.start_state_from_dask(
+        dsk, cache=cache, sortkey=keyorder.get
+    )  # type:ignore[no-untyped-call]
 
     if state["waiting"] and not state["ready"]:
         raise ValueError("Found no accessible jobs in dask")
 
-    async def fire_task():
+    async def fire_task() -> None:
         """Fire off a task to the thread pool."""
         # start a new job
         # Get the next task to compute (most recently added)
@@ -226,17 +228,20 @@ async def execute_dask_graph(dsk: Dict[str, Any], result: List[str]):
         # Notify task is running
         state["running"].add(key)
 
+        dependencies = dask.local.get_dependencies(
+            dsk, key
+        )  # type:ignore[no-untyped-call]
         # Prep args to send
-        data = {
-            dep: state["cache"][dep] for dep in dask.local.get_dependencies(dsk, key)
-        }
+        data = {dep: state["cache"][dep] for dep in dependencies}
 
         result = await _execute_task(dsk[key], data)
         state["cache"][key] = result
-        dask.local.finish_task(dsk, key, state, results, keyorder.get)
+        dask.local.finish_task(
+            dsk, key, state, results, keyorder.get
+        )  # type:ignore[no-untyped-call]
 
     # Main loop, wait on tasks to finish, insert new ones
     while state["ready"]:
         await fire_task()
 
-    return dask.local.nested_get(result, state["cache"])
+    return dask.local.nested_get(result, state["cache"])  # type:ignore[no-untyped-call]
