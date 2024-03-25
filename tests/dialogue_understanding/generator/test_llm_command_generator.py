@@ -289,7 +289,7 @@ class TestLLMCommandGenerator:
         mock_flow_retrieval_filter_flows.assert_called_once()
         assert predicted_commands == expected_commands
 
-    def test_generate_action_list_calls_llm_factory_correctly(
+    async def test_generate_action_list_calls_llm_factory_correctly(
         self,
         command_generator: LLMCommandGenerator,
     ):
@@ -307,11 +307,11 @@ class TestLLMCommandGenerator:
             "rasa.dialogue_understanding.generator.llm_command_generator.llm_factory",
             Mock(),
         ) as mock_llm_factory:
-            command_generator._generate_action_list_using_llm("some prompt")
+            await command_generator._generate_action_list_using_llm("some prompt")
             # Then
             mock_llm_factory.assert_called_once_with(None, llm_config)
 
-    def test_generate_action_list_calls_llm_correctly(
+    async def test_generate_action_list_calls_llm_correctly(
         self,
         command_generator: LLMCommandGenerator,
     ):
@@ -323,11 +323,11 @@ class TestLLMCommandGenerator:
         ) as mock_llm_factory:
             mock_llm_factory.return_value = Mock()
             # When
-            command_generator._generate_action_list_using_llm("some prompt")
+            await command_generator._generate_action_list_using_llm("some prompt")
             # Then
             mock_llm_factory.return_value.assert_called_once_with("some prompt")
 
-    def test_generate_action_list_catches_llm_exception(
+    async def test_generate_action_list_catches_llm_exception(
         self,
         command_generator: LLMCommandGenerator,
     ):
@@ -339,7 +339,7 @@ class TestLLMCommandGenerator:
             Mock(return_value=mock_llm),
         ):
             with capture_logs() as logs:
-                command_generator._generate_action_list_using_llm("some prompt")
+                await command_generator._generate_action_list_using_llm("some prompt")
                 # Then
                 print(logs)
                 assert len(logs) == 1

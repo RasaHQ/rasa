@@ -324,7 +324,7 @@ class MockLLMCommandgenerator(LLMCommandGenerator):
                 f"instrumentation needs to be adapted!"
             )
 
-    def _generate_action_list_using_llm(self, prompt: str) -> Optional[str]:
+    async def _generate_action_list_using_llm(self, prompt: str) -> Optional[str]:
         pass
 
 

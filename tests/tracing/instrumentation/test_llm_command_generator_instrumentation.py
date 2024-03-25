@@ -55,7 +55,7 @@ TEST_PROMPT_DIRECTORY = str(TRACING_TESTS_FIXTURES_DIRECTORY / "test_prompt.jinj
         ),
     ],
 )
-def test_tracing_llm_command_generator_default_attrs(
+async def test_tracing_llm_command_generator_default_attrs(
     default_model_storage: ModelStorage,
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
@@ -75,7 +75,7 @@ def test_tracing_llm_command_generator_default_attrs(
         model_storage=default_model_storage,
         resource=None,
     )
-    mock_llm_command_generator._generate_action_list_using_llm("some text")
+    await mock_llm_command_generator._generate_action_list_using_llm("some text")
 
     captured_spans: Sequence[
         ReadableSpan
@@ -100,7 +100,7 @@ def test_tracing_llm_command_generator_default_attrs(
     assert captured_span.attributes == expected_attributes
 
 
-def test_tracing_llm_command_generator_azure_attrs(
+async def test_tracing_llm_command_generator_azure_attrs(
     default_model_storage: ModelStorage,
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
@@ -130,7 +130,7 @@ def test_tracing_llm_command_generator_azure_attrs(
         model_storage=default_model_storage,
         resource=None,
     )
-    mock_llm_command_generator._generate_action_list_using_llm("some text")
+    await mock_llm_command_generator._generate_action_list_using_llm("some text")
 
     captured_spans: Sequence[
         ReadableSpan
@@ -156,7 +156,7 @@ def test_tracing_llm_command_generator_azure_attrs(
     assert captured_span.attributes == expected_attributes
 
 
-def test_tracing_llm_command_generator_non_default_llm_attrs(
+async def test_tracing_llm_command_generator_non_default_llm_attrs(
     default_model_storage: ModelStorage,
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
@@ -186,7 +186,7 @@ def test_tracing_llm_command_generator_non_default_llm_attrs(
         model_storage=default_model_storage,
         resource=None,
     )
-    mock_llm_command_generator._generate_action_list_using_llm("some text")
+    await mock_llm_command_generator._generate_action_list_using_llm("some text")
 
     captured_spans: Sequence[
         ReadableSpan
@@ -260,7 +260,7 @@ def test_tracing_llm_command_generator_check_commands_against_startable_flows(
     assert captured_span.attributes == expected_attributes
 
 
-def test_tracing_llm_command_generator_prompt_tokens(
+async def test_tracing_llm_command_generator_prompt_tokens(
     default_model_storage: ModelStorage,
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
@@ -278,7 +278,9 @@ def test_tracing_llm_command_generator_prompt_tokens(
         model_storage=default_model_storage,
         resource=Resource("llm-command-generator"),
     )
-    mock_llm_command_generator._generate_action_list_using_llm("This is a test prompt.")
+    await mock_llm_command_generator._generate_action_list_using_llm(
+        "This is a test prompt."
+    )
 
     captured_spans: Sequence[
         ReadableSpan
@@ -304,7 +306,7 @@ def test_tracing_llm_command_generator_prompt_tokens(
     assert captured_span.attributes == expected_attributes
 
 
-def test_tracing_llm_command_generator_prompt_tokens_non_openai(
+async def test_tracing_llm_command_generator_prompt_tokens_non_openai(
     default_model_storage: ModelStorage,
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
@@ -328,7 +330,7 @@ def test_tracing_llm_command_generator_prompt_tokens_non_openai(
     )
 
     with caplog.at_level(logging.WARNING):
-        mock_llm_command_generator._generate_action_list_using_llm(
+        await mock_llm_command_generator._generate_action_list_using_llm(
             "This is a test prompt."
         )
         assert (

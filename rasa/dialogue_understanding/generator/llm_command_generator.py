@@ -199,7 +199,6 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
 
     def persist(self) -> None:
         """Persist this component to disk for future loading."""
-
         # persist prompt template
         with self._model_storage.write_to(self._resource) as path:
             rasa.shared.utils.io.write_text_file(
@@ -209,7 +208,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         if self.flow_retrieval is not None:
             self.flow_retrieval.persist()
 
-    def predict_commands(
+    async def predict_commands(
         self,
         message: Message,
         flows: FlowsList,
@@ -255,7 +254,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             prompt=flow_prompt,
         )
 
-        action_list = self._generate_action_list_using_llm(flow_prompt)
+        action_list = await self._generate_action_list_using_llm(flow_prompt)
         log_llm(
             logger=structlogger,
             log_module="LLMCommandGenerator",
@@ -327,7 +326,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
 
         return Template(self.prompt_template).render(**inputs)
 
-    def _generate_action_list_using_llm(self, prompt: str) -> Optional[str]:
+    async def _generate_action_list_using_llm(self, prompt: str) -> Optional[str]:
         """Use LLM to generate a response.
 
         Args:
@@ -339,7 +338,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         llm = llm_factory(self.config.get(LLM_CONFIG_KEY), DEFAULT_LLM_CONFIG)
 
         try:
-            return llm(prompt)
+            return await llm.agenerate(prompt)
         except Exception as e:
             # unfortunately, langchain does not wrap LLM exceptions which means
             # we have to catch all exceptions here
