@@ -229,7 +229,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             return []
 
         filtered_flows = (
-            self.flow_retrieval.filter_flows(tracker, message, flows)
+            await self.flow_retrieval.filter_flows(tracker, message, flows)
             if self.flow_retrieval is not None
             else flows
         )

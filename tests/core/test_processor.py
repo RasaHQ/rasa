@@ -11,7 +11,7 @@ from http import HTTPStatus
 from pathlib import Path
 from typing import Optional, Text, List, Callable, Type, Any
 from unittest import mock
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, Mock, patch, AsyncMock
 
 import freezegun
 import pytest
@@ -2200,3 +2200,93 @@ async def test_update_full_retrieval_intent(
     # assert that parse_data["intent"] has a key called response
     assert FULL_RETRIEVAL_INTENT_NAME_KEY in parse_data[INTENT]
     assert parse_data[INTENT][FULL_RETRIEVAL_INTENT_NAME_KEY] == "chitchat/ask_weather"
+
+
+async def test_predict_does_not_block_on_command_generator_llm_calls(
+    trained_async: Callable, tmp_path: Path
+):
+    domain_content = textwrap.dedent(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        responses:
+            utter_greet:
+            - text: "Hello!"
+        """
+    )
+    domain_path = tmp_path / "domain.yml"
+    rasa.shared.utils.io.write_text_file(domain_content, domain_path)
+
+    training_data = textwrap.dedent(
+        """
+    flows:
+        greet_user:
+            name: greet_user
+            description: "Greet the user"
+            steps:
+            - action: utter_greet
+    """
+    )
+    training_data_path = tmp_path / "data.yml"
+    rasa.shared.utils.io.write_text_file(training_data, training_data_path)
+
+    config = textwrap.dedent(
+        f"""
+    version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+    assistant_id: placeholder_default
+    pipeline:
+    - name: LLMCommandGenerator
+      flow_retrieval:
+        active: false
+
+    policies:
+    - name: FlowPolicy
+    """
+    )
+    config_path = tmp_path / "config.yml"
+    rasa.shared.utils.io.write_text_file(config, config_path)
+
+    model_path = await trained_async(
+        str(domain_path), str(config_path), [str(training_data_path)]
+    )
+
+    async def sleepy_prediction(*args, **kwargs):
+        # a prediction mock that takes a bit to return
+        await asyncio.sleep(1)
+        return "StartFlow(greet_user)"
+
+    # we should have a trained model now and can start an agent with it
+    # let's patch the LLM though, as we don't want to make external calls
+    with patch(
+        "rasa.dialogue_understanding.generator.llm_command_generator.llm_factory",
+        Mock(),
+    ) as mock_llm_factory:
+        llm_mock = Mock()
+        apredict_mock = AsyncMock(side_effect=sleepy_prediction)
+        llm_mock.apredict = apredict_mock
+        mock_llm_factory.return_value = llm_mock
+
+        agent = await load_agent(model_path=model_path)
+
+        start = time.time()
+        results = await asyncio.gather(
+            *(
+                agent.processor.parse_message(
+                    UserMessage("Hi"),
+                    DialogueStateTracker.from_events(f"foo_{i}", evts=[]),
+                )
+                for i in range(10)
+            )
+        )
+        end = time.time()
+        time_needed = end - start
+        # all commands
+        assert all(
+            result.get("commands") == [{"flow": "greet_user", "command": "start flow"}]
+            for result in results
+        )
+        # this should only take a little more than a second since all
+        # the calls are done in parallel. but since CI could be slow,
+        # we give it a little bit of a buffer. It must be quicker
+        # than 10 seconds, if it takes longer this is a sign that the
+        # calls are not done in parallel but sequentially.
+        assert time_needed < 10
