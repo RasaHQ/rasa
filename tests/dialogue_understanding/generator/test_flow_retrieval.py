@@ -312,7 +312,9 @@ class TestFlowRetrieval:
         # When
         await flow_search._query_vector_store(query)
         # Then
-        mock_asimilarity_similarity_search_with_score.assert_called_once_with(query, k=k)
+        mock_asimilarity_similarity_search_with_score.assert_called_once_with(
+            query, k=k
+        )
 
     async def test_query_vector_store_when_its_not_initialized(
         self,
