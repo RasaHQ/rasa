@@ -11,8 +11,8 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 <!-- TOWNCRIER -->
 
 ## [3.7.8] - 2024-02-28
-                       
-Rasa 3.7.8 (2024-02-28)                        
+
+Rasa 3.7.8 (2024-02-28)
 ### Improvements
 - [#259](https://github.com/rasahq/rasa/issues/259): Improved UX around ClarifyCommand by checking options for existence and ordering them. Also, now dropping Clarify commands if there are any other commands to prevent two questions or statements to be uttered at the same time.
 - [#266](https://github.com/rasahq/rasa/issues/266): LLMCommandGenerator returns CannotHandle() command when is encountered with scenarios where
@@ -23,6 +23,7 @@ Rasa 3.7.8 (2024-02-28)
 - [#270](https://github.com/rasahq/rasa/issues/270): Modify flows YAML schema to make next step mandatory to noop step.
 - [#272](https://github.com/rasahq/rasa/issues/272): Flush messages when Kafka producer is closed. This is to ensure that all messages in the producer's internal queue are sent to the broker.
   Ensure to import all pattern stack frame subclasses of `DialogueStackFrame` when retrieving tracker from the tracker store, a required step during `rasa export`.
+- [#1060](https://github.com/rasahq/rasa-plus/issues/1060): Add support for `metadata_payload_key` for Qdrant Vector Store with an error message if `content_payload_key` or `metadata_payload_key` are incorrect
 
 
 ## [3.7.7] - 2024-02-06
@@ -58,6 +59,7 @@ Rasa 3.7.5 (2024-01-24)
 - [#196](https://github.com/rasahq/rasa/issues/196): Pin `grpcio` indirect dependency to `1.56.2` to address [CVE-2023-33953](https://www.cve.org/CVERecord?id=CVE-2023-33953)
   Pin `aiohttp` to version `3.9.0` to address [CVE-2023-49081](https://www.cve.org/CVERecord?id=CVE-2023-49081)
 - [#771](https://github.com/rasahq/rasa/issues/771): Fixes the bug that resulted in an infinite loop on a collect step in a flow with a flow guard set to `if: False`.
+- [#1029](https://github.com/rasahq/rasa-plus/issues/1029): Changed the parameters request timeout to 10 seconds and maximum number of retries to 1 for the default LLM used by Enterprise Search Policy. Any error during vector search or LLM API calls should now trigger the pattern `pattern_internal_error`. Updated the default enterprise search policy prompt to respond more succinctly to queries.
 
 
 ## [3.7.4] - 2024-01-03
@@ -77,6 +79,9 @@ Rasa 3.7.3 (2023-12-21)
 - [#133](https://github.com/rasahq/rasa/issues/133): Persist prompt as part of the model and reread prompt from the model storage instead of original file path during loading. Impacts LLMCommandGenerator.
 - [#141](https://github.com/rasahq/rasa/issues/141): Replaced soon to be depracted text-davinci-003 model with gpt-3.5-turbo. Affects components - LLM Intent Classifier and Contextual Response Rephraser.
 
+### Bugfixes
+- [#990](https://github.com/rasahq/rasa-plus/issues/990): Fix stale cache of local knowledge base used by EnterpriseSearchPolicy by implementing the `fingerprint_addon` class method.
+
 ### Miscellaneous internal changes
 - [#140](https://github.com/rasahq/rasa/issues/140), [#143](https://github.com/rasahq/rasa/issues/143), [#149](https://github.com/rasahq/rasa/issues/149), [#712](https://github.com/rasahq/rasa/issues/712)
 
@@ -84,20 +89,28 @@ Rasa 3.7.3 (2023-12-21)
 ## [3.7.2] - 2023-12-07
 
 Rasa 3.7.2 (2023-12-07)
+### Bugfixes
+- [#967](https://github.com/rasahq/rasa-plus/issues/967): Fix propagation of context across rasa spans when running `rasa run --enable-api` in the case when no additional tracing context is passed to rasa.
+- [#980](https://github.com/rasahq/rasa-plus/issues/980): Fixed a bug in policy invocation that made Enterprise Search Policy and `action_trigger_search` behaved strangely when used with rules and stories
+- [#984](https://github.com/rasahq/rasa-plus/issues/984): Updated aiohttp, cryptography and langchain to address security vulnerabilities.
 
-No significant changes.
+### Miscellaneous internal changes
+- [#992](https://github.com/rasahq/rasa-plus/issues/992)
 
 
 ## [3.7.1] - 2023-12-01
 
 Rasa 3.7.1 (2023-12-01)
-
-No significant changes.
+### Improvements
+- [#966](https://github.com/rasahq/rasa-plus/issues/966): Improved error handling in Enterprise Search Policy, changed the prompt to improve formatting of documents and ensured empty slots are not added to the prompt
 
 
 ## [3.7.0] - 2023-11-22
 
 Rasa 3.7.0 (2023-11-22)
+### Features
+- [#893](https://github.com/rasahq/rasa-plus/issues/893): Added Enterprise Search Policy that uses an LLM with conversation context and relevant knowledge base documents to generate rephrased responses. The LLM is prompted to answer the user questions given the chat transcript, documents retrived from a document search and the slot values so far. This policy supports an in-memory Faiss vector store and connecting to instances of Milvus or Qdrant vector store.
+
 ### Improvements
 - [#12480](https://github.com/rasahq/rasa/issues/12480): Skip executing the pipeline when the user message is of the form /intent or /intent + entities.
 - [#12514](https://github.com/rasahq/rasa/issues/12514): Remove tensorflow-addons from dependencies as it is now deprecated.
@@ -156,6 +169,28 @@ Rasa 3.7.0 (2023-11-22)
   feedback even when no input is detected.
   - `LLMCommandGenerator` behavior updated. It now returns an `ErrorCommand` for empty user messages.
   - Updated default error pattern and added the default utterance in `default_flows_for_patterns.yml`
+- [#1230](https://github.com/rasahq/rasa-plus/issues/1230): Add support for Vault namespaces.
+  To use namespace set either:
+  * `VAULT_NAMESPACE` environment variable
+  * `namespace` property in `secrets_manager` section at `endpoints.yaml`
+- [#669](https://github.com/rasahq/rasa-plus/issues/669): Added Rasa Labs LLM components. Added components are:
+  - `LLMIntentClassifier`
+  - `IntentlessPolicy`
+  - `ContextualResponseRephraser`
+- [#772](https://github.com/rasahq/rasa-plus/issues/772): Made it possible for the Rasa REST channel to accept OpenTelemetry tracing context.
+- [#773](https://github.com/rasahq/rasa-plus/issues/773): Improved the naming of trace spans and added more trace tags.
+- [#827](https://github.com/rasahq/rasa-plus/issues/827): Add `slot_was_not_set` to E2E testing for asserting that a slot was not set and that a slot was not set with a specific value.
+- [#850](https://github.com/rasahq/rasa-plus/issues/850): Introduced the rasa studio download command, enabling data retrieval from the studio.
+  Implemented the option to refresh the Keycloak token.
+  Expanded the functionality of RasaPrimitiveStorageMapper with the addition of flows.
+  Added flows support to `rasa studio train`.
+- [#898](https://github.com/rasahq/rasa-plus/issues/898): Instrument `LLMCommandGenerator._generate_action_list_using_llm` and `Command.run_command_on_tracker` methods.
+- [#917](https://github.com/rasahq/rasa-plus/issues/917): Added the default values for the number of tokens generated by the LLM (`max_tokens`)
+- [#918](https://github.com/rasahq/rasa-plus/issues/918): Make the instrumentation of `Command.run_command_on_tracker` method applicable to all subclasses of the `Command` class`
+- [#920](https://github.com/rasahq/rasa-plus/issues/920): Instrument `ContextualResponseRephraser._generate_llm_response` and `ContextualResponseRephraser.generate` methods.
+- [#925](https://github.com/rasahq/rasa-plus/issues/925): Extract commands as tracing attributes from message input when previous node was the `LLMCommandGenerator`.
+- [#927](https://github.com/rasahq/rasa-plus/issues/927): Rename `rasa chat` command to `rasa inspect` and rename channel name to `inspector`.
+- [#935](https://github.com/rasahq/rasa-plus/issues/935): Extract `events` and `optional_events` when `GraphNode` is `FlowPolicy`.
 
 ### Bugfixes
 - [#100](https://github.com/rasahq/rasa/issues/100): uvloop is disabled by default on apple silicon machines
@@ -172,6 +207,14 @@ Rasa 3.7.0 (2023-11-22)
   the new python-socketio version.
 
   https://github.com/miguelgrinberg/python-socketio/blob/main/CHANGES.md
+- [#779](https://github.com/rasahq/rasa-plus/issues/779): Fixed the `404 Not Found` Github actions error while removing packages.
+- [#827](https://github.com/rasahq/rasa-plus/issues/827): Corrected E2E diff behavior to prevent it from going out of sync when more than one turn difference exists between actual and expected events.
+  Fixed E2E tests from propagating errors when events and test steps did not have the same length.
+  Fixed the issue where E2E tests couldn't locate slot events that were not arranged chronologically.
+  Resolved the problem where E2E tests were incorrectly diffing user utter events when they were not in the correct order.
+- [#890](https://github.com/rasahq/rasa-plus/issues/890): Fixed E2E runner wrongly selecting the first available bot utterance when generating the test fail diff.
+- [#943](https://github.com/rasahq/rasa-plus/issues/943): Updated werkzeug and urllib3 to address security vulnerabilities.
+- [#950](https://github.com/rasahq/rasa-plus/issues/950): Fix cases when E2E test runner crashes when there is no response from the bot.
 
 ### Improved Documentation
 - [#12371](https://github.com/rasahq/rasa/issues/12371): Update wording in Rasa Pro installation page.
@@ -180,6 +223,8 @@ Rasa 3.7.0 (2023-11-22)
 - [#12703](https://github.com/rasahq/rasa/issues/12703): Document support for Vault namespaces.
 - [#12721](https://github.com/rasahq/rasa/issues/12721): Updated tracing documentation to include tracing in the action server and the REST Channel.
 
+### Miscellaneous internal changes
+- [#900](https://github.com/rasahq/rasa-plus/issues/900)
 
 ## [3.6.13] - 2023-10-23
 
@@ -191,9 +236,13 @@ Rasa 3.6.13 (2023-10-23)
 ## [3.6.12] - 2023-10-10
 
 Rasa 3.6.12 (2023-10-10)
+### Improvements
+- [#856](https://github.com/rasahq/rasa-plus/issues/856): Added `username` to the connection parameters for `ConcurrentRedisLockStore`.
+
 ### Bugfixes
 - [#12904](https://github.com/rasahq/rasa/issues/12904): Refresh headers used in requests (e.g. action server requests) made by `EndpointConfig` using its `headers` attribute.
 - [#12906](https://github.com/rasahq/rasa/issues/12906): Upgrade `pillow` to `10.0.1` to address security vulnerability CVE-2023-4863 found in `10.0.0` version.
+- [#867](https://github.com/rasahq/rasa-plus/issues/867): Fix setuptools security vulnerability CVE-2022-40897 in Docker build by updating setuptools in poetry's environment.
 
 
 ## [3.6.11] - 2023-10-05
@@ -234,8 +283,11 @@ Rasa 3.6.9 (2023-09-15)
 ## [3.6.8] - 2023-08-30
 
 Rasa 3.6.8 (2023-08-30)
-
-No significant changes.
+### Bugfixes
+- [#784](https://github.com/rasahq/rasa-plus/issues/784): Fix E2E testing diff algorithm to support the following use cases:
+  - asserting a slot was not set under a `slot_was_set` block
+  - asserting multiple slot names and/or values under a `slot_was_set` block
+  Additionally, the diff algorithm has been improved to show a higher fidelity result.
 
 
 ## [3.6.7] - 2023-08-29
@@ -243,6 +295,7 @@ No significant changes.
 Rasa 3.6.7 (2023-08-29)
 ### Bugfixes
 - [#12768](https://github.com/rasahq/rasa/issues/12768): Updated certifi, cryptography, and scipy packages to address security vulnerabilities.
+- [#795](https://github.com/rasahq/rasa-plus/issues/795): Updated setuptools and wheel to address security vulnerabilities.
 
 
 ## [3.6.6] - 2023-08-23
@@ -260,6 +313,7 @@ Rasa 3.6.5 (2023-08-17)
 
 ### Bugfixes
 - [#12737](https://github.com/rasahq/rasa/issues/12737): Resolve dependency incompatibility: Pin  version of `dnspython` to ==2.3.0.
+- [#774](https://github.com/rasahq/rasa-plus/issues/774): Fix the issue in `rasa test e2e` where test diff inaccurately displayed actual event transcripts, leading to the duplication of `BotUtter`` or `UserUtter`` events. This occurred specifically when `SetSlot`` events took place that were not explicitly defined in the Test Cases.
 
 ### Improved Documentation
 - [#12712](https://github.com/rasahq/rasa/issues/12712): Updated PII docs with new section on how to use Rasa X/Enterprise with PII management solution, and a new note on debug
@@ -273,6 +327,7 @@ Rasa 3.6.4 (2023-07-21)
 - [#12575](https://github.com/rasahq/rasa/issues/12575): Extract conditional response variation and channel variation filtering logic into a separate component.
   Enable usage of this component in the NaturalLanguageGenerator subclasses (e.g. CallbackNaturalLanguageGenerator, TemplatedNaturalLanguageGenerator).
   Amend nlg_request_format to include a single response ID string field, instead of a list of IDs.
+- [#123](https://github.com/rasahq/rasa-plus/issues/123): Added details to the logs of successful and failed cases of running the markers upload command.
 
 ### Improved Documentation
 - [#12663](https://github.com/rasahq/rasa/issues/12663): Updated commands with square brackets e.g (`pip install rasa[spacy]`) to use quotes (`pip install 'rasa[spacy]'`) for compatibility with zsh in docs.
@@ -287,6 +342,10 @@ Rasa 3.6.3 (2023-07-20)
 ### Bugfixes
 - [#12638](https://github.com/rasahq/rasa/issues/12638): Fix the issue with the most recent model not being selected if the owner or permissions where modified on the model file.
 - [#12661](https://github.com/rasahq/rasa/issues/12661): Fixed `BlockingIOError` which occured as a result of too large data passed to strulogs.
+- [#746](https://github.com/rasahq/rasa-plus/issues/746): Fixed the error handling mechanism in `rasa test e2e` to quickly detect and communicate errors when the action server, defined in endpoints.yaml, is not available.
+- [#747](https://github.com/rasahq/rasa-plus/issues/747): Allow hyphens `-` to be present in e2e test slot names.
+- [#748](https://github.com/rasahq/rasa-plus/issues/748): Resolved issues in `rasa test e2e` where errors occurred when the bot concluded the conversation with `SetSlot` events while there were remaining steps in the test case.
+  Corrected the misleading error message '- No slot set' to '- Slot types do not match' in `rasa test e2e` when a type mismatch occurred during testing.
 
 ### Improved Documentation
 - [#12659](https://github.com/rasahq/rasa/issues/12659): Update action server documentation with new capability to extend Sanic features by using plugins.
@@ -297,6 +356,11 @@ Rasa 3.6.3 (2023-07-20)
 ## [3.6.2] - 2023-07-06
 
 Rasa 3.6.2 (2023-07-06)
+### Improvements
+- [#651](https://github.com/rasahq/rasa-plus/issues/651): Add building Docker container for arm64 (e.g. to allow running Rasa inside docker on M1/M2).
+
+  Bumped the version of OpenTelemetry to meet the requirement of protobuf 4.x.
+
 ### Bugfixes
 - [#12602](https://github.com/rasahq/rasa/issues/12602): Resolves the issue of importing TensorFlow on Docker for ARM64 architecture.
 
@@ -314,6 +378,7 @@ Rasa 3.6.1 (2023-07-03)
 - [#12521](https://github.com/rasahq/rasa/issues/12521): Introduce a validation step in `rasa data validate` and `rasa train` commands to identify non-existent paths and empty domains.
 - [#12556](https://github.com/rasahq/rasa/issues/12556): Rich responses containing buttons with parentheses characters are now correctly parsed.
   Previously any characters found between the first identified pair of `()` in response button took precedence.
+- [#702](https://github.com/rasahq/rasa-plus/issues/702): Add PII bugfixes (e.g. handling None values and casting data types to string before being passed to the anonymizer) after testing manually with Audiocodes channel.
 
 ### Improved Documentation
 - [#12371](https://github.com/rasahq/rasa/issues/12371): Update wording in Rasa Pro installation page.
@@ -329,6 +394,29 @@ Rasa 3.6.1 (2023-07-03)
 Rasa 3.6.0 (2023-06-14)
 ### Deprecations and Removals
 - [#12355](https://github.com/rasahq/rasa/issues/12355): Removed Python 3.7 support as [it reaches its end of life in June 2023](https://devguide.python.org/versions/)
+
+### Features
+- [#644](https://github.com/rasahq/rasa-plus/issues/644): Implemented PII (Personally Idenfiable Information) management using Microsoft Presidio as the entity analyzer and
+  anonymization engine.
+  The feature covers the following:
+  - anonymization of Rasa events (`UserUttered`, `BotUttered`, `SlotSet`, `EntitiesAdded`) before they are streamed to
+  Kafka event broker anonymization topics specified in `endpoints.yml`.
+  - anonymization of Rasa logs that expose PII data
+
+  The main components of the feature are:
+  - anonymization rules that define in `endpoints.yml` the PII entities to be anonymized and the anonymization method to be used
+  - anonymization executor that executes the anonymization rules on a given text
+  - anonymization orchestrator that orchestrates the execution of the anonymization rules and publishes
+  the anonymized event to the matched Kafka topic.
+  - anonymization pipeline that contains a list of orchestrators and is registered to a singleton provider component,
+  which gets invoked in hook calls in Rasa Open Source when the pipeline must be retrieved for anonymizing events and logs.
+
+  Please read through the PII Management section in the official documentation to learn how to get started.
+- [#685](https://github.com/rasahq/rasa-plus/issues/685): Implemented support for real time evaluation of Markers with the Analytics
+  Data Pipeline, enabling you to gain valuable insights and enhance the performance of your Rasa
+  Assistant.
+
+  For this feature, we've added support for `rasa markers upload` command([PR#630](https://github.com/RasaHQ/rasa-plus/pull/630)). Running this command validates the marker configuration file against the domain file and uploads the configuration to Analytics Data Pipeline.
 
 ### Improvements
 - [#11222](https://github.com/rasahq/rasa/issues/11222): Add optional property `ids` to the nlg server request body.
@@ -353,10 +441,19 @@ Rasa 3.6.0 (2023-06-14)
       - intent: mood_unhappy
       - intent: mood_great
   ```
+- [#630](https://github.com/rasahq/rasa-plus/issues/630): Add `rasa marker upload` command to upload markers to the Rasa Pro Services.
+  Usage: `rasa marker upload --config=<path-to-config-file> -d=<path-to-domain-file> -rasa-pro-services-url=<url>`.
+- [#670](https://github.com/rasahq/rasa-plus/issues/670): Enhance the validation of the `anonymization` key in `endpoints.yaml` by introducing checks for required fields and duplicate IDs.
 
 ### Bugfixes
 - [#12467](https://github.com/rasahq/rasa/issues/12467): Fix running custom form validation to update required slots at form activation when prefilled slots consist only of slots
   that are not requested by the form.
+- [#638](https://github.com/rasahq/rasa-plus/issues/638): Anonymize `rasa_events` structlog key.
+- [#646](https://github.com/rasahq/rasa-plus/issues/646): Fixes issue with uploading locally trained model to a cloud rasa-plus instance where the conversation does not
+  go as expected because slots don't get set correctly, e.g. an error is logged `Tried to set non existent slot 'placeholder_slot_name'. Make sure you added all your slots to your domain file.`.
+  This is because the updated domain during the cloud upload did not get passed to the wrapped tracker store of the `AuthRetryTrackerStore` rasa-plus component.
+  The fix was to add domain property and setter methods to the `AuthRetryTrackerStore` component.
+- [#684](https://github.com/rasahq/rasa-plus/issues/684): When using `rasa studio upload`, if no specific `intents` or `entities` are specified by the user, the update will now include all available `intents` or `entities`.
 
 ### Improved Documentation
 - [#12145](https://github.com/rasahq/rasa/issues/12145): Explicitly set Node.js version to 12.x in order to run Docusaurus.
@@ -368,7 +465,7 @@ Rasa 3.6.0 (2023-06-14)
 - [#12504](https://github.com/rasahq/rasa/issues/12504): Fix dead link in Analytics documentation.
 
 ### Miscellaneous internal changes
-- [#12291](https://github.com/rasahq/rasa/issues/12291), [#12329](https://github.com/rasahq/rasa/issues/12329), [#12332](https://github.com/rasahq/rasa/issues/12332), [#12365](https://github.com/rasahq/rasa/issues/12365), [#12372](https://github.com/rasahq/rasa/issues/12372), [#12386](https://github.com/rasahq/rasa/issues/12386), [#12492](https://github.com/rasahq/rasa/issues/12492)
+- [#12291](https://github.com/rasahq/rasa/issues/12291), [#12329](https://github.com/rasahq/rasa/issues/12329), [#12332](https://github.com/rasahq/rasa/issues/12332), [#12365](https://github.com/rasahq/rasa/issues/12365), [#12372](https://github.com/rasahq/rasa/issues/12372), [#12386](https://github.com/rasahq/rasa/issues/12386), [#12492](https://github.com/rasahq/rasa/issues/12492), [#619](https://github.com/rasahq/rasa-plus/issues/619)
 
 
 ## [3.5.12] - 2023-06-23
@@ -533,6 +630,8 @@ Rasa 3.5.0 (2023-03-21)
 
   An assistant running without an identifier will issue a warning that dialogue events without identifier metadata will be
   streamed to the event broker.
+- [#309](https://github.com/rasahq/rasa-plus/issues/309): End-to-end testing is an enhanced and comprehensive CLI-based testing tool that allows you to test conversation scenarios with different pre-configured contexts, execute custom actions, verify response texts or names, and assert when slots are filled. It is available ysing the new `rasa test e2e` command.
+- [#342](https://github.com/rasahq/rasa-plus/issues/342): You can now store your assistant's secrets in an external credentials manager. In this release, Rasa Pro currently supports credentials manager for the Tracker Store with HashiCorp Vault.
 
 ### Improvements
 - [#11998](https://github.com/rasahq/rasa/issues/11998): Add capability to send compressed body in HTTP request to action server.
@@ -716,6 +815,7 @@ Rasa 3.4.1 (2023-01-19)
 Rasa 3.4.0 (2022-12-14)
 ### Features
 - [#11087](https://github.com/rasahq/rasa/issues/11087): Add metadata to Websocket channel. Messages can now include a `metadata` object which will be included as metadata to Rasa.  The metadata can be supplied on a user configurable key with the `metadata_key` setting in the `socketio` section of the `credentials.yml`.
+- [#185](https://github.com/rasahq/rasa-plus/issues/185): Use a new IVR Channel to connect your assistant to AudioCodes VoiceAI Connect.
 
 ### Improvements
 - [#11517](https://github.com/rasahq/rasa/issues/11517): Added `./docker/Dockerfile_pretrained_embeddings_spacy_it` to include Spacy's Italian pre-trained model `it_core_news_md`.
@@ -806,6 +906,10 @@ Use COMPRESS_ACTION_SERVER_REQUEST=True to turn the feature on.
 - [#11732](https://github.com/rasahq/rasa/issues/11732): Updated numpy and scikit learn version to fix vulnerabilities of those dependencies
 
 ## [3.3.0] - 2022-10-24
+### Features
+- [#3](https://github.com/rasahq/rasa-plus/issues/3): Tracing capabilities for your Rasa Pro assistant. Distributed tracing tracks requests as they flow through a distributed system (in this case: a Rasa assistant), sending data about the requests to a tracing backend which collects all trace data and enables inspecting it. With this version of the Tracing feature, Rasa Pro supports OpenTelemetry.
+- [#92](https://github.com/rasahq/rasa-plus/issues/92): `ConcurrentRedisLockStore` is a new lock store that uses Redis as a persistence layer and is safe for use with multiple Rasa server replicas.
+
 ### Improvements
 - [#11561](https://github.com/rasahq/rasa/issues/11561): Added option `--offset-timestamps-by-seconds` to offset the timestamp of events when using `rasa export`
 - [#11578](https://github.com/rasahq/rasa/issues/11578): Rasa supports native installations on Apple Silicon (M1 / M2). Please
