@@ -37,8 +37,8 @@ branches = ast.literal_eval(input_branches)
 tags = get_tags_from_branches(branches)
 
 # Filter out tags lower than the version where the product you're patching became available
-first_release_version = map(int, first_release.split('.'))
-filtered_tags = [tag for tag in tags if tuple(map(int, tag.split('.'))) >= tuple(first_release_version)]
+first_release_version = tuple(map(int, first_release.split('.')))
+filtered_tags = [tag for tag in tags if tuple(map(int, tag.split('.'))) >= first_release_version]
 
 print(f'{filtered_tags}')
 
