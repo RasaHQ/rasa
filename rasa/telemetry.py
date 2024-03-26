@@ -574,6 +574,7 @@ def _default_context_fields() -> Dict[Text, Any]:
             "rasa_open_source": rasa.__version__,
             "cpu": multiprocessing.cpu_count(),
             "docker": _is_docker(),
+            "company": property_of_active_license("company"),
         }
         license_hash = plugin_manager().hook.get_license_hash()
         if license_hash:
