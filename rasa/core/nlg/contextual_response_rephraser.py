@@ -118,7 +118,7 @@ class ContextualResponseRephraser(TemplatedNaturalLanguageGenerator):
         llm = llm_factory(self.nlg_endpoint.kwargs.get("llm"), DEFAULT_LLM_CONFIG)
 
         try:
-            return llm(prompt)
+            return await llm.apredict(prompt)
         except Exception as e:
             # unfortunately, langchain does not wrap LLM exceptions which means
             # we have to catch all exceptions here
