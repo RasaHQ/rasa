@@ -1,10 +1,11 @@
 import importlib.resources
 import re
 from typing import Dict, Any, List, Optional, Tuple, Union, Text
-
+from functools import lru_cache
 import rasa.shared.utils.io
 import structlog
 from jinja2 import Template
+import asyncio
 from rasa.dialogue_understanding.commands import (
     Command,
     ErrorCommand,
@@ -122,6 +123,14 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
     @property
     def enabled_flow_retrieval(self) -> bool:
         return self.config[FLOW_RETRIEVAL_KEY].get(FLOW_RETRIEVAL_ACTIVE_KEY, True)
+
+    @lru_cache
+    def _compile_template(self, template: str) -> Template:
+        """Compile the prompt template.
+
+        Compiling the template is an expensive operation,
+        so we cache the result."""
+        return Template(template)
 
     @classmethod
     def create(
@@ -324,7 +333,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             "user_message": latest_user_message,
         }
 
-        return Template(self.prompt_template).render(**inputs)
+        return self._compile_template(self.prompt_template).render(**inputs)
 
     async def _generate_action_list_using_llm(self, prompt: str) -> Optional[str]:
         """Use LLM to generate a response.

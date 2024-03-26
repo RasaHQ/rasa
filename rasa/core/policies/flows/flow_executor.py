@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any, Dict, Text, List, Optional
 
 from jinja2 import Template
+import copy
 from structlog.contextvars import (
     bound_contextvars,
 )
@@ -378,7 +379,7 @@ def advance_flows_until_next_action(
     """
     step_result: FlowStepResult = ContinueFlowWithNextStep()
 
-    tracker = tracker.copy()
+    tracker = copy.deepcopy(tracker)
 
     number_of_initial_events = len(tracker.events)
 
