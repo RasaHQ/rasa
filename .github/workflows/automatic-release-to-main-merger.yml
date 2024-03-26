@@ -13,6 +13,9 @@ on:
 env:
   LABEL_TYPE: type:release-branch-port
 
+permissions:
+  pull-requests: write
+
 jobs:
   update_merge_pr:
     runs-on: ubuntu-22.04
