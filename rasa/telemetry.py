@@ -571,7 +571,7 @@ def _default_context_fields() -> Dict[Text, Any]:
             "project": model.project_fingerprint(),
             "directory": _hash_directory_path(os.getcwd()),
             "python": sys.version.split(" ")[0],
-            "rasa_open_source": rasa.__version__,
+            "version": rasa.__version__,
             "cpu": multiprocessing.cpu_count(),
             "docker": _is_docker(),
             "license_hash": get_license_hash(),
