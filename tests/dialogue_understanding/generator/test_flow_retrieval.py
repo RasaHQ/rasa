@@ -298,10 +298,10 @@ class TestFlowRetrieval:
         # Then
         assert query == expected_query
 
-    @patch("langchain.vectorstores.faiss.FAISS.similarity_search_with_score")
+    @patch("langchain.vectorstores.faiss.FAISS.asimilarity_search_with_score")
     async def test_query_vector_store(
         self,
-        mock_similarity_similarity_search_with_score: Mock,
+        mock_asimilarity_similarity_search_with_score: Mock,
         flow_search: FlowRetrieval,
         startable_flows_documents: List[Document],
     ):
@@ -312,7 +312,7 @@ class TestFlowRetrieval:
         # When
         await flow_search._query_vector_store(query)
         # Then
-        mock_similarity_similarity_search_with_score.assert_called_once_with(query, k=k)
+        mock_asimilarity_similarity_search_with_score.assert_called_once_with(query, k=k)
 
     async def test_query_vector_store_when_its_not_initialized(
         self,
