@@ -44,9 +44,11 @@ jobs:
 
       - name: Run Python script
         id: tags
-        # Filter out tags inside get_tags_from_branch.py lower than '3.7.8'
+        # Filter out tags inside get_tags_from_branch.py lower than '3.8.0'
+        # Security patching from this repo is only for Rasa Pro >= 3.8.0
+        # Security patching for older versions is done in the Rasa Plus repo
         run: |
-          python scripts/get_tags_from_branch.py '${{ steps.get_branches.outputs.records }}'
+          python scripts/get_tags_from_branch.py '${{ steps.get_branches.outputs.records }}' '3.8.0'
 
       - name: Alert Slack if get_tags step fails
         if: steps.get_branches.outcome == 'failure' || steps.tags.outcome == 'failure'
