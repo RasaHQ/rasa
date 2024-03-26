@@ -1,3 +1,4 @@
+import hashlib
 import logging
 import os
 import re
@@ -310,3 +311,9 @@ def property_of_active_license(prop: Callable[[License], str]) -> Optional[str]:
     except LicenseValidationException as e:
         logger.warning("The provided license is invalid.", exc_info=e)
         return None
+
+
+def get_license_hash() -> Optional[Text]:
+    """Return the hash of the current active license."""
+    license_value = retrieve_license_from_env()
+    return hashlib.sha256(license_value.encode("utf-8")).hexdigest()

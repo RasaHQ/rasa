@@ -43,7 +43,7 @@ from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 from rasa.utils import common as rasa_utils
 import rasa.utils.io
-from rasa.utils.licensing import property_of_active_license
+from rasa.utils.licensing import property_of_active_license, get_license_hash
 
 if typing.TYPE_CHECKING:
     from rasa.core.brokers.broker import EventBroker
@@ -574,11 +574,9 @@ def _default_context_fields() -> Dict[Text, Any]:
             "rasa_open_source": rasa.__version__,
             "cpu": multiprocessing.cpu_count(),
             "docker": _is_docker(),
+            "license_hash": get_license_hash(),
             "company": property_of_active_license("company"),
         }
-        license_hash = plugin_manager().hook.get_license_hash()
-        if license_hash:
-            TELEMETRY_CONTEXT["license_hash"] = license_hash
 
     # avoid returning the cached dict --> caller could modify the dictionary...
     # usually we would use `lru_cache`, but that doesn't return a dict copy and

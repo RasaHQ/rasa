@@ -1,5 +1,4 @@
 import argparse
-import hashlib
 import logging
 from typing import Optional, TYPE_CHECKING, List, Text, Union
 
@@ -102,13 +101,6 @@ def get_anonymization_pipeline() -> Optional["AnonymizationPipeline"]:
     from rasa.anonymization.anonymization_pipeline import AnonymizationPipelineProvider
 
     return AnonymizationPipelineProvider().get_anonymization_pipeline()
-
-
-@hookimpl  # type: ignore[misc]
-def get_license_hash() -> Optional[Text]:
-    """Hook implementation for getting the license hash."""
-    license_value = retrieve_license_from_env()
-    return hashlib.sha256(license_value.encode("utf-8")).hexdigest()
 
 
 @hookimpl  # type: ignore[misc]

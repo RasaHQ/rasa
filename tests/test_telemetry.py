@@ -223,7 +223,7 @@ def test_segment_does_not_get_called_without_license(monkeypatch: MonkeyPatch):
         return None
 
     monkeypatch.setattr(
-        rasa.telemetry.plugin_manager().hook, "get_license_hash", mock_get_license_hash
+        rasa.utils.licensing, "get_license_hash", mock_get_license_hash
     )
 
     mock_license_property = MagicMock(return_value=None)
@@ -460,28 +460,16 @@ def test_context_contains_os():
 
 
 def test_context_contains_license_hash(monkeypatch: MonkeyPatch) -> None:
-    mock = MagicMock()
-    mock.return_value.hook.get_license_hash.return_value = "1234567890"
-    monkeypatch.setattr("rasa.telemetry.plugin_manager", mock)
+    monkeypatch.setattr(rasa.utils.licensing, "get_license_hash", "1234567890")
     context = telemetry._default_context_fields()
 
     assert "license_hash" in context
-    assert mock.return_value.hook.get_license_hash.called
+    assert rasa.utils.licensing.get_license_hash.called
     assert context["license_hash"] == "1234567890"
 
     # make sure it is still there after removing it
     context.pop("license_hash")
     assert "license_hash" in telemetry._default_context_fields()
-
-
-def test_context_does_not_contain_license_hash(monkeypatch: MonkeyPatch) -> None:
-    mock = MagicMock()
-    mock.return_value.hook.get_license_hash.return_value = None
-    monkeypatch.setattr("rasa.telemetry.plugin_manager", mock)
-    context = telemetry._default_context_fields()
-
-    assert "license_hash" not in context
-    assert mock.return_value.hook.get_license_hash.called
 
 
 def test_segment_identify_payload() -> None:
