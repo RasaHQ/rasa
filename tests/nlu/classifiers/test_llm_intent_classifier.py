@@ -129,7 +129,7 @@ def test_find_closest_examples_with_no_examples(
     assert len(examples) == 0
 
 
-def test_process_sets_intent(
+async def test_process_sets_intent(
     default_patched_llm_intent_classifier: LLMIntentClassifier,
 ) -> None:
     training_data = TrainingData(
@@ -142,7 +142,7 @@ def test_process_sets_intent(
     default_patched_llm_intent_classifier.train(training_data)
 
     message = Message(data={TEXT: "hello"})
-    default_patched_llm_intent_classifier.process([message])
+    await default_patched_llm_intent_classifier.process([message])
 
     assert message.get(INTENT) == {
         "confidence": 1.0,
@@ -161,7 +161,7 @@ def test_process_sets_no_intent_with_no_examples(
     assert message.get(INTENT) is None
 
 
-def test_process_sends_default_prompt(
+async def test_process_sends_default_prompt(
     default_patched_llm_intent_classifier: LLMIntentClassifier,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -201,7 +201,7 @@ def test_process_sends_default_prompt(
         default_patched_llm_intent_classifier.train(training_data)
 
         message = Message(data={TEXT: "howdy"})
-        default_patched_llm_intent_classifier.process([message])  #
+        await default_patched_llm_intent_classifier.process([message])  #
 
     mock.assert_called_once()
 
