@@ -10,6 +10,33 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.7.9] - 2024-03-26
+
+Rasa Pro 3.7.9 (2024-03-26)
+### Improvements
+- [#359](https://github.com/rasahq/rasa/issues/359): Add validations for flow ID to allow only alphanumeric characters, underscores, and hyphens except for the first character.
+
+### Bugfixes
+- [#310](https://github.com/rasahq/rasa/issues/310): Changed the ordering of returned events to order by ID (previously timestamp) in SQL Tracker Store
+- [#352](https://github.com/rasahq/rasa/issues/352): Fixes flow guards pypredicate evaluatation bug: pypredicate was evaluated with `Slot` instances instead of slot values
+- [#369](https://github.com/rasahq/rasa/issues/369): Improved handling of categorical slots with text values when using CALM.
+
+  Slot values extracted by the command generator (LLM) will be stored in the
+  same casing as the casing used to define the categorical slot values in the
+  domain. E.g. A categorical slot defined to store the values ["A", "B"]
+  will store "A" if the LLM predicts the slot to be filled with "a". Previously,
+  this would have stored "a".
+- [#871](https://github.com/rasahq/rasa/issues/871): Log message `llm_command_generator.predict_commands.finished` is set to debug log by default.
+  To enable logging of the `LLMCommandGenerator` set `LOG_LEVEL_LLM_COMMAND_GENERATOR` to `INFO`.
+- [#892](https://github.com/rasahq/rasa/issues/892): Improvements and fixes to cleaning up commands:
+
+  - Clean up predicted `StartFlow` commands from the `LLMCommandGenerator` if the flow, that should
+  be started, is already active.
+  - Clean up predicted SetSlot commands from the `LLMCommandGenerator` if the value of the slot is
+  already set on the tracker.
+  - Use string comparison for slot values to make sure to capture cases when the `LLMCommandGenerator`
+  predicted a string value but the value set on the tracker is, for example, an integer value.
+
 ## [3.7.8] - 2024-02-28
 
 Rasa Pro 3.7.8 (2024-02-28)
