@@ -105,7 +105,7 @@ async def test_loader_loads_graph_runner(
         graph_runner_class=DaskGraphRunner,
     )
 
-    assert loaded_predict_graph_runner.run() == {"load": test_value}
+    assert await loaded_predict_graph_runner.run() == {"load": test_value}
 
     assert model_metadata.predict_schema == predict_schema
     assert model_metadata.train_schema == train_schema

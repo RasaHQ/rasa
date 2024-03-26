@@ -87,11 +87,11 @@ class TestIntentBasedRouter:
         intent_based_router = IntentBasedRouter(config, model_storage, resource)
         assert intent_based_router.config == config
 
-    def test_intent_based_router_process_with_no_tracker(
+    async def test_intent_based_router_process_with_no_tracker(
         self, intent_based_router: IntentBasedRouter
     ) -> None:
         message = Message.build(text="some message")
-        returned_messages = intent_based_router.process([message], None)
+        returned_messages = await intent_based_router.process([message], None)
 
         assert len(returned_messages) == 1
         assert returned_messages[0] == message

@@ -16,7 +16,9 @@ from rasa.engine.training.components import (
 from tests.engine.graph_components_test_classes import CacheableText
 
 
-def test_cached_component_returns_value_from_cache(default_model_storage: ModelStorage):
+async def test_cached_component_returns_value_from_cache(
+    default_model_storage: ModelStorage,
+):
 
     cached_output = CacheableText("Cache me!!")
 
@@ -33,7 +35,7 @@ def test_cached_component_returns_value_from_cache(default_model_storage: ModelS
         execution_context=ExecutionContext(GraphSchema({}), "1"),
     )
 
-    node_name, returned_output = node()
+    node_name, returned_output = await node()
 
     assert node_name == "cached"
     assert returned_output.text == "Cache me!!"
@@ -103,7 +105,7 @@ class FingerprintableText:
         return self.text
 
 
-def test_fingerprint_component_hit(
+async def test_fingerprint_component_hit(
     default_model_storage: ModelStorage, temp_cache: TrainingCache
 ):
 
@@ -147,7 +149,7 @@ def test_fingerprint_component_hit(
         execution_context=ExecutionContext(GraphSchema({}), "1"),
     )
 
-    node_name, returned_output = node(
+    node_name, returned_output = await node(
         ("parent_node_1", FingerprintableText("input_1")),
         ("parent_node_2", FingerprintStatus(is_hit=True, output_fingerprint="input_2")),
     )
@@ -158,7 +160,7 @@ def test_fingerprint_component_hit(
     assert returned_output.output_fingerprint == returned_output.fingerprint()
 
 
-def test_fingerprint_component_miss(
+async def test_fingerprint_component_miss(
     default_model_storage: ModelStorage, temp_cache: TrainingCache
 ):
 
@@ -181,7 +183,7 @@ def test_fingerprint_component_miss(
         execution_context=ExecutionContext(GraphSchema({}), "1"),
     )
 
-    node_name, returned_output = node(
+    node_name, returned_output = await node(
         ("parent_node_1", FingerprintableText("input_1")),
         ("parent_node_2", FingerprintStatus(is_hit=True, output_fingerprint="input_2")),
     )

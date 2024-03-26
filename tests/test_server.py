@@ -517,7 +517,7 @@ async def test_train_with_yaml_with_params(
     fake_model = Path(tmp_path) / "fake_model.tar.gz"
     fake_model.touch()
     fake_model_path = str(fake_model)
-    mock_train = Mock(return_value=TrainingResult(model=fake_model_path))
+    mock_train = AsyncMock(return_value=TrainingResult(model=fake_model_path))
     monkeypatch.setattr(rasa.model_training, "train", mock_train)
 
     training_data = """

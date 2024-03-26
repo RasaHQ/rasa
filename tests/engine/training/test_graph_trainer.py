@@ -604,7 +604,7 @@ async def test_resources_fingerprints_remain_after_being_cached(
     "on_before, on_after",
     [(lambda: True, lambda: 2 / 0), (lambda: 2 / 0, lambda: True)],
 )
-def test_exception_handling_for_on_before_hook(
+async def test_exception_handling_for_on_before_hook(
     on_before: Callable,
     on_after: Callable,
     default_model_storage: ModelStorage,
@@ -644,4 +644,4 @@ def test_exception_handling_for_on_before_hook(
     )
 
     with pytest.raises(GraphComponentException):
-        node()
+        await node()

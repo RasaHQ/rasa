@@ -224,7 +224,7 @@ policy_prediction_with_reminder_scheduled_event = PolicyPrediction(
 )
 
 
-def test_tracing(
+async def test_tracing(
     default_model_storage: ModelStorage,
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
@@ -258,7 +258,7 @@ def test_tracing(
         execution_context=ExecutionContext(GraphSchema({}), "1"),
     )
 
-    graph_node()
+    await graph_node()
 
     captured_spans: Sequence[
         ReadableSpan
@@ -541,7 +541,7 @@ def test_tracing(
         ),
     ],
 )
-def test_tracing_with_inputs_from_previous_nodes(
+async def test_tracing_with_inputs_from_previous_nodes(
     default_model_storage: ModelStorage,
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
@@ -577,7 +577,7 @@ def test_tracing_with_inputs_from_previous_nodes(
         execution_context=ExecutionContext(GraphSchema({}), "1"),
     )
 
-    graph_node(inputs_from_previous_nodes)
+    await graph_node(inputs_from_previous_nodes)
 
     captured_spans: Sequence[
         ReadableSpan

@@ -1,6 +1,6 @@
 import uuid
 from typing import List, Optional
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, AsyncMock
 
 import pytest
 from _pytest.tmpdir import TempPathFactory
@@ -88,11 +88,11 @@ class TestLLMBasedRouter:
                 resource,
             )
 
-    def test_llm_based_router_process_with_no_tracker(
+    async def test_llm_based_router_process_with_no_tracker(
         self, llm_based_router: LLMBasedRouter
     ) -> None:
         message = Message.build(text="some message")
-        returned_messages = llm_based_router.process([message], None)
+        returned_messages = await llm_based_router.process([message], None)
 
         assert len(returned_messages) == 1
         assert returned_messages[0] == message
@@ -150,9 +150,13 @@ class TestLLMBasedRouter:
             "rasa.dialogue_understanding.coexistence.llm_based_router.llm_factory",
             Mock(),
         ) as mock_llm_factory:
+            llm_mock = Mock()
+            apredict_mock = AsyncMock(return_value="StartFlow(test_flow)")
+            llm_mock.apredict = apredict_mock
+            mock_llm_factory.return_value = llm_mock
             actual_commands = await llm_based_router.predict_commands(message, tracker)
 
-        mock_llm_factory.assert_not_called()
+        apredict_mock.assert_not_called()
         assert actual_commands == commands
 
     async def test_llm_based_router_predict_commands_with_routing_slot_set_to_none(
@@ -170,11 +174,14 @@ class TestLLMBasedRouter:
             "rasa.dialogue_understanding.coexistence.llm_based_router.llm_factory",
             Mock(),
         ) as mock_llm_factory:
-            mock_llm_factory.return_value = Mock()
+            llm_mock = Mock()
+            apredict_mock = AsyncMock(return_value="StartFlow(test_flow)")
+            llm_mock.apredict = apredict_mock
+            mock_llm_factory.return_value = llm_mock
             await llm_based_router.predict_commands(message, tracker)
 
             mock_llm_factory.assert_called_once_with(None, DEFAULT_LLM_CONFIG)
-            mock_llm_factory.return_value.assert_called_once()
+            apredict_mock.assert_called_once()
 
     async def test_predict_commands_llm_error(self, llm_based_router: (LLMBasedRouter)):
         message = Message.build(text="some message")
