@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 import dataclasses
 from enum import Enum
 from functools import lru_cache
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, Type
 
 import structlog
 from rasa.shared.exceptions import RasaException
@@ -27,7 +27,7 @@ def generate_stack_frame_id() -> str:
 
 
 @lru_cache
-def _get_all_subclasses() -> List[type]:
+def _get_all_subclasses() -> List[Type[DialogueStackFrame]]:
     stack_frame_subclasses = rasa.shared.utils.common.all_subclasses(DialogueStackFrame)
 
     # Get all the subclasses of DialogueStackFrame from the patterns package
