@@ -5,7 +5,6 @@ from functools import lru_cache
 import rasa.shared.utils.io
 import structlog
 from jinja2 import Template
-import asyncio
 from rasa.dialogue_understanding.commands import (
     Command,
     ErrorCommand,
