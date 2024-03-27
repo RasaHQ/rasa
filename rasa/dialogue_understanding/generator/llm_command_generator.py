@@ -247,7 +247,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             relevant_flows=list(filtered_flows.user_flow_ids),
         )
 
-        flow_prompt = self.render_template(message, tracker, filtered_flows)
+        flow_prompt = self.render_template(message, tracker, filtered_flows, flows)
         log_llm(
             logger=structlogger,
             log_module="LLMCommandGenerator",
@@ -289,21 +289,31 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         return commands
 
     def render_template(
-        self, message: Message, tracker: DialogueStateTracker, flows: FlowsList
+        self,
+        message: Message,
+        tracker: DialogueStateTracker,
+        startable_flows: FlowsList,
+        all_flows: FlowsList,
     ) -> str:
         """Render the jinja template to create the prompt for the LLM.
 
         Args:
             message: The current message from the user.
             tracker: The tracker containing the current state of the conversation.
-            flows: The flows available to the user.
+            startable_flows: The flows startable at this point in time by the user.
+            all_flows: all flows present in the assistant
 
         Returns:
             The rendered prompt template.
         """
-        top_relevant_frame = top_flow_frame(tracker.stack)
-        top_flow = top_relevant_frame.flow(flows) if top_relevant_frame else None
-        current_step = top_relevant_frame.step(flows) if top_relevant_frame else None
+        # need to make this distinction here because current step of the
+        # top_calling_frame would be the call step, but we need the collect step from
+        # the called frame. If no call is active calling and called frame are the same.
+        top_calling_frame = top_flow_frame(tracker.stack)
+        top_called_frame = top_flow_frame(tracker.stack, ignore_call_frames=False)
+
+        top_flow = top_calling_frame.flow(all_flows) if top_calling_frame else None
+        current_step = top_called_frame.step(all_flows) if top_called_frame else None
 
         flow_slots = self.prepare_current_flow_slots_for_template(
             top_flow, current_step, tracker
@@ -316,7 +326,9 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         current_conversation += f"\nUSER: {latest_user_message}"
 
         inputs = {
-            "available_flows": self.prepare_flows_for_template(flows, tracker),
+            "available_flows": self.prepare_flows_for_template(
+                startable_flows, tracker
+            ),
             "current_conversation": current_conversation,
             "flow_slots": flow_slots,
             "current_flow": top_flow.id if top_flow is not None else None,
