@@ -130,30 +130,36 @@ async def _execute_task(arg: Any, cache: Dict[str, Any]) -> Any:
     """Do the actual work of collecting data and executing a function.
 
     Examples:
-    --------
-    >>> inc = lambda x: x + 1
-    >>> add = lambda x, y: x + y
-    >>> cache = {'x': 1, 'y': 2}
+        >>> inc = lambda x: x + 1
+        >>> add = lambda x, y: x + y
+        >>> cache = {'x': 1, 'y': 2}
 
-    Compute tasks against a cache
-    >>> _execute_task((add, 'x', 1), cache)  # Compute task in naive manner
-    2
-    >>> _execute_task((add, (inc, 'x'), 1), cache)  # Support nested computation
-    3
+        Compute tasks against a cache
+        >>> _execute_task((add, 'x', 1), cache)  # Compute task in naive manner
+        2
+        >>> _execute_task((add, (inc, 'x'), 1), cache)  # Support nested computation
+        3
 
-    Also grab data from cache
-    >>> _execute_task('x', cache)
-    1
+        Also grab data from cache
+        >>> _execute_task('x', cache)
+        1
 
-    Support nested lists
-    >>> list(_execute_task(['x', 'y'], cache))
-    [1, 2]
+        Support nested lists
+        >>> list(_execute_task(['x', 'y'], cache))
+        [1, 2]
 
-    >>> list(map(list, _execute_task([['x', 'y'], ['y', 'x']], cache)))
-    [[1, 2], [2, 1]]
+        >>> list(map(list, _execute_task([['x', 'y'], ['y', 'x']], cache)))
+        [[1, 2], [2, 1]]
 
-    >>> _execute_task('foo', cache)  # Passes through on non-keys
-    'foo'
+        >>> _execute_task('foo', cache)  # Passes through on non-keys
+        'foo'
+
+    Args:
+        arg: The argument to execute (either a function and args or a value)
+        cache: A cache to store intermediate results
+
+    Returns:
+        The result of the computation.
     """
     if isinstance(arg, list):
         return [await _execute_task(a, cache) for a in arg]
@@ -169,6 +175,13 @@ async def _execute_task(arg: Any, cache: Dict[str, Any]) -> Any:
             # method that is a coroutine function and will be called here.
             return await func(*awaited_args)
         else:
+            # This is based on the original dask implementation.
+            # I (tmbo) do not think that we will ever go down that else path,
+            # but I kept it for compatibility. All our graph nodes should be
+            # of type `GraphNode` and end up in the above if. But honestly,
+            # I am not 100% sure they always are, so I wanted to make sure
+            # that if there is a node that is not a GraphNode, it runs
+            # just fine with the prior behaviour.
             return func(*awaited_args)
     elif not dask.core.ishashable(arg):  # type:ignore[no-untyped-call]
         return arg
@@ -193,16 +206,12 @@ async def execute_dask_graph(dsk: Dict[str, Any], result: List[str]) -> Any:
     The default dask implementation uses an internal event loop, which means
     blocking the outer event loop (e.g. sanic or webhooks).
 
-    Parameters
-    ----------
-    dsk : dict
-        A dask dictionary specifying a workflow
-    result : key or list of keys
-        Keys corresponding to desired data
+    Args:
+        dsk: A dask dictionary specifying a workflow
+        result: Keys corresponding to desired data
 
-    See Also:
-    --------
-    threaded.get
+    Returns:
+        The result keys values after computing the graph.
     """
     cache = None
 
