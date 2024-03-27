@@ -500,7 +500,7 @@ def test_enterprise_search_policy_fingerprint_addon_default_prompt_template(
     assert fingerprint_1 == fingerprint_2
 
 
-def test_enterprise_search_policy_vector_store_config_error(
+async def test_enterprise_search_policy_vector_store_config_error(
     mocked_enterprise_search_policy: EnterpriseSearchPolicy,
     enterprise_search_tracker: DialogueStateTracker,
     mock_create_prediction_internal_error: MagicMock,
@@ -517,7 +517,7 @@ def test_enterprise_search_policy_vector_store_config_error(
             "_connect_vector_store_or_raise",
             side_effect=VectorStoreConfigurationError("Mocked error"),
         ):
-            mocked_enterprise_search_policy.predict_action_probabilities(
+            await mocked_enterprise_search_policy.predict_action_probabilities(
                 tracker=tracker,
                 domain=Domain.empty(),
                 endpoints=None,
@@ -527,7 +527,7 @@ def test_enterprise_search_policy_vector_store_config_error(
             mock_create_prediction_internal_error.assert_called_once()
 
 
-def test_enterprise_search_policy_vector_store_search_error(
+async def test_enterprise_search_policy_vector_store_search_error(
     mocked_enterprise_search_policy: EnterpriseSearchPolicy,
     enterprise_search_tracker: DialogueStateTracker,
     mock_create_prediction_internal_error: MagicMock,
@@ -544,7 +544,7 @@ def test_enterprise_search_policy_vector_store_search_error(
             "search",
             side_effect=InformationRetrievalException,
         ):
-            mocked_enterprise_search_policy.predict_action_probabilities(
+            await mocked_enterprise_search_policy.predict_action_probabilities(
                 tracker=tracker,
                 domain=Domain.empty(),
                 endpoints=None,
@@ -554,7 +554,7 @@ def test_enterprise_search_policy_vector_store_search_error(
             mock_create_prediction_internal_error.assert_called_once()
 
 
-def test_enterprise_search_policy_none_llm_answer(
+async def test_enterprise_search_policy_none_llm_answer(
     mocked_enterprise_search_policy: EnterpriseSearchPolicy,
     enterprise_search_tracker: DialogueStateTracker,
     mock_create_prediction_internal_error: MagicMock,
@@ -571,7 +571,7 @@ def test_enterprise_search_policy_none_llm_answer(
             "_generate_llm_answer",
             return_value=None,
         ):
-            mocked_enterprise_search_policy.predict_action_probabilities(
+            await mocked_enterprise_search_policy.predict_action_probabilities(
                 tracker=tracker,
                 domain=Domain.empty(),
                 endpoints=None,
@@ -581,7 +581,7 @@ def test_enterprise_search_policy_none_llm_answer(
             mock_create_prediction_internal_error.assert_called_once()
 
 
-def test_enterprise_search_policy_no_retrieval(
+async def test_enterprise_search_policy_no_retrieval(
     mocked_enterprise_search_policy: EnterpriseSearchPolicy,
     enterprise_search_tracker: DialogueStateTracker,
     mock_create_prediction_cannot_handle: MagicMock,
@@ -598,7 +598,7 @@ def test_enterprise_search_policy_no_retrieval(
             "search",
             return_value=[],
         ):
-            mocked_enterprise_search_policy.predict_action_probabilities(
+            await mocked_enterprise_search_policy.predict_action_probabilities(
                 tracker=tracker,
                 domain=Domain.empty(),
                 endpoints=None,

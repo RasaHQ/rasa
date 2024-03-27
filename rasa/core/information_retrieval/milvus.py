@@ -39,7 +39,7 @@ class Milvus_Store(InformationRetrieval):
             collection_name=str(params.get("collection")),
         )
 
-    def search(self, query: Text, threshold: float = 0.0) -> List["Document"]:
+    async def search(self, query: Text, threshold: float = 0.0) -> List["Document"]:
         """Search for documents in the Milvus store.
 
         Args:
@@ -47,10 +47,11 @@ class Milvus_Store(InformationRetrieval):
             threshold: minimum similarity score to consider a document a match.
 
         Returns:
-        A list of documents that match the query."""
+        A list of documents that match the query.
+        """
         logger.debug("information_retrieval.milvus_store.search", query=query)
         try:
-            hits = self.client.similarity_search_with_score(query, k=4)
+            hits = await self.client.asimilarity_search_with_score(query, k=4)
         except Exception as exc:
             raise InformationRetrievalException from exc
 

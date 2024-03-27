@@ -112,6 +112,7 @@ def _instrument_extract_ai_responses(
 def _instrument_generate_answer(
     tracer: Tracer, policy_class: Type["IntentlessPolicy"]
 ) -> None:
+    # TODO: this needs to be made async
     def tracing_generate_answer_wrapper(fn: Callable) -> Callable:
         @functools.wraps(fn)
         def wrapper(

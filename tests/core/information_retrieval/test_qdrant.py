@@ -1,5 +1,5 @@
 from typing import Any
-from unittest.mock import MagicMock, Mock
+from unittest.mock import MagicMock, AsyncMock
 
 import pytest
 from pydantic import ValidationError
@@ -42,7 +42,7 @@ def test_qdrant_store_connect(embeddings: Embeddings) -> None:
 
 
 # TODO: Update this test to use ValidationError.from_exception_data() when using pydantic 2.x  # noqa: E501
-def test_qdrant_search_raises_custom_exception(
+async def test_qdrant_search_raises_custom_exception(
     monkeypatch: MonkeyPatch,
     embeddings: Embeddings,
 ) -> None:
@@ -65,12 +65,12 @@ def test_qdrant_search_raises_custom_exception(
 
     monkeypatch.setattr(
         qdrant_store.client,
-        "similarity_search",
-        Mock(side_effect=ValidationError([], Mock())),
+        "asimilarity_search",
+        AsyncMock(side_effect=ValidationError([], AsyncMock())),
     )
 
     with pytest.raises(PayloadNotFoundException) as e:
-        qdrant_store.search("test")
+        await qdrant_store.search("test")
 
     assert issubclass(e.type, InformationRetrievalException)
     assert (

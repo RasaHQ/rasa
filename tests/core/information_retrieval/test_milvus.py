@@ -8,7 +8,7 @@ from rasa.core.information_retrieval.information_retrieval import (
 from rasa.core.information_retrieval.milvus import Milvus_Store
 from langchain.schema.embeddings import Embeddings
 from langchain.schema import Document
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, patch
 import pytest
 from unittest.mock import MagicMock
 from langchain.vectorstores.milvus import Milvus
@@ -31,7 +31,7 @@ def test_milvus_store(embeddings: Embeddings):
         (1.0, 0, None),
     ],
 )
-def test_milvus_store_search(
+async def test_milvus_store_search(
     embeddings: Embeddings, threshold: float, expected_count: int, expected_id: str
 ):
     milvus_store = Milvus_Store(embeddings)
@@ -50,15 +50,17 @@ def test_milvus_store_search(
     ]
     # patch the client to return a list of tuples
     with patch.object(
-        milvus_store.client, "similarity_search_with_score", return_value=search_results
+        milvus_store.client,
+        "asimilarity_search_with_score",
+        return_value=search_results,
     ):
-        hits = milvus_store.search("test", threshold=threshold)
+        hits = await milvus_store.search("test", threshold=threshold)
         assert len(hits) == expected_count
         if hits:
             assert hits[0].metadata["id"] == expected_id
 
 
-def test_milvus_search_raises_custom_exception(
+async def test_milvus_search_raises_custom_exception(
     monkeypatch: MonkeyPatch,
     embeddings: Embeddings,
 ) -> None:
@@ -76,12 +78,12 @@ def test_milvus_search_raises_custom_exception(
 
     monkeypatch.setattr(
         milvus_store.client,
-        "similarity_search_with_score",
-        Mock(side_effect=Exception(base_exception_msg)),
+        "asimilarity_search_with_score",
+        AsyncMock(side_effect=Exception(base_exception_msg)),
     )
 
     with pytest.raises(InformationRetrievalException) as e:
-        milvus_store.search("test")
+        await milvus_store.search("test")
 
     assert (
         f"An error occurred while searching for documents: {base_exception_msg}"

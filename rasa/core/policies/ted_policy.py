@@ -814,7 +814,7 @@ class TEDPolicy(Policy):
         )
         return confidences[0], self.only_e2e
 
-    def predict_action_probabilities(
+    async def predict_action_probabilities(
         self,
         tracker: DialogueStateTracker,
         domain: Domain,

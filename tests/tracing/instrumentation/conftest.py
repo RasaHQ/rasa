@@ -416,7 +416,7 @@ def model_configuration(
 
 
 class MockPolicy(Policy):
-    def predict_action_probabilities(
+    async def predict_action_probabilities(
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
