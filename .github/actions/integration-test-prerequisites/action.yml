@@ -1,0 +1,91 @@
+name: Integration Test prerequisites
+description: Encapsulates steps for Integration Testing
+
+permissions:
+  id-token: write
+  contents: read
+
+inputs:
+  IMAGE_TAG:
+    description: 'Image tag'
+    required: true
+  AWS_REGION:
+    description: 'AWS Region'
+    required: true
+  AWS_ASSUME_ROLE_SESSION_TOKEN:
+    description: 'AWS session token'
+    required: true
+  REPOSITORY:
+    description: 'ECR Repository'
+    required: true
+  DEFAULT_PYTHON_VERSION:
+    description: 'Default Python Version'
+    required: true
+  POETRY_CACHE_VERSION:
+    description: 'Poetry cache version'
+    required: true
+  
+runs:
+  using: 'composite'
+  steps:
+      - name: Set up Python ${{ inputs.DEFAULT_PYTHON_VERSION }} 🐍
+        id: setup-python
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
+        with:
+          python-version: ${{ inputs.DEFAULT_PYTHON_VERSION }}
+
+      - name: Read Poetry Version 🔢
+        run: |
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+        shell: bash
+      
+      # Install & configure poetry
+      -  name: Install Poetry ${{ env.POETRY_VERSION }}
+         uses: snok/install-poetry@93ada01c735cc8a383ce0ce2ae205a21c415379b # v1.3.4
+         with:
+          version: ${{ env.POETRY_VERSION }}
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          installer-parallel: true
+      
+      # Load cached venv if cache exists
+      - name: Load cached venv
+        id: cached-poetry-dependencies
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+
+      - name: Inject setuptools into poetry's environment
+        run: |
+          poetry self add setuptools
+        shell: bash
+
+      - name: Install Dependencies (Linux) 📦
+        run: |
+          make install
+        shell: bash
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3  # v3.0.0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@0d103c3126aa41d772a8362f6aa67afac040f80c  # v3.1.0
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@8c3f20df09ac63af7b3ae3d7c91f105f857d8497 # v3.0.1
+        with:
+          role-to-assume: ${{ inputs.AWS_ASSUME_ROLE_SESSION_TOKEN }}
+          aws-region: ${{ inputs.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 # v2.0.1
+        with:
+          mask-password: "true"
+
+      - name: Pull dev rasa-private image from Amazon ECR
+        id: check_image
+        run: |
+          docker pull ${{ inputs.REPOSITORY }}:${{ inputs.IMAGE_TAG }}
+        shell: bash
