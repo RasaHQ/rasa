@@ -1,0 +1,93 @@
+name: Run Performance Checks On Main
+
+on:
+  schedule:
+    # Runs at the end of every day
+    - cron: 0 0 * * *
+  workflow_dispatch:
+  # TODO: remove
+  push:
+    branches:
+      - tighter-dependency-constraints
+
+# SECRETS:
+#  - RASA_CI_SEGMENT_WRITE_KEY: Segment write key for https://app.segment.com/rasa-x/sources/rasa_ci/overview
+
+jobs:
+  build_package:
+    name: Build python package
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+      - name: Read Poetry Version 🔢
+        run: |
+         echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Set up Python 3.10 🐍
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
+        with:
+          python-version: "3.10"
+
+      - name: Install poetry 🦄
+        uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844 # v8
+        with:
+          poetry-version: ${{ env.POETRY_VERSION }}
+
+      - name: Read Current project version 🔢
+        id: project_version
+        run: |
+          echo "rasa_pro=$(poetry version --short)" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: Build python package 🎁
+        run: poetry build
+
+      - name: Rename archive ✍️
+        run: mv dist/rasa_pro-${{ steps.project_version.outputs.rasa_pro }}.tar.gz dist/rasa_pro-tmp.tar.gz
+
+      - name: Store built package
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-package
+          path: dist/
+
+  check_installation_performance:
+    name: Check installation performance
+    runs-on: ubuntu-22.04
+    needs: [build_package]
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+      - name: Set up Python 3.10 🐍
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
+        with:
+          python-version: "3.10"
+
+      - name: Download built package ⤵️
+        uses: actions/download-artifact@v4
+        id: artifact
+        with:
+          name: python-package
+
+      - name: Install package ✅
+        id: installation
+        run: |
+          START=$(python -c 'import time; print(int(time.time() * 1000))')
+          pip install ${{ steps.artifact.outputs.download-path }}
+          END=$(python -c 'import time; print(int(time.time() * 1000))')
+          echo "installation_time=$((END-START))" >> $GITHUB_OUTPUT
+          echo "commit_time=$(git show -s --format=%ci ${{ github.sha }})" >> $GITHUB_OUTPUT
+
+      - name: Send metrics 🔊
+        run: |
+          COMMIT_TIME=$(git show -s --format=%ci ${{ github.sha }})
+          curl --location 'https://api.segment.io/v1/track' \
+          --header 'Content-Type: application/json' \
+          --data-raw '{
+              "event": "pip_install",
+              "sha": "${{ github.sha }}",
+              "installation_time_ms": ${{ steps.installation.outputs.installation_time }},
+              "commit_time": "${{ steps.installation.outputs.commit_time }}",
+              "userId": "rasa_pro_ci",
+              "writeKey": "${{ secrets.RASA_CI_SEGMENT_WRITE_KEY }}"
+          }'
