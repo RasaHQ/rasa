@@ -148,7 +148,7 @@ class FlowRetrieval:
         """Creates an embedder.
 
         Returns:
-        The embedder.
+            The embedder.
         """
         return embedder_factory(
             config.get(EMBEDDINGS_CONFIG_KEY), DEFAULT_EMBEDDINGS_CONFIG
@@ -178,7 +178,7 @@ class FlowRetrieval:
             domain: The domain containing relevant slot information.
         """
         flows_to_embedd = flows.exclude_link_only_flows()
-        embeddings = self._create_embedder(self.config[EMBEDDINGS_CONFIG_KEY])
+        embeddings = self._create_embedder(self.config)
         documents = self._generate_flow_documents(flows_to_embedd, domain)
         self.vector_store = FAISS.from_documents(
             documents=documents,

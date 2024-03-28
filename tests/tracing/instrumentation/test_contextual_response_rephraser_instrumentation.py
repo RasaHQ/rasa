@@ -125,7 +125,7 @@ def greet_tracker() -> DialogueStateTracker:
         ),
     ],
 )
-def test_tracing_contextual_response_rephraser_generate_llm_response(
+async def test_tracing_contextual_response_rephraser_generate_llm_response(
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
     previous_num_captured_spans: int,
@@ -145,7 +145,7 @@ def test_tracing_contextual_response_rephraser_generate_llm_response(
         endpoint_config=endpoint_config, domain=domain_with_responses
     )
 
-    mock_rephraser._generate_llm_response("some text")
+    await mock_rephraser._generate_llm_response("some text")
 
     captured_spans: Sequence[
         ReadableSpan
@@ -213,7 +213,7 @@ async def test_tracing_contextual_response_rephraser_rephrase(
     assert captured_span.attributes == expected_attributes
 
 
-def test_tracing_contextual_response_rephraser_len_prompt_tokens(
+async def test_tracing_contextual_response_rephraser_len_prompt_tokens(
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
     previous_num_captured_spans: int,
@@ -231,7 +231,7 @@ def test_tracing_contextual_response_rephraser_len_prompt_tokens(
         endpoint_config=endpoint_config, domain=domain_with_responses
     )
 
-    mock_rephraser._generate_llm_response("This is a test prompt.")
+    await mock_rephraser._generate_llm_response("This is a test prompt.")
 
     captured_spans: Sequence[
         ReadableSpan
@@ -258,7 +258,7 @@ def test_tracing_contextual_response_rephraser_len_prompt_tokens(
     assert captured_span.attributes == expected_attributes
 
 
-def test_tracing_contextual_response_rephraser_len_prompt_tokens_non_openai(
+async def test_tracing_contextual_response_rephraser_len_prompt_tokens_non_openai(
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
     previous_num_captured_spans: int,
@@ -280,7 +280,7 @@ def test_tracing_contextual_response_rephraser_len_prompt_tokens_non_openai(
     )
 
     with caplog.at_level(logging.WARNING):
-        mock_rephraser._generate_llm_response("This is a test prompt.")
+        await mock_rephraser._generate_llm_response("This is a test prompt.")
         assert (
             "Tracing prompt tokens is only supported for OpenAI models. Skipping."
             in caplog.text

@@ -149,7 +149,7 @@ def setup_test_contextual_nlg(
     monkeypatch: MonkeyPatch,
     **kwargs: Any,
 ) -> ContextualResponseRephraser:
-    def mock_contextual_nlg_generate(self: Any, prompt: str) -> Optional[str]:
+    async def mock_contextual_nlg_generate(self: Any, prompt: str) -> Optional[str]:
         return ""
 
     monkeypatch.setattr(

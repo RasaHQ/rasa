@@ -162,7 +162,7 @@ class Flow:
         if step_id.startswith(CONTINUE_STEP_PREFIX):
             return ContinueFlowStep(step_id[len(CONTINUE_STEP_PREFIX) :])
 
-        for step in self.steps:
+        for step in self.steps_with_calls_resolved:
             if step.id == step_id:
                 return step
 

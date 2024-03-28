@@ -133,7 +133,7 @@ class EnterpriseSearchPolicy(Policy):
 
         policies:
             # - ...
-            - name: rasa_plus.ml.EnterpriseSearchPolicy
+            - name: EnterpriseSearchPolicy
               vector_store:
                 type: "milvus"
                 <vector_store_config>

@@ -379,7 +379,7 @@ class MockContextualResponseRephraser(ContextualResponseRephraser):
                 f"instrumentation needs to be adapted!"
             )
 
-    def _generate_llm_response(self, prompt: str) -> Optional[str]:
+    async def _generate_llm_response(self, prompt: str) -> Optional[str]:
         pass
 
     async def generate(
