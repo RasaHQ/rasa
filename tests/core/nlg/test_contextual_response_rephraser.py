@@ -52,10 +52,10 @@ def greet_tracker() -> DialogueStateTracker:
 
 
 class MockedContextualResponseRephraser(ContextualResponseRephraser):
-    def _create_history(self, tracker: DialogueStateTracker) -> str:
+    async def _create_history(self, tracker: DialogueStateTracker) -> str:
         return "User said hello"
 
-    def _generate_llm_response(self, prompt: str) -> Optional[str]:
+    async def _generate_llm_response(self, prompt: str) -> Optional[str]:
         return "hello foobar"
 
 
@@ -121,7 +121,7 @@ async def test_rephraser_handles_failure_in_generation(
     greet_tracker: DialogueStateTracker,
     domain_with_responses: Domain,
 ) -> None:
-    def none_no_op(x: Any) -> None:
+    async def none_no_op(x: Any) -> None:
         return None
 
     endpoint_config = EndpointConfig.from_dict({})
@@ -148,10 +148,10 @@ async def test_rephraser_uses_template_from_response(
     domain_with_responses: Domain,
 ) -> None:
     class MockedTemplatedResponseRephraser(ContextualResponseRephraser):
-        def _create_history(self, tracker: DialogueStateTracker) -> str:
+        async def _create_history(self, tracker: DialogueStateTracker) -> str:
             return "User said hello"
 
-        def _generate_llm_response(self, prompt: str) -> Optional[str]:
+        async def _generate_llm_response(self, prompt: str) -> Optional[str]:
             assert prompt == "foobar"
             return "hello foobar"
 
@@ -177,10 +177,10 @@ async def test_rephraser_default_template(
     domain_with_responses: Domain,
 ) -> None:
     class MockedTemplatedResponseRephraser(ContextualResponseRephraser):
-        def _create_history(self, tracker: DialogueStateTracker) -> str:
+        async def _create_history(self, tracker: DialogueStateTracker) -> str:
             return "User said hello"
 
-        def _generate_llm_response(self, prompt: str) -> Optional[str]:
+        async def _generate_llm_response(self, prompt: str) -> Optional[str]:
             assert prompt == (
                 "The following is a conversation with\n"
                 "an AI assistant. The assistant is helpful, creative, "
