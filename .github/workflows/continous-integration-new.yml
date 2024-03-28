@@ -55,7 +55,7 @@ jobs:
               if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
                 echo "IMAGE_TAG=pr${{ github.event.number }}-$(git rev-parse --short $(cat $GITHUB_EVENT_PATH | jq -r .pull_request.head.sha))" >> $GITHUB_ENV
               else
-                echo "IMAGE_TAG=${GITHUB_REF##*/}-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+              echo "IMAGE_TAG=$(echo "${GITHUB_REF##*/}" | tr '[:upper:]' '[:lower:]')-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
               fi
     
           - name: Build base image
@@ -92,9 +92,9 @@ jobs:
       - name: Configure image tag
         run: |
             if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
-                echo "IMAGE_TAG=pr${{ github.event.number }}-$(git rev-parse --short $(cat $GITHUB_EVENT_PATH | jq -r .pull_request.head.sha))" >> $GITHUB_ENV
+              echo "IMAGE_TAG=pr${{ github.event.number }}-$(git rev-parse --short $(cat $GITHUB_EVENT_PATH | jq -r .pull_request.head.sha))" >> $GITHUB_ENV
             else
-                echo "IMAGE_TAG=${GITHUB_REF##*/}-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+              echo "IMAGE_TAG=$(echo "${GITHUB_REF##*/}" | tr '[:upper:]' '[:lower:]')-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
             fi
 
       - name: Prepare the job for integration tests
@@ -168,9 +168,9 @@ jobs:
       - name: Configure image tag
         run: |
             if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
-            echo "IMAGE_TAG=pr${{ github.event.number }}-$(git rev-parse --short $(cat $GITHUB_EVENT_PATH | jq -r .pull_request.head.sha))" >> $GITHUB_ENV
+              echo "IMAGE_TAG=pr${{ github.event.number }}-$(git rev-parse --short $(cat $GITHUB_EVENT_PATH | jq -r .pull_request.head.sha))" >> $GITHUB_ENV
             else
-            echo "IMAGE_TAG=${GITHUB_REF##*/}-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+              echo "IMAGE_TAG=$(echo "${GITHUB_REF##*/}" | tr '[:upper:]' '[:lower:]')-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
             fi
 
       - name: Prepare the job for integration tests
