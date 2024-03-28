@@ -150,3 +150,79 @@ jobs:
           comment_mode: ${{ (github.event.workflow_run.event == 'pull_request' || github.event_name == 'pull_request') && 'always' || 'off' }}
 
 
+  metric-integration-test:
+    name: Metric Integration Tests
+    needs: rasa-private-dev-docker-image
+    runs-on: ubuntu-22.04-4core
+    steps:
+      - name: Check out code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Read Poetry Version 🔢
+        run: |
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+        shell: bash
+
+    #   # Tag in format: pr_number-shortSHA or branch_name-shortSHA
+      - name: Configure image tag
+        run: |
+            if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+            echo "IMAGE_TAG=pr${{ github.event.number }}-$(git rev-parse --short $(cat $GITHUB_EVENT_PATH | jq -r .pull_request.head.sha))" >> $GITHUB_ENV
+            else
+            echo "IMAGE_TAG=${GITHUB_REF##*/}-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+            fi
+
+      - name: Prepare the job for integration tests
+        uses: ./.github/actions/integration-test-prerequisites
+        with:
+            IMAGE_TAG: ${{ env.IMAGE_TAG }}
+            AWS_REGION: ${{ env.AWS_REGION }}
+            AWS_ARN_ROLE_TO_ASSUME: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
+            REPOSITORY: ${{ env.REPOSITORY }}
+            DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+            POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
+
+      - name: Metric Integration Testing - Run docker containers
+        run: |
+          make run-metrics-integration-containers
+        env:
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          TARGET_IMAGE_REGISTRY: ${{ env.REPOSITORY }}
+          IMAGE_TAG: ${{ env.IMAGE_TAG }}
+
+      - name: Metric Integration Testing - Wait for container startup ⏳
+        timeout-minutes: 15
+        run: |
+          bash $CHECK_CONNECTION_SCRIPT http://localhost:5005
+        env:
+          CHECK_CONNECTION_SCRIPT: tests_deployment/integration_tests_tracing_deployment/check_connection.sh
+
+      - name: Metric Integration Testing -  Test Code with Services 🩺
+        run: |
+          make test-metrics-integration
+        env:
+          PYTHONIOENCODING: "utf-8"
+          RASA_TELEMETRY_WRITE_KEY: ${{ secrets.SEGMENT_WRITE_DEV_KEY }}
+    
+      - name: Check otlp-collector container logs
+        if: always()
+        run: |
+          docker compose -f tests_deployment/integration_tests_tracing_deployment/metrics_setup/docker-compose.yml logs otlp-collector
+
+      - name: Check prometheus container logs
+        if: always()
+        run: |
+          docker compose -f tests_deployment/integration_tests_tracing_deployment/metrics_setup/docker-compose.yml logs prometheus
+
+      - name: Metric Integration Testing - Stop docker containers
+        run: |
+          make stop-metrics-integration-containers
+
+      - name: Publish test results
+        if: always()
+        uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
+        with:
+          files: report*.xml
+          check_name: "Metric Integration Test Results"
+          comment_mode: ${{ (github.event.workflow_run.event == 'pull_request' || github.event_name == 'pull_request') && 'always' || 'off' }}
