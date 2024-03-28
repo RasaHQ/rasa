@@ -78,6 +78,8 @@ def tracker_as_readable_transcript(
     """
     transcript = []
 
+    # using `applied_events` rather than `events` means that only events after the
+    # most recent `Restart` or `SessionStarted` are included in the transcript
     for event in tracker.applied_events():
 
         if isinstance(event, UserUttered):
