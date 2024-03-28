@@ -118,7 +118,7 @@ class TestFlowRetrieval:
                     "    test_slot_2: A description for the second test slot, allowed "
                     "values: [True, False]\n"
                     "    test_slot_3: A description for the third test slot, "
-                    "allowed values: ['a', 'b', 'c']"
+                    "allowed values: ['A', 'B', 'C']"
                 ),
                 metadata={"flow_id": "test_flow_with_collect_steps"},
             ),
