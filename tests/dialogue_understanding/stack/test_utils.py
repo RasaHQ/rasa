@@ -59,6 +59,26 @@ def test_top_flow_frame_ignores_call():
     assert top_flow_frame(stack) == user_frame
 
 
+def test_top_flow_frame_does_not_ignore_call():
+    call_frame = UserFlowStackFrame(
+        flow_id="bar",
+        step_id="first_step",
+        frame_id="some-call-id",
+        frame_type=FlowStackFrameType.CALL,
+    )
+    user_frame = UserFlowStackFrame(
+        flow_id="foo", step_id="first_step", frame_id="some-frame-id"
+    )
+    stack = DialogueStack(
+        frames=[
+            user_frame,
+            call_frame,
+        ]
+    )
+
+    assert top_flow_frame(stack, ignore_call_frames=False) == call_frame
+
+
 def test_top_flow_frame_uses_pattern():
     pattern_frame = CollectInformationPatternFlowStackFrame(
         collect="foo", frame_id="some-other-id"
