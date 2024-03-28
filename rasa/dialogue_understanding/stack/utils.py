@@ -18,7 +18,9 @@ if typing.TYPE_CHECKING:
 
 
 def top_flow_frame(
-    dialogue_stack: DialogueStack, ignore_collect_information_pattern: bool = True
+    dialogue_stack: DialogueStack,
+    ignore_collect_information_pattern: bool = True,
+    ignore_call_frames: bool = True,
 ) -> Optional[BaseFlowStackFrame]:
     """Returns the topmost flow frame from the tracker.
 
@@ -34,6 +36,7 @@ def top_flow_frame(
         dialogue_stack: The dialogue stack to use.
         ignore_collect_information_pattern: Whether to ignore the
             `pattern_collect_information` frame.
+        ignore_call_frames: Whether to ignore user frames of type `call`
 
     Returns:
         The topmost flow frame from the tracker. `None` if there
@@ -44,7 +47,7 @@ def top_flow_frame(
             frame, CollectInformationPatternFlowStackFrame
         ):
             continue
-        if (
+        if ignore_call_frames and (
             isinstance(frame, UserFlowStackFrame)
             and frame.frame_type == FlowStackFrameType.CALL
         ):

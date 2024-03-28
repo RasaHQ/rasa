@@ -11,7 +11,7 @@ on:
         required: true
 
 env:
-  TARGET_IMAGE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-docker"
+  TARGET_IMAGE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-pro"
 
 permissions:
   id-token: write # This is required for requesting the JWT
@@ -60,7 +60,6 @@ jobs:
         with:
            workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER_OIDC}}
            service_account: "github-actions-oidc-atom@rasa-releases.iam.gserviceaccount.com"
-           token_format: access_token
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@98ddc00a17442e89a24bbf282954a3b65ce6d200 # v2.1.0
@@ -156,8 +155,8 @@ jobs:
            pip install keyring
            pip install keyrings.google-artifactregistry-auth
            pip install twine
-           gcloud artifacts print-settings python --project=rasa-releases --repository=rasa-plus-py --location=europe-west3 > ~/.pypirc
-           twine upload --verbose --repository-url https://europe-west3-python.pkg.dev/rasa-releases/rasa-plus-py/ ${{ format('{0}/dist/*', github.workspace) }}
+           gcloud artifacts print-settings python --project=rasa-releases --repository=rasa-pro-python --location=europe-west3 > ~/.pypirc
+           twine upload --verbose --repository-url https://europe-west3-python.pkg.dev/rasa-releases/rasa-pro-python/ ${{ format('{0}/dist/*', github.workspace) }}
 
       - name: Notify Sentry about the release
         env:
