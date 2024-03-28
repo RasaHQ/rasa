@@ -73,6 +73,7 @@ jobs:
         id: installation
         run: |
           START=$(python -c 'import time; print(int(time.time() * 1000))')
+          pip install --upgrade pip
           pip install ${{ steps.artifact.outputs.download-path }}
           END=$(python -c 'import time; print(int(time.time() * 1000))')
           echo "installation_time=$((END-START))" >> $GITHUB_OUTPUT
