@@ -78,7 +78,7 @@ def tracker_as_readable_transcript(
     """
     transcript = []
 
-    for event in tracker.events:
+    for event in tracker.applied_events():
 
         if isinstance(event, UserUttered):
             if event.has_triggered_error:
