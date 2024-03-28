@@ -1,5 +1,5 @@
 import uuid
-from typing import List, Text, Any
+from typing import List, Text, Any, Dict
 from unittest.mock import Mock, patch
 
 import pytest
@@ -15,6 +15,7 @@ from rasa.dialogue_understanding.generator.flow_retrieval import (
     TURNS_TO_EMBED_KEY,
     DEFAULT_TURNS_TO_EMBED,
     DEFAULT_MAX_FLOWS_FROM_SEMANTIC_SEARCH,
+    EMBEDDINGS_CONFIG_KEY,
 )
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
@@ -175,10 +176,18 @@ class TestFlowRetrieval:
             startable_flows_documents, key=get_flow_id
         )
 
+    @pytest.mark.parametrize(
+        "config",
+        [
+            {EMBEDDINGS_CONFIG_KEY: {"type": "openai", "model": "some_custom_option"}},
+            FlowRetrieval.get_default_config(),
+        ],
+    )
     @patch("langchain.vectorstores.faiss.FAISS.from_documents")
     def test_populate(
         self,
         mock_faiss_from_documents: Mock,
+        config: Dict,
         model_storage: ModelStorage,
         resource: Resource,
         flows: FlowsList,
@@ -189,8 +198,10 @@ class TestFlowRetrieval:
         # Given
         monkeypatch.setenv("OPENAI_API_KEY", "test")
         mock_faiss_from_documents.return_value = Mock()
-        config = FlowRetrieval.get_default_config()
         flow_search = FlowRetrieval(config, model_storage, resource)
+        expected_embeddings = OpenAIEmbeddings(
+            model=config[EMBEDDINGS_CONFIG_KEY]["model"]
+        )
         # When
         flow_search.populate(flows, domain)
         # Then
@@ -199,7 +210,7 @@ class TestFlowRetrieval:
         # the documents from flows that are not link-accessed only
         mock_faiss_from_documents.assert_called_once_with(
             documents=startable_flows_documents,
-            embedding=OpenAIEmbeddings(),
+            embedding=expected_embeddings,
             distance_strategy=DistanceStrategy.MAX_INNER_PRODUCT,
         )
 
