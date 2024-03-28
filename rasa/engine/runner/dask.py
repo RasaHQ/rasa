@@ -243,8 +243,8 @@ async def execute_dask_graph(dsk: Dict[str, Any], result: List[str]) -> Any:
         # Prep args to send
         data = {dep: state["cache"][dep] for dep in dependencies}
 
-        result = await _execute_task(dsk[key], data)
-        state["cache"][key] = result
+        task_result = await _execute_task(dsk[key], data)
+        state["cache"][key] = task_result
         dask.local.finish_task(
             dsk, key, state, results, keyorder.get
         )  # type:ignore[no-untyped-call]
