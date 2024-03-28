@@ -41,7 +41,7 @@ def intentless_policy_generator(
             )
 
 
-def test_tracing_intentless_policy_generate_answer(
+async def test_tracing_intentless_policy_generate_answer(
     intentless_policy_generator: IntentlessPolicy,
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
@@ -54,7 +54,7 @@ def test_tracing_intentless_policy_generate_answer(
         policy_subclasses=[component_class],
     )
 
-    intentless_policy_generator.generate_answer(
+    await intentless_policy_generator.generate_answer(
         ["Howdy!"],
         [""],
         "",
