@@ -101,7 +101,7 @@ jobs:
         with:
             IMAGE_TAG: ${{ env.IMAGE_TAG }}
             AWS_REGION: ${{ env.AWS_REGION }}
-            AWS_ASSUME_ROLE_SESSION_TOKEN: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
+            AWS_ARN_ROLE_TO_ASSUME: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
             REPOSITORY: ${{ env.REPOSITORY }}
             DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
             POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
