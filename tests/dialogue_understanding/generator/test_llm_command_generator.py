@@ -25,6 +25,7 @@ from rasa.dialogue_understanding.generator.llm_command_generator import (
     FLOW_RETRIEVAL_KEY,
     FLOW_RETRIEVAL_ACTIVE_KEY,
 )
+from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
@@ -377,13 +378,87 @@ class TestLLMCommandGenerator:
             expected_template = f.readlines()
         # When
         rendered_template = command_generator.render_template(
-            message=test_message, tracker=test_tracker, flows=test_flows
+            message=test_message,
+            tracker=test_tracker,
+            startable_flows=test_flows,
+            all_flows=test_flows,
         )
         # Then
         for rendered_line, expected_line in zip(
             rendered_template.splitlines(True), expected_template
         ):
             assert rendered_line == expected_line
+
+    def test_render_template_call(
+        self,
+        command_generator: LLMCommandGenerator,
+    ):
+        """Test that render_template renders the correct template string."""
+        # Given
+        test_message = Message.build(text="some message")
+        test_slot = TextSlot(
+            name="test_slot",
+            mappings=[{}],
+            initial_value=None,
+            influence_conversation=False,
+        )
+        test_tracker = DialogueStateTracker.from_events(
+            sender_id="test",
+            evts=[UserUttered("Hello"), BotUttered("Hi")],
+            slots=[test_slot],
+        )
+        stack = DialogueStack.from_dict(
+            [
+                {
+                    "type": "flow",
+                    "flow_id": "test_flow",
+                    "step_id": "call_step",
+                    "frame_id": "some-frame-id",
+                },
+                {
+                    "type": "flow",
+                    "frame_type": "call",
+                    "frame_id": "some-other-id",
+                    "step_id": "first_step",
+                    "flow_id": "called_flow",
+                },
+            ]
+        )
+        test_flows = flows_from_str(
+            """
+            flows:
+              called_flow:
+                if: False
+                description: a flows that's called
+                steps:
+                - id: first_step
+                  collect: test_slot
+              test_flow:
+                description: some description
+                steps:
+                - id: call_step
+                  call: called_flow
+            """
+        )
+        startable_test_flows = test_flows.exclude_link_only_flows()
+        test_tracker.update_stack(stack)
+        # When
+        rendered_template = command_generator.render_template(
+            message=test_message,
+            tracker=test_tracker,
+            startable_flows=startable_test_flows,
+            all_flows=test_flows,
+        )
+        # Then
+        # make sure non-startable flow isn't there
+        assert "called_flow" not in rendered_template
+        # make sure it looks like we are in the calling flow
+        assert 'You are currently in the flow "test_flow".' in rendered_template
+        # make sure the slot from the called flow is available in the template
+        assert (
+            'You have just asked the user for the slot "test_slot".'
+            in rendered_template
+        )
 
     @pytest.mark.parametrize(
         "input_action, expected_command",

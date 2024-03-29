@@ -7,5 +7,5 @@ pipeline:
 
 policies:
   - name: FlowPolicy
-#  - name: rasa_plus.ml.DocsearchPolicy
+#  - name: EnterpriseSearchPolicy
 #  - name: RulePolicy

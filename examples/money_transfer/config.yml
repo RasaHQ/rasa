@@ -7,7 +7,7 @@ pipeline:
 
 policies:
   - name: rasa.core.policies.flow_policy.FlowPolicy
-#  - name: rasa_plus.ml.DocsearchPolicy
+#  - name: EnterpriseSearchPolicy
 #  - name: RulePolicy
 
 assistant_id: 20230405-114328-tranquil-mustard
