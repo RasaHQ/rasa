@@ -3,7 +3,7 @@ name: Continuous Integration
 on:
   push:
     branches:
-      - main
+      - ATO-2272
   pull_request:
 
 concurrency:
@@ -35,6 +35,7 @@ env:
   IS_TAG_BUILD: ${{ startsWith(github.event.ref, 'refs/tags') }}
   DOCKERHUB_USERNAME: tmbo
   DEFAULT_PYTHON_VERSION: "3.10"
+  TARGET_IMAGE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-docker"
   NODE_VERSION_INSPECTOR_BUILD: 16
 
   # for wait_for_xx jobs
@@ -1019,244 +1020,540 @@ jobs:
         run: |
           make test-integration
 
-  # Temporary disable metric and integration test since we need to refactor and improve whole continuous-integration.yml
-  # Details can be found here: https://rasahq.atlassian.net/browse/ATO-2270
-  #
-  # tracing_integration_test:
-  #   name: Run Tracing Integration Tests
-  #   if: github.ref_type != 'tag' && startsWith(github.ref, 'refs/heads/prepare-release-pre-') != true
-  #   runs-on: ubuntu-22.04
-  #   needs: [ changes, build_docker_base_images_and_set_env ]
-  #   env:
-  #     IMAGE_TAG: ${{ needs.build_docker_base_images_and_set_env.outputs.image_tag }}
-  #     TARGET_IMAGE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-docker"
-  #     BASE_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_image_hash }}
-  #     BASE_BUILDER_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_builder_image_hash }}
+  tracing_integration_test:
+    name: Run Tracing Integration Tests
+    if: github.ref_type != 'tag' && startsWith(github.ref, 'refs/heads/prepare-release-pre-') != true
+    runs-on: ubuntu-22.04
+    needs: [ changes, build_docker_base_images_and_set_env ]
+    env:
+      IMAGE_TAG: ${{ needs.build_docker_base_images_and_set_env.outputs.image_tag }}
+      TARGET_IMAGE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-docker"
+      BASE_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_image_hash }}
+      BASE_BUILDER_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_builder_image_hash }}
 
-  #   steps:
-  #     - name: Checkout git repository 🕝
-  #       uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+    steps:
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
 
-  #     - name: Free disk space
-  #       # tries to make sure we do not run out of disk space
-  #       run: |
-  #         sudo swapoff -a
-  #         sudo rm -f /swapfile
-  #         sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-  #         sudo apt clean
-  #         docker image prune -a -f
-  #         docker volume prune -f
-  #         docker container prune -f
-  #         df -h
+      - name: Free disk space
+        # tries to make sure we do not run out of disk space
+        run: |
+          sudo swapoff -a
+          sudo rm -f /swapfile
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          sudo apt clean
+          docker image prune -a -f
+          docker volume prune -f
+          docker container prune -f
+          df -h
 
-  #     - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
-  #       uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
-  #       with:
-  #         python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
+      - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
+        with:
+          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
-  #     - name: Install poetry 🦄
-  #       uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844
-  #       with:
-  #         poetry-version: ${{ env.POETRY_VERSION }}
+      - name: Install poetry 🦄
+        uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844
+        with:
+          poetry-version: ${{ env.POETRY_VERSION }}
 
-  #     - name: Inject setuptools into poetry's environment
-  #       run: |
-  #         poetry self add setuptools
+      - name: Inject setuptools into poetry's environment
+        run: |
+          poetry self add setuptools
 
-  #     - name: Load Poetry Cached Libraries ⬇
-  #       id: cache-poetry
-  #       uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 #v4.0.0
-  #       with:
-  #         path: .venv
-  #         key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
+      - name: Load Poetry Cached Libraries ⬇
+        id: cache-poetry
+        uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 #v4.0.0
+        with:
+          path: .venv
+          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
 
-  #     - name: Clear Poetry cache
-  #       if: steps.cache-poetry.outputs.cache-hit == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')
-  #       run: rm -r .venv
+      - name: Clear Poetry cache
+        if: steps.cache-poetry.outputs.cache-hit == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')
+        run: rm -r .venv
 
-  #       # Poetry >= 1.1.0b uses virtualenv to create a virtual environment.
-  #       # The virtualenv simply doesn't work on Windows with our setup,
-  #       # that's why we use venv to create virtual environment
-  #     - name: Create virtual environment
-  #       if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests'))
-  #       run: python -m venv create .venv
+        # Poetry >= 1.1.0b uses virtualenv to create a virtual environment.
+        # The virtualenv simply doesn't work on Windows with our setup,
+        # that's why we use venv to create virtual environment
+      - name: Create virtual environment
+        if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests'))
+        run: python -m venv create .venv
 
-  #     - name: Set up virtual environment
-  #       # Poetry on Windows cannot pick up the virtual environments directory properly,
-  #       # and it creates a new one every time the pipeline runs.
-  #       # This step solves this problem — it tells poetry to always use `.venv` directory inside
-  #       # the project itself, which also makes it easier for us to determine the correct directory
-  #       # that needs to be cached.
-  #       run: poetry config virtualenvs.in-project true
+      - name: Set up virtual environment
+        # Poetry on Windows cannot pick up the virtual environments directory properly,
+        # and it creates a new one every time the pipeline runs.
+        # This step solves this problem — it tells poetry to always use `.venv` directory inside
+        # the project itself, which also makes it easier for us to determine the correct directory
+        # that needs to be cached.
+        run: poetry config virtualenvs.in-project true
 
-  #     # Authenticate with Gcloud.
-  #     - name: Authenticate with gcloud for release registry 🎫
-  #       id: 'auth-release'
-  #       uses: google-github-actions/auth@55bd3a7c6e2ae7cf1877fd1ccb9d54c0503c457c # v2.1.2
-  #       with:
-  #         token_format: 'access_token'
-  #         credentials_json: '${{ secrets.RASA_OSS_RELEASE_ACCOUNT_KEY }}'
+      # Authenticate with Gcloud.
+      - name: Authenticate with gcloud for release registry 🎫
+        id: 'auth-release'
+        uses: google-github-actions/auth@55bd3a7c6e2ae7cf1877fd1ccb9d54c0503c457c # v2.1.2
+        with:
+          token_format: 'access_token'
+          credentials_json: '${{ secrets.RASA_OSS_RELEASE_ACCOUNT_KEY }}'
 
-  #     # Authenticate with artifact registry where the images are stored.
-  #     - name: Authenticate docker for release registry 🎫
-  #       run: gcloud auth configure-docker europe-west3-docker.pkg.dev
+      # Authenticate with artifact registry where the images are stored.
+      - name: Authenticate docker for release registry 🎫
+        run: gcloud auth configure-docker europe-west3-docker.pkg.dev
 
-  #     - name: Install Dependencies (Linux) 📦
-  #       run: |
-  #         make install
+      - name: Install Dependencies (Linux) 📦
+        run: |
+          make install
 
-  #     - name: Set up QEMU
-  #       uses: docker/setup-qemu-action@2b82ce82d56a2a04d2637cd93a637ae1b359c0a7  # v2.2.0
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@2b82ce82d56a2a04d2637cd93a637ae1b359c0a7  # v2.2.0
 
-  #     - name: Set up Docker Buildx
-  #       uses: docker/setup-buildx-action@0d103c3126aa41d772a8362f6aa67afac040f80c  # v3.1.0
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@0d103c3126aa41d772a8362f6aa67afac040f80c  # v3.1.0
 
-  #     - name: Build rasa docker container
-  #       run: |
-  #         docker buildx create --name tracing-builder --use
-  #         docker buildx bake -f docker/docker-bake.hcl default --load
+      - name: Build rasa docker container
+        run: |
+          docker buildx create --name tracing-builder --use
+          docker buildx bake -f docker/docker-bake.hcl default --load
 
-  #     - name: Build action server docker container
-  #       run: |
-  #         docker buildx use default
-  #         docker buildx build tests_deployment/integration_tests_tracing_deployment/action_server -t action_server:latest -f tests_deployment/integration_tests_tracing_deployment/action_server/Dockerfile --build-arg TARGET_IMAGE_REGISTRY=$TARGET_IMAGE_REGISTRY --build-arg IMAGE_TAG=$IMAGE_TAG  --load
+      - name: Build action server docker container
+        run: |
+          docker buildx use default
+          docker buildx build tests_deployment/integration_tests_tracing_deployment/action_server -t action_server:latest -f tests_deployment/integration_tests_tracing_deployment/action_server/Dockerfile --build-arg TARGET_IMAGE_REGISTRY=$TARGET_IMAGE_REGISTRY --build-arg IMAGE_TAG=$IMAGE_TAG  --load
 
-  #     - name: Run docker containers for integration testing
-  #       run: |
-  #         make run-tracing-integration-containers
+      - name: Run docker containers for integration testing
+        run: |
+          make run-tracing-integration-containers
 
-  #     - name: Wait for container startup ⏳
-  #       timeout-minutes: 15
-  #       run: |
-  #         bash tests_deployment/integration_tests_tracing_deployment/check_connection.sh http://localhost:5006
-  #         bash tests_deployment/integration_tests_tracing_deployment/check_connection.sh http://localhost:5007
+      - name: Wait for container startup ⏳
+        timeout-minutes: 15
+        run: |
+          bash tests_deployment/integration_tests_tracing_deployment/check_connection.sh http://localhost:5006
+          bash tests_deployment/integration_tests_tracing_deployment/check_connection.sh http://localhost:5007
 
-  #     - name: Test Code with Services 🩺
-  #       env:
-  #         PYTHONIOENCODING: "utf-8"
-  #         RASA_TELEMETRY_WRITE_KEY: ${{ secrets.SEGMENT_WRITE_DEV_KEY }}
-  #       run: |
-  #         make test-tracing-integration
+      - name: Test Code with Services 🩺
+        env:
+          PYTHONIOENCODING: "utf-8"
+          RASA_TELEMETRY_WRITE_KEY: ${{ secrets.SEGMENT_WRITE_DEV_KEY }}
+        run: |
+          make test-tracing-integration
 
-  #     - name: Stop docker containers for integration testing
-  #       run: |
-  #         make stop-tracing-integration-containers
+      - name: Stop docker containers for integration testing
+        run: |
+          make stop-tracing-integration-containers
 
-  # metrics_integration_test:
-  #   name: Run Metrics Integration Tests
-  #   if: github.ref_type != 'tag' && startsWith(github.ref, 'refs/heads/prepare-release-pre-') != true
-  #   runs-on: ubuntu-22.04
-  #   needs: [ changes, build_docker_base_images_and_set_env ]
-  #   env:
-  #     IMAGE_TAG: ${{ needs.build_docker_base_images_and_set_env.outputs.image_tag }}
-  #     TARGET_IMAGE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-docker"
-  #     BASE_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_image_hash }}
-  #     BASE_BUILDER_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_builder_image_hash }}
+  metrics_integration_test:
+    name: Run Metrics Integration Tests
+    if: github.ref_type != 'tag' && startsWith(github.ref, 'refs/heads/prepare-release-pre-') != true
+    runs-on: ubuntu-22.04
+    needs: [ changes, build_docker_base_images_and_set_env ]
+    env:
+      IMAGE_TAG: ${{ needs.build_docker_base_images_and_set_env.outputs.image_tag }}
+      TARGET_IMAGE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-docker"
+      BASE_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_image_hash }}
+      BASE_BUILDER_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_builder_image_hash }}
 
-  #   steps:
-  #     - name: Checkout git repository 🕝
-  #       uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab
+    steps:
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab
 
-  #     - name: Free disk space
-  #       # tries to make sure we do not run out of disk space
-  #       run: |
-  #         sudo swapoff -a
-  #         sudo rm -f /swapfile
-  #         sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-  #         sudo apt clean
-  #         docker image prune -a -f
-  #         docker volume prune -f
-  #         docker container prune -f
-  #         df -h
+      - name: Free disk space
+        # tries to make sure we do not run out of disk space
+        run: |
+          sudo swapoff -a
+          sudo rm -f /swapfile
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          sudo apt clean
+          docker image prune -a -f
+          docker volume prune -f
+          docker container prune -f
+          df -h
 
-  #     - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
-  #       uses: actions/setup-python@bd6b4b6205c4dbad673328db7b31b7fab9e241c0  # v4.6.1
-  #       with:
-  #         python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
+      - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
+        uses: actions/setup-python@bd6b4b6205c4dbad673328db7b31b7fab9e241c0  # v4.6.1
+        with:
+          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
-  #     - name: Install poetry 🦄
-  #       uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844
-  #       with:
-  #         poetry-version: ${{ env.POETRY_VERSION }}
+      - name: Install poetry 🦄
+        uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844
+        with:
+          poetry-version: ${{ env.POETRY_VERSION }}
 
-  #     - name: Inject setuptools into poetry's environment
-  #       run: |
-  #         poetry self add setuptools
+      - name: Inject setuptools into poetry's environment
+        run: |
+          poetry self add setuptools
 
-  #     - name: Load Poetry Cached Libraries ⬇
-  #       id: cache-poetry
-  #       uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
-  #       with:
-  #         path: .venv
-  #         key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
+      - name: Load Poetry Cached Libraries ⬇
+        id: cache-poetry
+        uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
+        with:
+          path: .venv
+          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
 
-  #     - name: Clear Poetry cache
-  #       if: steps.cache-poetry.outputs.cache-hit == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')
-  #       run: rm -r .venv
+      - name: Clear Poetry cache
+        if: steps.cache-poetry.outputs.cache-hit == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')
+        run: rm -r .venv
 
-  #       # Poetry >= 1.1.0b uses virtualenv to create a virtual environment.
-  #       # The virtualenv simply doesn't work on Windows with our setup,
-  #       # that's why we use venv to create virtual environment
-  #     - name: Create virtual environment
-  #       if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests'))
-  #       run: python -m venv create .venv
+        # Poetry >= 1.1.0b uses virtualenv to create a virtual environment.
+        # The virtualenv simply doesn't work on Windows with our setup,
+        # that's why we use venv to create virtual environment
+      - name: Create virtual environment
+        if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests'))
+        run: python -m venv create .venv
 
-  #     - name: Set up virtual environment
-  #       # Poetry on Windows cannot pick up the virtual environments directory properly,
-  #       # and it creates a new one every time the pipeline runs.
-  #       # This step solves this problem — it tells poetry to always use `.venv` directory inside
-  #       # the project itself, which also makes it easier for us to determine the correct directory
-  #       # that needs to be cached.
-  #       run: poetry config virtualenvs.in-project true
+      - name: Set up virtual environment
+        # Poetry on Windows cannot pick up the virtual environments directory properly,
+        # and it creates a new one every time the pipeline runs.
+        # This step solves this problem — it tells poetry to always use `.venv` directory inside
+        # the project itself, which also makes it easier for us to determine the correct directory
+        # that needs to be cached.
+        run: poetry config virtualenvs.in-project true
 
-  #     # Authenticate with Gcloud.
-  #     - name: Authenticate with gcloud for release registry 🎫
-  #       id: 'auth-release'
-  #       uses: 'google-github-actions/auth@ef5d53e30bbcd8d0836f4288f5e50ff3e086997d'
-  #       with:
-  #         token_format: 'access_token'
-  #         credentials_json: '${{ secrets.RASA_OSS_RELEASE_ACCOUNT_KEY }}'
+      # Authenticate with Gcloud.
+      - name: Authenticate with gcloud for release registry 🎫
+        id: 'auth-release'
+        uses: 'google-github-actions/auth@ef5d53e30bbcd8d0836f4288f5e50ff3e086997d'
+        with:
+          token_format: 'access_token'
+          credentials_json: '${{ secrets.RASA_OSS_RELEASE_ACCOUNT_KEY }}'
 
-  #     # Authenticate with artifact registry where the images are stored.
-  #     - name: Authenticate docker for release registry 🎫
-  #       run: gcloud auth configure-docker europe-west3-docker.pkg.dev
+      # Authenticate with artifact registry where the images are stored.
+      - name: Authenticate docker for release registry 🎫
+        run: gcloud auth configure-docker europe-west3-docker.pkg.dev
 
-  #     - name: Install Dependencies (Linux) 📦
-  #       run: |
-  #         make install
+      - name: Install Dependencies (Linux) 📦
+        run: |
+          make install
 
-  #     - name: Set up QEMU
-  #       uses: docker/setup-qemu-action@2b82ce82d56a2a04d2637cd93a637ae1b359c0a7  # v2.2.0
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@2b82ce82d56a2a04d2637cd93a637ae1b359c0a7  # v2.2.0
 
-  #     - name: Set up Docker Buildx
-  #       uses: docker/setup-buildx-action@ecf95283f03858871ff00b787d79c419715afc34  # v2.7.0
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@ecf95283f03858871ff00b787d79c419715afc34  # v2.7.0
 
-  #     - name: Build rasa docker container
-  #       run: |
-  #         docker buildx create --name metrics-builder --use
-  #         docker buildx bake -f docker/docker-bake.hcl default --load
+      - name: Build rasa docker container
+        run: |
+          docker buildx create --name metrics-builder --use
+          docker buildx bake -f docker/docker-bake.hcl default --load
 
-  #     - name: Run docker containers for integration testing
-  #       run: |
-  #         make run-metrics-integration-containers
+      - name: Run docker containers for integration testing
+        run: |
+          make run-metrics-integration-containers
 
-  #     - name: Check container logs
-  #       if: always()
-  #       run: |
-  #         docker compose -f tests_deployment/integration_tests_tracing_deployment/metrics_setup/docker-compose.yml logs otlp-collector
+      - name: Check container logs
+        if: always()
+        run: |
+          docker compose -f tests_deployment/integration_tests_tracing_deployment/metrics_setup/docker-compose.yml logs otlp-collector
 
-  #     - name: Wait for container startup ⏳
-  #       timeout-minutes: 15
-  #       run: |
-  #         bash tests_deployment/integration_tests_tracing_deployment/check_connection.sh http://localhost:5005
+      - name: Wait for container startup ⏳
+        timeout-minutes: 15
+        run: |
+          bash tests_deployment/integration_tests_tracing_deployment/check_connection.sh http://localhost:5005
 
-  #     - name: Test Code with Services 🩺
-  #       env:
-  #         PYTHONIOENCODING: "utf-8"
-  #         RASA_TELEMETRY_WRITE_KEY: ${{ secrets.SEGMENT_WRITE_DEV_KEY }}
-  #       run: |
-  #         make test-metrics-integration
+      - name: Test Code with Services 🩺
+        env:
+          PYTHONIOENCODING: "utf-8"
+          RASA_TELEMETRY_WRITE_KEY: ${{ secrets.SEGMENT_WRITE_DEV_KEY }}
+        run: |
+          make test-metrics-integration
 
-  #     - name: Stop docker containers for integration testing
-  #       run: |
-  #         make stop-metrics-integration-containers
+      - name: Stop docker containers for integration testing
+        run: |
+          make stop-metrics-integration-containers
+
+  build_docker_base_images_and_set_env:
+    name: Build Docker base images and setup environment
+    runs-on: ubuntu-22.04
+    outputs:
+      base_image_hash: ${{ steps.check_image.outputs.base_image_hash }}
+      base_builder_image_hash: ${{ steps.check_image.outputs.base_builder_image_hash }}
+      # Tag name used for images created during Docker image builds, e.g. 3886 - a PR number
+      image_tag: ${{ steps.set_output.outputs.image_tag }}
+      # Return 'true' if tag version is equal or higher than the latest tagged Rasa version
+      is_newest_version: ${{ steps.rasa_get_version.outputs.is_newest_version }}
+
+    steps:
+      # Due to an issue with checking out a wrong commit, we make sure
+      # to checkout HEAD commit for a pull request.
+      # More details: https://github.com/actions/checkout/issues/299
+      - name: Checkout pull request HEAD commit instead of merge commit 🕝
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+        if: github.event_name == 'pull_request'
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+        if: github.event_name != 'pull_request'
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@0d103c3126aa41d772a8362f6aa67afac040f80c  # v3.1.0
+
+      - name: Read Poetry Version 🔢
+        run: |
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+        shell: bash
+
+      - id: 'auth-release'
+        name: Authenticate with gcloud for release registry 🎫
+        uses: google-github-actions/auth@55bd3a7c6e2ae7cf1877fd1ccb9d54c0503c457c # v2.1.2
+        with:
+          token_format: 'access_token'
+          credentials_json: '${{ secrets.RASA_OSS_RELEASE_ACCOUNT_KEY }}' #needs to be added to secrets
+
+      - name: Authenticate docker for release registry 🎫
+        run: |
+          # Set up docker to authenticate via gcloud command-line tool.
+          gcloud auth configure-docker europe-west3-docker.pkg.dev
+
+      - name: Check if tag version is equal or higher than the latest tagged Rasa version
+        id: rasa_get_version
+        if: env.IS_TAG_BUILD == 'true'
+        run: |
+          # Get latest tagged Rasa version
+          git fetch --depth=1 origin "+refs/tags/*:refs/tags/*"
+          # Fetch branch history
+          git fetch --prune --unshallow
+          LATEST_TAGGED_NON_ALPHA_RASA_VERSION=$(git tag | sort -r -V | grep -E "^[0-9.]+$" | head -n1)
+          CURRENT_TAG=${GITHUB_REF#refs/tags/}
+          # Return 'true' if tag version is equal or higher than the latest tagged Rasa version
+          IS_NEWEST_VERSION=$((printf '%s\n%s\n' "${LATEST_TAGGED_NON_ALPHA_RASA_VERSION}" "$CURRENT_TAG" \
+            | sort -V -C && echo true || echo false) || true)
+          # Avoid that the script gets released for alphas or release candidates
+          if [[ "${IS_NEWEST_VERSION}" == "true" && "$CURRENT_TAG" =~ ^[0-9.]+$ ]]; then
+            echo "is_newest_version=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_newest_version=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check if a base image exists
+        id: check_image
+        env:
+          DOCKER_CLI_EXPERIMENTAL: enabled
+        run: |
+          # Base image
+          BASE_IMAGE_HASH=${{ hashFiles('docker/Dockerfile.base') }}
+          echo "base_image_hash=${BASE_IMAGE_HASH}" >> $GITHUB_OUTPUT
+
+          BASE_IMAGE_EXISTS=$((docker manifest inspect ${{ env.TARGET_IMAGE_REGISTRY }}/rasa:base-${BASE_IMAGE_HASH} &> /dev/null && echo true || echo false) || true)
+          echo "base_exists=${BASE_IMAGE_EXISTS}" >> $GITHUB_OUTPUT
+
+          # Base poetry image
+          BASE_IMAGE_POETRY_EXISTS=$((docker manifest inspect ${{ env.TARGET_IMAGE_REGISTRY }}/rasa:base-poetry-${{ env.POETRY_VERSION }} &> /dev/null && echo true || echo false) || true)
+          echo "base_poetry_exists=${BASE_IMAGE_POETRY_EXISTS}" >> $GITHUB_OUTPUT
+
+          # Base builder image
+          BASE_IMAGE_BUILDER_HASH=${{ hashFiles('docker/Dockerfile.base-builder') }}-poetry-${{ env.POETRY_VERSION }}
+          echo "base_builder_image_hash=${BASE_IMAGE_BUILDER_HASH}" >> $GITHUB_OUTPUT
+
+          BASE_IMAGE_BUILDER_EXISTS=$((docker manifest inspect ${{ env.TARGET_IMAGE_REGISTRY }}/rasa:base-builder-${BASE_IMAGE_BUILDER_HASH} &> /dev/null && echo true || echo false) || true)
+          echo "base_builder_exists=${BASE_IMAGE_BUILDER_EXISTS}" >> $GITHUB_OUTPUT
+
+      - name: Build Docker base image 🛠
+        if: steps.check_image.outputs.base_exists == 'false' || env.IS_TAG_BUILD == 'true'
+        run: |
+          export IMAGE_TAG=${{ steps.check_image.outputs.base_image_hash }}
+          export TARGET_IMAGE_REGISTRY=${{ env.TARGET_IMAGE_REGISTRY }}
+          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl base
+
+      - name: Push Docker base image if it's not building from a fork ⬆
+        if: (steps.check_image.outputs.base_exists == 'false' || env.IS_TAG_BUILD == 'true') && github.event.pull_request.head.repo.owner.login == 'RasaHQ'
+        run: |
+          export IMAGE_TAG=${{ steps.check_image.outputs.base_image_hash }}
+          export TARGET_IMAGE_REGISTRY=${{ env.TARGET_IMAGE_REGISTRY }}
+          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl base --push
+
+      - name: Build Docker poetry base image 🛠
+        if: steps.check_image.outputs.base_poetry_exists == 'false' || steps.check_image.outputs.base_exists == 'false'
+        run: |
+          export IMAGE_TAG=${{ env.POETRY_VERSION }}
+          export BASE_IMAGE_HASH=${{ steps.check_image.outputs.base_image_hash }}
+          export TARGET_IMAGE_REGISTRY=${{ env.TARGET_IMAGE_REGISTRY }}
+          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl base-poetry
+
+      - name: Push Docker poetry base image if it's not building from a fork ⬆
+        if: (steps.check_image.outputs.base_poetry_exists == 'false' || steps.check_image.outputs.base_exists == 'false') && github.event.pull_request.head.repo.owner.login == 'RasaHQ'
+        run: |
+          export IMAGE_TAG=${{ env.POETRY_VERSION }}
+          export BASE_IMAGE_HASH=${{ steps.check_image.outputs.base_image_hash }}
+          export TARGET_IMAGE_REGISTRY=${{ env.TARGET_IMAGE_REGISTRY }}
+          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl base-poetry --push
+
+      - name: Build Docker builder base image 🛠
+        if: steps.check_image.outputs.base_builder_exists == 'false' || steps.check_image.outputs.base_exists == 'false'
+        run: |
+          export IMAGE_TAG=${{ steps.check_image.outputs.base_builder_image_hash }}
+          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl base-builder
+
+      - name: Push Docker builder base image if it's not building from a fork ⬆
+        if: (steps.check_image.outputs.base_builder_exists == 'false' || steps.check_image.outputs.base_exists == 'false') && github.event.pull_request.head.repo.owner.login == 'RasaHQ'
+        run: |
+          export IMAGE_TAG=${{ steps.check_image.outputs.base_builder_image_hash }}
+          export TARGET_IMAGE_REGISTRY=${{ env.TARGET_IMAGE_REGISTRY }}
+          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl base-builder --push
+
+      # Set environment variables for a pull request
+      #
+      # In this scenario, we've created a PR #1234
+      #
+      # Example output:
+      # IMAGE_TAG=1234
+      - name: Set environment variables - pull_request
+        if: github.event_name == 'pull_request' && env.IS_TAG_BUILD == 'false'
+        run: |
+          echo "IMAGE_TAG=${{ github.event.number }}" >> $GITHUB_ENV
+
+      # Set environment variables for a tag
+      #
+      # In this scenario, we've pushed the '2.0.6' tag
+      #
+      # Example output:
+      # TAG_NAME=2.0.6
+      # IMAGE_TAG=2.0.6
+      - name: Set environment variables - push - tag
+        if: github.event_name == 'push' && env.IS_TAG_BUILD == 'true'
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          echo "IMAGE_TAG=${TAG_NAME}" >> $GITHUB_ENV
+
+      # Set environment variables for a branch
+      #
+      # In this scenario, we've pushed changes into the main branch
+      #
+      # Example output:
+      # IMAGE_TAG=main
+      - name: Set environment variables - push - branch
+        if: github.event_name == 'push' && env.IS_TAG_BUILD == 'false'
+        run: |
+          BRANCH_NAME=${GITHUB_REF#refs/heads/}
+          SAFE_BRANCH_NAME="$(echo ${GITHUB_REF#refs/heads/} | sed 's/[\\*+.$\#\-\/]/-/g')"
+          echo "IMAGE_TAG=${SAFE_BRANCH_NAME}" >> $GITHUB_ENV
+
+      - name: Set output
+        id: set_output
+        run: |
+          echo "image_tag=${{ env.IMAGE_TAG }}" >> $GITHUB_OUTPUT
+
+  docker:
+    name: Build Docker
+    runs-on: ubuntu-22.04
+
+    # docker will only be run when there is a tag available
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && github.repository == 'RasaHQ/rasa-private'
+    needs: [changes, build_docker_base_images_and_set_env]
+    env:
+      IMAGE_TAG: ${{ needs.build_docker_base_images_and_set_env.outputs.image_tag }}
+      TARGET_IMAGE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-docker"
+      BASE_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_image_hash }}
+      BASE_BUILDER_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_builder_image_hash }}
+
+    steps:
+      # Due to an issue with checking out a wrong commit, we make sure
+      # to checkout HEAD commit for a pull request.
+      # More details: https://github.com/actions/checkout/issues/299
+      - name: Checkout pull request HEAD commit instead of merge commit 🕝
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+        if: github.event_name == 'pull_request'
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+        if: github.event_name != 'pull_request'
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@0d103c3126aa41d772a8362f6aa67afac040f80c  # v3.1.0
+
+      - name: Free disk space
+        if: needs.changes.outputs.docker == 'true'
+        # tries to make sure we do not run out of disk space, see
+        # https://github.community/t5/GitHub-Actions/BUG-Strange-quot-No-space-left-on-device-quot-IOExceptions-on/td-p/46101
+        run: |
+          sudo swapoff -a
+          sudo rm -f /swapfile
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          sudo apt clean
+          docker image prune -a -f
+          docker volume prune -f
+          docker container prune -f
+          df -h
+
+      - name: Read Poetry Version 🔢
+        run: |
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Echo Available platforms
+        run: echo ${{ steps.buildx.outputs.platforms }}
+
+      - name: Copy Segment write key to the package
+        if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && github.repository == 'RasaHQ/rasa-private'
+        env:
+          RASA_TELEMETRY_WRITE_KEY: ${{ secrets.RASA_OSS_TELEMETRY_WRITE_KEY }}
+          RASA_EXCEPTION_WRITE_KEY: ${{ secrets.RASA_OSS_EXCEPTION_WRITE_KEY }}
+        run: |
+          ./scripts/write_keys_file.sh
+
+      # Authenticate and push to the release registry
+      - id: 'auth-release'
+        name: Authenticate with gcloud for release registry 🎫
+        uses: google-github-actions/auth@55bd3a7c6e2ae7cf1877fd1ccb9d54c0503c457c # v2.1.2
+        with:
+          token_format: 'access_token'
+          credentials_json: '${{ secrets.RASA_OSS_RELEASE_ACCOUNT_KEY }}'
+
+      - name: Authenticate docker for release registry 🎫
+        run: |
+          # Set up docker to authenticate via gcloud command-line tool.
+          gcloud auth configure-docker europe-west3-docker.pkg.dev
+
+      - name: Build Docker image
+        if: needs.changes.outputs.docker == 'true'
+        run: |
+          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl default
+
+      - name: Check how much space is left after Docker build
+        run: df -h
+
+      - name: Push image with main tag 📦
+        if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'RasaHQ/rasa-private'
+        run: |
+          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl default --push
+
+      - name: Push image with ${{github.ref}} tag 📦
+        if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && env.IS_TAG_BUILD == 'true' && github.repository == 'RasaHQ/rasa-private'
+        run: |
+          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl default --push
+
+      - name: Push image with latest tag 📦
+        if: needs.changes.outputs.docker == 'true' && github.event_name == 'push' && env.IS_TAG_BUILD == 'true' && github.repository == 'RasaHQ/rasa-private' && needs.build_docker_base_images_and_set_env.outputs.is_newest_version == 'true'
+        run: |
+          RELEASE_TAG="${IMAGE_TAG}"
+          LATEST_TAG=$(echo $RELEASE_TAG | sed 's/'$IMAGE_TAG'/latest/g')
+
+          # This will not build the image from ground up, but will only tag the existing image with LATEST_TAG
+          IMAGE_TAG=${LATEST_TAG} docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl default
+          # Push tagged image
+          IMAGE_TAG=${LATEST_TAG} docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl default --push
+
+
+    name: Notify Slack of successful release
+    runs-on: ubuntu-22.04
+    # run this job when the workflow is triggered by a tag push
+    if: always() && github.repository == 'RasaHQ/rasa-private' && github.ref_type == 'tag'
+    needs:
+      - deploy
+
+    steps:
+      - name: Notify Slack of failure ⛔️
+        # send notification if 'deploy' is skipped (previous needed job failed) or failed
+        if: needs.deploy.result != 'success'
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_RELEASE_ASSISTANT_DEV_TRIBE_WEBHOOK }}
+        uses: Ilshidur/action-slack@689ad44a9c9092315abd286d0e3a9a74d31ab78a
+        with:
+          args: "⛔️ *Rasa Private* version `${{ github.ref_name }}` could not be released 😱! Please check out GitHub Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
