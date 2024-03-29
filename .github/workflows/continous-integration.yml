@@ -1,9 +1,6 @@
 name: Continuous Integration
 
 on:
-  push:
-    branches:
-      - ATO-2272
   pull_request:
 
 concurrency:

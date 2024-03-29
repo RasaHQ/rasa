@@ -215,6 +215,16 @@ jobs:
         if: always()
         run: |
           docker compose -f tests_deployment/integration_tests_tracing_deployment/metrics_setup/docker-compose.yml logs prometheus
+      
+      - name: Check rasa-pro-assistent container logs
+        if: always()
+        run: |
+          docker compose -f tests_deployment/integration_tests_tracing_deployment/metrics_setup/docker-compose.yml logs rasa-pro-assistant
+
+      - name: Check action-server container logs
+        if: always()
+        run: |
+          docker compose -f tests_deployment/integration_tests_tracing_deployment/metrics_setup/docker-compose.yml logs prometheus action-server
 
       - name: Metric Integration Testing - Stop docker containers
         run: |
