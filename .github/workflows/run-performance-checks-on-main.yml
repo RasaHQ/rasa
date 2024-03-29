@@ -80,10 +80,10 @@ jobs:
           END=$(python -c 'import time; print(int(time.time() * 1000))')
           echo "installation_time=$((END-START))" >> $GITHUB_OUTPUT
           echo "commit_time=$(git show -s --format=%ci ${{ github.sha }})" >> $GITHUB_OUTPUT
+          echo "rasa_pro_version=$(poetry version --short)" >> $GITHUB_OUTPUT
 
       - name: Send metrics 🔊
         run: |
-          COMMIT_TIME=$(git show -s --format=%ci ${{ github.sha }})
           curl --location 'https://api.segment.io/v1/track' \
           --header 'Content-Type: application/json' \
           --data-raw '{
@@ -93,7 +93,8 @@ jobs:
               "properties": {
                 "sha": "${{ github.sha }}",
                 "installation_time_ms": ${{ steps.installation.outputs.installation_time }},
-                "commit_time": "${{ steps.installation.outputs.commit_time }}"
+                "commit_time": "${{ steps.installation.outputs.commit_time }}",
+                "rasa_pro_version": "${{ steps.installation.outputs.rasa_pro_version }}"
               },
               "context": {
                 "python_version": "${{ env.PYTHON_VERSION }}"
