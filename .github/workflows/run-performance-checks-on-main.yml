@@ -88,11 +88,13 @@ jobs:
           --header 'Content-Type: application/json' \
           --data-raw '{
               "event": "pip_install",
-              "sha": "${{ github.sha }}",
-              "installation_time_ms": ${{ steps.installation.outputs.installation_time }},
-              "commit_time": "${{ steps.installation.outputs.commit_time }}",
               "userId": "rasa_pro_ci",
               "writeKey": "${{ secrets.RASA_CI_SEGMENT_WRITE_KEY }}",
+              "properties": {
+                "sha": "${{ github.sha }}",
+                "installation_time_ms": ${{ steps.installation.outputs.installation_time }},
+                "commit_time": "${{ steps.installation.outputs.commit_time }}"
+              },
               "context": {
                 "python_version": "${{ env.PYTHON_VERSION }}"
               }
