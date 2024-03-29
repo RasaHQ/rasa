@@ -117,7 +117,15 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             structlogger.info("llm_command_generator.flow_retrieval.enabled")
         else:
             self.flow_retrieval = None
-            structlogger.info("llm_command_generator.flow_retrieval.disabled")
+            structlogger.warn(
+                "llm_command_generator.flow_retrieval.disabled",
+                event_info=(
+                    "Disabling flow retrieval can cause issues when there are a "
+                    "large number of flows to be included in the prompt. For more"
+                    "information see:\n"
+                    "https://rasa.com/docs/rasa-pro/concepts/dialogue-understanding#how-the-llmcommandgenerator-works"
+                ),
+            )
 
     @property
     def enabled_flow_retrieval(self) -> bool:
@@ -192,8 +200,9 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         self, training_data: TrainingData, flows: FlowsList, domain: Domain
     ) -> Resource:
         """Train the llm command generator. Stores all flows into a vector store."""
+        # flow retrieval is populated with only user-defined flows
         if self.flow_retrieval is not None:
-            self.flow_retrieval.populate(flows, domain)
+            self.flow_retrieval.populate(flows.user_flows, domain)
         self.persist()
         return self._resource
 
