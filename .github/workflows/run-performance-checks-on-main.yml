@@ -21,6 +21,9 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+        # TODO: remove, this is for establishing the baseline
+        with:
+          ref: main
       - name: Read Poetry Version 🔢
         run: |
          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
@@ -60,6 +63,9 @@ jobs:
     needs: [build_package]
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+        # TODO: remove, this is for establishing the baseline
+        with:
+          ref: main
       - name: Set up Python 3.10 🐍
         uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
         with:
