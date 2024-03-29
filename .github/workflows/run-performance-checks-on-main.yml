@@ -84,7 +84,7 @@ jobs:
           pip install ${{ steps.artifact.outputs.download-path }}
           END=$(python -c 'import time; print(int(time.time() * 1000))')
           echo "installation_time=$((END-START))" >> $GITHUB_OUTPUT
-          echo "commit_time=$(git show -s --format=%ci ${{ github.sha }})" >> $GITHUB_OUTPUT
+          echo "commit_time=$(git show -s --format=%cI ${{ github.sha }})" >> $GITHUB_OUTPUT
           echo "rasa_pro_version=$(poetry version --short)" >> $GITHUB_OUTPUT
           echo "archive_size_kb=$(du -sk ${{ steps.artifact.outputs.download-path }} | sed -n '$s/\t.*//p')" >> $GITHUB_OUTPUT
 
