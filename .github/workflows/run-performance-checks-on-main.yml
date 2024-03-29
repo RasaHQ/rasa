@@ -87,6 +87,7 @@ jobs:
           echo "installation_time=$((END-START))" >> $GITHUB_OUTPUT
           echo "commit_time=$(git show -s --format=%ci ${{ github.sha }})" >> $GITHUB_OUTPUT
           echo "rasa_pro_version=$(poetry version --short)" >> $GITHUB_OUTPUT
+          echo "archive_size_kb=$(du -sk ${{ steps.artifact.outputs.download-path }})" >> $GITHUB_OUTPUT
 
       - name: Send metrics 🔊
         run: |
@@ -100,7 +101,8 @@ jobs:
                 "sha": "${{ github.sha }}",
                 "installation_time_ms": ${{ steps.installation.outputs.installation_time }},
                 "commit_time": "${{ steps.installation.outputs.commit_time }}",
-                "rasa_pro_version": "${{ steps.installation.outputs.rasa_pro_version }}"
+                "rasa_pro_version": "${{ steps.installation.outputs.rasa_pro_version }}",
+                "archive_size_kb": ${{ steps.installation.outputs.archive_size_kb }}
               },
               "context": {
                 "python_version": "${{ env.PYTHON_VERSION }}"
