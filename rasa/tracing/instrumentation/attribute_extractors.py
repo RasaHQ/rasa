@@ -338,6 +338,15 @@ def extract_attrs_for_contextual_response_rephraser(
     return extend_attributes_with_prompt_tokens_length(self, attributes, prompt)
 
 
+def extract_attrs_for_create_history(
+    self: Any,
+    tracker: DialogueStateTracker,
+) -> Dict[str, Any]:
+    from rasa.core.nlg.contextual_response_rephraser import DEFAULT_LLM_CONFIG
+
+    return extract_llm_config(self, default_llm_config=DEFAULT_LLM_CONFIG)
+
+
 def extract_attrs_for_generate(
     self: Any,
     utter_action: Text,

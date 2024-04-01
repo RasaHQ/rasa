@@ -300,3 +300,104 @@ async def test_tracing_contextual_response_rephraser_len_prompt_tokens_non_opena
     )
 
     assert captured_span.attributes["len_prompt_tokens"] == "None"
+
+
+@pytest.mark.parametrize(
+    "llm_config, expected",
+    [
+        (
+            {
+                "type": "openai",
+                "model_name": DEFAULT_OPENAI_GENERATE_MODEL_NAME,
+            },
+            {
+                "llm_model": DEFAULT_OPENAI_GENERATE_MODEL_NAME,
+                "llm_type": "openai",
+            },
+        ),
+        (
+            {
+                "type": "cohere",
+                "model": "gptd-instruct-tft",
+                "temperature": 0.7,
+                "request_timeout": 10,
+            },
+            {
+                "llm_type": "cohere",
+                "llm_model": "gptd-instruct-tft",
+                "llm_temperature": "0.7",
+                "request_timeout": "10",
+            },
+        ),
+        (
+            {
+                "type": "test",
+                "model_name": None,
+                "temperature": 0.7,
+                "request_timeout": 10,
+            },
+            {
+                "llm_type": "test",
+                "llm_model": "None",
+                "llm_temperature": "0.7",
+                "request_timeout": "10",
+            },
+        ),
+        (
+            {"model_name": "gpt-3.5-turbo"},
+            {
+                "llm_model": "gpt-3.5-turbo",
+                "llm_type": "openai",
+            },
+        ),
+        (
+            {},
+            {
+                "llm_model": DEFAULT_OPENAI_GENERATE_MODEL_NAME,
+                "llm_type": "openai",
+            },
+        ),
+    ],
+)
+async def test_tracing_contextual_response_rephraser_create_history(
+    tracer_provider: TracerProvider,
+    span_exporter: InMemorySpanExporter,
+    previous_num_captured_spans: int,
+    domain_with_responses: Domain,
+    greet_tracker: DialogueStateTracker,
+    llm_config: Dict[str, Any],
+    expected: Dict[str, Any],
+) -> None:
+    component_class = MockContextualResponseRephraser
+
+    instrumentation.instrument(
+        tracer_provider,
+        contextual_response_rephraser_class=component_class,
+    )
+
+    endpoint_config = EndpointConfig.from_dict({"llm": llm_config})
+    mock_rephraser = component_class(
+        endpoint_config=endpoint_config, domain=domain_with_responses
+    )
+
+    await mock_rephraser._create_history(greet_tracker)
+
+    captured_spans: Sequence[
+        ReadableSpan
+    ] = span_exporter.get_finished_spans()  # type: ignore
+
+    num_captured_spans = len(captured_spans) - previous_num_captured_spans
+    assert num_captured_spans == 1
+
+    captured_span = captured_spans[-1]
+
+    assert captured_span.name == "MockContextualResponseRephraser._create_history"
+
+    expected_attributes = {
+        "class_name": component_class.__name__,
+        "embeddings": "{}",
+        "llm_temperature": "0.3",
+        "request_timeout": "5",
+    }
+    expected_attributes.update(expected)
+    assert captured_span.attributes == expected_attributes
