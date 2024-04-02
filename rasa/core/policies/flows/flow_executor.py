@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import Any, Dict, Text, List, Optional
 
 from jinja2 import Template
-import copy
 from structlog.contextvars import (
     bound_contextvars,
 )
@@ -76,7 +75,6 @@ from rasa.shared.core.flows.steps.collect import SlotRejection
 from rasa.shared.core.trackers import (
     DialogueStateTracker,
 )
-from rasa.shared.utils.pypred import get_case_insensitive_predicate
 import structlog
 
 structlogger = structlog.get_logger()
@@ -100,9 +98,6 @@ def is_condition_satisfied(
     # add slots namespace to the document
     document["slots"] = tracker.current_slot_values()
 
-    predicate = get_case_insensitive_predicate(
-        predicate, list(document["slots"].keys()), tracker
-    )
     p = Predicate(render_template_variables(predicate, context))
     try:
         return p.evaluate(document)
@@ -379,7 +374,7 @@ def advance_flows_until_next_action(
     """
     step_result: FlowStepResult = ContinueFlowWithNextStep()
 
-    tracker = copy.deepcopy(tracker)
+    tracker = tracker.copy()
 
     number_of_initial_events = len(tracker.events)
 

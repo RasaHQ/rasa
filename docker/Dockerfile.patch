@@ -1,6 +1,6 @@
 ARG VERSION_NUMBER
 
-FROM europe-west3-docker.pkg.dev/rasa-releases/rasa-docker/rasa-pro:${VERSION_NUMBER}
+FROM europe-west3-docker.pkg.dev/rasa-releases/rasa-pro/rasa-pro:${VERSION_NUMBER}
 
 USER root
 RUN apt-get update && apt-get -y upgrade
