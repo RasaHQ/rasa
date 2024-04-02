@@ -95,7 +95,11 @@ jobs:
 
       - name: Send metrics 🔊
         run: |
-          curl --location 'https://api.segment.io/v1/track' \
+          curl --connect-timeout 5 \
+          --max-time 10 \
+          --retry 5 \
+          --retry-max-time 40 \
+          --location 'https://api.segment.io/v1/track' \
           --header 'Content-Type: application/json' \
           --data-raw '{
               "event": "pip_install",
