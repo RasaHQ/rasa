@@ -13,6 +13,7 @@ from rasa.dialogue_understanding.coexistence.constants import (
     NON_STICKY,
 )
 from rasa.engine.storage.local_model_storage import LocalModelStorage
+from rasa.shared.constants import ROUTE_TO_CALM_SLOT
 from rasa.shared.nlu.training_data.formats import RasaYAMLReader
 from rasa.utils.tensorflow.constants import EPOCHS, RUN_EAGERLY
 from typing import Any, Dict, List, Tuple, Text, Union, Optional
@@ -98,13 +99,32 @@ def pipelines_for_tests() -> List[Tuple[Text, List[Dict[Text, Any]]]]:
         ),
         ("fallback", as_pipeline("KeywordIntentClassifier", "FallbackClassifier")),
         ("calm", as_pipeline("NLUCommandAdapter", "LLMCommandGenerator")),
+    ]
+
+
+def coexistence_pipelines_for_tests() -> List[Tuple[Text, List[Dict[Text, Any]]]]:
+    # these pipelines really are just for testing
+
+    # first is language followed by list of components
+    return [
         (
-            "coexistence",
+            "coexistence_llm_based",
             as_pipeline(
                 {
                     "name": "LLMBasedRouter",
                     CALM_ENTRY: {STICKY: "handles everything around contacts"},
                 },
+                "WhitespaceTokenizer",
+                "CountVectorsFeaturizer",
+                "LogisticRegressionClassifier",
+                "CRFEntityExtractor",
+                "NLUCommandAdapter",
+                "LLMCommandGenerator",
+            ),
+        ),
+        (
+            "coexistence_intent_based",
+            as_pipeline(
                 {
                     "name": "IntentBasedRouter",
                     CALM_ENTRY: {STICKY: ["calm_supported"]},
@@ -164,6 +184,7 @@ def test_all_components_are_in_at_least_one_test_pipeline():
     """
     all_pipelines = (
         pipelines_for_tests()
+        + coexistence_pipelines_for_tests()
         + pipelines_for_non_windows_tests()
         + [("en", as_pipeline("LLMIntentClassifier"))]
     )
@@ -217,6 +238,65 @@ async def test_train_persist_load_parse(
             "pipeline": pipeline,
             "language": language,
             "assistant_id": "placeholder_default",
+        },
+    )
+
+    persisted_path = await rasa.model_training.train_nlu(
+        str(config_file),
+        nlu_as_json_path,
+        output=str(tmp_path),
+        domain=str(domain_file),
+    )
+
+    assert Path(persisted_path).is_file()
+
+    agent = Agent.load(persisted_path)
+    assert agent.processor
+    assert agent.is_ready()
+    assert await agent.parse_message("Rasa is great!") is not None
+
+
+@pytest.mark.timeout(600, func_only=True)
+@pytest.mark.parametrize("language, pipeline", coexistence_pipelines_for_tests())
+@pytest.mark.skip_on_windows
+@patch("langchain.vectorstores.faiss.FAISS.from_documents")
+@patch("langchain.vectorstores.faiss.FAISS.load_local")
+@patch(
+    "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval._create_embedder"
+)
+async def test_train_persist_load_parse_coexistence(
+    mock_flow_search_create_embedder: Mock,
+    mock_load_local: Mock,
+    mock_from_documents: Mock,
+    language: Optional[Text],
+    pipeline: List[Dict],
+    tmp_path: Path,
+    nlu_as_json_path: Text,
+):
+    mock_from_documents.return_value = Mock()
+    mock_flow_search_create_embedder.return_value = Mock()
+    mock_load_local.return_value = Mock()
+
+    config_file = tmp_path / "config.yml"
+    rasa.shared.utils.io.dump_obj_as_json_to_file(
+        config_file,
+        {
+            "pipeline": pipeline,
+            "language": language,
+            "assistant_id": "placeholder_default",
+        },
+    )
+
+    domain_file = tmp_path / "domain.yml"
+    rasa.shared.utils.io.dump_obj_as_json_to_file(
+        config_file,
+        {
+            "slots": {
+                ROUTE_TO_CALM_SLOT: {
+                    "type": "bool",
+                    "influence_conversation": False,
+                }
+            }
         },
     )
 
