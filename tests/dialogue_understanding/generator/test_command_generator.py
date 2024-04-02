@@ -18,7 +18,7 @@ from rasa.shared.nlu.training_data.message import Message
 
 
 class WackyCommandGenerator(CommandGenerator):
-    def predict_commands(
+    async def predict_commands(
         self,
         message: Message,
         flows: FlowsList,
@@ -30,10 +30,10 @@ class WackyCommandGenerator(CommandGenerator):
             return [ChitChatAnswerCommand()]
 
 
-def test_command_generator_catches_processing_errors():
+async def test_command_generator_catches_processing_errors():
     generator = WackyCommandGenerator({})
     messages = [Message.build("Hi"), Message.build("What is your purpose?")]
-    generator.process(messages, FlowsList(underlying_flows=[]))
+    await generator.process(messages, FlowsList(underlying_flows=[]))
     commands = [m.get(COMMANDS) for m in messages]
 
     assert len(commands[0]) == 0
@@ -41,11 +41,11 @@ def test_command_generator_catches_processing_errors():
     assert commands[1][0]["command"] == ChitChatAnswerCommand.command()
 
 
-def test_command_generator_still_throws_not_implemented_error():
+async def test_command_generator_still_throws_not_implemented_error():
     # This test can be removed if the predict_commands method stops to be abstract
     generator = CommandGenerator({})
     with pytest.raises(NotImplementedError):
-        generator.process([Message.build("test")], FlowsList([]))
+        await generator.process([Message.build("test")], FlowsList([]))
 
 
 @pytest.mark.parametrize(
@@ -89,7 +89,7 @@ def test_check_commands_against_startable_flows(
     "rasa.dialogue_understanding.generator.command_generator"
     ".CommandGenerator.get_startable_flows"
 )
-def test_command_processor_checks_flow_guards(
+async def test_command_processor_checks_flow_guards(
     mock_get_startable_flows: Mock, mock_check_commands_against_startable_flows: Mock
 ):
     """Test that the command processor checks flow guards."""
@@ -97,13 +97,13 @@ def test_command_processor_checks_flow_guards(
     generator = WackyCommandGenerator({})
     messages = [Message.build("What is your purpose?")]
     # When
-    generator.process(messages, FlowsList([Flow("spam")]))
+    await generator.process(messages, FlowsList([Flow("spam")]))
     # Then
     mock_get_startable_flows.assert_called_once()
     mock_check_commands_against_startable_flows.assert_called_once()
 
 
-def test_process_does_not_predict_commands_if_commands_already_present():
+async def test_process_does_not_predict_commands_if_commands_already_present():
     """Test that predict_commands does not overwrite commands
     if commands are already set on message."""
     command_generator = CommandGenerator({})
@@ -119,8 +119,10 @@ def test_process_does_not_predict_commands_if_commands_already_present():
     mock_tracker = Mock()
     mock_tracker.get_slot = Mock(return_value=[])
 
-    returned_message = command_generator.process(
-        [test_message], flows=Mock(), tracker=mock_tracker
+    returned_message = (
+        await command_generator.process(
+            [test_message], flows=Mock(), tracker=mock_tracker
+        )
     )[0]
 
     assert len(returned_message.get(COMMANDS)) == 1
@@ -135,11 +137,11 @@ def test_process_does_not_predict_commands_if_commands_already_present():
         ("Very long message", RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG),
     ],
 )
-def test_process_invalid_messages(message: Text, expected_error_type: Text):
+async def test_process_invalid_messages(message: Text, expected_error_type: Text):
     # Given
     generator = WackyCommandGenerator({"user_input": {"max_characters": 10}})
     # When
-    processed_messages = generator.process(
+    processed_messages = await generator.process(
         messages=[Message.build(text=message)], flows=FlowsList(underlying_flows=[])
     )
     # Then
@@ -161,13 +163,13 @@ def test_process_invalid_messages(message: Text, expected_error_type: Text):
         ("Chit Chat", ChitChatAnswerCommand, None),
     ],
 )
-def test_evaluate_and_predict_commands(
+async def test_evaluate_and_predict_commands(
     message: Text, expected_command_type: Type, expected_error_type: Optional[Text]
 ):
     # Given
     generator = WackyCommandGenerator({"user_input": {"max_characters": 20}})
     # When
-    commands = generator._evaluate_and_predict(
+    commands = await generator._evaluate_and_predict(
         message=Message.build(text=message),
         startable_flows=FlowsList(underlying_flows=[]),
     )

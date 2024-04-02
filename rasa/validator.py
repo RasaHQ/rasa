@@ -73,7 +73,8 @@ class Validator:
         self.config = config or {}
 
     def validate_routing_setup(self) -> bool:
-        component_names = {c["name"] for c in self.config["pipeline"]}
+        pipeline = self.config.get("pipeline", []) or []
+        component_names = {c["name"] for c in pipeline}
         routing_slot = [s for s in self.domain.slots if s.name == ROUTE_TO_CALM_SLOT]
         if (
             "LLMBasedRouter" in component_names

@@ -40,7 +40,7 @@ class GraphTrainer:
         self._cache = cache
         self._graph_runner_class = graph_runner_class
 
-    def train(
+    async def train(
         self,
         model_configuration: GraphModelConfiguration,
         importer: TrainingDataImporter,
@@ -56,6 +56,7 @@ class GraphTrainer:
             output_filename: The location to save the packaged model.
             force_retraining: If `True` then the cache is skipped and all components
                 are retrained.
+            is_finetuning: `True` if we want to finetune the model.
 
         Returns:
             The metadata describing the trained model.
@@ -72,7 +73,7 @@ class GraphTrainer:
             )
             pruned_training_schema = model_configuration.train_schema
         else:
-            fingerprint_run_outputs = self.fingerprint(
+            fingerprint_run_outputs = await self.fingerprint(
                 model_configuration.train_schema,
                 importer=importer,
                 is_finetuning=is_finetuning,
@@ -102,13 +103,13 @@ class GraphTrainer:
 
         logger.debug("Running the pruned train graph with real node execution.")
 
-        graph_runner.run(inputs={PLACEHOLDER_IMPORTER: importer})
+        await graph_runner.run(inputs={PLACEHOLDER_IMPORTER: importer})
 
         return self._model_storage.create_model_package(
             output_filename, model_configuration, domain
         )
 
-    def fingerprint(
+    async def fingerprint(
         self,
         train_schema: GraphSchema,
         importer: TrainingDataImporter,
@@ -139,7 +140,9 @@ class GraphTrainer:
         )
 
         logger.debug("Running the train graph in fingerprint mode.")
-        return fingerprint_graph_runner.run(inputs={PLACEHOLDER_IMPORTER: importer})
+        return await fingerprint_graph_runner.run(
+            inputs={PLACEHOLDER_IMPORTER: importer}
+        )
 
     def _create_fingerprint_schema(self, train_schema: GraphSchema) -> GraphSchema:
         fingerprint_schema = copy.deepcopy(train_schema)

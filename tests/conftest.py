@@ -320,8 +320,8 @@ async def trained_unexpected_intent_policy_path(trained_async: Callable) -> Text
 
 
 @pytest.fixture(scope="session")
-def trained_nlu_moodbot_path(trained_nlu: Callable) -> Text:
-    return trained_nlu(
+async def trained_nlu_moodbot_path(trained_nlu: Callable) -> Text:
+    return await trained_nlu(
         domain="data/test_moodbot/domain.yml",
         config="data/test_moodbot/config.yml",
         nlu_data="data/test_moodbot/data/nlu.yml",
@@ -389,7 +389,7 @@ def trained_async(tmp_path_factory: TempPathFactory) -> Callable:
             output_path = str(tmp_path_factory.mktemp("models"))
 
         with enable_cache(cache_dir):
-            result = train(*args, output=output_path, **kwargs)
+            result = await train(*args, output=output_path, **kwargs)
 
         return result.model
 
@@ -398,13 +398,13 @@ def trained_async(tmp_path_factory: TempPathFactory) -> Callable:
 
 @pytest.fixture(scope="session")
 def trained_nlu(tmp_path_factory: TempPathFactory) -> Callable:
-    def _train_nlu(
+    async def _train_nlu(
         *args: Any, output_path: Optional[Text] = None, **kwargs: Any
     ) -> Optional[Text]:
         if output_path is None:
             output_path = str(tmp_path_factory.mktemp("models"))
 
-        return train_nlu(*args, output=output_path, **kwargs)
+        return await train_nlu(*args, output=output_path, **kwargs)
 
     return _train_nlu
 

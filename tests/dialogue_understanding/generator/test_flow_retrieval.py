@@ -226,7 +226,7 @@ class TestFlowRetrieval:
         "rasa.dialogue_understanding.generator.flow_retrieval."
         "FlowRetrieval.find_most_similar_flows"
     )
-    def test_filter_flows(
+    async def test_filter_flows(
         self,
         mock_find_most_similar_flows: Mock,
         max_flows_from_semantic_search: int,
@@ -267,7 +267,7 @@ class TestFlowRetrieval:
             ],
         )
         # When
-        filtered_flows = flow_search.filter_flows(tracker, Mock(), flows)
+        filtered_flows = await flow_search.filter_flows(tracker, Mock(), flows)
         # Then
         assert len(filtered_flows) == len(expected_flows)
         assert filtered_flows.user_flow_ids == expected_flows.user_flow_ids
@@ -309,10 +309,10 @@ class TestFlowRetrieval:
         # Then
         assert query == expected_query
 
-    @patch("langchain.vectorstores.faiss.FAISS.similarity_search_with_score")
-    def test_query_vector_store(
+    @patch("langchain.vectorstores.faiss.FAISS.asimilarity_search_with_score")
+    async def test_query_vector_store(
         self,
-        mock_similarity_similarity_search_with_score: Mock,
+        mock_asimilarity_similarity_search_with_score: Mock,
         flow_search: FlowRetrieval,
         startable_flows_documents: List[Document],
     ):
@@ -321,18 +321,20 @@ class TestFlowRetrieval:
         flow_search.vector_store = FAISS(Mock(), Mock(), Mock(), Mock())
         k = flow_search.config[MAX_FLOWS_FROM_SEMANTIC_SEARCH_KEY]
         # When
-        flow_search._query_vector_store(query)
+        await flow_search._query_vector_store(query)
         # Then
-        mock_similarity_similarity_search_with_score.assert_called_once_with(query, k=k)
+        mock_asimilarity_similarity_search_with_score.assert_called_once_with(
+            query, k=k
+        )
 
-    def test_query_vector_store_when_its_not_initialized(
+    async def test_query_vector_store_when_its_not_initialized(
         self,
         flow_search: FlowRetrieval,
     ):
         # Given
         query = "test query"
         # When
-        result = flow_search._query_vector_store(query)
+        result = await flow_search._query_vector_store(query)
         # Then
         assert result == []
 
@@ -342,7 +344,7 @@ class TestFlowRetrieval:
     @patch(
         "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval._prepare_query"
     )
-    def test_find_most_similar_flows(
+    async def test_find_most_similar_flows(
         self,
         mock_prepare_query: Mock,
         mock_query_vector_store: Mock,
@@ -358,7 +360,7 @@ class TestFlowRetrieval:
             (d, 1.0) for d in startable_flows_documents
         ]
         # When
-        most_similar_flows = flow_search.find_most_similar_flows(
+        most_similar_flows = await flow_search.find_most_similar_flows(
             tracker=Mock(), message=Mock(), flows=flows
         )
         # Then

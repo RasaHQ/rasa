@@ -4,7 +4,8 @@ import inspect
 from dataclasses import dataclass, field
 import dataclasses
 from enum import Enum
-from typing import Any, Dict, List, Tuple
+from functools import lru_cache
+from typing import Any, Dict, List, Tuple, Type
 
 import structlog
 from rasa.shared.exceptions import RasaException
@@ -23,6 +24,26 @@ def generate_stack_frame_id() -> str:
         The generated stack frame ID.
     """
     return random_string(8)
+
+
+@lru_cache
+def _get_all_subclasses() -> List[Type[DialogueStackFrame]]:
+    stack_frame_subclasses = rasa.shared.utils.common.all_subclasses(DialogueStackFrame)
+
+    # Get all the subclasses of DialogueStackFrame from the patterns package
+    # in case these are not all imported at runtime
+    modules = rasa.shared.utils.common.import_package_modules(
+        "rasa.dialogue_understanding.patterns"
+    )
+    extra_subclasses = [
+        clazz
+        for module in modules
+        for _, clazz in inspect.getmembers(module, inspect.isclass)
+        if issubclass(clazz, DialogueStackFrame) and clazz not in stack_frame_subclasses
+    ]
+
+    stack_frame_subclasses.extend(extra_subclasses)
+    return stack_frame_subclasses
 
 
 class InvalidStackFrameType(RasaException):
@@ -102,26 +123,8 @@ class DialogueStackFrame:
             The created `DialogueStackFrame`.
         """
         typ = data.get("type")
-        stack_frame_subclasses = rasa.shared.utils.common.all_subclasses(
-            DialogueStackFrame
-        )
 
-        # Get all the subclasses of DialogueStackFrame from the patterns package
-        # in case these are not all imported at runtime
-        modules = rasa.shared.utils.common.import_package_modules(
-            "rasa.dialogue_understanding.patterns"
-        )
-        extra_subclasses = [
-            clazz
-            for module in modules
-            for _, clazz in inspect.getmembers(module, inspect.isclass)
-            if issubclass(clazz, DialogueStackFrame)
-            and clazz not in stack_frame_subclasses
-        ]
-
-        stack_frame_subclasses.extend(extra_subclasses)
-
-        for clazz in stack_frame_subclasses:
+        for clazz in _get_all_subclasses():
             try:
                 if typ == clazz.type():
                     return clazz.from_dict(data)
