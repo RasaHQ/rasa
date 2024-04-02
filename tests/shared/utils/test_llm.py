@@ -300,7 +300,7 @@ def test_embedder_factory_ignores_irrelevant_default_args(
         (BooleanSlot("test_slot", []), "[True, False]"),
         (
             CategoricalSlot("test_slot", [], values=["Value1", "Value2"]),
-            "['value1', 'value2']",
+            "['Value1', 'Value2']",
         ),
     ],
 )

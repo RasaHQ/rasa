@@ -148,7 +148,7 @@ class FlowRetrieval:
         """Creates an embedder.
 
         Returns:
-        The embedder.
+            The embedder.
         """
         return embedder_factory(
             config.get(EMBEDDINGS_CONFIG_KEY), DEFAULT_EMBEDDINGS_CONFIG
@@ -178,7 +178,7 @@ class FlowRetrieval:
             domain: The domain containing relevant slot information.
         """
         flows_to_embedd = flows.exclude_link_only_flows()
-        embeddings = self._create_embedder(self.config[EMBEDDINGS_CONFIG_KEY])
+        embeddings = self._create_embedder(self.config)
         documents = self._generate_flow_documents(flows_to_embedd, domain)
         self.vector_store = FAISS.from_documents(
             documents=documents,
@@ -234,7 +234,7 @@ class FlowRetrieval:
 
         return flow_docs
 
-    def filter_flows(
+    async def filter_flows(
         self, tracker: DialogueStateTracker, message: Message, flows: FlowsList
     ) -> FlowsList:
         """Filters the given flows.
@@ -261,14 +261,14 @@ class FlowRetrieval:
         always_included_flows = flows.get_flows_always_included_in_prompt()
         previously_started_flows = tracker.get_previously_started_flows(flows)
         # apply semantic search filtering
-        most_similar_flows = self.find_most_similar_flows(tracker, message, flows)
+        most_similar_flows = await self.find_most_similar_flows(tracker, message, flows)
         return FlowsList.from_multiple_flows_lists(
             always_included_flows,
             previously_started_flows,
             most_similar_flows,
         )
 
-    def find_most_similar_flows(
+    async def find_most_similar_flows(
         self, tracker: DialogueStateTracker, message: Message, flows: FlowsList
     ) -> FlowsList:
         """Filters the given flows so only the top 'k' most similar
@@ -283,7 +283,7 @@ class FlowRetrieval:
             The most similar flows to the current conversation.
         """
         query = self._prepare_query(tracker, message)
-        documents_with_scores = self._query_vector_store(query)
+        documents_with_scores = await self._query_vector_store(query)
         # filter out None i.e. more flows were embedded during training than are
         # available during prediction
         most_similar_flows_with_scores = [
@@ -326,7 +326,7 @@ class FlowRetrieval:
 
         return f"{message.data[TEXT]}"
 
-    def _query_vector_store(self, query: Text) -> List:
+    async def _query_vector_store(self, query: Text) -> List:
         """Compares the query with all flows using a vector store
         and returns the top k relevant flows for the current conversation.
 
@@ -343,7 +343,7 @@ class FlowRetrieval:
             )
             return []
 
-        documents_with_scores = self.vector_store.similarity_search_with_score(
+        documents_with_scores = await self.vector_store.asimilarity_search_with_score(
             query, k=int(self.config[MAX_FLOWS_FROM_SEMANTIC_SEARCH_KEY])
         )
 
