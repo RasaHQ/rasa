@@ -5,10 +5,6 @@ on:
     # Runs at the end of every day
     - cron: 0 0 * * *
   workflow_dispatch:
-  # TODO: remove
-  push:
-    branches:
-      - tighter-dependency-constraints
 
 # SECRETS:
 #  - RASA_CI_SEGMENT_WRITE_KEY: Segment write key for https://app.segment.com/rasa-x/sources/rasa_ci/overview
