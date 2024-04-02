@@ -1,5 +1,5 @@
 variable "TARGET_IMAGE_REGISTRY" {
-  default = "rasa-pro"
+  default = "rasa"
 }
 
 variable "TARGET_IMAGE_NAME" {
@@ -7,7 +7,7 @@ variable "TARGET_IMAGE_NAME" {
 }
 
 variable "BASE_IMAGE_NAME" {
-  default = "${TARGET_IMAGE_REGISTRY}/rasa-pro"
+  default = "${TARGET_IMAGE_REGISTRY}/rasa"
 }
 
 variable "IMAGE_TAG" {
