@@ -1055,15 +1055,12 @@ jobs:
           echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
         shell: bash
 
-      - name: Authenticate with Google Cloud
-        id: auth
+      - name: Authenticate with gcloud for release registry 🎫
+        id: 'auth-release'
         uses: google-github-actions/auth@55bd3a7c6e2ae7cf1877fd1ccb9d54c0503c457c # v2.1.2
         with:
-          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER_OIDC}}
-          service_account: "github-actions-oidc-atom@rasa-releases.iam.gserviceaccount.com"
-
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@98ddc00a17442e89a24bbf282954a3b65ce6d200 # v2.1.0
+          token_format: 'access_token'
+          credentials_json: '${{ secrets.RASA_OSS_RELEASE_ACCOUNT_KEY }}'
 
       - name: Authenticate docker for release registry 🎫
         run: |
