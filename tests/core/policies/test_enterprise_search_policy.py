@@ -1,3 +1,4 @@
+import textwrap
 from pathlib import Path
 from typing import List
 from unittest.mock import MagicMock, Mock, patch
@@ -666,3 +667,223 @@ def test_enterprise_search_policy_citation_disabled(
     default_enterprise_search_policy: EnterpriseSearchPolicy,
 ) -> None:
     assert default_enterprise_search_policy.citation_enabled is False
+
+
+def test_enterprise_search_policy_post_process_citations_same_order(
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    vector_store: InformationRetrieval,
+) -> None:
+    """Test that the citations are correctly re-ordered.
+
+    The original LLM answer contains the citations in the sources list
+    in the correct order with incorrect bracketed numbers.
+    """
+    first_source_citation = "3"
+    second_source_citation = "1"
+    third_source_citation = "2"
+
+    llm_answer = f"""
+This is a test answer with a citation [{first_source_citation}]. This is another test answer with a citation [{second_source_citation}]. This is a third test answer with a citation [{third_source_citation}].
+
+Sources:
+
+[{first_source_citation}] https://www.example.com/{first_source_citation}
+[{second_source_citation}] https://www.example.com/{second_source_citation}
+[{third_source_citation}] https://www.example.com/{third_source_citation}""".strip()  # noqa: E501
+
+    llm_answer = "\n".join([line.rstrip() for line in llm_answer.splitlines()])
+
+    processed_answer = EnterpriseSearchPolicy.post_process_citations(llm_answer)
+
+    assert (
+        processed_answer.strip()
+        == textwrap.dedent(
+            f"""This is a test answer with a citation [1]. This is another test answer with a citation [2]. This is a third test answer with a citation [3].
+Sources:
+[1] https://www.example.com/{first_source_citation}
+[2] https://www.example.com/{second_source_citation}
+[3] https://www.example.com/{third_source_citation}"""  # noqa: E501
+        ).strip()
+    )
+
+
+def test_enterprise_search_policy_post_process_citations_diff_order(
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    vector_store: InformationRetrieval,
+) -> None:
+    """Test that the citations are correctly ordered.
+
+    The original LLM answer contains the citations in the sources list
+    in the incorrect order with incorrect bracketed numbers.
+    """
+    first_source_citation = "3"
+    second_source_citation = "2"
+    third_source_citation = "1"
+    llm_answer = f"""
+This is a test answer with a citation [{first_source_citation}]. This is another test answer with a citation [{second_source_citation}]. This is a third test answer with a citation [{third_source_citation}].
+
+Sources:
+[{first_source_citation}] https://www.example.com/{first_source_citation}
+[{third_source_citation}] https://www.example.com/{third_source_citation}
+[{second_source_citation}] https://www.example.com/{second_source_citation}""".strip()  # noqa: E501
+
+    llm_answer = "\n".join([line.rstrip() for line in llm_answer.splitlines()])
+
+    processed_answer = EnterpriseSearchPolicy.post_process_citations(llm_answer)
+
+    assert (
+        processed_answer.strip()
+        == textwrap.dedent(
+            f"""This is a test answer with a citation [1]. This is another test answer with a citation [2]. This is a third test answer with a citation [3].
+Sources:
+[1] https://www.example.com/{first_source_citation}
+[2] https://www.example.com/{second_source_citation}
+[3] https://www.example.com/{third_source_citation}"""  # noqa: E501
+        ).strip()
+    )
+
+
+def test_enterprise_search_policy_post_process_citations_diff_format(
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    vector_store: InformationRetrieval,
+) -> None:
+    """Test that sources are returned as is when there are no relevant sources."""
+    llm_answer = """This is a test answer without relevant sources.
+
+Sources:
+
+No relevant sources.""".strip()
+
+    llm_answer = "\n".join([line.rstrip() for line in llm_answer.splitlines()])
+
+    processed_answer = EnterpriseSearchPolicy.post_process_citations(llm_answer)
+
+    assert (
+        processed_answer.strip()
+        == textwrap.dedent(
+            """This is a test answer without relevant sources.
+Sources:
+No relevant sources."""
+        ).strip()
+    )
+
+
+def test_enterprise_search_policy_post_process_citations_no_sources(
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    vector_store: InformationRetrieval,
+) -> None:
+    """Test that the llm answer is returned as is when no sources are present."""
+    llm_answer = "This is a test answer without sources."
+
+    processed_answer = EnterpriseSearchPolicy.post_process_citations(llm_answer)
+    assert processed_answer == llm_answer
+
+
+def test_enterprise_search_policy_post_process_citations_consecutive_citations(
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    vector_store: InformationRetrieval,
+) -> None:
+    """Test that consecutive citations are correctly ordered."""
+    first_source_citation = "3"
+    second_source_citation = "2"
+    third_source_citation = "1"
+    llm_answer = f"""
+This is a test answer with a citation [{first_source_citation}][{second_source_citation}]. This is another test answer with a citation [{third_source_citation}].
+
+Sources:
+[{first_source_citation}] https://www.example.com/{first_source_citation}
+[{third_source_citation}] https://www.example.com/{third_source_citation}
+[{second_source_citation}] https://www.example.com/{second_source_citation}""".strip()  # noqa: E501
+
+    llm_answer = "\n".join([line.rstrip() for line in llm_answer.splitlines()])
+
+    processed_answer = EnterpriseSearchPolicy.post_process_citations(llm_answer)
+
+    assert (
+        processed_answer.strip()
+        == textwrap.dedent(
+            f"""This is a test answer with a citation [1][2]. This is another test answer with a citation [3].
+Sources:
+[1] https://www.example.com/{first_source_citation}
+[2] https://www.example.com/{second_source_citation}
+[3] https://www.example.com/{third_source_citation}"""  # noqa: E501
+        ).strip()
+    )
+
+
+@pytest.mark.parametrize("separator", [", ", ","])
+def test_enterprise_search_policy_post_process_citations_nested_citations(
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    vector_store: InformationRetrieval,
+    separator: str,
+) -> None:
+    """Test that nested citations are correctly ordered."""
+    first_source_citation = "3"
+    second_source_citation = "1"
+    third_source_citation = "2"
+    llm_answer = f"""
+This is a test answer with a citation [{first_source_citation}{separator}{second_source_citation}]. This is another test answer with a citation [{third_source_citation}].
+
+Sources:
+[{first_source_citation}] https://www.example.com/{first_source_citation}
+[{second_source_citation}] https://www.example.com/{second_source_citation}
+[{third_source_citation}] https://www.example.com/{third_source_citation}""".strip()  # noqa: E501
+
+    llm_answer = "\n".join([line.rstrip() for line in llm_answer.splitlines()])
+
+    processed_answer = EnterpriseSearchPolicy.post_process_citations(llm_answer)
+
+    assert (
+        processed_answer.strip()
+        == textwrap.dedent(
+            f"""This is a test answer with a citation [1, 2]. This is another test answer with a citation [3].
+Sources:
+[1] https://www.example.com/{first_source_citation}
+[2] https://www.example.com/{second_source_citation}
+[3] https://www.example.com/{third_source_citation}"""  # noqa: E501
+        ).strip()
+    )
+
+
+@pytest.mark.parametrize("separator", [", ", ","])
+def test_enterprise_search_policy_post_process_citations_multiple_nested_citations(
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    vector_store: InformationRetrieval,
+    separator: str,
+) -> None:
+    """Test that nested citations are correctly ordered."""
+    first_citation = "3"
+    second_citation = "1"
+    third_citation = "4"
+    fourth_citation = "2"
+    llm_answer = f"""
+This is a test answer with a citation [{first_citation}{separator}{second_citation}{separator}{third_citation}]. This is another test answer with a citation [{fourth_citation}].
+
+Sources:
+[{first_citation}] https://www.example.com/{first_citation}
+[{second_citation}] https://www.example.com/{second_citation}
+[{third_citation}] https://www.example.com/{third_citation}
+[{fourth_citation}] https://www.example.com/{fourth_citation}""".strip()  # noqa: E501
+
+    llm_answer = "\n".join([line.rstrip() for line in llm_answer.splitlines()])
+
+    processed_answer = EnterpriseSearchPolicy.post_process_citations(llm_answer)
+
+    assert (
+        processed_answer.strip()
+        == textwrap.dedent(
+            f"""This is a test answer with a citation [1, 2, 3]. This is another test answer with a citation [4].
+Sources:
+[1] https://www.example.com/{first_citation}
+[2] https://www.example.com/{second_citation}
+[3] https://www.example.com/{third_citation}
+[4] https://www.example.com/{fourth_citation}"""  # noqa: E501
+        ).strip()
+    )
