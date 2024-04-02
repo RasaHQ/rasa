@@ -1,6 +1,7 @@
 import argparse
 import structlog
 import sys
+import asyncio
 from typing import Dict, List, Optional, Text
 
 from rasa.cli import SubParsersAction
@@ -163,18 +164,20 @@ def run_core_training(args: argparse.Namespace) -> Optional[Text]:
             args.config, CONFIG_MANDATORY_KEYS_CORE
         )
 
-        return train_core(
-            domain=args.domain,
-            config=config,
-            stories=story_file,
-            output=args.out,
-            fixed_model_name=args.fixed_model_name,
-            additional_arguments=additional_arguments,
-            model_to_finetune=_model_for_finetuning(args),
-            finetuning_epoch_fraction=args.epoch_fraction,
+        return asyncio.run(
+            train_core(
+                domain=args.domain,
+                config=config,
+                stories=story_file,
+                output=args.out,
+                fixed_model_name=args.fixed_model_name,
+                additional_arguments=additional_arguments,
+                model_to_finetune=_model_for_finetuning(args),
+                finetuning_epoch_fraction=args.epoch_fraction,
+            )
         )
     else:
-        do_compare_training(args, story_file, additional_arguments)
+        asyncio.run(do_compare_training(args, story_file, additional_arguments))
         return None
 
 
@@ -199,18 +202,20 @@ def run_nlu_training(args: argparse.Namespace) -> Optional[Text]:
             args.domain, "domain", DEFAULT_DOMAIN_PATHS, none_is_valid=True
         )
 
-    return train_nlu(
-        config=config,
-        nlu_data=nlu_data,
-        output=args.out,
-        fixed_model_name=args.fixed_model_name,
-        persist_nlu_training_data=args.persist_nlu_data,
-        additional_arguments={
-            **extract_nlu_additional_arguments(args),
-        },
-        domain=args.domain,
-        model_to_finetune=_model_for_finetuning(args),
-        finetuning_epoch_fraction=args.epoch_fraction,
+    return asyncio.run(
+        train_nlu(
+            config=config,
+            nlu_data=nlu_data,
+            output=args.out,
+            fixed_model_name=args.fixed_model_name,
+            persist_nlu_training_data=args.persist_nlu_data,
+            additional_arguments={
+                **extract_nlu_additional_arguments(args),
+            },
+            domain=args.domain,
+            model_to_finetune=_model_for_finetuning(args),
+            finetuning_epoch_fraction=args.epoch_fraction,
+        )
     )
 
 

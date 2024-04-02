@@ -3,6 +3,7 @@ import json
 import subprocess
 import sys
 import time
+import asyncio
 from pathlib import Path
 from typing import Text, List, Tuple, Optional, Union
 
@@ -128,10 +129,12 @@ class TestNLULeakManyEpochs(MemoryLeakTest):
         import rasa.model_training
 
         with TempDirectoryPath(get_temp_dir_name()) as temp_dir:
-            rasa.model_training.train_nlu(
-                _custom_default_config(temp_dir, epochs=self.epochs),
-                Path("data", "test_nlu_no_responses", "sara_nlu_data.yml"),
-                output=temp_dir,
+            asyncio.run(
+                rasa.model_training.train_nlu(
+                    _custom_default_config(temp_dir, epochs=self.epochs),
+                    Path("data", "test_nlu_no_responses", "sara_nlu_data.yml"),
+                    output=temp_dir,
+                )
             )
 
     @pytest.fixture()
@@ -157,12 +160,16 @@ class TestCoreLeakManyEpochs(MemoryLeakTest):
         import rasa.model_training
 
         with TempDirectoryPath(get_temp_dir_name()) as temp_dir:
-            rasa.model_training.train_core(
-                "data/test_domains/default_with_slots.yml",
-                _custom_default_config(temp_dir, epochs=self.epochs, max_history=None),
-                "data/test_yaml_stories/stories_defaultdomain.yml",
-                output=temp_dir,
-                additional_arguments={"augmentation_factor": 20},
+            asyncio.run(
+                rasa.model_training.train_core(
+                    "data/test_domains/default_with_slots.yml",
+                    _custom_default_config(
+                        temp_dir, epochs=self.epochs, max_history=None
+                    ),
+                    "data/test_yaml_stories/stories_defaultdomain.yml",
+                    output=temp_dir,
+                    additional_arguments={"augmentation_factor": 20},
+                )
             )
 
     @pytest.fixture()
@@ -218,10 +225,12 @@ class TestCRFDenseFeaturesLeak(MemoryLeakTest):
             config_for_test = Path(temp_dir) / "test_config.yml"
             write_yaml(config, config_for_test)
 
-            rasa.model_training.train_nlu(
-                str(config_for_test),
-                str(Path("data", "test_nlu_no_responses", "sara_nlu_data.yml")),
-                output=temp_dir,
+            asyncio.run(
+                rasa.model_training.train_nlu(
+                    str(config_for_test),
+                    str(Path("data", "test_nlu_no_responses", "sara_nlu_data.yml")),
+                    output=temp_dir,
+                )
             )
 
     @pytest.fixture()

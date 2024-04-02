@@ -140,7 +140,7 @@ def _check_unresolved_slots(domain: Domain, stories: StoryGraph) -> None:
         sys.exit(1)
 
 
-def train(
+async def train(
     domain: Text,
     config: Text,
     training_files: Optional[Union[Text, List[Text]]],
@@ -243,7 +243,7 @@ def train(
     _check_unresolved_slots(domain_object, stories)
 
     with telemetry.track_model_training(file_importer, model_type="rasa"):
-        return _train_graph(
+        return await _train_graph(
             file_importer,
             training_type=training_type,
             output_path=output,
@@ -258,7 +258,7 @@ def train(
         )
 
 
-def _train_graph(
+async def _train_graph(
     file_importer: TrainingDataImporter,
     training_type: TrainingType,
     output_path: Text,
@@ -318,7 +318,7 @@ def _train_graph(
         trainer = GraphTrainer(model_storage, cache, DaskGraphRunner)
 
         if dry_run:
-            fingerprint_status = trainer.fingerprint(
+            fingerprint_status = await trainer.fingerprint(
                 model_configuration.train_schema, file_importer
             )
             return _dry_run_result(fingerprint_status, force_full_training)
@@ -329,7 +329,7 @@ def _train_graph(
         with telemetry.track_model_training(
             file_importer, model_type=training_type.model_type
         ):
-            trainer.train(
+            await trainer.train(
                 model_configuration,
                 file_importer,
                 full_model_path,
@@ -377,7 +377,7 @@ def _determine_model_name(
     return f"{prefix}{time.strftime(time_format)}-{randomname.get_name()}.tar.gz"
 
 
-def train_core(
+async def train_core(
     domain: Union[Domain, Text],
     config: Text,
     stories: Text,
@@ -447,18 +447,20 @@ def train_core(
 
     _check_unresolved_slots(domain, stories_data)
 
-    return _train_graph(
-        file_importer,
-        training_type=TrainingType.CORE,
-        output_path=output,
-        model_to_finetune=model_to_finetune,
-        fixed_model_name=fixed_model_name,
-        finetuning_epoch_fraction=finetuning_epoch_fraction,
-        **(additional_arguments or {}),
+    return (
+        await _train_graph(
+            file_importer,
+            training_type=TrainingType.CORE,
+            output_path=output,
+            model_to_finetune=model_to_finetune,
+            fixed_model_name=fixed_model_name,
+            finetuning_epoch_fraction=finetuning_epoch_fraction,
+            **(additional_arguments or {}),
+        )
     ).model
 
 
-def train_nlu(
+async def train_nlu(
     config: Text,
     nlu_data: Optional[Text],
     output: Text,
@@ -517,13 +519,15 @@ def train_nlu(
         )
         return None
 
-    return _train_graph(
-        file_importer,
-        training_type=TrainingType.NLU,
-        output_path=output,
-        model_to_finetune=model_to_finetune,
-        fixed_model_name=fixed_model_name,
-        finetuning_epoch_fraction=finetuning_epoch_fraction,
-        persist_nlu_training_data=persist_nlu_training_data,
-        **(additional_arguments or {}),
+    return (
+        await _train_graph(
+            file_importer,
+            training_type=TrainingType.NLU,
+            output_path=output,
+            model_to_finetune=model_to_finetune,
+            fixed_model_name=fixed_model_name,
+            finetuning_epoch_fraction=finetuning_epoch_fraction,
+            persist_nlu_training_data=persist_nlu_training_data,
+            **(additional_arguments or {}),
+        )
     ).model

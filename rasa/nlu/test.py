@@ -519,6 +519,7 @@ def _add_confused_labels_to_report(
         report: the evaluation report
         confusion_matrix: confusion matrix
         labels: list of labels
+        exclude_labels: labels to exclude from the report
 
     Returns: updated evaluation report
     """
@@ -1043,8 +1044,7 @@ def determine_token_labels(
     extractors: Optional[Set[Text]] = None,
     attribute_key: Text = ENTITY_ATTRIBUTE_TYPE,
 ) -> Text:
-    """Determines the token label for the provided attribute key given entities that do
-    not overlap.
+    """Select token label for the provided attribute key for non-overlapping entities.
 
     Args:
         token: a single token
@@ -1072,8 +1072,7 @@ def determine_entity_for_token(
     entities: List[Dict[Text, Any]],
     extractors: Optional[Set[Text]] = None,
 ) -> Optional[Dict[Text, Any]]:
-    """Determines the best fitting entity for the given token, given entities that do
-    not overlap.
+    """Determines the best fitting non-overlapping entity for the given token.
 
     Args:
         token: a single token
@@ -1098,7 +1097,7 @@ def do_any_extractors_not_support_overlap(extractors: Optional[Set[Text]]) -> bo
     """Checks if any extractor does not support overlapping entities.
 
     Args:
-        Names of the entitiy extractors
+        extractors: Names of the entity extractors
 
     Returns:
         `True` if and only if CRFEntityExtractor or DIETClassifier is in `extractors`
@@ -1225,8 +1224,9 @@ def _get_entity_confidences(
 def align_all_entity_predictions(
     entity_results: List[EntityEvaluationResult], extractors: Set[Text]
 ) -> List[Dict]:
-    """Aligns entity predictions to the message tokens for the whole dataset
-    using align_entity_predictions.
+    """Aligns entity predictions to the message tokens.
+
+    Processes the whole dataset using align_entity_predictions.
 
     Args:
         entity_results: list of entity prediction results
@@ -1500,8 +1500,7 @@ async def combine_result(
         List[ResponseSelectionEvaluationResult]
     ] = None,
 ) -> Tuple[IntentMetrics, EntityMetrics, ResponseSelectionMetrics]:
-    """Collects intent, response selection and entity metrics for cross validation
-    folds.
+    """Collects intent, response selection and entity metrics for cross validation.
 
     If `intent_results`, `response_selection_results` or `entity_results` is provided
     as a list, prediction results are also collected.
@@ -1615,7 +1614,7 @@ async def cross_validate(
             training_data_file = tmp_path / "training_data.yml"
             RasaYAMLWriter().dump(training_data_file, train)
 
-            model_file = rasa.model_training.train_nlu(
+            model_file = await rasa.model_training.train_nlu(
                 nlu_config, str(training_data_file), str(tmp_path)
             )
 
@@ -1714,8 +1713,7 @@ async def compute_metrics(
     List[EntityEvaluationResult],
     List[ResponseSelectionEvaluationResult],
 ]:
-    """Computes metrics for intent classification, response selection and entity
-    extraction.
+    """Metrics for intent classification, response selection and entity extraction.
 
     Args:
         processor: the processor
@@ -1771,6 +1769,7 @@ async def compare_nlu(
     runs: int,
 ) -> List[int]:
     """Trains and compares multiple NLU models.
+
     For each run and exclusion percentage a model per config file is trained.
     Thereby, the model is trained only on the current percentage of training data.
     Afterwards, the model is tested on the complete test data of that run.
@@ -1832,7 +1831,7 @@ async def compare_nlu(
                 )
 
                 try:
-                    model_path = rasa.model_training.train_nlu(
+                    model_path = await rasa.model_training.train_nlu(
                         nlu_config,
                         train_split_path,
                         model_output_path,

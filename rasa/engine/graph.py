@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Text, Type, Tuple, Union
 
 import structlog
+import asyncio
 
 import rasa.shared.utils.common
 import rasa.utils.common
@@ -451,7 +452,7 @@ class GraphNode:
         # The component gets a chance to persist itself
         return Resource(self._node_name)
 
-    def __call__(
+    async def __call__(
         self, *inputs_from_previous_nodes: Union[Tuple[Text, Any], Text]
     ) -> Tuple[Text, Any]:
         """Calls the `GraphComponent` run method when the node executes in the graph.
@@ -513,7 +514,10 @@ class GraphNode:
         )
 
         try:
-            output = self._fn(self._component, **run_kwargs)
+            if asyncio.iscoroutinefunction(self._fn):
+                output = await self._fn(self._component, **run_kwargs)
+            else:
+                output = self._fn(self._component, **run_kwargs)
         except InvalidConfigException:
             # Pass through somewhat expected exception to allow more fine granular
             # handling of exceptions.
