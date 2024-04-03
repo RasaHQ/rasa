@@ -28,6 +28,7 @@ name = "internal repository mirroring psycopg binary for macos"
 url = "https://europe-west3-python.pkg.dev/rasa-releases/psycopg-binary/simple/"
 
 [tool.towncrier]
+name = "Rasa Pro"
 package = "rasa"
 package_dir = "rasa"
 filename = "CHANGELOG.md"
