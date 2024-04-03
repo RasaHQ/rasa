@@ -14,8 +14,7 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
                        
 Rasa 3.8.0 (2024-04-03)                        
 ### Features
-- [#324](https://github.com/rasahq/rasa/issues/324): Introduces a **semantic retrieval of the flows** that are relevant to the current state of the conversation, utilizing
-  similarity between vector embeddings. It enables the assistant to manage and scale to a large number of flows.
+- [#324](https://github.com/rasahq/rasa/issues/324): Introduces **semantic retrieval of flows** at runtime to reduce the size of the prompt sent to the LLM by utilizing similarity between vector embeddings. It enables the assistant to scale to a large number of flows.
 
   Flow retrieval is **enabled by default**. To configure it, you can modify the settings under the `flow_retrieval` 
   property of `LLMCommandGenerator` component. For detailed configuration options, refer to our
