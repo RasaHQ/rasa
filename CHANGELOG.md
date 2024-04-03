@@ -110,12 +110,6 @@ Rasa 3.8.0 (2024-04-03)
   export LOG_LEVEL_LLM_INTENTLESS_POLICY=DEBUG
   export LOG_LEVEL_LLM_PROMPT_REPHRASER=DEBUG
   ```
-- [#697](https://github.com/rasahq/rasa/issues/697): Introduction of coexistence between CALM and DM1.
-  Coexistence allows you to run a single assistant that uses both CALM and DM1 in parallel for the purpose of migrating from DM1 to CALM in an iterative fashion.
-- [#762](https://github.com/rasahq/rasa/issues/762): Introduction of `call` step.
-  You can use a `call` step to embed another flow.
-  When the execution reaches a `call` step, Rasa starts the called flow.
-  Once the called flow is complete, the execution continues with the calling flow.
 - [#780](https://github.com/rasahq/rasa/issues/780): If the user wants to chat with the assistant at the end of `rasa init`, 
   we are now calling `rasa inspect` instead of `rasa shell`.
 - [#827](https://github.com/rasahq/rasa/issues/827): A slot can now be collected via an action `action_ask_<slot-name>` instead of the utterance
