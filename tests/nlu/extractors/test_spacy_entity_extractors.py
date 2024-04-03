@@ -31,10 +31,10 @@ def test_spacy_ner_extractor(spacy_nlp):
     # Test dimension filtering includes only specified dimensions
     example = Message(
         data={
-            TEXT: "anywhere in the West with Sebastian Thrun",
+            TEXT: "anywhere in the West with Alan Turing",
             "intent": "example_intent",
             "entities": [],
-            "text_spacy_doc": spacy_nlp("anywhere in the West with Sebastian Thrun"),
+            "text_spacy_doc": spacy_nlp("anywhere in the West with Alan Turing"),
         }
     )
 
@@ -45,8 +45,8 @@ def test_spacy_ner_extractor(spacy_nlp):
     assert example.get("entities")[0] == {
         "start": 26,
         "extractor": "SpacyEntityExtractor",
-        "end": 41,
-        "value": "Sebastian Thrun",
+        "end": 37,
+        "value": "Alan Turing",
         "entity": "PERSON",
         "confidence": None,
     }
