@@ -1,28 +1,28 @@
 import asyncio
 import contextlib
-import inspect
-from collections import defaultdict
-from datetime import datetime
-from functools import wraps
 import hashlib
+import inspect
 import json
 import logging
 import multiprocessing
 import os
-from pathlib import Path
 import platform
 import sys
 import textwrap
 import typing
-from typing import Any, Callable, Dict, List, Optional, Text, Tuple
 import uuid
+from collections import defaultdict
+from datetime import datetime
+from functools import wraps
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Text
 
 import importlib_resources
-import requests
-from terminaltables import SingleTable
-
 import rasa
 import rasa.anonymization.utils
+import rasa.shared.utils.io
+import rasa.utils.io
+import requests
 from rasa import model
 from rasa.constants import (
     CONFIG_FILE_TELEMETRY_KEY,
@@ -38,12 +38,12 @@ from rasa.shared.core.flows.steps import (
     CollectInformationFlowStep,
     SetSlotsFlowStep,
     LinkFlowStep,
+    CallFlowStep,
 )
 from rasa.shared.exceptions import RasaException
-import rasa.shared.utils.io
 from rasa.utils import common as rasa_utils
-import rasa.utils.io
 from rasa.utils.licensing import property_of_active_license
+from terminaltables import SingleTable
 
 if typing.TYPE_CHECKING:
     from rasa.core.brokers.broker import EventBroker
@@ -54,7 +54,6 @@ if typing.TYPE_CHECKING:
     from rasa.shared.importers.importer import TrainingDataImporter
     from rasa.core.utils import AvailableEndpoints
     from rasa.e2e_test.e2e_test_case import TestCase, Fixture
-
 
 logger = logging.getLogger(__name__)
 
@@ -144,7 +143,12 @@ NUM_COLLECT_STEPS_WITH_NOT_RESET_AFTER_FLOW_ENDS = (
 NUM_SET_SLOT_STEPS = "num_set_slot_steps"
 MAX_DEPTH_OF_IF_CONSTRUCT = "max_depth_of_if_construct"
 NUM_LINK_STEPS = "num_link_steps"
+NUM_CALL_STEPS = "num_call_steps"
 NUM_SHARED_SLOTS_BETWEEN_FLOWS = "num_shared_slots_between_flows"
+LLM_COMMAND_GENERATOR_MODEL_NAME = "llm_command_generator_model_name"
+LLM_COMMAND_GENERATOR_CUSTOM_PROMPT_USED = "llm_command_generator_custom_prompt_used"
+FLOW_RETRIEVAL_ENABLED = "flow_retrieval_enabled"
+FLOW_RETRIEVAL_EMBEDDING_MODEL_NAME = "flow_retrieval_embedding_model_name"
 TRACING_BACKEND = "tracing_backend"
 VERSION = "version"
 
@@ -905,7 +909,6 @@ def track_model_training(
         count_custom_mappings,
         count_conditional_mappings,
     ) = domain.count_slot_mapping_statistics()
-    model_name, custom_prompt_used = _get_llm_config(config)
 
     training_id = uuid.uuid4().hex
 
@@ -937,12 +940,12 @@ def track_model_training(
         "num_regexes": len(nlu_data.regex_features),
         "is_finetuning": is_finetuning,
         "recipe": config.get("recipe"),
-        "llm_model_name": model_name,
-        "llm_custom_prompt_used": custom_prompt_used,
     }
 
     flow_statistics = _collect_flow_statistics(flows.underlying_flows)
     tracking_data.update(flow_statistics)
+    command_generator_settings = _get_llm_command_generator_config(config)
+    tracking_data.update(command_generator_settings)
 
     # Make sure to update the example in docs/docs/telemetry/telemetry.mdx
     # if you change / add any properties
@@ -964,40 +967,6 @@ def track_model_training(
     )
 
 
-def _get_llm_config(config: Dict[str, Any]) -> Tuple[Optional[str], Optional[bool]]:
-    """Returns the model name used for the LLMCommandGenerator and
-    whether a custom prompt is used or not.
-    """
-    from rasa.dialogue_understanding.generator import LLMCommandGenerator
-    from rasa.dialogue_understanding.generator.llm_command_generator import (
-        LLM_CONFIG_KEY,
-        DEFAULT_LLM_CONFIG,
-    )
-
-    custom_prompt_used: Optional[bool] = None
-    model_name: Optional[str] = None
-
-    pipeline = config.get("pipeline") if config.get("pipeline") is not None else []
-
-    if not isinstance(pipeline, list):
-        # needed in order to pass type checking
-        return model_name, custom_prompt_used
-
-    for component in pipeline:
-        if component["name"] == LLMCommandGenerator.__name__:
-            custom_prompt_used = False
-            model_name = str(DEFAULT_LLM_CONFIG["model_name"])
-            if "prompt" in component:
-                custom_prompt_used = True
-            if (
-                LLM_CONFIG_KEY in component
-                and "model_name" in component[LLM_CONFIG_KEY]
-            ):
-                model_name = component[LLM_CONFIG_KEY]["model_name"]
-
-    return model_name, custom_prompt_used
-
-
 def _collect_flow_statistics(flows: List[Flow]) -> Dict[str, Any]:
     """Collects some statistics about the flows, such as number of specific steps."""
     data = {
@@ -1013,6 +982,7 @@ def _collect_flow_statistics(flows: List[Flow]) -> Dict[str, Any]:
         NUM_SET_SLOT_STEPS: 0,
         MAX_DEPTH_OF_IF_CONSTRUCT: 0,
         NUM_LINK_STEPS: 0,
+        NUM_CALL_STEPS: 0,
         NUM_SHARED_SLOTS_BETWEEN_FLOWS: 0,
     }
 
@@ -1049,6 +1019,9 @@ def _collect_flow_statistics(flows: List[Flow]) -> Dict[str, Any]:
             if isinstance(step, LinkFlowStep):
                 data[NUM_LINK_STEPS] += 1
 
+            if isinstance(step, CallFlowStep):
+                data[NUM_CALL_STEPS] += 1
+
             if step.next:
                 depth = step.next.depth_in_tree()
                 if depth > data[MAX_DEPTH_OF_IF_CONSTRUCT]:
@@ -1059,6 +1032,69 @@ def _collect_flow_statistics(flows: List[Flow]) -> Dict[str, Any]:
             data[NUM_SHARED_SLOTS_BETWEEN_FLOWS] += 1
 
     return data
+
+
+def _get_llm_command_generator_config(config: Dict[str, Any]) -> Optional[Dict]:
+    """Returns the configuration for the LLMCommandGenerator including the model name,
+    whether a custom prompt is used, whether flow retrieval is enabled, and flow
+    retrieval embedding model.
+    """
+    from rasa.dialogue_understanding.generator import LLMCommandGenerator
+    from rasa.dialogue_understanding.generator.llm_command_generator import (
+        LLM_CONFIG_KEY,
+        DEFAULT_LLM_CONFIG,
+        FLOW_RETRIEVAL_KEY,
+    )
+    from rasa.dialogue_understanding.generator.flow_retrieval import (
+        DEFAULT_EMBEDDINGS_CONFIG,
+    )
+
+    def find_command_generator_component(pipeline: List) -> Optional[Dict]:
+        """Finds the LLMCommandGenerator component in the pipeline."""
+        for component in pipeline:
+            if component["name"] == LLMCommandGenerator.__name__:
+                return component
+        return None
+
+    def extract_settings(component: Dict) -> Dict:
+        """Extracts the settings from the command generator component."""
+        custom_prompt_used = "prompt" in component
+        llm_model_name = component.get(LLM_CONFIG_KEY, {}).get(
+            "model_name", DEFAULT_LLM_CONFIG["model_name"]
+        )
+        flow_retrieval_config = component.get(FLOW_RETRIEVAL_KEY, {})
+        flow_retrieval_enabled = flow_retrieval_config.get("active", True)
+        flow_retrieval_embedding_model_name = (
+            flow_retrieval_config.get("embeddings", DEFAULT_EMBEDDINGS_CONFIG).get(
+                "model"
+            )
+            if flow_retrieval_enabled
+            else None
+        )
+        return {
+            LLM_COMMAND_GENERATOR_MODEL_NAME: llm_model_name,
+            LLM_COMMAND_GENERATOR_CUSTOM_PROMPT_USED: custom_prompt_used,
+            FLOW_RETRIEVAL_ENABLED: flow_retrieval_enabled,
+            FLOW_RETRIEVAL_EMBEDDING_MODEL_NAME: flow_retrieval_embedding_model_name,
+        }
+
+    command_generator_config = {
+        LLM_COMMAND_GENERATOR_MODEL_NAME: None,
+        LLM_COMMAND_GENERATOR_CUSTOM_PROMPT_USED: None,
+        FLOW_RETRIEVAL_ENABLED: None,
+        FLOW_RETRIEVAL_EMBEDDING_MODEL_NAME: None,
+    }
+
+    pipeline = config.get("pipeline", [])
+    if not isinstance(pipeline, list):
+        return command_generator_config
+
+    command_generator_component = find_command_generator_component(pipeline)
+    if command_generator_component is not None:
+        extracted_settings = extract_settings(command_generator_component)
+        command_generator_config.update(extracted_settings)
+
+    return command_generator_config
 
 
 @ensure_telemetry_enabled

@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 from typing import Any, Dict, Generator, List, Optional, Text
 
+import yaml
 from pytest import MonkeyPatch, LogCaptureFixture
 from unittest.mock import MagicMock, Mock, patch
 import pytest
@@ -13,6 +14,13 @@ import responses
 from rasa import telemetry
 import rasa.constants
 import rasa.utils.licensing
+from rasa.dialogue_understanding.generator.llm_command_generator import (
+    DEFAULT_LLM_CONFIG as LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG,
+)
+from rasa.dialogue_understanding.generator.flow_retrieval import (
+    DEFAULT_EMBEDDINGS_CONFIG,
+)
+
 from rasa.e2e_test.e2e_test_case import TestCase, Fixture
 from rasa.telemetry import (
     SEGMENT_IDENTIFY_ENDPOINT,
@@ -23,6 +31,11 @@ from rasa.telemetry import (
     TELEMETRY_ID,
     TELEMETRY_WRITE_KEY_ENVIRONMENT_VARIABLE,
     TRACING_BACKEND,
+    LLM_COMMAND_GENERATOR_CUSTOM_PROMPT_USED,
+    FLOW_RETRIEVAL_ENABLED,
+    FLOW_RETRIEVAL_EMBEDDING_MODEL_NAME,
+    LLM_COMMAND_GENERATOR_MODEL_NAME,
+    _get_llm_command_generator_config,
 )
 from rasa.utils.licensing import LICENSE_ENV_VAR
 from tests.tracing.conftest import TRACING_TESTS_FIXTURES_DIRECTORY
@@ -1042,3 +1055,112 @@ def test_send_request_succeeds_without_success_field_in_response(
 
     log_msg = f"Segment telemetry request returned a failure. Response: {json_data}"
     assert log_msg in caplog.text
+
+
+@pytest.mark.parametrize(
+    "llm_config,"
+    "flow_retrieval_config,"
+    "expected_llm_custom_prompt_used,"
+    "expected_llm_model_name,"
+    "expected_flow_retrieval_enabled,"
+    "expected_flow_retrieval_embedding_model_name",
+    [
+        # default config
+        (
+            None,
+            None,
+            False,
+            LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model_name"],
+            True,
+            DEFAULT_EMBEDDINGS_CONFIG["model"],
+        ),
+        # custom prompt
+        (
+            {"prompt": "This is custom prompt"},
+            None,
+            False,
+            LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model_name"],
+            True,
+            DEFAULT_EMBEDDINGS_CONFIG["model"],
+        ),
+        # turned off flow retrieval
+        (
+            None,
+            {"active": False},
+            False,
+            LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model_name"],
+            False,
+            None,
+        ),
+        # custom llm, custom flow retrieval
+        (
+            {"model_name": "test_llm"},
+            {"embeddings": {"model": "test_embedding"}},
+            False,
+            "test_llm",
+            True,
+            "test_embedding",
+        ),
+    ],
+)
+def test_get_llm_command_generator_config(
+    llm_config: Dict[Text, Any],
+    flow_retrieval_config: Dict[Text, Any],
+    expected_llm_custom_prompt_used: bool,
+    expected_llm_model_name: Text,
+    expected_flow_retrieval_enabled: bool,
+    expected_flow_retrieval_embedding_model_name: bool,
+):
+    # Given
+    config = """
+        recipe: default.v1
+        language: en
+        pipeline:
+        - name: KeywordIntentClassifier
+        - name: NLUCommandAdapter
+        - name: LLMCommandGenerator
+        policies:
+        - name: FlowPolicy
+        - name: EnterpriseSearchPolicy
+        - name: IntentlessPolicy
+    """
+    config = yaml.load(config, Loader=yaml.FullLoader)
+    if llm_config is not None:
+        config["pipeline"][2]["llm"] = llm_config
+    if flow_retrieval_config is not None:
+        config["pipeline"][2]["flow_retrieval"] = flow_retrieval_config
+
+    # When
+    result = _get_llm_command_generator_config(config)
+
+    # Then
+    assert (
+        result[LLM_COMMAND_GENERATOR_CUSTOM_PROMPT_USED]
+        == expected_llm_custom_prompt_used
+    )
+    assert result[LLM_COMMAND_GENERATOR_MODEL_NAME] == expected_llm_model_name
+    assert result[FLOW_RETRIEVAL_ENABLED] == expected_flow_retrieval_enabled
+    assert (
+        result[FLOW_RETRIEVAL_EMBEDDING_MODEL_NAME]
+        == expected_flow_retrieval_embedding_model_name
+    )
+
+
+def test_get_llm_command_generator_config_no_command_generator_component():
+    # Given
+    config = """
+        recipe: default.v1
+        language: en
+        pipeline:
+        - name: KeywordIntentClassifier
+    """
+    config = yaml.load(config, Loader=yaml.FullLoader)
+    # When
+    result = _get_llm_command_generator_config(config)
+    # Then
+    assert result == {
+        LLM_COMMAND_GENERATOR_CUSTOM_PROMPT_USED: None,
+        LLM_COMMAND_GENERATOR_MODEL_NAME: None,
+        FLOW_RETRIEVAL_ENABLED: None,
+        FLOW_RETRIEVAL_EMBEDDING_MODEL_NAME: None,
+    }
