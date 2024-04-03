@@ -11,26 +11,27 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 <!-- TOWNCRIER -->
 
 ## [3.8.0] - 2024-04-03
-                       
-Rasa 3.8.0 (2024-04-03)                        
+
+Rasa 3.8.0 (2024-04-03)
 ### Features
 - [#324](https://github.com/rasahq/rasa/issues/324): Introduces **semantic retrieval of flows** at runtime to reduce the size of the prompt sent to the LLM by utilizing similarity between vector embeddings. It enables the assistant to scale to a large number of flows.
 
-  Flow retrieval is **enabled by default**. To configure it, you can modify the settings under the `flow_retrieval` 
+  Flow retrieval is **enabled by default**. To configure it, you can modify the settings under the `flow_retrieval`
   property of `LLMCommandGenerator` component. For detailed configuration options, refer to our
   [documentation](https://rasa.com/docs/rasa-pro/concepts/dialogue-understanding#customizing-flow-retrieval).
 
-  Introduces `always_include_in_prompt` field to the 
+  Introduces `always_include_in_prompt` field to the
   [flow definition](https://rasa.com/docs/rasa-pro/concepts/flows/#flow-properties).
   If field is set to `true` and the [flow guard](https://rasa.com/docs/rasa-pro/concepts/starting-flows/#flow-guards)
   defined in the `if` field evaluates to `true`, the flow will be included in the prompt.
 - [#697](https://github.com/rasahq/rasa/issues/697): Introduction of coexistence between CALM and NLU-based assistants.
   Coexistence allows you to use policies from both CALM and NLU-based assistants in a single assistant. This allows migrating from NLU-based paradigm to CALM in an iterative fashion.
-  
+
 - [#762](https://github.com/rasahq/rasa/issues/762): Introduction of `call` step.
   You can use a `call` step to embed another flow.
   When the execution reaches a `call` step, Rasa starts the called flow.
   Once the called flow is complete, the execution continues with the calling flow.
+
 ### Improvements
 - [#214](https://github.com/rasahq/rasa/issues/214): Instrument the `command_processor` module, in particular the following functions:
   - `execute_commands`
@@ -115,7 +116,7 @@ Rasa 3.8.0 (2024-04-03)
   export LOG_LEVEL_LLM_INTENTLESS_POLICY=DEBUG
   export LOG_LEVEL_LLM_PROMPT_REPHRASER=DEBUG
   ```
-- [#780](https://github.com/rasahq/rasa/issues/780): If the user wants to chat with the assistant at the end of `rasa init`, 
+- [#780](https://github.com/rasahq/rasa/issues/780): If the user wants to chat with the assistant at the end of `rasa init`,
   we are now calling `rasa inspect` instead of `rasa shell`.
 - [#827](https://github.com/rasahq/rasa/issues/827): A slot can now be collected via an action `action_ask_<slot-name>` instead of the utterance
   `utter_ask_<slot-name>` in a collect step.
@@ -138,7 +139,7 @@ Rasa 3.8.0 (2024-04-03)
 - [#407](https://github.com/rasahq/rasa/issues/407): Fix the bug with the validation of routing setup crashing when the pipeline is not specified (null)
 - [#408](https://github.com/rasahq/rasa/issues/408): Remove conversation turns prior to a restart when creating a conversation transcript for an LLM call.
 
-  This helps in cases where the prior conversation is not relevant for the 
+  This helps in cases where the prior conversation is not relevant for the
   current session. Information which should be carried to the next session
   should explicitly be stored in slots.
 - [#415](https://github.com/rasahq/rasa/issues/415): Add tracker back to the LLMCommandGenerator.parse_command to ensure compatibility with custom command generator built
@@ -147,12 +148,12 @@ Rasa 3.8.0 (2024-04-03)
   `rasa.engine.validation`. This gave access to graph schema which allowed for
   validation checks of subclassed routers.
 - [#427](https://github.com/rasahq/rasa/issues/427): Fixes a bug in determining the name of the model based on provided parameters.
-- [#592](https://github.com/rasahq/rasa/issues/592): `LogisticRegressionClassifier` checks if training examples are present during training and logs a 
+- [#592](https://github.com/rasahq/rasa/issues/592): `LogisticRegressionClassifier` checks if training examples are present during training and logs a
   warning in case no training examples are provided.
 - [#771](https://github.com/rasahq/rasa/issues/771): Fixes the bug that resulted in an infinite loop on a collect step in a flow with a flow guard set to `if: False`.
-- [#778](https://github.com/rasahq/rasa/issues/778): Fix training the enterprise search policy multiple times with a different 
+- [#778](https://github.com/rasahq/rasa/issues/778): Fix training the enterprise search policy multiple times with a different
   source folder name than the default name "docs".
-- [#871](https://github.com/rasahq/rasa/issues/871): Log message `llm_command_generator.predict_commands.finished` is set to debug log by default. 
+- [#871](https://github.com/rasahq/rasa/issues/871): Log message `llm_command_generator.predict_commands.finished` is set to debug log by default.
   To enable logging of the `LLMCommandGenerator` set `LOG_LEVEL_LLM_COMMAND_GENERATOR` to `INFO`.
 - [#892](https://github.com/rasahq/rasa/issues/892): Improvements and fixes to cleaning up commands:
 
