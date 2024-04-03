@@ -1256,6 +1256,11 @@ def test_validate_routing_setup(router_component: Text, tmp_path: Path) -> None:
                 - name: LogisticRegressionClassifier
                 - name: CRFEntityExtractor
                 - name: {router_component}
+                  calm_entry:
+                    sticky: 'calm entry sticky'
+                  nlu_entry:
+                    sticky: 'nlu entry sticky'
+                    non_sticky: 'nlu entry non sticky'
                 - name: LLMCommandGenerator
             """
         )
@@ -1438,3 +1443,138 @@ def test_validate_routing_setup_with_both_coexistence_components(
 
     with pytest.raises(SystemExit):
         validate_coexistance_routing_setup(domain, model_configuration)
+
+
+@pytest.mark.parametrize(
+    "router_component, config",
+    [
+        (
+            "IntentBasedRouter",
+            """
+            recipe: default.v1
+            language: en
+            pipeline:
+            - name: IntentBasedRouter
+              nlu_entry:
+                - sticky:
+                  - some-intent
+                - non_sticky:
+                  - some-intent
+              calm_entry:
+                sticky:
+                - some-intent
+            """,
+        ),
+        (
+            "IntentBasedRouter",
+            """
+            recipe: default.v1
+            language: en
+            pipeline:
+            - name: IntentBasedRouter
+              nlu_entry:
+                sticky:
+                - some-intent
+                non_sticky:
+                - some-intent
+              calm_entry:
+                - sticky:
+                  - some-intent
+            """,
+        ),
+        (
+            "IntentBasedRouter",
+            """
+            recipe: default.v1
+            language: en
+            pipeline:
+            - name: IntentBasedRouter
+              nlu_entry:
+                sticky:
+                - some-intent
+                non_sticky:
+                - some-intent
+            """,
+        ),
+        (
+            "LLMBasedRouter",
+            """
+            recipe: default.v1
+            language: en
+            pipeline:
+            - name: LLMBasedRouter
+              nlu_entry:
+                sticky: handles nlu sticky
+                non_sticky: handles nlu non sticky
+            """,
+        ),
+        (
+            "LLMBasedRouter",
+            """
+            recipe: default.v1
+            language: en
+            pipeline:
+            - name: LLMBasedRouter
+              calm_entry:
+                - sticky: handles calm sticky
+            """,
+        ),
+        (
+            "LLMBasedRouter",
+            """
+            recipe: default.v1
+            language: en
+            pipeline:
+            - name: LLMBasedRouter
+              calm_entry:
+                sticky: handles calm sticky
+              nlu_entry:
+                - sticky: handles nlu sticky
+                - non_sticky: handles nlu non sticky
+            """,
+        ),
+    ],
+)
+def test_validate_coexistence_configuration(
+    router_component: str,
+    config: str,
+    tmp_path: Path,
+) -> None:
+    # Given
+    config_file_name = tmp_path / "config.yml"
+    with open(config_file_name, "w") as file:
+        file.write(config)
+
+    importer = RasaFileImporter(config_file=config_file_name)
+    config = importer.get_config()
+    domain_yaml = textwrap.dedent(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        slots:
+          {ROUTE_TO_CALM_SLOT}:
+            type: bool
+            mappings: []
+            initial_value: false
+        """
+    )
+    domain = Domain.from_yaml(domain_yaml)
+    recipe = Recipe.recipe_for_name(config.get("recipe"))
+    model_configuration = recipe.graph_config_for_recipe(config, {})
+
+    expected_event = "validation.coexistance.invalid_configuration"
+    expected_log_level = "error"
+    expected_log_message = (
+        f"The configuration of the {router_component} is invalid."
+        f" Please check the documentation."
+    )
+
+    # When / Then
+    with structlog.testing.capture_logs() as caplog:
+
+        with pytest.raises(SystemExit):
+            validate_coexistance_routing_setup(domain, model_configuration)
+
+        logs = filter_logs(
+            caplog, expected_event, expected_log_level, [expected_log_message]
+        )
+        assert len(logs) == 1

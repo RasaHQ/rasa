@@ -101,6 +101,7 @@ class LLMBasedRouter(GraphComponent):
         """Validate the config of the router."""
         if (
             self.config[CALM_ENTRY] is None
+            or not isinstance(self.config[CALM_ENTRY], dict)
             or STICKY not in self.config[CALM_ENTRY]
             or self.config[CALM_ENTRY][STICKY] is None
         ):

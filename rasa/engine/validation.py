@@ -24,6 +24,12 @@ import rasa.utils.common
 from rasa.core import IntentlessPolicy
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.utils import AvailableEndpoints
+from rasa.dialogue_understanding.coexistence.constants import (
+    NLU_ENTRY,
+    CALM_ENTRY,
+    STICKY,
+    NON_STICKY,
+)
 from rasa.dialogue_understanding.patterns.chitchat import FLOW_PATTERN_CHITCHAT
 from rasa.engine.constants import RESERVED_PLACEHOLDERS
 from rasa.engine.exceptions import GraphSchemaValidationException
@@ -659,6 +665,15 @@ def validate_coexistance_routing_setup(
         # index is not found or there is no component with the given class
         return None
 
+    def get_component_config(
+        schema: GraphSchema, component_class: Type
+    ) -> Optional[Dict[str, Any]]:
+        """Extracts the config of a component of the given class in the schema."""
+        for node_name, node in schema.nodes.items():
+            if issubclass(node.uses, component_class):
+                return node.config
+        return None
+
     def validate_router_exclusivity(schema: GraphSchema) -> None:
         """Validate that intent-based and llm-based routers are not
         defined at the same time.
@@ -735,6 +750,57 @@ def validate_coexistance_routing_setup(
             )
             sys.exit(1)
 
+    def valid_nlu_entry_config(config: Optional[Dict[str, Any]]) -> bool:
+        return (
+            config is not None
+            and NLU_ENTRY in config
+            and isinstance(config[NLU_ENTRY], dict)
+            and STICKY in config[NLU_ENTRY]
+            and NON_STICKY in config[NLU_ENTRY]
+        )
+
+    def valid_calm_entry_config(config: Optional[Dict[str, Any]]) -> bool:
+        return (
+            config is not None
+            and CALM_ENTRY in config
+            and isinstance(config[CALM_ENTRY], dict)
+            and STICKY in config[CALM_ENTRY]
+        )
+
+    def validate_configuration(
+        schema: GraphSchema,
+    ) -> None:
+        """Validate the configuration of the existing coexistence routers."""
+        if schema.has_node(IntentBasedRouter, include_subtypes=False):
+            config = get_component_config(schema, IntentBasedRouter)
+            if not valid_calm_entry_config(config) or not valid_nlu_entry_config(
+                config
+            ):
+                structlogger.error(
+                    "validation.coexistance.invalid_configuration",
+                    event_info=(
+                        "The configuration of the IntentBasedRouter is invalid. "
+                        "Please check the documentation.",
+                    ),
+                )
+                sys.exit(1)
+
+        if schema.has_node(LLMBasedRouter, include_subtypes=False):
+            config = get_component_config(schema, LLMBasedRouter)
+            if not valid_calm_entry_config(config) or (
+                config is not None
+                and NLU_ENTRY in config
+                and not valid_nlu_entry_config(config)
+            ):
+                structlogger.error(
+                    "validation.coexistance.invalid_configuration",
+                    event_info=(
+                        "The configuration of the LLMBasedRouter is invalid. "
+                        "Please check the documentation.",
+                    ),
+                )
+                sys.exit(1)
+
     schema = model_configuration.predict_schema
     routing_slots = [s for s in domain.slots if s.name == ROUTE_TO_CALM_SLOT]
 
@@ -742,3 +808,4 @@ def validate_coexistance_routing_setup(
     validate_intent_based_router_position(schema)
     validate_that_slots_are_defined_if_router_is_defined(schema, routing_slots)
     validate_that_router_is_defined_if_router_slots_are_in_domain(schema, routing_slots)
+    validate_configuration(schema)
