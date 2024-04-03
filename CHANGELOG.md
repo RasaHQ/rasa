@@ -25,7 +25,13 @@ Rasa 3.8.0 (2024-04-03)
   [flow definition](https://rasa.com/docs/rasa-pro/concepts/flows/#flow-properties).
   If field is set to `true` and the [flow guard](https://rasa.com/docs/rasa-pro/concepts/starting-flows/#flow-guards)
   defined in the `if` field evaluates to `true`, the flow will be included in the prompt.
-
+- [#697](https://github.com/rasahq/rasa/issues/697): Introduction of coexistence between CALM and NLU-based assistants.
+  Coexistence allows you to use policies from both CALM and NLU-based assistants in a single assistant. This allows migrating from NLU-based paradigm to CALM in an iterative fashion.
+  
+- [#762](https://github.com/rasahq/rasa/issues/762): Introduction of `call` step.
+  You can use a `call` step to embed another flow.
+  When the execution reaches a `call` step, Rasa starts the called flow.
+  Once the called flow is complete, the execution continues with the calling flow.
 ### Improvements
 - [#214](https://github.com/rasahq/rasa/issues/214): Instrument the `command_processor` module, in particular the following functions:
   - `execute_commands`
