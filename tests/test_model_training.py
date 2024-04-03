@@ -7,7 +7,7 @@ import os
 import textwrap
 from pathlib import Path
 from typing import Text, Dict, Union, Any
-from unittest.mock import Mock, AsyncMock
+from unittest.mock import Mock, AsyncMock, patch
 
 import pytest
 from _pytest.capture import CaptureFixture
@@ -33,6 +33,7 @@ from rasa.model_training import (
     CODE_FORCED_TRAINING,
     CODE_NEEDS_TO_BE_RETRAINED,
     CODE_NO_NEED_TO_TRAIN,
+    _determine_model_name,
     _dry_run_result,
 )
 from rasa.shared.core.events import ActionExecuted, SlotSet
@@ -1085,3 +1086,21 @@ def test_dry_run_result_no_force_retraining(
 def test_dry_run_result_force_retraining():
     result = _dry_run_result({}, force_full_training=True)
     assert result.code == CODE_FORCED_TRAINING
+
+
+@pytest.mark.parametrize(
+    "model_name, expected",
+    [
+        (None, "20220101-120000-expected_name.tar.gz"),
+        ("model", "model.tar.gz"),
+        ("model.tar.gz", "model.tar.gz"),
+        ("test.1.2", "test.1.2.tar.gz"),
+        ("test.1.2.3", "test.1.2.3.tar.gz"),
+        ("test.1.2.tar.gz", "test.1.2.tar.gz"),
+    ],
+)
+def test_model_training_determine_model_name(model_name, expected):
+    with patch("randomname.get_name", return_value="expected_name"), patch(
+        "time.strftime", return_value="20220101-120000"
+    ):
+        assert _determine_model_name(model_name, TrainingType.BOTH) == expected

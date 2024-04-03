@@ -367,10 +367,8 @@ def _determine_model_name(
     fixed_model_name: Optional[Text], training_type: TrainingType
 ) -> Text:
     if fixed_model_name:
-        model_file = Path(fixed_model_name)
-        if not model_file.name.endswith(".tar.gz"):
-            return model_file.with_suffix(".tar.gz").name
-
+        if not fixed_model_name.endswith(".tar.gz"):
+            return f"{fixed_model_name}.tar.gz"
         return fixed_model_name
 
     prefix = ""
