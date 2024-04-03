@@ -295,6 +295,7 @@ async def _train_graph(
         training_type,
     )
     flows = file_importer.get_flows()
+    domain = file_importer.get_domain()
     model_configuration = recipe.graph_config_for_recipe(
         config,
         kwargs,
@@ -302,6 +303,9 @@ async def _train_graph(
         is_finetuning=is_finetuning,
     )
     rasa.engine.validation.validate(model_configuration)
+    rasa.engine.validation.validate_coexistance_routing_setup(
+        domain, model_configuration
+    )
     rasa.engine.validation.validate_flow_component_dependencies(
         flows, model_configuration
     )

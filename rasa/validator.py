@@ -23,7 +23,6 @@ from rasa.shared.constants import (
     CONFIG_MANDATORY_KEYS,
     DOCS_URL_DOMAINS,
     DOCS_URL_FORMS,
-    ROUTE_TO_CALM_SLOT,
     UTTER_PREFIX,
     DOCS_URL_ACTIONS,
     REQUIRED_SLOTS_KEY,
@@ -71,68 +70,6 @@ class Validator:
         self.story_graph = story_graph
         self.flows = flows
         self.config = config or {}
-
-    def validate_routing_setup(self) -> bool:
-        pipeline = self.config.get("pipeline", []) or []
-        component_names = {c["name"] for c in pipeline}
-        routing_slot = [s for s in self.domain.slots if s.name == ROUTE_TO_CALM_SLOT]
-        if (
-            "LLMBasedRouter" in component_names
-            and "IntentBasedRouter" in component_names
-        ):
-            rasa.shared.utils.cli.print_error_and_exit(
-                "Both LLMBasedRouter and IntentBasedRouter are in the config. "
-                "Please use only one of them."
-            )
-
-        if (
-            "IntentBasedRouter" in component_names
-            and "LLMCommandGenerator" in component_names
-        ):
-            for ind, component in enumerate(self.config["pipeline"]):
-                if component["name"] == "IntentBasedRouter":
-                    intent_based_router_pos = ind
-                elif component["name"] == "LLMCommandGenerator":
-                    llm_command_generator_pos = ind
-            if intent_based_router_pos > llm_command_generator_pos:
-                rasa.shared.utils.cli.print_error_and_exit(
-                    "IntentBasedRouter should come before LLMCommandGenerator "
-                    "in the pipeline."
-                )
-
-        if "LLMBasedRouter" in component_names and (
-            len(routing_slot) == 0 or routing_slot[0].type_name != "bool"
-        ):
-            rasa.shared.utils.io.raise_warning(
-                f"LLMBasedRouter is in the config, but the slot {ROUTE_TO_CALM_SLOT}"
-                f" is not in the domain or not of type bool."
-            )
-            return False
-
-        if "IntentBasedRouter" in component_names and (
-            len(routing_slot) == 0 or routing_slot[0].type_name != "bool"
-        ):
-            rasa.shared.utils.io.raise_warning(
-                f"IntentBasedRouter is in the config, but the slot {ROUTE_TO_CALM_SLOT}"
-                f" is not in the domain or not of type bool."
-            )
-            return False
-
-        if len(routing_slot) > 0 and (
-            (
-                "LLMBasedRouter" not in component_names
-                and "IntentBasedRouter" not in component_names
-            )
-            or routing_slot[0].type_name != "bool"
-        ):
-            rasa.shared.utils.io.raise_warning(
-                f"The slot {ROUTE_TO_CALM_SLOT} is in the domain but the "
-                f"LLMBasedRouter or the IntentBasedRouter is not in the config or "
-                f"the type of the slot is not bool."
-            )
-            return False
-
-        return True
 
     @classmethod
     def from_importer(cls, importer: TrainingDataImporter) -> "Validator":
