@@ -124,6 +124,13 @@ Rasa 3.8.0 (2024-04-03)
   Make sure to add your custom action `action_ask_<slot-name>` to the domain file.
 - [#953](https://github.com/rasahq/rasa/issues/953): Validate the configuration of the coexistence router before the actual training starts.
 - [#966](https://github.com/rasahq/rasa/issues/966): Improved error handling in Enterprise Search Policy, changed the prompt to improve formatting of documents and ensured empty slots are not added to the prompt.
+- [#390](https://github.com/rasahq/rasa-private/issues/390): Implement asynchronous graph execution. CALM assistants rely on a lot
+  of I/O calls (e.g. to a LLM service), which impaired performances. With this change, we've improved the response time performance
+  by 10x. All policies and components now support async calling.
+- [#184](https://github.com/rasahq/rasa-private/issues/184): Merge `rasa` and `rasa-plus` packages into one. As a result, we renamed
+  the Python package to `rasa-pro` and the Docker image to `rasa-pro`. Please head over to the migration guide
+  [here](https://rasa.com/docs/rasa-pro/migration-guide#installation) for installation,
+  and [here](https://rasa.com/docs/rasa-pro/migration-guide#component-yaml-configuration-changes) for the necessary configuration updates.
 
 ### Bugfixes
 - [#232](https://github.com/rasahq/rasa/issues/232): Updated pillow and jinja2 packages to address security vulnerabilities.
