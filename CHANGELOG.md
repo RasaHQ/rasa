@@ -12,7 +12,7 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 ## [3.8.0] - 2024-04-03
 
-Rasa 3.8.0 (2024-04-03)
+Rasa Pro 3.8.0 (2024-04-03)
 ### Features
 - [#324](https://github.com/rasahq/rasa/issues/324): Introduces **semantic retrieval of flows** at runtime to reduce the size of the prompt sent to the LLM by utilizing similarity between vector embeddings. It enables the assistant to scale to a large number of flows.
 
