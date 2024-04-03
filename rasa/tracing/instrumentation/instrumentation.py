@@ -411,6 +411,12 @@ def instrument(
         _instrument_method(
             tracer_provider.get_tracer(contextual_response_rephraser_class.__module__),
             contextual_response_rephraser_class,
+            "_create_history",
+            attribute_extractors.extract_attrs_for_create_history,
+        )
+        _instrument_method(
+            tracer_provider.get_tracer(contextual_response_rephraser_class.__module__),
+            contextual_response_rephraser_class,
             "generate",
             attribute_extractors.extract_attrs_for_generate,
         )

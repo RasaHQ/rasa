@@ -382,6 +382,9 @@ class MockContextualResponseRephraser(ContextualResponseRephraser):
     async def _generate_llm_response(self, prompt: str) -> Optional[str]:
         pass
 
+    async def _create_history(self, tracker: DialogueStateTracker) -> Optional[str]:
+        pass
+
     async def generate(
         self,
         utter_action: Text,
