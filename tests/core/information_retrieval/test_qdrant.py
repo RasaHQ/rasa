@@ -41,7 +41,6 @@ def test_qdrant_store_connect(embeddings: Embeddings) -> None:
     assert client.client.metadata_payload_key == "extra"
 
 
-# TODO: Update this test to use ValidationError.from_exception_data() when using pydantic 2.x  # noqa: E501
 async def test_qdrant_search_raises_custom_exception(
     monkeypatch: MonkeyPatch,
     embeddings: Embeddings,
@@ -57,16 +56,14 @@ async def test_qdrant_search_raises_custom_exception(
     qdrant_store = Qdrant_Store(embeddings=embeddings)
 
     base_exception_msg = "An error occurred"
-
-    def mock_str(self):
-        return base_exception_msg
-
-    monkeypatch.setattr(ValidationError, "__str__", mock_str)
-
     monkeypatch.setattr(
         qdrant_store.client,
         "asimilarity_search",
-        AsyncMock(side_effect=ValidationError([], AsyncMock())),
+        AsyncMock(
+            side_effect=ValidationError.from_exception_data(
+                base_exception_msg, line_errors=[]
+            )
+        ),
     )
 
     with pytest.raises(PayloadNotFoundException) as e:
@@ -74,9 +71,9 @@ async def test_qdrant_search_raises_custom_exception(
 
     assert issubclass(e.type, InformationRetrievalException)
     assert (
-        f"An error occurred while searching for documents: "
-        f"Payload not found in the Qdrant response. "
-        f"Please make sure the `content_payload_key`and `metadata_payload_key` "
-        f"are correct in the Qdrant configuration. "
-        f"Error: {base_exception_msg}"
+        "An error occurred while searching for documents: "
+        "Payload not found in the Qdrant response. Please "
+        "make sure the `content_payload_key`and "
+        "`metadata_payload_key` are correct in the Qdrant "
+        f"configuration. Error: 0 validation errors for {base_exception_msg}\n"
     ) in str(e.value)
