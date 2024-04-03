@@ -443,7 +443,7 @@ Rasa Pro 3.6.0 (2023-06-14)
   Data Pipeline, enabling you to gain valuable insights and enhance the performance of your Rasa
   Assistant.
 
-  For this feature, we've added support for `rasa markers upload` command([PR#630](https://github.com/RasaHQ/rasa-plus/pull/630)). Running this command validates the marker configuration file against the domain file and uploads the configuration to Analytics Data Pipeline.
+  For this feature, we've added support for `rasa markers upload` command. Running this command validates the marker configuration file against the domain file and uploads the configuration to Analytics Data Pipeline.
 
 ### Improvements
 - [#11222](https://github.com/rasahq/rasa/issues/11222): Add optional property `ids` to the nlg server request body.

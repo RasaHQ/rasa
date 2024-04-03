@@ -161,10 +161,14 @@ class GraphSchema:
 
         return required
 
-    def has_node(self, node_type: Type) -> bool:
-        """Checks if the graph schema contains a node of the specified node type."""
+    def has_node(self, node_type: Type, include_subtypes: bool = True) -> bool:
+        """Checks if the graph schema contains a node of the specified node type.
+        By default, it also checks for subtypes of the specified node type.
+        """
         for node in self.nodes.values():
-            if node.uses is node_type:
+            if (node.uses is node_type) or (
+                include_subtypes and issubclass(node.uses, node_type)
+            ):
                 return True
         return False
 
@@ -329,9 +333,11 @@ class ExecutionContext:
     # This is set by the `GraphNode` before it is passed to the `GraphComponent`.
     node_name: Optional[Text] = None
 
-    def has_node(self, node_type: Type) -> bool:
-        """Checks if the graph node of the given type is present in the graph schema."""
-        return self.graph_schema.has_node(node_type)
+    def has_node(self, node_type: Type, include_subtypes: bool = True) -> bool:
+        """Checks if the graph node of the given type is present in the graph schema.
+        By default, it also checks for subtypes of the specified node type.
+        """
+        return self.graph_schema.has_node(node_type, include_subtypes)
 
 
 class GraphNode:
