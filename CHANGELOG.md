@@ -124,7 +124,6 @@ Rasa 3.8.0 (2024-04-03)
   Make sure to add your custom action `action_ask_<slot-name>` to the domain file.
 - [#953](https://github.com/rasahq/rasa/issues/953): Validate the configuration of the coexistence router before the actual training starts.
 - [#966](https://github.com/rasahq/rasa/issues/966): Improved error handling in Enterprise Search Policy, changed the prompt to improve formatting of documents and ensured empty slots are not added to the prompt.
-  PR available here: https://github.com/RasaHQ/rasa-plus/pull/966
 
 ### Bugfixes
 - [#232](https://github.com/rasahq/rasa/issues/232): Updated pillow and jinja2 packages to address security vulnerabilities.
