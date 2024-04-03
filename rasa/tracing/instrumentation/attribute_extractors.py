@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Tuple
 
 import tiktoken
+from numpy import ndarray
 
 from rasa.core.agent import Agent
 from rasa.core.brokers.broker import EventBroker
@@ -522,6 +523,15 @@ def extract_attrs_for_policy_prediction(
     diagnostic_data: Optional[Dict[Text, Any]] = None,
     action_metadata: Optional[Dict[Text, Any]] = None,
 ) -> Dict[str, Any]:
+
+    # diagnostic_data can contain ndarray type values which need to be converted
+    # into a list since the returning values have to be JSON serializable.
+    if isinstance(diagnostic_data, dict):
+        diagnostic_data = {
+            key: value.tolist() if isinstance(value, ndarray) else value
+            for key, value in diagnostic_data.items()
+        }
+
     return {
         "priority": self.priority,
         "events": [event.__class__.__name__ for event in events] if events else "None",
