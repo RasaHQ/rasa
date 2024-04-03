@@ -37,7 +37,7 @@ class InformationRetrieval:
             "InformationRetrieval must implement the `connect` method."
         )
 
-    def search(
+    async def search(
         self,
         query: Text,
         threshold: float = 0.0,

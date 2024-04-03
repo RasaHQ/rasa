@@ -108,9 +108,9 @@ class FAISS_Store(InformationRetrieval):
         """Faiss does not need to connect to a server."""
         pass
 
-    def search(self, query: Text, threshold: float = 0.0) -> List["Document"]:
+    async def search(self, query: Text, threshold: float = 0.0) -> List["Document"]:
         logger.debug("information_retrieval.faiss_store.search", query=query)
         try:
-            return self.index.as_retriever().get_relevant_documents(query)
+            return await self.index.as_retriever().aget_relevant_documents(query)
         except Exception as exc:
             raise InformationRetrievalException from exc

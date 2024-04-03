@@ -326,7 +326,7 @@ class EnterpriseSearchPolicy(Policy):
                 return sanitize_message_for_prompt(event.text)
         return ""
 
-    def predict_action_probabilities(  # type: ignore[override]
+    async def predict_action_probabilities(  # type: ignore[override]
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
@@ -369,7 +369,7 @@ class EnterpriseSearchPolicy(Policy):
         search_query = self._get_last_user_message(tracker)
 
         try:
-            documents = self.vector_store.search(
+            documents = await self.vector_store.search(
                 query=search_query,
                 threshold=vector_search_threshold,
             )
@@ -383,7 +383,7 @@ class EnterpriseSearchPolicy(Policy):
 
         logger.debug(f"{logger_key}.documents", num_documents=len(documents))
         prompt = self._render_prompt(tracker, documents)
-        llm_answer = self._generate_llm_answer(llm, prompt)
+        llm_answer = await self._generate_llm_answer(llm, prompt)
         if llm_answer is None:
             return self._create_prediction_internal_error(domain, tracker)
 
@@ -430,9 +430,11 @@ class EnterpriseSearchPolicy(Policy):
         )
         return prompt
 
-    def _generate_llm_answer(self, llm: "BaseLLM", prompt: Text) -> Optional[Text]:
+    async def _generate_llm_answer(
+        self, llm: "BaseLLM", prompt: Text
+    ) -> Optional[Text]:
         try:
-            llm_answer = llm(prompt)
+            llm_answer = await llm.apredict(prompt)
         except Exception as e:
             # unfortunately, langchain does not wrap LLM exceptions which means
             # we have to catch all exceptions here
