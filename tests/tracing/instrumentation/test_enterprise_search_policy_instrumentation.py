@@ -14,7 +14,7 @@ from rasa.tracing.instrumentation import instrumentation
 from tests.tracing.instrumentation.conftest import MockInformationRetrieval
 
 
-def test_tracing_enterprise_search_policy_generate_llm_answer_default_config(
+async def test_tracing_enterprise_search_policy_generate_llm_answer_default_config(
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
     previous_num_captured_spans: int,
@@ -36,7 +36,7 @@ def test_tracing_enterprise_search_policy_generate_llm_answer_default_config(
         execution_context=default_execution_context,
         vector_store=vector_store,
     )
-    policy._generate_llm_answer(llm=Mock(), prompt="")
+    await policy._generate_llm_answer(llm=Mock(), prompt="")
 
     captured_spans: Sequence[
         ReadableSpan
@@ -58,7 +58,7 @@ def test_tracing_enterprise_search_policy_generate_llm_answer_default_config(
     }
 
 
-def test_tracing_enterprise_search_policy_generate_llm_answer_custom_config(
+async def test_tracing_enterprise_search_policy_generate_llm_answer_custom_config(
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
     previous_num_captured_spans: int,
@@ -87,7 +87,7 @@ def test_tracing_enterprise_search_policy_generate_llm_answer_custom_config(
         execution_context=default_execution_context,
         vector_store=vector_store,
     )
-    policy._generate_llm_answer(llm=Mock(), prompt="")
+    await policy._generate_llm_answer(llm=Mock(), prompt="")
 
     captured_spans: Sequence[
         ReadableSpan
@@ -109,7 +109,7 @@ def test_tracing_enterprise_search_policy_generate_llm_answer_custom_config(
     }
 
 
-def test_tracing_enterprise_search_policy_generate_llm_answer_len_prompt_tokens(
+async def test_tracing_enterprise_search_policy_generate_llm_answer_len_prompt_tokens(
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
     previous_num_captured_spans: int,
@@ -131,7 +131,7 @@ def test_tracing_enterprise_search_policy_generate_llm_answer_len_prompt_tokens(
         execution_context=default_execution_context,
         vector_store=vector_store,
     )
-    policy._generate_llm_answer(llm=Mock(), prompt="This is a test prompt.")
+    await policy._generate_llm_answer(llm=Mock(), prompt="This is a test prompt.")
 
     captured_spans: Sequence[
         ReadableSpan
@@ -154,7 +154,7 @@ def test_tracing_enterprise_search_policy_generate_llm_answer_len_prompt_tokens(
     }
 
 
-def test_tracing_enterprise_search_policy_generate_llm_answer_len_prompt_tokens_non_openai(  # noqa: E501
+async def test_tracing_enterprise_search_policy_generate_llm_answer_len_prompt_tokens_non_openai(  # noqa: E501
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
     previous_num_captured_spans: int,
@@ -182,7 +182,7 @@ def test_tracing_enterprise_search_policy_generate_llm_answer_len_prompt_tokens_
     )
 
     with caplog.at_level(logging.WARNING):
-        policy._generate_llm_answer(llm=Mock(), prompt="This is a test prompt.")
+        await policy._generate_llm_answer(llm=Mock(), prompt="This is a test prompt.")
         assert (
             "Tracing prompt tokens is only supported for OpenAI models. Skipping."
             in caplog.text
