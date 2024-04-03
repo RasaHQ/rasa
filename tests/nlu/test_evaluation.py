@@ -179,7 +179,7 @@ def mocks_for_test_cross_validate(monkeypatch: MonkeyPatch):
     mock_write_yaml.return_value = "write yaml"
     monkeypatch.setattr("rasa.nlu.test.write_yaml", mock_write_yaml)
 
-    mock_train_nlu = MagicMock()
+    mock_train_nlu = AsyncMock()
     mock_train_nlu.return_value = "train nlu"
     monkeypatch.setattr("rasa.model_training.train_nlu", mock_train_nlu)
 

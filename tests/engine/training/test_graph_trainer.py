@@ -38,7 +38,7 @@ from tests.engine.graph_components_test_classes import (
 )
 
 
-def test_graph_trainer_returns_model_metadata(
+async def test_graph_trainer_returns_model_metadata(
     default_model_storage: ModelStorage,
     temp_cache: TrainingCache,
     tmp_path: Path,
@@ -86,7 +86,7 @@ def test_graph_trainer_returns_model_metadata(
     )
 
     output_filename = tmp_path / "model.tar.gz"
-    model_metadata = graph_trainer.train(
+    model_metadata = await graph_trainer.train(
         GraphModelConfiguration(
             train_schema=train_schema,
             predict_schema=predict_schema,
@@ -106,7 +106,7 @@ def test_graph_trainer_returns_model_metadata(
     assert model_metadata.predict_schema == predict_schema
 
 
-def test_graph_trainer_fingerprints_and_caches(
+async def test_graph_trainer_fingerprints_and_caches(
     temp_cache: TrainingCache,
     tmp_path: Path,
     train_with_schema: Callable,
@@ -161,7 +161,7 @@ def test_graph_trainer_fingerprints_and_caches(
 
     # The first train should call all the components and cache their outputs.
     mocks = spy_on_all_components(train_schema)
-    train_with_schema(train_schema, temp_cache)
+    await train_with_schema(train_schema, temp_cache)
     assert node_call_counts(mocks) == {
         "read_file": 1,
         "train": 1,
@@ -173,7 +173,7 @@ def test_graph_trainer_fingerprints_and_caches(
     # Nothing has changed so this time so no components will run
     # (just input nodes during fingerprint run).
     mocks = spy_on_all_components(train_schema)
-    train_with_schema(train_schema, temp_cache)
+    await train_with_schema(train_schema, temp_cache)
     assert node_call_counts(mocks) == {
         "read_file": 1,  # Inputs nodes are always called during the fingerprint run.
         "train": 0,
@@ -185,7 +185,7 @@ def test_graph_trainer_fingerprints_and_caches(
     # As we changed the config of "add", all its descendants will run.
     train_schema.nodes["add"].config["something"] = "new"
     mocks = spy_on_all_components(train_schema)
-    train_with_schema(train_schema, temp_cache)
+    await train_with_schema(train_schema, temp_cache)
     assert node_call_counts(mocks) == {
         "read_file": 1,  # Inputs nodes are always called during the fingerprint run.
         "train": 0,
@@ -197,7 +197,7 @@ def test_graph_trainer_fingerprints_and_caches(
     # We always run everything when the `force_retraining` flag is set to `True`
     train_schema.nodes["add"].config["something"] = "new"
     mocks = spy_on_all_components(train_schema)
-    train_with_schema(train_schema, temp_cache, force_retraining=True)
+    await train_with_schema(train_schema, temp_cache, force_retraining=True)
     assert node_call_counts(mocks) == {
         "read_file": 1,
         "train": 1,
@@ -207,7 +207,7 @@ def test_graph_trainer_fingerprints_and_caches(
     }
 
 
-def test_graph_trainer_always_reads_input(
+async def test_graph_trainer_always_reads_input(
     temp_cache: TrainingCache,
     tmp_path: Path,
     train_with_schema: Callable,
@@ -247,23 +247,23 @@ def test_graph_trainer_always_reads_input(
 
     # The first train should call all the components and cache their outputs.
     mocks = spy_on_all_components(train_schema)
-    train_with_schema(train_schema, temp_cache)
+    await train_with_schema(train_schema, temp_cache)
     assert node_call_counts(mocks) == {"read_file": 1, "subtract": 1, "assert_node": 1}
 
     # Nothing has changed so this time so no components will run
     # (just input nodes during fingerprint run).
     mocks = spy_on_all_components(train_schema)
-    train_with_schema(train_schema, temp_cache)
+    await train_with_schema(train_schema, temp_cache)
     assert node_call_counts(mocks) == {"read_file": 1, "subtract": 0, "assert_node": 0}
 
     # When we update the input file, all the nodes will run again and the assert_node
     # will fail.
     input_file.write_text("5")
     with pytest.raises(GraphComponentException):
-        train_with_schema(train_schema, temp_cache)
+        await train_with_schema(train_schema, temp_cache)
 
 
-def test_graph_trainer_with_non_cacheable_components(
+async def test_graph_trainer_with_non_cacheable_components(
     temp_cache: TrainingCache,
     tmp_path: Path,
     train_with_schema: Callable,
@@ -295,13 +295,13 @@ def test_graph_trainer_with_non_cacheable_components(
 
     # The first train should call all the components.
     mocks = spy_on_all_components(train_schema)
-    train_with_schema(train_schema, temp_cache)
+    await train_with_schema(train_schema, temp_cache)
     assert node_call_counts(mocks) == {"input": 1, "subtract": 1}
 
     # Nothing has changed but none of the components can cache so all will have to
     # run again.
     mocks = spy_on_all_components(train_schema)
-    train_with_schema(train_schema, temp_cache)
+    await train_with_schema(train_schema, temp_cache)
     assert node_call_counts(mocks) == {"input": 1, "subtract": 1}
 
 
@@ -318,7 +318,7 @@ def train_with_schema(
     local_cache_creator: Callable,
     domain_path: Path,
 ):
-    def inner(
+    async def inner(
         train_schema: GraphSchema,
         cache: Optional[TrainingCache] = None,
         model_storage: Optional[ModelStorage] = None,
@@ -337,7 +337,7 @@ def train_with_schema(
         )
 
         output_filename = path / "model.tar.gz"
-        graph_trainer.train(
+        await graph_trainer.train(
             GraphModelConfiguration(
                 train_schema=train_schema,
                 predict_schema=GraphSchema({}),
@@ -379,7 +379,7 @@ def spy_on_all_components(spy_on_component) -> Callable:
     return inner
 
 
-def test_graph_trainer_train_logging(
+async def test_graph_trainer_train_logging(
     tmp_path: Path,
     temp_cache: TrainingCache,
     train_with_schema: Callable,
@@ -420,7 +420,7 @@ def test_graph_trainer_train_logging(
     )
 
     with caplog.at_level(logging.INFO, logger="rasa.engine.training.hooks"):
-        train_with_schema(train_schema, temp_cache)
+        await train_with_schema(train_schema, temp_cache)
 
     caplog_info_records = list(
         filter(lambda x: x[1] == logging.INFO, caplog.record_tuples)
@@ -434,7 +434,7 @@ def test_graph_trainer_train_logging(
     ]
 
 
-def test_graph_trainer_train_logging_with_cached_components(
+async def test_graph_trainer_train_logging_with_cached_components(
     tmp_path: Path,
     temp_cache: TrainingCache,
     train_with_schema: Callable,
@@ -474,11 +474,11 @@ def test_graph_trainer_train_logging_with_cached_components(
     )
 
     # Train to cache
-    train_with_schema(train_schema, temp_cache)
+    await train_with_schema(train_schema, temp_cache)
 
     # Train a second time
     with caplog.at_level(logging.INFO, logger="rasa.engine.training.hooks"):
-        train_with_schema(train_schema, temp_cache)
+        await train_with_schema(train_schema, temp_cache)
 
         caplog_info_records = list(
             filter(lambda x: x[1] == logging.INFO, caplog.record_tuples)
@@ -492,7 +492,7 @@ def test_graph_trainer_train_logging_with_cached_components(
         }
 
 
-def test_resources_fingerprints_are_unique_when_cached(
+async def test_resources_fingerprints_are_unique_when_cached(
     temp_cache: LocalTrainingCache, train_with_schema: Callable
 ):
     train_schema = GraphSchema(
@@ -524,11 +524,11 @@ def test_resources_fingerprints_are_unique_when_cached(
     )
 
     # Train to cache
-    train_with_schema(train_schema, temp_cache)
+    await train_with_schema(train_schema, temp_cache)
 
     train_schema.nodes["train"].config["test_value"] = "5"
     train_schema.nodes["assert_node"].config["value_to_assert"] = "5"
-    train_with_schema(train_schema, temp_cache)
+    await train_with_schema(train_schema, temp_cache)
 
     # Add something to the config so only "assert_node" re-runs.
     train_schema.nodes["assert_node"].config["something"] = "something"
@@ -536,10 +536,10 @@ def test_resources_fingerprints_are_unique_when_cached(
     # This is because the `Resource` for the first run is retrieved from the cache which
     # returns 4 whereas it should be the second resource which returns 5, and the schema
     # assert_node expects 5 now.
-    train_with_schema(train_schema, temp_cache)
+    await train_with_schema(train_schema, temp_cache)
 
 
-def test_resources_fingerprints_remain_after_being_cached(
+async def test_resources_fingerprints_remain_after_being_cached(
     temp_cache: LocalTrainingCache, train_with_schema: Callable
 ):
     train_schema = GraphSchema(
@@ -564,7 +564,7 @@ def test_resources_fingerprints_remain_after_being_cached(
     )
 
     # Train and cache.
-    train_with_schema(train_schema, temp_cache)
+    await train_with_schema(train_schema, temp_cache)
 
     # We can determine if a cached `Resource` has a static fingerprint by comparing two
     # subsequent cache entries of a child node.
@@ -587,7 +587,7 @@ def test_resources_fingerprints_remain_after_being_cached(
 
     # In this second train, the Resource output of "train" will be retrieved from the
     # cache.
-    train_with_schema(train_schema, temp_cache)
+    await train_with_schema(train_schema, temp_cache)
 
     with temp_cache._sessionmaker.begin() as session:
         # This will get the new cache entry for the "process" node.
@@ -604,7 +604,7 @@ def test_resources_fingerprints_remain_after_being_cached(
     "on_before, on_after",
     [(lambda: True, lambda: 2 / 0), (lambda: 2 / 0, lambda: True)],
 )
-def test_exception_handling_for_on_before_hook(
+async def test_exception_handling_for_on_before_hook(
     on_before: Callable,
     on_after: Callable,
     default_model_storage: ModelStorage,
@@ -644,4 +644,4 @@ def test_exception_handling_for_on_before_hook(
     )
 
     with pytest.raises(GraphComponentException):
-        node()
+        await node()

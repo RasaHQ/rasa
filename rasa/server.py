@@ -301,8 +301,9 @@ async def get_test_stories(
     until_time: Optional[float],
     fetch_all_sessions: bool = False,
 ) -> Text:
-    """Retrieves test stories from `processor` for all conversation sessions for
-       `conversation_id`.
+    """Retrieves test stories for all conversation sessions for `conversation_id`.
+
+    Uses `processor` to get the conversations.
 
     Args:
         processor: An instance of `MessageProcessor`.
@@ -1063,7 +1064,7 @@ def create_app(
             from rasa.model_training import train
 
             # pass `None` to run in default executor
-            training_result = train(**training_payload)
+            training_result = await train(**training_payload)
 
             if training_result.model:
                 filename = os.path.basename(training_result.model)
@@ -1282,7 +1283,7 @@ def create_app(
             )
 
         try:
-            result = app.ctx.agent.predict_next_with_tracker(tracker, verbosity)
+            result = await app.ctx.agent.predict_next_with_tracker(tracker, verbosity)
 
             return response.json(result)
         except Exception as e:
@@ -1376,7 +1377,7 @@ def create_app(
     async def get_flows(request: Request) -> HTTPResponse:
         """Get all the flows currently stored by the agent."""
         processor = app.ctx.agent.processor
-        flows = processor.get_flows()
+        flows = await processor.get_flows()
         return response.json(flows.as_json_list())
 
     @app.get("/domain")

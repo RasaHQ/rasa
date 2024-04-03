@@ -156,7 +156,7 @@ class LLMBasedRouter(GraphComponent):
         """Creates component (see parent class for full docstring)."""
         return cls(config, model_storage, resource)
 
-    def process(
+    async def process(
         self,
         messages: List[Message],
         tracker: Optional[DialogueStateTracker] = None,
@@ -167,13 +167,13 @@ class LLMBasedRouter(GraphComponent):
             return messages
 
         for message in messages:
-            commands = self.predict_commands(message, tracker)
+            commands = await self.predict_commands(message, tracker)
             commands_dicts = [command.as_dict() for command in commands]
             message.set(COMMANDS, commands_dicts, add_to_output=True)
 
         return messages
 
-    def predict_commands(
+    async def predict_commands(
         self,
         message: Message,
         tracker: DialogueStateTracker,
@@ -189,7 +189,7 @@ class LLMBasedRouter(GraphComponent):
             prompt = self.render_template(message)
             structlogger.info("llm_based_router.prompt_rendered", prompt=prompt)
             # generating answer
-            answer = self._generate_answer_using_llm(prompt)
+            answer = await self._generate_answer_using_llm(prompt)
             structlogger.info("llm_based_router.llm_answer", answer=answer)
             commands = self.parse_answer(answer)
             structlogger.info("llm_based_router.predicated_commands", commands=commands)
@@ -240,7 +240,7 @@ class LLMBasedRouter(GraphComponent):
 
         return Template(self.prompt_template).render(**inputs)
 
-    def _generate_answer_using_llm(self, prompt: str) -> Optional[str]:
+    async def _generate_answer_using_llm(self, prompt: str) -> Optional[str]:
         """Use LLM to generate a response.
 
         Args:
@@ -252,7 +252,7 @@ class LLMBasedRouter(GraphComponent):
         llm = llm_factory(self.config.get(LLM_CONFIG_KEY), DEFAULT_LLM_CONFIG)
 
         try:
-            return llm(prompt)
+            return await llm.apredict(prompt)
         except Exception as e:
             # unfortunately, langchain does not wrap LLM exceptions which means
             # we have to catch all exceptions here

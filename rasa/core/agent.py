@@ -436,13 +436,13 @@ class Agent:
         )
 
     @agent_must_be_ready
-    def predict_next_with_tracker(
+    async def predict_next_with_tracker(
         self,
         tracker: DialogueStateTracker,
         verbosity: EventVerbosity = EventVerbosity.AFTER_RESTART,
     ) -> Optional[Dict[Text, Any]]:
         """Predicts the next action."""
-        return self.processor.predict_next_with_tracker(  # type: ignore[union-attr]
+        return await self.processor.predict_next_with_tracker(  # type: ignore[union-attr] # noqa:E501
             tracker, verbosity
         )
 

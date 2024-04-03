@@ -124,11 +124,7 @@ def traceable(
         )
 
         module_name = attrs.pop("module_name", "")
-        if issubclass(self.__class__, GraphNode) and fn.__name__ == "__call__":
-            span_name = f"{self.__class__.__name__}." + attrs.get(
-                "component_class", "GraphNode"
-            )
-        elif module_name in ["command_processor", FLOW_EXECUTOR_MODULE_NAME]:
+        if module_name in ["command_processor", FLOW_EXECUTOR_MODULE_NAME]:
             span_name = f"{module_name}.{fn.__name__}"
         else:
             span_name = f"{self.__class__.__name__}.{fn.__name__}"
@@ -176,8 +172,15 @@ def traceable_async(
         )
         headers = header_extractor(*args, **kwargs) if header_extractor else {}
 
+        if issubclass(self.__class__, GraphNode) and fn.__name__ == "__call__":
+            span_name = f"{self.__class__.__name__}." + attrs.get(
+                "component_class", "GraphNode"
+            )
+        else:
+            span_name = f"{self.__class__.__name__}.{fn.__name__}"
+
         with tracer.start_as_current_span(
-            f"{self.__class__.__name__}.{fn.__name__}",
+            span_name,
             attributes=attrs,
         ):
             TraceContextTextMapPropagator().inject(headers)
@@ -486,7 +489,7 @@ def _instrument_nlu_command_adapter_predict_commands(
 ) -> None:
     def tracing_nlu_command_adapter_predict_commands_wrapper(fn: Callable) -> Callable:
         @functools.wraps(fn)
-        def wrapper(
+        async def wrapper(
             self: NLUCommandAdapter,
             message: Message,
             flows: FlowsList,
@@ -495,7 +498,7 @@ def _instrument_nlu_command_adapter_predict_commands(
             with tracer.start_as_current_span(
                 f"{self.__class__.__name__}.{fn.__name__}"
             ) as span:
-                commands = fn(self, message, flows, tracker)
+                commands = await fn(self, message, flows, tracker)
 
                 span.set_attributes(
                     {

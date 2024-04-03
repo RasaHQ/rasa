@@ -260,14 +260,14 @@ class MessageProcessor:
             The prediction for the next action. `None` if no domain or policies loaded.
         """
         tracker = await self.fetch_tracker_and_update_session(sender_id)
-        result = self.predict_next_with_tracker(tracker)
+        result = await self.predict_next_with_tracker(tracker)
 
         # save tracker state to continue conversation from this state
         await self.save_tracker(tracker)
 
         return result
 
-    def predict_next_with_tracker(
+    async def predict_next_with_tracker(
         self,
         tracker: DialogueStateTracker,
         verbosity: EventVerbosity = EventVerbosity.AFTER_RESTART,
@@ -288,7 +288,7 @@ class MessageProcessor:
             )
             return None
 
-        prediction = self._predict_next_with_tracker(tracker)
+        prediction = await self._predict_next_with_tracker(tracker)
 
         scores = [
             {"action": a, "score": p}
@@ -371,8 +371,7 @@ class MessageProcessor:
         output_channel: Optional[OutputChannel] = None,
         metadata: Optional[Dict] = None,
     ) -> DialogueStateTracker:
-        """Fetches tracker for `sender_id` and runs a session start if it's a new
-        tracker.
+        """Fetches tracker for `sender_id` and runs a session start on a new one.
 
         Args:
             metadata: Data sent from client associated with the incoming user message.
@@ -525,7 +524,7 @@ class MessageProcessor:
 
         return tracker
 
-    def predict_next_with_tracker_if_should(
+    async def predict_next_with_tracker_if_should(
         self, tracker: DialogueStateTracker
     ) -> Tuple[rasa.core.actions.action.Action, PolicyPrediction]:
         """Predicts the next action the bot should take after seeing x.
@@ -548,7 +547,7 @@ class MessageProcessor:
                 "The limit of actions to predict has been reached."
             )
 
-        prediction = self._predict_next_with_tracker(tracker)
+        prediction = await self._predict_next_with_tracker(tracker)
 
         action = rasa.core.actions.action.action_for_index(
             prediction.max_confidence_index, self.domain, self.action_endpoint
@@ -739,7 +738,7 @@ class MessageProcessor:
                 message=Message({TEXT: message.text})
             )
             if msg.data.get(INTENT) is None:
-                parse_data = self._parse_message_with_graph(
+                parse_data = await self._parse_message_with_graph(
                     message, tracker, only_output_properties
                 )
             else:
@@ -755,7 +754,7 @@ class MessageProcessor:
                 commands = []
 
                 if tracker:
-                    commands = self._nlu_to_commands(parse_data, tracker)
+                    commands = await self._nlu_to_commands(parse_data, tracker)
                     if (
                         tracker.has_coexistence_routing_slot
                         and tracker.get_slot(ROUTE_TO_CALM_SLOT) is None
@@ -801,7 +800,7 @@ class MessageProcessor:
             )
             parse_data[INTENT][FULL_RETRIEVAL_INTENT_NAME_KEY] = retrieval_intent
 
-    def _nlu_to_commands(
+    async def _nlu_to_commands(
         self, parse_data: Dict[str, Any], tracker: DialogueStateTracker
     ) -> List[Dict[str, Any]]:
         """Converts the NLU parse data to commands using the adaptor.
@@ -815,11 +814,11 @@ class MessageProcessor:
         )
 
         commands = NLUCommandAdapter.convert_nlu_to_commands(
-            Message(parse_data), tracker, self.get_flows()
+            Message(parse_data), tracker, await self.get_flows()
         )
         return [command.as_dict() for command in commands]
 
-    def _parse_message_with_graph(
+    async def _parse_message_with_graph(
         self,
         message: UserMessage,
         tracker: Optional[DialogueStateTracker] = None,
@@ -836,7 +835,7 @@ class MessageProcessor:
         Returns:
             Parsed data extracted from the message.
         """
-        results = self.graph_runner.run(
+        results = await self.graph_runner.run(
             inputs={PLACEHOLDER_MESSAGE: [message], PLACEHOLDER_TRACKER: tracker},
             targets=[self.model_metadata.nlu_target],
         )
@@ -960,13 +959,15 @@ class MessageProcessor:
         # keep taking actions decided by the policy until it chooses to 'listen'
         should_predict_another_action = True
 
-        tracker = self.run_command_processor(tracker)
+        tracker = await self.run_command_processor(tracker)
 
         # action loop. predicts actions until we hit action listen
         while should_predict_another_action and self._should_handle_message(tracker):
             # this actually just calls the policy's method by the same name
             try:
-                action, prediction = self.predict_next_with_tracker_if_should(tracker)
+                action, prediction = await self.predict_next_with_tracker_if_should(
+                    tracker
+                )
             except ActionLimitReached:
                 logger.warning(
                     "Circuit breaker tripped. Stopped predicting "
@@ -1007,9 +1008,7 @@ class MessageProcessor:
         tracker: DialogueStateTracker,
         output_channel: OutputChannel,
     ) -> None:
-        """Send bot messages, schedule and cancel reminders that are logged
-        in the events array.
-        """
+        """Send bot messages, schedule and cancel reminders."""
         await self._send_bot_messages(events, tracker, output_channel)
         await self._schedule_reminders(events, tracker, output_channel)
         await self._cancel_reminders(events, tracker)
@@ -1067,7 +1066,7 @@ class MessageProcessor:
                     ):
                         scheduler.remove_job(scheduled_job.id)
 
-    def run_command_processor(
+    async def run_command_processor(
         self, tracker: DialogueStateTracker
     ) -> DialogueStateTracker:
         """Run the command processor to apply commands to the stack.
@@ -1083,17 +1082,17 @@ class MessageProcessor:
         An updated tracker after commands have been applied
         """
         target = "command_processor"
-        results = self.graph_runner.run(
+        results = await self.graph_runner.run(
             inputs={PLACEHOLDER_TRACKER: tracker.copy()}, targets=[target]
         )
         events = results[target]
         tracker.update_with_events(events)
         return tracker
 
-    def get_flows(self) -> FlowsList:
+    async def get_flows(self) -> FlowsList:
         """Get the list of flows from the graph."""
         target = "flows_provider"
-        results = self.graph_runner.run(inputs={}, targets=[target])
+        results = await self.graph_runner.run(inputs={}, targets=[target])
         return results[target]
 
     async def _run_action(
@@ -1239,7 +1238,7 @@ class MessageProcessor:
         """
         await self.tracker_store.save(tracker)
 
-    def _predict_next_with_tracker(
+    async def _predict_next_with_tracker(
         self, tracker: DialogueStateTracker
     ) -> PolicyPrediction:
         """Collect predictions from ensemble and return action and predictions."""
@@ -1262,7 +1261,7 @@ class MessageProcessor:
         if not target:
             raise ValueError("Cannot predict next action if there is no core target.")
 
-        results = self.graph_runner.run(
+        results = await self.graph_runner.run(
             inputs={
                 PLACEHOLDER_TRACKER: tracker,
                 PLACEHOLDER_ENDPOINTS: self.endpoints,

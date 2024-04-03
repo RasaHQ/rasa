@@ -1,12 +1,16 @@
-from typing import Any, Callable, Dict, Text, Tuple, Type, Optional, List
-from collections import namedtuple
 import itertools
+import textwrap
+from collections import namedtuple
+from pathlib import Path
+from typing import Any, Callable, Dict, Text, Tuple, Type, Optional, List
 from unittest.mock import Mock
 
 import pytest
-from rasa.core.policies.policy import PolicyPrediction
+import structlog
 
+from rasa.core.policies.policy import PolicyPrediction
 from rasa.engine import validation
+from rasa.engine.constants import PLACEHOLDER_IMPORTER
 from rasa.engine.exceptions import GraphSchemaValidationException
 from rasa.engine.graph import (
     GraphComponent,
@@ -15,14 +19,21 @@ from rasa.engine.graph import (
     SchemaNode,
     GraphModelConfiguration,
 )
-from rasa.engine.constants import PLACEHOLDER_IMPORTER
+from rasa.engine.recipes.recipe import Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.engine.validation import validate_coexistance_routing_setup
+from rasa.shared.constants import (
+    LATEST_TRAINING_DATA_FORMAT_VERSION,
+    ROUTE_TO_CALM_SLOT,
+)
 from rasa.shared.core.domain import Domain
 from rasa.shared.data import TrainingType
 from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
+from tests.utilities import filter_logs
 
 
 class TestComponentWithoutRun(GraphComponent):
@@ -1220,3 +1231,210 @@ def test_graph_with_cls_type_hint():
     graph_config = create_test_schema(uses=MyComponent)
 
     validation.validate(graph_config)
+
+
+@pytest.mark.parametrize(
+    "router_component",
+    [
+        "IntentBasedRouter",
+        "LLMBasedRouter",
+        "tests.engine.conftest.SubclassedIntentBasedRouter",
+        "tests.engine.conftest.SubclassedLLMBasedRouter",
+    ],
+)
+def test_validate_routing_setup(router_component: Text, tmp_path: Path) -> None:
+    # Given
+    config_file_name = tmp_path / "config.yml"
+    with open(config_file_name, "w") as file:
+        file.write(
+            f"""
+                recipe: default.v1
+                language: en
+                pipeline:
+                - name: WhitespaceTokenizer
+                - name: CountVectorsFeaturizer
+                - name: LogisticRegressionClassifier
+                - name: CRFEntityExtractor
+                - name: {router_component}
+                - name: LLMCommandGenerator
+            """
+        )
+    importer = RasaFileImporter(config_file=config_file_name)
+    config = importer.get_config()
+    domain_yaml = textwrap.dedent(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        slots:
+          {ROUTE_TO_CALM_SLOT}:
+            type: bool
+            mappings: []
+            initial_value: false
+        """
+    )
+    domain = Domain.from_yaml(domain_yaml)
+    recipe = Recipe.recipe_for_name(config.get("recipe"))
+    model_configuration = recipe.graph_config_for_recipe(config, {})
+
+    # When / Then - should not raise any errors
+    validate_coexistance_routing_setup(domain, model_configuration)
+
+
+def test_validate_routing_setup_with_unrequired_calm_slot(tmp_path: Path) -> None:
+    # Given
+    config_file_name = tmp_path / "config.yml"
+    with open(config_file_name, "w") as file:
+        file.write(
+            """
+                recipe: default.v1
+                language: en
+                pipeline:
+                - name: WhitespaceTokenizer
+                - name: CountVectorsFeaturizer
+                - name: LogisticRegressionClassifier
+                - name: CRFEntityExtractor
+            """
+        )
+
+    importer = RasaFileImporter(config_file=config_file_name)
+    config = importer.get_config()
+    domain_yaml = textwrap.dedent(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        slots:
+          {ROUTE_TO_CALM_SLOT}:
+            type: bool
+            mappings: []
+            initial_value: false
+        """
+    )
+    domain = Domain.from_yaml(domain_yaml)
+    recipe = Recipe.recipe_for_name(config.get("recipe"))
+    model_configuration = recipe.graph_config_for_recipe(config, {})
+
+    expected_event = (
+        f"validation.coexistance."
+        f"{ROUTE_TO_CALM_SLOT}_in_domain_with_no_router_defined"
+    )
+    expected_log_level = "error"
+    expected_log_message = (
+        "LLMBasedRouter or the IntentBasedRouter is not in the config"
+    )
+
+    # When / Then
+    with structlog.testing.capture_logs() as caplog:
+
+        with pytest.raises(SystemExit):
+            validate_coexistance_routing_setup(domain, model_configuration)
+
+        logs = filter_logs(
+            caplog, expected_event, expected_log_level, [expected_log_message]
+        )
+        assert len(logs) == 1
+
+
+@pytest.mark.parametrize(
+    "router_component",
+    [
+        "IntentBasedRouter",
+        "LLMBasedRouter",
+        "tests.engine.conftest.SubclassedIntentBasedRouter",
+        "tests.engine.conftest.SubclassedLLMBasedRouter",
+    ],
+)
+def test_validate_routing_setup_with_router_and_no_calm_slot(
+    router_component: Text,
+    tmp_path: Path,
+) -> None:
+    # Given
+    config_file_name = tmp_path / "config.yml"
+    with open(config_file_name, "w") as file:
+        file.write(
+            f"""
+                recipe: default.v1
+                language: en
+                pipeline:
+                - name: WhitespaceTokenizer
+                - name: {router_component}
+            """
+        )
+
+    importer = RasaFileImporter(config_file=config_file_name)
+    config = importer.get_config()
+    domain = importer.get_domain()
+    recipe = Recipe.recipe_for_name(config.get("recipe"))
+    model_configuration = recipe.graph_config_for_recipe(config, {})
+
+    expected_event = f"validation.coexistance" f".{ROUTE_TO_CALM_SLOT}_not_in_domain"
+    expected_log_level = "error"
+    expected_log_message = (
+        f"is in the config, but the slot {ROUTE_TO_CALM_SLOT} is not in the domain"
+    )
+
+    # When / Then
+    with structlog.testing.capture_logs() as caplog:
+
+        with pytest.raises(SystemExit):
+            validate_coexistance_routing_setup(domain, model_configuration)
+
+        logs = filter_logs(
+            caplog, expected_event, expected_log_level, [expected_log_message]
+        )
+        assert len(logs) == 1
+
+
+@pytest.mark.parametrize(
+    "router_component",
+    [
+        "IntentBasedRouter",
+        "tests.engine.conftest.SubclassedIntentBasedRouter",
+    ],
+)
+def test_validate_routing_setup_with_wrong_component_order(
+    router_component: Text, tmp_path: Path
+) -> None:
+    config_file_name = tmp_path / "config.yml"
+    with open(config_file_name, "w") as file:
+        file.write(
+            f"""
+                recipe: default.v1
+                language: en
+                pipeline:
+                - name: LLMCommandGenerator
+                - name: {router_component}
+            """
+        )
+
+    importer = RasaFileImporter(config_file=config_file_name)
+    config = importer.get_config()
+    domain = importer.get_domain()
+    recipe = Recipe.recipe_for_name(config.get("recipe"))
+    model_configuration = recipe.graph_config_for_recipe(config, {})
+
+    # When / Then
+    with pytest.raises(SystemExit):
+        validate_coexistance_routing_setup(domain, model_configuration)
+
+
+def test_validate_routing_setup_with_both_coexistence_components(
+    tmp_path: Path,
+) -> None:
+    config_file_name = tmp_path / "config.yml"
+    with open(config_file_name, "w") as file:
+        file.write(
+            """
+                recipe: default.v1
+                language: en
+                pipeline:
+                - name: LLMBasedRouter
+                - name: IntentBasedRouter
+            """
+        )
+
+    importer = RasaFileImporter(config_file=config_file_name)
+    config = importer.get_config()
+    domain = importer.get_domain()
+    recipe = Recipe.recipe_for_name(config.get("recipe"))
+    model_configuration = recipe.graph_config_for_recipe(config, {})
+
+    with pytest.raises(SystemExit):
+        validate_coexistance_routing_setup(domain, model_configuration)

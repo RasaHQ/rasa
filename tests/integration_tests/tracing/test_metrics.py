@@ -71,7 +71,7 @@ def setup_test_llm_command_generator(
     monkeypatch: MonkeyPatch,
     **kwargs: Any,
 ) -> LLMCommandGenerator:
-    def mock_llm_command_generate(self: Any, prompt: str) -> Optional[str]:
+    async def mock_llm_command_generate(self: Any, prompt: str) -> Optional[str]:
         return ""
 
     monkeypatch.setattr(

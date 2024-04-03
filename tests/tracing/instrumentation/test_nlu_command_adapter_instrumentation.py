@@ -13,7 +13,7 @@ from rasa.tracing.instrumentation import instrumentation
 from tests.tracing.instrumentation.conftest import MockNLUCommandAdapter
 
 
-def test_tracing_nlu_command_adapter_predict_commands(
+async def test_tracing_nlu_command_adapter_predict_commands(
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
     default_model_storage: ModelStorage,
@@ -37,7 +37,7 @@ def test_tracing_nlu_command_adapter_predict_commands(
         evts=[UserUttered("I need some medical advice.")],
     )
 
-    mock_nlu_command_adapter.predict_commands(
+    await mock_nlu_command_adapter.predict_commands(
         Message(data={"intent": {"name": "health_advice"}}),
         FlowsList(underlying_flows=[]),
         tracker,

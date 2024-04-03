@@ -133,10 +133,10 @@ class TestTEDPolicy(PolicyTestCollection):
 
         return TEDPolicy
 
-    def test_train_model_checkpointing(
+    async def test_train_model_checkpointing(
         self, tmp_path: Path, tmp_path_factory: TempPathFactory
     ):
-        train_core(
+        await train_core(
             domain="data/test_domains/default.yml",
             stories="data/test_yaml_stories/stories_defaultdomain.yml",
             output=str(tmp_path),
@@ -150,10 +150,10 @@ class TestTEDPolicy(PolicyTestCollection):
         all_files = list(model_dir.rglob("*.*"))
         assert any(["from_checkpoint" in str(filename) for filename in all_files])
 
-    def test_doesnt_checkpoint_with_no_checkpointing(
+    async def test_doesnt_checkpoint_with_no_checkpointing(
         self, tmp_path: Path, tmp_path_factory: TempPathFactory
     ):
-        train_core(
+        await train_core(
             domain="data/test_domains/default.yml",
             stories="data/test_yaml_stories/stories_defaultdomain.yml",
             output=str(tmp_path),
@@ -167,12 +167,12 @@ class TestTEDPolicy(PolicyTestCollection):
         all_files = list(model_dir.rglob("*.*"))
         assert not any(["from_checkpoint" in str(filename) for filename in all_files])
 
-    def test_doesnt_checkpoint_with_zero_eval_num_examples(
+    async def test_doesnt_checkpoint_with_zero_eval_num_examples(
         self, tmp_path: Path, tmp_path_factory: TempPathFactory
     ):
         config_file = "config_ted_policy_model_checkpointing_zero_eval_num_examples.yml"
         with pytest.warns(UserWarning) as warning:
-            train_core(
+            await train_core(
                 domain="data/test_domains/default.yml",
                 stories="data/test_yaml_stories/stories_defaultdomain.yml",
                 output=str(tmp_path),
@@ -228,14 +228,16 @@ class TestTEDPolicy(PolicyTestCollection):
 
         assert loaded_policy.config[EPOCHS] == expected_epoch_value
 
-    def test_train_fails_with_checkpoint_zero_eval_num_epochs(self, tmp_path: Path):
+    async def test_train_fails_with_checkpoint_zero_eval_num_epochs(
+        self, tmp_path: Path
+    ):
         config_file = "config_ted_policy_model_checkpointing_zero_every_num_epochs.yml"
         match_string = (
             "Only values either equal to -1 or greater"
             " than 0 are allowed for this parameter."
         )
         with pytest.raises(InvalidConfigException, match=match_string):
-            train_core(
+            await train_core(
                 domain="data/test_domains/default.yml",
                 stories="data/test_yaml_stories/stories_defaultdomain.yml",
                 output=str(tmp_path),
