@@ -533,7 +533,7 @@ class TestLLMCommandGenerator:
             LLMCommandGenerator, "get_nullable_slot_value", Mock(return_value=None)
         ):
             parsed_commands = LLMCommandGenerator.parse_commands(
-                input_action, test_flows
+                input_action, Mock(), test_flows
             )
         # Then
         assert parsed_commands == expected_command
@@ -573,7 +573,9 @@ class TestLLMCommandGenerator:
                   collect: some_slot
             """
         )
-        parsed_commands = LLMCommandGenerator.parse_commands(input_action, test_flows)
+        parsed_commands = LLMCommandGenerator.parse_commands(
+            input_action, Mock(), test_flows
+        )
         # Then
         assert parsed_commands == expected_command
 

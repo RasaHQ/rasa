@@ -1,0 +1,138 @@
+name: Run Performance Checks On Main
+
+on:
+  schedule:
+    # Runs at the end of every day
+    - cron: 0 0 * * *
+  workflow_dispatch:
+
+# SECRETS:
+#  - RASA_CI_SEGMENT_WRITE_KEY: Segment write key for https://app.segment.com/rasa-x/sources/rasa_ci/overview
+env:
+  PYTHON_VERSION: "3.10"
+
+jobs:
+  build_package:
+    name: Build python package
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+      - name: Read Poetry Version 🔢
+        run: |
+         echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Set up Python 3.10 🐍
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install poetry 🦄
+        uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844 # v8
+        with:
+          poetry-version: ${{ env.POETRY_VERSION }}
+
+      - name: Read Current project version 🔢
+        id: project_version
+        run: |
+          echo "rasa_pro=$(poetry version --short)" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: Build python package 🎁
+        run: poetry build
+
+      - name: Rename archive ✍️
+        run: mv dist/rasa_pro-${{ steps.project_version.outputs.rasa_pro }}.tar.gz dist/rasa_pro-tmp.tar.gz
+
+      - name: Store built package
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3  # v4
+        with:
+          name: python-package
+          path: dist/
+
+  check_installation_performance:
+    name: Check installation performance
+    runs-on: ubuntu-22.04
+    needs: [build_package]
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+      - name: Read Poetry Version 🔢
+        run: |
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Set up Python 3.10 🐍
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install poetry 🦄
+        uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844 # v8
+        with:
+          poetry-version: ${{ env.POETRY_VERSION }}
+
+      - name: Download built package ⤵️
+        uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427  # v4
+        id: artifact
+        with:
+          name: python-package
+
+      - name: Install package ✅
+        id: installation
+        run: |
+          START=$(python -c 'import time; print(int(time.time() * 1000))')
+          pip install --upgrade pip
+          pip install ${{ steps.artifact.outputs.download-path }}
+          END=$(python -c 'import time; print(int(time.time() * 1000))')
+          echo "installation_time=$((END-START))" >> $GITHUB_OUTPUT
+          echo "commit_time=$(git show -s --format=%cI ${{ github.sha }})" >> $GITHUB_OUTPUT
+          echo "rasa_pro_version=$(poetry version --short)" >> $GITHUB_OUTPUT
+          echo "archive_size_kb=$(du -sk ${{ steps.artifact.outputs.download-path }} | sed -n '$s/\t.*//p')" >> $GITHUB_OUTPUT
+
+      - name: Send metrics 🔊
+        run: |
+          curl --connect-timeout 5 \
+          --max-time 10 \
+          --retry 5 \
+          --retry-max-time 40 \
+          --location 'https://api.segment.io/v1/track' \
+          --header 'Content-Type: application/json' \
+          --data-raw '{
+              "event": "pip_install",
+              "userId": "rasa_pro_ci",
+              "writeKey": "${{ secrets.RASA_CI_SEGMENT_WRITE_KEY }}",
+              "properties": {
+                "sha": "${{ github.sha }}",
+                "installation_time_ms": ${{ steps.installation.outputs.installation_time }},
+                "commit_time": "${{ steps.installation.outputs.commit_time }}",
+                "rasa_pro_version": "${{ steps.installation.outputs.rasa_pro_version }}",
+                "archive_size_kb": ${{ steps.installation.outputs.archive_size_kb }}
+              },
+              "context": {
+                "python_version": "${{ env.PYTHON_VERSION }}"
+              }
+          }' > response.txt
+
+          cat response.txt
+          SUCCESS=$(cat response.txt | jq .success)
+          if [[ "$SUCCESS" == "false" ]]; then
+            echo "Error calling Segment API"
+            exit 1
+          fi
+
+  send_slack_notification_on_failure:
+    name: Notify Slack
+    runs-on: ubuntu-22.04
+    if: always()
+    needs:
+      - check_installation_performance
+
+    steps:
+      - name: Notify Slack of failure ⛔️
+        # send notification if 'test' is skipped (previous needed job failed) or failed
+        if: needs.check_installation_performance.result != 'success'
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_RELEASE_ASSISTANT_ATOM_ALERTS_WEBHOOK }}
+        uses: Ilshidur/action-slack@689ad44a9c9092315abd286d0e3a9a74d31ab78a
+        with:
+          args: "⛔️ *Rasa Pro performance checks* failed 😱! Please check out GitHub Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"

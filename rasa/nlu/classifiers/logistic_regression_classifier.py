@@ -1,7 +1,7 @@
-import logging
 from typing import Any, Text, Dict, List, Type, Tuple
 
 import joblib
+import structlog
 from scipy.sparse import hstack, vstack, csr_matrix
 from sklearn.linear_model import LogisticRegression
 
@@ -17,7 +17,7 @@ from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.constants import TEXT, INTENT
 from rasa.utils.tensorflow.constants import RANKING_LENGTH
 
-logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger()
 
 
 @DefaultV1Recipe.register(
@@ -115,11 +115,24 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
 
     def train(self, training_data: TrainingData) -> Resource:
         """Train the intent classifier on a data set."""
+        if not training_data.intent_examples:
+            structlogger.warning(
+                "logistic_regression_classifier.not_able_to_train",
+                event_info=(
+                    f"Cannot train '{self.__class__.__name__}'. No data was provided. "
+                    f"Skipping training of the classifier."
+                ),
+            )
+            return self._resource
+
         X, y = self._create_training_matrix(training_data)
         if X.shape[0] == 0:
-            logger.debug(
-                f"Cannot train '{self.__class__.__name__}'. No data was provided. "
-                f"Skipping training of the classifier."
+            structlogger.debug(
+                "logistic_regression_classifier.not_able_to_train",
+                event_info=(
+                    f"Cannot train '{self.__class__.__name__}'. No data was provided. "
+                    f"Skipping training of the classifier."
+                ),
             )
             return self._resource
 
@@ -161,7 +174,10 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
         with self._model_storage.write_to(self._resource) as model_dir:
             path = model_dir / f"{self._resource.name}.joblib"
             joblib.dump(self.clf, path)
-            logger.debug(f"Saved intent classifier to '{path}'.")
+            structlogger.debug(
+                "logistic_regression_classifier.persist",
+                event_info=f"Saved intent classifier to '{path}'.",
+            )
 
     @classmethod
     def load(
@@ -182,9 +198,12 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
                 component.clf = classifier
                 return component
         except ValueError:
-            logger.debug(
-                f"Failed to load {cls.__class__.__name__} from model storage. Resource "
-                f"'{resource.name}' doesn't exist."
+            structlogger.debug(
+                "logistic_regression_classifier.load",
+                event_info=(
+                    f"Failed to load {cls.__class__.__name__} from model storage. "
+                    f"Resource '{resource.name}' doesn't exist."
+                ),
             )
             return cls.create(config, model_storage, resource, execution_context)
 
