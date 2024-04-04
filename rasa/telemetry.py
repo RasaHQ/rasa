@@ -150,6 +150,7 @@ LLM_COMMAND_GENERATOR_CUSTOM_PROMPT_USED = "llm_command_generator_custom_prompt_
 FLOW_RETRIEVAL_ENABLED = "flow_retrieval_enabled"
 FLOW_RETRIEVAL_EMBEDDING_MODEL_NAME = "flow_retrieval_embedding_model_name"
 TRACING_BACKEND = "tracing_backend"
+METRICS_BACKEND = "metrics_backend"
 VERSION = "version"
 
 
@@ -1505,16 +1506,55 @@ def identify_endpoint_config_traits(
 
     Otherwise, sets traits to None.
     """
-    import rasa.utils.endpoints
-    from rasa.anonymization.anonymisation_rule_yaml_reader import (
-        KEY_ANONYMIZATION_RULES,
-    )
-    from rasa.tracing.config import ENDPOINTS_TRACING_KEY
+    traits: Dict[str, Any] = {}
 
-    traits = {}
+    traits = append_tracing_trait(traits, endpoints_file)
+    traits = append_metrics_trait(traits, endpoints_file)
+    traits = append_anonymization_trait(traits, endpoints_file)
+
+    _identify(traits, context)
+
+
+def append_tracing_trait(
+    traits: Dict[str, Any], endpoints_file: Optional[str]
+) -> Dict[str, Any]:
+    """Append the tracing trait to the traits dictionary."""
+    import rasa.utils.endpoints
+    from rasa.tracing.constants import ENDPOINTS_TRACING_KEY
 
     tracing_config = rasa.utils.endpoints.read_endpoint_config(
         endpoints_file, ENDPOINTS_TRACING_KEY
+    )
+    traits[TRACING_BACKEND] = (
+        tracing_config.type if tracing_config is not None else None
+    )
+
+    return traits
+
+
+def append_metrics_trait(
+    traits: Dict[str, Any], endpoints_file: Optional[str]
+) -> Dict[str, Any]:
+    """Append the metrics trait to the traits dictionary."""
+    import rasa.utils.endpoints
+    from rasa.tracing.constants import ENDPOINTS_METRICS_KEY
+
+    metrics_config = rasa.utils.endpoints.read_endpoint_config(
+        endpoints_file, ENDPOINTS_METRICS_KEY
+    )
+    traits[METRICS_BACKEND] = (
+        metrics_config.type if metrics_config is not None else None
+    )
+
+    return traits
+
+
+def append_anonymization_trait(
+    traits: Dict[str, Any], endpoints_file: Optional[str]
+) -> Dict[str, Any]:
+    """Append the anonymization trait to the traits dictionary."""
+    from rasa.anonymization.anonymisation_rule_yaml_reader import (
+        KEY_ANONYMIZATION_RULES,
     )
 
     anonymization_config = rasa.anonymization.utils.read_endpoint_config(
@@ -1526,7 +1566,5 @@ def identify_endpoint_config_traits(
     ] = rasa.anonymization.utils.extract_anonymization_traits(
         anonymization_config, KEY_ANONYMIZATION_RULES
     )
-    traits[TRACING_BACKEND] = (
-        tracing_config.type if tracing_config is not None else None
-    )
-    _identify(traits, context)
+
+    return traits

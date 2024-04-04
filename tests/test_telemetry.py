@@ -14,6 +14,7 @@ import responses
 from rasa import telemetry
 import rasa.constants
 import rasa.utils.licensing
+from rasa.anonymization.anonymisation_rule_yaml_reader import KEY_ANONYMIZATION_RULES
 from rasa.dialogue_understanding.generator.llm_command_generator import (
     DEFAULT_LLM_CONFIG as LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG,
 )
@@ -23,6 +24,7 @@ from rasa.dialogue_understanding.generator.flow_retrieval import (
 
 from rasa.e2e_test.e2e_test_case import TestCase, Fixture
 from rasa.telemetry import (
+    METRICS_BACKEND,
     SEGMENT_IDENTIFY_ENDPOINT,
     SEGMENT_REQUEST_TIMEOUT,
     SEGMENT_TRACK_ENDPOINT,
@@ -38,7 +40,6 @@ from rasa.telemetry import (
     _get_llm_command_generator_config,
 )
 from rasa.utils.licensing import LICENSE_ENV_VAR
-from tests.tracing.conftest import TRACING_TESTS_FIXTURES_DIRECTORY
 
 TELEMETRY_TEST_USER = "083642a3e448423ca652134f00e7fc76"  # just some random static id
 TELEMETRY_TEST_KEY = "5640e893c1324090bff26f655456caf3"  # just some random static id
@@ -536,24 +537,26 @@ def test_identify_sends_telemetry_id(monkeypatch: MonkeyPatch) -> None:
 
 
 @pytest.mark.parametrize(
-    "tracing_backend, endpoints_file",
+    "tracing_backend, metrics_backend, endpoints_file",
     [
         (
-            "jaeger",
-            "jaeger_endpoints.yml",
+            "otlp",
+            "otlp",
+            "identify_telemetry_endpoints.yml",
         )
     ],
 )
 def test_segment_gets_called_for_identify(
-    tracing_backend: Text,
-    endpoints_file: Text,
-    valid_license: Text,
+    tracing_backend: str,
+    metrics_backend: str,
+    endpoints_file: str,
+    valid_license: str,
     monkeypatch: MonkeyPatch,
 ) -> None:
     monkeypatch.setenv(LICENSE_ENV_VAR, valid_license)
     monkeypatch.setenv(TELEMETRY_WRITE_KEY_ENVIRONMENT_VARIABLE, "foobar")
     monkeypatch.setenv(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE, "true")
-    endpoints_file = str(TRACING_TESTS_FIXTURES_DIRECTORY / endpoints_file)
+    endpoints_file = f"data/test_endpoints/{endpoints_file}"
     telemetry.initialize_telemetry()
 
     with responses.RequestsMock() as rsps:
@@ -574,6 +577,19 @@ def test_segment_gets_called_for_identify(
 
         assert "userId" in b
         assert b["traits"][TRACING_BACKEND] == tracing_backend
+        assert b["traits"][METRICS_BACKEND] == metrics_backend
+        assert b["traits"][KEY_ANONYMIZATION_RULES] == {
+            "enabled": True,
+            "metadata": {
+                "language": "en",
+                "model_provider": "spacy",
+                "model_name": "en_core_web_lg",
+            },
+            "number_of_rule_lists": 1,
+            "number_of_rules": 2,
+            "substitutions": {"mask": 2, "faker": 0, "text": 0, "not_defined": 0},
+            "entities": ["CREDIT_CARD", "IBAN_CODE"],
+        }
         assert (
             b["context"]["license_hash"]
             == hashlib.sha256(valid_license.encode("utf-8")).hexdigest()
@@ -621,6 +637,8 @@ def test_identify_sets_default_traits(
 
         assert "userId" in b
         assert b["traits"][TRACING_BACKEND] is None
+        assert b["traits"][METRICS_BACKEND] is None
+        assert b["traits"][KEY_ANONYMIZATION_RULES] == {"enabled": False}
         assert (
             b["context"]["license_hash"]
             == hashlib.sha256(valid_license.encode("utf-8")).hexdigest()
