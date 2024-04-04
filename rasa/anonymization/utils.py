@@ -84,7 +84,10 @@ def extract_anonymization_traits(
             traits["substitutions"][rule.get("substitution", "not_defined")] += 1
             traits["entities"].add(rule.get("entity"))
 
-    traits["entities"] = list(traits["entities"])
+    entities = list(traits["entities"])
+    entities.sort()
+    traits["entities"] = entities
+
     return traits
 
 
