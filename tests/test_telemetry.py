@@ -577,7 +577,7 @@ def test_segment_gets_called_for_identify(
 
         assert "userId" in b
         assert b["traits"][TRACING_BACKEND] == tracing_backend
-        assert b["traits"][METRICS_BACKEND] == "otlp"
+        assert b["traits"][METRICS_BACKEND] == metrics_backend
         assert b["traits"][KEY_ANONYMIZATION_RULES] == {
             "enabled": True,
             "metadata": {
