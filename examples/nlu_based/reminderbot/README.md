@@ -31,7 +31,7 @@ To train and chat with `reminderbot`, execute the following steps:
     ```
 
 3. To test this example, run a
-   [callback channel](https://rasa.com/docs/rasa/connectors/your-own-website#callbackinput).
+   [callback channel](https://rasa.com/docs/rasa-pro/connectors/your-own-website#callbackinput).
    In a separate console window from where you ran the step 2 command:
     ```
     python callback_server.py
