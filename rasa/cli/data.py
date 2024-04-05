@@ -147,7 +147,7 @@ def _add_data_validate_parsers(
 
 def _build_training_data_importer(args: argparse.Namespace) -> "TrainingDataImporter":
     config = rasa.cli.utils.get_validated_path(
-        args.config, "config", DEFAULT_CONFIG_PATH, none_is_valid=True
+        args.config, "config", DEFAULT_CONFIG_PATH, none_is_valid=False
     )
 
     # Exit the validation if the domain path is invalid
