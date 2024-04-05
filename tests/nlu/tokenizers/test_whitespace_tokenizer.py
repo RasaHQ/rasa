@@ -66,7 +66,7 @@ def create_whitespace_tokenizer(config: Optional[Dict] = None) -> WhitespaceToke
                 "client=safari&rls=en&q=i+like+rasa&ie=UTF-8&oe=UTF-8",
                 "https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#whitespacetokenizer",
             ],
-            [(0, 82), (83, 140)],
+            [(0, 82), (83, 165)],
         ),
         (
             "Joselico gracias Dois 🙏🇺🇸🏦🛠🔥⭐️🦅👑💪",
