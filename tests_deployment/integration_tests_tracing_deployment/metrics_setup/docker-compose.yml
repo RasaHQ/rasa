@@ -21,7 +21,7 @@ services:
       - "./certs:/app/certs"
     networks: [ 'rasa-pro-network' ]
     entrypoint: ""
-    command: rasa run -p 5005 --enable-api
+    command: rasa run -p 5005 --enable-api && chmod -R 777 /opt/venv/lib/python3.10/site-packages/
     ports:
       - "5005:5005"
     environment:
@@ -32,7 +32,6 @@ services:
         condition: service_started
       action-server:
         condition: service_started
-    user: root
 
  otlp-collector:
    image: otel/opentelemetry-collector:0.96.0
