@@ -181,6 +181,14 @@ jobs:
           pip install -U github3.py pep440-version-utils
           python3 scripts/publish_gh_release_notes.py
 
+      - name: Update CMS with new release record
+        uses: RasaHQ/push-release-record-to-datocms-gha@1be87116d0a2b555bd5b291ea5923ce5b7aeb83e
+        # this step only has an effect for new majors and minors; the action skips other versions
+        with:
+          dato-cms-api-key: ${{ secrets.DATO_CMS_API_KEY }}
+          product-name: "Rasa Pro"
+          build-trigger-id: ${{ vars.DATO_CMS_BUILD_TRIGGER_ID }}
+
       - name: Notify Slack of successful release 💬
         if: success()
         uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 #v 1.25.0
