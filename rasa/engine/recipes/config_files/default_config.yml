@@ -1,5 +1,5 @@
 # The config recipe.
-# https://rasa.com/docs/rasa/model-configuration/
+# https://rasa.com/docs/rasa-pro/nlu-based-assistants/model-configuration/
 recipe: default.v1
 
 # The assistant project unique identifier
@@ -7,7 +7,7 @@ recipe: default.v1
 assistant_id: placeholder_default
 
 # Configuration for the Rasa NLU components.
-# https://rasa.com/docs/rasa/components
+# https://rasa.com/docs/rasa-pro/nlu-based-assistants/components
 language: en
 
 pipeline:
@@ -31,7 +31,7 @@ pipeline:
     ambiguity_threshold: 0.1
 
 # Configuration for the Rasa Core policies.
-# https://rasa.com/docs/rasa/policies
+# https://rasa.com/docs/rasa-pro/concepts/policies/policy-overview/
 policies:
   - name: MemoizationPolicy
   - name: RulePolicy
