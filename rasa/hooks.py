@@ -12,7 +12,6 @@ from rasa.core.auth_retry_tracker_store import AuthRetryTrackerStore
 from rasa.core.secrets_manager.factory import load_secret_manager
 
 from rasa.tracing import config
-from rasa.utils.licensing import retrieve_license_from_env
 
 if TYPE_CHECKING:
     from rasa.core.brokers.broker import EventBroker
