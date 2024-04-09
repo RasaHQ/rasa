@@ -1,5 +1,5 @@
 # Configuration for Rasa NLU.
-# https://rasa.com/docs/rasa/components
+# https://rasa.com/docs/rasa-pro/nlu-based-assistants/components
 recipe: default.v1
 # The assistant project unique identifier
 assistant_id: unique_stack_assistant_test_name
@@ -9,7 +9,7 @@ pipeline:
   - name: RegexEntityExtractor
 
 # Configuration for Rasa Core.
-# https://rasa.com/docs/rasa/policies
+# https://rasa.com/docs/rasa-pro/concepts/policies/policy-overview/
 policies:
   - name: MemoizationPolicy
   - name: RulePolicy

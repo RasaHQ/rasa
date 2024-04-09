@@ -62,7 +62,7 @@ class Qdrant_Store(InformationRetrieval):
             metadata_payload_key=params.get("metadata_payload_key", "metadata"),
         )
 
-    def search(self, query: Text, threshold: float = 0.0) -> List["Document"]:
+    async def search(self, query: Text, threshold: float = 0.0) -> List["Document"]:
         """Search for a document in the Qdrant vector store.
 
         Args:
@@ -70,10 +70,13 @@ class Qdrant_Store(InformationRetrieval):
             threshold: minimum similarity score to consider a document a match.
 
         Returns:
-        A list of documents that match the query."""
+        A list of documents that match the query.
+        """
         logger.info("information_retrieval.qdrant_store.search", query=query)
         try:
-            hits = self.client.similarity_search(query, k=4, score_threshold=threshold)
+            hits = await self.client.asimilarity_search(
+                query, k=4, score_threshold=threshold
+            )
         except ValidationError as e:
             raise PayloadNotFoundException(
                 "Payload not found in the Qdrant response. Please make sure "

@@ -22,8 +22,13 @@ export const DiagramFlow = (props: Props) => {
   const activeStepId = stackFrame?.step_id;
   const flow = flows.find(({ id }) => id === activeFlowId);
 
+  const config = {
+    startOnLoad: true,
+    logLevel: 'info',
+  }
+
   useEffect(() => {
-    mermaid.mermaidAPI.initialize({ startOnLoad: true });
+    mermaid.mermaidAPI.initialize(config);
   }, []);
 
   useEffect(() => {

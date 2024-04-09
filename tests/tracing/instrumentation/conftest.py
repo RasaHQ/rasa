@@ -324,7 +324,7 @@ class MockLLMCommandgenerator(LLMCommandGenerator):
                 f"instrumentation needs to be adapted!"
             )
 
-    def _generate_action_list_using_llm(self, prompt: str) -> Optional[str]:
+    async def _generate_action_list_using_llm(self, prompt: str) -> Optional[str]:
         pass
 
 
@@ -379,7 +379,10 @@ class MockContextualResponseRephraser(ContextualResponseRephraser):
                 f"instrumentation needs to be adapted!"
             )
 
-    def _generate_llm_response(self, prompt: str) -> Optional[str]:
+    async def _generate_llm_response(self, prompt: str) -> Optional[str]:
+        pass
+
+    async def _create_history(self, tracker: DialogueStateTracker) -> Optional[str]:
         pass
 
     async def generate(
@@ -416,7 +419,7 @@ def model_configuration(
 
 
 class MockPolicy(Policy):
-    def predict_action_probabilities(
+    async def predict_action_probabilities(
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
@@ -505,7 +508,7 @@ class MockNLUCommandAdapter(NLUCommandAdapter):
         self.fail_if_undefined("predict_commands")
         super().__init__(config, model_storage, resource)
 
-    def predict_commands(
+    async def predict_commands(
         self,
         message: Message,
         flows: FlowsList,

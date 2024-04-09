@@ -10,7 +10,7 @@ from rasa.core.information_retrieval.information_retrieval import (
 )
 
 
-def test_faiss_search_raises_custom_exception(
+async def test_faiss_search_raises_custom_exception(
     monkeypatch: MonkeyPatch,
     embeddings: Embeddings,
 ) -> None:
@@ -34,7 +34,7 @@ def test_faiss_search_raises_custom_exception(
     )
 
     with pytest.raises(InformationRetrievalException) as e:
-        faiss_store.search("test")
+        await faiss_store.search("test")
 
     assert (
         f"An error occurred while searching for documents: {base_exception_msg}"

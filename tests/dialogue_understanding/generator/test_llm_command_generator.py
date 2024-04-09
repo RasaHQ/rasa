@@ -2,7 +2,7 @@ import os.path
 import uuid
 from pathlib import Path
 from typing import Optional, Dict, Text, Any
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, AsyncMock
 
 import pytest
 from _pytest.tmpdir import TempPathFactory
@@ -168,31 +168,31 @@ class TestLLMCommandGenerator:
         )
         assert generator.user_input_config.max_characters == expected_limit
 
-    def test_predict_commands_with_no_flows(
+    async def test_predict_commands_with_no_flows(
         self, command_generator: LLMCommandGenerator, tracker: DialogueStateTracker
     ):
         """Test that predict_commands returns an empty list when flows is None."""
         # Given
         empty_flows = FlowsList(underlying_flows=[])
         # When
-        predicted_commands = command_generator.predict_commands(
+        predicted_commands = await command_generator.predict_commands(
             Mock(), flows=empty_flows, tracker=tracker
         )
         # Then
         assert not predicted_commands
 
-    def test_predict_commands_with_no_tracker(
+    async def test_predict_commands_with_no_tracker(
         self, command_generator: LLMCommandGenerator
     ):
         """Test that predict_commands returns an empty list when tracker is None."""
         # When
-        predicted_commands = command_generator.predict_commands(
+        predicted_commands = await command_generator.predict_commands(
             Mock(), flows=Mock(), tracker=None
         )
         # Then
         assert not predicted_commands
 
-    def test_predict_commands_sets_routing_slot(
+    async def test_predict_commands_sets_routing_slot(
         self,
         command_generator: LLMCommandGenerator,
         flows: FlowsList,
@@ -204,8 +204,11 @@ class TestLLMCommandGenerator:
             "rasa.dialogue_understanding.generator.llm_command_generator.llm_factory",
             Mock(),
         ) as mock_llm_factory:
-            mock_llm_factory.return_value = Mock(return_value="StartFlow(test_flow)")
-            predicted_commands = command_generator.predict_commands(
+            llm_mock = Mock()
+            apredict_mock = AsyncMock(return_value="StartFlow(test_flow)")
+            llm_mock.apredict = apredict_mock
+            mock_llm_factory.return_value = llm_mock
+            predicted_commands = await command_generator.predict_commands(
                 Message.build(text="start test_flow"),
                 flows=flows,
                 tracker=tracker_with_routing_slot,
@@ -256,7 +259,7 @@ class TestLLMCommandGenerator:
     @patch(
         "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.filter_flows"
     )
-    def test_predict_commands(
+    async def test_predict_commands(
         self,
         mock_flow_retrieval_filter_flows: Mock,
         mock_render_template: Mock,
@@ -283,14 +286,14 @@ class TestLLMCommandGenerator:
         mock_message = Mock()
         mock_message.data = {TEXT: "some_message"}
         # When
-        predicted_commands = command_generator.predict_commands(
+        predicted_commands = await command_generator.predict_commands(
             message=mock_message, flows=test_flows, tracker=tracker_with_routing_slot
         )
         # Then
         mock_flow_retrieval_filter_flows.assert_called_once()
         assert predicted_commands == expected_commands
 
-    def test_generate_action_list_calls_llm_factory_correctly(
+    async def test_generate_action_list_calls_llm_factory_correctly(
         self,
         command_generator: LLMCommandGenerator,
     ):
@@ -308,11 +311,11 @@ class TestLLMCommandGenerator:
             "rasa.dialogue_understanding.generator.llm_command_generator.llm_factory",
             Mock(),
         ) as mock_llm_factory:
-            command_generator._generate_action_list_using_llm("some prompt")
+            await command_generator._generate_action_list_using_llm("some prompt")
             # Then
             mock_llm_factory.assert_called_once_with(None, llm_config)
 
-    def test_generate_action_list_calls_llm_correctly(
+    async def test_generate_action_list_calls_llm_correctly(
         self,
         command_generator: LLMCommandGenerator,
     ):
@@ -322,13 +325,16 @@ class TestLLMCommandGenerator:
             "rasa.dialogue_understanding.generator.llm_command_generator.llm_factory",
             Mock(),
         ) as mock_llm_factory:
-            mock_llm_factory.return_value = Mock()
+            llm_mock = Mock()
+            predict_mock = AsyncMock()
+            llm_mock.apredict = predict_mock
+            mock_llm_factory.return_value = llm_mock
             # When
-            command_generator._generate_action_list_using_llm("some prompt")
+            await command_generator._generate_action_list_using_llm("some prompt")
             # Then
-            mock_llm_factory.return_value.assert_called_once_with("some prompt")
+            predict_mock.assert_called_once_with("some prompt")
 
-    def test_generate_action_list_catches_llm_exception(
+    async def test_generate_action_list_catches_llm_exception(
         self,
         command_generator: LLMCommandGenerator,
     ):
@@ -340,7 +346,7 @@ class TestLLMCommandGenerator:
             Mock(return_value=mock_llm),
         ):
             with capture_logs() as logs:
-                command_generator._generate_action_list_using_llm("some prompt")
+                await command_generator._generate_action_list_using_llm("some prompt")
                 # Then
                 print(logs)
                 assert len(logs) == 1
@@ -527,7 +533,7 @@ class TestLLMCommandGenerator:
             LLMCommandGenerator, "get_nullable_slot_value", Mock(return_value=None)
         ):
             parsed_commands = LLMCommandGenerator.parse_commands(
-                input_action, test_flows
+                input_action, Mock(), test_flows
             )
         # Then
         assert parsed_commands == expected_command
@@ -567,7 +573,9 @@ class TestLLMCommandGenerator:
                   collect: some_slot
             """
         )
-        parsed_commands = LLMCommandGenerator.parse_commands(input_action, test_flows)
+        parsed_commands = LLMCommandGenerator.parse_commands(
+            input_action, Mock(), test_flows
+        )
         # Then
         assert parsed_commands == expected_command
 
