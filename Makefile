@@ -253,4 +253,4 @@ stop-metrics-integration-containers:
 	docker compose -f tests_deployment/integration_tests_tracing_deployment/metrics_setup/docker-compose.yml down
 
 test-metrics-integration:
-	poetry run pytest $(METRICS_INTEGRATION_TEST_PATH) -n $(JOBS)
+	poetry run pytest $(METRICS_INTEGRATION_TEST_PATH) -n $(JOBS) --junitxml=report_metric.xml
