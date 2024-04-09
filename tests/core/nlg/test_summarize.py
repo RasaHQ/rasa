@@ -27,7 +27,7 @@ def mocked_openai_complete_response(text: str) -> Any:
     )
 
 
-def test_summarize_conversation_handles_openai_exception(
+async def test_summarize_conversation_handles_openai_exception(
     monkeypatch: MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("OPENAI_API_KEY", "test")
@@ -45,10 +45,10 @@ def test_summarize_conversation_handles_openai_exception(
 
         # should fallback to transcript
         llm = OpenAI()
-        assert summarize_conversation(tracker, llm) == "USER: Hello"
+        assert await summarize_conversation(tracker, llm) == "USER: Hello"
 
 
-def test_summarize_conversation_handles_openai_response() -> None:
+async def test_summarize_conversation_handles_openai_response() -> None:
     tracker = DialogueStateTracker.from_events(
         "test",
         [
@@ -57,10 +57,10 @@ def test_summarize_conversation_handles_openai_response() -> None:
     )
     llm = FakeListLLM(responses=["User says hello."])
     # should use response from openai
-    assert summarize_conversation(tracker, llm) == "User says hello."
+    assert await summarize_conversation(tracker, llm) == "User says hello."
 
 
-def test_summarize_conversation_strips_whitespace() -> None:
+async def test_summarize_conversation_strips_whitespace() -> None:
     tracker = DialogueStateTracker.from_events(
         "test",
         [
@@ -70,4 +70,4 @@ def test_summarize_conversation_strips_whitespace() -> None:
     llm = FakeListLLM(responses=["     User says hello. "])
 
     # should strip whitespace from response
-    assert summarize_conversation(tracker, llm) == "User says hello."
+    assert await summarize_conversation(tracker, llm) == "User says hello."

@@ -1,6 +1,9 @@
 version: 2
 updates:
   - package-ecosystem: pip
+    # we enforce `increase` here because it ensures that we maintain a small range of
+    # compatible versions; it speeds up installation with pip for our customers
+    versioning-strategy: increase
     directory: "/"
     schedule:
       interval: weekly

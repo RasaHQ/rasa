@@ -84,6 +84,14 @@ class SlotTestCollection:
         dimensions = slot.feature_dimensionality()
         assert dimensions == 0
 
+    def test_none_is_valid_value(self, mappings: List[Dict[Text, Any]]):
+        slot = self.create_slot(mappings=mappings, influence_conversation=False)
+        assert slot.is_valid_value(None)
+
+    def test_none_stays_none_when_coercing(self, mappings: List[Dict[Text, Any]]):
+        slot = self.create_slot(mappings=mappings, influence_conversation=False)
+        assert slot.coerce_value(None) is None
+
     def test_has_a_type_name(self, mappings: List[Dict[Text, Any]]):
         slot = self.create_slot(mappings=mappings, influence_conversation=True)
         assert slot.type_name is not None
@@ -316,6 +324,73 @@ class TestCategoricalSlot(SlotTestCollection):
     )
     def value_feature_pair(self, request: SubRequest) -> Tuple[Any, List[float]]:
         return request.param
+
+    @pytest.mark.parametrize(
+        "value", [1, "two", "小于", {"three": 3}, "nOnE", "None", "null", None]
+    )
+    def test_is_valid_value(self, value):
+        slot = self.create_slot(mappings=[], influence_conversation=False)
+        assert slot.is_valid_value(value)
+
+    def test_is_invalid_value(self):
+        slot = self.create_slot(mappings=[], influence_conversation=False)
+        assert not slot.is_valid_value("unseen value")
+
+    def test_setting_value_coerces_case_lowercase(self):
+        slot = self.create_slot(mappings=[], influence_conversation=False)
+        slot.value = "TWO"
+        assert slot.value == "two"
+
+    def test_setting_value_coerces_case_uppercase(self):
+        slot = self.create_slot(mappings=[], influence_conversation=False)
+        slot.value = "none"
+        assert slot.value == "nOnE"
+
+    def test_setting_value_coerces_case_only_if_exact_match_is_not_found(self):
+        slot = self.create_slot(mappings=[], influence_conversation=False)
+        slot.value = "nOnE"
+        assert slot.value == "nOnE"
+
+        slot.value = "None"
+        assert slot.value == "None"
+
+    def test_stores_value_as_if_not_found(self):
+        slot = self.create_slot(mappings=[], influence_conversation=False)
+        slot.value = "unseen value"
+        assert slot.value == "unseen value"
+
+    @pytest.mark.parametrize(
+        "value, expected",
+        [
+            (None, None),
+            (1, 1),
+            ("two", "two"),
+            ("TWO", "two"),
+            ("小于", "小于"),
+            ({"three": 3}, {"three": 3}),
+            ("nOnE", "nOnE"),
+            ("None", "None"),
+            ("null", "null"),
+            ("unseen value", "unseen value"),
+        ],
+    )
+    def test_coerces_values(self, value: Any, expected: Any):
+        slot = self.create_slot(mappings=[], influence_conversation=False)
+        assert slot.coerce_value(value) == expected
+
+    def test_raises_warning_on_coerced_duplicate(self):
+        with pytest.warns(UserWarning) as records:
+            CategoricalSlot(
+                "test",
+                mappings=[],
+                values=[1, "two", "TWO"],
+            )
+
+        assert len(records) == 1
+        assert (
+            "Multiple values are coerced to the same value"
+            in records[0].message.args[0]
+        )
 
 
 class TestCategoricalSlotDefaultValue(SlotTestCollection):

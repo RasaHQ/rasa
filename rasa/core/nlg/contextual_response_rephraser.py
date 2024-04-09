@@ -106,7 +106,7 @@ class ContextualResponseRephraser(TemplatedNaturalLanguageGenerator):
                 return None
         return None
 
-    def _generate_llm_response(self, prompt: str) -> Optional[str]:
+    async def _generate_llm_response(self, prompt: str) -> Optional[str]:
         """Use LLM to generate a response.
 
         Args:
@@ -118,7 +118,7 @@ class ContextualResponseRephraser(TemplatedNaturalLanguageGenerator):
         llm = llm_factory(self.nlg_endpoint.kwargs.get("llm"), DEFAULT_LLM_CONFIG)
 
         try:
-            return llm(prompt)
+            return await llm.apredict(prompt)
         except Exception as e:
             # unfortunately, langchain does not wrap LLM exceptions which means
             # we have to catch all exceptions here
@@ -151,7 +151,7 @@ class ContextualResponseRephraser(TemplatedNaturalLanguageGenerator):
             RESPONSE_REPHRASING_TEMPLATE_KEY, self.prompt_template
         )
 
-    def _create_history(self, tracker: DialogueStateTracker) -> str:
+    async def _create_history(self, tracker: DialogueStateTracker) -> str:
         """Creates the history for the prompt.
 
         Args:
@@ -162,9 +162,9 @@ class ContextualResponseRephraser(TemplatedNaturalLanguageGenerator):
         The history for the prompt.
         """
         llm = llm_factory(self.nlg_endpoint.kwargs.get("llm"), DEFAULT_LLM_CONFIG)
-        return summarize_conversation(tracker, llm, max_turns=5)
+        return await summarize_conversation(tracker, llm, max_turns=5)
 
-    def rephrase(
+    async def rephrase(
         self,
         response: Dict[str, Any],
         tracker: DialogueStateTracker,
@@ -188,7 +188,7 @@ class ContextualResponseRephraser(TemplatedNaturalLanguageGenerator):
         prompt_template_text = self._template_for_response_rephrasing(response)
 
         prompt = Template(prompt_template_text).render(
-            history=self._create_history(tracker),
+            history=await self._create_history(tracker),
             suggested_response=response_text,
             current_input=current_input,
             slots=tracker.current_slot_values(),
@@ -205,7 +205,7 @@ class ContextualResponseRephraser(TemplatedNaturalLanguageGenerator):
             llm_type=self.llm_property("_type"),
             llm_model=self.llm_property("model") or self.llm_property("model_name"),
         )
-        if not (updated_text := self._generate_llm_response(prompt)):
+        if not (updated_text := await self._generate_llm_response(prompt)):
             # If the LLM fails to generate a response, we
             # return the original response.
             return response
@@ -262,7 +262,7 @@ class ContextualResponseRephraser(TemplatedNaturalLanguageGenerator):
         if templated_response and self.does_response_allow_rephrasing(
             templated_response
         ):
-            return self.rephrase(
+            return await self.rephrase(
                 templated_response,
                 tracker,
             )

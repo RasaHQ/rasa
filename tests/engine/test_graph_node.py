@@ -20,7 +20,7 @@ from tests.engine.graph_components_test_classes import (
 )
 
 
-def test_calling_component(default_model_storage: ModelStorage):
+async def test_calling_component(default_model_storage: ModelStorage):
     node = GraphNode(
         node_name="add_node",
         component_class=AddInputs,
@@ -34,13 +34,13 @@ def test_calling_component(default_model_storage: ModelStorage):
         execution_context=ExecutionContext(GraphSchema({}), "1"),
     )
 
-    result = node(("input_node1", 3), ("input_node2", 4))
+    result = await node(("input_node1", 3), ("input_node2", 4))
 
     assert result == ("add_node", 7)
 
 
 @pytest.mark.parametrize("x, output", [(None, 5), (0, 5), (1, 4), (2, 3)])
-def test_component_config(
+async def test_component_config(
     x: Optional[int], output: int, default_model_storage: ModelStorage
 ):
     node = GraphNode(
@@ -56,12 +56,12 @@ def test_component_config(
         execution_context=ExecutionContext(GraphSchema({}), "1"),
     )
 
-    result = node(("input_node", 5))
+    result = await node(("input_node", 5))
 
     assert result == ("subtract", output)
 
 
-def test_can_use_alternate_constructor(default_model_storage: ModelStorage):
+async def test_can_use_alternate_constructor(default_model_storage: ModelStorage):
     node = GraphNode(
         node_name="provide",
         component_class=ProvideX,
@@ -75,12 +75,12 @@ def test_can_use_alternate_constructor(default_model_storage: ModelStorage):
         execution_context=ExecutionContext(GraphSchema({}), "1"),
     )
 
-    result = node()
+    result = await node()
     assert result == ("provide", 2)
 
 
 @pytest.mark.parametrize("eager", [True, False])
-def test_eager_and_not_eager(eager: bool, default_model_storage: ModelStorage):
+async def test_eager_and_not_eager(eager: bool, default_model_storage: ModelStorage):
     run_mock = Mock()
     create_mock = Mock()
 
@@ -119,13 +119,15 @@ def test_eager_and_not_eager(eager: bool, default_model_storage: ModelStorage):
 
     assert not run_mock.called
 
-    node()
+    await node()
 
     assert create_mock.call_count == 1
     assert run_mock.called
 
 
-def test_non_eager_can_use_inputs_for_constructor(default_model_storage: ModelStorage):
+async def test_non_eager_can_use_inputs_for_constructor(
+    default_model_storage: ModelStorage,
+):
     node = GraphNode(
         node_name="provide",
         component_class=ProvideX,
@@ -139,12 +141,12 @@ def test_non_eager_can_use_inputs_for_constructor(default_model_storage: ModelSt
         execution_context=ExecutionContext(GraphSchema({}), "1"),
     )
 
-    result = node(("input_node", 5))
+    result = await node(("input_node", 5))
 
     assert result == ("provide", 5)
 
 
-def test_execution_context(default_model_storage: ModelStorage):
+async def test_execution_context(default_model_storage: ModelStorage):
     context = ExecutionContext(GraphSchema({}), "some_id")
     node = GraphNode(
         node_name="execution_context_aware",
@@ -161,7 +163,7 @@ def test_execution_context(default_model_storage: ModelStorage):
 
     context.model_id = "a_new_id"
 
-    result = node()[1]
+    result = (await node())[1]
     assert result.model_id == "some_id"
     assert result.node_name == "execution_context_aware"
 
@@ -196,7 +198,7 @@ def test_constructor_exception(default_model_storage: ModelStorage):
         )
 
 
-def test_fn_exception(default_model_storage: ModelStorage):
+async def test_fn_exception(default_model_storage: ModelStorage):
     class BadFn(GraphComponent):
         @classmethod
         def create(
@@ -225,10 +227,10 @@ def test_fn_exception(default_model_storage: ModelStorage):
     )
 
     with pytest.raises(GraphComponentException):
-        node()
+        await node()
 
 
-def test_writing_to_resource_during_training(default_model_storage: ModelStorage):
+async def test_writing_to_resource_during_training(default_model_storage: ModelStorage):
     node_name = "some_name"
 
     test_value_for_sub_directory = {"test": "test value sub dir"}
@@ -250,7 +252,7 @@ def test_writing_to_resource_during_training(default_model_storage: ModelStorage
         execution_context=ExecutionContext(GraphSchema({}), "123"),
     )
 
-    _, resource = node()
+    _, resource = await node()
 
     assert resource == Resource(node_name)
 
@@ -264,7 +266,7 @@ def test_writing_to_resource_during_training(default_model_storage: ModelStorage
         )
 
 
-def test_loading_from_resource_not_eager(default_model_storage: ModelStorage):
+async def test_loading_from_resource_not_eager(default_model_storage: ModelStorage):
     previous_resource = Resource("previous resource")
     parent_node_name = "parent"
     test_value = {"test": "test value"}
@@ -290,12 +292,12 @@ def test_loading_from_resource_not_eager(default_model_storage: ModelStorage):
         execution_context=ExecutionContext(GraphSchema({}), "123"),
     )
 
-    _, value = node((parent_node_name, previous_resource))
+    _, value = await node((parent_node_name, previous_resource))
 
     assert value == test_value
 
 
-def test_loading_from_resource_eager(default_model_storage: ModelStorage):
+async def test_loading_from_resource_eager(default_model_storage: ModelStorage):
     previous_resource = Resource("previous resource")
     test_value = {"test": "test value"}
 
@@ -320,7 +322,7 @@ def test_loading_from_resource_eager(default_model_storage: ModelStorage):
         execution_context=ExecutionContext(GraphSchema({}), "123"),
     )
 
-    actual_node_name, value = node()
+    actual_node_name, value = await node()
 
     assert actual_node_name == node_name
     assert value == test_value

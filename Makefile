@@ -101,8 +101,8 @@ types:
 static-checks: lint lint-security types
 
 prepare-spacy:
-	poetry run python -m spacy download en_core_web_md
-	poetry run python -m spacy download de_core_news_sm
+	poetry run python -m pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-3.7.1/en_core_web_md-3.7.1-py3-none-any.whl
+	poetry run python -m pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-3.7.0/de_core_news_sm-3.7.0-py3-none-any.whl
 
 prepare-mitie:
 	wget --progress=dot:giga -N -P data/ https://github.com/mit-nlp/MITIE/releases/download/v0.4/MITIE-models-v0.2.tar.bz2

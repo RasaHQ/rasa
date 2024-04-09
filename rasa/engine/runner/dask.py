@@ -3,7 +3,9 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, List, Optional, Text
 
-import dask
+import dask.local
+import dask.core
+import asyncio
 
 from rasa.engine.exceptions import GraphRunError
 from rasa.engine.graph import ExecutionContext, GraphNode, GraphNodeHook, GraphSchema
@@ -79,7 +81,7 @@ class DaskGraphRunner(GraphRunner):
         }
         return run_graph
 
-    def run(
+    async def run(
         self,
         inputs: Optional[Dict[Text, Any]] = None,
         targets: Optional[List[Text]] = None,
@@ -98,7 +100,7 @@ class DaskGraphRunner(GraphRunner):
         )
 
         try:
-            dask_result = dask.get(run_graph, run_targets)
+            dask_result = await execute_dask_graph(run_graph, run_targets)
             return dict(dask_result)
         except KeyError as e:
             raise GraphRunError(
@@ -122,3 +124,133 @@ class DaskGraphRunner(GraphRunner):
                     f"same as node names in the graph schema."
                 )
             graph[input_name] = (input_name, input_value)
+
+
+async def _execute_task(arg: Any, cache: Dict[str, Any]) -> Any:
+    """Do the actual work of collecting data and executing a function.
+
+    Examples:
+        >>> inc = lambda x: x + 1
+        >>> add = lambda x, y: x + y
+        >>> cache = {'x': 1, 'y': 2}
+
+        Compute tasks against a cache
+        >>> _execute_task((add, 'x', 1), cache)  # Compute task in naive manner
+        2
+        >>> _execute_task((add, (inc, 'x'), 1), cache)  # Support nested computation
+        3
+
+        Also grab data from cache
+        >>> _execute_task('x', cache)
+        1
+
+        Support nested lists
+        >>> list(_execute_task(['x', 'y'], cache))
+        [1, 2]
+
+        >>> list(map(list, _execute_task([['x', 'y'], ['y', 'x']], cache)))
+        [[1, 2], [2, 1]]
+
+        >>> _execute_task('foo', cache)  # Passes through on non-keys
+        'foo'
+
+    Args:
+        arg: The argument to execute (either a function and args or a value)
+        cache: A cache to store intermediate results
+
+    Returns:
+        The result of the computation.
+    """
+    if isinstance(arg, list):
+        return [await _execute_task(a, cache) for a in arg]
+    elif dask.core.istask(arg):  # type:ignore[no-untyped-call]
+        func, args = arg[0], arg[1:]
+        # Note: Don't assign the subtask results to a variable. numpy detects
+        # temporaries by their reference count and can execute certain
+        # operations in-place.
+        awaited_args = await asyncio.gather(*(_execute_task(a, cache) for a in args))
+        if hasattr(func, "__call__") and asyncio.iscoroutinefunction(func.__call__):
+            # in most cases, `func` will be an instance of `GraphNode`. rather
+            # than a function directly. `GraphNode` instances have a `__call__`
+            # method that is a coroutine function and will be called here.
+            return await func(*awaited_args)
+        else:
+            # This is based on the original dask implementation.
+            # I (tmbo) do not think that we will ever go down that else path,
+            # but I kept it for compatibility. All our graph nodes should be
+            # of type `GraphNode` and end up in the above if. But honestly,
+            # I am not 100% sure they always are, so I wanted to make sure
+            # that if there is a node that is not a GraphNode, it runs
+            # just fine with the prior behaviour.
+            return func(*awaited_args)
+    elif not dask.core.ishashable(arg):  # type:ignore[no-untyped-call]
+        return arg
+    elif arg in cache:
+        return cache[arg]
+    else:
+        return arg
+
+
+async def execute_dask_graph(dsk: Dict[str, Any], result: List[str]) -> Any:
+    """Asynchronous get function.
+
+    This is a general version of various asynchronous schedulers for dask.  It
+    takes a ``concurrent.futures.Executor.submit`` function to form a more
+    specific ``get`` method that walks through the dask array with parallel
+    workers, avoiding repeat computation and minimizing memory use.
+
+    Build on the version of `get_async` in `dask.local`. This version is
+    asynchronous and uses `asyncio` to manage the event loop. It is designed to
+    be used in an `async` function.
+
+    The default dask implementation uses an internal event loop, which means
+    blocking the outer event loop (e.g. sanic or webhooks).
+
+    Args:
+        dsk: A dask dictionary specifying a workflow
+        result: Keys corresponding to desired data
+
+    Returns:
+        The result keys values after computing the graph.
+    """
+    cache = None
+
+    results = set(result)
+
+    # if start_state_from_dask fails, we will have something
+    # to pass to the final block.
+    state = {}
+    keyorder = dask.local.order(dsk)  # type:ignore[no-untyped-call]
+
+    state = dask.local.start_state_from_dask(
+        dsk, cache=cache, sortkey=keyorder.get
+    )  # type:ignore[no-untyped-call]
+
+    if state["waiting"] and not state["ready"]:
+        raise ValueError("Found no accessible jobs in dask")
+
+    async def fire_task() -> None:
+        """Fire off a task to the thread pool."""
+        # start a new job
+        # Get the next task to compute (most recently added)
+        key = state["ready"].pop()
+        # Notify task is running
+        state["running"].add(key)
+
+        dependencies = dask.local.get_dependencies(
+            dsk, key
+        )  # type:ignore[no-untyped-call]
+        # Prep args to send
+        data = {dep: state["cache"][dep] for dep in dependencies}
+
+        task_result = await _execute_task(dsk[key], data)
+        state["cache"][key] = task_result
+        dask.local.finish_task(
+            dsk, key, state, results, keyorder.get
+        )  # type:ignore[no-untyped-call]
+
+    # Main loop, wait on tasks to finish, insert new ones
+    while state["ready"]:
+        await fire_task()
+
+    return dask.local.nested_get(result, state["cache"])  # type:ignore[no-untyped-call]

@@ -114,7 +114,7 @@ def _instrument_generate_answer(
 ) -> None:
     def tracing_generate_answer_wrapper(fn: Callable) -> Callable:
         @functools.wraps(fn)
-        def wrapper(
+        async def wrapper(
             self: "IntentlessPolicy",
             response_examples: List[str],
             conversation_samples: List[str],
@@ -123,7 +123,7 @@ def _instrument_generate_answer(
             with tracer.start_as_current_span(
                 f"{self.__class__.__name__}.{fn.__name__}"
             ) as span:
-                llm_response = fn(
+                llm_response = await fn(
                     self, response_examples, conversation_samples, history
                 )
                 span.set_attributes(

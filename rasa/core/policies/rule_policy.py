@@ -542,6 +542,7 @@ class RulePolicy(MemoizationPolicy):
         Args:
             prediction_source: the states that result in the prediction
             tracker: the tracker that raises the contradiction
+            predicted_action_name: the action that was predicted
 
         Returns:
             true if the contradiction is a result of an action, intent pair in the rule.
@@ -793,6 +794,7 @@ class RulePolicy(MemoizationPolicy):
         Args:
             training_trackers: The list of the trackers.
             domain: The domain.
+            **kwargs: Additional arguments.
 
         Returns:
             The resource which can be used to load the trained policy.
@@ -1102,7 +1104,7 @@ class RulePolicy(MemoizationPolicy):
             returning_from_unhappy_path,
         )
 
-    def predict_action_probabilities(
+    async def predict_action_probabilities(
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
