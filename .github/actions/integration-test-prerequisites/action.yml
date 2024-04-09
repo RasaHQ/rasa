@@ -1,10 +1,6 @@
 name: Integration Test prerequisites
 description: Encapsulates steps for Integration Testing
 
-permissions:
-  id-token: write
-  contents: read
-
 inputs:
   DEFAULT_PYTHON_VERSION:
     description: 'Default Python Version'
