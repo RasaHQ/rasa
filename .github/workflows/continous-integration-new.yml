@@ -300,7 +300,55 @@ jobs:
           if: always()
           uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
           with:
-            files: report_sequential.xml
+            files: report_integration.xml
             check_name: "Sequential Integration Test Results"
             comment_mode: ${{ (github.event.workflow_run.event == 'pull_request' || github.event_name == 'pull_request') && 'always' || 'off' }}
-            
+
+  concurrent_lockstore_integration_test:
+    name: Run Concurrent LockStore Integration Tests
+    runs-on: ubuntu-20.04
+    timeout-minutes: 60
+    env:
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
+
+    services:
+      redis:
+        image: redis:6
+        # Set health checks to wait until redis has started
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          # FIXME: cannot use ${{ env.REDIS_PORT }} here
+          # mapping container ports to the host
+          - 6379:6379
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Prepare the job for integration tests
+        uses: ./.github/actions/integration-test-prerequisites
+        with:
+            DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+            POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
+
+      # these integration tests need to be run separately
+      - name: Test Code with Services 🩺 (concurrent_lock_store)
+        env:
+          JOBS: 1
+          INTEGRATION_TEST_PYTEST_MARKERS: "concurrent_lock_store"
+          PYTHONIOENCODING: "utf-8"
+        run: |
+          make test-integration
+      
+      - name: Publish test results
+        if: always()
+        uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
+        with:
+          files: report_integration.xml
+          check_name: "Concurrent LockStore Integration Test Results"
+          comment_mode: ${{ (github.event.workflow_run.event == 'pull_request' || github.event_name == 'pull_request') && 'always' || 'off' }}
