@@ -6,18 +6,6 @@ permissions:
   contents: read
 
 inputs:
-  IMAGE_TAG:
-    description: 'Image tag'
-    required: true
-  AWS_REGION:
-    description: 'AWS Region'
-    required: true
-  AWS_ARN_ROLE_TO_ASSUME:
-    description: 'AWS role ARN'
-    required: true
-  REPOSITORY:
-    description: 'ECR Repository'
-    required: true
   DEFAULT_PYTHON_VERSION:
     description: 'Default Python Version'
     required: true
@@ -64,28 +52,4 @@ runs:
       - name: Install Dependencies (Linux) 📦
         run: |
           make install
-        shell: bash
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3  # v3.0.0
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@0d103c3126aa41d772a8362f6aa67afac040f80c  # v3.1.0
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@8c3f20df09ac63af7b3ae3d7c91f105f857d8497 # v3.0.1
-        with:
-          role-to-assume: ${{ inputs.AWS_ARN_ROLE_TO_ASSUME }}
-          aws-region: ${{ inputs.AWS_REGION }}
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 # v2.0.1
-        with:
-          mask-password: "true"
-
-      - name: Pull dev rasa-private image from Amazon ECR
-        id: check_image
-        run: |
-          docker pull ${{ inputs.REPOSITORY }}:${{ inputs.IMAGE_TAG }}
         shell: bash

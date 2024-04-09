@@ -99,12 +99,19 @@ jobs:
       - name: Prepare the job for integration tests
         uses: ./.github/actions/integration-test-prerequisites
         with:
+            DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+            POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
+
+      - name: Setup buildx
+        uses: ./.github/actions/setup-build-x
+
+      - name: Pull rasa-private dev image
+        uses: ./.github/actions/pull-from-ecr
+        with:
             IMAGE_TAG: ${{ env.IMAGE_TAG }}
             AWS_REGION: ${{ env.AWS_REGION }}
             AWS_ARN_ROLE_TO_ASSUME: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
             REPOSITORY: ${{ env.REPOSITORY }}
-            DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
-            POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
             
       - name: Build action server docker container
         run: |
@@ -174,12 +181,19 @@ jobs:
       - name: Prepare the job for integration tests
         uses: ./.github/actions/integration-test-prerequisites
         with:
+            DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+            POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
+
+      - name: Setup buildx
+        uses: ./.github/actions/setup-build-x
+
+      - name: Pull rasa-private dev image
+        uses: ./.github/actions/pull-from-ecr
+        with:
             IMAGE_TAG: ${{ env.IMAGE_TAG }}
             AWS_REGION: ${{ env.AWS_REGION }}
             AWS_ARN_ROLE_TO_ASSUME: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
             REPOSITORY: ${{ env.REPOSITORY }}
-            DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
-            POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
 
       - name: Metric Integration Testing - Run docker containers
         run: |
@@ -266,39 +280,11 @@ jobs:
         - name: Check out code
           uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
-        - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
-          id: setup-python
-          uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
+        - name: Prepare the job for integration tests
+          uses: ./.github/actions/integration-test-prerequisites
           with:
-            python-version: ${{ inputs.DEFAULT_PYTHON_VERSION }}
-
-        - name: Read Poetry Version 🔢
-          run: |
-            echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
-
-        # Install & configure poetry
-        -  name: Install Poetry ${{ env.POETRY_VERSION }}
-           uses: snok/install-poetry@93ada01c735cc8a383ce0ce2ae205a21c415379b # v1.3.4
-           with:
-            version: ${{ env.POETRY_VERSION }}
-            virtualenvs-create: true
-            virtualenvs-in-project: true
-            installer-parallel: true
-
-        # Load cached venv if cache exists
-        - name: Load cached venv
-          id: cached-poetry-dependencies
-          uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
-          with:
-            path: .venv
-            key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
-
-        - name: Install Dependencies (Linux) 📦
-          run: |
-            sudo apt-get -y install libpq-dev
-            make install-full | tee .output
-            if grep 'The lock file is not up to date' .output; then exit 1; fi
-            make prepare-tests-ubuntu
+              DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+              POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
 
         # these integration tests need to be ran in a sequential fashion,
         # due to environment constraints, so we're running them in a single process.
