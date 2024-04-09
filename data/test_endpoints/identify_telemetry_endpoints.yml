@@ -1,0 +1,24 @@
+tracing:
+  type: otlp
+  endpoint: otlp-collector:4317
+  insecure: true
+  service_name: rasa
+
+metrics:
+  type: otlp
+  endpoint: otlp-collector:4317
+  insecure: true
+  service_name: rasa
+
+anonymization:
+  metadata:
+    language: en
+    model_provider: spacy
+    model_name: en_core_web_lg
+  rule_lists:
+    - id: rules_1
+      rules:
+        - entity: CREDIT_CARD
+          substitution: mask
+        - entity: IBAN_CODE
+          substitution: mask
