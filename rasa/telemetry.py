@@ -18,11 +18,13 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Text
 
 import importlib_resources
+import requests
+from terminaltables import SingleTable
+
 import rasa
 import rasa.anonymization.utils
 import rasa.shared.utils.io
 import rasa.utils.io
-import requests
 from rasa import model
 from rasa.constants import (
     CONFIG_FILE_TELEMETRY_KEY,
@@ -31,7 +33,6 @@ from rasa.constants import (
     CONFIG_TELEMETRY_ID,
 )
 from rasa.engine.storage.local_model_storage import LocalModelStorage
-from rasa.plugin import plugin_manager
 from rasa.shared.constants import DOCS_URL_TELEMETRY, UTTER_ASK_PREFIX
 from rasa.shared.core.flows import Flow
 from rasa.shared.core.flows.steps import (
@@ -42,8 +43,7 @@ from rasa.shared.core.flows.steps import (
 )
 from rasa.shared.exceptions import RasaException
 from rasa.utils import common as rasa_utils
-from rasa.utils.licensing import property_of_active_license
-from terminaltables import SingleTable
+from rasa.utils.licensing import property_of_active_license, get_license_hash
 
 if typing.TYPE_CHECKING:
     from rasa.core.brokers.broker import EventBroker
@@ -576,13 +576,14 @@ def _default_context_fields() -> Dict[Text, Any]:
             "project": model.project_fingerprint(),
             "directory": _hash_directory_path(os.getcwd()),
             "python": sys.version.split(" ")[0],
-            "rasa_open_source": rasa.__version__,
+            "rasa_pro": rasa.__version__,
             "cpu": multiprocessing.cpu_count(),
             "docker": _is_docker(),
+            "license_hash": get_license_hash(),
+            "company": property_of_active_license(
+                lambda active_license: active_license.company
+            ),
         }
-        license_hash = plugin_manager().hook.get_license_hash()
-        if license_hash:
-            TELEMETRY_CONTEXT["license_hash"] = license_hash
 
     # avoid returning the cached dict --> caller could modify the dictionary...
     # usually we would use `lru_cache`, but that doesn't return a dict copy and
