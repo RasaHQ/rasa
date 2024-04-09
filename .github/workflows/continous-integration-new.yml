@@ -8,6 +8,7 @@ on:
     branches:
         - main
         - 3.7.x
+        - 3.8.x
         # Skip any PR created by dependabot to avoid permission issues
         - '!dependabot/**'
 
