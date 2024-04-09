@@ -1,17 +1,17 @@
 # The config recipe.
-# https://rasa.com/docs/rasa/model-configuration/
+# https://rasa.com/docs/rasa-pro/nlu-based-assistants/model-configuration/
 recipe: default.v1
 
 assistant_id: placeholder_default
 
 # Configuration for Rasa NLU.
-# https://rasa.com/docs/rasa/nlu/components/
+# https://rasa.com/docs/rasa-pro/nlu-based-assistants/components/
 language: en
 
 pipeline:
 # No configuration for the NLU pipeline was provided. The following default pipeline was used to train your model.
 # If you'd like to customize it, uncomment and adjust the pipeline.
-# See https://rasa.com/docs/rasa/tuning-your-model for more information.
+# See https://rasa.com/docs/rasa-pro/nlu-based-assistants/tuning-your-model for more information.
   - name: WhitespaceTokenizer
   - name: RegexFeaturizer
   - name: LexicalSyntacticFeaturizer
@@ -33,11 +33,11 @@ pipeline:
   #   ambiguity_threshold: 0.1
 
 # Configuration for Rasa Core.
-# https://rasa.com/docs/rasa/core/policies/
+# https://rasa.com/docs/rasa-pro/concepts/policies/policy-overview/
 policies:
 # No configuration for policies was provided. The following default policies were used to train your model.
 # If you'd like to customize them, uncomment and adjust the policies.
-# See https://rasa.com/docs/rasa/policies for more information.
+# See https://rasa.com/docs/rasa-pro/concepts/policies/policy-overview/ for more information.
   - name: AugmentedMemoizationPolicy
   - name: RulePolicy
   # - name: UnexpecTEDIntentPolicy

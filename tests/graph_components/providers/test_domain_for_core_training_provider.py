@@ -92,7 +92,7 @@ def test_provide_removes_or_replaces_expected_information(
             assert original_dict[key] == modified_dict[key]
 
 
-def test_train_core_with_original_or_provided_domain_and_compare(
+async def test_train_core_with_original_or_provided_domain_and_compare(
     tmp_path_factory: TempPathFactory,
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
@@ -120,7 +120,7 @@ def test_train_core_with_original_or_provided_domain_and_compare(
     # Train with the original domain
     original_domain_file = example / "domain.yml"
     original_output_dir = tmp_path_factory.mktemp("output dir")
-    model_training.train(
+    await model_training.train(
         domain=original_domain_file,
         config=str(config_file),
         training_files=training_files,
@@ -143,7 +143,7 @@ def test_train_core_with_original_or_provided_domain_and_compare(
     modified_domain.persist(modified_domain_file)
 
     modified_output_dir = tmp_path_factory.mktemp("modified output dir")
-    modified_result = model_training.train(
+    modified_result = await model_training.train(
         domain=modified_domain_file,
         config=str(config_file),
         training_files=training_files,

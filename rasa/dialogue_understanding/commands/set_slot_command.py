@@ -79,8 +79,14 @@ class SetSlotCommand(Command):
         Returns:
             The events to apply to the tracker.
         """
+        slot = tracker.slots.get(self.name)
+        if slot is None:
+            structlogger.debug(
+                "command_executor.skip_command.slot_not_in_domain", command=self
+            )
+            return []
 
-        if tracker.get_slot(self.name) == self.value:
+        if slot.has_same_coerced_value(self.value):
             # value hasn't changed, skip this one
             structlogger.debug(
                 "command_executor.skip_command.slot_already_set", command=self
@@ -116,4 +122,4 @@ class SetSlotCommand(Command):
                 return []
 
         structlogger.debug("command_executor.set_slot", command=self)
-        return [SlotSet(self.name, self.value)]
+        return [SlotSet(self.name, slot.coerce_value(self.value))]

@@ -106,7 +106,7 @@ class IntentBasedRouter(GraphComponent):
         """Creates component (see parent class for full docstring)."""
         return cls(config, model_storage, resource)
 
-    def process(
+    async def process(
         self,
         messages: List[Message],
         flows: FlowsList,
@@ -118,13 +118,13 @@ class IntentBasedRouter(GraphComponent):
             return messages
 
         for message in messages:
-            commands = self.predict_commands(message, flows, tracker)
+            commands = await self.predict_commands(message, flows, tracker)
             commands_dicts = [command.as_dict() for command in commands]
             message.set(COMMANDS, commands_dicts, add_to_output=True)
 
         return messages
 
-    def predict_commands(
+    async def predict_commands(
         self,
         message: Message,
         flows: FlowsList,

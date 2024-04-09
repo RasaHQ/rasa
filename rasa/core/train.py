@@ -12,7 +12,7 @@ from rasa.shared.importers.importer import TrainingDataImporter
 logger = logging.getLogger(__name__)
 
 
-def train_comparison_models(
+async def train_comparison_models(
     story_file: Text,
     domain: Text,
     output_path: Text = "",
@@ -41,7 +41,7 @@ def train_comparison_models(
                     )
                 )
 
-                rasa.model_training.train_core(
+                await rasa.model_training.train_core(
                     domain,
                     policy_config,
                     stories=story_file,
@@ -63,13 +63,13 @@ def get_no_of_stories(story_file: Text, domain: Text) -> int:
     return len(story_graph.story_steps)
 
 
-def do_compare_training(
+async def do_compare_training(
     args: argparse.Namespace,
     story_file: Text,
     additional_arguments: Optional[Dict] = None,
 ) -> None:
     """Train multiple models for comparison of policies and dumps the result."""
-    train_comparison_models(
+    await train_comparison_models(
         story_file=story_file,
         domain=args.domain,
         output_path=args.out,

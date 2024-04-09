@@ -9,7 +9,7 @@ from rasa.shared.constants import (
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
 )
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import BotUttered, UserUttered
+from rasa.shared.core.events import BotUttered, UserUttered, SessionStarted, Restarted
 from rasa.shared.core.slots import (
     FloatSlot,
     TextSlot,
@@ -42,6 +42,34 @@ def test_tracker_as_readable_transcript_handles_tracker_with_events(domain: Doma
         ],
     )
     assert tracker_as_readable_transcript(tracker) == ("""USER: hello\nAI: hi""")
+
+
+def test_tracker_as_readable_transcript_handles_session_restart(domain: Domain):
+    tracker = DialogueStateTracker(sender_id="test", slots=domain.slots)
+    tracker.update_with_events(
+        [
+            UserUttered("hello"),
+            BotUttered("hi"),
+            # this should clear the prior conversation from the transcript
+            SessionStarted(),
+            UserUttered("howdy"),
+        ],
+    )
+    assert tracker_as_readable_transcript(tracker) == ("""USER: howdy""")
+
+
+def test_tracker_as_readable_transcript_handles_restart(domain: Domain):
+    tracker = DialogueStateTracker(sender_id="test", slots=domain.slots)
+    tracker.update_with_events(
+        [
+            UserUttered("hello"),
+            BotUttered("hi"),
+            # this should clear the prior conversation from the transcript
+            Restarted(),
+            UserUttered("howdy"),
+        ],
+    )
+    assert tracker_as_readable_transcript(tracker) == ("""USER: howdy""")
 
 
 def test_tracker_as_readable_transcript_handles_tracker_with_events_and_prefixes(
@@ -272,7 +300,7 @@ def test_embedder_factory_ignores_irrelevant_default_args(
         (BooleanSlot("test_slot", []), "[True, False]"),
         (
             CategoricalSlot("test_slot", [], values=["Value1", "Value2"]),
-            "['value1', 'value2']",
+            "['Value1', 'Value2']",
         ),
     ],
 )

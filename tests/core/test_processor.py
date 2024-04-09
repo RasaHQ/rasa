@@ -11,7 +11,7 @@ from http import HTTPStatus
 from pathlib import Path
 from typing import Optional, Text, List, Callable, Type, Any
 from unittest import mock
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, Mock, patch, AsyncMock
 
 import freezegun
 import pytest
@@ -133,6 +133,7 @@ async def test_message_id_logging(default_processor: MessageProcessor):
 
 
 async def test_parsing(default_processor: MessageProcessor):
+    # TODO: not sure if change is needed to make async
     with mock.patch(
         "rasa.core.processor.MessageProcessor._parse_message_with_graph"
     ) as mocked_function:
@@ -1418,7 +1419,7 @@ async def test_predict_next_action_with_hidden_rules(
         ],
         slots=domain.slots,
     )
-    action, prediction = processor.predict_next_with_tracker_if_should(tracker)
+    action, prediction = await processor.predict_next_with_tracker_if_should(tracker)
     assert action._name == rule_action
     assert prediction.hide_rule_turn
 
@@ -1426,7 +1427,7 @@ async def test_predict_next_action_with_hidden_rules(
         tracker, action, [SlotSet(rule_slot, rule_slot)], prediction
     )
 
-    action, prediction = processor.predict_next_with_tracker_if_should(tracker)
+    action, prediction = await processor.predict_next_with_tracker_if_should(tracker)
     assert isinstance(action, ActionListen)
     assert prediction.hide_rule_turn
 
@@ -1435,7 +1436,7 @@ async def test_predict_next_action_with_hidden_rules(
     tracker.events.append(UserUttered(intent={"name": story_intent}))
 
     # rules are hidden correctly if memo policy predicts next actions correctly
-    action, prediction = processor.predict_next_with_tracker_if_should(tracker)
+    action, prediction = await processor.predict_next_with_tracker_if_should(tracker)
     assert action._name == story_action
     assert not prediction.hide_rule_turn
 
@@ -1443,12 +1444,12 @@ async def test_predict_next_action_with_hidden_rules(
         tracker, action, [SlotSet(story_slot, story_slot)], prediction
     )
 
-    action, prediction = processor.predict_next_with_tracker_if_should(tracker)
+    action, prediction = await processor.predict_next_with_tracker_if_should(tracker)
     assert isinstance(action, ActionListen)
     assert not prediction.hide_rule_turn
 
 
-def test_predict_next_action_raises_limit_reached_exception(
+async def test_predict_next_action_raises_limit_reached_exception(
     default_processor: MessageProcessor,
 ):
     tracker = DialogueStateTracker.from_events(
@@ -1463,10 +1464,10 @@ def test_predict_next_action_raises_limit_reached_exception(
 
     default_processor.max_number_of_predictions = 1
     with pytest.raises(ActionLimitReached):
-        default_processor.predict_next_with_tracker_if_should(tracker)
+        await default_processor.predict_next_with_tracker_if_should(tracker)
 
 
-def test_predict_next_action_raises_limit_reached_later_if_in_correction(
+async def test_predict_next_action_raises_limit_reached_later_if_in_correction(
     default_processor: MessageProcessor,
 ):
     tracker = DialogueStateTracker.from_events(
@@ -1482,13 +1483,13 @@ def test_predict_next_action_raises_limit_reached_later_if_in_correction(
     default_processor.max_number_of_predictions = 1
 
     # should not raise an exception like in the above test
-    default_processor.predict_next_with_tracker_if_should(tracker)
+    await default_processor.predict_next_with_tracker_if_should(tracker)
 
     # exception should be raised if there are already 5 actions (the previous
     # one and another 4)
     tracker.update_with_events([ActionExecuted("test_action")] * 4)
     with pytest.raises(ActionLimitReached):
-        default_processor.predict_next_with_tracker_if_should(tracker)
+        await default_processor.predict_next_with_tracker_if_should(tracker)
 
 
 async def test_processor_logs_text_tokens_in_tracker(
@@ -1574,27 +1575,27 @@ async def test_parse_message_full_model(trained_moodbot_path: Text):
     assert result["intent"]["name"]
 
 
-def test_predict_next_with_tracker_nlu_only(trained_nlu_model: Text):
+async def test_predict_next_with_tracker_nlu_only(trained_nlu_model: Text):
     processor = Agent.load(model_path=trained_nlu_model).processor
     tracker = DialogueStateTracker("some_id", [])
     tracker.followup_action = None
-    result = processor.predict_next_with_tracker(tracker)
+    result = await processor.predict_next_with_tracker(tracker)
     assert result is None
 
 
-def test_predict_next_with_tracker_core_only(trained_core_model: Text):
+async def test_predict_next_with_tracker_core_only(trained_core_model: Text):
     processor = Agent.load(model_path=trained_core_model).processor
     tracker = DialogueStateTracker("some_id", [])
     tracker.followup_action = None
-    result = processor.predict_next_with_tracker(tracker)
+    result = await processor.predict_next_with_tracker(tracker)
     assert result["policy"] == "MemoizationPolicy"
 
 
-def test_predict_next_with_tracker_full_model(trained_rasa_model: Text):
+async def test_predict_next_with_tracker_full_model(trained_rasa_model: Text):
     processor = Agent.load(model_path=trained_rasa_model).processor
     tracker = DialogueStateTracker("some_id", [])
     tracker.followup_action = None
-    result = processor.predict_next_with_tracker(tracker)
+    result = await processor.predict_next_with_tracker(tracker)
     assert result["policy"] == "MemoizationPolicy"
 
 
@@ -2038,7 +2039,7 @@ async def test_run_command_processor_starting_a_flow(
     )
     num_previous_events = len(tracker.events)
     # When
-    tracker = processor.run_command_processor(tracker)
+    tracker = await processor.run_command_processor(tracker)
     num_added_events = len(tracker.events) - num_previous_events
     # Then
     # tracker had two events: action_list and user utterance event
@@ -2091,7 +2092,7 @@ async def test_run_command_processor_setting_a_slot(
     )
     num_previous_events = len(tracker.events)
     # When
-    tracker = processor.run_command_processor(tracker)
+    tracker = await processor.run_command_processor(tracker)
     num_added_events = len(tracker.events) - num_previous_events
     # Then
     # tracker had three events: action_list, dialogue set slot and user utterance events
@@ -2199,3 +2200,93 @@ async def test_update_full_retrieval_intent(
     # assert that parse_data["intent"] has a key called response
     assert FULL_RETRIEVAL_INTENT_NAME_KEY in parse_data[INTENT]
     assert parse_data[INTENT][FULL_RETRIEVAL_INTENT_NAME_KEY] == "chitchat/ask_weather"
+
+
+async def test_predict_does_not_block_on_command_generator_llm_calls(
+    trained_async: Callable, tmp_path: Path
+):
+    domain_content = textwrap.dedent(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        responses:
+            utter_greet:
+            - text: "Hello!"
+        """
+    )
+    domain_path = tmp_path / "domain.yml"
+    rasa.shared.utils.io.write_text_file(domain_content, domain_path)
+
+    training_data = textwrap.dedent(
+        """
+    flows:
+        greet_user:
+            name: greet_user
+            description: "Greet the user"
+            steps:
+            - action: utter_greet
+    """
+    )
+    training_data_path = tmp_path / "data.yml"
+    rasa.shared.utils.io.write_text_file(training_data, training_data_path)
+
+    config = textwrap.dedent(
+        f"""
+    version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+    assistant_id: placeholder_default
+    pipeline:
+    - name: LLMCommandGenerator
+      flow_retrieval:
+        active: false
+
+    policies:
+    - name: FlowPolicy
+    """
+    )
+    config_path = tmp_path / "config.yml"
+    rasa.shared.utils.io.write_text_file(config, config_path)
+
+    model_path = await trained_async(
+        str(domain_path), str(config_path), [str(training_data_path)]
+    )
+
+    async def sleepy_prediction(*args, **kwargs):
+        # a prediction mock that takes a bit to return
+        await asyncio.sleep(1)
+        return "StartFlow(greet_user)"
+
+    # we should have a trained model now and can start an agent with it
+    # let's patch the LLM though, as we don't want to make external calls
+    with patch(
+        "rasa.dialogue_understanding.generator.llm_command_generator.llm_factory",
+        Mock(),
+    ) as mock_llm_factory:
+        llm_mock = Mock()
+        apredict_mock = AsyncMock(side_effect=sleepy_prediction)
+        llm_mock.apredict = apredict_mock
+        mock_llm_factory.return_value = llm_mock
+
+        agent = await load_agent(model_path=model_path)
+
+        start = time.time()
+        results = await asyncio.gather(
+            *(
+                agent.processor.parse_message(
+                    UserMessage("Hi"),
+                    DialogueStateTracker.from_events(f"foo_{i}", evts=[]),
+                )
+                for i in range(10)
+            )
+        )
+        end = time.time()
+        time_needed = end - start
+        # all commands
+        assert all(
+            result.get("commands") == [{"flow": "greet_user", "command": "start flow"}]
+            for result in results
+        )
+        # this should only take a little more than a second since all
+        # the calls are done in parallel. but since CI could be slow,
+        # we give it a little bit of a buffer. It must be quicker
+        # than 10 seconds, if it takes longer this is a sign that the
+        # calls are not done in parallel but sequentially.
+        assert time_needed < 10

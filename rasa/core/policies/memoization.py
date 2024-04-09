@@ -233,7 +233,7 @@ class MemoizationPolicy(Policy):
 
         return result
 
-    def predict_action_probabilities(
+    async def predict_action_probabilities(
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
@@ -247,6 +247,7 @@ class MemoizationPolicy(Policy):
             domain: the :class:`rasa.shared.core.domain.Domain`
             rule_only_data: Slots and loops which are specific to rules and hence
                 should be ignored by this policy.
+            **kwargs: Additional arguments.
 
         Returns:
              The policy's prediction (e.g. the probabilities for the actions).
