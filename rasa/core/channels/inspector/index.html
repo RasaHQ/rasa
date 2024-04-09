@@ -26,6 +26,7 @@
     const columnWidth = remReference * parseFloat(getComputedStyle(document.documentElement).fontSize);
 
     chatDiv.setAttribute("data-websocket-url", websocketUrl);
+    chatDiv.setAttribute("data-close-on-outside-click", false);
     chatDiv.setAttribute("data-height", maxHeight);
     chatDiv.setAttribute("data-width", columnWidth);
   </script>

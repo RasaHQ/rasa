@@ -18,11 +18,13 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Text
 
 import importlib_resources
+import requests
+from terminaltables import SingleTable
+
 import rasa
 import rasa.anonymization.utils
 import rasa.shared.utils.io
 import rasa.utils.io
-import requests
 from rasa import model
 from rasa.constants import (
     CONFIG_FILE_TELEMETRY_KEY,
@@ -31,7 +33,6 @@ from rasa.constants import (
     CONFIG_TELEMETRY_ID,
 )
 from rasa.engine.storage.local_model_storage import LocalModelStorage
-from rasa.plugin import plugin_manager
 from rasa.shared.constants import DOCS_URL_TELEMETRY, UTTER_ASK_PREFIX
 from rasa.shared.core.flows import Flow
 from rasa.shared.core.flows.steps import (
@@ -42,8 +43,7 @@ from rasa.shared.core.flows.steps import (
 )
 from rasa.shared.exceptions import RasaException
 from rasa.utils import common as rasa_utils
-from rasa.utils.licensing import property_of_active_license
-from terminaltables import SingleTable
+from rasa.utils.licensing import property_of_active_license, get_license_hash
 
 if typing.TYPE_CHECKING:
     from rasa.core.brokers.broker import EventBroker
@@ -150,6 +150,7 @@ LLM_COMMAND_GENERATOR_CUSTOM_PROMPT_USED = "llm_command_generator_custom_prompt_
 FLOW_RETRIEVAL_ENABLED = "flow_retrieval_enabled"
 FLOW_RETRIEVAL_EMBEDDING_MODEL_NAME = "flow_retrieval_embedding_model_name"
 TRACING_BACKEND = "tracing_backend"
+METRICS_BACKEND = "metrics_backend"
 VERSION = "version"
 
 
@@ -575,13 +576,14 @@ def _default_context_fields() -> Dict[Text, Any]:
             "project": model.project_fingerprint(),
             "directory": _hash_directory_path(os.getcwd()),
             "python": sys.version.split(" ")[0],
-            "rasa_open_source": rasa.__version__,
+            "rasa_pro": rasa.__version__,
             "cpu": multiprocessing.cpu_count(),
             "docker": _is_docker(),
+            "license_hash": get_license_hash(),
+            "company": property_of_active_license(
+                lambda active_license: active_license.company
+            ),
         }
-        license_hash = plugin_manager().hook.get_license_hash()
-        if license_hash:
-            TELEMETRY_CONTEXT["license_hash"] = license_hash
 
     # avoid returning the cached dict --> caller could modify the dictionary...
     # usually we would use `lru_cache`, but that doesn't return a dict copy and
@@ -1505,16 +1507,55 @@ def identify_endpoint_config_traits(
 
     Otherwise, sets traits to None.
     """
-    import rasa.utils.endpoints
-    from rasa.anonymization.anonymisation_rule_yaml_reader import (
-        KEY_ANONYMIZATION_RULES,
-    )
-    from rasa.tracing.config import ENDPOINTS_TRACING_KEY
+    traits: Dict[str, Any] = {}
 
-    traits = {}
+    traits = append_tracing_trait(traits, endpoints_file)
+    traits = append_metrics_trait(traits, endpoints_file)
+    traits = append_anonymization_trait(traits, endpoints_file)
+
+    _identify(traits, context)
+
+
+def append_tracing_trait(
+    traits: Dict[str, Any], endpoints_file: Optional[str]
+) -> Dict[str, Any]:
+    """Append the tracing trait to the traits dictionary."""
+    import rasa.utils.endpoints
+    from rasa.tracing.constants import ENDPOINTS_TRACING_KEY
 
     tracing_config = rasa.utils.endpoints.read_endpoint_config(
         endpoints_file, ENDPOINTS_TRACING_KEY
+    )
+    traits[TRACING_BACKEND] = (
+        tracing_config.type if tracing_config is not None else None
+    )
+
+    return traits
+
+
+def append_metrics_trait(
+    traits: Dict[str, Any], endpoints_file: Optional[str]
+) -> Dict[str, Any]:
+    """Append the metrics trait to the traits dictionary."""
+    import rasa.utils.endpoints
+    from rasa.tracing.constants import ENDPOINTS_METRICS_KEY
+
+    metrics_config = rasa.utils.endpoints.read_endpoint_config(
+        endpoints_file, ENDPOINTS_METRICS_KEY
+    )
+    traits[METRICS_BACKEND] = (
+        metrics_config.type if metrics_config is not None else None
+    )
+
+    return traits
+
+
+def append_anonymization_trait(
+    traits: Dict[str, Any], endpoints_file: Optional[str]
+) -> Dict[str, Any]:
+    """Append the anonymization trait to the traits dictionary."""
+    from rasa.anonymization.anonymisation_rule_yaml_reader import (
+        KEY_ANONYMIZATION_RULES,
     )
 
     anonymization_config = rasa.anonymization.utils.read_endpoint_config(
@@ -1526,7 +1567,5 @@ def identify_endpoint_config_traits(
     ] = rasa.anonymization.utils.extract_anonymization_traits(
         anonymization_config, KEY_ANONYMIZATION_RULES
     )
-    traits[TRACING_BACKEND] = (
-        tracing_config.type if tracing_config is not None else None
-    )
-    _identify(traits, context)
+
+    return traits

@@ -41,5 +41,5 @@ action_endpoint:
 #  password: password
 #  queue: queue
 
-nlg:
-  type: rasa.core.ContextualResponseRephraser
+#nlg:
+#  type: rasa.core.ContextualResponseRephraser
