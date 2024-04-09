@@ -581,7 +581,9 @@ def _default_context_fields() -> Dict[Text, Any]:
             "cpu": multiprocessing.cpu_count(),
             "docker": _is_docker(),
             "license_hash": get_license_hash(),
-            "company": property_of_active_license("company"),
+            "company": property_of_active_license(
+                lambda active_license: active_license.company
+            ),
         }
 
     # avoid returning the cached dict --> caller could modify the dictionary...
