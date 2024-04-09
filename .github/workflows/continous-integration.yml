@@ -37,7 +37,6 @@ env:
   DEFAULT_PYTHON_VERSION: "3.10"
   TARGET_IMAGE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-docker"
   NODE_VERSION_INSPECTOR_BUILD: 16
-  TARGET_IMAGE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-docker"
 
   # for wait_for_xx jobs
   WAIT_TIMEOUT_SECS: 3000
