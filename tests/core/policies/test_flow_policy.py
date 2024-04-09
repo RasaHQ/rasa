@@ -88,7 +88,7 @@ def test_get_default_config():
     assert FlowPolicy.get_default_config() == {"priority": 7, "max_history": None}
 
 
-def test_predict_action_probabilities_abstains_in_coexistence(
+async def test_predict_action_probabilities_abstains_in_coexistence(
     default_flow_policy: FlowPolicy, default_flows: FlowsList
 ):
     domain = Domain.empty()
@@ -106,7 +106,7 @@ def test_predict_action_probabilities_abstains_in_coexistence(
     )
     tracker.update_stack(stack)
 
-    prediction = default_flow_policy.predict_action_probabilities(
+    prediction = await default_flow_policy.predict_action_probabilities(
         tracker=tracker, domain=Domain.empty(), flows=default_flows
     )
 
@@ -114,7 +114,7 @@ def test_predict_action_probabilities_abstains_in_coexistence(
     assert prediction.max_confidence == 0.0
 
 
-def test_predict_action_probabilities_abstains_from_unsupported_frame(
+async def test_predict_action_probabilities_abstains_from_unsupported_frame(
     default_flow_policy: FlowPolicy,
 ):
     domain = Domain.empty()
@@ -129,7 +129,7 @@ def test_predict_action_probabilities_abstains_from_unsupported_frame(
     )
     tracker.update_stack(stack)
 
-    prediction = default_flow_policy.predict_action_probabilities(
+    prediction = await default_flow_policy.predict_action_probabilities(
         tracker=tracker,
         domain=Domain.empty(),
     )
@@ -138,7 +138,7 @@ def test_predict_action_probabilities_abstains_from_unsupported_frame(
     assert prediction.max_confidence == 0.0
 
 
-def test_predict_action_probabilities_advances_topmost_flow(
+async def test_predict_action_probabilities_advances_topmost_flow(
     default_flow_policy: FlowPolicy, default_flows: FlowsList
 ):
     domain = Domain.empty()
@@ -155,7 +155,7 @@ def test_predict_action_probabilities_advances_topmost_flow(
     )
     tracker.update_stack(stack)
 
-    prediction = default_flow_policy.predict_action_probabilities(
+    prediction = await default_flow_policy.predict_action_probabilities(
         tracker=tracker, domain=Domain.empty(), flows=default_flows
     )
 
@@ -179,7 +179,7 @@ def test_predict_action_probabilities_advances_topmost_flow(
     assert frame.frame_type == "regular"
 
 
-def test_policy_triggers_error_pattern_if_internal_circuit_breaker_is_tripped(
+async def test_policy_triggers_error_pattern_if_internal_circuit_breaker_is_tripped(
     default_flow_policy: FlowPolicy,
 ):
     flow_with_loop = flows_from_str_with_defaults(
@@ -213,7 +213,7 @@ def test_policy_triggers_error_pattern_if_internal_circuit_breaker_is_tripped(
     )
     tracker.update_stack(stack)
 
-    prediction = default_flow_policy.predict_action_probabilities(
+    prediction = await default_flow_policy.predict_action_probabilities(
         tracker=tracker.copy(), domain=domain, flows=flow_with_loop
     )
 

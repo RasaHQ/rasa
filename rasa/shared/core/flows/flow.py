@@ -26,7 +26,6 @@ from rasa.shared.core.flows.steps import (
 )
 from rasa.shared.core.flows.flow_step_sequence import FlowStepSequence
 from rasa.shared.core.slots import Slot
-from rasa.shared.utils.pypred import get_case_insensitive_predicate_given_slot_instance
 
 
 structlogger = structlog.get_logger()
@@ -162,7 +161,7 @@ class Flow:
         if step_id.startswith(CONTINUE_STEP_PREFIX):
             return ContinueFlowStep(step_id[len(CONTINUE_STEP_PREFIX) :])
 
-        for step in self.steps:
+        for step in self.steps_with_calls_resolved:
             if step.id == step_id:
                 return step
 
@@ -256,12 +255,7 @@ class Flow:
             return True
 
         try:
-            case_insensitive_guard_condition = (
-                get_case_insensitive_predicate_given_slot_instance(
-                    self.guard_condition, slots
-                )
-            )
-            predicate = Predicate(case_insensitive_guard_condition)
+            predicate = Predicate(self.guard_condition)
             is_startable = predicate.evaluate(
                 {"context": context, "slots": simplified_slots}
             )
@@ -291,9 +285,10 @@ class Flow:
         return False
 
     def is_startable_only_via_link(self) -> bool:
-        """Determines if the flow can be initiated exclusively through a link. This
-        condition is met when a guard condition exists and is consistently evaluated
-        to `False` (e.g. `if: False`).
+        """Determines if the flow can be initiated exclusively through a link.
+
+        This condition is met when a guard condition exists and is
+        consistently evaluated to `False` (e.g. `if: False`).
 
         Returns:
             A boolean indicating if the flow initiation is link-based only.
@@ -324,9 +319,9 @@ class Flow:
             return False
 
     def _contains_variables_in_guard_condition(self) -> bool:
-        """
-        Determines if the guard condition contains dynamic literals i.e. literals that
-        cannot be statically resolved, indicating a variable.
+        """Determines if the guard condition contains dynamic literals.
+
+        I.e. literals that cannot be statically resolved, indicating a variable.
 
         Returns:
             True if dynamic literals are present, False otherwise.

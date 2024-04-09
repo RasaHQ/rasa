@@ -523,7 +523,7 @@ class IntentlessPolicy(Policy):
                 self.prompt_template, path / INTENTLESS_PROMPT_TEMPLATE_FILE_NAME
             )
 
-    def predict_action_probabilities(
+    async def predict_action_probabilities(
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
@@ -561,7 +561,7 @@ class IntentlessPolicy(Policy):
             result = self._default_predictions(domain)
             return self._prediction(result)
 
-        response, score = self.find_closest_response(tracker)
+        response, score = await self.find_closest_response(tracker)
 
         predicted_action_name = action_from_response(response, domain.responses)
 
@@ -597,7 +597,7 @@ class IntentlessPolicy(Policy):
 
         return self._prediction(result, events=events)
 
-    def generate_answer(
+    async def generate_answer(
         self,
         response_examples: List[str],
         conversation_samples: List[str],
@@ -617,11 +617,11 @@ class IntentlessPolicy(Policy):
             log_event="intentless_policy.generate_answer.prompt_rendered",
             prompt=prompt,
         )
-        return self._generate_llm_answer(llm, prompt)
+        return await self._generate_llm_answer(llm, prompt)
 
-    def _generate_llm_answer(self, llm: "BaseLLM", prompt: str) -> Optional[str]:
+    async def _generate_llm_answer(self, llm: "BaseLLM", prompt: str) -> Optional[str]:
         try:
-            return llm(prompt)
+            return await llm.apredict(prompt)
         except Exception as e:
             # unfortunately, langchain does not wrap LLM exceptions which means
             # we have to catch all exceptions here
@@ -639,7 +639,7 @@ class IntentlessPolicy(Policy):
             structlogger.error("intentless_policy.answer_embedding.failed", error=e)
             return None
 
-    def find_closest_response(
+    async def find_closest_response(
         self, tracker: DialogueStateTracker
     ) -> Tuple[Optional[str], float]:
         """Find the closest response fitting the conversation in the tracker.
@@ -694,7 +694,7 @@ class IntentlessPolicy(Policy):
             if resp not in final_response_examples:
                 final_response_examples.append(resp)
 
-        llm_response = self.generate_answer(
+        llm_response = await self.generate_answer(
             final_response_examples, conversation_samples, history
         )
         if not llm_response:

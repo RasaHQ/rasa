@@ -32,7 +32,7 @@ class GraphRunner(ABC):
         ...
 
     @abstractmethod
-    def run(
+    async def run(
         self,
         inputs: Optional[Dict[Text, Any]] = None,
         targets: Optional[List[Text]] = None,

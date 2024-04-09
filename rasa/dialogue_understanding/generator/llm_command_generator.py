@@ -1,7 +1,7 @@
 import importlib.resources
 import re
 from typing import Dict, Any, List, Optional, Tuple, Union, Text
-
+from functools import lru_cache
 import rasa.shared.utils.io
 import structlog
 from jinja2 import Template
@@ -117,11 +117,27 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             structlogger.info("llm_command_generator.flow_retrieval.enabled")
         else:
             self.flow_retrieval = None
-            structlogger.info("llm_command_generator.flow_retrieval.disabled")
+            structlogger.warn(
+                "llm_command_generator.flow_retrieval.disabled",
+                event_info=(
+                    "Disabling flow retrieval can cause issues when there are a "
+                    "large number of flows to be included in the prompt. For more"
+                    "information see:\n"
+                    "https://rasa.com/docs/rasa-pro/concepts/dialogue-understanding#how-the-llmcommandgenerator-works"
+                ),
+            )
 
     @property
     def enabled_flow_retrieval(self) -> bool:
         return self.config[FLOW_RETRIEVAL_KEY].get(FLOW_RETRIEVAL_ACTIVE_KEY, True)
+
+    @lru_cache
+    def _compile_template(self, template: str) -> Template:
+        """Compile the prompt template.
+
+        Compiling the template is an expensive operation,
+        so we cache the result."""
+        return Template(template)
 
     @classmethod
     def create(
@@ -192,14 +208,14 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         self, training_data: TrainingData, flows: FlowsList, domain: Domain
     ) -> Resource:
         """Train the llm command generator. Stores all flows into a vector store."""
+        # flow retrieval is populated with only user-defined flows
         if self.flow_retrieval is not None:
-            self.flow_retrieval.populate(flows, domain)
+            self.flow_retrieval.populate(flows.user_flows, domain)
         self.persist()
         return self._resource
 
     def persist(self) -> None:
         """Persist this component to disk for future loading."""
-
         # persist prompt template
         with self._model_storage.write_to(self._resource) as path:
             rasa.shared.utils.io.write_text_file(
@@ -209,7 +225,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         if self.flow_retrieval is not None:
             self.flow_retrieval.persist()
 
-    def predict_commands(
+    async def predict_commands(
         self,
         message: Message,
         flows: FlowsList,
@@ -230,7 +246,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             return []
 
         filtered_flows = (
-            self.flow_retrieval.filter_flows(tracker, message, flows)
+            await self.flow_retrieval.filter_flows(tracker, message, flows)
             if self.flow_retrieval is not None
             else flows
         )
@@ -247,7 +263,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             relevant_flows=list(filtered_flows.user_flow_ids),
         )
 
-        flow_prompt = self.render_template(message, tracker, filtered_flows)
+        flow_prompt = self.render_template(message, tracker, filtered_flows, flows)
         log_llm(
             logger=structlogger,
             log_module="LLMCommandGenerator",
@@ -255,7 +271,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             prompt=flow_prompt,
         )
 
-        action_list = self._generate_action_list_using_llm(flow_prompt)
+        action_list = await self._generate_action_list_using_llm(flow_prompt)
         log_llm(
             logger=structlogger,
             log_module="LLMCommandGenerator",
@@ -269,7 +285,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             # if action_list is None, we couldn't get any response from the LLM
             commands = [ErrorCommand()]
         else:
-            commands = self.parse_commands(action_list, flows)
+            commands = self.parse_commands(action_list, tracker, flows)
 
             if not commands:
                 # no commands are parsed or there's an invalid command
@@ -289,21 +305,31 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         return commands
 
     def render_template(
-        self, message: Message, tracker: DialogueStateTracker, flows: FlowsList
+        self,
+        message: Message,
+        tracker: DialogueStateTracker,
+        startable_flows: FlowsList,
+        all_flows: FlowsList,
     ) -> str:
         """Render the jinja template to create the prompt for the LLM.
 
         Args:
             message: The current message from the user.
             tracker: The tracker containing the current state of the conversation.
-            flows: The flows available to the user.
+            startable_flows: The flows startable at this point in time by the user.
+            all_flows: all flows present in the assistant
 
         Returns:
             The rendered prompt template.
         """
-        top_relevant_frame = top_flow_frame(tracker.stack)
-        top_flow = top_relevant_frame.flow(flows) if top_relevant_frame else None
-        current_step = top_relevant_frame.step(flows) if top_relevant_frame else None
+        # need to make this distinction here because current step of the
+        # top_calling_frame would be the call step, but we need the collect step from
+        # the called frame. If no call is active calling and called frame are the same.
+        top_calling_frame = top_flow_frame(tracker.stack)
+        top_called_frame = top_flow_frame(tracker.stack, ignore_call_frames=False)
+
+        top_flow = top_calling_frame.flow(all_flows) if top_calling_frame else None
+        current_step = top_called_frame.step(all_flows) if top_called_frame else None
 
         flow_slots = self.prepare_current_flow_slots_for_template(
             top_flow, current_step, tracker
@@ -316,7 +342,9 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         current_conversation += f"\nUSER: {latest_user_message}"
 
         inputs = {
-            "available_flows": self.prepare_flows_for_template(flows, tracker),
+            "available_flows": self.prepare_flows_for_template(
+                startable_flows, tracker
+            ),
             "current_conversation": current_conversation,
             "flow_slots": flow_slots,
             "current_flow": top_flow.id if top_flow is not None else None,
@@ -325,9 +353,9 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             "user_message": latest_user_message,
         }
 
-        return Template(self.prompt_template).render(**inputs)
+        return self._compile_template(self.prompt_template).render(**inputs)
 
-    def _generate_action_list_using_llm(self, prompt: str) -> Optional[str]:
+    async def _generate_action_list_using_llm(self, prompt: str) -> Optional[str]:
         """Use LLM to generate a response.
 
         Args:
@@ -339,7 +367,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         llm = llm_factory(self.config.get(LLM_CONFIG_KEY), DEFAULT_LLM_CONFIG)
 
         try:
-            return llm(prompt)
+            return await llm.apredict(prompt)
         except Exception as e:
             # unfortunately, langchain does not wrap LLM exceptions which means
             # we have to catch all exceptions here
@@ -347,11 +375,14 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             return None
 
     @classmethod
-    def parse_commands(cls, actions: Optional[str], flows: FlowsList) -> List[Command]:
+    def parse_commands(
+        cls, actions: Optional[str], tracker: DialogueStateTracker, flows: FlowsList
+    ) -> List[Command]:
         """Parse the actions returned by the llm into intent and entities.
 
         Args:
             actions: The actions returned by the llm.
+            tracker: The tracker containing the current state of the conversation.
             flows: the list of flows
 
         Returns:

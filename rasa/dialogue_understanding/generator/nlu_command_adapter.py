@@ -66,7 +66,7 @@ class NLUCommandAdapter(GraphComponent, CommandGenerator):
         """Trains the NLU command adapter."""
         return self._resource
 
-    def predict_commands(
+    async def predict_commands(
         self,
         message: Message,
         flows: FlowsList,

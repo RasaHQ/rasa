@@ -204,7 +204,7 @@ class LLMIntentClassifier(GraphComponent, IntentClassifier):
         )
         return self._resource
 
-    def process(self, messages: List[Message]) -> List[Message]:
+    async def process(self, messages: List[Message]) -> List[Message]:
         """Sets the message intent and add it to the output if it exists."""
         for message in messages:
             if message.get(TEXT, "").startswith(INTENT_MESSAGE_PREFIX):
@@ -212,7 +212,9 @@ class LLMIntentClassifier(GraphComponent, IntentClassifier):
                 # that start with a slash as they are direct intents
                 continue
             examples = self.select_few_shot_examples(message)
-            predicted_intent_name = self.classify_intent_of_message(message, examples)
+            predicted_intent_name = await self.classify_intent_of_message(
+                message, examples
+            )
 
             if not predicted_intent_name:
                 # or should we predict self.fallback_intent?
@@ -246,7 +248,7 @@ class LLMIntentClassifier(GraphComponent, IntentClassifier):
         # )
         return messages
 
-    def _generate_llm_response(
+    async def _generate_llm_response(
         self, message: Message, intents: List[str], few_shot_examples: List[Document]
     ) -> Optional[str]:
         """Use LLM to generate a response.
@@ -281,7 +283,9 @@ class LLMIntentClassifier(GraphComponent, IntentClassifier):
         )
 
         try:
-            return chain.run(examples=examples, intents=intents, message=message_text)
+            return await chain.arun(
+                examples=examples, intents=intents, message=message_text
+            )
         except Exception as e:
             structlogger.error("llmintent.llm.error", error=e)
             return None
@@ -332,7 +336,7 @@ class LLMIntentClassifier(GraphComponent, IntentClassifier):
             template_format="jinja2",
         )
 
-    def classify_intent_of_message(
+    async def classify_intent_of_message(
         self, message: Message, few_shot_examples: List[Document]
     ) -> Optional[Text]:
         """Classify the message using an LLM.
@@ -347,7 +351,7 @@ class LLMIntentClassifier(GraphComponent, IntentClassifier):
         """
         provided_intents = self.select_intent_examples(message, few_shot_examples)
 
-        generated_intent = self._generate_llm_response(
+        generated_intent = await self._generate_llm_response(
             message, provided_intents, few_shot_examples
         )
 

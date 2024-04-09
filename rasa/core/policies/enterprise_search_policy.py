@@ -1,5 +1,6 @@
 import importlib.resources
 import json
+import re
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text
 
 import dotenv
@@ -325,7 +326,7 @@ class EnterpriseSearchPolicy(Policy):
                 return sanitize_message_for_prompt(event.text)
         return ""
 
-    def predict_action_probabilities(  # type: ignore[override]
+    async def predict_action_probabilities(  # type: ignore[override]
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
@@ -368,7 +369,7 @@ class EnterpriseSearchPolicy(Policy):
         search_query = self._get_last_user_message(tracker)
 
         try:
-            documents = self.vector_store.search(
+            documents = await self.vector_store.search(
                 query=search_query,
                 threshold=vector_search_threshold,
             )
@@ -382,9 +383,12 @@ class EnterpriseSearchPolicy(Policy):
 
         logger.debug(f"{logger_key}.documents", num_documents=len(documents))
         prompt = self._render_prompt(tracker, documents)
-        llm_answer = self._generate_llm_answer(llm, prompt)
+        llm_answer = await self._generate_llm_answer(llm, prompt)
         if llm_answer is None:
             return self._create_prediction_internal_error(domain, tracker)
+
+        if self.citation_enabled:
+            llm_answer = self.post_process_citations(llm_answer)
 
         logger.debug(f"{logger_key}.llm_answer", llm_answer=llm_answer)
         action_metadata = {
@@ -426,9 +430,11 @@ class EnterpriseSearchPolicy(Policy):
         )
         return prompt
 
-    def _generate_llm_answer(self, llm: "BaseLLM", prompt: Text) -> Optional[Text]:
+    async def _generate_llm_answer(
+        self, llm: "BaseLLM", prompt: Text
+    ) -> Optional[Text]:
         try:
-            llm_answer = llm(prompt)
+            llm_answer = await llm.apredict(prompt)
         except Exception as e:
             # unfortunately, langchain does not wrap LLM exceptions which means
             # we have to catch all exceptions here
@@ -618,3 +624,83 @@ class EnterpriseSearchPolicy(Policy):
             DEFAULT_ENTERPRISE_SEARCH_PROMPT_TEMPLATE,
         )
         return deep_container_fingerprint([prompt_template, local_knowledge_data])
+
+    @staticmethod
+    def post_process_citations(llm_answer: str) -> str:
+        """Post-process the LLM answer.
+
+         Re-writes the bracketed numbers to start from 1 and
+         re-arranges the sources to follow the enumeration order.
+
+        Args:
+            llm_answer: The LLM answer.
+
+        Returns:
+            The post-processed LLM answer.
+        """
+        # Split llm_answer into answer and citations
+        try:
+            answer, citations = llm_answer.rsplit("Sources:", 1)
+        except ValueError:
+            # if there is no "Sources:" in the llm_answer
+            return llm_answer
+
+        # Find all source references in the answer
+        pattern = r"\[\s*(\d+(?:\s*,\s*\d+)*)\s*\]"
+        matches = re.findall(pattern, answer)
+        old_source_indices = [
+            int(num.strip()) for match in matches for num in match.split(",")
+        ]
+
+        # Map old source references to the correct enumeration
+        renumber_mapping = {num: idx + 1 for idx, num in enumerate(old_source_indices)}
+
+        new_answer = []
+        for word in answer.split():
+            matches = (
+                re.findall(pattern, word)
+                or re.findall(r"\[\d+", word)
+                or re.findall(r"\d+\]", word)
+                or re.findall(r"\d+", word)
+            )
+            if matches:
+                for match in matches:
+                    if "," in match:
+                        old_indices = [
+                            int(num.strip()) for num in match.split(",") if num
+                        ]
+                        new_indices = [
+                            renumber_mapping[old_index] for old_index in old_indices
+                        ]
+                        word = word.replace(
+                            match, f"{', '.join(map(str, new_indices))}"
+                        )
+                    else:
+                        old_index = int(match.strip("[].,:;?!"))
+                        new_index = renumber_mapping[old_index]
+                        word = word.replace(str(old_index), str(new_index))
+            new_answer.append(word)
+
+        # join the words
+        joined_answer = " ".join(new_answer)
+        joined_answer += "\nSources:\n"
+
+        new_sources: List[str] = []
+
+        for line in citations.split("\n"):
+            pattern = r"(?<=\[)\d+"
+            match = re.search(pattern, line)
+            if match:
+                old_index = int(match.group(0))
+                new_index = renumber_mapping[old_index]
+                # replace only the first occurrence of the old index
+                line = line.replace(f"[{old_index}]", f"[{new_index}]", 1)
+
+                # insert the line into the new_index position
+                new_sources.insert(new_index - 1, line)
+            elif line.strip():
+                new_sources.append(line)
+
+        joined_sources = "\n".join(new_sources)
+
+        return joined_answer + joined_sources

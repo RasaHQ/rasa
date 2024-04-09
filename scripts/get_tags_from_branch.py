@@ -27,14 +27,18 @@ def get_tags_from_branches(branches):
 
     return tags
 
+# The list of supported branches from the Rasa Product Release and Maintenance Policy (https://rasa.com/rasa-product-release-and-maintenance-policy/)
 input_branches = sys.argv[1]
+# The branch that the product you're patching became available on
+first_release = sys.argv[2]
 
 # Convert stringified list to a Python list.
 branches = ast.literal_eval(input_branches)
 tags = get_tags_from_branches(branches)
 
-# Filter out tags lower than '3.7.8'
-filtered_tags = [tag for tag in tags if tuple(map(int, tag.split('.'))) >= (3, 7, 8)]
+# Filter out tags lower than the version where the product you're patching became available
+first_release_version = tuple(map(int, first_release.split('.')))
+filtered_tags = [tag for tag in tags if tuple(map(int, tag.split('.'))) >= first_release_version]
 
 print(f'{filtered_tags}')
 

@@ -59,7 +59,8 @@ class FlowPolicy(Policy):
             frame: The frame to check.
 
         Returns:
-            `True` if the policy supports the frame, `False` otherwise."""
+        `True` if the policy supports the frame, `False` otherwise.
+        """
         return isinstance(frame, BaseFlowStackFrame)
 
     @staticmethod
@@ -105,7 +106,7 @@ class FlowPolicy(Policy):
         """
         return self.resource
 
-    def predict_action_probabilities(
+    async def predict_action_probabilities(
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
@@ -190,6 +191,8 @@ class FlowPolicy(Policy):
             action_name: The name of the predicted action.
             domain: The model's domain.
             score: The score of the predicted action.
+            events: The events to return.
+            action_metadata: The metadata of the predicted action.
 
         Returns:
             The prediction result where the score is used for one hot encoding.

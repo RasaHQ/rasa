@@ -40,14 +40,15 @@ class CommandGenerator:
 
     Parses a message and returns a list of commands. The commands are then
     executed and will lead to tracker state modifications and action
-    predictions."""
+    predictions.
+    """
 
     def __init__(self, config: Dict[Text, Any]):
         self.user_input_config = UserInputConfig.from_dict(
             config.get("user_input") or {}
         )
 
-    def process(
+    async def process(
         self,
         messages: List[Message],
         flows: FlowsList,
@@ -76,7 +77,9 @@ class CommandGenerator:
                 # i.e. another command generator already predicted commands
                 continue
 
-            commands = self._evaluate_and_predict(message, startable_flows, tracker)
+            commands = await self._evaluate_and_predict(
+                message, startable_flows, tracker
+            )
             # Double check commands for guarded flows. Unlikely but the llm could
             # have predicted a command for a flow that is not in the startable
             # flow list supplied in the prompt.
@@ -91,8 +94,7 @@ class CommandGenerator:
     def get_startable_flows(
         self, flows: FlowsList, tracker: Optional[DialogueStateTracker] = None
     ) -> FlowsList:
-        """
-        Determines a set of startable flows by evaluating flow guard conditions.
+        """Determines a set of startable flows by evaluating flow guard conditions.
 
         Args:
             flows: Underlying flows.
@@ -109,14 +111,13 @@ class CommandGenerator:
         # else evaluate it without the tracker context
         return flows.get_startable_flows({})
 
-    def _evaluate_and_predict(
+    async def _evaluate_and_predict(
         self,
         message: Message,
         startable_flows: FlowsList,
         tracker: Optional[DialogueStateTracker] = None,
     ) -> List[Command]:
-        """Evaluates the given message for errors and predicts commands if no errors
-        are found.
+        """Evaluates message for errors and predicts commands if no errors are found.
 
         Args:
             message: The message to process.
@@ -132,14 +133,14 @@ class CommandGenerator:
 
         # if no errors, try predicting commands
         try:
-            return self.predict_commands(message, startable_flows, tracker)
+            return await self.predict_commands(message, startable_flows, tracker)
         except NotImplementedError:
             raise
         except Exception as e:
             structlogger.error("command_generator.predict.error", error=str(e))
             return []
 
-    def predict_commands(
+    async def predict_commands(
         self,
         message: Message,
         flows: FlowsList,
@@ -187,7 +188,7 @@ class CommandGenerator:
         return checked_commands
 
     def evaluate_message(self, message: Message) -> List[Command]:
-        """Evaluates the given message
+        """Evaluates the given message.
 
         Args:
             message: The message to evaluate.
@@ -195,7 +196,6 @@ class CommandGenerator:
         Returns:
             A list of error commands indicating the type of error.
         """
-
         errors: List[Command]
 
         if self.check_if_message_is_empty(message):
