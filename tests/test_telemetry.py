@@ -148,7 +148,7 @@ def test_in_ci_if_in_ci(monkeypatch: MonkeyPatch):
 def test_with_default_context_fields_contains_package_versions():
     context = telemetry.with_default_context_fields()
     assert "python" in context
-    assert context["version"] == rasa.__version__
+    assert context["rasa_pro"] == rasa.__version__
 
 
 def test_default_context_fields_overwrite_by_context():
