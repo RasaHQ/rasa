@@ -251,7 +251,7 @@ jobs:
           check_name: "Metric Integration Test Results"
           comment_mode: ${{ (github.event.workflow_run.event == 'pull_request' || github.event_name == 'pull_request') && 'always' || 'off' }}
           
-  sequential_integration_test:
+  sequential-integration-test:
       name: Run Sequential Integration Tests
       runs-on: ubuntu-20.04
       timeout-minutes: 60
@@ -305,7 +305,88 @@ jobs:
             check_name: "Sequential Integration Test Results"
             comment_mode: ${{ (github.event.workflow_run.event == 'pull_request' || github.event_name == 'pull_request') && 'always' || 'off' }}
 
-  concurrent_lockstore_integration_test:
+  non-sequential-integration-test:
+    name: Run Non-Sequential Integration Tests
+    runs-on: ubuntu-22.04-8core
+    timeout-minutes: 60
+    env:
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+
+    services:
+      redis:
+        image: redis:6
+        # Set health checks to wait until redis has started
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          # FIXME: cannot use ${{ env.REDIS_PORT }} here
+          # mapping container ports to the host
+          - 6379:6379
+
+      postgres:
+        image: postgres:13
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        env:
+          # postgres image requires password to be set
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+        ports:
+          # FIXME: cannot use ${{ env.POSTGRES_PORT }} here
+          # mapping container ports to the host
+          - 5432:5432
+
+      mongodb:
+        image: mongodb/mongodb-community-server:6.0.4-ubuntu2204
+        options: >-
+          --health-cmd "echo 'db.runCommand("ping").ok' | mongosh --quiet"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 27017:27017
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Prepare the job for integration tests
+        uses: ./.github/actions/integration-test-prerequisites
+        with:
+            DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+            POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
+
+      - name: Test Code with Services 🩺
+        env:
+          JOBS: 6
+          INTEGRATION_TEST_PYTEST_MARKERS: '"(not sequential) and (not broker) and (not concurrent_lock_store)"'
+          PYTHONIOENCODING: "utf-8"
+          INTEGRATION_TESTS_STUDIO_LICENSE: ${{ secrets.INTEGRATION_TESTS_STUDIO_LICENSE }}
+          INTEGRATION_TESTS_PRO_LICENSE: ${{ secrets.INTEGRATION_TESTS_PRO_LICENSE }}
+          INTEGRATION_TESTS_PRO_LICENSE_ALL_FEATURES: ${{ secrets.INTEGRATION_TESTS_PRO_LICENSE_ALL_FEATURES }}
+        run: |
+          make test-integration
+
+      - name: Publish test results
+        if: always()
+        uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
+        with:
+          files: report_integration.xml
+          check_name: "Non-Sequential Integration Test Results"
+          comment_mode: ${{ (github.event.workflow_run.event == 'pull_request' || github.event_name == 'pull_request') && 'always' || 'off' }}
+
+  concurrent-lockstore-integration-test:
     name: Run Concurrent LockStore Integration Tests
     runs-on: ubuntu-20.04
     timeout-minutes: 60
