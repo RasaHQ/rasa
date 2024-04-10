@@ -377,6 +377,8 @@ jobs:
           INTEGRATION_TESTS_PRO_LICENSE_ALL_FEATURES: ${{ secrets.INTEGRATION_TESTS_PRO_LICENSE_ALL_FEATURES }}
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
         run: |
+          make prepare-tests-ubuntu
+          make prepare-spacy
           make test-integration
 
       - name: Publish test results
