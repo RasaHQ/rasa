@@ -16,9 +16,9 @@ help:
 	@echo "    install-full"
 	@echo "        Install rasa with all extras (transformers, tensorflow_text, spacy, jieba)."
 	@echo "    formatter"
-	@echo "        Apply black formatting to code."
+	@echo "        Apply ruff formatting to code."
 	@echo "    lint"
-	@echo "        Lint code with ruff, and check if black formatter should be applied."
+	@echo "        Lint code with ruff, and check if ruff formatter should be applied."
 	@echo "    lint-docstrings"
 	@echo "        Check docstring conventions in changed files."
 	@echo "    types"
@@ -74,14 +74,14 @@ install-full: install-mitie
 	poetry install -E full
 
 formatter:
-	poetry run black rasa tests
+	poetry run ruff format rasa tests
 
 format: formatter
 
 lint:
      # Ignore docstring errors when running on the entire project
 	poetry run ruff check rasa tests --ignore D
-	poetry run black --check rasa tests
+	poetry run ruff format --check rasa tests
 	make lint-docstrings
 
 # Compare against `main` if no branch was provided

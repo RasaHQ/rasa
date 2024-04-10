@@ -300,14 +300,14 @@ class EvaluationStore:
                 filter(
                     lambda x: x.get(ENTITY_ATTRIBUTE_TEXT) == text, self.entity_targets
                 ),
-                key=lambda x: x[ENTITY_ATTRIBUTE_START],  # type: ignore[literal-required] # noqa: E501
+                key=lambda x: x[ENTITY_ATTRIBUTE_START],  # type: ignore[literal-required]
             )
             entity_predictions = sorted(
                 filter(
                     lambda x: x.get(ENTITY_ATTRIBUTE_TEXT) == text,
                     self.entity_predictions,
                 ),
-                key=lambda x: x[ENTITY_ATTRIBUTE_START],  # type: ignore[literal-required] # noqa: E501
+                key=lambda x: x[ENTITY_ATTRIBUTE_START],  # type: ignore[literal-required]
             )
 
             i_pred, i_target = 0, 0
@@ -461,7 +461,7 @@ def _clean_entity_results(
     cleaned_entities = []
 
     for r in tuple(entity_results):
-        cleaned_entity: EntityPrediction = {ENTITY_ATTRIBUTE_TEXT: text}  # type: ignore[misc]  # noqa E501
+        cleaned_entity: EntityPrediction = {ENTITY_ATTRIBUTE_TEXT: text}  # type: ignore[misc]
         for k in (
             ENTITY_ATTRIBUTE_START,
             ENTITY_ATTRIBUTE_END,
@@ -706,7 +706,6 @@ async def _collect_action_executed_predictions(
     event: ActionExecuted,
     fail_on_prediction_errors: bool,
 ) -> Tuple[EvaluationStore, PolicyPrediction, Optional[EntityEvaluationResult]]:
-
     action_executed_eval_store = EvaluationStore()
 
     expected_action_name = event.action_name
@@ -825,7 +824,6 @@ async def _predict_tracker_actions(
     List[Dict[Text, Any]],
     List[EntityEvaluationResult],
 ]:
-
     processor = agent.processor
     if agent.processor is not None:
         processor = agent.processor

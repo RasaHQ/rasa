@@ -58,7 +58,6 @@ def run_actions(args: argparse.Namespace) -> None:
 
 
 def _validate_model_path(model_path: Text, parameter: Text, default: Text) -> Text:
-
     if model_path is not None and not os.path.exists(model_path):
         reason_str = f"'{model_path}' not found."
         if model_path is None:

@@ -77,9 +77,7 @@ async def test_tracing_llm_command_generator_default_attrs(
     )
     await mock_llm_command_generator._generate_action_list_using_llm("some text")
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1
@@ -132,9 +130,7 @@ async def test_tracing_llm_command_generator_azure_attrs(
     )
     await mock_llm_command_generator._generate_action_list_using_llm("some text")
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1
@@ -188,9 +184,7 @@ async def test_tracing_llm_command_generator_non_default_llm_attrs(
     )
     await mock_llm_command_generator._generate_action_list_using_llm("some text")
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1
@@ -238,9 +232,7 @@ def test_tracing_llm_command_generator_check_commands_against_startable_flows(
         startable_flows=FlowsList(underlying_flows=[Flow(id="transfer_money")]),
     )
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     #
@@ -282,9 +274,7 @@ async def test_tracing_llm_command_generator_prompt_tokens(
         "This is a test prompt."
     )
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1
@@ -338,9 +328,7 @@ async def test_tracing_llm_command_generator_prompt_tokens_non_openai(
             in caplog.text
         )
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1

@@ -34,9 +34,7 @@ async def train_comparison_models(
             for policy_config in policy_configs:
                 config_name = os.path.splitext(os.path.basename(policy_config))[0]
                 logging.info(
-                    "Starting to train {} round {}/{}"
-                    " with {}% exclusion"
-                    "".format(
+                    "Starting to train {} round {}/{} with {}% exclusion".format(
                         config_name, current_run, len(exclusion_percentages), percentage
                     )
                 )

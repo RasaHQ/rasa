@@ -775,7 +775,6 @@ async def test_response_invalid_response(
 
 
 async def test_response_channel_specific(default_nlg, default_tracker, domain: Domain):
-
     output_channel = SlackBot("DummyToken", "General")
 
     events = await ActionBotResponse("utter_channel").run(

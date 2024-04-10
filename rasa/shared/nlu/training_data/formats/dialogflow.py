@@ -34,8 +34,9 @@ class DialogflowReader(TrainingDataReader):
 
         if fformat not in {DIALOGFLOW_INTENT, DIALOGFLOW_ENTITIES}:
             raise ValueError(
-                "fformat must be either {}, or {}"
-                "".format(DIALOGFLOW_INTENT, DIALOGFLOW_ENTITIES)
+                "fformat must be either {}, or {}".format(
+                    DIALOGFLOW_INTENT, DIALOGFLOW_ENTITIES
+                )
             )
 
         root_js = rasa.shared.utils.io.read_json_file(filename)

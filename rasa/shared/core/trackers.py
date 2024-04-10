@@ -289,7 +289,7 @@ class DialogueStateTracker:
         parse_data_with_nlu_state = self.latest_message.parse_data.copy()
         # Combine entities predicted by NLU with entities predicted by policies so that
         # users can access them together via `latest_message` (e.g. in custom actions)
-        parse_data_with_nlu_state[ENTITIES] = self.latest_message.entities  # type: ignore[literal-required]  # noqa: E501
+        parse_data_with_nlu_state[ENTITIES] = self.latest_message.entities  # type: ignore[literal-required]
 
         return parse_data_with_nlu_state
 
@@ -556,7 +556,6 @@ class DialogueStateTracker:
         tracker = self.init_copy()
 
         for event in self.applied_events(True):
-
             if isinstance(event, ActionExecuted):
                 yield tracker, event.hide_rule_turn
 
@@ -1015,7 +1014,6 @@ class DialogueStateTracker:
 
         # cycle through events in reverse order (newest events are appended at the end)
         for event in reversed(self.events):
-
             # check for FlowStarted event and append flow if it's in the flows lists
             if (
                 isinstance(event, FlowStarted)

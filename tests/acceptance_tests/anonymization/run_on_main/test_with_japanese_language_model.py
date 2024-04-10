@@ -23,7 +23,10 @@ from rasa.anonymization.anonymization_rule_executor import (
         ("PHONE_NUMBER", "私の電話番号は 020 123 4567 です"),
         ("EMAIL_ADDRESS", "test@test.com にメールを送ってください"),
         ("IBAN_CODE", "IBAN ES79 2100 0813 6101 2345 6789 に送金できます"),
-        ("CREDIT_CARD", "このクレジット カード番号 4916741327614057 を使用してください"),  # noqa: E501
+        (
+            "CREDIT_CARD",
+            "このクレジット カード番号 4916741327614057 を使用してください",
+        ),
         ("DATE_TIME", "私の誕生日は01/01/1990です"),
         ("IP_ADDRESS", "127.0.0.1 を調べる"),
         ("URL", "www.test.com で情報を探す必要があります"),

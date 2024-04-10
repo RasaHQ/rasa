@@ -231,7 +231,6 @@ class LLMBasedRouter(GraphComponent):
             return [SetSlotCommand(ROUTE_TO_CALM_SLOT, False)]
 
     def render_template(self, message: Message) -> str:
-
         inputs = {
             "user_message": message.get(TEXT),
             f"{CALM_ENTRY}_{STICKY}": self.config[CALM_ENTRY][STICKY],

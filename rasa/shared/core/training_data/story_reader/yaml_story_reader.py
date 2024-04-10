@@ -482,7 +482,7 @@ class YAMLStoryReader(StoryReader):
 
     @staticmethod
     def _parse_raw_entities(
-        raw_entities: Union[List[Dict[Text, Text]], List[Text]]
+        raw_entities: Union[List[Dict[Text, Text]], List[Text]],
     ) -> List[Dict[Text, Optional[Text]]]:
         final_entities = []
         for entity in raw_entities:
@@ -556,7 +556,6 @@ class YAMLStoryReader(StoryReader):
         return default_value
 
     def _parse_action(self, step: Dict[Text, Any]) -> None:
-
         action_name = step.get(KEY_ACTION, "")
         if not action_name:
             rasa.shared.utils.io.raise_warning(
@@ -582,7 +581,6 @@ class YAMLStoryReader(StoryReader):
         self._add_event(ActiveLoop.type_name, {LOOP_NAME: active_loop_name})
 
     def _parse_checkpoint(self, step: Dict[Text, Any]) -> None:
-
         checkpoint_name = step.get(KEY_CHECKPOINT, "")
         slots = step.get(KEY_CHECKPOINT_SLOTS, [])
 

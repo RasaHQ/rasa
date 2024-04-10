@@ -269,7 +269,7 @@ def extract_intent_name_and_slots(
             slots[slot_name] = slot_value.value
             break
     return {
-        "intent_name": str(tracker.latest_message.intent.get(INTENT_NAME_KEY)),  # type: ignore[union-attr]  # noqa: E501
+        "intent_name": str(tracker.latest_message.intent.get(INTENT_NAME_KEY)),  # type: ignore[union-attr]
         **slots,
     }
 
@@ -523,7 +523,6 @@ def extract_attrs_for_policy_prediction(
     diagnostic_data: Optional[Dict[Text, Any]] = None,
     action_metadata: Optional[Dict[Text, Any]] = None,
 ) -> Dict[str, Any]:
-
     # diagnostic_data can contain ndarray type values which need to be converted
     # into a list since the returning values have to be JSON serializable.
     if isinstance(diagnostic_data, dict):

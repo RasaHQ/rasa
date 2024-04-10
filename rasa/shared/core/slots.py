@@ -364,7 +364,7 @@ class ListSlot(Slot):
         """Sets the slot's value."""
         # Call property setter of superclass
         # FIXME: https://github.com/python/mypy/issues/8085
-        super(ListSlot, self.__class__).value.fset(self, self.coerce_value(value))  # type: ignore[attr-defined] # noqa: E501
+        super(ListSlot, self.__class__).value.fset(self, self.coerce_value(value))  # type: ignore[attr-defined]
 
 
 class CategoricalSlot(Slot):
@@ -579,7 +579,9 @@ class CategoricalSlot(Slot):
         """
         # Call property setter of superclass
         # FIXME: https://github.com/python/mypy/issues/8085
-        super(CategoricalSlot, self.__class__).value.fset(self, self.coerce_value(value))  # type: ignore[attr-defined] # noqa: E501
+        super(CategoricalSlot, self.__class__).value.fset(  # type: ignore[attr-defined]
+            self, self.coerce_value(value)
+        )
 
 
 class AnySlot(Slot):

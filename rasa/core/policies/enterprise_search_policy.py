@@ -529,7 +529,7 @@ class EnterpriseSearchPolicy(Policy):
         """
         result = self._default_predictions(domain)
         if action_name:
-            result[domain.index_for_action(action_name)] = score  # type: ignore[assignment]  # noqa: E501
+            result[domain.index_for_action(action_name)] = score  # type: ignore[assignment]
         return result
 
     @classmethod

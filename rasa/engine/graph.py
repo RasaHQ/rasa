@@ -108,10 +108,10 @@ class GraphSchema:
         nodes = {}
         for node_name, serialized_node in serialized_graph_schema["nodes"].items():
             try:
-                serialized_node[
-                    "uses"
-                ] = rasa.shared.utils.common.class_from_module_path(
-                    serialized_node["uses"]
+                serialized_node["uses"] = (
+                    rasa.shared.utils.common.class_from_module_path(
+                        serialized_node["uses"]
+                    )
                 )
 
                 resource = serialized_node["resource"]

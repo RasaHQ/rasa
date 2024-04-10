@@ -345,8 +345,9 @@ class ActionBotResponse(Action):
         if message is None:
             if not self.silent_fail:
                 logger.error(
-                    "Couldn't create message for response '{}'."
-                    "".format(self.utter_action)
+                    "Couldn't create message for response '{}'.".format(
+                        self.utter_action
+                    )
                 )
             return []
         message["utter_action"] = self.utter_action
@@ -492,8 +493,9 @@ class ActionRetrieveResponse(ActionBotResponse):
         else:
             if not self.silent_fail:
                 logger.error(
-                    "Couldn't create message for response action '{}'."
-                    "".format(self.action_name)
+                    "Couldn't create message for response action '{}'.".format(
+                        self.action_name
+                    )
                 )
             return []
 
@@ -703,7 +705,6 @@ class ActionDeactivateLoop(Action):
 
 class RemoteAction(Action):
     def __init__(self, name: Text, action_endpoint: Optional[EndpointConfig]) -> None:
-
         self._name = name
         self.action_endpoint = action_endpoint
 
@@ -987,7 +988,7 @@ def _revert_affirmation_events(tracker: "DialogueStateTracker") -> List[Event]:
     last_user_event = copy.deepcopy(last_user_event)
     # FIXME: better type annotation for `parse_data` would require
     # a larger refactoring (e.g. switch to dataclass)
-    last_user_event.parse_data["intent"]["confidence"] = 1.0  # type: ignore[typeddict-item]  # noqa: E501
+    last_user_event.parse_data["intent"]["confidence"] = 1.0  # type: ignore[typeddict-item]
 
     return revert_events + [last_user_event]
 
@@ -1061,7 +1062,7 @@ class ActionDefaultAskAffirmation(Action):
             intent_to_affirm == DEFAULT_NLU_FALLBACK_INTENT_NAME
             and len(intent_ranking) > 1
         ):
-            intent_to_affirm = intent_ranking[1][INTENT_NAME_KEY]  # type: ignore[literal-required] # noqa: E501
+            intent_to_affirm = intent_ranking[1][INTENT_NAME_KEY]  # type: ignore[literal-required]
 
         affirmation_message = f"Did you mean '{intent_to_affirm}'?"
 

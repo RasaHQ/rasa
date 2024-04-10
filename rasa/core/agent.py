@@ -122,7 +122,6 @@ async def _pull_model_and_fingerprint(
                 headers=headers,
                 params=params,
             ) as resp:
-
                 if resp.status in [204, 304]:
                     logger.debug(
                         "Model server returned {} status code, "
@@ -431,7 +430,7 @@ class Agent:
         self, sender_id: Text
     ) -> Optional[Dict[Text, Any]]:
         """Predict the next action for a sender id."""
-        return await self.processor.predict_next_for_sender_id(  # type: ignore[union-attr] # noqa:E501
+        return await self.processor.predict_next_for_sender_id(  # type: ignore[union-attr]
             sender_id
         )
 
@@ -442,7 +441,7 @@ class Agent:
         verbosity: EventVerbosity = EventVerbosity.AFTER_RESTART,
     ) -> Optional[Dict[Text, Any]]:
         """Predicts the next action."""
-        return await self.processor.predict_next_with_tracker(  # type: ignore[union-attr] # noqa:E501
+        return await self.processor.predict_next_with_tracker(  # type: ignore[union-attr]
             tracker, verbosity
         )
 
@@ -515,7 +514,6 @@ class Agent:
         return await self.handle_message(msg)
 
     def _set_fingerprint(self, fingerprint: Optional[Text] = None) -> None:
-
         if fingerprint:
             self.fingerprint = fingerprint
         else:

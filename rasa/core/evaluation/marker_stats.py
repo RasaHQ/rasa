@@ -12,7 +12,7 @@ from rasa.core.evaluation.marker_base import EventMetaData
 
 
 def compute_statistics(
-    values: List[Union[float, int]]
+    values: List[Union[float, int]],
 ) -> Dict[Text, Union[int, float, np.floating]]:
     """Computes some statistics over the given numbers."""
     return {
@@ -138,7 +138,6 @@ class MarkerStatistics:
         self.session_identifier.append((sender_id, session_idx))
 
         for marker_name, meta_data in meta_data_on_relevant_events_per_marker.items():
-
             num_preceding_user_turns = [
                 event_meta_data.preceding_user_turns for event_meta_data in meta_data
             ]
