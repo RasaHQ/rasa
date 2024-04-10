@@ -20,8 +20,6 @@ env:
 permissions:
   checks: write
   id-token: write
-  pull-requests: write
-  contents: read
   
 jobs:
   rasa-private-dev-docker-image:
@@ -149,13 +147,12 @@ jobs:
         run: |
           make stop-tracing-integration-containers
 
-      - name: Publish test results
+      - name: Save Test Results
         if: always()
-        uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
         with:
-          files: report_tracing.xml
-          check_name: "Tracing Integration Test Results"
-          comment_mode: ${{ (github.event.workflow_run.event == 'pull_request' || github.event_name == 'pull_request') && 'always' || 'off' }}
+          name: Tracing Integration Test Results
+          path: report_tracing.xml
 
   metric-integration-test:
     name: Metric Integration Tests
@@ -218,38 +215,17 @@ jobs:
         env:
           PYTHONIOENCODING: "utf-8"
           RASA_TELEMETRY_WRITE_KEY: ${{ secrets.SEGMENT_WRITE_DEV_KEY }}
-    
-      - name: Check otlp-collector container logs
-        if: always()
-        run: |
-          docker compose -f tests_deployment/integration_tests_tracing_deployment/metrics_setup/docker-compose.yml logs otlp-collector
-
-      - name: Check prometheus container logs
-        if: always()
-        run: |
-          docker compose -f tests_deployment/integration_tests_tracing_deployment/metrics_setup/docker-compose.yml logs prometheus
-      
-      - name: Check rasa-pro-assistent container logs
-        if: always()
-        run: |
-          docker compose -f tests_deployment/integration_tests_tracing_deployment/metrics_setup/docker-compose.yml logs rasa-pro-assistant
-
-      - name: Check action-server container logs
-        if: always()
-        run: |
-          docker compose -f tests_deployment/integration_tests_tracing_deployment/metrics_setup/docker-compose.yml logs prometheus action-server
 
       - name: Metric Integration Testing - Stop docker containers
         run: |
           make stop-metrics-integration-containers
 
-      - name: Publish test results
+      - name: Save Test Results
         if: always()
-        uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
         with:
-          files: report_metric.xml
-          check_name: "Metric Integration Test Results"
-          comment_mode: ${{ (github.event.workflow_run.event == 'pull_request' || github.event_name == 'pull_request') && 'always' || 'off' }}
+          name: Metric Integration Test Results
+          path: report_metric.xml
           
   sequential-integration-test:
       name: Run Sequential Integration Tests
@@ -297,13 +273,16 @@ jobs:
           run: |
             make test-integration
         
-        - name: Publish test results
+        - name: Prepare test results
           if: always()
-          uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
+          run: mv report_integration.xml sequential_report_integration.xml
+  
+        - name: Save Test Results
+          if: always()
+          uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
           with:
-            files: report_integration.xml
-            check_name: "Sequential Integration Test Results"
-            comment_mode: ${{ (github.event.workflow_run.event == 'pull_request' || github.event_name == 'pull_request') && 'always' || 'off' }}
+            name: Sequential Integration Test Results
+            path: sequential_report_integration.xml
 
   non-sequential-integration-test:
     name: Run Non-Sequential Integration Tests
@@ -381,13 +360,16 @@ jobs:
           make prepare-spacy
           make test-integration
 
-      - name: Publish test results
+      - name: Prepare test results
         if: always()
-        uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
+        run: mv report_integration.xml non-sequential_report_integration.xml
+
+      - name: Save Test Results
+        if: always()
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
         with:
-          files: report_integration.xml
-          check_name: "Non-Sequential Integration Test Results"
-          comment_mode: ${{ (github.event.workflow_run.event == 'pull_request' || github.event_name == 'pull_request') && 'always' || 'off' }}
+          name: Non-Sequential Integration Test Results
+          path: non-sequential_report_integration.xml
 
   concurrent-lockstore-integration-test:
     name: Run Concurrent LockStore Integration Tests
@@ -430,10 +412,37 @@ jobs:
         run: |
           make test-integration
       
+      - name: Prepare test results
+        if: always()
+        run: mv report_integration.xml concurrent-lockstore_report_integration.xml
+
+      - name: Save Test Results
+        if: always()
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
+        with:
+          name: Concurrent LockStore Integration Test Results
+          path: concurrent-lockstore_report_integration.xml
+
+  publish-test-results:
+    runs-on: ubuntu-20.04
+    permissions:
+      pull-requests: write
+      contents: read
+      issues: read
+    needs: [tracing-integration-test, metric-integration-test,
+            sequential-integration-test, non-sequential-integration-test,
+            concurrent-lockstore-integration-test]
+    if: always()
+    steps:
+      - name: Download test reports
+        uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427 #v4.1.4
+        with:
+          path: artifacts
+
       - name: Publish test results
         if: always()
         uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
         with:
-          files: report_integration.xml
-          check_name: "Concurrent LockStore Integration Test Results"
+          files: "artifacts/**/*.xml"
+          check_name: "Integration Test Results"
           comment_mode: ${{ (github.event.workflow_run.event == 'pull_request' || github.event_name == 'pull_request') && 'always' || 'off' }}
