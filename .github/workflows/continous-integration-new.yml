@@ -20,6 +20,9 @@ env:
 permissions:
   checks: write
   id-token: write
+  pull-requests: write
+  contents: read
+  issues: read
   
 jobs:
   rasa-private-dev-docker-image:
@@ -425,10 +428,6 @@ jobs:
 
   publish-test-results:
     runs-on: ubuntu-20.04
-    permissions:
-      pull-requests: write
-      contents: read
-      issues: read
     needs: [tracing-integration-test, metric-integration-test,
             sequential-integration-test, non-sequential-integration-test,
             concurrent-lockstore-integration-test]
