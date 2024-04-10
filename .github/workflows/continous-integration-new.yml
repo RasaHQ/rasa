@@ -443,5 +443,6 @@ jobs:
         uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
         with:
           files: "artifacts/**/*.xml"
+          json_test_case_results: true
           check_name: "Integration Test Results"
           comment_mode: ${{ (github.event.workflow_run.event == 'pull_request' || github.event_name == 'pull_request') && 'always' || 'off' }}
