@@ -145,6 +145,12 @@ jobs:
           RASA_TELEMETRY_WRITE_KEY: ${{ secrets.SEGMENT_WRITE_DEV_KEY }}
         run: |
           make test-tracing-integration
+      
+      - name: Show container logs
+        if: always()
+        uses: ./.github/actions/debug-tracing-tests
+        with:
+          COMPOSE_FILE_PATH: tests_deployment/integration_tests_tracing_deployment/docker-compose.intg.yml
 
       - name: Tracing integration testing - Stop docker containers
         run: |
@@ -218,6 +224,12 @@ jobs:
         env:
           PYTHONIOENCODING: "utf-8"
           RASA_TELEMETRY_WRITE_KEY: ${{ secrets.SEGMENT_WRITE_DEV_KEY }}
+
+      - name: Show container logs
+        if: always()
+        uses: ./.github/actions/debug-metric-tests
+        with:
+          COMPOSE_FILE_PATH: tests_deployment/integration_tests_tracing_deployment/metrics_setup/docker-compose.yml
 
       - name: Metric Integration Testing - Stop docker containers
         run: |
