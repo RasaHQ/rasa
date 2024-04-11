@@ -21,6 +21,7 @@ include = "rasa"
 [[tool.poetry.source]]
 name = "internal repository mirroring psycopg binary for macos"
 url = "https://europe-west3-python.pkg.dev/rasa-releases/psycopg-binary/simple/"
+priority = "primary"
 
 [tool.towncrier]
 name = "Rasa Pro"
@@ -202,11 +203,6 @@ python = ">=3.8,<3.11"
 [[tool.poetry.dependencies.numpy]]
 version = ">=1.23.5,<1.25.0"
 python = ">=3.8,<3.11"
-
-[[tool.poetry.dependencies.numpy]]
-version = "1.22.3"
-markers = "sys_platform =='Windows' and platform_python_implementation != 'PyPy'"
-python = "3.10"
 
 [[tool.poetry.dependencies.scipy]]
 version = ">=1.10.1"
