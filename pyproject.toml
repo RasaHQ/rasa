@@ -21,6 +21,10 @@ include = "rasa"
 [[tool.poetry.source]]
 name = "internal repository mirroring psycopg binary for macos"
 url = "https://europe-west3-python.pkg.dev/rasa-releases/psycopg-binary/simple/"
+priority = "supplemental"
+
+[[tool.poetry.source]]
+name = "pypi"
 priority = "primary"
 
 [tool.towncrier]

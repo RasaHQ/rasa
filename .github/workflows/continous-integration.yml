@@ -144,7 +144,6 @@ jobs:
         # Poetry intermittently fails to install dependency if it is not PEP 517 compliant
         # This is a workaround for that issue
         run: |
-          poetry cache clear --all . --no-interaction
           sudo apt-get -y install libpq-dev
           make install-full
 
