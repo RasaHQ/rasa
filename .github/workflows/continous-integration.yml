@@ -43,7 +43,7 @@ env:
   WAIT_INTERVAL_SECS: 60
   RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
   OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-  POETRY_VERSION: 1.4.2
+  POETRY_VERSION: 1.8.2
 
 jobs:
   changes:
