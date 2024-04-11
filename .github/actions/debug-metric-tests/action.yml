@@ -12,15 +12,19 @@ runs:
   - name: Check otlp-collector container logs
     run: |
       docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs otlp-collector
+    shell: bash
   
   - name: Check prometheus container logs
     run: |
       docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs prometheus
+    shell: bash
   
   - name: Check rasa-pro-assistent container logs
     run: |
       docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs rasa-pro-assistant
+    shell: bash
   
   - name: Check action-server container logs
     run: |
       docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs action-server
+    shell: bash

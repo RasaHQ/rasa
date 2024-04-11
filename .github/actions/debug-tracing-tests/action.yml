@@ -12,31 +12,39 @@ runs:
   - name: Check otel-collector container logs
     run: |
       docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs otel-collector
+    shell: bash
   
   - name: Check jaeger container logs
     run: |
       docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs jaeger
+    shell: bash
   
   - name: Check rasa-pro-jaeger container logs
     run: |
       docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs rasa-pro-jaeger
+    shell: bash
   
   - name: Check rasa-pro-otlp container logs
     run: |
       docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs rasa-pro-otlp
+    shell: bash
 
   - name: Check rasa-pro-jaeger-no-action-server container logs
     run: |
       docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs rasa-pro-jaeger-no-action-server
+    shell: bash
 
   - name: Check rasa-pro-otlp-no-action-server container logs
     run: |
       docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs rasa-pro-otlp-no-action-server
+    shell: bash
 
   - name: Check action-server-jaeger container logs
     run: |
       docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs action-server-jaeger
+    shell: bash
 
   - name: Check action-server-otlp container logs
     run: |
       docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs action-server-otlp
+    shell: bash
