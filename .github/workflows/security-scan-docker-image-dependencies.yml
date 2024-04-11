@@ -7,7 +7,7 @@ on:
 
 env:
   # Registry used to store Docker images used for release purposes
-  RELEASE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-docker/rasa-pro"
+  RELEASE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-pro/rasa-pro"
   REPORT_BUCKET: "rasa-container-scan-reports"
 
 jobs:
@@ -28,9 +28,8 @@ jobs:
       name: Authenticate with gcloud for release registry 🎫
       uses: 'google-github-actions/auth@55bd3a7c6e2ae7cf1877fd1ccb9d54c0503c457c' # v2.1.2
       with:
-        token_format: 'access_token'
-        credentials_json: '${{ secrets.RASA_PLUS_RELEASE_ACCOUNT_KEY }}'
-        cleanup_credentials: true
+        workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER_OIDC}}
+        service_account: "github-actions-oidc-atom@rasa-releases.iam.gserviceaccount.com"
 
     - name: Authenticate docker for release registry 🎫
       run: |
