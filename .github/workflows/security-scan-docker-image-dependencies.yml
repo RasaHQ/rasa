@@ -10,6 +10,10 @@ env:
   RELEASE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-pro/rasa-pro"
   REPORT_BUCKET: "rasa-container-scan-reports"
 
+permissions:
+  id-token: write # This is required for requesting the JWT
+  contents: read # This is required for actions/checkout
+
 jobs:
   scan_and_alert:
     runs-on: ubuntu-22.04
