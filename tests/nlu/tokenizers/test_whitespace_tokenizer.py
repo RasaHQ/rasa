@@ -80,7 +80,6 @@ def create_whitespace_tokenizer(config: Optional[Dict] = None) -> WhitespaceToke
     ],
 )
 def test_whitespace(text, expected_tokens, expected_indices):
-
     tk = create_whitespace_tokenizer()
 
     tokens = tk.tokenize(Message.build(text=text), attribute=TEXT)

@@ -1573,16 +1573,16 @@ def test_slot_invalid_mappings(domain_as_dict: Dict[Text, Any]):
 @pytest.mark.parametrize(
     "domain_yaml",
     [
-        # Wrong type for slots
         (
+            # Wrong type for slots
             f"""
         version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         slots:
           []
         """
         ),
-        # Wrong type for slot names
         (
+            # Wrong type for slot names
             f"""
         version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         slots:

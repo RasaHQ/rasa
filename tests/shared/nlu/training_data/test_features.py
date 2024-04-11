@@ -249,7 +249,6 @@ def _generate_feature_list_and_modifications(
     ),
 )
 def test_combine(is_sparse: bool, type: Text, number: int, use_expected_origin: bool):
-
     features_list, modifications = _generate_feature_list_and_modifications(
         is_sparse=is_sparse, type=type, number=number
     )
@@ -291,7 +290,6 @@ def test_combine(is_sparse: bool, type: Text, number: int, use_expected_origin: 
     ),
 )
 def test_filter(is_sparse: bool, type: Text, number: int):
-
     features_list, modifications = _generate_feature_list_and_modifications(
         is_sparse=is_sparse, type=type, number=number
     )
@@ -345,7 +343,6 @@ def test_groupby(
     num_features_per_attribute: Dict[Text, int],
     specified_attributes: Optional[List[Text]],
 ):
-
     features_list = []
     for attribute, number in num_features_per_attribute.items():
         for idx in range(number):
@@ -384,7 +381,6 @@ def test_groupby(
 def test_reduce(
     shuffle_mode: Text, num_features_per_combination: Tuple[int, int, int, int]
 ):
-
     # all combinations - in the expected order
     # (i.e. all sparse before all dense and sequence before sentence)
     all_combinations = [

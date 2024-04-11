@@ -16,9 +16,9 @@ help:
 	@echo "    install-full"
 	@echo "        Install rasa with all extras (transformers, tensorflow_text, spacy, jieba)."
 	@echo "    formatter"
-	@echo "        Apply black formatting to code."
+	@echo "        Apply ruff formatting to code."
 	@echo "    lint"
-	@echo "        Lint code with ruff, and check if black formatter should be applied."
+	@echo "        Lint code with ruff, and check if ruff formatter should be applied."
 	@echo "    lint-docstrings"
 	@echo "        Check docstring conventions in changed files."
 	@echo "    types"
@@ -74,14 +74,14 @@ install-full: install-mitie
 	poetry install -E full
 
 formatter:
-	poetry run black rasa tests
+	poetry run ruff format rasa tests
 
 format: formatter
 
 lint:
      # Ignore docstring errors when running on the entire project
 	poetry run ruff check rasa tests --ignore D
-	poetry run black --check rasa tests
+	poetry run ruff format --check rasa tests
 	make lint-docstrings
 
 # Compare against `main` if no branch was provided
@@ -206,13 +206,13 @@ release:
 
 build-docker:
     	# Build base image
-	docker build . -t rasa-private:base-localdev -f docker/Dockerfile.base --platform=linux/amd64
+	docker build . -t rasa-private:base-localdev -f docker/Dockerfile.base --platform=$(PLATFORM)
     	# Build base poetry image
-	docker build . -t rasa-private:base-poetry-localdev -f docker/Dockerfile.base-poetry --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_IMAGE_HASH=localdev --build-arg POETRY_VERSION=1.4.2 --platform=linux/amd64
+	docker build . -t rasa-private:base-poetry-localdev -f docker/Dockerfile.base-poetry --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_IMAGE_HASH=localdev --build-arg POETRY_VERSION=1.4.2 --platform=$(PLATFORM)
     	# Build base builder image
-	docker build . -t rasa-private:base-builder-localdev -f docker/Dockerfile.base-builder --build-arg IMAGE_BASE_NAME=rasa-private --build-arg POETRY_VERSION=localdev --platform=linux/amd64
+	docker build . -t rasa-private:base-builder-localdev -f docker/Dockerfile.base-builder --build-arg IMAGE_BASE_NAME=rasa-private --build-arg POETRY_VERSION=localdev --platform=$(PLATFORM)
     	# Build Rasa Private image
-	docker build . -t rasa-private:rasa-private-dev -f Dockerfile --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_IMAGE_HASH=localdev --build-arg BASE_BUILDER_IMAGE_HASH=localdev --platform=linux/amd64
+	docker build . -t rasa-private:rasa-private-dev -f Dockerfile --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_IMAGE_HASH=localdev --build-arg BASE_BUILDER_IMAGE_HASH=localdev --platform=$(PLATFORM)
 
 build-tests-deployment-env: ## Create environment files (.env) for docker-compose.
 	cd tests_deployment && \

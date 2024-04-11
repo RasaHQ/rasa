@@ -109,7 +109,6 @@ def test_validate_with_multiple_default_options(tmp_path: pathlib.Path):
 
 
 def test_validate_with_none_if_default_is_valid(tmp_path: pathlib.Path):
-
     expected_event = "cli.get_validated_path.path_does_not_exists"
     expected_log_level = "warning"
 
@@ -122,7 +121,6 @@ def test_validate_with_none_if_default_is_valid(tmp_path: pathlib.Path):
 
 
 def test_validate_with_invalid_directory_if_default_is_valid(tmp_path: pathlib.Path):
-
     invalid_directory = "gcfhvjkb"
 
     expected_event = "cli.get_validated_path.path_does_not_exists"
@@ -288,7 +286,7 @@ def test_get_validated_config_with_invalid_input(parameters: Dict[Text, Any]) ->
     ],
 )
 def test_get_validated_config_with_default_and_no_config(
-    parameters: Dict[Text, Any]
+    parameters: Dict[Text, Any],
 ) -> None:
     config_path = None
     default_config_content = {

@@ -774,7 +774,7 @@ async def test_set_up_fixtures(
 
 @pytest.mark.parametrize("slot_was_set", ["location", {"location": "Paris"}])
 def test_find_test_failure_with_slot_was_set_step(
-    slot_was_set: Union[Text, Dict]
+    slot_was_set: Union[Text, Dict],
 ) -> None:
     test_turns: TEST_TURNS_TYPE = {
         -1: ActualStepOutput.from_test_step(
@@ -817,7 +817,7 @@ def test_find_test_failure_with_slot_was_set_step(
 
 @pytest.mark.parametrize("slot_was_set", ["location", {"location": "Paris"}])
 def test_find_test_failure_with_slot_was_set_step_fail(
-    slot_was_set: Union[Text, Dict]
+    slot_was_set: Union[Text, Dict],
 ) -> None:
     test_turns: TEST_TURNS_TYPE = {
         -1: ActualStepOutput.from_test_step(

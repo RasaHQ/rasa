@@ -381,7 +381,6 @@ def advance_flows_until_next_action(
     number_of_steps_taken = 0
 
     while isinstance(step_result, ContinueFlowWithNextStep):
-
         number_of_steps_taken += 1
         if number_of_steps_taken > MAX_NUMBER_OF_STEPS:
             raise FlowCircuitBreakerTrippedException(

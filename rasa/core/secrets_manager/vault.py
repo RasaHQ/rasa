@@ -124,7 +124,6 @@ class VaultEndpointConfigReader:
                 credentials_location.get_secret_manager_name()
                 == VAULT_SECRET_MANAGER_NAME
             ):
-
                 return VaultCredentialsLocation.from_credentials_location(
                     credentials_location=credentials_location
                 )
@@ -161,11 +160,10 @@ class VaultEndpointConfigReader:
                     credentials_location
                 )
             ):
-
                 if credentials_location.transit_key:
-                    transit_keys[
-                        credentials_location.secret_key
-                    ] = credentials_location.transit_key
+                    transit_keys[credentials_location.secret_key] = (
+                        credentials_location.transit_key
+                    )
 
         return transit_keys if transit_keys else None
 
@@ -357,9 +355,9 @@ class VaultTokenManager:
 
     def start(self) -> None:
         """Start refreshing the token if it is expiring."""
-        renew_response: Dict[
-            Text, Dict[Text, Any]
-        ] = self.client.auth.token.lookup_self()
+        renew_response: Dict[Text, Dict[Text, Any]] = (
+            self.client.auth.token.lookup_self()
+        )
         is_token_expiring = renew_response["data"]["renewable"]
         if is_token_expiring:
             refresh_interval_in_seconds = renew_response["data"]["creation_ttl"]

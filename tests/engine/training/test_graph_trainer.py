@@ -112,7 +112,6 @@ async def test_graph_trainer_fingerprints_and_caches(
     train_with_schema: Callable,
     spy_on_all_components: Callable,
 ):
-
     input_file = tmp_path / "input_file.txt"
     input_file.write_text("3")
 
@@ -213,7 +212,6 @@ async def test_graph_trainer_always_reads_input(
     train_with_schema: Callable,
     spy_on_all_components: Callable,
 ):
-
     input_file = tmp_path / "input_file.txt"
     input_file.write_text("3")
 
@@ -269,7 +267,6 @@ async def test_graph_trainer_with_non_cacheable_components(
     train_with_schema: Callable,
     spy_on_all_components: Callable,
 ):
-
     input_file = tmp_path / "input_file.txt"
     input_file.write_text("3")
 
@@ -385,7 +382,6 @@ async def test_graph_trainer_train_logging(
     train_with_schema: Callable,
     caplog: LogCaptureFixture,
 ):
-
     input_file = tmp_path / "input_file.txt"
     input_file.write_text("3")
 
