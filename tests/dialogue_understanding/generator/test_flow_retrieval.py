@@ -236,9 +236,9 @@ class TestFlowRetrieval:
     ):
         # Given
         flow_search.vector_store = Mock()
-        flow_search.config[
-            MAX_FLOWS_FROM_SEMANTIC_SEARCH_KEY
-        ] = max_flows_from_semantic_search
+        flow_search.config[MAX_FLOWS_FROM_SEMANTIC_SEARCH_KEY] = (
+            max_flows_from_semantic_search
+        )
         # return the flows expected from similarity search
         mock_find_most_similar_flows.return_value = FlowsList(
             [f for f in flows if f.id in expected_flows_from_vector_store]

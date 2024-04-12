@@ -17,7 +17,7 @@ structlogger = structlog.get_logger()
 def read_endpoint_config(
     filename: Text, endpoint_type: Text
 ) -> Optional["EndpointConfig"]:
-    """Read an endpoint configuration file from disk and extract one config."""  # noqa: E501
+    """Read an endpoint configuration file from disk and extract one config."""
     if not filename:
         return None
 
@@ -298,6 +298,5 @@ def int_arg(
     try:
         return int(str(arg))
     except (ValueError, TypeError):
-
         structlogger.warning("endpoint.int_arg.convert_failed", arg=arg, key=key)
         return default

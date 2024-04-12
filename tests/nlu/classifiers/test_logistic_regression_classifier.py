@@ -1,5 +1,7 @@
 import copy
+
 import pytest
+import structlog
 import pathlib
 from rasa.shared.nlu.training_data.message import Message
 from rasa.engine.storage.resource import Resource
@@ -13,6 +15,7 @@ from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
 from rasa.nlu.classifiers.logistic_regression_classifier import (
     LogisticRegressionClassifier,
 )
+from tests.utilities import filter_logs
 
 
 @pytest.fixture
@@ -121,3 +124,31 @@ def test_predictions_added(training_data, tmpdir, featurizer_sparse):
     trained_messages = classifier.process(actual.training_examples)
     for m1, m2 in zip(loaded_messages, trained_messages):
         assert m1.get("intent") == m2.get("intent")
+
+
+def test_train_with_no_data(tmpdir, caplog):
+    # Set up classifier
+    node_storage = LocalModelStorage(pathlib.Path(tmpdir))
+    node_resource = Resource("classifier")
+    context = ExecutionContext(node_storage, node_resource)
+    ranking_length = 2
+    classifier = LogisticRegressionClassifier(
+        config={"ranking_length": ranking_length},
+        name=context.node_name,
+        resource=node_resource,
+        model_storage=node_storage,
+    )
+
+    expected_event = "logistic_regression_classifier.not_able_to_train"
+    expected_log_level = "warning"
+    expected_log_message = (
+        "Cannot train 'LogisticRegressionClassifier'. No data was provided. Skipping "
+        "training of the classifier."
+    )
+
+    with structlog.testing.capture_logs() as caplog:
+        classifier.train(TrainingData())
+        logs = filter_logs(
+            caplog, expected_event, expected_log_level, [expected_log_message]
+        )
+        assert len(logs) == 1

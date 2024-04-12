@@ -166,8 +166,9 @@ async def _pull_runtime_config_from_server(
         attempts -= 1
 
     rasa.shared.utils.cli.print_error_and_exit(
-        "Could not fetch runtime config from server at '{}'. "
-        "Exiting.".format(config_endpoint)
+        "Could not fetch runtime config from server at '{}'. Exiting.".format(
+            config_endpoint
+        )
     )
 
 

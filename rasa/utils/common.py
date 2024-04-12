@@ -519,7 +519,7 @@ class RepeatedLogFilter(logging.Filter):
 
 
 async def call_potential_coroutine(
-    coroutine_or_return_value: Union[Any, Coroutine]
+    coroutine_or_return_value: Union[Any, Coroutine],
 ) -> Any:
     """Awaits coroutine or returns value directly if it's not a coroutine.
 

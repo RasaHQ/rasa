@@ -31,7 +31,7 @@ def create_duckling(
 
 
 def test_duckling_entity_extractor_with_multiple_extracted_dates(
-    create_duckling: Callable[[Dict[Text, Any]], DucklingEntityExtractor]
+    create_duckling: Callable[[Dict[Text, Any]], DucklingEntityExtractor],
 ):
     duckling = create_duckling({"dimensions": ["time"], "timezone": "UTC"})
 
@@ -150,7 +150,7 @@ def test_duckling_entity_extractor_with_multiple_extracted_dates(
 
 
 def test_duckling_entity_extractor_with_one_extracted_date(
-    create_duckling: Callable[[Dict[Text, Any]], DucklingEntityExtractor]
+    create_duckling: Callable[[Dict[Text, Any]], DucklingEntityExtractor],
 ):
     duckling = create_duckling({"dimensions": ["time"], "timezone": "UTC"})
 
@@ -193,7 +193,7 @@ def test_duckling_entity_extractor_with_one_extracted_date(
 
 
 def test_duckling_entity_extractor_dimension_filtering(
-    create_duckling: Callable[[Dict[Text, Any]], DucklingEntityExtractor]
+    create_duckling: Callable[[Dict[Text, Any]], DucklingEntityExtractor],
 ):
     duckling_number = create_duckling({"dimensions": ["number"]})
 

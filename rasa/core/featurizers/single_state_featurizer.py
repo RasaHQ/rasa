@@ -91,6 +91,7 @@ class SingleStateFeaturizer:
             domain: An instance of :class:`rasa.shared.core.domain.Domain`.
             bilou_tagging: indicates whether BILOU tagging should be used or not
         """
+
         # store feature states for each attribute in order to create binary features
         def convert_to_dict(feature_states: List[Text]) -> Dict[Text, int]:
             return {
@@ -116,7 +117,7 @@ class SingleStateFeaturizer:
         if attribute in {INTENT, ACTION_NAME}:
             return {sub_state[attribute]: 1}  # type: ignore[dict-item]
         elif attribute == ENTITIES:
-            return {entity: 1 for entity in sub_state.get(ENTITIES, [])}  # type: ignore[misc]  # noqa: E501
+            return {entity: 1 for entity in sub_state.get(ENTITIES, [])}  # type: ignore[misc]
         elif attribute == ACTIVE_LOOP:
             return {sub_state["name"]: 1}  # type: ignore[dict-item]
         elif attribute == SLOTS:
@@ -185,14 +186,12 @@ class SingleStateFeaturizer:
         precomputations: Optional[MessageContainerForCoreFeaturization],
         sparse: bool = False,
     ) -> Dict[Text, List[Features]]:
-
         # Remove entities from possible attributes
         attributes = set(
             attribute for attribute in sub_state.keys() if attribute != ENTITIES
         )
 
         if precomputations is not None:
-
             # Collect features for all those attributes
             attributes_to_features = precomputations.collect_features(
                 sub_state, attributes=attributes
@@ -262,7 +261,6 @@ class SingleStateFeaturizer:
             # featurize user only if it is "real" user input,
             # i.e. input from a turn after action_listen
             if state_type == USER and is_prev_action_listen_in_state(state):
-
                 state_features.update(
                     self._extract_state_features(
                         sub_state, precomputations=precomputations, sparse=True

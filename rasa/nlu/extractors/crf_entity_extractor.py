@@ -108,7 +108,7 @@ class CRFEntityExtractor(GraphComponent, EntityExtractorMixin):
         CRFEntityExtractorOptions.DIGIT: lambda crf_token: crf_token.text.isdigit(),
         CRFEntityExtractorOptions.PATTERN: lambda crf_token: crf_token.pattern,
         CRFEntityExtractorOptions.TEXT_DENSE_FEATURES: (
-            lambda crf_token: CRFEntityExtractor._convert_dense_features_for_crfsuite(  # noqa: E501
+            lambda crf_token: CRFEntityExtractor._convert_dense_features_for_crfsuite(
                 crf_token
             )
         ),
@@ -507,9 +507,9 @@ class CRFEntityExtractor(GraphComponent, EntityExtractorMixin):
                         # pattern or not
                         regex_patterns = self.function_dict[feature](token)
                         for pattern_name, matched in regex_patterns.items():
-                            token_features[
-                                f"{prefix}:{feature}:{pattern_name}"
-                            ] = matched
+                            token_features[f"{prefix}:{feature}:{pattern_name}"] = (
+                                matched
+                            )
                     else:
                         value = self.function_dict[feature](token)
                         token_features[f"{prefix}:{feature}"] = value

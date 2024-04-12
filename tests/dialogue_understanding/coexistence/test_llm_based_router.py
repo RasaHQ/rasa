@@ -191,13 +191,9 @@ class TestLLMBasedRouter:
         )
 
         mock_llm = Mock(side_effect=Exception("some exception"))
-        with (
-            (
-                patch(
-                    "rasa.dialogue_understanding.coexistence.llm_based_router.llm_factory",
-                    Mock(return_value=mock_llm),
-                )
-            )
+        with patch(
+            "rasa.dialogue_understanding.coexistence.llm_based_router.llm_factory",
+            Mock(return_value=mock_llm),
         ):
             with capture_logs() as logs:
                 await llm_based_router.predict_commands(message, tracker)

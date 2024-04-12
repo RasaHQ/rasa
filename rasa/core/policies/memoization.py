@@ -233,7 +233,7 @@ class MemoizationPolicy(Policy):
 
         return result
 
-    def predict_action_probabilities(
+    async def predict_action_probabilities(
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
@@ -247,6 +247,7 @@ class MemoizationPolicy(Policy):
             domain: the :class:`rasa.shared.core.domain.Domain`
             rule_only_data: Slots and loops which are specific to rules and hence
                 should be ignored by this policy.
+            **kwargs: Additional arguments.
 
         Returns:
              The policy's prediction (e.g. the probabilities for the actions).
@@ -418,9 +419,9 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         logger.debug("Launch DeLorean...")
 
         # Truncate the tracker based on `max_history`
-        truncated_tracker: Optional[
-            DialogueStateTracker
-        ] = _trim_tracker_by_max_history(tracker, self.config[POLICY_MAX_HISTORY])
+        truncated_tracker: Optional[DialogueStateTracker] = (
+            _trim_tracker_by_max_history(tracker, self.config[POLICY_MAX_HISTORY])
+        )
         truncated_tracker = self._strip_leading_events_until_action_executed(
             truncated_tracker
         )

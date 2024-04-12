@@ -32,7 +32,6 @@ class StudioAuth:
         )
 
     def login(self, username: Text, password: Text, totp: Optional[int] = None) -> None:
-
         try:
             token_dict = self.keycloak_openid.token(
                 username=username, password=password, totp=totp

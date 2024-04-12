@@ -17,7 +17,7 @@ from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 
 
 def create_whitespace_tokenizer(
-    config: Optional[Dict[Text, Any]] = None
+    config: Optional[Dict[Text, Any]] = None,
 ) -> WhitespaceTokenizer:
     return WhitespaceTokenizer(
         {**WhitespaceTokenizer.get_default_config(), **(config if config else {})}

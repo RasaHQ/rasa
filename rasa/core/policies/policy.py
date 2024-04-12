@@ -238,6 +238,7 @@ class Policy(GraphComponent):
 
         Args:
             func: a callable function
+            **kwargs: the dictionary of parameters
 
         Returns:
             the dictionary of parameters
@@ -274,6 +275,7 @@ class Policy(GraphComponent):
             domain: the :class:`rasa.shared.core.domain.Domain`
             precomputations: Contains precomputed features and attributes.
             bilou_tagging: indicates whether BILOU tagging should be used or not
+            **kwargs: Additional arguments.
 
         Returns:
             - a dictionary of attribute (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
@@ -297,8 +299,9 @@ class Policy(GraphComponent):
         max_training_samples = kwargs.get("max_training_samples")
         if max_training_samples is not None:
             logger.debug(
-                "Limit training data to {} training samples."
-                "".format(max_training_samples)
+                "Limit training data to {} training samples.".format(
+                    max_training_samples
+                )
             )
             state_features = state_features[:max_training_samples]
             label_ids = label_ids[:max_training_samples]
@@ -398,7 +401,7 @@ class Policy(GraphComponent):
         raise NotImplementedError("Policy must have the capacity to train.")
 
     @abc.abstractmethod
-    def predict_action_probabilities(
+    async def predict_action_probabilities(
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
@@ -406,6 +409,9 @@ class Policy(GraphComponent):
         **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action the bot should take after seeing the tracker.
+
+        Backwards compatibility: this method can also be implemented without
+        `async`. In that case, the method will be run in a synchronous way.
 
         Args:
             tracker: The tracker containing the conversation history up to now.

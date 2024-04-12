@@ -16,9 +16,9 @@ help:
 	@echo "    install-full"
 	@echo "        Install rasa with all extras (transformers, tensorflow_text, spacy, jieba)."
 	@echo "    formatter"
-	@echo "        Apply black formatting to code."
+	@echo "        Apply ruff formatting to code."
 	@echo "    lint"
-	@echo "        Lint code with ruff, and check if black formatter should be applied."
+	@echo "        Lint code with ruff, and check if ruff formatter should be applied."
 	@echo "    lint-docstrings"
 	@echo "        Check docstring conventions in changed files."
 	@echo "    types"
@@ -74,14 +74,14 @@ install-full: install-mitie
 	poetry install -E full
 
 formatter:
-	poetry run black rasa tests
+	poetry run ruff format rasa tests
 
 format: formatter
 
 lint:
      # Ignore docstring errors when running on the entire project
 	poetry run ruff check rasa tests --ignore D
-	poetry run black --check rasa tests
+	poetry run ruff format --check rasa tests
 	make lint-docstrings
 
 # Compare against `main` if no branch was provided
@@ -101,8 +101,8 @@ types:
 static-checks: lint lint-security types
 
 prepare-spacy:
-	poetry run python -m spacy download en_core_web_md
-	poetry run python -m spacy download de_core_news_sm
+	poetry run python -m pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-3.7.1/en_core_web_md-3.7.1-py3-none-any.whl
+	poetry run python -m pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-3.7.0/de_core_news_sm-3.7.0-py3-none-any.whl
 
 prepare-mitie:
 	wget --progress=dot:giga -N -P data/ https://github.com/mit-nlp/MITIE/releases/download/v0.4/MITIE-models-v0.2.tar.bz2
@@ -144,9 +144,9 @@ test-integration:
 	# OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
 	# TF_CPP_MIN_LOG_LEVEL=2 sets C code log level for tensorflow to error suppressing lower log events
 ifeq (,$(wildcard tests_deployment/.env))
-	OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS) -m $(INTEGRATION_TEST_PYTEST_MARKERS) --dist loadgroup  --ignore $(TRACING_INTEGRATION_TEST_FOLDER)
+	OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS) -m $(INTEGRATION_TEST_PYTEST_MARKERS) --dist loadgroup  --ignore $(TRACING_INTEGRATION_TEST_FOLDER) --junitxml=report_integration.xml
 else
-	set -o allexport; source tests_deployment/.env && OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS) -m $(INTEGRATION_TEST_PYTEST_MARKERS) --dist loadgroup --ignore $(TRACING_INTEGRATION_TEST_FOLDER) && set +o allexport
+	set -o allexport; source tests_deployment/.env && OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS) -m $(INTEGRATION_TEST_PYTEST_MARKERS) --dist loadgroup --ignore $(TRACING_INTEGRATION_TEST_FOLDER) --junitxml=report_sequential.xml && set +o allexport
 endif
 
 test-anonymization: PYTEST_MARKER=category_anonymization and (not flaky) and (not acceptance)
@@ -206,13 +206,13 @@ release:
 
 build-docker:
     	# Build base image
-	docker build . -t rasa-private:base-localdev -f docker/Dockerfile.base --platform=linux/amd64
+	docker build . -t rasa-private:base-localdev -f docker/Dockerfile.base --platform=$(PLATFORM)
     	# Build base poetry image
-	docker build . -t rasa-private:base-poetry-localdev -f docker/Dockerfile.base-poetry --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_IMAGE_HASH=localdev --build-arg POETRY_VERSION=1.4.2 --platform=linux/amd64
+	docker build . -t rasa-private:base-poetry-localdev -f docker/Dockerfile.base-poetry --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_IMAGE_HASH=localdev --build-arg POETRY_VERSION=1.4.2 --platform=$(PLATFORM)
     	# Build base builder image
-	docker build . -t rasa-private:base-builder-localdev -f docker/Dockerfile.base-builder --build-arg IMAGE_BASE_NAME=rasa-private --build-arg POETRY_VERSION=localdev --platform=linux/amd64
+	docker build . -t rasa-private:base-builder-localdev -f docker/Dockerfile.base-builder --build-arg IMAGE_BASE_NAME=rasa-private --build-arg POETRY_VERSION=localdev --platform=$(PLATFORM)
     	# Build Rasa Private image
-	docker build . -t rasa-private:rasa-private-dev -f Dockerfile --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_IMAGE_HASH=localdev --build-arg BASE_BUILDER_IMAGE_HASH=localdev --platform=linux/amd64
+	docker build . -t rasa-private:rasa-private-dev -f Dockerfile --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_IMAGE_HASH=localdev --build-arg BASE_BUILDER_IMAGE_HASH=localdev --platform=$(PLATFORM)
 
 build-tests-deployment-env: ## Create environment files (.env) for docker-compose.
 	cd tests_deployment && \
@@ -241,7 +241,7 @@ stop-tracing-integration-containers: ## Stop the tracing integration test contai
 	docker-compose -f tests_deployment/integration_tests_tracing_deployment/docker-compose.intg.yml down
 
 test-tracing-integration:
-	PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python PYTHONPATH=./vendor/jaeger-python-proto poetry run pytest $(TRACING_INTEGRATION_TEST_FOLDER) -n $(JOBS) --ignore $(METRICS_INTEGRATION_TEST_PATH)
+	PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python PYTHONPATH=./vendor/jaeger-python-proto poetry run pytest $(TRACING_INTEGRATION_TEST_FOLDER) -n $(JOBS) --ignore $(METRICS_INTEGRATION_TEST_PATH) --junitxml=report_tracing.xml
 
 train-calm:
 	cd ./tests_deployment/integration_tests_tracing_deployment/metrics_setup/calm_bot && poetry run rasa train --fixed-model-name model
@@ -253,4 +253,4 @@ stop-metrics-integration-containers:
 	docker compose -f tests_deployment/integration_tests_tracing_deployment/metrics_setup/docker-compose.yml down
 
 test-metrics-integration:
-	poetry run pytest $(METRICS_INTEGRATION_TEST_PATH) -n $(JOBS)
+	poetry run pytest $(METRICS_INTEGRATION_TEST_PATH) -n $(JOBS) --junitxml=report_metric.xml

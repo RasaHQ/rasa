@@ -200,7 +200,7 @@ def test_potential_contradiction_resolved_by_conversation_start(policy: RulePoli
     policy.train([greet_rule_at_conversation_start, anti_greet_rule], domain)
 
 
-def test_potential_contradiction_resolved_by_conversation_start_when_slot_initial_value(
+async def test_contradictions_resolved_by_conversation_start_when_slot_initial_value(
     policy: RulePolicy,
 ):
     # Two rules that contradict each other except that one of them applies only at
@@ -262,7 +262,7 @@ def test_potential_contradiction_resolved_by_conversation_start_when_slot_initia
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered(intent={"name": GREET_INTENT_NAME}),
     ]
-    action_probabilities_1 = policy.predict_action_probabilities(
+    action_probabilities_1 = await policy.predict_action_probabilities(
         DialogueStateTracker.from_events(
             "test conversation", evts=conversation_events, slots=domain.slots
         ),
@@ -273,7 +273,7 @@ def test_potential_contradiction_resolved_by_conversation_start_when_slot_initia
     )
 
 
-def test_potential_contradiction_resolved_by_conversation_start_when_slot_initial_value_explicit(  # noqa: E501
+async def test_potential_contradiction_resolved_by_conversation_start_when_slot_initial_value_explicit(  # noqa: E501
     policy: RulePolicy,
 ):
     # Two rules that contradict each other except that one of them applies only at
@@ -336,7 +336,7 @@ def test_potential_contradiction_resolved_by_conversation_start_when_slot_initia
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered(intent={"name": GREET_INTENT_NAME}),
     ]
-    action_probabilities_2 = policy.predict_action_probabilities(
+    action_probabilities_2 = await policy.predict_action_probabilities(
         DialogueStateTracker.from_events(
             "test conversation with initial slot value explicitly set",
             evts=conversation_events_with_initial_slot_explicit,
@@ -817,7 +817,7 @@ def test_rule_policy_contradicting_rule_finetune(
         )
 
 
-def test_faq_rule(policy: RulePolicy):
+async def test_faq_rule(policy: RulePolicy):
     domain = Domain.from_yaml(
         f"""
         version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
@@ -837,7 +837,7 @@ def test_faq_rule(policy: RulePolicy):
             UserUttered("haha", {"name": GREET_INTENT_NAME}),
         ],
     )
-    prediction = policy.predict_action_probabilities(new_conversation, domain)
+    prediction = await policy.predict_action_probabilities(new_conversation, domain)
 
     test_utils.assert_predicted_action(prediction, domain, UTTER_GREET_ACTION)
 
@@ -881,7 +881,7 @@ async def test_predict_form_action_if_in_form(policy: RulePolicy):
     )
 
     # RulePolicy triggers form again
-    prediction = policy.predict_action_probabilities(form_conversation, domain)
+    prediction = await policy.predict_action_probabilities(form_conversation, domain)
     test_utils.assert_predicted_action(
         prediction, domain, form_name, is_no_user_prediction=True
     )
@@ -937,7 +937,7 @@ async def test_predict_loop_action_if_in_loop_but_there_is_e2e_rule(policy: Rule
     )
 
     # RulePolicy triggers form again
-    prediction = policy.predict_action_probabilities(loop_conversation, domain)
+    prediction = await policy.predict_action_probabilities(loop_conversation, domain)
     test_utils.assert_predicted_action(
         prediction, domain, loop_name, is_no_user_prediction=True
     )
@@ -989,7 +989,7 @@ async def test_predict_form_action_if_multiple_turns(policy: RulePolicy):
     )
 
     # RulePolicy triggers form again
-    prediction = policy.predict_action_probabilities(form_conversation, domain)
+    prediction = await policy.predict_action_probabilities(form_conversation, domain)
     test_utils.assert_predicted_action(
         prediction, domain, form_name, is_no_user_prediction=True
     )
@@ -1041,7 +1041,7 @@ slots:
         slots=domain.slots,
     )
 
-    prediction = policy.predict_action_probabilities(form_conversation, domain)
+    prediction = await policy.predict_action_probabilities(form_conversation, domain)
     test_utils.assert_predicted_action(prediction, domain, "action1")
 
 
@@ -1088,7 +1088,7 @@ slots:
         slots=domain.slots,
     )
 
-    prediction = policy.predict_action_probabilities(form_conversation, domain)
+    prediction = await policy.predict_action_probabilities(form_conversation, domain)
     test_utils.assert_predicted_action(prediction, domain, "action1")
 
 
@@ -1133,7 +1133,7 @@ async def test_predict_action_listen_after_form(policy: RulePolicy):
     )
 
     # RulePolicy predicts action listen
-    prediction = policy.predict_action_probabilities(form_conversation, domain)
+    prediction = await policy.predict_action_probabilities(form_conversation, domain)
     test_utils.assert_predicted_action(
         prediction, domain, ACTION_LISTEN_NAME, is_no_user_prediction=True
     )
@@ -1186,7 +1186,7 @@ async def test_dont_predict_form_if_already_finished(policy: RulePolicy):
     )
 
     # RulePolicy triggers form again
-    prediction = policy.predict_action_probabilities(form_conversation, domain)
+    prediction = await policy.predict_action_probabilities(form_conversation, domain)
     test_utils.assert_predicted_action(prediction, domain, UTTER_GREET_ACTION)
 
 
@@ -1231,7 +1231,9 @@ async def test_form_unhappy_path(policy: RulePolicy):
     )
 
     # RulePolicy doesn't trigger form but FAQ
-    prediction = policy.predict_action_probabilities(unhappy_form_conversation, domain)
+    prediction = await policy.predict_action_probabilities(
+        unhappy_form_conversation, domain
+    )
     test_utils.assert_predicted_action(prediction, domain, UTTER_GREET_ACTION)
 
 
@@ -1270,7 +1272,7 @@ async def test_form_unhappy_path_from_general_rule(policy: RulePolicy):
         ActionExecutionRejected(form_name),
     ]
 
-    prediction = policy.predict_action_probabilities(
+    prediction = await policy.predict_action_probabilities(
         DialogueStateTracker.from_events(
             "casd", evts=conversation_events, slots=domain.slots
         ),
@@ -1281,7 +1283,7 @@ async def test_form_unhappy_path_from_general_rule(policy: RulePolicy):
 
     # Check that RulePolicy triggers form again after handling unhappy path
     conversation_events.append(ActionExecuted(UTTER_GREET_ACTION))
-    prediction = policy.predict_action_probabilities(
+    prediction = await policy.predict_action_probabilities(
         DialogueStateTracker.from_events(
             "casd", evts=conversation_events, slots=domain.slots
         ),
@@ -1348,7 +1350,7 @@ async def test_form_unhappy_path_from_in_form_rule(policy: RulePolicy):
         ActionExecutionRejected(form_name),
     ]
 
-    prediction = policy.predict_action_probabilities(
+    prediction = await policy.predict_action_probabilities(
         DialogueStateTracker.from_events(
             "casd", evts=conversation_events, slots=domain.slots
         ),
@@ -1358,7 +1360,7 @@ async def test_form_unhappy_path_from_in_form_rule(policy: RulePolicy):
 
     # Check that RulePolicy triggers form again after handling unhappy path
     conversation_events.append(ActionExecuted(handle_rejection_action_name))
-    prediction = policy.predict_action_probabilities(
+    prediction = await policy.predict_action_probabilities(
         DialogueStateTracker.from_events(
             "casd", evts=conversation_events, slots=domain.slots
         ),
@@ -1422,7 +1424,7 @@ async def test_form_unhappy_path_from_story(policy: RulePolicy):
         ActionExecutionRejected(form_name),
     ]
 
-    prediction = policy.predict_action_probabilities(
+    prediction = await policy.predict_action_probabilities(
         DialogueStateTracker.from_events(
             "casd", evts=conversation_events, slots=domain.slots
         ),
@@ -1433,7 +1435,7 @@ async def test_form_unhappy_path_from_story(policy: RulePolicy):
     # Check that RulePolicy doesn't trigger form or action_listen
     # after handling unhappy path
     conversation_events.append(ActionExecuted(handle_rejection_action_name))
-    prediction = policy.predict_action_probabilities(
+    prediction = await policy.predict_action_probabilities(
         DialogueStateTracker.from_events(
             "casd", evts=conversation_events, slots=domain.slots
         ),
@@ -1443,7 +1445,7 @@ async def test_form_unhappy_path_from_story(policy: RulePolicy):
 
 
 async def test_form_unhappy_path_no_validation_from_rule(
-    policy_with_config: Callable[..., RulePolicy]
+    policy_with_config: Callable[..., RulePolicy],
 ):
     form_name = "some_form"
     handle_rejection_action_name = "utter_handle_rejection"
@@ -1506,7 +1508,7 @@ async def test_form_unhappy_path_no_validation_from_rule(
         ActionExecutionRejected(form_name),
     ]
 
-    prediction = policy.predict_action_probabilities(
+    prediction = await policy.predict_action_probabilities(
         DialogueStateTracker.from_events(
             "casd", evts=conversation_events, slots=domain.slots
         ),
@@ -1516,7 +1518,7 @@ async def test_form_unhappy_path_no_validation_from_rule(
 
     # Check that RulePolicy predicts action_listen
     conversation_events.append(ActionExecuted(handle_rejection_action_name))
-    prediction = policy.predict_action_probabilities(
+    prediction = await policy.predict_action_probabilities(
         DialogueStateTracker.from_events(
             "casd", evts=conversation_events, slots=domain.slots
         ),
@@ -1529,7 +1531,7 @@ async def test_form_unhappy_path_no_validation_from_rule(
     tracker = DialogueStateTracker.from_events(
         "casd", evts=conversation_events, slots=domain.slots
     )
-    prediction = policy.predict_action_probabilities(tracker, domain)
+    prediction = await policy.predict_action_probabilities(tracker, domain)
     test_utils.assert_predicted_action(prediction, domain, form_name)
     # check that RulePolicy entered unhappy path based on the training story
     assert prediction.events == [LoopInterrupted(True)]
@@ -1599,7 +1601,7 @@ async def test_form_unhappy_path_no_validation_from_story(policy: RulePolicy):
     tracker = DialogueStateTracker.from_events(
         "casd", evts=conversation_events, slots=domain.slots
     )
-    prediction = policy.predict_action_probabilities(tracker, domain)
+    prediction = await policy.predict_action_probabilities(tracker, domain)
     # there is no rule for next action
     assert prediction.max_confidence == policy.config["core_fallback_threshold"]
     # check that RulePolicy entered unhappy path based on the training story
@@ -1642,7 +1644,7 @@ async def test_form_unhappy_path_without_rule(policy: RulePolicy):
     ]
 
     # Unhappy path is not handled. No rule matches. Let's hope ML fixes our problems 🤞
-    prediction = policy.predict_action_probabilities(
+    prediction = await policy.predict_action_probabilities(
         DialogueStateTracker.from_events(
             "casd", evts=conversation_events, slots=domain.slots
         ),
@@ -1684,7 +1686,7 @@ async def test_form_activation_rule(policy: RulePolicy):
     ]
 
     # RulePolicy correctly predicts the form action
-    prediction = policy.predict_action_probabilities(
+    prediction = await policy.predict_action_probabilities(
         DialogueStateTracker.from_events(
             "casd", evts=conversation_events, slots=domain.slots
         ),
@@ -1724,7 +1726,7 @@ async def test_failing_form_activation_due_to_no_rule(policy: RulePolicy):
     ]
 
     # RulePolicy has no matching rule since no rule for form activation is given
-    prediction = policy.predict_action_probabilities(
+    prediction = await policy.predict_action_probabilities(
         DialogueStateTracker.from_events(
             "casd", evts=conversation_events, slots=domain.slots
         ),
@@ -1734,7 +1736,7 @@ async def test_failing_form_activation_due_to_no_rule(policy: RulePolicy):
     assert prediction.max_confidence == policy.config["core_fallback_threshold"]
 
 
-def test_form_submit_rule(policy: RulePolicy):
+async def test_form_submit_rule(policy: RulePolicy):
     form_name = "some_form"
     submit_action_name = "utter_submit"
     domain = Domain.from_yaml(
@@ -1782,11 +1784,11 @@ def test_form_submit_rule(policy: RulePolicy):
     )
 
     # RulePolicy predicts action which handles submit
-    prediction = policy.predict_action_probabilities(form_conversation, domain)
+    prediction = await policy.predict_action_probabilities(form_conversation, domain)
     test_utils.assert_predicted_action(prediction, domain, submit_action_name)
 
 
-def test_immediate_submit(policy: RulePolicy):
+async def test_immediate_submit(policy: RulePolicy):
     form_name = "some_form"
     submit_action_name = "utter_submit"
     entity = "some_entity"
@@ -1843,7 +1845,7 @@ def test_immediate_submit(policy: RulePolicy):
     )
 
     # RulePolicy predicts action which handles submit
-    prediction = policy.predict_action_probabilities(form_conversation, domain)
+    prediction = await policy.predict_action_probabilities(form_conversation, domain)
     test_utils.assert_predicted_action(prediction, domain, submit_action_name)
 
 
@@ -1888,7 +1890,7 @@ async def test_rule_policy_slot_filling_from_text(
     )
 
     # RulePolicy predicts action which handles submit
-    prediction = trained_rule_policy.predict_action_probabilities(
+    prediction = await trained_rule_policy.predict_action_probabilities(
         form_conversation, trained_rule_policy_domain
     )
     test_utils.assert_predicted_action(
@@ -1945,7 +1947,7 @@ async def test_one_stage_fallback_rule(policy: RulePolicy):
     tracker = DialogueStateTracker.from_events(
         "casd", evts=conversation_events, slots=domain.slots
     )
-    prediction = policy.predict_action_probabilities(tracker, domain)
+    prediction = await policy.predict_action_probabilities(tracker, domain)
     test_utils.assert_predicted_action(prediction, domain, ACTION_DEFAULT_FALLBACK_NAME)
 
     # Fallback action reverts fallback events, next action is `ACTION_LISTEN`
@@ -1965,7 +1967,7 @@ async def test_one_stage_fallback_rule(policy: RulePolicy):
         "casd", evts=conversation_events, slots=domain.slots
     )
 
-    prediction = policy.predict_action_probabilities(tracker, domain)
+    prediction = await policy.predict_action_probabilities(tracker, domain)
     test_utils.assert_predicted_action(prediction, domain, UTTER_GREET_ACTION)
 
 
@@ -1977,7 +1979,7 @@ async def test_one_stage_fallback_rule(policy: RulePolicy):
         (USER_INTENT_SESSION_START, ACTION_SESSION_START_NAME),
     ],
 )
-def test_default_actions(
+async def test_default_actions(
     intent_name: Text, expected_action_name: Text, policy: RulePolicy
 ):
     domain = Domain.from_yaml(
@@ -1999,7 +2001,7 @@ def test_default_actions(
             UserUttered("haha", {"name": intent_name}),
         ],
     )
-    prediction = policy.predict_action_probabilities(new_conversation, domain)
+    prediction = await policy.predict_action_probabilities(new_conversation, domain)
 
     test_utils.assert_predicted_action(prediction, domain, expected_action_name)
 
@@ -2007,7 +2009,7 @@ def test_default_actions(
 @pytest.mark.parametrize(
     "intent_name", [USER_INTENT_RESTART, USER_INTENT_BACK, USER_INTENT_SESSION_START]
 )
-def test_e2e_beats_default_actions(intent_name: Text, policy: RulePolicy):
+async def test_e2e_beats_default_actions(intent_name: Text, policy: RulePolicy):
     domain = Domain.from_yaml(
         f"""
         version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
@@ -2042,7 +2044,7 @@ def test_e2e_beats_default_actions(intent_name: Text, policy: RulePolicy):
             UserUttered("haha", {"name": intent_name}),
         ],
     )
-    prediction = policy.predict_action_probabilities(new_conversation, domain)
+    prediction = await policy.predict_action_probabilities(new_conversation, domain)
     test_utils.assert_predicted_action(
         prediction, domain, UTTER_GREET_ACTION, is_end_to_end_prediction=True
     )
@@ -2062,7 +2064,7 @@ def test_e2e_beats_default_actions(intent_name: Text, policy: RulePolicy):
         ),
     ],
 )
-def test_predict_core_fallback(
+async def test_predict_core_fallback(
     policy_with_config: Callable[..., RulePolicy],
     config: Dict[Text, Any],
     expected_confidence: float,
@@ -2091,15 +2093,17 @@ def test_predict_core_fallback(
         ],
     )
 
-    prediction = rule_policy.predict_action_probabilities(new_conversation, domain)
+    prediction = await rule_policy.predict_action_probabilities(
+        new_conversation, domain
+    )
 
     test_utils.assert_predicted_action(
         prediction, domain, expected_prediction, expected_confidence
     )
 
 
-def test_predict_nothing_if_fallback_disabled(
-    policy_with_config: Callable[..., RulePolicy]
+async def test_predict_nothing_if_fallback_disabled(
+    policy_with_config: Callable[..., RulePolicy],
 ):
     other_intent = "other"
     domain = Domain.from_yaml(
@@ -2121,12 +2125,12 @@ def test_predict_nothing_if_fallback_disabled(
             UserUttered("haha", {"name": other_intent}),
         ],
     )
-    prediction = policy.predict_action_probabilities(new_conversation, domain)
+    prediction = await policy.predict_action_probabilities(new_conversation, domain)
 
     assert prediction.max_confidence == 0
 
 
-def test_hide_rule_turn(policy: RulePolicy):
+async def test_hide_rule_turn(policy: RulePolicy):
     chitchat = "chitchat"
     action_chitchat = "action_chitchat"
     domain = Domain.from_yaml(
@@ -2157,7 +2161,7 @@ def test_hide_rule_turn(policy: RulePolicy):
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered("haha", {"name": GREET_INTENT_NAME}),
     ]
-    prediction = policy.predict_action_probabilities(
+    prediction = await policy.predict_action_probabilities(
         DialogueStateTracker.from_events(
             "casd", evts=conversation_events, slots=domain.slots
         ),
@@ -2169,7 +2173,7 @@ def test_hide_rule_turn(policy: RulePolicy):
     conversation_events += [
         ActionExecuted(UTTER_GREET_ACTION, hide_rule_turn=prediction.hide_rule_turn)
     ]
-    prediction = policy.predict_action_probabilities(
+    prediction = await policy.predict_action_probabilities(
         DialogueStateTracker.from_events(
             "casd", evts=conversation_events, slots=domain.slots
         ),
@@ -2195,7 +2199,7 @@ def test_hide_rule_turn(policy: RulePolicy):
     ]
 
 
-def test_hide_rule_turn_with_slots(
+async def test_hide_rule_turn_with_slots(
     policy: RulePolicy,
     default_model_storage: ModelStorage,
     resource: Resource,
@@ -2282,7 +2286,7 @@ def test_hide_rule_turn_with_slots(
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered("haha", {"name": some_intent}),
     ]
-    prediction = policy.predict_action_probabilities(
+    prediction = await policy.predict_action_probabilities(
         DialogueStateTracker.from_events(
             "casd", evts=conversation_events, slots=domain.slots
         ),
@@ -2295,7 +2299,7 @@ def test_hide_rule_turn_with_slots(
         ActionExecuted(some_action, hide_rule_turn=prediction.hide_rule_turn),
         SlotSet(slot_which_is_only_in_rule, some_slot_value),
     ]
-    prediction = policy.predict_action_probabilities(
+    prediction = await policy.predict_action_probabilities(
         DialogueStateTracker.from_events(
             "casd", evts=conversation_events, slots=domain.slots
         ),
@@ -2326,7 +2330,7 @@ def test_hide_rule_turn_with_slots(
     ]
 
 
-def test_hide_rule_turn_no_last_action_listen(
+async def test_hide_rule_turn_no_last_action_listen(
     policy: RulePolicy,
     default_model_storage: ModelStorage,
     resource: Resource,
@@ -2384,7 +2388,7 @@ def test_hide_rule_turn_no_last_action_listen(
         ActionExecuted(action_chitchat),
         SlotSet(followup_on_chitchat, True),
     ]
-    prediction = policy.predict_action_probabilities(
+    prediction = await policy.predict_action_probabilities(
         DialogueStateTracker.from_events(
             "casd", evts=conversation_events, slots=domain.slots
         ),
@@ -2412,7 +2416,7 @@ def test_hide_rule_turn_no_last_action_listen(
     ]
 
 
-def test_hide_rule_turn_with_loops(
+async def test_hide_rule_turn_with_loops(
     policy: RulePolicy,
     default_model_storage: ModelStorage,
     resource: Resource,
@@ -2482,7 +2486,7 @@ def test_hide_rule_turn_with_loops(
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered("haha", {"name": activate_form}),
     ]
-    prediction = policy.predict_action_probabilities(
+    prediction = await policy.predict_action_probabilities(
         DialogueStateTracker.from_events(
             "casd", evts=conversation_events, slots=domain.slots
         ),
@@ -2495,7 +2499,7 @@ def test_hide_rule_turn_with_loops(
         ActionExecuted(form_name, hide_rule_turn=prediction.hide_rule_turn),
         ActiveLoop(form_name),
     ]
-    prediction = policy.predict_action_probabilities(
+    prediction = await policy.predict_action_probabilities(
         DialogueStateTracker.from_events(
             "casd", evts=conversation_events, slots=domain.slots
         ),
@@ -2529,7 +2533,7 @@ def test_hide_rule_turn_with_loops(
     ]
 
 
-def test_do_not_hide_rule_turn_with_loops_in_stories(policy: RulePolicy):
+async def test_do_not_hide_rule_turn_with_loops_in_stories(policy: RulePolicy):
     form_name = "some_form"
     activate_form = "activate_form"
     domain = Domain.from_yaml(
@@ -2559,7 +2563,7 @@ def test_do_not_hide_rule_turn_with_loops_in_stories(policy: RulePolicy):
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered("haha", {"name": activate_form}),
     ]
-    prediction = policy.predict_action_probabilities(
+    prediction = await policy.predict_action_probabilities(
         DialogueStateTracker.from_events(
             "casd", evts=conversation_events, slots=domain.slots
         ),
@@ -2572,7 +2576,7 @@ def test_do_not_hide_rule_turn_with_loops_in_stories(policy: RulePolicy):
         ActionExecuted(form_name, hide_rule_turn=prediction.hide_rule_turn),
         ActiveLoop(form_name),
     ]
-    prediction = policy.predict_action_probabilities(
+    prediction = await policy.predict_action_probabilities(
         DialogueStateTracker.from_events(
             "casd", evts=conversation_events, slots=domain.slots
         ),
@@ -2584,7 +2588,7 @@ def test_do_not_hide_rule_turn_with_loops_in_stories(policy: RulePolicy):
     assert not prediction.hide_rule_turn
 
 
-def test_hide_rule_turn_with_loops_as_followup_action(policy: RulePolicy):
+async def test_hide_rule_turn_with_loops_as_followup_action(policy: RulePolicy):
     form_name = "some_form"
     activate_form = "activate_form"
     domain = Domain.from_yaml(
@@ -2617,7 +2621,7 @@ def test_hide_rule_turn_with_loops_as_followup_action(policy: RulePolicy):
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered("haha", {"name": activate_form}),
     ]
-    prediction = policy.predict_action_probabilities(
+    prediction = await policy.predict_action_probabilities(
         DialogueStateTracker.from_events(
             "casd", evts=conversation_events, slots=domain.slots
         ),
@@ -2630,7 +2634,7 @@ def test_hide_rule_turn_with_loops_as_followup_action(policy: RulePolicy):
         ActionExecuted(form_name, hide_rule_turn=prediction.hide_rule_turn),
         ActiveLoop(form_name),
     ]
-    prediction = policy.predict_action_probabilities(
+    prediction = await policy.predict_action_probabilities(
         DialogueStateTracker.from_events(
             "casd", evts=conversation_events, slots=domain.slots
         ),
@@ -2646,7 +2650,7 @@ def test_hide_rule_turn_with_loops_as_followup_action(policy: RulePolicy):
         UserUttered("haha", {"name": GREET_INTENT_NAME}),
         ActionExecutionRejected(form_name),
     ]
-    prediction = policy.predict_action_probabilities(
+    prediction = await policy.predict_action_probabilities(
         DialogueStateTracker.from_events(
             "casd", evts=conversation_events, slots=domain.slots
         ),
@@ -2660,7 +2664,7 @@ def test_hide_rule_turn_with_loops_as_followup_action(policy: RulePolicy):
         FollowupAction(form_name),
         ActionExecuted(form_name),
     ]
-    prediction = policy.predict_action_probabilities(
+    prediction = await policy.predict_action_probabilities(
         DialogueStateTracker.from_events(
             "casd", evts=conversation_events, slots=domain.slots
         ),
@@ -2903,7 +2907,7 @@ def test_raise_contradiction_if_rule_contradicts_with_story(policy: RulePolicy):
         policy.train([rule, story], domain)
 
 
-def test_rule_with_multiple_entities(policy: RulePolicy):
+async def test_rule_with_multiple_entities(policy: RulePolicy):
     intent_1 = "intent_1"
     entity_1 = "entity_1"
     entity_2 = "entity_2"
@@ -2955,7 +2959,7 @@ def test_rule_with_multiple_entities(policy: RulePolicy):
             ],
         ),
     ]
-    prediction = policy.predict_action_probabilities(
+    prediction = await policy.predict_action_probabilities(
         DialogueStateTracker.from_events(
             "casd", evts=conversation_events, slots=domain.slots
         ),
@@ -2964,7 +2968,7 @@ def test_rule_with_multiple_entities(policy: RulePolicy):
     test_utils.assert_predicted_action(prediction, domain, utter_1)
 
 
-def test_rule_with_multiple_slots(policy: RulePolicy):
+async def test_rule_with_multiple_slots(policy: RulePolicy):
     intent_1 = "intent_1"
     utter_1 = "utter_1"
     utter_2 = "utter_2"
@@ -3022,7 +3026,7 @@ def test_rule_with_multiple_slots(policy: RulePolicy):
         SlotSet(slot_2, value_2),
         SlotSet(slot_1, value_1),
     ]
-    prediction = policy.predict_action_probabilities(
+    prediction = await policy.predict_action_probabilities(
         DialogueStateTracker.from_events(
             "casd", evts=conversation_events, slots=domain.slots
         ),
@@ -3031,7 +3035,7 @@ def test_rule_with_multiple_slots(policy: RulePolicy):
     test_utils.assert_predicted_action(prediction, domain, utter_1)
 
 
-def test_include_action_unlikely_intent(policy: RulePolicy):
+async def test_include_action_unlikely_intent(policy: RulePolicy):
     intent_1 = "intent_1"
     intent_2 = "intent_2"
     utter_1 = "utter_1"
@@ -3110,7 +3114,7 @@ def test_include_action_unlikely_intent(policy: RulePolicy):
         SlotSet(slot_1, value_1),
         ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
     ]
-    prediction = policy.predict_action_probabilities(
+    prediction = await policy.predict_action_probabilities(
         DialogueStateTracker.from_events(
             "casd", evts=conversation_events, slots=domain.slots
         ),
@@ -3125,7 +3129,7 @@ def test_include_action_unlikely_intent(policy: RulePolicy):
         UserUttered("dummy", intent={"name": intent_2}),
         ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
     ]
-    prediction = policy.predict_action_probabilities(
+    prediction = await policy.predict_action_probabilities(
         DialogueStateTracker.from_events(
             "casd", evts=conversation_events, slots=domain.slots
         ),
@@ -3173,7 +3177,7 @@ def test_initial_values_are_not_incorporated_into_rule_policy(
     assert not any(["has_said_hi" in rule for rule in policy.lookup[RULES]])
 
 
-def test_predict_action_probabilities_abstains_in_coexistence(policy: RulePolicy):
+async def test_predict_action_probabilities_abstains_in_coexistence(policy: RulePolicy):
     domain = Domain.from_yaml(
         f"""
         version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
@@ -3194,7 +3198,7 @@ def test_predict_action_probabilities_abstains_in_coexistence(policy: RulePolicy
         ],
         slots=[BooleanSlot(ROUTE_TO_CALM_SLOT, mappings=[{}], initial_value=True)],
     )
-    prediction = policy.predict_action_probabilities(new_conversation, domain)
+    prediction = await policy.predict_action_probabilities(new_conversation, domain)
 
     # check that the policy didn't predict anything
     assert prediction.max_confidence == 0.0

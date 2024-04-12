@@ -41,7 +41,7 @@ def intentless_policy_generator(
             )
 
 
-def test_tracing_intentless_policy_generate_answer(
+async def test_tracing_intentless_policy_generate_answer(
     intentless_policy_generator: IntentlessPolicy,
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
@@ -54,15 +54,13 @@ def test_tracing_intentless_policy_generate_answer(
         policy_subclasses=[component_class],
     )
 
-    intentless_policy_generator.generate_answer(
+    await intentless_policy_generator.generate_answer(
         ["Howdy!"],
         [""],
         "",
     )
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     # includes the child span for `_generate_llm_answer` method call
@@ -99,9 +97,7 @@ def test_tracing_intentless_policy_extract_ai_responses(
     ]
     intentless_policy_generator.extract_ai_responses(conversation_samples)
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1
@@ -133,9 +129,7 @@ def test_tracing_intentless_policy_select_few_shot_conversations(
         100,
     )
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1
@@ -167,9 +161,7 @@ def test_tracing_intentless_policy_select_response_examples(
         100,
     )
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1
@@ -182,7 +174,7 @@ def test_tracing_intentless_policy_select_response_examples(
     assert captured_span.attributes == expected_attributes
 
 
-def test_tracing_intentless_policy_find_closest_response(
+async def test_tracing_intentless_policy_find_closest_response(
     intentless_policy_generator: IntentlessPolicy,
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
@@ -231,11 +223,9 @@ def test_tracing_intentless_policy_find_closest_response(
         ],
     )
 
-    intentless_policy_generator.find_closest_response(tracker)
+    await intentless_policy_generator.find_closest_response(tracker)
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1
@@ -272,9 +262,7 @@ def test_tracing_intentless_policy_prediction_result(
 
     intentless_policy_generator._prediction_result(action_name, Domain.empty())
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1
@@ -285,7 +273,7 @@ def test_tracing_intentless_policy_prediction_result(
     assert captured_span.attributes == expected_attributes
 
 
-def test_tracing_intentless_policy_generate_llm_answer_len_prompt_tokens(
+async def test_tracing_intentless_policy_generate_llm_answer_len_prompt_tokens(
     intentless_policy_generator: IntentlessPolicy,
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
@@ -300,11 +288,11 @@ def test_tracing_intentless_policy_generate_llm_answer_len_prompt_tokens(
 
     intentless_policy_generator.trace_prompt_tokens = True
 
-    intentless_policy_generator._generate_llm_answer(Mock(), "This is a test prompt.")
+    await intentless_policy_generator._generate_llm_answer(
+        Mock(), "This is a test prompt."
+    )
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1
@@ -324,7 +312,7 @@ def test_tracing_intentless_policy_generate_llm_answer_len_prompt_tokens(
     }
 
 
-def test_tracing_intentless_policy_generate_llm_answer_len_prompt_tokens_non_openai(
+async def test_intentless_policy_generate_llm_answer_len_prompt_tokens_non_openai(
     intentless_policy_generator: IntentlessPolicy,
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
@@ -342,7 +330,7 @@ def test_tracing_intentless_policy_generate_llm_answer_len_prompt_tokens_non_ope
     intentless_policy_generator.config = {"llm": {"type": "cohere", "model": "command"}}
 
     with caplog.at_level(logging.WARNING):
-        intentless_policy_generator._generate_llm_answer(
+        await intentless_policy_generator._generate_llm_answer(
             Mock(), "This is a test prompt."
         )
         assert (
@@ -350,9 +338,7 @@ def test_tracing_intentless_policy_generate_llm_answer_len_prompt_tokens_non_ope
             in caplog.text
         )
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1

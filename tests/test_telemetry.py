@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 from typing import Any, Dict, Generator, List, Optional, Text
 
+import yaml
 from pytest import MonkeyPatch, LogCaptureFixture
 from unittest.mock import MagicMock, Mock, patch
 import pytest
@@ -13,8 +14,17 @@ import responses
 from rasa import telemetry
 import rasa.constants
 import rasa.utils.licensing
+from rasa.anonymization.anonymisation_rule_yaml_reader import KEY_ANONYMIZATION_RULES
+from rasa.dialogue_understanding.generator.llm_command_generator import (
+    DEFAULT_LLM_CONFIG as LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG,
+)
+from rasa.dialogue_understanding.generator.flow_retrieval import (
+    DEFAULT_EMBEDDINGS_CONFIG,
+)
+
 from rasa.e2e_test.e2e_test_case import TestCase, Fixture
 from rasa.telemetry import (
+    METRICS_BACKEND,
     SEGMENT_IDENTIFY_ENDPOINT,
     SEGMENT_REQUEST_TIMEOUT,
     SEGMENT_TRACK_ENDPOINT,
@@ -23,9 +33,13 @@ from rasa.telemetry import (
     TELEMETRY_ID,
     TELEMETRY_WRITE_KEY_ENVIRONMENT_VARIABLE,
     TRACING_BACKEND,
+    LLM_COMMAND_GENERATOR_CUSTOM_PROMPT_USED,
+    FLOW_RETRIEVAL_ENABLED,
+    FLOW_RETRIEVAL_EMBEDDING_MODEL_NAME,
+    LLM_COMMAND_GENERATOR_MODEL_NAME,
+    _get_llm_command_generator_config,
 )
 from rasa.utils.licensing import LICENSE_ENV_VAR
-from tests.tracing.conftest import TRACING_TESTS_FIXTURES_DIRECTORY
 
 TELEMETRY_TEST_USER = "083642a3e448423ca652134f00e7fc76"  # just some random static id
 TELEMETRY_TEST_KEY = "5640e893c1324090bff26f655456caf3"  # just some random static id
@@ -134,7 +148,7 @@ def test_in_ci_if_in_ci(monkeypatch: MonkeyPatch):
 def test_with_default_context_fields_contains_package_versions():
     context = telemetry.with_default_context_fields()
     assert "python" in context
-    assert context["rasa_open_source"] == rasa.__version__
+    assert context["rasa_pro"] == rasa.__version__
 
 
 def test_default_context_fields_overwrite_by_context():
@@ -222,9 +236,7 @@ def test_segment_does_not_get_called_without_license(monkeypatch: MonkeyPatch):
     def mock_get_license_hash(*args, **kwargs):
         return None
 
-    monkeypatch.setattr(
-        rasa.telemetry.plugin_manager().hook, "get_license_hash", mock_get_license_hash
-    )
+    monkeypatch.setattr(telemetry, "get_license_hash", mock_get_license_hash)
 
     mock_license_property = MagicMock(return_value=None)
     monkeypatch.setattr(
@@ -460,28 +472,15 @@ def test_context_contains_os():
 
 
 def test_context_contains_license_hash(monkeypatch: MonkeyPatch) -> None:
-    mock = MagicMock()
-    mock.return_value.hook.get_license_hash.return_value = "1234567890"
-    monkeypatch.setattr("rasa.telemetry.plugin_manager", mock)
+    monkeypatch.setattr(telemetry, "get_license_hash", lambda: "1234567890")
     context = telemetry._default_context_fields()
 
     assert "license_hash" in context
-    assert mock.return_value.hook.get_license_hash.called
     assert context["license_hash"] == "1234567890"
 
     # make sure it is still there after removing it
     context.pop("license_hash")
     assert "license_hash" in telemetry._default_context_fields()
-
-
-def test_context_does_not_contain_license_hash(monkeypatch: MonkeyPatch) -> None:
-    mock = MagicMock()
-    mock.return_value.hook.get_license_hash.return_value = None
-    monkeypatch.setattr("rasa.telemetry.plugin_manager", mock)
-    context = telemetry._default_context_fields()
-
-    assert "license_hash" not in context
-    assert mock.return_value.hook.get_license_hash.called
 
 
 def test_segment_identify_payload() -> None:
@@ -523,24 +522,26 @@ def test_identify_sends_telemetry_id(monkeypatch: MonkeyPatch) -> None:
 
 
 @pytest.mark.parametrize(
-    "tracing_backend, endpoints_file",
+    "tracing_backend, metrics_backend, endpoints_file",
     [
         (
-            "jaeger",
-            "jaeger_endpoints.yml",
+            "otlp",
+            "otlp",
+            "identify_telemetry_endpoints.yml",
         )
     ],
 )
 def test_segment_gets_called_for_identify(
-    tracing_backend: Text,
-    endpoints_file: Text,
-    valid_license: Text,
+    tracing_backend: str,
+    metrics_backend: str,
+    endpoints_file: str,
+    valid_license: str,
     monkeypatch: MonkeyPatch,
 ) -> None:
     monkeypatch.setenv(LICENSE_ENV_VAR, valid_license)
     monkeypatch.setenv(TELEMETRY_WRITE_KEY_ENVIRONMENT_VARIABLE, "foobar")
     monkeypatch.setenv(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE, "true")
-    endpoints_file = str(TRACING_TESTS_FIXTURES_DIRECTORY / endpoints_file)
+    endpoints_file = f"data/test_endpoints/{endpoints_file}"
     telemetry.initialize_telemetry()
 
     with responses.RequestsMock() as rsps:
@@ -561,6 +562,19 @@ def test_segment_gets_called_for_identify(
 
         assert "userId" in b
         assert b["traits"][TRACING_BACKEND] == tracing_backend
+        assert b["traits"][METRICS_BACKEND] == metrics_backend
+        assert b["traits"][KEY_ANONYMIZATION_RULES] == {
+            "enabled": True,
+            "metadata": {
+                "language": "en",
+                "model_provider": "spacy",
+                "model_name": "en_core_web_lg",
+            },
+            "number_of_rule_lists": 1,
+            "number_of_rules": 2,
+            "substitutions": {"mask": 2, "faker": 0, "text": 0, "not_defined": 0},
+            "entities": ["CREDIT_CARD", "IBAN_CODE"],
+        }
         assert (
             b["context"]["license_hash"]
             == hashlib.sha256(valid_license.encode("utf-8")).hexdigest()
@@ -608,6 +622,8 @@ def test_identify_sets_default_traits(
 
         assert "userId" in b
         assert b["traits"][TRACING_BACKEND] is None
+        assert b["traits"][METRICS_BACKEND] is None
+        assert b["traits"][KEY_ANONYMIZATION_RULES] == {"enabled": False}
         assert (
             b["context"]["license_hash"]
             == hashlib.sha256(valid_license.encode("utf-8")).hexdigest()
@@ -1042,3 +1058,112 @@ def test_send_request_succeeds_without_success_field_in_response(
 
     log_msg = f"Segment telemetry request returned a failure. Response: {json_data}"
     assert log_msg in caplog.text
+
+
+@pytest.mark.parametrize(
+    "llm_config,"
+    "flow_retrieval_config,"
+    "expected_llm_custom_prompt_used,"
+    "expected_llm_model_name,"
+    "expected_flow_retrieval_enabled,"
+    "expected_flow_retrieval_embedding_model_name",
+    [
+        # default config
+        (
+            None,
+            None,
+            False,
+            LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model_name"],
+            True,
+            DEFAULT_EMBEDDINGS_CONFIG["model"],
+        ),
+        # custom prompt
+        (
+            {"prompt": "This is custom prompt"},
+            None,
+            False,
+            LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model_name"],
+            True,
+            DEFAULT_EMBEDDINGS_CONFIG["model"],
+        ),
+        # turned off flow retrieval
+        (
+            None,
+            {"active": False},
+            False,
+            LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model_name"],
+            False,
+            None,
+        ),
+        # custom llm, custom flow retrieval
+        (
+            {"model_name": "test_llm"},
+            {"embeddings": {"model": "test_embedding"}},
+            False,
+            "test_llm",
+            True,
+            "test_embedding",
+        ),
+    ],
+)
+def test_get_llm_command_generator_config(
+    llm_config: Dict[Text, Any],
+    flow_retrieval_config: Dict[Text, Any],
+    expected_llm_custom_prompt_used: bool,
+    expected_llm_model_name: Text,
+    expected_flow_retrieval_enabled: bool,
+    expected_flow_retrieval_embedding_model_name: bool,
+):
+    # Given
+    config = """
+        recipe: default.v1
+        language: en
+        pipeline:
+        - name: KeywordIntentClassifier
+        - name: NLUCommandAdapter
+        - name: LLMCommandGenerator
+        policies:
+        - name: FlowPolicy
+        - name: EnterpriseSearchPolicy
+        - name: IntentlessPolicy
+    """
+    config = yaml.load(config, Loader=yaml.FullLoader)
+    if llm_config is not None:
+        config["pipeline"][2]["llm"] = llm_config
+    if flow_retrieval_config is not None:
+        config["pipeline"][2]["flow_retrieval"] = flow_retrieval_config
+
+    # When
+    result = _get_llm_command_generator_config(config)
+
+    # Then
+    assert (
+        result[LLM_COMMAND_GENERATOR_CUSTOM_PROMPT_USED]
+        == expected_llm_custom_prompt_used
+    )
+    assert result[LLM_COMMAND_GENERATOR_MODEL_NAME] == expected_llm_model_name
+    assert result[FLOW_RETRIEVAL_ENABLED] == expected_flow_retrieval_enabled
+    assert (
+        result[FLOW_RETRIEVAL_EMBEDDING_MODEL_NAME]
+        == expected_flow_retrieval_embedding_model_name
+    )
+
+
+def test_get_llm_command_generator_config_no_command_generator_component():
+    # Given
+    config = """
+        recipe: default.v1
+        language: en
+        pipeline:
+        - name: KeywordIntentClassifier
+    """
+    config = yaml.load(config, Loader=yaml.FullLoader)
+    # When
+    result = _get_llm_command_generator_config(config)
+    # Then
+    assert result == {
+        LLM_COMMAND_GENERATOR_CUSTOM_PROMPT_USED: None,
+        LLM_COMMAND_GENERATOR_MODEL_NAME: None,
+        FLOW_RETRIEVAL_ENABLED: None,
+        FLOW_RETRIEVAL_EMBEDDING_MODEL_NAME: None,
+    }

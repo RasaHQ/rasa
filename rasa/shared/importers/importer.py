@@ -574,7 +574,7 @@ class ResponsesSyncImporter(PassThroughImporter):
 
     @staticmethod
     def _get_nlu_data_with_responses(
-        responses: Dict[Text, List[Dict[Text, Any]]]
+        responses: Dict[Text, List[Dict[Text, Any]]],
     ) -> TrainingData:
         """Construct training data object with only the responses supplied.
 
@@ -604,7 +604,6 @@ class E2EImporter(PassThroughImporter):
         return original.merge(e2e_domain)
 
     def _get_domain_with_e2e_actions(self) -> Domain:
-
         stories = self.get_stories()
 
         additional_e2e_action_names = set()

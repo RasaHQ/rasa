@@ -271,15 +271,13 @@ class RulePolicy(MemoizationPolicy):
             if (
                 # loop is predicted after action_listen in unhappy path,
                 # therefore no validation is needed
-                is_prev_action_listen_in_state(states[-1])
-                and action == active_loop
+                is_prev_action_listen_in_state(states[-1]) and action == active_loop
             ):
                 lookup[feature_key] = LOOP_WAS_INTERRUPTED
             elif (
                 # some action other than active_loop is predicted in unhappy path,
                 # therefore active_loop shouldn't be predicted by the rule
-                not is_prev_action_listen_in_state(states[-1])
-                and action != active_loop
+                not is_prev_action_listen_in_state(states[-1]) and action != active_loop
             ):
                 lookup[feature_key] = DO_NOT_PREDICT_LOOP_ACTION
         return lookup
@@ -542,6 +540,7 @@ class RulePolicy(MemoizationPolicy):
         Args:
             prediction_source: the states that result in the prediction
             tracker: the tracker that raises the contradiction
+            predicted_action_name: the action that was predicted
 
         Returns:
             true if the contradiction is a result of an action, intent pair in the rule.
@@ -776,10 +775,10 @@ class RulePolicy(MemoizationPolicy):
         trackers_as_actions = rule_trackers_as_actions + story_trackers_as_actions
 
         # negative rules are not anti-rules, they are auxiliary to actual rules
-        self.lookup[
-            RULES_FOR_LOOP_UNHAPPY_PATH
-        ] = self._create_loop_unhappy_lookup_from_states(
-            trackers_as_states, trackers_as_actions
+        self.lookup[RULES_FOR_LOOP_UNHAPPY_PATH] = (
+            self._create_loop_unhappy_lookup_from_states(
+                trackers_as_states, trackers_as_actions
+            )
         )
 
     def train(
@@ -793,6 +792,7 @@ class RulePolicy(MemoizationPolicy):
         Args:
             training_trackers: The list of the trackers.
             domain: The domain.
+            **kwargs: Additional arguments.
 
         Returns:
             The resource which can be used to load the trained policy.
@@ -953,7 +953,6 @@ class RulePolicy(MemoizationPolicy):
     def _find_action_from_loop_happy_path(
         tracker: DialogueStateTracker,
     ) -> Tuple[Optional[Text], Optional[Text]]:
-
         active_loop_name = tracker.active_loop_name
         if active_loop_name is None:
             return None, None
@@ -1102,7 +1101,7 @@ class RulePolicy(MemoizationPolicy):
             returning_from_unhappy_path,
         )
 
-    def predict_action_probabilities(
+    async def predict_action_probabilities(
         self,
         tracker: DialogueStateTracker,
         domain: Domain,

@@ -295,6 +295,7 @@ async def _train_graph(
         training_type,
     )
     flows = file_importer.get_flows()
+    domain = file_importer.get_domain()
     model_configuration = recipe.graph_config_for_recipe(
         config,
         kwargs,
@@ -302,6 +303,9 @@ async def _train_graph(
         is_finetuning=is_finetuning,
     )
     rasa.engine.validation.validate(model_configuration)
+    rasa.engine.validation.validate_coexistance_routing_setup(
+        domain, model_configuration
+    )
     rasa.engine.validation.validate_flow_component_dependencies(
         flows, model_configuration
     )
@@ -363,10 +367,8 @@ def _determine_model_name(
     fixed_model_name: Optional[Text], training_type: TrainingType
 ) -> Text:
     if fixed_model_name:
-        model_file = Path(fixed_model_name)
-        if not model_file.name.endswith(".tar.gz"):
-            return model_file.with_suffix(".tar.gz").name
-
+        if not fixed_model_name.endswith(".tar.gz"):
+            return f"{fixed_model_name}.tar.gz"
         return fixed_model_name
 
     prefix = ""

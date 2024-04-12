@@ -59,7 +59,6 @@ stories:
 
 
 def test_as_story_string_or_statement_with_slot_was_set():
-
     stories = """
     stories:
     - story: hello world

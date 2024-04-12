@@ -323,13 +323,11 @@ class ConveRTFeaturizer(DenseFeaturizer, GraphComponent):
         return texts
 
     def _sentence_encoding_of_text(self, batch: List[Text]) -> np.ndarray:
-
         return self.sentence_encoding_signature(tf.convert_to_tensor(batch))[
             "default"
         ].numpy()
 
     def _sequence_encoding_of_text(self, batch: List[Text]) -> np.ndarray:
-
         return self.sequence_encoding_signature(tf.convert_to_tensor(batch))[
             "sequence_encoding"
         ].numpy()
@@ -346,7 +344,6 @@ class ConveRTFeaturizer(DenseFeaturizer, GraphComponent):
         batch_size = 64
 
         for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
-
             non_empty_examples = list(
                 filter(lambda x: x.get(attribute), training_data.training_examples)
             )
@@ -410,7 +407,6 @@ class ConveRTFeaturizer(DenseFeaturizer, GraphComponent):
             )
 
     def _tokenize(self, sentence: Text) -> Any:
-
         return self.tokenize_signature(tf.convert_to_tensor([sentence]))[
             "default"
         ].numpy()

@@ -333,7 +333,7 @@ def test_train_intentless_policy(
     assert loaded.conversation_samples_index is not None
 
 
-def test_intentless_policy_predicts(
+async def test_intentless_policy_predicts(
     intentless_policy: IntentlessPolicy,
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
@@ -353,7 +353,9 @@ def test_intentless_policy_predicts(
         trackers_for_training(), domain, responses, forms, TrainingData(), FlowsList([])
     )
 
-    policy_prediction = intentless_policy.predict_action_probabilities(tracker, domain)
+    policy_prediction = await intentless_policy.predict_action_probabilities(
+        tracker, domain
+    )
 
     assert policy_prediction.policy_name == "IntentlessPolicy"
     assert any(p != 0.0 for p in policy_prediction.probabilities)
@@ -361,7 +363,7 @@ def test_intentless_policy_predicts(
     # assert all(p >= 0.0 and p <=1.0 for p in policy_prediction.probabilities)
 
 
-def test_intentless_policy_predicts_loop(
+async def test_intentless_policy_predicts_loop(
     intentless_policy: IntentlessPolicy,
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
@@ -383,7 +385,9 @@ def test_intentless_policy_predicts_loop(
         trackers_for_training(), domain, responses, forms, TrainingData(), FlowsList([])
     )
 
-    policy_prediction = intentless_policy.predict_action_probabilities(tracker, domain)
+    policy_prediction = await intentless_policy.predict_action_probabilities(
+        tracker, domain
+    )
 
     try:
         action_domain_index = domain.index_for_action("test_form")
@@ -393,7 +397,7 @@ def test_intentless_policy_predicts_loop(
     assert policy_prediction.probabilities[action_domain_index] > 0.0
 
 
-def test_intentless_policy_predicts_listen_if_no_loop(
+async def test_intentless_policy_predicts_listen_if_no_loop(
     intentless_policy: IntentlessPolicy,
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
@@ -414,7 +418,9 @@ def test_intentless_policy_predicts_listen_if_no_loop(
         trackers_for_training(), domain, responses, forms, TrainingData(), FlowsList([])
     )
 
-    policy_prediction = intentless_policy.predict_action_probabilities(tracker, domain)
+    policy_prediction = await intentless_policy.predict_action_probabilities(
+        tracker, domain
+    )
 
     try:
         action_domain_index = domain.index_for_action("action_listen")

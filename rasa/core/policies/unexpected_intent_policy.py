@@ -562,7 +562,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
 
         return UnexpecTEDIntentPolicyMetadata(query_intent_metadata, ranking_metadata)
 
-    def predict_action_probabilities(
+    async def predict_action_probabilities(
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
@@ -578,6 +578,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
             rule_only_data: Slots and loops which are specific to rules and hence
                 should be ignored by this policy.
             precomputations: Contains precomputed features and attributes.
+            **kwargs: Additional arguments.
 
         Returns:
              The policy's prediction (e.g. the probabilities for the actions).
@@ -793,7 +794,6 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         }
 
         for index, all_pos_labels in enumerate(label_ids):
-
             for candidate_label_id in unique_label_ids:
                 if candidate_label_id in all_pos_labels:
                     label_id_scores[candidate_label_id][POSITIVE_SCORES_KEY].append(
@@ -808,7 +808,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
 
     @staticmethod
     def _compute_label_quantiles(
-        label_id_scores: Dict[int, Dict[Text, List[float]]]
+        label_id_scores: Dict[int, Dict[Text, List[float]]],
     ) -> Dict[int, List[float]]:
         """Computes multiple quantiles for each label id.
 

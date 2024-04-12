@@ -73,7 +73,7 @@ actions:
 """
 
 
-def test_diagnostics(
+async def test_diagnostics(
     default_model_storage: ModelStorage, default_execution_context: ExecutionContext
 ):
     domain = Domain.from_yaml(DOMAIN_YAML)
@@ -95,7 +95,7 @@ def test_diagnostics(
     )
     precomputations = None
     policy.train([GREET_RULE], domain, precomputations)
-    prediction = policy.predict_action_probabilities(
+    prediction = await policy.predict_action_probabilities(
         GREET_RULE, domain, precomputations
     )
 
@@ -104,7 +104,7 @@ def test_diagnostics(
     assert isinstance(prediction.diagnostic_data.get("attention_weights"), np.ndarray)
 
 
-def test_predict_action_probabilities_abstains_in_coexistence(
+async def test_predict_action_probabilities_abstains_in_coexistence(
     default_model_storage: ModelStorage, default_execution_context: ExecutionContext
 ):
     domain = Domain.from_yaml(DOMAIN_YAML)
@@ -121,7 +121,7 @@ def test_predict_action_probabilities_abstains_in_coexistence(
         evts=[],
     )
 
-    prediction = policy.predict_action_probabilities(tracker, domain, None)
+    prediction = await policy.predict_action_probabilities(tracker, domain, None)
 
     # check that the policy didn't predict anything
     assert prediction.max_confidence == 0.0
@@ -130,7 +130,6 @@ def test_predict_action_probabilities_abstains_in_coexistence(
 class TestTEDPolicy(PolicyTestCollection):
     @staticmethod
     def _policy_class_to_test() -> Type[TEDPolicy]:
-
         return TEDPolicy
 
     async def test_train_model_checkpointing(
@@ -288,7 +287,7 @@ class TestTEDPolicy(PolicyTestCollection):
     def test_ranking_length(self, trained_policy: TEDPolicy):
         assert trained_policy.config[RANKING_LENGTH] == 0
 
-    def test_ranking_length_and_renormalization(
+    async def test_ranking_length_and_renormalization(
         self,
         trained_policy: TEDPolicy,
         tracker: DialogueStateTracker,
@@ -296,7 +295,7 @@ class TestTEDPolicy(PolicyTestCollection):
         monkeypatch: MonkeyPatch,
     ):
         precomputations = None
-        prediction = trained_policy.predict_action_probabilities(
+        prediction = await trained_policy.predict_action_probabilities(
             tracker, default_domain, precomputations
         )
 
@@ -541,7 +540,7 @@ class TestTEDPolicy(PolicyTestCollection):
             ),
         ],
     )
-    def test_ignore_action_unlikely_intent(
+    async def test_ignore_action_unlikely_intent(
         self,
         trained_policy: TEDPolicy,
         default_domain: Domain,
@@ -555,10 +554,10 @@ class TestTEDPolicy(PolicyTestCollection):
         tracker_without_action = DialogueStateTracker.from_events(
             "test 2", evts=tracker_events_without_action
         )
-        prediction_with_action = trained_policy.predict_action_probabilities(
+        prediction_with_action = await trained_policy.predict_action_probabilities(
             tracker_with_action, default_domain, precomputations
         )
-        prediction_without_action = trained_policy.predict_action_probabilities(
+        prediction_without_action = await trained_policy.predict_action_probabilities(
             tracker_without_action, default_domain, precomputations
         )
 
@@ -690,22 +689,22 @@ class TestTEDPolicyMargin(TestTEDPolicyConfigurationOptions, TestTEDPolicy):
     def test_confidence_type(self, trained_policy: TEDPolicy):
         assert trained_policy.config[MODEL_CONFIDENCE] == AUTO
 
-    def test_ranking_length_and_renormalization(
+    async def test_ranking_length_and_renormalization(
         self,
         trained_policy: Policy,
         tracker: DialogueStateTracker,
         default_domain: Domain,
     ):
-        policy_prediction = trained_policy.predict_action_probabilities(
+        policy_prediction = await trained_policy.predict_action_probabilities(
             tracker, default_domain, precomputations=None
         )
         assert sum(policy_prediction.probabilities) != pytest.approx(1)
 
-    def test_prediction_on_empty_tracker(
+    async def test_prediction_on_empty_tracker(
         self, trained_policy: Policy, default_domain: Domain
     ):
         tracker = DialogueStateTracker(DEFAULT_SENDER_ID, default_domain.slots)
-        prediction = trained_policy.predict_action_probabilities(
+        prediction = await trained_policy.predict_action_probabilities(
             tracker, default_domain, precomputations=None
         )
         assert not prediction.is_end_to_end_prediction
@@ -742,15 +741,17 @@ class TestTEDPolicyNormalization(TestTEDPolicyConfigurationOptions, TestTEDPolic
     def test_ranking_length(self, trained_policy: TEDPolicy):
         assert trained_policy.config[RANKING_LENGTH] == 4
 
-    def test_ranking_length_and_renormalization(
+    async def test_ranking_length_and_renormalization(
         self,
         trained_policy: Policy,
         tracker: DialogueStateTracker,
         default_domain: Domain,
     ):
         precomputations = None
-        predicted_probabilities = trained_policy.predict_action_probabilities(
-            tracker, default_domain, precomputations
+        predicted_probabilities = (
+            await trained_policy.predict_action_probabilities(
+                tracker, default_domain, precomputations
+            )
         ).probabilities
         assert all([confidence >= 0 for confidence in predicted_probabilities])
         assert sum([confidence > 0 for confidence in predicted_probabilities]) == 4

@@ -51,7 +51,7 @@ def make_mock_get_credentials_from_secret_managers(
     """
 
     def _make_mock_get_credentials_from_secret_managers(
-        result_credentials: Optional[Dict[Text, Text]]
+        result_credentials: Optional[Dict[Text, Text]],
     ) -> MagicMock:
         mock_get_credentials_from_secret_managers.return_value = result_credentials
         return mock_get_credentials_from_secret_managers

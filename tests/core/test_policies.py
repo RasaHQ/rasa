@@ -164,7 +164,7 @@ class PolicyTestCollection:
 
     @pytest.mark.timeout(120, func_only=True)
     @pytest.mark.parametrize("should_finetune", [False, True])
-    def test_persist_and_load(
+    async def test_persist_and_load(
         self,
         trained_policy: Policy,
         default_domain: Domain,
@@ -186,19 +186,19 @@ class PolicyTestCollection:
         trackers = train_trackers(default_domain, stories_path, augmentation_factor=20)
 
         for tracker in trackers:
-            predicted_probabilities = loaded.predict_action_probabilities(
+            predicted_probabilities = await loaded.predict_action_probabilities(
                 tracker, default_domain
             )
-            actual_probabilities = trained_policy.predict_action_probabilities(
+            actual_probabilities = await trained_policy.predict_action_probabilities(
                 tracker, default_domain
             )
             assert predicted_probabilities == actual_probabilities
 
-    def test_prediction_on_empty_tracker(
+    async def test_prediction_on_empty_tracker(
         self, trained_policy: Policy, default_domain: Domain
     ):
         tracker = DialogueStateTracker(DEFAULT_SENDER_ID, default_domain.slots)
-        prediction = trained_policy.predict_action_probabilities(
+        prediction = await trained_policy.predict_action_probabilities(
             tracker, default_domain
         )
         assert not prediction.is_end_to_end_prediction
@@ -228,9 +228,13 @@ class PolicyTestCollection:
         assert loaded is not None
 
     @staticmethod
-    def _get_next_action(policy: Policy, events: List[Event], domain: Domain) -> Text:
+    async def _get_next_action(
+        policy: Policy, events: List[Event], domain: Domain
+    ) -> Text:
         tracker = get_tracker(events)
-        scores = policy.predict_action_probabilities(tracker, domain).probabilities
+        scores = await policy.predict_action_probabilities(
+            tracker, domain
+        ).probabilities
         index = scores.index(max(scores))
         return domain.action_names_or_texts[index]
 
@@ -424,7 +428,6 @@ class TestMemoizationPolicy(PolicyTestCollection):
         default_domain: Domain,
         stories_path: Text,
     ):
-
         execution_context = dataclasses.replace(execution_context, is_finetuning=True)
         loaded_policy = MemoizationPolicy.load(
             trained_policy.config, model_storage, resource, execution_context
@@ -490,7 +493,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
             ),
         ],
     )
-    def test_ignore_action_unlikely_intent(
+    async def test_ignore_action_unlikely_intent(
         self,
         trained_policy: MemoizationPolicy,
         default_domain: Domain,
@@ -503,10 +506,10 @@ class TestMemoizationPolicy(PolicyTestCollection):
         tracker_without_action = DialogueStateTracker.from_events(
             "test 2", evts=tracker_events_without_action, slots=default_domain.slots
         )
-        prediction_with_action = trained_policy.predict_action_probabilities(
+        prediction_with_action = await trained_policy.predict_action_probabilities(
             tracker_with_action, default_domain
         )
-        prediction_without_action = trained_policy.predict_action_probabilities(
+        prediction_without_action = await trained_policy.predict_action_probabilities(
             tracker_without_action, default_domain
         )
 
@@ -557,7 +560,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
         assert isinstance(featurizer.state_featurizer, state_featurizer)
 
     @pytest.mark.parametrize("max_history", [1, 2, 3, 4, None])
-    def test_prediction(
+    async def test_prediction(
         self,
         max_history: Optional[int],
         model_storage: ModelStorage,
@@ -625,7 +628,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
             "training story", events[:-2], domain=domain, slots=domain.slots
         )
         policy.train([training_story], domain)
-        prediction = policy.predict_action_probabilities(test_story, domain)
+        prediction = await policy.predict_action_probabilities(test_story, domain)
         assert (
             domain.action_names_or_texts[
                 prediction.probabilities.index(max(prediction.probabilities))
@@ -642,7 +645,7 @@ class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
         return AugmentedMemoizationPolicy
 
     @pytest.mark.parametrize("max_history", [1, 2, 3, 4, None])
-    def test_augmented_prediction(
+    async def test_augmented_prediction(
         self,
         max_history: Optional[int],
         model_storage: ModelStorage,
@@ -720,7 +723,7 @@ class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
             slots=domain.slots,
         )
         policy.train([training_story], domain)
-        prediction = policy.predict_action_probabilities(test_story, domain)
+        prediction = await policy.predict_action_probabilities(test_story, domain)
         assert (
             domain.action_names_or_texts[
                 prediction.probabilities.index(max(prediction.probabilities))
@@ -729,7 +732,7 @@ class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
         )
 
     @pytest.mark.parametrize("max_history", [1, 2, 3, 4, None])
-    def test_augmented_prediction_across_max_history_actions(
+    async def test_augmented_prediction_across_max_history_actions(
         self,
         max_history: Optional[int],
         model_storage: ModelStorage,
@@ -802,7 +805,7 @@ class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
             slots=domain.slots,
         )
         policy.train([training_story], domain)
-        prediction = policy.predict_action_probabilities(test_story, domain)
+        prediction = await policy.predict_action_probabilities(test_story, domain)
         assert (
             domain.action_names_or_texts[
                 prediction.probabilities.index(max(prediction.probabilities))
@@ -811,7 +814,7 @@ class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
         )
 
     @pytest.mark.parametrize("max_history", [1, 2, 3, 4, None])
-    def test_aug_pred_sensitive_to_intent_across_max_history_actions(
+    async def test_aug_pred_sensitive_to_intent_across_max_history_actions(
         self,
         max_history: Optional[int],
         model_storage: ModelStorage,
@@ -889,7 +892,7 @@ class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
         )
 
         policy.train([training_story], domain)
-        prediction1 = policy.predict_action_probabilities(test_story1, domain)
+        prediction1 = await policy.predict_action_probabilities(test_story1, domain)
         assert (
             domain.action_names_or_texts[
                 prediction1.probabilities.index(max(prediction1.probabilities))
@@ -916,14 +919,14 @@ class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
             slots=domain.slots,
         )
 
-        prediction2 = policy.predict_action_probabilities(
+        prediction2 = await policy.predict_action_probabilities(
             test_story2_no_match_expected,
             domain,
         )
         assert all([prob == 0.0 for prob in prediction2.probabilities])
 
     @pytest.mark.parametrize("max_history", [1, 2, 3, 4, None])
-    def test_aug_pred_without_intent(
+    async def test_aug_pred_without_intent(
         self,
         max_history: Optional[int],
         model_storage: ModelStorage,
@@ -987,7 +990,7 @@ class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
             domain=domain,
             slots=domain.slots,
         )
-        prediction = policy.predict_action_probabilities(test_story, domain)
+        prediction = await policy.predict_action_probabilities(test_story, domain)
         assert (
             domain.action_names_or_texts[
                 prediction.probabilities.index(max(prediction.probabilities))

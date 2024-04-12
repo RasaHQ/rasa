@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Tuple
 
 import tiktoken
+from numpy import ndarray
 
 from rasa.core.agent import Agent
 from rasa.core.brokers.broker import EventBroker
@@ -268,7 +269,7 @@ def extract_intent_name_and_slots(
             slots[slot_name] = slot_value.value
             break
     return {
-        "intent_name": str(tracker.latest_message.intent.get(INTENT_NAME_KEY)),  # type: ignore[union-attr]  # noqa: E501
+        "intent_name": str(tracker.latest_message.intent.get(INTENT_NAME_KEY)),  # type: ignore[union-attr]
         **slots,
     }
 
@@ -336,6 +337,15 @@ def extract_attrs_for_contextual_response_rephraser(
     attributes = extract_llm_config(self, default_llm_config=DEFAULT_LLM_CONFIG)
 
     return extend_attributes_with_prompt_tokens_length(self, attributes, prompt)
+
+
+def extract_attrs_for_create_history(
+    self: Any,
+    tracker: DialogueStateTracker,
+) -> Dict[str, Any]:
+    from rasa.core.nlg.contextual_response_rephraser import DEFAULT_LLM_CONFIG
+
+    return extract_llm_config(self, default_llm_config=DEFAULT_LLM_CONFIG)
 
 
 def extract_attrs_for_generate(
@@ -513,6 +523,14 @@ def extract_attrs_for_policy_prediction(
     diagnostic_data: Optional[Dict[Text, Any]] = None,
     action_metadata: Optional[Dict[Text, Any]] = None,
 ) -> Dict[str, Any]:
+    # diagnostic_data can contain ndarray type values which need to be converted
+    # into a list since the returning values have to be JSON serializable.
+    if isinstance(diagnostic_data, dict):
+        diagnostic_data = {
+            key: value.tolist() if isinstance(value, ndarray) else value
+            for key, value in diagnostic_data.items()
+        }
+
     return {
         "priority": self.priority,
         "events": [event.__class__.__name__ for event in events] if events else "None",

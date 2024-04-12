@@ -285,7 +285,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             # if action_list is None, we couldn't get any response from the LLM
             commands = [ErrorCommand()]
         else:
-            commands = self.parse_commands(action_list, flows)
+            commands = self.parse_commands(action_list, tracker, flows)
 
             if not commands:
                 # no commands are parsed or there's an invalid command
@@ -375,11 +375,14 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             return None
 
     @classmethod
-    def parse_commands(cls, actions: Optional[str], flows: FlowsList) -> List[Command]:
+    def parse_commands(
+        cls, actions: Optional[str], tracker: DialogueStateTracker, flows: FlowsList
+    ) -> List[Command]:
         """Parse the actions returned by the llm into intent and entities.
 
         Args:
             actions: The actions returned by the llm.
+            tracker: The tracker containing the current state of the conversation.
             flows: the list of flows
 
         Returns:

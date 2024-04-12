@@ -88,7 +88,6 @@ def test_build_tag_id_dict():
 
 
 def test_apply_bilou_schema(whitespace_tokenizer: WhitespaceTokenizer):
-
     message_1 = Message.build(
         text="Germany is part of the European Union", intent="inform"
     )
@@ -229,7 +228,6 @@ def test_check_consistent_bilou_tagging(
     debug_message: Optional[Text],
     caplog: LogCaptureFixture,
 ):
-
     with caplog.at_level(logging.DEBUG):
         actual_tags, actual_confidences = bilou_utils.ensure_consistent_bilou_tagging(
             tags, confidences

@@ -101,6 +101,7 @@ class LLMBasedRouter(GraphComponent):
         """Validate the config of the router."""
         if (
             self.config[CALM_ENTRY] is None
+            or not isinstance(self.config[CALM_ENTRY], dict)
             or STICKY not in self.config[CALM_ENTRY]
             or self.config[CALM_ENTRY][STICKY] is None
         ):
@@ -230,7 +231,6 @@ class LLMBasedRouter(GraphComponent):
             return [SetSlotCommand(ROUTE_TO_CALM_SLOT, False)]
 
     def render_template(self, message: Message) -> str:
-
         inputs = {
             "user_message": message.get(TEXT),
             f"{CALM_ENTRY}_{STICKY}": self.config[CALM_ENTRY][STICKY],

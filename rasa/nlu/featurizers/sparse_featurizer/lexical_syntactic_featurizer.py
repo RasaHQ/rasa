@@ -76,9 +76,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer, GraphComponent):
 
     # NOTE: "suffix5" of the token "is" will be "is". Hence, when combining multiple
     # prefixes, short words will be represented/encoded repeatedly.
-    _FUNCTION_DICT: Dict[
-        Text, Callable[[Token], Union[Text, bool, None]]
-    ] = {  # noqa: RUF012
+    _FUNCTION_DICT: Dict[Text, Callable[[Token], Union[Text, bool, None]]] = {  # noqa: RUF012
         "low": lambda token: token.text.islower(),
         "title": lambda token: token.text.istitle(),
         "prefix5": lambda token: token.text[:5],
@@ -329,7 +327,6 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer, GraphComponent):
         assert len(window_range) == window_size
 
         for anchor in range(len(tokens)):
-
             token_features: Dict[Tuple[int, Text], Text] = {}
 
             for window_position, relative_position in enumerate(window_range):
@@ -341,13 +338,13 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer, GraphComponent):
 
                 token = tokens[absolute_position]
                 for feature_name in self._feature_config[window_position]:
-                    token_features[
-                        (window_position, feature_name)
-                    ] = self._extract_raw_features_from_token(
-                        token=token,
-                        feature_name=feature_name,
-                        token_position=absolute_position,
-                        num_tokens=len(tokens),
+                    token_features[(window_position, feature_name)] = (
+                        self._extract_raw_features_from_token(
+                            token=token,
+                            feature_name=feature_name,
+                            token_position=absolute_position,
+                            num_tokens=len(tokens),
+                        )
                     )
 
             sentence_features.append(token_features)
@@ -356,7 +353,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer, GraphComponent):
 
     @staticmethod
     def _build_feature_to_index_map(
-        feature_vocabulary: Dict[Tuple[int, Text], Set[Text]]
+        feature_vocabulary: Dict[Tuple[int, Text], Set[Text]],
     ) -> Dict[Tuple[int, Text], Dict[Text, int]]:
         """Creates a nested dictionary for mapping raw features to indices.
 

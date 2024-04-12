@@ -157,10 +157,10 @@ class DefaultV1Recipe(Recipe):
             else:
                 unique_types = set(component_types)
 
-            cls._registered_components[
-                registered_class.__name__
-            ] = cls.RegisteredComponent(
-                registered_class, unique_types, is_trainable, model_from
+            cls._registered_components[registered_class.__name__] = (
+                cls.RegisteredComponent(
+                    registered_class, unique_types, is_trainable, model_from
+                )
             )
             return registered_class
 
@@ -699,7 +699,6 @@ class DefaultV1Recipe(Recipe):
         preprocessors: List[Text],
         train_nodes: Dict[Text, SchemaNode],
     ) -> Dict[Text, SchemaNode]:
-
         predict_config = copy.deepcopy(config)
         predict_nodes = {}
 

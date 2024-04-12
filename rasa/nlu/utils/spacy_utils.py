@@ -195,7 +195,7 @@ class SpacyNLP(GraphComponent):
 
     @staticmethod
     def _filter_training_samples_by_content(
-        indexed_training_samples: List[Tuple[int, Text]]
+        indexed_training_samples: List[Tuple[int, Text]],
     ) -> Tuple[List[Tuple[int, Text]], List[Tuple[int, Text]]]:
         """Separates empty training samples from content bearing ones."""
         docs_to_pipe = list(
@@ -251,7 +251,6 @@ class SpacyNLP(GraphComponent):
     ) -> Dict[Text, List[Any]]:
         attribute_docs = {}
         for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
-
             texts = [
                 self._get_text(e, attribute) for e in training_data.training_examples
             ]
@@ -288,7 +287,6 @@ class SpacyNLP(GraphComponent):
         attribute_docs = self._docs_for_training_data(model.model, training_data)
 
         for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
-
             for idx, example in enumerate(training_data.training_examples):
                 example_attribute_doc = attribute_docs[attribute][idx]
                 if len(example_attribute_doc):

@@ -37,7 +37,7 @@ def _instrument_select_response_examples(
 
         return wrapper
 
-    policy_class.select_response_examples = tracing_select_response_examples_wrapper(  # type: ignore[assignment]  # noqa: E501
+    policy_class.select_response_examples = tracing_select_response_examples_wrapper(  # type: ignore[assignment]
         policy_class.select_response_examples
     )
 
@@ -72,8 +72,10 @@ def _instrument_select_few_shot_conversations(
 
         return wrapper
 
-    policy_class.select_few_shot_conversations = tracing_select_few_shot_conversations_wrapper(  # type: ignore[assignment]  # noqa: E501
-        policy_class.select_few_shot_conversations
+    policy_class.select_few_shot_conversations = (  # type: ignore[assignment]
+        tracing_select_few_shot_conversations_wrapper(
+            policy_class.select_few_shot_conversations
+        )
     )
 
     logger.debug(
@@ -102,7 +104,7 @@ def _instrument_extract_ai_responses(
 
         return wrapper
 
-    policy_class.extract_ai_responses = tracing_extract_ai_responses_wrapper(  # type: ignore[assignment]  # noqa: E501
+    policy_class.extract_ai_responses = tracing_extract_ai_responses_wrapper(  # type: ignore[assignment]
         policy_class.extract_ai_responses
     )
 
@@ -114,7 +116,7 @@ def _instrument_generate_answer(
 ) -> None:
     def tracing_generate_answer_wrapper(fn: Callable) -> Callable:
         @functools.wraps(fn)
-        def wrapper(
+        async def wrapper(
             self: "IntentlessPolicy",
             response_examples: List[str],
             conversation_samples: List[str],
@@ -123,7 +125,7 @@ def _instrument_generate_answer(
             with tracer.start_as_current_span(
                 f"{self.__class__.__name__}.{fn.__name__}"
             ) as span:
-                llm_response = fn(
+                llm_response = await fn(
                     self, response_examples, conversation_samples, history
                 )
                 span.set_attributes(
@@ -135,7 +137,7 @@ def _instrument_generate_answer(
 
         return wrapper
 
-    policy_class.generate_answer = tracing_generate_answer_wrapper(  # type: ignore[assignment]  # noqa: E501
+    policy_class.generate_answer = tracing_generate_answer_wrapper(  # type: ignore[assignment]
         policy_class.generate_answer
     )
 

@@ -48,9 +48,7 @@ class MarkerRegistry:
     """Keeps track of tags that can be used to configure markers."""
 
     all_tags: Set[Text] = set()  # noqa: RUF012
-    condition_tag_to_marker_class: Dict[
-        Text, Type[ConditionMarker]
-    ] = {}  # noqa: RUF012
+    condition_tag_to_marker_class: Dict[Text, Type[ConditionMarker]] = {}  # noqa: RUF012
     operator_tag_to_marker_class: Dict[Text, Type[OperatorMarker]] = {}  # noqa: RUF012
     marker_class_to_tag: Dict[Type[Marker], Text] = {}  # noqa: RUF012
     negated_tag_to_tag: Dict[Text, Text] = {}  # noqa: RUF012

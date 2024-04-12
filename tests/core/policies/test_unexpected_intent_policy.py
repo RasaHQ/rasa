@@ -61,7 +61,6 @@ from tests.core.policies.test_ted_policy import TestTEDPolicy
 class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
     @staticmethod
     def _policy_class_to_test() -> Type[UnexpecTEDIntentPolicy]:
-
         return UnexpecTEDIntentPolicy
 
     @pytest.fixture(scope="class")
@@ -85,15 +84,17 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
     def test_ranking_length(self, trained_policy: UnexpecTEDIntentPolicy):
         assert trained_policy.config[RANKING_LENGTH] == LABEL_RANKING_LENGTH
 
-    def test_ranking_length_and_renormalization(
+    async def test_ranking_length_and_renormalization(
         self,
         trained_policy: UnexpecTEDIntentPolicy,
         tracker: DialogueStateTracker,
         default_domain: Domain,
     ):
         precomputations = None
-        prediction_metadata = trained_policy.predict_action_probabilities(
-            tracker, default_domain, precomputations
+        prediction_metadata = (
+            await trained_policy.predict_action_probabilities(
+                tracker, default_domain, precomputations
+            )
         ).action_metadata
         assert (
             prediction_metadata is None
@@ -104,7 +105,6 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
     def test_label_data_assembly(
         self, trained_policy: UnexpecTEDIntentPolicy, default_domain: Domain
     ):
-
         # Construct input data
         state_featurizer = trained_policy.featurizer.state_featurizer
         encoded_all_labels = state_featurizer.encode_all_labels(
@@ -471,7 +471,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
             is False
         )
 
-    def test_no_action_unlikely_intent_prediction(
+    async def test_no_action_unlikely_intent_prediction(
         self,
         trained_policy: UnexpecTEDIntentPolicy,
         model_storage: ModelStorage,
@@ -488,7 +488,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
 
         precomputations = None
         tracker = DialogueStateTracker(sender_id="init", slots=default_domain.slots)
-        prediction = loaded_policy.predict_action_probabilities(
+        prediction = await loaded_policy.predict_action_probabilities(
             tracker, default_domain, precomputations
         )
 
@@ -500,7 +500,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
                 ActionExecuted(action_name="utter_greet"),
             ],
         )
-        prediction = loaded_policy.predict_action_probabilities(
+        prediction = await loaded_policy.predict_action_probabilities(
             tracker, default_domain, precomputations
         )
 
@@ -508,7 +508,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
 
         loaded_policy.model = None
 
-        prediction = loaded_policy.predict_action_probabilities(
+        prediction = await loaded_policy.predict_action_probabilities(
             tracker, default_domain, precomputations
         )
 
@@ -518,7 +518,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         "predicted_similarity, threshold_value, is_unlikely",
         [(1.2, 0.2, False), (0.3, -0.1, False), (-1.5, 0.03, True)],
     )
-    def test_action_unlikely_intent_prediction(
+    async def test_action_unlikely_intent_prediction(
         self,
         trained_policy: UnexpecTEDIntentPolicy,
         model_storage: ModelStorage,
@@ -558,7 +558,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
             lambda data: {"similarities": similarities},
         )
 
-        prediction = loaded_policy.predict_action_probabilities(
+        prediction = await loaded_policy.predict_action_probabilities(
             tracker, default_domain, precomputations
         )
 
@@ -626,7 +626,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
             ),
         ],
     )
-    def test_skip_predictions_to_prevent_loop(
+    async def test_skip_predictions_to_prevent_loop(
         self,
         trained_policy: UnexpecTEDIntentPolicy,
         model_storage: ModelStorage,
@@ -643,7 +643,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         tracker = DialogueStateTracker(sender_id="init", slots=default_domain.slots)
         tracker.update_with_events(tracker_events)
         with caplog.at_level(logging.DEBUG):
-            prediction = trained_policy.predict_action_probabilities(
+            prediction = await trained_policy.predict_action_probabilities(
                 tracker, default_domain, precomputations
             )
 
@@ -681,7 +681,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
             ],
         ],
     )
-    def test_skip_predictions_if_new_intent(
+    async def test_skip_predictions_if_new_intent(
         self,
         trained_policy: UnexpecTEDIntentPolicy,
         model_storage: ModelStorage,
@@ -696,7 +696,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         tracker.update_with_events(tracker_events)
 
         with caplog.at_level(logging.DEBUG):
-            prediction = trained_policy.predict_action_probabilities(
+            prediction = await trained_policy.predict_action_probabilities(
                 tracker, default_domain, precomputations=None
             )
 
@@ -766,7 +766,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
             ),
         ],
     )
-    def test_ignore_action_unlikely_intent(
+    async def test_ignore_action_unlikely_intent(
         self,
         trained_policy: UnexpecTEDIntentPolicy,
         model_storage: ModelStorage,
@@ -784,10 +784,10 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         tracker_without_action = DialogueStateTracker.from_events(
             "test 2", evts=tracker_events_without_action
         )
-        prediction_with_action = trained_policy.predict_action_probabilities(
+        prediction_with_action = await trained_policy.predict_action_probabilities(
             tracker_with_action, default_domain, precomputations
         )
-        prediction_without_action = trained_policy.predict_action_probabilities(
+        prediction_without_action = await trained_policy.predict_action_probabilities(
             tracker_without_action, default_domain, precomputations
         )
 
@@ -852,7 +852,6 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
             all_similarities: np.array,
             label_index: int,
         ):
-
             expected_score = all_similarities[0][label_index]
             expected_threshold = (
                 all_thresholds[label_index] if label_index in all_thresholds else None
@@ -1103,7 +1102,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
             collected_tracker_events = list(collected_tracker.events)
             assert collected_tracker_events == expected_tracker_events
 
-    def test_predict_action_probabilities_abstains_in_coexistence(
+    async def test_predict_action_probabilities_abstains_in_coexistence(
         self,
         default_model_storage: ModelStorage,
         default_execution_context: ExecutionContext,
@@ -1122,7 +1121,9 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
             evts=[],
         )
 
-        prediction = policy.predict_action_probabilities(tracker, default_domain, None)
+        prediction = await policy.predict_action_probabilities(
+            tracker, default_domain, None
+        )
 
         # check that the policy didn't predict anything
         assert prediction.max_confidence == 0.0

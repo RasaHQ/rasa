@@ -1,5 +1,4 @@
 import argparse
-import hashlib
 import logging
 from typing import Optional, TYPE_CHECKING, List, Text, Union
 
@@ -13,7 +12,6 @@ from rasa.core.auth_retry_tracker_store import AuthRetryTrackerStore
 from rasa.core.secrets_manager.factory import load_secret_manager
 
 from rasa.tracing import config
-from rasa.utils.licensing import retrieve_license_from_env
 
 if TYPE_CHECKING:
     from rasa.core.brokers.broker import EventBroker
@@ -80,7 +78,6 @@ def create_tracker_store(
     domain: "Domain",
     event_broker: Optional["EventBroker"],
 ) -> "TrackerStore":
-
     if isinstance(endpoint_config, EndpointConfig):
         return AuthRetryTrackerStore(
             endpoint_config=endpoint_config, domain=domain, event_broker=event_broker
@@ -102,13 +99,6 @@ def get_anonymization_pipeline() -> Optional["AnonymizationPipeline"]:
     from rasa.anonymization.anonymization_pipeline import AnonymizationPipelineProvider
 
     return AnonymizationPipelineProvider().get_anonymization_pipeline()
-
-
-@hookimpl  # type: ignore[misc]
-def get_license_hash() -> Optional[Text]:
-    """Hook implementation for getting the license hash."""
-    license_value = retrieve_license_from_env()
-    return hashlib.sha256(license_value.encode("utf-8")).hexdigest()
 
 
 @hookimpl  # type: ignore[misc]
