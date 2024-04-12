@@ -463,6 +463,7 @@ jobs:
           DD_ENV: test-flaky
           DD_SERVICE: rasa
           DD_ARGS: --ddtrace --ddtrace-patch-all
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
         run: |
           make test-flaky
           mv .coverage ${{ github.workspace }}/test-flaky-coverage
