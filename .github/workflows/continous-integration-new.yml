@@ -99,7 +99,7 @@ jobs:
             fi
 
       - name: Prepare the job for integration tests
-        uses: ./.github/actions/integration-test-prerequisites
+        uses: ./.github/actions/test-prerequisites
         with:
             DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
             POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
@@ -180,7 +180,7 @@ jobs:
             fi
 
       - name: Prepare the job for integration tests
-        uses: ./.github/actions/integration-test-prerequisites
+        uses: ./.github/actions/test-prerequisites
         with:
             DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
             POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
@@ -261,7 +261,7 @@ jobs:
           uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
         - name: Prepare the job for integration tests
-          uses: ./.github/actions/integration-test-prerequisites
+          uses: ./.github/actions/test-prerequisites
           with:
               DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
               POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
@@ -344,7 +344,7 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Prepare the job for integration tests
-        uses: ./.github/actions/integration-test-prerequisites
+        uses: ./.github/actions/test-prerequisites
         with:
             DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
             POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
@@ -401,7 +401,7 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Prepare the job for integration tests
-        uses: ./.github/actions/integration-test-prerequisites
+        uses: ./.github/actions/test-prerequisites
         with:
             DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
             POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
@@ -440,7 +440,7 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Prepare the job for integration tests
-        uses: ./.github/actions/integration-test-prerequisites
+        uses: ./.github/actions/test-prerequisites
         with:
             DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
             POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
