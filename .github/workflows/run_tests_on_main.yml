@@ -1,7 +1,7 @@
 name: Run Acceptance Tests on Main
 
 on:
-  workflow_call:
+  workflow_dispatch:
   push:
     branches:
       - main
