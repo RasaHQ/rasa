@@ -9,7 +9,7 @@ on:
 env:
   AWS_REGION: us-east-1
   AWS_REPOSITORY_PREF: 329710836760.dkr.ecr.us-east-1.amazonaws.com
-  POETRY_VERSION: 1.4.2
+  POETRY_VERSION: 1.8.2
 
 permissions:
   id-token: write # This is required for requesting the JWT
@@ -53,7 +53,7 @@ jobs:
       
       - name: Build base poetry image
         run: |
-          docker build . -t rasa-private:base-poetry-localdev -f docker/Dockerfile.base-poetry --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_IMAGE_HASH=localdev --build-arg POETRY_VERSION=1.4.2 --platform=linux/amd64
+          docker build . -t rasa-private:base-poetry-localdev -f docker/Dockerfile.base-poetry --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_IMAGE_HASH=localdev --build-arg POETRY_VERSION=1.8.2 --platform=linux/amd64
 
       - name: Build base builder image
         run: |
