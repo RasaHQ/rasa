@@ -162,7 +162,7 @@ jobs:
             AWS_REGION: ${{ env.AWS_REGION }}
             AWS_ARN_ROLE_TO_ASSUME: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
             REPOSITORY: ${{ env.REPOSITORY }}
-            
+
       - name: Build action server docker container
         run: |
           docker buildx use default
@@ -170,7 +170,7 @@ jobs:
         env:
           ACTION_SERVER_DIR: tests_deployment/integration_tests_tracing_deployment/action_server
           IMAGE_TAG: ${{ env.IMAGE_TAG }}
-          
+
       - name: Tracing integration testing - Run docker containers
         run: |
           make run-tracing-integration-containers
@@ -194,6 +194,12 @@ jobs:
         run: |
           make test-tracing-integration
       
+      - name: Show container logs
+        if: always()
+        uses: ./.github/actions/debug-tracing-tests
+        with:
+          COMPOSE_FILE_PATH: tests_deployment/integration_tests_tracing_deployment/docker-compose.intg.yml
+
       - name: Show container logs
         if: always()
         uses: ./.github/actions/debug-tracing-tests
@@ -289,7 +295,7 @@ jobs:
         with:
           name: Metric Integration Test Results
           path: report_metric.xml
-          
+
   sequential-integration-test:
       name: Run Sequential Integration Tests
       runs-on: ubuntu-20.04
@@ -335,11 +341,11 @@ jobs:
             PYTHONIOENCODING: "utf-8"
           run: |
             make test-integration
-        
+
         - name: Prepare test results
           if: always()
           run: mv report_integration.xml sequential_report_integration.xml
-  
+
         - name: Save Test Results
           if: always()
           uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
@@ -474,7 +480,7 @@ jobs:
           PYTHONIOENCODING: "utf-8"
         run: |
           make test-integration
-      
+
       - name: Prepare test results
         if: always()
         run: mv report_integration.xml concurrent-lockstore_report_integration.xml
@@ -519,7 +525,7 @@ jobs:
           make install-full | tee .output
           if grep 'The lock file is not up to date' .output; then exit 1; fi
           make prepare-tests-ubuntu
-          
+
       - name: Install ddtrace on Linux
         run: poetry run pip install -U 'ddtrace<2.0.0'
 
@@ -543,11 +549,79 @@ jobs:
           path: |
             ${{ github.workspace }}/test-flaky-coverage
 
+  broker_integration_test:
+    name: Run Broker Integration Tests
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    env:
+      RABBITMQ_HOST: localhost
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASSWORD: guest
+
+    services:
+      rabbitmq:
+        # see https://github.com/docker-library/healthcheck/blob/master/rabbitmq/docker-healthcheck
+        image: healthcheck/rabbitmq
+        ports:
+          - 5672:5672
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Prepare the job for integration tests
+        uses: ./.github/actions/test-prerequisites
+        with:
+          DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+          POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
+
+      - name: Install Dependencies Full (Linux) 📦
+        run: |
+          sudo apt-get -y install libpq-dev
+          make install-full | tee .output
+          if grep 'The lock file is not up to date' .output; then exit 1; fi
+          make prepare-tests-ubuntu
+          make prepare-spacy
+
+      - name: Run kafka and zookeeper containers for integration testing
+        run: |
+          docker-compose -f tests_deployment/docker-compose.kafka.yml up -d
+
+      - name: Test Code with Services 🩺(broker_integration_test)
+        env:
+          JOBS: 1
+          INTEGRATION_TEST_PYTEST_MARKERS: "broker"
+          PYTHONIOENCODING: "utf-8"
+        run: |
+            make test-integration
+
+      - name: Show container logs
+        if: always()
+        uses: ./.github/actions/debug-broker-tests
+        with:
+          COMPOSE_FILE_PATH: tests_deployment/docker-compose.kafka.yml
+
+      - name: Prepare test results
+        if: always()
+        run: mv report_integration.xml broker_integration_report_integration.xml
+
+      - name: Save Test Results
+        if: always()
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
+        with:
+            name: Broker Integration Test Results
+            path: broker_integration_report_integration.xml
+
+      - name: Stop kafka and zookeeper containers for integration testing
+        run: |
+          docker-compose -f tests_deployment/docker-compose.kafka.yml down
+
   publish-test-results:
     runs-on: ubuntu-20.04
-    needs: [tracing-integration-test, metric-integration-test,
-            sequential-integration-test, non-sequential-integration-test,
-            concurrent-lockstore-integration-test]
+    needs: [ tracing-integration-test, metric-integration-test,
+             sequential-integration-test, non-sequential-integration-test,
+             concurrent-lockstore-integration-test, broker_integration_test ]
     if: always()
     steps:
       - name: Download test reports
