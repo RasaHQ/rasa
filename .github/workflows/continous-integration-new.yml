@@ -81,6 +81,54 @@ jobs:
           docker tag $IMAGE_TAG $REPOSITORY:$IMAGE_TAG
           docker push $REPOSITORY:$IMAGE_TAG
 
+  check_inspector_build:
+    name: Check Inspector Build
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        shell: bash
+        working-directory: rasa/core/channels/inspector
+
+    steps:
+    - name: Check out code
+      uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+    - name: Set up Node.js
+      uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 #v4.0.2
+      with:
+        node-version: ${{ env.NODE_VERSION_INSPECTOR_BUILD }}
+
+    - name: Cache node modules
+      uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 #v4.0.2
+      id: yarn-cache
+      with:
+        path: "**/inspector/node_modules"
+        key: ${{ runner.os }}-modules-${{ hashFiles('**/inspector/yarn.lock') }}
+
+    - name: Install dependencies
+      if: steps.yarn-cache.outputs.cache-hit != 'true'
+      run: |
+        yarn install --frozen-lockfile
+
+    - name: Build Inspector
+      run: |
+        yarn build
+
+    - name: Store build output
+      uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
+      with:
+        name: inspector-build
+        path: rasa/core/channels/inspector/dist
+
+    - name: Compare build output
+      run: |
+        if git diff --quiet -- dist; then
+          echo "No changes in the Inspector build output."
+        else
+          echo "Detected changes in the Inspector build output. Please build the Inspector and commit the contents of rasa/core/channels/inspector/dist/ ."
+          exit 1
+        fi
+
   tracing-integration-test:
     name: Tracing Integration Tests
     needs: rasa-private-dev-docker-image
