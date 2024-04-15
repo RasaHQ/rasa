@@ -523,7 +523,7 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Prepare the job for integration tests
-        uses: ./.github/actions/integration-test-prerequisites
+        uses: ./.github/actions/test-prerequisites
         with:
           DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
           POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
@@ -535,6 +535,7 @@ jobs:
           if grep 'The lock file is not up to date' .output; then exit 1; fi
           make prepare-tests-ubuntu
           make prepare-spacy
+
       - name: Run kafka and zookeeper containers for integration testing
         run: |
           docker-compose -f tests_deployment/docker-compose.kafka.yml up -d
@@ -542,10 +543,16 @@ jobs:
       - name: Test Code with Services 🩺(broker_integration_test)
         env:
           JOBS: 1
-          INTEGRATION_TEST_PYTEST_MARKERS: "broker_integration_test"
+          INTEGRATION_TEST_PYTEST_MARKERS: "broker"
           PYTHONIOENCODING: "utf-8"
         run: |
             make test-integration
+
+      - name: Show container logs
+        if: always()
+        uses: ./.github/actions/debug-broker-tests
+        with:
+          COMPOSE_FILE_PATH: tests_deployment/docker-compose.kafka.yml
 
       - name: Prepare test results
         if: always()
