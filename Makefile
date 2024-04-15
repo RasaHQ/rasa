@@ -146,7 +146,7 @@ test-integration:
 ifeq (,$(wildcard tests_deployment/.env))
 	OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS) -m $(INTEGRATION_TEST_PYTEST_MARKERS) --dist loadgroup  --ignore $(TRACING_INTEGRATION_TEST_FOLDER) --junitxml=report_integration.xml
 else
-	set -o allexport; source tests_deployment/.env && OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS) -m $(INTEGRATION_TEST_PYTEST_MARKERS) --dist loadgroup --ignore $(TRACING_INTEGRATION_TEST_FOLDER) --junitxml=report_sequential.xml && set +o allexport
+	set -o allexport; source tests_deployment/.env && OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS) -m $(INTEGRATION_TEST_PYTEST_MARKERS) --dist loadgroup --ignore $(TRACING_INTEGRATION_TEST_FOLDER) --junitxml=report_integration.xml && set +o allexport
 endif
 
 test-anonymization: PYTEST_MARKER=category_anonymization and (not flaky) and (not acceptance)
