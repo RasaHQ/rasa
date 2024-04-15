@@ -145,6 +145,12 @@ jobs:
           RASA_TELEMETRY_WRITE_KEY: ${{ secrets.SEGMENT_WRITE_DEV_KEY }}
         run: |
           make test-tracing-integration
+      
+      - name: Show container logs
+        if: always()
+        uses: ./.github/actions/debug-tracing-tests
+        with:
+          COMPOSE_FILE_PATH: tests_deployment/integration_tests_tracing_deployment/docker-compose.intg.yml
 
       - name: Show container logs
         if: always()

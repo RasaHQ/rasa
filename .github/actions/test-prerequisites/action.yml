@@ -1,5 +1,5 @@
-name: Integration Test prerequisites
-description: Encapsulates steps for Integration Testing
+name: Test prerequisites
+description: Encapsulates steps for Testing
 
 inputs:
   DEFAULT_PYTHON_VERSION:
