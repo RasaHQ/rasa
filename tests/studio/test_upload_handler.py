@@ -1,5 +1,6 @@
 import argparse
 import base64
+from pathlib import Path
 from textwrap import dedent
 from typing import Any, Dict, List, Set, Text, Union
 from unittest.mock import MagicMock
@@ -374,6 +375,66 @@ def test_handle_upload(
     assert mock.post.called
     assert mock.post.call_args[0][0] == endpoint
     assert mock.post.call_args[1]["json"] == expected
+
+
+@pytest.mark.parametrize(
+    "is_calm_bot, mock_fn_name",
+    [
+        (True, "upload_calm_assistant"),
+        (False, "upload_nlu_assistant"),
+    ],
+)
+def test_handle_upload_no_domain_path_specified(
+    monkeypatch: MonkeyPatch,
+    tmp_path: Path,
+    is_calm_bot: bool,
+    mock_fn_name: str,
+) -> None:
+    """Test the handle_upload function when no domain path is specified in the CLI."""
+    # setup test
+    assistant_name = "test"
+    endpoint = "http://studio.amazonaws.com/api/graphql"
+    args = argparse.Namespace(
+        assistant_name=[assistant_name],
+        # this is the default value when running the cmd without specifying -d flag
+        domain="domain.yml",
+        calm=is_calm_bot,
+    )
+
+    domain_dir = tmp_path / "domain"
+    domain_dir.mkdir(parents=True, exist_ok=True)
+    domain_path = domain_dir / "domain.yml"
+    domain_path.write_text("test domain")
+
+    domain_paths = [str(domain_dir), str(tmp_path / "domain.yml")]
+    # we need to monkeypatch the DEFAULT_DOMAIN_PATHS to be able to use temporary paths
+    monkeypatch.setattr(rasa.studio.upload, "DEFAULT_DOMAIN_PATHS", domain_paths)
+
+    mock_config = MagicMock()
+    mock_config.read_config.return_value = StudioConfig(
+        authentication_server_url="http://studio.amazonaws.com",
+        studio_url=endpoint,
+        realm_name="rasa-test",
+        client_id="rasa-cli",
+    )
+    monkeypatch.setattr(
+        rasa.studio.upload,
+        "StudioConfig",
+        mock_config,
+    )
+
+    mock = MagicMock()
+    monkeypatch.setattr(rasa.studio.upload, mock_fn_name, mock)
+
+    rasa.studio.upload.handle_upload(args)
+
+    expected_args = argparse.Namespace(
+        assistant_name=[assistant_name],
+        calm=is_calm_bot,
+        domain=str(domain_dir),
+    )
+
+    mock.assert_called_once_with(expected_args, assistant_name, endpoint)
 
 
 @pytest.mark.parametrize(
