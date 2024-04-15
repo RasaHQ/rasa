@@ -483,14 +483,14 @@ jobs:
 
       - name: Prepare test results
         if: always()
-        run: mv report_integration.xml report_concurrent-lockstore_report_integration.xml
+        run: mv report_integration.xml integration-results-concurrent-lockstore.xml
 
       - name: Save Test Results
         if: always()
         uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
         with:
           name: Concurrent LockStore Integration Test Results
-          path: concurrent-lockstore_report_integration.xml
+          path: integration-results-concurrent-lockstore.xml
 
   test-flaky:
     name: Run Flaky Tests
@@ -607,7 +607,7 @@ jobs:
 
       - name: Prepare test results
         if: always()
-        run: mv report_integration.xml report_broker_integration.xml
+        run: mv report_integration.xml integration-results-broker-integration.xml
 
       - name: Save Test Results
         if: always()
