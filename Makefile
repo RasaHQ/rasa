@@ -146,7 +146,7 @@ test-integration:
 ifeq (,$(wildcard tests_deployment/.env))
 	OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS) -m $(INTEGRATION_TEST_PYTEST_MARKERS) --dist loadgroup  --ignore $(TRACING_INTEGRATION_TEST_FOLDER) --junitxml=report_integration.xml
 else
-	set -o allexport; source tests_deployment/.env && OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS) -m $(INTEGRATION_TEST_PYTEST_MARKERS) --dist loadgroup --ignore $(TRACING_INTEGRATION_TEST_FOLDER) --junitxml=report_sequential.xml && set +o allexport
+	set -o allexport; source tests_deployment/.env && OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS) -m $(INTEGRATION_TEST_PYTEST_MARKERS) --dist loadgroup --ignore $(TRACING_INTEGRATION_TEST_FOLDER) --junitxml=report_integration.xml && set +o allexport
 endif
 
 test-anonymization: PYTEST_MARKER=category_anonymization and (not flaky) and (not acceptance)
@@ -208,7 +208,7 @@ build-docker:
     	# Build base image
 	docker build . -t rasa-private:base-localdev -f docker/Dockerfile.base --platform=$(PLATFORM)
     	# Build base poetry image
-	docker build . -t rasa-private:base-poetry-localdev -f docker/Dockerfile.base-poetry --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_IMAGE_HASH=localdev --build-arg POETRY_VERSION=1.4.2 --platform=$(PLATFORM)
+	docker build . -t rasa-private:base-poetry-localdev -f docker/Dockerfile.base-poetry --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_IMAGE_HASH=localdev --build-arg POETRY_VERSION=1.8.2 --platform=$(PLATFORM)
     	# Build base builder image
 	docker build . -t rasa-private:base-builder-localdev -f docker/Dockerfile.base-builder --build-arg IMAGE_BASE_NAME=rasa-private --build-arg POETRY_VERSION=localdev --platform=$(PLATFORM)
     	# Build Rasa Private image
@@ -241,7 +241,7 @@ stop-tracing-integration-containers: ## Stop the tracing integration test contai
 	docker-compose -f tests_deployment/integration_tests_tracing_deployment/docker-compose.intg.yml down
 
 test-tracing-integration:
-	PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python PYTHONPATH=./vendor/jaeger-python-proto poetry run pytest $(TRACING_INTEGRATION_TEST_FOLDER) -n $(JOBS) --ignore $(METRICS_INTEGRATION_TEST_PATH) --junitxml=report_tracing.xml
+	PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python PYTHONPATH=./vendor/jaeger-python-proto poetry run pytest $(TRACING_INTEGRATION_TEST_FOLDER) -n $(JOBS) --ignore $(METRICS_INTEGRATION_TEST_PATH) --junitxml=integration-results-tracing.xml
 
 train-calm:
 	cd ./tests_deployment/integration_tests_tracing_deployment/metrics_setup/calm_bot && poetry run rasa train --fixed-model-name model
@@ -253,4 +253,4 @@ stop-metrics-integration-containers:
 	docker compose -f tests_deployment/integration_tests_tracing_deployment/metrics_setup/docker-compose.yml down
 
 test-metrics-integration:
-	poetry run pytest $(METRICS_INTEGRATION_TEST_PATH) -n $(JOBS) --junitxml=report_metric.xml
+	poetry run pytest $(METRICS_INTEGRATION_TEST_PATH) -n $(JOBS) --junitxml=integration-results-metric.xml

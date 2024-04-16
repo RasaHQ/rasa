@@ -15,7 +15,7 @@ env:
   BOTO_CONFIG: /dev/null
 
   # for wait_for_xx jobs
-  POETRY_VERSION: 1.4.2
+  POETRY_VERSION: 1.8.2
   RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
 
 jobs:
