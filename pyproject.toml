@@ -214,7 +214,7 @@ markers = "sys_platform =='win32' and platform_python_implementation != 'PyPy'"
 python = "3.10"
 
 [[tool.poetry.dependencies.scipy]]
-version = ">=1.10.1"
+version = ">=1.10.1,<1.11.0"
 python = ">=3.8,<3.11"
 
 [[tool.poetry.dependencies.scikit-learn]]
