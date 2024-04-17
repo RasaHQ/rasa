@@ -86,6 +86,7 @@ class TwilioVoiceInput(InputChannel):
         "Polly.Filiz",
         "Polly.Gwyneth",
         "Polly.Aditi",
+        "Polly.Ola-Neural"
     ]
 
     SUPPORTED_SPEECH_MODELS = [  # noqa: RUF012
