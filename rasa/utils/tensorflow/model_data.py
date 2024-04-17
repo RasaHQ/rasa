@@ -103,7 +103,7 @@ class FeatureArray(np.ndarray):
             return
 
         self.units = getattr(obj, "units", None)
-        self.number_of_dimensions = getattr(obj, "number_of_dimensions", None)  # type: ignore[assignment] # noqa:E501
+        self.number_of_dimensions = getattr(obj, "number_of_dimensions", None)  # type: ignore[assignment]
         self.is_sparse = getattr(obj, "is_sparse", None)
 
         default_attributes = {
@@ -285,12 +285,10 @@ class RasaModelData:
         self.sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]] = {}
 
     @overload
-    def get(self, key: Text, sub_key: Text) -> List[FeatureArray]:
-        ...
+    def get(self, key: Text, sub_key: Text) -> List[FeatureArray]: ...
 
     @overload
-    def get(self, key: Text, sub_key: None = ...) -> Dict[Text, List[FeatureArray]]:
-        ...
+    def get(self, key: Text, sub_key: None = ...) -> Dict[Text, List[FeatureArray]]: ...
 
     def get(
         self, key: Text, sub_key: Optional[Text] = None
@@ -739,9 +737,9 @@ class RasaModelData:
         # if a label was skipped in current batch
         skipped = [False] * num_label_ids
 
-        new_data: DefaultDict[
-            Text, DefaultDict[Text, List[List[FeatureArray]]]
-        ] = defaultdict(lambda: defaultdict(list))
+        new_data: DefaultDict[Text, DefaultDict[Text, List[List[FeatureArray]]]] = (
+            defaultdict(lambda: defaultdict(list))
+        )
 
         while min(num_data_cycles) == 0:
             if shuffle:
@@ -892,9 +890,9 @@ class RasaModelData:
         Returns:
             The test and train RasaModelData
         """
-        data_train: DefaultDict[
-            Text, DefaultDict[Text, List[FeatureArray]]
-        ] = defaultdict(lambda: defaultdict(list))
+        data_train: DefaultDict[Text, DefaultDict[Text, List[FeatureArray]]] = (
+            defaultdict(lambda: defaultdict(list))
+        )
         data_val: DefaultDict[Text, DefaultDict[Text, List[Any]]] = defaultdict(
             lambda: defaultdict(list)
         )

@@ -210,7 +210,7 @@ def test_all_events_before_user_msg():
 
 
 def all_events_before_latest_user_msg(
-    events: List[Dict[Text, Any]]
+    events: List[Dict[Text, Any]],
 ) -> List[Dict[Text, Any]]:
     """Return all events that happened before the most recent user message."""
     for i, e in enumerate(reversed(events)):

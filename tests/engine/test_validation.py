@@ -104,7 +104,6 @@ def create_test_schema(
     language: Optional[Text] = None,
     is_train_graph: bool = True,
 ) -> GraphModelConfiguration:
-
     parent_node = {}
     if parent:
         parent_node = {
@@ -1327,7 +1326,6 @@ def test_validate_routing_setup_with_unrequired_calm_slot(tmp_path: Path) -> Non
 
     # When / Then
     with structlog.testing.capture_logs() as caplog:
-
         with pytest.raises(SystemExit):
             validate_coexistance_routing_setup(domain, model_configuration)
 
@@ -1377,7 +1375,6 @@ def test_validate_routing_setup_with_router_and_no_calm_slot(
 
     # When / Then
     with structlog.testing.capture_logs() as caplog:
-
         with pytest.raises(SystemExit):
             validate_coexistance_routing_setup(domain, model_configuration)
 
@@ -1570,7 +1567,6 @@ def test_validate_coexistence_configuration(
 
     # When / Then
     with structlog.testing.capture_logs() as caplog:
-
         with pytest.raises(SystemExit):
             validate_coexistance_routing_setup(domain, model_configuration)
 

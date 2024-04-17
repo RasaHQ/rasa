@@ -502,7 +502,6 @@ def _validate_parent_return_type(
     parent_return_type: TypeAnnotation,
     required_type: TypeAnnotation,
 ) -> None:
-
     if not typing_utils.issubtype(parent_return_type, required_type):
         parent_node_text = ""
         if parent_node:
@@ -605,7 +604,6 @@ def _recursively_check_required_components(
 def validate_flow_component_dependencies(
     flows: FlowsList, model_configuration: GraphModelConfiguration
 ) -> None:
-
     if (pattern_chitchat := flows.flow_by_id(FLOW_PATTERN_CHITCHAT)) is not None:
         _validate_chitchat_dependencies(pattern_chitchat, model_configuration)
 

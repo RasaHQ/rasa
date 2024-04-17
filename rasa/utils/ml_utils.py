@@ -64,7 +64,7 @@ def extract_participant_messages_from_transcript(
 
 
 def extract_ai_response_examples(
-    responses: Dict[Text, List[Dict[Text, Any]]]
+    responses: Dict[Text, List[Dict[Text, Any]]],
 ) -> List[str]:
     """Extracts the responses from the domain.
 

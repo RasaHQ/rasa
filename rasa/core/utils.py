@@ -73,8 +73,9 @@ def one_hot(hot_idx: int, length: int, dtype: Optional[Text] = None) -> np.ndarr
     """
     if hot_idx >= length:
         raise ValueError(
-            "Can't create one hot. Index '{}' is out "
-            "of range (length '{}')".format(hot_idx, length)
+            "Can't create one hot. Index '{}' is out of range (length '{}')".format(
+                hot_idx, length
+            )
         )
     r = np.zeros(length, dtype)
     r[hot_idx] = 1
@@ -216,7 +217,7 @@ class AvailableEndpoints:
 
 
 def read_endpoints_from_path(
-    endpoints_path: Optional[Union[Path, Text]] = None
+    endpoints_path: Optional[Union[Path, Text]] = None,
 ) -> AvailableEndpoints:
     """Get `AvailableEndpoints` object from specified path.
 
@@ -283,7 +284,7 @@ def replace_decimals_with_floats(obj: Any) -> Any:
 
 
 def _lock_store_is_multi_worker_compatible(
-    lock_store: Union[EndpointConfig, LockStore, None]
+    lock_store: Union[EndpointConfig, LockStore, None],
 ) -> bool:
     if isinstance(lock_store, InMemoryLockStore):
         return False

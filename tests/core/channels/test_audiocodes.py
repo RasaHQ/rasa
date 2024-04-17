@@ -59,7 +59,6 @@ async def test_image_messages_raise_exceptions() -> None:
 
 
 def test_audiocodes_input_channel() -> None:
-
     input_channel = AudiocodesInput(
         token="TOKEN",
         use_websocket=True,
@@ -84,7 +83,6 @@ def test_audiocodes_input_channel() -> None:
 
 
 async def test_send_text_message() -> None:
-
     output_channel = AudiocodesOutput()
 
     await output_channel.send_text_message(recipient_id="123", text="hey")

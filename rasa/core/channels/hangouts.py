@@ -40,7 +40,6 @@ class HangoutsOutput(OutputChannel):
 
     @staticmethod
     def _text_card(message: Dict[Text, Any]) -> Dict:
-
         card = {
             "cards": [
                 {
@@ -193,7 +192,6 @@ class HangoutsInput(InputChannel):
 
     @classmethod
     def from_credentials(cls, credentials: Optional[Dict[Text, Any]]) -> InputChannel:
-
         if credentials:
             return cls(credentials.get("project_id"))
 
@@ -206,7 +204,6 @@ class HangoutsInput(InputChannel):
         hangouts_room_added_intent_name: Optional[Text] = "/room_added",
         hangouts_removed_intent_name: Optional[Text] = "/bot_removed",
     ) -> None:
-
         self.project_id = project_id
         self.hangouts_user_added_intent_name = hangouts_user_added_intent_name
         self.hangouts_room_added_intent_name = hangouts_room_added_intent_name
@@ -229,7 +226,6 @@ class HangoutsInput(InputChannel):
 
     @staticmethod
     def _extract_sender(req: Request) -> Text:
-
         if req.json["type"] == "MESSAGE":
             return req.json["message"]["sender"]["displayName"]
 
@@ -237,7 +233,6 @@ class HangoutsInput(InputChannel):
 
     # noinspection PyMethodMayBeStatic
     def _extract_message(self, req: Request) -> Text:
-
         if req.json["type"] == "MESSAGE":
             message = req.json["message"]["text"]
 
@@ -297,7 +292,6 @@ class HangoutsInput(InputChannel):
 
         @custom_webhook.route("/webhook", methods=["POST"])
         async def receive(request: Request) -> HTTPResponse:
-
             if self.project_id:
                 token = request.headers.get("Authorization", "").replace("Bearer ", "")
                 self._check_token(token)

@@ -30,7 +30,6 @@ class RasaFileImporter(TrainingDataImporter):
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[Union[List[Text], Text]] = None,
     ):
-
         self._domain_path = domain_path
 
         self._nlu_files = rasa.shared.data.get_data_files(

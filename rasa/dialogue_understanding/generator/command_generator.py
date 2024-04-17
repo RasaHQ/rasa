@@ -71,7 +71,6 @@ class CommandGenerator:
         startable_flows = self.get_startable_flows(flows, tracker)
 
         for message in messages:
-
             if message.get(COMMANDS):
                 # do not overwrite commands if they are already present
                 # i.e. another command generator already predicted commands

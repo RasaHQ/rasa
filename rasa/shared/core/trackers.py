@@ -289,7 +289,7 @@ class DialogueStateTracker:
         parse_data_with_nlu_state = self.latest_message.parse_data.copy()
         # Combine entities predicted by NLU with entities predicted by policies so that
         # users can access them together via `latest_message` (e.g. in custom actions)
-        parse_data_with_nlu_state[ENTITIES] = self.latest_message.entities  # type: ignore[literal-required]  # noqa: E501
+        parse_data_with_nlu_state[ENTITIES] = self.latest_message.entities  # type: ignore[literal-required]
 
         return parse_data_with_nlu_state
 
@@ -482,8 +482,10 @@ class DialogueStateTracker:
         entity_role: Optional[Text] = None,
         entity_group: Optional[Text] = None,
     ) -> Iterator[Text]:
-        """Get entity values found for the passed entity type and optional role and
-        group in latest message.
+        """Get entity values for latest message.
+
+        Returns entity values found for the passed entity type and
+        optional role and group in latest message.
 
         If you are only interested in the first entity of a given type use
         `next(tracker.get_latest_entity_values(`"`my_entity_name`"`), None)`.
@@ -556,7 +558,6 @@ class DialogueStateTracker:
         tracker = self.init_copy()
 
         for event in self.applied_events(True):
-
             if isinstance(event, ActionExecuted):
                 yield tracker, event.hide_rule_turn
 
@@ -718,7 +719,7 @@ class DialogueStateTracker:
 
     def copy(self) -> "DialogueStateTracker":
         """Creates a duplicate of this tracker."""
-        return self.travel_back_in_time(float("inf"))
+        return copy.deepcopy(self)
 
     def travel_back_in_time(self, target_time: float) -> "DialogueStateTracker":
         """Creates a new tracker with a state at a specific timestamp.
@@ -999,8 +1000,9 @@ class DialogueStateTracker:
         flows: FlowsList,
         max_turns: Optional[int] = 20,
     ) -> FlowsList:
-        """
-        Retrieves a list of flows that have been started in the past within a given
+        """Retrieves a list of previously started flows.
+
+        Returned flows have been started in the past within a given
         number of conversation turns.
 
         Args:
@@ -1015,7 +1017,6 @@ class DialogueStateTracker:
 
         # cycle through events in reverse order (newest events are appended at the end)
         for event in reversed(self.events):
-
             # check for FlowStarted event and append flow if it's in the flows lists
             if (
                 isinstance(event, FlowStarted)
@@ -1033,8 +1034,9 @@ class DialogueStateTracker:
         return FlowsList(underlying_flows=list(previously_started_flows.values()))
 
     def get_startable_flows(self, flows: FlowsList) -> FlowsList:
-        """
-        Retrieves a list of flows that are startable given the current
+        """Retrieves a list of flows that can be started.
+
+        Returned flows are startable given the current
         state (context and slot values) of the tracker.
 
         Args:
@@ -1056,11 +1058,15 @@ class TrackerEventDiffEngine:
     def event_difference(
         original: DialogueStateTracker, tracker: DialogueStateTracker
     ) -> List[Event]:
-        """Returns all events from the new tracker which are not present
-        in the original tracker.
+        """Find all events in the tracker not present in the original tracker.
 
         Args:
+            original: Original tracker to compare against.
             tracker: Tracker containing events from the current conversation session.
+
+        Returns:
+            List of events from the new tracker which are not present
+            in the original tracker.
         """
         offset = len(original.events) if original else 0
         events = tracker.events

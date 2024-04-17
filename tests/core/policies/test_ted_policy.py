@@ -130,7 +130,6 @@ async def test_predict_action_probabilities_abstains_in_coexistence(
 class TestTEDPolicy(PolicyTestCollection):
     @staticmethod
     def _policy_class_to_test() -> Type[TEDPolicy]:
-
         return TEDPolicy
 
     async def test_train_model_checkpointing(

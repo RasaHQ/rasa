@@ -179,7 +179,7 @@ def configure_app(
         app.add_task(run_cmdline_io)
 
     if server_listeners:
-        for (listener, event) in server_listeners:
+        for listener, event in server_listeners:
             app.register_listener(listener, event)
 
     return app

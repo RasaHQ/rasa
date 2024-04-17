@@ -303,7 +303,7 @@ def test_raise_wrong_model_file(
 
 @pytest.mark.skip_on_windows
 def test_raise_invalid_path(
-    create_or_load_convert_featurizer: Callable[[Dict[Text, Any]], ConveRTFeaturizer]
+    create_or_load_convert_featurizer: Callable[[Dict[Text, Any]], ConveRTFeaturizer],
 ):
     component_config = {FEATURIZER_CLASS_ALIAS: "alias", "model_url": "saved_model.pb"}
 

@@ -360,7 +360,6 @@ def test_clean_up_commands(
     commands: List[Command],
     expected_clean_commands: List[Command],
 ):
-
     stack = DialogueStack(frames=[user_frame_collect_eggs, pattern_frame_collect_eggs])
 
     tracker_eggs = DialogueStateTracker.from_events(sender_id="test", evts=[])

@@ -99,7 +99,7 @@ class E2ETestRunner:
         turns: TEST_TURNS_TYPE = {}
         event_cursor = 0
 
-        tracker = await self.agent.processor.fetch_tracker_with_initial_session(  # type: ignore[union-attr]  # noqa: E501
+        tracker = await self.agent.processor.fetch_tracker_with_initial_session(  # type: ignore[union-attr]
             sender_id
         )
         # turn -1 i used to contain events that happen during
@@ -310,10 +310,10 @@ class E2ETestRunner:
         if failed_step.text is not None:
             diff_test_text = f"{failed_step.actor}: {failed_step.text}"
             diff_actual_text = NO_RESPONSE
-            event: Optional[
-                Union[BotUttered, SlotSet]
-            ] = cls._find_first_non_matched_utterance(
-                test_response, bot_utter_test_steps
+            event: Optional[Union[BotUttered, SlotSet]] = (
+                cls._find_first_non_matched_utterance(
+                    test_response, bot_utter_test_steps
+                )
             )
             if event and isinstance(event, BotUttered):
                 test_response.remove_bot_uttered_event(event)
@@ -533,7 +533,7 @@ class E2ETestRunner:
         """
         if not fixtures:
             return
-        tracker = await self.agent.processor.fetch_tracker_with_initial_session(  # type: ignore[union-attr]  # noqa: E501
+        tracker = await self.agent.processor.fetch_tracker_with_initial_session(  # type: ignore[union-attr]
             sender_id
         )
 

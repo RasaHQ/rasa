@@ -31,7 +31,6 @@ from rasa.engine.storage.storage import ModelStorage
 
 @dataclasses.dataclass
 class TestCacheableOutput:
-
     value: Dict
     size_in_mb: int = 0
     cache_dir: Optional[Path] = dataclasses.field(default=None, compare=False)
@@ -53,7 +52,6 @@ class TestCacheableOutput:
         model_storage: ModelStorage,
         output_fingerprint: Text,
     ) -> "TestCacheableOutput":
-
         value = rasa.shared.utils.io.read_json_file(directory / "cached.json")
 
         return cls(value, cache_dir=directory)

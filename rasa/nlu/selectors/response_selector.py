@@ -430,9 +430,9 @@ class ResponseSelector(DIETClassifier):
         self, message: Message, prediction_dict: Dict[Text, Any], selector_key: Text
     ) -> None:
         message_selector_properties = message.get(RESPONSE_SELECTOR_PROPERTY_NAME, {})
-        message_selector_properties[
-            RESPONSE_SELECTOR_RETRIEVAL_INTENTS
-        ] = self.all_retrieval_intents
+        message_selector_properties[RESPONSE_SELECTOR_RETRIEVAL_INTENTS] = (
+            self.all_retrieval_intents
+        )
         message_selector_properties[selector_key] = prediction_dict
         message.set(
             RESPONSE_SELECTOR_PROPERTY_NAME,
@@ -505,7 +505,6 @@ class ResponseSelector(DIETClassifier):
             been caught earlier and a warning should have been raised.
         """
         for key, responses in self.responses.items():
-
             # First check if the predicted label was the key itself
             search_key = util.template_key_to_intent_response_key(key)
             if search_key == label.get("name"):
@@ -626,7 +625,6 @@ class ResponseSelector(DIETClassifier):
         config: Dict[Text, Any],
         finetune_mode: bool = False,
     ) -> "RasaModel":
-
         predict_data_example = RasaModelData(
             label_key=model_data_example.label_key,
             data={
@@ -723,7 +721,6 @@ class DIET2BOW(DIET):
             logger.debug(f"  {metric} ({name})")
 
     def _update_label_metrics(self, loss: tf.Tensor, acc: tf.Tensor) -> None:
-
         self.response_loss.update_state(loss)
         self.response_acc.update_state(acc)
 
@@ -796,10 +793,10 @@ class DIET2DIET(DIET):
             (self.text_name, self.config),
             (self.label_name, label_config),
         ]:
-            self._tf_layers[
-                f"sequence_layer.{attribute}"
-            ] = rasa_layers.RasaSequenceLayer(
-                attribute, self.data_signature[attribute], config
+            self._tf_layers[f"sequence_layer.{attribute}"] = (
+                rasa_layers.RasaSequenceLayer(
+                    attribute, self.data_signature[attribute], config
+                )
             )
 
         if self.config[MASKED_LM]:

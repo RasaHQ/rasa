@@ -141,7 +141,7 @@ class MessageProcessor:
 
     @staticmethod
     def _load_model(
-        model_path: Union[Text, Path]
+        model_path: Union[Text, Path],
     ) -> Tuple[Text, ModelMetadata, GraphRunner]:
         """Unpacks a model from a given path using the graph model loader."""
         try:
@@ -855,7 +855,6 @@ class MessageProcessor:
     async def _handle_message_with_tracker(
         self, message: UserMessage, tracker: DialogueStateTracker
     ) -> None:
-
         if message.parse_data:
             parse_data = message.parse_data
         else:

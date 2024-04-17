@@ -75,7 +75,10 @@ def _probabilities_with_action_unlikely_intent_for(
 
 def _custom_prediction_states_for_rules(
     ignore_action_unlikely_intent: bool = False,
-) -> Callable[[RulePolicy, DialogueStateTracker, Domain, bool], List[State],]:
+) -> Callable[
+    [RulePolicy, DialogueStateTracker, Domain, bool],
+    List[State],
+]:
     """Creates prediction states for `RulePolicy`.
 
     `RulePolicy` does not ignore `action_unlikely_intent` in reality.
@@ -197,7 +200,6 @@ async def _train_rule_based_agent(
     monkeypatch: MonkeyPatch,
     moodbot_domain_path: Path,
 ) -> Callable[[Path, bool], Coroutine]:
-
     # We need `RulePolicy` to predict the correct actions
     # in a particular conversation context as seen during training.
     # Since it can get affected by `action_unlikely_intent` being triggered in

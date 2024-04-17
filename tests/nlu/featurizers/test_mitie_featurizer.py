@@ -57,7 +57,6 @@ def test_mitie_featurizer(
     mitie_model: MitieModel,
     mitie_tokenizer: MitieTokenizer,
 ):
-
     featurizer = create({"alias": "mitie_featurizer"})
 
     sentence = "Hey how are you today"
@@ -84,7 +83,6 @@ def test_mitie_featurizer_train(
     mitie_model: MitieModel,
     mitie_tokenizer: MitieTokenizer,
 ):
-
     featurizer = create({"alias": "mitie_featurizer"})
 
     sentence = "Hey how are you today"

@@ -69,7 +69,6 @@ def test_provide_removes_or_replaces_expected_information(
 
     assert sorted(original_dict.keys()) == sorted(modified_dict.keys())
     for key in original_dict.keys():
-
         # replaced with default values
         if key in ["config", SESSION_CONFIG_KEY]:
             assert modified_dict[key] == default_dict[key]
