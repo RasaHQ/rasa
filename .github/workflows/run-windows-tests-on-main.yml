@@ -5,9 +5,6 @@ on:
     # Runs at the end of every day
     - cron: 0 0 * * *
   workflow_dispatch:
-  push:
-    branches:
-      - testfix/ATO-2138-test_tracing_enterprise_search_policy_generate_llm_answer_len_prompt_tokens
 
 env:
   # needed to fix issues with boto during testing:
