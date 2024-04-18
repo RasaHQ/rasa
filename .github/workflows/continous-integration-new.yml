@@ -25,6 +25,25 @@ permissions:
   issues: read
   
 jobs:
+  check-poetry-lock-is-up-to-date:
+    name: check poetry lock is up to date
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Prepare the job for integration tests
+        uses: ./.github/actions/test-prerequisites
+        with:
+          DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+          POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
+
+      - name: Check poetry lock
+        run: |
+          poetry check --lock
+          if grep 'Error: pyproject.toml changed significantly since poetry.lock was last generated' .output; then exit 1; fi
+
+
   rasa-private-dev-docker-image:
     name: rasa-private dev docker image
     runs-on: ubuntu-22.04
@@ -152,6 +171,11 @@ jobs:
             DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
             POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
 
+      - name: Install Dependencies (Linux) 📦
+        run: |
+          make install
+        shell: bash
+
       - name: Setup buildx
         uses: ./.github/actions/setup-build-x
 
@@ -245,6 +269,11 @@ jobs:
             DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
             POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
 
+      - name: Install Dependencies (Linux) 📦
+        run: |
+          make install
+        shell: bash
+
       - name: Setup buildx
         uses: ./.github/actions/setup-build-x
 
@@ -332,6 +361,11 @@ jobs:
               DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
               POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
 
+        - name: Install Dependencies (Linux) 📦
+          run: |
+            make install
+          shell: bash
+
         # these integration tests need to be ran in a sequential fashion,
         # due to environment constraints, so we're running them in a single process.
         - name: Test Code with Services 🩺 (sequential)
@@ -415,6 +449,11 @@ jobs:
             DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
             POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
 
+      - name: Install Dependencies (Linux) 📦
+        run: |
+          make install
+        shell: bash
+
       - name: Test Code with Services 🩺
         env:
           JOBS: 6
@@ -471,6 +510,11 @@ jobs:
         with:
             DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
             POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
+
+      - name: Install Dependencies (Linux) 📦
+        run: |
+          make install
+        shell: bash
 
       # these integration tests need to be run separately
       - name: Test Code with Services 🩺 (concurrent_lock_store)
