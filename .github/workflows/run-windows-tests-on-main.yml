@@ -8,8 +8,6 @@ on:
   push:
     branches:
       - main
-      - '[0-9]+.[0-9]+.x'
-      - ATO-2049
 
 env:
   # needed to fix issues with boto during testing:
@@ -335,19 +333,19 @@ jobs:
           make test-flaky
         shell: bash # bash shell is a way to make code run for both Linux and Windows
 
-#  send_slack_notification_on_failure:
-#    name: Notify Slack
-#    runs-on: ubuntu-22.04
-#    if: always()
-#    needs: [ test, test-anonymization, test-flaky ]
-#
-#    steps:
-#      - name: Notify Slack of failure ⛔️
-#        # send notification if 'test', 'test-anonymization' or 'test-flaky' is skipped (previous needed job failed) or failed
-#        if: needs.test.result != 'success' || needs.test-anonymization.result != 'success' || needs.test-flaky.result != 'success'
-#        env:
-#          SLACK_WEBHOOK: ${{ secrets.SLACK_RELEASE_ASSISTANT_ATOM_ALERTS_WEBHOOK }}
-#        uses: Ilshidur/action-slack@689ad44a9c9092315abd286d0e3a9a74d31ab78a
-#        with:
-#          args: "⛔️ *Windows Tests on Main failed* failed 😱! Please check out GitHub Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-#
+  send_slack_notification_on_failure:
+    name: Notify Slack
+    runs-on: ubuntu-22.04
+    if: always()
+    needs: [ test, test-anonymization, test-flaky ]
+
+    steps:
+      - name: Notify Slack of failure ⛔️
+        # send notification if 'test', 'test-anonymization' or 'test-flaky' is skipped (previous needed job failed) or failed
+        if: needs.test.result != 'success' || needs.test-anonymization.result != 'success' || needs.test-flaky.result != 'success'
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_RELEASE_ASSISTANT_ATOM_ALERTS_WEBHOOK }}
+        uses: Ilshidur/action-slack@689ad44a9c9092315abd286d0e3a9a74d31ab78a
+        with:
+          args: "⛔️ *Windows Tests on Main failed* failed 😱! Please check out GitHub Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
