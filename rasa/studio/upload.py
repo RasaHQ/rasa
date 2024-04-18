@@ -4,6 +4,7 @@ import logging
 from typing import Dict, Iterable, List, Set, Text, Tuple, Union
 
 import rasa.cli.telemetry
+import rasa.cli.utils
 import rasa.shared.utils.cli
 import rasa.shared.utils.io
 import requests
@@ -16,6 +17,10 @@ from rasa.shared.utils.yaml import dump_obj_as_yaml_to_string
 
 from rasa.studio.auth import KeycloakTokenReader
 from rasa.studio.config import StudioConfig
+
+from rasa.shared.constants import (
+    DEFAULT_DOMAIN_PATHS,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +55,10 @@ def handle_upload(args: argparse.Namespace) -> None:
         )
     else:
         logger.info("Loading data...")
+
+        args.domain = rasa.cli.utils.get_validated_path(
+            args.domain, "domain", DEFAULT_DOMAIN_PATHS
+        )
 
         # check safely if args.calm is set and not fail if not
         if hasattr(args, "calm") and args.calm:

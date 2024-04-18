@@ -102,6 +102,7 @@ EXPECTED_WARNINGS: List[Tuple[Type[Warning], str]] = [
         DeprecationWarning,
         "non-integer arguments to randrange\\(\\) have been deprecated since",
     ),
+    (DeprecationWarning, "invalid escape sequence*"),
 ]
 
 EXPECTED_WARNINGS.extend(EXPECTED_PILLOW_DEPRECATION_WARNINGS)
