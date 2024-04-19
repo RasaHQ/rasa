@@ -44,8 +44,3 @@ runs:
         run: |
           poetry self add setuptools
         shell: bash
-
-      - name: Install Dependencies (Linux) 📦
-        run: |
-          make install
-        shell: bash

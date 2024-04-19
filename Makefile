@@ -241,7 +241,7 @@ stop-tracing-integration-containers: ## Stop the tracing integration test contai
 	docker-compose -f tests_deployment/integration_tests_tracing_deployment/docker-compose.intg.yml down
 
 test-tracing-integration:
-	PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python PYTHONPATH=./vendor/jaeger-python-proto poetry run pytest $(TRACING_INTEGRATION_TEST_FOLDER) -n $(JOBS) --ignore $(METRICS_INTEGRATION_TEST_PATH) --junitxml=report_tracing.xml
+	PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python PYTHONPATH=./vendor/jaeger-python-proto poetry run pytest $(TRACING_INTEGRATION_TEST_FOLDER) -n $(JOBS) --ignore $(METRICS_INTEGRATION_TEST_PATH) --junitxml=integration-results-tracing.xml
 
 train-calm:
 	cd ./tests_deployment/integration_tests_tracing_deployment/metrics_setup/calm_bot && poetry run rasa train --fixed-model-name model
@@ -253,4 +253,4 @@ stop-metrics-integration-containers:
 	docker compose -f tests_deployment/integration_tests_tracing_deployment/metrics_setup/docker-compose.yml down
 
 test-metrics-integration:
-	poetry run pytest $(METRICS_INTEGRATION_TEST_PATH) -n $(JOBS) --junitxml=report_metric.xml
+	poetry run pytest $(METRICS_INTEGRATION_TEST_PATH) -n $(JOBS) --junitxml=integration-results-metric.xml

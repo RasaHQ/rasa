@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "rasa-pro"
-version = "3.8.0"
+version = "3.8.1"
 description = "State-of-the-art open-core Conversational AI framework for Enterprises that natively leverages generative AI for effortless assistant development."
 authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
 maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
@@ -211,7 +211,7 @@ markers = "sys_platform =='win32' and platform_python_implementation != 'PyPy'"
 python = "3.10"
 
 [[tool.poetry.dependencies.scipy]]
-version = ">=1.10.1"
+version = ">=1.10.1,<1.11.0"
 python = ">=3.8,<3.11"
 
 [[tool.poetry.dependencies.scikit-learn]]
