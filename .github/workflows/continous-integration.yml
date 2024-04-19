@@ -5,106 +5,827 @@ on:
     branches:
       - main
   pull_request:
-
+    branches:
+        - main
+        - 3.7.x
+        - 3.8.x
 concurrency:
   group: continous-integration-${{ github.ref }} # branch or tag name
   cancel-in-progress: true
 
 # SECRETS
-# - GH_RELEASE_NOTES_TOKEN: personal access token of `rasabot` github account
-#                           (login for account in 1pw)
-# - SLACK_WEBHOOK_TOKEN: token to post to RasaHQ slack account (in 1password)
-# - DOCKERHUB_PASSWORD: password for an account with write access to the rasa
-#                       repo on hub.docker.com. used to pull and upload containers
-# - RASA_OSS_TELEMETRY_WRITE_KEY: key to write to segment. Used to report telemetry.
+# - RASA_TELEMETRY_WRITE_KEY: key to write to segment. Used to report telemetry.
 #                                 The key will be added to the distributions
-# - RASA_OSS_EXCEPTION_WRITE_KEY: key to write to sentry. Used to report exceptions.
-#                                 The key will be added to the distributions.
-#                                 Key can be found at https://sentry.io/settings/rasahq/projects/rasa-open-source/install/python/
-# - SENTRY_AUTH_TOKEN: authentication used to tell Sentry about any new releases
 #                      created at https://sentry.io/settings/account/api/auth-tokens/
 # - RASA_PRO_LICENSE: license key for Rasa Pro. Used to run tests for Rasa Pro.
 # - INTEGRATION_TESTS_STUDIO_LICENSE: license key for Studio. Used in integration tests. Expires in 2034.
 # - INTEGRATION_TESTS_PRO_LICENSE: license key for Pro. Used in integration tests. Expires in 2034.
 
 env:
-  # needed to fix issues with boto during testing:
-  # https://github.com/travis-ci/travis-ci/issues/7940
-  BOTO_CONFIG: /dev/null
-
-  IS_TAG_BUILD: ${{ startsWith(github.event.ref, 'refs/tags') }}
-  DOCKERHUB_USERNAME: tmbo
+  AWS_REGION: us-east-1
+  REPOSITORY: 329710836760.dkr.ecr.us-east-1.amazonaws.com/rasa-private-dev
   DEFAULT_PYTHON_VERSION: "3.10"
-  TARGET_IMAGE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-docker"
   NODE_VERSION_INSPECTOR_BUILD: 16
-
-  # for wait_for_xx jobs
-  WAIT_TIMEOUT_SECS: 3000
-  WAIT_INTERVAL_SECS: 60
-  RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
-  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-  POETRY_VERSION: 1.8.2
-
+  
+permissions:
+  checks: write
+  id-token: write
+  pull-requests: write
+  contents: read
+  issues: read
+  
 jobs:
-  changes:
-    name: Check for file changes
+  check-poetry-lock-is-up-to-date:
+    name: check poetry lock is up to date
     runs-on: ubuntu-22.04
-    outputs:
-      # Both of the outputs below are strings but only one exists at any given time
-      backend: ${{ steps.changed-files.outputs.backend || steps.run-all.outputs.backend }}
-      docker: ${{ steps.changed-files.outputs.docker || steps.run-all.outputs.docker }}
-      is_pre_release_version: ${{ steps.rasa_check_version_type.outputs.is_pre_release_version }}
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
-      - uses: dorny/paths-filter@4512585405083f25c027a35db413c2b3b9006d50
-        # Run the normal filters if the all-tests-required label is not set
-        id: changed-files
-        if: contains(github.event.pull_request.labels.*.name, 'status:all-tests-required') == false && github.event_name == 'pull_request'
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          filters: .github/change_filters.yml
-      - name: Set all filters to true if all tests are required
-        # Set all filters to true if the all-tests-required label is set or if we are not in a PR
-        # Bypasses all the change filters in change_filters.yml and forces all outputs to true
-        id: run-all
-        if: contains(github.event.pull_request.labels.*.name, 'status:all-tests-required') || github.event_name != 'pull_request'
-        run: |
-          echo "backend=true" >> $GITHUB_OUTPUT
-          echo "docker=true" >> $GITHUB_OUTPUT
+      - name: Check out code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
-      - name: Check if tag version is a pre release version
-        id: rasa_check_version_type
-        if: env.IS_TAG_BUILD == 'true'
+      - name: Prepare the job for integration tests
+        uses: ./.github/actions/test-prerequisites
+        with:
+          DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+          POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
+
+      - name: Check poetry lock
         run: |
-          # Get current tagged Rasa version
-          CURRENT_TAG=${GITHUB_REF#refs/tags/}
-          if [[ "$CURRENT_TAG" =~ ^[0-9.]+$ ]]; then
-            echo "is_pre_release_version=false" >> $GITHUB_OUTPUT
+          poetry check --lock
+          if grep 'Error: pyproject.toml changed significantly since poetry.lock was last generated' .output; then exit 1; fi
+
+
+  quality:
+    name: Code Quality
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Prepare the job
+        uses: ./.github/actions/test-prerequisites
+        with:
+          DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+          POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
+
+      - name: Install Dependencies 📦
+        if: needs.changes.outputs.backend == 'true'
+        # Poetry intermittently fails to install dependency if it is not PEP 517 compliant
+        # This is a workaround for that issue
+        run: |
+          sudo apt-get -y install libpq-dev
+          make install-full
+
+      - name: Checkout target branch to be able to diff
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch origin ${{ github.base_ref }}
+          echo "DOCSTRING_DIFF_BRANCH=origin/${{ github.base_ref }}" >> $GITHUB_ENV
+
+          # Fetch entire history for current branch so that `make lint-docstrings`
+          # can calculate the proper diff between the branches
+          git fetch --unshallow origin "${{ github.ref }}"
+
+      - name: Add github workflow problem matchers
+        run: |
+          echo "::add-matcher::.github/matchers/flake8-error-matcher.json"
+
+      - name: Lint Code 🎎
+        run: |
+          # If it's not a pull request, $DOCSTRING_DIFF_BRANCH is unset.
+          # This will result in an empty diff, which effictively means that
+          # make lint-docstrings will be skipped for other events than `pull_request`
+          make lint BRANCH=$DOCSTRING_DIFF_BRANCH
+
+      - name: Check Types 📚
+        run: make types
+
+      - name: Lint Changelog Filenames 📝
+        if: github.event_name == 'pull_request'
+        run: make lint-changelog
+
+
+  rasa-private-dev-docker-image:
+    name: rasa-private dev docker image
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Read Poetry Version 🔢
+        run: |
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@8c3f20df09ac63af7b3ae3d7c91f105f857d8497 # v3.0.1
+        with:
+          role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 # v2.0.1
+        with:
+          mask-password: "true"
+
+      # Tag in format: pr_number-shortSHA or branch_name-shortSHA
+      - name: Set image tag
+        run: |
+          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+            echo "IMAGE_TAG=pr${{ github.event.number }}-$(git rev-parse --short $(cat $GITHUB_EVENT_PATH | jq -r .pull_request.head.sha))" >> $GITHUB_ENV
           else
-            echo "is_pre_release_version=true" >> $GITHUB_OUTPUT
+          echo "IMAGE_TAG=$(echo "${GITHUB_REF##*/}" | tr '[:upper:]' '[:lower:]')-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
           fi
 
-  
+      - name: Build base image
+        run: |
+          docker build . -t rasa-private:base-localdev -f docker/Dockerfile.base --platform=linux/amd64
+      
+      - name: Build base poetry image
+        run: |
+          docker build . -t rasa-private:base-poetry-localdev -f docker/Dockerfile.base-poetry --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_IMAGE_HASH=localdev --build-arg POETRY_VERSION=$POETRY_VERSION --platform=linux/amd64
+        env:
+          POETRY_VERSION: ${{ env.POETRY_VERSION }}
 
-  changelog:
-    name: Check for changelog
+      - name: Build base builder image
+        run: |
+          docker build . -t rasa-private:base-builder-localdev -f docker/Dockerfile.base-builder --build-arg IMAGE_BASE_NAME=rasa-private --build-arg POETRY_VERSION=localdev --platform=linux/amd64
+
+      - name: Build, tag, and push image to Amazon ECR
+        env:
+          IMAGE_TAG: ${{ env.IMAGE_TAG }}
+        run: |
+          docker build . -t $IMAGE_TAG -f Dockerfile --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_IMAGE_HASH=localdev --build-arg BASE_BUILDER_IMAGE_HASH=localdev --platform=linux/amd64
+          docker tag $IMAGE_TAG $REPOSITORY:$IMAGE_TAG
+          docker push $REPOSITORY:$IMAGE_TAG
+
+  check_inspector_build:
+    name: Check Inspector Build
     runs-on: ubuntu-22.04
+    defaults:
+      run:
+        shell: bash
+        working-directory: rasa/core/channels/inspector
 
     steps:
-      - name: Checkout git repository 🕝
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+    - name: Check out code
+      uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
-      - name: Assert release includes all changelog entries
-        # check changelog folder only when we create pull request preparing release
-        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'prepare-release') && needs.changes.outputs.is_pre_release_version == 'false'
-        working-directory: changelog
+    - name: Set up Node.js
+      uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 #v4.0.2
+      with:
+        node-version: ${{ env.NODE_VERSION_INSPECTOR_BUILD }}
+
+    - name: Cache node modules
+      uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 #v4.0.2
+      id: yarn-cache
+      with:
+        path: "**/inspector/node_modules"
+        key: ${{ runner.os }}-modules-${{ hashFiles('**/inspector/yarn.lock') }}
+
+    - name: Install dependencies
+      if: steps.yarn-cache.outputs.cache-hit != 'true'
+      run: |
+        yarn install --frozen-lockfile
+
+    - name: Build Inspector
+      run: |
+        yarn build
+
+    - name: Store build output
+      uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
+      with:
+        name: inspector-build
+        path: rasa/core/channels/inspector/dist
+
+    - name: Compare build output
+      run: |
+        if git diff --quiet -- dist; then
+          echo "No changes in the Inspector build output."
+        else
+          echo "Detected changes in the Inspector build output. Please build the Inspector and commit the contents of rasa/core/channels/inspector/dist/ ."
+          exit 1
+        fi
+
+  tracing-integration-test:
+    name: Tracing Integration Tests
+    needs: rasa-private-dev-docker-image
+    runs-on: ubuntu-22.04-4core
+    steps:
+      - name: Check out code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+        # Tag in format: pr_number-shortSHA or branch_name-shortSHA
+      - name: Configure image tag
         run: |
-          # List all unexpected files in changelog/
-          UNEXPECTED_FILES=$(ls -A --ignore={"README.md",".gitignore","_template.md.jinja2"})
+            if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+              echo "IMAGE_TAG=pr${{ github.event.number }}-$(git rev-parse --short $(cat $GITHUB_EVENT_PATH | jq -r .pull_request.head.sha))" >> $GITHUB_ENV
+            else
+              echo "IMAGE_TAG=$(echo "${GITHUB_REF##*/}" | tr '[:upper:]' '[:lower:]')-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+            fi
 
-          # Exit with error if found any unexpected files
-          [[ "$UNEXPECTED_FILES" ]] && \
-          echo "Found the following unexpected files in changelogs/" && \
-          echo "$UNEXPECTED_FILES" && \
-          exit 1 || \
-          echo "Release includes all changelog entries."
+      - name: Prepare the job for integration tests
+        uses: ./.github/actions/test-prerequisites
+        with:
+            DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+            POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
+
+      - name: Install Dependencies (Linux) 📦
+        run: |
+          make install
+        shell: bash
+
+      - name: Setup buildx
+        uses: ./.github/actions/setup-build-x
+
+      - name: Pull rasa-private dev image
+        uses: ./.github/actions/pull-from-ecr
+        with:
+            IMAGE_TAG: ${{ env.IMAGE_TAG }}
+            AWS_REGION: ${{ env.AWS_REGION }}
+            AWS_ARN_ROLE_TO_ASSUME: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
+            REPOSITORY: ${{ env.REPOSITORY }}
+
+      - name: Build action server docker container
+        run: |
+          docker buildx use default
+          docker buildx build $ACTION_SERVER_DIR -t action_server:latest -f $ACTION_SERVER_DIR/Dockerfile --build-arg TARGET_IMAGE_REGISTRY=$REPOSITORY --build-arg IMAGE_TAG=$IMAGE_TAG --load
+        env:
+          ACTION_SERVER_DIR: tests_deployment/integration_tests_tracing_deployment/action_server
+          IMAGE_TAG: ${{ env.IMAGE_TAG }}
+
+      - name: Tracing integration testing - Run docker containers
+        run: |
+          make run-tracing-integration-containers
+        env:
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          TARGET_IMAGE_REGISTRY: ${{ env.REPOSITORY }}
+          IMAGE_TAG: ${{ env.IMAGE_TAG }}
+
+      - name: Tracing integration testing -  Wait for container startup ⏳
+        timeout-minutes: 15
+        run: |
+          bash $CHECK_CONNECTION_SCRIPT http://localhost:5006
+          bash $CHECK_CONNECTION_SCRIPT http://localhost:5007
+        env:
+          CHECK_CONNECTION_SCRIPT: tests_deployment/integration_tests_tracing_deployment/check_connection.sh
+
+      - name: Tracing integration testing - Test Code with Services 🩺
+        env:
+          PYTHONIOENCODING: "utf-8"
+          RASA_TELEMETRY_WRITE_KEY: ${{ secrets.SEGMENT_WRITE_DEV_KEY }}
+        run: |
+          make test-tracing-integration
+      
+      - name: Show container logs
+        if: always()
+        uses: ./.github/actions/debug-tracing-tests
+        with:
+          COMPOSE_FILE_PATH: tests_deployment/integration_tests_tracing_deployment/docker-compose.intg.yml
+
+      - name: Show container logs
+        if: always()
+        uses: ./.github/actions/debug-tracing-tests
+        with:
+          COMPOSE_FILE_PATH: tests_deployment/integration_tests_tracing_deployment/docker-compose.intg.yml
+
+      - name: Tracing integration testing - Stop docker containers
+        run: |
+          make stop-tracing-integration-containers
+
+      - name: Save Test Results
+        if: always()
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
+        with:
+          name: Tracing Integration Test Results
+          path: integration-results-tracing.xml
+
+  metric-integration-test:
+    name: Metric Integration Tests
+    needs: rasa-private-dev-docker-image
+    runs-on: ubuntu-22.04-4core
+    steps:
+      - name: Check out code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Read Poetry Version 🔢
+        run: |
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+        shell: bash
+
+    #   # Tag in format: pr_number-shortSHA or branch_name-shortSHA
+      - name: Configure image tag
+        run: |
+            if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+              echo "IMAGE_TAG=pr${{ github.event.number }}-$(git rev-parse --short $(cat $GITHUB_EVENT_PATH | jq -r .pull_request.head.sha))" >> $GITHUB_ENV
+            else
+              echo "IMAGE_TAG=$(echo "${GITHUB_REF##*/}" | tr '[:upper:]' '[:lower:]')-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+            fi
+
+      - name: Prepare the job for integration tests
+        uses: ./.github/actions/test-prerequisites
+        with:
+            DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+            POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
+
+      - name: Install Dependencies (Linux) 📦
+        run: |
+          make install
+        shell: bash
+
+      - name: Setup buildx
+        uses: ./.github/actions/setup-build-x
+
+      - name: Pull rasa-private dev image
+        uses: ./.github/actions/pull-from-ecr
+        with:
+            IMAGE_TAG: ${{ env.IMAGE_TAG }}
+            AWS_REGION: ${{ env.AWS_REGION }}
+            AWS_ARN_ROLE_TO_ASSUME: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
+            REPOSITORY: ${{ env.REPOSITORY }}
+
+      - name: Metric Integration Testing - Run docker containers
+        run: |
+          make run-metrics-integration-containers
+        env:
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          TARGET_IMAGE_REGISTRY: ${{ env.REPOSITORY }}
+          IMAGE_TAG: ${{ env.IMAGE_TAG }}
+
+      - name: Metric Integration Testing - Wait for container startup ⏳
+        timeout-minutes: 15
+        run: |
+          bash $CHECK_CONNECTION_SCRIPT http://localhost:5005
+        env:
+          CHECK_CONNECTION_SCRIPT: tests_deployment/integration_tests_tracing_deployment/check_connection.sh
+
+      - name: Metric Integration Testing -  Test Code with Services 🩺
+        run: |
+          make test-metrics-integration
+        env:
+          PYTHONIOENCODING: "utf-8"
+          RASA_TELEMETRY_WRITE_KEY: ${{ secrets.SEGMENT_WRITE_DEV_KEY }}
+
+      - name: Show container logs
+        if: always()
+        uses: ./.github/actions/debug-metric-tests
+        with:
+          COMPOSE_FILE_PATH: tests_deployment/integration_tests_tracing_deployment/metrics_setup/docker-compose.yml
+
+      - name: Metric Integration Testing - Stop docker containers
+        run: |
+          make stop-metrics-integration-containers
+
+      - name: Save Test Results
+        if: always()
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
+        with:
+          name: Metric Integration Test Results
+          path: integration-results-metric.xml
+
+  sequential-integration-test:
+      name: Run Sequential Integration Tests
+      runs-on: ubuntu-20.04
+      timeout-minutes: 60
+      env:
+        POSTGRES_HOST: localhost
+        POSTGRES_PORT: 5432
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: postgres
+
+      services:
+        postgres:
+          image: postgres:13
+          # Set health checks to wait until postgres has started
+          options: >-
+            --health-cmd pg_isready
+            --health-interval 10s
+            --health-timeout 5s
+            --health-retries 5
+          env:
+            # postgres image requires password to be set
+            POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+          ports:
+            # FIXME: cannot use ${{ env.POSTGRES_PORT }} here
+            # mapping container ports to the host
+            - 5432:5432
+      steps:
+        - name: Check out code
+          uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+        - name: Prepare the job for integration tests
+          uses: ./.github/actions/test-prerequisites
+          with:
+              DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+              POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
+
+        - name: Install Dependencies (Linux) 📦
+          run: |
+            make install
+          shell: bash
+
+        # these integration tests need to be ran in a sequential fashion,
+        # due to environment constraints, so we're running them in a single process.
+        - name: Test Code with Services 🩺 (sequential)
+          env:
+            JOBS: 1
+            INTEGRATION_TEST_PYTEST_MARKERS: "sequential"
+            PYTHONIOENCODING: "utf-8"
+          run: |
+            make test-integration
+
+        - name: Prepare test results
+          if: always()
+          run: mv report_integration.xml integration-results-sequential.xml
+
+        - name: Save Test Results
+          if: always()
+          uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
+          with:
+            name: Sequential Integration Test Results
+            path: integration-results-sequential.xml
+
+  non-sequential-integration-test:
+    name: Run Non-Sequential Integration Tests
+    runs-on: ubuntu-22.04-8core
+    timeout-minutes: 60
+    env:
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+
+    services:
+      redis:
+        image: redis:6
+        # Set health checks to wait until redis has started
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          # FIXME: cannot use ${{ env.REDIS_PORT }} here
+          # mapping container ports to the host
+          - 6379:6379
+
+      postgres:
+        image: postgres:13
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        env:
+          # postgres image requires password to be set
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+        ports:
+          # FIXME: cannot use ${{ env.POSTGRES_PORT }} here
+          # mapping container ports to the host
+          - 5432:5432
+
+      mongodb:
+        image: mongodb/mongodb-community-server:6.0.4-ubuntu2204
+        options: >-
+          --health-cmd "echo 'db.runCommand("ping").ok' | mongosh --quiet"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 27017:27017
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Prepare the job for integration tests
+        uses: ./.github/actions/test-prerequisites
+        with:
+            DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+            POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
+
+      - name: Install Dependencies (Linux) 📦
+        run: |
+          make install
+        shell: bash
+
+      - name: Test Code with Services 🩺
+        env:
+          JOBS: 6
+          INTEGRATION_TEST_PYTEST_MARKERS: '"(not sequential) and (not broker) and (not concurrent_lock_store)"'
+          PYTHONIOENCODING: "utf-8"
+          INTEGRATION_TESTS_STUDIO_LICENSE: ${{ secrets.INTEGRATION_TESTS_STUDIO_LICENSE }}
+          INTEGRATION_TESTS_PRO_LICENSE: ${{ secrets.INTEGRATION_TESTS_PRO_LICENSE }}
+          INTEGRATION_TESTS_PRO_LICENSE_ALL_FEATURES: ${{ secrets.INTEGRATION_TESTS_PRO_LICENSE_ALL_FEATURES }}
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+        run: |
+          make prepare-tests-ubuntu
+          make prepare-spacy
+          make test-integration
+
+      - name: Prepare test results
+        if: always()
+        run: mv report_integration.xml integration-results-non-sequential.xml
+
+      - name: Save Test Results
+        if: always()
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
+        with:
+          name: Non-Sequential Integration Test Results
+          path: integration-results-non-sequential.xml
+
+  concurrent-lockstore-integration-test:
+    name: Run Concurrent LockStore Integration Tests
+    runs-on: ubuntu-20.04
+    timeout-minutes: 60
+    env:
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
+
+    services:
+      redis:
+        image: redis:6
+        # Set health checks to wait until redis has started
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          # FIXME: cannot use ${{ env.REDIS_PORT }} here
+          # mapping container ports to the host
+          - 6379:6379
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Prepare the job for integration tests
+        uses: ./.github/actions/test-prerequisites
+        with:
+            DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+            POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
+
+      - name: Install Dependencies (Linux) 📦
+        run: |
+          make install
+        shell: bash
+
+      # these integration tests need to be run separately
+      - name: Test Code with Services 🩺 (concurrent_lock_store)
+        env:
+          JOBS: 1
+          INTEGRATION_TEST_PYTEST_MARKERS: "concurrent_lock_store"
+          PYTHONIOENCODING: "utf-8"
+        run: |
+          make test-integration
+
+      - name: Prepare test results
+        if: always()
+        run: mv report_integration.xml integration-results-concurrent-lockstore.xml
+
+      - name: Save Test Results
+        if: always()
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
+        with:
+          name: Concurrent LockStore Integration Test Results
+          path: integration-results-concurrent-lockstore.xml
+
+  broker_integration_test:
+    name: Run Broker Integration Tests
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    env:
+      RABBITMQ_HOST: localhost
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASSWORD: guest
+
+    services:
+      rabbitmq:
+        # see https://github.com/docker-library/healthcheck/blob/master/rabbitmq/docker-healthcheck
+        image: healthcheck/rabbitmq
+        ports:
+          - 5672:5672
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Prepare the job for integration tests
+        uses: ./.github/actions/test-prerequisites
+        with:
+          DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+          POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
+
+      - name: Install Dependencies Full (Linux) 📦
+        run: |
+          sudo apt-get -y install libpq-dev
+          make install-full | tee .output
+          if grep 'The lock file is not up to date' .output; then exit 1; fi
+          make prepare-tests-ubuntu
+          make prepare-spacy
+
+      - name: Run kafka and zookeeper containers for integration testing
+        run: |
+          docker-compose -f tests_deployment/docker-compose.kafka.yml up -d
+
+      - name: Test Code with Services 🩺(broker_integration_test)
+        env:
+          JOBS: 1
+          INTEGRATION_TEST_PYTEST_MARKERS: "broker"
+          PYTHONIOENCODING: "utf-8"
+        run: |
+            make test-integration
+
+      - name: Show container logs
+        if: always()
+        uses: ./.github/actions/debug-broker-tests
+        with:
+          COMPOSE_FILE_PATH: tests_deployment/docker-compose.kafka.yml
+
+      - name: Prepare test results
+        if: always()
+        run: mv report_integration.xml integration-results-broker-integration.xml
+
+      - name: Save Test Results
+        if: always()
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
+        with:
+            name: Broker Integration Test Results
+            path: integration-results-broker-integration.xml
+
+      - name: Stop kafka and zookeeper containers for integration testing
+        run: |
+          docker-compose -f tests_deployment/docker-compose.kafka.yml down
+
+  unit-test:
+    name: Run Unit Tests
+    runs-on: ubuntu-22.04-8core
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        test:
+          - test-cli
+          - test-core-featurizers
+          - test-policies
+          - test-nlu-featurizers
+          - test-nlu-predictors
+          - test-full-model-training
+          - test-other-unit-tests
+          - test-performance
+          - test-flaky
+        python-version: [3.8, 3.9, "3.10"]
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Prepare the job for unit tests
+        uses: ./.github/actions/test-prerequisites
+        with:
+            DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+            POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
+
+      - name: Install Dependencies (Linux) 📦
+        # Poetry intermittently fails to install dependency if it is not PEP 517 compliant
+        # This is a workaround for that issue
+        run: |
+          sudo apt-get -y install libpq-dev
+          make install-full | tee .output
+          if grep 'The lock file is not up to date' .output; then exit 1; fi
+          make prepare-tests-ubuntu
+
+      - name: Add github workflow problem matchers
+        if: matrix.python-version == 3.7
+        # only annotate based on test runs on ubuntu: otherwise
+        # all errors will be duplicated for each python / os combination
+        # therefore, we only enable for the one where most tests are run
+        # (tests will still run in other envs, they will just not create annotations)
+        run: pip install pytest-github-actions-annotate-failures
+
+      - name: Install ddtrace on Linux
+        run: poetry run pip install -U 'ddtrace<2.0.0'
+
+      - name: Test Code 🔍 (multi-process)
+        env:
+          JOBS: 6
+          PYTHONUTF8: 1
+          DD_ENV: ${{ matrix.test }}
+          DD_SERVICE: rasa
+          DD_ARGS: --ddtrace --ddtrace-patch-all --junitxml=unit-tests-results.xml
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+        run: |
+          make ${{ matrix.test }}
+        shell: bash # bash shell is a way to make code run for both Linux and Windows
+
+      - name: Prepare test results
+        if: always()
+        run: mv unit-tests-results.xml ${{ github.workspace }}/unit-tests-results-${{ matrix.test }}-python-${{ matrix.python-version }}.xml
+
+      - name: Save Test Results
+        if: always()
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
+        with:
+          name: unit-tests-results-${{ matrix.test }}-python-${{ matrix.python-version }}
+          path: |
+            ${{ github.workspace }}/unit-tests-results-${{ matrix.test }}-python-${{ matrix.python-version }}.xml
+
+  test-anonymization:
+    name: Run Anonymization Unit Tests
+    runs-on: ubuntu-22.04-8core
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [3.8, 3.9, "3.10"]
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Prepare the job for unit tests
+        uses: ./.github/actions/test-prerequisites
+        with:
+          DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+          POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
+
+      - name: Install Dependencies (Linux) 📦
+        # Poetry intermittently fails to install dependency if it is not PEP 517 compliant
+        # This is a workaround for that issue
+        run: |
+          sudo apt-get -y install libpq-dev
+          make install-full | tee .output
+          if grep 'The lock file is not up to date' .output; then exit 1; fi
+          make prepare-tests-ubuntu
+
+      - name: Install spaCy language model
+        run: |
+          poetry run python -m pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.5.0/en_core_web_lg-3.5.0-py3-none-any.whl
+
+      - name: Add github workflow problem matchers
+        if: matrix.python-version == 3.7
+        # only annotate based on test runs on ubuntu: otherwise
+        # all errors will be duplicated for each python / os combination
+        # therefore, we only enable for the one where most tests are run
+        # (tests will still run in other envs, they will just not create annotations)
+        run: pip install pytest-github-actions-annotate-failures
+
+      - name: Install ddtrace on Linux
+        run: poetry run pip install -U 'ddtrace<2.0.0'
+
+      - name: Test Code 🔍 (multi-process)
+        env:
+          JOBS: 6
+          PYTHONUTF8: 1
+          DD_SERVICE: rasa
+          DD_ARGS: --ddtrace --ddtrace-patch-all --junitxml=unit-tests-results.xml
+        run: |
+          make test-anonymization
+        shell: bash # bash shell is a way to make code run for both Linux and Windows
+
+      - name: Prepare test results
+        if: always()
+        run: mv unit-tests-results.xml ${{ github.workspace }}/unit-tests-results-test-anonymization-python-${{ matrix.python-version }}.xml
+
+      - name: Save Test Results
+        if: always()
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
+        with:
+            name: unit-tests-results-test-anonymization-python-${{ matrix.python-version }}
+            path: |
+              ${{ github.workspace }}/unit-tests-results-test-anonymization-python-${{ matrix.python-version }}.xml
+        
+  publish-test-results:
+    runs-on: ubuntu-20.04
+    needs: [ tracing-integration-test, metric-integration-test,
+             sequential-integration-test, non-sequential-integration-test,
+             concurrent-lockstore-integration-test, broker_integration_test,
+             unit-test, test-anonymization ]
+    if: always()
+    steps:
+      - name: Download test reports
+        uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427 #v4.1.4
+        with:
+          path: artifacts
+
+      - name: Publish integration test results
+        if: always()
+        uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
+        with:
+          files: "artifacts/**/integration-results-*.xml"
+          check_name: "Integration Test Results"
+
+      - name: Publish unit-test results
+        if: always()
+        uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
+        with:
+          files: "artifacts/**/unit-tests-results-*.xml"
+          check_name: "Unit Test Results"
