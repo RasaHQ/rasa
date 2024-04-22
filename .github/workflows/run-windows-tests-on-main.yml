@@ -18,7 +18,7 @@ env:
 jobs:
   test:
     name: Run Tests
-    runs-on: windows-2019
+    runs-on: windows-2022
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -129,7 +129,7 @@ jobs:
 
   test-anonymization:
     name: Run Anonymization Unit Tests
-    runs-on: windows-2019
+    runs-on: windows-2022
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -233,7 +233,7 @@ jobs:
 
   test-flaky:
     name: Run Flaky Tests
-    runs-on: windows-2019
+    runs-on: windows-2022
     timeout-minutes: 60
     strategy:
       fail-fast: false
