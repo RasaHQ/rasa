@@ -188,6 +188,7 @@ pymilvus = "^2.3.6"
 qdrant-client = "^1.7.2"
 psutil = "^5.9.5"
 fonttools = "~4.43.0"
+idna = "3.7"
 
 [[tool.poetry.dependencies.tensorflow-io-gcs-filesystem]]
 version = "==0.31"
