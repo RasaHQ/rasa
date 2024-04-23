@@ -187,6 +187,8 @@ pycountry = "^22.3.5"
 pymilvus = "^2.3.6"
 qdrant-client = "^1.7.2"
 psutil = "^5.9.5"
+fonttools = "~4.43.0"
+
 [[tool.poetry.dependencies.tensorflow-io-gcs-filesystem]]
 version = "==0.31"
 markers = "sys_platform == 'win32'"
