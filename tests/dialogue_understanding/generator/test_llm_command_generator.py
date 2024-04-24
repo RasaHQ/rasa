@@ -955,3 +955,38 @@ class TestLLMCommandGenerator:
         assert loaded.prompt_template.startswith(
             "Your task is to analyze the current conversation"
         )
+
+    async def test_llm_command_generator_load_prompt_from_model_storage(
+        self,
+        model_storage: ModelStorage,
+        tmp_path: Path,
+    ) -> None:
+        # Create and write prompt file.
+        prompt_dir = Path(tmp_path) / "prompt"
+        prompt_dir.mkdir(parents=True, exist_ok=True)
+        prompt_file = prompt_dir / "llm_command_generator_prompt.jinja2"
+        prompt_file.write_text("This is a custom prompt")
+
+        # Add the prompt file path to the config.
+        config = {"prompt": str(prompt_file)}
+
+        # Persist the prompt file to the model storage.
+        resource = Resource("llmcmdgen")
+        generator = LLMCommandGenerator(config, model_storage, resource)
+        generator.persist()
+
+        # Test loading the prompt from the model storage.
+        # Case 1: No prompt in the config.
+        loaded = LLMCommandGenerator.load({}, model_storage, resource, Mock())
+        assert loaded.prompt_template == "This is a custom prompt"
+        assert loaded.config["prompt"] is None
+
+        # Case 2: Specifying a invalid prompt path in the config.
+        loaded = LLMCommandGenerator.load(
+            {"prompt": "test_prompt.jinja2"},
+            model_storage,
+            resource,
+            Mock(),
+        )
+        assert loaded.prompt_template == "This is a custom prompt"
+        assert loaded.config["prompt"] == "test_prompt.jinja2"
