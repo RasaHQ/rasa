@@ -51,6 +51,7 @@ from rasa.shared.exceptions import (
     YamlException,
     YamlSyntaxException,
 )
+from rasa.shared.utils.cli import print_error_and_exit
 import rasa.shared.utils.io
 import rasa.shared.utils.common
 import rasa.shared.core.slot_mappings
@@ -309,6 +310,19 @@ class Domain:
                     other_dict = read_yaml(rasa.shared.utils.io.read_file(full_path))
                     combined = Domain.merge_domain_dicts(other_dict, combined)
 
+        for response in combined["duplicates"].get(KEY_RESPONSES, []):
+            structlogger.error(
+                "domain.from_directory.duplicate_response",
+                response=response,
+                event_info=(
+                    f"Response '{response}' is defined in multiple domains. "
+                    f"Please make sure this response is only defined in one domain."
+                ),
+            )
+            print_error_and_exit(
+                "Unable to merge domains due to duplicate responses in domain."
+            )
+
         domain = Domain.from_dict(combined)
         return domain
 
@@ -399,7 +413,11 @@ class Domain:
 
         if duplicates:
             duplicates = rasa.shared.utils.common.clean_duplicates(duplicates)
-            combined.update({"duplicates": duplicates})
+            if "duplicates" not in combined:
+                combined.update({"duplicates": duplicates})
+                return combined
+            for key in duplicates.keys():
+                combined["duplicates"][key].extend(duplicates[key])
 
         return combined
 
