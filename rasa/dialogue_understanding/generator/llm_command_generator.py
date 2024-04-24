@@ -160,13 +160,12 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         **kwargs: Any,
     ) -> "LLMCommandGenerator":
         """Loads trained component (see parent class for full docstring)."""
+        # load prompt template from the model storage.
+        prompt_template = cls._load_prompt_template_from_model_storage(
+            model_storage, resource
+        )
         # init base command generator
-        command_generator = cls(config, model_storage, resource)
-        # load prompt template
-        if (
-            prompt_template := cls._load_prompt_template(model_storage, resource)
-        ) is not None:
-            command_generator.prompt_template = prompt_template
+        command_generator = cls(config, model_storage, resource, prompt_template)
         # load flow retrieval if enabled
         if command_generator.enabled_flow_retrieval:
             command_generator.flow_retrieval = cls._load_flow_retrival(
@@ -175,7 +174,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         return command_generator
 
     @classmethod
-    def _load_prompt_template(
+    def _load_prompt_template_from_model_storage(
         cls, model_storage: ModelStorage, resource: Resource
     ) -> Optional[Text]:
         try:

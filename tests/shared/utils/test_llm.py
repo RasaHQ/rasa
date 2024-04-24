@@ -3,6 +3,7 @@ from typing import Text, Any, Dict, Optional
 import pytest
 from langchain import OpenAI
 from langchain.embeddings import OpenAIEmbeddings
+from pathlib import Path
 from pytest import MonkeyPatch
 from rasa.shared.constants import (
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
@@ -19,6 +20,7 @@ from rasa.shared.core.slots import (
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.utils.llm import (
+    get_prompt_template,
     sanitize_message_for_prompt,
     tracker_as_readable_transcript,
     embedder_factory,
@@ -313,3 +315,23 @@ def test_allowed_values_for_slot(
     allowed_values = allowed_values_for_slot(input_slot)
     # Then
     assert allowed_values == expected_slot_values
+
+
+def test_get_prompt_template_returns_default_prompt() -> None:
+    default_prompt_template = "default prompt template"
+    response = get_prompt_template(None, default_prompt_template)
+    assert response == default_prompt_template
+
+
+def test_get_prompt_template_returns_custom_prompt(tmp_path: Path) -> None:
+    prompt_template = "This is a custom prompt template"
+    custom_prompt_file = tmp_path / "custom_prompt.jinja2"
+    custom_prompt_file.write_text(prompt_template)
+    response = get_prompt_template(custom_prompt_file, "default prompt")
+    assert response == prompt_template
+
+
+def test_get_prompt_template_returns_default_on_error() -> None:
+    default_prompt_template = "default prompt template"
+    response = get_prompt_template("non_existent_file.jinja2", default_prompt_template)
+    assert response == default_prompt_template
