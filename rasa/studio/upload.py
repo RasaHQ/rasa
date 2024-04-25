@@ -344,12 +344,11 @@ def _filter_domain(
     entities: List[Union[str, Dict]], intents: List[str], domain_from_files: Dict
 ) -> Dict:
     """Filters the domain to only include the selected entities and intents."""
-    domain = {}
-    domain["version"] = domain_from_files["version"]
-    domain["intents"] = intents
-    domain["entities"] = _remove_not_selected_entities(
-        entities, domain_from_files["entities"]
-    )
+    domain = {
+        "version": domain_from_files["version"],
+        "intents": intents,
+        "entities": _remove_not_selected_entities(entities, domain_from_files["entities"])
+    }
 
     return domain
 
