@@ -287,7 +287,7 @@ def build_import_request(
     flows_yaml: str,
     domain_yaml: str,
     config_yaml: str,
-    nlu_yaml: str = ""
+    nlu_yaml: str = "",
 ) -> Dict:
     # b64encode expects bytes and returns bytes so we need to decode to string
     base64_domain = base64.b64encode(domain_yaml.encode("utf-8")).decode("utf-8")
@@ -300,9 +300,7 @@ def build_import_request(
             "mutation UploadModernAssistant($input: UploadModernAssistantInput!)"
             "{\n  uploadModernAssistant(input: $input)\n}"
         ),
-        "variables": {
-            "input": {}
-        },
+        "variables": {"input": {}},
     }
 
     if assistant_name:
@@ -346,7 +344,7 @@ def build_request(
 
 
 def _filter_domain(
-        entities: List[Union[str, Dict]], intents: List[str], domain_from_files: Dict
+    entities: List[Union[str, Dict]], intents: List[str], domain_from_files: Dict
 ) -> Dict:
     """Filters the domain to only include the selected entities and intents."""
     domain = {}
