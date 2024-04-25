@@ -48,7 +48,6 @@ class BotFramework(OutputChannel):
         bot: Text,
         service_url: Text,
     ) -> None:
-
         service_url = (
             f"{service_url}/" if not service_url.endswith("/") else service_url
         )

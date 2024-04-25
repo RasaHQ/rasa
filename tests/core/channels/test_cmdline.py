@@ -86,7 +86,6 @@ async def test_record_messages(monkeypatch: MonkeyPatch, capsys: CaptureFixture)
     endpoint = f"{server_url}/webhooks/rest/webhook"
 
     with aioresponses() as mocked:
-
         for output in [m["out"] for m in input_output]:
             if output:
                 mocked.post(url=endpoint, payload=output)

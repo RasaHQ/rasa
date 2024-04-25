@@ -2,7 +2,7 @@
 # custom Python code.
 #
 # See this guide on how to implement these action:
-# https://rasa.com/docs/rasa/custom-actions
+# https://rasa.com/docs/rasa-pro/concepts/custom-actions
 
 
 # This is a simple example for an assistant that schedules reminders and

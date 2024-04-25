@@ -33,7 +33,6 @@ class Messenger:
         page_access_token: Text,
         on_new_message: Callable[[UserMessage], Awaitable[Any]],
     ) -> None:
-
         self.on_new_message = on_new_message
         self.client = MessengerClient(page_access_token)
         self.last_message: Dict[Text, Any] = {}
@@ -172,7 +171,6 @@ class MessengerBot(OutputChannel):
         return "facebook"
 
     def __init__(self, messenger_client: MessengerClient) -> None:
-
         self.messenger_client = messenger_client
         super().__init__()
 
@@ -351,7 +349,6 @@ class FacebookInput(InputChannel):
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
     ) -> Blueprint:
-
         fb_webhook = Blueprint("fb_webhook", __name__)
 
         # noinspection PyUnusedLocal

@@ -810,7 +810,6 @@ def test_lm_featurizer_correctly_handle_whitespace_token(
         [Dict[Text, Any]], LanguageModelFeaturizer
     ],
 ):
-
     config = {"model_name": "bert", "model_weights": "bert-base-chinese"}
 
     lm_featurizer = create_language_model_featurizer(config)

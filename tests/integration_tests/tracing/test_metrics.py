@@ -327,7 +327,6 @@ def send_user_message() -> str:
 def test_metrics_get_sent_to_otlp_collector(
     send_user_message: str,
 ) -> None:
-
     # make sure the OTLP collector has collected the metrics
     while True:
         response = requests.get(OTLP_METRICS_TEST_URL)

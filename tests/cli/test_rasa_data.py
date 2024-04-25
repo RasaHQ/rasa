@@ -52,7 +52,6 @@ def test_data_split_nlu(run_in_simple_project: Callable[..., RunResult]):
 
 
 def test_data_convert_nlu_json(run_in_simple_project: Callable[..., RunResult]):
-
     result = run_in_simple_project(
         "data",
         "convert",
@@ -72,7 +71,6 @@ def test_data_convert_nlu_json(run_in_simple_project: Callable[..., RunResult]):
 def test_data_convert_nlu_yml(
     run: Callable[..., RunResult], tmp_path: Path, request: FixtureRequest
 ):
-
     target_file = tmp_path / "out.yml"
 
     # The request rootdir is required as the `testdir` fixture in `run` changes the
@@ -213,7 +211,7 @@ def test_data_validate_not_used_debug_message(
 
 
 def test_data_validate_failed_to_load_domain(
-    run_in_simple_project_with_no_domain: Callable[..., RunResult]
+    run_in_simple_project_with_no_domain: Callable[..., RunResult],
 ):
     result = run_in_simple_project_with_no_domain(
         "data",
@@ -266,7 +264,7 @@ def test_data_split_stories(run_in_simple_project: Callable[..., RunResult]):
 
 
 def test_rasa_data_validate_flows_success(
-    run_in_simple_project: Callable[..., RunResult]
+    run_in_simple_project: Callable[..., RunResult],
 ) -> None:
     flows_yaml = f"""
 version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
@@ -304,7 +302,7 @@ flows:
 
 
 def test_rasa_data_validate_link_invalid_flow(
-    run_in_simple_project: Callable[..., RunResult]
+    run_in_simple_project: Callable[..., RunResult],
 ) -> None:
     """Test that a flow with a link to a non-existent flow is not validated."""
     flows_yaml = f"""

@@ -225,10 +225,12 @@ class YAMLStoryWriter(StoryWriter):
                         # FIXME: to fix this type issue, WronglyClassifiedUserUtterance
                         # needs to be imported but it's currently outside
                         # of `rasa.shared`
-                        for predicted in user_utterance.predicted_entities:  # type: ignore[attr-defined] # noqa: E501
+                        for predicted in user_utterance.predicted_entities:  # type: ignore[attr-defined]
                             if predicted["start"] == entity["start"]:
-                                commented_entity = user_utterance.inline_comment_for_entity(  # noqa: E501
-                                    predicted, entity
+                                commented_entity = (
+                                    user_utterance.inline_comment_for_entity(
+                                        predicted, entity
+                                    )
                                 )
                                 if commented_entity:
                                     entity_map = CommentedMap(

@@ -12,7 +12,6 @@ from rasa.core.agent import Agent
 
 
 def nlg_app(base_url="/"):
-
     app = Sanic("test_nlg")
 
     @app.route(base_url, methods=["POST"])

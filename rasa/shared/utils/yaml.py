@@ -615,7 +615,6 @@ def validate_training_data_format_version(
             )
 
         if latest_version >= parsed_version:
-
             return True
 
     except TypeError:

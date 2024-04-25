@@ -93,7 +93,7 @@ CI_ENVIRONMENT_TELL = [
 ]
 
 # If updating or creating a new event, remember to update
-# https://rasa.com/docs/rasa/telemetry
+# https://rasa.com/docs/rasa-pro/telemetry/telemetry
 TRAINING_STARTED_EVENT = "Training Started"
 TRAINING_COMPLETED_EVENT = "Training Completed"
 TELEMETRY_DISABLED_EVENT = "Telemetry Disabled"
@@ -542,7 +542,7 @@ def _is_docker() -> bool:
 
 
 def with_default_context_fields(
-    context: Optional[Dict[Text, Any]] = None
+    context: Optional[Dict[Text, Any]] = None,
 ) -> Dict[Text, Any]:
     """Return a new context dictionary with default and provided field values merged.
 
@@ -1562,10 +1562,10 @@ def append_anonymization_trait(
         endpoints_file, KEY_ANONYMIZATION_RULES
     )
 
-    traits[
-        KEY_ANONYMIZATION_RULES
-    ] = rasa.anonymization.utils.extract_anonymization_traits(
-        anonymization_config, KEY_ANONYMIZATION_RULES
+    traits[KEY_ANONYMIZATION_RULES] = (
+        rasa.anonymization.utils.extract_anonymization_traits(
+            anonymization_config, KEY_ANONYMIZATION_RULES
+        )
     )
 
     return traits

@@ -271,15 +271,13 @@ class RulePolicy(MemoizationPolicy):
             if (
                 # loop is predicted after action_listen in unhappy path,
                 # therefore no validation is needed
-                is_prev_action_listen_in_state(states[-1])
-                and action == active_loop
+                is_prev_action_listen_in_state(states[-1]) and action == active_loop
             ):
                 lookup[feature_key] = LOOP_WAS_INTERRUPTED
             elif (
                 # some action other than active_loop is predicted in unhappy path,
                 # therefore active_loop shouldn't be predicted by the rule
-                not is_prev_action_listen_in_state(states[-1])
-                and action != active_loop
+                not is_prev_action_listen_in_state(states[-1]) and action != active_loop
             ):
                 lookup[feature_key] = DO_NOT_PREDICT_LOOP_ACTION
         return lookup
@@ -777,10 +775,10 @@ class RulePolicy(MemoizationPolicy):
         trackers_as_actions = rule_trackers_as_actions + story_trackers_as_actions
 
         # negative rules are not anti-rules, they are auxiliary to actual rules
-        self.lookup[
-            RULES_FOR_LOOP_UNHAPPY_PATH
-        ] = self._create_loop_unhappy_lookup_from_states(
-            trackers_as_states, trackers_as_actions
+        self.lookup[RULES_FOR_LOOP_UNHAPPY_PATH] = (
+            self._create_loop_unhappy_lookup_from_states(
+                trackers_as_states, trackers_as_actions
+            )
         )
 
     def train(
@@ -955,7 +953,6 @@ class RulePolicy(MemoizationPolicy):
     def _find_action_from_loop_happy_path(
         tracker: DialogueStateTracker,
     ) -> Tuple[Optional[Text], Optional[Text]]:
-
         active_loop_name = tracker.active_loop_name
         if active_loop_name is None:
             return None, None

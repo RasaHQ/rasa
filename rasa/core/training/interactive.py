@@ -336,7 +336,7 @@ async def _ask_questions(
 
 
 def _selection_choices_from_intent_prediction(
-    predictions: List[Dict[Text, Any]]
+    predictions: List[Dict[Text, Any]],
 ) -> List[Dict[Text, Any]]:
     """Given a list of ML predictions create a UI choice list."""
     sorted_intents = sorted(
@@ -762,7 +762,7 @@ async def _request_export_info() -> Tuple[Text, Text, Text]:
 
 
 def _split_conversation_at_restarts(
-    events: List[Dict[Text, Any]]
+    events: List[Dict[Text, Any]],
 ) -> List[List[Dict[Text, Any]]]:
     """Split a conversation at restart events.
 

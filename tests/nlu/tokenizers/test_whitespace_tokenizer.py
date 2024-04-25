@@ -60,13 +60,13 @@ def create_whitespace_tokenizer(config: Optional[Dict] = None) -> WhitespaceToke
         ),
         (
             "https://www.google.com/search?client=safari&rls=en&q=i+like+rasa&ie=UTF-8&oe=UTF-8 "  # noqa: E501
-            "https://rasa.com/docs/rasa/components#whitespacetokenizer",
+            "https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#whitespacetokenizer",
             [
                 "https://www.google.com/search?"
                 "client=safari&rls=en&q=i+like+rasa&ie=UTF-8&oe=UTF-8",
-                "https://rasa.com/docs/rasa/components#whitespacetokenizer",
+                "https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#whitespacetokenizer",
             ],
-            [(0, 82), (83, 140)],
+            [(0, 82), (83, 165)],
         ),
         (
             "Joselico gracias Dois 🙏🇺🇸🏦🛠🔥⭐️🦅👑💪",
@@ -80,7 +80,6 @@ def create_whitespace_tokenizer(config: Optional[Dict] = None) -> WhitespaceToke
     ],
 )
 def test_whitespace(text, expected_tokens, expected_indices):
-
     tk = create_whitespace_tokenizer()
 
     tokens = tk.tokenize(Message.build(text=text), attribute=TEXT)

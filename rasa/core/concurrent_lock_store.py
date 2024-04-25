@@ -134,7 +134,7 @@ class ConcurrentRedisLockStore(LockStore):
             lock = self.get_or_create_lock(conversation_id)
             lock.remove_expired_tickets()
             ticket_number = self.increment_ticket_number(lock)
-            ticket = lock.concurrent_issue_ticket(lock_lifetime, ticket_number)  # type: ignore[attr-defined]  # noqa: E501
+            ticket = lock.concurrent_issue_ticket(lock_lifetime, ticket_number)  # type: ignore[attr-defined]
             self.save_lock(lock)
 
             return ticket

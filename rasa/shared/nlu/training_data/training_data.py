@@ -47,7 +47,6 @@ class TrainingData:
         lookup_tables: Optional[List[Dict[Text, Any]]] = None,
         responses: Optional[Dict[Text, List[Dict[Text, Any]]]] = None,
     ) -> None:
-
         if training_examples:
             self.training_examples = self.sanitize_examples(training_examples)
         else:
@@ -339,7 +338,6 @@ class TrainingData:
             )
             assistant_utterances = self.responses.get(story_lookup_key, [])
             if assistant_utterances:
-
                 # Use the first response text as training label if needed downstream
                 for assistant_utterance in assistant_utterances:
                     if assistant_utterance.get(TEXT):

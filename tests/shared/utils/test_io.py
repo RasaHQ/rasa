@@ -595,7 +595,6 @@ async def test_is_key_in_yaml_with_unicode_files():
 
 @pytest.mark.parametrize("length", [4, 8, 16, 32])
 def test_random_string(length):
-
     s = rasa.shared.utils.io.random_string(length)
     s2 = rasa.shared.utils.io.random_string(length)
 

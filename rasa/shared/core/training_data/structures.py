@@ -691,7 +691,7 @@ class StoryGraph:
 
     @staticmethod
     def topological_sort(
-        graph: Dict[Text, Set[Text]]
+        graph: Dict[Text, Set[Text]],
     ) -> Tuple[deque, List[Tuple[Text, Text]]]:
         """Creates a top sort of a directed graph. This is an unstable sorting!
 

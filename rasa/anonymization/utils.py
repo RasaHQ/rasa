@@ -30,8 +30,9 @@ def read_endpoint_config(
         return content
     except FileNotFoundError:
         logger.error(
-            "Failed to read configuration "
-            "from {}. No such file.".format(os.path.abspath(filename)),
+            "Failed to read configuration from {}. No such file.".format(
+                os.path.abspath(filename)
+            ),
         )
         return None
 
