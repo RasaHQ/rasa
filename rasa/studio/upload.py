@@ -3,24 +3,22 @@ import base64
 import logging
 from typing import Dict, Iterable, List, Set, Text, Tuple, Union
 
+import requests
+
 import rasa.cli.telemetry
 import rasa.cli.utils
 import rasa.shared.utils.cli
 import rasa.shared.utils.io
-import requests
-
+from rasa.shared.constants import (
+    DEFAULT_DOMAIN_PATHS,
+)
 from rasa.shared.core.flows.yaml_flows_io import YamlFlowsWriter
 from rasa.shared.exceptions import RasaException
 from rasa.shared.importers.importer import TrainingDataImporter, FlowSyncImporter
 from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
 from rasa.shared.utils.yaml import dump_obj_as_yaml_to_string
-
 from rasa.studio.auth import KeycloakTokenReader
 from rasa.studio.config import StudioConfig
-
-from rasa.shared.constants import (
-    DEFAULT_DOMAIN_PATHS,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -107,6 +105,7 @@ def upload_calm_assistant(
             "actions",
             "responses",
             "slots",
+            "intents",
             "forms",
             "session_config",
         ]
@@ -137,12 +136,26 @@ def upload_calm_assistant(
         user_flows = flow_importer.get_flows().user_flows
         flows = list(user_flows)
 
+        # Load NLU data
+        nlu_importer = TrainingDataImporter.load_from_dict(
+            domain_path=args.domain, training_data_paths=args.data
+        )
+
+        intents_from_files = nlu_importer.get_nlu_data().intents
+
+        nlu_examples = nlu_importer.get_nlu_data().filter_training_examples(
+            lambda ex: ex.get("intent") in intents_from_files
+        )
+
+        nlu_examples_yaml = RasaYAMLWriter().dumps(nlu_examples)
+
         # Build GraphQL request
         graphql_req = build_import_request(
             assistant_name,
             flows_yaml=YamlFlowsWriter().dumps(flows),
             domain_yaml=dump_obj_as_yaml_to_string(domain),
             config_yaml=dump_obj_as_yaml_to_string(config),
+            nlu_yaml=nlu_examples_yaml,
         )
 
         logger.info("Uploading to Rasa Studio...")
@@ -270,12 +283,13 @@ def _add_missing_entities(
 
 
 def build_import_request(
-    assistant_name: str, flows_yaml: str, domain_yaml: str, config_yaml: str
+        assistant_name: str, flows_yaml: str, domain_yaml: str, config_yaml: str, nlu_yaml: str = ""
 ) -> Dict:
     # b64encode expects bytes and returns bytes so we need to decode to string
     base64_domain = base64.b64encode(domain_yaml.encode("utf-8")).decode("utf-8")
     base64_flows = base64.b64encode(flows_yaml.encode("utf-8")).decode("utf-8")
     base64_config = base64.b64encode(config_yaml.encode("utf-8")).decode("utf-8")
+    base64_nlu = base64.b64encode(nlu_yaml.encode("utf-8")).decode("utf-8")
 
     graphql_req = {
         "query": (
@@ -283,14 +297,20 @@ def build_import_request(
             "{\n  uploadModernAssistant(input: $input)\n}"
         ),
         "variables": {
-            "input": {
-                "assistantName": assistant_name,
-                "domain": base64_domain,
-                "flows": base64_flows,
-                "config": base64_config,
-            }
+            "input": {}
         },
     }
+
+    if assistant_name:
+        graphql_req["variables"]["input"]["assistantName"] = assistant_name
+    if base64_domain:
+        graphql_req["variables"]["input"]["domain"] = base64_domain
+    if base64_flows:
+        graphql_req["variables"]["input"]["flows"] = base64_flows
+    if base64_nlu:
+        graphql_req["variables"]["input"]["nlu"] = base64_nlu
+    if base64_config:
+        graphql_req["variables"]["input"]["config"] = base64_config
 
     return graphql_req
 
@@ -322,7 +342,7 @@ def build_request(
 
 
 def _filter_domain(
-    entities: List[Union[str, Dict]], intents: List[str], domain_from_files: Dict
+        entities: List[Union[str, Dict]], intents: List[str], domain_from_files: Dict
 ) -> Dict:
     """Filters the domain to only include the selected entities and intents."""
     domain = {}

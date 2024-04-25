@@ -6,6 +6,10 @@ actions:
   - action_remove_contact
   - action_search_hotel
   - action_transaction_search
+  - action_check_transfer_funds
+
+intents:
+  - health_advice
 
 responses:
   utter_add_contact_cancelled:
@@ -166,6 +170,21 @@ slots:
     mappings:
       - type: custom
   transfer_money_transfer_successful:
+    type: bool
+    mappings:
+      - type: custom
+  set_slots_test_text:
+    type: text
+    mappings:
+      - type: custom
+  set_slots_test_categorical:
+    type: categorical
+    mappings:
+      - type: custom
+    values:
+      - value_1
+      - value_2
+  transfer_money_has_sufficient_funds:
     type: bool
     mappings:
       - type: custom
