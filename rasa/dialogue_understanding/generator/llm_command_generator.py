@@ -244,11 +244,16 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             # cannot do anything if there are no flows or no tracker
             return []
 
+        # If the flow retrieval is disabled, use the all the provided flows.
         filtered_flows = (
             await self.flow_retrieval.filter_flows(tracker, message, flows)
             if self.flow_retrieval is not None
             else flows
         )
+        # Filter flows based on current context (tracker and message) to identify which
+        # flows LLM can potentially start.
+        filtered_flows = tracker.get_startable_flows(filtered_flows)
+
         # add the filtered flows to the message for evaluation purposes
         message.set(
             FLOWS_IN_PROMPT, list(filtered_flows.user_flow_ids), add_to_output=True
