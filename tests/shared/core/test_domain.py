@@ -784,6 +784,13 @@ def test_load_domain_from_directory_tree():
                 "image": "https://i.imgur.com/nGF1K8f.jpg",
             }
         ],
+        "utter_greet2": [{"text": "Hey! How are you?"}],
+        "utter_cheer_up2": [
+            {
+                "text": "Here is something to cheer you up:",
+                "image": "https://i.imgur.com/nGF1K8f.jpg",
+            }
+        ],
     }
     assert set(expected_intents).issubset(set(actual.intents))
     assert set(expected_entities) == (set(actual.entities))
@@ -1844,17 +1851,17 @@ def test_domain_invalid_yml_in_folder():
         assert len(logs) == 1
 
 
-def test_invalid_domain_dir_with_duplicates(recwarn: WarningsRecorder):
+def test_invalid_domain_dir_with_duplicates_intents_slots(recwarn: WarningsRecorder):
     """Raises InvalidDomain if a domain is loaded from a directory with duplicated slots,
     responses and intents in domain files.
     """
-    Domain.from_directory("data/test_domains/test_domain_with_duplicates/")
+    Domain.from_directory(
+        "data/test_domains/test_domain_with_duplicates_intents_slots/"
+    )
 
     error_message = (
         "The following duplicated intents have been found across multiple domain files: greet \n"
-        "The following duplicated responses have been found across multiple domain files: "
-        "utter_did_that_help, utter_greet \n"
-        "The following duplicated slots have been found across multiple domain files: mood"
+        "The following duplicated slots have been found across 555multiple domain files: mood"
     )
     for warning in recwarn.list:
         # filter expected warnings
@@ -1864,6 +1871,28 @@ def test_invalid_domain_dir_with_duplicates(recwarn: WarningsRecorder):
             for warning_type, warning_message in EXPECTED_WARNINGS
         ):
             assert error_message == warning.message.args[0]
+
+
+def test_invalid_domain_dir_with_duplicated_responses():
+    """Exits if the domain has duplicated responses in domain files."""
+    expected_event = "domain.duplicate_response"
+    expected_log_level = "error"
+    expected_log_message = (
+        "Please make sure this response is only defined in one domain."
+    )
+
+    with structlog.testing.capture_logs() as caplog:
+        with pytest.raises(SystemExit):
+            Domain.from_directory("data/test_domains/test_domain_with_duplicates/")
+
+        logs = filter_logs(
+            caplog, expected_event, expected_log_level, [expected_log_message]
+        )
+        assert len(logs) == 2
+        assert set([log["response"] for log in logs]) == {
+            "utter_did_that_help",
+            "utter_greet",
+        }
 
 
 def test_domain_fingerprint_consistency_across_runs():
@@ -2395,3 +2424,18 @@ def test_domain_default_slots_are_marked_as_builtin(domain: Domain) -> None:
     ]
 
     assert all(slot.is_builtin for slot in domain_default_slots)
+
+
+def test_domain_unique_responses(domain: Domain):
+    domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        actions:
+        - utter_greet
+        responses:
+            utter_greet:
+            - text: "hi"
+        """
+    )
+
+    assert len(domain.action_names_or_texts) == len(DEFAULT_ACTION_NAMES) + 1
