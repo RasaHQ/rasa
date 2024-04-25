@@ -310,7 +310,7 @@ class Domain:
                     other_dict = read_yaml(rasa.shared.utils.io.read_file(full_path))
                     combined = Domain.merge_domain_dicts(other_dict, combined)
 
-        for response in combined["duplicates"].get(KEY_RESPONSES, []):
+        for response in combined.get("duplicates", {}).get(KEY_RESPONSES, []):
             structlogger.error(
                 "domain.from_directory.duplicate_response",
                 response=response,
@@ -414,7 +414,7 @@ class Domain:
         if duplicates:
             duplicates = rasa.shared.utils.common.clean_duplicates(duplicates)
             if "duplicates" not in combined:
-                combined.update({"duplicates": duplicates})
+                combined["duplicates"] = duplicates
                 return combined
             for key in duplicates.keys():
                 combined["duplicates"][key].extend(duplicates[key])
