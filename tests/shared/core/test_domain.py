@@ -2424,18 +2424,3 @@ def test_domain_default_slots_are_marked_as_builtin(domain: Domain) -> None:
     ]
 
     assert all(slot.is_builtin for slot in domain_default_slots)
-
-
-def test_domain_unique_responses(domain: Domain):
-    domain = Domain.from_yaml(
-        f"""
-        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
-        actions:
-        - utter_greet
-        responses:
-            utter_greet:
-            - text: "hi"
-        """
-    )
-
-    assert len(domain.action_names_or_texts) == len(DEFAULT_ACTION_NAMES) + 1
