@@ -1,11 +1,13 @@
 import os.path
 import uuid
 from pathlib import Path
-from typing import Optional, Dict, Text, Any
+from typing import Optional, Dict, Text, Any, Set
 from unittest.mock import Mock, patch, AsyncMock
 
 import pytest
 from _pytest.tmpdir import TempPathFactory
+from structlog.testing import capture_logs
+
 from rasa.dialogue_understanding.commands import (
     Command,
     ErrorCommand,
@@ -48,7 +50,6 @@ from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.utils.llm import (
     DEFAULT_MAX_USER_INPUT_CHARACTERS,
 )
-from structlog.testing import capture_logs
 from tests.utilities import flows_from_str
 
 EXPECTED_PROMPT_PATH = "./tests/dialogue_understanding/generator/rendered_prompt.txt"
@@ -217,6 +218,90 @@ class TestLLMCommandGenerator:
         # Then
         assert StartFlowCommand("test_flow") in predicted_commands
         assert SetSlotCommand(ROUTE_TO_CALM_SLOT, True) in predicted_commands
+
+    @pytest.mark.parametrize(
+        "flow_guard_value, expected_flow_ids",
+        (
+            (None, {"flow_regular"}),
+            (False, {"flow_regular"}),
+            (True, {"flow_regular", "flow_with_guard"}),
+            ("false", {"flow_regular", "flow_with_guard"}),
+            ("true", {"flow_regular", "flow_with_guard"}),
+        ),
+    )
+    @patch(
+        "rasa.dialogue_understanding.generator.llm_command_generator"
+        ".LLMCommandGenerator"
+        ".render_template"
+    )
+    @patch(
+        "rasa.dialogue_understanding.generator.llm_command_generator"
+        ".LLMCommandGenerator"
+        "._generate_action_list_using_llm"
+    )
+    async def test_predict_commands_calls_prompt_rendering_with_startable_flows_only(
+        self,
+        mock_generate_action_list_using_llm: Mock,
+        mock_render_template: Mock,
+        flow_guard_value: Any,
+        expected_flow_ids: Set[Text],
+        command_generator: LLMCommandGenerator,
+    ):
+        # Given
+        test_flows = flows_from_str(
+            """
+            flows:
+                flow_with_guard:
+                    if: slots.some_slot
+                    name: flow with guard
+                    description: description for flow a
+                    steps:
+                        - id: step_a
+                          action: action_listen
+                flow_link:
+                    if: False
+                    name: flow link
+                    description: description for flow b
+                    steps:
+                        - id: step_b
+                          action: action_listen
+                flow_regular:
+                    name: flow regular
+                    description: description for flow b
+                    steps:
+                        - id: step_c
+                          action: action_listen
+            """
+        )
+        tracker = DialogueStateTracker.from_events(
+            sender_id="test",
+            evts=[SlotSet(key="some_slot", value=flow_guard_value)],
+        )
+        mock_message = Mock()
+        mock_message.data = {TEXT: "some_message"}
+        # regardless of flow retrieval we want to make sure we are calling the
+        # prompt rendering only with startable flows.
+        config = {"flow_retrieval": {"active": False}}
+        command_generator = LLMCommandGenerator.create(
+            config=config,
+            resource=Mock(),
+            model_storage=Mock(),
+            execution_context=Mock(),
+        )
+        # the return value doesn't matter
+        mock_generate_action_list_using_llm.return_value = None
+
+        # When
+        await command_generator.predict_commands(
+            message=mock_message, flows=test_flows, tracker=tracker
+        )
+        mock_render_template.assert_called_once()
+        filtered_flows = mock_render_template.call_args.args[2]
+        all_available_flows = mock_render_template.call_args.args[3]
+
+        # Then
+        assert filtered_flows.flow_ids == expected_flow_ids
+        assert all_available_flows.flow_ids == test_flows.flow_ids
 
     @pytest.mark.parametrize(
         "llm_response, expected_commands",
@@ -955,3 +1040,38 @@ class TestLLMCommandGenerator:
         assert loaded.prompt_template.startswith(
             "Your task is to analyze the current conversation"
         )
+
+    async def test_llm_command_generator_load_prompt_from_model_storage(
+        self,
+        model_storage: ModelStorage,
+        tmp_path: Path,
+    ) -> None:
+        # Create and write prompt file.
+        prompt_dir = Path(tmp_path) / "prompt"
+        prompt_dir.mkdir(parents=True, exist_ok=True)
+        prompt_file = prompt_dir / "llm_command_generator_prompt.jinja2"
+        prompt_file.write_text("This is a custom prompt")
+
+        # Add the prompt file path to the config.
+        config = {"prompt": str(prompt_file)}
+
+        # Persist the prompt file to the model storage.
+        resource = Resource("llmcmdgen")
+        generator = LLMCommandGenerator(config, model_storage, resource)
+        generator.persist()
+
+        # Test loading the prompt from the model storage.
+        # Case 1: No prompt in the config.
+        loaded = LLMCommandGenerator.load({}, model_storage, resource, Mock())
+        assert loaded.prompt_template == "This is a custom prompt"
+        assert loaded.config["prompt"] is None
+
+        # Case 2: Specifying a invalid prompt path in the config.
+        loaded = LLMCommandGenerator.load(
+            {"prompt": "test_prompt.jinja2"},
+            model_storage,
+            resource,
+            Mock(),
+        )
+        assert loaded.prompt_template == "This is a custom prompt"
+        assert loaded.config["prompt"] == "test_prompt.jinja2"

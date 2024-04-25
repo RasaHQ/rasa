@@ -3,19 +3,23 @@ from typing import Any, Dict, Optional, Text, Type, TYPE_CHECKING, Union
 
 import rasa.shared.utils.io
 import structlog
+from rasa.shared.constants import (
+    RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
+    RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
+)
 from rasa.shared.core.events import BotUttered, UserUttered
 from rasa.shared.core.slots import Slot, BooleanSlot, CategoricalSlot
 from rasa.shared.engine.caching import get_local_cache_location
+from rasa.shared.exceptions import (
+    FileIOException,
+    FileNotFoundException,
+)
 
 if TYPE_CHECKING:
     from langchain.schema.embeddings import Embeddings
     from langchain.llms.base import BaseLLM
     from rasa.shared.core.trackers import DialogueStateTracker
 
-from rasa.shared.constants import (
-    RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
-    RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
-)
 
 structlogger = structlog.get_logger()
 
@@ -258,11 +262,15 @@ def get_prompt_template(
     Returns:
         The prompt template.
     """
-    return (
-        rasa.shared.utils.io.read_file(jinja_file_path)
-        if jinja_file_path is not None
-        else default_prompt_template
-    )
+    try:
+        if jinja_file_path is not None:
+            return rasa.shared.utils.io.read_file(jinja_file_path)
+    except (FileIOException, FileNotFoundException):
+        structlogger.warning(
+            "Failed to read custom prompt template. Using default template instead.",
+            jinja_file_path=jinja_file_path,
+        )
+    return default_prompt_template
 
 
 def allowed_values_for_slot(slot: Slot) -> Union[str, None]:

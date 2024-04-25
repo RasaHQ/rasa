@@ -69,6 +69,13 @@ class CommandGenerator:
         """
         # Determines a set of startable flows by evaluating flow guard conditions.
         startable_flows = self.get_startable_flows(flows, tracker)
+        # Get the currently active and called flow (if present).
+        # If they would be guarded, e.g. if: false, they would not be in the list
+        # of startable flows and not available inside the prompt.
+        active_flows = self.get_active_flows(flows, tracker)
+        available_flows = FlowsList.from_multiple_flows_lists(
+            startable_flows, active_flows
+        )
 
         for message in messages:
             if message.get(COMMANDS):
@@ -77,7 +84,7 @@ class CommandGenerator:
                 continue
 
             commands = await self._evaluate_and_predict(
-                message, startable_flows, tracker
+                message, available_flows, tracker
             )
             # Double check commands for guarded flows. Unlikely but the llm could
             # have predicted a command for a flow that is not in the startable
@@ -109,6 +116,22 @@ class CommandGenerator:
 
         # else evaluate it without the tracker context
         return flows.get_startable_flows({})
+
+    def get_active_flows(
+        self, flows: FlowsList, tracker: Optional[DialogueStateTracker]
+    ) -> FlowsList:
+        """Retrieve a list of currently active flows.
+
+        Args:
+            flows: Underlying flows.
+            tracker: The tracker.
+
+        Returns:
+            FlowsList: All currently active flows.
+        """
+        if not tracker:
+            return FlowsList([])
+        return tracker.get_active_flows(flows)
 
     async def _evaluate_and_predict(
         self,
