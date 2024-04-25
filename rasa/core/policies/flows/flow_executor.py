@@ -98,7 +98,13 @@ def is_condition_satisfied(
     # add slots namespace to the document
     document["slots"] = tracker.current_slot_values()
 
-    p = Predicate(render_template_variables(predicate, context))
+    rendered_condition = render_template_variables(predicate, context)
+    p = Predicate(rendered_condition)
+    structlogger.debug(
+        "flow.predicate.evaluating",
+        condition=predicate,
+        rendered_condition=rendered_condition,
+    )
     try:
         return p.evaluate(document)
     except (TypeError, Exception) as e:
@@ -137,11 +143,21 @@ def select_next_step_id(
             if is_condition_satisfied(
                 link.condition, condition_evaluation_context, tracker
             ):
+                structlogger.debug(
+                    "flow.link.if_condition_satisfied",
+                    current_id=current.id,
+                    target=link.target,
+                )
                 return link.target
 
     # evaluate else condition
     for link in next_step.links:
         if isinstance(link, ElseFlowStepLink):
+            structlogger.debug(
+                "flow.link.else_condition_satisfied",
+                current_id=current.id,
+                target=link.target,
+            )
             return link.target
 
     if next_step.links:

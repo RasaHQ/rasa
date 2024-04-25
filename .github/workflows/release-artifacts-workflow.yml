@@ -10,6 +10,16 @@ on:
         description: 'Tag version:'
         required: true
 
+# SECRETS
+# - SLACK_BOT_TOKEN: token to post to RasaHQ slack account
+# - RASA_TELEMETRY_WRITE_KEY: key to write to segment. Used to report telemetry.
+#                                 The key will be added to the distributions
+# - RASA_EXCEPTION_WRITE_KEY: key to write to sentry. Used to report exceptions.
+#                                 The key will be added to the distributions.
+#                                 Key can be found at https://sentry.io/settings/rasahq/projects/rasa-open-source/install/python/
+# - SENTRY_AUTH_TOKEN: authentication used to tell Sentry about any new releases
+#                      created at https://sentry.io/settings/account/api/auth-tokens/
+
 env:
   TARGET_IMAGE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-pro"
 

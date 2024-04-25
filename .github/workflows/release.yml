@@ -1,0 +1,66 @@
+name: Release PR Workflow
+
+on:
+  push:
+    # Pattern matched against refs/tags
+    tags:
+      - '*'
+    branches:
+        - prepare-release*
+  pull_request:
+
+env:
+  DEFAULT_PYTHON_VERSION: "3.10"
+
+permissions:
+  checks: write
+  id-token: write
+  pull-requests: write
+  contents: read
+  issues: read
+
+jobs:
+  changes:
+    name: Check for version
+    runs-on: ubuntu-22.04
+    outputs:
+      # Both of the outputs below are strings but only one exists at any given time
+      is_pre_release_version: ${{ steps.rasa_check_version_type.outputs.is_pre_release_version }}
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+
+      - name: Check if tag version is a pre release version
+        id: rasa_check_version_type
+        if: env.IS_TAG_BUILD == 'true'
+        run: |
+          # Get current tagged Rasa version
+          CURRENT_TAG=${GITHUB_REF#refs/tags/}
+          if [[ "$CURRENT_TAG" =~ ^[0-9.]+$ ]]; then
+            echo "is_pre_release_version=false" >> $GITHUB_OUTPUT
+          else
+            echo "is_pre_release_version=true" >> $GITHUB_OUTPUT
+          fi
+
+
+  changelog:
+    name: Check for changelog
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Assert release includes all changelog entries
+        # check changelog folder only when we create pull request preparing release
+        if: needs.changes.outputs.is_pre_release_version == 'false'
+        working-directory: changelog
+        run: |
+          # List all unexpected files in changelog/
+          UNEXPECTED_FILES=$(ls -A --ignore={"README.md",".gitignore","_template.md.jinja2"})
+
+          # Exit with error if found any unexpected files
+          [[ "$UNEXPECTED_FILES" ]] && \
+          echo "Found the following unexpected files in changelogs/" && \
+          echo "$UNEXPECTED_FILES" && \
+          exit 1 || \
+          echo "Release includes all changelog entries."
