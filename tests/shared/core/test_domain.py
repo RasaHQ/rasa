@@ -1861,7 +1861,7 @@ def test_invalid_domain_dir_with_duplicates_intents_slots(recwarn: WarningsRecor
 
     error_message = (
         "The following duplicated intents have been found across multiple domain files: greet \n"
-        "The following duplicated slots have been found across 555multiple domain files: mood"
+        "The following duplicated slots have been found across multiple domain files: mood"
     )
     for warning in recwarn.list:
         # filter expected warnings
