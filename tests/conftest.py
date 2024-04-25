@@ -142,6 +142,7 @@ def calm_nlu_yaml():
     with open("data/upload/calm/data/nlu.yml", "r") as f:
         return f.read()
 
+
 @pytest.fixture(scope="session")
 def domain_with_categorical_slot_path() -> Text:
     return "data/test_domains/domain_with_categorical_slot.yml"
