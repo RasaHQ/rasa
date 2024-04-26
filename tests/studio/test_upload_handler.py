@@ -630,9 +630,7 @@ def test_build_import_request(
     assert graphql_req["variables"]["input"]["nlu"] == base64_nlu
 
 
-def test_build_import_request_no_nlu(
-    calm_domain_yaml, calm_flows_yaml
-) -> None:
+def test_build_import_request_no_nlu(calm_domain_yaml, calm_flows_yaml) -> None:
     """Test the build_import_request function when there is no NLU content to upload.
 
     :return: None
@@ -851,7 +849,6 @@ def test_filter_domain(
     entities: List[Union[str, Dict[Any, Any]]],
     expected_domain: Dict[str, Any],
 ) -> None:
-
     filtered_domain = rasa.studio.upload._filter_domain(
         domain_from_files=domain_from_files, intents=intents, entities=entities
     )
@@ -875,7 +872,6 @@ def test_check_for_missing_primitives(
     found_intents: List[str],
     found_entities: List[str],
 ) -> None:
-
     with pytest.raises(RasaException) as excinfo:
         rasa.studio.upload._check_for_missing_primitives(
             intents, entities, found_intents, found_entities

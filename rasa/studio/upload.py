@@ -24,9 +24,9 @@ logger = logging.getLogger(__name__)
 
 
 def _get_selected_entities_and_intents(
-        args: argparse.Namespace,
-        intents_from_files: Set[Text],
-        entities_from_files: List[Text],
+    args: argparse.Namespace,
+    intents_from_files: Set[Text],
+    entities_from_files: List[Text],
 ) -> Tuple[List[Text], List[Text]]:
     entities = args.entities
 
@@ -71,7 +71,7 @@ def extract_values(data: Dict, keys: List[Text]) -> Dict:
 
 
 def upload_calm_assistant(
-        args: argparse.Namespace, assistant_name: str, endpoint: str
+    args: argparse.Namespace, assistant_name: str, endpoint: str
 ) -> None:
     """Uploads the CALM assistant data to Rasa Studio.
 
@@ -172,7 +172,7 @@ def upload_calm_assistant(
 
 
 def upload_nlu_assistant(
-        args: argparse.Namespace, assistant_name: str, endpoint: str
+    args: argparse.Namespace, assistant_name: str, endpoint: str
 ) -> None:
     """Uploads the classic (dm1) assistant data to Rasa Studio.
 
@@ -257,9 +257,9 @@ def make_request(endpoint: str, graphql_req: Dict) -> Tuple[str, bool]:
 
 def _response_has_errors(response: Dict) -> bool:
     return (
-            "errors" in response
-            and isinstance(response["errors"], list)
-            and len(response["errors"]) > 0
+        "errors" in response
+        and isinstance(response["errors"], list)
+        and len(response["errors"]) > 0
     )
 
 
@@ -269,7 +269,7 @@ def print_errors_from_response(response: Dict) -> None:
 
 
 def _add_missing_entities(
-        entities_from_intents: Iterable[str], entities: List[str]
+    entities_from_intents: Iterable[str], entities: List[str]
 ) -> List[Union[str, Dict]]:
     all_entities: List[Union[str, Dict]] = []
     all_entities.extend(entities)
@@ -283,11 +283,11 @@ def _add_missing_entities(
 
 
 def build_import_request(
-        assistant_name: str,
-        flows_yaml: str,
-        domain_yaml: str,
-        config_yaml: str,
-        nlu_yaml: str = "",
+    assistant_name: str,
+    flows_yaml: str,
+    domain_yaml: str,
+    config_yaml: str,
+    nlu_yaml: str = "",
 ) -> Dict:
     # b64encode expects bytes and returns bytes so we need to decode to string
     base64_domain = base64.b64encode(domain_yaml.encode("utf-8")).decode("utf-8")
@@ -315,7 +315,7 @@ def build_import_request(
 
 
 def build_request(
-        assistant_name: str, nlu_examples_yaml: str, domain_yaml: str
+    assistant_name: str, nlu_examples_yaml: str, domain_yaml: str
 ) -> Dict:
     # b64encode expects bytes and returns bytes so we need to decode to string
     base64_domain = base64.b64encode(domain_yaml.encode("utf-8")).decode("utf-8")
@@ -341,26 +341,25 @@ def build_request(
 
 
 def _filter_domain(
-        entities: List[Union[str, Dict]], intents: List[str], domain_from_files: Dict
+    entities: List[Union[str, Dict]], intents: List[str], domain_from_files: Dict
 ) -> Dict:
     """Filters the domain to only include the selected entities and intents."""
     domain = {
         "version": domain_from_files["version"],
         "intents": intents,
         "entities": _remove_not_selected_entities(
-            entities,
-            domain_from_files["entities"]
-        )
+            entities, domain_from_files["entities"]
+        ),
     }
 
     return domain
 
 
 def _check_for_missing_primitives(
-        intents: Iterable[str],
-        entities: Iterable[str],
-        intents_found: Iterable[str],
-        entities_found: Iterable[str],
+    intents: Iterable[str],
+    entities: Iterable[str],
+    intents_found: Iterable[str],
+    entities_found: Iterable[str],
 ) -> None:
     """Checks if the data contains all intents and entities.
 
@@ -388,7 +387,7 @@ def _check_for_missing_primitives(
 
 
 def _remove_not_selected_entities(
-        entities: List[Union[Text, Dict]], domain_entities: List[Union[Text, Dict]]
+    entities: List[Union[Text, Dict]], domain_entities: List[Union[Text, Dict]]
 ) -> List:
     to_remove: List[Union[Text, Dict]] = []
 
