@@ -1878,8 +1878,7 @@ def test_invalid_domain_dir_with_duplicated_responses():
     expected_event = "domain.duplicate_response"
     expected_log_level = "error"
     expected_log_message = (
-        "Please make sure this response is "
-        "only defined in one domain."
+        "Please make sure this response is " "only defined in one domain."
     )
 
     with structlog.testing.capture_logs() as caplog:
