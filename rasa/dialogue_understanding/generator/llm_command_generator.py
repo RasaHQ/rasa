@@ -160,13 +160,12 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         **kwargs: Any,
     ) -> "LLMCommandGenerator":
         """Loads trained component (see parent class for full docstring)."""
+        # load prompt template from the model storage.
+        prompt_template = cls._load_prompt_template_from_model_storage(
+            model_storage, resource
+        )
         # init base command generator
-        command_generator = cls(config, model_storage, resource)
-        # load prompt template
-        if (
-            prompt_template := cls._load_prompt_template(model_storage, resource)
-        ) is not None:
-            command_generator.prompt_template = prompt_template
+        command_generator = cls(config, model_storage, resource, prompt_template)
         # load flow retrieval if enabled
         if command_generator.enabled_flow_retrieval:
             command_generator.flow_retrieval = cls._load_flow_retrival(
@@ -175,7 +174,7 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
         return command_generator
 
     @classmethod
-    def _load_prompt_template(
+    def _load_prompt_template_from_model_storage(
         cls, model_storage: ModelStorage, resource: Resource
     ) -> Optional[Text]:
         try:
@@ -245,11 +244,16 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             # cannot do anything if there are no flows or no tracker
             return []
 
+        # If the flow retrieval is disabled, use the all the provided flows.
         filtered_flows = (
             await self.flow_retrieval.filter_flows(tracker, message, flows)
             if self.flow_retrieval is not None
             else flows
         )
+        # Filter flows based on current context (tracker and message) to identify which
+        # flows LLM can potentially start.
+        filtered_flows = tracker.get_startable_flows(filtered_flows)
+
         # add the filtered flows to the message for evaluation purposes
         message.set(
             FLOWS_IN_PROMPT, list(filtered_flows.user_flow_ids), add_to_output=True

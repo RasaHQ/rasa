@@ -1048,6 +1048,32 @@ class DialogueStateTracker:
         slots = self.slots
         return flows.get_startable_flows(context, slots)
 
+    def get_active_flows(self, flows: FlowsList) -> FlowsList:
+        """
+        Retrieve a list of all currently active flows.
+
+        Args:
+            flows: list of flows to check against for active flows.
+
+        Returns:
+            List of flows that are active within the current state of the tracker
+        """
+        from rasa.dialogue_understanding.stack.utils import top_flow_frame
+
+        active_flows = []
+
+        # get the current active flow if present
+        top_calling_frame = top_flow_frame(self.stack)
+        if top_calling_frame is not None:
+            active_flows.append(top_calling_frame.flow(flows))
+
+        # get the called flow if present
+        top_called_frame = top_flow_frame(self.stack, ignore_call_frames=False)
+        if top_called_frame is not None:
+            active_flows.append(top_called_frame.flow(flows))
+
+        return FlowsList(active_flows)
+
 
 class TrackerEventDiffEngine:
     """Computes event difference of two trackers."""
