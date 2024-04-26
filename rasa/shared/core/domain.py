@@ -310,22 +310,27 @@ class Domain:
                     other_dict = read_yaml(rasa.shared.utils.io.read_file(full_path))
                     combined = Domain.merge_domain_dicts(other_dict, combined)
 
-        all_response_duplicates = combined.get("duplicates", {}).get(KEY_RESPONSES, [])
-        if all_response_duplicates:
-            for response in all_response_duplicates:
-                structlogger.error(
-                    "domain.duplicate_response",
-                    response=response,
-                    event_info=(
-                        f"Response '{response}' is defined in multiple domains. "
-                        f"Please make sure this response is only defined in one domain."
-                    ),
+        def _check_and_handle_duplicated_responses(
+            duplicated_responses: List[str],
+        ) -> None:
+            if duplicated_responses:
+                for response in duplicated_responses:
+                    structlogger.error(
+                        "domain.duplicate_response",
+                        response=response,
+                        event_info=(
+                            f"The response '{response}' appears in multiple domains. "
+                            f"Please ensure it is defined only in one domain."
+                        ),
+                    )
+
+                print_error_and_exit(
+                    "Unable to merge domains due to duplicate responses in domain."
                 )
 
-            print_error_and_exit(
-                "Unable to merge domains due to duplicate responses in domain."
-            )
-
+        _check_and_handle_duplicated_responses(
+            combined.get("duplicates", {}).get(KEY_RESPONSES, [])
+        )
         domain = Domain.from_dict(combined)
         return domain
 
