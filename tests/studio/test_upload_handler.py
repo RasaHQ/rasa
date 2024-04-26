@@ -630,9 +630,8 @@ def test_build_import_request(
     assert graphql_req["variables"]["input"]["nlu"] == base64_nlu
 
 
-@pytest.mark.parametrize("assistant_name", ["test"])
 def test_build_import_request_no_nlu(
-    assistant_name: str, calm_domain_yaml, calm_flows_yaml
+    calm_domain_yaml, calm_flows_yaml
 ) -> None:
     """Test the build_import_request function when there is no NLU content to upload.
 
