@@ -8,6 +8,7 @@ from typing import Text, Any, Dict, Optional, List
 from rasa.core.nlg import interpolator
 from rasa.core.nlg.generator import NaturalLanguageGenerator, ResponseVariationFilter
 from rasa.shared.constants import RESPONSE_CONDITION
+from rasa.shared.core.domain import RESPONSE_KEYS_TO_INTERPOLATE
 from rasa.shared.nlu.constants import METADATA
 
 logger = logging.getLogger(__name__)
@@ -111,16 +112,8 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
             TEMPLATE_ENGINE_CONFIG_KEY, DEFAULT_TEMPLATE_ENGINE
         )
 
-        keys_to_interpolate = [
-            "text",
-            "image",
-            "custom",
-            "buttons",
-            "attachment",
-            "quick_replies",
-        ]
         if response_vars:
-            for key in keys_to_interpolate:
+            for key in RESPONSE_KEYS_TO_INTERPOLATE:
                 if key in response:
                     response[key] = interpolator.interpolate(
                         response[key],
