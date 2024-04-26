@@ -630,6 +630,28 @@ def test_build_import_request(
     assert graphql_req["variables"]["input"]["nlu"] == base64_nlu
 
 
+@pytest.mark.parametrize("assistant_name", ["test"])
+def test_build_import_request_no_nlu(
+    assistant_name: str, calm_domain_yaml, calm_flows_yaml
+) -> None:
+    """Test the build_import_request function when there is no NLU content to upload.
+
+    :return: None
+    """
+    assistant_name = "test"
+    base64_domain = base64.b64encode("domain".encode("utf-8")).decode("utf-8")
+    base64_flows = base64.b64encode("flows".encode("utf-8")).decode("utf-8")
+    base64_config = base64.b64encode("".encode("utf-8")).decode("utf-8")
+
+    graphql_req = rasa.studio.upload.build_import_request(
+        assistant_name, "flows", "domain", base64_config
+    )
+
+    assert graphql_req["variables"]["input"]["domain"] == base64_domain
+    assert graphql_req["variables"]["input"]["flows"] == base64_flows
+    assert graphql_req["variables"]["input"]["assistantName"] == assistant_name
+
+
 @pytest.mark.parametrize(
     "graphQL_req, endpoint, return_value, expected_response, expected_status",
     [
