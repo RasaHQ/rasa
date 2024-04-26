@@ -208,8 +208,16 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
     ) -> Resource:
         """Train the llm command generator. Stores all flows into a vector store."""
         # flow retrieval is populated with only user-defined flows
-        if self.flow_retrieval is not None:
-            self.flow_retrieval.populate(flows.user_flows, domain)
+        try:
+            if self.flow_retrieval is not None:
+                self.flow_retrieval.populate(flows.user_flows, domain)
+        except Exception as e:
+            structlogger.error(
+                "llm_command_generator.train.failed",
+                event_info=("Flow retrieval store isinaccessible."),
+                error=e,
+            )
+            raise
         self.persist()
         return self._resource
 
@@ -244,15 +252,20 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             # cannot do anything if there are no flows or no tracker
             return []
 
-        # If the flow retrieval is disabled, use the all the provided flows.
-        filtered_flows = (
-            await self.flow_retrieval.filter_flows(tracker, message, flows)
-            if self.flow_retrieval is not None
-            else flows
-        )
-        # Filter flows based on current context (tracker and message) to identify which
-        # flows LLM can potentially start.
-        filtered_flows = tracker.get_startable_flows(filtered_flows)
+        # retrieve flows
+        try:
+            # If the flow retrieval is disabled, use the all the provided flows.
+            filtered_flows = (
+                await self.flow_retrieval.filter_flows(tracker, message, flows)
+                if self.flow_retrieval is not None
+                else flows
+            )
+            # Filter flows based on current context (tracker and message)
+            # to identify which flows LLM can potentially start.
+            filtered_flows = tracker.get_startable_flows(filtered_flows)
+        except Exception:
+            # e.g. in case of API problems (are being logged by the flow retrieval)
+            return [ErrorCommand()]
 
         # add the filtered flows to the message for evaluation purposes
         message.set(

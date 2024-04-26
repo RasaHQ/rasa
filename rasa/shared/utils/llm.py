@@ -1,3 +1,4 @@
+import os
 import warnings
 from typing import Any, Dict, Optional, Text, Type, TYPE_CHECKING, Union
 
@@ -16,6 +17,7 @@ from rasa.shared.exceptions import (
 )
 
 if TYPE_CHECKING:
+    from langchain.chat_models import AzureChatOpenAI
     from langchain.schema.embeddings import Embeddings
     from langchain.llms.base import BaseLLM
     from rasa.shared.core.trackers import DialogueStateTracker
@@ -162,9 +164,56 @@ def ensure_cache() -> None:
     langchain.llm_cache = SQLiteCache(database_path=str(db_location))
 
 
+def preprocess_config_for_azure(config: Dict[str, Any]) -> Dict[str, Any]:
+    """Preprocesses the config for Azure deployments.
+
+    This function is used to preprocess the config for Azure deployments.
+    AzureChatOpenAI does not expect the _type key, as it is not a defined parameter
+    in the class. So we need to remove it before passing the config to the class.
+    AzureChatOpenAI expects the openai_api_type key to be set instead.
+
+    Args:
+        config: The config to preprocess.
+
+    Returns:
+        The preprocessed config.
+    """
+    config["deployment_name"] = (
+        config.get("deployment_name")
+        or config.get("deployment")
+        or config.get("engine")
+    )
+    config["openai_api_base"] = (
+        config.get("openai_api_base")
+        or config.get("api_base")
+        or os.environ.get("OPENAI_API_BASE")
+    )
+    config["openai_api_type"] = (
+        config.get("openai_api_type")
+        or config.get("api_type")
+        or os.environ.get("OPENAI_API_TYPE")
+    )
+    config["openai_api_version"] = (
+        config.get("openai_api_version")
+        or config.get("api_version")
+        or os.environ.get("OPENAI_API_VERSION")
+    )
+    for keys in [
+        "api_base",
+        "api_type",
+        "api_version",
+        "deployment",
+        "engine",
+        "_type",
+    ]:
+        config.pop(keys, None)
+
+    return config
+
+
 def llm_factory(
     custom_config: Optional[Dict[str, Any]], default_config: Dict[str, Any]
-) -> "BaseLLM":
+) -> Union["BaseLLM", "AzureChatOpenAI"]:
     """Creates an LLM from the given config.
 
     Args:
@@ -193,6 +242,18 @@ def llm_factory(
     #   Instead, please use: `from langchain.chat_models import ChatOpenAI
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=UserWarning)
+        if (
+            config.get("openai_api_type") == "azure"
+            or config.get("api_type") == "azure"
+            or os.environ.get("OPENAI_API_TYPE") == "azure"
+        ):
+            # Azure deployments are treated differently. This is done as the
+            # GPT-3.5 Turbo newer versions 0613 and 1106 only support the
+            # Chat Completions API.
+            from langchain.chat_models import AzureChatOpenAI
+
+            transformed_config = preprocess_config_for_azure(config.copy())
+            return AzureChatOpenAI(**transformed_config)
         return load_llm_from_config(config.copy())
 
 

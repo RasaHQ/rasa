@@ -12,6 +12,25 @@ logger = logging.getLogger(__name__)
 structlogger = structlog.get_logger()
 
 
+def _get_variables_to_be_rendered(
+    response: Text, values: Dict[Text, Text]
+) -> Dict[Text, Text]:
+    """Get the variables that need to be rendered in the response.
+
+    Args:
+        response: The response that should be interpolated.
+        values: A dictionary of keys and the values that those
+            keys should be replaced with.
+
+    Returns:
+        The variables that need to be rendered.
+    """
+    # The regex matches and captures all the strings that are enclosed in curly braces.
+    # The strings should not contain newlines or curly braces.
+    variables = re.findall(r"{([^\n{}]+?)}", response)
+    return {var: values[var] for var in variables if var in values}
+
+
 def interpolate_format_template(response: Text, values: Dict[Text, Text]) -> Text:
     """Interpolate values into responses with placeholders.
 
@@ -30,8 +49,9 @@ def interpolate_format_template(response: Text, values: Dict[Text, Text]) -> Tex
         The piece of text with any replacements made.
     """
     try:
+        values_to_be_rendered = _get_variables_to_be_rendered(response, values)
         text = re.sub(r"{([^\n{}]+?)}", r"{0[\1]}", response)
-        text = text.format(values)
+        text = text.format(values_to_be_rendered)
         if "0[" in text:
             # regex replaced tag but format did not replace
             # likely cause would be that tag name was enclosed

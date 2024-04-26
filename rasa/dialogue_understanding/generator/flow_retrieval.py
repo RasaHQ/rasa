@@ -1,3 +1,23 @@
+"""
+The module is primarily centered around the `FlowRetrieval` class which handles the
+initialization, configuration validation, vector store management, and flow retrieval
+logic. It integrates components for managing embeddings, vector stores, and
+flow-specific templates, facilitating semantic search functionalities.
+Key Features:
+- Configurable embedding strategies for dialogue components.
+- Seamless interaction with model storage and resource management.
+- Supports dynamic loading and persistence of vector stores.
+- Enables population of vector stores based on specified dialogue flows and domain
+information.
+- Implements flow retrieval mechanisms including semantic search based on dialogue
+context.
+Usage:
+Interaction with this class typically involves creating an instance with a
+configuration dict, model storage, and a resource reference, then using methods
+like `populate`, `persist`, or dynamic retrieval methods to manage or utilize
+flows within a conversational context.
+"""
+
 import importlib
 from typing import Dict, Text, Any, List, Optional
 
@@ -179,11 +199,23 @@ class FlowRetrieval:
         flows_to_embedd = flows.exclude_link_only_flows()
         embeddings = self._create_embedder(self.config)
         documents = self._generate_flow_documents(flows_to_embedd, domain)
-        self.vector_store = FAISS.from_documents(
-            documents=documents,
-            embedding=embeddings,
-            distance_strategy=DistanceStrategy.MAX_INNER_PRODUCT,
-        )
+        try:
+            self.vector_store = FAISS.from_documents(
+                documents=documents,
+                embedding=embeddings,
+                distance_strategy=DistanceStrategy.MAX_INNER_PRODUCT,
+            )
+        except Exception as e:
+            error_type = e.__class__.__name__
+            structlogger.error(
+                "flow_retrieval.populate_vector_store.not_populated",
+                event_info=(
+                    "Failed to populate the FAISS store with the provided flows."
+                ),
+                error_type=error_type,
+                error=e,
+            )
+            raise
 
     def _generate_flow_documents(
         self, flows: FlowsList, domain: Domain
@@ -341,27 +373,37 @@ class FlowRetrieval:
                 event_info="Vector store is not configured",
             )
             return []
-
-        documents_with_scores = await self.vector_store.asimilarity_search_with_score(
-            query, k=int(self.config[MAX_FLOWS_FROM_SEMANTIC_SEARCH_KEY])
-        )
-
-        structlogger.debug(
-            "flow_retrieval.query_vector_store.fetched",
-            event_info=(
-                f"Fetched the top {self.config[MAX_FLOWS_FROM_SEMANTIC_SEARCH_KEY]} "
-                f"similar flows from the vector store"
-            ),
-            query=query,
-            top_k=self.config[MAX_FLOWS_FROM_SEMANTIC_SEARCH_KEY],
-            results=[
-                {
-                    "flow_id": document.metadata["flow_id"],
-                    "score": score,
-                    "content": document.page_content,
-                }
-                for document, score in documents_with_scores
-            ],
-        )
-
-        return documents_with_scores
+        try:
+            documents_with_scores = (
+                await self.vector_store.asimilarity_search_with_score(
+                    query, k=int(self.config[MAX_FLOWS_FROM_SEMANTIC_SEARCH_KEY])
+                )
+            )
+            structlogger.debug(
+                "flow_retrieval.query_vector_store.fetched",
+                event_info=(
+                    f"Fetched the top {self.config[MAX_FLOWS_FROM_SEMANTIC_SEARCH_KEY]}"
+                    f"similar flows from the vector store"
+                ),
+                query=query,
+                top_k=self.config[MAX_FLOWS_FROM_SEMANTIC_SEARCH_KEY],
+                results=[
+                    {
+                        "flow_id": document.metadata["flow_id"],
+                        "score": score,
+                        "content": document.page_content,
+                    }
+                    for document, score in documents_with_scores
+                ],
+            )
+            return documents_with_scores
+        except Exception as e:
+            error_type = e.__class__.__name__
+            structlogger.error(
+                "flow_retrieval.query_vector_store.error",
+                event_info="Cannot fetch flows from vector store",
+                error_type=error_type,
+                error=e,
+                query=query,
+            )
+            raise

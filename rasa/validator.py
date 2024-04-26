@@ -31,7 +31,10 @@ from rasa.shared.core import constants
 from rasa.shared.core.constants import MAPPING_CONDITIONS, ACTIVE_LOOP
 from rasa.shared.core.events import ActionExecuted, ActiveLoop
 from rasa.shared.core.events import UserUttered
-from rasa.shared.core.domain import Domain
+from rasa.shared.core.domain import (
+    Domain,
+    RESPONSE_KEYS_TO_INTERPOLATE,
+)
 from rasa.shared.core.generator import TrainingDataGenerator
 from rasa.shared.core.constants import SlotMappingType, MAPPING_TYPE
 from rasa.shared.core.slots import ListSlot, Slot
@@ -269,6 +272,40 @@ class Validator:
 
                 stories_utterances.add(event.action_name)
         return stories_utterances
+
+    @classmethod
+    def check_for_placeholder(cls, value: Any) -> bool:
+        """Check if a value contains a placeholder."""
+        if isinstance(value, str):
+            return bool(re.search(r"{\s*}", value))
+        elif isinstance(value, dict):
+            return any(cls.check_for_placeholder(i) for i in value.values())
+        elif isinstance(value, list):
+            return any(cls.check_for_placeholder(i) for i in value)
+        return False
+
+    def check_for_no_empty_paranthesis_in_responses(self) -> bool:
+        """Checks if there are no empty parenthesis in utterances."""
+        everything_is_alright = True
+
+        for response_text, response_variations in self.domain.responses.items():
+            for response in response_variations:
+                if any(
+                    self.check_for_placeholder(response.get(key))
+                    for key in RESPONSE_KEYS_TO_INTERPOLATE
+                ):
+                    structlogger.error(
+                        "validator.empty_paranthesis_in_utterances",
+                        response=response_text,
+                        event_info=(
+                            f"The response '{response_text}' in the domain file "
+                            f"contains empty parenthesis, which is not permitted."
+                            f" Please remove the empty parenthesis."
+                        ),
+                    )
+                    everything_is_alright = False
+
+        return everything_is_alright
 
     def verify_utterances_in_dialogues(self, ignore_warnings: bool = True) -> bool:
         """Verifies usage of utterances in stories or flows.
