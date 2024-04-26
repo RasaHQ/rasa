@@ -378,6 +378,39 @@ class TestLLMCommandGenerator:
         mock_flow_retrieval_filter_flows.assert_called_once()
         assert predicted_commands == expected_commands
 
+    @patch(
+        "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.filter_flows"
+    )
+    async def test_predict_commands_and_flow_retrieval_api_error_throws_exception(
+        self,
+        mock_flow_retrieval_filter_flows: Mock,
+        command_generator: LLMCommandGenerator,
+        tracker_with_routing_slot: DialogueStateTracker,
+    ) -> None:
+        # Given
+        test_flows = flows_from_str(
+            """
+            flows:
+              some_flow:
+                description: some description
+                steps:
+                - id: first_step
+                  collect: test_slot
+            """
+        )
+        mock_message = Mock()
+        mock_message.data = {TEXT: "some_message"}
+        mock_flow_retrieval_filter_flows.side_effect = Exception("Test Exception")
+        # When
+        predicted_commands = await command_generator.predict_commands(
+            message=mock_message,
+            flows=test_flows,
+            tracker=tracker_with_routing_slot,
+        )
+        # Then
+        mock_flow_retrieval_filter_flows.assert_called_once()
+        assert predicted_commands == [ErrorCommand()]
+
     async def test_generate_action_list_calls_llm_factory_correctly(
         self,
         command_generator: LLMCommandGenerator,
@@ -928,6 +961,32 @@ class TestLLMCommandGenerator:
         # When
         generator.train(TrainingData(), flows, domain)
         # Then
+        mock_flow_search_populate.assert_called_once_with(flows, domain)
+
+    @patch(
+        "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.populate"
+    )
+    def test_train_with_flow_retrieval_enabled_and_api_error_throws_exception(
+        self,
+        mock_flow_search_populate: Mock,
+        model_storage: ModelStorage,
+        flows: FlowsList,
+        resource: Resource,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        # Given
+        generator = LLMCommandGenerator(
+            {},
+            model_storage,
+            resource,
+        )
+        domain = Mock()
+        mock_flow_search_populate.side_effect = Exception("Test Exception")
+        # When
+        with pytest.raises(Exception) as exc_info:
+            generator.train(TrainingData(), flows, domain)
+        # Then
+        assert "Test Exception" in str(exc_info.value), "Expected exception not raised"
         mock_flow_search_populate.assert_called_once_with(flows, domain)
 
     def test_load_with_flow_retrieval_disabled(
