@@ -469,8 +469,8 @@ class FlowSyncImporter(PassThroughImporter):
         flow_domain = Domain.from_dict({KEY_ACTIONS: flow_names})
 
         default_domain = flow_domain.merge(default_flows_domain)
-        # we're merging with the default domain, silence any duplicate warnings
-        # (overrides)
+        # we're merging with the default domain which contains default patterns
+        # utterances (overrides)
         domain = user_defined_domain.merge(
             default_domain, ignore_warnings_about_duplicates=True
         )

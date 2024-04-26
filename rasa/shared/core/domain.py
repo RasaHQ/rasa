@@ -333,29 +333,13 @@ class Domain:
 
         # handle duplicated responses by raising an error
         duplicated_responses = combined_duplicates.pop(KEY_RESPONSES, [])
-        cls._handle_duplicate_responses(duplicated_responses)
+        _handle_duplicate_responses(duplicated_responses)
 
         # warn about other duplicates
         warn_about_duplicates_found_during_domain_merging(combined_duplicates)
 
         domain = Domain.from_dict(combined)
         return domain
-
-    @staticmethod
-    def _handle_duplicate_responses(response_duplicates: List[Text]) -> None:
-        if response_duplicates:
-            for response in response_duplicates:
-                structlogger.error(
-                    "domain.duplicate_response",
-                    response=response,
-                    event_info=(
-                        f"Response '{response}' is defined in multiple domains. "
-                        f"Please make sure this response is only defined in one domain."
-                    ),
-                )
-            print_error_and_exit(
-                "Unable to merge domains due to duplicate responses in domain."
-            )
 
     def merge(
         self,
@@ -2050,11 +2034,6 @@ def warn_about_duplicates_found_during_domain_merging(
         KEY_ENTITIES,
     ]
 
-    # check if there are any duplicates for the domain keys
-    has_duplicates = any(duplicates.get(key) for key in domain_keys)
-    if not has_duplicates:
-        return None
-
     # Build the message if there are duplicates
     message = []
     for key in domain_keys:
@@ -2098,3 +2077,19 @@ def _validate_forms(forms: Union[Dict, List]) -> None:
                 f"the keyword `{REQUIRED_SLOTS_KEY}` is required. "
                 f"Please see {DOCS_URL_FORMS} for more information."
             )
+
+
+def _handle_duplicate_responses(response_duplicates: List[Text]) -> None:
+    if response_duplicates:
+        for response in response_duplicates:
+            structlogger.error(
+                "domain.duplicate_response",
+                response=response,
+                event_info=(
+                    f"Response '{response}' is defined in multiple domains. "
+                    f"Please make sure this response is only defined in one domain."
+                ),
+            )
+        print_error_and_exit(
+            "Unable to merge domains due to duplicate responses in domain."
+        )
