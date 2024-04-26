@@ -300,19 +300,16 @@ def build_import_request(
             "mutation UploadModernAssistant($input: UploadModernAssistantInput!)"
             "{\n  uploadModernAssistant(input: $input)\n}"
         ),
-        "variables": {"input": {}},
+        "variables": {
+            "input": {
+                "assistantName": assistant_name,
+                "domain": base64_domain,
+                "flows": base64_flows,
+                "nlu": base64_nlu,
+                "config": base64_config,
+            }
+        },
     }
-
-    if assistant_name:
-        graphql_req["variables"]["input"]["assistantName"] = assistant_name
-    if base64_domain:
-        graphql_req["variables"]["input"]["domain"] = base64_domain
-    if base64_flows:
-        graphql_req["variables"]["input"]["flows"] = base64_flows
-    if base64_nlu:
-        graphql_req["variables"]["input"]["nlu"] = base64_nlu
-    if base64_config:
-        graphql_req["variables"]["input"]["config"] = base64_config
 
     return graphql_req
 
