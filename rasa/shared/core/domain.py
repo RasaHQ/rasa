@@ -312,34 +312,63 @@ class Domain:
     def from_directory(cls, path: Text) -> "Domain":
         """Loads and merges multiple domain files recursively from a directory tree."""
         combined: Dict[Text, Any] = {}
-        combined_duplicates: Dict[Text, List[Text]] = collections.defaultdict(list)
+        duplicates: List[Dict[Text, List[Text]]] = []
 
         for root, _, files in os.walk(path, followlinks=True):
             for file in files:
+
                 full_path = os.path.join(root, file)
-                if Domain.is_domain_file(full_path):
+                if not Domain.is_domain_file(full_path):
+                    continue
 
-                    # does the validation here only
-                    _ = Domain.from_file(full_path)
+                # does the validation here only
+                _ = Domain.from_file(full_path)
 
-                    other_dict = read_yaml(rasa.shared.utils.io.read_file(full_path))
-                    combined = Domain.merge_domain_dicts(other_dict, combined)
+                other_dict = read_yaml(rasa.shared.utils.io.read_file(full_path))
+                combined = Domain.merge_domain_dicts(other_dict, combined)
+                duplicates.append(combined.pop("duplicates", {}))
 
-                    duplicates = combined.pop("duplicates", {})
-                    duplicates = rasa.shared.utils.common.clean_duplicates(duplicates)
-
-                    for key in duplicates.keys():
-                        combined_duplicates[key].extend(duplicates[key])
-
-        # handle duplicated responses by raising an error
-        duplicated_responses = combined_duplicates.pop(KEY_RESPONSES, [])
-        _handle_duplicate_responses(duplicated_responses)
-
-        # warn about other duplicates
-        warn_about_duplicates_found_during_domain_merging(combined_duplicates)
+        Domain._handle_duplicates_from_multiple_files(duplicates)
 
         domain = Domain.from_dict(combined)
         return domain
+
+    @staticmethod
+    def _handle_duplicates_from_multiple_files(
+            duplicates_from_multiple_files: List[Dict[Text, List[Text]]]
+    ) -> None:
+        combined_duplicates: Dict[Text, List[Text]] = collections.defaultdict(list)
+
+        for duplicates in duplicates_from_multiple_files:
+            duplicates = rasa.shared.utils.common.clean_duplicates(duplicates)
+
+            for key in duplicates.keys():
+                combined_duplicates[key].extend(duplicates[key])
+
+            # handle duplicated responses by raising an error
+            duplicated_responses = combined_duplicates.pop(KEY_RESPONSES, [])
+            Domain._handle_duplicate_responses(duplicated_responses)
+
+            # warn about other duplicates
+            warn_about_duplicates_found_during_domain_merging(combined_duplicates)
+
+    @staticmethod
+    def _handle_duplicate_responses(
+            response_duplicates: List[Text]
+    ) -> None:
+        if response_duplicates:
+            for response in response_duplicates:
+                structlogger.error(
+                    "domain.duplicate_response",
+                    response=response,
+                    event_info=(
+                        f"Response '{response}' is defined in multiple domains. "
+                        f"Please make sure this response is only defined in one domain."
+                    ),
+                )
+            print_error_and_exit(
+                "Unable to merge domains due to duplicate responses in domain."
+            )
 
     def merge(
         self,
@@ -2077,19 +2106,3 @@ def _validate_forms(forms: Union[Dict, List]) -> None:
                 f"the keyword `{REQUIRED_SLOTS_KEY}` is required. "
                 f"Please see {DOCS_URL_FORMS} for more information."
             )
-
-
-def _handle_duplicate_responses(response_duplicates: List[Text]) -> None:
-    if response_duplicates:
-        for response in response_duplicates:
-            structlogger.error(
-                "domain.duplicate_response",
-                response=response,
-                event_info=(
-                    f"Response '{response}' is defined in multiple domains. "
-                    f"Please make sure this response is only defined in one domain."
-                ),
-            )
-        print_error_and_exit(
-            "Unable to merge domains due to duplicate responses in domain."
-        )
