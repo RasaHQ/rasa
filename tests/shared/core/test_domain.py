@@ -1877,7 +1877,9 @@ def test_invalid_domain_dir_with_duplicated_responses():
     """Exits if the domain has duplicated responses in domain files."""
     expected_event = "domain.duplicate_response"
     expected_log_level = "error"
-    expected_log_message = "Please ensure it is defined only in one domain."
+    expected_log_message = (
+        "Please make sure this response is " "only defined in one domain."
+    )
 
     with structlog.testing.capture_logs() as caplog:
         with pytest.raises(SystemExit):

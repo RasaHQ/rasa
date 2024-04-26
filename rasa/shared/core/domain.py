@@ -261,10 +261,6 @@ class Domain:
         Returns:
             The instantiated `Domain` object.
         """
-        duplicates = data.pop("duplicates", None)
-        if duplicates:
-            warn_about_duplicates_found_during_domain_merging(duplicates)
-
         responses = data.get(KEY_RESPONSES, {})
 
         domain_slots = data.get(KEY_SLOTS, {})
@@ -316,42 +312,56 @@ class Domain:
     def from_directory(cls, path: Text) -> "Domain":
         """Loads and merges multiple domain files recursively from a directory tree."""
         combined: Dict[Text, Any] = {}
+        combined_duplicates: Dict[Text, List[Text]] = collections.defaultdict(list)
+
         for root, _, files in os.walk(path, followlinks=True):
             for file in files:
                 full_path = os.path.join(root, file)
                 if Domain.is_domain_file(full_path):
-                    _ = Domain.from_file(full_path)  # does the validation here only
+
+                    # does the validation here only
+                    _ = Domain.from_file(full_path)
+
                     other_dict = read_yaml(rasa.shared.utils.io.read_file(full_path))
                     combined = Domain.merge_domain_dicts(other_dict, combined)
 
-        def _check_and_handle_duplicated_responses(
-            duplicated_responses: List[str],
-        ) -> None:
-            if duplicated_responses:
-                for response in duplicated_responses:
-                    structlogger.error(
-                        "domain.duplicate_response",
-                        response=response,
-                        event_info=(
-                            f"The response '{response}' appears in multiple domains. "
-                            f"Please ensure it is defined only in one domain."
-                        ),
-                    )
+                    duplicates = combined.pop("duplicates", {})
+                    duplicates = rasa.shared.utils.common.clean_duplicates(duplicates)
 
-                print_error_and_exit(
-                    "Unable to merge domains due to duplicate responses in domain."
-                )
+                    for key in duplicates.keys():
+                        combined_duplicates[key].extend(duplicates[key])
 
-        _check_and_handle_duplicated_responses(
-            combined.get("duplicates", {}).get(KEY_RESPONSES, [])
-        )
+        # handle duplicated responses by raising an error
+        duplicated_responses = combined_duplicates.pop(KEY_RESPONSES, [])
+        cls._handle_duplicate_responses(duplicated_responses)
+
+        # warn about other duplicates
+        warn_about_duplicates_found_during_domain_merging(combined_duplicates)
+
         domain = Domain.from_dict(combined)
         return domain
+
+    @staticmethod
+    def _handle_duplicate_responses(response_duplicates: List[Text]) -> None:
+        if response_duplicates:
+            for response in response_duplicates:
+                structlogger.error(
+                    "domain.duplicate_response",
+                    response=response,
+                    event_info=(
+                        f"Response '{response}' is defined in multiple domains. "
+                        f"Please make sure this response is only defined in one domain."
+                    ),
+                )
+            print_error_and_exit(
+                "Unable to merge domains due to duplicate responses in domain."
+            )
 
     def merge(
         self,
         domain: Optional["Domain"],
         override: bool = False,
+        ignore_warnings_about_duplicates: bool = False,
     ) -> "Domain":
         """Merges this domain dict with another one, combining their attributes.
 
@@ -369,11 +379,16 @@ class Domain:
         if self.is_empty():
             return domain
 
-        merged_dict = self.__class__.merge_domain_dicts(
+        combined = self.__class__.merge_domain_dicts(
             domain.as_dict(), self.as_dict(), override
         )
 
-        return Domain.from_dict(merged_dict)
+        duplicates = combined.pop("duplicates", {})
+
+        if not ignore_warnings_about_duplicates:
+            warn_about_duplicates_found_during_domain_merging(duplicates)
+
+        return Domain.from_dict(combined)
 
     @staticmethod
     def merge_domain_dicts(
@@ -434,15 +449,7 @@ class Domain:
             )
 
         if duplicates:
-            duplicates = rasa.shared.utils.common.clean_duplicates(duplicates)
-            if "duplicates" not in combined:
-                combined["duplicates"] = duplicates
-                return combined
-            for key in duplicates.keys():
-                if key in combined["duplicates"]:
-                    combined["duplicates"][key].extend(duplicates[key])
-                else:
-                    combined["duplicates"][key] = duplicates[key]
+            combined.update({"duplicates": duplicates})
 
         return combined
 
@@ -2030,11 +2037,10 @@ class Domain:
 
 
 def warn_about_duplicates_found_during_domain_merging(
-    duplicates: Dict[Text, List[Text]]
+    duplicates: Dict[str, List[str]]
 ) -> None:
-    """Emits warning about found duplicates while loading multiple domain paths."""
-    message = ""
-    for key in [
+    """Emits a warning about found duplicates while loading multiple domain paths."""
+    domain_keys = [
         KEY_INTENTS,
         KEY_FORMS,
         KEY_ACTIONS,
@@ -2042,21 +2048,31 @@ def warn_about_duplicates_found_during_domain_merging(
         KEY_RESPONSES,
         KEY_SLOTS,
         KEY_ENTITIES,
-    ]:
+    ]
+
+    # check if there are any duplicates for the domain keys
+    has_duplicates = any(duplicates.get(key) for key in domain_keys)
+    if not has_duplicates:
+        return None
+
+    # Build the message if there are duplicates
+    message = []
+    for key in domain_keys:
         duplicates_per_key = duplicates.get(key)
         if duplicates_per_key:
-            if message:
-                message += " \n"
-
-            duplicates_per_key_str = ", ".join(duplicates_per_key)
-            message += (
+            message.append(
                 f"The following duplicated {key} have been found "
-                f"across multiple domain files: {duplicates_per_key_str}"
+                f"across multiple domain files: "
+                f"{', '.join(duplicates_per_key)}"
             )
 
-    structlogger.warning(
-        "domain.duplicates_found", event_info=message, docs=DOCS_URL_DOMAINS
-    )
+    # send the warning with the constructed message
+    if message:
+        full_message = " \n".join(message)
+        structlogger.warning(
+            "domain.duplicates_found", event_info=full_message, docs=DOCS_URL_DOMAINS
+        )
+
     return None
 
 
