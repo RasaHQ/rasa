@@ -7,7 +7,6 @@ from rasa.cli.arguments.default_arguments import (
     add_data_param,
     add_domain_param,
     add_endpoint_param,
-    add_nlu_data_param
 )
 from rasa.studio.upload import handle_upload
 
@@ -52,7 +51,6 @@ def set_upload_arguments(parser: argparse.ArgumentParser) -> None:
     add_data_param(parser, data_type="training")
     add_domain_param(parser)
     add_flows_param(parser)
-    add_nlu_data_param(parser, help_text="Path to the NLU data file.")
     add_config_param(parser)
     add_endpoint_param(parser, help_text="Path to the endpoints file.")
 
