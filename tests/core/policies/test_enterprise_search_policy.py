@@ -887,3 +887,52 @@ Sources:
 [4] https://www.example.com/{fourth_citation}"""  # noqa: E501
         ).strip()
     )
+
+
+def test_enterprise_search_policy_post_process_citations_with_numbers_in_llm_answer(
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    vector_store: InformationRetrieval,
+) -> None:
+    """Test that numbers in the llm answer are not matched as citation indices."""
+    number = "136"
+    llm_answer = f"""
+You can find directions to campus by following PA Route {number} West, turning left onto College Street, then left at the next stoplight onto Wheeling Street. Continue straight down the hill to the Burnett Center on your right, then turn right onto Grant Street. The Taylor lot will be on your left [1].
+Sources:
+[1] docs/txt/52a4386a.txt""".strip()  # noqa: E501
+
+    llm_answer = "\n".join([line.rstrip() for line in llm_answer.splitlines()])
+
+    processed_answer = EnterpriseSearchPolicy.post_process_citations(llm_answer)
+
+    assert processed_answer.strip() == llm_answer
+
+
+def test_enterprise_search_policy_post_process_citations_numbers_identical_to_source_indices(  # noqa: E501
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    vector_store: InformationRetrieval,
+) -> None:
+    """Test that numbers in the llm answer are not matched as citation indices.
+
+    The number in the llm answer is identical to the source index.
+    """
+    number = "2"
+    llm_answer = f"""
+You can find directions to campus by following PA Route {number} West, turning left onto College Street, then left at the next stoplight onto Wheeling Street. Continue straight down the hill to the Burnett Center on your right, then turn right onto Grant Street. The Taylor lot will be on your left [2].
+
+Sources:
+
+[2] docs/txt/52a4386a.txt""".strip()  # noqa: E501
+
+    llm_answer = "\n".join([line.rstrip() for line in llm_answer.splitlines()])
+
+    processed_answer = EnterpriseSearchPolicy.post_process_citations(llm_answer)
+
+    assert (
+        processed_answer.strip()
+        == f"""
+You can find directions to campus by following PA Route {number} West, turning left onto College Street, then left at the next stoplight onto Wheeling Street. Continue straight down the hill to the Burnett Center on your right, then turn right onto Grant Street. The Taylor lot will be on your left [1].
+Sources:
+[1] docs/txt/52a4386a.txt""".strip()  # noqa: E501
+    )

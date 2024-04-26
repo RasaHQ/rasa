@@ -638,6 +638,10 @@ class EnterpriseSearchPolicy(Policy):
         Returns:
             The post-processed LLM answer.
         """
+        logger.debug(
+            "enterprise_search_policy.post_process_citations", llm_answer=llm_answer
+        )
+
         # Split llm_answer into answer and citations
         try:
             answer, citations = llm_answer.rsplit("Sources:", 1)
@@ -655,14 +659,13 @@ class EnterpriseSearchPolicy(Policy):
         # Map old source references to the correct enumeration
         renumber_mapping = {num: idx + 1 for idx, num in enumerate(old_source_indices)}
 
+        # remove whitespace from original source citations in answer
+        for match in matches:
+            answer = answer.replace(f"[{match}]", f"[{match.replace(' ', '')}]")
+
         new_answer = []
         for word in answer.split():
-            matches = (
-                re.findall(pattern, word)
-                or re.findall(r"\[\d+", word)
-                or re.findall(r"\d+\]", word)
-                or re.findall(r"\d+", word)
-            )
+            matches = re.findall(pattern, word)
             if matches:
                 for match in matches:
                     if "," in match:
@@ -670,14 +673,22 @@ class EnterpriseSearchPolicy(Policy):
                             int(num.strip()) for num in match.split(",") if num
                         ]
                         new_indices = [
-                            renumber_mapping[old_index] for old_index in old_indices
+                            renumber_mapping[old_index]
+                            for old_index in old_indices
+                            if old_index in renumber_mapping
                         ]
+                        if not new_indices:
+                            continue
+
                         word = word.replace(
                             match, f"{', '.join(map(str, new_indices))}"
                         )
                     else:
                         old_index = int(match.strip("[].,:;?!"))
-                        new_index = renumber_mapping[old_index]
+                        new_index = renumber_mapping.get(old_index)
+                        if not new_index:
+                            continue
+
                         word = word.replace(str(old_index), str(new_index))
             new_answer.append(word)
 
