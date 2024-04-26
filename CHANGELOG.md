@@ -10,6 +10,25 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.8.3] - 2024-04-26
+                       
+Rasa Pro 3.8.3 (2024-04-26)                            
+### Improvements
+- [#538](https://github.com/rasahq/rasa/issues/538): * Throw validation error and exit when duplicate responses are found across domains. This is a breaking change, as it will cause training to fail if duplicate responses are found. If you have duplicate responses in your training data, you will need to remove them before training.
+  * Update domain importing to ignore the warnings about duplicates when merging with the default flow domain
+
+### Bugfixes
+- [#515](https://github.com/rasahq/rasa/issues/515): Use AzureChatOpenAI class instead of AzureOpenAI class to instantiate openai models deployed in Azure. This fixes the usage of gpt-3.5-turbo model in Azure.
+- [#518](https://github.com/rasahq/rasa/issues/518): Fixes validation to catch empty placeholders in response that dumps entire context.
+- [#532](https://github.com/rasahq/rasa/issues/532): Fix security vulnerabilities by updating poetry environment:
+  fonttools, CVE-2023-45139, from 4.40.0 to 4.43.0
+  aiohttp, CVE-2024-27306, from 3.9.3 to 3.9.4
+  dnspython, CVE-2023-29483, from 2.3.0 to 2.6.1
+  pymongo, CVE-2024-21506, from 4.3.3 to 4.6.3
+- [#540](https://github.com/rasahq/rasa/issues/540): Numbers that are part of the body of the LLM answer in EnterpriseSearch should not be matched as citation references in the postprocessing method.
+- [#552](https://github.com/rasahq/rasa/issues/552): Errors from the Flow Retrieval API are now both logged and thrown. When such errors occur, an ErrorCommand is emitted by the Command Generator.
+
+
 ## [3.8.2] - 2024-04-25
                        
 Rasa Pro 3.8.2 (2024-04-25)                            
