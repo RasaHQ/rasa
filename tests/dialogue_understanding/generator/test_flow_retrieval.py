@@ -312,9 +312,8 @@ class TestFlowRetrieval:
     @patch("langchain.vectorstores.faiss.FAISS.asimilarity_search_with_score")
     async def test_query_vector_store(
         self,
-        mock_asimilarity_similarity_search_with_score: Mock,
+        mock_asimilarity_search_with_score: Mock,
         flow_search: FlowRetrieval,
-        startable_flows_documents: List[Document],
     ):
         # Given
         query = "test query"
@@ -323,9 +322,25 @@ class TestFlowRetrieval:
         # When
         await flow_search._query_vector_store(query)
         # Then
-        mock_asimilarity_similarity_search_with_score.assert_called_once_with(
-            query, k=k
-        )
+        mock_asimilarity_search_with_score.assert_called_once_with(query, k=k)
+
+    @patch("langchain.vectorstores.faiss.FAISS.asimilarity_search_with_score")
+    async def test_query_vector_store_throws_exception(
+        self,
+        mock_asimilarity_search_with_score: Mock,
+        flow_search: FlowRetrieval,
+    ):
+        # Given
+        query = "test query"
+        flow_search.vector_store = FAISS(Mock(), Mock(), Mock(), Mock())
+        k = flow_search.config[MAX_FLOWS_FROM_SEMANTIC_SEARCH_KEY]
+        mock_asimilarity_search_with_score.side_effect = Exception("Test Exception")
+        # When
+        with pytest.raises(Exception) as exc_info:
+            await flow_search._query_vector_store(query)
+        # Then
+        assert "Test Exception" in str(exc_info.value), "Expected exception not raised"
+        mock_asimilarity_search_with_score.assert_called_once_with(query, k=k)
 
     async def test_query_vector_store_when_its_not_initialized(
         self,
