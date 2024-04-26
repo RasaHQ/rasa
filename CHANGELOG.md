@@ -10,6 +10,15 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.8.2] - 2024-04-25
+                       
+Rasa Pro 3.8.2 (2024-04-25)                            
+### Bugfixes
+- [#1013](https://github.com/rasahq/rasa/issues/1013): Add the currently active flow as well as the called flow (if present) to the 
+  list of available flows for the `LLMCommandGenerator`.
+- [#533](https://github.com/rasahq/rasa/issues/533): Fix custom prompt not read from the model resource path for LLMCommandGenerator.
+
+
 ## [3.8.1] - 2024-04-17
                        
 Rasa Pro 3.8.1 (2024-04-17)                            

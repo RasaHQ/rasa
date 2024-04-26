@@ -1,7 +1,7 @@
 import textwrap
 import warnings
 from pathlib import Path
-from typing import Any, Dict, List, Text
+from typing import Any, Dict, List, Text, Union
 
 import pytest
 import structlog
@@ -1815,3 +1815,180 @@ def test_verify_flow_steps_against_domain_disallows_collect_step_with_action_utt
             caplog, expected_event, expected_log_level, [expected_log_message]
         )
         assert len(logs) == 1
+
+
+@pytest.mark.parametrize(
+    "response, result",
+    [
+        ("Hello {name}", False),
+        ("Hello {}", True),
+        ("Hello { }", True),
+        ("Hello {    }", True),
+        ("Hello { name }", False),
+        (["Hello {name}", "{}"], True),
+        ({"key": "Hello {name}"}, False),
+        ({"key": "{}"}, True),
+        ({"key": ["Hello {name}", "{}"]}, True),
+        ({"key": {"key": "Hello {name}"}}, False),
+        ({"key": {"key": "{}"}}, True),
+        ({"key": {"key": ["Hello {name}", "{}"]}}, True),
+        (
+            [{"key": {"key": ["Hello {name}", "{}"], "key2": ["Hello {name}", "{}"]}}],
+            True,
+        ),
+    ],
+)
+def test_validator_check_for_placeholder(
+    response: Union[str, List, Dict], result: bool
+) -> None:
+    assert Validator.check_for_placeholder(response) is result
+
+
+def test_validator_check_for_empty_paranthesis_in_text_response() -> None:
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        responses:
+            utter_greet:
+            - text: "Hey! How are you? {{name}}{{}}"
+            utter_did_that_help:
+            - text: "Did that help you?"
+        """
+    )
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), None, None)
+    assert validator.check_for_no_empty_paranthesis_in_responses() is False
+
+
+def test_validator_check_for_empty_paranthesis_in_image_response() -> None:
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        responses:
+            utter_cheer_up:
+            - text: "Here is something to cheer you up:"
+              image: "https://i.imgur.com/nGF1K8f.jpg{{}}"
+        """
+    )
+
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), None, None)
+    assert validator.check_for_no_empty_paranthesis_in_responses() is False
+
+
+def test_validator_check_for_empty_paranthesis_in_button_response() -> None:
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        responses:
+            utter_ask_confirm:
+            - buttons:
+                - payload: "yes"
+                  title: Yes
+                - payload: "{{}}"
+                  title: No
+              text: "Do you confirm?"
+        """
+    )
+
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), None, None)
+    assert validator.check_for_no_empty_paranthesis_in_responses() is False
+
+
+def test_validator_check_for_empty_paranthesis_in_text_button_response() -> None:
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        responses:
+            utter_ask_confirm:
+            - buttons:
+                - payload: "yes"
+                  title: Yes
+                - payload: "no"
+                  title: "{{}}"
+              text: "Do you confirm?"
+        """
+    )
+
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), None, None)
+    assert validator.check_for_no_empty_paranthesis_in_responses() is False
+
+
+def test_validator_check_for_empty_paranthesis_in_custom_response() -> None:
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        responses:
+            utter_ask_custom:
+            - custom:
+                field: "slot_value"
+                properties:
+                    field_prefixed: "test {{}}"
+                bool_field: true
+        """
+    )
+
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), None, None)
+    assert validator.check_for_no_empty_paranthesis_in_responses() is False
+
+
+def test_validator_check_for_empty_paranthesis_multiple_errors() -> None:
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        responses:
+            utter_greet:
+            - text: "Hey! How are you? {{}}"
+            utter_did_that_help:
+            - text: "Did that help you?"
+            utter_cheer_up:
+            - text: "Here is something to cheer you up:"
+              image: "https://i.imgur.com/nGF1K8f.jpg{{}}"
+            utter_ask_confirm:
+            - buttons:
+                - payload: "yes"
+                  title: Yes
+                - payload: "{{}}"
+                  title: No
+              text: "Do you confirm? {{}}"
+            utter_ask_custom:
+            - custom:
+                field: "slot_value"
+                properties:
+                    field_prefixed: "test {{}}"
+                bool_field: true
+        """
+    )
+
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), None, None)
+    assert validator.check_for_no_empty_paranthesis_in_responses() is False
+
+
+def test_validator_check_for_empty_paranthesis_all_good() -> None:
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        responses:
+            utter_greet:
+            - text: "Hey! How are you?"
+            utter_did_that_help:
+            - text: "Did that help you?"
+            utter_cheer_up:
+            - text: "Here is something to cheer you up:"
+              image: "https://i.imgur.com/nGF1K8f.jpg"
+            utter_ask_confirm:
+            - buttons:
+                - payload: "yes"
+                  title: Yes
+                - payload: "no"
+                  title: No
+              text: "Do you confirm?"
+            utter_ask_custom:
+            - custom:
+                field: "slot_value"
+                properties:
+                    field_prefixed: "test"
+                bool_field: true
+        """
+    )
+
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), None, None)
+    assert validator.check_for_no_empty_paranthesis_in_responses() is True

@@ -103,7 +103,87 @@ async def test_command_processor_checks_flow_guards(
     mock_check_commands_against_startable_flows.assert_called_once()
 
 
-async def test_process_does_not_predict_commands_if_commands_already_present():
+@patch(
+    "rasa.dialogue_understanding.generator.command_generator"
+    ".CommandGenerator._check_commands_against_startable_flows"
+)
+@patch(
+    "rasa.dialogue_understanding.generator.command_generator"
+    ".CommandGenerator.get_startable_flows"
+)
+@patch(
+    "rasa.dialogue_understanding.generator.command_generator"
+    ".CommandGenerator.get_active_flows"
+)
+@patch(
+    "rasa.dialogue_understanding.generator.command_generator"
+    ".CommandGenerator._evaluate_and_predict"
+)
+async def test_command_generator_adds_active_flows_to_avaialble_flows(
+    mock_evaluate_and_predict: Mock,
+    mock_get_active_flows: Mock,
+    mock_get_startable_flows: Mock,
+    mock_check_commands_against_startable_flows: Mock,
+):
+    """Test that the command processor checks flow guards."""
+    # Given
+    generator = WackyCommandGenerator({})
+    messages = [Message.build("What is your purpose?")]
+
+    mock_tracker = Mock()
+
+    mock_get_active_flows.return_value = FlowsList(
+        [Flow("active_flow"), Flow("called_flow")]
+    )
+    mock_get_startable_flows.return_value = FlowsList(
+        [Flow("startable_flow_1"), Flow("startable_flow_2")]
+    )
+
+    # When
+    await generator.process(
+        messages,
+        FlowsList(
+            [
+                Flow("other_flow_1"),
+                Flow("other_flow_2"),
+                Flow("active_flow"),
+                Flow("called_flow"),
+                Flow("startable_flow_1"),
+                Flow("startable_flow_2"),
+            ]
+        ),
+        mock_tracker,
+    )
+    # Then
+    mock_evaluate_and_predict.assert_called_once_with(
+        messages[0],
+        FlowsList(
+            [
+                Flow("startable_flow_1"),
+                Flow("startable_flow_2"),
+                Flow("active_flow"),
+                Flow("called_flow"),
+            ]
+        ),
+        mock_tracker,
+    )
+    mock_get_startable_flows.assert_called_once()
+    mock_get_active_flows.assert_called_once()
+    mock_check_commands_against_startable_flows.assert_called_once()
+
+
+@patch(
+    "rasa.dialogue_understanding.generator.command_generator"
+    ".CommandGenerator.get_active_flows"
+)
+@patch(
+    "rasa.dialogue_understanding.generator.command_generator"
+    ".CommandGenerator.get_startable_flows"
+)
+async def test_process_does_not_predict_commands_if_commands_already_present(
+    mock_get_active_flows: Mock,
+    mock_startable_flows: Mock,
+):
     """Test that predict_commands does not overwrite commands
     if commands are already set on message."""
     command_generator = CommandGenerator({})
@@ -119,9 +199,14 @@ async def test_process_does_not_predict_commands_if_commands_already_present():
     mock_tracker = Mock()
     mock_tracker.get_slot = Mock(return_value=[])
 
+    mock_get_active_flows.return_value = FlowsList([])
+    mock_startable_flows.return_value = FlowsList([Flow("startable_flow")])
+
     returned_message = (
         await command_generator.process(
-            [test_message], flows=Mock(), tracker=mock_tracker
+            [test_message],
+            flows=FlowsList([Flow("startable_flow")]),
+            tracker=mock_tracker,
         )
     )[0]
 

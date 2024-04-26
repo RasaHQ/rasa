@@ -2,6 +2,7 @@ from typing import Text, Any, Dict, Optional
 
 import pytest
 from langchain import OpenAI
+from langchain.chat_models import AzureChatOpenAI
 from langchain.embeddings import OpenAIEmbeddings
 from pathlib import Path
 from pytest import MonkeyPatch
@@ -315,6 +316,221 @@ def test_allowed_values_for_slot(
     allowed_values = allowed_values_for_slot(input_slot)
     # Then
     assert allowed_values == expected_slot_values
+
+
+def test_llm_factory_azure_openai_models_no_param_transformation(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "test")
+
+    llm = llm_factory(
+        {
+            "openai_api_type": "azure",
+            "openai_api_base": "http://test",
+            "openai_api_version": "test_dev",
+            "deployment_name": "test",
+        },
+        {"_type": "openai"},
+    )
+    assert isinstance(llm, AzureChatOpenAI)
+    assert llm.openai_api_type == "azure"
+    assert llm.openai_api_base == "http://test"
+    assert llm.openai_api_version == "test_dev"
+    assert llm.deployment_name == "test"
+
+
+def test_llm_factory_azure_openai_models_with_api_type(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "test")
+
+    llm = llm_factory(
+        {
+            "api_type": "azure",
+            "openai_api_base": "http://test",
+            "openai_api_version": "test_dev",
+            "deployment_name": "test",
+        },
+        {"_type": "openai"},
+    )
+    assert isinstance(llm, AzureChatOpenAI)
+    assert llm.openai_api_type == "azure"
+    assert llm.openai_api_base == "http://test"
+    assert llm.openai_api_version == "test_dev"
+    assert llm.deployment_name == "test"
+    assert not hasattr(llm, "api_type")
+
+
+def test_llm_factory_azure_openai_models_with_api_version(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "test")
+
+    llm = llm_factory(
+        {
+            "api_version": "test_dev",
+            "openai_api_type": "azure",
+            "openai_api_base": "http://test",
+            "deployment_name": "test",
+        },
+        {"_type": "openai"},
+    )
+    assert isinstance(llm, AzureChatOpenAI)
+    assert llm.openai_api_type == "azure"
+    assert llm.openai_api_base == "http://test"
+    assert llm.openai_api_version == "test_dev"
+    assert llm.deployment_name == "test"
+    assert not hasattr(llm, "api_version")
+
+
+def test_llm_factory_azure_openai_models_with_api_base(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "test")
+
+    llm = llm_factory(
+        {
+            "openai_api_type": "azure",
+            "api_base": "http://test",
+            "openai_api_version": "test_dev",
+            "engine": "test",
+        },
+        {"_type": "openai"},
+    )
+    assert isinstance(llm, AzureChatOpenAI)
+    assert llm.openai_api_type == "azure"
+    assert llm.openai_api_base == "http://test"
+    assert llm.openai_api_version == "test_dev"
+    assert llm.deployment_name == "test"
+    assert not hasattr(llm, "api_base")
+
+
+def test_llm_factory_azure_openai_models_with_deployment(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "test")
+
+    llm = llm_factory(
+        {
+            "openai_api_type": "azure",
+            "openai_api_base": "http://test",
+            "openai_api_version": "test_dev",
+            "deployment": "test",
+        },
+        {"_type": "openai"},
+    )
+    assert isinstance(llm, AzureChatOpenAI)
+    assert llm.openai_api_type == "azure"
+    assert llm.openai_api_base == "http://test"
+    assert llm.openai_api_version == "test_dev"
+    assert llm.deployment_name == "test"
+    assert not hasattr(llm, "deployment")
+
+
+def test_llm_factory_azure_openai_models_with_engine(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "test")
+
+    llm = llm_factory(
+        {
+            "openai_api_type": "azure",
+            "openai_api_base": "http://test",
+            "openai_api_version": "test_dev",
+            "engine": "test",
+        },
+        {"_type": "openai"},
+    )
+    assert isinstance(llm, AzureChatOpenAI)
+    assert llm.openai_api_type == "azure"
+    assert llm.openai_api_base == "http://test"
+    assert llm.openai_api_version == "test_dev"
+    assert llm.deployment_name == "test"
+    assert not hasattr(llm, "engine")
+
+
+def test_llm_factory_azure_openai_models_with_api_base_in_env(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "test")
+    monkeypatch.setenv("OPENAI_API_BASE", "http://test")
+
+    llm = llm_factory(
+        {
+            "openai_api_type": "azure",
+            "openai_api_version": "test_dev",
+            "deployment_name": "test",
+        },
+        {"_type": "openai"},
+    )
+    assert isinstance(llm, AzureChatOpenAI)
+    assert llm.openai_api_type == "azure"
+    assert llm.openai_api_version == "test_dev"
+    assert llm.deployment_name == "test"
+    assert llm.openai_api_base == "http://test"
+
+
+def test_llm_factory_azure_openai_models_with_api_version_in_env(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "test")
+    monkeypatch.setenv("OPENAI_API_VERSION", "test_dev")
+
+    llm = llm_factory(
+        {
+            "openai_api_type": "azure",
+            "openai_api_base": "http://test",
+            "deployment_name": "test",
+        },
+        {"_type": "openai"},
+    )
+    assert isinstance(llm, AzureChatOpenAI)
+    assert llm.openai_api_base == "http://test"
+    assert llm.openai_api_type == "azure"
+    assert llm.deployment_name == "test"
+    assert llm.openai_api_version == "test_dev"
+
+
+def test_llm_factory_azure_openai_models_with_api_type_in_env(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "test")
+    monkeypatch.setenv("OPENAI_API_TYPE", "azure")
+
+    llm = llm_factory(
+        {
+            "openai_api_base": "http://test",
+            "openai_api_version": "test_dev",
+            "deployment_name": "test",
+        },
+        {"_type": "openai"},
+    )
+    assert isinstance(llm, AzureChatOpenAI)
+    assert llm.openai_api_base == "http://test"
+    assert llm.deployment_name == "test"
+    assert llm.openai_api_version == "test_dev"
+    assert llm.openai_api_type == "azure"
+
+
+def test_llm_factory_azure_openai_models_with_many_env_set(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "test")
+    monkeypatch.setenv("OPENAI_API_BASE", "http://test")
+    monkeypatch.setenv("OPENAI_API_TYPE", "azure")
+    monkeypatch.setenv("OPENAI_API_VERSION", "test_dev")
+
+    llm = llm_factory(
+        {
+            "deployment_name": "test",
+        },
+        {"_type": "openai"},
+    )
+    assert isinstance(llm, AzureChatOpenAI)
+    assert llm.deployment_name == "test"
+    assert llm.openai_api_base == "http://test"
+    assert llm.openai_api_type == "azure"
+    assert llm.openai_api_version == "test_dev"
 
 
 def test_get_prompt_template_returns_default_prompt() -> None:
