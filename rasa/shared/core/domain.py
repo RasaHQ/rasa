@@ -385,7 +385,7 @@ class Domain:
 
         duplicates = combined.pop("duplicates", {})
 
-        if not ignore_warnings_about_duplicates and duplicates:
+        if not ignore_warnings_about_duplicates:
             warn_about_duplicates_found_during_domain_merging(duplicates)
 
         return Domain.from_dict(combined)
@@ -2037,11 +2037,9 @@ class Domain:
 
 
 def warn_about_duplicates_found_during_domain_merging(
-    duplicates: Dict[Text, List[Text]]
-) -> None:
-    """Emits warning about found duplicates while loading multiple domain paths."""
-    message = ""
-    for key in [
+        duplicates: Dict[str, List[str]]) -> None:
+    """Emits a warning about found duplicates while loading multiple domain paths."""
+    domain_keys = [
         KEY_INTENTS,
         KEY_FORMS,
         KEY_ACTIONS,
@@ -2049,23 +2047,34 @@ def warn_about_duplicates_found_during_domain_merging(
         KEY_RESPONSES,
         KEY_SLOTS,
         KEY_ENTITIES,
-    ]:
+    ]
+
+    # check if there are any duplicates for the domain keys
+    has_duplicates = any(duplicates.get(key) for key in domain_keys)
+    if not has_duplicates:
+        return None
+
+    # Build the message if there are duplicates
+    message = []
+    for key in domain_keys:
         duplicates_per_key = duplicates.get(key)
         if duplicates_per_key:
-            if message:
-                message += " \n"
-
-            duplicates_per_key_str = ", ".join(duplicates_per_key)
-            message += (
+            message.append(
                 f"The following duplicated {key} have been found "
-                f"across multiple domain files: {duplicates_per_key_str}"
+                f"across multiple domain files: "
+                f"{', '.join(duplicates_per_key)}"
             )
 
-    structlogger.warning(
-        "domain.duplicates_found", event_info=message, docs=DOCS_URL_DOMAINS
-    )
-    return None
+    # send the warning with the constructed message
+    if message:
+        full_message = " \n".join(message)
+        structlogger.warning(
+            "domain.duplicates_found",
+            event_info=full_message,
+            docs=DOCS_URL_DOMAINS
+        )
 
+    return None
 
 def _validate_forms(forms: Union[Dict, List]) -> None:
     if not isinstance(forms, dict):
