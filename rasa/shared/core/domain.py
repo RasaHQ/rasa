@@ -335,7 +335,7 @@ class Domain:
 
     @staticmethod
     def _handle_duplicates_from_multiple_files(
-            duplicates_from_multiple_files: List[Dict[Text, List[Text]]]
+        duplicates_from_multiple_files: List[Dict[Text, List[Text]]]
     ) -> None:
         combined_duplicates: Dict[Text, List[Text]] = collections.defaultdict(list)
 
@@ -353,9 +353,7 @@ class Domain:
             warn_about_duplicates_found_during_domain_merging(combined_duplicates)
 
     @staticmethod
-    def _handle_duplicate_responses(
-            response_duplicates: List[Text]
-    ) -> None:
+    def _handle_duplicate_responses(response_duplicates: List[Text]) -> None:
         if response_duplicates:
             for response in response_duplicates:
                 structlogger.error(
