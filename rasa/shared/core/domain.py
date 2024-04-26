@@ -361,7 +361,7 @@ class Domain:
         self,
         domain: Optional["Domain"],
         override: bool = False,
-        ignore_warnings_about_duplicates: bool = False
+        ignore_warnings_about_duplicates: bool = False,
     ) -> "Domain":
         """Merges this domain dict with another one, combining their attributes.
 
@@ -2037,7 +2037,8 @@ class Domain:
 
 
 def warn_about_duplicates_found_during_domain_merging(
-        duplicates: Dict[str, List[str]]) -> None:
+    duplicates: Dict[str, List[str]]
+) -> None:
     """Emits a warning about found duplicates while loading multiple domain paths."""
     domain_keys = [
         KEY_INTENTS,
@@ -2069,12 +2070,11 @@ def warn_about_duplicates_found_during_domain_merging(
     if message:
         full_message = " \n".join(message)
         structlogger.warning(
-            "domain.duplicates_found",
-            event_info=full_message,
-            docs=DOCS_URL_DOMAINS
+            "domain.duplicates_found", event_info=full_message, docs=DOCS_URL_DOMAINS
         )
 
     return None
+
 
 def _validate_forms(forms: Union[Dict, List]) -> None:
     if not isinstance(forms, dict):
