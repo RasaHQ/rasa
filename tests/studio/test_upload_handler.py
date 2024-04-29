@@ -823,9 +823,7 @@ def test_build_request(
 
 
 @pytest.mark.parametrize("assistant_name", ["test"])
-def test_build_import_request(
-    assistant_name: str
-) -> None:
+def test_build_import_request(assistant_name: str) -> None:
     """Test the build_import_request function.
 
     :param assistant_name: The name of the assistant
@@ -863,7 +861,7 @@ def test_build_import_request_no_nlu() -> None:
         assistant_name,
         flows_yaml=calm_flows_yaml,
         domain_yaml=calm_domain_yaml,
-        config_yaml=empty_string
+        config_yaml=empty_string,
     )
 
     assert graphql_req["variables"]["input"]["domain"] == base64_domain
