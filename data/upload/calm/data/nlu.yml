@@ -1,0 +1,19 @@
+version: "3.1"
+
+nlu:
+  - intent: health_advice
+    examples: |
+      - I need some medical advice.
+      - Can you help me with some health issues?
+      - I need medical support.
+      - I'm experiencing some symptoms and I need guidance on what to do.
+      - Can you provide me with health recommendations?
+      - I'm struggling with some health concerns. Can you offer advice?
+      - Can you suggest ways to improve my overall well-being?
+      - I'm looking for tips on managing stress and anxiety. Any advice?
+      - I have a specific health question. Can you offer me some insights?
+      - I need suggestions on maintaining a healthy diet and exercise routine.
+      - Is there anyone knowledgeable about natural remedies who can give me advice?
+      - Can you provide me with information on preventing common illnesses?
+      - I'm interested in learning about alternative therapies. Can you share your expertise?
+      - Can you recommend a good doctor? I'm not feeling well.

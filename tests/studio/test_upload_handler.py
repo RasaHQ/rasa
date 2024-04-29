@@ -12,13 +12,582 @@ from rasa.shared.exceptions import RasaException
 import rasa.studio.upload
 from rasa.studio.config import StudioConfig
 
+CALM_DOMAIN_YAML = dedent(
+    """\
+    version: '3.1'
+    actions:
+    - action_add_contact
+    - action_check_balance
+    - action_execute_transfer
+    - action_remove_contact
+    - action_search_hotel
+    - action_transaction_search
+    - action_check_transfer_funds
+    responses:
+      utter_add_contact_cancelled:
+      - text: Okay, I am cancelling this adding of a contact.
+      utter_add_contact_error:
+      - text: Something went wrong, please try again.
+      utter_ca_income_insufficient:
+      - text: Unfortunately, we cannot increase your transfer limits under these circumstances.
+      utter_cant_advice_on_health:
+      - text: I'm sorry, I can't give you advice on your health.
+      utter_contact_added:
+      - text: Contact added successfully.
+      utter_contact_already_exists:
+      - text: There's already a contact with that handle in your list.
+      utter_contact_not_in_list:
+      - text: That contact is not in your list.
+      utter_current_balance:
+      - text: You still have {current_balance} in your account.
+      utter_hotel_inform_rating:
+      - text: The {hotel_name} has an average rating of {hotel_average_rating}
+      utter_remove_contact_cancelled:
+      - text: Okay, I am cancelling this removal of a contact.
+      utter_remove_contact_error:
+      - text: Something went wrong, please try again.
+      utter_remove_contact_success:
+      - text: Removed {remove_contact_handle}({remove_contact_name}) from your contacts.
+      utter_transactions:
+      - text: 'Your current transactions are:  {transactions_list}'
+      utter_verify_account_cancelled:
+      - text: Cancelling account verification...
+        metadata:
+          rephrase: true
+      utter_verify_account_success:
+      - text: Your account was successfully verified
+      utter_ask_add_contact_confirmation:
+      - text: Do you want to add {add_contact_name}({add_contact_handle}) to your contacts?
+      utter_ask_add_contact_handle:
+      - text: What's the handle of the user you want to add?
+      utter_ask_add_contact_name:
+      - text: What's the name of the user you want to add?
+        metadata:
+          rephrase: true
+      utter_ask_based_in_california:
+      - text: Are you based in California?
+        buttons:
+        - title: Yes
+          payload: Yes
+        - title: No
+          payload: No
+      utter_ask_remove_contact_confirmation:
+      - text: Should I remove {remove_contact_handle} from your contact list?
+        buttons:
+        - title: Yes
+          payload: Yes
+        - title: No
+          payload: No
+      utter_ask_remove_contact_handle:
+      - text: What's the handle of the user you want to remove?
+      utter_ask_verify_account_confirmation:
+      - text: Your email address is {verify_account_email} and you are not based in California, correct?
+        buttons:
+        - title: Yes
+          payload: Yes
+        - title: No
+          payload: No
+      utter_ask_verify_account_confirmation_california:
+      - text: Your email address is {verify_account_email} and you are based in California with a yearly income exceeding 100,000$, correct?
+        buttons:
+        - title: Yes
+          payload: Yes
+        - title: No
+          payload: No
+      utter_ask_verify_account_email:
+      - text: What's your email address?
+      utter_ask_verify_account_sufficient_california_income:
+      - text: Does your yearly income exceed 100,000 USD?
+        buttons:
+        - title: Yes
+          payload: Yes
+        - title: No
+          payload: No
+    slots:
+      add_contact_confirmation:
+        type: bool
+        mappings:
+        - type: custom
+      add_contact_handle:
+        type: text
+        mappings:
+        - type: custom
+      add_contact_name:
+        type: text
+        mappings:
+        - type: custom
+      based_in_california:
+        type: bool
+        mappings:
+        - type: custom
+      current_balance:
+        type: float
+        mappings:
+        - type: custom
+      hotel_average_rating:
+        type: float
+        mappings:
+        - type: custom
+      hotel_name:
+        type: text
+        mappings:
+        - type: custom
+      remove_contact_confirmation:
+        type: bool
+        mappings:
+        - type: custom
+      remove_contact_handle:
+        type: text
+        mappings:
+        - type: custom
+      remove_contact_name:
+        type: text
+        mappings:
+        - type: custom
+      return_value:
+        type: text
+        mappings:
+        - type: custom
+      transactions_list:
+        type: text
+        mappings:
+        - type: custom
+      set_slots_test_text:
+        type: text
+        mappings:
+        - type: custom
+      set_slots_test_categorical:
+        type: categorical
+        mappings:
+        - type: custom
+        values:
+        - value_1
+        - value_2
+      verify_account_confirmation:
+        type: bool
+        mappings:
+        - type: custom
+      verify_account_confirmation_california:
+        type: bool
+        mappings:
+        - type: custom
+      verify_account_email:
+        type: text
+        mappings:
+        - type: custom
+      verify_account_sufficient_california_income:
+        type: bool
+        mappings:
+        - type: custom
+    intents:
+    - health_advice
+    session_config:
+      session_expiration_time: 60
+      carry_over_slots_to_new_session: true
+    """  # noqa: E501
+)
 
-def base64_calm_domain_yaml(calm_domain_yaml):
-    return base64.b64encode(calm_domain_yaml.encode("utf-8")).decode("utf-8")
+
+CALM_FLOWS_YAML = dedent(
+    """\
+    flows:
+      health_advice:
+        steps:
+        - id: 0_utter_cant_advice_on_health
+          next: END
+          action: utter_cant_advice_on_health
+        name: health advice
+        description: user asks for health advice
+        nlu_trigger:
+        - intent:
+            name: health_advice
+            confidence_threshold: 0.8
+      add_contact:
+        steps:
+        - id: 0_collect_add_contact_handle
+          next: 1_collect_add_contact_name
+          description: a user handle starting with @
+          collect: add_contact_handle
+          utter: utter_ask_add_contact_handle
+          ask_before_filling: false
+          reset_after_flow_ends: true
+          rejections: []
+        - id: 1_collect_add_contact_name
+          next: 2_collect_add_contact_confirmation
+          description: a name of a person
+          collect: add_contact_name
+          utter: utter_ask_add_contact_name
+          ask_before_filling: false
+          reset_after_flow_ends: true
+          rejections: []
+        - id: 2_collect_add_contact_confirmation
+          next:
+          - if: not slots.add_contact_confirmation
+            then:
+            - id: 3_utter_add_contact_cancelled
+              next: END
+              action: utter_add_contact_cancelled
+          - else: action_add_contact
+          description: a confirmation to add contact
+          collect: add_contact_confirmation
+          utter: utter_ask_add_contact_confirmation
+          ask_before_filling: false
+          reset_after_flow_ends: true
+          rejections: []
+        - id: action_add_contact
+          next:
+          - if: slots.return_value is 'already_exists'
+            then:
+            - id: 5_utter_contact_already_exists
+              next: END
+              action: utter_contact_already_exists
+          - if: slots.return_value is 'success'
+            then:
+            - id: 6_utter_contact_added
+              next: END
+              action: utter_contact_added
+          - else:
+            - id: 7_utter_add_contact_error
+              next: END
+              action: utter_add_contact_error
+          action: action_add_contact
+        name: add_contact
+        description: add a contact to your contact list
+      check_balance:
+        steps:
+        - id: 0_action_check_balance
+          next: 1_utter_current_balance
+          action: action_check_balance
+        - id: 1_utter_current_balance
+          next: END
+          action: utter_current_balance
+        name: check_balance
+        description: check the user's account balance.
+      hotel_search:
+        steps:
+        - id: 0_action_search_hotel
+          next: 1_utter_hotel_inform_rating
+          action: action_search_hotel
+        - id: 1_utter_hotel_inform_rating
+          next: END
+          action: utter_hotel_inform_rating
+        name: hotel_search
+        description: search for hotels
+      remove_contact:
+        steps:
+        - id: 0_collect_remove_contact_handle
+          next: 1_collect_remove_contact_confirmation
+          description: a contact handle starting with @
+          collect: remove_contact_handle
+          utter: utter_ask_remove_contact_handle
+          ask_before_filling: false
+          reset_after_flow_ends: true
+          rejections: []
+        - id: 1_collect_remove_contact_confirmation
+          next:
+          - if: not slots.remove_contact_confirmation
+            then:
+            - id: 2_utter_remove_contact_cancelled
+              next: END
+              action: utter_remove_contact_cancelled
+          - else: action_remove_contact
+          collect: remove_contact_confirmation
+          utter: utter_ask_remove_contact_confirmation
+          ask_before_filling: true
+          reset_after_flow_ends: true
+          rejections: []
+        - id: action_remove_contact
+          next:
+          - if: slots.return_value is 'not_found'
+            then:
+            - id: 4_utter_contact_not_in_list
+              next: END
+              action: utter_contact_not_in_list
+          - if: slots.return_value is 'success'
+            then:
+            - id: 5_utter_remove_contact_success
+              next: END
+              action: utter_remove_contact_success
+          - else:
+            - id: 6_utter_remove_contact_error
+              next: END
+              action: utter_remove_contact_error
+          action: action_remove_contact
+        name: remove_contact
+        description: remove a contact from your contact list
+      transaction_search:
+        steps:
+        - id: 0_action_transaction_search
+          next: 1_utter_transactions
+          action: action_transaction_search
+        - id: 1_utter_transactions
+          next: END
+          action: utter_transactions
+        name: transaction_search
+        description: lists the last transactions of the user account
+      transfer_money:
+        steps:
+        - id: 0_collect_transfer_money_recipient
+          next: 1_collect_transfer_money_amount_of_money
+          description: Asks user for the recipient's name.
+          collect: transfer_money_recipient
+          utter: utter_ask_transfer_money_recipient
+          ask_before_filling: false
+          reset_after_flow_ends: true
+          rejections: []
+        - id: 1_collect_transfer_money_amount_of_money
+          next: 2_action_check_transfer_funds
+          description: Asks user for the amount to transfer.
+          collect: transfer_money_amount_of_money
+          utter: utter_ask_transfer_money_amount_of_money
+          ask_before_filling: false
+          reset_after_flow_ends: true
+          rejections: []
+        - id: 2_action_check_transfer_funds
+          next:
+          - if: not slots.transfer_money_has_sufficient_funds
+            then:
+            - id: 3_utter_transfer_money_insufficient_funds
+              next: 4_set_slots
+              action: utter_transfer_money_insufficient_funds
+            - id: 4_set_slots
+              next: END
+              set_slots:
+              - transfer_money_amount_of_money: null
+              - transfer_money_has_sufficient_funds: null
+              - set_slots_test_text: This is a test!
+              - set_slots_test_categorical: value_1
+          - else: collect_transfer_money_final_confirmation
+          action: action_check_transfer_funds
+        - id: collect_transfer_money_final_confirmation
+          next:
+          - if: not slots.transfer_money_final_confirmation
+            then:
+            - id: 6_utter_transfer_cancelled
+              next: END
+              action: utter_transfer_cancelled
+          - else: action_execute_transfer
+          description: Asks user for final confirmation to transfer money.
+          collect: transfer_money_final_confirmation
+          utter: utter_ask_transfer_money_final_confirmation
+          ask_before_filling: true
+          reset_after_flow_ends: true
+          rejections: []
+        - id: action_execute_transfer
+          next:
+          - if: slots.transfer_money_transfer_successful
+            then:
+            - id: 8_utter_transfer_complete
+              next: END
+              action: utter_transfer_complete
+          - else:
+            - id: 9_utter_transfer_failed
+              next: END
+              action: utter_transfer_failed
+          action: action_execute_transfer
+        name: transfer_money
+        description: This flow let's users send money to friends and family.
+      verify_account:
+        steps:
+        - id: 0_collect_verify_account_email
+          next: 1_collect_based_in_california
+          description: Asks user for their email address.
+          collect: verify_account_email
+          utter: utter_ask_verify_account_email
+          ask_before_filling: true
+          reset_after_flow_ends: true
+          rejections: []
+        - id: 1_collect_based_in_california
+          next:
+          - if: slots.based_in_california
+            then:
+            - id: 2_collect_verify_account_sufficient_california_income
+              next:
+              - if: not slots.verify_account_sufficient_california_income
+                then:
+                - id: 3_utter_ca_income_insufficient
+                  next: END
+                  action: utter_ca_income_insufficient
+              - else: collect_verify_account_confirmation_california
+              description: Asks user if they have sufficient income in California.
+              collect: verify_account_sufficient_california_income
+              utter: utter_ask_verify_account_sufficient_california_income
+              ask_before_filling: true
+              reset_after_flow_ends: true
+              rejections: []
+            - id: collect_verify_account_confirmation_california
+              next:
+              - if: slots.verify_account_confirmation_california
+                then:
+                - id: 5_utter_verify_account_success
+                  next: END
+                  action: utter_verify_account_success
+              - else:
+                - id: 6_utter_verify_account_cancelled
+                  next: END
+                  action: utter_verify_account_cancelled
+              description: Asks user for final confirmation to verify their account in California.
+              collect: verify_account_confirmation_california
+              utter: utter_ask_verify_account_confirmation_california
+              ask_before_filling: true
+              reset_after_flow_ends: true
+              rejections: []
+          - else: collect_verify_account_confirmation
+          description: Asks user if they are based in California.
+          collect: based_in_california
+          utter: utter_ask_based_in_california
+          ask_before_filling: true
+          reset_after_flow_ends: true
+          rejections: []
+        - id: collect_verify_account_confirmation
+          next:
+          - if: slots.verify_account_confirmation
+            then:
+            - id: 8_utter_verify_account_success
+              next: END
+              action: utter_verify_account_success
+          - else:
+            - id: 9_utter_verify_account_cancelled
+              next: END
+              action: utter_verify_account_cancelled
+          description: Asks user for final confirmation to verify their account.
+          collect: verify_account_confirmation
+          utter: utter_ask_verify_account_confirmation
+          ask_before_filling: true
+          reset_after_flow_ends: true
+          rejections: []
+        name: verify_account
+        description: Verify an account for higher transfer limits
+    """  # noqa: E501
+)
+
+CALM_NLU_YAML = dedent(
+    """\
+    version: "3.1"
+    nlu:
+    - intent: health_advice
+      examples: |
+        - I need some medical advice.
+        - Can you help me with some health issues?
+        - I need medical support.
+        - I'm experiencing some symptoms and I need guidance on what to do.
+        - Can you provide me with health recommendations?
+        - I'm struggling with some health concerns. Can you offer advice?
+        - Can you suggest ways to improve my overall well-being?
+        - I'm looking for tips on managing stress and anxiety. Any advice?
+        - I have a specific health question. Can you offer me some insights?
+        - I need suggestions on maintaining a healthy diet and exercise routine.
+        - Is there anyone knowledgeable about natural remedies who can give me advice?
+        - Can you provide me with information on preventing common illnesses?
+        - I'm interested in learning about alternative therapies. Can you share your expertise?
+        - Can you recommend a good doctor? I'm not feeling well.
+    responses:
+      utter_transfer_money_insufficient_funds:
+      - text: You don't have so much money on your account!
+      utter_transfer_failed:
+      - text: something went wrong transferring the money.
+      utter_out_of_scope:
+      - text: Sorry, I'm not sure how to respond to that. Type "help" for assistance.
+      utter_ask_transfer_money_amount_of_money:
+      - text: How much money do you want to transfer?
+      utter_ask_transfer_money_recipient:
+      - text: Who do you want to transfer money to?
+      utter_transfer_complete:
+      - text: Successfully transferred {transfer_money_amount_of_money} to {transfer_money_recipient}.
+      utter_transfer_cancelled:
+      - text: Transfer cancelled.
+      utter_ask_transfer_money_final_confirmation:
+      - buttons:
+        - payload: yes
+          title: Yes
+        - payload: no
+          title: No, cancel the transaction
+        text: Would you like to transfer {transfer_money_amount_of_money} to {transfer_money_recipient}?
+      utter_add_contact_cancelled:
+      - text: Okay, I am cancelling this adding of a contact.
+      utter_add_contact_error:
+      - text: Something went wrong, please try again.
+      utter_ca_income_insufficient:
+      - text: Unfortunately, we cannot increase your transfer limits under these circumstances.
+      utter_cant_advice_on_health:
+      - text: I'm sorry, I can't give you advice on your health.
+      utter_contact_added:
+      - text: Contact added successfully.
+      utter_contact_already_exists:
+      - text: There's already a contact with that handle in your list.
+      utter_contact_not_in_list:
+      - text: That contact is not in your list.
+      utter_current_balance:
+      - text: You still have {current_balance} in your account.
+      utter_hotel_inform_rating:
+      - text: The {hotel_name} has an average rating of {hotel_average_rating}
+      utter_remove_contact_cancelled:
+      - text: Okay, I am cancelling this removal of a contact.
+      utter_remove_contact_error:
+      - text: Something went wrong, please try again.
+      utter_remove_contact_success:
+      - text: Removed {remove_contact_handle}({remove_contact_name}) from your contacts.
+      utter_transactions:
+      - text: 'Your current transactions are:  {transactions_list}'
+      utter_verify_account_cancelled:
+      - text: Cancelling account verification...
+        metadata:
+          rephrase: true
+      utter_verify_account_success:
+      - text: Your account was successfully verified
+      utter_ask_add_contact_confirmation:
+      - text: Do you want to add {add_contact_name}({add_contact_handle}) to your contacts?
+      utter_ask_add_contact_handle:
+      - text: What's the handle of the user you want to add?
+      utter_ask_add_contact_name:
+      - text: What's the name of the user you want to add?
+        metadata:
+          rephrase: true
+      utter_ask_based_in_california:
+      - text: Are you based in California?
+        buttons:
+        - title: Yes
+          payload: Yes
+        - title: No
+          payload: No
+      utter_ask_remove_contact_confirmation:
+      - text: Should I remove {remove_contact_handle} from your contact list?
+        buttons:
+        - title: Yes
+          payload: Yes
+        - title: No
+          payload: No
+      utter_ask_remove_contact_handle:
+      - text: What's the handle of the user you want to remove?
+      utter_ask_verify_account_confirmation:
+      - text: Your email address is {verify_account_email} and you are not based in California, correct?
+        buttons:
+        - title: Yes
+          payload: Yes
+        - title: No
+          payload: No
+      utter_ask_verify_account_confirmation_california:
+      - text: Your email address is {verify_account_email} and you are based in California with a yearly income exceeding 100,000$, correct?
+        buttons:
+        - title: Yes
+          payload: Yes
+        - title: No
+          payload: No
+      utter_ask_verify_account_email:
+      - text: What's your email address?
+      utter_ask_verify_account_sufficient_california_income:
+      - text: Does your yearly income exceed 100,000 USD?
+        buttons:
+        - title: Yes
+          payload: Yes
+        - title: No
+          payload: No
+    """  # noqa: E501
+)
 
 
-def base64_calm_flows_yaml(calm_flows_yaml):
-    return base64.b64encode(calm_flows_yaml.encode("utf-8")).decode("utf-8")
+def encode_yaml(yaml):
+    return base64.b64encode(yaml.encode("utf-8")).decode("utf-8")
 
 
 @pytest.mark.parametrize(
@@ -70,7 +639,7 @@ def base64_calm_flows_yaml(calm_flows_yaml):
             argparse.Namespace(
                 assistant_name=["test"],
                 calm=True,
-                domain="data/upload/calm/domain.yml",
+                domain="data/upload/calm/domain/domain.yml",
                 data=["data/upload/calm/"],
                 config="data/upload/calm/config.yml",
                 flows="data/upload/flows.yml",
@@ -85,257 +654,9 @@ def base64_calm_flows_yaml(calm_flows_yaml):
                 "variables": {
                     "input": {
                         "assistantName": "test",
-                        "domain": (
-                            "dmVyc2lvbjogJzMuMScKYWN0aW9uczoKLSBhY3Rpb25fYWRkX2NvbnRhY3QKLSBhY3Rpb25fY2hl"
-                            "Y2tfYmFsYW5jZQotIGFjdGlvbl9leGVjdXRlX3RyYW5zZmVyCi0gYWN0aW9uX3JlbW92ZV9jb250"
-                            "YWN0Ci0gYWN0aW9uX3NlYXJjaF9ob3RlbAotIGFjdGlvbl90cmFuc2FjdGlvbl9zZWFyY2gKcmVz"
-                            "cG9uc2VzOgogIHV0dGVyX2FkZF9jb250YWN0X2NhbmNlbGxlZDoKICAtIHRleHQ6IE9rYXksIEkg"
-                            "YW0gY2FuY2VsbGluZyB0aGlzIGFkZGluZyBvZiBhIGNvbnRhY3QuCiAgdXR0ZXJfYWRkX2NvbnRh"
-                            "Y3RfZXJyb3I6CiAgLSB0ZXh0OiBTb21ldGhpbmcgd2VudCB3cm9uZywgcGxlYXNlIHRyeSBhZ2Fp"
-                            "bi4KICB1dHRlcl9jYV9pbmNvbWVfaW5zdWZmaWNpZW50OgogIC0gdGV4dDogVW5mb3J0dW5hdGVs"
-                            "eSwgd2UgY2Fubm90IGluY3JlYXNlIHlvdXIgdHJhbnNmZXIgbGltaXRzIHVuZGVyIHRoZXNlIGNp"
-                            "cmN1bXN0YW5jZXMuCiAgdXR0ZXJfY2FudF9hZHZpY2Vfb25faGVhbHRoOgogIC0gdGV4dDogSSdt"
-                            "IHNvcnJ5LCBJIGNhbid0IGdpdmUgeW91IGFkdmljZSBvbiB5b3VyIGhlYWx0aC4KICB1dHRlcl9j"
-                            "b250YWN0X2FkZGVkOgogIC0gdGV4dDogQ29udGFjdCBhZGRlZCBzdWNjZXNzZnVsbHkuCiAgdXR0"
-                            "ZXJfY29udGFjdF9hbHJlYWR5X2V4aXN0czoKICAtIHRleHQ6IFRoZXJlJ3MgYWxyZWFkeSBhIGNv"
-                            "bnRhY3Qgd2l0aCB0aGF0IGhhbmRsZSBpbiB5b3VyIGxpc3QuCiAgdXR0ZXJfY29udGFjdF9ub3Rf"
-                            "aW5fbGlzdDoKICAtIHRleHQ6IFRoYXQgY29udGFjdCBpcyBub3QgaW4geW91ciBsaXN0LgogIHV0"
-                            "dGVyX2N1cnJlbnRfYmFsYW5jZToKICAtIHRleHQ6IFlvdSBzdGlsbCBoYXZlIHtjdXJyZW50X2Jh"
-                            "bGFuY2V9IGluIHlvdXIgYWNjb3VudC4KICB1dHRlcl9ob3RlbF9pbmZvcm1fcmF0aW5nOgogIC0g"
-                            "dGV4dDogVGhlIHtob3RlbF9uYW1lfSBoYXMgYW4gYXZlcmFnZSByYXRpbmcgb2Yge2hvdGVsX2F2"
-                            "ZXJhZ2VfcmF0aW5nfQogIHV0dGVyX3JlbW92ZV9jb250YWN0X2NhbmNlbGxlZDoKICAtIHRleHQ6"
-                            "IE9rYXksIEkgYW0gY2FuY2VsbGluZyB0aGlzIHJlbW92YWwgb2YgYSBjb250YWN0LgogIHV0dGVy"
-                            "X3JlbW92ZV9jb250YWN0X2Vycm9yOgogIC0gdGV4dDogU29tZXRoaW5nIHdlbnQgd3JvbmcsIHBs"
-                            "ZWFzZSB0cnkgYWdhaW4uCiAgdXR0ZXJfcmVtb3ZlX2NvbnRhY3Rfc3VjY2VzczoKICAtIHRleHQ6"
-                            "IFJlbW92ZWQge3JlbW92ZV9jb250YWN0X2hhbmRsZX0oe3JlbW92ZV9jb250YWN0X25hbWV9KSBm"
-                            "cm9tIHlvdXIgY29udGFjdHMuCiAgdXR0ZXJfdHJhbnNhY3Rpb25zOgogIC0gdGV4dDogJ1lvdXIg"
-                            "Y3VycmVudCB0cmFuc2FjdGlvbnMgYXJlOiAge3RyYW5zYWN0aW9uc19saXN0fScKICB1dHRlcl90"
-                            "cmFuc2Zlcl9jYW5jZWxsZWQ6CiAgLSB0ZXh0OiBUcmFuc2ZlciBjYW5jZWxsZWQuCiAgdXR0ZXJf"
-                            "dHJhbnNmZXJfY29tcGxldGU6CiAgLSB0ZXh0OiBTdWNjZXNzZnVsbHkgdHJhbnNmZXJyZWQge3Ry"
-                            "YW5zZmVyX21vbmV5X2Ftb3VudH0gdG8ge3RyYW5zZmVyX21vbmV5X3JlY2lwaWVudH0uCiAgdXR0"
-                            "ZXJfdHJhbnNmZXJfZmFpbGVkOgogIC0gdGV4dDogc29tZXRoaW5nIHdlbnQgd3JvbmcgdHJhbnNm"
-                            "ZXJyaW5nIHRoZSBtb25leS4KICB1dHRlcl92ZXJpZnlfYWNjb3VudF9jYW5jZWxsZWQ6CiAgLSB0"
-                            "ZXh0OiBDYW5jZWxsaW5nIGFjY291bnQgdmVyaWZpY2F0aW9uLi4uCiAgICBtZXRhZGF0YToKICAg"
-                            "ICAgcmVwaHJhc2U6IHRydWUKICB1dHRlcl92ZXJpZnlfYWNjb3VudF9zdWNjZXNzOgogIC0gdGV4"
-                            "dDogWW91ciBhY2NvdW50IHdhcyBzdWNjZXNzZnVsbHkgdmVyaWZpZWQKICB1dHRlcl9hc2tfYWRk"
-                            "X2NvbnRhY3RfY29uZmlybWF0aW9uOgogIC0gdGV4dDogRG8geW91IHdhbnQgdG8gYWRkIHthZGRf"
-                            "Y29udGFjdF9uYW1lfSh7YWRkX2NvbnRhY3RfaGFuZGxlfSkgdG8geW91ciBjb250YWN0cz8KICB1"
-                            "dHRlcl9hc2tfYWRkX2NvbnRhY3RfaGFuZGxlOgogIC0gdGV4dDogV2hhdCdzIHRoZSBoYW5kbGUg"
-                            "b2YgdGhlIHVzZXIgeW91IHdhbnQgdG8gYWRkPwogIHV0dGVyX2Fza19hZGRfY29udGFjdF9uYW1l"
-                            "OgogIC0gdGV4dDogV2hhdCdzIHRoZSBuYW1lIG9mIHRoZSB1c2VyIHlvdSB3YW50IHRvIGFkZD8K"
-                            "ICAgIG1ldGFkYXRhOgogICAgICByZXBocmFzZTogdHJ1ZQogIHV0dGVyX2Fza19iYXNlZF9pbl9j"
-                            "YWxpZm9ybmlhOgogIC0gdGV4dDogQXJlIHlvdSBiYXNlZCBpbiBDYWxpZm9ybmlhPwogICAgYnV0"
-                            "dG9uczoKICAgIC0gdGl0bGU6IFllcwogICAgICBwYXlsb2FkOiBZZXMKICAgIC0gdGl0bGU6IE5v"
-                            "CiAgICAgIHBheWxvYWQ6IE5vCiAgdXR0ZXJfYXNrX3JlbW92ZV9jb250YWN0X2NvbmZpcm1hdGlv"
-                            "bjoKICAtIHRleHQ6IFNob3VsZCBJIHJlbW92ZSB7cmVtb3ZlX2NvbnRhY3RfaGFuZGxlfSBmcm9t"
-                            "IHlvdXIgY29udGFjdCBsaXN0PwogICAgYnV0dG9uczoKICAgIC0gdGl0bGU6IFllcwogICAgICBw"
-                            "YXlsb2FkOiBZZXMKICAgIC0gdGl0bGU6IE5vCiAgICAgIHBheWxvYWQ6IE5vCiAgdXR0ZXJfYXNr"
-                            "X3JlbW92ZV9jb250YWN0X2hhbmRsZToKICAtIHRleHQ6IFdoYXQncyB0aGUgaGFuZGxlIG9mIHRo"
-                            "ZSB1c2VyIHlvdSB3YW50IHRvIHJlbW92ZT8KICB1dHRlcl9hc2tfdHJhbnNmZXJfbW9uZXlfYW1v"
-                            "dW50OgogIC0gdGV4dDogSG93IG11Y2ggbW9uZXkgZG8geW91IHdhbnQgdG8gdHJhbnNmZXI/CiAg"
-                            "dXR0ZXJfYXNrX3RyYW5zZmVyX21vbmV5X2ZpbmFsX2NvbmZpcm1hdGlvbjoKICAtIHRleHQ6IFdv"
-                            "dWxkIHlvdSBsaWtlIHRvIHRyYW5zZmVyIHt0cmFuc2Zlcl9tb25leV9hbW91bnR9IHRvIHt0cmFu"
-                            "c2Zlcl9tb25leV9yZWNpcGllbnR9PwogICAgYnV0dG9uczoKICAgIC0gdGl0bGU6IFllcwogICAg"
-                            "ICBwYXlsb2FkOiBZZXMKICAgIC0gdGl0bGU6IE5vCiAgICAgIHBheWxvYWQ6IE5vCiAgdXR0ZXJf"
-                            "YXNrX3RyYW5zZmVyX21vbmV5X3JlY2lwaWVudDoKICAtIHRleHQ6IFdobyBkbyB5b3Ugd2FudCB0"
-                            "byB0cmFuc2ZlciBtb25leSB0bz8KICB1dHRlcl9hc2tfdmVyaWZ5X2FjY291bnRfY29uZmlybWF0"
-                            "aW9uOgogIC0gdGV4dDogWW91ciBlbWFpbCBhZGRyZXNzIGlzIHt2ZXJpZnlfYWNjb3VudF9lbWFp"
-                            "bH0gYW5kIHlvdSBhcmUgbm90IGJhc2VkIGluIENhbGlmb3JuaWEsIGNvcnJlY3Q/CiAgICBidXR0"
-                            "b25zOgogICAgLSB0aXRsZTogWWVzCiAgICAgIHBheWxvYWQ6IFllcwogICAgLSB0aXRsZTogTm8K"
-                            "ICAgICAgcGF5bG9hZDogTm8KICB1dHRlcl9hc2tfdmVyaWZ5X2FjY291bnRfY29uZmlybWF0aW9u"
-                            "X2NhbGlmb3JuaWE6CiAgLSB0ZXh0OiBZb3VyIGVtYWlsIGFkZHJlc3MgaXMge3ZlcmlmeV9hY2Nv"
-                            "dW50X2VtYWlsfSBhbmQgeW91IGFyZSBiYXNlZCBpbiBDYWxpZm9ybmlhIHdpdGggYSB5ZWFybHkg"
-                            "aW5jb21lIGV4Y2VlZGluZyAxMDAsMDAwJCwgY29ycmVjdD8KICAgIGJ1dHRvbnM6CiAgICAtIHRp"
-                            "dGxlOiBZZXMKICAgICAgcGF5bG9hZDogWWVzCiAgICAtIHRpdGxlOiBObwogICAgICBwYXlsb2Fk"
-                            "OiBObwogIHV0dGVyX2Fza192ZXJpZnlfYWNjb3VudF9lbWFpbDoKICAtIHRleHQ6IFdoYXQncyB5"
-                            "b3VyIGVtYWlsIGFkZHJlc3M/CiAgdXR0ZXJfYXNrX3ZlcmlmeV9hY2NvdW50X3N1ZmZpY2llbnRf"
-                            "Y2FsaWZvcm5pYV9pbmNvbWU6CiAgLSB0ZXh0OiBEb2VzIHlvdXIgeWVhcmx5IGluY29tZSBleGNl"
-                            "ZWQgMTAwLDAwMCBVU0Q/CiAgICBidXR0b25zOgogICAgLSB0aXRsZTogWWVzCiAgICAgIHBheWxv"
-                            "YWQ6IFllcwogICAgLSB0aXRsZTogTm8KICAgICAgcGF5bG9hZDogTm8Kc2xvdHM6CiAgYWRkX2Nv"
-                            "bnRhY3RfY29uZmlybWF0aW9uOgogICAgdHlwZTogYm9vbAogICAgbWFwcGluZ3M6CiAgICAtIHR5"
-                            "cGU6IGN1c3RvbQogIGFkZF9jb250YWN0X2hhbmRsZToKICAgIHR5cGU6IHRleHQKICAgIG1hcHBp"
-                            "bmdzOgogICAgLSB0eXBlOiBjdXN0b20KICBhZGRfY29udGFjdF9uYW1lOgogICAgdHlwZTogdGV4"
-                            "dAogICAgbWFwcGluZ3M6CiAgICAtIHR5cGU6IGN1c3RvbQogIGJhc2VkX2luX2NhbGlmb3JuaWE6"
-                            "CiAgICB0eXBlOiBib29sCiAgICBtYXBwaW5nczoKICAgIC0gdHlwZTogY3VzdG9tCiAgY3VycmVu"
-                            "dF9iYWxhbmNlOgogICAgdHlwZTogZmxvYXQKICAgIG1hcHBpbmdzOgogICAgLSB0eXBlOiBjdXN0"
-                            "b20KICBob3RlbF9hdmVyYWdlX3JhdGluZzoKICAgIHR5cGU6IGZsb2F0CiAgICBtYXBwaW5nczoK"
-                            "ICAgIC0gdHlwZTogY3VzdG9tCiAgaG90ZWxfbmFtZToKICAgIHR5cGU6IHRleHQKICAgIG1hcHBp"
-                            "bmdzOgogICAgLSB0eXBlOiBjdXN0b20KICByZW1vdmVfY29udGFjdF9jb25maXJtYXRpb246CiAg"
-                            "ICB0eXBlOiBib29sCiAgICBtYXBwaW5nczoKICAgIC0gdHlwZTogY3VzdG9tCiAgcmVtb3ZlX2Nv"
-                            "bnRhY3RfaGFuZGxlOgogICAgdHlwZTogdGV4dAogICAgbWFwcGluZ3M6CiAgICAtIHR5cGU6IGN1"
-                            "c3RvbQogIHJlbW92ZV9jb250YWN0X25hbWU6CiAgICB0eXBlOiB0ZXh0CiAgICBtYXBwaW5nczoK"
-                            "ICAgIC0gdHlwZTogY3VzdG9tCiAgcmV0dXJuX3ZhbHVlOgogICAgdHlwZTogdGV4dAogICAgbWFw"
-                            "cGluZ3M6CiAgICAtIHR5cGU6IGN1c3RvbQogIHRyYW5zYWN0aW9uc19saXN0OgogICAgdHlwZTog"
-                            "dGV4dAogICAgbWFwcGluZ3M6CiAgICAtIHR5cGU6IGN1c3RvbQogIHRyYW5zZmVyX21vbmV5X2Ft"
-                            "b3VudDoKICAgIHR5cGU6IGZsb2F0CiAgICBtYXBwaW5nczoKICAgIC0gdHlwZTogY3VzdG9tCiAg"
-                            "dHJhbnNmZXJfbW9uZXlfZmluYWxfY29uZmlybWF0aW9uOgogICAgdHlwZTogYm9vbAogICAgbWFw"
-                            "cGluZ3M6CiAgICAtIHR5cGU6IGN1c3RvbQogIHRyYW5zZmVyX21vbmV5X3JlY2lwaWVudDoKICAg"
-                            "IHR5cGU6IHRleHQKICAgIG1hcHBpbmdzOgogICAgLSB0eXBlOiBjdXN0b20KICB0cmFuc2Zlcl9t"
-                            "b25leV90cmFuc2Zlcl9zdWNjZXNzZnVsOgogICAgdHlwZTogYm9vbAogICAgbWFwcGluZ3M6CiAg"
-                            "ICAtIHR5cGU6IGN1c3RvbQogIHZlcmlmeV9hY2NvdW50X2NvbmZpcm1hdGlvbjoKICAgIHR5cGU6"
-                            "IGJvb2wKICAgIG1hcHBpbmdzOgogICAgLSB0eXBlOiBjdXN0b20KICB2ZXJpZnlfYWNjb3VudF9j"
-                            "b25maXJtYXRpb25fY2FsaWZvcm5pYToKICAgIHR5cGU6IGJvb2wKICAgIG1hcHBpbmdzOgogICAg"
-                            "LSB0eXBlOiBjdXN0b20KICB2ZXJpZnlfYWNjb3VudF9lbWFpbDoKICAgIHR5cGU6IHRleHQKICAg"
-                            "IG1hcHBpbmdzOgogICAgLSB0eXBlOiBjdXN0b20KICB2ZXJpZnlfYWNjb3VudF9zdWZmaWNpZW50"
-                            "X2NhbGlmb3JuaWFfaW5jb21lOgogICAgdHlwZTogYm9vbAogICAgbWFwcGluZ3M6CiAgICAtIHR5"
-                            "cGU6IGN1c3RvbQpzZXNzaW9uX2NvbmZpZzoKICBzZXNzaW9uX2V4cGlyYXRpb25fdGltZTogNjAK"
-                            "ICBjYXJyeV9vdmVyX3Nsb3RzX3RvX25ld19zZXNzaW9uOiB0cnVlCg=="
-                        ),
-                        "flows": (
-                            "Zmxvd3M6CiAgaGVhbHRoX2FkdmljZToKICAgIHN0ZXBzOgogICAgLSBpZDogMF91dHRlcl9jYW50"
-                            "X2FkdmljZV9vbl9oZWFsdGgKICAgICAgbmV4dDogRU5ECiAgICAgIGFjdGlvbjogdXR0ZXJfY2Fu"
-                            "dF9hZHZpY2Vfb25faGVhbHRoCiAgICBuYW1lOiBoZWFsdGhfYWR2aWNlCiAgICBkZXNjcmlwdGlv"
-                            "bjogdXNlciBhc2tzIGZvciBoZWFsdGggYWR2aWNlCiAgYWRkX2NvbnRhY3Q6CiAgICBzdGVwczoK"
-                            "ICAgIC0gaWQ6IDBfY29sbGVjdF9hZGRfY29udGFjdF9oYW5kbGUKICAgICAgbmV4dDogMV9jb2xs"
-                            "ZWN0X2FkZF9jb250YWN0X25hbWUKICAgICAgZGVzY3JpcHRpb246IGEgdXNlciBoYW5kbGUgc3Rh"
-                            "cnRpbmcgd2l0aCBACiAgICAgIGNvbGxlY3Q6IGFkZF9jb250YWN0X2hhbmRsZQogICAgICB1dHRl"
-                            "cjogdXR0ZXJfYXNrX2FkZF9jb250YWN0X2hhbmRsZQogICAgICBhc2tfYmVmb3JlX2ZpbGxpbmc6"
-                            "IGZhbHNlCiAgICAgIHJlc2V0X2FmdGVyX2Zsb3dfZW5kczogdHJ1ZQogICAgICByZWplY3Rpb25z"
-                            "OiBbXQogICAgLSBpZDogMV9jb2xsZWN0X2FkZF9jb250YWN0X25hbWUKICAgICAgbmV4dDogMl9j"
-                            "b2xsZWN0X2FkZF9jb250YWN0X2NvbmZpcm1hdGlvbgogICAgICBkZXNjcmlwdGlvbjogYSBuYW1l"
-                            "IG9mIGEgcGVyc29uCiAgICAgIGNvbGxlY3Q6IGFkZF9jb250YWN0X25hbWUKICAgICAgdXR0ZXI6"
-                            "IHV0dGVyX2Fza19hZGRfY29udGFjdF9uYW1lCiAgICAgIGFza19iZWZvcmVfZmlsbGluZzogZmFs"
-                            "c2UKICAgICAgcmVzZXRfYWZ0ZXJfZmxvd19lbmRzOiB0cnVlCiAgICAgIHJlamVjdGlvbnM6IFtd"
-                            "CiAgICAtIGlkOiAyX2NvbGxlY3RfYWRkX2NvbnRhY3RfY29uZmlybWF0aW9uCiAgICAgIG5leHQ6"
-                            "CiAgICAgIC0gaWY6IG5vdCBzbG90cy5hZGRfY29udGFjdF9jb25maXJtYXRpb24KICAgICAgICB0"
-                            "aGVuOgogICAgICAgIC0gaWQ6IDNfdXR0ZXJfYWRkX2NvbnRhY3RfY2FuY2VsbGVkCiAgICAgICAg"
-                            "ICBuZXh0OiBFTkQKICAgICAgICAgIGFjdGlvbjogdXR0ZXJfYWRkX2NvbnRhY3RfY2FuY2VsbGVk"
-                            "CiAgICAgIC0gZWxzZTogYWN0aW9uX2FkZF9jb250YWN0CiAgICAgIGRlc2NyaXB0aW9uOiBhIGNv"
-                            "bmZpcm1hdGlvbiB0byBhZGQgY29udGFjdAogICAgICBjb2xsZWN0OiBhZGRfY29udGFjdF9jb25m"
-                            "aXJtYXRpb24KICAgICAgdXR0ZXI6IHV0dGVyX2Fza19hZGRfY29udGFjdF9jb25maXJtYXRpb24K"
-                            "ICAgICAgYXNrX2JlZm9yZV9maWxsaW5nOiBmYWxzZQogICAgICByZXNldF9hZnRlcl9mbG93X2Vu"
-                            "ZHM6IHRydWUKICAgICAgcmVqZWN0aW9uczogW10KICAgIC0gaWQ6IGFjdGlvbl9hZGRfY29udGFj"
-                            "dAogICAgICBuZXh0OgogICAgICAtIGlmOiBzbG90cy5yZXR1cm5fdmFsdWUgaXMgJ2FscmVhZHlf"
-                            "ZXhpc3RzJwogICAgICAgIHRoZW46CiAgICAgICAgLSBpZDogNV91dHRlcl9jb250YWN0X2FscmVh"
-                            "ZHlfZXhpc3RzCiAgICAgICAgICBuZXh0OiBFTkQKICAgICAgICAgIGFjdGlvbjogdXR0ZXJfY29u"
-                            "dGFjdF9hbHJlYWR5X2V4aXN0cwogICAgICAtIGlmOiBzbG90cy5yZXR1cm5fdmFsdWUgaXMgJ3N1"
-                            "Y2Nlc3MnCiAgICAgICAgdGhlbjoKICAgICAgICAtIGlkOiA2X3V0dGVyX2NvbnRhY3RfYWRkZWQK"
-                            "ICAgICAgICAgIG5leHQ6IEVORAogICAgICAgICAgYWN0aW9uOiB1dHRlcl9jb250YWN0X2FkZGVk"
-                            "CiAgICAgIC0gZWxzZToKICAgICAgICAtIGlkOiA3X3V0dGVyX2FkZF9jb250YWN0X2Vycm9yCiAg"
-                            "ICAgICAgICBuZXh0OiBFTkQKICAgICAgICAgIGFjdGlvbjogdXR0ZXJfYWRkX2NvbnRhY3RfZXJy"
-                            "b3IKICAgICAgYWN0aW9uOiBhY3Rpb25fYWRkX2NvbnRhY3QKICAgIG5hbWU6IGFkZF9jb250YWN0"
-                            "CiAgICBkZXNjcmlwdGlvbjogYWRkIGEgY29udGFjdCB0byB5b3VyIGNvbnRhY3QgbGlzdAogIGNo"
-                            "ZWNrX2JhbGFuY2U6CiAgICBzdGVwczoKICAgIC0gaWQ6IDBfYWN0aW9uX2NoZWNrX2JhbGFuY2UK"
-                            "ICAgICAgbmV4dDogMV91dHRlcl9jdXJyZW50X2JhbGFuY2UKICAgICAgYWN0aW9uOiBhY3Rpb25f"
-                            "Y2hlY2tfYmFsYW5jZQogICAgLSBpZDogMV91dHRlcl9jdXJyZW50X2JhbGFuY2UKICAgICAgbmV4"
-                            "dDogRU5ECiAgICAgIGFjdGlvbjogdXR0ZXJfY3VycmVudF9iYWxhbmNlCiAgICBuYW1lOiBjaGVj"
-                            "a19iYWxhbmNlCiAgICBkZXNjcmlwdGlvbjogY2hlY2sgdGhlIHVzZXIncyBhY2NvdW50IGJhbGFu"
-                            "Y2UuCiAgaG90ZWxfc2VhcmNoOgogICAgc3RlcHM6CiAgICAtIGlkOiAwX2FjdGlvbl9zZWFyY2hf"
-                            "aG90ZWwKICAgICAgbmV4dDogMV91dHRlcl9ob3RlbF9pbmZvcm1fcmF0aW5nCiAgICAgIGFjdGlv"
-                            "bjogYWN0aW9uX3NlYXJjaF9ob3RlbAogICAgLSBpZDogMV91dHRlcl9ob3RlbF9pbmZvcm1fcmF0"
-                            "aW5nCiAgICAgIG5leHQ6IEVORAogICAgICBhY3Rpb246IHV0dGVyX2hvdGVsX2luZm9ybV9yYXRp"
-                            "bmcKICAgIG5hbWU6IGhvdGVsX3NlYXJjaAogICAgZGVzY3JpcHRpb246IHNlYXJjaCBmb3IgaG90"
-                            "ZWxzCiAgcmVtb3ZlX2NvbnRhY3Q6CiAgICBzdGVwczoKICAgIC0gaWQ6IDBfY29sbGVjdF9yZW1v"
-                            "dmVfY29udGFjdF9oYW5kbGUKICAgICAgbmV4dDogMV9jb2xsZWN0X3JlbW92ZV9jb250YWN0X2Nv"
-                            "bmZpcm1hdGlvbgogICAgICBkZXNjcmlwdGlvbjogYSBjb250YWN0IGhhbmRsZSBzdGFydGluZyB3"
-                            "aXRoIEAKICAgICAgY29sbGVjdDogcmVtb3ZlX2NvbnRhY3RfaGFuZGxlCiAgICAgIHV0dGVyOiB1"
-                            "dHRlcl9hc2tfcmVtb3ZlX2NvbnRhY3RfaGFuZGxlCiAgICAgIGFza19iZWZvcmVfZmlsbGluZzog"
-                            "ZmFsc2UKICAgICAgcmVzZXRfYWZ0ZXJfZmxvd19lbmRzOiB0cnVlCiAgICAgIHJlamVjdGlvbnM6"
-                            "IFtdCiAgICAtIGlkOiAxX2NvbGxlY3RfcmVtb3ZlX2NvbnRhY3RfY29uZmlybWF0aW9uCiAgICAg"
-                            "IG5leHQ6CiAgICAgIC0gaWY6IG5vdCBzbG90cy5yZW1vdmVfY29udGFjdF9jb25maXJtYXRpb24K"
-                            "ICAgICAgICB0aGVuOgogICAgICAgIC0gaWQ6IDJfdXR0ZXJfcmVtb3ZlX2NvbnRhY3RfY2FuY2Vs"
-                            "bGVkCiAgICAgICAgICBuZXh0OiBFTkQKICAgICAgICAgIGFjdGlvbjogdXR0ZXJfcmVtb3ZlX2Nv"
-                            "bnRhY3RfY2FuY2VsbGVkCiAgICAgIC0gZWxzZTogYWN0aW9uX3JlbW92ZV9jb250YWN0CiAgICAg"
-                            "IGNvbGxlY3Q6IHJlbW92ZV9jb250YWN0X2NvbmZpcm1hdGlvbgogICAgICB1dHRlcjogdXR0ZXJf"
-                            "YXNrX3JlbW92ZV9jb250YWN0X2NvbmZpcm1hdGlvbgogICAgICBhc2tfYmVmb3JlX2ZpbGxpbmc6"
-                            "IHRydWUKICAgICAgcmVzZXRfYWZ0ZXJfZmxvd19lbmRzOiB0cnVlCiAgICAgIHJlamVjdGlvbnM6"
-                            "IFtdCiAgICAtIGlkOiBhY3Rpb25fcmVtb3ZlX2NvbnRhY3QKICAgICAgbmV4dDoKICAgICAgLSBp"
-                            "Zjogc2xvdHMucmV0dXJuX3ZhbHVlIGlzICdub3RfZm91bmQnCiAgICAgICAgdGhlbjoKICAgICAg"
-                            "ICAtIGlkOiA0X3V0dGVyX2NvbnRhY3Rfbm90X2luX2xpc3QKICAgICAgICAgIG5leHQ6IEVORAog"
-                            "ICAgICAgICAgYWN0aW9uOiB1dHRlcl9jb250YWN0X25vdF9pbl9saXN0CiAgICAgIC0gaWY6IHNs"
-                            "b3RzLnJldHVybl92YWx1ZSBpcyAnc3VjY2VzcycKICAgICAgICB0aGVuOgogICAgICAgIC0gaWQ6"
-                            "IDVfdXR0ZXJfcmVtb3ZlX2NvbnRhY3Rfc3VjY2VzcwogICAgICAgICAgbmV4dDogRU5ECiAgICAg"
-                            "ICAgICBhY3Rpb246IHV0dGVyX3JlbW92ZV9jb250YWN0X3N1Y2Nlc3MKICAgICAgLSBlbHNlOgog"
-                            "ICAgICAgIC0gaWQ6IDZfdXR0ZXJfcmVtb3ZlX2NvbnRhY3RfZXJyb3IKICAgICAgICAgIG5leHQ6"
-                            "IEVORAogICAgICAgICAgYWN0aW9uOiB1dHRlcl9yZW1vdmVfY29udGFjdF9lcnJvcgogICAgICBh"
-                            "Y3Rpb246IGFjdGlvbl9yZW1vdmVfY29udGFjdAogICAgbmFtZTogcmVtb3ZlX2NvbnRhY3QKICAg"
-                            "IGRlc2NyaXB0aW9uOiByZW1vdmUgYSBjb250YWN0IGZyb20geW91ciBjb250YWN0IGxpc3QKICB0"
-                            "cmFuc2FjdGlvbl9zZWFyY2g6CiAgICBzdGVwczoKICAgIC0gaWQ6IDBfYWN0aW9uX3RyYW5zYWN0"
-                            "aW9uX3NlYXJjaAogICAgICBuZXh0OiAxX3V0dGVyX3RyYW5zYWN0aW9ucwogICAgICBhY3Rpb246"
-                            "IGFjdGlvbl90cmFuc2FjdGlvbl9zZWFyY2gKICAgIC0gaWQ6IDFfdXR0ZXJfdHJhbnNhY3Rpb25z"
-                            "CiAgICAgIG5leHQ6IEVORAogICAgICBhY3Rpb246IHV0dGVyX3RyYW5zYWN0aW9ucwogICAgbmFt"
-                            "ZTogdHJhbnNhY3Rpb25fc2VhcmNoCiAgICBkZXNjcmlwdGlvbjogbGlzdHMgdGhlIGxhc3QgdHJh"
-                            "bnNhY3Rpb25zIG9mIHRoZSB1c2VyIGFjY291bnQKICB0cmFuc2Zlcl9tb25leToKICAgIHN0ZXBz"
-                            "OgogICAgLSBpZDogMF9jb2xsZWN0X3RyYW5zZmVyX21vbmV5X3JlY2lwaWVudAogICAgICBuZXh0"
-                            "OiAxX2NvbGxlY3RfdHJhbnNmZXJfbW9uZXlfYW1vdW50CiAgICAgIGRlc2NyaXB0aW9uOiBBc2tz"
-                            "IHVzZXIgZm9yIHRoZSByZWNpcGllbnQncyBuYW1lLgogICAgICBjb2xsZWN0OiB0cmFuc2Zlcl9t"
-                            "b25leV9yZWNpcGllbnQKICAgICAgdXR0ZXI6IHV0dGVyX2Fza190cmFuc2Zlcl9tb25leV9yZWNp"
-                            "cGllbnQKICAgICAgYXNrX2JlZm9yZV9maWxsaW5nOiBmYWxzZQogICAgICByZXNldF9hZnRlcl9m"
-                            "bG93X2VuZHM6IHRydWUKICAgICAgcmVqZWN0aW9uczogW10KICAgIC0gaWQ6IDFfY29sbGVjdF90"
-                            "cmFuc2Zlcl9tb25leV9hbW91bnQKICAgICAgbmV4dDogMl9jb2xsZWN0X3RyYW5zZmVyX21vbmV5"
-                            "X2ZpbmFsX2NvbmZpcm1hdGlvbgogICAgICBkZXNjcmlwdGlvbjogQXNrcyB1c2VyIGZvciB0aGUg"
-                            "YW1vdW50IHRvIHRyYW5zZmVyLgogICAgICBjb2xsZWN0OiB0cmFuc2Zlcl9tb25leV9hbW91bnQK"
-                            "ICAgICAgdXR0ZXI6IHV0dGVyX2Fza190cmFuc2Zlcl9tb25leV9hbW91bnQKICAgICAgYXNrX2Jl"
-                            "Zm9yZV9maWxsaW5nOiBmYWxzZQogICAgICByZXNldF9hZnRlcl9mbG93X2VuZHM6IHRydWUKICAg"
-                            "ICAgcmVqZWN0aW9uczogW10KICAgIC0gaWQ6IDJfY29sbGVjdF90cmFuc2Zlcl9tb25leV9maW5h"
-                            "bF9jb25maXJtYXRpb24KICAgICAgbmV4dDoKICAgICAgLSBpZjogbm90IHNsb3RzLnRyYW5zZmVy"
-                            "X21vbmV5X2ZpbmFsX2NvbmZpcm1hdGlvbgogICAgICAgIHRoZW46CiAgICAgICAgLSBpZDogM191"
-                            "dHRlcl90cmFuc2Zlcl9jYW5jZWxsZWQKICAgICAgICAgIG5leHQ6IEVORAogICAgICAgICAgYWN0"
-                            "aW9uOiB1dHRlcl90cmFuc2Zlcl9jYW5jZWxsZWQKICAgICAgLSBlbHNlOiBhY3Rpb25fZXhlY3V0"
-                            "ZV90cmFuc2ZlcgogICAgICBkZXNjcmlwdGlvbjogQXNrcyB1c2VyIGZvciBmaW5hbCBjb25maXJt"
-                            "YXRpb24gdG8gdHJhbnNmZXIgbW9uZXkuCiAgICAgIGNvbGxlY3Q6IHRyYW5zZmVyX21vbmV5X2Zp"
-                            "bmFsX2NvbmZpcm1hdGlvbgogICAgICB1dHRlcjogdXR0ZXJfYXNrX3RyYW5zZmVyX21vbmV5X2Zp"
-                            "bmFsX2NvbmZpcm1hdGlvbgogICAgICBhc2tfYmVmb3JlX2ZpbGxpbmc6IHRydWUKICAgICAgcmVz"
-                            "ZXRfYWZ0ZXJfZmxvd19lbmRzOiB0cnVlCiAgICAgIHJlamVjdGlvbnM6IFtdCiAgICAtIGlkOiBh"
-                            "Y3Rpb25fZXhlY3V0ZV90cmFuc2ZlcgogICAgICBuZXh0OgogICAgICAtIGlmOiBzbG90cy50cmFu"
-                            "c2Zlcl9tb25leV90cmFuc2Zlcl9zdWNjZXNzZnVsCiAgICAgICAgdGhlbjoKICAgICAgICAtIGlk"
-                            "OiA1X3V0dGVyX3RyYW5zZmVyX2NvbXBsZXRlCiAgICAgICAgICBuZXh0OiBFTkQKICAgICAgICAg"
-                            "IGFjdGlvbjogdXR0ZXJfdHJhbnNmZXJfY29tcGxldGUKICAgICAgLSBlbHNlOgogICAgICAgIC0g"
-                            "aWQ6IDZfdXR0ZXJfdHJhbnNmZXJfZmFpbGVkCiAgICAgICAgICBuZXh0OiBFTkQKICAgICAgICAg"
-                            "IGFjdGlvbjogdXR0ZXJfdHJhbnNmZXJfZmFpbGVkCiAgICAgIGFjdGlvbjogYWN0aW9uX2V4ZWN1"
-                            "dGVfdHJhbnNmZXIKICAgIG5hbWU6IHRyYW5zZmVyX21vbmV5CiAgICBkZXNjcmlwdGlvbjogVGhp"
-                            "cyBmbG93IGxldCdzIHVzZXJzIHNlbmQgbW9uZXkgdG8gZnJpZW5kcyBhbmQgZmFtaWx5LgogIHZl"
-                            "cmlmeV9hY2NvdW50OgogICAgc3RlcHM6CiAgICAtIGlkOiAwX2NvbGxlY3RfdmVyaWZ5X2FjY291"
-                            "bnRfZW1haWwKICAgICAgbmV4dDogMV9jb2xsZWN0X2Jhc2VkX2luX2NhbGlmb3JuaWEKICAgICAg"
-                            "ZGVzY3JpcHRpb246IEFza3MgdXNlciBmb3IgdGhlaXIgZW1haWwgYWRkcmVzcy4KICAgICAgY29s"
-                            "bGVjdDogdmVyaWZ5X2FjY291bnRfZW1haWwKICAgICAgdXR0ZXI6IHV0dGVyX2Fza192ZXJpZnlf"
-                            "YWNjb3VudF9lbWFpbAogICAgICBhc2tfYmVmb3JlX2ZpbGxpbmc6IHRydWUKICAgICAgcmVzZXRf"
-                            "YWZ0ZXJfZmxvd19lbmRzOiB0cnVlCiAgICAgIHJlamVjdGlvbnM6IFtdCiAgICAtIGlkOiAxX2Nv"
-                            "bGxlY3RfYmFzZWRfaW5fY2FsaWZvcm5pYQogICAgICBuZXh0OgogICAgICAtIGlmOiBzbG90cy5i"
-                            "YXNlZF9pbl9jYWxpZm9ybmlhCiAgICAgICAgdGhlbjoKICAgICAgICAtIGlkOiAyX2NvbGxlY3Rf"
-                            "dmVyaWZ5X2FjY291bnRfc3VmZmljaWVudF9jYWxpZm9ybmlhX2luY29tZQogICAgICAgICAgbmV4"
-                            "dDoKICAgICAgICAgIC0gaWY6IG5vdCBzbG90cy52ZXJpZnlfYWNjb3VudF9zdWZmaWNpZW50X2Nh"
-                            "bGlmb3JuaWFfaW5jb21lCiAgICAgICAgICAgIHRoZW46CiAgICAgICAgICAgIC0gaWQ6IDNfdXR0"
-                            "ZXJfY2FfaW5jb21lX2luc3VmZmljaWVudAogICAgICAgICAgICAgIG5leHQ6IEVORAogICAgICAg"
-                            "ICAgICAgIGFjdGlvbjogdXR0ZXJfY2FfaW5jb21lX2luc3VmZmljaWVudAogICAgICAgICAgLSBl"
-                            "bHNlOiBjb2xsZWN0X3ZlcmlmeV9hY2NvdW50X2NvbmZpcm1hdGlvbl9jYWxpZm9ybmlhCiAgICAg"
-                            "ICAgICBkZXNjcmlwdGlvbjogQXNrcyB1c2VyIGlmIHRoZXkgaGF2ZSBzdWZmaWNpZW50IGluY29t"
-                            "ZSBpbiBDYWxpZm9ybmlhLgogICAgICAgICAgY29sbGVjdDogdmVyaWZ5X2FjY291bnRfc3VmZmlj"
-                            "aWVudF9jYWxpZm9ybmlhX2luY29tZQogICAgICAgICAgdXR0ZXI6IHV0dGVyX2Fza192ZXJpZnlf"
-                            "YWNjb3VudF9zdWZmaWNpZW50X2NhbGlmb3JuaWFfaW5jb21lCiAgICAgICAgICBhc2tfYmVmb3Jl"
-                            "X2ZpbGxpbmc6IHRydWUKICAgICAgICAgIHJlc2V0X2FmdGVyX2Zsb3dfZW5kczogdHJ1ZQogICAg"
-                            "ICAgICAgcmVqZWN0aW9uczogW10KICAgICAgICAtIGlkOiBjb2xsZWN0X3ZlcmlmeV9hY2NvdW50"
-                            "X2NvbmZpcm1hdGlvbl9jYWxpZm9ybmlhCiAgICAgICAgICBuZXh0OgogICAgICAgICAgLSBpZjog"
-                            "c2xvdHMudmVyaWZ5X2FjY291bnRfY29uZmlybWF0aW9uX2NhbGlmb3JuaWEKICAgICAgICAgICAg"
-                            "dGhlbjoKICAgICAgICAgICAgLSBpZDogNV91dHRlcl92ZXJpZnlfYWNjb3VudF9zdWNjZXNzCiAg"
-                            "ICAgICAgICAgICAgbmV4dDogRU5ECiAgICAgICAgICAgICAgYWN0aW9uOiB1dHRlcl92ZXJpZnlf"
-                            "YWNjb3VudF9zdWNjZXNzCiAgICAgICAgICAtIGVsc2U6CiAgICAgICAgICAgIC0gaWQ6IDZfdXR0"
-                            "ZXJfdmVyaWZ5X2FjY291bnRfY2FuY2VsbGVkCiAgICAgICAgICAgICAgbmV4dDogRU5ECiAgICAg"
-                            "ICAgICAgICAgYWN0aW9uOiB1dHRlcl92ZXJpZnlfYWNjb3VudF9jYW5jZWxsZWQKICAgICAgICAg"
-                            "IGRlc2NyaXB0aW9uOiBBc2tzIHVzZXIgZm9yIGZpbmFsIGNvbmZpcm1hdGlvbiB0byB2ZXJpZnkg"
-                            "dGhlaXIgYWNjb3VudCBpbiBDYWxpZm9ybmlhLgogICAgICAgICAgY29sbGVjdDogdmVyaWZ5X2Fj"
-                            "Y291bnRfY29uZmlybWF0aW9uX2NhbGlmb3JuaWEKICAgICAgICAgIHV0dGVyOiB1dHRlcl9hc2tf"
-                            "dmVyaWZ5X2FjY291bnRfY29uZmlybWF0aW9uX2NhbGlmb3JuaWEKICAgICAgICAgIGFza19iZWZv"
-                            "cmVfZmlsbGluZzogdHJ1ZQogICAgICAgICAgcmVzZXRfYWZ0ZXJfZmxvd19lbmRzOiB0cnVlCiAg"
-                            "ICAgICAgICByZWplY3Rpb25zOiBbXQogICAgICAtIGVsc2U6IGNvbGxlY3RfdmVyaWZ5X2FjY291"
-                            "bnRfY29uZmlybWF0aW9uCiAgICAgIGRlc2NyaXB0aW9uOiBBc2tzIHVzZXIgaWYgdGhleSBhcmUg"
-                            "YmFzZWQgaW4gQ2FsaWZvcm5pYS4KICAgICAgY29sbGVjdDogYmFzZWRfaW5fY2FsaWZvcm5pYQog"
-                            "ICAgICB1dHRlcjogdXR0ZXJfYXNrX2Jhc2VkX2luX2NhbGlmb3JuaWEKICAgICAgYXNrX2JlZm9y"
-                            "ZV9maWxsaW5nOiB0cnVlCiAgICAgIHJlc2V0X2FmdGVyX2Zsb3dfZW5kczogdHJ1ZQogICAgICBy"
-                            "ZWplY3Rpb25zOiBbXQogICAgLSBpZDogY29sbGVjdF92ZXJpZnlfYWNjb3VudF9jb25maXJtYXRp"
-                            "b24KICAgICAgbmV4dDoKICAgICAgLSBpZjogc2xvdHMudmVyaWZ5X2FjY291bnRfY29uZmlybWF0"
-                            "aW9uCiAgICAgICAgdGhlbjoKICAgICAgICAtIGlkOiA4X3V0dGVyX3ZlcmlmeV9hY2NvdW50X3N1"
-                            "Y2Nlc3MKICAgICAgICAgIG5leHQ6IEVORAogICAgICAgICAgYWN0aW9uOiB1dHRlcl92ZXJpZnlf"
-                            "YWNjb3VudF9zdWNjZXNzCiAgICAgIC0gZWxzZToKICAgICAgICAtIGlkOiA5X3V0dGVyX3Zlcmlm"
-                            "eV9hY2NvdW50X2NhbmNlbGxlZAogICAgICAgICAgbmV4dDogRU5ECiAgICAgICAgICBhY3Rpb246"
-                            "IHV0dGVyX3ZlcmlmeV9hY2NvdW50X2NhbmNlbGxlZAogICAgICBkZXNjcmlwdGlvbjogQXNrcyB1"
-                            "c2VyIGZvciBmaW5hbCBjb25maXJtYXRpb24gdG8gdmVyaWZ5IHRoZWlyIGFjY291bnQuCiAgICAg"
-                            "IGNvbGxlY3Q6IHZlcmlmeV9hY2NvdW50X2NvbmZpcm1hdGlvbgogICAgICB1dHRlcjogdXR0ZXJf"
-                            "YXNrX3ZlcmlmeV9hY2NvdW50X2NvbmZpcm1hdGlvbgogICAgICBhc2tfYmVmb3JlX2ZpbGxpbmc6"
-                            "IHRydWUKICAgICAgcmVzZXRfYWZ0ZXJfZmxvd19lbmRzOiB0cnVlCiAgICAgIHJlamVjdGlvbnM6"
-                            "IFtdCiAgICBuYW1lOiB2ZXJpZnlfYWNjb3VudAogICAgZGVzY3JpcHRpb246IFZlcmlmeSBhbiBh"
-                            "Y2NvdW50IGZvciBoaWdoZXIgdHJhbnNmZXIgbGltaXRzCg=="
-                        ),
+                        "domain": (encode_yaml(CALM_DOMAIN_YAML)),
+                        "flows": (encode_yaml(CALM_FLOWS_YAML)),
+                        "nlu": (encode_yaml(CALM_NLU_YAML)),
                         "config": (
                             "cmVjaXBlOiBkZWZhdWx0LnYxCmxhbmd1YWdlOiBlbgpwaXBlbGluZToKLSBuYW1lOiBMTE1Db21t"
                             "YW5kR2VuZXJhdG9yCiAgbGxtOgogICAgbW9kZWxfbmFtZTogZ3B0LTQKcG9saWNpZXM6Ci0gbmFt"
@@ -502,25 +823,52 @@ def test_build_request(
 
 
 @pytest.mark.parametrize("assistant_name", ["test"])
-def test_build_import_request(
-    assistant_name: str, calm_domain_yaml, calm_flows_yaml
-) -> None:
+def test_build_import_request(assistant_name: str) -> None:
     """Test the build_import_request function.
 
     :param assistant_name: The name of the assistant
     :return: None
     """
-    base64_domain = base64.b64encode(calm_domain_yaml.encode("utf-8")).decode("utf-8")
-    base64_flows = base64.b64encode(calm_flows_yaml.encode("utf-8")).decode("utf-8")
-    base64_config = base64.b64encode("".encode("utf-8")).decode("utf-8")
+
+    base64_flows = encode_yaml(CALM_FLOWS_YAML)
+    base64_domain = encode_yaml(CALM_DOMAIN_YAML)
+    base64_config = encode_yaml("")
+    base64_nlu = encode_yaml(CALM_NLU_YAML)
 
     graphql_req = rasa.studio.upload.build_import_request(
-        assistant_name, calm_flows_yaml, calm_domain_yaml, base64_config
+        assistant_name, CALM_FLOWS_YAML, CALM_DOMAIN_YAML, base64_config, CALM_NLU_YAML
     )
 
     assert graphql_req["variables"]["input"]["domain"] == base64_domain
     assert graphql_req["variables"]["input"]["flows"] == base64_flows
     assert graphql_req["variables"]["input"]["assistantName"] == assistant_name
+    assert graphql_req["variables"]["input"]["nlu"] == base64_nlu
+
+
+def test_build_import_request_no_nlu() -> None:
+    """Test the build_import_request function when there is no NLU content to upload.
+
+    :return: None
+    """
+    assistant_name = "test"
+    empty_string = ""
+
+    base64_flows = encode_yaml(CALM_FLOWS_YAML)
+    base64_domain = encode_yaml(CALM_DOMAIN_YAML)
+    base64_config = encode_yaml(empty_string)
+
+    graphql_req = rasa.studio.upload.build_import_request(
+        assistant_name,
+        flows_yaml=CALM_FLOWS_YAML,
+        domain_yaml=CALM_DOMAIN_YAML,
+        config_yaml=empty_string,
+    )
+
+    assert graphql_req["variables"]["input"]["domain"] == base64_domain
+    assert graphql_req["variables"]["input"]["flows"] == base64_flows
+    assert graphql_req["variables"]["input"]["assistantName"] == assistant_name
+    assert graphql_req["variables"]["input"]["config"] == base64_config
+    assert graphql_req["variables"]["input"]["nlu"] == empty_string
 
 
 @pytest.mark.parametrize(
@@ -597,8 +945,8 @@ def test_build_import_request(
                 "variables": {
                     "input": {
                         "assistantName": "test",
-                        "domain": base64_calm_domain_yaml,
-                        "flows": base64_calm_flows_yaml,
+                        "domain": encode_yaml(CALM_DOMAIN_YAML),
+                        "flows": encode_yaml(CALM_FLOWS_YAML),
                     }
                 },
             },
@@ -618,8 +966,8 @@ def test_build_import_request(
                 "variables": {
                     "input": {
                         "assistantName": "test",
-                        "domain": base64_calm_domain_yaml,
-                        "flows": base64_calm_flows_yaml,
+                        "domain": encode_yaml(CALM_DOMAIN_YAML),
+                        "flows": encode_yaml(CALM_FLOWS_YAML),
                     }
                 },
             },
@@ -639,8 +987,8 @@ def test_build_import_request(
                 "variables": {
                     "input": {
                         "assistantName": "test",
-                        "domain": base64_calm_domain_yaml,
-                        "flows": base64_calm_flows_yaml,
+                        "domain": encode_yaml(CALM_DOMAIN_YAML),
+                        "flows": encode_yaml(CALM_FLOWS_YAML),
                         "config": "",
                     }
                 },
@@ -662,8 +1010,6 @@ def test_make_request(
     expected_response: str,
     expected_status: bool,
     endpoint: str,
-    calm_domain_yaml: str,
-    calm_flows_yaml: str,
 ) -> None:
     return_mock = MagicMock()
     return_mock.status_code = return_value["status_code"]
@@ -723,7 +1069,6 @@ def test_filter_domain(
     entities: List[Union[str, Dict[Any, Any]]],
     expected_domain: Dict[str, Any],
 ) -> None:
-
     filtered_domain = rasa.studio.upload._filter_domain(
         domain_from_files=domain_from_files, intents=intents, entities=entities
     )
@@ -747,7 +1092,6 @@ def test_check_for_missing_primitives(
     found_intents: List[str],
     found_entities: List[str],
 ) -> None:
-
     with pytest.raises(RasaException) as excinfo:
         rasa.studio.upload._check_for_missing_primitives(
             intents, entities, found_intents, found_entities
