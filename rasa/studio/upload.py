@@ -93,7 +93,6 @@ def upload_calm_assistant(
         importer = TrainingDataImporter.load_from_dict(
             domain_path=args.domain,
             config_path=args.config,
-            training_data_paths=args.data,
         )
 
         # Prepare config and domain
