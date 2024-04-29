@@ -451,13 +451,14 @@ class FlowSyncImporter(PassThroughImporter):
     @rasa.shared.utils.common.cached_method
     def get_domain(self) -> Domain:
         """Merge existing domain with properties of flows."""
-        domain = self._importer.get_domain()
+        # load domain data from user defined domain files
+        user_defined_domain = self._importer.get_domain()
 
+        # load user defined flows
         flows = self.get_flows()
-
         if flows.is_empty():
             # if there are no flows, we don't need to add the default flows either
-            return domain
+            return user_defined_domain
 
         default_flows_domain = self.load_default_pattern_flows_domain()
 
@@ -465,9 +466,15 @@ class FlowSyncImporter(PassThroughImporter):
             rasa.shared.constants.FLOW_PREFIX + flow.id
             for flow in flows.underlying_flows
         ]
-
         flow_domain = Domain.from_dict({KEY_ACTIONS: flow_names})
-        return domain.merge(flow_domain.merge(default_flows_domain))
+
+        default_domain = flow_domain.merge(default_flows_domain)
+        # we're merging with the default domain which contains default patterns
+        # utterances (overrides)
+        domain = user_defined_domain.merge(
+            default_domain, ignore_warnings_about_duplicates=True
+        )
+        return domain
 
 
 class ResponsesSyncImporter(PassThroughImporter):
@@ -618,8 +625,6 @@ class E2EImporter(PassThroughImporter):
             )
 
         return Domain.from_dict({KEY_E2E_ACTIONS: list(additional_e2e_action_names)})
-
-        return self._importer.get_config_file_for_auto_config()
 
     @rasa.shared.utils.common.cached_method
     def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
