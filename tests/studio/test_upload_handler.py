@@ -12,7 +12,7 @@ from rasa.shared.exceptions import RasaException
 import rasa.studio.upload
 from rasa.studio.config import StudioConfig
 
-calm_domain_yaml = dedent(
+CALM_DOMAIN_YAML = dedent(
     """\
     version: '3.1'
     actions:
@@ -188,7 +188,7 @@ calm_domain_yaml = dedent(
 )
 
 
-calm_flows_yaml = dedent(
+CALM_FLOWS_YAML = dedent(
     """\
     flows:
       health_advice:
@@ -461,7 +461,7 @@ calm_flows_yaml = dedent(
     """  # noqa: E501
 )
 
-calm_nlu_yaml = dedent(
+CALM_NLU_YAML = dedent(
     """\
     version: "3.1"
     nlu:
@@ -654,9 +654,9 @@ def encode_yaml(yaml):
                 "variables": {
                     "input": {
                         "assistantName": "test",
-                        "domain": (encode_yaml(calm_domain_yaml)),
-                        "flows": (encode_yaml(calm_flows_yaml)),
-                        "nlu": (encode_yaml(calm_nlu_yaml)),
+                        "domain": (encode_yaml(CALM_DOMAIN_YAML)),
+                        "flows": (encode_yaml(CALM_FLOWS_YAML)),
+                        "nlu": (encode_yaml(CALM_NLU_YAML)),
                         "config": (
                             "cmVjaXBlOiBkZWZhdWx0LnYxCmxhbmd1YWdlOiBlbgpwaXBlbGluZToKLSBuYW1lOiBMTE1Db21t"
                             "YW5kR2VuZXJhdG9yCiAgbGxtOgogICAgbW9kZWxfbmFtZTogZ3B0LTQKcG9saWNpZXM6Ci0gbmFt"
@@ -830,13 +830,13 @@ def test_build_import_request(assistant_name: str) -> None:
     :return: None
     """
 
-    base64_flows = encode_yaml(calm_flows_yaml)
-    base64_domain = encode_yaml(calm_domain_yaml)
+    base64_flows = encode_yaml(CALM_FLOWS_YAML)
+    base64_domain = encode_yaml(CALM_DOMAIN_YAML)
     base64_config = encode_yaml("")
-    base64_nlu = encode_yaml(calm_nlu_yaml)
+    base64_nlu = encode_yaml(CALM_NLU_YAML)
 
     graphql_req = rasa.studio.upload.build_import_request(
-        assistant_name, calm_flows_yaml, calm_domain_yaml, base64_config, calm_nlu_yaml
+        assistant_name, CALM_FLOWS_YAML, CALM_DOMAIN_YAML, base64_config, CALM_NLU_YAML
     )
 
     assert graphql_req["variables"]["input"]["domain"] == base64_domain
@@ -853,14 +853,14 @@ def test_build_import_request_no_nlu() -> None:
     assistant_name = "test"
     empty_string = ""
 
-    base64_flows = encode_yaml(calm_flows_yaml)
-    base64_domain = encode_yaml(calm_domain_yaml)
+    base64_flows = encode_yaml(CALM_FLOWS_YAML)
+    base64_domain = encode_yaml(CALM_DOMAIN_YAML)
     base64_config = encode_yaml(empty_string)
 
     graphql_req = rasa.studio.upload.build_import_request(
         assistant_name,
-        flows_yaml=calm_flows_yaml,
-        domain_yaml=calm_domain_yaml,
+        flows_yaml=CALM_FLOWS_YAML,
+        domain_yaml=CALM_DOMAIN_YAML,
         config_yaml=empty_string,
     )
 
@@ -945,8 +945,8 @@ def test_build_import_request_no_nlu() -> None:
                 "variables": {
                     "input": {
                         "assistantName": "test",
-                        "domain": encode_yaml(calm_domain_yaml),
-                        "flows": encode_yaml(calm_flows_yaml),
+                        "domain": encode_yaml(CALM_DOMAIN_YAML),
+                        "flows": encode_yaml(CALM_FLOWS_YAML),
                     }
                 },
             },
@@ -966,8 +966,8 @@ def test_build_import_request_no_nlu() -> None:
                 "variables": {
                     "input": {
                         "assistantName": "test",
-                        "domain": encode_yaml(calm_domain_yaml),
-                        "flows": encode_yaml(calm_flows_yaml),
+                        "domain": encode_yaml(CALM_DOMAIN_YAML),
+                        "flows": encode_yaml(CALM_FLOWS_YAML),
                     }
                 },
             },
@@ -987,8 +987,8 @@ def test_build_import_request_no_nlu() -> None:
                 "variables": {
                     "input": {
                         "assistantName": "test",
-                        "domain": encode_yaml(calm_domain_yaml),
-                        "flows": encode_yaml(calm_flows_yaml),
+                        "domain": encode_yaml(CALM_DOMAIN_YAML),
+                        "flows": encode_yaml(CALM_FLOWS_YAML),
                         "config": "",
                     }
                 },

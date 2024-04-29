@@ -136,7 +136,8 @@ def upload_calm_assistant(
         user_flows = flow_importer.get_flows().user_flows
         flows = list(user_flows)
 
-        # Load NLU data
+        # We instantiate the TrainingDataImporter again on purpose to avoid
+        # adding patterns to domain's actions. More info https://t.ly/W8uuc
         nlu_importer = TrainingDataImporter.load_from_dict(
             domain_path=args.domain, training_data_paths=args.data
         )
