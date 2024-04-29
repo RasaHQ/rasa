@@ -93,6 +93,7 @@ def upload_calm_assistant(
         importer = TrainingDataImporter.load_from_dict(
             domain_path=args.domain,
             config_path=args.config,
+            training_data_paths=args.data,
         )
 
         # Prepare config and domain
@@ -140,10 +141,11 @@ def upload_calm_assistant(
         nlu_importer = TrainingDataImporter.load_from_dict(
             domain_path=args.domain, training_data_paths=args.data
         )
+        nlu_data = nlu_importer.get_nlu_data()
 
-        intents_from_files = nlu_importer.get_nlu_data().intents
+        intents_from_files = nlu_data.intents
 
-        nlu_examples = nlu_importer.get_nlu_data().filter_training_examples(
+        nlu_examples = nlu_data.filter_training_examples(
             lambda ex: ex.get("intent") in intents_from_files
         )
 
