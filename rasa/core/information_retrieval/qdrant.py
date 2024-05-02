@@ -2,7 +2,6 @@ from typing import TYPE_CHECKING, List, Text
 
 import structlog
 from langchain.vectorstores.qdrant import Qdrant
-from pydantic import ValidationError
 from qdrant_client import QdrantClient
 from rasa.utils.endpoints import EndpointConfig
 
@@ -77,11 +76,11 @@ class Qdrant_Store(InformationRetrieval):
             hits = await self.client.asimilarity_search(
                 query, k=4, score_threshold=threshold
             )
-        except ValidationError as e:
+        except Exception as e:
             raise PayloadNotFoundException(
                 "Payload not found in the Qdrant response. Please make sure "
                 "the `content_payload_key`and `metadata_payload_key` are correct in "
-                "the Qdrant configuration. Error: "
+                f"the Qdrant configuration. Error: {e}"
                 ""
             ) from e
         return hits
