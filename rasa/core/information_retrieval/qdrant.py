@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, List, Text
 
 import structlog
 from langchain.vectorstores.qdrant import Qdrant
+from pydantic import ValidationError
 from qdrant_client import QdrantClient
 from rasa.utils.endpoints import EndpointConfig
 
@@ -19,6 +20,17 @@ logger = structlog.get_logger()
 
 class PayloadNotFoundException(InformationRetrievalException):
     """Exception raised for errors in missing payloads."""
+
+    def __init__(self, message: str) -> None:
+        self.message = message
+        super().__init__()
+
+    def __str__(self) -> str:
+        return self.base_message + self.message + f"{self.__cause__}"
+
+
+class QdrantInformationRetrievalException(InformationRetrievalException):
+    """Exception raised for errors in the Qdrant vector store."""
 
     def __init__(self, message: str) -> None:
         self.message = message
@@ -76,11 +88,15 @@ class Qdrant_Store(InformationRetrieval):
             hits = await self.client.asimilarity_search(
                 query, k=4, score_threshold=threshold
             )
-        except Exception as e:
+        except ValidationError as e:
             raise PayloadNotFoundException(
                 "Payload not found in the Qdrant response. Please make sure "
                 "the `content_payload_key`and `metadata_payload_key` are correct in "
                 f"the Qdrant configuration. Error: {e}"
                 ""
+            ) from e
+        except Exception as e:
+            raise QdrantInformationRetrievalException(
+                f"Failed to search the Qdrant vector store. Encountered error: {e}"
             ) from e
         return hits

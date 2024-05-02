@@ -13,6 +13,7 @@ from rasa.core.information_retrieval.information_retrieval import (
 from rasa.utils.endpoints import EndpointConfig
 from rasa.core.information_retrieval.qdrant import (
     PayloadNotFoundException,
+    QdrantInformationRetrievalException,
     Qdrant_Store,
 )
 
@@ -41,7 +42,7 @@ def test_qdrant_store_connect(embeddings: Embeddings) -> None:
     assert client.client.metadata_payload_key == "extra"
 
 
-async def test_qdrant_search_raises_custom_exception(
+async def test_qdrant_search_raises_PayloadNotFoundException(
     monkeypatch: MonkeyPatch,
     embeddings: Embeddings,
 ) -> None:
@@ -76,4 +77,36 @@ async def test_qdrant_search_raises_custom_exception(
         "make sure the `content_payload_key`and "
         "`metadata_payload_key` are correct in the Qdrant "
         f"configuration. Error: 0 validation errors for {base_exception_msg}\n"
+    ) in str(e.value)
+
+
+async def test_qdrant_search_raises_QdrantInformationRetrievalException(
+    monkeypatch: MonkeyPatch,
+    embeddings: Embeddings,
+) -> None:
+    def mock_init(self, embeddings: Any):
+        self.embeddings = embeddings
+        self.client = MagicMock()
+
+    monkeypatch.setattr(
+        "rasa.core.information_retrieval.qdrant.Qdrant_Store.__init__",
+        mock_init,
+    )
+    qdrant_store = Qdrant_Store(embeddings=embeddings)
+
+    base_exception_msg = "An error occurred"
+    monkeypatch.setattr(
+        qdrant_store.client,
+        "asimilarity_search",
+        AsyncMock(side_effect=Exception(base_exception_msg)),
+    )
+
+    with pytest.raises(QdrantInformationRetrievalException) as e:
+        await qdrant_store.search("test")
+
+    assert issubclass(e.type, InformationRetrievalException)
+    assert (
+        "An error occurred while searching for documents: "
+        "Failed to search the Qdrant vector store. "
+        f"Encountered error: {base_exception_msg}"
     ) in str(e.value)
