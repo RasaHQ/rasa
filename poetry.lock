@@ -5263,20 +5263,17 @@ fastembed = ["fastembed (==0.1.1)"]
 
 [[package]]
 name = "questionary"
-version = "1.10.0"
+version = "2.0.1"
 description = "Python library to build pretty command line user prompts ⭐️"
 optional = false
-python-versions = ">=3.6,<4.0"
+python-versions = ">=3.8"
 files = [
-    {file = "questionary-1.10.0-py3-none-any.whl", hash = "sha256:fecfcc8cca110fda9d561cb83f1e97ecbb93c613ff857f655818839dac74ce90"},
-    {file = "questionary-1.10.0.tar.gz", hash = "sha256:600d3aefecce26d48d97eee936fdb66e4bc27f934c3ab6dd1e292c4f43946d90"},
+    {file = "questionary-2.0.1-py3-none-any.whl", hash = "sha256:8ab9a01d0b91b68444dff7f6652c1e754105533f083cbe27597c8110ecc230a2"},
+    {file = "questionary-2.0.1.tar.gz", hash = "sha256:bcce898bf3dbb446ff62830c86c5c6fb9a22a54146f0f5597d3da43b10d8fc8b"},
 ]
 
 [package.dependencies]
-prompt_toolkit = ">=2.0,<4.0"
-
-[package.extras]
-docs = ["Sphinx (>=3.3,<4.0)", "sphinx-autobuild (>=2020.9.1,<2021.0.0)", "sphinx-autodoc-typehints (>=1.11.1,<2.0.0)", "sphinx-copybutton (>=0.3.1,<0.4.0)", "sphinx-rtd-theme (>=0.5.0,<0.6.0)"]
+prompt_toolkit = ">=2.0,<=3.0.36"
 
 [[package]]
 name = "randomname"
@@ -8213,4 +8210,4 @@ transformers = ["sentencepiece", "transformers"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8.1,<3.11"
-content-hash = "d78f3e422e59520bf876c7a61447d8c3eeb14c2a2f1459f0cedc4dc9f7e929ce"
+content-hash = "85a140175fad392a63ae1e4be8744bf69ee2709a4464e68b538226587a6071bd"
