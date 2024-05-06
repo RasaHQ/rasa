@@ -88,69 +88,93 @@ async def annotate_test_with_commands(
         commands = tracker.latest_message.parse_data["commands"]
         commands_output = []
 
-        # commands are in a random order, but we want them in a specific order
-        # for the e2e tests
-        # start
-        start_flow_commands = [
-            command for command in commands if command["command"] == "start flow"
-        ]
-        for start_flow_commands in start_flow_commands:
-            commands_output.append({"start_flow": start_flow_commands["flow"]})
+        # if the llm did not predict any commands, we should add no_command
+        if not commands:
+            commands_output.append("no_command")
+        else:
+            # commands are in a random order, but we want them in a specific order
+            # for the e2e tests
+            # start
+            start_flow_commands = [
+                command for command in commands if command["command"] == "start flow"
+            ]
+            for start_flow_commands in start_flow_commands:
+                commands_output.append({"start_flow": start_flow_commands["flow"]})
 
-        # set slot
-        set_slot_commands = [
-            command for command in commands if command["command"] == "set slot"
-        ]
-        if set_slot_commands:
-            slots = []
-            for set_slot_command in set_slot_commands:
-                if isinstance(set_slot_command, str):
-                    slots.append(set_slot_command)
-                else:
-                    slots.append({set_slot_command["name"]: set_slot_command["value"]})
-            commands_output.append({"set_slot": slots})
+            # set slot
+            set_slot_commands = [
+                command for command in commands if command["command"] == "set slot"
+            ]
+            if set_slot_commands:
+                slots = []
+                for set_slot_command in set_slot_commands:
+                    if isinstance(set_slot_command, str):
+                        slots.append(set_slot_command)
+                    else:
+                        slots.append({set_slot_command["name"]: set_slot_command["value"]})
+                commands_output.append({"set_slot": slots})
 
-        # cancel
-        cancel_flow_commands = [
-            command for command in commands if command["command"] == "cancel flow"
-        ]
-        for cancel_flow_command in cancel_flow_commands:
-            commands_output.append({"cancel_flow": cancel_flow_command["flow"]})
+            # correct slot
+            correct_slot_commands = [
+                command for command in commands if command["command"] == "correct slot"
+            ]
+            if correct_slot_commands:
+                slots = []
+                for correct_slot_command in correct_slot_commands:
+                    if isinstance(correct_slot_command, str):
+                        slots.append(correct_slot_command)
+                    else:
+                        slots.append({correct_slot_command["name"]: correct_slot_command["value"]})
+                commands_output.append({"correct_slot": slots})
 
-        # clarify
-        clarify_commands = [
-            command for command in commands if command["command"] == "clarify"
-        ]
-        for clarify_command in clarify_commands:
-            commands_output.append({"clarify": clarify_command["options"]})
+            # cancel
+            cancel_flow_commands = [
+                command for command in commands if command["command"] == "cancel flow"
+            ]
+            for cancel_flow_command in cancel_flow_commands:
+                commands_output.append("cancel_flow")
 
-        # chitchat
-        chitchat_commands = [
-            command for command in commands if command["command"] == "chitchat"
-        ]
-        for chitchat_command in chitchat_commands:
-            commands_output.append("chitchat")
+            # clarify
+            clarify_commands = [
+                command for command in commands if command["command"] == "clarify"
+            ]
+            for clarify_command in clarify_commands:
+                commands_output.append({"clarify": clarify_command["options"]})
 
-        # human handoff
-        human_handoff_commands = [
-            command for command in commands if command["command"] == "human handoff"
-        ]
-        for human_handoff_command in human_handoff_commands:
-            commands_output.append("human_handoff")
+            # chitchat
+            chitchat_commands = [
+                command for command in commands if command["command"] == "chitchat"
+            ]
+            for chitchat_command in chitchat_commands:
+                commands_output.append("chitchat")
 
-        # knowledge
-        knowledge_commands = [
-            command for command in commands if command["command"] == "knowledge"
-        ]
-        for knowledge_command in knowledge_commands:
-            commands_output.append("knowledge")
+            # human handoff
+            human_handoff_commands = [
+                command for command in commands if command["command"] == "human handoff"
+            ]
+            for human_handoff_command in human_handoff_commands:
+                commands_output.append("human_handoff")
 
-        # skip question
-        skip_question_commands = [
-            command for command in commands if command["command"] == "skip question"
-        ]
-        for skip_question_command in skip_question_commands:
-            commands_output.append("skip question")
+            # knowledge
+            knowledge_commands = [
+                command for command in commands if command["command"] == "knowledge"
+            ]
+            for knowledge_command in knowledge_commands:
+                commands_output.append("knowledge")
+
+            # skip question
+            skip_question_commands = [
+                command for command in commands if command["command"] == "skip question"
+            ]
+            for skip_question_command in skip_question_commands:
+                commands_output.append("skip question")
+
+            # error
+            error_commands = [
+                command for command in commands if command["command"] == "error"
+            ]
+            for error_command in error_commands:
+                commands_output.append("error")
 
         command_annotated_steps.append({"commands": commands_output})
 
