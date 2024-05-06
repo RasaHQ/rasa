@@ -122,10 +122,6 @@ class TestStep:
             )
 
     def as_dict(self) -> Dict[Text, Any]:
-        """Returns the underlying dictionary of the test step."""
-        return self._underlying or {}
-
-    def as_dict(self) -> Dict[Text, Any]:
         """Returns the underlying dictionary of the test step.
         Only works if self._underlying has the original input dictionary.
         """

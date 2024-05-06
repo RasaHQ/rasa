@@ -79,7 +79,7 @@ async def annotate_test_with_commands(
         except Exception:
             structlogger.exception(
                 "e2e.tests.command_annotation.handle_message.failed",
-                error=f"An exception occurred while handling user message '{step.text}'.",
+                error=f"An exception occurred handling user message '{step.text}'.",
             )
         command_annotated_steps.append({"user": step.text})
 
@@ -88,7 +88,8 @@ async def annotate_test_with_commands(
         commands = tracker.latest_message.parse_data["commands"]
         commands_output = []
 
-        # commands are in random order, but we want them in a specific order in the e2e tests
+        # commands are in a random order, but we want them in a specific order
+        # for the e2e tests
         # start
         start_flow_commands = [
             command for command in commands if command["command"] == "start flow"
