@@ -21,7 +21,7 @@ structlogger = structlog.get_logger()
 
 
 def persist_tests(
-    test_cases: List[TestCase],
+    test_cases: List[Any],
     path: str,
 ) -> None:
     """Saves e2e tests.
@@ -53,7 +53,7 @@ def persist_tests(
 
 async def annotate_test_with_commands(
     test: TestCase, test_runner: E2ETestRunner, sender_id: str
-) -> List[Any]:
+) -> Dict[str, Any]:
     command_annotated_steps = []
 
     for step in test.steps:
@@ -85,7 +85,7 @@ async def annotate_test_with_commands(
 
         # get commands
         tracker = await test_runner.agent.tracker_store.retrieve(sender_id)
-        commands = tracker.latest_message.parse_data["commands"]
+        commands = tracker.latest_message.parse_data["commands"] # type: ignore
         commands_output = []
 
         # if the llm did not predict any commands, we should add no_command
@@ -98,8 +98,8 @@ async def annotate_test_with_commands(
             start_flow_commands = [
                 command for command in commands if command["command"] == "start flow"
             ]
-            for start_flow_commands in start_flow_commands:
-                commands_output.append({"start_flow": start_flow_commands["flow"]})
+            for start_flow_command in start_flow_commands:
+                commands_output.append({"start_flow": start_flow_command["flow"]})
 
             # set slot
             set_slot_commands = [
@@ -188,7 +188,7 @@ async def annotate_test_with_commands(
 async def command_annotate_tests(
     tests: List[TestCase],
     test_runner: E2ETestRunner,
-) -> List[List[TestCase]]:
+) -> List[Dict[str, Any]]:
     command_annotated_tests = []
     for test_case in tests:
         command_annotated_test = await annotate_test_with_commands(
