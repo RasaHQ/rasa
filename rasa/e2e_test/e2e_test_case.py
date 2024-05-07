@@ -25,6 +25,7 @@ class Fixture:
 
     name: Text
     slots_set: Dict[Text, Any]
+    _underlying: Optional[Dict[Text, Any]] = None
 
     @staticmethod
     def from_dict(fixture_dict: Dict[Text, Any]) -> "Fixture":
@@ -45,7 +46,14 @@ class Fixture:
                 for slot_dict in slots_list
                 for slot_name, slot_value in slot_dict.items()
             },
+            _underlying=fixture_dict,
         )
+
+    def as_dict(self) -> Dict[Text, Any]:
+        """Returns the underlying dictionary of the fixture.
+        Only works if self._underlying has the original input dictionary.
+        """
+        return self._underlying or {}
 
 
 @dataclass(frozen=True)

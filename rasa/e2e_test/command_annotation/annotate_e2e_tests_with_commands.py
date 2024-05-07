@@ -3,14 +3,18 @@ import argparse
 import asyncio
 import uuid
 import structlog
-from typing import List, Any, Dict
+from typing import List, Any, Dict, Union
 
-from rasa.cli.e2e_test import read_test_cases
+from rasa.cli.e2e_test import (
+    read_test_cases,
+    split_into_passed_failed,
+    print_test_result,
+)
 
 from rasa.e2e_test.e2e_test_runner import E2ETestRunner
 from rasa.core.channels import CollectingOutputChannel, UserMessage
 from rasa.core.utils import AvailableEndpoints
-from rasa.e2e_test.e2e_test_case import TestCase
+from rasa.e2e_test.e2e_test_case import TestCase, Fixture
 
 from ruamel.yaml import YAML
 
@@ -51,8 +55,84 @@ def persist_tests(
             yaml.dump(test_case, f)
 
 
+def convert_commands(commands: List[Dict[str, Any]]) -> List[Union[str, Dict]]:
+    """Processes a list of command dictionaries into a structured list of
+    commands suitable for end-to-end tests,
+    iterating over the list only once for efficiency.
+
+    Args:
+        commands (List[Dict[str, Any]]): List of command dictionaries.
+
+    Returns:
+        List[Union[str, Dict]]: A structured and ordered list of commands.
+    """
+    if not commands:
+        return ["no_command"]
+
+    categorized_commands = {
+        "start_flow": [],
+        "set_slot": [],
+        "correct_slot": [],
+        "cancel_flow": [],
+        "clarify": [],
+        "chitchat": [],
+        "human_handoff": [],
+        "knowledge": [],
+        "skip_question": [],
+        "error": [],
+    }
+
+    # Single pass over the commands list to categorize them
+    for command in commands:
+        command_type = command["command"]
+        if command_type == "start flow":
+            categorized_commands["start_flow"].append({"start_flow": command["flow"]})
+        elif command_type == "set slot":
+            categorized_commands["set_slot"].append({command["name"]: command["value"]})
+        elif command_type == "correct slot":
+            categorized_commands["correct_slot"].append(
+                {command["name"]: command["value"]}
+            )
+        elif command_type == "cancel flow":
+            categorized_commands["cancel_flow"].append("cancel_flow")
+        elif command_type == "clarify":
+            categorized_commands["clarify"].append({"clarify": command["options"]})
+        elif command_type == "chitchat":
+            categorized_commands["chitchat"].append("chitchat")
+        elif command_type == "human handoff":
+            categorized_commands["human_handoff"].append("human_handoff")
+        elif command_type == "knowledge":
+            categorized_commands["knowledge"].append("knowledge")
+        elif command_type == "skip question":
+            categorized_commands["skip_question"].append("skip question")
+        elif command_type == "error":
+            categorized_commands["error"].append("error")
+
+    # Compiling the output in the desired structured format
+    commands_output = []
+    for key in [
+        "start_flow",
+        "set_slot",
+        "correct_slot",
+        "cancel_flow",
+        "clarify",
+        "chitchat",
+        "human_handoff",
+        "knowledge",
+        "skip_question",
+        "error",
+    ]:
+        if categorized_commands[key]:
+            if key in ["set_slot", "correct_slot"]:
+                commands_output.append({key: categorized_commands[key]})
+            else:
+                commands_output.extend(categorized_commands[key])
+
+    return commands_output
+
+
 async def annotate_test_with_commands(
-    test: TestCase, test_runner: E2ETestRunner, sender_id: str
+    test: TestCase, fixtures: List[Fixture], test_runner: E2ETestRunner, sender_id: str
 ) -> Dict[str, Any]:
     command_annotated_steps = []
 
@@ -85,101 +165,15 @@ async def annotate_test_with_commands(
 
         # get commands
         tracker = await test_runner.agent.tracker_store.retrieve(sender_id)
-        commands = tracker.latest_message.parse_data["commands"] # type: ignore
-        commands_output = []
+        commands = tracker.latest_message.parse_data["commands"]  # type: ignore
+        converted_commands = convert_commands(commands)
 
-        # if the llm did not predict any commands, we should add no_command
-        if not commands:
-            commands_output.append("no_command")
-        else:
-            # commands are in a random order, but we want them in a specific order
-            # for the e2e tests
-            # start
-            start_flow_commands = [
-                command for command in commands if command["command"] == "start flow"
-            ]
-            for start_flow_command in start_flow_commands:
-                commands_output.append({"start_flow": start_flow_command["flow"]})
+        command_annotated_steps.append({"commands": converted_commands})
 
-            # set slot
-            set_slot_commands = [
-                command for command in commands if command["command"] == "set slot"
-            ]
-            if set_slot_commands:
-                slots = []
-                for set_slot_command in set_slot_commands:
-                    if isinstance(set_slot_command, str):
-                        slots.append(set_slot_command)
-                    else:
-                        slots.append({set_slot_command["name"]: set_slot_command["value"]})
-                commands_output.append({"set_slot": slots})
-
-            # correct slot
-            correct_slot_commands = [
-                command for command in commands if command["command"] == "correct slot"
-            ]
-            if correct_slot_commands:
-                slots = []
-                for correct_slot_command in correct_slot_commands:
-                    if isinstance(correct_slot_command, str):
-                        slots.append(correct_slot_command)
-                    else:
-                        slots.append({correct_slot_command["name"]: correct_slot_command["value"]})
-                commands_output.append({"correct_slot": slots})
-
-            # cancel
-            cancel_flow_commands = [
-                command for command in commands if command["command"] == "cancel flow"
-            ]
-            for cancel_flow_command in cancel_flow_commands:
-                commands_output.append("cancel_flow")
-
-            # clarify
-            clarify_commands = [
-                command for command in commands if command["command"] == "clarify"
-            ]
-            for clarify_command in clarify_commands:
-                commands_output.append({"clarify": clarify_command["options"]})
-
-            # chitchat
-            chitchat_commands = [
-                command for command in commands if command["command"] == "chitchat"
-            ]
-            for chitchat_command in chitchat_commands:
-                commands_output.append("chitchat")
-
-            # human handoff
-            human_handoff_commands = [
-                command for command in commands if command["command"] == "human handoff"
-            ]
-            for human_handoff_command in human_handoff_commands:
-                commands_output.append("human_handoff")
-
-            # knowledge
-            knowledge_commands = [
-                command for command in commands if command["command"] == "knowledge"
-            ]
-            for knowledge_command in knowledge_commands:
-                commands_output.append("knowledge")
-
-            # skip question
-            skip_question_commands = [
-                command for command in commands if command["command"] == "skip question"
-            ]
-            for skip_question_command in skip_question_commands:
-                commands_output.append("skip question")
-
-            # error
-            error_commands = [
-                command for command in commands if command["command"] == "error"
-            ]
-            for error_command in error_commands:
-                commands_output.append("error")
-
-        command_annotated_steps.append({"commands": commands_output})
-
+    relevant_fixtures = test_runner.filter_fixtures_for_test_case(test, fixtures)
     command_annotated_test: Dict[str, Any] = {
-        "test_cases": [{"test_case": test.name, "steps": command_annotated_steps}]
+        "fixtures": [fixture.as_dict() for fixture in relevant_fixtures],
+        "test_cases": [{"test_case": test.name, "steps": command_annotated_steps}],
     }
 
     return command_annotated_test
@@ -187,12 +181,13 @@ async def annotate_test_with_commands(
 
 async def command_annotate_tests(
     tests: List[TestCase],
+    input_fixtures: List[Fixture],
     test_runner: E2ETestRunner,
 ) -> List[Dict[str, Any]]:
     command_annotated_tests = []
     for test_case in tests:
         command_annotated_test = await annotate_test_with_commands(
-            test_case, test_runner, uuid.uuid4().hex
+            test_case, input_fixtures, test_runner, uuid.uuid4().hex
         )
         command_annotated_tests.append(command_annotated_test)
     return command_annotated_tests
@@ -245,10 +240,16 @@ def main() -> None:
         endpoints=AvailableEndpoints.read_endpoints(args.endpoints),
     )
 
-    # annotate
+    # filter passing tests
+    results = asyncio.run(test_runner.run_tests(input_tests, input_fixtures))
+    passed, failed = split_into_passed_failed(results)
+    print_test_result(passed, failed)
+
+    # annotate passing
     command_annotated_tests = asyncio.run(
         command_annotate_tests(
-            input_tests,
+            passed,
+            input_fixtures,
             test_runner,
         )
     )
