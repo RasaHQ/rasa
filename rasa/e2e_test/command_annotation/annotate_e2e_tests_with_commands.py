@@ -3,18 +3,20 @@ import argparse
 import asyncio
 import uuid
 import structlog
+from collections import defaultdict
 from typing import List, Any, Dict, Union
 
 from rasa.cli.e2e_test import (
     read_test_cases,
     split_into_passed_failed,
-    print_test_result,
+    # print_test_result,
 )
 
 from rasa.e2e_test.e2e_test_runner import E2ETestRunner
 from rasa.core.channels import CollectingOutputChannel, UserMessage
 from rasa.core.utils import AvailableEndpoints
 from rasa.e2e_test.e2e_test_case import TestCase, Fixture
+from rasa.e2e_test.constants import AVAILABLE_COMMANDS
 
 from ruamel.yaml import YAML
 
@@ -58,7 +60,9 @@ def persist_tests(
             yaml.dump(test_case, f)
 
 
-def convert_commands(commands: List[Dict[str, Any]]) -> List[Union[str, Dict]]:
+def convert_commands(
+    commands: List[Dict[str, Any]]
+) -> List[Union[str, Dict[str, Any]]]:
     """Processes a list of command dictionaries into a structured list of
     commands suitable for end-to-end tests,
     iterating over the list only once for efficiency.
@@ -67,25 +71,14 @@ def convert_commands(commands: List[Dict[str, Any]]) -> List[Union[str, Dict]]:
         commands (List[Dict[str, Any]]): List of command dictionaries.
 
     Returns:
-        List[Union[str, Dict]]: A structured and ordered list of commands.
+        List[Union[str, Dict[str, Any]]]: A structured ordered list of commands.
     """
     if not commands:
         return ["no_command"]
 
-    categorized_commands = {
-        "start_flow": [],
-        "set_slot": [],
-        "correct_slot": [],
-        "cancel_flow": [],
-        "clarify": [],
-        "chitchat": [],
-        "human_handoff": [],
-        "knowledge": [],
-        "skip_question": [],
-        "error": [],
-    }
+    categorized_commands = defaultdict(list)
 
-    # Single pass over the commands list to categorize them
+    # single pass over the commands list to categorize them
     for command in commands:
         command_type = command["command"]
         if command_type == "start flow":
@@ -112,19 +105,8 @@ def convert_commands(commands: List[Dict[str, Any]]) -> List[Union[str, Dict]]:
             categorized_commands["error"].append("error")
 
     # Compiling the output in the desired structured format
-    commands_output = []
-    for key in [
-        "start_flow",
-        "set_slot",
-        "correct_slot",
-        "cancel_flow",
-        "clarify",
-        "chitchat",
-        "human_handoff",
-        "knowledge",
-        "skip_question",
-        "error",
-    ]:
+    commands_output: List[Union[str, Dict[str, Any]]] = []
+    for key in AVAILABLE_COMMANDS:
         if categorized_commands[key]:
             if key in ["set_slot", "correct_slot"]:
                 commands_output.append({key: categorized_commands[key]})
@@ -176,7 +158,13 @@ async def annotate_test_with_commands(
     relevant_fixtures = test_runner.filter_fixtures_for_test_case(test, fixtures)
     command_annotated_test: Dict[str, Any] = {
         "fixtures": [fixture.as_dict() for fixture in relevant_fixtures],
-        "test_cases": [{"test_case": test.name, "steps": command_annotated_steps}],
+        "test_cases": [
+            {
+                "test_case": test.name,
+                "fixtures": test.fixture_names,
+                "steps": command_annotated_steps,
+            }
+        ],
     }
 
     return command_annotated_test
@@ -246,7 +234,7 @@ def main() -> None:
     # filter passing tests
     results = asyncio.run(test_runner.run_tests(input_tests, input_fixtures))
     passed, failed = split_into_passed_failed(results)
-    print_test_result(passed, failed)
+    # print_test_result(passed, failed)
 
     # annotate passing
     command_annotated_tests = asyncio.run(
