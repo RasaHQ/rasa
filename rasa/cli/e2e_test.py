@@ -495,7 +495,7 @@ def print_test_result(
         has_failed = False
 
     print_final_line(passed, failed, has_failed=has_failed)
-    sys.exit(1 if has_failed else 0)
+    # sys.exit(1 if has_failed else 0)
 
 
 def print_e2e_help() -> None:

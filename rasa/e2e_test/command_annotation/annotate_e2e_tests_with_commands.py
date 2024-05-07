@@ -43,9 +43,12 @@ def persist_tests(
 
     os.makedirs(path, exist_ok=True)
 
-    for test_case in test_cases:
+    for i, test_case in enumerate(test_cases):
         test_case_name = test_case["test_cases"][0]["test_case"]
-        file_path = f"{path}/{test_case_name.replace(' ', '_')}.yml"
+        command_annotation_id = i
+        file_path = (
+            f"{path}/{test_case_name.replace(' ', '_')}_{command_annotation_id}.yml"
+        )
         structlogger.info(
             "e2e.tests.command_annotation.persist_tests",
             test_name=test_case_name,
@@ -248,7 +251,7 @@ def main() -> None:
     # annotate passing
     command_annotated_tests = asyncio.run(
         command_annotate_tests(
-            passed,
+            [result.test_case for result in passed],
             input_fixtures,
             test_runner,
         )
