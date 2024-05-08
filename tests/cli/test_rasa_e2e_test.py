@@ -6,7 +6,6 @@ import textwrap
 from pathlib import Path
 from typing import Any, Callable, List, Text
 from unittest.mock import MagicMock, call, patch
-from collections import OrderedDict
 
 import pytest
 from pytest import LogCaptureFixture, MonkeyPatch, RunResult
@@ -169,40 +168,16 @@ def test_color_difference() -> None:
         (
             "data/end_to_end_testing_input_files/e2e_test_cases_with_fixtures.yml",
             [
-                Fixture(
-                    name="premium",
-                    slots_set={"membership_type": "premium"},
-                    _underlying=OrderedDict(
-                        [("premium", [OrderedDict([("membership_type", "premium")])])]
-                    ),
-                ),
-                Fixture(
-                    name="standard",
-                    slots_set={"membership_type": "standard"},
-                    _underlying=OrderedDict(
-                        [("standard", [OrderedDict([("membership_type", "standard")])])]
-                    ),
-                ),
+                Fixture(name="premium", slots_set={"membership_type": "premium"}),
+                Fixture(name="standard", slots_set={"membership_type": "standard"}),
             ],
         ),
         # Path to directory with files with global fixtures key
         (
             "data/end_to_end_testing_input_files",
             [
-                Fixture(
-                    name="premium",
-                    slots_set={"membership_type": "premium"},
-                    _underlying=OrderedDict(
-                        [("premium", [OrderedDict([("membership_type", "premium")])])]
-                    ),
-                ),
-                Fixture(
-                    name="standard",
-                    slots_set={"membership_type": "standard"},
-                    _underlying=OrderedDict(
-                        [("standard", [OrderedDict([("membership_type", "standard")])])]
-                    ),
-                ),
+                Fixture(name="premium", slots_set={"membership_type": "premium"}),
+                Fixture(name="standard", slots_set={"membership_type": "standard"}),
             ],
         ),
     ],
