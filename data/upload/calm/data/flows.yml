@@ -1,10 +1,14 @@
 version: "3.1"
 flows:
-  "health_advice":
-    name: health_advice
+  health_advice:
+    name: health advice
     description: user asks for health advice
+    nlu_trigger:
+    - intent:
+        name: health_advice
+        confidence_threshold: 0.8
     steps:
-      - action: utter_cant_advice_on_health
+    - action: utter_cant_advice_on_health
   add_contact:
     name: add_contact
     description: add a contact to your contact list
@@ -87,9 +91,22 @@ flows:
     steps:
       - collect: transfer_money_recipient
         description: Asks user for the recipient's name.
-      - collect: transfer_money_amount
+      - collect: transfer_money_amount_of_money
         description: Asks user for the amount to transfer.
-      - collect: transfer_money_final_confirmation
+      - action: action_check_transfer_funds
+        next:
+          - if: not slots.transfer_money_has_sufficient_funds
+            then:
+              - action: utter_transfer_money_insufficient_funds
+              - set_slots:
+                  - transfer_money_amount_of_money: null
+                  - transfer_money_has_sufficient_funds: null
+                  - set_slots_test_text: "This is a test!"
+                  - set_slots_test_categorical: value_1
+                next: END
+          - else: collect_transfer_money_final_confirmation
+      - id: collect_transfer_money_final_confirmation
+        collect: transfer_money_final_confirmation
         description: Asks user for final confirmation to transfer money.
         ask_before_filling: true
         next:

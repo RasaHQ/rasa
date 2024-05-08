@@ -10,6 +10,20 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.8.5] - 2024-05-03
+                       
+Rasa Pro 3.8.5 (2024-05-03)                            
+### Bugfixes
+- [#575](https://github.com/rasahq/rasa/issues/575): Trigger `pattern_internal_error` if collection does not exist in a Qdrant vector store.
+
+
+## [3.8.4] - 2024-04-30
+                       
+Rasa Pro 3.8.4 (2024-04-30)                            
+### Improvements
+- [#542](https://github.com/rasahq/rasa/issues/542): Added support for NLU Triggers by supporting uploading the NLU files for CALM Assistants
+
+
 ## [3.8.3] - 2024-04-26
                        
 Rasa Pro 3.8.3 (2024-04-26)                            
