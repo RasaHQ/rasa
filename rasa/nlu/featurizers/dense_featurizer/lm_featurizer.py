@@ -316,7 +316,6 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
         batch_token_ids = []
         batch_tokens = []
         for example in batch_examples:
-
             example_tokens, example_token_ids = self._tokenize_example(
                 example, attribute
             )
@@ -416,7 +415,6 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
         # This doesn't affect the computation since we compute an attention mask
         # anyways.
         for example_token_ids in batch_token_ids:
-
             # Truncate any longer sequences so that they can be fed to the model
             if len(example_token_ids) > max_sequence_length_model:
                 example_token_ids = example_token_ids[:max_sequence_length_model]
@@ -710,7 +708,6 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
         batch_size = 64
 
         for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
-
             non_empty_examples = list(
                 filter(lambda x: x.get(attribute), training_data.training_examples)
             )
@@ -718,7 +715,6 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
             batch_start_index = 0
 
             while batch_start_index < len(non_empty_examples):
-
                 batch_end_index = min(
                     batch_start_index + batch_size, len(non_empty_examples)
                 )

@@ -2,7 +2,6 @@ import rasa.shared.nlu.training_data.synonyms_parser as synonyms_parser
 
 
 def test_add_synonym():
-
     synonym_name = "savings"
     synonym_examples = ["pink pig", "savings account"]
     expected_result = {"pink pig": synonym_name, "savings account": synonym_name}
@@ -16,7 +15,6 @@ def test_add_synonym():
 
 
 def test_add_synonyms_from_entities():
-
     training_example = "I want to fly from Berlin to LA"
 
     entities = [

@@ -300,7 +300,6 @@ def test_endpoint_reader_get_config_key_string(
     config_key_name: Text,
     expected_result: Union[str, CredentialsLocation],
 ) -> None:
-
     result = EndpointReader(endpoint_config=endpoint_config).get_property_value(
         endpoint_property_name=config_key_name
     )
@@ -364,7 +363,6 @@ def test_endpoint_reader_get_config_key_secret_manager_stored_secret(
     config_key_name: Text,
     expected_result: CredentialsLocation,
 ) -> None:
-
     result = EndpointReader(endpoint_config=endpoint_config).get_property_value(
         endpoint_property_name=config_key_name
     )

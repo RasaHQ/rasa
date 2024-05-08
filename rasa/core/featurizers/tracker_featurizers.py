@@ -753,14 +753,12 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
             disable=rasa.shared.utils.io.is_logging_disabled(),
         )
         for tracker in pbar:
-
             for states, label, entities in self._extract_examples(
                 tracker,
                 domain,
                 omit_unset_slots=omit_unset_slots,
                 ignore_action_unlikely_intent=ignore_action_unlikely_intent,
             ):
-
                 if self.remove_duplicates:
                     hashed = self._hash_example(states, label)
                     if hashed in hashed_examples:
@@ -816,7 +814,6 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                 entity_data = self._entity_data(event)
 
             elif isinstance(event, ActionExecuted):
-
                 label_index += 1
 
                 # use only actions which can be predicted at a stories start
@@ -992,14 +989,12 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
             disable=rasa.shared.utils.io.is_logging_disabled(),
         )
         for tracker in pbar:
-
             for states, label, entities in self._extract_examples(
                 tracker,
                 domain,
                 omit_unset_slots=omit_unset_slots,
                 ignore_action_unlikely_intent=ignore_action_unlikely_intent,
             ):
-
                 if self.remove_duplicates:
                     hashed = self._hash_example(states, label)
                     if hashed in hashed_examples:
@@ -1065,12 +1060,10 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
 
         label_index = 0
         for event in events:
-
             if isinstance(event, ActionExecuted):
                 label_index += 1
 
             elif isinstance(event, UserUttered):
-
                 sliced_states = self.slice_state_history(
                     tracker_states[:label_index], self.max_history
                 )

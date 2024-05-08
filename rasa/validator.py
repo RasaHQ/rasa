@@ -801,7 +801,7 @@ class Validator:
 
         for flow in self.flows.underlying_flows:
             flow_description = flow.description
-            cleaned_description = flow_description.translate(punctuation_table)  # type: ignore[union-attr] # noqa: E501
+            cleaned_description = flow_description.translate(punctuation_table)  # type: ignore[union-attr]
             if cleaned_description in flow_descriptions:
                 structlogger.error(
                     "validator.verify_unique_flows.duplicate_description",

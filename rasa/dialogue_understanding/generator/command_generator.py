@@ -78,7 +78,6 @@ class CommandGenerator:
         )
 
         for message in messages:
-
             if message.get(COMMANDS):
                 # do not overwrite commands if they are already present
                 # i.e. another command generator already predicted commands

@@ -335,7 +335,7 @@ class Domain:
 
     @staticmethod
     def _handle_duplicates_from_multiple_files(
-        duplicates_from_multiple_files: List[Dict[Text, List[Text]]]
+        duplicates_from_multiple_files: List[Dict[Text, List[Text]]],
     ) -> None:
         combined_duplicates: Dict[Text, List[Text]] = collections.defaultdict(list)
 
@@ -922,7 +922,7 @@ class Domain:
 
     @staticmethod
     def _collect_overridden_default_intents(
-        intents: Union[Set[Text], List[Text], List[Dict[Text, Any]]]
+        intents: Union[Set[Text], List[Text], List[Dict[Text, Any]]],
     ) -> List[Text]:
         """Collects the default intents overridden by the user.
 
@@ -942,7 +942,7 @@ class Domain:
 
     @staticmethod
     def _initialize_forms(
-        forms: Dict[Text, Any]
+        forms: Dict[Text, Any],
     ) -> Tuple[List[Text], Dict[Text, Any], List[Text]]:
         """Retrieves the initial values for the Domain's form fields.
 
@@ -986,7 +986,7 @@ class Domain:
 
     @staticmethod
     def _sort_intent_names_alphabetical_order(
-        intents: List[Union[Text, Dict]]
+        intents: List[Union[Text, Dict]],
     ) -> List[Union[Text, Dict]]:
         def sort(elem: Union[Text, Dict]) -> Union[Text, Dict]:
             if isinstance(elem, dict):
@@ -1027,7 +1027,7 @@ class Domain:
 
     @staticmethod
     def is_retrieval_intent_response(
-        response: Tuple[Text, List[Dict[Text, Any]]]
+        response: Tuple[Text, List[Dict[Text, Any]]],
     ) -> bool:
         """Check if the response is for a retrieval intent.
 
@@ -1603,7 +1603,7 @@ class Domain:
 
     @staticmethod
     def get_responses_with_multilines(
-        responses: Dict[Text, List[Dict[Text, Any]]]
+        responses: Dict[Text, List[Dict[Text, Any]]],
     ) -> Dict[Text, List[Dict[Text, Any]]]:
         """Returns `responses` with preserved multilines in the `text` key.
 
@@ -1622,9 +1622,9 @@ class Domain:
                 if not response_text or "\n" not in response_text:
                     continue
                 # Has new lines, use `LiteralScalarString`
-                final_responses[utter_action][i][
-                    KEY_RESPONSES_TEXT
-                ] = LiteralScalarString(response_text)
+                final_responses[utter_action][i][KEY_RESPONSES_TEXT] = (
+                    LiteralScalarString(response_text)
+                )
 
         return final_responses
 
@@ -1802,7 +1802,7 @@ class Domain:
             ]
 
         def check_mappings(
-            intent_properties: Dict[Text, Dict[Text, Union[bool, List]]]
+            intent_properties: Dict[Text, Dict[Text, Union[bool, List]]],
         ) -> List[Tuple[Text, Text]]:
             """Checks whether intent-action mappings use valid action names or texts."""
             incorrect = []
@@ -1840,7 +1840,7 @@ class Domain:
             return message
 
         def get_duplicate_exception_message(
-            duplicates: List[Tuple[List[Text], Text]]
+            duplicates: List[Tuple[List[Text], Text]],
         ) -> Text:
             """Return a message given a list of duplicates."""
             message = ""
@@ -2014,7 +2014,7 @@ class Domain:
 
     @staticmethod
     def _collect_action_names(
-        actions: List[Union[Text, Dict[Text, Any]]]
+        actions: List[Union[Text, Dict[Text, Any]]],
     ) -> List[Text]:
         action_names: List[Text] = []
 
@@ -2028,7 +2028,7 @@ class Domain:
 
     @staticmethod
     def _collect_actions_which_explicitly_need_domain(
-        actions: List[Union[Text, Dict[Text, Any]]]
+        actions: List[Union[Text, Dict[Text, Any]]],
     ) -> List[Text]:
         action_names: List[Text] = []
 
@@ -2048,7 +2048,7 @@ class Domain:
 
 
 def warn_about_duplicates_found_during_domain_merging(
-    duplicates: Dict[str, List[str]]
+    duplicates: Dict[Text, List[Text]],
 ) -> None:
     """Emits a warning about found duplicates while loading multiple domain paths."""
     domain_keys = [

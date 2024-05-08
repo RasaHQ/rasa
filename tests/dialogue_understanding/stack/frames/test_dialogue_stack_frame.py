@@ -25,7 +25,6 @@ class MockStackFrame(DialogueStackFrame):
 
 @dataclass
 class MockStackFrameWithAdditionalProperty(DialogueStackFrame):
-
     foo: str = ""
 
     @classmethod
@@ -76,7 +75,6 @@ def test_create_typed_frame():
 
 
 def test_create_typed_frame_with_unknown_type():
-
     with pytest.raises(InvalidStackFrameType):
         DialogueStackFrame.create_typed_frame({"type": "unknown"})
 

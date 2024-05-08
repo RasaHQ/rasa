@@ -212,8 +212,8 @@ The Docker image is available on your local machine as `rasa-private-dev`.
 
 ### Code Style
 
-To ensure a standardized code style we use the formatter [black](https://github.com/ambv/black).
-To ensure our type annotations are correct we use the type checker [pytype](https://github.com/google/pytype).
+To ensure a standardized code style we use the [ruff](https://docs.astral.sh/ruff/formatter/) formatter.
+To ensure our type annotations are correct we use the type checker [mypy](https://mypy.readthedocs.io/en/stable/).
 If your code is not formatted properly or doesn't type check, GitHub will fail to build.
 
 #### Formatting
@@ -222,7 +222,7 @@ If you want to automatically format your code on every commit, you can use [pre-
 Just install it via `pip install pre-commit` and execute `pre-commit install` in the root folder.
 This will add a hook to the repository, which reformats files on every commit.
 
-If you want to set it up manually, install black via `poetry install`.
+If you want to set it up manually, install `ruff` via `poetry install`.
 To reformat files execute
 ```
 make formatter

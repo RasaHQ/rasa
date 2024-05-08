@@ -25,7 +25,7 @@ from transformers import (  # noqa: E402
     RobertaTokenizer,
     CamembertTokenizer,
 )
-from rasa.nlu.utils.hugging_face.transformers_pre_post_processors import (  # noqa: E402, E501
+from rasa.nlu.utils.hugging_face.transformers_pre_post_processors import (  # noqa: E402
     bert_tokens_pre_processor,
     gpt_tokens_pre_processor,
     xlnet_tokens_pre_processor,

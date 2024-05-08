@@ -93,11 +93,10 @@ class FlowRetrieval:
 
     @classmethod
     def validate_config(cls, config: Dict[Text, Any]) -> Dict[Text, Any]:
-
         if config[MAX_FLOWS_FROM_SEMANTIC_SEARCH_KEY] < 0:
-            config[
-                MAX_FLOWS_FROM_SEMANTIC_SEARCH_KEY
-            ] = DEFAULT_MAX_FLOWS_FROM_SEMANTIC_SEARCH
+            config[MAX_FLOWS_FROM_SEMANTIC_SEARCH_KEY] = (
+                DEFAULT_MAX_FLOWS_FROM_SEMANTIC_SEARCH
+            )
             structlogger.error(
                 f"flow_retrieval.validate_config.{MAX_FLOWS_FROM_SEMANTIC_SEARCH_KEY}.set_as_negative",
                 event_info=(

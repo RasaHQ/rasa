@@ -351,7 +351,7 @@ def instrument(
             tracer_provider.get_tracer(lock_store_class.__module__),
             attribute_extractors.extract_attrs_for_lock_store,
         )
-        lock_store_class.lock = contextlib.asynccontextmanager(traced_lock_method)  # type: ignore[assignment]  # noqa: E501
+        lock_store_class.lock = contextlib.asynccontextmanager(traced_lock_method)  # type: ignore[assignment]
 
         logger.debug(f"Instrumented '{lock_store_class.__name__}.lock'.")
 
@@ -512,8 +512,10 @@ def _instrument_nlu_command_adapter_predict_commands(
 
         return wrapper
 
-    nlu_command_adapter_class.predict_commands = tracing_nlu_command_adapter_predict_commands_wrapper(  # type: ignore[assignment]  # noqa: E501
-        nlu_command_adapter_class.predict_commands
+    nlu_command_adapter_class.predict_commands = (  # type: ignore[assignment]
+        tracing_nlu_command_adapter_predict_commands_wrapper(
+            nlu_command_adapter_class.predict_commands
+        )
     )
 
     logger.debug(
@@ -543,7 +545,7 @@ def _instrument_information_retrieval_search(
 
         return wrapper
 
-    vector_store_class.search = tracing_information_retrieval_search_wrapper(  # type: ignore[assignment]  # noqa: E501
+    vector_store_class.search = tracing_information_retrieval_search_wrapper(  # type: ignore[assignment]
         vector_store_class.search
     )
 
@@ -652,7 +654,7 @@ def _instrument_get_tracker(
 
         return wrapper
 
-    processor_class.get_tracker = tracing_get_tracker_wrapper(  # type: ignore[assignment]  # noqa: E501
+    processor_class.get_tracker = tracing_get_tracker_wrapper(  # type: ignore[assignment]
         processor_class.get_tracker
     )
 
@@ -832,7 +834,7 @@ def _instrument_run_action(
             attrs = {
                 "action_name": action.name(),
                 "sender_id": tracker.sender_id,
-                "message_id": tracker.latest_message.message_id or "default",  # type: ignore[union-attr]  # noqa: E501
+                "message_id": tracker.latest_message.message_id or "default",  # type: ignore[union-attr]
             }
             with tracer.start_as_current_span(
                 f"{self.__class__.__name__}.{fn.__name__}",
@@ -856,7 +858,7 @@ def _instrument_run_action(
 
         return wrapper
 
-    processor_class._run_action = tracing_run_action_wrapper(  # type: ignore[assignment]  # noqa: E501
+    processor_class._run_action = tracing_run_action_wrapper(  # type: ignore[assignment]
         processor_class._run_action
     )
 

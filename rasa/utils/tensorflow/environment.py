@@ -98,7 +98,7 @@ def _parse_gpu_config(gpu_memory_config: Text) -> Dict[int, int]:
         # Helper explanation of where the error comes from
         raise ValueError(
             f"Error parsing GPU configuration. Please cross-check the format of "
-            f"'{ENV_GPU_CONFIG}' at https://rasa.com/docs/rasa/tuning-your-model"
+            f"'{ENV_GPU_CONFIG}' at https://rasa.com/docs/rasa-pro/nlu-based-assistants/tuning-your-model"
             f"#restricting-absolute-gpu-memory-available ."
         )
 

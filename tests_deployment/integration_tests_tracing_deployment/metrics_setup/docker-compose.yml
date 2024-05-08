@@ -14,7 +14,7 @@ services:
       - "9090:9090"
 
  rasa-pro-assistant:
-    image: ${TARGET_IMAGE_REGISTRY}/rasa-pro:${IMAGE_TAG}
+    image: ${TARGET_IMAGE_REGISTRY}:${IMAGE_TAG}
     volumes:
       - "./calm_bot:/app"
       - "./endpoints-metrics.yml:/app/endpoints.yml"
@@ -32,7 +32,7 @@ services:
         condition: service_started
       action-server:
         condition: service_started
-
+    user: root
 
  otlp-collector:
    image: otel/opentelemetry-collector:0.96.0

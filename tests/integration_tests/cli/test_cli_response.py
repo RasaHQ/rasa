@@ -48,7 +48,7 @@ def test_rasa_validate_debug_no_errors(
     assert "If you'd like to opt-out,"
     "you can use `rasa telemetry disable`." in output_text
     assert "To learn more, check out"
-    "https://rasa.com/docs/rasa/telemetry/telemetry." in output_text
+    "https://rasa.com/docs/rasa-pro/telemetry/telemetry." in output_text
 
 
 def test_rasa_validate_debug_with_errors(
@@ -115,7 +115,7 @@ def test_rasa_validate_verbose_no_errors(
     assert "If you'd like to opt-out,"
     "you can use `rasa telemetry disable`." in output_text
     assert "To learn more, check out"
-    "https://rasa.com/docs/rasa/telemetry/telemetry." in output_text
+    "https://rasa.com/docs/rasa-pro/telemetry/telemetry." in output_text
 
 
 def test_rasa_validate_quiet_no_errors(
@@ -148,7 +148,7 @@ def test_rasa_validate_quiet_no_errors(
     assert "If you'd like to opt-out,"
     "you can use `rasa telemetry disable`." in output_text
     assert "To learn more, check out"
-    "https://rasa.com/docs/rasa/telemetry/telemetry." in output_text
+    "https://rasa.com/docs/rasa-pro/telemetry/telemetry." in output_text
 
 
 def test_rasa_validate_null_active_loop_no_errors(
