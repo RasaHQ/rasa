@@ -13,7 +13,6 @@ from rasa.e2e_test.constants import (
     KEY_STEPS,
     KEY_TEST_CASE,
     KEY_USER_INPUT,
-    KEY_COMMANDS,
 )
 
 logger = logging.getLogger(__name__)
@@ -25,7 +24,6 @@ class Fixture:
 
     name: Text
     slots_set: Dict[Text, Any]
-    _underlying: Optional[Dict[Text, Any]] = None
 
     @staticmethod
     def from_dict(fixture_dict: Dict[Text, Any]) -> "Fixture":
@@ -46,14 +44,7 @@ class Fixture:
                 for slot_dict in slots_list
                 for slot_name, slot_value in slot_dict.items()
             },
-            _underlying=fixture_dict,
         )
-
-    def as_dict(self) -> Dict[Text, Any]:
-        """Returns the underlying dictionary of the fixture.
-        Only works if self._underlying has the original input dictionary.
-        """
-        return self._underlying or {}
 
 
 @dataclass(frozen=True)
@@ -130,38 +121,8 @@ class TestStep:
             )
 
     def as_dict(self) -> Dict[Text, Any]:
-        """Returns the underlying dictionary of the test step.
-        Only works if self._underlying has the original input dictionary.
-        """
+        """Returns the underlying dictionary of the test step."""
         return self._underlying or {}
-
-    def to_dict(self) -> Dict[Text, Any]:
-        """Converts the TestStep instance back into a dictionary."""
-        result = {}
-
-        if self.actor == KEY_USER_INPUT:
-            if self.text is not None:
-                result[KEY_USER_INPUT] = self.text
-        elif self.actor == KEY_BOT_INPUT:
-            if self.text is not None:
-                result[KEY_BOT_INPUT] = self.text
-            if self.template is not None:
-                result[KEY_BOT_UTTERED] = self.template
-
-        if isinstance(self._slot_instance, dict):
-            slots = [{k: str(v)} for k, v in dict(self._slot_instance).items()]
-        elif isinstance(self._slot_instance, str):
-            slots = [str(self._slot_instance)]  # type: ignore
-
-        if self.slot_was_set:
-            result[KEY_SLOT_SET] = slots  # type: ignore
-        elif self.slot_was_not_set:
-            result[KEY_SLOT_NOT_SET] = slots  # type: ignore
-
-        if KEY_COMMANDS in self._underlying:  # type: ignore
-            result[KEY_COMMANDS] = self._underlying[KEY_COMMANDS]  # type: ignore
-
-        return result
 
     def matches_event(self, other: Union[BotUttered, SlotSet, None]) -> bool:
         """Compares the test step with BotUttered or SlotSet event.
