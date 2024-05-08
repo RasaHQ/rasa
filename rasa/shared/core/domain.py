@@ -316,7 +316,6 @@ class Domain:
 
         for root, _, files in os.walk(path, followlinks=True):
             for file in files:
-
                 full_path = os.path.join(root, file)
                 if not Domain.is_domain_file(full_path):
                     continue
