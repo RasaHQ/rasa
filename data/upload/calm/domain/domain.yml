@@ -6,6 +6,10 @@ actions:
   - action_remove_contact
   - action_search_hotel
   - action_transaction_search
+  - action_check_transfer_funds
+
+intents:
+  - health_advice
 
 responses:
   utter_add_contact_cancelled:
@@ -34,12 +38,6 @@ responses:
     - text: Removed {remove_contact_handle}({remove_contact_name}) from your contacts.
   utter_transactions:
     - text: "Your current transactions are:  {transactions_list}"
-  utter_transfer_cancelled:
-    - text: Transfer cancelled.
-  utter_transfer_complete:
-    - text: Successfully transferred {transfer_money_amount} to {transfer_money_recipient}.
-  utter_transfer_failed:
-    - text: something went wrong transferring the money.
   utter_verify_account_cancelled:
     - text: Cancelling account verification...
       metadata:
@@ -70,17 +68,6 @@ responses:
           payload: "No"
   utter_ask_remove_contact_handle:
     - text: What's the handle of the user you want to remove?
-  utter_ask_transfer_money_amount:
-    - text: How much money do you want to transfer?
-  utter_ask_transfer_money_final_confirmation:
-    - text: Would you like to transfer {transfer_money_amount} to {transfer_money_recipient}?
-      buttons:
-        - title: "Yes"
-          payload: "Yes"
-        - title: "No"
-          payload: "No"
-  utter_ask_transfer_money_recipient:
-    - text: Who do you want to transfer money to?
   utter_ask_verify_account_confirmation:
     - text: Your email address is {verify_account_email} and you are not based in California, correct?
       buttons:
@@ -153,22 +140,17 @@ slots:
     type: text
     mappings:
       - type: custom
-  transfer_money_amount:
-    type: float
-    mappings:
-      - type: custom
-  transfer_money_final_confirmation:
-    type: bool
-    mappings:
-      - type: custom
-  transfer_money_recipient:
+  set_slots_test_text:
     type: text
     mappings:
       - type: custom
-  transfer_money_transfer_successful:
-    type: bool
+  set_slots_test_categorical:
+    type: categorical
     mappings:
       - type: custom
+    values:
+      - value_1
+      - value_2
   verify_account_confirmation:
     type: bool
     mappings:
