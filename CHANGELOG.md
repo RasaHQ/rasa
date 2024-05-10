@@ -59,7 +59,7 @@ Rasa Pro 3.8.1 (2024-04-17)
 - [#441](https://github.com/rasahq/rasa/issues/441): Adjusted chat widget behavior to remain open when clicking outside the chat box area.
 - [#468](https://github.com/rasahq/rasa/issues/468): Improve debug logs to include information about evaluation of `if-else` conditions in flows at runtime.
 - [#893](https://github.com/rasahq/rasa/issues/893): Remove the `ContextualResponseRephraser` from the tutorial template to keep it simple as it is not needed anymore.
-- [#475](https://github.com/rasahq/rasa/issues/475): Update poetry package manager version to `1.8.2`.
+- [#475](https://github.com/rasahq/rasa/issues/475): Update poetry package manager version to `1.8.2`. Check the [migration guide](https://rasa.com/docs/rasa-pro/migration-guide#rasa-pro-380-to-rasa-pro-381) for instructions on how to update your environment.
 
 ### Bugfixes
 - [#441](https://github.com/rasahq/rasa/issues/441): Introduced support for numbered Markdown lists.
