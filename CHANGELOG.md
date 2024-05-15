@@ -11,25 +11,24 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 <!-- TOWNCRIER -->
 
 ## [3.8.5] - 2024-05-03
-                       
-Rasa Pro 3.8.5 (2024-05-03)                            
+
+Rasa Pro 3.8.5 (2024-05-03)
 ### Bugfixes
 - [#575](https://github.com/rasahq/rasa/issues/575): Trigger `pattern_internal_error` if collection does not exist in a Qdrant vector store.
 
 
 ## [3.8.4] - 2024-04-30
-                       
-Rasa Pro 3.8.4 (2024-04-30)                            
+
+Rasa Pro 3.8.4 (2024-04-30)
 ### Improvements
 - [#542](https://github.com/rasahq/rasa/issues/542): Added support for NLU Triggers by supporting uploading the NLU files for CALM Assistants
 
 
 ## [3.8.3] - 2024-04-26
-                       
-Rasa Pro 3.8.3 (2024-04-26)                            
+
+Rasa Pro 3.8.3 (2024-04-26)
 ### Improvements
-- [#538](https://github.com/rasahq/rasa/issues/538): * Throw validation error and exit when duplicate responses are found across domains. This is a breaking change, as it will cause training to fail if duplicate responses are found. If you have duplicate responses in your training data, you will need to remove them before training.
-  * Update domain importing to ignore the warnings about duplicates when merging with the default flow domain
+- [#538](https://github.com/rasahq/rasa/issues/538): Throw validation error and exit when duplicate responses are found across domains. This is a breaking change, as it will cause training to fail if duplicate responses are found. If you have duplicate responses in your training data, you will need to remove them before training. Update domain importing to ignore the warnings about duplicates when merging with the default flow domain
 
 ### Bugfixes
 - [#515](https://github.com/rasahq/rasa/issues/515): Use AzureChatOpenAI class instead of AzureOpenAI class to instantiate openai models deployed in Azure. This fixes the usage of gpt-3.5-turbo model in Azure.
@@ -44,17 +43,17 @@ Rasa Pro 3.8.3 (2024-04-26)
 
 
 ## [3.8.2] - 2024-04-25
-                       
-Rasa Pro 3.8.2 (2024-04-25)                            
+
+Rasa Pro 3.8.2 (2024-04-25)
 ### Bugfixes
-- [#1013](https://github.com/rasahq/rasa/issues/1013): Add the currently active flow as well as the called flow (if present) to the 
+- [#1013](https://github.com/rasahq/rasa/issues/1013): Add the currently active flow as well as the called flow (if present) to the
   list of available flows for the `LLMCommandGenerator`.
 - [#533](https://github.com/rasahq/rasa/issues/533): Fix custom prompt not read from the model resource path for LLMCommandGenerator.
 
 
 ## [3.8.1] - 2024-04-17
-                       
-Rasa Pro 3.8.1 (2024-04-17)                            
+
+Rasa Pro 3.8.1 (2024-04-17)
 ### Improvements
 - [#441](https://github.com/rasahq/rasa/issues/441): Adjusted chat widget behavior to remain open when clicking outside the chat box area.
 - [#468](https://github.com/rasahq/rasa/issues/468): Improve debug logs to include information about evaluation of `if-else` conditions in flows at runtime.
@@ -3213,7 +3212,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 - [#7122](https://github.com/rasahq/rasa/issues/7122): Add validations for [slot mappings](https://rasa.com/docs/rasa-pro/nlu-based-assistants/forms#slot-mappings).
   If a slot mapping is not valid, an `InvalidDomain` error is raised.
 - [#7132](https://github.com/rasahq/rasa/issues/7132): Adapt the training data reader and emulator for LUIS to
-  [their latest format](https://westcentralus.dev.cognitive.microsoft.com/docs/services/luis-endpoint-api-v3-0/)
+  [their latest format](https://westus.dev.cognitive.microsoft.com/docs/services/luis-endpoint-api-v3-0)
   and add support for roles.
   Update the instructions in the
   "Migrate from LUIS" documentation page
