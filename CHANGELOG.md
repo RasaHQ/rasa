@@ -47,7 +47,7 @@ Rasa Pro 3.8.3 (2024-04-26)
 
 Rasa Pro 3.8.2 (2024-04-25)
 ### Bugfixes
-- [#1013](https://github.com/rasahq/rasa-private/issues/1013): Add the currently active flow as well as the called flow (if present) to the 
+- [#539](https://github.com/rasahq/rasa-private/issues/539): Add the currently active flow as well as the called flow (if present) to the 
   list of available flows for the `LLMCommandGenerator`.
 - [#533](https://github.com/rasahq/rasa-private/issues/533): Fix custom prompt not read from the model resource path for LLMCommandGenerator.
 
@@ -58,7 +58,7 @@ Rasa Pro 3.8.1 (2024-04-17)
 ### Improvements
 - [#441](https://github.com/rasahq/rasa-private/issues/441): Adjusted chat widget behavior to remain open when clicking outside the chat box area.
 - [#468](https://github.com/rasahq/rasa-private/issues/468): Improve debug logs to include information about evaluation of `if-else` conditions in flows at runtime.
-- [#893](https://github.com/rasahq/rasa-private/issues/893): Remove the `ContextualResponseRephraser` from the tutorial template to keep it simple as it is not needed anymore.
+- [#438](https://github.com/rasahq/rasa-private/issues/438): Remove the `ContextualResponseRephraser` from the tutorial template to keep it simple as it is not needed anymore.
 
 ### Bugfixes
 - [#441](https://github.com/rasahq/rasa-private/issues/441): Introduced support for numbered Markdown lists.
@@ -82,10 +82,10 @@ Rasa Pro 3.8.0 (2024-04-03)
   [flow definition](https://rasa.com/docs/rasa-pro/concepts/flows/#flow-properties).
   If field is set to `true` and the [flow guard](https://rasa.com/docs/rasa-pro/concepts/starting-flows/#flow-guards)
   defined in the `if` field evaluates to `true`, the flow will be included in the prompt.
-- [#697](https://github.com/rasahq/rasa-private/issues/697): Introduction of coexistence between CALM and NLU-based assistants.
+- [#303](https://github.com/rasahq/rasa-private/issues/303): Introduction of coexistence between CALM and NLU-based assistants.
   Coexistence allows you to use policies from both CALM and NLU-based assistants in a single assistant. This allows migrating from NLU-based paradigm to CALM in an iterative fashion.
 
-- [#762](https://github.com/rasahq/rasa-private/issues/762): Introduction of `call` step.
+- [#303](https://github.com/rasahq/rasa-private/issues/303): Introduction of `call` step.
   You can use a `call` step to embed another flow.
   When the execution reaches a `call` step, Rasa starts the called flow.
   Once the called flow is complete, the execution continues with the calling flow.
@@ -162,7 +162,7 @@ Rasa Pro 3.8.0 (2024-04-03)
 - [#410](https://github.com/rasahq/rasa-private/issues/410): Tighten python dependency constraints in `pyproject.toml`, hence reducing the installation time to
   around 20 minutes with `pip` (and no caching enabled).
 - [#420](https://github.com/rasahq/rasa-private/issues/420): Improved tracing clarity of the Contextual Response Rephraser by adding the `_create_history` method span, including its LLM configuration attributes.
-- [#682](https://github.com/rasahq/rasa-private/issues/682): Users now have enhanced control over the debugging process of LLM-driven components. This update introduces a fine-grained, customizable logging that can be controlled through specific environment variables.
+- [#217](https://github.com/rasahq/rasa-private/issues/217): Users now have enhanced control over the debugging process of LLM-driven components. This update introduces a fine-grained, customizable logging that can be controlled through specific environment variables.
 
   For example, set the `LOG_LEVEL_LLM` environment variable to enable detailed logging at the desired level for all the LLM components or specify the component you are debugging:
 
@@ -174,14 +174,14 @@ Rasa Pro 3.8.0 (2024-04-03)
   export LOG_LEVEL_LLM_INTENTLESS_POLICY=DEBUG
   export LOG_LEVEL_LLM_PROMPT_REPHRASER=DEBUG
   ```
-- [#780](https://github.com/rasahq/rasa-private/issues/780): If the user wants to chat with the assistant at the end of `rasa init`,
+- [#209](https://github.com/rasahq/rasa-private/issues/209): If the user wants to chat with the assistant at the end of `rasa init`,
   we are now calling `rasa inspect` instead of `rasa shell`.
-- [#827](https://github.com/rasahq/rasa-private/issues/827): A slot can now be collected via an action `action_ask_<slot-name>` instead of the utterance
+- [#335](https://github.com/rasahq/rasa-private/issues/335): A slot can now be collected via an action `action_ask_<slot-name>` instead of the utterance
   `utter_ask_<slot-name>` in a collect step.
   You can either define an utterance or an action for the collect step in your flow.
   Make sure to add your custom action `action_ask_<slot-name>` to the domain file.
-- [#953](https://github.com/rasahq/rasa-private/issues/953): Validate the configuration of the coexistence router before the actual training starts.
-- [#966](https://github.com/rasahq/rasa-private/issues/966): Improved error handling in Enterprise Search Policy, changed the prompt to improve formatting of documents and ensured empty slots are not added to the prompt.
+- [#953](https://github.com/rasahq/rasa-plus/issues/953): Validate the configuration of the coexistence router before the actual training starts.
+- [#966](https://github.com/rasahq/rasa-plus/issues/966): Improved error handling in Enterprise Search Policy, changed the prompt to improve formatting of documents and ensured empty slots are not added to the prompt.
 - [#390](https://github.com/rasahq/rasa-private/issues/390): Implement asynchronous graph execution. CALM assistants rely on a lot
   of I/O calls (e.g. to a LLM service), which impaired performances. With this change, we've improved the response time performance
   by 10x. All policies and components now support async calling.
@@ -212,14 +212,14 @@ Rasa Pro 3.8.0 (2024-04-03)
   `rasa.engine.validation`. This gave access to graph schema which allowed for
   validation checks of subclassed routers.
 - [#427](https://github.com/rasahq/rasa-private/issues/427): Fixes a bug in determining the name of the model based on provided parameters.
-- [#592](https://github.com/rasahq/rasa-private/issues/592): `LogisticRegressionClassifier` checks if training examples are present during training and logs a
+- [#426](https://github.com/rasahq/rasa-private/issues/426): `LogisticRegressionClassifier` checks if training examples are present during training and logs a
   warning in case no training examples are provided.
-- [#771](https://github.com/rasahq/rasa-private/issues/771): Fixes the bug that resulted in an infinite loop on a collect step in a flow with a flow guard set to `if: False`.
-- [#778](https://github.com/rasahq/rasa-private/issues/778): Fix training the enterprise search policy multiple times with a different
+- [#198](https://github.com/rasahq/rasa-private/issues/198): Fixes the bug that resulted in an infinite loop on a collect step in a flow with a flow guard set to `if: False`.
+- [#213](https://github.com/rasahq/rasa-private/issues/213): Fix training the enterprise search policy multiple times with a different
   source folder name than the default name "docs".
-- [#871](https://github.com/rasahq/rasa-private/issues/871): Log message `llm_command_generator.predict_commands.finished` is set to debug log by default.
+- [#302](https://github.com/rasahq/rasa-private/issues/302): Log message `llm_command_generator.predict_commands.finished` is set to debug log by default.
   To enable logging of the `LLMCommandGenerator` set `LOG_LEVEL_LLM_COMMAND_GENERATOR` to `INFO`.
-- [#892](https://github.com/rasahq/rasa-private/issues/892): Improvements and fixes to cleaning up commands:
+- [#314](https://github.com/rasahq/rasa-private/issues/314): Improvements and fixes to cleaning up commands:
 
   - Clean up predicted `StartFlow` commands from the `LLMCommandGenerator` if the flow, that should
   be started, is already active.
@@ -227,8 +227,8 @@ Rasa Pro 3.8.0 (2024-04-03)
   already set on the tracker.
   - Use string comparison for slot values to make sure to capture cases when the `LLMCommandGenerator`
   predicted a string value but the value set on the tracker is, for example, an integer value.
-- [#907](https://github.com/rasahq/rasa-private/issues/907): Remove `context` from list of `restricted` slots
-- [#931](https://github.com/rasahq/rasa-private/issues/931): Improved handling of categorical slots with text values when using CALM.
+- [#320](https://github.com/rasahq/rasa-private/issues/320): Remove `context` from list of `restricted` slots
+- [#369](https://github.com/rasahq/rasa-private/issues/369): Improved handling of categorical slots with text values when using CALM.
 
   Slot values extracted by the command generator (LLM) will be stored in the
   same casing as the casing used to define the categorical slot values in the
@@ -249,16 +249,16 @@ Rasa Pro 3.7.9 (2024-03-26)
 ### Bugfixes
 - [#310](https://github.com/rasahq/rasa-private/issues/310): Changed the ordering of returned events to order by ID (previously timestamp) in SQL Tracker Store
 - [#352](https://github.com/rasahq/rasa-private/issues/352): Fixes flow guards pypredicate evaluatation bug: pypredicate was evaluated with `Slot` instances instead of slot values
-- [#369](https://github.com/rasahq/rasa-private/issues/369): Improved handling of categorical slots with text values when using CALM.
+- [#369](https://github.com/rasahq/rasa-private/issues/389): Improved handling of categorical slots with text values when using CALM.
 
   Slot values extracted by the command generator (LLM) will be stored in the
   same casing as the casing used to define the categorical slot values in the
   domain. E.g. A categorical slot defined to store the values ["A", "B"]
   will store "A" if the LLM predicts the slot to be filled with "a". Previously,
   this would have stored "a".
-- [#871](https://github.com/rasahq/rasa/issues/871): Log message `llm_command_generator.predict_commands.finished` is set to debug log by default.
+- [#302](https://github.com/rasahq/rasa/issues/302): Log message `llm_command_generator.predict_commands.finished` is set to debug log by default.
   To enable logging of the `LLMCommandGenerator` set `LOG_LEVEL_LLM_COMMAND_GENERATOR` to `INFO`.
-- [#892](https://github.com/rasahq/rasa/issues/892): Improvements and fixes to cleaning up commands:
+- [#314](https://github.com/rasahq/rasa/issues/314): Improvements and fixes to cleaning up commands:
 
   - Clean up predicted `StartFlow` commands from the `LLMCommandGenerator` if the flow, that should
   be started, is already active.
@@ -315,7 +315,7 @@ Rasa Pro 3.7.5 (2024-01-24)
 - [#189](https://github.com/rasahq/rasa-private/issues/189): Fixes a bug that caused the `full_retrieval_intent_name` key to be missing in the published event. Rasa Analytics makes use of this key to get the Retrieval Intent Name
 - [#196](https://github.com/rasahq/rasa-private/issues/196): Pin `grpcio` indirect dependency to `1.56.2` to address [CVE-2023-33953](https://www.cve.org/CVERecord?id=CVE-2023-33953)
   Pin `aiohttp` to version `3.9.0` to address [CVE-2023-49081](https://www.cve.org/CVERecord?id=CVE-2023-49081)
-- [#771](https://github.com/rasahq/rasa/issues/771): Fixes the bug that resulted in an infinite loop on a collect step in a flow with a flow guard set to `if: False`.
+- [#199](https://github.com/rasahq/rasa/issues/199): Fixes the bug that resulted in an infinite loop on a collect step in a flow with a flow guard set to `if: False`.
 - [#1029](https://github.com/rasahq/rasa-plus/issues/1029): Changed the parameters request timeout to 10 seconds and maximum number of retries to 1 for the default LLM used by Enterprise Search Policy. Any error during vector search or LLM API calls should now trigger the pattern `pattern_internal_error`. Updated the default enterprise search policy prompt to respond more succinctly to queries.
 
 
@@ -340,7 +340,7 @@ Rasa Pro 3.7.3 (2023-12-21)
 - [#990](https://github.com/rasahq/rasa-plus/issues/990): Fix stale cache of local knowledge base used by EnterpriseSearchPolicy by implementing the `fingerprint_addon` class method.
 
 ### Miscellaneous internal changes
-- [#140](https://github.com/rasahq/rasa-private/issues/140), [#143](https://github.com/rasahq/rasa-private/issues/143), [#149](https://github.com/rasahq/rasa-private/issues/149), [#712](https://github.com/rasahq/rasa-private/issues/712)
+- [#140](https://github.com/rasahq/rasa-private/issues/140), [#143](https://github.com/rasahq/rasa-private/issues/143), [#149](https://github.com/rasahq/rasa-private/issues/149), [#150](https://github.com/rasahq/rasa-private/issues/150)
 
 
 ## [3.7.2] - 2023-12-07
@@ -392,8 +392,8 @@ Rasa Pro 3.7.0 (2023-11-22)
 
   For auth token the following environment variable is available:
   - AUTH_TOKEN
-- [#33](https://github.com/rasahq/rasa/issues/33): Add skip question command
-- [#41](https://github.com/rasahq/rasa/issues/41): Update the CALM starter template by:
+- [#33](https://github.com/rasahq/rasa-private/issues/33): Add skip question command
+- [#41](https://github.com/rasahq/rasa-private/issues/41): Update the CALM starter template by:
   - adding the following flows from the financial chatbot:
     - add_contact.yml
     - remove_contact.yml
@@ -403,7 +403,7 @@ Rasa Pro 3.7.0 (2023-11-22)
     - happy paths
     - cancelations
     - corrections
-- [#74](https://github.com/rasahq/rasa/issues/74): - Enhanced the Rasa error pattern for accommodating various error types.
+- [#74](https://github.com/rasahq/rasa-private/issues/74): - Enhanced the Rasa error pattern for accommodating various error types.
   - Upgraded the LLMCommandGenerator for processing the new 'user_input' configuration section. This update includes handling of messages that surpass the defined character limit.
 
   **Configuration Update:**
@@ -422,7 +422,7 @@ Rasa Pro 3.7.0 (2023-11-22)
 
   In the absence of a specified limit, it defaults to a 420-character cap.
   To bypass the limit entirely, set the 'max_characters' value to -1.
-- [#90](https://github.com/rasahq/rasa/issues/90): - Bot now returns a default message in response to an empty user message. This improves user experience by providing
+- [#90](https://github.com/rasahq/rasa-private/issues/90): - Bot now returns a default message in response to an empty user message. This improves user experience by providing
   feedback even when no input is detected.
   - `LLMCommandGenerator` behavior updated. It now returns an `ErrorCommand` for empty user messages.
   - Updated default error pattern and added the default utterance in `default_flows_for_patterns.yml`
@@ -450,7 +450,7 @@ Rasa Pro 3.7.0 (2023-11-22)
 - [#935](https://github.com/rasahq/rasa-plus/issues/935): Extract `events` and `optional_events` when `GraphNode` is `FlowPolicy`.
 
 ### Bugfixes
-- [#100](https://github.com/rasahq/rasa/issues/100): uvloop is disabled by default on apple silicon machines
+- [#100](https://github.com/rasahq/rasa-private/issues/100): uvloop is disabled by default on apple silicon machines
 - [#12516](https://github.com/rasahq/rasa/issues/12516): Add `rasa_events` to the list of anonymizable structlog keys and rename structlog keys.
 - [#12521](https://github.com/rasahq/rasa/issues/12521): Introduce a validation step in `rasa data validate` and `rasa train` commands to identify non-existent paths and empty domains.
 - [#12556](https://github.com/rasahq/rasa/issues/12556): Rich responses containing buttons with parentheses characters are now correctly parsed.
