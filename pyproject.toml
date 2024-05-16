@@ -33,7 +33,7 @@ underlines = "   "
 title_format = "## [{version}] - {project_date}"
 template = "./changelog/_template.md.jinja2"
 start_string = "<!-- TOWNCRIER -->\n"
-issue_format = "[#{issue}](https://github.com/rasahq/rasa/issues/{issue})"
+issue_format = "[#{issue}](https://github.com/rasahq/rasa-private/issues/{issue})"
 [[tool.towncrier.type]]
 directory = "removal"
 name = "Deprecations and Removals"
