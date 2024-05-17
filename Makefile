@@ -9,6 +9,7 @@ METRICS_INTEGRATION_TEST_PATH = tests/integration_tests/tracing/test_metrics.py
 BASE_IMAGE_HASH ?= localdev-slim
 BASE_BUILDER_IMAGE_HASH ?= localdev-slim
 RASA_DEPS_IMAGE_HASH ?= localdev-slim
+POETRY_VERSION ?= 1.8.2
 
 help:
 	@echo "make"
@@ -214,7 +215,7 @@ build-docker-builder:
 	docker build . -t rasa-private:base-builder-localdev-slim -f docker/Dockerfile.base-builder-slim --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_IMAGE_HASH=$(BASE_IMAGE_HASH)
 
 build-docker-rasa-deps:
-	docker build . -t rasa-private:rasa-deps-localdev-slim -f docker/Dockerfile.rasa-deps --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_BUILDER_IMAGE_HASH=$(BASE_BUILDER_IMAGE_HASH)
+	docker build . -t rasa-private:rasa-deps-localdev-slim -f docker/Dockerfile.rasa-deps --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_BUILDER_IMAGE_HASH=$(BASE_BUILDER_IMAGE_HASH) --build-arg POETRY_VERSION=$(POETRY_VERSION)
 
 build-docker-rasa-image:
 	docker build . -t rasa-private:rasa-private-dev-slim -f Dockerfile --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_IMAGE_HASH=localdev-slim --build-arg RASA_DEPS_IMAGE_HASH=$(RASA_DEPS_IMAGE_HASH)

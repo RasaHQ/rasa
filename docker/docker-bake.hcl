@@ -22,6 +22,10 @@ variable "BASE_BUILDER_IMAGE_HASH" {
   default = "localdev"
 }
 
+variable "RASA_DEPS_IMAGE_HASH" {
+  default = "localdev"
+}
+
 # keep this in sync with the version in .github/poetry_version.txt
 # the variable is set automatically for builds in CI
 variable "POETRY_VERSION" {
