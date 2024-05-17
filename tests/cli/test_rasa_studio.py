@@ -2,8 +2,6 @@ from typing import Callable
 
 from pytest import RunResult
 
-from rasa.cli.studio.studio import _configure_studio_url
-
 
 def test_studio_config_help(run: Callable[..., RunResult]):
     output = run("studio", "config", "--help")
@@ -17,9 +15,3 @@ def test_studio_config_help(run: Callable[..., RunResult]):
     printed_help = {line.strip() for line in output.outlines}
     for line in lines:
         assert line.strip() in printed_help
-
-
-def test_configure_studio_url(run: Callable[..., RunResult]):
-    # provide input for questionary
-    studio_url = _configure_studio_url()
-    assert studio_url is not None

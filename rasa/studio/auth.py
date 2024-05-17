@@ -32,6 +32,11 @@ class StudioAuth:
         )
 
     def health_check(self) -> bool:
+        """Check if the Keycloak server is reachable.
+
+        Returns:
+        True if the server is reachable, False otherwise.
+        """
         try:
             self.keycloak_openid.well_known()
             return True
