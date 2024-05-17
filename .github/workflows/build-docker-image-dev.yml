@@ -66,6 +66,6 @@ jobs:
           IMAGE_TAG: ${{ env.IMAGE_TAG }}
           POETRY_VERSION: ${{ env.POETRY_VERSION }}
         run: |
-          docker build . -t $IMAGE_TAG -f Dockerfile --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_IMAGE_HASH=localdev --build-arg BASE_BUILDER_IMAGE_HASH=localdev --platform=linux/amd64
+          docker build . -t $IMAGE_TAG -f Dockerfile --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_IMAGE_HASH=localdev --build-arg BASE_BUILDER_IMAGE_HASH=localdev --build-arg RASA_DEPS_IMAGE_HASH=localdev --platform=linux/amd64
           docker tag $IMAGE_TAG $REPOSITORY:$IMAGE_TAG
           docker push $REPOSITORY:$IMAGE_TAG
