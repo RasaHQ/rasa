@@ -72,8 +72,8 @@ target "default" {
 
   args = {
     IMAGE_BASE_NAME         = "${BASE_IMAGE_NAME}"
-    RASA_DEPS_IMAGE_HASH    = "${IMAGE_TAG}"
-    BASE_IMAGE_HASH         = "${IMAGE_TAG}"
+    BASE_IMAGE_HASH         = "${BASE_IMAGE_HASH}"
+    RASA_DEPS_IMAGE_HASH    = "${RASA_DEPS_IMAGE_HASH}"
   }
 
   cache-to = ["type=inline"]
@@ -81,6 +81,7 @@ target "default" {
   cache-from = [
     "type=registry,ref=${BASE_IMAGE_NAME}:base-${BASE_IMAGE_HASH}",
     "type=registry,ref=${BASE_IMAGE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH}",
+    "type=registry,ref=${BASE_IMAGE_NAME}:rasa-deps-${RASA_DEPS_IMAGE_HASH}",
     "type=registry,ref=${TARGET_IMAGE_NAME}:latest",
   ]
 }
