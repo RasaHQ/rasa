@@ -1138,13 +1138,13 @@ jobs:
       - name: Build Docker rasa deps image 🛠
         if: steps.check_image.outputs.rasa_deps_exists == 'false' || steps.check_image.outputs.base_builder_exists == 'false'
         run: |
-          export IMAGE_TAG=${{ steps.check_image.outputs.base_builder_image_hash }}
+          export IMAGE_TAG=${{ steps.check_image.outputs.base_image_hash }}
           docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl rasa-deps
 
       - name: Push Docker rasa deps image if it's not building from a fork ⬆
         if: (steps.check_image.outputs.rasa_deps_exists == 'false' || steps.check_image.outputs.base_builder_exists == 'false') && github.event.pull_request.head.repo.owner.login == 'RasaHQ'
         run: |
-          export IMAGE_TAG=${{ steps.check_image.outputs.base_builder_image_hash }}
+          export IMAGE_TAG=${{ steps.check_image.outputs.base_image_hash }}
           export TARGET_IMAGE_REGISTRY=${{ env.TARGET_IMAGE_REGISTRY }}
           docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl rasa-deps --push
 
