@@ -48,7 +48,7 @@ target "base-builder" {
 
   args = {
     IMAGE_BASE_NAME = "${BASE_IMAGE_NAME}"
-    BASE_IMAGE_HASH = "${BASE_IMAGE_HASH}"
+    BASE_IMAGE_HASH = "${IMAGE_TAG}"
   }
 
   cache-to = ["type=inline"]
