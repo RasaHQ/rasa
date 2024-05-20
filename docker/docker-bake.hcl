@@ -56,11 +56,11 @@ target "base-builder" {
 
 target "rasa-deps" {
   dockerfile = "docker/Dockerfile.rasa-deps"
-  tags       = ["${BASE_IMAGE_NAME}:rasa-deps-${RASA_DEPS_IMAGE_HASH}"]
+  tags       = ["${BASE_IMAGE_NAME}:rasa-deps-${IMAGE_TAG}"]
 
   args = {
     IMAGE_BASE_NAME = "${BASE_IMAGE_NAME}"
-    BASE_BUILDER_IMAGE_HASH  = "${BASE_BUILDER_IMAGE_HASH}"
+    BASE_BUILDER_IMAGE_HASH  = "${IMAGE_TAG}"
   }
 
   cache-to = ["type=inline"]
@@ -72,7 +72,7 @@ target "default" {
 
   args = {
     IMAGE_BASE_NAME         = "${BASE_IMAGE_NAME}"
-    BASE_BUILDER_IMAGE_HASH = "${BASE_BUILDER_IMAGE_HASH}"
+    RASA_DEPS_IMAGE_HASH = "${IMAGE_TAG}"
   }
 
   cache-to = ["type=inline"]
