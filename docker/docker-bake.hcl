@@ -72,7 +72,8 @@ target "default" {
 
   args = {
     IMAGE_BASE_NAME         = "${BASE_IMAGE_NAME}"
-    RASA_DEPS_IMAGE_HASH = "${IMAGE_TAG}"
+    RASA_DEPS_IMAGE_HASH    = "${IMAGE_TAG}"
+    BASE_IMAGE_HASH         = "${IMAGE_TAG}"
   }
 
   cache-to = ["type=inline"]
