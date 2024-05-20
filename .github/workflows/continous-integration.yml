@@ -1125,7 +1125,7 @@ jobs:
       - name: Build Docker builder base image 🛠
         if: steps.check_image.outputs.base_builder_exists == 'false' || steps.check_image.outputs.base_exists == 'false'
         run: |
-          export IMAGE_TAG=${{ steps.check_image.outputs.base_builder_image_hash }}
+          export IMAGE_TAG=${{ steps.check_image.outputs.base_image_hash }}
           docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl base-builder
 
       - name: Push Docker builder base image if it's not building from a fork ⬆
