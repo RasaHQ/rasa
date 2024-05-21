@@ -69,7 +69,6 @@ jobs:
           POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
 
       - name: Install Dependencies 📦
-        if: needs.changes.outputs.backend == 'true'
         # Poetry intermittently fails to install dependency if it is not PEP 517 compliant
         # This is a workaround for that issue
         run: |
