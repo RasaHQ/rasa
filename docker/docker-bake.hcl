@@ -22,6 +22,10 @@ variable "BASE_BUILDER_IMAGE_HASH" {
   default = "localdev"
 }
 
+variable "RASA_DEPS_IMAGE_HASH" {
+  default = "localdev"
+}
+
 # keep this in sync with the version in .github/poetry_version.txt
 # the variable is set automatically for builds in CI
 variable "POETRY_VERSION" {
@@ -33,35 +37,30 @@ group "base-images" {
 }
 
 target "base" {
-  dockerfile = "docker/Dockerfile.base"
+  dockerfile = "docker/Dockerfile.base-slim"
   tags       = ["${BASE_IMAGE_NAME}:base-${IMAGE_TAG}"]
   cache-to   = ["type=inline"]
 }
 
-target "base-poetry" {
-  dockerfile = "docker/Dockerfile.base-poetry"
-  tags       = ["${BASE_IMAGE_NAME}:base-poetry-${POETRY_VERSION}"]
-
-  args = {
-    IMAGE_BASE_NAME = "${BASE_IMAGE_NAME}"
-    BASE_IMAGE_HASH = "${BASE_IMAGE_HASH}"
-    POETRY_VERSION  = "${POETRY_VERSION}"
-  }
-
-  cache-to = ["type=inline"]
-
-  cache-from = [
-    "type=registry,ref=${BASE_IMAGE_NAME}:base-poetry-${POETRY_VERSION}",
-  ]
-}
-
 target "base-builder" {
-  dockerfile = "docker/Dockerfile.base-builder"
+  dockerfile = "docker/Dockerfile.base-builder-slim"
   tags       = ["${BASE_IMAGE_NAME}:base-builder-${IMAGE_TAG}"]
 
   args = {
     IMAGE_BASE_NAME = "${BASE_IMAGE_NAME}"
-    POETRY_VERSION  = "${POETRY_VERSION}"
+    BASE_IMAGE_HASH = "${IMAGE_TAG}"
+  }
+
+  cache-to = ["type=inline"]
+}
+
+target "rasa-deps" {
+  dockerfile = "docker/Dockerfile.rasa-deps"
+  tags       = ["${BASE_IMAGE_NAME}:rasa-deps-${IMAGE_TAG}"]
+
+  args = {
+    IMAGE_BASE_NAME = "${BASE_IMAGE_NAME}"
+    BASE_BUILDER_IMAGE_HASH  = "${IMAGE_TAG}"
   }
 
   cache-to = ["type=inline"]
@@ -74,7 +73,7 @@ target "default" {
   args = {
     IMAGE_BASE_NAME         = "${BASE_IMAGE_NAME}"
     BASE_IMAGE_HASH         = "${BASE_IMAGE_HASH}"
-    BASE_BUILDER_IMAGE_HASH = "${BASE_BUILDER_IMAGE_HASH}"
+    RASA_DEPS_IMAGE_HASH    = "${BASE_IMAGE_HASH}"
   }
 
   cache-to = ["type=inline"]
@@ -82,6 +81,7 @@ target "default" {
   cache-from = [
     "type=registry,ref=${BASE_IMAGE_NAME}:base-${BASE_IMAGE_HASH}",
     "type=registry,ref=${BASE_IMAGE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH}",
+    "type=registry,ref=${BASE_IMAGE_NAME}:rasa-deps-${RASA_DEPS_IMAGE_HASH}",
     "type=registry,ref=${TARGET_IMAGE_NAME}:latest",
   ]
 }

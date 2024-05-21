@@ -1,29 +1,26 @@
 # The default Docker image
 ARG IMAGE_BASE_NAME
 ARG BASE_IMAGE_HASH
-ARG BASE_BUILDER_IMAGE_HASH
+ARG RASA_DEPS_IMAGE_HASH
 
-FROM ${IMAGE_BASE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH} as builder
-# copy files
-COPY . /build/
+FROM ${IMAGE_BASE_NAME}:rasa-deps-${RASA_DEPS_IMAGE_HASH} as rasa-install
 
-# change working directory
+ENV PATH="/opt/venv/bin:$PATH"
+
+COPY . /build
+
 WORKDIR /build
 
-# install dependencies
-RUN python -m venv /opt/venv && \
-  . /opt/venv/bin/activate && \
-  pip install --no-cache-dir -U "pip==24.*" -U "wheel>0.38.0" && \
-  poetry install --only main --no-root --no-interaction && \
-  poetry build -f wheel -n && \
+RUN poetry build -f wheel -n && \
   pip install --no-deps dist/*.whl && \
   rm -rf dist *.egg-info
 
 # start a new build stage
+
 FROM ${IMAGE_BASE_NAME}:base-${BASE_IMAGE_HASH} as runner
 
-# copy everything from /opt
-COPY --from=builder /opt/venv /opt/venv
+# copy everything from /opt/venv
+COPY --from=rasa-install /opt/venv /opt/venv
 
 # make sure we use the virtualenv
 ENV PATH="/opt/venv/bin:$PATH"
@@ -41,6 +38,8 @@ VOLUME /tmp
 
 # change shell
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+RUN ls -la /opt/venv/bin
 
 # the entry point
 EXPOSE 5005

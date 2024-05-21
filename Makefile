@@ -6,6 +6,10 @@ INTEGRATION_TEST_PYTEST_MARKERS ?= "sequential or broker or concurrent_lock_stor
 PLATFORM ?= "linux/amd64"
 TRACING_INTEGRATION_TEST_FOLDER = tests/integration_tests/tracing
 METRICS_INTEGRATION_TEST_PATH = tests/integration_tests/tracing/test_metrics.py
+BASE_IMAGE_HASH ?= localdev-slim
+BASE_BUILDER_IMAGE_HASH ?= localdev-slim
+RASA_DEPS_IMAGE_HASH ?= localdev-slim
+POETRY_VERSION ?= 1.8.2
 
 help:
 	@echo "make"
@@ -204,15 +208,19 @@ test-marker: clean
 release:
 	poetry run python scripts/release.py prepare --interactive
 
-build-docker:
-    	# Build base image
-	docker build . -t rasa-private:base-localdev -f docker/Dockerfile.base --platform=$(PLATFORM)
-    	# Build base poetry image
-	docker build . -t rasa-private:base-poetry-localdev -f docker/Dockerfile.base-poetry --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_IMAGE_HASH=localdev --build-arg POETRY_VERSION=1.8.2 --platform=$(PLATFORM)
-    	# Build base builder image
-	docker build . -t rasa-private:base-builder-localdev -f docker/Dockerfile.base-builder --build-arg IMAGE_BASE_NAME=rasa-private --build-arg POETRY_VERSION=localdev --platform=$(PLATFORM)
-    	# Build Rasa Private image
-	docker build . -t rasa-private:rasa-private-dev -f Dockerfile --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_IMAGE_HASH=localdev --build-arg BASE_BUILDER_IMAGE_HASH=localdev --platform=$(PLATFORM)
+build-docker-base:
+	docker build . -t rasa-private:base-localdev-slim -f docker/Dockerfile.base-slim
+
+build-docker-builder:
+	docker build . -t rasa-private:base-builder-localdev-slim -f docker/Dockerfile.base-builder-slim --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_IMAGE_HASH=$(BASE_IMAGE_HASH)
+
+build-docker-rasa-deps:
+	docker build . -t rasa-private:rasa-deps-localdev-slim -f docker/Dockerfile.rasa-deps --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_BUILDER_IMAGE_HASH=$(BASE_BUILDER_IMAGE_HASH) --build-arg POETRY_VERSION=$(POETRY_VERSION)
+
+build-docker-rasa-image:
+	docker build . -t rasa-private:rasa-private-dev-slim -f Dockerfile --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_IMAGE_HASH=localdev-slim --build-arg RASA_DEPS_IMAGE_HASH=$(RASA_DEPS_IMAGE_HASH)
+
+build-docker: build-docker-base build-docker-builder build-docker-rasa-deps build-docker-rasa-image
 
 build-tests-deployment-env: ## Create environment files (.env) for docker-compose.
 	cd tests_deployment && \
