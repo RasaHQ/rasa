@@ -124,8 +124,8 @@ def mock_create_prediction_cannot_handle():
         ),
         (
             {},
-            "You are an AI Assistant. Given the following information,"
-            " please provide an answer based on the provided documents",
+            "Given the following information, please provide an answer based on"
+            " the provided documents",
             "",
         ),
         (
