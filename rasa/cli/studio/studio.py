@@ -12,6 +12,11 @@ from rasa.studio.auth import StudioAuth
 from rasa.studio.config import StudioConfig
 
 
+DEFAULT_REALM_NAME = "rasa-studio"
+
+DEFAULT_CLIENT_ID = "admin-cli"
+
+
 def add_subparser(
     subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]
 ) -> None:
@@ -142,11 +147,11 @@ def _get_advanced_config(studio_url: str) -> tuple:
     ).unsafe_ask()
 
     realm_name = questionary.text(
-        "Please enter Realm Name", default="rasa-studio"
+        "Please enter Realm Name", default=DEFAULT_REALM_NAME
     ).unsafe_ask()
 
     client_id = questionary.text(
-        "Please enter client ID", default="admin-cli"
+        "Please enter client ID", default=DEFAULT_CLIENT_ID
     ).unsafe_ask()
 
     return keycloak_url, realm_name, client_id
@@ -155,8 +160,8 @@ def _get_advanced_config(studio_url: str) -> tuple:
 def _get_default_config(studio_url: str) -> tuple:
     """Get the default configuration values for Rasa Studio."""
     keycloak_url = studio_url + "auth/"
-    realm_name = "admin-cli"
-    client_id = "rasa-studio"
+    realm_name = DEFAULT_REALM_NAME
+    client_id = DEFAULT_CLIENT_ID
 
     rasa.shared.utils.cli.print_info(
         f"Using default values for "
