@@ -1,6 +1,6 @@
 import argparse
 from typing import List, Optional
-from urllib.parse import urlparse
+from urllib.parse import ParseResult, urlparse
 
 import questionary
 from rasa.cli import SubParsersAction
@@ -95,8 +95,9 @@ def _studio_login(args: argparse.Namespace) -> None:
     studio_auth = StudioAuth(studio_config)
 
     # show the user the studio url they are logging into
-    parsed_url = urlparse(studio_config.studio_url)
-    studio_url = parsed_url.scheme + "://" + parsed_url.netloc
+    # urlparse will always return parseresult if a string is passed in as url
+    parsed_url: ParseResult = urlparse(studio_config.studio_url)  # type: ignore[assignment]
+    studio_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
 
     rasa.shared.utils.cli.print_info(
         f"Trying to log in to Rasa Studio at {studio_url} ..."
