@@ -48,7 +48,7 @@ def _add_config_subparser(
         help="Configure communication parameters for Rasa Studio",
     )
 
-    studio_config_parser.set_defaults(func=_create_and_store_studio_config)
+    studio_config_parser.set_defaults(func=create_and_store_studio_config)
 
     # add advanced configuration flag to trigger
     # advanced configuration setup for authentication settings
@@ -241,7 +241,7 @@ def _configure_studio_config(args: argparse.Namespace) -> StudioConfig:
     return _configure_studio_config(args)
 
 
-def _create_and_store_studio_config(args: argparse.Namespace) -> None:
+def create_and_store_studio_config(args: argparse.Namespace) -> None:
     """Create and store the Rasa Studio configuration.
 
     Args:
