@@ -218,7 +218,7 @@ build-docker-rasa-deps:
 	docker build . -t rasa-private:rasa-deps-localdev -f docker/Dockerfile.rasa-deps --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_BUILDER_IMAGE_HASH=$(BASE_BUILDER_IMAGE_HASH) --build-arg POETRY_VERSION=$(POETRY_VERSION)
 
 build-docker-rasa-image:
-	docker build . -t rasa-private:rasa-private-dev -f Dockerfile --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_IMAGE_HASH=localdev-slim --build-arg RASA_DEPS_IMAGE_HASH=$(RASA_DEPS_IMAGE_HASH)
+	docker build . -t rasa-private:rasa-private-dev -f Dockerfile --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_IMAGE_HASH=localdev --build-arg RASA_DEPS_IMAGE_HASH=$(RASA_DEPS_IMAGE_HASH)
 
 build-docker: build-docker-base build-docker-builder build-docker-rasa-deps build-docker-rasa-image
 
