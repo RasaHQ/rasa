@@ -91,7 +91,7 @@ jobs:
            echo "base_exists=${BASE_IMAGE_EXISTS}" >> $GITHUB_OUTPUT
 
            # Base builder image
-           BASE_BUILDER_IMAGE_HASH=${{ hashFiles('docker/Dockerfile.base-builder-slim') }}
+           BASE_BUILDER_IMAGE_HASH=${{ hashFiles('docker/Dockerfile.base-builder') }}
            echo "base_builder_image_hash=${BASE_BUILDER_IMAGE_HASH}" >> $GITHUB_OUTPUT
 
            BASE_BUILDER_IMAGE_EXISTS=$((docker manifest inspect ${{ env.TARGET_IMAGE_REGISTRY }}/rasa:base-builder-${BASE_BUILDER_IMAGE_HASH} &> /dev/null && echo true || echo false) || true)
