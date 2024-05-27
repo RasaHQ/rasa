@@ -10,6 +10,17 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.8.6] - 2024-05-27
+                       
+Rasa Pro 3.8.6 (2024-05-27)                            
+### Improvements
+- [#619](https://github.com/rasahq/rasa/issues/619): Adds `tracker_state` attribute to `OutputChannel`. It simplifies the access of tracker state for custom channel connector with `CollectingOutputChannel.tracker_state`.
+
+### Bugfixes
+- [#581](https://github.com/rasahq/rasa/issues/581): If a button in a response does not have a payload, socketio channel will use
+  the title as payload by default rather than throwing an exception.
+
+
 ## [3.8.5] - 2024-05-03
                        
 Rasa Pro 3.8.5 (2024-05-03)                            
