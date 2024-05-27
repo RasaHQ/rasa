@@ -37,13 +37,13 @@ group "base-images" {
 }
 
 target "base" {
-  dockerfile = "docker/Dockerfile.base-slim"
+  dockerfile = "docker/Dockerfile.base"
   tags       = ["${BASE_IMAGE_NAME}:base-${IMAGE_TAG}"]
   cache-to   = ["type=inline"]
 }
 
 target "base-builder" {
-  dockerfile = "docker/Dockerfile.base-builder-slim"
+  dockerfile = "docker/Dockerfile.base-builder"
   tags       = ["${BASE_IMAGE_NAME}:base-builder-${IMAGE_TAG}"]
 
   args = {

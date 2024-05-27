@@ -49,11 +49,11 @@ jobs:
 
       - name: Build base image
         run: |
-          docker build . -t rasa-private:base-localdev -f docker/Dockerfile.base-slim --platform=linux/amd64
+          docker build . -t rasa-private:base-localdev -f docker/Dockerfile.base --platform=linux/amd64
 
       - name: Build base builder image
         run: |
-          docker build . -t rasa-private:base-builder-localdev -f docker/Dockerfile.base-builder-slim --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_IMAGE_HASH=localdev --platform=linux/amd64
+          docker build . -t rasa-private:base-builder-localdev -f docker/Dockerfile.base-builder --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_IMAGE_HASH=localdev --platform=linux/amd64
 
       - name: Build rasa deps image
         run: |

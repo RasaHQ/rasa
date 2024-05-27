@@ -6,9 +6,9 @@ INTEGRATION_TEST_PYTEST_MARKERS ?= "sequential or broker or concurrent_lock_stor
 PLATFORM ?= "linux/amd64"
 TRACING_INTEGRATION_TEST_FOLDER = tests/integration_tests/tracing
 METRICS_INTEGRATION_TEST_PATH = tests/integration_tests/tracing/test_metrics.py
-BASE_IMAGE_HASH ?= localdev-slim
-BASE_BUILDER_IMAGE_HASH ?= localdev-slim
-RASA_DEPS_IMAGE_HASH ?= localdev-slim
+BASE_IMAGE_HASH ?= localdev
+BASE_BUILDER_IMAGE_HASH ?= localdev
+RASA_DEPS_IMAGE_HASH ?= localdev
 POETRY_VERSION ?= 1.8.2
 
 help:
@@ -209,16 +209,16 @@ release:
 	poetry run python scripts/release.py prepare --interactive
 
 build-docker-base:
-	docker build . -t rasa-private:base-localdev-slim -f docker/Dockerfile.base-slim
+	docker build . -t rasa-private:base-localdev -f docker/Dockerfile.base
 
 build-docker-builder:
-	docker build . -t rasa-private:base-builder-localdev-slim -f docker/Dockerfile.base-builder-slim --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_IMAGE_HASH=$(BASE_IMAGE_HASH)
+	docker build . -t rasa-private:base-builder-localdev -f docker/Dockerfile.base-builder --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_IMAGE_HASH=$(BASE_IMAGE_HASH)
 
 build-docker-rasa-deps:
-	docker build . -t rasa-private:rasa-deps-localdev-slim -f docker/Dockerfile.rasa-deps --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_BUILDER_IMAGE_HASH=$(BASE_BUILDER_IMAGE_HASH) --build-arg POETRY_VERSION=$(POETRY_VERSION)
+	docker build . -t rasa-private:rasa-deps-localdev -f docker/Dockerfile.rasa-deps --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_BUILDER_IMAGE_HASH=$(BASE_BUILDER_IMAGE_HASH) --build-arg POETRY_VERSION=$(POETRY_VERSION)
 
 build-docker-rasa-image:
-	docker build . -t rasa-private:rasa-private-dev-slim -f Dockerfile --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_IMAGE_HASH=localdev-slim --build-arg RASA_DEPS_IMAGE_HASH=$(RASA_DEPS_IMAGE_HASH)
+	docker build . -t rasa-private:rasa-private-dev -f Dockerfile --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_IMAGE_HASH=localdev --build-arg RASA_DEPS_IMAGE_HASH=$(RASA_DEPS_IMAGE_HASH)
 
 build-docker: build-docker-base build-docker-builder build-docker-rasa-deps build-docker-rasa-image
 
