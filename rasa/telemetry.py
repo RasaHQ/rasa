@@ -124,6 +124,13 @@ TELEMETRY_INTENTLESS_POLICY_PREDICT_EVENT = "Intentless Policy Predicted"
 TELEMETRY_LLM_INTENT_PREDICT_EVENT = "LLM Intent Predicted"
 TELEMETRY_LLM_INTENT_TRAIN_COMPLETED_EVENT = "LLM Intent Training Completed"
 TELEMETRY_E2E_TEST_RUN_STARTED_EVENT = "E2E Test Run Started"
+TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_STARTED_EVENT = (
+    "Enterprise Search Policy Training Started"
+)
+TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_COMPLETED_EVENT = (
+    "Enterprise Search Policy Training Completed"
+)
+TELEMETRY_ENTERPRISE_SEARCH_POLICY_PREDICT_EVENT = "Enterprise Search Policy Predicted"
 
 # used to calculate the context on the first call and cache it afterwards
 TELEMETRY_CONTEXT = None
@@ -1569,3 +1576,52 @@ def append_anonymization_trait(
     )
 
     return traits
+
+
+def track_enterprise_search_policy_train() -> None:
+    """Track when a user starts training Enterprise Search policy."""
+    _track(TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_STARTED_EVENT)
+
+
+def track_enterprise_search_policy_train_completed(
+    vector_store_type: Optional[str],
+    embeddings_type: Optional[str],
+    embeddings_model: Optional[str],
+    llm_type: Optional[str],
+    llm_model: Optional[str],
+    citation_enabled: Optional[bool],
+) -> None:
+    """Track when a user completes training Enterprise Search policy."""
+    _track(
+        TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_COMPLETED_EVENT,
+        {
+            "vector_store_type": vector_store_type,
+            "embeddings_type": embeddings_type,
+            "embeddings_model": embeddings_model,
+            "llm_type": llm_type,
+            "llm_model": llm_model,
+            "citation_enabled": citation_enabled,
+        },
+    )
+
+
+def track_enterprise_search_policy_predict(
+    vector_store_type: Optional[str],
+    embeddings_type: Optional[str],
+    embeddings_model: Optional[str],
+    llm_type: Optional[str],
+    llm_model: Optional[str],
+    citation_enabled: Optional[bool],
+) -> None:
+    """Track when a user predicts the next action using Enterprise Search policy."""
+    _track(
+        TELEMETRY_ENTERPRISE_SEARCH_POLICY_PREDICT_EVENT,
+        {
+            "vector_store_type": vector_store_type,
+            "embeddings_type": embeddings_type,
+            "embeddings_model": embeddings_model,
+            "llm_type": llm_type,
+            "llm_model": llm_model,
+            "citation_enabled": citation_enabled,
+        },
+    )
