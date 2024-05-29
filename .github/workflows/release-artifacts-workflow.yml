@@ -118,7 +118,7 @@ jobs:
            export TARGET_IMAGE_REGISTRY=${{ env.TARGET_IMAGE_REGISTRY }}
            docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl base-builder --push
 
-      - name: Build Docker rasa deps image 🛠
+      - name: Build Docker Rasa dependencies image 🛠
         if: steps.check_image.outputs.rasa_deps_exists == 'false' || steps.check_image.outputs.base_builder_exists == 'false'
         run: |
           export IMAGE_TAG=${{ steps.check_image.outputs.base_image_hash }}
