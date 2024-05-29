@@ -42,8 +42,6 @@ def test_handle_train(
     handler_mock = MagicMock()
     return_mock = MagicMock()
     return_mock.return_value = handler_mock
-    handler_mock.nlu_assistant = True
-    handler_mock.flows_assistant = False
     handler_mock.nlu = """version: "3.1"
 nlu:
 - intent: greet
@@ -118,8 +116,6 @@ def test_handle_train_with_flows(
     handler_mock = MagicMock()
     return_mock = MagicMock()
     return_mock.return_value = handler_mock
-    handler_mock.nlu_assistant = False
-    handler_mock.flows_assistant = True
     handler_mock.flows = """flows:
   check_balance:
     name: check your balance
