@@ -106,6 +106,7 @@ def upload_calm_assistant(
             "responses",
             "slots",
             "intents",
+            "entities",
             "forms",
             "session_config",
         ]

@@ -181,6 +181,9 @@ CALM_DOMAIN_YAML = dedent(
         - type: custom
     intents:
     - health_advice
+    entities:
+    - name
+    - age
     session_config:
       session_expiration_time: 60
       carry_over_slots_to_new_session: true
