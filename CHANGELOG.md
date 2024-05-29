@@ -11,8 +11,8 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 <!-- TOWNCRIER -->
 
 ## [3.8.7] - 2024-05-29
-                       
-Rasa Pro 3.8.7 (2024-05-29)                            
+
+Rasa Pro 3.8.7 (2024-05-29)
 ### Bugfixes
 - [#645](https://github.com/rasahq/rasa/issues/645): Add support for domain entities in CALM import
 - [#647](https://github.com/rasahq/rasa/issues/647): Download NLU data when running `rasa studio download` for a modern assistant
@@ -21,8 +21,8 @@ Rasa Pro 3.8.7 (2024-05-29)
 
 
 ## [3.8.6] - 2024-05-27
-                       
-Rasa Pro 3.8.6 (2024-05-27)                            
+
+Rasa Pro 3.8.6 (2024-05-27)
 ### Improvements
 - [#619](https://github.com/rasahq/rasa/issues/619): Adds `tracker_state` attribute to `OutputChannel`. It simplifies the access of tracker state for custom channel connector with `CollectingOutputChannel.tracker_state`.
 
@@ -32,22 +32,22 @@ Rasa Pro 3.8.6 (2024-05-27)
 
 
 ## [3.8.5] - 2024-05-03
-                       
-Rasa Pro 3.8.5 (2024-05-03)                            
+
+Rasa Pro 3.8.5 (2024-05-03)
 ### Bugfixes
 - [#575](https://github.com/rasahq/rasa/issues/575): Trigger `pattern_internal_error` if collection does not exist in a Qdrant vector store.
 
 
 ## [3.8.4] - 2024-04-30
-                       
-Rasa Pro 3.8.4 (2024-04-30)                            
+
+Rasa Pro 3.8.4 (2024-04-30)
 ### Improvements
 - [#542](https://github.com/rasahq/rasa/issues/542): Added support for NLU Triggers by supporting uploading the NLU files for CALM Assistants
 
 
 ## [3.8.3] - 2024-04-26
-                       
-Rasa Pro 3.8.3 (2024-04-26)                            
+
+Rasa Pro 3.8.3 (2024-04-26)
 ### Improvements
 - [#538](https://github.com/rasahq/rasa/issues/538): * Throw validation error and exit when duplicate responses are found across domains. This is a breaking change, as it will cause training to fail if duplicate responses are found. If you have duplicate responses in your training data, you will need to remove them before training.
   * Update domain importing to ignore the warnings about duplicates when merging with the default flow domain
@@ -65,17 +65,17 @@ Rasa Pro 3.8.3 (2024-04-26)
 
 
 ## [3.8.2] - 2024-04-25
-                       
-Rasa Pro 3.8.2 (2024-04-25)                            
+
+Rasa Pro 3.8.2 (2024-04-25)
 ### Bugfixes
-- [#1013](https://github.com/rasahq/rasa/issues/1013): Add the currently active flow as well as the called flow (if present) to the 
+- [#1013](https://github.com/rasahq/rasa/issues/1013): Add the currently active flow as well as the called flow (if present) to the
   list of available flows for the `LLMCommandGenerator`.
 - [#533](https://github.com/rasahq/rasa/issues/533): Fix custom prompt not read from the model resource path for LLMCommandGenerator.
 
 
 ## [3.8.1] - 2024-04-17
-                       
-Rasa Pro 3.8.1 (2024-04-17)                            
+
+Rasa Pro 3.8.1 (2024-04-17)
 ### Improvements
 - [#441](https://github.com/rasahq/rasa/issues/441): Adjusted chat widget behavior to remain open when clicking outside the chat box area.
 - [#468](https://github.com/rasahq/rasa/issues/468): Improve debug logs to include information about evaluation of `if-else` conditions in flows at runtime.
