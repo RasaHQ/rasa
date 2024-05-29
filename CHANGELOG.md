@@ -10,6 +10,16 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.8.7] - 2024-05-29
+                       
+Rasa Pro 3.8.7 (2024-05-29)                            
+### Bugfixes
+- [#645](https://github.com/rasahq/rasa/issues/645): Add support for domain entities in CALM import
+- [#647](https://github.com/rasahq/rasa/issues/647): Download NLU data when running `rasa studio download` for a modern assistant
+  with NLU triggers. Previously, this data was not downloaded, leading to a
+  partial assistant.
+
+
 ## [3.8.6] - 2024-05-27
                        
 Rasa Pro 3.8.6 (2024-05-27)                            
