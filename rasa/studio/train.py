@@ -2,7 +2,7 @@ import argparse
 import logging
 import sys
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, List, Optional
 
 import rasa.cli.utils
 import rasa.shared.utils.cli
@@ -54,7 +54,9 @@ def handle_train(args: argparse.Namespace) -> Optional[str]:
 
     domain_file = _create_temp_file(read_yaml(domain.as_yaml()), "domain.yml")  # type: ignore[union-attr]  # noqa: E501
 
-    trining_file = make_training_file(handler, data_form_studio, data_original)
+    studio_training_files = make_training_files(
+        handler, data_form_studio, data_original
+    )
 
     training_files = [
         rasa.cli.utils.get_validated_path(
@@ -62,7 +64,7 @@ def handle_train(args: argparse.Namespace) -> Optional[str]:
         )
         for f in args.data
     ]
-    training_files.append(trining_file)
+    training_files.extend(studio_training_files)
 
     training_result = train_all(
         domain=str(domain_file),
@@ -87,11 +89,11 @@ def handle_train(args: argparse.Namespace) -> Optional[str]:
     return training_result.model
 
 
-def make_training_file(
+def make_training_files(
     handler: StudioDataHandler,
     data_form_studio: TrainingDataImporter,
     data_original: TrainingDataImporter,
-) -> Path:
+) -> List[Path]:
     """Create training file from studio data and original data.
 
     Args:
@@ -100,9 +102,10 @@ def make_training_file(
         data_original (TrainingDataImporter): original data
 
     Returns:
-        Path: path to training file
+        List[Path]: list of training files
     """
-    if handler.nlu_assistant:
+    training_files = []
+    if handler.has_nlu():
         # nlu has deduplication
         train_data = (
             data_original.get_nlu_data()
@@ -110,7 +113,9 @@ def make_training_file(
             .nlu_as_yaml()
         )
         training_file = _create_temp_file(read_yaml(train_data), "nlu.yml")
-    else:
+        training_files.append(training_file)
+
+    if handler.has_flows():
         diff = DataDiffGenerator(
             original_flows=data_original.get_flows().underlying_flows,
             studio_flows=data_form_studio.get_flows().underlying_flows,
@@ -119,7 +124,9 @@ def make_training_file(
         tmp_dir = get_temp_dir_name()
         training_file = Path(tmp_dir, "flows.yml")
         YamlFlowsWriter.dump(diff_flows, training_file)
-    return training_file
+        training_files.append(training_file)
+
+    return training_files
 
 
 def _create_temp_file(data: Any, name: str) -> Path:

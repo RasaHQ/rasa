@@ -42,8 +42,9 @@ def test_handle_train(
     handler_mock = MagicMock()
     return_mock = MagicMock()
     return_mock.return_value = handler_mock
-    handler_mock.nlu_assistant = True
-    handler_mock.flows_assistant = False
+    handler_mock.has_flows = lambda: False
+    handler_mock.has_nlu = lambda: True
+    handler_mock.flows = None
     handler_mock.nlu = """version: "3.1"
 nlu:
 - intent: greet
@@ -70,11 +71,10 @@ nlu:
     - see you around
     - bye bye
     - see you later"""
-    handler_mock.domain_intents = """version: "3.1"
+    handler_mock.domain = """version: "3.1"
 intents:
   - greet
-  - goodbye"""
-    handler_mock.domain_entities = """version: "3.1"
+  - goodbye
 entities:
   - first_name
   - last_name"""
@@ -118,8 +118,9 @@ def test_handle_train_with_flows(
     handler_mock = MagicMock()
     return_mock = MagicMock()
     return_mock.return_value = handler_mock
-    handler_mock.nlu_assistant = False
-    handler_mock.flows_assistant = True
+    handler_mock.has_flows = lambda: True
+    handler_mock.has_nlu = lambda: False
+    handler_mock.nlu = None
     handler_mock.flows = """flows:
   check_balance:
     name: check your balance
@@ -129,17 +130,15 @@ def test_handle_train_with_flows(
       - action: check_balance
       - action: utter_current_balance
   """
-    handler_mock.domain_slots = """version: "3.1"
+    handler_mock.domain = """version: "3.1"
 slots:
   current_balance:
     type: float
     mappings:
-      - type: custom"""
-    handler_mock.domain_responses = """version: "3.1"
+      - type: custom
 responses:
   utter_current_balance:
-    - text: You still have {current_balance} in your account."""
-    handler_mock.domain_actions = """version: "3.1"
+    - text: You still have {current_balance} in your account.
 actions:
   - check_balance"""
     monkeypatch.setattr(rasa.studio.train, "StudioDataHandler", return_mock)
