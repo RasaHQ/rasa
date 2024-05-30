@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "rasa-pro"
-version = "3.8.5"
+version = "3.9.0.dev2"
 description = "State-of-the-art open-core Conversational AI framework for Enterprises that natively leverages generative AI for effortless assistant development."
 authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
 maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
@@ -82,25 +82,9 @@ disable_error_code = [ "arg-type",]
 skips = [ "B104", "B301",]
 
 [tool.ruff]
-# The following checks are disabled because they are not relevant for Rasa
-# - RUF001: Checks for ambiguous Unicode characters in strings. https://docs.astral.sh/ruff/rules/ambiguous-unicode-character-string/
-# - RUF002: Checks for ambiguous Unicode characters in docstrings. https://docs.astral.sh/ruff/rules/ambiguous-unicode-character-docstring/
-# - RUF003: Checks for ambiguous Unicode characters in comments. https://docs.astral.sh/ruff/rules/ambiguous-unicode-character-comment/
-# - RUF005: Use of + operator for string concatenation https://docs.astral.sh/ruff/rules/collection-literal-concatenation/
-# Following checks are currently disabled but will be enabled in the future
-# as part of the ticket https://rasahq.atlassian.net/browse/ATO-866
-# - D100: Missing docstring in public module
-# - D101: Missing docstring in public class
-# - D102: Missing docstring in public method
-# - D103: Missing docstring in public function
-# - D104: Missing docstring in public package
-# - D105: Missing docstring in magic method
-# - D107: Missing docstring in __init__
-lint.ignore = [ "D100", "D101", "D102", "D103", "D104", "D105", "D107", "RUF001", "RUF002", "RUF003", "RUF005",]
 line-length = 88
-lint.select = [ "D", "E", "F", "W", "RUF",]
 target-version = "py38"
-exclude = ["eggs", ".git", ".pytest_cache", "build", "dist"]
+exclude = [ "eggs", ".git", ".pytest_cache", "build", "dist",]
 
 [tool.poetry.dependencies]
 python = ">=3.8.1,<3.11"
@@ -251,12 +235,9 @@ metal = [ "tensorflow-metal",]
 [tool.poetry.scripts]
 rasa = "rasa.__main__:main"
 
-[tool.ruff.lint.pydocstyle]
-convention = "google"
-
-[tool.ruff.lint.per-file-ignores]
-"tests/test_telemetry.py" = [ "E501",]
-"tests/shared/core/test_domain.py" = [ "E501",]
+[tool.ruff.lint]
+ignore = [ "D100", "D101", "D102", "D103", "D104", "D105", "D107", "RUF001", "RUF002", "RUF003", "RUF005",]
+select = [ "D", "E", "F", "W", "RUF",]
 
 [tool.pytest.ini_options]
 python_functions = "test_"
@@ -269,7 +250,7 @@ timeout_func_only = true
 asyncio_mode = "auto"
 
 [tool.poetry.dependencies.rasa-sdk]
-version = "~3.8.0"
+version = "3.9.0dev1"
 allow-prereleases = true
 
 [tool.poetry.dependencies.tensorflow]
@@ -329,6 +310,13 @@ extras = [ "tls", "srv",]
 [tool.poetry.dev-dependencies.pytest-sanic]
 git = "https://github.com/RasaHQ/pytest-sanic"
 branch = "fix_signal_issue"
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/test_telemetry.py" = [ "E501",]
+"tests/shared/core/test_domain.py" = [ "E501",]
 
 [tool.poetry.group.dev.dependencies]
 ruff = ">=0.3.5,<0.4.0"

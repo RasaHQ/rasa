@@ -89,7 +89,7 @@ class SocketIOOutput(OutputChannel):
             {
                 "content_type": "text",
                 "title": button["title"],
-                "payload": button["payload"],
+                "payload": button.get("payload", button["title"]),
             }
             for button in buttons
         ]
