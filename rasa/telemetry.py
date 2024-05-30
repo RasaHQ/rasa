@@ -1578,7 +1578,7 @@ def append_anonymization_trait(
     return traits
 
 
-def track_enterprise_search_policy_train() -> None:
+def track_enterprise_search_policy_train_started() -> None:
     """Track when a user starts training Enterprise Search policy."""
     _track(TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_STARTED_EVENT)
 

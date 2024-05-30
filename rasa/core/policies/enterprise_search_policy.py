@@ -8,7 +8,11 @@ import rasa.shared.utils.io
 import structlog
 from jinja2 import Template
 from pydantic.error_wrappers import ValidationError
-from rasa import telemetry
+from rasa.telemetry import (
+    track_enterprise_search_policy_predict,
+    track_enterprise_search_policy_train_completed,
+    track_enterprise_search_policy_train_started,
+)
 from rasa.shared.exceptions import RasaException
 from rasa.core.constants import (
     POLICY_MAX_HISTORY,
@@ -49,7 +53,6 @@ from rasa.shared.utils.io import deep_container_fingerprint
 from rasa.shared.utils.llm import (
     DEFAULT_OPENAI_CHAT_MODEL_NAME,
     DEFAULT_OPENAI_EMBEDDING_MODEL_NAME,
-    combine_custom_and_default_config,
     embedder_factory,
     get_prompt_template,
     llm_factory,
@@ -192,18 +195,6 @@ class EnterpriseSearchPolicy(Policy):
             config.get(EMBEDDINGS_CONFIG_KEY), DEFAULT_EMBEDDINGS_CONFIG
         )
 
-    def embeddings_property(self, prop: str) -> Optional[str]:
-        """Returns the property of the embeddings config."""
-        return combine_custom_and_default_config(
-            self.config.get(EMBEDDINGS_CONFIG_KEY), DEFAULT_EMBEDDINGS_CONFIG
-        ).get(prop)
-
-    def llm_property(self, prop: str) -> Optional[str]:
-        """Returns the property of the LLM config."""
-        return combine_custom_and_default_config(
-            self.config.get(LLM_CONFIG_KEY), DEFAULT_LLM_CONFIG
-        ).get(prop)
-
     def train(  # type: ignore[override]
         self,
         training_trackers: List[TrackerWithCachedStates],
@@ -229,7 +220,9 @@ class EnterpriseSearchPolicy(Policy):
             can load the policy from the resource.
         """
         store_type = self.vector_store_config.get(VECTOR_STORE_TYPE_PROPERTY)
-        telemetry.track_enterprise_search_policy_train()
+
+        # telemetry call to track training start
+        track_enterprise_search_policy_train_started()
 
         # validate embedding configuration
         try:
@@ -261,13 +254,21 @@ class EnterpriseSearchPolicy(Policy):
         else:
             logger.info("enterprise_search_policy.train.custom", store_type=store_type)
 
-        telemetry.track_enterprise_search_policy_train_completed(
+        # telemetry call to track training completion
+        track_enterprise_search_policy_train_completed(
             vector_store_type=store_type,
-            embeddings_type=self.embeddings_property("_type"),
-            embeddings_model=self.embeddings_property("model")
-            or self.embeddings_property("model_name"),
-            llm_type=self.llm_property("_type"),
-            llm_model=self.llm_property("model") or self.llm_property("model_name"),
+            embeddings_type=self.config.get(
+                EMBEDDINGS_CONFIG_KEY, DEFAULT_EMBEDDINGS_CONFIG
+            ).get("_type"),
+            embeddings_model=self.config.get(
+                EMBEDDINGS_CONFIG_KEY, DEFAULT_EMBEDDINGS_CONFIG
+            ).get("model")
+            or self.config.get(EMBEDDINGS_CONFIG_KEY, DEFAULT_EMBEDDINGS_CONFIG).get(
+                "model_name"
+            ),
+            llm_type=self.config.get(LLM_CONFIG_KEY, DEFAULT_LLM_CONFIG).get("_type"),
+            llm_model=self.config.get(LLM_CONFIG_KEY, DEFAULT_LLM_CONFIG).get("model")
+            or self.config.get(LLM_CONFIG_KEY, DEFAULT_LLM_CONFIG).get("model_name"),
             citation_enabled=self.citation_enabled,
         )
         self.persist()
@@ -421,13 +422,21 @@ class EnterpriseSearchPolicy(Policy):
             }
         }
 
-        telemetry.track_enterprise_search_policy_predict(
+        # telemetry call to track policy prediction
+        track_enterprise_search_policy_predict(
             vector_store_type=self.vector_store_config.get(VECTOR_STORE_TYPE_PROPERTY),
-            embeddings_type=self.embeddings_property("_type"),
-            embeddings_model=self.embeddings_property("model")
-            or self.embeddings_property("model_name"),
-            llm_type=self.llm_property("_type"),
-            llm_model=self.llm_property("model") or self.llm_property("model_name"),
+            embeddings_type=self.config.get(
+                EMBEDDINGS_CONFIG_KEY, DEFAULT_EMBEDDINGS_CONFIG
+            ).get("_type"),
+            embeddings_model=self.config.get(
+                EMBEDDINGS_CONFIG_KEY, DEFAULT_EMBEDDINGS_CONFIG
+            ).get("model")
+            or self.config.get(EMBEDDINGS_CONFIG_KEY, DEFAULT_EMBEDDINGS_CONFIG).get(
+                "model_name"
+            ),
+            llm_type=self.config.get(LLM_CONFIG_KEY, DEFAULT_LLM_CONFIG).get("_type"),
+            llm_model=self.config.get(LLM_CONFIG_KEY, DEFAULT_LLM_CONFIG).get("model")
+            or self.config.get(LLM_CONFIG_KEY, DEFAULT_LLM_CONFIG).get("model_name"),
             citation_enabled=self.citation_enabled,
         )
         return self._create_prediction(
