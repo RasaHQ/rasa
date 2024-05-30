@@ -10,6 +10,17 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.8.6] - 2024-05-27
+                       
+Rasa Pro 3.8.6 (2024-05-27)                            
+### Improvements
+- [#619](https://github.com/rasahq/rasa/issues/619): Adds `tracker_state` attribute to `OutputChannel`. It simplifies the access of tracker state for custom channel connector with `CollectingOutputChannel.tracker_state`.
+
+### Bugfixes
+- [#581](https://github.com/rasahq/rasa/issues/581): If a button in a response does not have a payload, socketio channel will use
+  the title as payload by default rather than throwing an exception.
+
+
 ## [3.8.5] - 2024-05-03
 
 Rasa Pro 3.8.5 (2024-05-03)
@@ -56,9 +67,10 @@ Rasa Pro 3.8.2 (2024-04-25)
 
 Rasa Pro 3.8.1 (2024-04-17)
 ### Improvements
-- [#441](https://github.com/rasahq/rasa-private/issues/441): Adjusted chat widget behavior to remain open when clicking outside the chat box area.
-- [#468](https://github.com/rasahq/rasa-private/issues/468): Improve debug logs to include information about evaluation of `if-else` conditions in flows at runtime.
-- [#438](https://github.com/rasahq/rasa-private/issues/438): Remove the `ContextualResponseRephraser` from the tutorial template to keep it simple as it is not needed anymore.
+- [#441](https://github.com/rasahq/rasa/issues/441): Adjusted chat widget behavior to remain open when clicking outside the chat box area.
+- [#468](https://github.com/rasahq/rasa/issues/468): Improve debug logs to include information about evaluation of `if-else` conditions in flows at runtime.
+- [#893](https://github.com/rasahq/rasa/issues/893): Remove the `ContextualResponseRephraser` from the tutorial template to keep it simple as it is not needed anymore.
+- [#475](https://github.com/rasahq/rasa/issues/475): Update poetry package manager version to `1.8.2`. Check the [migration guide](https://rasa.com/docs/rasa-pro/migration-guide#rasa-pro-380-to-rasa-pro-381) for instructions on how to update your environment.
 
 ### Bugfixes
 - [#441](https://github.com/rasahq/rasa-private/issues/441): Introduced support for numbered Markdown lists.

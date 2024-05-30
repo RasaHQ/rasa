@@ -20,6 +20,10 @@ from rasa.cli import utils as cli_utils
 from rasa.shared.constants import DOCS_BASE_URL, DEFAULT_SENDER_ID
 from rasa.core.constants import BEARER_TOKEN_PREFIX
 from rasa.shared.exceptions import RasaException
+from rasa.shared.core.trackers import (
+    DialogueStateTracker,
+    EventVerbosity,
+)
 
 try:
     from urlparse import urljoin
@@ -226,6 +230,10 @@ class OutputChannel:
     def name(cls) -> Text:
         """Every output channel needs a name to identify it."""
         return cls.__name__
+
+    def attach_tracker_state(self, tracker: DialogueStateTracker) -> None:
+        """Attaches the current tracker state to the output channel."""
+        self.tracker_state = tracker.current_state(EventVerbosity.AFTER_RESTART)
 
     async def send_response(self, recipient_id: Text, message: Dict[Text, Any]) -> None:
         """Send a message to the client."""

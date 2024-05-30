@@ -1005,9 +1005,11 @@ class MessageProcessor:
         self,
         events: List[Event],
         tracker: DialogueStateTracker,
-        output_channel: OutputChannel,
+        output_channel: Optional[OutputChannel],
     ) -> None:
-        """Send bot messages, schedule and cancel reminders."""
+        """Attach tracker, send bot messages, schedule and cancel reminders."""
+        if output_channel:
+            output_channel.attach_tracker_state(tracker)
         await self._send_bot_messages(events, tracker, output_channel)
         await self._schedule_reminders(events, tracker, output_channel)
         await self._cancel_reminders(events, tracker)
