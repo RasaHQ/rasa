@@ -1,0 +1,40 @@
+# The default Docker image
+ARG IMAGE_BASE_NAME
+ARG BASE_BUILDER_IMAGE_HASH
+
+FROM ${IMAGE_BASE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH} as rasa-deps
+
+ARG POETRY_VERSION
+
+# change working directory
+WORKDIR /build
+
+# copy files
+COPY ./poetry.lock /build/poetry.lock
+COPY ./pyproject.toml /build/pyproject.toml
+COPY ./README.md /build/README.md
+COPY ./CHANGELOG.md /build/CHANGELOG.md
+
+# install poetry
+ENV POETRY_VERSION ${POETRY_VERSION}
+RUN curl -sSL https://install.python-poetry.org | python3 -
+ENV PATH "/root/.local/bin:${PATH}"
+
+# install dependencies
+RUN python -m venv /opt/venv && \
+  . /opt/venv/bin/activate && \
+  poetry config virtualenvs.create false && \
+  pip install --no-cache-dir -U "pip==22.*" -U "wheel>0.38.0" && \
+  poetry install --only main --no-root --no-interaction
+
+FROM ${IMAGE_BASE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH}
+
+COPY --from=rasa-deps /opt/venv /opt/venv
+
+# Reinstall poetry or copy its installation from the first stage
+COPY --from=rasa-deps /root/.local /root/.local
+ENV PATH="/root/.local/bin:${PATH}"
+
+
+RUN . /opt/venv/bin/activate && \
+    poetry config virtualenvs.create false
