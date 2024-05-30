@@ -21,6 +21,8 @@ jobs:
     if: (github.actor != 'dependabot[bot]')
     name: rasa-private-dev image
     runs-on: ubuntu-22.04
+    env:
+      PLATFORM: linux/amd64
 
     steps:
       - name: Check out code
@@ -49,15 +51,15 @@ jobs:
 
       - name: Build base image
         run: |
-          docker build . -t rasa-private:base-localdev -f docker/Dockerfile.base --platform=linux/amd64
-      
-      - name: Build base poetry image
-        run: |
-          docker build . -t rasa-private:base-poetry-localdev -f docker/Dockerfile.base-poetry --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_IMAGE_HASH=localdev --build-arg POETRY_VERSION=1.8.2 --platform=linux/amd64
+          PLATFORM=${{ env.PLATFORM }} make build-docker-base
 
       - name: Build base builder image
         run: |
-          docker build . -t rasa-private:base-builder-localdev -f docker/Dockerfile.base-builder --build-arg IMAGE_BASE_NAME=rasa-private --build-arg POETRY_VERSION=localdev --platform=linux/amd64
+          BASE_IMAGE_HASH=localdev PLATFORM=${{ env.PLATFORM }} make build-docker-builder
+
+      - name: Build rasa deps image
+        run: |
+          BASE_BUILDER_IMAGE_HASH=localdev POETRY_VERSION=$POETRY_VERSION PLATFORM=${{ env.PLATFORM }} make build-docker-rasa-deps
 
       - name: Build, tag, and push image to Amazon ECR
         env:
@@ -66,6 +68,6 @@ jobs:
           IMAGE_TAG: ${{ env.IMAGE_TAG }}
           POETRY_VERSION: ${{ env.POETRY_VERSION }}
         run: |
-          docker build . -t $IMAGE_TAG -f Dockerfile --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_IMAGE_HASH=localdev --build-arg BASE_BUILDER_IMAGE_HASH=localdev --platform=linux/amd64
+          IMAGE_TAG=$IMAGE_TAG BASE_IMAGE_HASH=localdev RASA_DEPS_IMAGE_HASH=localdev PLATFORM=${{ env.PLATFORM }} make build-docker-rasa-image
           docker tag $IMAGE_TAG $REPOSITORY:$IMAGE_TAG
           docker push $REPOSITORY:$IMAGE_TAG

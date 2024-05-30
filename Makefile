@@ -3,9 +3,14 @@
 JOBS ?= 1
 INTEGRATION_TEST_FOLDER = tests/integration_tests/
 INTEGRATION_TEST_PYTEST_MARKERS ?= "sequential or broker or concurrent_lock_store or ((not sequential) and (not broker) and (not concurrent_lock_store))"
-PLATFORM ?= "linux/amd64"
+PLATFORM ?= "linux/arm64"
 TRACING_INTEGRATION_TEST_FOLDER = tests/integration_tests/tracing
 METRICS_INTEGRATION_TEST_PATH = tests/integration_tests/tracing/test_metrics.py
+BASE_IMAGE_HASH ?= localdev
+BASE_BUILDER_IMAGE_HASH ?= localdev
+RASA_DEPS_IMAGE_HASH ?= localdev
+IMAGE_TAG ?= rasa-private:rasa-private-dev
+POETRY_VERSION ?= 1.8.2
 
 help:
 	@echo "make"
@@ -204,15 +209,19 @@ test-marker: clean
 release:
 	poetry run python scripts/release.py prepare --interactive
 
-build-docker:
-    	# Build base image
-	docker build . -t rasa-private:base-localdev -f docker/Dockerfile.base --platform=linux/amd64
-    	# Build base poetry image
-	docker build . -t rasa-private:base-poetry-localdev -f docker/Dockerfile.base-poetry --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_IMAGE_HASH=localdev --build-arg POETRY_VERSION=1.8.2 --platform=linux/amd64
-    	# Build base builder image
-	docker build . -t rasa-private:base-builder-localdev -f docker/Dockerfile.base-builder --build-arg IMAGE_BASE_NAME=rasa-private --build-arg POETRY_VERSION=localdev --platform=linux/amd64
-    	# Build Rasa Private image
-	docker build . -t rasa-private:rasa-private-dev -f Dockerfile --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_IMAGE_HASH=localdev --build-arg BASE_BUILDER_IMAGE_HASH=localdev --platform=linux/amd64
+build-docker-base:
+	docker build . -t rasa-private:base-localdev -f docker/Dockerfile.base --progress=plain --platform=$(PLATFORM)
+
+build-docker-builder:
+	docker build . -t rasa-private:base-builder-localdev -f docker/Dockerfile.base-builder --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_IMAGE_HASH=$(BASE_IMAGE_HASH) --progress=plain --platform=$(PLATFORM)
+
+build-docker-rasa-deps:
+	docker build . -t rasa-private:rasa-deps-localdev -f docker/Dockerfile.rasa-deps --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_BUILDER_IMAGE_HASH=$(BASE_BUILDER_IMAGE_HASH) --build-arg POETRY_VERSION=$(POETRY_VERSION) --progress=plain --platform=$(PLATFORM)
+
+build-docker-rasa-image:
+	docker build . -t $(IMAGE_TAG) -f Dockerfile --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_IMAGE_HASH=$(BASE_IMAGE_HASH) --build-arg RASA_DEPS_IMAGE_HASH=$(RASA_DEPS_IMAGE_HASH) --progress=plain --platform=$(PLATFORM)
+
+build-docker: build-docker-base build-docker-builder build-docker-rasa-deps build-docker-rasa-image
 
 build-tests-deployment-env: ## Create environment files (.env) for docker-compose.
 	cd tests_deployment && \

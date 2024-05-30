@@ -1097,14 +1097,16 @@ jobs:
           echo "base_image_hash=${BASE_IMAGE_HASH}" >> $GITHUB_OUTPUT
           BASE_IMAGE_EXISTS=$((docker manifest inspect ${{ env.TARGET_IMAGE_REGISTRY }}/rasa:base-${BASE_IMAGE_HASH} &> /dev/null && echo true || echo false) || true)
           echo "base_exists=${BASE_IMAGE_EXISTS}" >> $GITHUB_OUTPUT
-          # Base poetry image
-          BASE_IMAGE_POETRY_EXISTS=$((docker manifest inspect ${{ env.TARGET_IMAGE_REGISTRY }}/rasa:base-poetry-${{ env.POETRY_VERSION }} &> /dev/null && echo true || echo false) || true)
-          echo "base_poetry_exists=${BASE_IMAGE_POETRY_EXISTS}" >> $GITHUB_OUTPUT
           # Base builder image
-          BASE_IMAGE_BUILDER_HASH=${{ hashFiles('docker/Dockerfile.base-builder') }}-poetry-${{ env.POETRY_VERSION }}
-          echo "base_builder_image_hash=${BASE_IMAGE_BUILDER_HASH}" >> $GITHUB_OUTPUT
-          BASE_IMAGE_BUILDER_EXISTS=$((docker manifest inspect ${{ env.TARGET_IMAGE_REGISTRY }}/rasa:base-builder-${BASE_IMAGE_BUILDER_HASH} &> /dev/null && echo true || echo false) || true)
-          echo "base_builder_exists=${BASE_IMAGE_BUILDER_EXISTS}" >> $GITHUB_OUTPUT
+          BASE_BUILDER_IMAGE_HASH=${{ hashFiles('docker/Dockerfile.base-builder') }}
+          echo "base_builder_image_hash=${BASE_BUILDER_IMAGE_HASH}" >> $GITHUB_OUTPUT
+          BASE_BUILDER_IMAGE_EXISTS=$((docker manifest inspect ${{ env.TARGET_IMAGE_REGISTRY }}/rasa:base-builder-${BASE_BUILDER_IMAGE_HASH} &> /dev/null && echo true || echo false) || true)
+          echo "base_builder_exists=${BASE_BUILDER_IMAGE_EXISTS}" >> $GITHUB_OUTPUT
+          # Rasa deps image
+          RASA_DEPS_IMAGE_HASH=${{ hashFiles('docker/Dockerfile.rasa-deps') }}
+          echo "rasa_deps_image_hash=${RASA_DEPS_IMAGE_HASH}" >> $GITHUB_OUTPUT
+          RASA_DEPS_IMAGE_EXISTS=$((docker manifest inspect ${{ env.TARGET_IMAGE_REGISTRY }}/rasa:rasa-deps-${RASA_DEPS_IMAGE_HASH} &> /dev/null && echo true || echo false) || true)
+          echo "rasa_deps_exists=${RASA_DEPS_IMAGE_EXISTS}" >> $GITHUB_OUTPUT
 
       - name: Build Docker base image 🛠
         if: steps.check_image.outputs.base_exists == 'false' || env.IS_TAG_BUILD == 'true'
@@ -1120,34 +1122,31 @@ jobs:
           export TARGET_IMAGE_REGISTRY=${{ env.TARGET_IMAGE_REGISTRY }}
           docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl base --push
 
-      - name: Build Docker poetry base image 🛠
-        if: steps.check_image.outputs.base_poetry_exists == 'false' || steps.check_image.outputs.base_exists == 'false'
-        run: |
-          export IMAGE_TAG=${{ env.POETRY_VERSION }}
-          export BASE_IMAGE_HASH=${{ steps.check_image.outputs.base_image_hash }}
-          export TARGET_IMAGE_REGISTRY=${{ env.TARGET_IMAGE_REGISTRY }}
-          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl base-poetry
-
-      - name: Push Docker poetry base image if it's not building from a fork ⬆
-        if: (steps.check_image.outputs.base_poetry_exists == 'false' || steps.check_image.outputs.base_exists == 'false') && github.event.pull_request.head.repo.owner.login == 'RasaHQ'
-        run: |
-          export IMAGE_TAG=${{ env.POETRY_VERSION }}
-          export BASE_IMAGE_HASH=${{ steps.check_image.outputs.base_image_hash }}
-          export TARGET_IMAGE_REGISTRY=${{ env.TARGET_IMAGE_REGISTRY }}
-          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl base-poetry --push
-
       - name: Build Docker builder base image 🛠
         if: steps.check_image.outputs.base_builder_exists == 'false' || steps.check_image.outputs.base_exists == 'false'
         run: |
-          export IMAGE_TAG=${{ steps.check_image.outputs.base_builder_image_hash }}
+          export IMAGE_TAG=${{ steps.check_image.outputs.base_image_hash }}
           docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl base-builder
 
       - name: Push Docker builder base image if it's not building from a fork ⬆
         if: (steps.check_image.outputs.base_builder_exists == 'false' || steps.check_image.outputs.base_exists == 'false') && github.event.pull_request.head.repo.owner.login == 'RasaHQ'
         run: |
-          export IMAGE_TAG=${{ steps.check_image.outputs.base_builder_image_hash }}
+          export IMAGE_TAG=${{ steps.check_image.outputs.base_image_hash }}
           export TARGET_IMAGE_REGISTRY=${{ env.TARGET_IMAGE_REGISTRY }}
           docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl base-builder --push
+
+      - name: Build Docker rasa deps image 🛠
+        if: steps.check_image.outputs.rasa_deps_exists == 'false' || steps.check_image.outputs.base_builder_exists == 'false'
+        run: |
+          export IMAGE_TAG=${{ steps.check_image.outputs.base_image_hash }}
+          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl rasa-deps
+
+      - name: Push Docker rasa deps image if it's not building from a fork ⬆
+        if: (steps.check_image.outputs.rasa_deps_exists == 'false' || steps.check_image.outputs.base_builder_exists == 'false') && github.event.pull_request.head.repo.owner.login == 'RasaHQ'
+        run: |
+          export IMAGE_TAG=${{ steps.check_image.outputs.base_image_hash }}
+          export TARGET_IMAGE_REGISTRY=${{ env.TARGET_IMAGE_REGISTRY }}
+          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl rasa-deps --push
 
       - name: Set environment variables - pull_request
         if: github.event_name == 'pull_request' && env.IS_TAG_BUILD == 'false'
@@ -1182,7 +1181,7 @@ jobs:
        IMAGE_TAG: ${{ needs.build_docker_base_images_and_set_env.outputs.image_tag }}
        TARGET_IMAGE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-docker"
        BASE_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_image_hash }}
-       BASE_BUILDER_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_builder_image_hash }}
+       RASA_DEPS_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.rasa_deps_image_hash }}
 
      steps:
        - name: Checkout git repository 🕝
@@ -1302,7 +1301,7 @@ jobs:
        IMAGE_TAG: ${{ needs.build_docker_base_images_and_set_env.outputs.image_tag }}
        TARGET_IMAGE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-docker"
        BASE_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_image_hash }}
-       BASE_BUILDER_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.base_builder_image_hash }}
+       RASA_DEPS_IMAGE_HASH: ${{ needs.build_docker_base_images_and_set_env.outputs.rasa_deps_image_hash }}
 
      steps:
        - name: Checkout git repository 🕝
