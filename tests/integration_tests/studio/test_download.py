@@ -71,23 +71,63 @@ nlu:
 
 
 @pytest.fixture
-def test_sample_intents() -> str:
+def test_sample_domain_nlu_only() -> str:
     return """version: "3.1"
 intents:
   - greet
   - goodbye
   - inform
   - random_one
-  - new_intent"""
+  - new_intent
 
-
-@pytest.fixture
-def test_sample_entities() -> str:
-    return """version: "3.1"
 entities:
   - first_name
   - new_entity
-  - age"""
+  - age
+"""
+
+
+@pytest.fixture
+def test_sample_domain() -> str:
+    return """version: "3.1"
+intents:
+  - greet
+  - goodbye
+  - inform
+  - random_one
+  - new_intent
+
+entities:
+  - first_name
+  - new_entity
+  - age
+
+slots:
+  logged_in:
+    type: bool
+    mappings:
+    - type: from_text
+  order_status:
+    type: text
+    mappings:
+    - type: from_text
+
+actions:
+  - action_get_order_status
+  - action_reset_unk_slots
+  - validate_order_tracking_form
+
+responses:
+  utter_greet:
+  - text: Hey! How are you?
+  - text: Hey, {name}. Welcome back! How can I help you today?
+    condition:
+    - type: slot
+      name: logged_in
+      value: true
+  utter_cheer_up:
+  - text: 'Here is something to cheer you up:'
+    image: https://i.imgur.com/nGF1K8f.jpg"""
 
 
 @pytest.fixture
@@ -121,46 +161,9 @@ def test_sample_flows() -> str:
         next: END"""
 
 
-@pytest.fixture
-def test_sample_slots() -> str:
-    return """slots:
-  logged_in:
-    type: bool
-    mappings:
-    - type: from_text
-  order_status:
-    type: text
-    mappings:
-    - type: from_text"""
-
-
-@pytest.fixture
-def test_sample_actions() -> str:
-    return """actions:
-- action_get_order_status
-- action_reset_unk_slots
-- validate_order_tracking_form"""
-
-
-@pytest.fixture
-def test_simple_responses() -> str:
-    return """responses:
-  utter_greet:
-  - text: Hey! How are you?
-  - text: Hey, {name}. Welcome back! How can I help you today?
-    condition:
-    - type: slot
-      name: logged_in
-      value: true
-  utter_cheer_up:
-  - text: 'Here is something to cheer you up:'
-    image: https://i.imgur.com/nGF1K8f.jpg"""
-
-
 def test_download_handler_nlu_based_all_files(
     test_sample_nlu: str,
-    test_sample_intents: str,
-    test_sample_entities: str,
+    test_sample_domain: str,
     monkeypatch: MonkeyPatch,
 ) -> None:
     temp_dir = Path(get_temp_dir_name())
@@ -184,10 +187,8 @@ def test_download_handler_nlu_based_all_files(
         ),
         name_space.assistant_name,
     )
-    handler.nlu_assistant = True
     handler.nlu = test_sample_nlu
-    handler.domain_intents = test_sample_intents
-    handler.domain_entities = test_sample_entities
+    handler.domain = test_sample_domain
     handler.request_all_data = MagicMock()  # type: ignore[method-assign]
     mock_handler = MagicMock()
     mock_handler.return_value = handler
@@ -216,8 +217,7 @@ def test_download_handler_nlu_based_all_files(
 
 def test_download_handler_nlu_based_all_dirs(
     test_sample_nlu: str,
-    test_sample_intents: str,
-    test_sample_entities: str,
+    test_sample_domain_nlu_only: str,
     monkeypatch: MonkeyPatch,
 ) -> None:
     temp_dir = Path(get_temp_dir_name())
@@ -242,10 +242,8 @@ def test_download_handler_nlu_based_all_dirs(
         ),
         name_space.assistant_name,
     )
-    handler.nlu_assistant = True
     handler.nlu = test_sample_nlu
-    handler.domain_intents = test_sample_intents
-    handler.domain_entities = test_sample_entities
+    handler.domain = test_sample_domain_nlu_only
     handler.request_all_data = MagicMock()  # type: ignore[method-assign]
 
     mock_handler = MagicMock()
@@ -278,8 +276,7 @@ def test_download_handler_nlu_based_all_dirs(
 
 def test_download_handler_nlu_based_all_dir_overwrite(
     test_sample_nlu: str,
-    test_sample_intents: str,
-    test_sample_entities: str,
+    test_sample_domain: str,
     monkeypatch: MonkeyPatch,
 ) -> None:
     temp_dir = Path(get_temp_dir_name())
@@ -304,10 +301,8 @@ def test_download_handler_nlu_based_all_dir_overwrite(
         ),
         name_space.assistant_name,
     )
-    handler.nlu_assistant = True
     handler.nlu = test_sample_nlu
-    handler.domain_intents = test_sample_intents
-    handler.domain_entities = test_sample_entities
+    handler.domain = test_sample_domain
     handler.request_all_data = MagicMock()  # type: ignore[method-assign]
 
     mock_handler = MagicMock()
@@ -341,8 +336,7 @@ def test_download_handler_nlu_based_all_dir_overwrite(
 
 def test_download_handler_nlu_based_all_files_overwrite(
     test_sample_nlu: str,
-    test_sample_intents: str,
-    test_sample_entities: str,
+    test_sample_domain: str,
     monkeypatch: MonkeyPatch,
 ) -> None:
     temp_dir = Path(get_temp_dir_name())
@@ -366,10 +360,8 @@ def test_download_handler_nlu_based_all_files_overwrite(
         ),
         name_space.assistant_name,
     )
-    handler.nlu_assistant = True
     handler.nlu = test_sample_nlu
-    handler.domain_intents = test_sample_intents
-    handler.domain_entities = test_sample_entities
+    handler.domain = test_sample_domain
     handler.request_all_data = MagicMock()  # type: ignore[method-assign]
     mock_handler = MagicMock()
     mock_handler.return_value = handler
@@ -400,9 +392,7 @@ def test_download_handler_nlu_based_all_files_overwrite(
 
 def test_download_handler_modern_all_files(
     test_sample_flows: str,
-    test_sample_slots: str,
-    test_sample_actions: str,
-    test_simple_responses: str,
+    test_sample_domain: str,
     monkeypatch: MonkeyPatch,
 ) -> None:
     temp_dir = Path(get_temp_dir_name())
@@ -426,12 +416,8 @@ def test_download_handler_modern_all_files(
         ),
         name_space.assistant_name,
     )
-    handler.flows_assistant = True
-    handler.nlu_assistant = False
     handler.flows = test_sample_flows
-    handler.domain_slots = test_sample_slots
-    handler.domain_actions = test_sample_actions
-    handler.domain_responses = test_simple_responses
+    handler.domain = test_sample_domain
     handler.request_all_data = MagicMock()  # type: ignore[method-assign]
     mock_handler = MagicMock()
     mock_handler.return_value = handler
@@ -461,12 +447,15 @@ def test_download_handler_modern_all_files(
     for flow_name in ["check_balance", "replace_card"]:
         assert flow_name in [flow.id for flow in flows]
 
+    for intent in ["greet", "goodbye", "inform", "random_one", "new_intent"]:
+        assert intent in domain.intents
+    for entity in ["first_name", "new_entity", "age"]:
+        assert entity in domain.entities
+
 
 def test_download_handler_modern_all_dirs(
     test_sample_flows: str,
-    test_sample_slots: str,
-    test_sample_actions: str,
-    test_simple_responses: str,
+    test_sample_domain: str,
     monkeypatch: MonkeyPatch,
 ) -> None:
     temp_dir = Path(get_temp_dir_name())
@@ -490,12 +479,8 @@ def test_download_handler_modern_all_dirs(
         ),
         name_space.assistant_name,
     )
-    handler.flows_assistant = True
-    handler.nlu_assistant = False
     handler.flows = test_sample_flows
-    handler.domain_slots = test_sample_slots
-    handler.domain_actions = test_sample_actions
-    handler.domain_responses = test_simple_responses
+    handler.domain = test_sample_domain
     handler.request_all_data = MagicMock()  # type: ignore[method-assign]
     mock_handler = MagicMock()
     mock_handler.return_value = handler
@@ -524,12 +509,15 @@ def test_download_handler_modern_all_dirs(
     for flow_name in ["check_balance", "replace_card"]:
         assert flow_name in [flow.id for flow in flows]
 
+    assert "new_intent" in domain.intents
+    assert "random_one" in domain.intents
+
+    assert "new_entity" in domain.entities
+
 
 def test_download_handler_modern_all_files_overwrite(
     test_sample_flows: str,
-    test_sample_slots: str,
-    test_sample_actions: str,
-    test_simple_responses: str,
+    test_sample_domain: str,
     monkeypatch: MonkeyPatch,
 ) -> None:
     temp_dir = Path(get_temp_dir_name())
@@ -553,12 +541,8 @@ def test_download_handler_modern_all_files_overwrite(
         ),
         name_space.assistant_name,
     )
-    handler.flows_assistant = True
-    handler.nlu_assistant = False
     handler.flows = test_sample_flows
-    handler.domain_slots = test_sample_slots
-    handler.domain_actions = test_sample_actions
-    handler.domain_responses = test_simple_responses
+    handler.domain = test_sample_domain
     handler.request_all_data = MagicMock()  # type: ignore[method-assign]
     mock_handler = MagicMock()
     mock_handler.return_value = handler
@@ -588,12 +572,15 @@ def test_download_handler_modern_all_files_overwrite(
     for flow_name in ["check_balance", "replace_card"]:
         assert flow_name in [flow.id for flow in flows]
 
+    for intent in ["greet", "goodbye", "inform", "random_one", "new_intent"]:
+        assert intent in domain.intents
+    for entity in ["first_name", "new_entity", "age"]:
+        assert entity in domain.entities
+
 
 def test_download_handler_modern_all_dirs_overwrite(
     test_sample_flows: str,
-    test_sample_slots: str,
-    test_sample_actions: str,
-    test_simple_responses: str,
+    test_sample_domain: str,
     monkeypatch: MonkeyPatch,
 ) -> None:
     temp_dir = Path(get_temp_dir_name())
@@ -617,12 +604,8 @@ def test_download_handler_modern_all_dirs_overwrite(
         ),
         name_space.assistant_name,
     )
-    handler.flows_assistant = True
-    handler.nlu_assistant = False
     handler.flows = test_sample_flows
-    handler.domain_slots = test_sample_slots
-    handler.domain_actions = test_sample_actions
-    handler.domain_responses = test_simple_responses
+    handler.domain = test_sample_domain
     handler.request_all_data = MagicMock()  # type: ignore[method-assign]
     mock_handler = MagicMock()
     mock_handler.return_value = handler
@@ -651,3 +634,8 @@ def test_download_handler_modern_all_dirs_overwrite(
     flows = importer.get_flows().underlying_flows
     for flow_name in ["check_balance", "replace_card"]:
         assert flow_name in [flow.id for flow in flows]
+
+    for intent in ["greet", "goodbye", "inform", "random_one", "new_intent"]:
+        assert intent in domain.intents
+    for entity in ["first_name", "new_entity", "age"]:
+        assert entity in domain.entities

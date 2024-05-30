@@ -30,6 +30,16 @@ class StudioDataHandler:
             )
         self.assistant_name = assistant_name
 
+        self.nlu: Optional[str] = None
+        self.domain: Optional[str] = None
+        self.flows: Optional[str] = None
+
+    def has_flows(self) -> bool:
+        return self.flows is not None
+
+    def has_nlu(self) -> bool:
+        return self.nlu is not None
+
     def _build_request(
         self,
         intent_names: Optional[List[str]] = None,
@@ -40,9 +50,9 @@ class StudioDataHandler:
                 "query ExportAsEncodedYaml($input: ExportAsEncodedYamlInput!) "
                 "{ exportAsEncodedYaml(input: $input) "
                 "{ ... on ExportModernAsEncodedYamlOutput "
-                "{ flows domain domainActions domainResponses domainSlots } "
+                "{ nlu flows domain } "
                 "... on ExportClassicAsEncodedYamlOutput "
-                "{ nlu domain domainIntents domainEntities }}}"
+                "{ nlu domain }}}"
             ),
             "variables": {"input": {"assistantName": self.assistant_name}},
         }
@@ -170,30 +180,13 @@ class StudioDataHandler:
 
     def _extract_data(self, response: dict) -> None:
         return_data = response["data"]["exportAsEncodedYaml"]
-        # Studio classic assistant
+
         self.nlu = self._decode_response(return_data.get("nlu"))
         self.domain = self._decode_response(return_data.get("domain"))
-        self.domain_intents = self._decode_response(return_data.get("domainIntents"))
-        self.domain_entities = self._decode_response(return_data.get("domainEntities"))
-        # Studio modern assistant
         self.flows = self._decode_response(return_data.get("flows"))
-        self.domain_actions = self._decode_response(return_data.get("domainActions"))
-        self.domain_slots = self._decode_response(return_data.get("domainSlots"))
-        self.domain_responses = self._decode_response(
-            return_data.get("domainResponses")
-        )
 
-        if self.nlu:
-            self.nlu_assistant = True
-            self.flows_assistant = False
-        elif self.flows:
-            self.nlu_assistant = False
-            self.flows_assistant = True
-        else:
-            raise RasaException(
-                "No nlu or flows data in Studio response."
-                "Cannot determine assistant type."
-            )
+        if not self.has_nlu() and not self.has_flows():
+            raise RasaException("No nlu or flows data in Studio response.")
 
     @staticmethod
     def _decode_response(data: str) -> Optional[str]:
@@ -330,38 +323,30 @@ def import_data_from_studio(
     data_original = TrainingDataImporter.load_from_dict(
         domain_path=domain_path, training_data_paths=data_paths
     )
-    # ExportClassicAsEncodedYamlOutput
-    if handler.nlu_assistant:
+
+    data_paths = []
+
+    if handler.has_nlu():
         nlu_file = Path(tmp_dir, "nlu.yml")
         write_yaml(read_yaml(handler.nlu), nlu_file)
+        data_paths.append(str(nlu_file))
 
-        intents = Domain.from_yaml(handler.domain_intents)
-        entities = Domain.from_yaml(handler.domain_entities)
-        studio_domain = intents.merge(entities)
-        domain_file = Path(tmp_dir, "domain.yml")
-        studio_domain.persist(domain_file)
-
-        data_from_studio = TrainingDataImporter.load_from_dict(
-            domain_path=str(domain_file), training_data_paths=[str(nlu_file)]
-        )
-    # ExportModernAsEncodedYamlOutput
-    elif handler.flows_assistant:
+    if handler.has_flows():
         flows_file = Path(tmp_dir, "flows.yml")
         write_yaml(read_yaml(handler.flows), flows_file)
+        data_paths.append(str(flows_file))
 
-        actions = Domain.from_yaml(handler.domain_actions)
-        slots = Domain.from_yaml(handler.domain_slots)
-        responses = Domain.from_yaml(handler.domain_responses)
-        studio_domain = actions.merge(slots).merge(responses)
-        domain_file = Path(tmp_dir, "domain.yml")
-        studio_domain.persist(domain_file)
-
-        data_from_studio = TrainingDataImporter.load_from_dict(
-            domain_path=str(domain_file), training_data_paths=[str(flows_file)]
-        )
-    else:
+    if not data_paths:
         return rasa.shared.utils.cli.print_error_and_exit(
-            "No Data for nlu or flows. Cannot assert if nlu-based or CALM assistant"
+            "No Data for nlu or flows. Can't import data from Studio."
         )
+
+    studio_domain = Domain.from_yaml(handler.domain)
+    domain_file = Path(tmp_dir, "domain.yml")
+    studio_domain.persist(domain_file)
+
+    data_from_studio = TrainingDataImporter.load_from_dict(
+        domain_path=str(domain_file), training_data_paths=data_paths
+    )
 
     return data_from_studio, data_original
