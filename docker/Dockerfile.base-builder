@@ -1,13 +1,14 @@
 # The base builder image used for all images
 ARG IMAGE_BASE_NAME
-ARG POETRY_VERSION
+ARG BASE_IMAGE_HASH
 
-FROM ${IMAGE_BASE_NAME}:base-poetry-${POETRY_VERSION}
+FROM ${IMAGE_BASE_NAME}:base-${BASE_IMAGE_HASH}
 
 ARG BUILDPLATFORM
 
 RUN apt-get update -qq && \
   apt-get install -y --no-install-recommends \
+  python3-dev \
   build-essential \
   wget \
   openssh-client \
@@ -16,9 +17,11 @@ RUN apt-get update -qq && \
   git-core \
   openssl \
   libssl-dev \
-  libffi7 \
   libffi-dev \
   libpng-dev \
+  # required for some Python package builds with Ubuntu 22.04
+  cargo \
+  rustc \
   && apt-get autoremove -y
 
 RUN \
@@ -27,7 +30,3 @@ then  wget --progress=dot:giga -N -P librdkafka/ https://github.com/confluentinc
   tar -xvf librdkafka/v2.0.2.tar.gz -C librdkafka/ && \
   cd librdkafka/librdkafka-2.0.2 && ./configure --prefix=/usr && make && make install ; \
 fi
-
-# Make sure that all security updates are installed
-RUN apt-get update && apt-get dist-upgrade -y --no-install-recommends
-
