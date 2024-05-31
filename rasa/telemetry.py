@@ -93,7 +93,8 @@ CI_ENVIRONMENT_TELL = [
 ]
 
 # If updating or creating a new event, remember to update
-# https://rasa.com/docs/rasa-pro/telemetry/telemetry
+# https://rasa.com/docs/rasa-pro/telemetry/telemetry OR
+# https://rasa.com/docs/rasa-pro/telemetry/reference
 TRAINING_STARTED_EVENT = "Training Started"
 TRAINING_COMPLETED_EVENT = "Training Completed"
 TELEMETRY_DISABLED_EVENT = "Telemetry Disabled"
