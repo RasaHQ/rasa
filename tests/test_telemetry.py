@@ -38,11 +38,22 @@ from rasa.telemetry import (
     FLOW_RETRIEVAL_EMBEDDING_MODEL_NAME,
     LLM_COMMAND_GENERATOR_MODEL_NAME,
     _get_llm_command_generator_config,
+    TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_COMPLETED_EVENT,
+    TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_STARTED_EVENT,
+    TELEMETRY_ENTERPRISE_SEARCH_POLICY_PREDICT_EVENT,
 )
 from rasa.utils.licensing import LICENSE_ENV_VAR
 
 TELEMETRY_TEST_USER = "083642a3e448423ca652134f00e7fc76"  # just some random static id
 TELEMETRY_TEST_KEY = "5640e893c1324090bff26f655456caf3"  # just some random static id
+ENTERPRISE_SEARCH_TELEMETRY_EVENT_DATA = {
+    "vector_store_type": "qdrant",
+    "embeddings_type": DEFAULT_EMBEDDINGS_CONFIG["_type"],
+    "embeddings_model": DEFAULT_EMBEDDINGS_CONFIG["model"],
+    "llm_type": LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["_type"],
+    "llm_model": LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model_name"],
+    "citation_enabled": True,
+}
 
 
 @pytest.fixture(autouse=True)
@@ -1167,3 +1178,60 @@ def test_get_llm_command_generator_config_no_command_generator_component():
         FLOW_RETRIEVAL_ENABLED: None,
         FLOW_RETRIEVAL_EMBEDDING_MODEL_NAME: None,
     }
+
+
+@patch("rasa.telemetry._track")
+def track_track_enterprise_search_policy_train_started(
+    mock_track: MagicMock,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE, "true")
+
+    telemetry.track_enterprise_search_policy_train_started()
+    mock_track.assert_called_once_with(
+        TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_STARTED_EVENT
+    )
+
+
+@patch("rasa.telemetry._track")
+def test_track_enterprise_search_policy_train_completed(
+    mock_track: MagicMock,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE, "true")
+
+    telemetry.track_enterprise_search_policy_train_completed(
+        "qdrant",
+        DEFAULT_EMBEDDINGS_CONFIG["_type"],
+        DEFAULT_EMBEDDINGS_CONFIG["model"],
+        LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["_type"],
+        LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model_name"],
+        True,
+    )
+
+    mock_track.assert_called_once_with(
+        TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_COMPLETED_EVENT,
+        ENTERPRISE_SEARCH_TELEMETRY_EVENT_DATA,
+    )
+
+
+@patch("rasa.telemetry._track")
+def test_track_enterprise_search_policy_predict(
+    mock_track: MagicMock,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE, "true")
+
+    telemetry.track_enterprise_search_policy_predict(
+        "qdrant",
+        DEFAULT_EMBEDDINGS_CONFIG["_type"],
+        DEFAULT_EMBEDDINGS_CONFIG["model"],
+        LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["_type"],
+        LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model_name"],
+        True,
+    )
+
+    mock_track.assert_called_once_with(
+        TELEMETRY_ENTERPRISE_SEARCH_POLICY_PREDICT_EVENT,
+        ENTERPRISE_SEARCH_TELEMETRY_EVENT_DATA,
+    )
