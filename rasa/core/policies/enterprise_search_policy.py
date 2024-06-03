@@ -8,6 +8,11 @@ import rasa.shared.utils.io
 import structlog
 from jinja2 import Template
 from pydantic.error_wrappers import ValidationError
+from rasa.telemetry import (
+    track_enterprise_search_policy_predict,
+    track_enterprise_search_policy_train_completed,
+    track_enterprise_search_policy_train_started,
+)
 from rasa.shared.exceptions import RasaException
 from rasa.core.constants import (
     POLICY_MAX_HISTORY,
@@ -175,6 +180,10 @@ class EnterpriseSearchPolicy(Policy):
         self.vector_store_config = config.get(
             VECTOR_STORE_PROPERTY, DEFAULT_VECTOR_STORE
         )
+        self.llm_config = self.config.get(LLM_CONFIG_KEY, DEFAULT_LLM_CONFIG)
+        self.embeddings_config = self.config.get(
+            EMBEDDINGS_CONFIG_KEY, DEFAULT_EMBEDDINGS_CONFIG
+        )
         self.max_history = self.config.get(POLICY_MAX_HISTORY)
         self.prompt_template = prompt_template or get_prompt_template(
             self.config.get("prompt"),
@@ -226,6 +235,9 @@ class EnterpriseSearchPolicy(Policy):
         """
         store_type = self.vector_store_config.get(VECTOR_STORE_TYPE_PROPERTY)
 
+        # telemetry call to track training start
+        track_enterprise_search_policy_train_started()
+
         # validate embedding configuration
         try:
             embeddings = self._create_plain_embedder(self.config)
@@ -256,6 +268,16 @@ class EnterpriseSearchPolicy(Policy):
         else:
             logger.info("enterprise_search_policy.train.custom", store_type=store_type)
 
+        # telemetry call to track training completion
+        track_enterprise_search_policy_train_completed(
+            vector_store_type=store_type,
+            embeddings_type=self.embeddings_config.get("_type"),
+            embeddings_model=self.embeddings_config.get("model")
+            or self.embeddings_config.get("model_name"),
+            llm_type=self.llm_config.get("_type"),
+            llm_model=self.llm_config.get("model") or self.llm_config.get("model_name"),
+            citation_enabled=self.citation_enabled,
+        )
         self.persist()
         return self._resource
 
@@ -407,6 +429,16 @@ class EnterpriseSearchPolicy(Policy):
             }
         }
 
+        # telemetry call to track policy prediction
+        track_enterprise_search_policy_predict(
+            vector_store_type=self.vector_store_config.get(VECTOR_STORE_TYPE_PROPERTY),
+            embeddings_type=self.embeddings_config.get("_type"),
+            embeddings_model=self.embeddings_config.get("model")
+            or self.embeddings_config.get("model_name"),
+            llm_type=self.llm_config.get("_type"),
+            llm_model=self.llm_config.get("model") or self.llm_config.get("model_name"),
+            citation_enabled=self.citation_enabled,
+        )
         return self._create_prediction(
             domain=domain, tracker=tracker, action_metadata=action_metadata
         )
