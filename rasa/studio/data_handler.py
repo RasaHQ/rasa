@@ -195,114 +195,98 @@ class StudioDataHandler:
         return base64.b64decode(data).decode("utf-8")
 
 
-class DataDiffGenerator:
-    """Generate diff between original and studio data."""
+def create_new_domain_from_diff(studio_domain, original_domain) -> Dict:
+    """Create a new domain file from the diff."""
+    if studio_domain is None or original_domain is None:
+        return {}
+    return _domain_from_diff_rec(studio_domain, original_domain)
 
-    def __init__(
-        self,
-        original_domain: Optional[Dict] = None,
-        studio_domain: Optional[Dict] = None,
-        original_nlu: Optional[Dict[str, List]] = None,
-        studio_nlu: Optional[Dict[str, List]] = None,
-        original_flows: Optional[List[Flow]] = None,
-        studio_flows: Optional[List[Flow]] = None,
-    ):
-        self.original_domain = original_domain
-        self.studio_domain = studio_domain
-        self.original_nlu = original_nlu
-        self.studio_nlu = studio_nlu
-        self.original_flows = original_flows
-        self.studio_flows = studio_flows
 
-    def create_new_domain_from_diff(self) -> Dict:
-        """Create a new domain file from the diff."""
-        if self.studio_domain is None or self.original_domain is None:
-            return {}
-        return self._domain_from_diff_rec(self.studio_domain, self.original_domain)
-
-    @staticmethod
-    def _domain_from_diff_rec(studio: Dict, original: Dict) -> Dict:
-        ret_dict = {}
-        for key in studio:
-            if key not in original:
+def _domain_from_diff_rec(studio: Dict, original: Dict) -> Dict:
+    ret_dict = {}
+    for key in studio:
+        if key not in original:
+            ret_dict[key] = studio[key]
+        elif isinstance(studio[key], dict):
+            ret_dict[key] = _domain_from_diff_rec(studio[key], original[key])
+            # remove empty diffs
+            if not ret_dict[key]:
+                del ret_dict[key]
+            elif key not in [KEY_SLOTS, KEY_RESPONSES]:
+                # copy over the whole key not just the diff in case of items
+                # to get complete (valid) data not just the diff
                 ret_dict[key] = studio[key]
-            elif isinstance(studio[key], dict):
-                ret_dict[key] = DataDiffGenerator._domain_from_diff_rec(
-                    studio[key], original[key]
-                )
-                # remove empty diffs
-                if not ret_dict[key]:
-                    del ret_dict[key]
-                elif key not in [KEY_SLOTS, KEY_RESPONSES]:
-                    # copy over the whole key not just the diff in case of items
-                    # to get complete (valid) data not just the diff
-                    ret_dict[key] = studio[key]
-            elif isinstance(studio[key], list):
-                ret_dict[key] = []
-                for item in studio[key]:
-                    if item not in original[key]:
-                        ret_dict[key].append(item)
+        elif isinstance(studio[key], list):
+            ret_dict[key] = []
+            for item in studio[key]:
+                if item not in original[key]:
+                    ret_dict[key].append(item)
 
-                # if list is empty, remove it
-                if not ret_dict[key]:
-                    del ret_dict[key]
+            # if list is empty, remove it
+            if not ret_dict[key]:
+                del ret_dict[key]
 
-        return ret_dict
+    return ret_dict
 
-    def create_new_nlu_from_diff(self) -> Dict:
-        """Create a new nlu file from the diff."""
-        if self.studio_nlu is None or self.original_nlu is None:
-            return {"nlu": []}
 
-        nlu_diff = []
-        nlu_new_examples = [
-            new for new in self.studio_nlu["nlu"] if new not in self.original_nlu["nlu"]
-        ]
-        if nlu_new_examples:
-            for new_example in nlu_new_examples:
-                nlu_diff.append(new_example)
-                intent = new_example.get("intent")
-                if intent:
-                    self._diff_nlu_examples(new_example, nlu_diff, "intent", intent)
-                synonym = new_example.get("synonym")
-                if synonym:
-                    self._diff_nlu_examples(new_example, nlu_diff, "synonym", synonym)
+def _diff_nlu_examples(
+    new_example: Dict,
+    nlu_diff: List,
+    match_key: str,
+    match_value: str,
+    original_nlu_examples: List,
+) -> None:
+    """Creates diff of nlu data examples.
 
-        return {"nlu": nlu_diff}
-
-    def create_new_flows_from_diff(self) -> List[Flow]:
-        """Create a new flows file from the diff."""
-        if self.studio_flows is None or self.original_flows is None:
-            return []
-
-        flows_new = [new for new in self.studio_flows if new not in self.original_flows]
-        return flows_new
-
-    def _diff_nlu_examples(
-        self, new_example: Dict, nlu_diff: List, match_key: str, match_value: str
-    ) -> None:
-        """Creates diff of nlu data examples.
-
-        Args:
-            new_example (Dict): intent or synonym with examples
-            nlu_diff (List): list of diff examples
-            match_key (str): intent or synonym name
-            match_value (str): intent or synonym value
-        """
-        orig = list(
-            filter(
-                lambda x: x.get(match_key) == match_value,
-                self.original_nlu["nlu"],  # type: ignore[index]
-            )
+    Args:
+        new_example (Dict): intent or synonym with examples
+        nlu_diff (List): list of diff examples
+        match_key (str): intent or synonym name
+        match_value (str): intent or synonym value
+        original_nlu_examples (List): original nlu examples
+    """
+    orig = list(
+        filter(
+            lambda x: x.get(match_key) == match_value,
+            original_nlu_examples,  # type: ignore[index]
         )
-        if len(orig) == 1:
-            orig_ex = orig[0]["examples"].split("\n")
-            new_ex = new_example["examples"].split("\n")
-            new_example["examples"] = "\n".join(
-                list(set(new_ex).difference(set(orig_ex)))
-            )
-            if not new_example["examples"]:
-                nlu_diff.remove(new_example)
+    )
+    if len(orig) == 1:
+        orig_ex = orig[0]["examples"].split("\n")
+        new_ex = new_example["examples"].split("\n")
+        new_example["examples"] = "\n".join(list(set(new_ex).difference(set(orig_ex))))
+        if not new_example["examples"]:
+            nlu_diff.remove(new_example)
+
+
+def create_new_nlu_from_diff(studio_nlu, original_nlu) -> Dict:
+    """Create a new nlu file from the diff."""
+    studio_nlu_data = studio_nlu.get("nlu", []) or []
+    original_nlu_data = original_nlu.get("nlu", []) or []
+
+    nlu_diff = []
+    for new in studio_nlu_data:
+        if new in original_nlu_data:
+            continue
+
+        nlu_diff.append(new)
+        intent = new.get("intent")
+        if intent:
+            _diff_nlu_examples(new, nlu_diff, "intent", intent, original_nlu_data)
+        synonym = new.get("synonym")
+        if synonym:
+            _diff_nlu_examples(new, nlu_diff, "synonym", synonym, original_nlu_data)
+
+    return {"nlu": nlu_diff}
+
+
+def create_new_flows_from_diff(studio_flows, original_flows) -> List[Flow]:
+    """Create a new flows file from the diff."""
+    if studio_flows is None or original_flows is None:
+        return []
+
+    flows_new = [new for new in studio_flows if new not in original_flows]
+    return flows_new
 
 
 def import_data_from_studio(

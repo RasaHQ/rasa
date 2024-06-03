@@ -15,10 +15,10 @@ from rasa.shared.core.flows.steps import (
     CollectInformationFlowStep,
     LinkFlowStep,
 )
+from rasa.studio import data_handler
 
 from rasa.studio.config import StudioConfig
 from rasa.studio.data_handler import (
-    DataDiffGenerator,
     StudioDataHandler,
 )
 
@@ -615,8 +615,7 @@ from rasa.studio.data_handler import (
     ],
 )
 def test_diff_generator_domain(domain1: Dict, domain2: Dict, domain_diff: Dict) -> None:
-    diff = DataDiffGenerator(original_domain=domain1, studio_domain=domain2)
-    actual_diff = diff.create_new_domain_from_diff()
+    actual_diff = data_handler.create_new_domain_from_diff(domain2, domain1)
     assert actual_diff == domain_diff
 
 
@@ -1005,9 +1004,43 @@ def test_diff_generator_domain(domain1: Dict, domain2: Dict, domain_diff: Dict) 
 def test_diff_generator_nlu(
     nlu1: Dict[str, List], nlu2: Dict[str, List], nlu_diff: Dict[str, List]
 ) -> None:
-    diff = DataDiffGenerator(original_nlu=nlu1, studio_nlu=nlu2)
-    actual_diff = diff.create_new_nlu_from_diff()
+    actual_diff = data_handler.create_new_nlu_from_diff(nlu2, nlu1)
     assert actual_diff == nlu_diff
+
+
+def test_diff_generator_nlu_empty_studio_data() -> None:
+    original_nlu = {
+        "nlu": [
+            {
+                "intent": "greet",
+                "examples": "- hey",
+            }
+        ]
+    }
+    studio_nlu = {}
+    actual_diff = data_handler.create_new_nlu_from_diff(studio_nlu, original_nlu)
+    assert actual_diff == {"nlu": []}
+
+
+def test_diff_generator_nlu_empty_original_data() -> None:
+    original_nlu = {}
+    studio_nlu = {
+        "nlu": [
+            {
+                "intent": "greet",
+                "examples": "- hey",
+            }
+        ]
+    }
+    actual_diff = data_handler.create_new_nlu_from_diff(studio_nlu, original_nlu)
+    assert actual_diff == {"nlu": [{"examples": "- hey", "intent": "greet"}]}
+
+
+def test_diff_generator_nlu_empty_everything() -> None:
+    original_nlu = {}
+    studio_nlu = {}
+    actual_diff = data_handler.create_new_nlu_from_diff(studio_nlu, original_nlu)
+    assert actual_diff == {"nlu": []}
 
 
 @pytest.mark.parametrize(
@@ -1405,8 +1438,7 @@ def test_diff_generator_nlu(
 def test_diff_generator_flows(
     flows1: List[Flow], flows2: List[Flow], flows_diff: List[Flow]
 ) -> None:
-    diff = DataDiffGenerator(original_flows=flows1, studio_flows=flows2)
-    actual_diff = diff.create_new_flows_from_diff()
+    actual_diff = data_handler.create_new_flows_from_diff(flows2, flows1)
     assert actual_diff == flows_diff
 
 
