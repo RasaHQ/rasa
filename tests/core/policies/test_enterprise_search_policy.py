@@ -115,16 +115,32 @@ def mock_create_prediction_cannot_handle():
 
 
 @pytest.mark.parametrize(
-    "config,prompt_starts_with",
+    "config,prompt_starts_with,prompt_contains",
     [
         (
             {"prompt": "data/prompt_templates/test_prompt.jinja2"},
             "Identify the user's message intent",
+            "",
         ),
         (
             {},
             "Given the following information, please provide an answer based on"
             " the provided documents",
+            "",
+        ),
+        (
+            {
+                "prompt": "data/prompt_templates/test_prompt.jinja2",
+                "citation_enabled": True,
+            },
+            "Identify the user's message intent",
+            "",
+        ),
+        (
+            {"citation_enabled": True},
+            "Given the following information, please provide an answer based on"
+            " the provided documents",
+            "Citing Sources",
         ),
     ],
 )
@@ -134,6 +150,7 @@ async def test_enterprise_search_policy_prompt(
     vector_store: InformationRetrieval,
     config: dict,
     prompt_starts_with: str,
+    prompt_contains: str,
 ) -> None:
     """Test that the prompt is set correctly based on the config."""
     policy = EnterpriseSearchPolicy(
@@ -144,6 +161,7 @@ async def test_enterprise_search_policy_prompt(
         vector_store=vector_store,
     )
     assert policy.prompt_template.startswith(prompt_starts_with)
+    assert prompt_contains in policy.prompt_template
     with patch(
         "rasa.core.policies.enterprise_search_policy.llm_factory",
         Mock(return_value=FakeListLLM(responses=["Hello there", "Goodbye"])),
@@ -160,6 +178,7 @@ async def test_enterprise_search_policy_prompt(
                 default_execution_context,
             )
     assert loaded.prompt_template.startswith(prompt_starts_with)
+    assert prompt_contains in loaded.prompt_template
 
 
 @pytest.mark.parametrize(
@@ -661,12 +680,17 @@ def test_enterprise_search_policy_citation_enabled(
     )
 
     assert policy.citation_enabled is True
+    assert policy.prompt_template == policy.citation_prompt_template
 
 
 def test_enterprise_search_policy_citation_disabled(
     default_enterprise_search_policy: EnterpriseSearchPolicy,
 ) -> None:
     assert default_enterprise_search_policy.citation_enabled is False
+    assert (
+        default_enterprise_search_policy.prompt_template
+        != default_enterprise_search_policy.citation_prompt_template
+    )
 
 
 def test_enterprise_search_policy_post_process_citations_same_order(

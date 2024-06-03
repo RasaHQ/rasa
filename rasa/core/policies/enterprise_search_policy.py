@@ -114,6 +114,10 @@ DEFAULT_ENTERPRISE_SEARCH_PROMPT_TEMPLATE = importlib.resources.read_text(
     "rasa.core.policies", "enterprise_search_prompt_template.jinja2"
 )
 
+DEFAULT_ENTERPRISE_SEARCH_PROMPT_WITH_CITATION_TEMPLATE = importlib.resources.read_text(
+    "rasa.core.policies", "enterprise_search_prompt_with_citation_template.jinja2"
+)
+
 
 class VectorStoreConnectionError(RasaException):
     """Exception raised for errors in connecting to the vector store."""
@@ -176,6 +180,10 @@ class EnterpriseSearchPolicy(Policy):
         self.vector_store_config = config.get(
             VECTOR_STORE_PROPERTY, DEFAULT_VECTOR_STORE
         )
+        self.llm_config = self.config.get(LLM_CONFIG_KEY, DEFAULT_LLM_CONFIG)
+        self.embeddings_config = self.config.get(
+            EMBEDDINGS_CONFIG_KEY, DEFAULT_EMBEDDINGS_CONFIG
+        )
         self.max_history = self.config.get(POLICY_MAX_HISTORY)
         self.prompt_template = prompt_template or get_prompt_template(
             self.config.get("prompt"),
@@ -183,10 +191,12 @@ class EnterpriseSearchPolicy(Policy):
         )
         self.trace_prompt_tokens = self.config.get("trace_prompt_tokens", False)
         self.citation_enabled = self.config.get("citation_enabled", False)
-        self.llm_config = self.config.get(LLM_CONFIG_KEY, DEFAULT_LLM_CONFIG)
-        self.embeddings_config = self.config.get(
-            EMBEDDINGS_CONFIG_KEY, DEFAULT_EMBEDDINGS_CONFIG
+        self.citation_prompt_template = get_prompt_template(
+            self.config.get("prompt"),
+            DEFAULT_ENTERPRISE_SEARCH_PROMPT_WITH_CITATION_TEMPLATE,
         )
+        if self.citation_enabled:
+            self.prompt_template = self.citation_prompt_template
 
     @classmethod
     def _create_plain_embedder(cls, config: Dict[Text, Any]) -> "Embeddings":
