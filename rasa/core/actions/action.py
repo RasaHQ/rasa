@@ -714,9 +714,9 @@ class CustomActionExecutor(abc.ABC):
 
     @abc.abstractmethod
     async def run(
-            self,
-            tracker: "DialogueStateTracker",
-            domain: "Domain",
+        self,
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
     ) -> Dict[Text, Any]:
         """Executes the custom action.
 
@@ -786,9 +786,9 @@ class HTTPCustomActionExecutor(CustomActionExecutor):
         return result
 
     async def run(
-            self,
-            tracker: "DialogueStateTracker",
-            domain: "Domain",
+        self,
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
     ) -> Dict[Text, Any]:
         """Execute the custom action using an HTTP POST request.
 
