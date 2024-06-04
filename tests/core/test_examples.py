@@ -61,6 +61,10 @@ async def test_formbot_example(form_bot_agent: Agent):
         with aioresponses() as mocked:
             mocked.post(
                 "https://example.com/webhooks/actions",
+                status=449,
+            )
+            mocked.post(
+                "https://example.com/webhooks/actions",
                 payload=response_for_slot(slot),
                 repeat=True,
             )
