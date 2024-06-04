@@ -364,6 +364,7 @@ async def test_e2e_with_entity_evaluation(e2e_bot_agent: Agent, tmp_path: Path):
     )
 
     report = rasa.shared.utils.io.read_json_file(tmp_path / "TEDPolicy_report.json")
+    import pdb; pdb.set_trace()
     assert report["name"] == {
         "precision": 1.0,
         "recall": 1.0,

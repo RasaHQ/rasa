@@ -190,6 +190,10 @@ async def test_remote_action_runs(
     with aioresponses() as mocked:
         mocked.post(
             "https://example.com/webhooks/actions",
+            status=449,
+        )
+        mocked.post(
+            "https://example.com/webhooks/actions",
             payload={"events": [], "responses": []},
         )
 
@@ -201,6 +205,7 @@ async def test_remote_action_runs(
 
         assert json_of_latest_request(r) == {
             "domain": domain.as_dict(),
+            "domain_digest": rasa.model.get_local_model(),
             "next_action": "my_action",
             "sender_id": "my-sender",
             "version": rasa.__version__,
@@ -254,6 +259,7 @@ async def test_remote_action_logs_events(
     }
 
     with aioresponses() as mocked:
+        mocked.post("https://example.com/webhooks/actions", status=449)
         mocked.post("https://example.com/webhooks/actions", payload=response)
 
         events = await remote_action.run(
@@ -265,6 +271,7 @@ async def test_remote_action_logs_events(
 
         assert json_of_latest_request(r) == {
             "domain": domain.as_dict(),
+            "domain_digest": rasa.model.get_local_model(),
             "next_action": "my_action",
             "sender_id": "my-sender",
             "version": rasa.__version__,

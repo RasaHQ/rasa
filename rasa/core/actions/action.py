@@ -704,7 +704,11 @@ class ActionDeactivateLoop(Action):
 
 
 class RemoteAction(Action):
-    def __init__(self, name: Text, action_endpoint: Optional[EndpointConfig]) -> None:
+    def __init__(
+        self,
+        name: Text,
+        action_endpoint: Optional[EndpointConfig],
+    ) -> None:
         self._name = name
         self.action_endpoint = action_endpoint
 
@@ -712,6 +716,7 @@ class RemoteAction(Action):
         self,
         tracker: "DialogueStateTracker",
         domain: "Domain",
+        should_include_domain: bool = True,
     ) -> Dict[Text, Any]:
         """Create the request json send to the action server."""
         from rasa.shared.core.trackers import EventVerbosity
@@ -725,11 +730,13 @@ class RemoteAction(Action):
             "version": rasa.__version__,
         }
 
-        if (
+        if should_include_domain and (
             not self._is_selective_domain_enabled()
             or domain.does_custom_action_explicitly_need_domain(self.name())
         ):
             result["domain"] = domain.as_dict()
+
+        result["domain_digest"] = rasa.model.get_local_model()
 
         return result
 
@@ -805,6 +812,33 @@ class RemoteAction(Action):
 
         return bot_messages
 
+    async def _perform_request_with_retries(
+        self,
+        json_body: Dict[Text, Any],
+        should_compress: bool,
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+    ) -> Any:
+        """Attempts to perform the request with retries if necessary."""
+        assert self.action_endpoint is not None
+        number_of_retries = 2
+        for _ in range(number_of_retries):
+            try:
+                return await self.action_endpoint.request(
+                    json=json_body,
+                    method="post",
+                    timeout=DEFAULT_REQUEST_TIMEOUT,
+                    compress=should_compress,
+                )
+            except ClientResponseError as e:
+                # Repeat the request because Domain was not in the payload
+                if e.status == 449:
+                    json_body = self._action_call_format(
+                        tracker=tracker, domain=domain, should_include_domain=True
+                    )
+                    continue
+                raise e
+
     async def run(
         self,
         output_channel: "OutputChannel",
@@ -814,7 +848,9 @@ class RemoteAction(Action):
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> List[Event]:
         """Runs action. Please see parent class for the full docstring."""
-        json_body = self._action_call_format(tracker, domain)
+        json_body = self._action_call_format(
+            tracker=tracker, domain=domain, should_include_domain=False
+        )
         if not self.action_endpoint:
             raise RasaException(
                 f"Failed to execute custom action '{self.name()}' "
@@ -835,11 +871,8 @@ class RemoteAction(Action):
                 DEFAULT_COMPRESS_ACTION_SERVER_REQUEST,
             )
 
-            response: Any = await self.action_endpoint.request(
-                json=json_body,
-                method="post",
-                timeout=DEFAULT_REQUEST_TIMEOUT,
-                compress=should_compress,
+            response = await self._perform_request_with_retries(
+                json_body, should_compress, tracker, domain
             )
             self._validate_action_result(response)
 
