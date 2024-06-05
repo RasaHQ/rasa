@@ -719,8 +719,7 @@ class RemoteAction(Action):
             return rasa.model.get_local_model()
         except ModelNotFound as e:
             logger.warning(
-                f"Model not found while running the action '{self._name}'.",
-                exc_info=e
+                f"Model not found while running the action '{self._name}'.", exc_info=e
             )
             return None
 
