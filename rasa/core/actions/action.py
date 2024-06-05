@@ -14,7 +14,9 @@ from typing import (
 )
 
 import aiohttp
+
 import rasa.core
+import rasa.shared.utils.io
 from rasa.core.actions.constants import DEFAULT_SELECTIVE_DOMAIN, SELECTIVE_DOMAIN
 from rasa.core.constants import (
     DEFAULT_REQUEST_TIMEOUT,
@@ -22,6 +24,7 @@ from rasa.core.constants import (
     DEFAULT_COMPRESS_ACTION_SERVER_REQUEST,
 )
 from rasa.core.policies.policy import PolicyPrediction
+from rasa.exceptions import ModelNotFound
 from rasa.nlu.constants import (
     RESPONSE_SELECTOR_DEFAULT_INTENT,
     RESPONSE_SELECTOR_PROPERTY_NAME,
@@ -84,7 +87,6 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_GROUP,
 )
 from rasa.shared.utils.schemas.events import EVENTS_SCHEMA
-import rasa.shared.utils.io
 from rasa.utils.common import get_bool_env_variable
 from rasa.utils.endpoints import EndpointConfig, ClientResponseError
 
@@ -712,6 +714,16 @@ class RemoteAction(Action):
         self._name = name
         self.action_endpoint = action_endpoint
 
+    def _get_domain_digest(self) -> Optional[Text]:
+        try:
+            return rasa.model.get_local_model()
+        except ModelNotFound as e:
+            logger.warning(
+                f"Model not found while running the action '{self._name}'.",
+                exc_info=e
+            )
+            return None
+
     def _action_call_format(
         self,
         tracker: "DialogueStateTracker",
@@ -736,7 +748,8 @@ class RemoteAction(Action):
         ):
             result["domain"] = domain.as_dict()
 
-        result["domain_digest"] = rasa.model.get_local_model()
+        if domain_digest := self._get_domain_digest():
+            result["domain_digest"] = domain_digest
 
         return result
 
