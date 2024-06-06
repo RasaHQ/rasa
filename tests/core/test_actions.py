@@ -191,6 +191,10 @@ async def test_remote_action_runs(
     with aioresponses() as mocked:
         mocked.post(
             "https://example.com/webhooks/actions",
+            status=449,
+        )
+        mocked.post(
+            "https://example.com/webhooks/actions",
             payload={"events": [], "responses": []},
         )
 
@@ -255,6 +259,7 @@ async def test_remote_action_logs_events(
     }
 
     with aioresponses() as mocked:
+        mocked.post("https://example.com/webhooks/actions", status=449)
         mocked.post("https://example.com/webhooks/actions", payload=response)
 
         events = await remote_action.run(

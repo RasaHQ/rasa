@@ -25,6 +25,7 @@ from rasa.core.constants import (
     DEFAULT_COMPRESS_ACTION_SERVER_REQUEST,
 )
 from rasa.core.policies.policy import PolicyPrediction
+from rasa.exceptions import ModelNotFound
 from rasa.nlu.constants import (
     RESPONSE_SELECTOR_DEFAULT_INTENT,
     RESPONSE_SELECTOR_PROPERTY_NAME,
@@ -740,6 +741,15 @@ class HTTPCustomActionExecutor(CustomActionExecutor):
         self._name = name
         self.action_endpoint = action_endpoint
 
+    def _get_domain_digest(self) -> Optional[Text]:
+        try:
+            return rasa.model.get_local_model()
+        except ModelNotFound as e:
+            logger.warning(
+                f"Model not found while running the action '{self._name}'.", exc_info=e
+            )
+            return None
+
     def _is_selective_domain_enabled(self) -> bool:
         """Check if selective domain handling is enabled.
 
@@ -756,6 +766,7 @@ class HTTPCustomActionExecutor(CustomActionExecutor):
         self,
         tracker: "DialogueStateTracker",
         domain: "Domain",
+        should_include_domain: bool = True,
     ) -> Dict[Text, Any]:
         """Create the JSON payload for the action server request.
 
@@ -777,13 +788,43 @@ class HTTPCustomActionExecutor(CustomActionExecutor):
             "version": rasa.__version__,
         }
 
-        if (
+        if should_include_domain and (
             not self._is_selective_domain_enabled()
             or domain.does_custom_action_explicitly_need_domain(self._name)
         ):
             result["domain"] = domain.as_dict()
 
+        if domain_digest := self._get_domain_digest():
+            result["domain_digest"] = domain_digest
+
         return result
+
+    async def _perform_request_with_retries(
+        self,
+        json_body: Dict[Text, Any],
+        should_compress: bool,
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+    ) -> Any:
+        """Attempts to perform the request with retries if necessary."""
+        assert self.action_endpoint is not None
+        number_of_retries = 2
+        for _ in range(number_of_retries):
+            try:
+                return await self.action_endpoint.request(
+                    json=json_body,
+                    method="post",
+                    timeout=DEFAULT_REQUEST_TIMEOUT,
+                    compress=should_compress,
+                )
+            except ClientResponseError as e:
+                # Repeat the request because Domain was not in the payload
+                if e.status == 449:
+                    json_body = self._action_call_format(
+                        tracker=tracker, domain=domain, should_include_domain=True
+                    )
+                    continue
+                raise e
 
     async def run(
         self,
@@ -803,22 +844,17 @@ class HTTPCustomActionExecutor(CustomActionExecutor):
             RasaException: If an error occurs while making the HTTP request.
         """
         try:
-            logger.debug(
-                "Calling action endpoint to run action '{}'.".format(self.name())
+            json_body = self._action_call_format(
+                tracker=tracker, domain=domain, should_include_domain=False
             )
-
-            json_body = self._action_call_format(tracker, domain)
 
             should_compress = get_bool_env_variable(
                 COMPRESS_ACTION_SERVER_REQUEST_ENV_NAME,
                 DEFAULT_COMPRESS_ACTION_SERVER_REQUEST,
             )
 
-            response = await self.action_endpoint.request(
-                json=json_body,
-                method="post",
-                timeout=DEFAULT_REQUEST_TIMEOUT,
-                compress=should_compress,
+            response = await self._perform_request_with_retries(
+                json_body, should_compress, tracker, domain
             )
 
             if response is None:
