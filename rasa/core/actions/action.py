@@ -845,6 +845,10 @@ class HTTPCustomActionExecutor(CustomActionExecutor):
             RasaException: If an error occurs while making the HTTP request.
         """
         try:
+            logger.debug(
+                "Calling action endpoint to run action '{}'.".format(self.name())
+            )
+
             json_body = self._action_call_format(
                 tracker=tracker, domain=domain, should_include_domain=False
             )
