@@ -19,6 +19,7 @@ from rasa.utils.endpoints import EndpointConfig
 from rasa.e2e_test.e2e_test_case import (
     ActualStepOutput,
     Fixture,
+    Metadata,
     TestCase,
     TestStep,
 )
@@ -85,6 +86,8 @@ class E2ETestRunner:
         collector: CollectingOutputChannel,
         steps: List[TestStep],
         sender_id: Text,
+        test_metadata: Metadata = None,
+        input_metadata: List[Metadata] = [],
     ) -> TEST_TURNS_TYPE:
         """Runs dialogue prediction.
 
@@ -123,12 +126,20 @@ class E2ETestRunner:
                 )
                 continue
 
+            metadata = test_metadata.metadata if test_metadata else {}
+            if step.metadata_name:
+                step_metadata = self.filter_metadata_for_input(
+                    step.metadata_name, input_metadata
+                )
+                metadata = step_metadata.metadata
+
             try:
                 await self.agent.handle_message(
                     UserMessage(
                         step.text,
                         collector,
                         sender_id,
+                        metadata=metadata,
                     )
                 )
             except CancelledError:
@@ -564,10 +575,33 @@ class E2ETestRunner:
             )
         )
 
+    @staticmethod
+    def filter_metadata_for_input(
+        metadata_name: Text, metadata: List[Metadata]
+    ) -> Metadata:
+        """Filters the input metadata for the input step or test case.
+
+        Args:
+            test_case: The test case or user step.
+            metadata: The metadata.
+
+        Returns:
+        The filtered metadata.
+        """
+        return next(
+            iter(
+                filter(
+                    lambda metadata: metadata_name and metadata.name == metadata_name,
+                    metadata,
+                )
+            )
+        )
+
     async def run_tests(
         self,
         input_test_cases: List[TestCase],
         input_fixtures: List[Fixture],
+        input_metadata: List[Metadata],
         fail_fast: bool = False,
     ) -> List["TestResult"]:
         """Runs the test cases.
@@ -575,11 +609,13 @@ class E2ETestRunner:
         Args:
             input_test_cases: Input test cases.
             input_fixtures: Input fixtures.
+            input_metadata: Input metadata.
             fail_fast: Whether to fail fast.
 
         Returns:
         List of test results.
         """
+        test_metadata = None
         results = []
 
         # telemetry call for tracking test runs
@@ -597,8 +633,13 @@ class E2ETestRunner:
                 )
                 await self.set_up_fixtures(test_fixtures, sender_id)
 
+            if input_metadata:
+                test_metadata = self.filter_metadata_for_input(
+                    test_case.metadata_name, input_metadata
+                )
+
             tracker = await self.run_prediction_loop(
-                collector, test_case.steps, sender_id
+                collector, test_case.steps, sender_id, test_metadata, input_metadata
             )
 
             test_result = self.generate_test_result(tracker, test_case)

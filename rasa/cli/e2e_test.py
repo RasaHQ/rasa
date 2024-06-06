@@ -22,7 +22,13 @@ from rasa.exceptions import RasaException
 from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH, DEFAULT_MODELS_PATH
 
 from rasa.e2e_test.constants import SCHEMA_FILE_PATH, KEY_TEST_CASE
-from rasa.e2e_test.e2e_test_case import KEY_FIXTURES, Fixture, TestCase
+from rasa.e2e_test.e2e_test_case import (
+    KEY_FIXTURES,
+    KEY_METADATA,
+    Fixture,
+    Metadata,
+    TestCase,
+)
 from rasa.e2e_test.e2e_test_result import TestResult
 from rasa.e2e_test.e2e_test_runner import E2ETestRunner
 import rasa.utils.io
@@ -194,7 +200,7 @@ def validate_test_case(test_case_name: Text, input_test_cases: List[TestCase]) -
         sys.exit(1)
 
 
-def read_test_cases(path: Text) -> Tuple[List[TestCase], List[Fixture]]:
+def read_test_cases(path: Text) -> Tuple[List[TestCase], List[Fixture], List[Metadata]]:
     """Read test cases from the given path.
 
     Args:
@@ -212,6 +218,7 @@ def read_test_cases(path: Text) -> Tuple[List[TestCase], List[Fixture]]:
 
     input_test_cases = []
     fixtures: Dict[Text, Fixture] = {}
+    metadata: Dict[Text, Metadata] = {}
 
     for test_file in test_files:
         test_file_content = parse_raw_yaml(Path(test_file).read_text())
@@ -233,6 +240,7 @@ def read_test_cases(path: Text) -> Tuple[List[TestCase], List[Fixture]]:
 
         input_test_cases.extend(test_cases)
         fixtures_content = test_file_content.get(KEY_FIXTURES) or []
+        metadata_contents = test_file_content.get(KEY_METADATA) or []
         for fixture in fixtures_content:
             fixture_obj = Fixture.from_dict(fixture_dict=fixture)
 
@@ -240,8 +248,15 @@ def read_test_cases(path: Text) -> Tuple[List[TestCase], List[Fixture]]:
             if fixtures.get(fixture_obj.name) is None:
                 fixtures[fixture_obj.name] = fixture_obj
 
+        for metadata_content in metadata_contents:
+            metadata_obj = Metadata.from_dict(metadata_dict=metadata_content)
+
+            # avoid adding duplicates from across multiple files
+            if metadata.get(metadata_obj.name) is None:
+                metadata[metadata_obj.name] = metadata_obj
+
     validate_test_case(test_case_name, input_test_cases)
-    return input_test_cases, list(fixtures.values())
+    return input_test_cases, list(fixtures.values()), list(metadata.values())
 
 
 def execute_e2e_tests(args: argparse.Namespace) -> None:
@@ -269,7 +284,9 @@ def execute_e2e_tests(args: argparse.Namespace) -> None:
         args, "path-to-test-cases", DEFAULT_E2E_INPUT_TESTS_PATH
     )
 
-    input_test_cases, input_fixtures = read_test_cases(path_to_test_cases)
+    input_test_cases, input_fixtures, input_metadata = read_test_cases(
+        path_to_test_cases
+    )
 
     try:
         test_runner = E2ETestRunner(
@@ -283,7 +300,9 @@ def execute_e2e_tests(args: argparse.Namespace) -> None:
         sys.exit(1)
 
     results = asyncio.run(
-        test_runner.run_tests(input_test_cases, input_fixtures, args.fail_fast)
+        test_runner.run_tests(
+            input_test_cases, input_fixtures, input_metadata, args.fail_fast
+        )
     )
 
     if args.e2e_results is not None:

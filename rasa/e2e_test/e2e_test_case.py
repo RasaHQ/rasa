@@ -8,6 +8,8 @@ from rasa.e2e_test.constants import (
     KEY_BOT_INPUT,
     KEY_BOT_UTTERED,
     KEY_FIXTURES,
+    KEY_TEXT,
+    KEY_METADATA,
     KEY_SLOT_NOT_SET,
     KEY_SLOT_SET,
     KEY_STEPS,
@@ -63,6 +65,7 @@ class TestStep:
     slot_was_not_set: bool = False
     _slot_instance: Optional[Union[Text, Dict[Text, Any]]] = None
     _underlying: Optional[Dict[Text, Any]] = None
+    metadata_name: Optional[Text] = None
 
     @staticmethod
     def from_dict(test_step_dict: Dict[Text, Any]) -> "TestStep":
@@ -82,11 +85,16 @@ class TestStep:
         if test_step_dict.get(KEY_SLOT_NOT_SET):
             slot_instance = test_step_dict.get(KEY_SLOT_NOT_SET)
 
+        metadata_name = ""
+        actor_input = test_step_dict.get(
+            KEY_USER_INPUT, test_step_dict.get(KEY_BOT_INPUT, "")
+        )
+        if isinstance(actor_input, list):
+            metadata_name = actor_input[1].get(KEY_METADATA, {})
+            actor_input = actor_input[0].get(KEY_TEXT, "")
+
         return TestStep(
-            text=test_step_dict.get(
-                KEY_USER_INPUT, test_step_dict.get(KEY_BOT_INPUT, "")
-            ).strip()
-            or None,
+            text=actor_input.strip() or None,
             template=test_step_dict.get(KEY_BOT_UTTERED),
             actor=KEY_USER_INPUT if KEY_USER_INPUT in test_step_dict else KEY_BOT_INPUT,
             line=test_step_dict.lc.line + 1 if hasattr(test_step_dict, "lc") else None,
@@ -94,6 +102,7 @@ class TestStep:
             slot_was_not_set=bool(test_step_dict.get(KEY_SLOT_NOT_SET)),
             _slot_instance=slot_instance,
             _underlying=test_step_dict,
+            metadata_name=metadata_name,
         )
 
     @staticmethod
@@ -269,6 +278,7 @@ class TestCase:
     file: Optional[Text] = None
     line: Optional[int] = None
     fixture_names: Optional[List[Text]] = None
+    metadata_name: Optional[Text] = None
 
     @staticmethod
     def from_dict(
@@ -311,6 +321,7 @@ class TestCase:
             if hasattr(input_test_case, "lc")
             else None,
             fixture_names=input_test_case.get(KEY_FIXTURES),
+            metadata_name=input_test_case.get(KEY_METADATA),
         )
 
     def file_with_line(self) -> Text:
@@ -320,3 +331,32 @@ class TestCase:
 
         line = str(self.line) if self.line is not None else ""
         return f"{self.file}:{line}"
+
+
+@dataclass(frozen=True)
+class Metadata:
+    """Class for storing an input metadata."""
+
+    name: Text
+    metadata: Dict[Text, Any]
+
+    @staticmethod
+    def from_dict(metadata_dict: Dict[Text, Any]) -> "Metadata":
+        """Creates a metadata from a dictionary.
+
+        Example:
+            >>> Metadata.from_dict({"some_metadata": [{"room": "test_room"}]})
+            Metadata(name="some_metadata", metadata={"room": "test_room"})
+
+        Args:
+            metadata_dict: Dictionary containing the metadata.
+        """
+        return Metadata(
+            name=next(iter(metadata_dict.keys())),
+            metadata={
+                metadata_name: metadata_value
+                for metadata_list in metadata_dict.values()
+                for metadata_dict in metadata_list
+                for metadata_name, metadata_value in metadata_dict.items()
+            },
+        )
