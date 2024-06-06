@@ -2,11 +2,27 @@ import os
 import warnings
 from typing import Any, Dict, Optional, Text, Type, TYPE_CHECKING, Union
 
-import rasa.shared.utils.io
 import structlog
+
+import rasa.shared.utils.io
 from rasa.shared.constants import (
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
+    OPENAI_API_TYPE_ENV_VAR,
+    OPENAI_API_VERSION_ENV_VAR,
+    OPENAI_API_BASE_ENV_VAR,
+    REQUESTS_CA_BUNDLE_ENV_VAR,
+    OPENAI_API_BASE_NO_PREFIX_CONFIG_KEY,
+    OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY,
+    OPENAI_API_VERSION_CONFIG_KEY,
+    OPENAI_API_VERSION_NO_PREFIX_CONFIG_KEY,
+    OPENAI_API_TYPE_CONFIG_KEY,
+    OPENAI_API_BASE_CONFIG_KEY,
+    OPENAI_DEPLOYMENT_NAME_CONFIG_KEY,
+    OPENAI_DEPLOYMENT_CONFIG_KEY,
+    OPENAI_ENGINE_CONFIG_KEY,
+    LANGCHAIN_TYPE_CONFIG_KEY,
+    RASA_TYPE_CONFIG_KEY,
 )
 from rasa.shared.core.events import BotUttered, UserUttered
 from rasa.shared.core.slots import Slot, BooleanSlot, CategoricalSlot
@@ -21,7 +37,10 @@ if TYPE_CHECKING:
     from langchain.schema.embeddings import Embeddings
     from langchain.llms.base import BaseLLM
     from rasa.shared.core.trackers import DialogueStateTracker
-
+    from rasa.shared.providers.openai.clients import (
+        AioHTTPSessionAzureChatOpenAI,
+        AioHTTPSessionOpenAIChat,
+    )
 
 structlogger = structlog.get_logger()
 
@@ -139,15 +158,17 @@ def combine_custom_and_default_config(
     if custom_config is None:
         return default_config
 
-    if "type" in custom_config:
+    if RASA_TYPE_CONFIG_KEY in custom_config:
         # rename type to _type as "type" is the convention we use
         # across the different components in config files.
         # langchain expects "_type" as the key though
-        custom_config["_type"] = custom_config.pop("type")
+        custom_config[LANGCHAIN_TYPE_CONFIG_KEY] = custom_config.pop(
+            RASA_TYPE_CONFIG_KEY
+        )
 
-    if "_type" in custom_config and custom_config["_type"] != default_config.get(
-        "_type"
-    ):
+    if LANGCHAIN_TYPE_CONFIG_KEY in custom_config and custom_config[
+        LANGCHAIN_TYPE_CONFIG_KEY
+    ] != default_config.get(LANGCHAIN_TYPE_CONFIG_KEY):
         return custom_config
     return {**default_config, **custom_config}
 
@@ -180,41 +201,52 @@ def preprocess_config_for_azure(config: Dict[str, Any]) -> Dict[str, Any]:
         The preprocessed config.
     """
     config["deployment_name"] = (
-        config.get("deployment_name")
-        or config.get("deployment")
-        or config.get("engine")
+        config.get(OPENAI_DEPLOYMENT_NAME_CONFIG_KEY)
+        or config.get(OPENAI_DEPLOYMENT_CONFIG_KEY)
+        or config.get(OPENAI_ENGINE_CONFIG_KEY)
     )
     config["openai_api_base"] = (
-        config.get("openai_api_base")
-        or config.get("api_base")
-        or os.environ.get("OPENAI_API_BASE")
+        config.get(OPENAI_API_BASE_CONFIG_KEY)
+        or config.get(OPENAI_API_BASE_NO_PREFIX_CONFIG_KEY)
+        or os.environ.get(OPENAI_API_BASE_ENV_VAR)
     )
     config["openai_api_type"] = (
-        config.get("openai_api_type")
-        or config.get("api_type")
-        or os.environ.get("OPENAI_API_TYPE")
+        config.get(OPENAI_API_TYPE_CONFIG_KEY)
+        or config.get(OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY)
+        or os.environ.get(OPENAI_API_TYPE_ENV_VAR)
     )
     config["openai_api_version"] = (
-        config.get("openai_api_version")
-        or config.get("api_version")
-        or os.environ.get("OPENAI_API_VERSION")
+        config.get(OPENAI_API_VERSION_CONFIG_KEY)
+        or config.get(OPENAI_API_VERSION_NO_PREFIX_CONFIG_KEY)
+        or os.environ.get(OPENAI_API_VERSION_ENV_VAR)
     )
     for keys in [
-        "api_base",
-        "api_type",
-        "api_version",
-        "deployment",
-        "engine",
-        "_type",
+        OPENAI_API_BASE_NO_PREFIX_CONFIG_KEY,
+        OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY,
+        OPENAI_API_VERSION_NO_PREFIX_CONFIG_KEY,
+        OPENAI_DEPLOYMENT_CONFIG_KEY,
+        OPENAI_ENGINE_CONFIG_KEY,
+        LANGCHAIN_TYPE_CONFIG_KEY,
     ]:
         config.pop(keys, None)
 
     return config
 
 
+def process_config_for_aiohttp_chat_openai(config: Dict[str, Any]) -> Dict[str, Any]:
+    config = config.copy()
+    config.pop(LANGCHAIN_TYPE_CONFIG_KEY)
+    return config
+
+
 def llm_factory(
     custom_config: Optional[Dict[str, Any]], default_config: Dict[str, Any]
-) -> Union["BaseLLM", "AzureChatOpenAI"]:
+) -> Union[
+    "BaseLLM",
+    "AzureChatOpenAI",
+    "AioHTTPSessionAzureChatOpenAI",
+    "AioHTTPSessionOpenAIChat",
+]:
     """Creates an LLM from the given config.
 
     Args:
@@ -241,20 +273,32 @@ def llm_factory(
     #   packages/langchain/llms/openai.py:189: UserWarning: You are trying to
     #   use a chat model. This way of initializing it is no longer supported.
     #   Instead, please use: `from langchain.chat_models import ChatOpenAI
-    with warnings.catch_warnings():
+    with (warnings.catch_warnings()):
         warnings.simplefilter("ignore", category=UserWarning)
-        if (
-            config.get("openai_api_type") == "azure"
-            or config.get("api_type") == "azure"
-            or os.environ.get("OPENAI_API_TYPE") == "azure"
-        ):
+        if is_azure_config(config):
             # Azure deployments are treated differently. This is done as the
             # GPT-3.5 Turbo newer versions 0613 and 1106 only support the
             # Chat Completions API.
             from langchain.chat_models import AzureChatOpenAI
+            from rasa.shared.providers.openai.clients import (
+                AioHTTPSessionAzureChatOpenAI,
+            )
 
             transformed_config = preprocess_config_for_azure(config.copy())
-            return AzureChatOpenAI(**transformed_config)
+            if os.environ.get(REQUESTS_CA_BUNDLE_ENV_VAR) is None:
+                return AzureChatOpenAI(**transformed_config)
+            else:
+                return AioHTTPSessionAzureChatOpenAI(**transformed_config)
+
+        if (
+            os.environ.get(REQUESTS_CA_BUNDLE_ENV_VAR) is not None
+            and config.get(LANGCHAIN_TYPE_CONFIG_KEY) == "openai"
+        ):
+            from rasa.shared.providers.openai.clients import AioHTTPSessionOpenAIChat
+
+            config = process_config_for_aiohttp_chat_openai(config)
+            return AioHTTPSessionOpenAIChat(**config.copy())
+
         return load_llm_from_config(config.copy())
 
 
@@ -283,10 +327,12 @@ def embedder_factory(
         SpacyEmbeddings,
         VertexAIEmbeddings,
     )
+    from rasa.shared.providers.openai.clients import AioHTTPSessionOpenAIEmbeddings
 
     type_to_embedding_cls_dict: Dict[str, Type[Embeddings]] = {
         "azure": OpenAIEmbeddings,
         "openai": OpenAIEmbeddings,
+        "openai-aiohttp-session": AioHTTPSessionOpenAIEmbeddings,
         "cohere": CohereEmbeddings,
         "spacy": SpacyEmbeddings,
         "vertexai": VertexAIEmbeddings,
@@ -298,18 +344,24 @@ def embedder_factory(
     }
 
     config = combine_custom_and_default_config(custom_config, default_config)
-    typ = config.get("_type")
+    embedding_type = config.get(LANGCHAIN_TYPE_CONFIG_KEY)
+
+    if (
+        os.environ.get(REQUESTS_CA_BUNDLE_ENV_VAR) is not None
+        and embedding_type is not None
+    ):
+        embedding_type = f"{embedding_type}-aiohttp-session"
 
     structlogger.debug("llmfactory.create.embedder", config=config)
 
-    if not typ:
+    if not embedding_type:
         return OpenAIEmbeddings()
-    elif embeddings_cls := type_to_embedding_cls_dict.get(typ):
+    elif embeddings_cls := type_to_embedding_cls_dict.get(embedding_type):
         parameters = config.copy()
-        parameters.pop("_type")
+        parameters.pop(LANGCHAIN_TYPE_CONFIG_KEY)
         return embeddings_cls(**parameters)
     else:
-        raise ValueError(f"Unsupported embeddings type '{typ}'")
+        raise ValueError(f"Unsupported embeddings type '{embedding_type}'")
 
 
 def get_prompt_template(
@@ -343,3 +395,11 @@ def allowed_values_for_slot(slot: Slot) -> Union[str, None]:
         return str([v for v in slot.values if v != "__other__"])
     else:
         return None
+
+
+def is_azure_config(config: Dict) -> bool:
+    return (
+        config.get(OPENAI_API_TYPE_CONFIG_KEY) == "azure"
+        or config.get(OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY) == "azure"
+        or os.environ.get(OPENAI_API_TYPE_ENV_VAR) == "azure"
+    )
