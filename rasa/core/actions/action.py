@@ -773,6 +773,7 @@ class HTTPCustomActionExecutor(CustomActionExecutor):
         Args:
             tracker: The current state of the dialogue.
             domain: The domain object containing domain-specific information.
+            should_include_domain: If domain context should be in the payload.
 
         Returns:
             A JSON payload to be sent to the action server.
@@ -906,7 +907,7 @@ class HTTPCustomActionExecutor(CustomActionExecutor):
 
 
 class RemoteAction(Action):
-    def __init__(self, name: Text, action_endpoint: Optional[EndpointConfig]) -> None:
+    def __init__(self, name: Text, action_endpoint: EndpointConfig) -> None:
         self._name = name
         self.action_endpoint = action_endpoint
         self.executor = self._create_executor()
@@ -920,9 +921,7 @@ class RemoteAction(Action):
         Raises:
             RasaException: If no valid action endpoint is configured.
         """
-        if self.action_endpoint and self.action_endpoint.url:
-            return HTTPCustomActionExecutor(self.name(), self.action_endpoint)
-        raise RasaException("No valid action endpoint configured.")
+        return HTTPCustomActionExecutor(self.name(), self.action_endpoint)
 
     @staticmethod
     def action_response_format_spec() -> Dict[Text, Any]:
