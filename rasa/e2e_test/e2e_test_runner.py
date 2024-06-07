@@ -127,7 +127,7 @@ class E2ETestRunner:
                 continue
 
             metadata = test_metadata.metadata if test_metadata else {}
-            if step.metadata_name:
+            if input_metadata and step.metadata_name:
                 step_metadata = self.filter_metadata_for_input(
                     step.metadata_name, input_metadata
                 )
@@ -633,7 +633,7 @@ class E2ETestRunner:
                 )
                 await self.set_up_fixtures(test_fixtures, sender_id)
 
-            if input_metadata:
+            if input_metadata and test_case.metadata_name:
                 test_metadata = self.filter_metadata_for_input(
                     test_case.metadata_name, input_metadata
                 )
