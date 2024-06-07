@@ -131,8 +131,7 @@ class E2ETestRunner:
                 step_metadata = self.filter_metadata_for_input(
                     step.metadata_name, input_metadata
                 )
-                metadata = step_metadata.metadata
-
+                metadata = step_metadata.metadata if step_metadata else metadata
             try:
                 await self.agent.handle_message(
                     UserMessage(
@@ -578,7 +577,7 @@ class E2ETestRunner:
     @staticmethod
     def filter_metadata_for_input(
         metadata_name: Text, metadata: List[Metadata]
-    ) -> Metadata:
+    ) -> Optional[Metadata]:
         """Filters the input metadata for the input step or test case.
 
         Args:
@@ -588,14 +587,17 @@ class E2ETestRunner:
         Returns:
         The filtered metadata.
         """
-        return next(
-            iter(
-                filter(
-                    lambda metadata: metadata_name and metadata.name == metadata_name,
-                    metadata,
-                )
+        filtered_metadata = list(
+            filter(
+                lambda metadata: metadata_name and metadata.name == metadata_name,
+                metadata,
             )
         )
+        if not filtered_metadata:
+            logger.warning(
+                f"Metadata '{metadata_name}' is not defined in the input metadata."
+            )
+        return filtered_metadata[0] if filtered_metadata else None
 
     async def run_tests(
         self,

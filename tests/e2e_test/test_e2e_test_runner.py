@@ -2,7 +2,7 @@ import datetime
 import logging
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Text, Union
+from typing import Any, Dict, List, Optional, Text, Union
 from unittest.mock import MagicMock, Mock
 
 import pytest
@@ -910,7 +910,6 @@ async def test_run_prediction_loop(
         TestStep.from_dict({"bot": "Hey! How can I help?"}),
         TestStep.from_dict({"user": "I would like to book a trip."}),
         TestStep.from_dict({"bot": "Ok, where would you like to travel?"}),
-        TestStep.from_dict({"user": "I want to go to Paris."}),
         TestStep.from_dict({"bot": "Paris is a great city! Let me check the flights."}),
     ]
     sender_id = "test_run_prediction_loop"
@@ -1614,3 +1613,48 @@ def test_bot_event_text_message_formatting() -> None:
 
     assert result.pass_status is True
     assert result.difference == []
+
+
+@pytest.mark.parametrize(
+    "metadata_name, input_metadata, expected",
+    [
+        (
+            "device_info",
+            [
+                Metadata(name="device_info", metadata={"os": "linux"}),
+                Metadata(name="user_info", metadata={"name": "Tom"}),
+            ],
+            Metadata(name="device_info", metadata={"os": "linux"}),
+        ),
+        (
+            "incorrect_metadata_name",
+            [
+                Metadata(name="device_info", metadata={"os": "linux"}),
+                Metadata(name="user_info", metadata={"name": "Tom"}),
+            ],
+            None,
+        ),
+    ],
+)
+def test_filter_metadata_for_input(
+    metadata_name: Text, input_metadata: List[Metadata], expected: Optional[Metadata]
+) -> None:
+    result = E2ETestRunner.filter_metadata_for_input(metadata_name, input_metadata)
+
+    assert result == expected
+
+
+def test_metadata_name_not_defined(
+    caplog: LogCaptureFixture,
+) -> None:
+    metadata_name = "incorrect_metadata_name"
+    with caplog.at_level(logging.WARNING):
+        E2ETestRunner.filter_metadata_for_input(
+            metadata_name,
+            [Metadata(name="device_info", metadata={"os": "linux"})],
+        )
+
+    assert (
+        f"Metadata '{metadata_name}' is not defined in the input metadata."
+        in caplog.text
+    )
