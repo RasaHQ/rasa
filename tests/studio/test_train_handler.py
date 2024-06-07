@@ -7,7 +7,7 @@ from rasa.shared.utils.yaml import read_yaml_file
 
 from rasa.studio.config import StudioConfig
 from rasa.studio.data_handler import StudioDataHandler
-from rasa.studio.train import _create_temp_file, make_training_file
+from rasa.studio.train import _create_temp_file, make_training_files
 
 
 @pytest.fixture
@@ -29,12 +29,12 @@ def test_make_training_file(handler: StudioDataHandler) -> None:
     data1 = TrainingDataImporter.load_from_dict(
         domain_path=domain_path, training_data_paths=[nlu_dir]
     )
-    handler.nlu_assistant = True
-    file = make_training_file(handler, data1, data1)
-    assert Path(file).exists()
+    files = make_training_files(handler, data1, data1)
+    for file in files:
+        assert Path(file).exists()
 
     data_test = TrainingDataImporter.load_from_dict(
-        domain_path=domain_path, training_data_paths=[str(file)]
+        domain_path=domain_path, training_data_paths=[str(file) for file in files]
     )
     # assert the data is the same as the original data
     # since the data is the same, the training data file is the same

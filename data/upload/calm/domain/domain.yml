@@ -167,3 +167,7 @@ slots:
     type: bool
     mappings:
       - type: custom
+
+entities:
+  - name
+  - age
