@@ -246,7 +246,7 @@ def test_tracing_llm_command_generator_check_commands_against_startable_flows(
 
     expected_attributes = {
         "commands": '[{"flow": "transfer_money", "command": "start flow"}, '
-        '{"name": "amount", "command": "set slot", "is_slot_value_missing_or_none": false}]',  # noqa: E501
+        '{"name": "amount", "extractor": "LLM", "command": "set slot", "is_slot_value_missing_or_none": false}]',  # noqa: E501
         "startable_flow_ids": '["transfer_money"]',
     }
     assert captured_span.attributes == expected_attributes

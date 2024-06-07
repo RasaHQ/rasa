@@ -15,12 +15,13 @@ from unittest.mock import MagicMock, Mock, patch, AsyncMock
 
 import freezegun
 import pytest
+
+from rasa.dialogue_understanding.commands.set_slot_command import SetSlotExtractor
+import rasa.shared.utils.io
+import tests.utilities
 from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
-
-import rasa.shared.utils.io
-import tests.utilities
 from rasa.core import jobs
 from rasa.core.actions.action import (
     ActionBotResponse,
@@ -2294,3 +2295,44 @@ async def test_predict_does_not_block_on_command_generator_llm_calls(
         # than 10 seconds, if it takes longer this is a sign that the
         # calls are not done in parallel but sequentially.
         assert time_needed < 10
+
+
+async def test_parse_message_with_set_slot_button(
+    flow_policy_bot_agent: Agent,
+):
+    processor = flow_policy_bot_agent.processor
+    sender_id = uuid.uuid4().hex
+    tracker = await processor.tracker_store.get_or_create_tracker(sender_id)
+
+    parse_data = await processor.parse_message(
+        UserMessage("/SetSlots(foo_slot_a=foo)"), tracker
+    )
+
+    assert len(parse_data[COMMANDS]) == 1
+    assert (
+        SetSlotCommand(
+            "foo_slot_a", "foo", SetSlotExtractor.COMMAND_PAYLOAD_READER.value
+        ).as_dict()
+        in parse_data[COMMANDS]
+    )
+
+
+@pytest.mark.parametrize(
+    "slot_value, expected_value", [("true", True), ("false", False)]
+)
+async def test_parse_message_with_multiple_set_slots_button(
+    flow_policy_bot_agent: Agent, slot_value: str, expected_value: bool
+) -> None:
+    processor = flow_policy_bot_agent.processor
+    sender_id = uuid.uuid4().hex
+
+    await processor.handle_message(
+        UserMessage(
+            f"/SetSlots(button_slot_a={slot_value}, button_slot_b={slot_value})",
+            sender_id=sender_id,
+        ),
+    )
+
+    tracker = await processor.get_tracker(sender_id)
+    assert tracker.get_slot("button_slot_a") is expected_value
+    assert tracker.get_slot("button_slot_b") is expected_value

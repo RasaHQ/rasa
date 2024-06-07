@@ -23,7 +23,7 @@ from rasa.engine.storage.storage import ModelMetadata
 from rasa.model import get_latest_model
 from rasa.plugin import plugin_manager
 from rasa.shared.core.flows import FlowsList
-from rasa.shared.data import TrainingType
+from rasa.shared.data import TrainingType, create_regex_pattern_reader
 import rasa.shared.utils.io
 import rasa.core.actions.action
 from rasa.core import jobs
@@ -71,9 +71,6 @@ import rasa.core.tracker_store
 import rasa.core.actions.action
 import rasa.shared.core.trackers
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
-from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
-    YAMLStoryReader,
-)
 from rasa.shared.nlu.constants import (
     COMMANDS,
     ENTITIES,
@@ -733,11 +730,16 @@ class MessageProcessor:
         if self.http_interpreter:
             parse_data = await self.http_interpreter.parse(message)
         else:
-            # Intent is not explicitly present. Pass message to graph.
-            msg = YAMLStoryReader.unpack_regex_message(
-                message=Message({TEXT: message.text})
-            )
-            if msg.data.get(INTENT) is None:
+            regex_reader = create_regex_pattern_reader(message, self.domain)
+
+            processed_message = Message({TEXT: message.text})
+            if regex_reader:
+                processed_message = regex_reader.unpack_regex_message(
+                    message=processed_message, domain=self.domain
+                )
+
+            # Intent or commands are not explicitly present. Pass message to graph.
+            if not (processed_message.has_intent() or processed_message.has_commands()):
                 parse_data = await self._parse_message_with_graph(
                     message, tracker, only_output_properties
                 )
@@ -748,13 +750,19 @@ class MessageProcessor:
                     ENTITIES: [],
                 }
                 parse_data.update(
-                    msg.as_dict(only_output_properties=only_output_properties)
+                    processed_message.as_dict(
+                        only_output_properties=only_output_properties
+                    )
                 )
 
-                commands = []
+                commands = parse_data.get(COMMANDS, [])
 
                 if tracker:
-                    commands = await self._nlu_to_commands(parse_data, tracker)
+                    nlu_adapted_commands = await self._nlu_to_commands(
+                        parse_data, tracker
+                    )
+                    commands += nlu_adapted_commands
+
                     if (
                         tracker.has_coexistence_routing_slot
                         and tracker.get_slot(ROUTE_TO_CALM_SLOT) is None
@@ -763,9 +771,9 @@ class MessageProcessor:
                         # we make a sticky routing to CALM if there are any commands
                         # from the trigger intent parsing
                         # or a sticky routing to dm1 if there are no commands
-                        commands = commands + [
+                        commands += [
                             SetSlotCommand(
-                                ROUTE_TO_CALM_SLOT, len(commands) > 0
+                                ROUTE_TO_CALM_SLOT, len(nlu_adapted_commands) > 0
                             ).as_dict()
                         ]
 

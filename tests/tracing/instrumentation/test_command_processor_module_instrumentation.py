@@ -72,7 +72,12 @@ def test_tracing_command_processor_clean_up_commands(
         parse_data={
             "commands": [
                 {"command": "start flow", "flow": "transfer_money"},
-                {"command": "set slot", "name": "recipient", "value": "Anna"},
+                {
+                    "command": "set slot",
+                    "name": "recipient",
+                    "value": "Anna",
+                    "extractor": "LLM",
+                },
             ]
         },
     )
@@ -124,7 +129,7 @@ def test_tracing_command_processor_clean_up_commands(
 
     expected_values = [
         {"flow": "transfer_money", "command": "start flow"},
-        {"name": "recipient", "command": "set slot"},
+        {"name": "recipient", "extractor": "LLM", "command": "set slot"},
     ]
 
     assert captured_span.attributes == {

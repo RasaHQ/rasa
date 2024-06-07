@@ -26,7 +26,7 @@ from rasa.shared.core.events import DialogueStackUpdated, Event
 from rasa.shared.core.flows import Flow, FlowStep, FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.importers.importer import TrainingDataImporter
-from rasa.shared.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.nlu.constants import INTENT_NAME_KEY, SET_SLOT_COMMAND
 from rasa.shared.utils.llm import combine_custom_and_default_config
 from rasa.tracing.constants import (
     PROMPT_TOKEN_LENGTH_ATTRIBUTE_NAME,
@@ -84,7 +84,7 @@ def extract_llm_command_generator_attrs(
         command_name = command.get("command")
         commands_list.append(command_name)
 
-        if command_name == "set slot":
+        if command_name == SET_SLOT_COMMAND:
             attributes["slot_name"] = command.get("name")
 
         if command_name == "start flow":
@@ -382,7 +382,7 @@ def extract_attrs_for_validate_state_of_commands(
         command_type = command.command()
         command_as_dict = command.as_dict()
 
-        if command_type == "set slot":
+        if command_type == SET_SLOT_COMMAND:
             command_as_dict.pop("value", None)
 
         if command_type == "correct slot":
@@ -414,7 +414,7 @@ def extract_attrs_for_clean_up_commands(
         command_type = command.command()
         command_as_dict = command.as_dict()
 
-        if command_type == "set slot":
+        if command_type == SET_SLOT_COMMAND:
             command_as_dict.pop("value", None)
 
         commands_list.append(command_as_dict)
@@ -467,7 +467,7 @@ def extract_attrs_for_check_commands_against_startable_flows(
         command_as_dict = command.as_dict()
         command_type = command.command()
 
-        if command_type == "set slot":
+        if command_type == SET_SLOT_COMMAND:
             slot_value = command_as_dict.pop("value", None)
             command_as_dict["is_slot_value_missing_or_none"] = slot_value is None
 

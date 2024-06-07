@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import Enum
 from typing import Any, Dict, List
 
 import structlog
@@ -15,8 +16,20 @@ from rasa.shared.constants import ROUTE_TO_CALM_SLOT
 from rasa.shared.core.events import Event, SlotSet
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.nlu.constants import SET_SLOT_COMMAND
 
 structlogger = structlog.get_logger()
+
+
+class SetSlotExtractor(Enum):
+    """The extractors that can set a slot."""
+
+    LLM = "LLM"
+    COMMAND_PAYLOAD_READER = "CommandPayloadReader"
+    NLU = "NLU"
+
+    def __str__(self) -> str:
+        return self.value
 
 
 def get_flows_predicted_to_start_from_tracker(
@@ -45,11 +58,12 @@ class SetSlotCommand(Command):
 
     name: str
     value: Any
+    extractor: str = SetSlotExtractor.LLM.value
 
     @classmethod
     def command(cls) -> str:
         """Returns the command type."""
-        return "set slot"
+        return SET_SLOT_COMMAND
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> SetSlotCommand:
@@ -59,7 +73,11 @@ class SetSlotCommand(Command):
             The converted dictionary.
         """
         try:
-            return SetSlotCommand(name=data["name"], value=data["value"])
+            return SetSlotCommand(
+                name=data["name"],
+                value=data["value"],
+                extractor=data.get("extractor", SetSlotExtractor.LLM.value),
+            )
         except KeyError as e:
             raise ValueError(f"Missing key when parsing SetSlotCommand: {e}") from e
 
@@ -106,7 +124,11 @@ class SetSlotCommand(Command):
         if isinstance(top_frame, CollectInformationPatternFlowStackFrame):
             slots_of_active_flow.add(top_frame.collect)
 
-        if self.name not in slots_of_active_flow and self.name != ROUTE_TO_CALM_SLOT:
+        if (
+            self.name not in slots_of_active_flow
+            and self.name != ROUTE_TO_CALM_SLOT
+            and self.extractor == SetSlotExtractor.LLM.value
+        ):
             # Get the other predicted flows from the most recent message on the tracker.
             predicted_flows = get_flows_predicted_to_start_from_tracker(tracker)
             use_slot_fill = any(
