@@ -128,9 +128,10 @@ def test_domain_action_instantiation():
         forms={},
         data={},
     )
+    endpoint = EndpointConfig("https://example.com/webhooks/actions")
 
     instantiated_actions = [
-        action.action_for_name_or_text(action_name, domain, None)
+        action.action_for_name_or_text(action_name, domain, endpoint)
         for action_name in domain.action_names_or_texts
     ]
     expected_action_names = DEFAULT_ACTION_NAMES + [
@@ -1093,7 +1094,8 @@ def test_overridden_form_action():
         )
     )
 
-    actual = action.action_for_name_or_text(form_action_name, domain, None)
+    endpoint = EndpointConfig("https://example.com/webhooks/actions")
+    actual = action.action_for_name_or_text(form_action_name, domain, endpoint)
     assert isinstance(actual, RemoteAction)
 
 
@@ -2504,7 +2506,8 @@ async def test_action_extract_slots_with_none_value_predefined_mapping():
     event = UserUttered("Hi", entities=[{"entity": "some_entity", "value": None}])
     tracker = DialogueStateTracker.from_events(sender_id="test_id", evts=[event])
 
-    action_extract_slots = ActionExtractSlots(None)
+    endpoint = EndpointConfig("https://example.com/webhooks/actions")
+    action_extract_slots = ActionExtractSlots(endpoint)
 
     events = await action_extract_slots.run(
         CollectingOutputChannel(),

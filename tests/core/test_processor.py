@@ -15,14 +15,12 @@ from unittest.mock import MagicMock, Mock, patch, AsyncMock
 
 import freezegun
 import pytest
-
-from rasa.dialogue_understanding.commands import SetSlotCommand, StartFlowCommand
-from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
-import rasa.shared.utils.io
-import tests.utilities
 from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
+
+import rasa.shared.utils.io
+import tests.utilities
 from rasa.core import jobs
 from rasa.core.actions.action import (
     ActionBotResponse,
@@ -44,9 +42,12 @@ from rasa.core.policies.ensemble import DefaultPolicyPredictionEnsemble
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import InMemoryTrackerStore
+from rasa.core.utils import AvailableEndpoints
+from rasa.dialogue_understanding.commands import SetSlotCommand, StartFlowCommand
 from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
 )
+from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.storage import ModelStorage
@@ -1408,7 +1409,10 @@ async def test_predict_next_action_with_hidden_rules(
     model_path = await trained_async(
         str(domain_path), str(config_path), [str(training_data_path)]
     )
-    agent = await load_agent(model_path=model_path)
+
+    action_endpoint = EndpointConfig("https://example.com/webhooks/actions")
+    endpoints = AvailableEndpoints(action=action_endpoint)
+    agent = await load_agent(model_path=model_path, endpoints=endpoints)
     processor = agent.processor
 
     tracker = DialogueStateTracker.from_events(
