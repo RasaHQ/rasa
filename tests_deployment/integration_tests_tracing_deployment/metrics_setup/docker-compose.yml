@@ -46,7 +46,7 @@ services:
      - "8889:8889" # Prometheus exporter configured metrics
 
  action-server:
-  image: rasa/rasa-sdk:3.7.1
+  image: rasa/rasa-sdk:latest
   volumes:
     - ./calm_bot/actions:/app/actions
   networks: [ 'rasa-pro-network' ]
