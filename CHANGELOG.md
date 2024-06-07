@@ -10,6 +10,13 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.8.8] - 2024-06-07
+                       
+Rasa Pro 3.8.8 (2024-06-07)                            
+### Bugfixes
+- [#630](https://github.com/rasahq/rasa/issues/630): Add wrappers around openai clients that can set the self-signed certs via `REQUESTS_CA_BUNDLE` env variable.
+
+
 ## [3.8.7] - 2024-05-29
 
 Rasa Pro 3.8.7 (2024-05-29)
