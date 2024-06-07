@@ -13,6 +13,20 @@ mapping:
                   regex;(^[a-zA-Z_]+[a-zA-Z0-9_]*$):
                     type: any
 
+  metadata:
+    allowempty: True
+    type: "seq"
+    sequence:
+      - type: map
+        mapping:
+          regex;(^[a-zA-Z_]+[a-zA-Z0-9_]*$):
+            type: "seq"
+            sequence:
+              - type: map
+                mapping:
+                  regex;(^[a-zA-Z_]+[a-zA-Z0-9_]*$):
+                    type: any
+
   test_cases:
     type: "seq"
     sequence:
@@ -27,6 +41,12 @@ mapping:
             sequence:
               - type: "str"
                 pattern: ^[a-zA-Z_]+[a-zA-Z0-9_]*$
+          metadata:
+            allowempty: True
+            type: "seq"
+            sequence:
+              - type: "str"
+                pattern: ^[a-zA-Z_]+[a-zA-Z0-9_]*$
           steps:
             type: "seq"
             matching: "any"
@@ -34,7 +54,7 @@ mapping:
               - type: map
                 mapping:
                   user:
-                    type: "str"
+                    type: any
               - type: map
                 mapping:
                   utter:
