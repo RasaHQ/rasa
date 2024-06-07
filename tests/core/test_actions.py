@@ -566,9 +566,11 @@ async def test_remote_action_multiple_events_payload(
 async def test_remote_action_without_endpoint(
     default_channel, default_nlg, default_tracker, domain: Domain
 ):
+    remote_action = action.RemoteAction("my_action", None)
+
     with pytest.raises(Exception) as execinfo:
-        action.RemoteAction("my_action", None)
-    assert "No valid action endpoint configured." in str(execinfo.value)
+        await remote_action.run(default_channel, default_nlg, default_tracker, domain)
+    assert "Failed to execute custom action" in str(execinfo.value)
 
 
 async def test_remote_action_endpoint_not_running(
