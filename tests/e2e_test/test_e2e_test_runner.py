@@ -36,6 +36,7 @@ import rasa.cli.e2e_test
 from rasa.e2e_test.e2e_test_case import (
     ActualStepOutput,
     Fixture,
+    Metadata,
     TestCase,
     TestStep,
 )
@@ -759,7 +760,7 @@ async def test_set_up_fixtures(
     fixture_path = (
         Path(__file__).parent.parent.parent / "data" / "end_to_end_testing_input_files"
     )
-    test_cases, input_fixtures = rasa.cli.e2e_test.read_test_cases(str(fixture_path))
+    test_cases, input_fixtures, _ = rasa.cli.e2e_test.read_test_cases(str(fixture_path))
 
     test_case = next(iter(filter(lambda x: x.name == test_case_name, test_cases)))
     test_fixtures = runner.filter_fixtures_for_test_case(test_case, input_fixtures)
@@ -905,6 +906,7 @@ async def test_run_prediction_loop(
     collector = CollectingOutputChannel()
     steps = [
         TestStep.from_dict({"user": "Hi!"}),
+        TestStep.from_dict({"user": [{"text": "Hey!"}, {"metadata": "user_info"}]}),
         TestStep.from_dict({"bot": "Hey! How can I help?"}),
         TestStep.from_dict({"user": "I would like to book a trip."}),
         TestStep.from_dict({"bot": "Ok, where would you like to travel?"}),
@@ -912,8 +914,15 @@ async def test_run_prediction_loop(
         TestStep.from_dict({"bot": "Paris is a great city! Let me check the flights."}),
     ]
     sender_id = "test_run_prediction_loop"
+    test_metadata = Metadata(name="device_info", metadata={"os": "linux"})
+    input_metadata = [
+        test_metadata,
+        Metadata(name="user_info", metadata={"name": "Tom"}),
+    ]
 
-    test_turns = await runner.run_prediction_loop(collector, steps, sender_id)
+    test_turns = await runner.run_prediction_loop(
+        collector, steps, sender_id, test_metadata, input_metadata
+    )
     # there should be one more turn than steps because we capture events before
     # the first step in -1 index
     assert len(test_turns) == len(steps) + 1
@@ -978,9 +987,13 @@ async def test_run_tests_with_fail_fast(
             steps=[
                 TestStep.from_dict({"user": "Hi!"}),
                 TestStep.from_dict({"bot": "Hey! How can I help?"}),
+                TestStep.from_dict(
+                    {"user": [{"text": "Hello!"}, {"metadata": "user_info"}]}
+                ),
             ],
             name="test_hi",
             fixture_names=["premium"],
+            metadata_name="device_info",
         ),
         TestCase(
             steps=[
@@ -990,7 +1003,14 @@ async def test_run_tests_with_fail_fast(
             name="test_bot",
         ),
     ]
-    test_fixtures = [Fixture(name="premium", slots_set={"premium": True})]
+    test_fixtures = [
+        Fixture(name="premium", slots_set={"premium": True}),
+        Fixture(name="standard", slots_set={"premium": False}),
+    ]
+    test_metadata = [
+        Metadata(name="device_info", metadata={"os": "linux"}),
+        Metadata(name="user_info", metadata={"name": "Tom"}),
+    ]
 
     def mock_init(self: Any, *args: Any, **kwargs: Any) -> None:
         domain = Domain.empty()
@@ -1024,7 +1044,9 @@ async def test_run_tests_with_fail_fast(
 
     runner = E2ETestRunner()
 
-    results = await runner.run_tests(test_cases, test_fixtures, fail_fast=fail_fast)
+    results = await runner.run_tests(
+        test_cases, test_fixtures, test_metadata, fail_fast=fail_fast
+    )
 
     assert len(results) == expected_len
     assert results[0] == TestResult(

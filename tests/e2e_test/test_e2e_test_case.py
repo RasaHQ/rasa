@@ -35,9 +35,16 @@ def test_create_test_fixture_from_dict_invalid() -> None:
         Fixture.from_dict({"some_fixture_name": {"slot_a": 1, "slot_b": "some_value"}})
 
 
-def test_create_test_step_user_from_dict() -> None:
+@pytest.mark.parametrize(
+    "input",
+    [
+        {"user": "Hi!"},
+        {"user": [{"text": "Hi!"}, {"metadata": "user_info"}]},
+    ],
+)
+def test_create_test_step_user_from_dict(input: Dict) -> None:
     """Test creating a test step from a dictionary."""
-    result = TestStep.from_dict({"user": "Hi!"})
+    result = TestStep.from_dict(input)
     assert result.text == "Hi!"
     assert result.actor == "user"
 
@@ -103,6 +110,7 @@ def test_create_test_case_from_dict() -> None:
     "input",
     [
         {"user": "Hi!"},
+        {"user": [{"text": "Hi!"}, {"metadata": "user_info"}]},
         {"bot": "Hi!"},
         {"utter": "utter_greet"},
         {"slot_was_set": {"slot_a": 1}},
