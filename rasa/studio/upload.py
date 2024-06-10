@@ -22,6 +22,10 @@ from rasa.studio.config import StudioConfig
 
 logger = logging.getLogger(__name__)
 
+call_step_error = "Call flow reference not set. Check whether flows exist and are correctly referenced."  # noqa: E501
+call_cyclic_error = "Possible CALL cyclic dependencies in flows. Please check that flows do not call each other."  # noqa: E501
+max_recursion_error = "maximum recursion depth exceeded while calling a Python object"
+
 
 def _get_selected_entities_and_intents(
     args: argparse.Namespace,
@@ -171,20 +175,13 @@ def upload_calm_assistant(
             rasa.shared.utils.cli.print_error(response)
 
     except Exception as e:
-        if (
-            e.args[0]
-            == "maximum recursion depth exceeded while calling a Python object"
-        ):
-            logger.error(
-                f"Possible CALL cyclic dependencies in flows. Please check that flows do not call each other."
-            )
+        if e.args[0] == max_recursion_error:
+            logger.error(call_cyclic_error)
             logger.error(f"Error occurred while parsing flows: {e}")
             return
 
         if e.args[0] == "Call flow reference not set.":
-            logger.error(
-                f"Call flow reference not set. Please check that all flows exist and are correctly referenced."
-            )
+            logger.error(call_step_error)
             logger.error(f"Error occurred while parsing flows: {e}")
             return
         else:
