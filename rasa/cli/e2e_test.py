@@ -28,6 +28,7 @@ from rasa.e2e_test.e2e_test_case import (
     Fixture,
     Metadata,
     TestCase,
+    TestSuite,
 )
 from rasa.e2e_test.e2e_test_result import TestResult
 from rasa.e2e_test.e2e_test_runner import E2ETestRunner
@@ -200,15 +201,14 @@ def validate_test_case(test_case_name: Text, input_test_cases: List[TestCase]) -
         sys.exit(1)
 
 
-def read_test_cases(path: Text) -> Tuple[List[TestCase], List[Fixture], List[Metadata]]:
+def read_test_cases(path: Text) -> TestSuite:
     """Read test cases from the given path.
 
     Args:
         path: Path to the file or folder containing test cases.
 
     Returns:
-        Tuple consisting of the list of all test cases and the
-        list of all global fixtures found in the file or folder.
+        TestSuite.
     """
     path, test_case_name = extract_test_case_from_path(path)
     validate_path_to_test_cases(path)
@@ -256,7 +256,7 @@ def read_test_cases(path: Text) -> Tuple[List[TestCase], List[Fixture], List[Met
                 metadata[metadata_obj.name] = metadata_obj
 
     validate_test_case(test_case_name, input_test_cases)
-    return input_test_cases, list(fixtures.values()), list(metadata.values())
+    return TestSuite(input_test_cases, list(fixtures.values()), list(metadata.values()))
 
 
 def execute_e2e_tests(args: argparse.Namespace) -> None:
@@ -284,9 +284,7 @@ def execute_e2e_tests(args: argparse.Namespace) -> None:
         args, "path-to-test-cases", DEFAULT_E2E_INPUT_TESTS_PATH
     )
 
-    input_test_cases, input_fixtures, input_metadata = read_test_cases(
-        path_to_test_cases
-    )
+    test_suite = read_test_cases(path_to_test_cases)
 
     try:
         test_runner = E2ETestRunner(
@@ -299,11 +297,7 @@ def execute_e2e_tests(args: argparse.Namespace) -> None:
         logger.error(msg=error.message)
         sys.exit(1)
 
-    results = asyncio.run(
-        test_runner.run_tests(
-            input_test_cases, input_fixtures, input_metadata, args.fail_fast
-        )
-    )
+    results = asyncio.run(test_runner.run_tests(test_suite, args.fail_fast))
 
     if args.e2e_results is not None:
         write_test_results_to_file(results, args.e2e_results)

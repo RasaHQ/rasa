@@ -89,9 +89,9 @@ class TestStep:
         actor_input = test_step_dict.get(
             KEY_USER_INPUT, test_step_dict.get(KEY_BOT_INPUT, "")
         )
-        if isinstance(actor_input, list):
-            metadata_name = actor_input[1].get(KEY_METADATA, {})
-            actor_input = actor_input[0].get(KEY_TEXT, "")
+        if isinstance(actor_input, dict):
+            metadata_name = actor_input.get(KEY_METADATA, "")
+            actor_input = actor_input.get(KEY_TEXT, "")
 
         return TestStep(
             text=actor_input.strip() or None,
@@ -356,7 +356,15 @@ class Metadata:
             metadata={
                 metadata_name: metadata_value
                 for metadata_list in metadata_dict.values()
-                for metadata_dict in metadata_list
-                for metadata_name, metadata_value in metadata_dict.items()
+                for metadata_name, metadata_value in metadata_list.items()
             },
         )
+
+
+@dataclass(frozen=True)
+class TestSuite:
+    """Class for representing all top level test suite keys."""
+
+    test_cases: List[TestCase]
+    fixtures: List[Fixture]
+    metadata: List[Metadata]

@@ -78,9 +78,8 @@ def test_get_test_results_summary() -> None:
 
 
 def test_find_test_case_line_number(e2e_input_folder: Path) -> None:
-    input_test_cases, _, _ = read_test_cases(
-        str(e2e_input_folder / "e2e_test_cases.yml")
-    )
+    test_suite = read_test_cases(str(e2e_input_folder / "e2e_test_cases.yml"))
+    input_test_cases = test_suite.test_cases
 
     assert len(input_test_cases) == 2
     assert input_test_cases[0].name == "test_booking"
@@ -108,13 +107,14 @@ def test_is_test_case_file(
 
 
 def test_find_test_cases_handles_empty(e2e_input_folder: Path) -> None:
-    input_test_cases, _, _ = read_test_cases(str(e2e_input_folder / "e2e_empty.yml"))
+    test_suite = read_test_cases(str(e2e_input_folder / "e2e_empty.yml"))
 
-    assert len(input_test_cases) == 0
+    assert len(test_suite.test_cases) == 0
 
 
 def test_find_test_sets_file(e2e_input_folder: Path) -> None:
-    input_test_cases, _, _ = read_test_cases(str(e2e_input_folder))
+    test_suite = read_test_cases(str(e2e_input_folder))
+    input_test_cases = test_suite.test_cases
 
     assert len(input_test_cases) == 8
     assert input_test_cases[0].file == str(e2e_input_folder / "e2e_one_test.yml")
@@ -192,8 +192,8 @@ def test_color_difference() -> None:
 )
 def test_read_fixtures(input_tests_path: Text, expected_results: List[Fixture]) -> None:
     adjusted_path = Path(__file__).parent.parent.parent / input_tests_path
-    _, input_fixtures, _ = read_test_cases(str(adjusted_path))
-    assert input_fixtures == expected_results
+    test_suite = read_test_cases(str(adjusted_path))
+    assert test_suite.fixtures == expected_results
 
 
 @pytest.mark.parametrize(
@@ -230,8 +230,8 @@ def test_read_metadata(
     input_tests_path: Text, expected_results: List[Metadata]
 ) -> None:
     adjusted_path = Path(__file__).parent.parent.parent / input_tests_path
-    _, _, input_metadata = read_test_cases(str(adjusted_path))
-    assert input_metadata == expected_results
+    test_suite = read_test_cases(str(adjusted_path))
+    assert test_suite.metadata == expected_results
 
 
 def test_transform_results_output_to_yaml() -> None:
@@ -380,11 +380,9 @@ def test_execute_e2e_tests_fail_fast_true(
     with pytest.raises(SystemExit):
         execute_e2e_tests(cli_args)
 
-    test_cases, test_fixtures, test_metadata = read_test_cases(path_to_test_cases)
+    test_suite = read_test_cases(path_to_test_cases)
 
-    run_tests_mock.assert_called_once_with(
-        test_cases, test_fixtures, test_metadata, cli_args.fail_fast
-    )
+    run_tests_mock.assert_called_once_with(test_suite, cli_args.fail_fast)
 
     captured = capsys.readouterr()
 
@@ -438,11 +436,9 @@ def test_execute_e2e_tests_fail_fast_false(
     with pytest.raises(SystemExit):
         execute_e2e_tests(cli_args)
 
-    test_cases, test_fixtures, test_metadata = read_test_cases(path_to_test_cases)
+    test_suite = read_test_cases(path_to_test_cases)
 
-    run_tests_mock.assert_called_once_with(
-        test_cases, test_fixtures, test_metadata, cli_args.fail_fast
-    )
+    run_tests_mock.assert_called_once_with(test_suite, cli_args.fail_fast)
 
     captured = capsys.readouterr()
 
@@ -647,9 +643,9 @@ def test_read_single_test_case(
     e2e_input_folder: Path, test_cases_file: str, test_case: str, number_of_steps: int
 ) -> None:
     path_to_test_case = str(e2e_input_folder / f"{test_cases_file}::{test_case}")
-    input_test_cases, _, _ = read_test_cases(path_to_test_case)
+    test_suite = read_test_cases(path_to_test_case)
+    input_test_cases = test_suite.test_cases
 
-    print(input_test_cases)
     assert len(input_test_cases) == 1
     assert input_test_cases[0].name == test_case
     assert len(input_test_cases[0].steps) == number_of_steps

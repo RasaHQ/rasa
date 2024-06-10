@@ -39,6 +39,7 @@ from rasa.e2e_test.e2e_test_case import (
     Metadata,
     TestCase,
     TestStep,
+    TestSuite,
 )
 from rasa.e2e_test.e2e_test_result import TestResult
 from rasa.e2e_test.e2e_test_runner import TEST_TURNS_TYPE, E2ETestRunner
@@ -760,10 +761,12 @@ async def test_set_up_fixtures(
     fixture_path = (
         Path(__file__).parent.parent.parent / "data" / "end_to_end_testing_input_files"
     )
-    test_cases, input_fixtures, _ = rasa.cli.e2e_test.read_test_cases(str(fixture_path))
+    test_suite = rasa.cli.e2e_test.read_test_cases(str(fixture_path))
 
-    test_case = next(iter(filter(lambda x: x.name == test_case_name, test_cases)))
-    test_fixtures = runner.filter_fixtures_for_test_case(test_case, input_fixtures)
+    test_case = next(
+        iter(filter(lambda x: x.name == test_case_name, test_suite.test_cases))
+    )
+    test_fixtures = runner.filter_fixtures_for_test_case(test_case, test_suite.fixtures)
     sender_id = f"{test_case.name}_{datetime.datetime.now()}"
 
     await runner.set_up_fixtures(test_fixtures, sender_id=sender_id)
@@ -906,21 +909,21 @@ async def test_run_prediction_loop(
     collector = CollectingOutputChannel()
     steps = [
         TestStep.from_dict({"user": "Hi!"}),
-        TestStep.from_dict({"user": [{"text": "Hey!"}, {"metadata": "user_info"}]}),
         TestStep.from_dict({"bot": "Hey! How can I help?"}),
-        TestStep.from_dict({"user": "I would like to book a trip."}),
+        TestStep.from_dict({"user": {"text": "Hey!", "metadata": "user_info"}}),
         TestStep.from_dict({"bot": "Ok, where would you like to travel?"}),
+        TestStep.from_dict({"user": "Paris"}),
         TestStep.from_dict({"bot": "Paris is a great city! Let me check the flights."}),
     ]
     sender_id = "test_run_prediction_loop"
-    test_metadata = Metadata(name="device_info", metadata={"os": "linux"})
-    input_metadata = [
-        test_metadata,
+    test_case_metadata = Metadata(name="device_info", metadata={"os": "linux"})
+    test_suite_metadata = [
+        test_case_metadata,
         Metadata(name="user_info", metadata={"name": "Tom"}),
     ]
 
     test_turns = await runner.run_prediction_loop(
-        collector, steps, sender_id, test_metadata, input_metadata
+        collector, steps, sender_id, test_case_metadata, test_suite_metadata
     )
     # there should be one more turn than steps because we capture events before
     # the first step in -1 index
@@ -987,7 +990,7 @@ async def test_run_tests_with_fail_fast(
                 TestStep.from_dict({"user": "Hi!"}),
                 TestStep.from_dict({"bot": "Hey! How can I help?"}),
                 TestStep.from_dict(
-                    {"user": [{"text": "Hello!"}, {"metadata": "user_info"}]}
+                    {"user": {"text": "Hello!", "metadata": "user_info"}}
                 ),
             ],
             name="test_hi",
@@ -1010,6 +1013,7 @@ async def test_run_tests_with_fail_fast(
         Metadata(name="device_info", metadata={"os": "linux"}),
         Metadata(name="user_info", metadata={"name": "Tom"}),
     ]
+    test_suite = TestSuite(test_cases, test_fixtures, test_metadata)
 
     def mock_init(self: Any, *args: Any, **kwargs: Any) -> None:
         domain = Domain.empty()
@@ -1043,9 +1047,7 @@ async def test_run_tests_with_fail_fast(
 
     runner = E2ETestRunner()
 
-    results = await runner.run_tests(
-        test_cases, test_fixtures, test_metadata, fail_fast=fail_fast
-    )
+    results = await runner.run_tests(test_suite, fail_fast=fail_fast)
 
     assert len(results) == expected_len
     assert results[0] == TestResult(
@@ -1658,3 +1660,44 @@ def test_metadata_name_not_defined(
         f"Metadata '{metadata_name}' is not defined in the input metadata."
         in caplog.text
     )
+
+
+@pytest.mark.parametrize(
+    "test_case_metadata, step_metadata, expected",
+    [
+        ({"os": "linux"}, {"name": "Tom"}, {"os": "linux", "name": "Tom"}),
+        (
+            {"os": "linux"},
+            {
+                "name": "Tom",
+                "os": "windows",
+            },
+            {"os": "windows", "name": "Tom"},
+        ),
+    ],
+)
+def test_merge_metadata(
+    test_case_metadata: Dict[Text, Text],
+    step_metadata: Dict[Text, Text],
+    expected: Dict[Text, Text],
+) -> None:
+    result = E2ETestRunner.merge_metadata(
+        "Test_case", "step_text", test_case_metadata, step_metadata
+    )
+
+    assert result == expected
+
+
+def test_merge_metadata_warning(
+    caplog: LogCaptureFixture,
+) -> None:
+    keys_to_overwrite = ["os"]
+    with caplog.at_level(logging.WARNING):
+        E2ETestRunner.merge_metadata(
+            "Test case name_123",
+            "step_text",
+            {"os": "linux"},
+            {"name": "Tom", "os": "windows"},
+        )
+    print(caplog.text)
+    assert f"Metadata {keys_to_overwrite} exist in both the test case " in caplog.text

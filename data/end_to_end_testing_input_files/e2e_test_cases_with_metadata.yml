@@ -1,19 +1,18 @@
 metadata:
   - user_info:
-      - language: English
-      - location: Europe
+      language: English
+      location: Europe
   - device_info:
-      - os: linux
+      os: linux
 
 test_cases:
   - test_case: "test_standard_booking2"
-    metadata:
-      - user_info
+    metadata: user_info
     steps:
       - user: "Hi!"
       - user: 
-        - text: "No, thanks2."
-        - metadata: device_info
+          text: "No, thanks2."
+          metadata: device_info
       - utter: "utter_greet"
       - user: "I would like to book a trip."
       - bot: "Where would you like to travel?"
