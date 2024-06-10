@@ -32,12 +32,17 @@ class NLUCommandAdapter(GraphComponent, CommandGenerator):
     """An NLU-based command generator."""
 
     def __init__(
-        self, config: Dict[str, Any], model_storage: ModelStorage, resource: Resource
+        self,
+        config: Dict[str, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
     ) -> None:
         super().__init__(config)
         self.config = {**self.get_default_config(), **config}
         self._model_storage = model_storage
         self._resource = resource
+        self._execution_context = execution_context
 
     @classmethod
     def create(
@@ -48,7 +53,7 @@ class NLUCommandAdapter(GraphComponent, CommandGenerator):
         execution_context: ExecutionContext,
     ) -> "NLUCommandAdapter":
         """Creates a new untrained component (see parent class for full docstring)."""
-        return cls(config, model_storage, resource)
+        return cls(config, model_storage, resource, execution_context)
 
     @classmethod
     def load(
@@ -60,7 +65,7 @@ class NLUCommandAdapter(GraphComponent, CommandGenerator):
         **kwargs: Any,
     ) -> "NLUCommandAdapter":
         """Loads trained component (see parent class for full docstring)."""
-        return cls(config, model_storage, resource)
+        return cls(config, model_storage, resource, execution_context)
 
     def train(self, training_data: TrainingData) -> Resource:
         """Trains the NLU command adapter."""
@@ -92,6 +97,20 @@ class NLUCommandAdapter(GraphComponent, CommandGenerator):
             # if the nlu command adapter will start a flow and the coexistence feature
             # is used, make sure to set the routing slot
             commands += [SetSlotCommand(ROUTE_TO_CALM_SLOT, True)]
+
+        # TODO:
+        #    (May 30th, 2024)
+        #    This code within the can be removed once the cleaning process
+        #    is applied by default for every instance of the command generator
+        #    class.
+        #    Ticket: https://rasahq.atlassian.net/browse/ENG-1076
+        from rasa.dialogue_understanding.processor.command_processor import (
+            clean_up_commands,
+        )
+
+        structlogger.info("nlu_command_adapter.cleaning_commands", commands=commands)
+        commands = clean_up_commands(commands, tracker, flows, self._execution_context)
+        structlogger.info("nlu_command_adapter.clean_commands", clean_commands=commands)
 
         return commands
 
