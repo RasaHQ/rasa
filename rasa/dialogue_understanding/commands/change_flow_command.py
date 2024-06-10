@@ -9,22 +9,23 @@ from rasa.shared.core.trackers import DialogueStateTracker
 
 
 @dataclass
-class NoopCommand(Command):
-    """A command to indicate that nothing needs to be done."""
+class ChangeFlowCommand(Command):
+    """A command to indicate a change of flows was requested by the command
+    generator."""
 
     @classmethod
     def command(cls) -> str:
         """Returns the command type."""
-        return "noop"
+        return "change_flow"
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> NoopCommand:
+    def from_dict(cls, data: Dict[str, Any]) -> ChangeFlowCommand:
         """Converts the dictionary to a command.
 
         Returns:
             The converted dictionary.
         """
-        return NoopCommand()
+        return ChangeFlowCommand()
 
     def run_command_on_tracker(
         self,
@@ -32,23 +33,6 @@ class NoopCommand(Command):
         all_flows: FlowsList,
         original_tracker: DialogueStateTracker,
     ) -> List[Event]:
-        """Runs the command on the tracker.
-
-        Args:
-            tracker: The tracker to run the command on.
-            all_flows: All flows in the assistant.
-            original_tracker: The tracker before any command was executed.
-
-        Returns:
-            The events to apply to the tracker.
-        """
+        # the change flow command is not actually pushing anything to the tracker,
+        # but it is predicted by the MultiStepLLMCommandGenerator and used internally
         return []
-
-    def __hash__(self) -> int:
-        return hash(self.command())
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, NoopCommand):
-            return False
-
-        return True

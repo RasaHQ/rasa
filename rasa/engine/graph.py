@@ -206,7 +206,7 @@ class GraphComponent(ABC):
 
     @classmethod
     def load(
-        cls,
+        cls: Any,
         config: Dict[Text, Any],
         model_storage: ModelStorage,
         resource: Resource,
@@ -267,7 +267,7 @@ class GraphComponent(ABC):
         return []
 
     @classmethod
-    def fingerprint_addon(cls, config: Dict[str, Any]) -> Optional[str]:
+    def fingerprint_addon(cls: Any, config: Dict[str, Any]) -> Optional[str]:
         """Adds additional data to the fingerprint calculation.
 
         This is useful if a component uses external data that is not provided

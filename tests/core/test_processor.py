@@ -2262,7 +2262,7 @@ async def test_predict_does_not_block_on_command_generator_llm_calls(
     # we should have a trained model now and can start an agent with it
     # let's patch the LLM though, as we don't want to make external calls
     with patch(
-        "rasa.dialogue_understanding.generator.llm_command_generator.llm_factory",
+        "rasa.dialogue_understanding.generator.llm_based_command_generator.llm_factory",
         Mock(),
     ) as mock_llm_factory:
         llm_mock = Mock()

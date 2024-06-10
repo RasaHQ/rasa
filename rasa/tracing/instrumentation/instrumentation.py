@@ -374,7 +374,7 @@ def instrument(
         _instrument_method(
             tracer_provider.get_tracer(llm_command_generator_class.__module__),
             llm_command_generator_class,
-            "_generate_action_list_using_llm",
+            "invoke_llm",
             attribute_extractors.extract_attrs_for_llm_command_generator,
             metrics_recorder=record_llm_command_generator_metrics,
         )

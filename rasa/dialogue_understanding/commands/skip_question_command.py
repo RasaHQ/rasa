@@ -64,3 +64,12 @@ class SkipQuestionCommand(Command):
 
         stack.push(SkipQuestionPatternFlowStackFrame())
         return tracker.create_stack_updated_events(stack)
+
+    def __hash__(self) -> int:
+        return hash(self.command())
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, SkipQuestionCommand):
+            return False
+
+        return True

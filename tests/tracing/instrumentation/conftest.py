@@ -310,7 +310,7 @@ class MockLLMCommandgenerator(LLMCommandGenerator):
         model_storage: ModelStorage,
         resource: Resource,
     ) -> None:
-        self.fail_if_undefined("_generate_action_list_using_llm")
+        self.fail_if_undefined("invoke_llm")
         super().__init__(config, model_storage, resource)
 
     def fail_if_undefined(self, method_name: Text) -> None:
@@ -324,7 +324,7 @@ class MockLLMCommandgenerator(LLMCommandGenerator):
                 f"instrumentation needs to be adapted!"
             )
 
-    async def _generate_action_list_using_llm(self, prompt: str) -> Optional[str]:
+    async def invoke_llm(self, prompt: str) -> Optional[str]:
         pass
 
 

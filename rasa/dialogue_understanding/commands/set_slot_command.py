@@ -145,3 +145,12 @@ class SetSlotCommand(Command):
 
         structlogger.debug("command_executor.set_slot", command=self)
         return [SlotSet(self.name, slot.coerce_value(self.value))]
+
+    def __hash__(self) -> int:
+        return hash(self.value) + hash(self.name)
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, SetSlotCommand):
+            return False
+
+        return other.value == self.value and other.name == self.name
