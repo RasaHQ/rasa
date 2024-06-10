@@ -171,7 +171,12 @@ def upload_calm_assistant(
             rasa.shared.utils.cli.print_error(response)
 
     except Exception as e:
-        logger.error(f"An error occurred while uploading the CALM assistant: {e}")
+        if e.args[0] == "maximum recursion depth exceeded while calling a Python object":
+            logger.error(f"Possible CALL cyclic dependencies in flows. Please check that flows do not call each other.")
+            logger.error(f"Error occurred while parsing flows: {e}.")
+            return
+        else:
+            logger.error(f"An error occurred while uploading the CALM assistant: {e}")
 
 
 def upload_nlu_assistant(
