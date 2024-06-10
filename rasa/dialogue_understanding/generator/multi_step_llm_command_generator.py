@@ -16,6 +16,7 @@ from rasa.dialogue_understanding.commands import (
     SkipQuestionCommand,
     KnowledgeAnswerCommand,
     ClarifyCommand,
+    CannotHandleCommand,
 )
 from rasa.dialogue_understanding.commands.change_flow_command import ChangeFlowCommand
 from rasa.dialogue_understanding.generator.llm_based_command_generator import (
@@ -37,6 +38,7 @@ from rasa.engine.graph import ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.shared.constants import RASA_PATTERN_CANNOT_HANDLE_NOT_SUPPORTED
 from rasa.shared.core.flows import FlowStep, Flow, FlowsList
 from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -230,6 +232,7 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
                 + commands_for_newly_started_flows
             )
         )
+        commands = self._clean_up_commands(commands)
         # do not refine slots as it does not work well
         # commands = await self.refine_commands(commands, tracker, flows, message)
         structlogger.debug(
@@ -278,6 +281,7 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
         knowledge_re = re.compile(r"SearchAndReply\(\)")
         humand_handoff_re = re.compile(r"HumanHandoff\(\)")
         clarify_re = re.compile(r"Clarify\(([\"\'a-zA-Z0-9_, ]+)\)")
+        cannot_handle_re = re.compile(r"CannotHandle\(\)")
 
         for action in actions.strip().splitlines():
             if is_start_or_end_prompt:
@@ -288,6 +292,10 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
                 ):
                     break
 
+            if cannot_handle_re.search(action):
+                commands.append(
+                    CannotHandleCommand(RASA_PATTERN_CANNOT_HANDLE_NOT_SUPPORTED)
+                )
             if match := slot_set_re.search(action):
                 slot_name = cls.clean_extracted_value(match.group(1).strip())
                 slot_value = cls.clean_extracted_value(match.group(2))
@@ -719,3 +727,28 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
             if isinstance(current_step, CollectInformationFlowStep)
             else (None, None)
         )
+
+    @staticmethod
+    def _clean_up_commands(commands: List[Command]) -> List[Command]:
+        """
+        Cleans the list of commands by removing CannotHandleCommand,
+        if it exists and there are other commands in the list.
+        """
+        other_commands_count = sum(
+            not isinstance(command, CannotHandleCommand) for command in commands
+        )
+
+        if other_commands_count == len(commands):
+            # no cannot handle command found
+            return commands
+
+        if other_commands_count:
+            # remove cannot handle commands
+            return [
+                command
+                for command in commands
+                if not isinstance(command, CannotHandleCommand)
+            ]
+
+        # only cannot handle commands present
+        return [CannotHandleCommand(RASA_PATTERN_CANNOT_HANDLE_NOT_SUPPORTED)]

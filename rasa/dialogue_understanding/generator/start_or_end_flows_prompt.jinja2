@@ -19,7 +19,7 @@ by the flow engine. These are your available actions:
 1. Starting a flow, described by "StartFlow(flow_name)".
 2. If unsure which flow should be started, clarify candidate flows, described by "Clarify(flow_name_1, flow_name_2, ...)". This is particularly useful for short messages.{% if current_flow != None %}
 3. Stopping the current flow on request of the user, described by "CancelFlow()".{% endif %}
-4. Indicating that the users intent goes beyond starting, clarifying or canceling a flow, described by "Other()".
+4. Indicating that the users intent goes beyond starting, clarifying or canceling a flow, described by "CannotHandle()".
 
 ===
 Here are some examples of user messages -> action list:

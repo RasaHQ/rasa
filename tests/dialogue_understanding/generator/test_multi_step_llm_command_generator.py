@@ -1,6 +1,6 @@
 import uuid
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List
 from unittest.mock import Mock, patch, AsyncMock
 
 import pytest
@@ -18,6 +18,7 @@ from rasa.dialogue_understanding.commands import (
     KnowledgeAnswerCommand,
     ClarifyCommand,
     ChangeFlowCommand,
+    CannotHandleCommand,
 )
 from rasa.dialogue_understanding.generator.multi_step_llm_command_generator import (
     MultiStepLLMCommandGenerator,
@@ -30,6 +31,7 @@ from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.shared.constants import RASA_PATTERN_CANNOT_HANDLE_NOT_SUPPORTED
 from rasa.shared.core.events import BotUttered, UserUttered
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.slots import TextSlot
@@ -380,6 +382,10 @@ class TestMultiStepLLMCommandGenerator:
             ),
             ("Clarify(some_flow, test_a, test_b, test_c, test_d, test_e)", []),
             ("ChangeFlow()", [ChangeFlowCommand()]),
+            (
+                "CannotHandle()",
+                [CannotHandleCommand(RASA_PATTERN_CANNOT_HANDLE_NOT_SUPPORTED)],
+            ),
         ],
     )
     def test_parse_commands_identifies_correct_command(
@@ -649,3 +655,62 @@ class TestMultiStepLLMCommandGenerator:
         assert "test_slot" in slot_names_to_render
         assert "test_slot_2" in slot_names_to_render
         assert "test_slot_3" not in slot_names_to_render
+
+    @pytest.mark.parametrize(
+        "input_commands, output_commands",
+        [
+            (
+                [
+                    StartFlowCommand("test_flow"),
+                    SetSlotCommand("test_slot", "test_value"),
+                ],
+                [
+                    StartFlowCommand("test_flow"),
+                    SetSlotCommand("test_slot", "test_value"),
+                ],
+            ),
+            (
+                [
+                    StartFlowCommand("test_flow"),
+                    SetSlotCommand("test_slot", "test_value"),
+                    CannotHandleCommand(RASA_PATTERN_CANNOT_HANDLE_NOT_SUPPORTED),
+                ],
+                [
+                    StartFlowCommand("test_flow"),
+                    SetSlotCommand("test_slot", "test_value"),
+                ],
+            ),
+            (
+                [
+                    StartFlowCommand("test_flow"),
+                    SetSlotCommand("test_slot", "test_value"),
+                    CannotHandleCommand(RASA_PATTERN_CANNOT_HANDLE_NOT_SUPPORTED),
+                    CannotHandleCommand(RASA_PATTERN_CANNOT_HANDLE_NOT_SUPPORTED),
+                ],
+                [
+                    StartFlowCommand("test_flow"),
+                    SetSlotCommand("test_slot", "test_value"),
+                ],
+            ),
+            (
+                [
+                    CannotHandleCommand(RASA_PATTERN_CANNOT_HANDLE_NOT_SUPPORTED),
+                    CannotHandleCommand(RASA_PATTERN_CANNOT_HANDLE_NOT_SUPPORTED),
+                ],
+                [CannotHandleCommand(RASA_PATTERN_CANNOT_HANDLE_NOT_SUPPORTED)],
+            ),
+            (
+                [CannotHandleCommand(RASA_PATTERN_CANNOT_HANDLE_NOT_SUPPORTED)],
+                [CannotHandleCommand(RASA_PATTERN_CANNOT_HANDLE_NOT_SUPPORTED)],
+            ),
+        ],
+    )
+    def test_clean_up_commands(
+        self, input_commands: List[Command], output_commands: List[Command]
+    ):
+        # When
+        result_commands = MultiStepLLMCommandGenerator._clean_up_commands(
+            input_commands
+        )
+        # Then
+        assert result_commands == output_commands
