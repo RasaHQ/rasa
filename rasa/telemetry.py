@@ -23,6 +23,7 @@ from terminaltables import SingleTable
 
 import rasa
 import rasa.anonymization.utils
+from rasa.e2e_test.e2e_test_case import TestSuite
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa import model
@@ -53,7 +54,6 @@ if typing.TYPE_CHECKING:
     from rasa.shared.nlu.training_data.training_data import TrainingData
     from rasa.shared.importers.importer import TrainingDataImporter
     from rasa.core.utils import AvailableEndpoints
-    from rasa.e2e_test.e2e_test_case import TestCase, Fixture
 
 logger = logging.getLogger(__name__)
 
@@ -1387,16 +1387,18 @@ def track_markers_parsed_count(
 
 
 @ensure_telemetry_enabled
-def track_e2e_test_run(
-    input_test_cases: List["TestCase"], input_fixtures: List["Fixture"]
-) -> None:
+def track_e2e_test_run(test_suite: TestSuite) -> None:
     """Track an end-to-end test run."""
+    input_fixtures = test_suite.fixtures
+    input_metadata = test_suite.metadata
     _track(
         TELEMETRY_E2E_TEST_RUN_STARTED_EVENT,
         {
-            "number_of_test_cases": len(input_test_cases),
+            "number_of_test_cases": len(test_suite.test_cases),
             "number_of_fixtures": len(input_fixtures),
             "uses_fixtures": len(input_fixtures) > 0,
+            "uses_metadata": len(input_metadata) > 0,
+            "number_of_metadata": len(input_metadata),
         },
     )
 

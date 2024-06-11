@@ -671,7 +671,7 @@ class E2ETestRunner:
         input_metadata = test_suite.metadata
 
         # telemetry call for tracking test runs
-        track_e2e_test_run(input_test_cases, input_fixtures)
+        track_e2e_test_run(test_suite)
 
         for test_case in input_test_cases:
             collector = CollectingOutputChannel()
