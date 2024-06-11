@@ -21,7 +21,6 @@ FROM ${IMAGE_BASE_NAME}:base-${BASE_IMAGE_HASH} as runner
 
 # copy everything from /opt/venv
 COPY --from=rasa-install /opt/venv /opt/venv
-RUN chmod -R o+rw /opt/venv/lib/python3.10/site-packages/pypred/**
 
 # make sure we use the virtualenv
 ENV PATH="/opt/venv/bin:$PATH"
@@ -40,8 +39,7 @@ VOLUME /tmp
 # change shell
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-RUN ls -la /opt/venv/bin
-
 # the entry point
 EXPOSE 5005
-ENTRYPOINT ["/bin/sh", "-c" , "ls -la /opt/venv/lib/python3.10/site-packages/pypred && rasa train"]
+ENTRYPOINT ["rasa"]
+CMD ["--help"]
