@@ -11,7 +11,8 @@ COPY . /build
 
 WORKDIR /build
 
-RUN poetry build -f wheel -n && \
+RUN poetry install --only main --no-root --no-interaction &&\
+  poetry build -f wheel -n && \
   pip install --no-deps dist/*.whl && \
   rm -rf dist *.egg-info
 

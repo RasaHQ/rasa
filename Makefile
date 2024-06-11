@@ -12,10 +12,12 @@ CALM_CUSTOM_ACTIONS_INTEGRATION_TEST_PATH = $(CUSTOM_ACTIONS_INTEGRATION_TEST_PA
 BASE_IMAGE_HASH ?= localdev
 BASE_BUILDER_IMAGE_HASH ?= localdev
 RASA_DEPS_IMAGE_HASH ?= localdev
-IMAGE_TAG ?= rasa-private:rasa-private-dev
 POETRY_VERSION ?= 1.8.2
 BOT_PATH ?=
 MODEL_NAME ?= model
+# find user's id
+USER_ID := $(shell id -u)
+
 # find user's id
 USER_ID := $(shell id -u)
 
@@ -130,8 +132,12 @@ endif
 	rm data/MITIE*.bz2
 
 prepare-transformers:
-	while read -r MODEL; do poetry run python scripts/download_transformer_model.py $$MODEL ; done < data/test/hf_transformers_models.txt
-	if ! [ $(CI) ]; then poetry run python scripts/download_transformer_model.py rasa/LaBSE; fi
+	while read -r MODEL; \
+	do poetry run python scripts/download_transformer_model.py $$MODEL ; \
+	done < data/test/hf_transformers_models.txt
+	if ! [ $(CI) ]; then \
+  		poetry run python scripts/download_transformer_model.py rasa/LaBSE; \
+  	fi
 prepare-tests-macos:
 	brew install wget graphviz || true
 
@@ -167,6 +173,7 @@ ifeq (,$(wildcard tests_deployment/.env))
 	TF_CPP_MIN_LOG_LEVEL=2 \
 	poetry run \
 		pytest $(INTEGRATION_TEST_FOLDER)/ \
+		pytest $(INTEGRATION_TEST_FOLDER) \
 			-n $(JOBS) \
 			-m $(INTEGRATION_TEST_PYTEST_MARKERS) \
 			--dist loadgroup  \
@@ -234,7 +241,10 @@ test-acceptance: DD_ARGS := $(or $(DD_ARGS),)
 test-acceptance: prepare-spacy prepare-mitie test-marker
 
 test-gh-actions:
-	OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest .github/tests --cov .github/scripts
+	OMP_NUM_THREADS=1 \
+	TF_CPP_MIN_LOG_LEVEL=2 \
+	poetry run \
+		pytest .github/tests --cov .github/scripts
 
 test-marker: clean
     # OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
@@ -254,16 +264,40 @@ release:
 	poetry run python scripts/release.py prepare --interactive
 
 build-docker-base:
-	docker build . -t rasa-private:base-localdev -f docker/Dockerfile.base --progress=plain --platform=$(PLATFORM)
+	docker build . \
+		-t rasa-private:base-localdev \
+		-f docker/Dockerfile.base \
+		--progress=plain \
+		--platform=$(PLATFORM)
 
 build-docker-builder:
-	docker build . -t rasa-private:base-builder-localdev -f docker/Dockerfile.base-builder --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_IMAGE_HASH=$(BASE_IMAGE_HASH) --progress=plain --platform=$(PLATFORM)
+	docker build . \
+		-t rasa-private:base-builder-localdev \
+		-f docker/Dockerfile.base-builder \
+		--build-arg IMAGE_BASE_NAME=rasa-private \
+		--build-arg BASE_IMAGE_HASH=$(BASE_IMAGE_HASH) \
+		--progress=plain \
+		--platform=$(PLATFORM)
 
 build-docker-rasa-deps:
-	docker build . -t rasa-private:rasa-deps-localdev -f docker/Dockerfile.rasa-deps --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_BUILDER_IMAGE_HASH=$(BASE_BUILDER_IMAGE_HASH) --build-arg POETRY_VERSION=$(POETRY_VERSION) --progress=plain --platform=$(PLATFORM)
+	docker build . \
+		-t rasa-private:rasa-deps-localdev \
+		-f docker/Dockerfile.rasa-deps \
+		--build-arg IMAGE_BASE_NAME=rasa-private \
+		--build-arg BASE_BUILDER_IMAGE_HASH=$(BASE_BUILDER_IMAGE_HASH) \
+		--build-arg POETRY_VERSION=$(POETRY_VERSION) \
+		--progress=plain \
+		--platform=$(PLATFORM)
 
 build-docker-rasa-image:
-	docker build . -t $(IMAGE_TAG) -f Dockerfile --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_IMAGE_HASH=$(BASE_IMAGE_HASH) --build-arg RASA_DEPS_IMAGE_HASH=$(RASA_DEPS_IMAGE_HASH) --progress=plain --platform=$(PLATFORM)
+	docker build . \
+		-t $(RASA_REPOSITORY)\:$(RASA_IMAGE_TAG) \
+		-f Dockerfile \
+		--build-arg IMAGE_BASE_NAME=rasa-private \
+		--build-arg BASE_IMAGE_HASH=$(BASE_IMAGE_HASH) \
+		--build-arg RASA_DEPS_IMAGE_HASH=$(RASA_DEPS_IMAGE_HASH) \
+		--progress=plain \
+		--platform=$(PLATFORM)
 
 build-docker: build-docker-base build-docker-builder build-docker-rasa-deps build-docker-rasa-image
 
@@ -282,38 +316,62 @@ stop-integration-containers: ## Stop the integration test containers.
 tag-release-auto:
 	poetry run python scripts/release.py tag --skip-confirmation
 
-tests_deployment/integration_tests_tracing_deployment/simple_bot/models/model.tar.gz:
-	cd ./tests_deployment/integration_tests_tracing_deployment/simple_bot && poetry run rasa train --fixed-model-name model
+train-nlu:
+	docker run \
+		--rm \
+		-u $(USER_ID) \
+		--name rasa-pro-training-${RASA_IMAGE_TAG} \
+		-e RASA_PRO_LICENSE=${RASA_PRO_LICENSE} \
+		-v $(PWD)/tests_deployment/integration_tests_tracing_deployment/simple_bot\:/app \
+		${RASA_REPOSITORY}\:${RASA_IMAGE_TAG} \
+		train --fixed-model-name model
 
-train: tests_deployment/integration_tests_tracing_deployment/simple_bot/models/model.tar.gz
-
-run-tracing-integration-containers: train ## Run the tracing integration test containers.
-	docker-compose -f tests_deployment/integration_tests_tracing_deployment/docker-compose.intg.yml up -d
+run-tracing-integration-containers: train-nlu ## Run the tracing integration test containers.
+	docker-compose \
+		-f tests_deployment/integration_tests_tracing_deployment/docker-compose.intg.yml \
+		up -d
 
 stop-tracing-integration-containers: ## Stop the tracing integration test containers.
-	docker-compose -f tests_deployment/integration_tests_tracing_deployment/docker-compose.intg.yml down
+	docker-compose \
+		-f tests_deployment/integration_tests_tracing_deployment/docker-compose.intg.yml \
+		down
 
 test-tracing-integration:
 	PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python \
 	PYTHONPATH=./vendor/jaeger-python-proto \
 	poetry run \
 		pytest $(TRACING_INTEGRATION_TEST_FOLDER) \
-		-n $(JOBS) \
-		--ignore $(METRICS_INTEGRATION_TEST_PATH) \
-		--ignore $(CUSTOM_ACTIONS_INTEGRATION_TEST_PATH) \
-		--junitxml=integration-results-tracing.xml
+			-n $(JOBS) \
+			--ignore $(METRICS_INTEGRATION_TEST_PATH) \
+			--ignore $(CUSTOM_ACTIONS_INTEGRATION_TEST_PATH) \
+			--junitxml=integration-results-tracing.xml
 
-train-calm:
-	cd ./tests_deployment/integration_tests_tracing_deployment/metrics_setup/calm_bot && poetry run rasa train --fixed-model-name model
+train-calm: # we need to set the user ID used to run rasa for Linux OS (in Github workflows user ID is 1000)
+	docker run \
+		--rm \
+		-u $(USER_ID) \
+		--name rasa-pro-training-${RASA_IMAGE_TAG} \
+		-e RASA_PRO_LICENSE=${RASA_PRO_LICENSE} \
+		-e OPENAI_API_KEY=${OPENAI_API_KEY} \
+		-v $(PWD)/tests_deployment/integration_tests_tracing_deployment/metrics_setup/calm_bot\:/app \
+		${RASA_REPOSITORY}\:${RASA_IMAGE_TAG} \
+		train --fixed-model-name model
 
 run-metrics-integration-containers: train-calm ## Run the metrics integration test containers.
-	docker compose -f tests_deployment/integration_tests_tracing_deployment/metrics_setup/docker-compose.yml up -d --wait
+	docker compose \
+		-f $(PWD)/tests_deployment/integration_tests_tracing_deployment/metrics_setup/docker-compose.yml \
+		up -d --wait
 
 stop-metrics-integration-containers:
-	docker compose -f tests_deployment/integration_tests_tracing_deployment/metrics_setup/docker-compose.yml down
+	docker compose \
+		-f $(PWD)/tests_deployment/integration_tests_tracing_deployment/metrics_setup/docker-compose.yml \
+		down
 
 test-metrics-integration:
-	poetry run pytest $(METRICS_INTEGRATION_TEST_PATH) -n $(JOBS) --junitxml=integration-results-metric.xml
+	poetry run \
+		pytest $(METRICS_INTEGRATION_TEST_PATH) \
+			-n $(JOBS) \
+			--junitxml=integration-results-metric.xml
 
 
 RASA_CUSTOM_ACTION_SERVER_INTEGRATION_TESTS_PATH = $(PWD)/tests_deployment/integration_tests_custom_action_server
@@ -422,3 +480,4 @@ test-custom-action-integration-with-calm-bot: INTEGRATION_TEST_PATH = $(CALM_CUS
 test-custom-action-integration-with-calm-bot: RESULTS_FILE = integration-results-custom-actions-with-calm-bot-results.xml
 test-custom-action-integration-with-calm-bot:
 	$(TEST_CUSTOM_ACTION_INTEGRATION_COMMAND)
+
