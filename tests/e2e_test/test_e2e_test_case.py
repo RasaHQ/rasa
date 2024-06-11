@@ -39,7 +39,7 @@ def test_create_test_fixture_from_dict_invalid() -> None:
     "input",
     [
         {"user": "Hi!"},
-        {"user": {"text": "Hi!", "metadata": "user_info"}},
+        {"user": "Hi!", "metadata": "user_info"},
     ],
 )
 def test_create_test_step_user_from_dict(input: Dict) -> None:
@@ -111,7 +111,7 @@ def test_create_test_case_from_dict() -> None:
     "input",
     [
         {"user": "Hi!"},
-        {"user": {"text": "Hi!", "metadata": "user_info"}},
+        {"user": "Hi!", "metadata": "user_info"},
         {"bot": "Hi!"},
         {"utter": "utter_greet"},
         {"slot_was_set": {"slot_a": 1}},

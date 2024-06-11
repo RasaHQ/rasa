@@ -8,7 +8,6 @@ from rasa.e2e_test.constants import (
     KEY_BOT_INPUT,
     KEY_BOT_UTTERED,
     KEY_FIXTURES,
-    KEY_TEXT,
     KEY_METADATA,
     KEY_SLOT_NOT_SET,
     KEY_SLOT_SET,
@@ -85,13 +84,10 @@ class TestStep:
         if test_step_dict.get(KEY_SLOT_NOT_SET):
             slot_instance = test_step_dict.get(KEY_SLOT_NOT_SET)
 
-        metadata_name = ""
         actor_input = test_step_dict.get(
             KEY_USER_INPUT, test_step_dict.get(KEY_BOT_INPUT, "")
         )
-        if isinstance(actor_input, dict):
-            metadata_name = actor_input.get(KEY_METADATA, "")
-            actor_input = actor_input.get(KEY_TEXT, "")
+        metadata_name = test_step_dict.get(KEY_METADATA, "")
 
         return TestStep(
             text=actor_input.strip() or None,

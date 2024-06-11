@@ -1,4 +1,5 @@
 import asyncio
+import copy
 import datetime
 import difflib
 import logging
@@ -87,8 +88,8 @@ class E2ETestRunner:
         collector: CollectingOutputChannel,
         steps: List[TestStep],
         sender_id: Text,
-        test_case_metadata: Metadata = None,
-        input_metadata: List[Metadata] = [],
+        test_case_metadata: Optional[Metadata] = None,
+        input_metadata: Optional[List[Metadata]] = None,
     ) -> TEST_TURNS_TYPE:
         """Runs dialogue prediction.
 
@@ -131,16 +132,13 @@ class E2ETestRunner:
                 test_case_metadata.metadata if test_case_metadata else {}
             )
             step_metadata_value = {}
-            metadata = test_case_metadata_value
+            metadata = copy.deepcopy(test_case_metadata_value)
 
             if input_metadata and step.metadata_name:
                 step_metadata = self.filter_metadata_for_input(
                     step.metadata_name, input_metadata
                 )
                 step_metadata_value = step_metadata.metadata if step_metadata else {}
-                metadata = step_metadata_value
-
-            if test_case_metadata_value and step_metadata_value:
                 metadata = self.merge_metadata(
                     sender_id, step.text, test_case_metadata_value, step_metadata_value
                 )
@@ -196,7 +194,7 @@ class E2ETestRunner:
                     keys_to_overwrite.append(key)
 
             if keys_to_overwrite:
-                test_case = sender_id.split("_")[0]
+                test_case = sender_id.rsplit("_")[0]
                 logger.warning(
                     f"Metadata {keys_to_overwrite} exist in both the test case "
                     f"'{test_case}' and the user step '{step_text}'. "
@@ -204,10 +202,11 @@ class E2ETestRunner:
                     "override the test case metadata."
                 )
 
-            merged_metadata = test_case_metadata.copy()
+            merged_metadata = copy.deepcopy(test_case_metadata)
             merged_metadata.update(step_metadata)
 
-        return merged_metadata
+            return merged_metadata
+        return step_metadata if step_metadata else test_case_metadata
 
     @staticmethod
     def get_actual_step_output(
@@ -645,11 +644,14 @@ class E2ETestRunner:
                 test_suite_metadata,
             )
         )
+
         if not filtered_metadata:
             logger.warning(
                 f"Metadata '{metadata_name}' is not defined in the input metadata."
             )
-        return filtered_metadata[0] if filtered_metadata else None
+            return None
+
+        return filtered_metadata[0]
 
     async def run_tests(
         self,

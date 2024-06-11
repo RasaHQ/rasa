@@ -910,7 +910,7 @@ async def test_run_prediction_loop(
     steps = [
         TestStep.from_dict({"user": "Hi!"}),
         TestStep.from_dict({"bot": "Hey! How can I help?"}),
-        TestStep.from_dict({"user": {"text": "Hey!", "metadata": "user_info"}}),
+        TestStep.from_dict({"user": "Hey!", "metadata": "user_info"}),
         TestStep.from_dict({"bot": "Ok, where would you like to travel?"}),
         TestStep.from_dict({"user": "Paris"}),
         TestStep.from_dict({"bot": "Paris is a great city! Let me check the flights."}),
@@ -989,9 +989,7 @@ async def test_run_tests_with_fail_fast(
             steps=[
                 TestStep.from_dict({"user": "Hi!"}),
                 TestStep.from_dict({"bot": "Hey! How can I help?"}),
-                TestStep.from_dict(
-                    {"user": {"text": "Hello!", "metadata": "user_info"}}
-                ),
+                TestStep.from_dict({"user": "Hello!", "metadata": "user_info"}),
             ],
             name="test_hi",
             fixture_names=["premium"],
@@ -1674,6 +1672,8 @@ def test_metadata_name_not_defined(
             },
             {"os": "windows", "name": "Tom"},
         ),
+        ({}, {"name": "Tom"}, {"name": "Tom"}),
+        ({"os": "linux"}, {}, {"os": "linux"}),
     ],
 )
 def test_merge_metadata(
@@ -1694,10 +1694,10 @@ def test_merge_metadata_warning(
     keys_to_overwrite = ["os"]
     with caplog.at_level(logging.WARNING):
         E2ETestRunner.merge_metadata(
-            "Test case name_123",
+            "Test_case_name_123",
             "step_text",
             {"os": "linux"},
             {"name": "Tom", "os": "windows"},
         )
-    print(caplog.text)
     assert f"Metadata {keys_to_overwrite} exist in both the test case " in caplog.text
+    assert "'Test_case_name' and the user step 'step_text'. "
