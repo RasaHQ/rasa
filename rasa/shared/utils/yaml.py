@@ -1,39 +1,24 @@
-from io import StringIO
-from pathlib import Path
-import re
-from collections import OrderedDict
 import logging
 import os
+import re
+from collections import OrderedDict
+from dataclasses import dataclass
+from dataclasses import field
+from functools import lru_cache
+from io import StringIO
+from pathlib import Path
 from typing import Dict, List, Optional, Any, Callable, Union
 
-
+import jsonschema
 from importlib_resources import files
 from packaging import version
 from packaging.version import LegacyVersion
 from pykwalify.core import Core
 from pykwalify.errors import SchemaError
-from dataclasses import dataclass
-import jsonschema
-from dataclasses import field
+from ruamel import yaml as yaml
 from ruamel.yaml import RoundTripRepresenter, YAMLError
 from ruamel.yaml.constructor import DuplicateKeyError, BaseConstructor, ScalarNode
-from ruamel import yaml as yaml
 
-from rasa.shared.utils.constants import DEFAULT_ENCODING
-from rasa.shared.utils.io import (
-    read_file,
-    convert_to_ordered_dict,
-    raise_warning,
-    read_json_file,
-)
-
-from rasa.shared.exceptions import (
-    YamlException,
-    YamlSyntaxException,
-    SchemaValidationError,
-    RasaException,
-    FileNotFoundException,
-)
 from rasa.shared.constants import (
     MODEL_CONFIG_SCHEMA_FILE,
     CONFIG_SCHEMA_FILE,
@@ -43,11 +28,32 @@ from rasa.shared.constants import (
     SCHEMA_EXTENSIONS_FILE,
     RESPONSES_SCHEMA_FILE,
 )
+from rasa.shared.exceptions import (
+    YamlException,
+    YamlSyntaxException,
+    SchemaValidationError,
+    RasaException,
+    FileNotFoundException,
+)
+from rasa.shared.utils.constants import (
+    DEFAULT_ENCODING,
+    READ_YAML_FILE_CACHE_MAXSIZE_ENV_VAR,
+    DEFAULT_READ_YAML_FILE_CACHE_MAXSIZE,
+)
+from rasa.shared.utils.io import (
+    read_file,
+    convert_to_ordered_dict,
+    raise_warning,
+    read_json_file,
+)
 
 logger = logging.getLogger(__name__)
 
 KEY_TRAINING_DATA_FORMAT_VERSION = "version"
 YAML_VERSION = (1, 2)
+READ_YAML_FILE_CACHE_MAXSIZE = os.environ.get(
+    READ_YAML_FILE_CACHE_MAXSIZE_ENV_VAR, DEFAULT_READ_YAML_FILE_CACHE_MAXSIZE
+)
 
 
 @dataclass
@@ -362,6 +368,7 @@ def _is_ascii(text: str) -> bool:
     return all(ord(character) < 128 for character in text)
 
 
+@lru_cache(maxsize=READ_YAML_FILE_CACHE_MAXSIZE)
 def read_yaml_file(
     filename: Union[str, Path], reader_type: Union[str, List[str]] = "safe"
 ) -> Union[List[Any], Dict[str, Any]]:
