@@ -131,7 +131,6 @@ class E2ETestRunner:
             test_case_metadata_value = (
                 test_case_metadata.metadata if test_case_metadata else {}
             )
-            step_metadata_value = {}
             metadata = copy.deepcopy(test_case_metadata_value)
 
             if input_metadata and step.metadata_name:
@@ -206,7 +205,9 @@ class E2ETestRunner:
             merged_metadata.update(step_metadata)
 
             return merged_metadata
-        return step_metadata if step_metadata else test_case_metadata
+        if step_metadata:
+            return step_metadata
+        return test_case_metadata
 
     @staticmethod
     def get_actual_step_output(
@@ -638,6 +639,8 @@ class E2ETestRunner:
         Returns:
             The filtered metadata.
         """
+        if not metadata_name:
+            return None
         filtered_metadata = list(
             filter(
                 lambda metadata: metadata_name and metadata.name == metadata_name,

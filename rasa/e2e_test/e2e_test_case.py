@@ -86,13 +86,11 @@ class TestStep:
         if test_step_dict.get(KEY_SLOT_NOT_SET):
             slot_instance = test_step_dict.get(KEY_SLOT_NOT_SET)
 
-        actor_input = test_step_dict.get(
-            KEY_USER_INPUT, test_step_dict.get(KEY_BOT_INPUT, "")
-        )
-        metadata_name = test_step_dict.get(KEY_METADATA, "")
-
         return TestStep(
-            text=actor_input.strip() or None,
+            text=test_step_dict.get(
+                KEY_USER_INPUT, test_step_dict.get(KEY_BOT_INPUT, "")
+            ).strip()
+            or None,
             template=test_step_dict.get(KEY_BOT_UTTERED),
             actor=KEY_USER_INPUT if KEY_USER_INPUT in test_step_dict else KEY_BOT_INPUT,
             line=test_step_dict.lc.line + 1 if hasattr(test_step_dict, "lc") else None,
@@ -100,7 +98,7 @@ class TestStep:
             slot_was_not_set=bool(test_step_dict.get(KEY_SLOT_NOT_SET)),
             _slot_instance=slot_instance,
             _underlying=test_step_dict,
-            metadata_name=metadata_name,
+            metadata_name=test_step_dict.get(KEY_METADATA, ""),
         )
 
     @staticmethod
@@ -343,7 +341,7 @@ class Metadata:
         """Creates a metadata from a dictionary.
 
         Example:
-            >>> Metadata.from_dict({"some_metadata": [{"room": "test_room"}]})
+            >>> Metadata.from_dict({"some_metadata": {"room": "test_room"}})
             Metadata(name="some_metadata", metadata={"room": "test_room"})
 
         Args:
@@ -353,8 +351,8 @@ class Metadata:
             name=next(iter(metadata_dict.keys())),
             metadata={
                 metadata_name: metadata_value
-                for metadata_list in metadata_dict.values()
-                for metadata_name, metadata_value in metadata_list.items()
+                for metadata in metadata_dict.values()
+                for metadata_name, metadata_value in metadata.items()
             },
         )
 

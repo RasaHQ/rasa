@@ -53,6 +53,13 @@ else:
             return super().__call__(*args, **kwargs)
 
 
+def get_test_metadata() -> List[Metadata]:
+    return [
+        Metadata(name="device_info", metadata={"os": "linux"}),
+        Metadata(name="user_info", metadata={"name": "Tom"}),
+    ]
+
+
 def test_generate_test_result_successful() -> None:
     test_turns: TEST_TURNS_TYPE = {
         -1: ActualStepOutput.from_test_step(
@@ -1620,18 +1627,17 @@ def test_bot_event_text_message_formatting() -> None:
     [
         (
             "device_info",
-            [
-                Metadata(name="device_info", metadata={"os": "linux"}),
-                Metadata(name="user_info", metadata={"name": "Tom"}),
-            ],
+            get_test_metadata(),
             Metadata(name="device_info", metadata={"os": "linux"}),
         ),
         (
             "incorrect_metadata_name",
-            [
-                Metadata(name="device_info", metadata={"os": "linux"}),
-                Metadata(name="user_info", metadata={"name": "Tom"}),
-            ],
+            get_test_metadata(),
+            None,
+        ),
+        (
+            "",
+            get_test_metadata(),
             None,
         ),
     ],
