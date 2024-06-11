@@ -73,6 +73,8 @@ class TestStep:
         Example:
             >>> TestStep.from_dict({"user": "hello"})
             TestStep(text="hello", actor="user")
+            >>> TestStep.from_dict({"user": "hello", metadata: "some_metadata"})
+            TestStep(text="hello", actor="user", metadata_name="some_metadata")
             >>> TestStep.from_dict({"bot": "hello world"})
             TestStep(text="hello world", actor="bot")
 

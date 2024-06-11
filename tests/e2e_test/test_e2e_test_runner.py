@@ -1644,7 +1644,7 @@ def test_filter_metadata_for_input(
     assert result == expected
 
 
-def test_metadata_name_not_defined(
+def test_filter_metadata_for_input_undefined_metadata_name(
     caplog: LogCaptureFixture,
 ) -> None:
     metadata_name = "incorrect_metadata_name"
