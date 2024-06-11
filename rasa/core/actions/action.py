@@ -3,11 +3,11 @@ import copy
 import json
 import logging
 from typing import (
-    List,
-    Text,
-    Optional,
-    Dict,
     Any,
+    Dict,
+    Text,
+    List,
+    Optional,
     TYPE_CHECKING,
     Tuple,
     Set,
@@ -15,6 +15,7 @@ from typing import (
 )
 
 import aiohttp
+from rasa_sdk.executor import ActionExecutor
 
 import rasa.core
 import rasa.shared.utils.io
@@ -38,6 +39,7 @@ from rasa.shared.constants import (
     ROUTE_TO_CALM_SLOT,
     UTTER_PREFIX,
     FLOW_PREFIX,
+    DEFAULT_ACTIONS_PATH,
 )
 from rasa.shared.core.constants import (
     ACTION_RESET_ROUTING,
@@ -79,6 +81,7 @@ from rasa.shared.core.events import (
 from rasa.shared.core.slot_mappings import SlotMapping
 from rasa.shared.core.slots import ListSlot
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import EventVerbosity
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import (
     INTENT_NAME_KEY,
@@ -778,8 +781,6 @@ class HTTPCustomActionExecutor(CustomActionExecutor):
         Returns:
             A JSON payload to be sent to the action server.
         """
-        from rasa.shared.core.trackers import EventVerbosity
-
         tracker_state = tracker.current_state(EventVerbosity.ALL)
 
         result = {
@@ -910,6 +911,32 @@ class HTTPCustomActionExecutor(CustomActionExecutor):
         return self._name
 
 
+class DirectCustomActionExecutor(CustomActionExecutor):
+    def __init__(self, name: str, action_package: Text):
+        self._name = name
+        self.action_executor = ActionExecutor()
+        self.action_executor.register_package(action_package)
+
+    async def run(
+        self, tracker: DialogueStateTracker, domain: Domain
+    ) -> Dict[Text, Any]:
+        logger.debug(f"Directly executing custom action '{self.name()}'")
+        tracker_state = tracker.current_state(EventVerbosity.ALL)
+
+        action_call = {
+            "next_action": self._name,
+            "sender_id": tracker.sender_id,
+            "tracker": tracker_state,
+            "version": rasa.__version__,
+            "domain": domain.as_dict(),
+        }
+
+        return await self.action_executor.run(action_call)
+
+    def name(self):
+        return self._name
+
+
 class RemoteAction(Action):
     def __init__(self, name: Text, action_endpoint: EndpointConfig) -> None:
         self._name = name
@@ -925,7 +952,9 @@ class RemoteAction(Action):
         Raises:
             RasaException: If no valid action endpoint is configured.
         """
-        return HTTPCustomActionExecutor(self.name(), self.action_endpoint)
+        if self.action_endpoint and self.action_endpoint.url:
+            return HTTPCustomActionExecutor(self.name(), self.action_endpoint)
+        return DirectCustomActionExecutor(self._name, DEFAULT_ACTIONS_PATH)
 
     @staticmethod
     def action_response_format_spec() -> Dict[Text, Any]:
@@ -1001,16 +1030,6 @@ class RemoteAction(Action):
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> List[Event]:
         """Runs action. Please see parent class for the full docstring."""
-        if not self.action_endpoint:
-            raise RasaException(
-                f"Failed to execute custom action '{self.name()}' "
-                f"because no endpoint is configured to run this "
-                f"custom action. Please take a look at "
-                f"the docs and set an endpoint configuration via the "
-                f"--endpoints flag. "
-                f"{DOCS_BASE_URL}/custom-actions"
-            )
-
         response = await self.executor.run(tracker=tracker, domain=domain)
         self._validate_action_result(response)
 
