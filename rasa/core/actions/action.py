@@ -933,7 +933,7 @@ class DirectCustomActionExecutor(CustomActionExecutor):
 
         return await self.action_executor.run(action_call)
 
-    def name(self):
+    def name(self) -> Text:
         return self._name
 
 
