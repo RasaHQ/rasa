@@ -128,18 +128,15 @@ class E2ETestRunner:
                 )
                 continue
 
-            test_case_metadata_value = (
-                test_case_metadata.metadata if test_case_metadata else {}
-            )
-            metadata = copy.deepcopy(test_case_metadata_value)
+            metadata = test_case_metadata.metadata if test_case_metadata else {}
 
             if input_metadata and step.metadata_name:
                 step_metadata = self.filter_metadata_for_input(
                     step.metadata_name, input_metadata
                 )
-                step_metadata_value = step_metadata.metadata if step_metadata else {}
+                step_metadata_dict = step_metadata.metadata if step_metadata else {}
                 metadata = self.merge_metadata(
-                    sender_id, step.text, test_case_metadata_value, step_metadata_value
+                    sender_id, step.text, metadata, step_metadata_dict
                 )
 
             try:
@@ -185,29 +182,30 @@ class E2ETestRunner:
         Returns:
             A dictionary with the merged metadata.
         """
-        if test_case_metadata and step_metadata:
-            keys_to_overwrite = []
-
-            for key in step_metadata.keys():
-                if key in test_case_metadata.keys():
-                    keys_to_overwrite.append(key)
-
-            if keys_to_overwrite:
-                test_case = sender_id.rsplit("_")[0]
-                logger.warning(
-                    f"Metadata {keys_to_overwrite} exist in both the test case "
-                    f"'{test_case}' and the user step '{step_text}'. "
-                    "The user step metadata takes precedence and will "
-                    "override the test case metadata."
-                )
-
-            merged_metadata = copy.deepcopy(test_case_metadata)
-            merged_metadata.update(step_metadata)
-
-            return merged_metadata
-        if step_metadata:
+        if not test_case_metadata:
             return step_metadata
-        return test_case_metadata
+        if not step_metadata:
+            return test_case_metadata
+
+        keys_to_overwrite = []
+
+        for key in step_metadata.keys():
+            if key in test_case_metadata.keys():
+                keys_to_overwrite.append(key)
+
+        if keys_to_overwrite:
+            test_case_name = sender_id.rsplit("_")[0]
+            logger.warning(
+                f"Metadata {keys_to_overwrite} exist in both the test case "
+                f"'{test_case_name}' and the user step '{step_text}'. "
+                "The user step metadata takes precedence and will "
+                "override the test case metadata."
+            )
+
+        merged_metadata = copy.deepcopy(test_case_metadata)
+        merged_metadata.update(step_metadata)
+
+        return merged_metadata
 
     @staticmethod
     def get_actual_step_output(
@@ -639,8 +637,6 @@ class E2ETestRunner:
         Returns:
             The filtered metadata.
         """
-        if not metadata_name:
-            return None
         filtered_metadata = list(
             filter(
                 lambda metadata: metadata_name and metadata.name == metadata_name,

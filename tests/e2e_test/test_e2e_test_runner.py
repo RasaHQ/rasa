@@ -53,11 +53,17 @@ else:
             return super().__call__(*args, **kwargs)
 
 
-def get_test_metadata() -> List[Metadata]:
+@pytest.fixture
+def test_suite_metadata() -> List[Metadata]:
     return [
         Metadata(name="device_info", metadata={"os": "linux"}),
         Metadata(name="user_info", metadata={"name": "Tom"}),
     ]
+
+
+@pytest.fixture
+def test_case_metadata() -> Metadata:
+    return Metadata(name="device_info", metadata={"os": "linux"})
 
 
 def test_generate_test_result_successful() -> None:
@@ -875,6 +881,8 @@ def test_find_test_failure_with_slot_was_set_step_fail(
 
 async def test_run_prediction_loop(
     monkeypatch: MonkeyPatch,
+    test_suite_metadata: List[Metadata],
+    test_case_metadata: Metadata,
 ) -> None:
     def mock_init(self: Any, *args: Any, **kwargs: Any) -> None:
         domain = Domain.from_dict(
@@ -917,18 +925,14 @@ async def test_run_prediction_loop(
     steps = [
         TestStep.from_dict({"user": "Hi!"}),
         TestStep.from_dict({"bot": "Hey! How can I help?"}),
-        TestStep.from_dict({"user": "Hey!", "metadata": "user_info"}),
+        TestStep.from_dict(
+            {"user": "I would like to book a trip.", "metadata": "user_info"}
+        ),
         TestStep.from_dict({"bot": "Ok, where would you like to travel?"}),
-        TestStep.from_dict({"user": "Paris"}),
+        TestStep.from_dict({"user": "I want to go to Paris."}),
         TestStep.from_dict({"bot": "Paris is a great city! Let me check the flights."}),
     ]
     sender_id = "test_run_prediction_loop"
-    test_case_metadata = Metadata(name="device_info", metadata={"os": "linux"})
-    test_suite_metadata = [
-        test_case_metadata,
-        Metadata(name="user_info", metadata={"name": "Tom"}),
-    ]
-
     test_turns = await runner.run_prediction_loop(
         collector, steps, sender_id, test_case_metadata, test_suite_metadata
     )
@@ -989,7 +993,10 @@ async def test_run_prediction_loop_warning_for_no_user_text(
 
 @pytest.mark.parametrize("fail_fast, expected_len", [(True, 1), (False, 2)])
 async def test_run_tests_with_fail_fast(
-    monkeypatch: MonkeyPatch, fail_fast: bool, expected_len: int
+    monkeypatch: MonkeyPatch,
+    fail_fast: bool,
+    expected_len: int,
+    test_suite_metadata: List[Metadata],
 ) -> None:
     test_cases = [
         TestCase(
@@ -1010,15 +1017,8 @@ async def test_run_tests_with_fail_fast(
             name="test_bot",
         ),
     ]
-    test_fixtures = [
-        Fixture(name="premium", slots_set={"premium": True}),
-        Fixture(name="standard", slots_set={"premium": False}),
-    ]
-    test_metadata = [
-        Metadata(name="device_info", metadata={"os": "linux"}),
-        Metadata(name="user_info", metadata={"name": "Tom"}),
-    ]
-    test_suite = TestSuite(test_cases, test_fixtures, test_metadata)
+    test_fixtures = [Fixture(name="premium", slots_set={"premium": True})]
+    test_suite = TestSuite(test_cases, test_fixtures, test_suite_metadata)
 
     def mock_init(self: Any, *args: Any, **kwargs: Any) -> None:
         domain = Domain.empty()
@@ -1623,29 +1623,22 @@ def test_bot_event_text_message_formatting() -> None:
 
 
 @pytest.mark.parametrize(
-    "metadata_name, input_metadata, expected",
+    "metadata_name, expected",
     [
         (
             "device_info",
-            get_test_metadata(),
             Metadata(name="device_info", metadata={"os": "linux"}),
         ),
         (
             "incorrect_metadata_name",
-            get_test_metadata(),
-            None,
-        ),
-        (
-            "",
-            get_test_metadata(),
             None,
         ),
     ],
 )
 def test_filter_metadata_for_input(
-    metadata_name: Text, input_metadata: List[Metadata], expected: Optional[Metadata]
+    metadata_name: Text, test_suite_metadata, expected: Optional[Metadata]
 ) -> None:
-    result = E2ETestRunner.filter_metadata_for_input(metadata_name, input_metadata)
+    result = E2ETestRunner.filter_metadata_for_input(metadata_name, test_suite_metadata)
 
     assert result == expected
 
@@ -1667,7 +1660,7 @@ def test_filter_metadata_for_input_undefined_metadata_name(
 
 
 @pytest.mark.parametrize(
-    "test_case_metadata, step_metadata, expected",
+    "test_case_metadata_dict, step_metadata_dict, expected",
     [
         ({"os": "linux"}, {"name": "Tom"}, {"os": "linux", "name": "Tom"}),
         (
@@ -1680,15 +1673,16 @@ def test_filter_metadata_for_input_undefined_metadata_name(
         ),
         ({}, {"name": "Tom"}, {"name": "Tom"}),
         ({"os": "linux"}, {}, {"os": "linux"}),
+        ({}, {}, {}),
     ],
 )
 def test_merge_metadata(
-    test_case_metadata: Dict[Text, Text],
-    step_metadata: Dict[Text, Text],
+    test_case_metadata_dict: Dict[Text, Text],
+    step_metadata_dict: Dict[Text, Text],
     expected: Dict[Text, Text],
 ) -> None:
     result = E2ETestRunner.merge_metadata(
-        "Test_case", "step_text", test_case_metadata, step_metadata
+        "Test_case", "step_text", test_case_metadata_dict, step_metadata_dict
     )
 
     assert result == expected

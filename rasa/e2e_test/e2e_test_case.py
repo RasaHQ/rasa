@@ -347,6 +347,8 @@ class Metadata:
         Args:
             metadata_dict: Dictionary containing the metadata.
         """
+        if not metadata_dict:
+            return Metadata(name="", metadata={})
         return Metadata(
             name=next(iter(metadata_dict.keys())),
             metadata={
