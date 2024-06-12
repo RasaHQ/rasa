@@ -26,6 +26,7 @@ from rasa.core.constants import (
 )
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.exceptions import ModelNotFound
+from rasa.model import get_local_model
 from rasa.nlu.constants import (
     RESPONSE_SELECTOR_DEFAULT_INTENT,
     RESPONSE_SELECTOR_PROPERTY_NAME,
@@ -726,6 +727,117 @@ class CustomActionExecutor(abc.ABC):
             The response from the execution of the custom action.
         """
         pass
+
+
+class GRPCCustomActionExecutor(CustomActionExecutor):
+    """gRPC-based implementation of the CustomActionExecutor.
+
+    Executes custom actions by making gRPC requests to the action endpoint.
+    """
+
+    def __init__(self, name: Text, action_endpoint: EndpointConfig) -> None:
+        self._name = name
+        self.action_endpoint = action_endpoint
+
+    async def run(self, tracker: "DialogueStateTracker", domain: "Domain") -> Dict[Text, Any]:
+        """Execute the custom action using a gRPC request."""
+        pass
+
+    def _get_domain_digest(self) -> Optional[Text]:
+        try:
+            return get_local_model()
+        except ModelNotFound as e:
+            logger.warning(
+                f"Model not found while running the action '{self._name}'.", exc_info=e
+            )
+            return None
+
+    def _is_selective_domain_enabled(self) -> bool:
+        """Check if selective domain handling is enabled.
+
+        Returns:
+            True if selective domain handling is enabled, otherwise False.
+        """
+        if self.action_endpoint is None:
+            return False
+        return bool(
+            self.action_endpoint.kwargs.get(SELECTIVE_DOMAIN, DEFAULT_SELECTIVE_DOMAIN)
+        )
+
+    def _action_call_format(
+        self,
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+        should_include_domain: bool = True,
+    ) -> Dict[Text, Any]:
+        """Create the JSON payload for the action server request.
+
+        Args:
+            tracker: The current state of the dialogue.
+            domain: The domain object containing domain-specific information.
+            should_include_domain: If domain context should be in the payload.
+
+        Returns:
+            A JSON payload to be sent to the action server.
+        """
+        from rasa.shared.core.trackers import EventVerbosity
+
+        tracker_state = tracker.current_state(EventVerbosity.ALL)
+
+        result = {
+            "next_action": self._name,
+            "sender_id": tracker.sender_id,
+            "tracker": tracker_state,
+            "version": rasa.__version__,
+        }
+
+        if should_include_domain and (
+            not self._is_selective_domain_enabled()
+            or domain.does_custom_action_explicitly_need_domain(self._name)
+        ):
+            result["domain"] = domain.as_dict()
+
+        if domain_digest := self._get_domain_digest():
+            result["domain_digest"] = domain_digest
+
+        return result
+
+    def create_channel(
+        self,
+        url: Optional[Text],
+        cafile: Optional[Text] = None
+        )-> Channel:
+        if self.cafile:
+            try:
+                credentials = grpc.ssl_channel_credentials(
+                    root_certificates=open(cafile, 'rb').read() if cafile else None
+                )
+                return grpc.secure_channel(self.url, credentials)
+            except FileNotFoundError as e:
+                raise FileNotFoundException(
+                    f"Failed to find certificate file, "
+                    f"'{os.path.abspath(self.cafile)}' does not exist."
+                ) from e
+
+        else:
+            return grpc.insecure_channel(self.url)
+
+    def _request(
+        self,
+        json_body: Dict[Text, Any] = None,
+    ) -> Dict[Text, Any]:
+
+        channel = self.create_channel(self.url, self.cafile)
+        stub = action_webhook_pb2_grpc.ActionServerWebhookStub(channel)
+        request_proto = action_webhook_pb2.WebhookRequest()
+        request = ParseDict(json_body, request_proto)
+        try:
+            response = stub.webhook(request)
+            return MessageToDict(response)
+        except grpc.RpcError as e:
+            status_code = e.code()
+            details = e.details()
+            raise ClientResponseError(status=status_code, message=details)
 
 
 class HTTPCustomActionExecutor(CustomActionExecutor):
