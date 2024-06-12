@@ -21,7 +21,7 @@ def add_subparser(
     telemetry_parser = subparsers.add_parser(
         "telemetry",
         parents=parents,
-        help="Configuration of Rasa Open Source telemetry reporting.",
+        help="Configuration of Rasa Pro telemetry reporting.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
 
@@ -30,7 +30,7 @@ def add_subparser(
         "disable",
         parents=parents,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        help="Disable Rasa Open Source Telemetry reporting.",
+        help="Disable Rasa Pro Telemetry reporting.",
     )
     telemetry_disable_parser.set_defaults(func=disable_telemetry)
 
@@ -38,7 +38,7 @@ def add_subparser(
         "enable",
         parents=parents,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        help="Enable Rasa Open Source Telemetry reporting.",
+        help="Enable Rasa Pro Telemetry reporting.",
     )
     telemetry_enable_parser.set_defaults(func=enable_telemetry)
     telemetry_parser.set_defaults(func=inform_about_telemetry)
@@ -60,7 +60,7 @@ def inform_about_telemetry(_: argparse.Namespace) -> None:
         textwrap.dedent(
             """
             Rasa uses telemetry to report anonymous usage information. This information
-            is essential to help improve Rasa Open Source for all users."""
+            is essential to help improve Rasa Pro for all users."""
         )
     )
 

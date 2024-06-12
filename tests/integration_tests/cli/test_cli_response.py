@@ -42,7 +42,7 @@ def test_rasa_validate_debug_no_errors(
     assert result.ret == 0
     assert "DEBUG" in str(result.stderr)
     output_text = "".join(result.outlines)
-    assert "Rasa Open Source reports anonymous usage telemetry"
+    assert "Rasa Pro reports anonymous usage telemetry"
     "to help improve the product" in output_text
     assert "for all its users." in output_text
     assert "If you'd like to opt-out,"
@@ -109,7 +109,7 @@ def test_rasa_validate_verbose_no_errors(
     assert result.ret == 0
     assert "INFO" in str(result.stderr)
     output_text = "".join(result.outlines)
-    assert "Rasa Open Source reports anonymous usage telemetry"
+    assert "Rasa Pro reports anonymous usage telemetry"
     "to help improve the product" in output_text
     assert "for all its users." in output_text
     assert "If you'd like to opt-out,"
@@ -142,7 +142,7 @@ def test_rasa_validate_quiet_no_errors(
     )
     assert result.ret == 0
     output_text = "".join(result.outlines)
-    assert "Rasa Open Source reports anonymous usage telemetry"
+    assert "Rasa Pro reports anonymous usage telemetry"
     "to help improve the product" in output_text
     assert "for all its users." in output_text
     assert "If you'd like to opt-out,"

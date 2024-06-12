@@ -36,6 +36,6 @@ class CustomNLUComponent(GraphComponent):
         return training_data
 
     def process(self, messages: List[Message]) -> List[Message]:
-        # TODO: This is the method which Rasa Open Source will call during inference.
+        # TODO: This is the method which Rasa Pro will call during inference.
         ...
         return messages

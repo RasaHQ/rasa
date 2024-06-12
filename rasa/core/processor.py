@@ -1262,7 +1262,7 @@ class MessageProcessor:
 
             logger.error(
                 f"Trying to run unknown follow-up action '{followup_action}'. "
-                "Instead of running that, Rasa Open Source will ignore the action "
+                "Instead of running that, Rasa Pro will ignore the action "
                 "and predict the next action."
             )
 

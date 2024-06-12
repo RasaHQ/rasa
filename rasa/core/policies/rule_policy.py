@@ -60,7 +60,7 @@ logger = logging.getLogger(__name__)
 structlogger = structlog.get_logger()
 
 
-# These are Rasa Open Source default actions and overrule everything at any time.
+# These are Rasa Pro default actions and overrule everything at any time.
 DEFAULT_ACTION_MAPPINGS = {
     USER_INTENT_RESTART: ACTION_RESTART_NAME,
     USER_INTENT_BACK: ACTION_BACK_NAME,
@@ -1129,7 +1129,7 @@ class RulePolicy(MemoizationPolicy):
             tracker, domain, use_text_for_last_user_input=True
         )
 
-        # Rasa Open Source default actions overrule anything. If users want to achieve
+        # Rasa Pro default actions overrule anything. If users want to achieve
         # the same, they need to write a rule or make sure that their loop rejects
         # accordingly.
         (

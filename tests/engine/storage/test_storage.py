@@ -90,7 +90,7 @@ def test_metadata_version_check():
     trained_at = datetime.utcnow()
     old_version = "2.7.2"
     expected_message = (
-        f"The model version is trained using Rasa Open Source "
+        f"The model version is trained using Rasa Pro "
         f"{old_version} and is not compatible with your current "
         f"installation .*"
     )

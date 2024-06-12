@@ -109,7 +109,7 @@ CONFIG_MANDATORY_KEYS = CONFIG_MANDATORY_KEYS_CORE + CONFIG_MANDATORY_KEYS_NLU
 REQUIRED_SLOTS_KEY = "required_slots"
 IGNORED_INTENTS = "ignored_intents"
 
-# Constants for default Rasa Open Source project layout
+# Constants for default Rasa Pro project layout
 DEFAULT_ENDPOINTS_PATH = "endpoints.yml"
 DEFAULT_CREDENTIALS_PATH = "credentials.yml"
 DEFAULT_CONFIG_PATH = "config.yml"

@@ -471,7 +471,7 @@ def _check_evaluation_setting(component_config: Dict[Text, Any]) -> None:
 def _check_confidence_setting(component_config: Dict[Text, Any]) -> None:
     if component_config[MODEL_CONFIDENCE] == COSINE:
         raise InvalidConfigException(
-            f"{MODEL_CONFIDENCE}={COSINE} was introduced in Rasa Open Source 2.3.0 "
+            f"{MODEL_CONFIDENCE}={COSINE} was introduced in Rasa Pro 2.3.0 "
             f"but post-release experiments revealed that using cosine similarity can "
             f"change the order of predicted labels. "
             f"Since this is not ideal, using `{MODEL_CONFIDENCE}={COSINE}` has been "

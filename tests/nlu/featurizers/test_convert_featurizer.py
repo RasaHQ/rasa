@@ -253,7 +253,7 @@ def test_convert_featurizer_number_of_sub_tokens(
         (ORIGINAL_TF_HUB_MODULE_URL, "which does not contain the model any longer"),
         (
             RESTRICTED_ACCESS_URL,
-            "which is strictly reserved for pytests of Rasa Open Source only",
+            "which is strictly reserved for pytests of Rasa Pro only",
         ),
         (None, "'model_url' was not specified in the configuration"),
         ("", "'model_url' was not specified in the configuration"),

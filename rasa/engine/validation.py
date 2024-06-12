@@ -209,7 +209,7 @@ def _validate_interface_usage(node: SchemaNode) -> None:
         raise GraphSchemaValidationException(
             f"Your model uses a component with class '{node.uses.__name__}'. "
             f"This class does not implement the '{GraphComponent.__name__}' interface "
-            f"and can hence not be run within Rasa Open Source. Please use a different "
+            f"and can hence not be run within Rasa Pro. Please use a different "
             f"component or implement the '{GraphComponent}' interface in class "
             f"'{node.uses.__name__}'. "
             f"See {DOCS_URL_GRAPH_COMPONENTS} for more information."

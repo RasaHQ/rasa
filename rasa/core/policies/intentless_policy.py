@@ -670,7 +670,7 @@ class IntentlessPolicy(Policy):
         if tracker.latest_message.text.startswith("/"):
             # we don't want to generate a response if the user is trying to
             # execute a "command" - this should be handled by the regex
-            # intent classifier in rasa open source.
+            # intent classifier in rasa pro.
             structlogger.debug("intentless_policy.prediction.skip_slash")
             return None, 0.0
 
