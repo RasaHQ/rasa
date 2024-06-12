@@ -345,6 +345,10 @@ jobs:
         run: |
           make test-metrics-integration
 
+      - name: List containers
+        if: always()
+        run: sudo docker ps -a
+
       - name: Show container logs
         if: always()
         uses: ./.github/actions/debug-metric-tests
