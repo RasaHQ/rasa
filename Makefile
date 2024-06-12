@@ -327,6 +327,7 @@ train-nlu:
 		train --fixed-model-name model
 
 run-tracing-integration-containers: train-nlu ## Run the tracing integration test containers.
+	USER_ID=$(USER_ID) \
 	docker-compose \
 		-f tests_deployment/integration_tests_tracing_deployment/docker-compose.intg.yml \
 		up -d
@@ -357,7 +358,7 @@ train-calm: # we need to set the user ID used to run rasa for Linux OS (in Githu
 		${RASA_REPOSITORY}\:${RASA_IMAGE_TAG} \
 		train --fixed-model-name model
 
-run-metrics-integration-containers: ## Run the metrics integration test containers.
+run-metrics-integration-containers: train-calm ## Run the metrics integration test containers.
 	USER_ID=$(USER_ID) \
 	docker compose \
 		-f $(PWD)/tests_deployment/integration_tests_tracing_deployment/metrics_setup/docker-compose.yml \

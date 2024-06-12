@@ -41,7 +41,8 @@ services:
       interval: 10s
       retries: 10
       start_period: 15s
-      timeout: 50s
+      timeout: 10s
+    user: ${USER_ID}
 
   rasa-pro-otlp:
     image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
@@ -61,7 +62,8 @@ services:
       interval: 10s
       retries: 10
       start_period: 15s
-      timeout: 50s
+      timeout: 10s
+    user: ${USER_ID}
 
   rasa-pro-jaeger-no-action-server:
     image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
@@ -80,7 +82,8 @@ services:
       interval: 10s
       retries: 10
       start_period: 15s
-      timeout: 50s
+      timeout: 10s
+    user: ${USER_ID}
 
   rasa-pro-otlp-no-action-server:
     image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
@@ -100,7 +103,8 @@ services:
       interval: 10s
       retries: 10
       start_period: 15s
-      timeout: 50s
+      timeout: 10s
+    user: ${USER_ID}
 
   action-server-jaeger:
     image: ${RASA_SDK_REPOSITORY}:latest

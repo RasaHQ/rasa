@@ -12,12 +12,6 @@ services:
       - '--enable-feature=otlp-write-receiver'
     ports:
       - "9090:9090"
-    healthcheck:
-      test: [ "CMD", "wget", "http://localhost:9090" ]
-      interval: 10s
-      timeout: 15s
-      retries: 10
-      start_period: 40s
 
  rasa-pro-assistant:
     image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
@@ -44,7 +38,7 @@ services:
       interval: 10s
       retries: 10
       start_period: 15s
-      timeout: 50s
+      timeout: 10s
 
  otlp-collector:
    image: otel/opentelemetry-collector:0.96.0

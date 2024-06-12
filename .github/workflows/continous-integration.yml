@@ -267,12 +267,20 @@ jobs:
         run: |
           make run-tracing-integration-containers
 
+      - name: List containers
+        if: always()
+        run: sudo docker ps -a
+
       - name: Tracing integration testing - Test Code with Services 🩺
         env:
           PYTHONIOENCODING: "utf-8"
           RASA_TELEMETRY_WRITE_KEY: ${{ secrets.SEGMENT_WRITE_DEV_KEY }}
         run: |
           make test-tracing-integration
+
+      - name: List containers
+        if: always()
+        run: sudo docker ps -a
 
       - name: Show container logs
         if: always()
@@ -281,6 +289,7 @@ jobs:
           COMPOSE_FILE_PATH: tests_deployment/integration_tests_tracing_deployment/docker-compose.intg.yml
 
       - name: Tracing integration testing - Stop docker containers
+        if: always()
         run: |
           make stop-tracing-integration-containers
 
@@ -338,16 +347,16 @@ jobs:
         run: |
           make run-metrics-integration-containers
 
+      - name: List containers
+        if: always()
+        run: sudo docker ps -a
+
       - name: Metric Integration Testing -  Test Code with Services 🩺
         env:
           PYTHONIOENCODING: "utf-8"
           RASA_TELEMETRY_WRITE_KEY: ${{ secrets.SEGMENT_WRITE_DEV_KEY }}
         run: |
           make test-metrics-integration
-
-      - name: List containers
-        if: always()
-        run: sudo docker ps -a
 
       - name: Show container logs
         if: always()
