@@ -370,7 +370,7 @@ def _is_ascii(text: str) -> bool:
 
 @lru_cache(maxsize=READ_YAML_FILE_CACHE_MAXSIZE)
 def read_yaml_file(
-    filename: Union[str, Path], reader_type: Union[str, List[str]] = "safe"
+    filename: Union[str, Path], reader_type: str = "safe"
 ) -> Union[List[Any], Dict[str, Any]]:
     """Parses a yaml file.
 

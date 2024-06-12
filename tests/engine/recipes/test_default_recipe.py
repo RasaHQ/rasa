@@ -142,6 +142,8 @@ def test_generate_graphs(
     training_type: TrainingType,
     is_finetuning: bool,
 ):
+    read_yaml_file.cache_clear()
+
     expected_schema_as_dict = read_yaml_file(expected_train_schema_path)
     expected_train_schema = GraphSchema.from_dict(expected_schema_as_dict)
 
@@ -343,6 +345,8 @@ def test_epoch_fraction_cli_param():
 
 
 def test_epoch_fraction_cli_param_unspecified():
+    read_yaml_file.cache_clear()
+
     # TODO: enhance testing of cli instead of imitating expected parsed input
     expected_schema_as_dict = read_yaml_file(
         "data/graph_schemas/default_config_finetune_epoch_fraction_schema.yml"

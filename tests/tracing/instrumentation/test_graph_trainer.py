@@ -4,9 +4,10 @@ from typing import Sequence, Text
 import pytest
 from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
+
 from rasa.shared.data import TrainingType
 from rasa.shared.importers.rasa import RasaFileImporter
-
+from rasa.shared.utils.yaml import read_yaml_file
 from rasa.tracing.instrumentation import instrumentation
 from tests.tracing.instrumentation.conftest import (
     MockGraphTrainer,
@@ -38,6 +39,7 @@ async def test_tracing_for_training_without_finetuning(
         tracer_provider,
         graph_trainer_class=MockGraphTrainer,
     )
+    read_yaml_file.cache_clear()
 
     expected_training_type = training_type.model_type
     expected_language = "en"
@@ -94,6 +96,8 @@ async def test_tracing_for_training_with_finetuning(
     training_type: TrainingType,
     previous_num_captured_spans: int,
 ) -> None:
+    read_yaml_file.cache_clear()
+
     instrumentation.instrument(
         tracer_provider,
         graph_trainer_class=MockGraphTrainer,

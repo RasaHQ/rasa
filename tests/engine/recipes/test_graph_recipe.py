@@ -61,6 +61,8 @@ def test_generate_graphs(
     expected_predict_schema_path: Text,
     training_type: TrainingType,
 ):
+    read_yaml_file.cache_clear()
+
     expected_schema_as_dict = read_yaml_file(expected_train_schema_path)
     expected_train_schema = GraphSchema.from_dict(expected_schema_as_dict)
 
