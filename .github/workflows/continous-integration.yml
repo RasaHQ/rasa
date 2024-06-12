@@ -267,22 +267,6 @@ jobs:
         run: |
           make run-tracing-integration-containers
 
-      - name: Tracing integration testing -  Wait for container startup ⏳
-        timeout-minutes: 15
-        run: |
-          curl --retry-all-errors \
-            --connect-timeout 8 \
-            --max-time 5 \
-            --retry 15 \
-            --retry-max-time 120 \
-            --location 'http://localhost:5006'
-          curl --retry-all-errors \
-            --connect-timeout 8 \
-            --max-time 5 \
-            --retry 15 \
-            --retry-max-time 120 \
-            --location 'http://localhost:5007'
-
       - name: Tracing integration testing - Test Code with Services 🩺
         env:
           PYTHONIOENCODING: "utf-8"
@@ -353,16 +337,6 @@ jobs:
           RASA_SDK_IMAGE_TAG: latest
         run: |
           make run-metrics-integration-containers
-
-      - name: Metric Integration Testing - Wait for container startup ⏳
-        timeout-minutes: 15
-        run: |
-          curl --retry-all-errors \
-            --connect-timeout 8 \
-            --max-time 5 \
-            --retry 15 \
-            --retry-max-time 120 \
-            --location 'http://localhost:5005'
 
       - name: Metric Integration Testing -  Test Code with Services 🩺
         env:

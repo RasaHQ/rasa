@@ -36,6 +36,12 @@ services:
       - "5006:5006"
     environment:
       <<: *license
+    healthcheck:
+      test: curl localhost:5006 || exit 1
+      interval: 10s
+      retries: 10
+      start_period: 15s
+      timeout: 50s
 
   rasa-pro-otlp:
     image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
@@ -50,6 +56,12 @@ services:
       - "5007:5007"
     environment:
       <<: *license
+    healthcheck:
+      test: curl localhost:5007 || exit 1
+      interval: 10s
+      retries: 10
+      start_period: 15s
+      timeout: 50s
 
   rasa-pro-jaeger-no-action-server:
     image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
@@ -63,6 +75,12 @@ services:
       - "5008:5008"
     environment:
       <<: *license
+    healthcheck:
+      test: curl localhost:5008 || exit 1
+      interval: 10s
+      retries: 10
+      start_period: 15s
+      timeout: 50s
 
   rasa-pro-otlp-no-action-server:
     image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
@@ -77,6 +95,12 @@ services:
       - "5009:5009"
     environment:
       <<: *license
+    healthcheck:
+      test: curl localhost:5009 || exit 1
+      interval: 10s
+      retries: 10
+      start_period: 15s
+      timeout: 50s
 
   action-server-jaeger:
     image: ${RASA_SDK_REPOSITORY}:latest

@@ -33,6 +33,12 @@ services:
       action-server:
         condition: service_started
     user: ${USER_ID}
+    healthcheck:
+      test: curl localhost:5005 || exit 1
+      interval: 10s
+      retries: 10
+      start_period: 15s
+      timeout: 50s
 
  otlp-collector:
    image: otel/opentelemetry-collector:0.96.0
