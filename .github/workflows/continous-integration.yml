@@ -349,7 +349,8 @@ jobs:
           RASA_REPOSITORY: ${{ env.RASA_PRIVATE_DEV_REPOSITORY }}
           RASA_IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
-          RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_DEV_REPOSITORY }}
+          RASA_SDK_REPOSITORY: rasa/rasa-sdk
+          RASA_SDK_IMAGE_TAG: latest
         run: |
           make run-metrics-integration-containers
 
