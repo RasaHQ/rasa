@@ -32,6 +32,7 @@ services:
         condition: service_started
       action-server:
         condition: service_started
+    user: ${USER_ID}
 
  otlp-collector:
    image: otel/opentelemetry-collector:0.96.0
@@ -45,7 +46,7 @@ services:
      - "8889:8889" # Prometheus exporter configured metrics
 
  action-server:
-  image: rasa/rasa-sdk:latest
+  image: ${RASA_SDK_REPOSITORY}:latest
   volumes:
     - ./calm_bot/actions:/app/actions
   networks: [ 'rasa-pro-network' ]
