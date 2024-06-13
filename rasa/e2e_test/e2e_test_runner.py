@@ -1,9 +1,10 @@
 import asyncio
+import copy
 import datetime
 import difflib
 import logging
 from asyncio import CancelledError
-from typing import Dict, List, Optional, Text, Tuple, Union
+from typing import Any, Dict, List, Optional, Text, Tuple, Union
 from urllib.parse import urlparse
 
 import rasa.shared.utils.io
@@ -19,6 +20,7 @@ from rasa.utils.endpoints import EndpointConfig
 from rasa.e2e_test.e2e_test_case import (
     ActualStepOutput,
     Fixture,
+    Metadata,
     TestCase,
     TestStep,
 )
@@ -85,6 +87,8 @@ class E2ETestRunner:
         collector: CollectingOutputChannel,
         steps: List[TestStep],
         sender_id: Text,
+        test_case_metadata: Optional[Metadata] = None,
+        input_metadata: Optional[List[Metadata]] = None,
     ) -> TEST_TURNS_TYPE:
         """Runs dialogue prediction.
 
@@ -94,7 +98,7 @@ class E2ETestRunner:
             sender_id: The test case name with added timestamp suffix.
 
         Returns:
-        Test turns: {turn_sequence (int) : TestStep or ActualStepOutput}.
+            Test turns: {turn_sequence (int) : TestStep or ActualStepOutput}.
         """
         turns: TEST_TURNS_TYPE = {}
         event_cursor = 0
@@ -123,12 +127,24 @@ class E2ETestRunner:
                 )
                 continue
 
+            metadata = test_case_metadata.metadata if test_case_metadata else {}
+
+            if input_metadata:
+                step_metadata = self.filter_metadata_for_input(
+                    step.metadata_name, input_metadata
+                )
+                step_metadata_dict = step_metadata.metadata if step_metadata else {}
+                metadata = self.merge_metadata(
+                    sender_id, step.text, metadata, step_metadata_dict
+                )
+
             try:
                 await self.agent.handle_message(
                     UserMessage(
                         step.text,
                         collector,
                         sender_id,
+                        metadata=metadata,
                     )
                 )
             except CancelledError:
@@ -146,6 +162,49 @@ class E2ETestRunner:
                 tracker, step, event_cursor
             )
         return turns
+
+    @staticmethod
+    def merge_metadata(
+        sender_id: Text,
+        step_text: Text,
+        test_case_metadata: Dict[Text, Text],
+        step_metadata: Dict[Text, Text],
+    ) -> Dict[Text, Text]:
+        """Merges the test case and user step metadata.
+
+        Args:
+            sender_id: The test case name with added timestamp suffix.
+            step_text: The user step text.
+            test_case_metadata: The test case metadata dict.
+            step_metadata: The user step metadata dict.
+
+        Returns:
+            A dictionary with the merged metadata.
+        """
+        if not test_case_metadata:
+            return step_metadata
+        if not step_metadata:
+            return test_case_metadata
+
+        keys_to_overwrite = []
+
+        for key in step_metadata.keys():
+            if key in test_case_metadata.keys():
+                keys_to_overwrite.append(key)
+
+        if keys_to_overwrite:
+            test_case_name = sender_id.rsplit("_", 1)[0]
+            logger.warning(
+                f"Metadata {keys_to_overwrite} exist in both the test case "
+                f"'{test_case_name}' and the user step '{step_text}'. "
+                "The user step metadata takes precedence and will "
+                "override the test case metadata."
+            )
+
+        merged_metadata = copy.deepcopy(test_case_metadata)
+        merged_metadata.update(step_metadata)
+
+        return merged_metadata
 
     @staticmethod
     def get_actual_step_output(
@@ -564,11 +623,43 @@ class E2ETestRunner:
             )
         )
 
+    @staticmethod
+    def filter_metadata_for_input(
+        metadata_name: Optional[Text], test_suite_metadata: List[Metadata]
+    ) -> Optional[Metadata]:
+        """Filters the test suite metadata for a metadata name.
+
+        Args:
+            metadata_name: The test case or user step metadata name.
+            test_suite_metadata: The top level list of all metadata definitions.
+
+        Returns:
+            The filtered metadata.
+        """
+        if not metadata_name:
+            return None
+
+        filtered_metadata = list(
+            filter(
+                lambda metadata: metadata_name and metadata.name == metadata_name,
+                test_suite_metadata,
+            )
+        )
+
+        if not filtered_metadata:
+            logger.warning(
+                f"Metadata '{metadata_name}' is not defined in the input metadata."
+            )
+            return None
+
+        return filtered_metadata[0]
+
     async def run_tests(
         self,
         input_test_cases: List[TestCase],
         input_fixtures: List[Fixture],
         fail_fast: bool = False,
+        **kwargs: Any,
     ) -> List["TestResult"]:
         """Runs the test cases.
 
@@ -576,14 +667,16 @@ class E2ETestRunner:
             input_test_cases: Input test cases.
             input_fixtures: Input fixtures.
             fail_fast: Whether to fail fast.
+            **kwargs: Additional arguments which are passed here.
 
         Returns:
-        List of test results.
+            List of test results.
         """
         results = []
+        input_metadata = kwargs.get("input_metadata", None)
 
         # telemetry call for tracking test runs
-        track_e2e_test_run(input_test_cases, input_fixtures)
+        track_e2e_test_run(input_test_cases, input_fixtures, input_metadata)
 
         for test_case in input_test_cases:
             collector = CollectingOutputChannel()
@@ -597,8 +690,18 @@ class E2ETestRunner:
                 )
                 await self.set_up_fixtures(test_fixtures, sender_id)
 
+            test_case_metadata = None
+            if input_metadata:
+                test_case_metadata = self.filter_metadata_for_input(
+                    test_case.metadata_name, input_metadata
+                )
+
             tracker = await self.run_prediction_loop(
-                collector, test_case.steps, sender_id
+                collector,
+                test_case.steps,
+                sender_id,
+                test_case_metadata,
+                input_metadata,
             )
 
             test_result = self.generate_test_result(tracker, test_case)
