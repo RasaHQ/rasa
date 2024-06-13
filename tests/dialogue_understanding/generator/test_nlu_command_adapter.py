@@ -1,18 +1,24 @@
+import uuid
+from typing import List
 from unittest.mock import Mock
 
 import pytest
 
 from rasa.dialogue_understanding.commands import (
+    Command,
     StartFlowCommand,
     SetSlotCommand,
 )
+from rasa.dialogue_understanding.commands.set_slot_command import SetSlotExtractor
 from rasa.dialogue_understanding.generator.nlu_command_adapter import NLUCommandAdapter
 from rasa.shared.constants import ROUTE_TO_CALM_SLOT
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.slots import BooleanSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 
 from rasa.shared.nlu.constants import (
+    ENTITIES,
     INTENT,
     INTENT_NAME_KEY,
     PREDICTED_CONFIDENCE_KEY,
@@ -23,7 +29,7 @@ from tests.utilities import flows_from_str
 
 
 class TestNLUCommandAdapter:
-    """Tests for the LLMCommandGenerator."""
+    """Tests for the NLUCommandAdapter."""
 
     @pytest.fixture
     def command_generator(self):
@@ -36,6 +42,30 @@ class TestNLUCommandAdapter:
     def tracker(self):
         """Create a Tracker."""
         return DialogueStateTracker.from_events("", [])
+
+    @pytest.fixture
+    def domain(self):
+        """Create a Domain."""
+        return Domain.from_yaml("""
+        intents:
+            - foo
+            - foo2
+        entities:
+            - bar
+            - bar2
+        slots:
+            baz:
+              type: text
+              mappings:
+                - type: from_entity
+                  entity: bar
+            baz2:
+              type: text
+              mappings:
+                - type: from_entity
+                  entity: bar2
+                  intent: foo
+        """)
 
     @pytest.fixture
     def tracker_with_routing_slot(self):
@@ -88,7 +118,7 @@ class TestNLUCommandAdapter:
         # Then
         assert not predicted_commands
 
-    async def test_predict_commands_with_message_without_intent(
+    async def test_predict_commands_with_message_without_intent_nor_entities(
         self,
         command_generator: NLUCommandAdapter,
         flows: FlowsList,
@@ -182,6 +212,7 @@ class TestNLUCommandAdapter:
         self,
         command_generator: NLUCommandAdapter,
         tracker: DialogueStateTracker,
+        domain: Domain,
     ):
         """Test that predict_commands returns just one StartFlowCommand
         if multiple flows can be triggered by the predicted intent."""
@@ -220,9 +251,113 @@ class TestNLUCommandAdapter:
             },
         )
         predicted_commands = await command_generator.predict_commands(
-            test_message, flows=flows, tracker=tracker
+            test_message, flows=flows, tracker=tracker, domain=domain
         )
 
         assert len(predicted_commands) == 1
         assert isinstance(predicted_commands[0], StartFlowCommand)
         assert predicted_commands[0].as_dict()["flow"] == "first_flow"
+
+    async def test_predict_commands_with_message_with_intent_and_no_entities(
+        self,
+        command_generator: NLUCommandAdapter,
+        flows: FlowsList,
+        tracker: DialogueStateTracker,
+    ):
+        """Test that predict_commands returns an empty list when
+        message does not have any entities."""
+        # When
+        predicted_commands = await command_generator.predict_commands(
+            Message(
+                data={
+                    TEXT: "some message",
+                    INTENT: {INTENT_NAME_KEY: "foo", PREDICTED_CONFIDENCE_KEY: 1.0},
+                }
+            ),
+            flows=flows,
+            tracker=tracker,
+        )
+        # Then
+        assert len(predicted_commands) == 1
+        assert isinstance(predicted_commands[0], StartFlowCommand)
+        assert predicted_commands[0].as_dict()["flow"] == "test_flow"
+
+    async def test_predict_commands_with_message_with_entities_and_no_intent(
+        self,
+        command_generator: NLUCommandAdapter,
+        flows: FlowsList,
+        domain: Domain,
+    ):
+        entity_name = "bar"
+        entity_value = "test_value"
+        expected_slot_name = "baz"
+        sender_id = uuid.uuid4().hex
+        tracker = DialogueStateTracker.from_events(sender_id, [], slots=domain.slots)
+
+        predicted_commands = await command_generator.predict_commands(
+            Message(
+                data={
+                    TEXT: "some message",
+                    ENTITIES: [{"entity": entity_name, "value": entity_value}],
+                }
+            ),
+            flows=flows,
+            tracker=tracker,
+            domain=domain,
+        )
+
+        assert len(predicted_commands) == 1
+        assert isinstance(predicted_commands[0], SetSlotCommand)
+        assert predicted_commands[0] == SetSlotCommand(
+            name=expected_slot_name,
+            value=entity_value,
+            extractor=SetSlotExtractor.NLU.value,
+        )
+
+    @pytest.mark.parametrize(
+        "intent_name, expected_commands",
+        [
+            (
+                "foo",
+                [
+                    StartFlowCommand(flow="test_flow"),
+                    SetSlotCommand(
+                        name="baz2",
+                        value="test_value",
+                        extractor=SetSlotExtractor.NLU.value,
+                    ),
+                ],
+            ),
+            ("foo2", []),
+        ],
+    )
+    async def test_predict_commands_with_message_with_entities_and_intent(
+        self,
+        command_generator: NLUCommandAdapter,
+        flows: FlowsList,
+        domain: Domain,
+        intent_name: str,
+        expected_commands: List[Command],
+    ):
+        entity_name = "bar2"
+        entity_value = "test_value"
+        sender_id = uuid.uuid4().hex
+        tracker = DialogueStateTracker.from_events(sender_id, [], slots=domain.slots)
+
+        predicted_commands = await command_generator.predict_commands(
+            Message(
+                data={
+                    TEXT: "some message",
+                    INTENT: {
+                        INTENT_NAME_KEY: intent_name,
+                        PREDICTED_CONFIDENCE_KEY: 1.0,
+                    },
+                    ENTITIES: [{"entity": entity_name, "value": entity_value}],
+                }
+            ),
+            flows=flows,
+            tracker=tracker,
+            domain=domain,
+        )
+
+        assert predicted_commands == expected_commands
