@@ -4,7 +4,7 @@ import datetime
 import difflib
 import logging
 from asyncio import CancelledError
-from typing import Dict, List, Optional, Text, Tuple, Union
+from typing import Any, Dict, List, Optional, Text, Tuple, Union
 from urllib.parse import urlparse
 
 import rasa.shared.utils.io
@@ -23,7 +23,6 @@ from rasa.e2e_test.e2e_test_case import (
     Metadata,
     TestCase,
     TestStep,
-    TestSuite,
 )
 from rasa.e2e_test.e2e_test_result import (
     NO_RESPONSE,
@@ -654,25 +653,27 @@ class E2ETestRunner:
 
     async def run_tests(
         self,
-        test_suite: TestSuite,
+        input_test_cases: List[TestCase],
+        input_fixtures: List[Fixture],
         fail_fast: bool = False,
+        **kwargs: Any,
     ) -> List["TestResult"]:
         """Runs the test cases.
 
         Args:
-            test_suite: Test Suite.
+            input_test_cases: Input test cases.
+            input_fixtures: Input fixtures.
             fail_fast: Whether to fail fast.
+            **kwargs: Additional arguments which are passed here.
 
         Returns:
             List of test results.
         """
         results = []
-        input_test_cases = test_suite.test_cases
-        input_fixtures = test_suite.fixtures
-        input_metadata = test_suite.metadata
+        input_metadata = kwargs.get("input_metadata", None)
 
         # telemetry call for tracking test runs
-        track_e2e_test_run(test_suite)
+        track_e2e_test_run(input_test_cases, input_fixtures, input_metadata)
 
         for test_case in input_test_cases:
             collector = CollectingOutputChannel()

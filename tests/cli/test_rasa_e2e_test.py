@@ -382,7 +382,12 @@ def test_execute_e2e_tests_fail_fast_true(
 
     test_suite = read_test_cases(path_to_test_cases)
 
-    run_tests_mock.assert_called_once_with(test_suite, cli_args.fail_fast)
+    run_tests_mock.assert_called_once_with(
+        test_suite.test_cases,
+        test_suite.fixtures,
+        cli_args.fail_fast,
+        input_metadata=test_suite.metadata,
+    )
 
     captured = capsys.readouterr()
 
@@ -438,8 +443,12 @@ def test_execute_e2e_tests_fail_fast_false(
 
     test_suite = read_test_cases(path_to_test_cases)
 
-    run_tests_mock.assert_called_once_with(test_suite, cli_args.fail_fast)
-
+    run_tests_mock.assert_called_once_with(
+        test_suite.test_cases,
+        test_suite.fixtures,
+        cli_args.fail_fast,
+        input_metadata=test_suite.metadata,
+    )
     captured = capsys.readouterr()
 
     assert (

@@ -771,7 +771,9 @@ def test_track_e2e_test_run(
 ) -> None:
     monkeypatch.setenv(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE, "true")
 
-    telemetry.track_e2e_test_run(test_suite)
+    telemetry.track_e2e_test_run(
+        test_suite.test_cases, test_suite.fixtures, test_suite.metadata
+    )
 
     mock_track.assert_called_once_with(
         TELEMETRY_E2E_TEST_RUN_STARTED_EVENT,

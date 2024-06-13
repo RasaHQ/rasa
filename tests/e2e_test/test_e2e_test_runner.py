@@ -39,7 +39,6 @@ from rasa.e2e_test.e2e_test_case import (
     Metadata,
     TestCase,
     TestStep,
-    TestSuite,
 )
 from rasa.e2e_test.e2e_test_result import TestResult
 from rasa.e2e_test.e2e_test_runner import TEST_TURNS_TYPE, E2ETestRunner
@@ -1018,7 +1017,6 @@ async def test_run_tests_with_fail_fast(
         ),
     ]
     test_fixtures = [Fixture(name="premium", slots_set={"premium": True})]
-    test_suite = TestSuite(test_cases, test_fixtures, test_suite_metadata)
 
     def mock_init(self: Any, *args: Any, **kwargs: Any) -> None:
         domain = Domain.empty()
@@ -1052,7 +1050,12 @@ async def test_run_tests_with_fail_fast(
 
     runner = E2ETestRunner()
 
-    results = await runner.run_tests(test_suite, fail_fast=fail_fast)
+    results = await runner.run_tests(
+        test_cases,
+        test_fixtures,
+        fail_fast=fail_fast,
+        input_metadata=test_suite_metadata,
+    )
 
     assert len(results) == expected_len
     assert results[0] == TestResult(

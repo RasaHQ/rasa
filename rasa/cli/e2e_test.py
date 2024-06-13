@@ -297,7 +297,14 @@ def execute_e2e_tests(args: argparse.Namespace) -> None:
         logger.error(msg=error.message)
         sys.exit(1)
 
-    results = asyncio.run(test_runner.run_tests(test_suite, args.fail_fast))
+    results = asyncio.run(
+        test_runner.run_tests(
+            test_suite.test_cases,
+            test_suite.fixtures,
+            args.fail_fast,
+            input_metadata=test_suite.metadata,
+        )
+    )
 
     if args.e2e_results is not None:
         write_test_results_to_file(results, args.e2e_results)
