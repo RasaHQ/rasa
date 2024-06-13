@@ -24,6 +24,7 @@ concurrency:
 env:
   AWS_REGION: us-east-1
   REPOSITORY: 329710836760.dkr.ecr.us-east-1.amazonaws.com/rasa-private-dev
+  SDK_REPOSITORY: 329710836760.dkr.ecr.us-east-1.amazonaws.com/rasa-sdk-dev
   DEFAULT_PYTHON_VERSION: "3.10"
   NODE_VERSION_INSPECTOR_BUILD: 16
   
@@ -247,13 +248,13 @@ jobs:
             AWS_ARN_ROLE_TO_ASSUME: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
             REPOSITORY: ${{ env.REPOSITORY }}
 
-      - name: Build action server docker container
-        run: |
-          docker buildx use default
-          docker buildx build $ACTION_SERVER_DIR -t action_server:latest -f $ACTION_SERVER_DIR/Dockerfile --build-arg TARGET_IMAGE_REGISTRY=$REPOSITORY --build-arg IMAGE_TAG=$IMAGE_TAG --load
-        env:
-          ACTION_SERVER_DIR: tests_deployment/integration_tests_tracing_deployment/action_server
-          IMAGE_TAG: ${{ env.IMAGE_TAG }}
+      - name: Pull rasa-sdk dev image
+        uses: ./.github/actions/pull-from-ecr
+        with:
+          AWS_REGION: ${{ env.AWS_REGION }}
+          AWS_ARN_ROLE_TO_ASSUME: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
+          REPOSITORY: ${{ env.SDK_REPOSITORY }}
+          IMAGE_TAG: latest
 
       - name: Tracing integration testing - Run docker containers
         run: |
@@ -261,6 +262,7 @@ jobs:
         env:
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           TARGET_IMAGE_REGISTRY: ${{ env.REPOSITORY }}
+          SDK_TARGET_IMAGE_REGISTRY: ${{ env.SDK_REPOSITORY }}
           IMAGE_TAG: ${{ env.IMAGE_TAG }}
 
       - name: Tracing integration testing -  Wait for container startup ⏳

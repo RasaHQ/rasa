@@ -87,6 +87,14 @@ CORE_SCHEMA_FILE = "shared/utils/schemas/stories.yml"
 DEFAULT_VALUE_TEXT_SLOTS = "filled"
 DEFAULT_VALUE_LIST_SLOTS = [DEFAULT_VALUE_TEXT_SLOTS]
 
+INTENT_ENTITIES_PATTERN = (
+    f"^{INTENT_MESSAGE_PREFIX}"
+    f"(?P<{INTENT_NAME_KEY}>[^{{@]+)"  # "{{" is a masked "{" in an f-string
+    f"(?P<{PREDICTED_CONFIDENCE_KEY}>@[0-9.]+)?"
+    f"(?P<{ENTITIES}>{{.+}})?"  # "{{" is a masked "{" in an f-string
+    f"(?P<rest>.*)"
+)
+
 
 class YAMLStoryReader(StoryReader):
     """Class that reads Core training data and rule data in YAML format."""
@@ -609,13 +617,7 @@ class YAMLStoryReader(StoryReader):
         Returns:
             pattern with named groups
         """
-        return re.compile(
-            f"^{INTENT_MESSAGE_PREFIX}"
-            f"(?P<{INTENT_NAME_KEY}>[^{{@]+)"  # "{{" is a masked "{" in an f-string
-            f"(?P<{PREDICTED_CONFIDENCE_KEY}>@[0-9.]+)?"
-            f"(?P<{ENTITIES}>{{.+}})?"  # "{{" is a masked "{" in an f-string
-            f"(?P<rest>.*)"
-        )
+        return re.compile(INTENT_ENTITIES_PATTERN)
 
     @staticmethod
     def unpack_regex_message(

@@ -76,7 +76,7 @@ def setup_test_llm_command_generator(
 
     monkeypatch.setattr(
         LLMCommandGenerator,
-        "_generate_action_list_using_llm",
+        "invoke_llm",
         mock_llm_command_generate,
     )
 
@@ -188,7 +188,7 @@ def setup_test_endpoint_config(
             LLMCommandGenerator,
             setup_test_llm_command_generator,
             ["default_model_storage"],
-            "_generate_action_list_using_llm",
+            "invoke_llm",
             ["prompt"],
             0,
             LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME,

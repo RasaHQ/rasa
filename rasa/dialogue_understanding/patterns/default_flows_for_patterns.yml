@@ -122,6 +122,11 @@ flows:
             then:
               - action: utter_cannot_handle
                 next: "END"
+          # fallback for things that are not supported
+          - if: "'{{context.reason}}' == 'cannot_handle_not_supported'"
+            then:
+              - action: utter_cannot_handle
+                next: "END"
           # default
           - else:
               - action: utter_ask_rephrase

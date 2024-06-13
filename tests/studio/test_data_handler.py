@@ -1423,16 +1423,16 @@ def handler() -> StudioDataHandler:
     )
 
 
-def test_build_request_no_intents_or_entities(handler: StudioDataHandler) -> None:
+def test_build_request_simple(handler: StudioDataHandler) -> None:
     request = handler._build_request()
     assert request == {
         "query": (
             "query ExportAsEncodedYaml($input: ExportAsEncodedYamlInput!)"
             " { exportAsEncodedYaml(input: $input) "
             "{ ... on ExportModernAsEncodedYamlOutput "
-            "{ flows domain domainActions domainResponses domainSlots }"
+            "{ nlu flows domain }"
             " ... on ExportClassicAsEncodedYamlOutput "
-            "{ nlu domain domainIntents domainEntities }}}"
+            "{ nlu domain }}}"
         ),
         "variables": {"input": {"assistantName": "test"}},
     }
@@ -1445,9 +1445,9 @@ def test_build_request(handler: StudioDataHandler) -> None:
             "query ExportAsEncodedYaml($input: ExportAsEncodedYamlInput!)"
             " { exportAsEncodedYaml(input: $input) "
             "{ ... on ExportModernAsEncodedYamlOutput "
-            "{ flows domain domainActions domainResponses domainSlots }"
+            "{ nlu flows domain }"
             " ... on ExportClassicAsEncodedYamlOutput "
-            "{ nlu domain domainIntents domainEntities }}}"
+            "{ nlu domain }}}"
         ),
         "variables": {
             "input": {
@@ -1526,20 +1526,11 @@ def test_extract_data_nlu(handler: StudioDataHandler) -> None:
         {
             "data": {
                 "exportAsEncodedYaml": {
-                    "domainIntents": (
-                        "dmVyc2lvbjogJzMuMScKaW50ZW50czoKLSBhcmVfdV9hX2Jvb3QKLSBmZW"
-                        "VsX2dyZWF0Ci0gZmVlbF9zYWQKLSBnb29kYnllCi0gZ3JlZXQKLSBob3d"
-                        "fbWFueV9zdGFycwotIGluZm9ybQotIHN0YXJ0X2Zvcm0=="
-                    ),
                     "domain": (
-                        "dmVyc2lvbjogJzMuMScKaW50ZW50czoKLSBhcmVfdV9hX2Jvb3QKLSB"
-                        "mZWVsX2dyZWF0Ci0gZmVlbF9zYWQKLSBnb29kYnllCi0gZ3JlZXQKLS"
-                        "Bob3dfbWFueV9zdGFycwotIGluZm9ybQotIHN0YXJ0X2Zvcm0KZW50a"
-                        "XRpZXM6Ci0gZmlyc3RfbmFtZQotIGFnZQ=="
-                    ),
-                    "domainEntities": (
-                        "dmVyc2lvbjogJzMuMScKZW50aXRpZXM6Ci0gZ"
-                        "mlyc3RfbmFtZQotIGFnZQ=="
+                        "dmVyc2lvbjogJzMuMScKaW50ZW50czoKLSBhcmVfdV9hX2Jvb3QKLS"
+                        "BmZWVsX2dyZWF0Ci0gZmVlbF9zYWQKLSBnb29kYnllCi0gZ3JlZXQK"
+                        "LSBob3dfbWFueV9zdGFycwotIGluZm9ybQotIHN0YXJ0X2Zvcm0KZW"
+                        "50aXRpZXM6Ci0gZmlyc3RfbmFtZQotIGFnZQ=="
                     ),
                     "nlu": (
                         "dmVyc2lvbjogJzMuMScKbmx1OgotIGludGVudDogZ3JlZXQKICBleG"
@@ -1617,27 +1608,7 @@ entities:
 - first_name
 - age"""
     )
-    assert (
-        handler.domain_intents
-        == """version: '3.1'
-intents:
-- are_u_a_boot
-- feel_great
-- feel_sad
-- goodbye
-- greet
-- how_many_stars
-- inform
-- start_form"""
-    )
-    assert (
-        handler.domain_entities
-        == """version: '3.1'
-entities:
-- first_name
-- age"""
-    )
-    assert handler.nlu_assistant
+    assert handler.has_nlu()
 
 
 def test_extract_data_flows(handler: StudioDataHandler) -> None:
@@ -1696,41 +1667,6 @@ def test_extract_data_flows(handler: StudioDataHandler) -> None:
                         "Jzb25hbF9kZXRhaWxzX2Zvcm0KICAgICAgICByZXF1ZXN0ZWRfc2xvdDo"
                         "gYWdlCmFjdGlvbnM6Ci0gYWN0aW9uX2V4YW1wbGUKLSBhY3Rpb25fcmFz"
                         "YV9zdGFyZ2F6ZXJzX2NvdW50"
-                    ),
-                    "domainActions": (
-                        "dmVyc2lvbjogJzMuMScKYWN0aW9uczoKLSBhY3Rpb25fZXhhbX"
-                        "BsZQotIGFjdGlvbl9yYXNhX3N0YXJnYXplcnNfY291bnQ="
-                    ),
-                    "domainSlots": (
-                        "dmVyc2lvbjogJzMuMScKc2xvdHM6CiAgc3RhcmdhemVyc19jb3Vu"
-                        "dDoKICAgIHR5cGU6IHRleHQKICAgIG1hcHBpbmdzOgogICAgLSB0e"
-                        "XBlOiBmcm9tX3RleHQKICBmaXJzdF9uYW1lOgogICAgdHlwZTogdG"
-                        "V4dAogICAgbWFwcGluZ3M6CiAgICAtIHR5cGU6IGZyb21fZW50aXR"
-                        "5CiAgICAgIGVudGl0eTogZmlyc3RfbmFtZQogICAgICBpbnRlbnQ6"
-                        "IGluZm9ybQogICAgICBjb25kaXRpb25zOgogICAgICAtIGFjdGl2Z"
-                        "V9sb29wOiBwZXJzb25hbF9kZXRhaWxzX2Zvcm0KICAgICAgICByZX"
-                        "F1ZXN0ZWRfc2xvdDogZmlyc3RfbmFtZQogICAgLSB0eXBlOiBmcm9"
-                        "tX3RleHQKICAgICAgaW50ZW50OiBpbmZvcm0KICAgICAgY29uZGl0"
-                        "aW9uczoKICAgICAgLSBhY3RpdmVfbG9vcDogcGVyc29uYWxfZGV0Y"
-                        "Wlsc19mb3JtCiAgICAgICAgcmVxdWVzdGVkX3Nsb3Q6IGZpcnN0X2"
-                        "5hbWUKICBhZ2U6CiAgICB0eXBlOiBmbG9hdAogICAgbWFwcGluZ3M"
-                        "6CiAgICAtIHR5cGU6IGZyb21fZW50aXR5CiAgICAgIGVudGl0eTog"
-                        "YWdlCiAgICAgIGludGVudDogaW5mb3JtCiAgICAgIGNvbmRpdGlvb"
-                        "nM6CiAgICAgIC0gYWN0aXZlX2xvb3A6IHBlcnNvbmFsX2RldGFpbH"
-                        "NfZm9ybQogICAgICAgIHJlcXVlc3RlZF9zbG90OiBhZ2UKICAgIC0"
-                        "gdHlwZTogZnJvbV90ZXh0CiAgICAgIGludGVudDogaW5mb3JtCiAg"
-                        "ICAgIGNvbmRpdGlvbnM6CiAgICAgIC0gYWN0aXZlX2xvb3A6IHBlc"
-                        "nNvbmFsX2RldGFpbHNfZm9ybQogICAgICAgIHJlcXVlc3RlZF9zbG"
-                        "90OiBhZ2U="
-                    ),
-                    "domainResponses": (
-                        "dmVyc2lvbjogJzMuMScKcmVzcG9uc2VzOgogIHV0dGVyX2Zvc"
-                        "m1fY29tcGxldGVkOgogIC0gdGV4dDogJ0ZpcnN0IE5hbWU6IH"
-                        "tmaXJzdF9uYW1lfSwgQWdlOiB7YWdlfScKICB1dHRlcl9hc2t"
-                        "fYWdlOgogIC0gdGV4dDogaG93IG9sZCBhcmUgdT8KICB1dHRl"
-                        "cl9hc2tfZmlyc3RfbmFtZToKICAtIHRleHQ6IFdoYXQgaXMgd"
-                        "XIgbmFtZT8KICB1dHRlcl9oaV9maXJzdF9uYW1lOgogIC0gdG"
-                        "V4dDogaGkge2ZpcnN0X25hbWV9"
                     ),
                 }
             }
@@ -1814,61 +1750,4 @@ actions:
 - action_example
 - action_rasa_stargazers_count"""
     )
-    assert (
-        handler.domain_actions
-        == """version: '3.1'
-actions:
-- action_example
-- action_rasa_stargazers_count"""
-    )
-    assert (
-        handler.domain_slots
-        == """version: '3.1'
-slots:
-  stargazers_count:
-    type: text
-    mappings:
-    - type: from_text
-  first_name:
-    type: text
-    mappings:
-    - type: from_entity
-      entity: first_name
-      intent: inform
-      conditions:
-      - active_loop: personal_details_form
-        requested_slot: first_name
-    - type: from_text
-      intent: inform
-      conditions:
-      - active_loop: personal_details_form
-        requested_slot: first_name
-  age:
-    type: float
-    mappings:
-    - type: from_entity
-      entity: age
-      intent: inform
-      conditions:
-      - active_loop: personal_details_form
-        requested_slot: age
-    - type: from_text
-      intent: inform
-      conditions:
-      - active_loop: personal_details_form
-        requested_slot: age"""
-    )
-    assert (
-        handler.domain_responses
-        == """version: '3.1'
-responses:
-  utter_form_completed:
-  - text: 'First Name: {first_name}, Age: {age}'
-  utter_ask_age:
-  - text: how old are u?
-  utter_ask_first_name:
-  - text: What is ur name?
-  utter_hi_first_name:
-  - text: hi {first_name}"""
-    )
-    assert handler.flows_assistant
+    assert handler.has_flows()

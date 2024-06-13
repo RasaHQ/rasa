@@ -128,9 +128,10 @@ def test_domain_action_instantiation():
         forms={},
         data={},
     )
+    endpoint = EndpointConfig("https://example.com/webhooks/actions")
 
     instantiated_actions = [
-        action.action_for_name_or_text(action_name, domain, None)
+        action.action_for_name_or_text(action_name, domain, endpoint)
         for action_name in domain.action_names_or_texts
     ]
     expected_action_names = DEFAULT_ACTION_NAMES + [
@@ -188,6 +189,10 @@ async def test_remote_action_runs(
     remote_action = action.RemoteAction("my_action", endpoint)
 
     with aioresponses() as mocked:
+        mocked.post(
+            "https://example.com/webhooks/actions",
+            status=449,
+        )
         mocked.post(
             "https://example.com/webhooks/actions",
             payload={"events": [], "responses": []},
@@ -254,6 +259,7 @@ async def test_remote_action_logs_events(
     }
 
     with aioresponses() as mocked:
+        mocked.post("https://example.com/webhooks/actions", status=449)
         mocked.post("https://example.com/webhooks/actions", payload=response)
 
         events = await remote_action.run(
@@ -1088,7 +1094,8 @@ def test_overridden_form_action():
         )
     )
 
-    actual = action.action_for_name_or_text(form_action_name, domain, None)
+    endpoint = EndpointConfig("https://example.com/webhooks/actions")
+    actual = action.action_for_name_or_text(form_action_name, domain, endpoint)
     assert isinstance(actual, RemoteAction)
 
 
@@ -1173,12 +1180,14 @@ async def test_run_end_to_end_utterance_action():
     [
         (
             UserUttered(
+                "I am travelling to London.",
                 intent={"name": "inform"},
                 entities=[{"entity": "city", "value": "London"}],
             ),
             "location",
             "London",
             UserUttered(
+                "I am travelling to Berlin.",
                 intent={"name": "inform"},
                 entities=[{"entity": "city", "value": "Berlin"}],
             ),
@@ -1207,6 +1216,7 @@ async def test_run_end_to_end_utterance_action():
         ),
         (
             UserUttered(
+                text="I am travelling with Bob and Mary.",
                 intent={"name": "inform"},
                 entities=[
                     {"entity": "name", "value": "Bob"},
@@ -1216,6 +1226,7 @@ async def test_run_end_to_end_utterance_action():
             "guest_names",
             ["Bob", "Mary"],
             UserUttered(
+                text="I am travelling with John also.",
                 intent={"name": "inform"},
                 entities=[{"entity": "name", "value": "John"}],
             ),
@@ -1282,21 +1293,10 @@ async def test_action_extract_slots_predefined_mappings(
             domain,
         )
 
-    assert events == [SlotSet(slot_name, slot_value)]
+    assert SlotSet(slot_name, slot_value) in events
 
-    events.extend([user])
+    events.extend([BotUttered(), ActionExecuted("action_listen"), new_user])
     tracker.update_with_events(events)
-
-    new_events = await action_extract_slots.run(
-        CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.responses),
-        tracker,
-        domain,
-    )
-    assert new_events == [SlotSet(slot_name, slot_value)]
-
-    new_events.extend([BotUttered(), ActionExecuted("action_listen"), new_user])
-    tracker.update_with_events(new_events)
 
     updated_evts = await action_extract_slots.run(
         CollectingOutputChannel(),
@@ -1305,7 +1305,7 @@ async def test_action_extract_slots_predefined_mappings(
         domain,
     )
 
-    assert updated_evts == [SlotSet(slot_name, updated_value)]
+    assert SlotSet(slot_name, updated_value) in updated_evts
 
 
 async def test_action_extract_slots_with_from_trigger_mappings():
@@ -2499,7 +2499,8 @@ async def test_action_extract_slots_with_none_value_predefined_mapping():
     event = UserUttered("Hi", entities=[{"entity": "some_entity", "value": None}])
     tracker = DialogueStateTracker.from_events(sender_id="test_id", evts=[event])
 
-    action_extract_slots = ActionExtractSlots(None)
+    endpoint = EndpointConfig("https://example.com/webhooks/actions")
+    action_extract_slots = ActionExtractSlots(endpoint)
 
     events = await action_extract_slots.run(
         CollectingOutputChannel(),

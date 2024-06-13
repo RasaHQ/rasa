@@ -309,6 +309,7 @@ async def _train_graph(
     rasa.engine.validation.validate_flow_component_dependencies(
         flows, model_configuration
     )
+    rasa.engine.validation.validate_command_generator_setup(model_configuration)
 
     tempdir_name = rasa.utils.common.get_temp_dir_name()
     # Use `TempDirectoryPath` instead of `tempfile.TemporaryDirectory` as this

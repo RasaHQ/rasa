@@ -1,11 +1,14 @@
 import argparse
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set
 
 import rasa.cli.utils
 import rasa.shared.utils.cli
-from rasa.shared.constants import DEFAULT_DATA_PATH, DEFAULT_DOMAIN_PATH
+from rasa.shared.constants import (
+    DEFAULT_DATA_PATH,
+    DEFAULT_DOMAIN_PATHS,
+)
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows.yaml_flows_io import YamlFlowsWriter
 from rasa.shared.importers.importer import TrainingDataImporter
@@ -33,7 +36,7 @@ def handle_download(args: argparse.Namespace) -> None:
     )
     handler.request_all_data()
     domain_path = rasa.cli.utils.get_validated_path(
-        args.domain, "domain", DEFAULT_DOMAIN_PATH, none_is_valid=True
+        args.domain, "domain", DEFAULT_DOMAIN_PATHS, none_is_valid=True
     )
     domain_path = Path(domain_path)
 
@@ -87,20 +90,20 @@ def _handle_download_no_overwrite(
 
     if len(data_paths) == 1 and data_paths[0].is_file():
         data_path = data_paths[0]
-        if handler.nlu_assistant:
+        if handler.has_nlu():
             data_nlu = data_original.get_nlu_data().merge(
                 data_from_studio.get_nlu_data()
             )
             data_nlu.persist_nlu(data_path)
-        elif handler.flows_assistant:
+        if handler.has_flows():
             data_flows = data_original.get_flows().merge(data_from_studio.get_flows())
             YamlFlowsWriter.dump(data_flows.underlying_flows, data_path)
 
     elif len(data_paths) == 1 and data_paths[0].is_dir():
-        if handler.nlu_assistant:
+        if handler.has_nlu():
             data_path = data_paths[0] / Path(STUDIO_NLU_FILENAME)
             _persist_nlu_diff(data_original, data_from_studio, data_path)
-        elif handler.flows_assistant:
+        if handler.has_flows():
             data_path = data_paths[0] / Path(STUDIO_FLOWS_FILENAME)
             _persist_flows_diff(data_original, data_from_studio, data_path)
     else:
@@ -110,9 +113,9 @@ def _handle_download_no_overwrite(
         else:
             logger.info(f"Saving data to {STUDIO_NLU_FILENAME}.")
             data_path = Path(STUDIO_NLU_FILENAME)
-        if handler.nlu_assistant:
+        if handler.has_nlu():
             _persist_nlu_diff(data_original, data_from_studio, data_path)
-        elif handler.flows_assistant:
+        if handler.has_flows():
             _persist_flows_diff(data_original, data_from_studio, data_path)
 
 
@@ -185,28 +188,43 @@ def _handle_download_with_overwrite(
         domain_merged.persist(domain_path)
     elif domain_path.is_dir():
         default = domain_path / Path(STUDIO_DOMAIN_FILENAME)
-        if handler.nlu_assistant:
-            paths = get_domain_path(domain_path, data_from_studio, mapper)
-            _persist_domain_part(handler.domain_intents, default, paths["intent_path"])
-            _persist_domain_part(
-                handler.domain_entities, default, paths["entities_path"]
-            )
+        studio_domain = data_from_studio.get_domain()
 
-        elif handler.flows_assistant:
-            paths = get_domain_path(domain_path, data_from_studio, mapper)
-            _persist_domain_part(handler.domain_actions, default, paths["action_path"])
-            _persist_domain_part(handler.domain_slots, default, paths["slot_path"])
-            _persist_domain_part(
-                handler.domain_responses, default, paths["response_path"]
-            )
+        paths = get_domain_path(domain_path, data_from_studio, mapper)
+
+        _persist_domain_part(
+            {"intents": studio_domain.as_dict().get("intents", [])},
+            default,
+            paths["intent_path"],
+        )
+        _persist_domain_part(
+            {"entities": studio_domain.as_dict().get("entities", [])},
+            default,
+            paths["entities_path"],
+        )
+        _persist_domain_part(
+            {"actions": studio_domain.as_dict().get("actions", [])},
+            default,
+            paths["action_path"],
+        )
+        _persist_domain_part(
+            {"slots": studio_domain.as_dict().get("slots", {})},
+            default,
+            paths["slot_path"],
+        )
+        _persist_domain_part(
+            {"responses": studio_domain.as_dict().get("responses", {})},
+            default,
+            paths["response_path"],
+        )
 
     if len(data_paths) == 1 and data_paths[0].is_file():
-        if handler.nlu_assistant:
+        if handler.has_nlu():
             nlu_data_merged = data_from_studio.get_nlu_data().merge(
                 data_original.get_nlu_data()
             )
             nlu_data_merged.persist_nlu(data_paths[0])
-        elif handler.flows_assistant:
+        if handler.has_flows():
             flows_data_merged = data_from_studio.get_flows().merge(
                 data_original.get_flows()
             )
@@ -214,7 +232,7 @@ def _handle_download_with_overwrite(
     elif len(data_paths) == 1 and data_paths[0].is_dir():
         data_path = data_paths[0]
         paths = get_training_path(data_path, data_original, mapper)
-        if handler.nlu_assistant:
+        if handler.has_nlu():
             nlu_data = data_from_studio.get_nlu_data()
             if paths["nlu_path"].exists():
                 nlu_file = TrainingDataImporter.load_from_dict(
@@ -222,7 +240,7 @@ def _handle_download_with_overwrite(
                 )
                 nlu_data = nlu_data.merge(nlu_file.get_nlu_data())
             pretty_write_nlu_yaml(read_yaml(nlu_data.nlu_as_yaml()), paths["nlu_path"])
-        elif handler.flows_assistant:
+        if handler.has_flows():
             flows_data = data_from_studio.get_flows()
             if paths["flow_path"].exists():
                 flows_file = TrainingDataImporter.load_from_dict(
@@ -230,12 +248,15 @@ def _handle_download_with_overwrite(
                 )
                 flows_data = flows_data.merge(flows_file.get_flows())
             YamlFlowsWriter.dump(flows_data.underlying_flows, paths["flow_path"])
+    else:
+        #  TODO: we are not handling the case of multiple data paths?
+        raise NotImplementedError("Multiple data paths are not supported yet.")
 
 
 def _persist_domain_part(
-    domain_part: Optional[str], default: Path, path: Optional[Path]
+    domain_part: Dict[str, Any], default: Path, path: Optional[Path]
 ) -> None:
-    domain = Domain.from_yaml(domain_part)
+    domain = Domain.from_dict(domain_part)
     if (path is not None) and path.exists():
         domain = Domain.from_file(path).merge(domain, override=True)
         domain.persist(path)

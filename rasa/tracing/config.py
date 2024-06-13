@@ -60,9 +60,7 @@ def configure_tracing(tracer_provider: Optional[TracerProvider]) -> None:
     if tracer_provider is None:
         return None
 
-    from rasa.core.information_retrieval.information_retrieval import (
-        InformationRetrieval,
-    )
+    from rasa.core.information_retrieval import InformationRetrieval
     from rasa.core.nlg.contextual_response_rephraser import ContextualResponseRephraser
     from rasa.core.policies.policy import Policy
     from rasa.engine.recipes.default_components import DEFAULT_COMPONENTS

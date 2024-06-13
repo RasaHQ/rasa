@@ -12,8 +12,8 @@ if typing.TYPE_CHECKING:
 
 RASA_JAEGER_TRACING_SERVICE_NAME = "rasa-jaeger-testing"
 RASA_OTLP_TRACING_SERVICE_NAME = "rasa-otlp-testing"
-ACTION_SERVER_JAEGER_TRACING_SERVICE_NAME = "action-server-jaeger-testing"
-ACTION_SERVER_OTLP_ACTION_SERVER_NAME = "action-server-otlp-testing"
+ACTION_SERVER_JAEGER_TRACING_SERVICE_NAME = "rasa_sdk"
+ACTION_SERVER_OTLP_ACTION_SERVER_NAME = "rasa_sdk"
 
 RASA_SERVER_JAEGER = "http://localhost:5006"
 RASA_SERVER_OTLP = "http://localhost:5007"
@@ -22,7 +22,7 @@ RASA_SERVER_OTLP_NO_ACTION_SERVER = "http://localhost:5009"
 
 
 ACTION_SERVER_PARENT_SPAN_NAME = "MessageProcessor._run_action"
-ACTION_SERVER_SPAN_NAME = "action_server.run.run_action"
+ACTION_SERVER_SPAN_NAME = "ActionExecutor.run"
 ACTION_SERVER_TRIGGER_MESSAGE = "/goodbye"
 ACTION_SERVER_ACTION_TRIGGERED = "action_goodbye"
 

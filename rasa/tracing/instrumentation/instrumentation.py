@@ -26,7 +26,7 @@ from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapProp
 from rasa.core.actions.action import Action, RemoteAction
 from rasa.core.agent import Agent
 from rasa.core.channels import OutputChannel
-from rasa.core.information_retrieval.information_retrieval import InformationRetrieval
+from rasa.core.information_retrieval import InformationRetrieval
 from rasa.core.lock_store import LockStore
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.flows.flow_step_result import FlowActionPrediction
@@ -374,7 +374,7 @@ def instrument(
         _instrument_method(
             tracer_provider.get_tracer(llm_command_generator_class.__module__),
             llm_command_generator_class,
-            "_generate_action_list_using_llm",
+            "invoke_llm",
             attribute_extractors.extract_attrs_for_llm_command_generator,
             metrics_recorder=record_llm_command_generator_metrics,
         )

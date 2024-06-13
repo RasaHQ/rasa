@@ -9,7 +9,12 @@ from jinja2 import Template
 from pypred import Predicate
 
 import rasa.core.training.story_conflict
+from rasa.core.channels import UserMessage
 from rasa.dialogue_understanding.stack.frames import PatternFlowStackFrame
+from rasa.shared.core.command_payload_reader import (
+    CommandPayloadReader,
+    MAX_NUMBER_OF_SLOTS,
+)
 from rasa.shared.core.flows.flow_step_links import IfFlowStepLink
 from rasa.shared.core.flows.steps.set_slots import SetSlotsFlowStep
 from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
@@ -39,7 +44,10 @@ from rasa.shared.core.generator import TrainingDataGenerator
 from rasa.shared.core.constants import SlotMappingType, MAPPING_TYPE
 from rasa.shared.core.slots import ListSlot, Slot
 from rasa.shared.core.training_data.structures import StoryGraph
+from rasa.shared.data import create_regex_pattern_reader
 from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.nlu.constants import COMMANDS
+from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 import rasa.shared.utils.cli
 import rasa.shared.utils.io
@@ -1046,5 +1054,111 @@ class Validator:
         all_good = all(flow_validation_conditions)
 
         structlogger.info("validation.flows.ended")
+
+        return all_good
+
+    def validate_button_payloads(self) -> bool:
+        """Check if the response button payloads are valid."""
+        all_good = True
+        for utter_name, response in self.domain.responses.items():
+            for variation in response:
+                for button in variation.get("buttons", []):
+                    payload = button.get("payload")
+                    if payload is None:
+                        structlogger.error(
+                            "validator.validate_button_payloads.missing_payload",
+                            event_info=(
+                                f"The button '{button.get('title')}' in response "
+                                f"'{utter_name}' does not have a payload. "
+                                f"Please add a payload to the button."
+                            ),
+                        )
+                        all_good = False
+                        continue
+
+                    if not payload.strip():
+                        structlogger.error(
+                            "validator.validate_button_payloads.empty_payload",
+                            event_info=(
+                                f"The button '{button.get('title')}' in response "
+                                f"'{utter_name}' has an empty payload. "
+                                f"Please add a payload to the button."
+                            ),
+                        )
+                        all_good = False
+                        continue
+
+                    regex_reader = create_regex_pattern_reader(
+                        UserMessage(text=payload), self.domain
+                    )
+
+                    if regex_reader is None:
+                        structlogger.warning(
+                            "validator.validate_button_payloads.free_form_string",
+                            event_info=(
+                                "Using a free form string in payload of a button "
+                                "implies that the string will be sent to the NLU "
+                                "interpreter for parsing. To avoid the need for "
+                                "parsing at runtime, it is recommended to use one "
+                                "of the documented formats "
+                                "(https://rasa.com/docs/rasa-pro/concepts/responses#buttons)"
+                            ),
+                        )
+                        continue
+
+                    if isinstance(
+                        regex_reader, CommandPayloadReader
+                    ) and regex_reader.is_above_slot_limit(payload):
+                        structlogger.error(
+                            "validator.validate_button_payloads.slot_limit_exceeded",
+                            event_info=(
+                                f"The button '{button.get('title')}' in response "
+                                f"'{utter_name}' has a payload that sets more than "
+                                f"{MAX_NUMBER_OF_SLOTS} slots. "
+                                f"Please make sure that the number of slots set by "
+                                f"the button payload does not exceed the limit."
+                            ),
+                        )
+                        all_good = False
+                        continue
+
+                    resulting_message = regex_reader.unpack_regex_message(
+                        message=Message(data={"text": payload}), domain=self.domain
+                    )
+
+                    if not (
+                        resulting_message.has_intent()
+                        or resulting_message.has_commands()
+                    ):
+                        structlogger.error(
+                            "validator.validate_button_payloads.invalid_payload_format",
+                            event_info=(
+                                f"The button '{button.get('title')}' in response "
+                                f"'{utter_name}' does not follow valid payload formats "
+                                f"for triggering a specific intent and entities or for "
+                                f"triggering a SetSlot command."
+                            ),
+                        )
+                        all_good = False
+
+                    if resulting_message.has_commands():
+                        # validate that slot names are unique
+                        slot_names = set()
+                        for command in resulting_message.get(COMMANDS, []):
+                            slot_name = command.get("name")
+                            if slot_name and slot_name in slot_names:
+                                structlogger.error(
+                                    "validator.validate_button_payloads.duplicate_slot_name",
+                                    event_info=(
+                                        f"The button '{button.get('title')}' "
+                                        f"in response '{utter_name}' has a "
+                                        f"command to set the slot "
+                                        f"'{slot_name}' multiple times. "
+                                        f"Please make sure that each slot "
+                                        f"is set only once."
+                                    ),
+                                )
+                                all_good = False
+                            slot_names.add(slot_name)
 
         return all_good

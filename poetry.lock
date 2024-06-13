@@ -3876,17 +3876,17 @@ tests = ["pytest", "pytest-cov", "pytest-pep8"]
 
 [[package]]
 name = "packaging"
-version = "20.9"
+version = "21.3"
 description = "Core utilities for Python packages"
 optional = false
-python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+python-versions = ">=3.6"
 files = [
-    {file = "packaging-20.9-py2.py3-none-any.whl", hash = "sha256:67714da7f7bc052e064859c05c595155bd1ee9f69f76557e21f051443c20947a"},
-    {file = "packaging-20.9.tar.gz", hash = "sha256:5b327ac1320dc863dca72f4514ecc086f31186744b84a230374cc1fd776feae5"},
+    {file = "packaging-21.3-py3-none-any.whl", hash = "sha256:ef103e05f519cdc783ae24ea4e2e0f508a9c99b2d4969652eed6a2e1ea5bd522"},
+    {file = "packaging-21.3.tar.gz", hash = "sha256:dd47c42927d89ab911e606518907cc2d3a1f38bbd026385970643f9c5b8ecfeb"},
 ]
 
 [package.dependencies]
-pyparsing = ">=2.0.2"
+pyparsing = ">=2.0.2,<3.0.5 || >3.0.5"
 
 [[package]]
 name = "pamqp"
@@ -4000,17 +4000,17 @@ files = [
 
 [[package]]
 name = "pep440-version-utils"
-version = "0.3.0"
+version = "1.0.0"
 description = "Utilities to deal with pep440 versioning"
 optional = false
-python-versions = ">=3.6,<4.0"
+python-versions = ">=3.8,<3.11"
 files = [
-    {file = "pep440-version-utils-0.3.0.tar.gz", hash = "sha256:ceb8c8da63b54cc555946d91829f72fe323f8d635b22fa54ef0a9800c37f50df"},
-    {file = "pep440_version_utils-0.3.0-py3-none-any.whl", hash = "sha256:73780b2c31adad5ca35c89eb008f51c2a47aee0318debe31391b673b90577e1b"},
+    {file = "pep440_version_utils-1.0.0-py3-none-any.whl", hash = "sha256:5140d35f9451eb02b28e76f0d5cd0f0d6d9d4154c3dec69653a5c8a08fb7ef97"},
+    {file = "pep440_version_utils-1.0.0.tar.gz", hash = "sha256:7ce03456ce4429e7d29547ccffd15c19dbb851c9e1960c2fa5b281959da1083a"},
 ]
 
 [package.dependencies]
-packaging = ">=20.3,<21.0"
+packaging = ">=21.3,<24"
 
 [[package]]
 name = "phonenumbers"
@@ -4945,8 +4945,8 @@ websockets = ">=9.1,<11.0"
 [package.source]
 type = "git"
 url = "https://github.com/RasaHQ/pytest-sanic"
-reference = "fix_signal_issue"
-resolved_reference = "4092e8005fbbdc29b892cd8b09399894d86b1ac7"
+reference = "fix-variable-setting-on-sanic-instance-issue"
+resolved_reference = "23958346ecf34ccb134671171d8bc9fbd2743b6f"
 
 [[package]]
 name = "pytest-timeout"
@@ -5291,13 +5291,13 @@ fire = "*"
 
 [[package]]
 name = "rasa-sdk"
-version = "3.9.0.dev1"
+version = "3.9.0.dev2"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 optional = false
 python-versions = "<3.11,>=3.8"
 files = [
-    {file = "rasa_sdk-3.9.0.dev1-py3-none-any.whl", hash = "sha256:50c341fe30ca78e1feb2373b16b8f6dc2646a04ee80badb2a62a24704b0ea077"},
-    {file = "rasa_sdk-3.9.0.dev1.tar.gz", hash = "sha256:59d13b75c8795ce5c86220c4e51235f4e9c394098c3767a1f6315cba2fdf97c5"},
+    {file = "rasa_sdk-3.9.0.dev2-py3-none-any.whl", hash = "sha256:dbd5ea36bce64644e141d6a6da45bf4190c027d039187de68b8898be2e2b1899"},
+    {file = "rasa_sdk-3.9.0.dev2.tar.gz", hash = "sha256:c8859f66684480111c75a35b353022aacf55247251275060c81c64869c675c61"},
 ]
 
 [package.dependencies]
@@ -5309,7 +5309,7 @@ opentelemetry-sdk = ">=1.15.0,<1.16.0"
 pluggy = ">=1.0.0,<2.0.0"
 prompt-toolkit = ">=3.0,<3.0.29"
 "ruamel.yaml" = ">=0.16.5,<0.18.0"
-sanic = ">=21.12.0,<22.0.0"
+sanic = ">=22.12,<23.0"
 Sanic-Cors = ">=2.0.0,<3.0.0"
 typing-extensions = ">=4.1.1,<5.0.0"
 websockets = ">=10.0,<12.0"
@@ -5944,43 +5944,45 @@ torch = ["safetensors[numpy]", "torch (>=1.10)"]
 
 [[package]]
 name = "sanic"
-version = "21.12.2"
+version = "22.12.0"
 description = "A web server and web framework that's written to go fast. Build fast. Run fast."
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "sanic-21.12.2-py3-none-any.whl", hash = "sha256:ef4edddfba46f2f8728400470f84deb91d9e5fc21cf2531512acf70638699620"},
-    {file = "sanic-21.12.2.tar.gz", hash = "sha256:c426e15aac6984860c6d1221329be17e02e2dfed4ce0abf8532ab096026ee5e3"},
+    {file = "sanic-22.12.0-py3-none-any.whl", hash = "sha256:84edf46cc17d13264ccec0ae6622e43087498f95644dc336ade74a2d5e6c88cb"},
+    {file = "sanic-22.12.0.tar.gz", hash = "sha256:e5f81115f838956957046b6c52e7a08c1bd6e8ff530ee1376471eaf1579bfffa"},
 ]
 
 [package.dependencies]
 aiofiles = ">=0.6.0"
 httptools = ">=0.0.10"
-multidict = ">=5.0,<6.0"
-sanic-routing = ">=0.7,<1.0"
+multidict = ">=5.0,<7.0"
+sanic-routing = ">=22.8.0"
 ujson = {version = ">=1.35", markers = "sys_platform != \"win32\" and implementation_name == \"cpython\""}
-uvloop = {version = ">=0.5.3", markers = "sys_platform != \"win32\" and implementation_name == \"cpython\""}
+uvloop = {version = ">=0.15.0", markers = "sys_platform != \"win32\" and implementation_name == \"cpython\""}
 websockets = ">=10.0"
 
 [package.extras]
-all = ["bandit", "beautifulsoup4", "black", "chardet (==3.*)", "coverage (==5.3)", "cryptography", "docutils", "flake8", "gunicorn (==20.0.4)", "isort (>=5.0.0)", "m2r2", "mistune (<2.0.0)", "mypy (>=0.901,<0.910)", "pygments", "pytest (==6.2.5)", "pytest-benchmark", "pytest-cov", "pytest-sanic", "pytest-sugar", "sanic-testing (>=0.7.0)", "sphinx (>=2.1.2)", "sphinx-rtd-theme (>=0.4.3)", "towncrier", "tox", "types-ujson", "uvicorn (<0.15.0)"]
-dev = ["bandit", "beautifulsoup4", "black", "chardet (==3.*)", "coverage (==5.3)", "cryptography", "docutils", "flake8", "gunicorn (==20.0.4)", "isort (>=5.0.0)", "mypy (>=0.901,<0.910)", "pygments", "pytest (==6.2.5)", "pytest-benchmark", "pytest-cov", "pytest-sanic", "pytest-sugar", "sanic-testing (>=0.7.0)", "towncrier", "tox", "types-ujson", "uvicorn (<0.15.0)"]
-docs = ["docutils", "m2r2", "mistune (<2.0.0)", "pygments", "sphinx (>=2.1.2)", "sphinx-rtd-theme (>=0.4.3)"]
+all = ["bandit", "beautifulsoup4", "black", "chardet (==3.*)", "coverage", "cryptography", "docutils", "enum-tools[sphinx]", "flake8", "isort (>=5.0.0)", "m2r2", "mistune (<2.0.0)", "mypy (>=0.901,<0.910)", "pygments", "pytest (==7.1.*)", "pytest-benchmark", "pytest-sanic", "sanic-testing (>=22.9.0)", "slotscheck (>=0.8.0,<1)", "sphinx (>=2.1.2)", "sphinx-rtd-theme (>=0.4.3)", "towncrier", "tox", "types-ujson", "uvicorn (<0.15.0)"]
+dev = ["bandit", "beautifulsoup4", "black", "chardet (==3.*)", "coverage", "cryptography", "docutils", "flake8", "isort (>=5.0.0)", "mypy (>=0.901,<0.910)", "pygments", "pytest (==7.1.*)", "pytest-benchmark", "pytest-sanic", "sanic-testing (>=22.9.0)", "slotscheck (>=0.8.0,<1)", "towncrier", "tox", "types-ujson", "uvicorn (<0.15.0)"]
+docs = ["docutils", "enum-tools[sphinx]", "m2r2", "mistune (<2.0.0)", "pygments", "sphinx (>=2.1.2)", "sphinx-rtd-theme (>=0.4.3)"]
 ext = ["sanic-ext"]
-test = ["bandit", "beautifulsoup4", "black", "chardet (==3.*)", "coverage (==5.3)", "docutils", "flake8", "gunicorn (==20.0.4)", "isort (>=5.0.0)", "mypy (>=0.901,<0.910)", "pygments", "pytest (==6.2.5)", "pytest-benchmark", "pytest-cov", "pytest-sanic", "pytest-sugar", "sanic-testing (>=0.7.0)", "types-ujson", "uvicorn (<0.15.0)"]
+http3 = ["aioquic"]
+test = ["bandit", "beautifulsoup4", "black", "chardet (==3.*)", "coverage", "docutils", "flake8", "isort (>=5.0.0)", "mypy (>=0.901,<0.910)", "pygments", "pytest (==7.1.*)", "pytest-benchmark", "pytest-sanic", "sanic-testing (>=22.9.0)", "slotscheck (>=0.8.0,<1)", "types-ujson", "uvicorn (<0.15.0)"]
 
 [[package]]
 name = "sanic-cors"
-version = "2.0.1"
+version = "2.2.0"
 description = "A Sanic extension adding a decorator for CORS support. Based on flask-cors by Cory Dolphin."
 optional = false
 python-versions = "*"
 files = [
-    {file = "Sanic-Cors-2.0.1.tar.gz", hash = "sha256:4d2f26333d49db428217814c66e89fc3df20fc62a5ab518a71fa22e2e249e19d"},
-    {file = "Sanic_Cors-2.0.1-py2.py3-none-any.whl", hash = "sha256:0c8132bed394ba86f93c03bef52787183652d96b70add4ea13c25eb98f344343"},
+    {file = "Sanic-Cors-2.2.0.tar.gz", hash = "sha256:f8d7515da4c8b837871d422c66314c4b5704396a78894b59c50e26aa72a95873"},
+    {file = "Sanic_Cors-2.2.0-py2.py3-none-any.whl", hash = "sha256:c3b133ff1f0bb609a53db35f727f5c371dc4ebeb6be4cc2c37c19dd8b9301115"},
 ]
 
 [package.dependencies]
+packaging = ">=21.3"
 sanic = ">=21.9.3"
 
 [[package]]
@@ -6003,24 +6005,24 @@ docs = ["Jinja2 (<3.1)", "Sphinx"]
 
 [[package]]
 name = "sanic-routing"
-version = "0.7.2"
+version = "22.8.0"
 description = "Core routing component for Sanic"
 optional = false
 python-versions = "*"
 files = [
-    {file = "sanic-routing-0.7.2.tar.gz", hash = "sha256:139ce88b3f054e7aa336e2ecc8459837092b103b275d3a97609a34092c55374d"},
-    {file = "sanic_routing-0.7.2-py3-none-any.whl", hash = "sha256:523034ffd07aca056040e08de438269c9a880722eee1ace3a32e4f74b394d9aa"},
+    {file = "sanic-routing-22.8.0.tar.gz", hash = "sha256:305729b4e0bf01f074044a2a315ff401fa7eeffb009eec1d2c81d35e1038ddfc"},
+    {file = "sanic_routing-22.8.0-py3-none-any.whl", hash = "sha256:9a928ed9e19a36bc019223be90a5da0ab88cdd76b101e032510b6a7073c017e9"},
 ]
 
 [[package]]
 name = "sanic-testing"
-version = "22.6.0"
+version = "22.12.0"
 description = "Core testing clients for Sanic"
 optional = false
 python-versions = "*"
 files = [
-    {file = "sanic-testing-22.6.0.tar.gz", hash = "sha256:8f006d2332106539cd6f3da8a5c0d1f31472261f3293e43e2c9bbad605e72c5b"},
-    {file = "sanic_testing-22.6.0-py3-none-any.whl", hash = "sha256:d84303e83066de7f18e8c3a0cd04512ba1517dbc31123f14e8aec318b22c008c"},
+    {file = "sanic-testing-22.12.0.tar.gz", hash = "sha256:c9582c9bb9aabd82d3bf9fba2514a0274d0d741d84ce600e3ba2bef7b6c87aed"},
+    {file = "sanic_testing-22.12.0-py3-none-any.whl", hash = "sha256:2cc3338207c6aab4cdc6b89264744a3d51ea66685fe1f30f81f9c376f3ee93a3"},
 ]
 
 [package.dependencies]
@@ -8211,4 +8213,4 @@ transformers = ["sentencepiece", "transformers"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8.1,<3.11"
-content-hash = "07165a1cf4181d058d2491ad3895ee483e638e0c3f4a1ad84213f2264982d9dd"
+content-hash = "88bfa251b0d9a7cd8f79941bd2de780e60f3721c6c111127ef9de04e9d131380"

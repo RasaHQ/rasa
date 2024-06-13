@@ -26,6 +26,8 @@ from rasa.dialogue_understanding.commands.correct_slots_command import (
     CorrectSlotsCommand,
     CorrectedSlot,
 )
+from rasa.dialogue_understanding.commands.noop_command import NoopCommand
+from rasa.dialogue_understanding.commands.change_flow_command import ChangeFlowCommand
 
 __all__ = [
     "Command",
@@ -42,4 +44,6 @@ __all__ = [
     "CorrectSlotsCommand",
     "CorrectedSlot",
     "ErrorCommand",
+    "NoopCommand",
+    "ChangeFlowCommand",
 ]

@@ -1,11 +1,15 @@
 import os
 import tempfile
 from pathlib import Path
+from typing import Optional
 
 import pytest
 import rasa.shared
 
 import rasa.shared.data
+from rasa.core.channels import UserMessage
+from rasa.shared.core.command_payload_reader import CommandPayloadReader
+from rasa.shared.core.domain import Domain
 from rasa.shared.nlu.training_data.loading import load_data
 from rasa.shared.utils.io import write_text_file, json_to_string
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
@@ -172,3 +176,43 @@ def test_get_story_file_with_yaml():
         [examples_dir], YAMLStoryReader.is_stories_file
     )
     assert core_files
+
+
+@pytest.mark.parametrize(
+    "user_text, expected_result",
+    [
+        (
+            "/SetSlots(merchant=visa, amount=1000, date=2022-01-01)",
+            CommandPayloadReader,
+        ),
+        ("/inform", YAMLStoryReader),
+    ],
+)
+def test_create_regex_pattern_reader(user_text: str, expected_result):
+    user_message = UserMessage(text=user_text)
+    domain = Domain.from_yaml(
+        """
+            slots:
+              merchant:
+                type: text
+            """
+    )
+    reader = rasa.shared.data.create_regex_pattern_reader(user_message, domain)
+    assert reader is not None
+    assert hasattr(reader, "unpack_regex_message")
+    assert callable(reader.unpack_regex_message)
+    assert isinstance(reader, expected_result)
+
+
+@pytest.mark.parametrize("user_text", ["", None])
+def test_create_regex_pattern_reader_empty_user_message(user_text: Optional[str]):
+    user_message = UserMessage(text=user_text)
+    domain = Domain.from_yaml(
+        """
+            slots:
+              merchant:
+                type: text
+            """
+    )
+    reader = rasa.shared.data.create_regex_pattern_reader(user_message, domain)
+    assert reader is None

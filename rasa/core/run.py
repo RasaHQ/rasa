@@ -15,6 +15,8 @@ from typing import (
     Dict,
 )
 
+from sanic.worker.loader import AppLoader
+
 import rasa.core.utils
 from rasa.plugin import plugin_manager
 from rasa.shared.exceptions import RasaException
@@ -126,19 +128,24 @@ def configure_app(
     )
 
     if enable_api:
-        app = server.create_app(
-            cors_origins=cors,
-            auth_token=auth_token,
-            response_timeout=response_timeout,
-            jwt_secret=jwt_secret,
-            jwt_private_key=jwt_private_key,
-            jwt_method=jwt_method,
-            endpoints=endpoints,
+        loader = AppLoader(
+            factory=partial(
+                server.create_app,
+                cors_origins=cors,
+                auth_token=auth_token,
+                response_timeout=response_timeout,
+                jwt_secret=jwt_secret,
+                jwt_private_key=jwt_private_key,
+                jwt_method=jwt_method,
+                endpoints=endpoints,
+            )
         )
     else:
-        app = _create_app_without_api(cors)
+        loader = AppLoader(factory=partial(_create_app_without_api, cors))
 
+    app = loader.load()
     app.config.KEEP_ALIVE_TIMEOUT = keep_alive_timeout
+
     if _is_apple_silicon_system() or not use_uvloop:
         app.config.USE_UVLOOP = False
         # some library still sets the loop to uvloop, even if disabled for sanic
@@ -154,18 +161,16 @@ def configure_app(
     if logger.isEnabledFor(logging.DEBUG):
         rasa.core.utils.list_routes(app)
 
-    async def configure_async_logging() -> None:
+    @app.main_process_start
+    async def configure_async_logging(running_app: Sanic) -> None:
         if logger.isEnabledFor(logging.DEBUG):
             rasa.utils.io.enable_async_loop_debugging(asyncio.get_event_loop())
 
-    app.add_task(configure_async_logging)
-
     if "cmdline" in {c.name() for c in input_channels}:
 
+        @app.after_server_start
         async def run_cmdline_io(running_app: Sanic) -> None:
             """Small wrapper to shut down the server once cmd io is done."""
-            await asyncio.sleep(1)  # allow server to start
-
             await console.record_messages(
                 server_url=constants.DEFAULT_SERVER_FORMAT.format("http", port),
                 sender_id=conversation_id,
@@ -174,9 +179,10 @@ def configure_app(
 
             logger.info("Killing Sanic server now.")
             running_app.stop()  # kill the sanic server
-            plugin_manager().hook.after_server_stop()
 
-        app.add_task(run_cmdline_io)
+    @app.after_server_stop
+    async def after_server_stop(running_app: Sanic) -> None:
+        plugin_manager().hook.after_server_stop()
 
     if server_listeners:
         for listener, event in server_listeners:
@@ -272,6 +278,7 @@ def serve_application(
         ssl=ssl_context,
         backlog=int(os.environ.get(ENV_SANIC_BACKLOG, "100")),
         workers=number_of_workers,
+        legacy=True,
     )
 
 

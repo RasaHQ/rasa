@@ -79,12 +79,13 @@ services:
       <<: *license
 
   action-server-jaeger:
-    image: action_server:latest
+    image: ${SDK_TARGET_IMAGE_REGISTRY}:latest
     volumes:
       - "./endpoints-jaeger-for-action-server.yml:/app/endpoints.yml"
+      - "./simple_bot/actions:/app/actions"
     networks: [ 'rasa-pro-network' ]
     entrypoint: ""
-    command: python -m action_server -p 5056
+    command: python -m rasa_sdk --actions actions -p 5056
     ports:
       - "5056:5056"
     environment:
@@ -92,13 +93,14 @@ services:
 
 
   action-server-otlp:
-    image: action_server:latest
+    image: ${SDK_TARGET_IMAGE_REGISTRY}:latest
     volumes:
       - "./endpoints-otlp-for-action-server.yml:/app/endpoints.yml"
       - "./certs/ca.pem:/certs/ca.pem"
+      - "./simple_bot/actions:/app/actions"
     networks: [ 'rasa-pro-network' ]
     entrypoint: ""
-    command: python -m action_server -p 5057
+    command: python -m rasa_sdk --actions actions -p 5057
     ports:
       - "5057:5057"
     environment:

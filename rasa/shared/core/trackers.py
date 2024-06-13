@@ -444,6 +444,12 @@ class DialogueStateTracker:
         return self._underlying_stack.copy()
 
     @property
+    def active_flow(self) -> Optional[Text]:
+        """Returns the name of the active flow."""
+        current_context = self.stack.current_context()
+        return current_context.get("flow_id")
+
+    @property
     def has_coexistence_routing_slot(self) -> bool:
         """Returns whether the coexistence routing slot is present."""
         if self.slots:
@@ -1049,6 +1055,13 @@ class DialogueStateTracker:
         context = self.stack.current_context()
         slots = self.slots
         return flows.get_startable_flows(context, slots)
+
+    @property
+    def has_active_flow(self) -> bool:
+        from rasa.dialogue_understanding.stack.utils import top_flow_frame
+
+        top_relevant_frame = top_flow_frame(self.stack)
+        return bool(top_relevant_frame and top_relevant_frame.flow_id)
 
     def get_active_flows(self, flows: FlowsList) -> FlowsList:
         """

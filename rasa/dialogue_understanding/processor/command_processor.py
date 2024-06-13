@@ -354,6 +354,19 @@ def clean_up_commands(
                 ".skip_command_flow_already_cancelled",
                 command=command,
             )
+
+        # if there is a cannot handle command after the previous step,
+        # we don't want to add another one
+        elif isinstance(command, CannotHandleCommand) and contains_command(
+            clean_commands, CannotHandleCommand
+        ):
+            structlogger.debug(
+                "command_processor"
+                ".clean_up_commands"
+                ".skip_command_already_has_cannot_handle",
+                command=command,
+            )
+
         elif isinstance(command, StartFlowCommand) and command.flow == active_flow:
             # drop a start flow command if the starting flow is equal to the currently
             # active flow
