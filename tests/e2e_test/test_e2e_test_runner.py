@@ -1636,6 +1636,7 @@ def test_bot_event_text_message_formatting() -> None:
             "incorrect_metadata_name",
             None,
         ),
+        ("", None),
     ],
 )
 def test_filter_metadata_for_input(

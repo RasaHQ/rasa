@@ -129,7 +129,7 @@ class E2ETestRunner:
 
             metadata = test_case_metadata.metadata if test_case_metadata else {}
 
-            if input_metadata and step.metadata_name:
+            if input_metadata:
                 step_metadata = self.filter_metadata_for_input(
                     step.metadata_name, input_metadata
                 )
@@ -625,7 +625,7 @@ class E2ETestRunner:
 
     @staticmethod
     def filter_metadata_for_input(
-        metadata_name: Text, test_suite_metadata: List[Metadata]
+        metadata_name: Optional[Text], test_suite_metadata: List[Metadata]
     ) -> Optional[Metadata]:
         """Filters the test suite metadata for a metadata name.
 
@@ -636,6 +636,9 @@ class E2ETestRunner:
         Returns:
             The filtered metadata.
         """
+        if not metadata_name:
+            return None
+
         filtered_metadata = list(
             filter(
                 lambda metadata: metadata_name and metadata.name == metadata_name,
@@ -688,7 +691,7 @@ class E2ETestRunner:
                 await self.set_up_fixtures(test_fixtures, sender_id)
 
             test_case_metadata = None
-            if input_metadata and test_case.metadata_name:
+            if input_metadata:
                 test_case_metadata = self.filter_metadata_for_input(
                     test_case.metadata_name, input_metadata
                 )
