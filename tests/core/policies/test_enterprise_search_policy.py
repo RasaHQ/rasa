@@ -19,9 +19,9 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, UserUttered, BotUttered
-from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 
-from rasa.core.information_retrieval.information_retrieval import (
+from rasa.core.information_retrieval import (
     InformationRetrieval,
     InformationRetrievalException,
 )
@@ -960,3 +960,32 @@ You can find directions to campus by following PA Route {number} West, turning l
 Sources:
 [1] docs/txt/52a4386a.txt""".strip()  # noqa: E501
     )
+
+
+async def test_enterprise_search_policy_tracker_state_is_passed(
+    mocked_enterprise_search_policy: EnterpriseSearchPolicy,
+    enterprise_search_tracker: DialogueStateTracker,
+) -> None:
+    tracker = enterprise_search_tracker
+
+    with patch("rasa.shared.utils.llm.llm_factory") as mock_llm_factory:
+        mock_llm = MagicMock()
+        mock_llm_factory.return_value = mock_llm.return_value
+
+        # assert self.vector_store.search was called with tracker_state
+        with patch.object(
+            mocked_enterprise_search_policy.vector_store,
+            "search",
+            return_value=[],
+        ) as mock_search:
+            await mocked_enterprise_search_policy.predict_action_probabilities(
+                tracker=tracker,
+                domain=Domain.empty(),
+                endpoints=None,
+            )
+
+            mock_search.assert_called_once_with(
+                query="what is the meaning of life?",
+                tracker_state=tracker.current_state(EventVerbosity.AFTER_RESTART),
+                threshold=0.0,
+            )

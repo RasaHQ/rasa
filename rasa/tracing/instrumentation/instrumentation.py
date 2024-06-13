@@ -26,7 +26,7 @@ from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapProp
 from rasa.core.actions.action import Action, RemoteAction
 from rasa.core.agent import Agent
 from rasa.core.channels import OutputChannel
-from rasa.core.information_retrieval.information_retrieval import InformationRetrieval
+from rasa.core.information_retrieval import InformationRetrieval
 from rasa.core.lock_store import LockStore
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.flows.flow_step_result import FlowActionPrediction

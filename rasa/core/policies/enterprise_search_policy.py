@@ -46,7 +46,7 @@ from rasa.shared.core.constants import (
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import Event
 from rasa.shared.core.generator import TrackerWithCachedStates
-from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.utils.cli import print_error_and_exit
 from rasa.shared.utils.io import deep_container_fingerprint
@@ -61,7 +61,7 @@ from rasa.shared.utils.llm import (
 )
 
 from rasa.core.information_retrieval.faiss import FAISS_Store
-from rasa.core.information_retrieval.information_retrieval import (
+from rasa.core.information_retrieval import (
     InformationRetrieval,
     InformationRetrievalException,
     create_from_endpoint_config,
@@ -399,10 +399,12 @@ class EnterpriseSearchPolicy(Policy):
             return self._create_prediction_internal_error(domain, tracker)
 
         search_query = self._get_last_user_message(tracker)
+        tracker_state = tracker.current_state(EventVerbosity.AFTER_RESTART)
 
         try:
             documents = await self.vector_store.search(
                 query=search_query,
+                tracker_state=tracker_state,
                 threshold=vector_search_threshold,
             )
         except InformationRetrievalException as e:

@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, List, Text
+from typing import Text, Any
 
 import structlog
 from langchain.vectorstores.qdrant import Qdrant
@@ -6,14 +6,11 @@ from pydantic import ValidationError
 from qdrant_client import QdrantClient
 from rasa.utils.endpoints import EndpointConfig
 
-from rasa.core.information_retrieval.information_retrieval import (
+from rasa.core.information_retrieval import (
+    SearchResultList,
     InformationRetrieval,
     InformationRetrievalException,
 )
-
-if TYPE_CHECKING:
-    from langchain.schema import Document
-    from langchain.schema.embeddings import Embeddings
 
 logger = structlog.get_logger()
 
@@ -41,12 +38,6 @@ class QdrantInformationRetrievalException(InformationRetrievalException):
 
 
 class Qdrant_Store(InformationRetrieval):
-    def __init__(
-        self,
-        embeddings: "Embeddings",
-    ) -> None:
-        self.embeddings = embeddings
-
     def connect(
         self,
         config: EndpointConfig,
@@ -73,7 +64,9 @@ class Qdrant_Store(InformationRetrieval):
             metadata_payload_key=params.get("metadata_payload_key", "metadata"),
         )
 
-    async def search(self, query: Text, threshold: float = 0.0) -> List["Document"]:
+    async def search(
+        self, query: Text, tracker_state: dict[str, Any], threshold: float = 0.0
+    ) -> SearchResultList:
         """Search for a document in the Qdrant vector store.
 
         Args:
@@ -83,7 +76,7 @@ class Qdrant_Store(InformationRetrieval):
         Returns:
         A list of documents that match the query.
         """
-        logger.info("information_retrieval.qdrant_store.search", query=query)
+        logger.debug("information_retrieval.qdrant_store.search", query=query)
         try:
             hits = await self.client.asimilarity_search(
                 query, k=4, score_threshold=threshold
@@ -99,4 +92,4 @@ class Qdrant_Store(InformationRetrieval):
             raise QdrantInformationRetrievalException(
                 f"Failed to search the Qdrant vector store. Encountered error: {e}"
             ) from e
-        return hits
+        return SearchResultList.from_document_list(hits)
