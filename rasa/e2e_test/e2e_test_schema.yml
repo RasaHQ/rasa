@@ -41,6 +41,7 @@ mapping:
                 pattern: ^[a-zA-Z_]+[a-zA-Z0-9_]*$
           metadata:
             type: "str"
+            pattern: ^[a-zA-Z_]+[a-zA-Z0-9_]*$
           steps:
             type: "seq"
             matching: "any"
@@ -51,6 +52,7 @@ mapping:
                     type: str
                   metadata:
                     type: "str"
+                    pattern: ^[a-zA-Z_]+[a-zA-Z0-9_]*$
               - type: map
                 mapping:
                   utter:

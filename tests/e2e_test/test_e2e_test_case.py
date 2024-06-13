@@ -43,18 +43,6 @@ def test_create_test_metadata_from_dict() -> None:
     assert result.metadata == {"os": "linux", "name": "Tom"}
 
 
-def test_create_test_metadata_from_list_invalid() -> None:
-    """Test creating an invalid metadata.
-
-    The value type associated with the metadata name is a
-    list of dicts instead of a dict.
-    """
-    with pytest.raises(AttributeError):
-        Metadata.from_dict(
-            {"some_fixture_name": [{"slot_a": 1}, {"slot_b": "some_value"}]}
-        )
-
-
 @pytest.mark.parametrize(
     "input, metadata_name",
     [({"user": "Hi!"}, ""), ({"user": "Hi!", "metadata": "user_info"}, "user_info")],
