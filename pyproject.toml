@@ -131,7 +131,7 @@ SQLAlchemy = ">=2.0.22,<2.1.0"
 sklearn-crfsuite = "~0.3.6"
 psycopg2-binary = ">=2.9.9,<2.10.0"
 python-dateutil = "~2.8.2"
-protobuf = ">=4.23.3,< 4.23.4"
+protobuf = ">=4.23.3,< 4.25.4"
 tensorflow_hub = "^0.13.0"
 setuptools = ">=69.5.1"
 ujson = ">=5.8,<6.0"
@@ -265,8 +265,10 @@ timeout_func_only = true
 asyncio_mode = "auto"
 
 [tool.poetry.dependencies.rasa-sdk]
-version = "3.9.0.dev2"
-allow-prereleases = true
+#version = "3.9.0.dev2"
+#allow-prereleases = true
+path = "../rasa-sdk"
+develop = true
 
 [tool.poetry.dependencies.tensorflow]
 version = "2.12.0"
