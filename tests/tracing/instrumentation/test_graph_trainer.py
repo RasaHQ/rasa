@@ -39,8 +39,6 @@ async def test_tracing_for_training_without_finetuning(
         tracer_provider,
         graph_trainer_class=MockGraphTrainer,
     )
-    read_yaml_file.cache_clear()
-
     expected_training_type = training_type.model_type
     expected_language = "en"
     expected_recipe_name = "graph.v1"
@@ -96,8 +94,6 @@ async def test_tracing_for_training_with_finetuning(
     training_type: TrainingType,
     previous_num_captured_spans: int,
 ) -> None:
-    read_yaml_file.cache_clear()
-
     instrumentation.instrument(
         tracer_provider,
         graph_trainer_class=MockGraphTrainer,

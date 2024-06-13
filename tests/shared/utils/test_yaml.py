@@ -864,8 +864,6 @@ def test_flow_next_is_not_a_step():
 
 
 def test_yaml_file_is_cached():
-    read_yaml_file.cache_clear()
-
     def check_cache_after_read(file_path, hits, misses, currsize):
         read_yaml_file(file_path)
         cache_info = read_yaml_file.cache_info()

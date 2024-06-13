@@ -337,8 +337,6 @@ class TestE2e:
         tmp_path: Path,
         trained_e2e_model_cache: Path,
     ):
-        read_yaml_file.cache_clear()
-
         stories_yaml = read_yaml_file(e2e_stories_path)
         stories_yaml["stories"][1]["steps"].append({"user": "Yes"})
 
