@@ -17,7 +17,6 @@ from rasa.core.actions.action import (
     ActionDefaultAskAffirmation,
     ActionDefaultAskRephrase,
     ActionDefaultFallback,
-    ActionExecutionRejection,
     ActionRestart,
     ActionBotResponse,
     ActionRetrieveResponse,
@@ -29,6 +28,7 @@ from rasa.core.actions.action import (
     default_actions,
     ActionResetRouting,
 )
+from rasa.core.actions.action_exceptions import ActionExecutionRejection
 from rasa.core.actions.forms import FormAction
 from rasa.core.channels import CollectingOutputChannel, OutputChannel
 from rasa.core.channels.slack import SlackBot

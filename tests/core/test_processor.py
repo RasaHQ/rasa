@@ -26,10 +26,10 @@ from rasa.core import jobs
 from rasa.core.actions.action import (
     ActionBotResponse,
     ActionListen,
-    ActionExecutionRejection,
     ActionSendText,
     ActionUnlikelyIntent,
 )
+from rasa.core.actions.action_exceptions import ActionExecutionRejection
 from rasa.core.agent import Agent, load_agent
 from rasa.core.channels.channel import (
     CollectingOutputChannel,

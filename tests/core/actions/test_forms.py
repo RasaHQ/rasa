@@ -11,7 +11,8 @@ from aioresponses import aioresponses
 from rasa.core.agent import Agent
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.actions import action
-from rasa.core.actions.action import ActionExecutionRejection, ActionExtractSlots
+from rasa.core.actions.action import ActionExtractSlots
+from rasa.core.actions.action_exceptions import ActionExecutionRejection
 from rasa.shared.constants import (
     LATEST_TRAINING_DATA_FORMAT_VERSION,
     REQUIRED_SLOTS_KEY,

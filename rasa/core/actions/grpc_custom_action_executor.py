@@ -41,12 +41,13 @@ class GRPCCustomActionExecutor(CustomActionExecutor):
         self,
         json_body: Dict[Text, Any],
     ) -> Dict[Text, Any]:
-        channel = self._create_channel(
+        client = self._create_grpc_client(
             self.action_endpoint.url, self.action_endpoint.cafile
         )
-        client = action_webhook_pb2_grpc.ActionServerWebhookStub(channel)
         request_proto = action_webhook_pb2.WebhookRequest()
-        request = ParseDict(json_body, request_proto)
+        request = ParseDict(
+            js_dict=json_body, message=request_proto, ignore_unknown_fields=True
+        )
         try:
             response = client.webhook(request)
             return MessageToDict(response)
@@ -54,6 +55,13 @@ class GRPCCustomActionExecutor(CustomActionExecutor):
             status_code = e.code()
             details = e.details()
             raise ClientResponseError(status=status_code, message=details, text="")
+
+    @staticmethod
+    def _create_grpc_client(
+        url: Text, cert_file: Optional[Text] = None
+    ) -> action_webhook_pb2_grpc.ActionServerWebhookStub:
+        channel = GRPCCustomActionExecutor._create_channel(url, cert_file)
+        return action_webhook_pb2_grpc.ActionServerWebhookStub(channel)
 
     @staticmethod
     def _create_channel(
@@ -74,4 +82,4 @@ class GRPCCustomActionExecutor(CustomActionExecutor):
                 ) from e
 
         else:
-            return grpc.insecure_channel(url)
+            return grpc.insecure_channel(url.lstrip("grpc://"))

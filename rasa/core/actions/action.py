@@ -12,10 +12,10 @@ from typing import (
     cast,
 )
 
-
 import rasa.core
 import rasa.shared.utils.io
 from rasa.core.actions.custom_action_executor import CustomActionExecutor
+from rasa.core.actions.grpc_custom_action_executor import GRPCCustomActionExecutor
 from rasa.core.actions.http_custom_action_executor import HTTPCustomActionExecutor
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.nlu.constants import (
@@ -78,6 +78,7 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.utils.schemas.events import EVENTS_SCHEMA
 from rasa.utils.endpoints import EndpointConfig, ClientResponseError
+from rasa.utils.url_tools import get_url_schema, UrlSchema
 
 if TYPE_CHECKING:
     from rasa.core.nlg import NaturalLanguageGenerator
@@ -709,7 +710,17 @@ class RemoteAction(Action):
         Raises:
             RasaException: If no valid action endpoint is configured.
         """
-        return HTTPCustomActionExecutor(self.name(), self.action_endpoint)
+
+        url_schema = get_url_schema(self.action_endpoint.url)
+
+        if url_schema == UrlSchema.GRPC:
+            return GRPCCustomActionExecutor(self.name(), self.action_endpoint)
+        elif (
+            url_schema == UrlSchema.HTTP
+            or url_schema == UrlSchema.HTTPS
+            or url_schema == UrlSchema.NOT_SPECIFIED
+        ):
+            return HTTPCustomActionExecutor(self.name(), self.action_endpoint)
 
     @staticmethod
     def action_response_format_spec() -> Dict[Text, Any]:
@@ -809,21 +820,6 @@ class RemoteAction(Action):
 
     def name(self) -> Text:
         return self._name
-
-
-class ActionExecutionRejection(RasaException):
-    """Raising this exception allows other policies to predict a different action."""
-
-    def __init__(self, action_name: Text, message: Optional[Text] = None) -> None:
-        """Create a new ActionExecutionRejection exception."""
-        self.action_name = action_name
-        self.message = message or "Custom action '{}' rejected to run".format(
-            action_name
-        )
-        super(ActionExecutionRejection, self).__init__()
-
-    def __str__(self) -> Text:
-        return self.message
 
 
 class ActionRevertFallbackEvents(Action):

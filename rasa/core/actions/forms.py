@@ -11,7 +11,8 @@ from rasa.core.channels import OutputChannel
 from rasa.shared.core.domain import Domain, KEY_SLOTS
 from rasa.shared.core.constants import SlotMappingType, SLOT_MAPPINGS, MAPPING_TYPE
 
-from rasa.core.actions.action import ActionExecutionRejection, RemoteAction
+from rasa.core.actions.action import RemoteAction
+from rasa.core.actions.action_exceptions import ActionExecutionRejection
 from rasa.shared.core.constants import (
     ACTION_EXTRACT_SLOTS,
     ACTION_LISTEN_NAME,

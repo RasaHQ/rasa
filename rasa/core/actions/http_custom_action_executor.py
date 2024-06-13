@@ -4,7 +4,7 @@ from typing import Dict, Any, Text, TYPE_CHECKING
 
 import aiohttp
 
-from rasa.core.actions.action import ActionExecutionRejection
+from rasa.core.actions.action_exceptions import ActionExecutionRejection
 from rasa.core.actions.custom_action_executor import CustomActionExecutor
 from rasa.core.constants import (
     DEFAULT_REQUEST_TIMEOUT,
