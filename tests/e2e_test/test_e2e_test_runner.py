@@ -1695,13 +1695,12 @@ def test_merge_metadata(
 def test_merge_metadata_warning(
     caplog: LogCaptureFixture,
 ) -> None:
-    keys_to_overwrite = ["os"]
     with caplog.at_level(logging.WARNING):
         E2ETestRunner.merge_metadata(
             "Test_case_name_123",
-            "step_text",
+            "Hi!",
             {"os": "linux"},
             {"name": "Tom", "os": "windows"},
         )
-    assert f"Metadata {keys_to_overwrite} exist in both the test case " in caplog.text
-    assert "'Test_case_name' and the user step 'step_text'. "
+    assert f"Metadata {['os']} exist in both the test case " in caplog.text
+    assert "'Test_case_name' and the user step 'Hi!'. " in caplog.text

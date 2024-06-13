@@ -193,7 +193,7 @@ class E2ETestRunner:
                 keys_to_overwrite.append(key)
 
         if keys_to_overwrite:
-            test_case_name = sender_id.rsplit("_")[0]
+            test_case_name = sender_id.rsplit("_", 1)[0]
             logger.warning(
                 f"Metadata {keys_to_overwrite} exist in both the test case "
                 f"'{test_case_name}' and the user step '{step_text}'. "
