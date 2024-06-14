@@ -187,6 +187,7 @@ def configure_logging_and_warnings(
     logging_config_file: Optional[Text] = None,
     warn_only_once: bool = True,
     filter_repeated_logs: bool = True,
+    should_filter_warnings: bool = True,
 ) -> None:
     """Sets log levels of various loggers and sets up filters for warnings and logs.
 
@@ -200,6 +201,7 @@ def configure_logging_and_warnings(
             `warnings` module to appear only "once"
         filter_repeated_logs: determines whether `RepeatedLogFilter`s are added to
             the handlers of the root logger
+        should_filter_warnings: determines whether expected warnings should be filtered
     """
     if logging_config_file is not None:
         configure_logging_from_file(logging_config_file)
@@ -220,10 +222,11 @@ def configure_logging_and_warnings(
         for handler in logging.getLogger().handlers:
             handler.addFilter(RepeatedLogFilter())
 
-    _filter_warnings(log_level=log_level, warn_only_once=warn_only_once)
+    if should_filter_warnings:
+        filter_warnings(log_level=log_level, warn_only_once=warn_only_once)
 
 
-def _filter_warnings(log_level: Optional[int], warn_only_once: bool = True) -> None:
+def filter_warnings(log_level: Optional[int], warn_only_once: bool = True) -> None:
     """Sets up filters for warnings.
 
     Args:
@@ -234,11 +237,13 @@ def _filter_warnings(log_level: Optional[int], warn_only_once: bool = True) -> N
     """
     if warn_only_once:
         warnings.filterwarnings("once", category=UserWarning)
-    if log_level and log_level > logging.DEBUG:
-        for warning_type, warning_message in EXPECTED_WARNINGS:
-            warnings.filterwarnings(
-                "ignore", message=f".*{warning_message}", category=warning_type
-            )
+    if log_level and log_level <= logging.DEBUG:
+        return None
+
+    for warning_type, warning_message in EXPECTED_WARNINGS:
+        warnings.filterwarnings(
+            "ignore", message=f".*{warning_message}", category=warning_type
+        )
 
 
 def configure_library_logging() -> None:

@@ -3,29 +3,33 @@ import logging
 import os
 import platform
 import sys
+import warnings
 
 from rasa_sdk import __version__ as rasa_sdk_version
-from rasa.constants import MINIMUM_COMPATIBLE_VERSION
-from rasa.utils.log_utils import configure_structlog
 
 import rasa.telemetry
 import rasa.utils.io
 import rasa.utils.tensorflow.environment as tf_env
 from rasa import version
-from rasa.cli import (
-    data,
-    export,
-    interactive,
-    run,
-    scaffold,
-    shell,
-    telemetry,
-    test,
-    train,
-    visualize,
-    x,
-    evaluate,
-)
+from rasa.constants import MINIMUM_COMPATIBLE_VERSION
+from rasa.utils.log_utils import configure_structlog
+
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+    from rasa.cli import (
+        data,
+        export,
+        interactive,
+        run,
+        scaffold,
+        shell,
+        telemetry,
+        test,
+        train,
+        visualize,
+        x,
+        evaluate,
+    )
 from rasa.cli.arguments.default_arguments import add_logging_options
 from rasa.cli.utils import (
     parse_last_positional_argument_as_model_path,
@@ -34,7 +38,7 @@ from rasa.cli.utils import (
 from rasa.plugin import plugin_manager
 from rasa.shared.exceptions import RasaException
 from rasa.shared.utils.cli import print_error
-from rasa.utils.common import configure_logging_and_warnings
+from rasa.utils.common import configure_logging_and_warnings, filter_warnings
 
 logger = logging.getLogger(__name__)
 
@@ -94,6 +98,8 @@ def print_version() -> None:
 
 def main() -> None:
     """Run as standalone python application."""
+    filter_warnings(log_level=None)
+
     warn_if_rasa_plus_package_installed()
     parse_last_positional_argument_as_model_path()
     arg_parser = create_argument_parser()
@@ -102,7 +108,11 @@ def main() -> None:
     log_level = getattr(cmdline_arguments, "loglevel", None)
     logging_config_file = getattr(cmdline_arguments, "logging_config_file", None)
     configure_logging_and_warnings(
-        log_level, logging_config_file, warn_only_once=True, filter_repeated_logs=True
+        log_level,
+        logging_config_file,
+        warn_only_once=True,
+        filter_repeated_logs=True,
+        should_filter_warnings=False,
     )
 
     tf_env.setup_tf_environment()
