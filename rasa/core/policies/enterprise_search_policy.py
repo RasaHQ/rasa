@@ -7,7 +7,7 @@ import dotenv
 import rasa.shared.utils.io
 import structlog
 from jinja2 import Template
-from pydantic.error_wrappers import ValidationError
+from pydantic import ValidationError
 from rasa.telemetry import (
     track_enterprise_search_policy_predict,
     track_enterprise_search_policy_train_completed,
@@ -63,12 +63,12 @@ from rasa.shared.utils.llm import (
 from rasa.core.information_retrieval.faiss import FAISS_Store
 from rasa.core.information_retrieval import (
     InformationRetrieval,
+    SearchResult,
     InformationRetrievalException,
     create_from_endpoint_config,
 )
 
 if TYPE_CHECKING:
-    from langchain.schema import Document
     from langchain.schema.embeddings import Embeddings
     from langchain.llms.base import BaseLLM
     from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
@@ -83,6 +83,9 @@ SOURCE_PROPERTY = "source"
 VECTOR_STORE_TYPE_PROPERTY = "type"
 VECTOR_STORE_PROPERTY = "vector_store"
 VECTOR_STORE_THRESHOLD_PROPERTY = "threshold"
+TRACE_TOKENS_PROPERTY = "trace_prompt_tokens"
+CITATION_ENABLED_PROPERTY = "citation_enabled"
+USE_LLM_PROPERTY = "use_generative_llm"
 
 DEFAULT_VECTOR_STORE_TYPE = "faiss"
 DEFAULT_VECTOR_STORE_THRESHOLD = 0.0
@@ -189,8 +192,9 @@ class EnterpriseSearchPolicy(Policy):
             self.config.get("prompt"),
             DEFAULT_ENTERPRISE_SEARCH_PROMPT_TEMPLATE,
         )
-        self.trace_prompt_tokens = self.config.get("trace_prompt_tokens", False)
-        self.citation_enabled = self.config.get("citation_enabled", False)
+        self.trace_prompt_tokens = self.config.get(TRACE_TOKENS_PROPERTY, False)
+        self.use_llm = self.config.get(USE_LLM_PROPERTY, True)
+        self.citation_enabled = self.config.get(CITATION_ENABLED_PROPERTY, False)
         self.citation_prompt_template = get_prompt_template(
             self.config.get("prompt"),
             DEFAULT_ENTERPRISE_SEARCH_PROMPT_WITH_CITATION_TEMPLATE,
@@ -415,19 +419,33 @@ class EnterpriseSearchPolicy(Policy):
             logger.info(f"{logger_key}.no_documents")
             return self._create_prediction_cannot_handle(domain, tracker)
 
-        logger.debug(f"{logger_key}.documents", num_documents=len(documents))
-        prompt = self._render_prompt(tracker, documents)
-        llm_answer = await self._generate_llm_answer(llm, prompt)
-        if llm_answer is None:
+        if self.use_llm:
+            prompt = self._render_prompt(tracker, documents.results)
+            llm_answer = await self._generate_llm_answer(llm, prompt)
+
+            if self.citation_enabled:
+                llm_answer = self.post_process_citations(llm_answer)
+
+            logger.debug(f"{logger_key}.llm_answer", llm_answer=llm_answer)
+            response = llm_answer
+        else:
+            response = documents.results[0].metadata.get("answer", None)
+            if not response:
+                logger.error(
+                    f"{logger_key}.answer_key_missing_in_metadata",
+                    search_results=documents.results,
+                )
+            logger.debug(
+                "enterprise_search_policy.predict_action_probabilities.no_llm",
+                search_results=documents,
+            )
+
+        if response is None:
             return self._create_prediction_internal_error(domain, tracker)
 
-        if self.citation_enabled:
-            llm_answer = self.post_process_citations(llm_answer)
-
-        logger.debug(f"{logger_key}.llm_answer", llm_answer=llm_answer)
         action_metadata = {
             "message": {
-                "text": llm_answer,
+                "text": response,
             }
         }
 
@@ -446,13 +464,13 @@ class EnterpriseSearchPolicy(Policy):
         )
 
     def _render_prompt(
-        self, tracker: DialogueStateTracker, documents: List["Document"]
+        self, tracker: DialogueStateTracker, documents: List[SearchResult]
     ) -> Text:
         """Renders the prompt from the template.
 
         Args:
             tracker: The tracker containing the conversation history up to now.
-            documents: The documents retrieved from the vector store.
+            documents: The documents retrieved from search
 
         Returns:
             The rendered prompt.
