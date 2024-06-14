@@ -3,18 +3,26 @@ from os.path import abspath
 from typing import Dict, Text, Any, Optional, TYPE_CHECKING
 
 import grpc
+import structlog
 from google.protobuf.json_format import ParseDict, MessageToDict
 
 from rasa.core.actions.custom_action_executor import CustomActionExecutor
 from rasa.shared.exceptions import FileNotFoundException
 from rasa.utils.endpoints import EndpointConfig, ClientResponseError
+from rasa_sdk.grpc_exceptions import ResourceNotFound, ResourceNotFoundType
 from rasa_sdk.grpc_py import action_webhook_pb2_grpc, action_webhook_pb2
 
 if TYPE_CHECKING:
     from rasa.shared.core.trackers import DialogueStateTracker
     from rasa.shared.core.domain import Domain
 
-logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger(__name__)
+
+
+class DomainNotFound(Exception):
+    """Exception raised when domain is not found."""
+
+    pass
 
 
 class GRPCCustomActionExecutor(CustomActionExecutor):
@@ -31,13 +39,24 @@ class GRPCCustomActionExecutor(CustomActionExecutor):
     ) -> Dict[Text, Any]:
         """Execute the custom action using a gRPC request."""
 
+        return self._request(tracker, domain)
+
+    def _request(
+        self, tracker: "DialogueStateTracker", domain: "Domain"
+    ) -> Dict[Text, Any]:
         json_body = self._action_call_format(
             tracker=tracker, domain=domain, should_include_domain=False
         )
 
-        return self._request(json_body)
+        try:
+            return self._perform_one_request(json_body)
+        except DomainNotFound as e:
+            json_body = self._action_call_format(
+                tracker=tracker, domain=domain, should_include_domain=True
+            )
+            return self._perform_one_request(json_body)
 
-    def _request(
+    def _perform_one_request(
         self,
         json_body: Dict[Text, Any],
     ) -> Dict[Text, Any]:
@@ -54,6 +73,26 @@ class GRPCCustomActionExecutor(CustomActionExecutor):
         except grpc.RpcError as e:
             status_code = e.code()
             details = e.details()
+            if status_code == grpc.StatusCode.NOT_FOUND:
+                not_found_error = ResourceNotFound.model_validate_json(details)
+                if not_found_error:
+                    if not_found_error.resource_type == ResourceNotFoundType.DOMAIN:
+                        structlogger.error(
+                            "rasa.core.actions.grpc_custom_action_executor.domain_not_found",
+                            event_info=(
+                                f"Failed to execute custom action '{self._name}'. "
+                                f"Could not find domain. {not_found_error.message}"
+                            ),
+                        )
+                        raise DomainNotFound()
+                    elif not_found_error.resource_type == ResourceNotFoundType.ACTION:
+                        structlogger.error(
+                            "rasa.core.actions.grpc_custom_action_executor.action_not_found",
+                            event_info=(
+                                f"Failed to execute custom action '{self._name}'. "
+                                f"Could not find action. {not_found_error.message}"
+                            ),
+                        )
             raise ClientResponseError(status=status_code, message=details, text="")
 
     @staticmethod
