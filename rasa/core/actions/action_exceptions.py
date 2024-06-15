@@ -16,3 +16,9 @@ class ActionExecutionRejection(RasaException):
 
     def __str__(self) -> str:
         return self.message
+
+
+class DomainNotFound(Exception):
+    """Exception raised when domain is not found."""
+
+    pass

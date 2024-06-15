@@ -6,10 +6,14 @@ import grpc
 import structlog
 from google.protobuf.json_format import ParseDict, MessageToDict
 
-from rasa.core.actions.custom_action_executor import CustomActionExecutor
+from rasa.core.actions.action_exceptions import DomainNotFound
+from rasa.core.actions.custom_action_executor import (
+    CustomActionExecutor,
+    CustomActionRequestWriter,
+)
 from rasa.shared.exceptions import FileNotFoundException
 from rasa.utils.endpoints import EndpointConfig, ClientResponseError
-from rasa_sdk.grpc_exceptions import ResourceNotFound, ResourceNotFoundType
+from rasa_sdk.grpc_errors import ResourceNotFound, ResourceNotFoundType
 from rasa_sdk.grpc_py import action_webhook_pb2_grpc, action_webhook_pb2
 
 if TYPE_CHECKING:
@@ -19,42 +23,25 @@ if TYPE_CHECKING:
 structlogger = structlog.get_logger(__name__)
 
 
-class DomainNotFound(Exception):
-    """Exception raised when domain is not found."""
-
-    pass
-
-
 class GRPCCustomActionExecutor(CustomActionExecutor):
     """gRPC-based implementation of the CustomActionExecutor.
 
     Executes custom actions by making gRPC requests to the action endpoint.
     """
 
-    def __init__(self, name: str, action_endpoint: EndpointConfig) -> None:
-        super().__init__(name, action_endpoint)
+    def __init__(self, action_name: str, action_endpoint: EndpointConfig) -> None:
+        self.action_name = action_name
+        self.action_endpoint = action_endpoint
+        self.request_writer = CustomActionRequestWriter(action_name, action_endpoint)
 
     async def run(
-        self, tracker: "DialogueStateTracker", domain: "Domain"
+        self, tracker: "DialogueStateTracker", domain: Optional["Domain"] = None
     ) -> Dict[Text, Any]:
         """Execute the custom action using a gRPC request."""
 
-        return self._request(tracker, domain)
+        json_body = self.request_writer.create(tracker=tracker, domain=domain)
 
-    def _request(
-        self, tracker: "DialogueStateTracker", domain: "Domain"
-    ) -> Dict[Text, Any]:
-        json_body = self._action_call_format(
-            tracker=tracker, domain=domain, should_include_domain=False
-        )
-
-        try:
-            return self._perform_one_request(json_body)
-        except DomainNotFound as e:
-            json_body = self._action_call_format(
-                tracker=tracker, domain=domain, should_include_domain=True
-            )
-            return self._perform_one_request(json_body)
+        return self._perform_one_request(json_body)
 
     def _perform_one_request(
         self,
@@ -80,7 +67,7 @@ class GRPCCustomActionExecutor(CustomActionExecutor):
                         structlogger.error(
                             "rasa.core.actions.grpc_custom_action_executor.domain_not_found",
                             event_info=(
-                                f"Failed to execute custom action '{self._name}'. "
+                                f"Failed to execute custom action '{self.action_endpoint}'. "
                                 f"Could not find domain. {not_found_error.message}"
                             ),
                         )
@@ -89,7 +76,7 @@ class GRPCCustomActionExecutor(CustomActionExecutor):
                         structlogger.error(
                             "rasa.core.actions.grpc_custom_action_executor.action_not_found",
                             event_info=(
-                                f"Failed to execute custom action '{self._name}'. "
+                                f"Failed to execute custom action '{self.action_name}'. "
                                 f"Could not find action. {not_found_error.message}"
                             ),
                         )

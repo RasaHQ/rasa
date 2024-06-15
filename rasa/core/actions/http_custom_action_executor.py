@@ -1,11 +1,14 @@
 import json
 import logging
-from typing import Dict, Any, Text, TYPE_CHECKING
+from typing import Dict, Any, Text, TYPE_CHECKING, Optional
 
 import aiohttp
 
-from rasa.core.actions.action_exceptions import ActionExecutionRejection
-from rasa.core.actions.custom_action_executor import CustomActionExecutor
+from rasa.core.actions.action_exceptions import ActionExecutionRejection, DomainNotFound
+from rasa.core.actions.custom_action_executor import (
+    CustomActionExecutor,
+    CustomActionRequestWriter,
+)
 from rasa.core.constants import (
     DEFAULT_REQUEST_TIMEOUT,
     COMPRESS_ACTION_SERVER_REQUEST_ENV_NAME,
@@ -29,13 +32,15 @@ class HTTPCustomActionExecutor(CustomActionExecutor):
     Executes custom actions by making HTTP POST requests to the action endpoint.
     """
 
-    def __init__(self, name: str, action_endpoint: EndpointConfig) -> None:
-        super().__init__(name, action_endpoint)
+    def __init__(self, action_name: str, action_endpoint: EndpointConfig) -> None:
+        self.action_name = action_name
+        self.action_endpoint = action_endpoint
+        self.request_writer = CustomActionRequestWriter(action_name, action_endpoint)
 
     async def run(
         self,
         tracker: "DialogueStateTracker",
-        domain: "Domain",
+        domain: Optional["Domain"] = None,
     ) -> Dict[str, Any]:
         """Execute the custom action using an HTTP POST request.
 
@@ -51,12 +56,10 @@ class HTTPCustomActionExecutor(CustomActionExecutor):
         """
         try:
             logger.debug(
-                "Calling action endpoint to run action '{}'.".format(self.name())
+                "Calling action endpoint to run action '{}'.".format(self.action_name)
             )
 
-            json_body = self._action_call_format(
-                tracker=tracker, domain=domain, should_include_domain=False
-            )
+            json_body = self.request_writer.create(tracker=tracker, domain=domain)
 
             should_compress = get_bool_env_variable(
                 COMPRESS_ACTION_SERVER_REQUEST_ENV_NAME,
@@ -64,7 +67,7 @@ class HTTPCustomActionExecutor(CustomActionExecutor):
             )
 
             response = await self._perform_request_with_retries(
-                json_body, should_compress, tracker, domain
+                json_body, should_compress
             )
 
             if response is None:
@@ -82,18 +85,18 @@ class HTTPCustomActionExecutor(CustomActionExecutor):
                 raise exception
             else:
                 raise RasaException(
-                    f"Failed to execute custom action '{self.name()}'"
+                    f"Failed to execute custom action '{self.action_name}'"
                 ) from e
 
         except aiohttp.ClientConnectionError as e:
             logger.error(
-                f"Failed to run custom action '{self.name()}'. Couldn't connect "
+                f"Failed to run custom action '{self.action_name}'. Couldn't connect "
                 f"to the server at '{self.action_endpoint.url}'. "
                 f"Is the server running? "
                 f"Error: {e}"
             )
             raise RasaException(
-                f"Failed to execute custom action '{self.name()}'. Couldn't connect "
+                f"Failed to execute custom action '{self.action_name}'. Couldn't connect "
                 f"to the server at '{self.action_endpoint.url}."
             )
 
@@ -108,35 +111,25 @@ class HTTPCustomActionExecutor(CustomActionExecutor):
                 "responded with a non 200 status code of {}. "
                 "Make sure your action server properly runs actions "
                 "and returns a 200 once the action is executed. "
-                "Error: {}".format(self.name(), status, e)
+                "Error: {}".format(self.action_name, status, e)
             )
-
-    def name(self) -> Text:
-        return self._name
 
     async def _perform_request_with_retries(
         self,
         json_body: Dict[str, Any],
         should_compress: bool,
-        tracker: "DialogueStateTracker",
-        domain: "Domain",
     ) -> Any:
         """Attempts to perform the request with retries if necessary."""
         assert self.action_endpoint is not None
-        number_of_retries = 2
-        for _ in range(number_of_retries):
-            try:
-                return await self.action_endpoint.request(
-                    json=json_body,
-                    method="post",
-                    timeout=DEFAULT_REQUEST_TIMEOUT,
-                    compress=should_compress,
-                )
-            except ClientResponseError as e:
-                # Repeat the request because Domain was not in the payload
-                if e.status == 449:
-                    json_body = self._action_call_format(
-                        tracker=tracker, domain=domain, should_include_domain=True
-                    )
-                    continue
-                raise e
+        try:
+            return await self.action_endpoint.request(
+                json=json_body,
+                method="post",
+                timeout=DEFAULT_REQUEST_TIMEOUT,
+                compress=should_compress,
+            )
+        except ClientResponseError as e:
+            # Repeat the request because Domain was not in the payload
+            if e.status == 449:
+                raise DomainNotFound()
+            raise e

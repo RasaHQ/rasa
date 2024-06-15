@@ -3,6 +3,7 @@ import logging
 from typing import Dict, Any, Optional, TYPE_CHECKING, Text
 
 import rasa
+from rasa.core.actions.action_exceptions import DomainNotFound
 from rasa.core.actions.constants import SELECTIVE_DOMAIN, DEFAULT_SELECTIVE_DOMAIN
 from rasa.exceptions import ModelNotFound
 from rasa.model import get_local_model
@@ -23,16 +24,49 @@ class CustomActionExecutor(abc.ABC):
     regardless of the communication protocol.
     """
 
-    def __init__(self, name: str, action_endpoint: EndpointConfig) -> None:
-        self._name = name
+    @abc.abstractmethod
+    async def run(
+        self,
+        tracker: "DialogueStateTracker",
+        domain: Optional["Domain"] = None,
+    ) -> Dict[Text, Any]:
+        """Executes the custom action.
+
+        Args:
+            tracker: The current state of the dialogue.
+            domain: The domain object containing domain-specific information.
+
+        Returns:
+            The response from the execution of the custom action.
+        """
+        pass
+
+
+class CustomActionRequestWriter:
+    """Writes the request payload for a custom action."""
+
+    def __init__(self, action_name: str, action_endpoint: EndpointConfig) -> None:
+        """Initializes the request writer.
+
+        Args:
+            action_name: The name of the custom action.
+            action_endpoint: The endpoint configuration for the action server.
+        """
+        self.action_name = action_name
         self.action_endpoint = action_endpoint
 
     def _get_domain_digest(self) -> Optional[str]:
+        """Get the domain digest from the local model.
+
+        Returns:
+            The domain digest if the local model is found, otherwise None.
+        """
         try:
             return get_local_model()
         except ModelNotFound as e:
             logger.warning(
-                f"Model not found while running the action '{self._name}'.", exc_info=e
+                f"Model not found while running the action '{self.action_name}'.",
+                exc_info=e,
             )
             return None
 
@@ -48,18 +82,16 @@ class CustomActionExecutor(abc.ABC):
             self.action_endpoint.kwargs.get(SELECTIVE_DOMAIN, DEFAULT_SELECTIVE_DOMAIN)
         )
 
-    def _action_call_format(
+    def create(
         self,
         tracker: "DialogueStateTracker",
-        domain: "Domain",
-        should_include_domain: bool = True,
+        domain: Optional["Domain"] = None,
     ) -> Dict[str, Any]:
         """Create the JSON payload for the action server request.
 
         Args:
             tracker: The current state of the dialogue.
             domain: The domain object containing domain-specific information.
-            should_include_domain: If domain context should be in the payload.
 
         Returns:
             A JSON payload to be sent to the action server.
@@ -69,15 +101,15 @@ class CustomActionExecutor(abc.ABC):
         tracker_state = tracker.current_state(EventVerbosity.ALL)
 
         result = {
-            "next_action": self._name,
+            "next_action": self.action_name,
             "sender_id": tracker.sender_id,
             "tracker": tracker_state,
             "version": rasa.__version__,
         }
 
-        if should_include_domain and (
+        if domain and (
             not self._is_selective_domain_enabled()
-            or domain.does_custom_action_explicitly_need_domain(self._name)
+            or domain.does_custom_action_explicitly_need_domain(self.action_name)
         ):
             result["domain"] = domain.as_dict()
 
@@ -86,13 +118,22 @@ class CustomActionExecutor(abc.ABC):
 
         return result
 
-    @abc.abstractmethod
+
+class RetryCustomActionExecutor(CustomActionExecutor):
+    """Retries the execution of a custom action."""
+
+    def __init__(self, custom_action_executor: CustomActionExecutor) -> None:
+        self._custom_action_executor = custom_action_executor
+
     async def run(
-        self,
-        tracker: "DialogueStateTracker",
-        domain: "Domain",
+        self, tracker: "DialogueStateTracker", domain: Optional["Domain"] = None
     ) -> Dict[Text, Any]:
-        """Executes the custom action.
+        """Runs the wrapped custom action executor.
+
+        First request to the action server is made without the domain information.
+
+        If the action server responds with a `DomainNotFound` error, by running the
+        custom action executor again with the domain information.
 
         Args:
             tracker: The current state of the dialogue.
@@ -101,4 +142,7 @@ class CustomActionExecutor(abc.ABC):
         Returns:
             The response from the execution of the custom action.
         """
-        pass
+        try:
+            return await self._custom_action_executor.run(tracker)
+        except DomainNotFound:
+            return await self._custom_action_executor.run(tracker, domain)

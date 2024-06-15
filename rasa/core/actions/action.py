@@ -14,7 +14,10 @@ from typing import (
 
 import rasa.core
 import rasa.shared.utils.io
-from rasa.core.actions.custom_action_executor import CustomActionExecutor
+from rasa.core.actions.custom_action_executor import (
+    CustomActionExecutor,
+    RetryCustomActionExecutor,
+)
 from rasa.core.actions.grpc_custom_action_executor import GRPCCustomActionExecutor
 from rasa.core.actions.http_custom_action_executor import HTTPCustomActionExecutor
 from rasa.core.policies.policy import PolicyPrediction
@@ -714,13 +717,17 @@ class RemoteAction(Action):
         url_schema = get_url_schema(self.action_endpoint.url)
 
         if url_schema == UrlSchema.GRPC:
-            return GRPCCustomActionExecutor(self.name(), self.action_endpoint)
+            return RetryCustomActionExecutor(
+                GRPCCustomActionExecutor(self.name(), self.action_endpoint)
+            )
         elif (
             url_schema == UrlSchema.HTTP
             or url_schema == UrlSchema.HTTPS
             or url_schema == UrlSchema.NOT_SPECIFIED
         ):
-            return HTTPCustomActionExecutor(self.name(), self.action_endpoint)
+            return RetryCustomActionExecutor(
+                HTTPCustomActionExecutor(self.name(), self.action_endpoint)
+            )
 
     @staticmethod
     def action_response_format_spec() -> Dict[Text, Any]:
