@@ -1,0 +1,36 @@
+flows:
+  order_pizza:
+    name: order pizza
+    description: user asks for a pizza
+    nlu_trigger:
+    - intent:
+        name: inform_pizza
+        confidence_threshold: 0.5
+    steps:
+    - collect: pizza
+    - collect: num_pizza
+    - collect: address
+    - collect: order_confirmation
+      next:
+        - if: slots.order_confirmation
+          then: "place_order"
+        - else: "cancel_order"
+    - id: "place_order"
+      action: utter_place_order
+      next: END
+    - id: "cancel_order"
+      action: utter_cancel_order
+      next: END
+
+  use_loyalty_points:
+    name: use loyalty points
+    description: user asks to use membership points
+    steps:
+      - collect: loyalty_points
+        next:
+          - if: slots.loyalty_points
+            then: "use_points"
+          - else: END
+      - id: "use_points"
+        action: utter_use_points
+        next: END

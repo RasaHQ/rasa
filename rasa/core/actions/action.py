@@ -56,8 +56,6 @@ from rasa.shared.core.constants import (
     REQUESTED_SLOT,
     ACTION_EXTRACT_SLOTS,
     DEFAULT_SLOT_NAMES,
-    MAPPING_CONDITIONS,
-    ACTIVE_LOOP,
     ACTION_VALIDATE_SLOT_MAPPINGS,
     MAPPING_TYPE,
     SlotMappingType,
@@ -76,16 +74,15 @@ from rasa.shared.core.events import (
     Restarted,
     SessionStarted,
 )
-from rasa.shared.core.slot_mappings import SlotMapping
-from rasa.shared.core.slots import ListSlot
+from rasa.shared.core.slot_mappings import (
+    SlotFillingManager,
+    extract_slot_value,
+)
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import (
     INTENT_NAME_KEY,
     INTENT_RANKING_KEY,
-    ENTITY_ATTRIBUTE_TYPE,
-    ENTITY_ATTRIBUTE_ROLE,
-    ENTITY_ATTRIBUTE_GROUP,
 )
 from rasa.shared.utils.schemas.events import EVENTS_SCHEMA
 from rasa.utils.common import get_bool_env_variable
@@ -1260,51 +1257,6 @@ class ActionExtractSlots(Action):
         """Returns action_extract_slots name."""
         return ACTION_EXTRACT_SLOTS
 
-    @staticmethod
-    def _matches_mapping_conditions(
-        mapping: Dict[Text, Any], tracker: "DialogueStateTracker", slot_name: Text
-    ) -> bool:
-        slot_mapping_conditions = mapping.get(MAPPING_CONDITIONS)
-
-        if not slot_mapping_conditions:
-            return True
-
-        if (
-            tracker.is_active_loop_rejected
-            and tracker.get_slot(REQUESTED_SLOT) == slot_name
-        ):
-            return False
-
-        # check if found mapping conditions matches form
-        for condition in slot_mapping_conditions:
-            active_loop = condition.get(ACTIVE_LOOP)
-
-            if active_loop and active_loop == tracker.active_loop_name:
-                condition_requested_slot = condition.get(REQUESTED_SLOT)
-                if not condition_requested_slot:
-                    return True
-                if condition_requested_slot == tracker.get_slot(REQUESTED_SLOT):
-                    return True
-
-            if active_loop is None and tracker.active_loop_name is None:
-                return True
-
-        return False
-
-    @staticmethod
-    def _verify_mapping_conditions(
-        mapping: Dict[Text, Any], tracker: "DialogueStateTracker", slot_name: Text
-    ) -> bool:
-        if mapping.get(MAPPING_CONDITIONS) and mapping[MAPPING_TYPE] != str(
-            SlotMappingType.FROM_TRIGGER_INTENT
-        ):
-            if not ActionExtractSlots._matches_mapping_conditions(
-                mapping, tracker, slot_name
-            ):
-                return False
-
-        return True
-
     async def _run_custom_action(
         self,
         custom_action: Text,
@@ -1405,36 +1357,6 @@ class ActionExtractSlots(Action):
             event for event in slot_events if event.key not in validated_slot_names
         ]
 
-    def _fails_unique_entity_mapping_check(
-        self,
-        slot_name: Text,
-        mapping: Dict[Text, Any],
-        tracker: "DialogueStateTracker",
-        domain: "Domain",
-    ) -> bool:
-        from rasa.core.actions.forms import FormAction
-
-        if mapping[MAPPING_TYPE] != str(SlotMappingType.FROM_ENTITY):
-            return False
-
-        form_name = tracker.active_loop_name
-
-        if not form_name:
-            return False
-
-        if tracker.get_slot(REQUESTED_SLOT) == slot_name:
-            return False
-
-        form = FormAction(form_name, self._action_endpoint)
-
-        if slot_name not in form.required_slots(domain):
-            return False
-
-        if form.entity_mapping_is_unique(mapping, domain):
-            return False
-
-        return True
-
     async def run(
         self,
         output_channel: "OutputChannel",
@@ -1453,50 +1375,17 @@ class ActionExtractSlots(Action):
             if slot.name not in DEFAULT_SLOT_NAMES | KNOWLEDGE_BASE_SLOT_NAMES
         ]
 
+        slot_filling_manager = SlotFillingManager(
+            domain, tracker, action_endpoint=self._action_endpoint
+        )
+
         for slot in user_slots:
+            slot_value, is_extracted = extract_slot_value(slot, slot_filling_manager)
+            if is_extracted:
+                slot_events.append(SlotSet(slot.name, slot_value))
+
             for mapping in slot.mappings:
                 mapping_type = SlotMappingType(mapping.get(MAPPING_TYPE))
-
-                if not SlotMapping.check_mapping_validity(
-                    slot_name=slot.name,
-                    mapping_type=mapping_type,
-                    mapping=mapping,
-                    domain=domain,
-                ):
-                    continue
-
-                intent_is_desired = SlotMapping.intent_is_desired(
-                    mapping, tracker, domain
-                )
-
-                if not intent_is_desired:
-                    continue
-
-                if not ActionExtractSlots._verify_mapping_conditions(
-                    mapping, tracker, slot.name
-                ):
-                    continue
-
-                if self._fails_unique_entity_mapping_check(
-                    slot.name, mapping, tracker, domain
-                ):
-                    continue
-
-                if mapping_type.is_predefined_type():
-                    value = extract_slot_value_from_predefined_mapping(
-                        mapping_type, mapping, tracker
-                    )
-                else:
-                    value = None
-
-                if value:
-                    if not isinstance(slot, ListSlot):
-                        value = value[-1]
-
-                    if value is not None or tracker.get_slot(slot.name) is not None:
-                        slot_events.append(SlotSet(slot.name, value))
-                        break
-
                 should_fill_custom_slot = mapping_type == SlotMappingType.CUSTOM
 
                 if should_fill_custom_slot:
@@ -1517,67 +1406,3 @@ class ActionExtractSlots(Action):
             slot_events, output_channel, nlg, tracker, domain
         )
         return validated_events
-
-
-def extract_slot_value_from_predefined_mapping(
-    mapping_type: SlotMappingType,
-    mapping: Dict[Text, Any],
-    tracker: "DialogueStateTracker",
-) -> List[Any]:
-    """Extracts slot value if slot has an applicable predefined mapping."""
-    if tracker.has_bot_message_after_latest_user_message():
-        # TODO: this needs further validation - not sure if this breaks something!!!
-
-        # If the bot sent a message after the user sent a message, we can't
-        # extract any slots from the user message. We assume that the user
-        # message was already processed by the bot and the slot value was
-        # already extracted (e.g. for a prior form slot).
-        return []
-
-    should_fill_entity_slot = (
-        mapping_type == SlotMappingType.FROM_ENTITY
-        and SlotMapping.entity_is_desired(mapping, tracker)
-    )
-
-    should_fill_intent_slot = mapping_type == SlotMappingType.FROM_INTENT
-
-    should_fill_text_slot = mapping_type == SlotMappingType.FROM_TEXT
-
-    active_loops_in_mapping_conditions = [
-        active_loop.get(ACTIVE_LOOP)
-        for active_loop in mapping.get(MAPPING_CONDITIONS, [])
-    ]
-
-    trigger_mapping_condition_met = True
-
-    if tracker.active_loop_name is None:
-        trigger_mapping_condition_met = False
-    elif (
-        active_loops_in_mapping_conditions
-        and tracker.active_loop_name is not None
-        and (tracker.active_loop_name not in active_loops_in_mapping_conditions)
-    ):
-        trigger_mapping_condition_met = False
-
-    should_fill_trigger_slot = (
-        mapping_type == SlotMappingType.FROM_TRIGGER_INTENT
-        and trigger_mapping_condition_met
-    )
-
-    value: List[Any] = []
-    if should_fill_entity_slot:
-        value = list(
-            tracker.get_latest_entity_values(
-                mapping.get(ENTITY_ATTRIBUTE_TYPE),
-                mapping.get(ENTITY_ATTRIBUTE_ROLE),
-                mapping.get(ENTITY_ATTRIBUTE_GROUP),
-            )
-        )
-    elif should_fill_intent_slot or should_fill_trigger_slot:
-        value = [mapping.get("value")]
-    elif should_fill_text_slot:
-        value = [
-            tracker.latest_message.text if tracker.latest_message is not None else None
-        ]
-
-    return value

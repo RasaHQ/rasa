@@ -1,0 +1,28 @@
+metadata:
+  - user_info:
+      language: English
+      location: Europe
+  - device_info:
+      os: linux
+
+test_cases:
+  - test_case: "test_standard_booking2"
+    metadata: user_info
+    steps:
+      - user: "Hi!"
+      - user: "No, thanks2."
+        metadata: device_info
+      - utter: "utter_greet"
+      - user: "I would like to book a trip."
+      - bot: "Where would you like to travel?"
+      - user: "I want to travel to Lisbon."
+      - bot: "Your trip to Lisbon has been booked."
+      - bot: "You saved 15% by booking with a standard membership."
+      - bot: "Upgrade for more savings."
+
+  - test_case: "test_mood_great"
+    steps:
+      - user: "Hi!"
+      - bot: "Hey! How are you?"
+      - user: "I am feeling wonderful."
+      - bot: "Great, carry on!"
