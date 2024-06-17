@@ -108,10 +108,10 @@ class GraphSchema:
         nodes = {}
         for node_name, serialized_node in serialized_graph_schema["nodes"].items():
             try:
-                serialized_node[
-                    "uses"
-                ] = rasa.shared.utils.common.class_from_module_path(
-                    serialized_node["uses"]
+                serialized_node["uses"] = (
+                    rasa.shared.utils.common.class_from_module_path(
+                        serialized_node["uses"]
+                    )
                 )
 
                 resource = serialized_node["resource"]
@@ -206,7 +206,7 @@ class GraphComponent(ABC):
 
     @classmethod
     def load(
-        cls,
+        cls: Any,
         config: Dict[Text, Any],
         model_storage: ModelStorage,
         resource: Resource,
@@ -267,7 +267,7 @@ class GraphComponent(ABC):
         return []
 
     @classmethod
-    def fingerprint_addon(cls, config: Dict[str, Any]) -> Optional[str]:
+    def fingerprint_addon(cls: Any, config: Dict[str, Any]) -> Optional[str]:
         """Adds additional data to the fingerprint calculation.
 
         This is useful if a component uses external data that is not provided

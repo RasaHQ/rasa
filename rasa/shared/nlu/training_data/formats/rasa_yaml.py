@@ -108,7 +108,6 @@ class RasaYAMLReader(TrainingDataReader):
         )
 
     def _parse_nlu(self, nlu_data: Optional[List[Dict[Text, Any]]]) -> None:
-
         if not nlu_data:
             return
 
@@ -162,7 +161,6 @@ class RasaYAMLReader(TrainingDataReader):
         for example, entities, metadata in self._parse_training_examples(
             examples, intent
         ):
-
             plain_text = entities_parser.replace_entities(example)
 
             synonyms_parser.add_synonyms_from_entities(
@@ -534,9 +532,9 @@ class RasaYAMLWriter(TrainingDataWriter):
             )
 
             if examples_have_metadata or example_texts_have_escape_chars:
-                intent[
-                    key_examples
-                ] = RasaYAMLWriter._render_training_examples_as_objects(converted)
+                intent[key_examples] = (
+                    RasaYAMLWriter._render_training_examples_as_objects(converted)
+                )
             else:
                 intent[key_examples] = RasaYAMLWriter._render_training_examples_as_text(
                     converted

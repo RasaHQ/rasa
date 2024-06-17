@@ -28,7 +28,7 @@ def set_run_action_arguments(parser: argparse.ArgumentParser) -> None:
 
 
 def add_interface_argument(
-    parser: Union[argparse.ArgumentParser, argparse._ArgumentGroup]
+    parser: Union[argparse.ArgumentParser, argparse._ArgumentGroup],
 ) -> None:
     """Binds the RASA process to a network interface."""
     parser.add_argument(
@@ -42,7 +42,7 @@ def add_interface_argument(
 
 # noinspection PyProtectedMember
 def add_port_argument(
-    parser: Union[argparse.ArgumentParser, argparse._ArgumentGroup]
+    parser: Union[argparse.ArgumentParser, argparse._ArgumentGroup],
 ) -> None:
     """Add an argument for port."""
     parser.add_argument(

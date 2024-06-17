@@ -58,7 +58,7 @@ def count_temp_rasa_files(directory: Text) -> int:
                 [
                     # Ignore the following files/directories:
                     entry == "__pycache__",  # Python bytecode
-                    entry.endswith(".py")  # Temp .py files created by TF
+                    entry.endswith(".py"),  # Temp .py files created by TF
                     # Anything else is considered to be created by Rasa
                 ]
             )

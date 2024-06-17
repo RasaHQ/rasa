@@ -416,7 +416,6 @@ def test_entity_dict_is_valid(data):
 
 
 async def test_future_training_data_format_version_not_compatible():
-
     next_minor = str(Version(LATEST_TRAINING_DATA_FORMAT_VERSION).next_minor())
 
     incompatible_version = {KEY_TRAINING_DATA_FORMAT_VERSION: next_minor}
@@ -426,7 +425,6 @@ async def test_future_training_data_format_version_not_compatible():
 
 
 async def test_compatible_training_data_format_version():
-
     prev_major = str(Version("1.0"))
 
     compatible_version_1 = {KEY_TRAINING_DATA_FORMAT_VERSION: prev_major}
@@ -440,7 +438,6 @@ async def test_compatible_training_data_format_version():
 
 
 async def test_invalid_training_data_format_version_warns():
-
     invalid_version_1 = {KEY_TRAINING_DATA_FORMAT_VERSION: 2.0}
     invalid_version_2 = {KEY_TRAINING_DATA_FORMAT_VERSION: "Rasa"}
 

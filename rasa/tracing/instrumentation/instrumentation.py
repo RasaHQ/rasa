@@ -26,7 +26,7 @@ from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapProp
 from rasa.core.actions.action import Action, RemoteAction
 from rasa.core.agent import Agent
 from rasa.core.channels import OutputChannel
-from rasa.core.information_retrieval.information_retrieval import InformationRetrieval
+from rasa.core.information_retrieval import InformationRetrieval
 from rasa.core.lock_store import LockStore
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.flows.flow_step_result import FlowActionPrediction
@@ -351,7 +351,7 @@ def instrument(
             tracer_provider.get_tracer(lock_store_class.__module__),
             attribute_extractors.extract_attrs_for_lock_store,
         )
-        lock_store_class.lock = contextlib.asynccontextmanager(traced_lock_method)  # type: ignore[assignment]  # noqa: E501
+        lock_store_class.lock = contextlib.asynccontextmanager(traced_lock_method)  # type: ignore[assignment]
 
         logger.debug(f"Instrumented '{lock_store_class.__name__}.lock'.")
 
@@ -374,7 +374,7 @@ def instrument(
         _instrument_method(
             tracer_provider.get_tracer(llm_command_generator_class.__module__),
             llm_command_generator_class,
-            "_generate_action_list_using_llm",
+            "invoke_llm",
             attribute_extractors.extract_attrs_for_llm_command_generator,
             metrics_recorder=record_llm_command_generator_metrics,
         )
@@ -512,8 +512,10 @@ def _instrument_nlu_command_adapter_predict_commands(
 
         return wrapper
 
-    nlu_command_adapter_class.predict_commands = tracing_nlu_command_adapter_predict_commands_wrapper(  # type: ignore[assignment]  # noqa: E501
-        nlu_command_adapter_class.predict_commands
+    nlu_command_adapter_class.predict_commands = (  # type: ignore[assignment]
+        tracing_nlu_command_adapter_predict_commands_wrapper(
+            nlu_command_adapter_class.predict_commands
+        )
     )
 
     logger.debug(
@@ -543,7 +545,7 @@ def _instrument_information_retrieval_search(
 
         return wrapper
 
-    vector_store_class.search = tracing_information_retrieval_search_wrapper(  # type: ignore[assignment]  # noqa: E501
+    vector_store_class.search = tracing_information_retrieval_search_wrapper(  # type: ignore[assignment]
         vector_store_class.search
     )
 
@@ -652,7 +654,7 @@ def _instrument_get_tracker(
 
         return wrapper
 
-    processor_class.get_tracker = tracing_get_tracker_wrapper(  # type: ignore[assignment]  # noqa: E501
+    processor_class.get_tracker = tracing_get_tracker_wrapper(  # type: ignore[assignment]
         processor_class.get_tracker
     )
 
@@ -832,7 +834,7 @@ def _instrument_run_action(
             attrs = {
                 "action_name": action.name(),
                 "sender_id": tracker.sender_id,
-                "message_id": tracker.latest_message.message_id or "default",  # type: ignore[union-attr]  # noqa: E501
+                "message_id": tracker.latest_message.message_id or "default",  # type: ignore[union-attr]
             }
             with tracer.start_as_current_span(
                 f"{self.__class__.__name__}.{fn.__name__}",
@@ -856,7 +858,7 @@ def _instrument_run_action(
 
         return wrapper
 
-    processor_class._run_action = tracing_run_action_wrapper(  # type: ignore[assignment]  # noqa: E501
+    processor_class._run_action = tracing_run_action_wrapper(  # type: ignore[assignment]
         processor_class._run_action
     )
 

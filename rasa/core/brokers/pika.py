@@ -94,7 +94,7 @@ class PikaEventBroker(EventBroker):
 
     @staticmethod
     def _get_queues_from_args(
-        queues_arg: Union[List[Text], Tuple[Text, ...], Text, None]
+        queues_arg: Union[List[Text], Tuple[Text, ...], Text, None],
     ) -> Union[List[Text], Tuple[Text, ...]]:
         """Get queues for this event broker.
 
@@ -166,7 +166,6 @@ class PikaEventBroker(EventBroker):
         url = None
 
         if self.host.startswith("amqp"):
-
             parsed_host = urlparse(self.host)
 
             amqp_user = f"{self.username}:{self.password}"

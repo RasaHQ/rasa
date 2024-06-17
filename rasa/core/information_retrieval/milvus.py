@@ -1,29 +1,20 @@
-from typing import TYPE_CHECKING, List, Text
+from typing import Text, Any
 
 import structlog
 from langchain.vectorstores.milvus import Milvus
 from rasa.utils.endpoints import EndpointConfig
 
-from rasa.core.information_retrieval.information_retrieval import (
+from rasa.core.information_retrieval import (
+    SearchResultList,
     InformationRetrieval,
     InformationRetrievalException,
 )
-
-if TYPE_CHECKING:
-    from langchain.schema import Document
-    from langchain.schema.embeddings import Embeddings
 
 logger = structlog.get_logger()
 
 
 class Milvus_Store(InformationRetrieval):
     """Milvus Store implementation."""
-
-    def __init__(
-        self,
-        embeddings: "Embeddings",
-    ):
-        self.embeddings = embeddings
 
     def connect(self, config: EndpointConfig) -> None:
         """Connect to the Milvus system."""
@@ -39,7 +30,9 @@ class Milvus_Store(InformationRetrieval):
             collection_name=str(params.get("collection")),
         )
 
-    async def search(self, query: Text, threshold: float = 0.0) -> List["Document"]:
+    async def search(
+        self, query: Text, tracker_state: dict[str, Any], threshold: float = 0.0
+    ) -> SearchResultList:
         """Search for documents in the Milvus store.
 
         Args:
@@ -56,4 +49,4 @@ class Milvus_Store(InformationRetrieval):
             raise InformationRetrievalException from exc
 
         filtered_hits = [doc for doc, score in hits if score >= threshold]
-        return filtered_hits
+        return SearchResultList.from_document_list(filtered_hits)

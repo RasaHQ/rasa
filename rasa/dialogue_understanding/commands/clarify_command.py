@@ -75,3 +75,12 @@ class ClarifyCommand(Command):
         names = [flow.readable_name() for flow in relevant_flows if flow is not None]
         stack.push(ClarifyPatternFlowStackFrame(names=names))
         return tracker.create_stack_updated_events(stack)
+
+    def __hash__(self) -> int:
+        return hash(self.options)
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, ClarifyCommand):
+            return False
+
+        return other.options == self.options

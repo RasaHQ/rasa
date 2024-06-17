@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Text, Union
 
 import pytest
 import structlog
-
+from pytest import CaptureFixture
 
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.domain import Domain
@@ -1992,3 +1992,196 @@ def test_validator_check_for_empty_paranthesis_all_good() -> None:
 
     validator = Validator(test_domain, TrainingData(), StoryGraph([]), None, None)
     assert validator.check_for_no_empty_paranthesis_in_responses() is True
+
+
+def test_validate_button_payloads_no_payload(capsys: CaptureFixture) -> None:
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        responses:
+            utter_ask_confirm:
+            - buttons:
+                - title: Yes
+                - title: No
+                  payload: " "
+              text: "Do you confirm?"
+        """
+    )
+
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), None, None)
+    assert validator.validate_button_payloads() is False
+
+    captured = capsys.readouterr()
+    assert (
+        "The button 'Yes' in response 'utter_ask_confirm' does "
+        "not have a payload." in captured.out
+    )
+    assert (
+        "The button 'No' in response 'utter_ask_confirm' has "
+        "an empty payload." in captured.out
+    )
+
+
+def test_validate_button_payloads_free_form_payloads(capsys: CaptureFixture) -> None:
+    test_domain = Domain.from_yaml(
+        """
+        responses:
+            utter_ask_confirm:
+            - buttons:
+                - title: Yes
+                  payload: yes
+                - title: No
+                  payload: no
+              text: "Do you confirm?"
+        """
+    )
+
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), None, None)
+    assert validator.validate_button_payloads() is True
+
+    captured = capsys.readouterr()
+    logging_level = "warning"
+    logging_message = (
+        "Using a free form string in payload of a button "
+        "implies that the string will be sent to the NLU "
+        "interpreter for parsing. To avoid the need for "
+        "parsing at runtime, it is recommended to use "
+        "one of the documented formats "
+        "(https://rasa.com/docs/rasa-pro/concepts/responses#buttons)"
+    )
+    assert logging_level in captured.out
+    assert logging_message in captured.out
+
+
+@pytest.mark.parametrize(
+    "payload", ["/SetSlots(confirmation=True)", '/inform{{"confirmation": "true"}}']
+)
+def test_validate_button_payloads_valid_payloads(
+    capsys: CaptureFixture, payload: str
+) -> None:
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        intents:
+         - inform
+        slots:
+          confirmation:
+             type: bool
+             mappings:
+              - type: custom
+        responses:
+            utter_ask_confirm:
+            - buttons:
+                - title: Yes
+                  payload: '{payload}'
+              text: "Do you confirm?"
+        """
+    )
+
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), None, None)
+    assert validator.validate_button_payloads() is True
+
+    captured = capsys.readouterr()
+    log_levels = ["error", "warning"]
+    assert all([log_level not in captured.out for log_level in log_levels])
+
+
+@pytest.mark.parametrize(
+    "payload",
+    ['/inform[["confirmation": "false"]]', '/SetSlots["confirmation": "false"]'],
+)
+def test_validate_button_payloads_invalid_payloads(
+    capsys: CaptureFixture, payload: str
+) -> None:
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        intents:
+        - inform
+        responses:
+            utter_ask_confirm:
+            - buttons:
+                - title: No
+                  payload: '{payload}'
+              text: "Do you confirm?"
+        """
+    )
+
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), None, None)
+    assert validator.validate_button_payloads() is False
+
+    captured = capsys.readouterr()
+    log_level = "error"
+    assert log_level in captured.out
+    assert (
+        "The button 'No' in response "
+        "'utter_ask_confirm' does not follow valid payload formats "
+        "for triggering a specific intent and entities or for "
+        "triggering a SetSlot command."
+    ) in captured.out
+
+
+def test_validate_button_payloads_above_slot_limit(capsys: CaptureFixture) -> None:
+    payload = "/SetSlots(" + "test_slot=1, " * 11 + ")"
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        intents:
+        - inform
+        slots:
+          test_slot:
+             type: float
+        responses:
+            utter_ask_confirm:
+            - buttons:
+                - title: Test
+                  payload: '{payload}'
+              text: "Do you confirm?"
+        """
+    )
+
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), None, None)
+    assert validator.validate_button_payloads() is False
+
+    captured = capsys.readouterr()
+    log_level = "error"
+    assert log_level in captured.out
+    assert "validator.validate_button_payloads.slot_limit_exceeded" in captured.out
+    assert (
+        "The button 'Test' in response 'utter_ask_confirm' has a payload "
+        "that sets more than 10 slots. Please make sure that the number "
+        "of slots set by the button payload does not exceed the limit."
+    ) in captured.out
+
+
+def test_validate_button_payloads_unique_slot_names(capsys: CaptureFixture) -> None:
+    payload = "/SetSlots(name=John, name=Paul)"
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        intents:
+        - inform
+        slots:
+          name:
+             type: text
+        responses:
+            utter_ask_name:
+            - buttons:
+                - title: Name
+                  payload: '{payload}'
+              text: "Do you confirm?"
+        """
+    )
+
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), None, None)
+    assert validator.validate_button_payloads() is False
+
+    captured = capsys.readouterr()
+    log_level = "error"
+    assert log_level in captured.out
+    assert "validator.validate_button_payloads.duplicate_slot_name" in captured.out
+    assert (
+        "The button 'Name' in response 'utter_ask_name' has a command "
+        "to set the slot 'name' multiple times. Please make sure "
+        "that each slot is set only once."
+    ) in captured.out

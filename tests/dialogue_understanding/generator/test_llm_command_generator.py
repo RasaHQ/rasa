@@ -6,7 +6,6 @@ from unittest.mock import Mock, patch, AsyncMock
 
 import pytest
 from _pytest.tmpdir import TempPathFactory
-from structlog.testing import capture_logs
 
 from rasa.dialogue_understanding.commands import (
     Command,
@@ -24,6 +23,8 @@ from rasa.dialogue_understanding.commands import (
 from rasa.dialogue_understanding.generator.flow_retrieval import FlowRetrieval
 from rasa.dialogue_understanding.generator.llm_command_generator import (
     LLMCommandGenerator,
+)
+from rasa.dialogue_understanding.generator.constants import (
     FLOW_RETRIEVAL_KEY,
     FLOW_RETRIEVAL_ACTIVE_KEY,
 )
@@ -34,12 +35,8 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import ROUTE_TO_CALM_SLOT
 from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
 from rasa.shared.core.flows import FlowsList
-from rasa.shared.core.flows.steps.collect import (
-    SlotRejection,
-    CollectInformationFlowStep,
-)
+
 from rasa.shared.core.slots import (
-    Slot,
     BooleanSlot,
     TextSlot,
 )
@@ -202,7 +199,7 @@ class TestLLMCommandGenerator:
         """Test that predict_commands sets the routing slot to True."""
         # When
         with patch(
-            "rasa.dialogue_understanding.generator.llm_command_generator.llm_factory",
+            "rasa.dialogue_understanding.generator.llm_based_command_generator.llm_factory",
             Mock(),
         ) as mock_llm_factory:
             llm_mock = Mock()
@@ -237,7 +234,7 @@ class TestLLMCommandGenerator:
     @patch(
         "rasa.dialogue_understanding.generator.llm_command_generator"
         ".LLMCommandGenerator"
-        "._generate_action_list_using_llm"
+        ".invoke_llm"
     )
     async def test_predict_commands_calls_prompt_rendering_with_startable_flows_only(
         self,
@@ -335,7 +332,7 @@ class TestLLMCommandGenerator:
     )
     @patch(
         "rasa.dialogue_understanding.generator.llm_command_generator."
-        "LLMCommandGenerator._generate_action_list_using_llm"
+        "LLMCommandGenerator.invoke_llm"
     )
     @patch(
         "rasa.dialogue_understanding.generator.llm_command_generator."
@@ -410,65 +407,6 @@ class TestLLMCommandGenerator:
         # Then
         mock_flow_retrieval_filter_flows.assert_called_once()
         assert predicted_commands == [ErrorCommand()]
-
-    async def test_generate_action_list_calls_llm_factory_correctly(
-        self,
-        command_generator: LLMCommandGenerator,
-    ):
-        """Test that _generate_action_list calls llm correctly."""
-        # Given
-        llm_config = {
-            "_type": "openai",
-            "request_timeout": 7,
-            "temperature": 0.0,
-            "model_name": "gpt-4",
-            "max_tokens": 256,
-        }
-        # When
-        with patch(
-            "rasa.dialogue_understanding.generator.llm_command_generator.llm_factory",
-            Mock(),
-        ) as mock_llm_factory:
-            await command_generator._generate_action_list_using_llm("some prompt")
-            # Then
-            mock_llm_factory.assert_called_once_with(None, llm_config)
-
-    async def test_generate_action_list_calls_llm_correctly(
-        self,
-        command_generator: LLMCommandGenerator,
-    ):
-        """Test that _generate_action_list calls llm correctly."""
-        # Given
-        with patch(
-            "rasa.dialogue_understanding.generator.llm_command_generator.llm_factory",
-            Mock(),
-        ) as mock_llm_factory:
-            llm_mock = Mock()
-            predict_mock = AsyncMock()
-            llm_mock.apredict = predict_mock
-            mock_llm_factory.return_value = llm_mock
-            # When
-            await command_generator._generate_action_list_using_llm("some prompt")
-            # Then
-            predict_mock.assert_called_once_with("some prompt")
-
-    async def test_generate_action_list_catches_llm_exception(
-        self,
-        command_generator: LLMCommandGenerator,
-    ):
-        """Test that _generate_action_list calls llm correctly."""
-        # When
-        mock_llm = Mock(side_effect=Exception("some exception"))
-        with patch(
-            "rasa.dialogue_understanding.generator.llm_command_generator.llm_factory",
-            Mock(return_value=mock_llm),
-        ):
-            with capture_logs() as logs:
-                await command_generator._generate_action_list_using_llm("some prompt")
-                # Then
-                print(logs)
-                assert len(logs) == 1
-                assert logs[0]["event"] == "llm_command_generator.llm.error"
 
     def test_render_template(
         self,
@@ -655,226 +593,6 @@ class TestLLMCommandGenerator:
             )
         # Then
         assert parsed_commands == expected_command
-
-    @pytest.mark.parametrize(
-        "input_action, expected_command",
-        [
-            (
-                "SetSlot(test_slot, 1234)",
-                [SetSlotCommand(name="test_slot", value="1234")],
-            ),
-            (
-                "SetSlot(phone_number, (412) 555-1234)",
-                [SetSlotCommand(name="phone_number", value="(412) 555-1234")],
-            ),
-        ],
-    )
-    def test_parse_commands_uses_correct_regex(
-        self,
-        input_action: Optional[str],
-        expected_command: Command,
-    ):
-        """Test that parse_commands uses the expected regex."""
-        # When
-        test_flows = flows_from_str(
-            """
-            flows:
-              some_flow:
-                description: some description
-                steps:
-                - id: first_step
-                  collect: test_slot
-              02_benefits_learning_days:
-                description: some foo
-                steps:
-                - id: some_id
-                  collect: some_slot
-            """
-        )
-        parsed_commands = LLMCommandGenerator.parse_commands(
-            input_action, Mock(), test_flows
-        )
-        # Then
-        assert parsed_commands == expected_command
-
-    @pytest.mark.parametrize(
-        "input_value, expected_output",
-        [
-            ("text", "text"),
-            (" text ", "text"),
-            ('"text"', "text"),
-            ("'text'", "text"),
-            ("' \"text' \"  ", "text"),
-            ("", ""),
-        ],
-    )
-    def test_clean_extracted_value(self, input_value: str, expected_output: str):
-        """Test that clean_extracted_value removes
-        the leading and trailing whitespaces.
-        """
-        # When
-        cleaned_value = LLMCommandGenerator.clean_extracted_value(input_value)
-        # Then
-        assert cleaned_value == expected_output
-
-    @pytest.mark.parametrize(
-        "input_value, expected_truthiness",
-        [
-            ("", False),
-            (" ", False),
-            ("none", False),
-            ("some text", False),
-            ("[missing information]", True),
-            ("[missing]", True),
-            ("None", True),
-            ("undefined", True),
-            ("null", True),
-        ],
-    )
-    def test_is_none_value(self, input_value: str, expected_truthiness: bool):
-        """Test that is_none_value returns True when the value is None."""
-        assert LLMCommandGenerator.is_none_value(input_value) == expected_truthiness
-
-    @pytest.mark.parametrize(
-        "slot, slot_name, expected_output",
-        [
-            (TextSlot("test_slot", [], initial_value="hello"), "test_slot", "hello"),
-            (TextSlot("test_slot", []), "some_other_slot", "undefined"),
-        ],
-    )
-    def test_slot_value(self, slot: Slot, slot_name: str, expected_output: str):
-        """Test that slot_value returns the correct string."""
-        # Given
-        tracker = DialogueStateTracker.from_events("test", evts=[], slots=[slot])
-        # When
-        slot_value = LLMCommandGenerator.get_slot_value(tracker, slot_name)
-
-        assert slot_value == expected_output
-
-    @pytest.fixture
-    def collect_info_step(self) -> CollectInformationFlowStep:
-        """Create a CollectInformationFlowStep."""
-        return CollectInformationFlowStep(
-            collect="test_slot",
-            idx=0,
-            ask_before_filling=True,
-            utter="hello",
-            collect_action="action_ask_hello",
-            rejections=[SlotRejection("test_slot", "some rejection")],
-            custom_id="collect",
-            description="test_slot",
-            metadata={},
-            next="next_step",
-        )
-
-    def test_is_extractable_with_no_slot(
-        self,
-        command_generator: LLMCommandGenerator,
-        collect_info_step: CollectInformationFlowStep,
-    ):
-        """Test that is_extractable returns False
-        when there are no slots to be filled.
-        """
-        # Given
-        tracker = DialogueStateTracker.from_events(sender_id="test", evts=[], slots=[])
-        # When
-        is_extractable = command_generator.is_extractable(collect_info_step, tracker)
-        # Then
-        assert not is_extractable
-
-    def test_is_extractable_when_slot_can_be_filled_without_asking(
-        self,
-        command_generator: LLMCommandGenerator,
-    ):
-        """Test that is_extractable returns True when
-        collect_information slot can be filled.
-        """
-        # Given
-        tracker = DialogueStateTracker.from_events(
-            sender_id="test", evts=[], slots=[TextSlot(name="test_slot", mappings=[])]
-        )
-        collect_info_step = CollectInformationFlowStep(
-            collect="test_slot",
-            ask_before_filling=False,
-            utter="hello",
-            collect_action="action_ask_hello",
-            rejections=[SlotRejection("test_slot", "some rejection")],
-            custom_id="collect_information",
-            idx=0,
-            description="test_slot",
-            metadata={},
-            next="next_step",
-        )
-        # When
-        is_extractable = command_generator.is_extractable(collect_info_step, tracker)
-        # Then
-        assert is_extractable
-
-    def test_is_extractable_when_slot_has_already_been_set(
-        self,
-        command_generator: LLMCommandGenerator,
-        collect_info_step: CollectInformationFlowStep,
-    ):
-        """Test that is_extractable returns True
-        when collect_information can be filled.
-        """
-        # Given
-        slot = TextSlot(name="test_slot", mappings=[])
-        tracker = DialogueStateTracker.from_events(
-            sender_id="test", evts=[SlotSet("test_slot", "hello")], slots=[slot]
-        )
-        # When
-        is_extractable = command_generator.is_extractable(collect_info_step, tracker)
-        # Then
-        assert is_extractable
-
-    def test_is_extractable_with_current_step(
-        self,
-        command_generator: LLMCommandGenerator,
-        collect_info_step: CollectInformationFlowStep,
-    ):
-        """Test that is_extractable returns True when the current step is a collect
-        information step and matches the information step.
-        """
-        # Given
-        tracker = DialogueStateTracker.from_events(
-            sender_id="test",
-            evts=[UserUttered("Hello"), BotUttered("Hi")],
-            slots=[TextSlot(name="test_slot", mappings=[])],
-        )
-        # When
-        is_extractable = command_generator.is_extractable(
-            collect_info_step, tracker, current_step=collect_info_step
-        )
-        # Then
-        assert is_extractable
-
-    @pytest.mark.parametrize(
-        "message, max_characters, expected_exceeds_limit",
-        [
-            ("Hello", 5, False),
-            ("Hello! I'm a long message", 3, True),
-            ("Hello! I'm a long message", -1, False),
-        ],
-    )
-    def test_check_if_message_exceeds_limit(
-        self,
-        message: Text,
-        max_characters: int,
-        expected_exceeds_limit: bool,
-        model_storage: ModelStorage,
-        resource: Resource,
-    ):
-        # Given
-        generator = LLMCommandGenerator(
-            {"user_input": {"max_characters": max_characters}},
-            model_storage,
-            resource,
-        )
-        message = Message.build(text=message)
-        # When
-        exceeds_limit = generator.check_if_message_exceeds_limit(message)
-        assert exceeds_limit == expected_exceeds_limit
 
     async def test_llm_command_generator_fingerprint_addon_diff_in_prompt_template(
         self,

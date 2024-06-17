@@ -16,8 +16,7 @@ from unittest.mock import MagicMock, Mock, patch, AsyncMock
 import freezegun
 import pytest
 
-from rasa.dialogue_understanding.commands import SetSlotCommand, StartFlowCommand
-from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
+from rasa.dialogue_understanding.commands.set_slot_command import SetSlotExtractor
 import rasa.shared.utils.io
 import tests.utilities
 from _pytest.logging import LogCaptureFixture
@@ -44,9 +43,12 @@ from rasa.core.policies.ensemble import DefaultPolicyPredictionEnsemble
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import InMemoryTrackerStore
+from rasa.core.utils import AvailableEndpoints
+from rasa.dialogue_understanding.commands import SetSlotCommand, StartFlowCommand
 from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
 )
+from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.storage import ModelStorage
@@ -1408,7 +1410,10 @@ async def test_predict_next_action_with_hidden_rules(
     model_path = await trained_async(
         str(domain_path), str(config_path), [str(training_data_path)]
     )
-    agent = await load_agent(model_path=model_path)
+
+    action_endpoint = EndpointConfig("https://example.com/webhooks/actions")
+    endpoints = AvailableEndpoints(action=action_endpoint)
+    agent = await load_agent(model_path=model_path, endpoints=endpoints)
     processor = agent.processor
 
     tracker = DialogueStateTracker.from_events(
@@ -2257,7 +2262,7 @@ async def test_predict_does_not_block_on_command_generator_llm_calls(
     # we should have a trained model now and can start an agent with it
     # let's patch the LLM though, as we don't want to make external calls
     with patch(
-        "rasa.dialogue_understanding.generator.llm_command_generator.llm_factory",
+        "rasa.dialogue_understanding.generator.llm_based_command_generator.llm_factory",
         Mock(),
     ) as mock_llm_factory:
         llm_mock = Mock()
@@ -2290,3 +2295,62 @@ async def test_predict_does_not_block_on_command_generator_llm_calls(
         # than 10 seconds, if it takes longer this is a sign that the
         # calls are not done in parallel but sequentially.
         assert time_needed < 10
+
+
+async def test_parse_message_with_set_slot_button(
+    flow_policy_bot_agent: Agent,
+):
+    processor = flow_policy_bot_agent.processor
+    sender_id = uuid.uuid4().hex
+    tracker = await processor.tracker_store.get_or_create_tracker(sender_id)
+
+    parse_data = await processor.parse_message(
+        UserMessage("/SetSlots(foo_slot_a=foo)"), tracker
+    )
+
+    assert len(parse_data[COMMANDS]) == 1
+    assert (
+        SetSlotCommand(
+            "foo_slot_a", "foo", SetSlotExtractor.COMMAND_PAYLOAD_READER.value
+        ).as_dict()
+        in parse_data[COMMANDS]
+    )
+
+
+@pytest.mark.parametrize(
+    "slot_value, expected_value", [("true", True), ("false", False)]
+)
+async def test_parse_message_with_multiple_set_slots_button(
+    flow_policy_bot_agent: Agent, slot_value: str, expected_value: bool
+) -> None:
+    processor = flow_policy_bot_agent.processor
+    sender_id = uuid.uuid4().hex
+
+    await processor.handle_message(
+        UserMessage(
+            f"/SetSlots(button_slot_a={slot_value}, button_slot_b={slot_value})",
+            sender_id=sender_id,
+        ),
+    )
+
+    tracker = await processor.get_tracker(sender_id)
+    assert tracker.get_slot("button_slot_a") is expected_value
+    assert tracker.get_slot("button_slot_b") is expected_value
+
+
+def test_handle_message_with_commands_does_not_run_action_extract_slots(
+    flow_policy_bot_agent: Agent, monkeypatch: MonkeyPatch
+) -> None:
+    processor = flow_policy_bot_agent.processor
+    sender_id = uuid.uuid4().hex
+
+    mock_run_action_extract_slots = MagicMock()
+    monkeypatch.setattr(
+        processor, "run_action_extract_slots", mock_run_action_extract_slots
+    )
+
+    processor.handle_message(
+        UserMessage("/SetSlots(foo_slot_a=foo)", sender_id=sender_id)
+    )
+
+    mock_run_action_extract_slots.assert_not_called()

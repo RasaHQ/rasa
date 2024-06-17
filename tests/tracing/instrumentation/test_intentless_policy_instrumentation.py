@@ -60,9 +60,7 @@ async def test_tracing_intentless_policy_generate_answer(
         "",
     )
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     # includes the child span for `_generate_llm_answer` method call
@@ -99,9 +97,7 @@ def test_tracing_intentless_policy_extract_ai_responses(
     ]
     intentless_policy_generator.extract_ai_responses(conversation_samples)
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1
@@ -133,9 +129,7 @@ def test_tracing_intentless_policy_select_few_shot_conversations(
         100,
     )
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1
@@ -167,9 +161,7 @@ def test_tracing_intentless_policy_select_response_examples(
         100,
     )
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1
@@ -233,9 +225,7 @@ async def test_tracing_intentless_policy_find_closest_response(
 
     await intentless_policy_generator.find_closest_response(tracker)
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1
@@ -272,9 +262,7 @@ def test_tracing_intentless_policy_prediction_result(
 
     intentless_policy_generator._prediction_result(action_name, Domain.empty())
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1
@@ -304,9 +292,7 @@ async def test_tracing_intentless_policy_generate_llm_answer_len_prompt_tokens(
         Mock(), "This is a test prompt."
     )
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1
@@ -352,9 +338,7 @@ async def test_intentless_policy_generate_llm_answer_len_prompt_tokens_non_opena
             in caplog.text
         )
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1

@@ -19,7 +19,6 @@ from tests.engine.graph_components_test_classes import CacheableText
 async def test_cached_component_returns_value_from_cache(
     default_model_storage: ModelStorage,
 ):
-
     cached_output = CacheableText("Cache me!!")
 
     node = GraphNode(
@@ -108,7 +107,6 @@ class FingerprintableText:
 async def test_fingerprint_component_hit(
     default_model_storage: ModelStorage, temp_cache: TrainingCache
 ):
-
     cached_output = CacheableText("Cache me!!")
     output_fingerprint = uuid.uuid4().hex
 
@@ -163,7 +161,6 @@ async def test_fingerprint_component_hit(
 async def test_fingerprint_component_miss(
     default_model_storage: ModelStorage, temp_cache: TrainingCache
 ):
-
     component_config = {"x": 1}
 
     node = GraphNode(

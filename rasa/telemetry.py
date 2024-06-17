@@ -53,7 +53,7 @@ if typing.TYPE_CHECKING:
     from rasa.shared.nlu.training_data.training_data import TrainingData
     from rasa.shared.importers.importer import TrainingDataImporter
     from rasa.core.utils import AvailableEndpoints
-    from rasa.e2e_test.e2e_test_case import TestCase, Fixture
+    from rasa.e2e_test.e2e_test_case import TestCase, Fixture, Metadata
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +93,8 @@ CI_ENVIRONMENT_TELL = [
 ]
 
 # If updating or creating a new event, remember to update
-# https://rasa.com/docs/rasa/telemetry
+# https://rasa.com/docs/rasa-pro/telemetry/telemetry OR
+# https://rasa.com/docs/rasa-pro/telemetry/reference
 TRAINING_STARTED_EVENT = "Training Started"
 TRAINING_COMPLETED_EVENT = "Training Completed"
 TELEMETRY_DISABLED_EVENT = "Telemetry Disabled"
@@ -124,6 +125,13 @@ TELEMETRY_INTENTLESS_POLICY_PREDICT_EVENT = "Intentless Policy Predicted"
 TELEMETRY_LLM_INTENT_PREDICT_EVENT = "LLM Intent Predicted"
 TELEMETRY_LLM_INTENT_TRAIN_COMPLETED_EVENT = "LLM Intent Training Completed"
 TELEMETRY_E2E_TEST_RUN_STARTED_EVENT = "E2E Test Run Started"
+TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_STARTED_EVENT = (
+    "Enterprise Search Policy Training Started"
+)
+TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_COMPLETED_EVENT = (
+    "Enterprise Search Policy Training Completed"
+)
+TELEMETRY_ENTERPRISE_SEARCH_POLICY_PREDICT_EVENT = "Enterprise Search Policy Predicted"
 
 # used to calculate the context on the first call and cache it afterwards
 TELEMETRY_CONTEXT = None
@@ -542,7 +550,7 @@ def _is_docker() -> bool:
 
 
 def with_default_context_fields(
-    context: Optional[Dict[Text, Any]] = None
+    context: Optional[Dict[Text, Any]] = None,
 ) -> Dict[Text, Any]:
     """Return a new context dictionary with default and provided field values merged.
 
@@ -1380,7 +1388,9 @@ def track_markers_parsed_count(
 
 @ensure_telemetry_enabled
 def track_e2e_test_run(
-    input_test_cases: List["TestCase"], input_fixtures: List["Fixture"]
+    input_test_cases: List["TestCase"],
+    input_fixtures: List["Fixture"],
+    input_metadata: List["Metadata"],
 ) -> None:
     """Track an end-to-end test run."""
     _track(
@@ -1389,6 +1399,8 @@ def track_e2e_test_run(
             "number_of_test_cases": len(input_test_cases),
             "number_of_fixtures": len(input_fixtures),
             "uses_fixtures": len(input_fixtures) > 0,
+            "uses_metadata": len(input_metadata) > 0,
+            "number_of_metadata": len(input_metadata),
         },
     )
 
@@ -1562,10 +1574,59 @@ def append_anonymization_trait(
         endpoints_file, KEY_ANONYMIZATION_RULES
     )
 
-    traits[
-        KEY_ANONYMIZATION_RULES
-    ] = rasa.anonymization.utils.extract_anonymization_traits(
-        anonymization_config, KEY_ANONYMIZATION_RULES
+    traits[KEY_ANONYMIZATION_RULES] = (
+        rasa.anonymization.utils.extract_anonymization_traits(
+            anonymization_config, KEY_ANONYMIZATION_RULES
+        )
     )
 
     return traits
+
+
+def track_enterprise_search_policy_train_started() -> None:
+    """Track when a user starts training Enterprise Search policy."""
+    _track(TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_STARTED_EVENT)
+
+
+def track_enterprise_search_policy_train_completed(
+    vector_store_type: Optional[str],
+    embeddings_type: Optional[str],
+    embeddings_model: Optional[str],
+    llm_type: Optional[str],
+    llm_model: Optional[str],
+    citation_enabled: Optional[bool],
+) -> None:
+    """Track when a user completes training Enterprise Search policy."""
+    _track(
+        TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_COMPLETED_EVENT,
+        {
+            "vector_store_type": vector_store_type,
+            "embeddings_type": embeddings_type,
+            "embeddings_model": embeddings_model,
+            "llm_type": llm_type,
+            "llm_model": llm_model,
+            "citation_enabled": citation_enabled,
+        },
+    )
+
+
+def track_enterprise_search_policy_predict(
+    vector_store_type: Optional[str],
+    embeddings_type: Optional[str],
+    embeddings_model: Optional[str],
+    llm_type: Optional[str],
+    llm_model: Optional[str],
+    citation_enabled: Optional[bool],
+) -> None:
+    """Track when a user predicts the next action using Enterprise Search policy."""
+    _track(
+        TELEMETRY_ENTERPRISE_SEARCH_POLICY_PREDICT_EVENT,
+        {
+            "vector_store_type": vector_store_type,
+            "embeddings_type": embeddings_type,
+            "embeddings_model": embeddings_model,
+            "llm_type": llm_type,
+            "llm_model": llm_model,
+            "citation_enabled": citation_enabled,
+        },
+    )

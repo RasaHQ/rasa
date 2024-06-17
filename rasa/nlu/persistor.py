@@ -95,7 +95,6 @@ class Persistor(abc.ABC):
 
     @staticmethod
     def _tar_name(model_name: Text, include_extension: bool = True) -> Text:
-
         ext = ".tar.gz" if include_extension else ""
         return f"{model_name}{ext}"
 

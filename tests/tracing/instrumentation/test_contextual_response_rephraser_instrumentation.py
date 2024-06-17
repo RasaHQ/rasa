@@ -147,9 +147,7 @@ async def test_tracing_contextual_response_rephraser_generate_llm_response(
 
     await mock_rephraser._generate_llm_response("some text")
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1
@@ -195,9 +193,7 @@ async def test_tracing_contextual_response_rephraser_rephrase(
         output_channel="callback",
     )
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1
@@ -233,9 +229,7 @@ async def test_tracing_contextual_response_rephraser_len_prompt_tokens(
 
     await mock_rephraser._generate_llm_response("This is a test prompt.")
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1
@@ -286,9 +280,7 @@ async def test_tracing_contextual_response_rephraser_len_prompt_tokens_non_opena
             in caplog.text
         )
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1
@@ -382,9 +374,7 @@ async def test_tracing_contextual_response_rephraser_create_history(
 
     await mock_rephraser._create_history(greet_tracker)
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1

@@ -14,19 +14,23 @@ from rasa.dialogue_understanding.stack.frames import (
     SearchStackFrame,
     UserFlowStackFrame,
 )
+from rasa.core.policies.policy import PolicyPrediction
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, UserUttered, BotUttered
-from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 
-from rasa.core.information_retrieval.information_retrieval import (
+from rasa.core.information_retrieval import (
     InformationRetrieval,
+    SearchResultList,
+    SearchResult,
     InformationRetrievalException,
 )
 from rasa.core.policies.enterprise_search_policy import (
     LLM_CONFIG_KEY,
+    USE_LLM_PROPERTY,
     EnterpriseSearchPolicy,
     VectorStoreConfigurationError,
 )
@@ -89,8 +93,8 @@ def mocked_enterprise_search_policy(
         model_storage=default_model_storage,
         resource=resource,
         execution_context=default_execution_context,
+        vector_store=vector_store,
     )
-    policy.vector_store = vector_store
     return policy
 
 
@@ -114,17 +118,50 @@ def mock_create_prediction_cannot_handle():
         yield mock_create_prediction_cannot_handle
 
 
+@pytest.fixture
+def search_results() -> SearchResultList:
+    return SearchResultList(
+        results=[
+            SearchResult(
+                text="test query",
+                metadata={"id": "doc1", "answer": "test response"},
+            ),
+            SearchResult(
+                text="test query2",
+                metadata={"id": "doc2", "answer": "world response"},
+            ),
+        ],
+        metadata={},
+    )
+
+
 @pytest.mark.parametrize(
-    "config,prompt_starts_with",
+    "config,prompt_starts_with,prompt_contains",
     [
         (
             {"prompt": "data/prompt_templates/test_prompt.jinja2"},
             "Identify the user's message intent",
+            "",
         ),
         (
             {},
             "Given the following information, please provide an answer based on"
             " the provided documents",
+            "",
+        ),
+        (
+            {
+                "prompt": "data/prompt_templates/test_prompt.jinja2",
+                "citation_enabled": True,
+            },
+            "Identify the user's message intent",
+            "",
+        ),
+        (
+            {"citation_enabled": True},
+            "Given the following information, please provide an answer based on"
+            " the provided documents",
+            "Citing Sources",
         ),
     ],
 )
@@ -134,6 +171,7 @@ async def test_enterprise_search_policy_prompt(
     vector_store: InformationRetrieval,
     config: dict,
     prompt_starts_with: str,
+    prompt_contains: str,
 ) -> None:
     """Test that the prompt is set correctly based on the config."""
     policy = EnterpriseSearchPolicy(
@@ -144,6 +182,7 @@ async def test_enterprise_search_policy_prompt(
         vector_store=vector_store,
     )
     assert policy.prompt_template.startswith(prompt_starts_with)
+    assert prompt_contains in policy.prompt_template
     with patch(
         "rasa.core.policies.enterprise_search_policy.llm_factory",
         Mock(return_value=FakeListLLM(responses=["Hello there", "Goodbye"])),
@@ -160,6 +199,7 @@ async def test_enterprise_search_policy_prompt(
                 default_execution_context,
             )
     assert loaded.prompt_template.startswith(prompt_starts_with)
+    assert prompt_contains in loaded.prompt_template
 
 
 @pytest.mark.parametrize(
@@ -661,12 +701,17 @@ def test_enterprise_search_policy_citation_enabled(
     )
 
     assert policy.citation_enabled is True
+    assert policy.prompt_template == policy.citation_prompt_template
 
 
 def test_enterprise_search_policy_citation_disabled(
     default_enterprise_search_policy: EnterpriseSearchPolicy,
 ) -> None:
     assert default_enterprise_search_policy.citation_enabled is False
+    assert (
+        default_enterprise_search_policy.prompt_template
+        != default_enterprise_search_policy.citation_prompt_template
+    )
 
 
 def test_enterprise_search_policy_post_process_citations_same_order(
@@ -936,3 +981,140 @@ You can find directions to campus by following PA Route {number} West, turning l
 Sources:
 [1] docs/txt/52a4386a.txt""".strip()  # noqa: E501
     )
+
+
+async def test_enterprise_search_policy_tracker_state_is_passed(
+    mocked_enterprise_search_policy: EnterpriseSearchPolicy,
+    enterprise_search_tracker: DialogueStateTracker,
+) -> None:
+    tracker = enterprise_search_tracker
+
+    with patch("rasa.shared.utils.llm.llm_factory") as mock_llm_factory:
+        mock_llm = MagicMock()
+        mock_llm_factory.return_value = mock_llm.return_value
+
+        # assert self.vector_store.search was called with tracker_state
+        with patch.object(
+            mocked_enterprise_search_policy.vector_store,
+            "search",
+            return_value=[],
+        ) as mock_search:
+            await mocked_enterprise_search_policy.predict_action_probabilities(
+                tracker=tracker,
+                domain=Domain.empty(),
+                endpoints=None,
+            )
+
+            mock_search.assert_called_once_with(
+                query="what is the meaning of life?",
+                tracker_state=tracker.current_state(EventVerbosity.AFTER_RESTART),
+                threshold=0.0,
+            )
+
+
+def test_enterprise_search_policy_use_llm_config(
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    vector_store: InformationRetrieval,
+) -> None:
+    policy = EnterpriseSearchPolicy(
+        config={
+            USE_LLM_PROPERTY: False,
+        },
+        model_storage=default_model_storage,
+        resource=Resource("enterprisesearchpolicy"),
+        execution_context=default_execution_context,
+        vector_store=vector_store,
+    )
+    assert policy.config.get(USE_LLM_PROPERTY) is False
+
+
+async def test_enterprise_search_policy_response_with_use_llm_false(
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    vector_store: InformationRetrieval,
+    enterprise_search_tracker: DialogueStateTracker,
+    search_results: SearchResultList,
+) -> None:
+    """
+    Given the `USE_LLM_PROPERTY` is set to False, the policy should return
+    a response without using the LLM. Response text should be from the first
+    search result.
+    """
+    policy = EnterpriseSearchPolicy(
+        config={USE_LLM_PROPERTY: False},
+        model_storage=default_model_storage,
+        resource=Resource("enterprisesearchpolicy"),
+        execution_context=default_execution_context,
+        vector_store=vector_store,
+    )
+
+    with patch("rasa.shared.utils.llm.llm_factory") as mock_llm_factory:
+        mock_llm = MagicMock()
+        mock_llm_factory.return_value = mock_llm.return_value
+
+        # mock self.vector_store.search() to return search results
+        with patch.object(
+            policy.vector_store,
+            "search",
+            return_value=search_results,
+        ):
+            prediction = await policy.predict_action_probabilities(
+                tracker=enterprise_search_tracker,
+                domain=Domain.empty(),
+                endpoints=None,
+            )
+
+            assert isinstance(prediction, PolicyPrediction)
+            assert (
+                prediction.action_metadata.get("message").get("text") == "test response"
+            )
+
+
+async def test_enterprise_search_policy_response_with_use_llm_true(
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    vector_store: InformationRetrieval,
+    enterprise_search_tracker: DialogueStateTracker,
+    search_results: SearchResultList,
+) -> None:
+    """
+    Given the `USE_LLM_PROPERTY` is set to True, the policy should return
+    a response using the LLM. Response text should be from the LLM.
+    """
+    policy = EnterpriseSearchPolicy(
+        config={USE_LLM_PROPERTY: True},
+        model_storage=default_model_storage,
+        resource=Resource("enterprisesearchpolicy"),
+        execution_context=default_execution_context,
+        vector_store=vector_store,
+    )
+
+    with patch("rasa.shared.utils.llm.llm_factory") as mock_llm_factory:
+        mock_llm = MagicMock()
+        mock_llm_factory.return_value = mock_llm.return_value
+
+        # mock self.vector_store.search() to return search results
+        with patch.object(
+            policy.vector_store,
+            "search",
+            return_value=search_results,
+        ):
+            # mock self._generate_llm_answer(llm, prompt) to
+            # return LLM generated response
+            with patch.object(
+                policy,
+                "_generate_llm_answer",
+                return_value="LLM generated response",
+            ):
+                prediction = await policy.predict_action_probabilities(
+                    tracker=enterprise_search_tracker,
+                    domain=Domain.empty(),
+                    endpoints=None,
+                )
+
+                assert isinstance(prediction, PolicyPrediction)
+                assert (
+                    prediction.action_metadata.get("message").get("text")
+                    == "LLM generated response"
+                )

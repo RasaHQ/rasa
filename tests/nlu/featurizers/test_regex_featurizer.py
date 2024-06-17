@@ -304,7 +304,6 @@ def test_regex_featurizer_no_sequence(
     create_featurizer: Callable[..., RegexFeaturizer],
     spacy_tokenizer: SpacyTokenizer,
 ):
-
     patterns = [
         {"pattern": "[0-9]+", "name": "number", "usage": "intent"},
         {"pattern": "\\bhey*", "name": "hello", "usage": "intent"},
@@ -402,7 +401,6 @@ def test_regex_featurizer_case_sensitive(
     create_featurizer: Callable[..., RegexFeaturizer],
     spacy_tokenizer: SpacyTokenizer,
 ):
-
     patterns = [
         {"pattern": "[0-9]+", "name": "number", "usage": "intent"},
         {"pattern": "\\bhey*", "name": "hello", "usage": "intent"},

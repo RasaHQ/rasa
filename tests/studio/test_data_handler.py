@@ -1065,7 +1065,7 @@ def test_diff_generator_nlu(
                                             target_reference=FlowStepSequence(
                                                 child_steps=[
                                                     LinkFlowStep(
-                                                        custom_id="1_link_replace_eligible_card",  # noqa: E501
+                                                        custom_id="1_link_replace_eligible_card",
                                                         idx=1,
                                                         description=None,
                                                         metadata={},
@@ -1080,7 +1080,7 @@ def test_diff_generator_nlu(
                                             target_reference=FlowStepSequence(
                                                 child_steps=[
                                                     ActionFlowStep(
-                                                        custom_id="2_utter_relevant_card_not_linked",  # noqa: E501
+                                                        custom_id="2_utter_relevant_card_not_linked",
                                                         idx=2,
                                                         description=None,
                                                         metadata={},
@@ -1091,7 +1091,7 @@ def test_diff_generator_nlu(
                                                                 )
                                                             ]
                                                         ),
-                                                        action="utter_relevant_card_not_linked",  # noqa: E501
+                                                        action="utter_relevant_card_not_linked",
                                                     )
                                                 ]
                                             )
@@ -1160,7 +1160,7 @@ def test_diff_generator_nlu(
                                             target_reference=FlowStepSequence(
                                                 child_steps=[
                                                     LinkFlowStep(
-                                                        custom_id="1_link_replace_eligible_card",  # noqa: E501
+                                                        custom_id="1_link_replace_eligible_card",
                                                         idx=1,
                                                         description=None,
                                                         metadata={},
@@ -1175,7 +1175,7 @@ def test_diff_generator_nlu(
                                             target_reference=FlowStepSequence(
                                                 child_steps=[
                                                     ActionFlowStep(
-                                                        custom_id="2_utter_relevant_card_not_linked",  # noqa: E501
+                                                        custom_id="2_utter_relevant_card_not_linked",
                                                         idx=2,
                                                         description=None,
                                                         metadata={},
@@ -1186,7 +1186,7 @@ def test_diff_generator_nlu(
                                                                 )
                                                             ]
                                                         ),
-                                                        action="utter_relevant_card_not_linked",  # noqa: E501
+                                                        action="utter_relevant_card_not_linked",
                                                     )
                                                 ]
                                             )
@@ -1225,7 +1225,7 @@ def test_diff_generator_nlu(
                                             target_reference=FlowStepSequence(
                                                 child_steps=[
                                                     LinkFlowStep(
-                                                        custom_id="1_link_replace_eligible_card",  # noqa: E501
+                                                        custom_id="1_link_replace_eligible_card",
                                                         idx=1,
                                                         description=None,
                                                         metadata={},
@@ -1240,7 +1240,7 @@ def test_diff_generator_nlu(
                                             target_reference=FlowStepSequence(
                                                 child_steps=[
                                                     ActionFlowStep(
-                                                        custom_id="2_utter_relevant_card_not_linked",  # noqa: E501
+                                                        custom_id="2_utter_relevant_card_not_linked",
                                                         idx=2,
                                                         description=None,
                                                         metadata={},
@@ -1251,7 +1251,7 @@ def test_diff_generator_nlu(
                                                                 )
                                                             ]
                                                         ),
-                                                        action="utter_relevant_card_not_linked",  # noqa: E501
+                                                        action="utter_relevant_card_not_linked",
                                                     )
                                                 ]
                                             )
@@ -1320,7 +1320,7 @@ def test_diff_generator_nlu(
                                             target_reference=FlowStepSequence(
                                                 child_steps=[
                                                     LinkFlowStep(
-                                                        custom_id="1_link_replace_eligible_card",  # noqa: E501
+                                                        custom_id="1_link_replace_eligible_card",
                                                         idx=1,
                                                         description=None,
                                                         metadata={},
@@ -1335,7 +1335,7 @@ def test_diff_generator_nlu(
                                             target_reference=FlowStepSequence(
                                                 child_steps=[
                                                     ActionFlowStep(
-                                                        custom_id="2_utter_relevant_card_not_linked",  # noqa: E501
+                                                        custom_id="2_utter_relevant_card_not_linked",
                                                         idx=2,
                                                         description=None,
                                                         metadata={},
@@ -1346,7 +1346,7 @@ def test_diff_generator_nlu(
                                                                 )
                                                             ]
                                                         ),
-                                                        action="utter_relevant_card_not_linked",  # noqa: E501
+                                                        action="utter_relevant_card_not_linked",
                                                     )
                                                 ]
                                             )

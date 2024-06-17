@@ -17,6 +17,9 @@ from rasa.core.policies.flows.flow_step_result import (
     FlowStepResult,
     PauseFlowReturnPrediction,
 )
+from rasa.dialogue_understanding.patterns.internal_error import (
+    InternalErrorPatternFlowStackFrame,
+)
 from rasa.dialogue_understanding.patterns.search import SearchPatternFlowStackFrame
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import (
@@ -42,7 +45,7 @@ from rasa.dialogue_understanding.stack.utils import (
 
 from pypred import Predicate
 
-from rasa.shared.core.constants import ACTION_LISTEN_NAME
+from rasa.shared.core.constants import ACTION_LISTEN_NAME, SlotMappingType
 from rasa.shared.core.events import (
     Event,
     FlowCompleted,
@@ -397,7 +400,6 @@ def advance_flows_until_next_action(
     number_of_steps_taken = 0
 
     while isinstance(step_result, ContinueFlowWithNextStep):
-
         number_of_steps_taken += 1
         if number_of_steps_taken > MAX_NUMBER_OF_STEPS:
             raise FlowCircuitBreakerTrippedException(
@@ -467,6 +469,33 @@ def advance_flows_until_next_action(
         return FlowActionPrediction(None, 0.0, events=gathered_events)
 
 
+def validate_custom_slot_mappings(
+    step: CollectInformationFlowStep,
+    stack: DialogueStack,
+    tracker: DialogueStateTracker,
+    available_actions: List[str],
+) -> bool:
+    """Validate a slot with custom mappings.
+
+    If invalid, trigger pattern_internal_error and return False.
+    """
+    slot = tracker.slots.get(step.collect, None)
+    slot_mappings = slot.mappings if slot else []
+    for mapping in slot_mappings:
+        if mapping.get("type") == SlotMappingType.CUSTOM.value:
+            # this is a slot that must be filled by a custom action
+            # check if collect_action exists
+            if step.collect_action not in available_actions:
+                structlogger.warning(
+                    "flow.step.run.collect_action_not_found_for_custom_slot_mapping",
+                    action=step.collect_action,
+                    collect=step.collect,
+                )
+                stack.push(InternalErrorPatternFlowStackFrame())
+                return False
+    return True
+
+
 def run_step(
     step: FlowStep,
     flow: Flow,
@@ -500,6 +529,12 @@ def run_step(
         initial_events.append(FlowStarted(flow.id))
 
     if isinstance(step, CollectInformationFlowStep):
+        is_valid = validate_custom_slot_mappings(
+            step, stack, tracker, available_actions
+        )
+        if not is_valid:
+            return ContinueFlowWithNextStep(events=initial_events)
+
         structlogger.debug("flow.step.run.collect")
         trigger_pattern_ask_collect_information(
             step.collect, stack, step.rejections, step.utter, step.collect_action

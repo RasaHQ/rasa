@@ -27,9 +27,7 @@ async def test_tracing_endpoint_config_request(
     test_json = {"test": "value"}
     await mock_endpoint_config.request(json=test_json)
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1

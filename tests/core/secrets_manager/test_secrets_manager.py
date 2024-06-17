@@ -61,7 +61,7 @@ def test_endpoint_resolver_update_credentials_from_secret_manager(
     assert result["password"] == credentials[1]
 
 
-def test_endpoint_resolver_update_credentials_from_secret_manager_secret_not_found(  # noqa: E501
+def test_endpoint_resolver_update_credentials_from_secret_manager_secret_not_found(
     caplog: LogCaptureFixture,
     vault_secrets_manager: VaultSecretsManager,
     monkeypatch: MonkeyPatch,

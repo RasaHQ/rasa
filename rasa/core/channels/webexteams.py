@@ -78,7 +78,6 @@ class WebexTeamsInput(InputChannel):
         sender_id: Optional[Text],
         metadata: Optional[Dict],
     ) -> Any:
-
         try:
             out_channel = self.get_output_channel()
             user_msg = UserMessage(

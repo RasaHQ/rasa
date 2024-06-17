@@ -23,7 +23,6 @@ from rasa.shared.utils.yaml import read_config_file
 from rasa.utils.io import write_yaml
 
 if TYPE_CHECKING:
-
     from questionary import Question
     from typing_extensions import Literal
     from rasa.validator import Validator
@@ -39,8 +38,7 @@ def get_validated_path(
     parameter: Text,
     default: Optional[Union[Path, Text, List[Text]]] = ...,
     none_is_valid: "Literal[False]" = ...,
-) -> Union[Path, Text]:
-    ...
+) -> Union[Path, Text]: ...
 
 
 @overload
@@ -49,8 +47,7 @@ def get_validated_path(
     parameter: Text,
     default: Optional[Union[Path, Text, List[Text]]] = ...,
     none_is_valid: "Literal[True]" = ...,
-) -> Optional[Union[Path, Text]]:
-    ...
+) -> Optional[Union[Path, Text]]: ...
 
 
 def get_validated_path(
@@ -158,9 +155,9 @@ def validate_assistant_id_in_config(config_file: Union["Path", Text]) -> None:
 
         # add random value for assistant id, overwrite config file
         time_format = "%Y%m%d-%H%M%S"
-        config_data[
-            ASSISTANT_ID_KEY
-        ] = f"{time.strftime(time_format)}-{randomname.get_name()}"
+        config_data[ASSISTANT_ID_KEY] = (
+            f"{time.strftime(time_format)}-{randomname.get_name()}"
+        )
 
         write_yaml(data=config_data, target=config_file, should_preserve_key_order=True)
 
@@ -302,6 +299,7 @@ def _validate_domain(validator: "Validator") -> bool:
     valid_form_slots = validator.verify_form_slots()
     valid_slot_mappings = validator.verify_slot_mappings()
     valid_responses = validator.check_for_no_empty_paranthesis_in_responses()
+    valid_buttons = validator.validate_button_payloads()
     return (
         valid_domain_validity
         and valid_actions_in_stories_rules
@@ -309,6 +307,7 @@ def _validate_domain(validator: "Validator") -> bool:
         and valid_form_slots
         and valid_slot_mappings
         and valid_responses
+        and valid_buttons
     )
 
 

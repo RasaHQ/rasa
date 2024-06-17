@@ -30,6 +30,7 @@ from rasa.dialogue_understanding.coexistence.constants import (
     STICKY,
     NON_STICKY,
 )
+from rasa.dialogue_understanding.generator import LLMCommandGenerator
 from rasa.dialogue_understanding.patterns.chitchat import FLOW_PATTERN_CHITCHAT
 from rasa.engine.constants import RESERVED_PLACEHOLDERS
 from rasa.engine.exceptions import GraphSchemaValidationException
@@ -502,7 +503,6 @@ def _validate_parent_return_type(
     parent_return_type: TypeAnnotation,
     required_type: TypeAnnotation,
 ) -> None:
-
     if not typing_utils.issubtype(parent_return_type, required_type):
         parent_node_text = ""
         if parent_node:
@@ -605,7 +605,6 @@ def _recursively_check_required_components(
 def validate_flow_component_dependencies(
     flows: FlowsList, model_configuration: GraphModelConfiguration
 ) -> None:
-
     if (pattern_chitchat := flows.flow_by_id(FLOW_PATTERN_CHITCHAT)) is not None:
         _validate_chitchat_dependencies(pattern_chitchat, model_configuration)
 
@@ -644,7 +643,6 @@ def validate_coexistance_routing_setup(
         IntentBasedRouter,
     )
     from rasa.dialogue_understanding.coexistence.llm_based_router import LLMBasedRouter
-    from rasa.dialogue_understanding.generator import LLMCommandGenerator
 
     def get_component_index(
         schema: GraphSchema, component_class: Type
@@ -809,3 +807,30 @@ def validate_coexistance_routing_setup(
     validate_that_slots_are_defined_if_router_is_defined(schema, routing_slots)
     validate_that_router_is_defined_if_router_slots_are_in_domain(schema, routing_slots)
     validate_configuration(schema)
+
+
+def validate_command_generator_setup(
+    model_configuration: GraphModelConfiguration,
+) -> None:
+    def validate_command_generator_exclusivity(schema: GraphSchema) -> None:
+        """Validate that multiple command generators are not defined at same time."""
+        from rasa.dialogue_understanding.generator import (
+            MultiStepLLMCommandGenerator,
+            SingleStepLLMCommandGenerator,
+        )
+
+        if schema.has_node(MultiStepLLMCommandGenerator) and (
+            schema.has_node(SingleStepLLMCommandGenerator)
+            or schema.has_node(LLMCommandGenerator)
+        ):
+            structlogger.error(
+                "validation.command_generator.multiple_command_generator_defined",
+                event_info=(
+                    "Multiple command generators are defined in the config. "
+                    "Please use only one command generator."
+                ),
+            )
+            sys.exit(1)
+
+    schema = model_configuration.predict_schema
+    validate_command_generator_exclusivity(schema)

@@ -62,7 +62,6 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
     """
 
     def __init__(self, endpoint_config: EndpointConfig) -> None:
-
         self.nlg_endpoint = endpoint_config
 
     async def generate(
@@ -82,9 +81,9 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
         body = nlg_request_format(utter_action, tracker, output_channel, **kwargs)
 
         logger.debug(
-            "Requesting NLG for {} from {}."
-            "The request body is {}."
-            "".format(utter_action, self.nlg_endpoint.url, json.dumps(body))
+            "Requesting NLG for {} from {}. The request body is {}.".format(
+                utter_action, self.nlg_endpoint.url, json.dumps(body)
+            )
         )
 
         response = await self.nlg_endpoint.request(

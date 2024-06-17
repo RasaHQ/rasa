@@ -428,7 +428,6 @@ class TestMemoizationPolicy(PolicyTestCollection):
         default_domain: Domain,
         stories_path: Text,
     ):
-
         execution_context = dataclasses.replace(execution_context, is_finetuning=True)
         loaded_policy = MemoizationPolicy.load(
             trained_policy.config, model_storage, resource, execution_context

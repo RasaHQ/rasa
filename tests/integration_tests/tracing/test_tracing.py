@@ -91,7 +91,7 @@ def test_trace_context_propagated_to_action_server(
     rasa_server_endpoint: Text,
     trace_query_timestamps: TraceQueryTimestamps,
 ) -> None:
-    if tracing_service_name == ACTION_SERVER_OTLP_ACTION_SERVER_NAME:
+    if rasa_server_endpoint == RASA_SERVER_OTLP:
         pytest.skip("Temporary disabled due to TLS timeout error")
 
     from api_v3.query_service_pb2 import TraceQueryParameters
@@ -100,8 +100,6 @@ def test_trace_context_propagated_to_action_server(
     sender_id = send_message_to_rasa_server(
         rasa_server_endpoint, ACTION_SERVER_TRIGGER_MESSAGE
     )
-    tracker = _fetch_tracker(server_location=rasa_server_endpoint, sender_id=sender_id)
-    message_id = tracker.get("latest_message", {}).get("message_id")
 
     params = TraceQueryParameters(
         service_name=tracing_service_name,
@@ -118,7 +116,6 @@ def test_trace_context_propagated_to_action_server(
             {
                 "action_name": ACTION_SERVER_ACTION_TRIGGERED,
                 "sender_id": sender_id,
-                "message_id": message_id,
             },
         )
 

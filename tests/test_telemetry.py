@@ -3,7 +3,7 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, Generator, List, Optional, Text
+from typing import Any, Dict, List, Generator, Optional, Text
 
 import yaml
 from pytest import MonkeyPatch, LogCaptureFixture
@@ -22,7 +22,7 @@ from rasa.dialogue_understanding.generator.flow_retrieval import (
     DEFAULT_EMBEDDINGS_CONFIG,
 )
 
-from rasa.e2e_test.e2e_test_case import TestCase, Fixture
+from rasa.e2e_test.e2e_test_case import Fixture, Metadata, TestCase, TestSuite
 from rasa.telemetry import (
     METRICS_BACKEND,
     SEGMENT_IDENTIFY_ENDPOINT,
@@ -38,11 +38,22 @@ from rasa.telemetry import (
     FLOW_RETRIEVAL_EMBEDDING_MODEL_NAME,
     LLM_COMMAND_GENERATOR_MODEL_NAME,
     _get_llm_command_generator_config,
+    TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_COMPLETED_EVENT,
+    TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_STARTED_EVENT,
+    TELEMETRY_ENTERPRISE_SEARCH_POLICY_PREDICT_EVENT,
 )
 from rasa.utils.licensing import LICENSE_ENV_VAR
 
 TELEMETRY_TEST_USER = "083642a3e448423ca652134f00e7fc76"  # just some random static id
 TELEMETRY_TEST_KEY = "5640e893c1324090bff26f655456caf3"  # just some random static id
+ENTERPRISE_SEARCH_TELEMETRY_EVENT_DATA = {
+    "vector_store_type": "qdrant",
+    "embeddings_type": DEFAULT_EMBEDDINGS_CONFIG["_type"],
+    "embeddings_model": DEFAULT_EMBEDDINGS_CONFIG["model"],
+    "llm_type": LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["_type"],
+    "llm_model": LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model_name"],
+    "citation_enabled": True,
+}
 
 
 @pytest.fixture(autouse=True)
@@ -66,6 +77,25 @@ def patch_telemetry_context() -> Generator[None, None, None]:
 
 async def _mock_track_internal_exception(*args, **kwargs) -> None:
     raise Exception("Tracking failed")
+
+
+def get_test_cases() -> List[TestCase]:
+    return [
+        TestCase(name="case 1", steps=[]),
+        TestCase(name="case 2", steps=[]),
+        TestCase(name="case 3", steps=[]),
+    ]
+
+
+def get_test_fixtures() -> List[Fixture]:
+    return [
+        Fixture(name="fixture 1", slots_set={}),
+        Fixture(name="fixture 2", slots_set={}),
+    ]
+
+
+def get_test_metadata() -> List[Metadata]:
+    return [Metadata(name="metadata 1", metadata={})]
 
 
 def test_config_path_empty(monkeypatch: MonkeyPatch):
@@ -656,59 +686,94 @@ def test_get_telemetry_id_invalid(
 
 
 @pytest.mark.parametrize(
-    "input_test_cases, input_fixtures, expected_number_of_test_cases, "
-    "expected_number_of_fixtures, expected_uses_fixtures",
+    """
+    test_suite, expected_number_of_test_cases,
+    expected_number_of_fixtures, expected_uses_fixtures,
+    expected_uses_metadata, expected_number_of_metadata,
+    """,
     [
         (
-            [
-                TestCase(name="case 1", steps=[]),
-                TestCase(name="case 2", steps=[]),
-                TestCase(name="case 3", steps=[]),
-            ],
-            [
-                Fixture(name="fixture 1", slots_set={}),
-                Fixture(name="fixture 2", slots_set={}),
-            ],
+            TestSuite(get_test_cases(), get_test_fixtures(), get_test_metadata()),
             3,
             2,
             True,
+            True,
+            1,
         ),
         (
-            [],
-            [
-                Fixture(name="fixture 1", slots_set={}),
-                Fixture(name="fixture 2", slots_set={}),
-            ],
+            TestSuite([], get_test_fixtures(), get_test_metadata()),
             0,
             2,
             True,
+            True,
+            1,
         ),
         (
-            [
-                TestCase(name="case 1", steps=[]),
-                TestCase(name="case 2", steps=[]),
-                TestCase(name="case 3", steps=[]),
-            ],
-            [],
+            TestSuite(get_test_cases(), [], get_test_metadata()),
             3,
             0,
             False,
+            True,
+            1,
+        ),
+        (
+            TestSuite(get_test_cases(), get_test_fixtures(), []),
+            3,
+            2,
+            True,
+            False,
+            0,
+        ),
+        (
+            TestSuite(get_test_cases(), [], []),
+            3,
+            0,
+            False,
+            False,
+            0,
+        ),
+        (
+            TestSuite([], get_test_fixtures(), []),
+            0,
+            2,
+            True,
+            False,
+            0,
+        ),
+        (
+            TestSuite([], [], get_test_metadata()),
+            0,
+            0,
+            False,
+            True,
+            1,
+        ),
+        (
+            TestSuite([], [], []),
+            0,
+            0,
+            False,
+            False,
+            0,
         ),
     ],
 )
 @patch("rasa.telemetry._track")
 def test_track_e2e_test_run(
     mock_track: MagicMock,
-    input_test_cases: List["TestCase"],
-    input_fixtures: List["Fixture"],
+    test_suite: TestSuite,
     expected_number_of_test_cases: int,
     expected_number_of_fixtures: int,
     expected_uses_fixtures: bool,
+    expected_uses_metadata: bool,
+    expected_number_of_metadata: int,
     monkeypatch: MonkeyPatch,
 ) -> None:
     monkeypatch.setenv(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE, "true")
 
-    telemetry.track_e2e_test_run(input_test_cases, input_fixtures)
+    telemetry.track_e2e_test_run(
+        test_suite.test_cases, test_suite.fixtures, test_suite.metadata
+    )
 
     mock_track.assert_called_once_with(
         TELEMETRY_E2E_TEST_RUN_STARTED_EVENT,
@@ -716,6 +781,8 @@ def test_track_e2e_test_run(
             "number_of_test_cases": expected_number_of_test_cases,
             "number_of_fixtures": expected_number_of_fixtures,
             "uses_fixtures": expected_uses_fixtures,
+            "uses_metadata": expected_uses_metadata,
+            "number_of_metadata": expected_number_of_metadata,
         },
     )
 
@@ -1167,3 +1234,60 @@ def test_get_llm_command_generator_config_no_command_generator_component():
         FLOW_RETRIEVAL_ENABLED: None,
         FLOW_RETRIEVAL_EMBEDDING_MODEL_NAME: None,
     }
+
+
+@patch("rasa.telemetry._track")
+def track_track_enterprise_search_policy_train_started(
+    mock_track: MagicMock,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE, "true")
+
+    telemetry.track_enterprise_search_policy_train_started()
+    mock_track.assert_called_once_with(
+        TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_STARTED_EVENT
+    )
+
+
+@patch("rasa.telemetry._track")
+def test_track_enterprise_search_policy_train_completed(
+    mock_track: MagicMock,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE, "true")
+
+    telemetry.track_enterprise_search_policy_train_completed(
+        "qdrant",
+        DEFAULT_EMBEDDINGS_CONFIG["_type"],
+        DEFAULT_EMBEDDINGS_CONFIG["model"],
+        LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["_type"],
+        LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model_name"],
+        True,
+    )
+
+    mock_track.assert_called_once_with(
+        TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_COMPLETED_EVENT,
+        ENTERPRISE_SEARCH_TELEMETRY_EVENT_DATA,
+    )
+
+
+@patch("rasa.telemetry._track")
+def test_track_enterprise_search_policy_predict(
+    mock_track: MagicMock,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE, "true")
+
+    telemetry.track_enterprise_search_policy_predict(
+        "qdrant",
+        DEFAULT_EMBEDDINGS_CONFIG["_type"],
+        DEFAULT_EMBEDDINGS_CONFIG["model"],
+        LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["_type"],
+        LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model_name"],
+        True,
+    )
+
+    mock_track.assert_called_once_with(
+        TELEMETRY_ENTERPRISE_SEARCH_POLICY_PREDICT_EVENT,
+        ENTERPRISE_SEARCH_TELEMETRY_EVENT_DATA,
+    )

@@ -32,7 +32,8 @@ def test_properly_prepared_tracker(tracker: DialogueStateTracker):
 
     # foo flow is on the stack
     stack = tracker.stack
-    assert (top_frame := stack.top())
+    top_frame = stack.top()
+    assert top_frame
     assert isinstance(top_frame, UserFlowStackFrame)
     assert top_frame.flow_id == "foo"
 
@@ -130,7 +131,8 @@ def test_starting_of_another_flow(tracker: DialogueStateTracker, all_flows: Flow
     execute_commands(tracker, all_flows, Mock())
     stack = tracker.stack
     assert len(stack.frames) == 2
-    assert (top_frame := stack.top())
+    top_frame = stack.top()
+    assert top_frame
     assert isinstance(top_frame, UserFlowStackFrame)
     assert top_frame.flow_id == "bar"
 
@@ -141,7 +143,8 @@ def test_stack_cleaning_command_is_applied_on_changes(tracker: DialogueStateTrac
     execute_commands(tracker, all_flows, Mock())
     stack = tracker.stack
     assert len(stack.frames) == 2
-    assert (top_frame := stack.top())
+    top_frame = stack.top()
+    assert top_frame
     assert isinstance(top_frame, PatternFlowStackFrame)
     assert top_frame.flow_id == FLOW_PATTERN_CODE_CHANGE_ID
 

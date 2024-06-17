@@ -11,7 +11,7 @@ responses:
         template: jinja
 
   utter_can_do_something_else:
-    - text: "What else I can help you with?"
+    - text: "What else can I help you with?"
       metadata:
         rephrase: True
 
@@ -119,6 +119,11 @@ flows:
         next:
           # chitchat fallback
           - if: "'{{context.reason}}' == 'cannot_handle_chitchat'"
+            then:
+              - action: utter_cannot_handle
+                next: "END"
+          # fallback for things that are not supported
+          - if: "'{{context.reason}}' == 'cannot_handle_not_supported'"
             then:
               - action: utter_cannot_handle
                 next: "END"

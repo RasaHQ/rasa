@@ -233,7 +233,6 @@ def requires_auth(
         async def decorated(
             request: Request, *args: Any, **kwargs: Any
         ) -> response.HTTPResponse:
-
             provided = request.args.get("token", None)
 
             # noinspection PyProtectedMember

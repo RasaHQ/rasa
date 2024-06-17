@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-22.04, windows-2019 ]
+        os: [ ubuntu-22.04, windows-2022 ]
         python-version: [ 3.8, 3.9, '3.10' ]
 
     steps:
@@ -52,10 +52,6 @@ jobs:
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 
-    - name: Inject setuptools into poetry's environment
-      run: |
-        poetry self add setuptools
-
     - name: Prevent race condition in poetry build
       # More context about race condition during poetry build can be found here:
       # https://github.com/python-poetry/poetry/issues/7611#issuecomment-1747836233
@@ -79,31 +75,22 @@ jobs:
     - name: Set up virtual environment
       # Poetry on Windows cannot pick up the virtual environments directory properly,
       # and it creates a new one every time the pipeline runs.
-      # This step solves this problem — it tells poetry to always use `.venv` directory inside
+      # This step solves this problem — it tells poetry to always use `.venv` directory inside
       # the project itself, which also makes it easier for us to determine the correct directory
       # that needs to be cached.
       run: poetry config virtualenvs.in-project true
 
-    - name: Upgrade pip (Linux only) 📦
-      # This is needed cause the cryptography module does not install with the out-of-the-box pip version on linux
-      if: matrix.os == 'ubuntu-22.04'
-      run: |
-        poetry run pip install --upgrade pip
-
     - name: Install Dependencies 📦
       run: |
-        make install
-        poetry run python -m pip install transformers
-        poetry run python -m pip install huggingface-hub
-        poetry run python -m pip install stanza
-        poetry run python -m pip install spacy-stanza
-        poetry run python -m pip install https://github.com/explosion/spacy-models/releases/download/es_core_news_lg-3.5.0/es_core_news_lg-3.5.0-py3-none-any.whl
-        poetry run python -m pip install https://github.com/explosion/spacy-models/releases/download/ja_core_news_lg-3.5.0/ja_core_news_lg-3.5.0-py3-none-any.whl
-        poetry run python -m pip install https://github.com/explosion/spacy-models/releases/download/it_core_news_lg-3.5.0/it_core_news_lg-3.5.0-py3-none-any.whl
-        poetry run python -m pip install https://github.com/explosion/spacy-models/releases/download/nl_core_news_lg-3.5.0/nl_core_news_lg-3.5.0-py3-none-any.whl
-        poetry run python -m pip install https://github.com/explosion/spacy-models/releases/download/fr_core_news_lg-3.5.0/fr_core_news_lg-3.5.0-py3-none-any.whl
-        poetry run python -m pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_lg-3.5.0/de_core_news_lg-3.5.0-py3-none-any.whl
-        poetry run python -m pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.5.0/en_core_web_lg-3.5.0-py3-none-any.whl
+        make install-full
+        poetry add spacy-stanza
+        poetry add https://github.com/explosion/spacy-models/releases/download/es_core_news_lg-3.7.0/es_core_news_lg-3.7.0-py3-none-any.whl
+        poetry add https://github.com/explosion/spacy-models/releases/download/ja_core_news_lg-3.7.0/ja_core_news_lg-3.7.0-py3-none-any.whl
+        poetry add https://github.com/explosion/spacy-models/releases/download/it_core_news_lg-3.7.0/it_core_news_lg-3.7.0-py3-none-any.whl
+        poetry add https://github.com/explosion/spacy-models/releases/download/nl_core_news_lg-3.7.0/nl_core_news_lg-3.7.0-py3-none-any.whl
+        poetry add https://github.com/explosion/spacy-models/releases/download/fr_core_news_lg-3.7.0/fr_core_news_lg-3.7.0-py3-none-any.whl
+        poetry add https://github.com/explosion/spacy-models/releases/download/de_core_news_lg-3.7.0/de_core_news_lg-3.7.0-py3-none-any.whl
+        poetry add https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.7.1/en_core_web_lg-3.7.1-py3-none-any.whl
 
     - name: Test Code 🔍
       env:

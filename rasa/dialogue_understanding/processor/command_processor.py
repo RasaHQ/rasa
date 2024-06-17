@@ -118,7 +118,7 @@ def validate_state_of_commands(commands: List[Command]) -> None:
     ]
     if free_form_answer_commands != commands[: len(free_form_answer_commands)]:
         structlogger.error(
-            "command_processor.validate_state_of_commands.free_form_answer_commands_not_at_beginning",  # noqa: E501
+            "command_processor.validate_state_of_commands.free_form_answer_commands_not_at_beginning",
             commands=commands,
         )
         raise ValueError(
@@ -341,7 +341,6 @@ def clean_up_commands(
     clean_commands: List[Command] = []
 
     for command in commands:
-
         if isinstance(command, SetSlotCommand):
             clean_commands = clean_up_slot_command(
                 clean_commands, command, tracker, all_flows, slots_so_far
@@ -355,6 +354,19 @@ def clean_up_commands(
                 ".skip_command_flow_already_cancelled",
                 command=command,
             )
+
+        # if there is a cannot handle command after the previous step,
+        # we don't want to add another one
+        elif isinstance(command, CannotHandleCommand) and contains_command(
+            clean_commands, CannotHandleCommand
+        ):
+            structlogger.debug(
+                "command_processor"
+                ".clean_up_commands"
+                ".skip_command_already_has_cannot_handle",
+                command=command,
+            )
+
         elif isinstance(command, StartFlowCommand) and command.flow == active_flow:
             # drop a start flow command if the starting flow is equal to the currently
             # active flow
