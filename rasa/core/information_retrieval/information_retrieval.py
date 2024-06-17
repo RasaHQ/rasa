@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, Text
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, List, Text, Any, Optional
 
 import structlog
 
 from rasa.shared.exceptions import RasaException
 from rasa.utils.endpoints import EndpointConfig
+import importlib
 
 if TYPE_CHECKING:
     from langchain.schema import Document
@@ -13,6 +15,40 @@ if TYPE_CHECKING:
 
 
 logger = structlog.get_logger()
+
+
+@dataclass
+class SearchResult:
+    text: str
+    metadata: dict
+    score: Optional[float] = None
+
+    @classmethod
+    def from_document(cls, document: Document) -> "SearchResult":
+        """Construct a SearchResult object from Langchain Document object."""
+        return cls(text=document.page_content, metadata=document.metadata)
+
+
+@dataclass
+class SearchResultList:
+    results: List[SearchResult]
+    metadata: dict
+
+    @classmethod
+    def from_document_list(cls, documents: List["Document"]) -> "SearchResultList":
+        """
+        Convert a list of Langchain Documents to a SearchResultList object.
+
+        Args:
+            documents: List of Langchain Documents.
+
+        Returns:
+            SearchResultList object.
+        """
+        return cls(
+            results=[SearchResult.from_document(doc) for doc in documents],
+            metadata={"total_results": len(documents)},
+        )
 
 
 class InformationRetrievalException(RasaException):
@@ -28,6 +64,9 @@ class InformationRetrievalException(RasaException):
 class InformationRetrieval:
     """Base class for any InformationRetrieval implementation."""
 
+    def __init__(self, embeddings: "Embeddings") -> None:
+        self.embeddings = embeddings
+
     def connect(
         self,
         config: EndpointConfig,
@@ -40,8 +79,9 @@ class InformationRetrieval:
     async def search(
         self,
         query: Text,
+        tracker_state: dict[str, Any],
         threshold: float = 0.0,
-    ) -> List["Document"]:
+    ) -> SearchResultList:
         """Search for a document in the InformationRetrieval system."""
         raise NotImplementedError(
             "InformationRetrieval must implement the `search` method."
@@ -65,8 +105,25 @@ def create_from_endpoint_config(
 
         return Qdrant_Store(embeddings=embeddings)
     else:
-        logger.error(
-            "information_retrieval.create_from_endpoint_config.unknown_type",
-            config_type=config_type,
-        )
-        raise ValueError(f"Unknown vector store type '{config_type}'.")
+        # Import the module dynamically
+        try:
+            module_name, class_name = config_type.rsplit(".", 1)
+            module = importlib.import_module(module_name)
+        except ValueError:
+            logger.error(
+                "information_retrieval.create_from_endpoint_config.invalid_config",
+                config_type=config_type,
+            )
+            raise ValueError(
+                f"Invalid configuration for vector store: '{config_type}'. "
+                f"Expected a module path and a class name separated by a dot."
+            )
+        except ModuleNotFoundError:
+            logger.error(
+                "information_retrieval.create_from_endpoint_config.unknown_type",
+                config_type=config_type,
+            )
+            raise ImportError(f"Cannot retrieve class from path {config_type}.")
+
+        external_class = getattr(module, class_name)
+        return external_class(embeddings=embeddings)

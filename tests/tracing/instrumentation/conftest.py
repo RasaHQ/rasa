@@ -25,7 +25,7 @@ from rasa.core.actions.action import Action
 from rasa.core.agent import Agent
 from rasa.core.brokers.broker import EB, EventBroker
 from rasa.core.channels import OutputChannel, UserMessage
-from rasa.core.information_retrieval.information_retrieval import InformationRetrieval
+from rasa.core.information_retrieval import InformationRetrieval
 from rasa.core.lock import TicketLock
 from rasa.core.lock_store import LockStore
 from rasa.core.nlg import NaturalLanguageGenerator
@@ -503,10 +503,14 @@ class MockInformationRetrieval(InformationRetrieval):
 
 class MockNLUCommandAdapter(NLUCommandAdapter):
     def __init__(
-        self, config: Dict[str, Any], model_storage: ModelStorage, resource: Resource
+        self,
+        config: Dict[str, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
     ) -> None:
         self.fail_if_undefined("predict_commands")
-        super().__init__(config, model_storage, resource)
+        super().__init__(config, model_storage, resource, execution_context)
 
     async def predict_commands(
         self,

@@ -1,0 +1,81 @@
+version: "3.1"
+
+intents:
+  - greet
+  - inform_pizza
+  - affirm
+  - deny
+  - inform_address
+  - inform_num_pizza
+  - ask_availability
+
+entities:
+  - pizza_type
+  - number
+
+slots:
+  pizza:
+    type: text
+    mappings:
+        - type: from_entity
+          entity: pizza_type
+  num_pizza:
+    type: float
+    mappings:
+        - type: from_entity
+          entity: number
+          conditions:
+            - active_flow: order_pizza
+  address:
+    type: text
+    mappings:
+      - type: from_text
+        intent: inform_address
+  order_confirmation:
+    type: bool
+    mappings:
+        - type: from_intent
+          intent: affirm
+          value: true
+        - type: from_intent
+          intent: deny
+          value: false
+  route_session_to_calm:
+    type: bool
+  num_tickets:
+    type: float
+    mappings:
+      - type: from_entity
+        entity: number
+  loyalty_points:
+    type: float
+    mappings:
+      - type: custom
+
+responses:
+  utter_ask_pizza:
+    - text: What type of pizza would you like to order?
+
+  utter_place_order:
+    - text: Thank you for your order. Your pizza will be delivered to {address} in 30 minutes.
+
+  utter_ask_num_pizza:
+    - text: How many pizzas would you like to order?
+
+  utter_ask_address:
+    - text: What is the delivery address?
+
+  utter_ask_order_confirmation:
+    - text: You have put in a order for {num_pizza} {pizza} pizzas. Please confirm these details are correct?
+
+  utter_cancel_order:
+    - text: Your order has been cancelled.
+
+  utter_event_availability:
+    - text: "Yes, we have {num_tickets} places available for the store launch event."
+
+  utter_ask_loyalty_points:
+    - text: "Let's proceed checking how many loyalty points you have left."
+
+  utter_use_points:
+    - text: "You have successfully used {loyalty_points} loyalty points."

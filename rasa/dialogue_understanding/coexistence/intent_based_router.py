@@ -19,6 +19,7 @@ from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import ROUTE_TO_CALM_SLOT
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import InvalidConfigException
@@ -111,6 +112,7 @@ class IntentBasedRouter(GraphComponent):
         messages: List[Message],
         flows: FlowsList,
         tracker: Optional[DialogueStateTracker] = None,
+        domain: Optional[Domain] = None,
     ) -> List[Message]:
         """Process a list of messages."""
         if tracker is None:
@@ -118,7 +120,7 @@ class IntentBasedRouter(GraphComponent):
             return messages
 
         for message in messages:
-            commands = await self.predict_commands(message, flows, tracker)
+            commands = await self.predict_commands(message, flows, tracker, domain)
             commands_dicts = [command.as_dict() for command in commands]
             message.set(COMMANDS, commands_dicts, add_to_output=True)
 
@@ -129,6 +131,7 @@ class IntentBasedRouter(GraphComponent):
         message: Message,
         flows: FlowsList,
         tracker: DialogueStateTracker,
+        domain: Optional[Domain] = None,
     ) -> List[Command]:
         if not tracker.has_coexistence_routing_slot:
             raise InvalidConfigException(
@@ -156,7 +159,11 @@ class IntentBasedRouter(GraphComponent):
         self, message: Message, tracker: DialogueStateTracker, flows: FlowsList
     ) -> bool:
         """Check if the intent is part of a nlu trigger."""
-        commands = NLUCommandAdapter.convert_nlu_to_commands(message, tracker, flows)
+        commands = NLUCommandAdapter.convert_nlu_to_commands(
+            message,
+            tracker,
+            flows,
+        )
         return len(commands) > 0
 
     def _generate_command_using_intent(
