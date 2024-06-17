@@ -17,6 +17,7 @@ from rasa.core.nlg.contextual_response_rephraser import ContextualResponseRephra
 from rasa.core.policies.intentless_policy import IntentlessPolicy
 from rasa.core.policies.enterprise_search_policy import EnterpriseSearchPolicy
 from rasa.dialogue_understanding.generator import LLMCommandGenerator
+from rasa.dialogue_understanding.generator import MultiStepLLMCommandGenerator
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
@@ -31,6 +32,7 @@ from rasa.tracing.constants import (
     LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME,
     LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME,
     LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME,
+    MULTI_STEP_LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME,
 )
 from rasa.tracing.instrumentation import instrumentation
 from rasa.tracing.metric_instrument_provider import MetricInstrumentProvider
@@ -84,6 +86,28 @@ def setup_test_llm_command_generator(
 
     return LLMCommandGenerator(
         {}, default_model_storage, Resource("test_llm_command_generator")
+    )
+
+
+def setup_test_multi_step_llm_command_generator(
+    monkeypatch: MonkeyPatch,
+    **kwargs: Any,
+) -> MultiStepLLMCommandGenerator:
+    async def mock_multi_step_llm_command_generate(
+        self: Any, prompt: str
+    ) -> Optional[str]:
+        return ""
+
+    monkeypatch.setattr(
+        MultiStepLLMCommandGenerator,
+        "invoke_llm",
+        mock_multi_step_llm_command_generate,
+    )
+
+    default_model_storage = kwargs.get("default_model_storage")
+
+    return MultiStepLLMCommandGenerator(
+        {}, default_model_storage, Resource("test_multi_step_llm_command_generator")
     )
 
 
@@ -238,6 +262,17 @@ def setup_test_endpoint_config(
             6,
             RASA_CLIENT_REQUEST_DURATION_METRIC_NAME,
             "The duration of the rasa client request",
+        ),
+        (
+            "multi_step_llm_command_generator_class",
+            MultiStepLLMCommandGenerator,
+            setup_test_multi_step_llm_command_generator,
+            ["default_model_storage"],
+            "invoke_llm",
+            ["prompt"],
+            8,
+            MULTI_STEP_LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME,
+            "The duration of MultiStepLLMCommandGenerator's LLM call",
         ),
     ],
 )

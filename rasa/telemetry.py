@@ -132,6 +132,9 @@ TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_COMPLETED_EVENT = (
     "Enterprise Search Policy Training Completed"
 )
 TELEMETRY_ENTERPRISE_SEARCH_POLICY_PREDICT_EVENT = "Enterprise Search Policy Predicted"
+TELEMETRY_MULTI_STEP_LLM_COMMAND_GENERATOR_INITIALISED_EVENT = (
+    "MultiStepLLMCommandGenerator Initialised"
+)
 
 # used to calculate the context on the first call and cache it afterwards
 TELEMETRY_CONTEXT = None
@@ -155,6 +158,15 @@ NUM_CALL_STEPS = "num_call_steps"
 NUM_SHARED_SLOTS_BETWEEN_FLOWS = "num_shared_slots_between_flows"
 LLM_COMMAND_GENERATOR_MODEL_NAME = "llm_command_generator_model_name"
 LLM_COMMAND_GENERATOR_CUSTOM_PROMPT_USED = "llm_command_generator_custom_prompt_used"
+MULTI_STEP_LLM_COMMAND_GENERATOR_MODEL_NAME = (
+    "multi_step_llm_command_generator_model_name"
+)
+MULTI_STEP_LLM_COMMAND_GENERATOR_START_OR_END_FLOWS_PROMPT = (
+    "multi_step_llm_command_generator_custom_start_or_end_flows_prompt"
+)
+MULTI_STEP_LLM_COMMAND_GENERATOR_FILL_SLOTS_PROMPT = (
+    "multi_step_llm_command_generator_custom_fill_slots_prompt"
+)
 FLOW_RETRIEVAL_ENABLED = "flow_retrieval_enabled"
 FLOW_RETRIEVAL_EMBEDDING_MODEL_NAME = "flow_retrieval_embedding_model_name"
 TRACING_BACKEND = "tracing_backend"
@@ -1628,5 +1640,22 @@ def track_enterprise_search_policy_predict(
             "llm_type": llm_type,
             "llm_model": llm_model,
             "citation_enabled": citation_enabled,
+        },
+    )
+
+
+@ensure_telemetry_enabled
+def track_multi_step_llm_command_generator_init(
+    llm_model_name: Optional[str],
+    start_or_end_flows_prompt: Optional[str],
+    fill_slots_prompt: Optional[str],
+) -> None:
+    """Track MultiStepLLMCommandGenerator initialisation event."""
+    _track(
+        TELEMETRY_MULTI_STEP_LLM_COMMAND_GENERATOR_INITIALISED_EVENT,
+        {
+            MULTI_STEP_LLM_COMMAND_GENERATOR_MODEL_NAME: llm_model_name,
+            MULTI_STEP_LLM_COMMAND_GENERATOR_START_OR_END_FLOWS_PROMPT: start_or_end_flows_prompt,  # noqa
+            MULTI_STEP_LLM_COMMAND_GENERATOR_FILL_SLOTS_PROMPT: fill_slots_prompt,
         },
     )

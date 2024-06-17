@@ -14,9 +14,6 @@ from rasa.core.lock_store import LOCK_LIFETIME, LockStore
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import TrackerStore
 from rasa.dialogue_understanding.commands import Command
-from rasa.dialogue_understanding.generator.llm_command_generator import (
-    LLMCommandGenerator,
-)
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.engine.graph import GraphModelConfiguration, GraphNode, ExecutionContext
 from rasa.engine.training.graph_trainer import GraphTrainer
@@ -39,7 +36,10 @@ if TYPE_CHECKING:
     from rasa.core.policies.enterprise_search_policy import EnterpriseSearchPolicy
     from rasa.core.policies.intentless_policy import IntentlessPolicy
     from rasa.core.policies.policy import PolicyPrediction
-    from rasa.dialogue_understanding.generator.command_generator import CommandGenerator
+    from rasa.dialogue_understanding.generator import (
+        CommandGenerator,
+        LLMBasedCommandGenerator,
+    )
     from rasa.utils.endpoints import EndpointConfig
 
 # This file contains all attribute extractors for tracing instrumentation.
@@ -315,11 +315,11 @@ def extract_llm_config(self: Any, default_llm_config: Dict[str, Any]) -> Dict[st
     return attributes
 
 
-def extract_attrs_for_llm_command_generator(
-    self: LLMCommandGenerator,
+def extract_attrs_for_llm_based_command_generator(
+    self: "LLMBasedCommandGenerator",
     prompt: str,
 ) -> Dict[str, Any]:
-    from rasa.dialogue_understanding.generator.llm_command_generator import (
+    from rasa.dialogue_understanding.generator.constants import (
         DEFAULT_LLM_CONFIG,
     )
 

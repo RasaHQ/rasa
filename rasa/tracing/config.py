@@ -26,6 +26,7 @@ from rasa.dialogue_understanding.commands import (
 from rasa.dialogue_understanding.generator.llm_command_generator import (
     LLMCommandGenerator,
 )
+from rasa.dialogue_understanding.generator import MultiStepLLMCommandGenerator
 from rasa.dialogue_understanding.generator.nlu_command_adapter import NLUCommandAdapter
 from rasa.engine.graph import GraphNode
 from rasa.engine.training.graph_trainer import GraphTrainer
@@ -94,6 +95,7 @@ def configure_tracing(tracer_provider: Optional[TracerProvider]) -> None:
         vector_store_subclasses=vector_store_subclasses,
         nlu_command_adapter_class=NLUCommandAdapter,
         endpoint_config_class=EndpointConfig,
+        multi_step_llm_command_generator_class=MultiStepLLMCommandGenerator,
     )
 
 

@@ -36,6 +36,7 @@ from rasa.dialogue_understanding.commands import Command, StartFlowCommand
 from rasa.dialogue_understanding.generator.llm_command_generator import (
     LLMCommandGenerator,
 )
+from rasa.dialogue_understanding.generator import MultiStepLLMCommandGenerator
 from rasa.dialogue_understanding.generator.nlu_command_adapter import NLUCommandAdapter
 from rasa.engine.caching import LocalTrainingCache, TrainingCache
 from rasa.engine.graph import (
@@ -304,6 +305,31 @@ class MockGraphTrainer(GraphTrainer):
 
 
 class MockLLMCommandgenerator(LLMCommandGenerator):
+    def __init__(
+        self,
+        config: Dict[str, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+    ) -> None:
+        self.fail_if_undefined("invoke_llm")
+        super().__init__(config, model_storage, resource)
+
+    def fail_if_undefined(self, method_name: Text) -> None:
+        if not (
+            hasattr(self.__class__.__base__, method_name)
+            and callable(getattr(self.__class__.__base__, method_name))
+        ):
+            pytest.fail(
+                f"method '{method_name}' not found in {self.__class__.__base__}. "
+                f"This likely means the method was renamed, which means the "
+                f"instrumentation needs to be adapted!"
+            )
+
+    async def invoke_llm(self, prompt: str) -> Optional[str]:
+        pass
+
+
+class MockMultiStepLLMCommandGenerator(MultiStepLLMCommandGenerator):
     def __init__(
         self,
         config: Dict[str, Any],

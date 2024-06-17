@@ -37,12 +37,14 @@ from rasa.dialogue_understanding.commands import Command
 from rasa.dialogue_understanding.generator.llm_command_generator import (
     LLMCommandGenerator,
 )
+from rasa.dialogue_understanding.generator import MultiStepLLMCommandGenerator
 from rasa.dialogue_understanding.generator.nlu_command_adapter import NLUCommandAdapter
 from rasa.engine.graph import GraphNode
 from rasa.engine.training.graph_trainer import GraphTrainer
 from rasa.shared.constants import DOCS_BASE_URL
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.nlu.constants import SET_SLOT_COMMAND
 from rasa.shared.nlu.training_data.message import Message
 from rasa.tracing.instrumentation.intentless_policy_instrumentation import (
     _instrument_extract_ai_responses,
@@ -52,6 +54,7 @@ from rasa.tracing.instrumentation.intentless_policy_instrumentation import (
 )
 from rasa.tracing.instrumentation.metrics import (
     record_llm_command_generator_metrics,
+    record_multi_step_llm_command_generator_metrics,
     record_callable_duration_metrics,
     record_request_size_in_bytes,
 )
@@ -244,6 +247,9 @@ GraphNodeType = TypeVar("GraphNodeType", bound=GraphNode)
 LockStoreType = TypeVar("LockStoreType", bound=LockStore)
 GraphTrainerType = TypeVar("GraphTrainerType", bound=GraphTrainer)
 LLMCommandGeneratorType = TypeVar("LLMCommandGeneratorType", bound=LLMCommandGenerator)
+MultiStepLLMCommandGeneratorType = TypeVar(
+    "MultiStepLLMCommandGeneratorType", bound=MultiStepLLMCommandGenerator
+)
 CommandType = TypeVar("CommandType", bound=Command)
 PolicyType = TypeVar("PolicyType", bound=Policy)
 InformationRetrievalType = TypeVar(
@@ -268,6 +274,9 @@ def instrument(
     vector_store_subclasses: Optional[List[Type[InformationRetrievalType]]] = None,
     nlu_command_adapter_class: Optional[Type[NLUCommandAdapterType]] = None,
     endpoint_config_class: Optional[Type[EndpointConfigType]] = None,
+    multi_step_llm_command_generator_class: Optional[
+        Type[MultiStepLLMCommandGeneratorType]
+    ] = None,
 ) -> None:
     """Substitute methods to be traced by their traced counterparts.
 
@@ -305,6 +314,9 @@ def instrument(
         `None` is given, no `NLUCommandAdapter` will be instrumented.
     :param endpoint_config_class: The `EndpointConfig` to be instrumented. If
         `None` is given, no `EndpointConfig` will be instrumented.
+    :param multi_step_llm_command_generator_class: The `MultiStepLLMCommandGenerator`
+        to be instrumented. If `None` is given, no `MultiStepLLMCommandGenerator` will
+        be instrumented.
     """
     if agent_class is not None and not class_is_instrumented(agent_class):
         _instrument_method(
@@ -375,7 +387,7 @@ def instrument(
             tracer_provider.get_tracer(llm_command_generator_class.__module__),
             llm_command_generator_class,
             "invoke_llm",
-            attribute_extractors.extract_attrs_for_llm_command_generator,
+            attribute_extractors.extract_attrs_for_llm_based_command_generator,
             metrics_recorder=record_llm_command_generator_metrics,
         )
         _instrument_method(
@@ -385,6 +397,26 @@ def instrument(
             attribute_extractors.extract_attrs_for_check_commands_against_startable_flows,
         )
         mark_class_as_instrumented(llm_command_generator_class)
+
+    if multi_step_llm_command_generator_class is not None and not class_is_instrumented(
+        multi_step_llm_command_generator_class
+    ):
+        _instrument_method(
+            tracer_provider.get_tracer(
+                multi_step_llm_command_generator_class.__module__
+            ),
+            multi_step_llm_command_generator_class,
+            "invoke_llm",
+            attribute_extractors.extract_attrs_for_llm_based_command_generator,
+            metrics_recorder=record_multi_step_llm_command_generator_metrics,
+        )
+        _instrument_multi_step_llm_command_generator_parse_commands(
+            tracer_provider.get_tracer(
+                multi_step_llm_command_generator_class.__module__
+            ),
+            multi_step_llm_command_generator_class,
+        )
+        mark_class_as_instrumented(multi_step_llm_command_generator_class)
 
     if command_subclasses:
         for command_subclass in command_subclasses:
@@ -520,6 +552,51 @@ def _instrument_nlu_command_adapter_predict_commands(
 
     logger.debug(
         f"Instrumented '{nlu_command_adapter_class.__name__}.predict_commands'."
+    )
+
+
+def _instrument_multi_step_llm_command_generator_parse_commands(
+    tracer: Tracer,
+    multi_step_llm_command_generator_class: Type[MultiStepLLMCommandGeneratorType],
+) -> None:
+    def tracing_multi_step_llm_command_generator_parse_commands_wrapper(
+        fn: Callable,
+    ) -> Callable:
+        @functools.wraps(fn)
+        def wrapper(
+            cls: MultiStepLLMCommandGenerator,
+            actions: Optional[str],
+            tracker: DialogueStateTracker,
+            flows: FlowsList,
+            is_start_or_end_prompt: bool = False,
+        ) -> List[Command]:
+            with tracer.start_as_current_span(
+                f"{cls.__class__.__name__}.{fn.__name__}"
+            ) as span:
+                commands = fn(actions, tracker, flows, is_start_or_end_prompt)
+
+                commands_list = []
+                for command in commands:
+                    command_as_dict = command.as_dict()
+                    command_type = command.command()
+
+                    if command_type == SET_SLOT_COMMAND:
+                        slot_value = command_as_dict.pop("value", None)
+                        command_as_dict["is_slot_value_missing_or_none"] = (
+                            slot_value is None
+                        )
+
+                    commands_list.append(command_as_dict)
+
+                span.set_attributes({"commands": json.dumps(commands_list)})
+                return commands
+
+        return wrapper
+
+    multi_step_llm_command_generator_class.parse_commands = (  # type: ignore[assignment]
+        tracing_multi_step_llm_command_generator_parse_commands_wrapper(
+            multi_step_llm_command_generator_class.parse_commands
+        )
     )
 
 

@@ -41,6 +41,10 @@ from rasa.telemetry import (
     TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_COMPLETED_EVENT,
     TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_STARTED_EVENT,
     TELEMETRY_ENTERPRISE_SEARCH_POLICY_PREDICT_EVENT,
+    TELEMETRY_MULTI_STEP_LLM_COMMAND_GENERATOR_INITIALISED_EVENT,
+    MULTI_STEP_LLM_COMMAND_GENERATOR_MODEL_NAME,
+    MULTI_STEP_LLM_COMMAND_GENERATOR_FILL_SLOTS_PROMPT,
+    MULTI_STEP_LLM_COMMAND_GENERATOR_START_OR_END_FLOWS_PROMPT,
 )
 from rasa.utils.licensing import LICENSE_ENV_VAR
 
@@ -1290,4 +1294,27 @@ def test_track_enterprise_search_policy_predict(
     mock_track.assert_called_once_with(
         TELEMETRY_ENTERPRISE_SEARCH_POLICY_PREDICT_EVENT,
         ENTERPRISE_SEARCH_TELEMETRY_EVENT_DATA,
+    )
+
+
+@patch("rasa.telemetry._track")
+def test_track_multi_step_llm_command_generator_init(
+    mock_track: MagicMock,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE, "true")
+
+    telemetry.track_multi_step_llm_command_generator_init(
+        "test_model",
+        "test_prompt_text1",
+        "test_prompt_text2",
+    )
+
+    mock_track.assert_called_once_with(
+        TELEMETRY_MULTI_STEP_LLM_COMMAND_GENERATOR_INITIALISED_EVENT,
+        {
+            MULTI_STEP_LLM_COMMAND_GENERATOR_MODEL_NAME: "test_model",
+            MULTI_STEP_LLM_COMMAND_GENERATOR_START_OR_END_FLOWS_PROMPT: "test_prompt_text1",
+            MULTI_STEP_LLM_COMMAND_GENERATOR_FILL_SLOTS_PROMPT: "test_prompt_text2",
+        },
     )
