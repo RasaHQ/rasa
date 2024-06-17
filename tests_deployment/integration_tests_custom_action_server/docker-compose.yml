@@ -1,0 +1,43 @@
+version: "3.8"
+
+x-license: &license
+  RASA_PRO_LICENSE: ${RASA_PRO_LICENSE}
+
+services:
+  rasa-pro:
+    image: ${RASA_IMAGE_REGISTRY}:${RASA_IMAGE_TAG}
+    volumes:
+      - "./simple_bot:/app"
+      - "./endpoints-for-rasa.yml:/app/endpoints.yml"
+    entrypoint: ""
+    command: rasa run -p ${RASA_PORT} --enable-api
+    networks: [ 'rasa-pro-network' ]
+    ports:
+      - "${RASA_PORT}:${RASA_PORT}"
+    environment:
+      <<: *license
+    healthcheck:
+      test: curl localhost:${RASA_PORT} || exit 1
+      interval: 10s
+      retries: 10
+      start_period: 15s
+      timeout: 10s
+
+
+  action-server:
+    image: ${RASA_SDK_IMAGE_REGISTRY}:${RASA_SDK_IMAGE_TAG}
+    volumes:
+      - "./endpoints-for-action-server.yml:/app/endpoints.yml"
+      - "./certs/cert.pem:/app/certs/cert.pem"
+      - "./certs/cert-key.pem:/app/certs/cert-key.pem"
+      - "./simple_bot/actions:/app/actions"
+    networks: [ 'rasa-pro-network' ]
+    entrypoint: ""
+    command: python -m rasa_sdk --actions actions -p ${RASA_SDK_PORT}
+    ports:
+      - "${RASA_SDK_PORT}:${RASA_SDK_PORT}"
+    environment:
+      <<: *license
+
+
+networks: { rasa-pro-network: { } }
