@@ -5303,7 +5303,7 @@ description = "Open source machine learning framework to automate text- and voic
 optional = false
 python-versions = ">=3.8,<3.11"
 files = []
-develop = true
+develop = false
 
 [package.dependencies]
 coloredlogs = ">=10,<16"
@@ -5316,6 +5316,7 @@ opentelemetry-sdk = "~1.15.0"
 pluggy = "^1.0.0"
 prompt-toolkit = "^3.0,<3.0.29"
 protobuf = "4.25.3"
+pydantic = "2.6.4"
 "ruamel.yaml" = ">=0.16.5,<0.18.0"
 sanic = "^22.12"
 Sanic-Cors = "^2.0.0"
@@ -5323,8 +5324,10 @@ typing-extensions = ">=4.1.1,<5.0.0"
 websockets = ">=10.0,<12.0"
 
 [package.source]
-type = "directory"
-url = "../rasa-sdk"
+type = "git"
+url = "https://github.com/RasaHQ/rasa-sdk"
+reference = "feature/ATO-1652-add-grpc-support"
+resolved_reference = "8390b58ed5262549c3a6b6163794f9e84b18a96b"
 
 [[package]]
 name = "redis"
@@ -8226,4 +8229,4 @@ transformers = ["sentencepiece", "transformers"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8.1,<3.11"
-content-hash = "abf10b290b3c136968b87c71c3fcfd676e25df1a925f6bc2292e230569f6a590"
+content-hash = "769a8443e897d2101d3999d5e0295378c3722d790710036663432a5aba1abfa9"

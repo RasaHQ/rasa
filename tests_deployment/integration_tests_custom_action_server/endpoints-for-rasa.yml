@@ -1,2 +1,0 @@
-action_endpoint:
-  url: "grpc://action-server:5058"
