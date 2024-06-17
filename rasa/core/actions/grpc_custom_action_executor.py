@@ -1,5 +1,6 @@
 from os.path import abspath
 from typing import Dict, Text, Any, Optional, TYPE_CHECKING
+from urllib.parse import urlparse
 
 import grpc
 import structlog
@@ -36,12 +37,15 @@ class GRPCCustomActionExecutor(CustomActionExecutor):
             action_endpoint: Endpoint configuration of the custom action.
         """
         self.action_name = action_name
-        self.action_endpoint = action_endpoint
         self.request_writer = CustomActionRequestWriter(action_name, action_endpoint)
+        self.action_endpoint = action_endpoint
+
+        parsed_url = urlparse(self.action_endpoint.url)
+        self.request_url = parsed_url.netloc
 
     async def run(
         self, tracker: "DialogueStateTracker", domain: Optional["Domain"] = None
-    ) -> Dict[Text, Any]:
+    ) -> Dict[str, Any]:
         """Execute the custom action using a gRPC request.
 
         Args:
@@ -58,8 +62,8 @@ class GRPCCustomActionExecutor(CustomActionExecutor):
 
     def _request(
         self,
-        json_body: Dict[Text, Any],
-    ) -> Dict[Text, Any]:
+        json_body: Dict[str, Any],
+    ) -> Dict[str, Any]:
         """Perform a single gRPC request to the action server.
 
         Args:
@@ -69,9 +73,7 @@ class GRPCCustomActionExecutor(CustomActionExecutor):
             Response from the action server.
         """
 
-        client = self._create_grpc_client(
-            self.action_endpoint.url, self.action_endpoint.cafile
-        )
+        client = self._create_grpc_client(self.request_url, self.action_endpoint.cafile)
         request_proto = action_webhook_pb2.WebhookRequest()
         request = ParseDict(
             js_dict=json_body, message=request_proto, ignore_unknown_fields=True
@@ -110,7 +112,7 @@ class GRPCCustomActionExecutor(CustomActionExecutor):
 
     @staticmethod
     def _create_grpc_client(
-        url: Text, cert_file: Optional[Text] = None
+        url: str, cert_file: Optional[str] = None
     ) -> action_webhook_pb2_grpc.ActionServerWebhookStub:
         """Create a gRPC client for the action server.
 
@@ -125,9 +127,7 @@ class GRPCCustomActionExecutor(CustomActionExecutor):
         return action_webhook_pb2_grpc.ActionServerWebhookStub(channel)
 
     @staticmethod
-    def _create_channel(
-        url: Optional[Text], cert_ca_file: Optional[Text] = None
-    ) -> grpc.Channel:
+    def _create_channel(url: str, cert_ca_file: Optional[str] = None) -> grpc.Channel:
         """Create a gRPC channel for the action server.
 
         Args:
@@ -152,4 +152,4 @@ class GRPCCustomActionExecutor(CustomActionExecutor):
                 ) from e
 
         else:
-            return grpc.insecure_channel(url.lstrip("grpc://"))
+            return grpc.insecure_channel(url)

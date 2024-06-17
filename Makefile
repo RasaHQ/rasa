@@ -11,6 +11,10 @@ BASE_BUILDER_IMAGE_HASH ?= localdev
 RASA_DEPS_IMAGE_HASH ?= localdev
 IMAGE_TAG ?= rasa-private:rasa-private-dev
 POETRY_VERSION ?= 1.8.2
+BOT_PATH ?=
+MODEL_NAME ?= model
+# find user's id
+USER_ID := $(shell id -u)
 
 help:
 	@echo "make"
@@ -216,7 +220,7 @@ build-docker-builder:
 	docker build . -t rasa-private:base-builder-localdev -f docker/Dockerfile.base-builder --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_IMAGE_HASH=$(BASE_IMAGE_HASH) --progress=plain --platform=$(PLATFORM)
 
 build-docker-rasa-deps:
-	docker build . -t rasa-private:rasa-deps-localdev -f docker/Dockerfile.rasa-deps --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_BUILDER_IMAGE_HASH=$(BASE_BUILDER_IMAGE_HASH) --build-arg POETRY_VERSION=$(POETRY_VERSION) --progress=plain --platform=$(PLATFORM)
+	docker build . -t rasa-private:rasa-deps-localdev -f docker/Dockerfile.rasa-deps --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_BUILDER_IMAGE_HASH=$(BASE_BUILDER_IMAGE_HASH) --build-arg POETRY_VERSION=$(POETRY_VERSION) --progress=plain --platform=$(PLATFORM) --no-cache
 
 build-docker-rasa-image:
 	docker build . -t $(IMAGE_TAG) -f Dockerfile --build-arg IMAGE_BASE_NAME=rasa-private --build-arg BASE_IMAGE_HASH=$(BASE_IMAGE_HASH) --build-arg RASA_DEPS_IMAGE_HASH=$(RASA_DEPS_IMAGE_HASH) --progress=plain --platform=$(PLATFORM)
@@ -263,3 +267,32 @@ stop-metrics-integration-containers:
 
 test-metrics-integration:
 	poetry run pytest $(METRICS_INTEGRATION_TEST_PATH) -n $(JOBS) --junitxml=integration-results-metric.xml
+
+RASA_CUSTOM_ACTION_SERVER_INTEGRATION_TESTS_PATH = $(PWD)/tests_deployment/integration_tests_custom_action_server
+RASA_CUSTOM_ACTION_SERVER_INTEGRATION_TESTS_DOCKER_COMPOSE_PATH = $(RASA_CUSTOM_ACTION_SERVER_INTEGRATION_TESTS_PATH)/docker-compose.yml
+RASA_CUSTOM_ACTION_SERVER_INTEGRATION_TESTS_ENV_FILE = $(RASA_CUSTOM_ACTION_SERVER_INTEGRATION_TESTS_PATH)/env-file
+
+train-nlu-bot:
+	docker run --rm \
+    	-u $(USER_ID) \
+    	--name rasa-pro-training-nlu-bot-${RASA_IMAGE_TAG} \
+		-e RASA_PRO_LICENSE=${RASA_PRO_LICENSE} \
+		-v $(BOT_PATH)\:/app \
+		${RASA_REPOSITORY}:${RASA_IMAGE_TAG} \
+		train --fixed-model-name $(MODEL_NAME)
+
+train-action-server-nlu-bot: BOT_PATH = $(RASA_CUSTOM_ACTION_SERVER_INTEGRATION_TESTS_PATH)/simple_nlu_bot
+train-action-server-nlu-bot: train-nlu-bot
+
+# Run the action server integration test containers.
+run-action-server-containers:
+	docker-compose -f $(RASA_CUSTOM_ACTION_SERVER_INTEGRATION_TESTS_DOCKER_COMPOSE_PATH) --env-file $(RASA_CUSTOM_ACTION_SERVER_INTEGRATION_TESTS_ENV_FILE) up -d
+
+# Stop the action server integration test containers.
+stop-action-server-containers:
+	docker-compose -f $(RASA_CUSTOM_ACTION_SERVER_INTEGRATION_TESTS_DOCKER_COMPOSE_PATH) --env-file $(RASA_CUSTOM_ACTION_SERVER_INTEGRATION_TESTS_ENV_FILE) down
+
+# Run the action server integration tests.
+run-action-server-integration-tests:
+	poetry run pytest $(RASA_CUSTOM_ACTION_SERVER_INTEGRATION_TESTS_PATH) -n $(JOBS) --junitxml=integration-results-action-server.xml
+
