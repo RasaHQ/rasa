@@ -503,10 +503,14 @@ class MockInformationRetrieval(InformationRetrieval):
 
 class MockNLUCommandAdapter(NLUCommandAdapter):
     def __init__(
-        self, config: Dict[str, Any], model_storage: ModelStorage, resource: Resource
+        self,
+        config: Dict[str, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
     ) -> None:
         self.fail_if_undefined("predict_commands")
-        super().__init__(config, model_storage, resource)
+        super().__init__(config, model_storage, resource, execution_context)
 
     async def predict_commands(
         self,

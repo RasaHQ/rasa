@@ -1,8 +1,10 @@
 from typing import Sequence
+from unittest.mock import Mock
 
 from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 
+from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.events import UserUttered
@@ -30,6 +32,7 @@ async def test_tracing_nlu_command_adapter_predict_commands(
         config={},
         model_storage=default_model_storage,
         resource=Resource("nlu_command_adapter"),
+        execution_context=Mock(spec=ExecutionContext),
     )
 
     tracker = DialogueStateTracker.from_events(
