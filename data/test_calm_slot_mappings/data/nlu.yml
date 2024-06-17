@@ -66,3 +66,20 @@ nlu:
       - Are there any tickets left for the store launch event?
       - Are there any tickets left for the store opening?
       - Do you have [4](number) tickets left for the store launch event?
+
+  - intent: correct_order
+    examples: |
+      - I actually need to update my order.
+      - I need to change my order.
+      - I actually want to order [2](number) pizzas.
+      - Need [10](number) pizzas now instead.
+      - I made a mistake in the delivery address.
+      - I need to update the delivery address.
+      - I actually want to order a [vegetarian](pizza_type) pizza.
+      - I actually want to order [pepperoni](pizza_type) pizzas.
+      - Actually, I want to order [2](number) [margherita](pizza_type) pizzas.
+
+  - intent: request_payment
+    examples: |
+        - I would like to pay for my order.
+        - How can I pay for my order?
