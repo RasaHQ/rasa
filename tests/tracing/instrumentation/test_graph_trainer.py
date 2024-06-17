@@ -7,7 +7,6 @@ from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanE
 
 from rasa.shared.data import TrainingType
 from rasa.shared.importers.rasa import RasaFileImporter
-from rasa.shared.utils.yaml import read_yaml_file
 from rasa.tracing.instrumentation import instrumentation
 from tests.tracing.instrumentation.conftest import (
     MockGraphTrainer,
