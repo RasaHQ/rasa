@@ -1,11 +1,16 @@
-import os
 import asyncio
+import os
 import uuid
 from datetime import datetime
-from typing import Generator, Callable, Dict, Text
+from typing import Generator, Callable, Dict, Text, List, Any
 from unittest.mock import patch, Mock
 
 import pytest
+from rasa_sdk import Action, Tracker
+from rasa_sdk.executor import CollectingDispatcher
+from sanic.request import Request
+from scipy import sparse
+
 from rasa.core.agent import Agent
 from rasa.core.channels.channel import CollectingOutputChannel, OutputChannel
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator, NaturalLanguageGenerator
@@ -22,8 +27,6 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.nlu.training_data.features import Features
 from rasa.utils.endpoints import EndpointConfig
-from sanic.request import Request
-from scipy import sparse
 from tests.core.utilities import tracker_from_dialogue
 from tests.dialogues import TEST_MOODBOT_DIALOGUE
 
@@ -269,3 +272,13 @@ async def nlu_trigger_flow_policy_bot_agent(
     return Agent.load(
         model_path=trained_nlu_trigger_flow_policy_bot, action_endpoint=endpoint
     )
+
+
+class MockCustomAction(Action):
+    def name(self) -> str:
+        return "mock_custom_action"
+
+    def run(
+        self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[str, Any]
+    ) -> List[Dict[Text, Any]]:
+        return [{"event": "slot", "value": "rasa", "name": "name"}]

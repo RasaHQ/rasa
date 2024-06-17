@@ -1,16 +1,19 @@
 import logging
+import sys
 import textwrap
+import types
 from datetime import datetime
 from typing import List, Text, Any, Dict, Optional
 from unittest.mock import Mock
 
 import pytest
-from pytest import MonkeyPatch
 from _pytest.logging import LogCaptureFixture
 from aioresponses import aioresponses
 from jsonschema import ValidationError
+from pytest import MonkeyPatch
 
 import rasa.core
+import rasa.shared.utils.common
 from rasa.core.actions import action
 from rasa.core.actions.action import (
     ActionBack,
@@ -34,11 +37,23 @@ from rasa.core.channels import CollectingOutputChannel, OutputChannel
 from rasa.core.channels.slack import SlackBot
 from rasa.core.constants import COMPRESS_ACTION_SERVER_REQUEST_ENV_NAME
 from rasa.core.nlg import NaturalLanguageGenerator
+from rasa.core.nlg.response import TemplatedNaturalLanguageGenerator
 from rasa.shared.constants import (
     LATEST_TRAINING_DATA_FORMAT_VERSION,
     UTTER_PREFIX,
     REQUIRED_SLOTS_KEY,
     ROUTE_TO_CALM_SLOT,
+)
+from rasa.shared.core.constants import (
+    USER_INTENT_SESSION_START,
+    ACTION_LISTEN_NAME,
+    ACTIVE_LOOP,
+    FOLLOWUP_ACTION,
+    REQUESTED_SLOT,
+    SESSION_START_METADATA_SLOT,
+    FLOW_HASHES_SLOT,
+    DEFAULT_ACTION_NAMES,
+    RULE_SNIPPET_ACTION_NAME,
 )
 from rasa.shared.core.domain import (
     ActionNotFoundException,
@@ -73,22 +88,10 @@ from rasa.shared.core.events import (
     LegacyForm,
     RoutingSessionEnded,
 )
-import rasa.shared.utils.common
-from rasa.core.nlg.response import TemplatedNaturalLanguageGenerator
-from rasa.shared.core.constants import (
-    USER_INTENT_SESSION_START,
-    ACTION_LISTEN_NAME,
-    ACTIVE_LOOP,
-    FOLLOWUP_ACTION,
-    REQUESTED_SLOT,
-    SESSION_START_METADATA_SLOT,
-    FLOW_HASHES_SLOT,
-    DEFAULT_ACTION_NAMES,
-    RULE_SNIPPET_ACTION_NAME,
-)
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
 from rasa.utils.endpoints import ClientResponseError, EndpointConfig
+from tests.core.conftest import MockCustomAction
 from tests.utilities import json_of_latest_request, latest_request
 
 
@@ -566,11 +569,20 @@ async def test_remote_action_multiple_events_payload(
 async def test_remote_action_without_endpoint(
     default_channel, default_nlg, default_tracker, domain: Domain
 ):
-    remote_action = action.RemoteAction("my_action", None)
+    # Dynamically create 'actions' module
+    actions = types.ModuleType("actions")
+    sys.modules["actions"] = actions
 
-    with pytest.raises(Exception) as execinfo:
-        await remote_action.run(default_channel, default_nlg, default_tracker, domain)
-    assert "Failed to execute custom action" in str(execinfo.value)
+    MockCustomAction()
+    remote_action = action.RemoteAction("mock_custom_action", None)
+
+    result = await remote_action.run(
+        default_channel, default_nlg, default_tracker, domain
+    )
+    assert result == [SlotSet(key="name", value="rasa")]
+
+    # Clean up the dummy module
+    del sys.modules["actions"]
 
 
 async def test_remote_action_endpoint_not_running(

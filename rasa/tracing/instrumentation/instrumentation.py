@@ -838,23 +838,25 @@ def _instrument_run_action(
             }
             if isinstance(action, RemoteAction):
                 attrs["executor_class_name"] = type(action.executor).__name__
-                if not isinstance(action.action_endpoint, EndpointConfig):
-                    rasa.shared.utils.io.raise_warning(
-                        f"No endpoint is configured to propagate the trace of this "
-                        f"custom action {action.name()}. Please take a look at "
-                        f"the docs and set an endpoint configuration in the "
-                        f"endpoints.yml file",
-                        docs=f"{DOCS_BASE_URL}/custom-actions",
-                    )
-                else:
-                    propagator = TraceContextTextMapPropagator()
-                    propagator.inject(action.action_endpoint.headers)
 
             with tracer.start_as_current_span(
                 f"{self.__class__.__name__}.{fn.__name__}",
                 kind=SpanKind.CLIENT,
                 attributes=attrs,
             ):
+                if isinstance(action, RemoteAction):
+                    if not isinstance(action.action_endpoint, EndpointConfig):
+                        rasa.shared.utils.io.raise_warning(
+                            f"No endpoint is configured to propagate the trace of this "
+                            f"custom action {action.name()}. Please take a look at "
+                            f"the docs and set an endpoint configuration in the "
+                            f"endpoints.yml file",
+                            docs=f"{DOCS_BASE_URL}/custom-actions",
+                        )
+                    else:
+                        propagator = TraceContextTextMapPropagator()
+                        propagator.inject(action.action_endpoint.headers)
+
                 return await fn(self, action, tracker, output_channel, nlg, prediction)
 
         return wrapper
