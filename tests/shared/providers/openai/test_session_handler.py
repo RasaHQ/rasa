@@ -107,8 +107,9 @@ async def test_exit_context_closes_session_and_clears_context_var(
     mock_openai_aiosession.set.assert_called_once_with(None)
 
 
+@pytest.mark.asyncio
 @patch("ssl.create_default_context")
-def test_create_session_with_valid_ssl_context(
+async def test_create_session_with_valid_ssl_context(
     mock_ssl_create_default_context: MagicMock, valid_certificate_path: Path
 ):
     # Given
@@ -126,15 +127,16 @@ def test_create_session_with_valid_ssl_context(
 
 
 @pytest.mark.asyncio
-def test_invalid_certificate_path_raises_value_error():
+async def test_invalid_certificate_path_raises_value_error():
     invalid_path = "invalid_certificate.pem"
     handler = OpenAISessionHandler(certificate_path=invalid_path)
     with pytest.raises(ValueError):
         handler._create_ssl_context()
 
 
+@pytest.mark.asyncio
 @patch("ssl.create_default_context", side_effect=ssl.SSLError())
-def test_exception_in_ssl_context_creation(valid_certificate_path):
+async def test_exception_in_ssl_context_creation(valid_certificate_path):
     handler = OpenAISessionHandler(certificate_path=str(valid_certificate_path))
     with pytest.raises(Exception):
         handler._create_ssl_context()
