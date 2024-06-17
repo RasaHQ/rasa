@@ -1,20 +1,27 @@
+import argparse
 import os
 import sys
 from pathlib import Path
+from unittest.mock import patch
 
 from _pytest.capture import CaptureFixture
 import pytest
-from typing import Callable, List
+from typing import Callable, List, Union
 from _pytest.pytester import RunResult
 from _pytest.tmpdir import TempPathFactory
 
 import rasa.shared.utils.io
+from rasa.cli.train import _check_nlg_endpoint_validity, run_training
 from rasa.constants import NUMBER_OF_TRAINING_STORIES_FILE
 from rasa.core.policies.policy import Policy
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.shared.core.domain import Domain
-from rasa.model_training import CODE_NEEDS_TO_BE_RETRAINED, CODE_FORCED_TRAINING
+from rasa.model_training import (
+    CODE_NEEDS_TO_BE_RETRAINED,
+    CODE_FORCED_TRAINING,
+    TrainingResult,
+)
 
 from rasa.shared.constants import (
     LATEST_TRAINING_DATA_FORMAT_VERSION,
@@ -631,3 +638,52 @@ def test_train_validation_max_history_2(
 
     assert "Story structure conflict" not in str(result.errlines)
     assert result.ret == 0
+
+
+def test_train_validate_nlg_config_valid() -> None:
+    args = argparse.Namespace(
+        domain="data/test_domains/default.yml",
+        config="data/test_config/config_defaults.yml",
+        data=["data/test_moodbot/data"],
+        endpoints="data/test_nlg/endpoint_with_valid_nlg.yml",
+        skip_validation=True,
+        out="models",
+        force=False,
+        fixed_model_name=None,
+        persist_nlu_data=False,
+        epoch_fraction=1.0,
+        dry_run=False,
+        finetune=None,
+    )
+
+    with patch("rasa.train", return_value=TrainingResult(0)):
+        run_training(args)
+
+
+def test_train_validate_nlg_config_invalid() -> None:
+    args = argparse.Namespace(
+        domain="data/test_domains/default.yml",
+        config="data/test_config/config_defaults.yml",
+        data=["data/test_moodbot/data"],
+        endpoints="data/test_nlg/endpoint_with_invalid_nlg.yml",
+    )
+
+    with pytest.raises(SystemExit):
+        run_training(args)
+
+
+@pytest.mark.parametrize(
+    "endpoint_path, expected_error",
+    [
+        ("data/test_nlg/endpoint_with_valid_nlg.yml", False),
+        ("data/test_nlg/endpoint_with_invalid_nlg.yml", True),
+    ],
+)
+def test_train_check_nlg_endpoint_validity(
+    endpoint_path: Union[Path, str], expected_error: bool
+) -> None:
+    if expected_error:
+        with pytest.raises(SystemExit):
+            _check_nlg_endpoint_validity(endpoint=endpoint_path)
+    else:
+        _check_nlg_endpoint_validity(endpoint=endpoint_path)
