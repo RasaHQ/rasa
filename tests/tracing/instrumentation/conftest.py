@@ -33,7 +33,7 @@ from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import TrackerStore
 from rasa.dialogue_understanding.commands import Command, StartFlowCommand
-from rasa.dialogue_understanding.generator.llm_command_generator import (
+from rasa.dialogue_understanding.generator import (
     LLMCommandGenerator,
 )
 from rasa.dialogue_understanding.generator import MultiStepLLMCommandGenerator

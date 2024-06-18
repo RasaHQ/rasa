@@ -56,26 +56,26 @@ from rasa.shared.utils.llm import (
 from rasa.telemetry import track_multi_step_llm_command_generator_init
 
 # multistep template keys
-START_OR_END_FLOW_KEY = "start_or_end_flow"
+HANDLE_FLOWS_KEY = "handle_flows"
 FILL_SLOTS_KEY = "fill_slots"
 
 # multistep template file names
-START_OR_END_FLOWS_PROMPT_FILE_NAME = "start_or_end_flows_prompt.jinja2"
+HANDLE_FLOWS_PROMPT_FILE_NAME = "handle_flows_prompt.jinja2"
 FILL_SLOTS_PROMPT_FILE_NAME = "fill_slots_prompt.jinja2"
 
 # multistep templates
-DEFAULT_START_OR_END_FLOWS_TEMPLATE = importlib.resources.read_text(
-    "rasa.dialogue_understanding.generator", "start_or_end_flows_prompt.jinja2"
+DEFAULT_HANDLE_FLOWS_TEMPLATE = importlib.resources.read_text(
+    "rasa.dialogue_understanding.generator.multi_step", "handle_flows_prompt.jinja2"
 ).strip()
 DEFAULT_FILL_SLOTS_TEMPLATE = importlib.resources.read_text(
-    "rasa.dialogue_understanding.generator", "fill_slots_prompt.jinja2"
+    "rasa.dialogue_understanding.generator.multi_step", "fill_slots_prompt.jinja2"
 ).strip()
 
 # dictionary of template names and associated file names and default values
 PROMPT_TEMPLATES = {
-    START_OR_END_FLOW_KEY: (
-        START_OR_END_FLOWS_PROMPT_FILE_NAME,
-        DEFAULT_START_OR_END_FLOWS_TEMPLATE,
+    HANDLE_FLOWS_KEY: (
+        HANDLE_FLOWS_PROMPT_FILE_NAME,
+        DEFAULT_HANDLE_FLOWS_TEMPLATE,
     ),
     FILL_SLOTS_KEY: (
         FILL_SLOTS_PROMPT_FILE_NAME,
@@ -110,7 +110,7 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
         )
 
         self._prompts: Dict[Text, Optional[Text]] = {
-            START_OR_END_FLOW_KEY: None,
+            HANDLE_FLOWS_KEY: None,
             FILL_SLOTS_KEY: None,
         }
         self._init_prompt_templates(prompt_templates)
@@ -118,7 +118,7 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
         self.trace_prompt_tokens = self.config.get("trace_prompt_tokens", False)
         track_multi_step_llm_command_generator_init(
             llm_model_name=config.get(LLM_CONFIG_KEY, {}).get("model_name"),
-            start_or_end_flows_prompt=self.start_or_end_flows_prompt,
+            handle_flows_prompt=self.handle_flows_prompt,
             fill_slots_prompt=self.fill_slots_prompt,
         )
 
@@ -127,7 +127,7 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
     def get_default_config() -> Dict[str, Any]:
         """The component's default config (see parent class for full docstring)."""
         return {
-            "prompts": {},
+            "prompt_templates": {},
             USER_INPUT_CONFIG_KEY: None,
             LLM_CONFIG_KEY: None,
             FLOW_RETRIEVAL_KEY: FlowRetrieval.get_default_config(),
@@ -204,15 +204,15 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
         change_flows = not commands_from_active_flow or contains_change_flow_command
 
         if change_flows:
-            commands_for_starting_or_ending_flows = (
-                await self.predict_commands_for_starting_and_ending_flows(
+            commands_for_handling_flows = (
+                await self.predict_commands_for_handling_flows(
                     message,
                     tracker,
                     filtered_flows,
                 )
             )
         else:
-            commands_for_starting_or_ending_flows = []
+            commands_for_handling_flows = []
 
         if contains_change_flow_command:
             commands_from_active_flow.pop(
@@ -222,7 +222,7 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
         started_flows = FlowsList(
             [
                 flow
-                for command in commands_for_starting_or_ending_flows
+                for command in commands_for_handling_flows
                 if (
                     isinstance(command, StartFlowCommand)
                     and (flow := filtered_flows.flow_by_id(command.flow)) is not None
@@ -239,7 +239,7 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
         commands = list(
             set(
                 commands_from_active_flow
-                + commands_for_starting_or_ending_flows
+                + commands_for_handling_flows
                 + commands_for_newly_started_flows
             )
         )
@@ -263,7 +263,7 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
         actions: Optional[str],
         tracker: DialogueStateTracker,
         flows: FlowsList,
-        is_start_or_end_prompt: bool = False,
+        is_handle_flows_prompt: bool = False,
     ) -> List[Command]:
         """Parse the actions returned by the llm into intent and entities.
 
@@ -271,7 +271,7 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
             actions: The actions returned by the llm.
             tracker: The tracker containing the current state of the conversation.
             flows: The list of flows.
-            is_start_or_end_prompt: bool
+            is_handle_flows_prompt: bool
 
         Returns:
             The parsed commands.
@@ -295,7 +295,7 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
         cannot_handle_re = re.compile(r"CannotHandle\(\)")
 
         for action in actions.strip().splitlines():
-            if is_start_or_end_prompt:
+            if is_handle_flows_prompt:
                 if (
                     len(commands) >= 2
                     or len(commands) == 1
@@ -350,8 +350,8 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
 
     ### Helper methods
     @property
-    def start_or_end_flows_prompt(self) -> Optional[Text]:
-        return self._prompts[START_OR_END_FLOW_KEY]
+    def handle_flows_prompt(self) -> Optional[Text]:
+        return self._prompts[HANDLE_FLOWS_KEY]
 
     @property
     def fill_slots_prompt(self) -> Optional[Text]:
@@ -395,7 +395,7 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
         ):
             return prompt_templates[key]  # type: ignore[return-value]
         return get_prompt_template(
-            config.get("prompts", {}).get(key, {}).get(FILE_PATH_KEY),
+            config.get("prompt_templates", {}).get(key, {}).get(FILE_PATH_KEY),
             default_value,
         )
 
@@ -456,7 +456,7 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
         commands = self.parse_commands(actions, tracker, flows)
         return commands
 
-    async def predict_commands_for_starting_and_ending_flows(
+    async def predict_commands_for_handling_flows(
         self,
         message: Message,
         tracker: DialogueStateTracker,
@@ -465,10 +465,10 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
         """Predicts commands for starting and canceling flows."""
 
         inputs = self.prepare_inputs(message, tracker, flows, 2)
-        prompt = Template(self.start_or_end_flows_prompt).render(**inputs).strip()
+        prompt = Template(self.handle_flows_prompt).render(**inputs).strip()
         structlogger.debug(
             "multi_step_llm_command_generator"
-            ".predict_commands_for_starting_and_ending_flows"
+            ".predict_commands_for_handling_flows"
             ".prompt_rendered",
             prompt=prompt,
         )
@@ -476,7 +476,7 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
         actions = await self.invoke_llm(prompt)
         structlogger.debug(
             "multi_step_llm_command_generator"
-            ".predict_commands_for_starting_and_ending_flows"
+            ".predict_commands_for_handling_flows"
             ".actions_generated",
             action_list=actions,
         )
@@ -671,17 +671,21 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
     @classmethod
     def fingerprint_addon(cls, config: Dict[str, Any]) -> Optional[str]:
         """Add a fingerprint for the graph."""
-        start_or_end_flows_template = get_prompt_template(
-            config.get("prompts", {}).get(START_OR_END_FLOW_KEY, {}).get(FILE_PATH_KEY),
-            DEFAULT_START_OR_END_FLOWS_TEMPLATE,
+        handle_flows_template = get_prompt_template(
+            config.get("prompt_templates", {})
+            .get(HANDLE_FLOWS_KEY, {})
+            .get(FILE_PATH_KEY),
+            DEFAULT_HANDLE_FLOWS_TEMPLATE,
         )
         fill_slots_template = get_prompt_template(
-            config.get("prompts", {}).get(FILL_SLOTS_KEY, {}).get(FILE_PATH_KEY),
+            config.get("prompt_templates", {})
+            .get(FILL_SLOTS_KEY, {})
+            .get(FILE_PATH_KEY),
             DEFAULT_FILL_SLOTS_TEMPLATE,
         )
         return deep_container_fingerprint(
             [
-                start_or_end_flows_template,
+                handle_flows_template,
                 fill_slots_template,
             ]
         )

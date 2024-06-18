@@ -226,7 +226,7 @@ async def test_processor_handle_message_calm_slots_custom_action_invalid(
         return "StartFlow(authenticate_user)"
 
     monkeypatch.setattr(
-        "rasa.dialogue_understanding.generator.llm_command_generator.LLMCommandGenerator.invoke_llm",
+        "rasa.dialogue_understanding.generator.single_step.llm_command_generator.LLMCommandGenerator.invoke_llm",
         mock_invoke_llm,
     )
 
@@ -345,7 +345,7 @@ async def test_processor_handle_message_calm_cannot_handle_command(
         return "SetSlot(payment_option, credit card)"
 
     monkeypatch.setattr(
-        "rasa.dialogue_understanding.generator.llm_command_generator.LLMCommandGenerator.invoke_llm",
+        "rasa.dialogue_understanding.generator.single_step.llm_command_generator.LLMCommandGenerator.invoke_llm",
         mock_invoke_llm,
     )
 

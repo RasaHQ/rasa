@@ -33,7 +33,7 @@ class TestNLUCommandAdapter:
 
     @pytest.fixture
     def command_generator(self):
-        """Create an LLMCommandGenerator."""
+        """Create a CommandGenerator subclass."""
         return NLUCommandAdapter.create(
             config={}, resource=Mock(), model_storage=Mock(), execution_context=Mock()
         )

@@ -172,6 +172,18 @@ class GraphSchema:
                 return True
         return False
 
+    def count_nodes_of_a_given_type(
+        self, node_type: Type, include_subtypes: bool = True
+    ) -> int:
+        """Counts the number of the nodes of specified class"""
+        counter = 0
+        for node in self.nodes.values():
+            if (node.uses is node_type) or (
+                include_subtypes and issubclass(node.uses, node_type)
+            ):
+                counter += 1
+        return counter
+
 
 class GraphComponent(ABC):
     """Interface for any component which will run in a graph."""

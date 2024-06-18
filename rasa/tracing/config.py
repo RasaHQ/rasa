@@ -23,10 +23,10 @@ from rasa.dialogue_understanding.commands import (
     Command,
     FreeFormAnswerCommand,
 )
-from rasa.dialogue_understanding.generator.llm_command_generator import (
+from rasa.dialogue_understanding.generator import (
     LLMCommandGenerator,
+    MultiStepLLMCommandGenerator,
 )
-from rasa.dialogue_understanding.generator import MultiStepLLMCommandGenerator
 from rasa.dialogue_understanding.generator.nlu_command_adapter import NLUCommandAdapter
 from rasa.engine.graph import GraphNode
 from rasa.engine.training.graph_trainer import GraphTrainer
@@ -61,7 +61,9 @@ def configure_tracing(tracer_provider: Optional[TracerProvider]) -> None:
     if tracer_provider is None:
         return None
 
-    from rasa.core.information_retrieval import InformationRetrieval
+    from rasa.core.information_retrieval.information_retrieval import (
+        InformationRetrieval,
+    )
     from rasa.core.nlg.contextual_response_rephraser import ContextualResponseRephraser
     from rasa.core.policies.policy import Policy
     from rasa.engine.recipes.default_components import DEFAULT_COMPONENTS

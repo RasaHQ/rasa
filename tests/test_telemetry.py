@@ -15,7 +15,7 @@ from rasa import telemetry
 import rasa.constants
 import rasa.utils.licensing
 from rasa.anonymization.anonymisation_rule_yaml_reader import KEY_ANONYMIZATION_RULES
-from rasa.dialogue_understanding.generator.llm_command_generator import (
+from rasa.dialogue_understanding.generator.constants import (
     DEFAULT_LLM_CONFIG as LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG,
 )
 from rasa.dialogue_understanding.generator.flow_retrieval import (

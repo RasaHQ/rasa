@@ -16,8 +16,13 @@ from opentelemetry.sdk.trace import TracerProvider
 from rasa.core.nlg.contextual_response_rephraser import ContextualResponseRephraser
 from rasa.core.policies.intentless_policy import IntentlessPolicy
 from rasa.core.policies.enterprise_search_policy import EnterpriseSearchPolicy
-from rasa.dialogue_understanding.generator import LLMCommandGenerator
-from rasa.dialogue_understanding.generator import MultiStepLLMCommandGenerator
+
+from rasa.dialogue_understanding.generator import (
+    LLMCommandGenerator,
+    MultiStepLLMCommandGenerator,
+    SingleStepLLMCommandGenerator,
+)
+
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
@@ -86,6 +91,28 @@ def setup_test_llm_command_generator(
 
     return LLMCommandGenerator(
         {}, default_model_storage, Resource("test_llm_command_generator")
+    )
+
+
+def setup_test_single_step_llm_command_generator(
+    monkeypatch: MonkeyPatch,
+    **kwargs: Any,
+) -> SingleStepLLMCommandGenerator:
+    async def mock_single_step_llm_command_generate(
+        self: Any, prompt: str
+    ) -> Optional[str]:
+        return ""
+
+    monkeypatch.setattr(
+        SingleStepLLMCommandGenerator,
+        "invoke_llm",
+        mock_single_step_llm_command_generate,
+    )
+
+    default_model_storage = kwargs.get("default_model_storage")
+
+    return SingleStepLLMCommandGenerator(
+        {}, default_model_storage, Resource("test_single_step_llm_command_generator")
     )
 
 

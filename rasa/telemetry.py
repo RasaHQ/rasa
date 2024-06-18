@@ -1062,7 +1062,7 @@ def _get_llm_command_generator_config(config: Dict[str, Any]) -> Optional[Dict]:
     retrieval embedding model.
     """
     from rasa.dialogue_understanding.generator import LLMCommandGenerator
-    from rasa.dialogue_understanding.generator.llm_command_generator import (
+    from rasa.dialogue_understanding.generator.constants import (
         LLM_CONFIG_KEY,
         DEFAULT_LLM_CONFIG,
         FLOW_RETRIEVAL_KEY,
@@ -1647,7 +1647,7 @@ def track_enterprise_search_policy_predict(
 @ensure_telemetry_enabled
 def track_multi_step_llm_command_generator_init(
     llm_model_name: Optional[str],
-    start_or_end_flows_prompt: Optional[str],
+    handle_flows_prompt: Optional[str],
     fill_slots_prompt: Optional[str],
 ) -> None:
     """Track MultiStepLLMCommandGenerator initialisation event."""
@@ -1655,7 +1655,7 @@ def track_multi_step_llm_command_generator_init(
         TELEMETRY_MULTI_STEP_LLM_COMMAND_GENERATOR_INITIALISED_EVENT,
         {
             MULTI_STEP_LLM_COMMAND_GENERATOR_MODEL_NAME: llm_model_name,
-            MULTI_STEP_LLM_COMMAND_GENERATOR_START_OR_END_FLOWS_PROMPT: start_or_end_flows_prompt,  # noqa
+            MULTI_STEP_LLM_COMMAND_GENERATOR_START_OR_END_FLOWS_PROMPT: handle_flows_prompt,  # noqa
             MULTI_STEP_LLM_COMMAND_GENERATOR_FILL_SLOTS_PROMPT: fill_slots_prompt,
         },
     )

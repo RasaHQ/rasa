@@ -147,8 +147,8 @@ class IntentBasedRouter(GraphComponent):
             )
             return commands
         elif route_session_to_calm is True:
-            # don't set any commands so that the `LLMCommandGenerator` is triggered
-            # and can predict the actual commands.
+            # don't set any commands so that a `LLMBasedCommandGenerator` is
+            # triggered and can predict the actual commands.
             return []
         else:
             # If the session is assigned to DM1 add a `NoopCommand` to silence

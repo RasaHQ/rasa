@@ -4,15 +4,13 @@ from typing import Dict, Any, Optional, Text
 from unittest.mock import Mock, AsyncMock, patch
 from _pytest.tmpdir import TempPathFactory
 from structlog.testing import capture_logs
-from rasa.dialogue_understanding.generator.llm_based_command_generator import (
+from rasa.dialogue_understanding.generator import (
     LLMBasedCommandGenerator,
-)
-from rasa.dialogue_understanding.generator.llm_command_generator import (
     LLMCommandGenerator,
-)
-from rasa.dialogue_understanding.generator.multi_step_llm_command_generator import (
+    SingleStepLLMCommandGenerator,
     MultiStepLLMCommandGenerator,
 )
+
 from rasa.dialogue_understanding.generator.constants import (
     FLOW_RETRIEVAL_KEY,
     FLOW_RETRIEVAL_ACTIVE_KEY,
@@ -43,7 +41,7 @@ from tests.utilities import flows_from_str
 
 
 class TestLLMBasedCommandGenerator:
-    """Tests for the MultiStepLLMCommandGenerator."""
+    """Tests for the LLMBasedCommandGenerator."""
 
     @pytest.fixture
     def flows(self) -> FlowsList:
@@ -133,6 +131,15 @@ class TestLLMBasedCommandGenerator:
         )
 
     @pytest.fixture
+    def single_step_llm_command_generator_fixture(self, model_storage, resource):
+        return SingleStepLLMCommandGenerator.create(
+            config={},
+            model_storage=model_storage,
+            resource=resource,
+            execution_context=Mock(spec=ExecutionContext),
+        )
+
+    @pytest.fixture
     def multi_step_llm_command_generator_fixture(self, model_storage, resource):
         return MultiStepLLMCommandGenerator.create(
             config={},
@@ -147,11 +154,11 @@ class TestLLMBasedCommandGenerator:
     def command_generator_fixture(
         self,
         request,
-        llm_command_generator_fixture,
+        single_step_llm_command_generator_fixture,
         multi_step_llm_command_generator_fixture,
     ):
         if request.param == "implementation_single_step":
-            return llm_command_generator_fixture
+            return single_step_llm_command_generator_fixture
         elif request.param == "implementation_multi_step":
             return multi_step_llm_command_generator_fixture
         else:
@@ -377,7 +384,7 @@ class TestLLMBasedCommandGenerator:
         self,
         request,
         base_class_fixture,
-        llm_command_generator_fixture,
+        single_step_llm_command_generator_fixture,
         multi_step_llm_command_generator_fixture,
         model_storage,
         resource,
@@ -390,7 +397,7 @@ class TestLLMBasedCommandGenerator:
                 config=config, model_storage=model_storage, resource=resource
             )
         if request.param == "implementation_single_step":
-            return llm_command_generator_fixture
+            return single_step_llm_command_generator_fixture
         elif request.param == "implementation_multi_step":
             return multi_step_llm_command_generator_fixture
         else:

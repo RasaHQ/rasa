@@ -26,7 +26,7 @@ from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapProp
 from rasa.core.actions.action import Action, RemoteAction
 from rasa.core.agent import Agent
 from rasa.core.channels import OutputChannel
-from rasa.core.information_retrieval import InformationRetrieval
+from rasa.core.information_retrieval.information_retrieval import InformationRetrieval
 from rasa.core.lock_store import LockStore
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.flows.flow_step_result import FlowActionPrediction
@@ -34,10 +34,13 @@ from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import TrackerStore
 from rasa.dialogue_understanding.commands import Command
-from rasa.dialogue_understanding.generator.llm_command_generator import (
+from rasa.dialogue_understanding.generator.single_step.llm_command_generator import (
     LLMCommandGenerator,
 )
-from rasa.dialogue_understanding.generator import MultiStepLLMCommandGenerator
+from rasa.dialogue_understanding.generator import (
+    MultiStepLLMCommandGenerator,
+    SingleStepLLMCommandGenerator,
+)
 from rasa.dialogue_understanding.generator.nlu_command_adapter import NLUCommandAdapter
 from rasa.engine.graph import GraphNode
 from rasa.engine.training.graph_trainer import GraphTrainer
@@ -247,6 +250,9 @@ GraphNodeType = TypeVar("GraphNodeType", bound=GraphNode)
 LockStoreType = TypeVar("LockStoreType", bound=LockStore)
 GraphTrainerType = TypeVar("GraphTrainerType", bound=GraphTrainer)
 LLMCommandGeneratorType = TypeVar("LLMCommandGeneratorType", bound=LLMCommandGenerator)
+SingleStepLLMCommandGeneratorType = TypeVar(
+    "SingleStepLLMCommandGeneratorType", bound=SingleStepLLMCommandGenerator
+)
 MultiStepLLMCommandGeneratorType = TypeVar(
     "MultiStepLLMCommandGeneratorType", bound=MultiStepLLMCommandGenerator
 )
