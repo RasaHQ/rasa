@@ -12,6 +12,7 @@ from rasa.core.actions.custom_action_executor import (
     CustomActionRequestWriter,
 )
 from rasa.shared.exceptions import FileNotFoundException
+from rasa.shared.utils.io import file_as_bytes
 from rasa.utils.endpoints import EndpointConfig, ClientResponseError
 from rasa_sdk.grpc_errors import ResourceNotFound, ResourceNotFoundType
 from rasa_sdk.grpc_py import action_webhook_pb2_grpc, action_webhook_pb2
@@ -127,22 +128,37 @@ class GRPCCustomActionExecutor(CustomActionExecutor):
         return action_webhook_pb2_grpc.ActionServerWebhookStub(channel)
 
     @staticmethod
-    def _create_channel(url: str, cert_ca_file: Optional[str] = None) -> grpc.Channel:
+    def _create_channel(
+        url: str,
+        cert_ca_file: Optional[str] = None,
+        client_cert_file: Optional[str] = None,
+        client_key_file: Optional[str] = None,
+    ) -> grpc.Channel:
         """Create a gRPC channel for the action server.
 
         Args:
             url: URL of the action server.
             cert_ca_file: Path to the certificate file for TLS encryption.
+            client_cert_file: Path to the client certificate file for mutual TLS authentication.
+            client_key_file: Path to the client key file for mutual TLS authentication.
 
         Returns:
             gRPC channel for the action server.
         """
         if cert_ca_file:
+            cert_ca = file_as_bytes(cert_ca_file)
+
+            client_cert = None
+            client_key = None
+            if client_cert and client_key:
+                client_cert = file_as_bytes(client_cert_file)
+                client_key = file_as_bytes(client_key_file)
+
             try:
                 credentials = grpc.ssl_channel_credentials(
-                    root_certificates=open(cert_ca_file, "rb").read()
-                    if cert_ca_file
-                    else None
+                    root_certificates=cert_ca,
+                    private_key=client_key,
+                    certificate_chain=client_cert,
                 )
                 return grpc.secure_channel(url, credentials)
             except FileNotFoundError as e:

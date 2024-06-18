@@ -160,12 +160,6 @@ def is_limit_reached(num_messages: int, limit: Optional[int]) -> bool:
     return limit is not None and num_messages >= limit
 
 
-def file_as_bytes(path: Text) -> bytes:
-    """Read in a file as a byte array."""
-    with open(path, "rb") as f:
-        return f.read()
-
-
 class AvailableEndpoints:
     """Collection of configured endpoints."""
 
