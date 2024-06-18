@@ -17,6 +17,7 @@ import rasa.shared.utils.io
 from rasa.core.actions.custom_action_executor import (
     CustomActionExecutor,
     RetryCustomActionExecutor,
+    NoEndpointCustomActionExecutor,
 )
 from rasa.core.actions.grpc_custom_action_executor import GRPCCustomActionExecutor
 from rasa.core.actions.http_custom_action_executor import HTTPCustomActionExecutor
@@ -699,7 +700,9 @@ class ActionDeactivateLoop(Action):
 
 
 class RemoteAction(Action):
-    def __init__(self, name: Text, action_endpoint: EndpointConfig) -> None:
+    def __init__(
+        self, name: Text, action_endpoint: Optional[EndpointConfig] = None
+    ) -> None:
         self._name = name
         self.action_endpoint = action_endpoint
         self.executor = self._create_executor()
@@ -713,6 +716,9 @@ class RemoteAction(Action):
         Raises:
             RasaException: If no valid action endpoint is configured.
         """
+
+        if not self.action_endpoint:
+            return NoEndpointCustomActionExecutor(self.name())
 
         url_schema = get_url_schema(self.action_endpoint.url)
 
@@ -810,16 +816,6 @@ class RemoteAction(Action):
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> List[Event]:
         """Runs action. Please see parent class for the full docstring."""
-        if not self.action_endpoint:
-            raise RasaException(
-                f"Failed to execute custom action '{self.name()}' "
-                f"because no endpoint is configured to run this "
-                f"custom action. Please take a look at "
-                f"the docs and set an endpoint configuration via the "
-                f"--endpoints flag. "
-                f"{DOCS_BASE_URL}/custom-actions"
-            )
-
         response = await self.executor.run(tracker=tracker, domain=domain)
         self._validate_action_result(response)
 

@@ -7,6 +7,8 @@ from rasa.core.actions.action_exceptions import DomainNotFound
 from rasa.core.actions.constants import SELECTIVE_DOMAIN, DEFAULT_SELECTIVE_DOMAIN
 from rasa.exceptions import ModelNotFound
 from rasa.model import get_local_model
+from rasa.shared.constants import DOCS_BASE_URL
+from rasa.shared.exceptions import RasaException
 from rasa.utils.endpoints import EndpointConfig
 
 if TYPE_CHECKING:
@@ -40,6 +42,46 @@ class CustomActionExecutor(abc.ABC):
             The response from the execution of the custom action.
         """
         pass
+
+
+class NoEndpointCustomActionExecutor(CustomActionExecutor):
+    """Implementation of a custom action executor when endpoint is not set.
+
+    Used to handle the case where no endpoint is configured.
+
+    Raises RasaException when executed.
+    """
+
+    def __init__(self, name: str) -> None:
+        """Initializes the custom action executor.
+
+        Args:
+            name: The name of the custom action.
+        """
+        self.name = name
+
+    async def run(
+        self,
+        tracker: "DialogueStateTracker",
+        domain: Optional["Domain"] = None,
+    ) -> Dict[Text, Any]:
+        """Executes the custom action.
+
+        Args:
+            tracker: The current state of the dialogue.
+            domain: The domain object containing domain-specific information.
+
+        Returns:
+            The response from the execution of the custom action.
+        """
+        raise RasaException(
+            f"Failed to execute custom action '{self.name}' "
+            f"because no endpoint is configured to run this "
+            f"custom action. Please take a look at "
+            f"the docs and set an endpoint configuration via the "
+            f"--endpoints flag. "
+            f"{DOCS_BASE_URL}/custom-actions"
+        )
 
 
 class CustomActionRequestWriter:
