@@ -5,26 +5,51 @@ inputs:
   COMPOSE_FILE_PATH:
     description: 'Custom action docker compose path'
     required: true
+  ENV_FILE_PATH:
+    description: 'Custom action environment file path'
+    required: true
+  RASA_DOCKER_REPOSITORY:
+    description: 'Rasa repository path'
+    required: true
+  RASA_IMAGE_TAG:
+    description: 'Rasa image tag'
+    required: true
 
 runs:
   using: 'composite'
   steps:
   - name: Check rasa-pro container logs
     run: |
-      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs rasa-pro
+      RASA_REPOSITORY=${{ inputs.RASA_DOCKER_REPOSITORY }} \
+      RASA_IMAGE_TAG=${{ inputs.RASA_IMAGE_TAG }} \
+      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} \
+        --env-file=${{ inputs.ENV_FILE_PATH }} \
+        logs rasa-pro
     shell: bash
   
   - name: Check rasa-pro-grpc-ssl container logs
     run: |
-      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs rasa-pro-grpc-ssl
+      RASA_REPOSITORY=${{ inputs.RASA_DOCKER_REPOSITORY }} \
+      RASA_IMAGE_TAG=${{ inputs.RASA_IMAGE_TAG }} \
+      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} \
+      --env-file=${{ inputs.ENV_FILE_PATH }} \
+      logs rasa-pro-grpc-ssl
     shell: bash
   
   - name: Check rasa-grpc-action-server container logs
     run: |
-      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs rasa-grpc-action-server
+      RASA_REPOSITORY=${{ inputs.RASA_DOCKER_REPOSITORY }} \
+      RASA_IMAGE_TAG=${{ inputs.RASA_IMAGE_TAG }} \
+      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} \
+      --env-file=${{ inputs.ENV_FILE_PATH }} \
+      logs rasa-grpc-action-server
     shell: bash
   
   - name: Check rasa-grpc-ssl-action-server container logs
     run: |
-      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs rasa-grpc-ssl-action-server
+      RASA_REPOSITORY=${{ inputs.RASA_DOCKER_REPOSITORY }} \
+      RASA_IMAGE_TAG=${{ inputs.RASA_IMAGE_TAG }} \
+      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} \
+      --env-file=${{ inputs.ENV_FILE_PATH }} \
+      logs rasa-grpc-ssl-action-server \
     shell: bash

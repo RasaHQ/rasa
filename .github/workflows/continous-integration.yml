@@ -451,6 +451,9 @@ jobs:
         uses: ./.github/actions/debug-custom-action-tests
         with:
           COMPOSE_FILE_PATH: tests_deployment/integration_tests_custom_action_server/docker-compose.yml
+          ENV_FILE_PATH: tests_deployment/integration_tests_custom_action_server/env-file
+          RASA_REPOSITORY: ${{ env.REPOSITORY }}
+          RASA_IMAGE_TAG: ${{ env.IMAGE_TAG }}
 
       - name: Custom Action Integration Testing - Stop docker containers
         if: always()
