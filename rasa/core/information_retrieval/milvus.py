@@ -1,4 +1,4 @@
-from typing import Text, Any
+from typing import Text, Any, Dict
 
 import structlog
 from langchain.vectorstores.milvus import Milvus
@@ -31,7 +31,7 @@ class Milvus_Store(InformationRetrieval):
         )
 
     async def search(
-        self, query: Text, tracker_state: dict[str, Any], threshold: float = 0.0
+        self, query: Text, tracker_state: Dict[str, Any], threshold: float = 0.0
     ) -> SearchResultList:
         """Search for documents in the Milvus store.
 

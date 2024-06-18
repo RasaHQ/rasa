@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Text, Any
+from typing import TYPE_CHECKING, List, Optional, Text, Any, Dict
 
 import structlog
 from langchain.document_loaders import DirectoryLoader, TextLoader
@@ -110,7 +110,7 @@ class FAISS_Store(InformationRetrieval):
         pass
 
     async def search(
-        self, query: Text, tracker_state: dict[str, Any], threshold: float = 0.0
+        self, query: Text, tracker_state: Dict[str, Any], threshold: float = 0.0
     ) -> SearchResultList:
         logger.debug("information_retrieval.faiss_store.search", query=query)
         try:

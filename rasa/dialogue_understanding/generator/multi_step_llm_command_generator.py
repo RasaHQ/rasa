@@ -53,6 +53,7 @@ from rasa.shared.utils.llm import (
     sanitize_message_for_prompt,
     allowed_values_for_slot,
 )
+from rasa.telemetry import track_multi_step_llm_command_generator_init
 
 # multistep template keys
 START_OR_END_FLOW_KEY = "start_or_end_flow"
@@ -113,6 +114,13 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
             FILL_SLOTS_KEY: None,
         }
         self._init_prompt_templates(prompt_templates)
+
+        self.trace_prompt_tokens = self.config.get("trace_prompt_tokens", False)
+        track_multi_step_llm_command_generator_init(
+            llm_model_name=config.get(LLM_CONFIG_KEY, {}).get("model_name"),
+            start_or_end_flows_prompt=self.start_or_end_flows_prompt,
+            fill_slots_prompt=self.fill_slots_prompt,
+        )
 
     ### Implementations of LLMBasedCommandGenerator parent
     @staticmethod

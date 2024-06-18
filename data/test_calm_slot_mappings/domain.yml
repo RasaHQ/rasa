@@ -8,10 +8,13 @@ intents:
   - inform_address
   - inform_num_pizza
   - ask_availability
+  - correct_order
+  - request_payment
 
 entities:
   - pizza_type
   - number
+  - payment_option
 
 slots:
   pizza:
@@ -37,9 +40,13 @@ slots:
         - type: from_intent
           intent: affirm
           value: true
+          conditions:
+            - active_flow: order_pizza
         - type: from_intent
           intent: deny
           value: false
+          conditions:
+            - active_flow: order_pizza
   route_session_to_calm:
     type: bool
   num_tickets:
@@ -47,10 +54,21 @@ slots:
     mappings:
       - type: from_entity
         entity: number
-  loyalty_points:
-    type: float
+  is_member:
+    type: bool
     mappings:
       - type: custom
+  payment_option:
+    type: text
+    mappings:
+      - type: from_entity
+        entity: payment_option
+        conditions:
+          - active_flow: payment_flow
+  card_number:
+    type: text
+    mappings:
+      - type: from_llm
 
 responses:
   utter_ask_pizza:
@@ -74,8 +92,17 @@ responses:
   utter_event_availability:
     - text: "Yes, we have {num_tickets} places available for the store launch event."
 
-  utter_ask_loyalty_points:
-    - text: "Let's proceed checking how many loyalty points you have left."
+  utter_ask_is_member:
+    - text: "Let's proceed with loging you in."
 
-  utter_use_points:
-    - text: "You have successfully used {loyalty_points} loyalty points."
+  utter_login_successful:
+    - text: "You have successfully logged in."
+
+  utter_cancel_auth:
+    - text: "Login failed. Please try again."
+
+  utter_ask_payment_option:
+    - text: "How would you like to pay for your order?"
+
+  utter_ask_card_number:
+    - text: "Please provide your card number."

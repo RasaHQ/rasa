@@ -22,15 +22,46 @@ flows:
       action: utter_cancel_order
       next: END
 
-  use_loyalty_points:
-    name: use loyalty points
-    description: user asks to use membership points
+  authenticate_user:
+    name: authenticate user
+    description: user asks to authenticate
     steps:
-      - collect: loyalty_points
+      - collect: is_member
         next:
-          - if: slots.loyalty_points
-            then: "use_points"
-          - else: END
-      - id: "use_points"
-        action: utter_use_points
+          - if: slots.is_member
+            then: "login_successful"
+          - else: "cancel_auth"
+      - id: "login_successful"
+        action: utter_login_successful
+        next: END
+      - id: "cancel_auth"
+        action: utter_cancel_auth
+        next: END
+
+  payment_flow:
+    name: payment flow
+    description: user asks to pay for order
+    nlu_trigger:
+      - intent: request_payment
+        confidence_threshold: 0.5
+    steps:
+      - collect: payment_option
+        next:
+          - if: slots.payment_option is 'card'
+            then: "use_card_details"
+          - else: "invalid_payment_option"
+      - id: "use_card_details"
+        collect: card_number
+        next:
+            - if: slots.card_number
+              then: "take_payment"
+            - else: "cancel_order"
+      - id: "invalid_payment_option"
+        action: utter_invalid_payment_option
+        next: END
+      - id: "take_payment"
+        action: utter_execute_payment
+        next: END
+      - id: "cancel_order"
+        action: utter_cancel_order
         next: END

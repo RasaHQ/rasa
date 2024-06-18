@@ -99,8 +99,6 @@ responses:
 slots:
   confirm_correction:
     type: bool
-    mappings:
-      - type: custom
 
 flows:
   pattern_cancel_flow:

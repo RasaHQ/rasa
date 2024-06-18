@@ -352,9 +352,9 @@ def test_validate_assistant_id_in_config(
         )
         assert len(logs) == 1
 
-    config_data = read_yaml_file(config_file)
+    # Calling the wrapped function to avoid getting cached result
+    config_data = read_yaml_file.__wrapped__(config_file)
     assistant_name = config_data.get(ASSISTANT_ID_KEY)
-
     assert assistant_name is not None
     assert assistant_name != ASSISTANT_ID_DEFAULT_VALUE
 
@@ -651,7 +651,7 @@ def test_validate_files_config_missing_assistant_id():
 
 def test_validate_assistant_id_in_config_preserves_comment() -> None:
     config_file = "data/test_config/config_no_assistant_id_with_comments.yml"
-    reader_type = ["safe", "rt"]
+    reader_type = "rt"
     original_config_data = copy.deepcopy(
         read_yaml_file(config_file, reader_type=reader_type)
     )
@@ -659,7 +659,8 @@ def test_validate_assistant_id_in_config_preserves_comment() -> None:
     # append assistant_id to the config file
     rasa.cli.utils.validate_assistant_id_in_config(config_file)
 
-    config_data = read_yaml_file(config_file, reader_type=reader_type)
+    # Calling the wrapped function to avoid getting cached result
+    config_data = read_yaml_file.__wrapped__(config_file, reader_type=reader_type)
 
     assert "assistant_id" in config_data
 
