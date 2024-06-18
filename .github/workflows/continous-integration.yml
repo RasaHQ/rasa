@@ -448,7 +448,7 @@ jobs:
 
       - name: Show container logs
         if: always()
-        uses: ./.github/actions/debug-custom-actions-tests
+        uses: ./.github/actions/debug-custom-action-tests
         with:
           COMPOSE_FILE_PATH: tests_deployment/integration_tests_custom_action_server/docker-compose.yml
 

@@ -335,7 +335,7 @@ run-action-server-containers: train-action-server-nlu-bot
 	docker compose \
 		-f $(RASA_CUSTOM_ACTION_SERVER_INTEGRATION_TESTS_DOCKER_COMPOSE_PATH) \
 		--env-file $(RASA_CUSTOM_ACTION_SERVER_INTEGRATION_TESTS_ENV_FILE) \
-		up -d
+		up --wait
 
 # Stop the action server integration test containers.
 stop-action-server-containers:

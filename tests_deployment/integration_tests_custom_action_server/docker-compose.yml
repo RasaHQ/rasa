@@ -38,6 +38,8 @@ services:
       start_period: 15s
       timeout: 10s
     user: ${USER_ID}
+    depends_on:
+      - rasa-grpc-action-server
 
   rasa-pro-grpc-ssl:
     image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
@@ -61,6 +63,8 @@ services:
       start_period: 15s
       timeout: 10s
     user: ${USER_ID}
+    depends_on:
+      - rasa-grpc-ssl-action-server
 
 
   rasa-grpc-action-server:
