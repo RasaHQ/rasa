@@ -80,7 +80,7 @@ class GRPCCustomActionExecutor(CustomActionExecutor):
             js_dict=json_body, message=request_proto, ignore_unknown_fields=True
         )
         try:
-            response = client.webhook(request)
+            response = client.Webhook(request)
             return MessageToDict(response)
         except grpc.RpcError as e:
             status_code = e.code()
@@ -114,7 +114,7 @@ class GRPCCustomActionExecutor(CustomActionExecutor):
     @staticmethod
     def _create_grpc_client(
         url: str, cert_file: Optional[str] = None
-    ) -> action_webhook_pb2_grpc.ActionServerWebhookStub:
+    ) -> action_webhook_pb2_grpc.ActionServiceStub:
         """Create a gRPC client for the action server.
 
         Args:
@@ -125,7 +125,7 @@ class GRPCCustomActionExecutor(CustomActionExecutor):
             gRPC client for the action server.
         """
         channel = GRPCCustomActionExecutor._create_channel(url, cert_file)
-        return action_webhook_pb2_grpc.ActionServerWebhookStub(channel)
+        return action_webhook_pb2_grpc.ActionServiceStub(channel)
 
     @staticmethod
     def _create_channel(
