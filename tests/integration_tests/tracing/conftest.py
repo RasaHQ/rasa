@@ -1,10 +1,8 @@
 import collections
 import typing
-import uuid
 
 import grpc
 import pytest
-import requests
 from google.protobuf.timestamp_pb2 import Timestamp
 
 if typing.TYPE_CHECKING:
