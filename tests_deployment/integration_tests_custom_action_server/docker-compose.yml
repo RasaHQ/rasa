@@ -6,11 +6,11 @@ configs:
   endpoints.yml:
     content: |
       action_endpoint:
-        url: "http://rasa-grpc-action-server:${RASA_SDK_PORT}"
+        url: "grpc://rasa-grpc-action-server:${RASA_SDK_PORT}"
   endpoints-ssl.yml:
     content: |
       action_endpoint:
-        url: "http://rasa-grpc-ssl-action-server:${RASA_SDK_SSL_PORT}"
+        url: "grpc://rasa-grpc-ssl-action-server:${RASA_SDK_SSL_PORT}"
         cafile: "/app/certs/ca.pem"
   action-server-endpoints.yml:
     content: |
@@ -20,7 +20,7 @@ services:
   rasa-pro:
     image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
     volumes:
-      - "./simple_bot:/app"
+      - "./simple_nlu_bot:/app"
     configs:
       - source: endpoints.yml
         target: /app/endpoints.yml
@@ -37,17 +37,18 @@ services:
       retries: 10
       start_period: 15s
       timeout: 10s
+    user: ${USER_ID}
 
   rasa-pro-grpc-ssl:
     image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
     volumes:
-      - "./simple_bot:/app"
+      - "./simple_nlu_bot:/app"
       - "./certs/ca.pem:/app/certs/ca.pem"
     configs:
       - source: endpoints-ssl.yml
-        target: /app/endpoints.yml
+        target: /app/endpoints-ssl.yml
     entrypoint: ""
-    command: rasa run -p ${RASA_PORT} --enable-api
+    command: rasa run -p ${RASA_PORT} --enable-api --endpoints /app/endpoints-ssl.yml
     networks: [ 'rasa-pro-network' ]
     ports:
       - "${RASA_GRPC_SSL_PORT}:${RASA_PORT}"
@@ -59,12 +60,13 @@ services:
       retries: 10
       start_period: 15s
       timeout: 10s
+    user: ${USER_ID}
 
 
   rasa-grpc-action-server:
     image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
     volumes:
-      - "./simple_bot/actions:/app/actions"
+      - "./simple_nlu_bot/actions:/app/actions"
     configs:
       - source: action-server-endpoints.yml
         target: /app/endpoints.yml
@@ -82,7 +84,7 @@ services:
     volumes:
       - "./certs/server.pem:/app/certs/server.pem"
       - "./certs/server-key.pem:/app/certs/server-key.pem"
-      - "./simple_bot/actions:/app/actions"
+      - "./simple_nlu_bot/actions:/app/actions"
     configs:
       - source: action-server-endpoints.yml
         target: /app/endpoints.yml

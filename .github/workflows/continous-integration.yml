@@ -387,6 +387,80 @@ jobs:
           name: Metric Integration Test Results
           path: integration-results-metric.xml
 
+  custom-action-integration-test:
+    name: Custom Action Integration Tests
+    needs: rasa-private-dev-docker-image
+    runs-on: ubuntu-22.04-4core
+    steps:
+      - name: Check out code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Read Poetry Version 🔢
+        run: |
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+        shell: bash
+
+    #   # Tag in format: pr_number-shortSHA or branch_name-shortSHA
+      - name: Configure image tag
+        run: |
+            if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+              echo "IMAGE_TAG=pr${{ github.event.number }}-$(git rev-parse --short $(cat $GITHUB_EVENT_PATH | jq -r .pull_request.head.sha))" >> $GITHUB_ENV
+            else
+              echo "IMAGE_TAG=$(echo "${GITHUB_REF##*/}" | tr '[:upper:]' '[:lower:]')-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+            fi
+
+      - name: Prepare the job for integration tests
+        uses: ./.github/actions/test-prerequisites
+        with:
+            DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+            POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
+
+      - name: Install Dependencies (Linux) 📦
+        run: |
+          make install
+        shell: bash
+
+      - name: Pull rasa-private dev image
+        uses: ./.github/actions/pull-from-ecr
+        with:
+            IMAGE_TAG: ${{ env.IMAGE_TAG }}
+            AWS_REGION: ${{ env.AWS_REGION }}
+            AWS_ARN_ROLE_TO_ASSUME: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
+            REPOSITORY: ${{ env.REPOSITORY }}
+
+      - name: Custom Actions Integration Testing - Run docker containers
+        run: |
+          make run-action-server-containers
+        env:
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          RASA_REPOSITORY: ${{ env.REPOSITORY }}
+          RASA_IMAGE_TAG: ${{ env.IMAGE_TAG }}
+
+      - name: Custom Actions Testing -  Test Code with Services 🩺
+        run: |
+          make test-custom-action-integration
+        env:
+          PYTHONIOENCODING: "utf-8"
+          RASA_TELEMETRY_WRITE_KEY: ${{ secrets.SEGMENT_WRITE_DEV_KEY }}
+
+      - name: Show container logs
+        if: always()
+        uses: ./.github/actions/debug-metric-tests
+        with:
+          COMPOSE_FILE_PATH: tests_deployment/integration_tests_custom_action_server/docker-compose.yml
+
+      - name: Custom Action Integration Testing - Stop docker containers
+        if: always()
+        run: |
+          make stop-action-server-containers
+
+      - name: Save Test Results
+        if: always()
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
+        with:
+          name: Custom Action Integration Test Results
+          path: custom-actions-integration-results.xml
+
   sequential-integration-test:
       name: Run Sequential Integration Tests
       runs-on: ubuntu-20.04

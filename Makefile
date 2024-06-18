@@ -1,11 +1,12 @@
 .PHONY: clean test lint init docs format formatter build-docker
 
 JOBS ?= 1
-INTEGRATION_TEST_FOLDER = tests/integration_tests/
+INTEGRATION_TEST_FOLDER = tests/integration_tests
 INTEGRATION_TEST_PYTEST_MARKERS ?= "sequential or broker or concurrent_lock_store or ((not sequential) and (not broker) and (not concurrent_lock_store))"
 PLATFORM ?= "linux/arm64"
-TRACING_INTEGRATION_TEST_FOLDER = tests/integration_tests/tracing
-METRICS_INTEGRATION_TEST_PATH = tests/integration_tests/tracing/test_metrics.py
+TRACING_INTEGRATION_TEST_FOLDER = $(INTEGRATION_TEST_FOLDER)/tracing
+METRICS_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/tracing/test_metrics.py
+GRPC_CUSTOM_ACTIONS_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/actions/custom_actions/test_grpc_custom_actions.py
 BASE_IMAGE_HASH ?= localdev
 BASE_BUILDER_IMAGE_HASH ?= localdev
 RASA_DEPS_IMAGE_HASH ?= localdev
@@ -147,15 +148,43 @@ prepare-tests-windows-gha:
 test: clean
 	# OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
 	# TF_CPP_MIN_LOG_LEVEL=2 sets C code log level for tensorflow to error suppressing lower log events
-	OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest tests -n $(JOBS) --dist loadscope --cov rasa --ignore $(INTEGRATION_TEST_FOLDER)
+	OMP_NUM_THREADS=1 \
+	TF_CPP_MIN_LOG_LEVEL=2 \
+	poetry run \
+		pytest tests \
+			-n $(JOBS) \
+			--dist loadscope \
+			--cov rasa \
+			--ignore $(INTEGRATION_TEST_FOLDER)/
 
 test-integration:
 	# OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
 	# TF_CPP_MIN_LOG_LEVEL=2 sets C code log level for tensorflow to error suppressing lower log events
 ifeq (,$(wildcard tests_deployment/.env))
-	OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS) -m $(INTEGRATION_TEST_PYTEST_MARKERS) --dist loadgroup  --ignore $(TRACING_INTEGRATION_TEST_FOLDER) --junitxml=report_integration.xml
+	OMP_NUM_THREADS=1 \
+	TF_CPP_MIN_LOG_LEVEL=2 \
+	poetry run \
+		pytest $(INTEGRATION_TEST_FOLDER)/ \
+			-n $(JOBS) \
+			-m $(INTEGRATION_TEST_PYTEST_MARKERS) \
+			--dist loadgroup  \
+			--ignore $(TRACING_INTEGRATION_TEST_FOLDER) \
+			--ignore $(GRPC_CUSTOM_ACTIONS_INTEGRATION_TEST_PATH) \
+			--junitxml=report_integration.xml
 else
-	set -o allexport; source tests_deployment/.env && OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS) -m $(INTEGRATION_TEST_PYTEST_MARKERS) --dist loadgroup --ignore $(TRACING_INTEGRATION_TEST_FOLDER) --junitxml=report_integration.xml && set +o allexport
+	set -o allexport; \
+	source tests_deployment/.env && \
+	OMP_NUM_THREADS=1 \
+	TF_CPP_MIN_LOG_LEVEL=2 \
+	poetry run \
+		pytest $(INTEGRATION_TEST_FOLDER)/ \
+			-n $(JOBS) \
+			-m $(INTEGRATION_TEST_PYTEST_MARKERS) \
+			--dist loadgroup \
+			--ignore $(TRACING_INTEGRATION_TEST_FOLDER) \
+			--ignore $(GRPC_CUSTOM_ACTIONS_INTEGRATION_TEST_PATH) \
+			--junitxml=report_integration.xml && \
+	set +o allexport
 endif
 
 test-anonymization: PYTEST_MARKER=category_anonymization and (not flaky) and (not acceptance)
@@ -208,7 +237,16 @@ test-gh-actions:
 test-marker: clean
     # OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
 	# TF_CPP_MIN_LOG_LEVEL=2 sets C code log level for tensorflow to error suppressing lower log events
-	TRANSFORMERS_OFFLINE=1 OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest tests -n $(JOBS) --dist loadscope -m "$(PYTEST_MARKER)" --cov rasa --ignore $(INTEGRATION_TEST_FOLDER) $(DD_ARGS)
+	TRANSFORMERS_OFFLINE=1 \
+	OMP_NUM_THREADS=1 \
+	TF_CPP_MIN_LOG_LEVEL=2 \
+	poetry run \
+		pytest tests \
+			-n $(JOBS) \
+			--dist loadscope \
+			-m "$(PYTEST_MARKER)" \
+			--cov rasa \
+			--ignore $(INTEGRATION_TEST_FOLDER)/ $(DD_ARGS)
 
 release:
 	poetry run python scripts/release.py prepare --interactive
@@ -254,7 +292,14 @@ stop-tracing-integration-containers: ## Stop the tracing integration test contai
 	docker-compose -f tests_deployment/integration_tests_tracing_deployment/docker-compose.intg.yml down
 
 test-tracing-integration:
-	PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python PYTHONPATH=./vendor/jaeger-python-proto poetry run pytest $(TRACING_INTEGRATION_TEST_FOLDER) -n $(JOBS) --ignore $(METRICS_INTEGRATION_TEST_PATH) --junitxml=integration-results-tracing.xml
+	PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python \
+	PYTHONPATH=./vendor/jaeger-python-proto \
+	poetry run \
+		pytest $(TRACING_INTEGRATION_TEST_FOLDER) \
+		-n $(JOBS) \
+		--ignore $(METRICS_INTEGRATION_TEST_PATH) \
+		--ignore $(GRPC_CUSTOM_ACTIONS_INTEGRATION_TEST_PATH) \
+		--junitxml=integration-results-tracing.xml
 
 train-calm:
 	cd ./tests_deployment/integration_tests_tracing_deployment/metrics_setup/calm_bot && poetry run rasa train --fixed-model-name model
@@ -285,14 +330,25 @@ train-action-server-nlu-bot: BOT_PATH = $(RASA_CUSTOM_ACTION_SERVER_INTEGRATION_
 train-action-server-nlu-bot: train-nlu-bot
 
 # Run the action server integration test containers.
-run-action-server-containers:
-	docker-compose -f $(RASA_CUSTOM_ACTION_SERVER_INTEGRATION_TESTS_DOCKER_COMPOSE_PATH) --env-file $(RASA_CUSTOM_ACTION_SERVER_INTEGRATION_TESTS_ENV_FILE) up -d
+run-action-server-containers: train-action-server-nlu-bot
+	USER_ID=$(USER_ID) \
+	docker-compose \
+		-f $(RASA_CUSTOM_ACTION_SERVER_INTEGRATION_TESTS_DOCKER_COMPOSE_PATH) \
+		--env-file $(RASA_CUSTOM_ACTION_SERVER_INTEGRATION_TESTS_ENV_FILE) \
+		up -d
 
 # Stop the action server integration test containers.
 stop-action-server-containers:
-	docker-compose -f $(RASA_CUSTOM_ACTION_SERVER_INTEGRATION_TESTS_DOCKER_COMPOSE_PATH) --env-file $(RASA_CUSTOM_ACTION_SERVER_INTEGRATION_TESTS_ENV_FILE) down
+	USER_ID=$(USER_ID) \
+	docker-compose \
+		-f $(RASA_CUSTOM_ACTION_SERVER_INTEGRATION_TESTS_DOCKER_COMPOSE_PATH) \
+		--env-file $(RASA_CUSTOM_ACTION_SERVER_INTEGRATION_TESTS_ENV_FILE) \
+		down
 
 # Run the action server integration tests.
-run-action-server-integration-tests:
-	poetry run pytest $(RASA_CUSTOM_ACTION_SERVER_INTEGRATION_TESTS_PATH) -n $(JOBS) --junitxml=integration-results-action-server.xml
+test-custom-action-integration:
+	poetry run \
+		pytest $(GRPC_CUSTOM_ACTIONS_INTEGRATION_TEST_PATH) \
+		-n $(JOBS) \
+		--junitxml=custom-actions-integration-results.xml
 

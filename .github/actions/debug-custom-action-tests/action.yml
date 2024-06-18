@@ -1,0 +1,30 @@
+name: Debug metric test containers
+description: Encapsulates steps for metric test debugging
+
+inputs:
+  COMPOSE_FILE_PATH:
+    description: 'Metric tests docker compose path'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+  - name: Check otlp-collector container logs
+    run: |
+      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs rasa-pro
+    shell: bash
+  
+  - name: Check prometheus container logs
+    run: |
+      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs rasa-pro-grpc-ssl
+    shell: bash
+  
+  - name: Check rasa-pro-assistent container logs
+    run: |
+      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs rasa-grpc-action-server
+    shell: bash
+  
+  - name: Check action-server container logs
+    run: |
+      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs rasa-grpc-ssl-action-server
+    shell: bash
