@@ -1162,3 +1162,173 @@ class Validator:
                             slot_names.add(slot_name)
 
         return all_good
+
+    def validate_CALM_slot_mappings(self) -> bool:
+        """Check if the usage of slot mappings in a CALM assistant is valid."""
+        all_good = True
+
+        for slot in self.domain._user_slots:
+            nlu_mappings = any(
+                [
+                    SlotMappingType(
+                        mapping.get("type", SlotMappingType.FROM_LLM.value)
+                    ).is_predefined_type()
+                    for mapping in slot.mappings
+                ]
+            )
+            llm_mappings = any(
+                [
+                    SlotMappingType(mapping.get("type", SlotMappingType.FROM_LLM.value))
+                    == SlotMappingType.FROM_LLM
+                    for mapping in slot.mappings
+                ]
+            )
+            custom_mappings = any(
+                [
+                    SlotMappingType(mapping.get("type", SlotMappingType.FROM_LLM.value))
+                    == SlotMappingType.CUSTOM
+                    for mapping in slot.mappings
+                ]
+            )
+
+            all_good = self._slot_contains_all_mappings_types(
+                llm_mappings, nlu_mappings, custom_mappings, slot.name, all_good
+            )
+
+            all_good = self._custom_action_name_is_defined_in_the_domain(
+                custom_mappings, slot, all_good
+            )
+
+            all_good = self._config_contains_nlu_command_adapter(
+                nlu_mappings, slot.name, all_good
+            )
+
+            all_good = self._uses_from_llm_mappings_in_a_NLU_based_assistant(
+                llm_mappings, slot.name, all_good
+            )
+
+        return all_good
+
+    @staticmethod
+    def _slot_contains_all_mappings_types(
+        llm_mappings: bool,
+        nlu_mappings: bool,
+        custom_mappings: bool,
+        slot_name: str,
+        all_good: bool,
+    ) -> bool:
+        if llm_mappings and (nlu_mappings or custom_mappings):
+            structlogger.error(
+                "validator.validate_slot_mappings_in_CALM.llm_and_nlu_mappings",
+                slot_name=slot_name,
+                event_info=(
+                    f"The slot '{slot_name}' has both LLM and "
+                    f"NLU or custom slot mappings. "
+                    f"Please make sure that the slot has only one type of mapping."
+                ),
+            )
+            all_good = False
+
+        return all_good
+
+    def _custom_action_name_is_defined_in_the_domain(
+        self,
+        custom_mappings: bool,
+        slot: Slot,
+        all_good: bool,
+    ) -> bool:
+        if not custom_mappings:
+            return all_good
+
+        if not self.flows:
+            return all_good
+
+        slot_collected_by_flows = any(
+            [
+                step.collect == slot.name
+                for flow in self.flows.underlying_flows
+                for step in flow.steps
+                if isinstance(step, CollectInformationFlowStep)
+            ]
+        )
+
+        if not slot_collected_by_flows:
+            return all_good
+
+        is_custom_action_defined = any(
+            [
+                mapping.get("action") is not None
+                and mapping.get("action") in self.domain.action_names_or_texts
+                for mapping in slot.mappings
+            ]
+        )
+
+        if is_custom_action_defined:
+            return all_good
+
+        custom_action_name = f"action_ask_{slot.name}"
+        if custom_action_name not in self.domain.action_names_or_texts:
+            structlogger.error(
+                "validator.validate_slot_mappings_in_CALM.custom_action_not_in_domain",
+                slot_name=slot.name,
+                event_info=(
+                    f"The slot '{slot.name}' has a custom slot mapping, "
+                    f"but the action '{custom_action_name}' is not defined "
+                    f"in the domain file. "
+                    f"Please add the action to your domain file."
+                ),
+            )
+            all_good = False
+
+        return all_good
+
+    def _config_contains_nlu_command_adapter(
+        self, nlu_mappings: bool, slot_name: str, all_good: bool
+    ) -> bool:
+        if not nlu_mappings:
+            return all_good
+
+        if not self.flows:
+            return all_good
+
+        contains_nlu_command_adapter = any(
+            [
+                component.get("name") == "NLUCommandAdapter"
+                for component in self.config.get("pipeline", [])
+            ]
+        )
+
+        if not contains_nlu_command_adapter:
+            structlogger.error(
+                "validator.validate_slot_mappings_in_CALM.nlu_mappings_without_adapter",
+                slot_name=slot_name,
+                event_info=(
+                    f"The slot '{slot_name}' has NLU slot mappings, "
+                    f"but the NLUCommandAdapter is not present in the "
+                    f"pipeline. Please add the NLUCommandAdapter to the "
+                    f"pipeline in the config file."
+                ),
+            )
+            all_good = False
+
+        return all_good
+
+    def _uses_from_llm_mappings_in_a_NLU_based_assistant(
+        self, llm_mappings: bool, slot_name: str, all_good: bool
+    ) -> bool:
+        if not llm_mappings:
+            return all_good
+
+        if self.flows:
+            return all_good
+
+        structlogger.error(
+            "validator.validate_slot_mappings_in_CALM.llm_mappings_without_flows",
+            slot_name=slot_name,
+            event_info=(
+                f"The slot '{slot_name}' has LLM slot mappings, "
+                f"but no flows are present in the training data files. "
+                f"Please add flows to the training data files."
+            ),
+        )
+        return False

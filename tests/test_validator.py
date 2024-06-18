@@ -2185,3 +2185,171 @@ def test_validate_button_payloads_unique_slot_names(capsys: CaptureFixture) -> N
         "to set the slot 'name' multiple times. Please make sure "
         "that each slot is set only once."
     ) in captured.out
+
+
+def test_validate_CALM_slot_mappings_success(
+    capsys: CaptureFixture,
+) -> None:
+    importer = RasaFileImporter(
+        config_file="data/test_calm_slot_mappings/config.yml",
+        domain_path="data/test_calm_slot_mappings/validation/domain_valid.yml",
+        training_data_paths=[
+            "data/test_calm_slot_mappings/data/flows.yml",
+            "data/test_calm_slot_mappings/data/nlu.yml",
+            "data/test_calm_slot_mappings/data/stories.yml",
+        ],
+    )
+    validator = Validator.from_importer(importer)
+    assert validator.validate_CALM_slot_mappings() is True
+
+    captured = capsys.readouterr()
+    log_level = "error"
+    assert log_level not in captured.out
+
+
+@pytest.mark.parametrize(
+    "domain_path",
+    [
+        "data/test_calm_slot_mappings/validation/domain_with_llm_and_custom_mappings.yml",
+        "data/test_calm_slot_mappings/validation/domain_with_llm_and_nlu_mappings.yml",
+    ],
+)
+def test_domain_slots_contain_all_mapping_type(
+    capsys: CaptureFixture, domain_path: str
+) -> None:
+    importer = RasaFileImporter(
+        config_file="data/test_calm_slot_mappings/config.yml",
+        domain_path=domain_path,
+        training_data_paths=[
+            "data/test_calm_slot_mappings/validation/flows.yml",
+        ],
+    )
+    validator = Validator.from_importer(importer)
+    assert validator.validate_CALM_slot_mappings() is False
+
+    captured = capsys.readouterr()
+    log_level = "error"
+    assert log_level in captured.out
+    assert (
+        "validator.validate_slot_mappings_in_CALM.llm_and_nlu_mappings" in captured.out
+    )
+    assert (
+        "The slot 'card_number' has both LLM and "
+        "NLU or custom slot mappings. "
+        "Please make sure that the slot has only one type of mapping."
+    ) in captured.out
+
+
+def test_validate_action_ask_defined_in_the_domain(
+    capsys: CaptureFixture,
+) -> None:
+    importer = RasaFileImporter(
+        config_file="data/test_calm_slot_mappings/config.yml",
+        domain_path="data/test_calm_slot_mappings/validation/domain_action_ask_missing.yml",
+        training_data_paths=[
+            "data/test_calm_slot_mappings/validation/flows.yml",
+        ],
+    )
+    validator = Validator.from_importer(importer)
+    assert validator.validate_CALM_slot_mappings() is False
+
+    captured = capsys.readouterr()
+    log_level = "error"
+    assert log_level in captured.out
+    assert (
+        "validator.validate_slot_mappings_in_CALM.custom_action_not_in_domain"
+        in captured.out
+    )
+    assert (
+        "The slot 'card_number' has a custom slot mapping, "
+        "but the action 'action_ask_card_number' is not defined "
+        "in the domain file. Please add the action to your domain file."
+    ) in captured.out
+
+
+def test_validate_nlu_command_adapter_not_in_config(
+    capsys: CaptureFixture,
+) -> None:
+    importer = RasaFileImporter(
+        config_file="data/test_calm_slot_mappings/validation/config_nlu_command_adapter_missing.yml",
+        domain_path="data/test_calm_slot_mappings/validation/domain_valid_nlu_mappings.yml",
+        training_data_paths=[
+            "data/test_calm_slot_mappings/validation/flows.yml",
+        ],
+    )
+    validator = Validator.from_importer(importer)
+    assert validator.validate_CALM_slot_mappings() is False
+
+    captured = capsys.readouterr()
+    log_level = "error"
+    assert log_level in captured.out
+    assert (
+        "validator.validate_slot_mappings_in_CALM.nlu_mappings_without_adapter"
+        in captured.out
+    )
+    assert (
+        "The slot 'card_number' has NLU slot mappings, "
+        "but the NLUCommandAdapter is not present in the "
+        "pipeline. Please add the NLUCommandAdapter to the "
+        "pipeline in the config file."
+    ) in captured.out
+
+
+def test_validate_llm_slot_mappings_in_nlu_based_assistant(
+    capsys: CaptureFixture,
+) -> None:
+    importer = RasaFileImporter(
+        domain_path="data/test_calm_slot_mappings/validation/domain_valid_llm_mappings.yml",
+        training_data_paths=[
+            "data/test_calm_slot_mappings/validation/stories.yml",
+        ],
+    )
+    validator = Validator.from_importer(importer)
+    assert validator.validate_CALM_slot_mappings() is False
+
+    captured = capsys.readouterr()
+    log_level = "error"
+    assert log_level in captured.out
+    assert (
+        "validator.validate_slot_mappings_in_CALM.llm_mappings_without_flows"
+        in captured.out
+    )
+    assert (
+        "The slot 'num_people' has LLM slot mappings, "
+        "but no flows are present in the training data files. "
+        "Please add flows to the training data files."
+    ) in captured.out
+
+
+def test_validate_llm_slot_mapping_with_action_ask_success(
+    capsys: CaptureFixture,
+) -> None:
+    importer = RasaFileImporter(
+        domain_path="data/test_calm_slot_mappings/validation/domain_valid_llm_mappings.yml",
+        training_data_paths=[
+            "data/test_calm_slot_mappings/validation/flows.yml",
+        ],
+    )
+    validator = Validator.from_importer(importer)
+    assert validator.validate_CALM_slot_mappings() is True
+
+    captured = capsys.readouterr()
+    log_level = "error"
+    assert log_level not in captured.out
+
+
+def test_validate_custom_slot_mappings_with_action_property_success(
+    capsys: CaptureFixture,
+) -> None:
+    importer = RasaFileImporter(
+        domain_path="data/test_calm_slot_mappings/validation/domain_custom_mappings_valid.yml",
+        training_data_paths=[
+            "data/test_calm_slot_mappings/validation/flows_for_valid_custom_slot_mappings.yml",
+        ],
+    )
+    validator = Validator.from_importer(importer)
+    assert validator.validate_CALM_slot_mappings() is True
+
+    captured = capsys.readouterr()
+    log_level = "error"
+    assert log_level not in captured.out

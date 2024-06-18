@@ -1,0 +1,9 @@
+slots:
+  card_number:
+    type: text
+    mappings:
+      - type: from_llm
+      - type: custom
+
+actions:
+  - action_ask_card_number
