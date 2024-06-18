@@ -2,6 +2,7 @@ import abc
 import copy
 import json
 import logging
+from types import ModuleType
 from typing import (
     Any,
     Dict,
@@ -12,6 +13,7 @@ from typing import (
     Tuple,
     Set,
     cast,
+    Union,
 )
 
 import aiohttp
@@ -139,7 +141,10 @@ def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["A
 
 
 def action_for_index(
-    index: int, domain: Domain, action_endpoint: Optional[EndpointConfig]
+    index: int,
+    domain: Domain,
+    action_endpoint: Optional[EndpointConfig],
+    action_package_name: Union[Text, ModuleType] = None,
 ) -> "Action":
     """Get an action based on its index in the list of available actions.
 
@@ -162,7 +167,10 @@ def action_for_index(
         )
 
     return action_for_name_or_text(
-        domain.action_names_or_texts[index], domain, action_endpoint
+        domain.action_names_or_texts[index],
+        domain,
+        action_endpoint,
+        action_package_name,
     )
 
 
@@ -186,7 +194,10 @@ def is_retrieval_action(action_name: Text, retrieval_intents: List[Text]) -> boo
 
 
 def action_for_name_or_text(
-    action_name_or_text: Text, domain: Domain, action_endpoint: Optional[EndpointConfig]
+    action_name_or_text: Text,
+    domain: Domain,
+    action_endpoint: Optional[EndpointConfig],
+    action_package_name: Union[Text, ModuleType] = None,
 ) -> "Action":
     """Retrieves an action by its name or by its text in case it's an end-to-end action.
 
@@ -235,7 +246,7 @@ def action_for_name_or_text(
         from rasa.core.actions.action_trigger_flow import ActionTriggerFlow
 
         return ActionTriggerFlow(action_name_or_text)
-    return RemoteAction(action_name_or_text, action_endpoint)
+    return RemoteAction(action_name_or_text, action_endpoint, action_package_name)
 
 
 def create_bot_utterance(message: Dict[Text, Any]) -> BotUttered:
@@ -938,12 +949,19 @@ class DirectCustomActionExecutor(CustomActionExecutor):
 
 
 class RemoteAction(Action):
-    def __init__(self, name: Text, action_endpoint: EndpointConfig) -> None:
+    def __init__(
+        self,
+        name: Text,
+        action_endpoint: EndpointConfig,
+        action_package_name: Union[Text, ModuleType] = None,
+    ) -> None:
         self._name = name
         self.action_endpoint = action_endpoint
-        self.executor = self._create_executor()
+        self.executor = self._create_executor(action_package_name)
 
-    def _create_executor(self) -> CustomActionExecutor:
+    def _create_executor(
+        self, action_package_name: Union[Text, ModuleType] = None
+    ) -> CustomActionExecutor:
         """Creates an executor based on the action endpoint configuration.
 
         Returns:
@@ -954,7 +972,9 @@ class RemoteAction(Action):
         """
         if self.action_endpoint and self.action_endpoint.url:
             return HTTPCustomActionExecutor(self.name(), self.action_endpoint)
-        return DirectCustomActionExecutor(self._name, DEFAULT_ACTIONS_PATH)
+        return DirectCustomActionExecutor(
+            self._name, action_package_name or DEFAULT_ACTIONS_PATH
+        )
 
     @staticmethod
     def action_response_format_spec() -> Dict[Text, Any]:

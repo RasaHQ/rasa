@@ -1,9 +1,11 @@
 import asyncio
 import logging
-import uuid
-import platform
 import os
+import platform
+import uuid
+from asyncio import AbstractEventLoop
 from functools import partial
+from types import ModuleType
 from typing import (
     Any,
     Callable,
@@ -15,12 +17,12 @@ from typing import (
     Dict,
 )
 
+from sanic import Sanic
 from sanic.worker.loader import AppLoader
 
 import rasa.core.utils
-from rasa.plugin import plugin_manager
-from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.common
+import rasa.shared.utils.io
 import rasa.utils
 import rasa.utils.common
 import rasa.utils.io
@@ -31,10 +33,8 @@ from rasa.core.agent import Agent
 from rasa.core.channels import console
 from rasa.core.channels.channel import InputChannel
 from rasa.core.utils import AvailableEndpoints
-import rasa.shared.utils.io
-from sanic import Sanic
-from asyncio import AbstractEventLoop
-
+from rasa.plugin import plugin_manager
+from rasa.shared.exceptions import RasaException
 from rasa.shared.utils.yaml import read_config_file
 
 logger = logging.getLogger()  # get the root logger
@@ -121,6 +121,7 @@ def configure_app(
     server_listeners: Optional[List[Tuple[Callable, Text]]] = None,
     use_uvloop: Optional[bool] = True,
     keep_alive_timeout: int = constants.DEFAULT_KEEP_ALIVE_TIMEOUT,
+    action_package_name: Union[Text, ModuleType] = None,
 ) -> Sanic:
     """Run the agent."""
     rasa.core.utils.configure_file_logging(
@@ -138,6 +139,7 @@ def configure_app(
                 jwt_private_key=jwt_private_key,
                 jwt_method=jwt_method,
                 endpoints=endpoints,
+                action_package_name=action_package_name,
             )
         )
     else:
@@ -218,6 +220,7 @@ def serve_application(
     syslog_protocol: Optional[Text] = None,
     request_timeout: Optional[int] = None,
     server_listeners: Optional[List[Tuple[Callable, Text]]] = None,
+    action_package_name: Union[Text, ModuleType] = None,
 ) -> None:
     """Run the API entrypoint."""
     if not channel and not credentials:
@@ -244,6 +247,7 @@ def serve_application(
         syslog_protocol=syslog_protocol,
         request_timeout=request_timeout,
         server_listeners=server_listeners,
+        action_package_name=action_package_name,
     )
 
     ssl_context = server.create_ssl_context(

@@ -23,7 +23,7 @@ import rasa.shared.utils.io
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.trace import SpanKind, Tracer
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
-from rasa.core.actions.action import Action, RemoteAction
+from rasa.core.actions.action import Action, RemoteAction, CustomActionExecutor
 from rasa.core.agent import Agent
 from rasa.core.channels import OutputChannel
 from rasa.core.information_retrieval.information_retrieval import InformationRetrieval
@@ -268,6 +268,9 @@ def instrument(
     vector_store_subclasses: Optional[List[Type[InformationRetrievalType]]] = None,
     nlu_command_adapter_class: Optional[Type[NLUCommandAdapterType]] = None,
     endpoint_config_class: Optional[Type[EndpointConfigType]] = None,
+    custom_action_executor_subclasses: Optional[
+        List[Type[CustomActionExecutor]]
+    ] = None,
 ) -> None:
     """Substitute methods to be traced by their traced counterparts.
 
@@ -305,6 +308,9 @@ def instrument(
         `None` is given, no `NLUCommandAdapter` will be instrumented.
     :param endpoint_config_class: The `EndpointConfig` to be instrumented. If
         `None` is given, no `EndpointConfig` will be instrumented.
+    :param custom_action_executor_subclasses: The subclasses of `CustomActionExecutor`
+        to be instrumented. If `None` is given, no subclass of `CustomActionExecutor`
+        will be instrumented.
     """
     if agent_class is not None and not class_is_instrumented(agent_class):
         _instrument_method(
@@ -482,6 +488,22 @@ def instrument(
             attribute_extractors.extract_attrs_for_endpoint_config,
             metrics_recorder=record_request_size_in_bytes,
         )
+
+    if custom_action_executor_subclasses:
+        for custom_action_executor_subclass in custom_action_executor_subclasses:
+            if (
+                custom_action_executor_subclass is not None
+                and not class_is_instrumented(custom_action_executor_subclass)
+            ):
+                _instrument_method(
+                    tracer_provider.get_tracer(
+                        custom_action_executor_subclass.__module__
+                    ),
+                    custom_action_executor_subclass,
+                    "run",
+                    attribute_extractors.extract_attrs_for_custom_action_executor,
+                )
+                mark_class_as_instrumented(custom_action_executor_subclass)
 
 
 def _instrument_nlu_command_adapter_predict_commands(

@@ -9,6 +9,7 @@ from functools import reduce, wraps
 from http import HTTPStatus
 from inspect import isawaitable
 from pathlib import Path
+from types import ModuleType
 from typing import (
     Any,
     Callable,
@@ -25,6 +26,12 @@ from typing import (
 
 import aiohttp
 import jsonschema
+from sanic import Sanic, response
+from sanic.request import Request
+from sanic.response import HTTPResponse
+from sanic_cors import CORS
+from sanic_jwt import Initialize, exceptions
+
 import rasa
 import rasa.core.utils
 import rasa.nlu.test
@@ -70,11 +77,6 @@ from rasa.shared.utils.schemas.events import EVENTS_SCHEMA
 from rasa.shared.utils.yaml import validate_training_data
 from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
 from rasa.utils.endpoints import EndpointConfig
-from sanic import Sanic, response
-from sanic.request import Request
-from sanic.response import HTTPResponse
-from sanic_cors import CORS
-from sanic_jwt import Initialize, exceptions
 
 if TYPE_CHECKING:
     from ssl import SSLContext
@@ -640,6 +642,7 @@ def create_app(
     jwt_private_key: Optional[Text] = None,
     jwt_method: Text = "HS256",
     endpoints: Optional[AvailableEndpoints] = None,
+    action_package_name: Union[Text, ModuleType] = None,
 ) -> Sanic:
     """Class representing a Rasa HTTP server."""
     app = Sanic("rasa_server")
@@ -674,6 +677,7 @@ def create_app(
     # Initialize shared object of type unsigned int for tracking
     # the number of active training processes
     app.ctx.active_training_processes = multiprocessing.Value("I", 0)
+    app.ctx.action_package_name = action_package_name
 
     @app.exception(ErrorResponse)
     async def handle_error_response(

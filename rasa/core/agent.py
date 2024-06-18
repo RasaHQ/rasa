@@ -1,37 +1,38 @@
 from __future__ import annotations
-from asyncio import AbstractEventLoop, CancelledError
+
 import functools
 import logging
 import os
-from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Text, Union
 import uuid
+from asyncio import AbstractEventLoop, CancelledError
+from pathlib import Path
+from types import ModuleType
+from typing import Any, Callable, Dict, List, Optional, Text, Union
 
 import aiohttp
 from aiohttp import ClientError
 
+import rasa.shared.utils.io
 from rasa.core import jobs
 from rasa.core.channels.channel import OutputChannel, UserMessage
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
-from rasa.core.http_interpreter import RasaNLUHttpInterpreter
-from rasa.shared.core.domain import Domain
 from rasa.core.exceptions import AgentNotReady
-from rasa.shared.constants import DEFAULT_SENDER_ID
+from rasa.core.http_interpreter import RasaNLUHttpInterpreter
 from rasa.core.lock_store import InMemoryLockStore, LockStore
 from rasa.core.nlg import NaturalLanguageGenerator, TemplatedNaturalLanguageGenerator
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import FailSafeTrackerStore, InMemoryTrackerStore
-from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
-from rasa.exceptions import ModelNotFound
-from rasa.nlu.utils import is_url
-from rasa.shared.exceptions import RasaException
-import rasa.shared.utils.io
-from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
-from rasa.utils.endpoints import EndpointConfig
-
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.utils import AvailableEndpoints
+from rasa.exceptions import ModelNotFound
+from rasa.nlu.utils import is_url
+from rasa.shared.constants import DEFAULT_SENDER_ID
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
+from rasa.shared.exceptions import RasaException
+from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
+from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
 
@@ -413,7 +414,9 @@ class Agent:
         return await self.processor.parse_message(message)  # type: ignore[union-attr]
 
     async def handle_message(
-        self, message: UserMessage
+        self,
+        message: UserMessage,
+        action_package_name: Union[Text, ModuleType] = None,
     ) -> Optional[List[Dict[Text, Any]]]:
         """Handle a single message."""
         if not self.is_ready():
@@ -422,7 +425,8 @@ class Agent:
 
         async with self.lock_store.lock(message.sender_id):
             return await self.processor.handle_message(  # type: ignore[union-attr]
-                message
+                message,
+                action_package_name,
             )
 
     @agent_must_be_ready

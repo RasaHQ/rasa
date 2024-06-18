@@ -2,7 +2,7 @@ import argparse
 import webbrowser
 from asyncio import AbstractEventLoop
 from typing import List, Text
-
+from rasa_sdk.cli.arguments import action_arg
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import shell as arguments
 from rasa.core import constants
@@ -31,6 +31,12 @@ def add_subparser(
         ),
     )
     inspect_parser.set_defaults(func=inspect)
+    inspect_parser.add_argument(
+        "--actions",
+        type=action_arg,
+        default=None,
+        help="name of action package to be loaded",
+    )
 
     arguments.set_shell_arguments(inspect_parser)
     # it'd be confusing to expose those arguments to the user,

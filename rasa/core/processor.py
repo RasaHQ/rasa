@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 import tarfile
 import time
-from types import LambdaType
+from types import LambdaType, ModuleType
 from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Tuple, Union
 
 from rasa.core.http_interpreter import RasaNLUHttpInterpreter
@@ -166,7 +166,7 @@ class MessageProcessor:
                 raise ModelNotFound(f"Model {model_path} can not be loaded.")
 
     async def handle_message(
-        self, message: UserMessage
+        self, message: UserMessage, action_package_name: Union[Text, ModuleType] = None
     ) -> Optional[List[Dict[Text, Any]]]:
         """Handle a single message with this processor."""
         # preprocess message if necessary
@@ -182,7 +182,9 @@ class MessageProcessor:
 
         tracker = await self.run_action_extract_slots(message.output_channel, tracker)
 
-        await self._run_prediction_loop(message.output_channel, tracker)
+        await self._run_prediction_loop(
+            message.output_channel, tracker, action_package_name
+        )
 
         await self.run_anonymization_pipeline(tracker)
 
@@ -522,7 +524,9 @@ class MessageProcessor:
         return tracker
 
     async def predict_next_with_tracker_if_should(
-        self, tracker: DialogueStateTracker
+        self,
+        tracker: DialogueStateTracker,
+        action_package_name: Union[Text, ModuleType] = None,
     ) -> Tuple[rasa.core.actions.action.Action, PolicyPrediction]:
         """Predicts the next action the bot should take after seeing x.
 
@@ -547,7 +551,10 @@ class MessageProcessor:
         prediction = await self._predict_next_with_tracker(tracker)
 
         action = rasa.core.actions.action.action_for_index(
-            prediction.max_confidence_index, self.domain, self.action_endpoint
+            prediction.max_confidence_index,
+            self.domain,
+            self.action_endpoint,
+            action_package_name,
         )
 
         logger.debug(
@@ -961,7 +968,10 @@ class MessageProcessor:
         )
 
     async def _run_prediction_loop(
-        self, output_channel: OutputChannel, tracker: DialogueStateTracker
+        self,
+        output_channel: OutputChannel,
+        tracker: DialogueStateTracker,
+        action_package_name: Union[Text, ModuleType] = None,
     ) -> None:
         # keep taking actions decided by the policy until it chooses to 'listen'
         should_predict_another_action = True
@@ -973,7 +983,7 @@ class MessageProcessor:
             # this actually just calls the policy's method by the same name
             try:
                 action, prediction = await self.predict_next_with_tracker_if_should(
-                    tracker
+                    tracker, action_package_name
                 )
             except ActionLimitReached:
                 logger.warning(

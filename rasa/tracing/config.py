@@ -16,6 +16,7 @@ from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
+from rasa.core.actions.action import CustomActionExecutor
 from rasa.core.agent import Agent
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import TrackerStore
@@ -38,10 +39,9 @@ from rasa.tracing.constants import (
     ENDPOINTS_ROOT_CERTIFICATES_KEY,
     ENDPOINTS_METRICS_KEY,
 )
+from rasa.tracing.instrumentation import instrumentation
 from rasa.tracing.metric_instrument_provider import MetricInstrumentProvider
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
-
-from rasa.tracing.instrumentation import instrumentation
 
 TRACING_SERVICE_NAME = os.environ.get("TRACING_SERVICE_NAME", "rasa")
 
@@ -82,6 +82,11 @@ def configure_tracing(tracer_provider: Optional[TracerProvider]) -> None:
         for vector_store_class in InformationRetrieval.__subclasses__()
     ]
 
+    custom_action_executor_subclasses = [
+        custom_action_executor_class
+        for custom_action_executor_class in CustomActionExecutor.__subclasses__()
+    ]
+
     instrumentation.instrument(
         tracer_provider=tracer_provider,
         agent_class=Agent,
@@ -96,6 +101,7 @@ def configure_tracing(tracer_provider: Optional[TracerProvider]) -> None:
         vector_store_subclasses=vector_store_subclasses,
         nlu_command_adapter_class=NLUCommandAdapter,
         endpoint_config_class=EndpointConfig,
+        custom_action_executor_subclasses=custom_action_executor_subclasses,
     )
 
 

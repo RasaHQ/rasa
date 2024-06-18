@@ -1,16 +1,18 @@
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Tuple
+from types import ModuleType
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Tuple, Union
 
 import tiktoken
 from numpy import ndarray
 
+from rasa.core.actions.action import HTTPCustomActionExecutor, DirectCustomActionExecutor
 from rasa.core.agent import Agent
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels import UserMessage
-from rasa.core.nlg.contextual_response_rephraser import ContextualResponseRephraser
 from rasa.core.lock_store import LOCK_LIFETIME, LockStore
+from rasa.core.nlg.contextual_response_rephraser import ContextualResponseRephraser
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import TrackerStore
 from rasa.dialogue_understanding.commands import Command
@@ -247,7 +249,11 @@ def extract_attrs_for_graph_trainer(
     }
 
 
-def extract_headers(message: UserMessage, **kwargs: Any) -> Any:
+def extract_headers(
+    message: UserMessage,
+    action_package_name: Union[Text, ModuleType] = None,
+    **kwargs: Any,
+) -> Any:
     """Extract the headers from the `UserMessage`."""
     if message.headers:
         return message.headers
@@ -659,4 +665,17 @@ def extract_attrs_for_endpoint_config(
             }
         )
 
+    return attrs
+
+
+def extract_attrs_for_custom_action_executor(
+    self: Union[HTTPCustomActionExecutor, DirectCustomActionExecutor],
+    tracker: DialogueStateTracker,
+    domain: Domain,
+) -> Dict[str, Any]:
+    attrs: Dict[str, Any] = {
+        "class_name": self.__class__.__name__,
+        "action_name": self.name(),
+        "sender_id": tracker.sender_id,
+    }
     return attrs

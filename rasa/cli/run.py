@@ -3,8 +3,11 @@ import logging
 import os
 from typing import List, Text
 
+from rasa_sdk.cli.arguments import action_arg
+
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import run as arguments
+from rasa.exceptions import ModelNotFound
 from rasa.shared.constants import (
     DOCS_BASE_URL,
     DEFAULT_ENDPOINTS_PATH,
@@ -12,7 +15,6 @@ from rasa.shared.constants import (
     DEFAULT_ACTIONS_PATH,
     DEFAULT_MODELS_PATH,
 )
-from rasa.exceptions import ModelNotFound
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +36,12 @@ def add_subparser(
         help="Starts a Rasa server with your trained model.",
     )
     run_parser.set_defaults(func=run)
+    run_parser.add_argument(
+        "--actions",
+        type=action_arg,
+        default=None,
+        help="name of action package to be loaded",
+    )
 
     run_subparsers = run_parser.add_subparsers()
     sdk_subparser = run_subparsers.add_parser(
@@ -85,6 +93,7 @@ def run(args: argparse.Namespace) -> None:
     args.credentials = rasa.cli.utils.get_validated_path(
         args.credentials, "credentials", DEFAULT_CREDENTIALS_PATH, True
     )
+    args.action_package_name = args.actions
 
     if args.enable_api:
         if not args.remote_storage:

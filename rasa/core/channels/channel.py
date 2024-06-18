@@ -1,9 +1,7 @@
 import json
 import logging
 import uuid
-import jwt
-from sanic import Sanic, Blueprint
-from sanic.request import Request
+from types import ModuleType
 from typing import (
     Text,
     List,
@@ -14,16 +12,21 @@ from typing import (
     Iterable,
     Awaitable,
     NoReturn,
+    Union,
 )
 
+import jwt
+from sanic import Sanic, Blueprint
+from sanic.request import Request
+
 from rasa.cli import utils as cli_utils
-from rasa.shared.constants import DOCS_BASE_URL, DEFAULT_SENDER_ID
 from rasa.core.constants import BEARER_TOKEN_PREFIX
-from rasa.shared.exceptions import RasaException
+from rasa.shared.constants import DOCS_BASE_URL, DEFAULT_SENDER_ID
 from rasa.shared.core.trackers import (
     DialogueStateTracker,
     EventVerbosity,
 )
+from rasa.shared.exceptions import RasaException
 
 try:
     from urlparse import urljoin
@@ -101,7 +104,7 @@ def register(
     """Registers input channel blueprints with Sanic."""
 
     async def handler(message: UserMessage) -> None:
-        await app.ctx.agent.handle_message(message)
+        await app.ctx.agent.handle_message(message, app.ctx.action_package_name)
 
     for channel in input_channels:
         if route:
