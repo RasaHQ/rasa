@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Dict, Any, Text, TYPE_CHECKING, Optional
+from typing import Any, Dict, TYPE_CHECKING, Optional
 
 import aiohttp
 
@@ -96,8 +96,8 @@ class HTTPCustomActionExecutor(CustomActionExecutor):
                 f"Error: {e}"
             )
             raise RasaException(
-                f"Failed to execute custom action '{self.action_name}'. Couldn't connect "
-                f"to the server at '{self.action_endpoint.url}."
+                f"Failed to execute custom action '{self.action_name}'. "
+                f"Couldn't connect to the server at '{self.action_endpoint.url}."
             )
 
         except aiohttp.ClientError as e:

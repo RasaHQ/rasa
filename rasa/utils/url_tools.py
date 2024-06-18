@@ -46,7 +46,8 @@ def get_url_schema(url: str) -> UrlSchema:
     except ValueError:
         structlogger.warn(
             "rasa.utils.url_tools.get_url_schema.unknown_schema",
-            event_info=f"Unknown URL schema '{parsed_url.scheme}'. Returning 'unknown'.",
+            event_info=f"Unknown URL schema '{parsed_url.scheme}'. "
+            f"Returning 'unknown'.",
         )
 
         return UrlSchema.UNKNOWN

@@ -75,12 +75,6 @@ services:
       - "${RASA_SDK_PORT}:${RASA_SDK_PORT}"
     environment:
       <<: *license
-    healthcheck:
-      test: curl localhost:${RASA_SDK_PORT} || exit 1
-      interval: 10s
-      retries: 10
-      start_period: 15s
-      timeout: 10s
 
 
   rasa-grpc-ssl-action-server:
@@ -99,12 +93,6 @@ services:
       - "${RASA_SDK_SSL_PORT}:${RASA_SDK_SSL_PORT}"
     environment:
       <<: *license
-    healthcheck:
-      test: curl localhost:${RASA_SDK_SSL_PORT} || exit 1
-      interval: 10s
-      retries: 10
-      start_period: 15s
-      timeout: 10s
 
 
 networks: { rasa-pro-network: { } }

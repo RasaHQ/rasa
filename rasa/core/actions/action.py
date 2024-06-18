@@ -728,6 +728,13 @@ class RemoteAction(Action):
             return RetryCustomActionExecutor(
                 HTTPCustomActionExecutor(self.name(), self.action_endpoint)
             )
+        raise RasaException(
+            f"Failed to create a custom action executor. "
+            f"Please make sure to include an action endpoint configuration in your "
+            f"endpoints configuration file. Make sure that for grpc, http and https "
+            f"an url schema is set. "
+            f"Found url '{self.action_endpoint.url}'."
+        )
 
     @staticmethod
     def action_response_format_spec() -> Dict[Text, Any]:

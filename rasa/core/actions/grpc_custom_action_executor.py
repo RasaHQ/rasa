@@ -1,5 +1,5 @@
 from os.path import abspath
-from typing import Dict, Text, Any, Optional, TYPE_CHECKING
+from typing import Any, Dict, Optional, TYPE_CHECKING
 from urllib.parse import urlparse
 
 import grpc
@@ -139,7 +139,8 @@ class GRPCCustomActionExecutor(CustomActionExecutor):
         Args:
             url: URL of the action server.
             cert_ca_file: Path to the certificate file for TLS encryption.
-            client_cert_file: Path to the client certificate file for mutual TLS authentication.
+            client_cert_file: Path to the client certificate
+                              file for mutual TLS authentication.
             client_key_file: Path to the client key file for mutual TLS authentication.
 
         Returns:
