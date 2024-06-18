@@ -787,11 +787,7 @@ def validate_coexistance_routing_setup(
 
         if schema.has_node(LLMBasedRouter, include_subtypes=False):
             config = get_component_config(schema, LLMBasedRouter)
-            if not valid_calm_entry_config(config) or (
-                config is not None
-                and NLU_ENTRY in config
-                and not valid_nlu_entry_config(config)
-            ):
+            if not valid_calm_entry_config(config):
                 structlogger.error(
                     "validation.coexistance.invalid_configuration",
                     event_info=(
