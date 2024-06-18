@@ -5327,7 +5327,7 @@ websockets = ">=10.0,<12.0"
 type = "git"
 url = "https://github.com/RasaHQ/rasa-sdk"
 reference = "feature/ATO-1652-add-grpc-support"
-resolved_reference = "1e593efa2cdecc78f8a31c74bfae3f7292eefbee"
+resolved_reference = "0431530c2cc201bab42c21bc2a4f46bf62baa716"
 
 [[package]]
 name = "redis"
