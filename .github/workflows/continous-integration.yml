@@ -420,6 +420,9 @@ jobs:
           make install
         shell: bash
 
+      - name: Docker version
+        run: docker --version && docker compose version
+
       - name: Pull rasa-private dev image
         uses: ./.github/actions/pull-from-ecr
         with:
@@ -445,7 +448,7 @@ jobs:
 
       - name: Show container logs
         if: always()
-        uses: ./.github/actions/debug-metric-tests
+        uses: ./.github/actions/debug-custom-actions-tests
         with:
           COMPOSE_FILE_PATH: tests_deployment/integration_tests_custom_action_server/docker-compose.yml
 

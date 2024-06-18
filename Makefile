@@ -332,7 +332,7 @@ train-action-server-nlu-bot: train-nlu-bot
 # Run the action server integration test containers.
 run-action-server-containers: train-action-server-nlu-bot
 	USER_ID=$(USER_ID) \
-	docker-compose \
+	docker compose \
 		-f $(RASA_CUSTOM_ACTION_SERVER_INTEGRATION_TESTS_DOCKER_COMPOSE_PATH) \
 		--env-file $(RASA_CUSTOM_ACTION_SERVER_INTEGRATION_TESTS_ENV_FILE) \
 		up -d
@@ -340,7 +340,7 @@ run-action-server-containers: train-action-server-nlu-bot
 # Stop the action server integration test containers.
 stop-action-server-containers:
 	USER_ID=$(USER_ID) \
-	docker-compose \
+	docker compose \
 		-f $(RASA_CUSTOM_ACTION_SERVER_INTEGRATION_TESTS_DOCKER_COMPOSE_PATH) \
 		--env-file $(RASA_CUSTOM_ACTION_SERVER_INTEGRATION_TESTS_ENV_FILE) \
 		down
