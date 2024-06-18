@@ -1,3 +1,0 @@
-action_endpoint:
-    url: "grpc://rasa-grpc-ssl-action-server:${RASA_SDK_PORT}"
-    cafile: "/app/certs/ca.pem"

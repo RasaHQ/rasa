@@ -886,7 +886,7 @@ jobs:
         
   publish-test-results:
     runs-on: ubuntu-20.04
-    needs: [ tracing-integration-test, metric-integration-test,
+    needs: [ tracing-integration-test, metric-integration-test, custom-action-integration-test,
              sequential-integration-test, non-sequential-integration-test,
              concurrent-lockstore-integration-test, broker_integration_test,
              unit-test, test-anonymization ]

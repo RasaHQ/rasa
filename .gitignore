@@ -92,3 +92,8 @@ rasa/keys
 rasa.code-workspace
 .config
 .keras
+.bash_history
+report_integration.xml
+integration-results-tracing.xml
+integration-results-metric.xml
+custom-actions-integration-results.xml

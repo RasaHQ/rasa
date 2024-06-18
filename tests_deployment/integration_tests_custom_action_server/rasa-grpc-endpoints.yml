@@ -1,2 +1,0 @@
-action_endpoint:
-    url: "http://rasa-grpc-action-server:${RASA_SDK_PORT}"

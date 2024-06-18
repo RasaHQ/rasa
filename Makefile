@@ -6,7 +6,7 @@ INTEGRATION_TEST_PYTEST_MARKERS ?= "sequential or broker or concurrent_lock_stor
 PLATFORM ?= "linux/arm64"
 TRACING_INTEGRATION_TEST_FOLDER = $(INTEGRATION_TEST_FOLDER)/tracing
 METRICS_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/tracing/test_metrics.py
-GRPC_CUSTOM_ACTIONS_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/actions/custom_actions/test_grpc_custom_actions.py
+CUSTOM_ACTIONS_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/actions/custom_actions/test_custom_actions.py
 BASE_IMAGE_HASH ?= localdev
 BASE_BUILDER_IMAGE_HASH ?= localdev
 RASA_DEPS_IMAGE_HASH ?= localdev
@@ -169,7 +169,7 @@ ifeq (,$(wildcard tests_deployment/.env))
 			-m $(INTEGRATION_TEST_PYTEST_MARKERS) \
 			--dist loadgroup  \
 			--ignore $(TRACING_INTEGRATION_TEST_FOLDER) \
-			--ignore $(GRPC_CUSTOM_ACTIONS_INTEGRATION_TEST_PATH) \
+			--ignore $(CUSTOM_ACTIONS_INTEGRATION_TEST_PATH) \
 			--junitxml=report_integration.xml
 else
 	set -o allexport; \
@@ -182,7 +182,7 @@ else
 			-m $(INTEGRATION_TEST_PYTEST_MARKERS) \
 			--dist loadgroup \
 			--ignore $(TRACING_INTEGRATION_TEST_FOLDER) \
-			--ignore $(GRPC_CUSTOM_ACTIONS_INTEGRATION_TEST_PATH) \
+			--ignore $(CUSTOM_ACTIONS_INTEGRATION_TEST_PATH) \
 			--junitxml=report_integration.xml && \
 	set +o allexport
 endif
@@ -298,7 +298,7 @@ test-tracing-integration:
 		pytest $(TRACING_INTEGRATION_TEST_FOLDER) \
 		-n $(JOBS) \
 		--ignore $(METRICS_INTEGRATION_TEST_PATH) \
-		--ignore $(GRPC_CUSTOM_ACTIONS_INTEGRATION_TEST_PATH) \
+		--ignore $(CUSTOM_ACTIONS_INTEGRATION_TEST_PATH) \
 		--junitxml=integration-results-tracing.xml
 
 train-calm:
@@ -348,7 +348,7 @@ stop-action-server-containers:
 # Run the action server integration tests.
 test-custom-action-integration:
 	poetry run \
-		pytest $(GRPC_CUSTOM_ACTIONS_INTEGRATION_TEST_PATH) \
+		pytest $(CUSTOM_ACTIONS_INTEGRATION_TEST_PATH) \
 		-n $(JOBS) \
 		--junitxml=custom-actions-integration-results.xml
 

@@ -18,13 +18,13 @@ inputs:
 runs:
   using: 'composite'
   steps:
-  - name: Check rasa-pro container logs
+  - name: Check rasa-pro-grpc container logs
     run: |
       RASA_REPOSITORY=${{ inputs.RASA_DOCKER_REPOSITORY }} \
       RASA_IMAGE_TAG=${{ inputs.RASA_IMAGE_TAG }} \
       docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} \
         --env-file=${{ inputs.ENV_FILE_PATH }} \
-        logs rasa-pro
+        logs rasa-pro-grpc
     shell: bash
   
   - name: Check rasa-pro-grpc-ssl container logs
@@ -51,5 +51,41 @@ runs:
       RASA_IMAGE_TAG=${{ inputs.RASA_IMAGE_TAG }} \
       docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} \
       --env-file=${{ inputs.ENV_FILE_PATH }} \
-      logs rasa-grpc-ssl-action-server \
+      logs rasa-grpc-ssl-action-server
+    shell: bash
+
+  - name: Check rasa-pro-http container logs
+    run: |
+      RASA_REPOSITORY=${{ inputs.RASA_DOCKER_REPOSITORY }} \
+      RASA_IMAGE_TAG=${{ inputs.RASA_IMAGE_TAG }} \
+      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} \
+        --env-file=${{ inputs.ENV_FILE_PATH }} \
+        logs rasa-pro-http
+    shell: bash
+
+  - name: Check rasa-pro-https container logs
+    run: |
+      RASA_REPOSITORY=${{ inputs.RASA_DOCKER_REPOSITORY }} \
+      RASA_IMAGE_TAG=${{ inputs.RASA_IMAGE_TAG }} \
+      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} \
+      --env-file=${{ inputs.ENV_FILE_PATH }} \
+      logs rasa-pro-https
+    shell: bash
+
+  - name: Check rasa-http-action-server container logs
+    run: |
+      RASA_REPOSITORY=${{ inputs.RASA_DOCKER_REPOSITORY }} \
+      RASA_IMAGE_TAG=${{ inputs.RASA_IMAGE_TAG }} \
+      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} \
+      --env-file=${{ inputs.ENV_FILE_PATH }} \
+      logs rasa-grpc-action-server
+    shell: bash
+
+  - name: Check rasa-https-action-server container logs
+    run: |
+      RASA_REPOSITORY=${{ inputs.RASA_DOCKER_REPOSITORY }} \
+      RASA_IMAGE_TAG=${{ inputs.RASA_IMAGE_TAG }} \
+      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} \
+      --env-file=${{ inputs.ENV_FILE_PATH }} \
+      logs rasa-https-action-server
     shell: bash
