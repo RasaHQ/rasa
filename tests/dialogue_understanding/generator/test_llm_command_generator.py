@@ -561,6 +561,18 @@ class TestLLMCommandGenerator:
                 "Clarify(some_flow, 02_benefits_learning_days)",
                 [ClarifyCommand(options=["02_benefits_learning_days", "some_flow"])],
             ),
+            # Clarify with single option is converted to a StartFlowCommand
+            ("Clarify(some_flow)", [StartFlowCommand(flow="some_flow")]),
+            # Clarify with multiple but same options is converted to a StartFlowCommand
+            (
+                "Clarify(some_flow, some_flow, some_flow, some_flow)",
+                [StartFlowCommand(flow="some_flow")],
+            ),
+            # Clarify with multiple but same options is converted to a StartFlowCommand
+            (
+                "Clarify(some_flow, some_flow)",
+                [StartFlowCommand(flow="some_flow")],
+            ),
         ],
     )
     def test_parse_commands_identifies_correct_command(

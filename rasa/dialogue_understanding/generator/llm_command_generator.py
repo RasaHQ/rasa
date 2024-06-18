@@ -262,7 +262,9 @@ class LLMCommandGenerator(LLMBasedCommandGenerator):
                 valid_options = [
                     flow for flow in options if flow in flows.user_flow_ids
                 ]
-                if len(valid_options) >= 1:
+                if len(set(valid_options)) == 1:
+                    commands.extend(cls.start_flow_by_name(valid_options[0], flows))
+                elif len(valid_options) > 1:
                     commands.append(ClarifyCommand(valid_options))
 
         return commands
