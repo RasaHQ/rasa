@@ -162,8 +162,8 @@ async def test_remote_actions_are_compressed(
     monkeypatch: MonkeyPatch,
 ):
     endpoint = EndpointConfig("https://example.com/webhooks/actions")
-    remote_action = action.RemoteAction("my_action", endpoint)
     monkeypatch.setenv(COMPRESS_ACTION_SERVER_REQUEST_ENV_NAME, is_compression_enabled)
+    remote_action = action.RemoteAction("my_action", endpoint)
 
     with aioresponses() as mocked:
         mocked.post(
