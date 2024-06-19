@@ -1,7 +1,6 @@
 import json
 import logging
 from pathlib import Path
-from types import ModuleType
 from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Tuple, Union
 
 import tiktoken
@@ -252,7 +251,6 @@ def extract_attrs_for_graph_trainer(
 
 def extract_headers(
     message: UserMessage,
-    action_package_name: Union[Text, ModuleType] = None,
     **kwargs: Any,
 ) -> Any:
     """Extract the headers from the `UserMessage`."""

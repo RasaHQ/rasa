@@ -946,7 +946,7 @@ def _instrument_run_action(
                 if isinstance(action.executor, RetryCustomActionExecutor):
                     attrs["executor_class_name"] = type(
                         action.executor._custom_action_executor
-                    ).__name__  # type: ignore[attr-defined]
+                    ).__name__
                 else:
                     attrs["executor_class_name"] = type(action.executor).__name__
             with tracer.start_as_current_span(
