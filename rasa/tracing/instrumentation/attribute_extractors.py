@@ -670,7 +670,7 @@ def extract_attrs_for_endpoint_config(
 def extract_attrs_for_custom_action_executor(
     self: Union[HTTPCustomActionExecutor, GRPCCustomActionExecutor],
     tracker: DialogueStateTracker,
-    domain: Domain,
+    domain: Optional[Domain] = None,
 ) -> Dict[str, Any]:
     attrs: Dict[str, Any] = {
         "class_name": self.__class__.__name__,
