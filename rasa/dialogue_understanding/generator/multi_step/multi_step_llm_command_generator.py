@@ -24,6 +24,7 @@ from rasa.dialogue_understanding.generator.llm_based_command_generator import (
 )
 from rasa.dialogue_understanding.generator.constants import (
     LLM_CONFIG_KEY,
+    DEFAULT_LLM_CONFIG,
     USER_INPUT_CONFIG_KEY,
     FLOW_RETRIEVAL_KEY,
 )
@@ -116,8 +117,11 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
         self._init_prompt_templates(prompt_templates)
 
         self.trace_prompt_tokens = self.config.get("trace_prompt_tokens", False)
+        model_name = (self.config.get(LLM_CONFIG_KEY) or DEFAULT_LLM_CONFIG).get(
+            "model_name"
+        )
         track_multi_step_llm_command_generator_init(
-            llm_model_name=config.get(LLM_CONFIG_KEY, {}).get("model_name"),
+            llm_model_name=model_name,
             handle_flows_prompt=self.handle_flows_prompt,
             fill_slots_prompt=self.fill_slots_prompt,
         )

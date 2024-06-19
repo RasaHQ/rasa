@@ -38,6 +38,7 @@ from rasa.tracing.constants import (
     LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME,
     LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME,
     MULTI_STEP_LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME,
+    SINGLE_STEP_LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME,
 )
 from rasa.tracing.instrumentation import instrumentation
 from rasa.tracing.metric_instrument_provider import MetricInstrumentProvider
@@ -300,6 +301,17 @@ def setup_test_endpoint_config(
             8,
             MULTI_STEP_LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME,
             "The duration of MultiStepLLMCommandGenerator's LLM call",
+        ),
+        (
+            "single_step_llm_command_generator_class",
+            SingleStepLLMCommandGenerator,
+            setup_test_single_step_llm_command_generator,
+            ["default_model_storage"],
+            "invoke_llm",
+            ["prompt"],
+            11,
+            SINGLE_STEP_LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME,
+            "The duration of SingleStepLLMCommandGenerator's LLM call",
         ),
     ],
 )

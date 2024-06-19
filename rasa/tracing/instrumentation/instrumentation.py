@@ -58,6 +58,7 @@ from rasa.tracing.instrumentation.intentless_policy_instrumentation import (
 )
 from rasa.tracing.instrumentation.metrics import (
     record_llm_command_generator_metrics,
+    record_single_step_llm_command_generator_metrics,
     record_multi_step_llm_command_generator_metrics,
     record_callable_duration_metrics,
     record_request_size_in_bytes,
@@ -281,6 +282,9 @@ def instrument(
     vector_store_subclasses: Optional[List[Type[InformationRetrievalType]]] = None,
     nlu_command_adapter_class: Optional[Type[NLUCommandAdapterType]] = None,
     endpoint_config_class: Optional[Type[EndpointConfigType]] = None,
+    single_step_llm_command_generator_class: Optional[
+        Type[SingleStepLLMCommandGeneratorType]
+    ] = None,
     multi_step_llm_command_generator_class: Optional[
         Type[MultiStepLLMCommandGeneratorType]
     ] = None,
@@ -324,6 +328,9 @@ def instrument(
         `None` is given, no `NLUCommandAdapter` will be instrumented.
     :param endpoint_config_class: The `EndpointConfig` to be instrumented. If
         `None` is given, no `EndpointConfig` will be instrumented.
+    :param single_step_llm_command_generator_class: The `SingleStepLLMCommandGenerator`
+        to be instrumented. If `None` is given, no `SingleStepLLMCommandGenerator` will
+        be instrumented.
     :param multi_step_llm_command_generator_class: The `MultiStepLLMCommandGenerator`
         to be instrumented. If `None` is given, no `MultiStepLLMCommandGenerator` will
         be instrumented.
@@ -410,6 +417,29 @@ def instrument(
             attribute_extractors.extract_attrs_for_check_commands_against_startable_flows,
         )
         mark_class_as_instrumented(llm_command_generator_class)
+
+    if (
+        single_step_llm_command_generator_class is not None
+        and not class_is_instrumented(single_step_llm_command_generator_class)
+    ):
+        _instrument_method(
+            tracer_provider.get_tracer(
+                single_step_llm_command_generator_class.__module__
+            ),
+            single_step_llm_command_generator_class,
+            "invoke_llm",
+            attribute_extractors.extract_attrs_for_llm_based_command_generator,
+            metrics_recorder=record_single_step_llm_command_generator_metrics,
+        )
+        _instrument_method(
+            tracer_provider.get_tracer(
+                single_step_llm_command_generator_class.__module__
+            ),
+            single_step_llm_command_generator_class,
+            "_check_commands_against_startable_flows",
+            attribute_extractors.extract_attrs_for_check_commands_against_startable_flows,
+        )
+        mark_class_as_instrumented(single_step_llm_command_generator_class)
 
     if multi_step_llm_command_generator_class is not None and not class_is_instrumented(
         multi_step_llm_command_generator_class

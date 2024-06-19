@@ -29,6 +29,7 @@ from rasa.dialogue_understanding.commands import (
 )
 from rasa.dialogue_understanding.generator import (
     LLMCommandGenerator,
+    SingleStepLLMCommandGenerator,
     MultiStepLLMCommandGenerator,
 )
 from rasa.dialogue_understanding.generator.nlu_command_adapter import NLUCommandAdapter
@@ -106,6 +107,7 @@ def configure_tracing(tracer_provider: Optional[TracerProvider]) -> None:
         vector_store_subclasses=vector_store_subclasses,
         nlu_command_adapter_class=NLUCommandAdapter,
         endpoint_config_class=EndpointConfig,
+        single_step_llm_command_generator_class=SingleStepLLMCommandGenerator,
         multi_step_llm_command_generator_class=MultiStepLLMCommandGenerator,
         custom_action_executor_subclasses=custom_action_executor_subclasses,
     )
