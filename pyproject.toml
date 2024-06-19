@@ -266,12 +266,8 @@ timeout_func_only = true
 asyncio_mode = "auto"
 
 [tool.poetry.dependencies.rasa-sdk]
-#version = "3.9.0.dev2"
-#allow-prereleases = true
-git = "https://github.com/RasaHQ/rasa-sdk"
-branch = "feature/ATO-1652-add-grpc-support"
-#path = "../rasa-sdk"
-#develop = true
+version = " 3.9.0rc1"
+allow-prereleases = true
 
 [tool.poetry.dependencies.tensorflow]
 version = "2.12.0"

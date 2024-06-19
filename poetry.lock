@@ -5298,36 +5298,32 @@ fire = "*"
 
 [[package]]
 name = "rasa-sdk"
-version = "3.9.0.dev2"
+version = "3.9.0rc1"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 optional = false
-python-versions = ">=3.8,<3.11"
-files = []
-develop = false
+python-versions = "<3.11,>=3.8"
+files = [
+    {file = "rasa_sdk-3.9.0rc1-py3-none-any.whl", hash = "sha256:8c2755a0b002c814d9093a8a1c98a2ee0500c95aea478c2f5df23fa7431fe3c7"},
+    {file = "rasa_sdk-3.9.0rc1.tar.gz", hash = "sha256:ff9433112fcb2a54bd07699fa1cd46937ccf90a7b5c686a1899be68f3e04190e"},
+]
 
 [package.dependencies]
 coloredlogs = ">=10,<16"
 grpcio = "1.59.3"
 grpcio-tools = "1.56.2"
-opentelemetry-api = "~1.15.0"
-opentelemetry-exporter-jaeger = "~1.15.0"
-opentelemetry-exporter-otlp = "~1.15.0"
-opentelemetry-sdk = "~1.15.0"
-pluggy = "^1.0.0"
-prompt-toolkit = "^3.0,<3.0.29"
+opentelemetry-api = ">=1.15.0,<1.16.0"
+opentelemetry-exporter-jaeger = ">=1.15.0,<1.16.0"
+opentelemetry-exporter-otlp = ">=1.15.0,<1.16.0"
+opentelemetry-sdk = ">=1.15.0,<1.16.0"
+pluggy = ">=1.0.0,<2.0.0"
+prompt-toolkit = ">=3.0,<3.0.29"
 protobuf = "4.25.3"
 pydantic = "2.6.4"
 "ruamel.yaml" = ">=0.16.5,<0.18.0"
-sanic = "^22.12"
-Sanic-Cors = "^2.0.0"
+sanic = ">=22.12,<23.0"
+Sanic-Cors = ">=2.0.0,<3.0.0"
 typing-extensions = ">=4.1.1,<5.0.0"
 websockets = ">=10.0,<12.0"
-
-[package.source]
-type = "git"
-url = "https://github.com/RasaHQ/rasa-sdk"
-reference = "feature/ATO-1652-add-grpc-support"
-resolved_reference = "c6ff6f6a6c8585cfbc115c9c69e09fa57456d708"
 
 [[package]]
 name = "redis"
@@ -8229,4 +8225,4 @@ transformers = ["sentencepiece", "transformers"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8.1,<3.11"
-content-hash = "93f89589c2758dac05ec6a67b807ed59326727e9d9ddffffee900d6f14c1e376"
+content-hash = "ed9c5615ba290cdec429f261e3fbb5da863141dfe59c137b2105824ab3e6d930"
