@@ -336,7 +336,7 @@ async def _ask_questions(
 
 
 def _selection_choices_from_intent_prediction(
-    predictions: List[Dict[Text, Any]]
+    predictions: List[Dict[Text, Any]],
 ) -> List[Dict[Text, Any]]:
     """Given a list of ML predictions create a UI choice list."""
     sorted_intents = sorted(
@@ -762,7 +762,7 @@ async def _request_export_info() -> Tuple[Text, Text, Text]:
 
 
 def _split_conversation_at_restarts(
-    events: List[Dict[Text, Any]]
+    events: List[Dict[Text, Any]],
 ) -> List[List[Dict[Text, Any]]]:
     """Split a conversation at restart events.
 
@@ -1600,6 +1600,7 @@ def _serve_application(
     """Start a core server and attach the interactive learning IO."""
     endpoint = EndpointConfig(url=DEFAULT_SERVER_FORMAT.format("http", port))
 
+    @app.after_server_start
     async def run_interactive_io(running_app: Sanic) -> None:
         """Small wrapper to shut down the server once cmd io is done."""
         await record_messages(
@@ -1613,11 +1614,9 @@ def _serve_application(
 
         running_app.stop()  # kill the sanic server
 
-    app.add_task(run_interactive_io)
-
     update_sanic_log_level()
 
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=port, legacy=True)
 
     return app
 
@@ -1647,7 +1646,7 @@ def start_visualization(image_path: Text, port: int) -> None:
 
     update_sanic_log_level()
 
-    app.run(host="0.0.0.0", port=port, access_log=False)
+    app.run(host="0.0.0.0", port=port, access_log=False, legacy=True)
 
 
 def run_interactive_learning(

@@ -299,8 +299,9 @@ class Policy(GraphComponent):
         max_training_samples = kwargs.get("max_training_samples")
         if max_training_samples is not None:
             logger.debug(
-                "Limit training data to {} training samples."
-                "".format(max_training_samples)
+                "Limit training data to {} training samples.".format(
+                    max_training_samples
+                )
             )
             state_features = state_features[:max_training_samples]
             label_ids = label_ids[:max_training_samples]

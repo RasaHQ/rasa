@@ -132,7 +132,6 @@ nlu:
 
 
 def test_wrong_format_raises():
-
     wrong_yaml_nlu_content = """
     !!
     """
@@ -146,7 +145,6 @@ def test_wrong_format_raises():
     "example", [WRONG_YAML_NLU_CONTENT_1, WRONG_YAML_NLU_CONTENT_2]
 )
 def test_wrong_schema_raises(example: Text):
-
     parser = RasaYAMLReader()
     with pytest.raises(YamlException):
         parser.reads(example)
@@ -338,7 +336,6 @@ def test_synonyms_are_extracted_from_entities():
 
 
 def test_lookup_is_parsed():
-
     parser = RasaYAMLReader()
     training_data = parser.reads(LOOKUP_EXAMPLE)
 
@@ -347,7 +344,6 @@ def test_lookup_is_parsed():
 
 
 def test_regex_is_parsed():
-
     parser = RasaYAMLReader()
     training_data = parser.reads(REGEX_EXAMPLE)
 

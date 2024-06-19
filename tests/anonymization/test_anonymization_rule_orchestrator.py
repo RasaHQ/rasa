@@ -86,7 +86,7 @@ def test_anonymization_rule_orchestrator_anonymize_entities_event(
     anonymized_event = anonymization_rule_orchestrator.anonymize_event(event)
 
     anonymized_entity = anonymized_event.get("entities", [])[0].get("value")
-    original_entity = event.get("entities", [])[0].get("value")  # type: ignore[attr-defined] # noqa: E501
+    original_entity = event.get("entities", [])[0].get("value")  # type: ignore[attr-defined]
 
     assert anonymized_entity != original_entity
 

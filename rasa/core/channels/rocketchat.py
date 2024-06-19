@@ -114,7 +114,6 @@ class RocketChatInput(InputChannel):
         )
 
     def __init__(self, user: Text, password: Text, server_url: Text) -> None:
-
         self.user = user
         self.password = password
         self.server_url = server_url

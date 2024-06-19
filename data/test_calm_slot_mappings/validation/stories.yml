@@ -1,0 +1,5 @@
+stories:
+  - story: Book a restaurant
+    steps:
+      - intent: book_restaurant
+      - action: action_available_menu_faq

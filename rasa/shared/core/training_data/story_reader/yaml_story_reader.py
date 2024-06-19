@@ -87,6 +87,14 @@ CORE_SCHEMA_FILE = "shared/utils/schemas/stories.yml"
 DEFAULT_VALUE_TEXT_SLOTS = "filled"
 DEFAULT_VALUE_LIST_SLOTS = [DEFAULT_VALUE_TEXT_SLOTS]
 
+INTENT_ENTITIES_PATTERN = (
+    f"^{INTENT_MESSAGE_PREFIX}"
+    f"(?P<{INTENT_NAME_KEY}>[^{{@]+)"  # "{{" is a masked "{" in an f-string
+    f"(?P<{PREDICTED_CONFIDENCE_KEY}>@[0-9.]+)?"
+    f"(?P<{ENTITIES}>{{.+}})?"  # "{{" is a masked "{" in an f-string
+    f"(?P<rest>.*)"
+)
+
 
 class YAMLStoryReader(StoryReader):
     """Class that reads Core training data and rule data in YAML format."""
@@ -444,7 +452,7 @@ class YAMLStoryReader(StoryReader):
                 f"{self._get_item_title()}:\n"
                 f"User intent '{user_intent}' is a full retrieval intent. "
                 f"Stories shouldn't contain full retrieval intents. "
-                f"Rasa Open Source will only use base intent '{base_intent}' "
+                f"Rasa Pro will only use base intent '{base_intent}' "
                 f"for training.",
                 docs=self._get_docs_link(),
             )
@@ -482,7 +490,7 @@ class YAMLStoryReader(StoryReader):
 
     @staticmethod
     def _parse_raw_entities(
-        raw_entities: Union[List[Dict[Text, Text]], List[Text]]
+        raw_entities: Union[List[Dict[Text, Text]], List[Text]],
     ) -> List[Dict[Text, Optional[Text]]]:
         final_entities = []
         for entity in raw_entities:
@@ -556,7 +564,6 @@ class YAMLStoryReader(StoryReader):
         return default_value
 
     def _parse_action(self, step: Dict[Text, Any]) -> None:
-
         action_name = step.get(KEY_ACTION, "")
         if not action_name:
             rasa.shared.utils.io.raise_warning(
@@ -582,7 +589,6 @@ class YAMLStoryReader(StoryReader):
         self._add_event(ActiveLoop.type_name, {LOOP_NAME: active_loop_name})
 
     def _parse_checkpoint(self, step: Dict[Text, Any]) -> None:
-
         checkpoint_name = step.get(KEY_CHECKPOINT, "")
         slots = step.get(KEY_CHECKPOINT_SLOTS, [])
 
@@ -611,13 +617,7 @@ class YAMLStoryReader(StoryReader):
         Returns:
             pattern with named groups
         """
-        return re.compile(
-            f"^{INTENT_MESSAGE_PREFIX}"
-            f"(?P<{INTENT_NAME_KEY}>[^{{@]+)"  # "{{" is a masked "{" in an f-string
-            f"(?P<{PREDICTED_CONFIDENCE_KEY}>@[0-9.]+)?"
-            f"(?P<{ENTITIES}>{{.+}})?"  # "{{" is a masked "{" in an f-string
-            f"(?P<rest>.*)"
-        )
+        return re.compile(INTENT_ENTITIES_PATTERN)
 
     @staticmethod
     def unpack_regex_message(

@@ -108,10 +108,10 @@ class GraphSchema:
         nodes = {}
         for node_name, serialized_node in serialized_graph_schema["nodes"].items():
             try:
-                serialized_node[
-                    "uses"
-                ] = rasa.shared.utils.common.class_from_module_path(
-                    serialized_node["uses"]
+                serialized_node["uses"] = (
+                    rasa.shared.utils.common.class_from_module_path(
+                        serialized_node["uses"]
+                    )
                 )
 
                 resource = serialized_node["resource"]
@@ -172,6 +172,18 @@ class GraphSchema:
                 return True
         return False
 
+    def count_nodes_of_a_given_type(
+        self, node_type: Type, include_subtypes: bool = True
+    ) -> int:
+        """Counts the number of the nodes of specified class"""
+        counter = 0
+        for node in self.nodes.values():
+            if (node.uses is node_type) or (
+                include_subtypes and issubclass(node.uses, node_type)
+            ):
+                counter += 1
+        return counter
+
 
 class GraphComponent(ABC):
     """Interface for any component which will run in a graph."""
@@ -206,7 +218,7 @@ class GraphComponent(ABC):
 
     @classmethod
     def load(
-        cls,
+        cls: Any,
         config: Dict[Text, Any],
         model_storage: ModelStorage,
         resource: Resource,
@@ -267,7 +279,7 @@ class GraphComponent(ABC):
         return []
 
     @classmethod
-    def fingerprint_addon(cls, config: Dict[str, Any]) -> Optional[str]:
+    def fingerprint_addon(cls: Any, config: Dict[str, Any]) -> Optional[str]:
         """Adds additional data to the fingerprint calculation.
 
         This is useful if a component uses external data that is not provided

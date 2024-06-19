@@ -109,7 +109,6 @@ def test_validate_with_multiple_default_options(tmp_path: pathlib.Path):
 
 
 def test_validate_with_none_if_default_is_valid(tmp_path: pathlib.Path):
-
     expected_event = "cli.get_validated_path.path_does_not_exists"
     expected_log_level = "warning"
 
@@ -122,7 +121,6 @@ def test_validate_with_none_if_default_is_valid(tmp_path: pathlib.Path):
 
 
 def test_validate_with_invalid_directory_if_default_is_valid(tmp_path: pathlib.Path):
-
     invalid_directory = "gcfhvjkb"
 
     expected_event = "cli.get_validated_path.path_does_not_exists"
@@ -288,7 +286,7 @@ def test_get_validated_config_with_invalid_input(parameters: Dict[Text, Any]) ->
     ],
 )
 def test_get_validated_config_with_default_and_no_config(
-    parameters: Dict[Text, Any]
+    parameters: Dict[Text, Any],
 ) -> None:
     config_path = None
     default_config_content = {
@@ -354,9 +352,9 @@ def test_validate_assistant_id_in_config(
         )
         assert len(logs) == 1
 
-    config_data = read_yaml_file(config_file)
+    # Calling the wrapped function to avoid getting cached result
+    config_data = read_yaml_file.__wrapped__(config_file)
     assistant_name = config_data.get(ASSISTANT_ID_KEY)
-
     assert assistant_name is not None
     assert assistant_name != ASSISTANT_ID_DEFAULT_VALUE
 
@@ -653,7 +651,7 @@ def test_validate_files_config_missing_assistant_id():
 
 def test_validate_assistant_id_in_config_preserves_comment() -> None:
     config_file = "data/test_config/config_no_assistant_id_with_comments.yml"
-    reader_type = ["safe", "rt"]
+    reader_type = "rt"
     original_config_data = copy.deepcopy(
         read_yaml_file(config_file, reader_type=reader_type)
     )
@@ -661,7 +659,8 @@ def test_validate_assistant_id_in_config_preserves_comment() -> None:
     # append assistant_id to the config file
     rasa.cli.utils.validate_assistant_id_in_config(config_file)
 
-    config_data = read_yaml_file(config_file, reader_type=reader_type)
+    # Calling the wrapped function to avoid getting cached result
+    config_data = read_yaml_file.__wrapped__(config_file, reader_type=reader_type)
 
     assert "assistant_id" in config_data
 

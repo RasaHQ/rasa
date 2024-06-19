@@ -253,7 +253,7 @@ def test_convert_featurizer_number_of_sub_tokens(
         (ORIGINAL_TF_HUB_MODULE_URL, "which does not contain the model any longer"),
         (
             RESTRICTED_ACCESS_URL,
-            "which is strictly reserved for pytests of Rasa Open Source only",
+            "which is strictly reserved for pytests of Rasa Pro only",
         ),
         (None, "'model_url' was not specified in the configuration"),
         ("", "'model_url' was not specified in the configuration"),
@@ -303,7 +303,7 @@ def test_raise_wrong_model_file(
 
 @pytest.mark.skip_on_windows
 def test_raise_invalid_path(
-    create_or_load_convert_featurizer: Callable[[Dict[Text, Any]], ConveRTFeaturizer]
+    create_or_load_convert_featurizer: Callable[[Dict[Text, Any]], ConveRTFeaturizer],
 ):
     component_config = {FEATURIZER_CLASS_ALIAS: "alias", "model_url": "saved_model.pb"}
 

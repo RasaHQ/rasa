@@ -6,6 +6,7 @@ import copy
 import rasa.shared.utils.io
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import (
+    COMMANDS,
     TEXT,
     INTENT,
     RESPONSE,
@@ -475,3 +476,11 @@ class Message:
                 else:
                     break
         return overlapping_pairs
+
+    def has_intent(self) -> bool:
+        """Checks if the message has an intent."""
+        return self.data.get(INTENT) is not None
+
+    def has_commands(self) -> bool:
+        """Checks if the message has any commands."""
+        return self.data.get(COMMANDS) is not None

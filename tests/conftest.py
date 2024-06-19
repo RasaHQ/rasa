@@ -1046,3 +1046,8 @@ def run_in_simple_project(pytester: Pytester) -> Callable[..., RunResult]:
 @pytest.fixture(scope="session", autouse=True)
 def set_open_ai_env_variable():
     os.environ["OPENAI_API_KEY"] = "test"
+
+
+@pytest.fixture(autouse=True)
+def clear_read_yaml_file_cache() -> None:
+    read_yaml_file.cache_clear()

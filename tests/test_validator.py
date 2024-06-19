@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Text, Union
 
 import pytest
 import structlog
-
+from pytest import CaptureFixture
 
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.domain import Domain
@@ -1992,3 +1992,364 @@ def test_validator_check_for_empty_paranthesis_all_good() -> None:
 
     validator = Validator(test_domain, TrainingData(), StoryGraph([]), None, None)
     assert validator.check_for_no_empty_paranthesis_in_responses() is True
+
+
+def test_validate_button_payloads_no_payload(capsys: CaptureFixture) -> None:
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        responses:
+            utter_ask_confirm:
+            - buttons:
+                - title: Yes
+                - title: No
+                  payload: " "
+              text: "Do you confirm?"
+        """
+    )
+
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), None, None)
+    assert validator.validate_button_payloads() is False
+
+    captured = capsys.readouterr()
+    assert (
+        "The button 'Yes' in response 'utter_ask_confirm' does "
+        "not have a payload." in captured.out
+    )
+    assert (
+        "The button 'No' in response 'utter_ask_confirm' has "
+        "an empty payload." in captured.out
+    )
+
+
+def test_validate_button_payloads_free_form_payloads(capsys: CaptureFixture) -> None:
+    test_domain = Domain.from_yaml(
+        """
+        responses:
+            utter_ask_confirm:
+            - buttons:
+                - title: Yes
+                  payload: yes
+                - title: No
+                  payload: no
+              text: "Do you confirm?"
+        """
+    )
+
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), None, None)
+    assert validator.validate_button_payloads() is True
+
+    captured = capsys.readouterr()
+    logging_level = "warning"
+    logging_message = (
+        "Using a free form string in payload of a button "
+        "implies that the string will be sent to the NLU "
+        "interpreter for parsing. To avoid the need for "
+        "parsing at runtime, it is recommended to use "
+        "one of the documented formats "
+        "(https://rasa.com/docs/rasa-pro/concepts/responses#buttons)"
+    )
+    assert logging_level in captured.out
+    assert logging_message in captured.out
+
+
+@pytest.mark.parametrize(
+    "payload", ["/SetSlots(confirmation=True)", '/inform{{"confirmation": "true"}}']
+)
+def test_validate_button_payloads_valid_payloads(
+    capsys: CaptureFixture, payload: str
+) -> None:
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        intents:
+         - inform
+        slots:
+          confirmation:
+             type: bool
+             mappings:
+              - type: custom
+        responses:
+            utter_ask_confirm:
+            - buttons:
+                - title: Yes
+                  payload: '{payload}'
+              text: "Do you confirm?"
+        """
+    )
+
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), None, None)
+    assert validator.validate_button_payloads() is True
+
+    captured = capsys.readouterr()
+    log_levels = ["error", "warning"]
+    assert all([log_level not in captured.out for log_level in log_levels])
+
+
+@pytest.mark.parametrize(
+    "payload",
+    ['/inform[["confirmation": "false"]]', '/SetSlots["confirmation": "false"]'],
+)
+def test_validate_button_payloads_invalid_payloads(
+    capsys: CaptureFixture, payload: str
+) -> None:
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        intents:
+        - inform
+        responses:
+            utter_ask_confirm:
+            - buttons:
+                - title: No
+                  payload: '{payload}'
+              text: "Do you confirm?"
+        """
+    )
+
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), None, None)
+    assert validator.validate_button_payloads() is False
+
+    captured = capsys.readouterr()
+    log_level = "error"
+    assert log_level in captured.out
+    assert (
+        "The button 'No' in response "
+        "'utter_ask_confirm' does not follow valid payload formats "
+        "for triggering a specific intent and entities or for "
+        "triggering a SetSlot command."
+    ) in captured.out
+
+
+def test_validate_button_payloads_above_slot_limit(capsys: CaptureFixture) -> None:
+    payload = "/SetSlots(" + "test_slot=1, " * 11 + ")"
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        intents:
+        - inform
+        slots:
+          test_slot:
+             type: float
+        responses:
+            utter_ask_confirm:
+            - buttons:
+                - title: Test
+                  payload: '{payload}'
+              text: "Do you confirm?"
+        """
+    )
+
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), None, None)
+    assert validator.validate_button_payloads() is False
+
+    captured = capsys.readouterr()
+    log_level = "error"
+    assert log_level in captured.out
+    assert "validator.validate_button_payloads.slot_limit_exceeded" in captured.out
+    assert (
+        "The button 'Test' in response 'utter_ask_confirm' has a payload "
+        "that sets more than 10 slots. Please make sure that the number "
+        "of slots set by the button payload does not exceed the limit."
+    ) in captured.out
+
+
+def test_validate_button_payloads_unique_slot_names(capsys: CaptureFixture) -> None:
+    payload = "/SetSlots(name=John, name=Paul)"
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        intents:
+        - inform
+        slots:
+          name:
+             type: text
+        responses:
+            utter_ask_name:
+            - buttons:
+                - title: Name
+                  payload: '{payload}'
+              text: "Do you confirm?"
+        """
+    )
+
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), None, None)
+    assert validator.validate_button_payloads() is False
+
+    captured = capsys.readouterr()
+    log_level = "error"
+    assert log_level in captured.out
+    assert "validator.validate_button_payloads.duplicate_slot_name" in captured.out
+    assert (
+        "The button 'Name' in response 'utter_ask_name' has a command "
+        "to set the slot 'name' multiple times. Please make sure "
+        "that each slot is set only once."
+    ) in captured.out
+
+
+def test_validate_CALM_slot_mappings_success(
+    capsys: CaptureFixture,
+) -> None:
+    importer = RasaFileImporter(
+        config_file="data/test_calm_slot_mappings/config.yml",
+        domain_path="data/test_calm_slot_mappings/validation/domain_valid.yml",
+        training_data_paths=[
+            "data/test_calm_slot_mappings/data/flows.yml",
+            "data/test_calm_slot_mappings/data/nlu.yml",
+            "data/test_calm_slot_mappings/data/stories.yml",
+        ],
+    )
+    validator = Validator.from_importer(importer)
+    assert validator.validate_CALM_slot_mappings() is True
+
+    captured = capsys.readouterr()
+    log_level = "error"
+    assert log_level not in captured.out
+
+
+@pytest.mark.parametrize(
+    "domain_path",
+    [
+        "data/test_calm_slot_mappings/validation/domain_with_llm_and_custom_mappings.yml",
+        "data/test_calm_slot_mappings/validation/domain_with_llm_and_nlu_mappings.yml",
+    ],
+)
+def test_domain_slots_contain_all_mapping_type(
+    capsys: CaptureFixture, domain_path: str
+) -> None:
+    importer = RasaFileImporter(
+        config_file="data/test_calm_slot_mappings/config.yml",
+        domain_path=domain_path,
+        training_data_paths=[
+            "data/test_calm_slot_mappings/validation/flows.yml",
+        ],
+    )
+    validator = Validator.from_importer(importer)
+    assert validator.validate_CALM_slot_mappings() is False
+
+    captured = capsys.readouterr()
+    log_level = "error"
+    assert log_level in captured.out
+    assert (
+        "validator.validate_slot_mappings_in_CALM.llm_and_nlu_mappings" in captured.out
+    )
+    assert (
+        "The slot 'card_number' has both LLM and "
+        "NLU or custom slot mappings. "
+        "Please make sure that the slot has only one type of mapping."
+    ) in captured.out
+
+
+def test_validate_action_ask_defined_in_the_domain(
+    capsys: CaptureFixture,
+) -> None:
+    importer = RasaFileImporter(
+        config_file="data/test_calm_slot_mappings/config.yml",
+        domain_path="data/test_calm_slot_mappings/validation/domain_action_ask_missing.yml",
+        training_data_paths=[
+            "data/test_calm_slot_mappings/validation/flows.yml",
+        ],
+    )
+    validator = Validator.from_importer(importer)
+    assert validator.validate_CALM_slot_mappings() is False
+
+    captured = capsys.readouterr()
+    log_level = "error"
+    assert log_level in captured.out
+    assert (
+        "validator.validate_slot_mappings_in_CALM.custom_action_not_in_domain"
+        in captured.out
+    )
+    assert (
+        "The slot 'card_number' has a custom slot mapping, "
+        "but the action 'action_ask_card_number' is not defined "
+        "in the domain file. Please add the action to your domain file."
+    ) in captured.out
+
+
+def test_validate_nlu_command_adapter_not_in_config(
+    capsys: CaptureFixture,
+) -> None:
+    importer = RasaFileImporter(
+        config_file="data/test_calm_slot_mappings/validation/config_nlu_command_adapter_missing.yml",
+        domain_path="data/test_calm_slot_mappings/validation/domain_valid_nlu_mappings.yml",
+        training_data_paths=[
+            "data/test_calm_slot_mappings/validation/flows.yml",
+        ],
+    )
+    validator = Validator.from_importer(importer)
+    assert validator.validate_CALM_slot_mappings() is False
+
+    captured = capsys.readouterr()
+    log_level = "error"
+    assert log_level in captured.out
+    assert (
+        "validator.validate_slot_mappings_in_CALM.nlu_mappings_without_adapter"
+        in captured.out
+    )
+    assert (
+        "The slot 'card_number' has NLU slot mappings, "
+        "but the NLUCommandAdapter is not present in the "
+        "pipeline. Please add the NLUCommandAdapter to the "
+        "pipeline in the config file."
+    ) in captured.out
+
+
+def test_validate_llm_slot_mappings_in_nlu_based_assistant(
+    capsys: CaptureFixture,
+) -> None:
+    importer = RasaFileImporter(
+        domain_path="data/test_calm_slot_mappings/validation/domain_valid_llm_mappings.yml",
+        training_data_paths=[
+            "data/test_calm_slot_mappings/validation/stories.yml",
+        ],
+    )
+    validator = Validator.from_importer(importer)
+    assert validator.validate_CALM_slot_mappings() is False
+
+    captured = capsys.readouterr()
+    log_level = "error"
+    assert log_level in captured.out
+    assert (
+        "validator.validate_slot_mappings_in_CALM.llm_mappings_without_flows"
+        in captured.out
+    )
+    assert (
+        "The slot 'num_people' has LLM slot mappings, "
+        "but no flows are present in the training data files. "
+        "Please add flows to the training data files."
+    ) in captured.out
+
+
+def test_validate_llm_slot_mapping_with_action_ask_success(
+    capsys: CaptureFixture,
+) -> None:
+    importer = RasaFileImporter(
+        domain_path="data/test_calm_slot_mappings/validation/domain_valid_llm_mappings.yml",
+        training_data_paths=[
+            "data/test_calm_slot_mappings/validation/flows.yml",
+        ],
+    )
+    validator = Validator.from_importer(importer)
+    assert validator.validate_CALM_slot_mappings() is True
+
+    captured = capsys.readouterr()
+    log_level = "error"
+    assert log_level not in captured.out
+
+
+def test_validate_custom_slot_mappings_with_action_property_success(
+    capsys: CaptureFixture,
+) -> None:
+    importer = RasaFileImporter(
+        domain_path="data/test_calm_slot_mappings/validation/domain_custom_mappings_valid.yml",
+        training_data_paths=[
+            "data/test_calm_slot_mappings/validation/flows_for_valid_custom_slot_mappings.yml",
+        ],
+    )
+    validator = Validator.from_importer(importer)
+    assert validator.validate_CALM_slot_mappings() is True
+
+    captured = capsys.readouterr()
+    log_level = "error"
+    assert log_level not in captured.out

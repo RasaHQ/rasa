@@ -23,7 +23,8 @@ import rasa.shared.utils.io
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.trace import SpanKind, Tracer
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
-from rasa.core.actions.action import Action, RemoteAction
+from rasa.core.actions.action import Action, RemoteAction, CustomActionExecutor
+from rasa.core.actions.custom_action_executor import RetryCustomActionExecutor
 from rasa.core.agent import Agent
 from rasa.core.channels import OutputChannel
 from rasa.core.information_retrieval.information_retrieval import InformationRetrieval
@@ -34,8 +35,12 @@ from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import TrackerStore
 from rasa.dialogue_understanding.commands import Command
-from rasa.dialogue_understanding.generator.llm_command_generator import (
+from rasa.dialogue_understanding.generator.single_step.llm_command_generator import (
     LLMCommandGenerator,
+)
+from rasa.dialogue_understanding.generator import (
+    MultiStepLLMCommandGenerator,
+    SingleStepLLMCommandGenerator,
 )
 from rasa.dialogue_understanding.generator.nlu_command_adapter import NLUCommandAdapter
 from rasa.engine.graph import GraphNode
@@ -43,6 +48,7 @@ from rasa.engine.training.graph_trainer import GraphTrainer
 from rasa.shared.constants import DOCS_BASE_URL
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.nlu.constants import SET_SLOT_COMMAND
 from rasa.shared.nlu.training_data.message import Message
 from rasa.tracing.instrumentation.intentless_policy_instrumentation import (
     _instrument_extract_ai_responses,
@@ -52,6 +58,8 @@ from rasa.tracing.instrumentation.intentless_policy_instrumentation import (
 )
 from rasa.tracing.instrumentation.metrics import (
     record_llm_command_generator_metrics,
+    record_single_step_llm_command_generator_metrics,
+    record_multi_step_llm_command_generator_metrics,
     record_callable_duration_metrics,
     record_request_size_in_bytes,
 )
@@ -244,6 +252,12 @@ GraphNodeType = TypeVar("GraphNodeType", bound=GraphNode)
 LockStoreType = TypeVar("LockStoreType", bound=LockStore)
 GraphTrainerType = TypeVar("GraphTrainerType", bound=GraphTrainer)
 LLMCommandGeneratorType = TypeVar("LLMCommandGeneratorType", bound=LLMCommandGenerator)
+SingleStepLLMCommandGeneratorType = TypeVar(
+    "SingleStepLLMCommandGeneratorType", bound=SingleStepLLMCommandGenerator
+)
+MultiStepLLMCommandGeneratorType = TypeVar(
+    "MultiStepLLMCommandGeneratorType", bound=MultiStepLLMCommandGenerator
+)
 CommandType = TypeVar("CommandType", bound=Command)
 PolicyType = TypeVar("PolicyType", bound=Policy)
 InformationRetrievalType = TypeVar(
@@ -268,6 +282,15 @@ def instrument(
     vector_store_subclasses: Optional[List[Type[InformationRetrievalType]]] = None,
     nlu_command_adapter_class: Optional[Type[NLUCommandAdapterType]] = None,
     endpoint_config_class: Optional[Type[EndpointConfigType]] = None,
+    single_step_llm_command_generator_class: Optional[
+        Type[SingleStepLLMCommandGeneratorType]
+    ] = None,
+    multi_step_llm_command_generator_class: Optional[
+        Type[MultiStepLLMCommandGeneratorType]
+    ] = None,
+    custom_action_executor_subclasses: Optional[
+        List[Type[CustomActionExecutor]]
+    ] = None,
 ) -> None:
     """Substitute methods to be traced by their traced counterparts.
 
@@ -305,6 +328,15 @@ def instrument(
         `None` is given, no `NLUCommandAdapter` will be instrumented.
     :param endpoint_config_class: The `EndpointConfig` to be instrumented. If
         `None` is given, no `EndpointConfig` will be instrumented.
+    :param single_step_llm_command_generator_class: The `SingleStepLLMCommandGenerator`
+        to be instrumented. If `None` is given, no `SingleStepLLMCommandGenerator` will
+        be instrumented.
+    :param multi_step_llm_command_generator_class: The `MultiStepLLMCommandGenerator`
+        to be instrumented. If `None` is given, no `MultiStepLLMCommandGenerator` will
+        be instrumented.
+    :param custom_action_executor_subclasses: The subclasses of `CustomActionExecutor`
+    to be instrumented. If `None` is given, no subclass of `CustomActionExecutor`
+    will be instrumented.
     """
     if agent_class is not None and not class_is_instrumented(agent_class):
         _instrument_method(
@@ -351,7 +383,7 @@ def instrument(
             tracer_provider.get_tracer(lock_store_class.__module__),
             attribute_extractors.extract_attrs_for_lock_store,
         )
-        lock_store_class.lock = contextlib.asynccontextmanager(traced_lock_method)  # type: ignore[assignment]  # noqa: E501
+        lock_store_class.lock = contextlib.asynccontextmanager(traced_lock_method)  # type: ignore[assignment]
 
         logger.debug(f"Instrumented '{lock_store_class.__name__}.lock'.")
 
@@ -374,8 +406,8 @@ def instrument(
         _instrument_method(
             tracer_provider.get_tracer(llm_command_generator_class.__module__),
             llm_command_generator_class,
-            "_generate_action_list_using_llm",
-            attribute_extractors.extract_attrs_for_llm_command_generator,
+            "invoke_llm",
+            attribute_extractors.extract_attrs_for_llm_based_command_generator,
             metrics_recorder=record_llm_command_generator_metrics,
         )
         _instrument_method(
@@ -385,6 +417,49 @@ def instrument(
             attribute_extractors.extract_attrs_for_check_commands_against_startable_flows,
         )
         mark_class_as_instrumented(llm_command_generator_class)
+
+    if (
+        single_step_llm_command_generator_class is not None
+        and not class_is_instrumented(single_step_llm_command_generator_class)
+    ):
+        _instrument_method(
+            tracer_provider.get_tracer(
+                single_step_llm_command_generator_class.__module__
+            ),
+            single_step_llm_command_generator_class,
+            "invoke_llm",
+            attribute_extractors.extract_attrs_for_llm_based_command_generator,
+            metrics_recorder=record_single_step_llm_command_generator_metrics,
+        )
+        _instrument_method(
+            tracer_provider.get_tracer(
+                single_step_llm_command_generator_class.__module__
+            ),
+            single_step_llm_command_generator_class,
+            "_check_commands_against_startable_flows",
+            attribute_extractors.extract_attrs_for_check_commands_against_startable_flows,
+        )
+        mark_class_as_instrumented(single_step_llm_command_generator_class)
+
+    if multi_step_llm_command_generator_class is not None and not class_is_instrumented(
+        multi_step_llm_command_generator_class
+    ):
+        _instrument_method(
+            tracer_provider.get_tracer(
+                multi_step_llm_command_generator_class.__module__
+            ),
+            multi_step_llm_command_generator_class,
+            "invoke_llm",
+            attribute_extractors.extract_attrs_for_llm_based_command_generator,
+            metrics_recorder=record_multi_step_llm_command_generator_metrics,
+        )
+        _instrument_multi_step_llm_command_generator_parse_commands(
+            tracer_provider.get_tracer(
+                multi_step_llm_command_generator_class.__module__
+            ),
+            multi_step_llm_command_generator_class,
+        )
+        mark_class_as_instrumented(multi_step_llm_command_generator_class)
 
     if command_subclasses:
         for command_subclass in command_subclasses:
@@ -483,6 +558,22 @@ def instrument(
             metrics_recorder=record_request_size_in_bytes,
         )
 
+    if custom_action_executor_subclasses:
+        for custom_action_executor_subclass in custom_action_executor_subclasses:
+            if (
+                custom_action_executor_subclass is not None
+                and not class_is_instrumented(custom_action_executor_subclass)
+            ):
+                _instrument_method(
+                    tracer_provider.get_tracer(
+                        custom_action_executor_subclass.__module__
+                    ),
+                    custom_action_executor_subclass,
+                    "run",
+                    attribute_extractors.extract_attrs_for_custom_action_executor,
+                )
+                mark_class_as_instrumented(custom_action_executor_subclass)
+
 
 def _instrument_nlu_command_adapter_predict_commands(
     tracer: Tracer, nlu_command_adapter_class: Type[NLUCommandAdapterType]
@@ -512,12 +603,59 @@ def _instrument_nlu_command_adapter_predict_commands(
 
         return wrapper
 
-    nlu_command_adapter_class.predict_commands = tracing_nlu_command_adapter_predict_commands_wrapper(  # type: ignore[assignment]  # noqa: E501
-        nlu_command_adapter_class.predict_commands
+    nlu_command_adapter_class.predict_commands = (  # type: ignore[assignment]
+        tracing_nlu_command_adapter_predict_commands_wrapper(
+            nlu_command_adapter_class.predict_commands
+        )
     )
 
     logger.debug(
         f"Instrumented '{nlu_command_adapter_class.__name__}.predict_commands'."
+    )
+
+
+def _instrument_multi_step_llm_command_generator_parse_commands(
+    tracer: Tracer,
+    multi_step_llm_command_generator_class: Type[MultiStepLLMCommandGeneratorType],
+) -> None:
+    def tracing_multi_step_llm_command_generator_parse_commands_wrapper(
+        fn: Callable,
+    ) -> Callable:
+        @functools.wraps(fn)
+        def wrapper(
+            cls: MultiStepLLMCommandGenerator,
+            actions: Optional[str],
+            tracker: DialogueStateTracker,
+            flows: FlowsList,
+            is_start_or_end_prompt: bool = False,
+        ) -> List[Command]:
+            with tracer.start_as_current_span(
+                f"{cls.__class__.__name__}.{fn.__name__}"
+            ) as span:
+                commands = fn(actions, tracker, flows, is_start_or_end_prompt)
+
+                commands_list = []
+                for command in commands:
+                    command_as_dict = command.as_dict()
+                    command_type = command.command()
+
+                    if command_type == SET_SLOT_COMMAND:
+                        slot_value = command_as_dict.pop("value", None)
+                        command_as_dict["is_slot_value_missing_or_none"] = (
+                            slot_value is None
+                        )
+
+                    commands_list.append(command_as_dict)
+
+                span.set_attributes({"commands": json.dumps(commands_list)})
+                return commands
+
+        return wrapper
+
+    multi_step_llm_command_generator_class.parse_commands = (  # type: ignore[assignment]
+        tracing_multi_step_llm_command_generator_parse_commands_wrapper(
+            multi_step_llm_command_generator_class.parse_commands
+        )
     )
 
 
@@ -543,7 +681,7 @@ def _instrument_information_retrieval_search(
 
         return wrapper
 
-    vector_store_class.search = tracing_information_retrieval_search_wrapper(  # type: ignore[assignment]  # noqa: E501
+    vector_store_class.search = tracing_information_retrieval_search_wrapper(  # type: ignore[assignment]
         vector_store_class.search
     )
 
@@ -652,7 +790,7 @@ def _instrument_get_tracker(
 
         return wrapper
 
-    processor_class.get_tracker = tracing_get_tracker_wrapper(  # type: ignore[assignment]  # noqa: E501
+    processor_class.get_tracker = tracing_get_tracker_wrapper(  # type: ignore[assignment]
         processor_class.get_tracker
     )
 
@@ -832,8 +970,15 @@ def _instrument_run_action(
             attrs = {
                 "action_name": action.name(),
                 "sender_id": tracker.sender_id,
-                "message_id": tracker.latest_message.message_id or "default",  # type: ignore[union-attr]  # noqa: E501
+                "message_id": tracker.latest_message.message_id or "default",  # type: ignore[union-attr]
             }
+            if isinstance(action, RemoteAction):
+                if isinstance(action.executor, RetryCustomActionExecutor):
+                    attrs["executor_class_name"] = type(
+                        action.executor._custom_action_executor
+                    ).__name__
+                else:
+                    attrs["executor_class_name"] = type(action.executor).__name__
             with tracer.start_as_current_span(
                 f"{self.__class__.__name__}.{fn.__name__}",
                 kind=SpanKind.CLIENT,
@@ -856,7 +1001,7 @@ def _instrument_run_action(
 
         return wrapper
 
-    processor_class._run_action = tracing_run_action_wrapper(  # type: ignore[assignment]  # noqa: E501
+    processor_class._run_action = tracing_run_action_wrapper(  # type: ignore[assignment]
         processor_class._run_action
     )
 

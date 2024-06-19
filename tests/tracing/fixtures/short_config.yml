@@ -1,5 +1,5 @@
 # The config recipe.
-# https://rasa.com/docs/rasa/model-configuration/
+# https://rasa.com/docs/rasa-pro/nlu-based-assistants/model-configuration/
 recipe: graph.v1
 
 language: en

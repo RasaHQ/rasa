@@ -31,7 +31,6 @@ from rasa.engine.storage.storage import ModelStorage
 
 @dataclasses.dataclass
 class TestCacheableOutput:
-
     value: Dict
     size_in_mb: int = 0
     cache_dir: Optional[Path] = dataclasses.field(default=None, compare=False)
@@ -53,7 +52,6 @@ class TestCacheableOutput:
         model_storage: ModelStorage,
         output_fingerprint: Text,
     ) -> "TestCacheableOutput":
-
         value = rasa.shared.utils.io.read_json_file(directory / "cached.json")
 
         return cls(value, cache_dir=directory)
@@ -288,7 +286,7 @@ def test_removing_no_longer_compatible_cache_entries(
         fingerprint_key3, output3, output_fingerprint3, default_model_storage
     )
 
-    # Pretend we updated Rasa Open Source to a no longer compatible version
+    # Pretend we updated Rasa Pro to a no longer compatible version
     monkeypatch.setattr(rasa.engine.caching, "MINIMUM_COMPATIBLE_VERSION", "99999.8.10")
 
     cache_run_by_future_rasa = LocalTrainingCache()

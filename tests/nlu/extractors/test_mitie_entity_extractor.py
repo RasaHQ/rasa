@@ -73,7 +73,6 @@ def test_train_extract_load(
     mitie_model: MitieModel,
     with_trainable_examples: bool,
 ):
-
     # some texts where last token is a city
     texts_ending_with_city = ["Bert lives in Berlin", "Ernie asks where is Bielefeld"]
 

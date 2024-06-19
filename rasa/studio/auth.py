@@ -31,8 +31,19 @@ class StudioAuth:
             realm_name=studio_config.realm_name,
         )
 
-    def login(self, username: Text, password: Text, totp: Optional[int] = None) -> None:
+    def health_check(self) -> bool:
+        """Check if the Keycloak server is reachable.
 
+        Returns:
+        True if the server is reachable, False otherwise.
+        """
+        try:
+            self.keycloak_openid.well_known()
+            return True
+        except Exception:
+            return False
+
+    def login(self, username: Text, password: Text, totp: Optional[int] = None) -> None:
         try:
             token_dict = self.keycloak_openid.token(
                 username=username, password=password, totp=totp

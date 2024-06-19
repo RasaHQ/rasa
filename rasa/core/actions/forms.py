@@ -11,7 +11,8 @@ from rasa.core.channels import OutputChannel
 from rasa.shared.core.domain import Domain, KEY_SLOTS
 from rasa.shared.core.constants import SlotMappingType, SLOT_MAPPINGS, MAPPING_TYPE
 
-from rasa.core.actions.action import ActionExecutionRejection, RemoteAction
+from rasa.core.actions.action import RemoteAction
+from rasa.core.actions.action_exceptions import ActionExecutionRejection
 from rasa.shared.core.constants import (
     ACTION_EXTRACT_SLOTS,
     ACTION_LISTEN_NAME,
@@ -293,7 +294,8 @@ class FormAction(LoopAction):
             + [SlotSet(REQUESTED_SLOT, self.get_slot_to_fill(current_tracker))]
             # Insert form execution event so that it's clearly distinguishable which
             # events were newly added.
-            + [ActionExecuted(self.name())] + additional_events,
+            + [ActionExecuted(self.name())]
+            + additional_events,
             slots=domain.slots,
         )
 
@@ -712,9 +714,7 @@ class FormAction(LoopAction):
                 if isinstance(event, ActiveLoop)
             ),
             None,
-        ) == ActiveLoop(
-            None
-        )
+        ) == ActiveLoop(None)
 
     async def deactivate(self, *args: Any, **kwargs: Any) -> List[Event]:
         """Deactivates form."""

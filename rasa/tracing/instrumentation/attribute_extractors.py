@@ -1,11 +1,13 @@
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Tuple
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Tuple, Union
 
 import tiktoken
 from numpy import ndarray
 
+from rasa.core.actions.grpc_custom_action_executor import GRPCCustomActionExecutor
+from rasa.core.actions.http_custom_action_executor import HTTPCustomActionExecutor
 from rasa.core.agent import Agent
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels import UserMessage
@@ -14,9 +16,6 @@ from rasa.core.lock_store import LOCK_LIFETIME, LockStore
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import TrackerStore
 from rasa.dialogue_understanding.commands import Command
-from rasa.dialogue_understanding.generator.llm_command_generator import (
-    LLMCommandGenerator,
-)
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.engine.graph import GraphModelConfiguration, GraphNode, ExecutionContext
 from rasa.engine.training.graph_trainer import GraphTrainer
@@ -26,7 +25,7 @@ from rasa.shared.core.events import DialogueStackUpdated, Event
 from rasa.shared.core.flows import Flow, FlowStep, FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.importers.importer import TrainingDataImporter
-from rasa.shared.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.nlu.constants import INTENT_NAME_KEY, SET_SLOT_COMMAND
 from rasa.shared.utils.llm import combine_custom_and_default_config
 from rasa.tracing.constants import (
     PROMPT_TOKEN_LENGTH_ATTRIBUTE_NAME,
@@ -39,7 +38,10 @@ if TYPE_CHECKING:
     from rasa.core.policies.enterprise_search_policy import EnterpriseSearchPolicy
     from rasa.core.policies.intentless_policy import IntentlessPolicy
     from rasa.core.policies.policy import PolicyPrediction
-    from rasa.dialogue_understanding.generator.command_generator import CommandGenerator
+    from rasa.dialogue_understanding.generator import (
+        CommandGenerator,
+        LLMBasedCommandGenerator,
+    )
     from rasa.utils.endpoints import EndpointConfig
 
 # This file contains all attribute extractors for tracing instrumentation.
@@ -84,7 +86,7 @@ def extract_llm_command_generator_attrs(
         command_name = command.get("command")
         commands_list.append(command_name)
 
-        if command_name == "set slot":
+        if command_name == SET_SLOT_COMMAND:
             attributes["slot_name"] = command.get("name")
 
         if command_name == "start flow":
@@ -247,7 +249,10 @@ def extract_attrs_for_graph_trainer(
     }
 
 
-def extract_headers(message: UserMessage, **kwargs: Any) -> Any:
+def extract_headers(
+    message: UserMessage,
+    **kwargs: Any,
+) -> Any:
     """Extract the headers from the `UserMessage`."""
     if message.headers:
         return message.headers
@@ -269,7 +274,7 @@ def extract_intent_name_and_slots(
             slots[slot_name] = slot_value.value
             break
     return {
-        "intent_name": str(tracker.latest_message.intent.get(INTENT_NAME_KEY)),  # type: ignore[union-attr]  # noqa: E501
+        "intent_name": str(tracker.latest_message.intent.get(INTENT_NAME_KEY)),  # type: ignore[union-attr]
         **slots,
     }
 
@@ -315,11 +320,11 @@ def extract_llm_config(self: Any, default_llm_config: Dict[str, Any]) -> Dict[st
     return attributes
 
 
-def extract_attrs_for_llm_command_generator(
-    self: LLMCommandGenerator,
+def extract_attrs_for_llm_based_command_generator(
+    self: "LLMBasedCommandGenerator",
     prompt: str,
 ) -> Dict[str, Any]:
-    from rasa.dialogue_understanding.generator.llm_command_generator import (
+    from rasa.dialogue_understanding.generator.constants import (
         DEFAULT_LLM_CONFIG,
     )
 
@@ -382,7 +387,7 @@ def extract_attrs_for_validate_state_of_commands(
         command_type = command.command()
         command_as_dict = command.as_dict()
 
-        if command_type == "set slot":
+        if command_type == SET_SLOT_COMMAND:
             command_as_dict.pop("value", None)
 
         if command_type == "correct slot":
@@ -414,7 +419,7 @@ def extract_attrs_for_clean_up_commands(
         command_type = command.command()
         command_as_dict = command.as_dict()
 
-        if command_type == "set slot":
+        if command_type == SET_SLOT_COMMAND:
             command_as_dict.pop("value", None)
 
         commands_list.append(command_as_dict)
@@ -467,7 +472,7 @@ def extract_attrs_for_check_commands_against_startable_flows(
         command_as_dict = command.as_dict()
         command_type = command.command()
 
-        if command_type == "set slot":
+        if command_type == SET_SLOT_COMMAND:
             slot_value = command_as_dict.pop("value", None)
             command_as_dict["is_slot_value_missing_or_none"] = slot_value is None
 
@@ -523,7 +528,6 @@ def extract_attrs_for_policy_prediction(
     diagnostic_data: Optional[Dict[Text, Any]] = None,
     action_metadata: Optional[Dict[Text, Any]] = None,
 ) -> Dict[str, Any]:
-
     # diagnostic_data can contain ndarray type values which need to be converted
     # into a list since the returning values have to be JSON serializable.
     if isinstance(diagnostic_data, dict):
@@ -660,4 +664,17 @@ def extract_attrs_for_endpoint_config(
             }
         )
 
+    return attrs
+
+
+def extract_attrs_for_custom_action_executor(
+    self: Union[HTTPCustomActionExecutor, GRPCCustomActionExecutor],
+    tracker: DialogueStateTracker,
+    domain: Optional[Domain] = None,
+) -> Dict[str, Any]:
+    attrs: Dict[str, Any] = {
+        "class_name": self.__class__.__name__,
+        "action_name": self.action_name,
+        "sender_id": tracker.sender_id,
+    }
     return attrs

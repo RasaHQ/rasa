@@ -49,7 +49,6 @@ def test_persist_and_load(
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
 ) -> None:
-
     training_data = TrainingData(
         training_examples=[
             Message(data={TEXT: "hello", INTENT: "greet"}),

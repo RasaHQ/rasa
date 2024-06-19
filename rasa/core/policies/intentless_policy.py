@@ -670,7 +670,7 @@ class IntentlessPolicy(Policy):
         if tracker.latest_message.text.startswith("/"):
             # we don't want to generate a response if the user is trying to
             # execute a "command" - this should be handled by the regex
-            # intent classifier in rasa open source.
+            # intent classifier in rasa pro.
             structlogger.debug("intentless_policy.prediction.skip_slash")
             return None, 0.0
 
@@ -863,7 +863,7 @@ class IntentlessPolicy(Policy):
         """
         result = self._default_predictions(domain)
         if action_name:
-            result[domain.index_for_action(action_name)] = score  # type: ignore[assignment]  # noqa: E501
+            result[domain.index_for_action(action_name)] = score  # type: ignore[assignment]
         return result
 
     @classmethod
@@ -892,9 +892,7 @@ class IntentlessPolicy(Policy):
                 #  normalized. unfortunatley langchain doesn't persist / load
                 #  this parameter.
                 if responses_docsearch:
-                    responses_docsearch._normalize_L2 = (
-                        True  # pylint: disable=protected-access
-                    )
+                    responses_docsearch._normalize_L2 = True  # pylint: disable=protected-access
                 prompt_template = rasa.shared.utils.io.read_file(
                     path / INTENTLESS_PROMPT_TEMPLATE_FILE_NAME
                 )

@@ -448,7 +448,7 @@ def _check_evaluation_setting(component_config: Dict[Text, Any]) -> None:
                 f"No checkpoint model will be saved."
             )
         rasa.shared.utils.io.raise_warning(warning)
-    if CHECKPOINT_MODEL in component_config and component_config[CHECKPOINT_MODEL]:
+    if component_config.get(CHECKPOINT_MODEL):
         if (
             component_config[EVAL_NUM_EPOCHS] != -1
             and component_config[EVAL_NUM_EPOCHS] < 1

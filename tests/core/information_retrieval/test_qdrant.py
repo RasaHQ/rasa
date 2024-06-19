@@ -7,9 +7,7 @@ from pytest import MonkeyPatch
 from langchain.schema.embeddings import Embeddings
 from langchain.vectorstores.qdrant import Qdrant
 
-from rasa.core.information_retrieval.information_retrieval import (
-    InformationRetrievalException,
-)
+from rasa.core.information_retrieval import InformationRetrievalException
 from rasa.utils.endpoints import EndpointConfig
 from rasa.core.information_retrieval.qdrant import (
     PayloadNotFoundException,
@@ -68,7 +66,7 @@ async def test_qdrant_search_raises_PayloadNotFoundException(
     )
 
     with pytest.raises(PayloadNotFoundException) as e:
-        await qdrant_store.search("test")
+        await qdrant_store.search("test", {})
 
     assert issubclass(e.type, InformationRetrievalException)
     assert (
@@ -102,7 +100,7 @@ async def test_qdrant_search_raises_QdrantInformationRetrievalException(
     )
 
     with pytest.raises(QdrantInformationRetrievalException) as e:
-        await qdrant_store.search("test")
+        await qdrant_store.search("test", {})
 
     assert issubclass(e.type, InformationRetrievalException)
     assert (

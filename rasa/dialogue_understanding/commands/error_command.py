@@ -65,3 +65,12 @@ class ErrorCommand(Command):
             )
         )
         return tracker.create_stack_updated_events(stack)
+
+    def __hash__(self) -> int:
+        return hash(self.error_type) + hash(self.info)
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, ErrorCommand):
+            return False
+
+        return other.error_type == self.error_type and other.info == self.info

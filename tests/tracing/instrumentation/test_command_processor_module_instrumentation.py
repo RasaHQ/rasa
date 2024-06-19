@@ -31,9 +31,7 @@ def test_tracing_command_processor_execute_commands(
     tracker = DialogueStateTracker.from_events(sender_id, evts=[])
     module.execute_commands(tracker, FlowsList(underlying_flows=[]), Mock())
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
 
@@ -74,7 +72,12 @@ def test_tracing_command_processor_clean_up_commands(
         parse_data={
             "commands": [
                 {"command": "start flow", "flow": "transfer_money"},
-                {"command": "set slot", "name": "recipient", "value": "Anna"},
+                {
+                    "command": "set slot",
+                    "name": "recipient",
+                    "value": "Anna",
+                    "extractor": "LLM",
+                },
             ]
         },
     )
@@ -116,9 +119,7 @@ def test_tracing_command_processor_clean_up_commands(
         Mock(),
     )
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
 
@@ -128,7 +129,7 @@ def test_tracing_command_processor_clean_up_commands(
 
     expected_values = [
         {"flow": "transfer_money", "command": "start flow"},
-        {"name": "recipient", "command": "set slot"},
+        {"name": "recipient", "extractor": "LLM", "command": "set slot"},
     ]
 
     assert captured_span.attributes == {
@@ -153,9 +154,7 @@ def test_tracing_command_processor_validate_state_of_commands(
     # act
     module.validate_state_of_commands(cleaned_up_commands)
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
 
@@ -188,9 +187,7 @@ def test_tracing_command_processor_remove_duplicated_set_slots(
     # act
     module.remove_duplicated_set_slots(events)
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
 

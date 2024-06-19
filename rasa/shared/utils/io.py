@@ -401,3 +401,14 @@ def handle_print_blocking(output: Text) -> None:
             lock = AnsiToWin32(lock).stream
 
         print(output, file=lock, flush=True)
+
+
+def file_as_bytes(file_path: Text) -> bytes:
+    """Read in a file as a byte array."""
+    try:
+        with open(file_path, "rb") as f:
+            return f.read()
+    except FileNotFoundError:
+        raise FileNotFoundException(
+            f"Failed to read file, " f"'{os.path.abspath(file_path)}' does not exist."
+        )

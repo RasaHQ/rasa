@@ -132,7 +132,6 @@ async def test_train_persist_with_different_configurations(
     spacy_nlp_component: SpacyNLP,
     spacy_model: SpacyModel,
 ):
-
     crf_extractor = crf_entity_extractor(config_params)
 
     importer = RasaFileImporter(training_data_paths=["data/examples/rasa"])

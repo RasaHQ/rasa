@@ -42,9 +42,7 @@ async def test_tracing_enterprise_search_policy_generate_llm_answer_default_conf
     )
     await policy._generate_llm_answer(llm=Mock(), prompt="")
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1
@@ -101,9 +99,7 @@ async def test_tracing_enterprise_search_policy_generate_llm_answer_custom_confi
             vector_store=vector_store,
         )
         await policy._generate_llm_answer(llm=Mock(), prompt="")
-        captured_spans: Sequence[
-            ReadableSpan
-        ] = span_exporter.get_finished_spans()  # type: ignore
+        captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
         num_captured_spans = len(captured_spans) - previous_num_captured_spans
         assert num_captured_spans == 1
@@ -154,9 +150,7 @@ async def test_tracing_enterprise_search_policy_generate_llm_answer_len_prompt_t
         )
         await policy._generate_llm_answer(llm=Mock(), prompt="This is a test prompt.")
 
-        captured_spans: Sequence[
-            ReadableSpan
-        ] = span_exporter.get_finished_spans()  # type: ignore
+        captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
         num_captured_spans = len(captured_spans) - previous_num_captured_spans
         assert num_captured_spans == 1
@@ -220,9 +214,7 @@ async def test_tracing_enterprise_search_policy_generate_llm_answer_len_prompt_t
                 in caplog.text
             )
 
-        captured_spans: Sequence[
-            ReadableSpan
-        ] = span_exporter.get_finished_spans()  # type: ignore
+        captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
         num_captured_spans = len(captured_spans) - previous_num_captured_spans
         assert num_captured_spans == 1

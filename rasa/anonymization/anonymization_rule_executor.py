@@ -87,19 +87,19 @@ class AnonymizationAnalyzer(metaclass=Singleton):
         if anonymization_rule_list.model_provider == "transformers":
             nlp_engine = TransformersNlpEngine(
                 models={
-                    anonymization_rule_list.language: anonymization_rule_list.models  # noqa: E501
+                    anonymization_rule_list.language: anonymization_rule_list.models
                 },
             )
         elif anonymization_rule_list.model_provider == "stanza":
             nlp_engine = StanzaNlpEngine(
                 models={
-                    anonymization_rule_list.language: anonymization_rule_list.models  # noqa: E501
+                    anonymization_rule_list.language: anonymization_rule_list.models
                 },
             )
         else:
             nlp_engine = SpacyNlpEngine(
                 models={
-                    anonymization_rule_list.language: anonymization_rule_list.models  # noqa: E501
+                    anonymization_rule_list.language: anonymization_rule_list.models
                 },
             )
 

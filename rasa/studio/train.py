@@ -50,9 +50,9 @@ def handle_train(args: argparse.Namespace) -> Optional[str]:
         handler, domain, args.data
     )
 
-    domain = data_original.get_domain().merge(data_form_studio.get_domain())  # type: ignore[assignment]  # noqa: E501
+    domain = data_original.get_domain().merge(data_form_studio.get_domain())  # type: ignore[assignment]
 
-    domain_file = _create_temp_file(read_yaml(domain.as_yaml()), "domain.yml")  # type: ignore[union-attr]  # noqa: E501
+    domain_file = _create_temp_file(read_yaml(domain.as_yaml()), "domain.yml")  # type: ignore[union-attr]
 
     studio_training_files = make_training_files(
         handler, data_form_studio, data_original

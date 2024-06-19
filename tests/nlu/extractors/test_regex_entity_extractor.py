@@ -264,7 +264,7 @@ def test_train_and_process(
 
 
 def test_train_process_and_load_with_empty_model(
-    create_or_load_extractor: Callable[..., RegexEntityExtractor]
+    create_or_load_extractor: Callable[..., RegexEntityExtractor],
 ):
     extractor = create_or_load_extractor({})
     with pytest.warns(UserWarning):
@@ -276,9 +276,8 @@ def test_train_process_and_load_with_empty_model(
 
 
 def test_process_does_not_overwrite_any_entities(
-    create_or_load_extractor: Callable[..., RegexEntityExtractor]
+    create_or_load_extractor: Callable[..., RegexEntityExtractor],
 ):
-
     pre_existing_entity = {
         ENTITY_ATTRIBUTE_TYPE: "person",
         ENTITY_ATTRIBUTE_VALUE: "Max",

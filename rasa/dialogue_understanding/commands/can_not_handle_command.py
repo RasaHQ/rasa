@@ -59,3 +59,12 @@ class CannotHandleCommand(Command):
         else:
             stack.push(CannotHandlePatternFlowStackFrame())
         return tracker.create_stack_updated_events(stack)
+
+    def __hash__(self) -> int:
+        return hash(self.reason)
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, CannotHandleCommand):
+            return False
+
+        return other.reason == self.reason
