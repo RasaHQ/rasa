@@ -59,10 +59,7 @@ class GRPCCustomActionExecutor(CustomActionExecutor):
 
         client_cert_file = self.action_endpoint.kwargs.get(SSL_CLIENT_CERT_FIELD)
         client_key_file = self.action_endpoint.kwargs.get(SSL_CLIENT_KEY_FIELD)
-        if client_cert_file and client_key_file:
-            self.client_cert = file_as_bytes(client_cert_file)
-            self.client_key = file_as_bytes(client_key_file)
-        elif client_cert_file:
+        if not client_key_file:
             structlogger.error(
                 f"rasa.core.actions.grpc_custom_action_executor.{SSL_CLIENT_KEY_FIELD}_missing",
                 event_info=(
@@ -73,7 +70,7 @@ class GRPCCustomActionExecutor(CustomActionExecutor):
                     f"Continuing without client TLS authentication."
                 ),
             )
-        elif client_key_file:
+        if not client_cert_file:
             structlogger.error(
                 f"rasa.core.actions.grpc_custom_action_executor.{SSL_CLIENT_CERT_FIELD}_missing",
                 event_info=(
@@ -84,6 +81,9 @@ class GRPCCustomActionExecutor(CustomActionExecutor):
                     f"Continuing without client TLS authentication."
                 ),
             )
+        if client_cert_file and client_key_file:
+            self.client_cert = file_as_bytes(client_cert_file)
+            self.client_key = file_as_bytes(client_key_file)
 
     async def run(
         self, tracker: "DialogueStateTracker", domain: Optional["Domain"] = None
