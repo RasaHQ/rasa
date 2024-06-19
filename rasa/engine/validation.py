@@ -44,12 +44,13 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.training.fingerprinting import Fingerprintable
 from rasa.shared.constants import DOCS_URL_GRAPH_COMPONENTS, ROUTE_TO_CALM_SLOT
-from rasa.shared.core.constants import ACTION_TRIGGER_CHITCHAT
+from rasa.shared.core.constants import ACTION_RESET_ROUTING, ACTION_TRIGGER_CHITCHAT
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows import FlowsList, Flow
 from rasa.shared.core.slots import Slot
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.training_data.message import Message
+
 
 TypeAnnotation = Union[TypeVar, Text, Type, Optional[AvailableEndpoints]]
 
@@ -637,7 +638,7 @@ def _validate_chitchat_dependencies(
 
 
 def validate_coexistance_routing_setup(
-    domain: Domain, model_configuration: GraphModelConfiguration
+    domain: Domain, model_configuration: GraphModelConfiguration, flows: FlowsList
 ) -> None:
     import re
     from rasa.dialogue_understanding.coexistence.intent_based_router import (
@@ -797,6 +798,34 @@ def validate_coexistance_routing_setup(
                 )
                 sys.exit(1)
 
+    def validate_that_router_or_router_slot_are_defined_if_action_reset_routing_is_used(
+        schema: GraphSchema, flows: FlowsList, routing_slots: List[Slot]
+    ) -> None:
+        slot_has_issue = len(routing_slots) == 0 or routing_slots[0].type_name != "bool"
+        router_present = schema.has_node(LLMBasedRouter) or schema.has_node(
+            IntentBasedRouter
+        )
+
+        if router_present or not slot_has_issue:
+            return
+
+        faulty_flows_with_action_reset_routing = [
+            flow for flow in flows if flow.has_action_step(ACTION_RESET_ROUTING)
+        ]
+
+        if faulty_flows_with_action_reset_routing:
+            for flow in faulty_flows_with_action_reset_routing:
+                structlogger.error(
+                    f"validation.coexistance.{ACTION_RESET_ROUTING}_present_in_flow"
+                    f"_without_router_or_{ROUTE_TO_CALM_SLOT}_slot",
+                    event_info=(
+                        f"The action - {ACTION_RESET_ROUTING} is used in the flow - "
+                        f"{flow.id}, but a router (LLMBasedRouter/IntentBasedRouter) or"
+                        f" {ROUTE_TO_CALM_SLOT} are not defined.",
+                    ),
+                )
+            sys.exit(1)
+
     schema = model_configuration.predict_schema
     routing_slots = [s for s in domain.slots if s.name == ROUTE_TO_CALM_SLOT]
 
@@ -805,3 +834,6 @@ def validate_coexistance_routing_setup(
     validate_that_slots_are_defined_if_router_is_defined(schema, routing_slots)
     validate_that_router_is_defined_if_router_slots_are_in_domain(schema, routing_slots)
     validate_configuration(schema)
+    validate_that_router_or_router_slot_are_defined_if_action_reset_routing_is_used(
+        schema, flows, routing_slots
+    )
