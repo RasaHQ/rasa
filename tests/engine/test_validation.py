@@ -1669,7 +1669,6 @@ def test_validate_routing_setup_with_unrequired_action_reset_routing(
 
     # When / Then
     with structlog.testing.capture_logs() as caplog:
-
         with pytest.raises(SystemExit):
             validate_coexistance_routing_setup(domain, model_configuration, flows_list)
 
