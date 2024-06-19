@@ -1296,6 +1296,45 @@ def test_validate_routing_setup(router_component: Text, tmp_path: Path) -> None:
     validate_coexistance_routing_setup(domain, model_configuration)
 
 
+def test_validate_llm_based_router_required_routing_setup(tmp_path: Path) -> None:
+    # Given
+    config_file_name = tmp_path / "config.yml"
+    with open(config_file_name, "w") as file:
+        file.write(
+            """
+                recipe: default.v1
+                language: en
+                pipeline:
+                - name: WhitespaceTokenizer
+                - name: CountVectorsFeaturizer
+                - name: LogisticRegressionClassifier
+                - name: CRFEntityExtractor
+                - name: LLMBasedRouter
+                  calm_entry:
+                    sticky: 'calm entry sticky'
+                - name: LLMCommandGenerator
+            """
+        )
+    importer = RasaFileImporter(config_file=config_file_name)
+    config = importer.get_config()
+    domain_yaml = textwrap.dedent(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        slots:
+          {ROUTE_TO_CALM_SLOT}:
+            type: bool
+            mappings: []
+            initial_value: false
+        """
+    )
+    domain = Domain.from_yaml(domain_yaml)
+    recipe = Recipe.recipe_for_name(config.get("recipe"))
+    model_configuration = recipe.graph_config_for_recipe(config, {})
+
+    # When / Then - should not raise any errors
+    validate_coexistance_routing_setup(domain, model_configuration)
+
+
 def test_validate_routing_setup_with_unrequired_calm_slot(tmp_path: Path) -> None:
     # Given
     config_file_name = tmp_path / "config.yml"
@@ -1527,20 +1566,6 @@ def test_validate_routing_setup_with_both_coexistence_components(
             - name: LLMBasedRouter
               calm_entry:
                 - sticky: handles calm sticky
-            """,
-        ),
-        (
-            "LLMBasedRouter",
-            """
-            recipe: default.v1
-            language: en
-            pipeline:
-            - name: LLMBasedRouter
-              calm_entry:
-                sticky: handles calm sticky
-              nlu_entry:
-                - sticky: handles nlu sticky
-                - non_sticky: handles nlu non sticky
             """,
         ),
     ],

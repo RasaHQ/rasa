@@ -399,16 +399,12 @@ def clean_up_commands(
         # drop all clarify commands if there are more commands. Otherwise, we might
         # get a situation where two questions are asked at once.
         elif isinstance(command, ClarifyCommand) and len(commands) > 1:
-            # if there are multiple clarify commands, do add the first one
-            if (
-                all([isinstance(c, ClarifyCommand) for c in commands])
-                and len(clean_commands) == 0
-            ):
-                clean_commands.append(command)
-            structlogger.debug(
-                "command_processor.clean_up_commands.drop_clarify_given_other_commands",
-                command=command,
-            )
+            clean_commands = clean_up_clarify_command(clean_commands, commands, command)
+            if command not in clean_commands:
+                structlogger.debug(
+                    "command_processor.clean_up_commands.drop_clarify_given_other_commands",
+                    command=command,
+                )
         else:
             clean_commands.append(command)
 
@@ -425,6 +421,44 @@ def clean_up_commands(
     )
 
     return clean_commands
+
+
+def clean_up_clarify_command(
+    commands_so_far: List[Command],
+    all_commands: List[Command],
+    current_command: ClarifyCommand,
+) -> List[Command]:
+    """Clean up a clarify command.
+
+    Args:
+        commands_so_far: The commands cleaned up so far.
+        all_commands: All the predicted commands.
+        current_command: The current clarify command.
+
+    Returns:
+        The cleaned up commands.
+    """
+    # Get the commands after removing the ROUTE_TO_CALM_SLOT set slot command.
+    commands_without_route_to_calm_set_slot = [
+        c
+        for c in all_commands
+        if not (isinstance(c, SetSlotCommand) and c.name == ROUTE_TO_CALM_SLOT)
+    ]
+
+    # if there are multiple clarify commands, do add the first one
+    if all(
+        isinstance(c, ClarifyCommand) for c in commands_without_route_to_calm_set_slot
+    ):
+        # Check if clean_commands is empty or contains only ROUTE_TO_CALM_SLOT
+        # set slot command.
+        if not commands_so_far or (
+            len(commands_so_far) == 1
+            and isinstance(commands_so_far[0], SetSlotCommand)
+            and commands_so_far[0].name == ROUTE_TO_CALM_SLOT
+        ):
+            commands_so_far.append(current_command)
+
+    return commands_so_far
 
 
 def clean_up_slot_command(

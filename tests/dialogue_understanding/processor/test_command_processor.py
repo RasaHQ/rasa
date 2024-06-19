@@ -42,7 +42,10 @@ from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
     UserFlowStackFrame,
 )
 from rasa.engine.graph import ExecutionContext
-from rasa.shared.constants import RASA_PATTERN_CANNOT_HANDLE_CHITCHAT
+from rasa.shared.constants import (
+    ROUTE_TO_CALM_SLOT,
+    RASA_PATTERN_CANNOT_HANDLE_CHITCHAT,
+)
 from rasa.shared.core.constants import ACTION_TRIGGER_CHITCHAT
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -357,7 +360,45 @@ def test_get_current_collect_step_returns_none(
             [StartFlowCommand("flow_name"), ClarifyCommand(["x", "y"])],
             [StartFlowCommand("flow_name")],
         ),
-        # drop clarify command of flow that is already on the tracker
+        # Keep only the first clarify command if there are multiple clarify commands
+        # and a ROUTE_TO_CALM set slot command
+        (
+            [
+                ClarifyCommand(["a", "b", "c"]),
+                ClarifyCommand(["d", "e"]),
+                SetSlotCommand(ROUTE_TO_CALM_SLOT, "True"),
+            ],
+            [
+                ClarifyCommand(["a", "b", "c"]),
+                SetSlotCommand(ROUTE_TO_CALM_SLOT, "True"),
+            ],
+        ),
+        # Keep only the first clarify command if there are multiple clarify commands
+        # and a ROUTE_TO_CALM set slot command at the start
+        (
+            [
+                SetSlotCommand(ROUTE_TO_CALM_SLOT, "True"),
+                ClarifyCommand(["a", "b", "c"]),
+                ClarifyCommand(["d", "e"]),
+            ],
+            [
+                SetSlotCommand(ROUTE_TO_CALM_SLOT, "True"),
+                ClarifyCommand(["a", "b", "c"]),
+            ],
+        ),
+        # Drop clarify command if there are other commands and a ROUTE_TO_CALM
+        # set slot command
+        (
+            [
+                StartFlowCommand("flow_name"),
+                ClarifyCommand(["x", "y"]),
+                SetSlotCommand(ROUTE_TO_CALM_SLOT, "False"),
+            ],
+            [
+                StartFlowCommand("flow_name"),
+                SetSlotCommand(ROUTE_TO_CALM_SLOT, "False"),
+            ],
+        ),
     ],
 )
 def test_clean_up_commands(
