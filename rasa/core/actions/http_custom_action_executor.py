@@ -32,10 +32,18 @@ class HTTPCustomActionExecutor(CustomActionExecutor):
     Executes custom actions by making HTTP POST requests to the action endpoint.
     """
 
-    def __init__(self, action_name: str, action_endpoint: EndpointConfig) -> None:
+    def __init__(
+        self,
+        action_name: str,
+        action_endpoint: EndpointConfig,
+    ) -> None:
         self.action_name = action_name
         self.action_endpoint = action_endpoint
         self.request_writer = CustomActionRequestWriter(action_name, action_endpoint)
+        self.should_compress = get_bool_env_variable(
+            COMPRESS_ACTION_SERVER_REQUEST_ENV_NAME,
+            DEFAULT_COMPRESS_ACTION_SERVER_REQUEST,
+        )
 
     async def run(
         self,
@@ -61,14 +69,7 @@ class HTTPCustomActionExecutor(CustomActionExecutor):
 
             json_body = self.request_writer.create(tracker=tracker, domain=domain)
 
-            should_compress = get_bool_env_variable(
-                COMPRESS_ACTION_SERVER_REQUEST_ENV_NAME,
-                DEFAULT_COMPRESS_ACTION_SERVER_REQUEST,
-            )
-
-            response = await self._perform_request_with_retries(
-                json_body, should_compress
-            )
+            response = await self._perform_request_with_retries(json_body)
 
             if response is None:
                 response = {}
@@ -117,7 +118,6 @@ class HTTPCustomActionExecutor(CustomActionExecutor):
     async def _perform_request_with_retries(
         self,
         json_body: Dict[str, Any],
-        should_compress: bool,
     ) -> Any:
         """Attempts to perform the request with retries if necessary."""
         assert self.action_endpoint is not None
@@ -126,7 +126,7 @@ class HTTPCustomActionExecutor(CustomActionExecutor):
                 json=json_body,
                 method="post",
                 timeout=DEFAULT_REQUEST_TIMEOUT,
-                compress=should_compress,
+                compress=self.should_compress,
             )
         except ClientResponseError as e:
             # Repeat the request because Domain was not in the payload

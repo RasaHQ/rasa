@@ -1,4 +1,3 @@
-from os.path import abspath
 from typing import Any, Dict, Optional, TYPE_CHECKING
 from urllib.parse import urlparse
 
@@ -7,13 +6,14 @@ import structlog
 from google.protobuf.json_format import ParseDict, MessageToDict
 
 from rasa.core.actions.action_exceptions import DomainNotFound
+from rasa.core.actions.constants import SSL_CLIENT_CERT_FIELD, SSL_CLIENT_KEY_FIELD
 from rasa.core.actions.custom_action_executor import (
     CustomActionExecutor,
     CustomActionRequestWriter,
 )
-from rasa.shared.exceptions import FileNotFoundException
+from rasa.shared.exceptions import RasaException
 from rasa.shared.utils.io import file_as_bytes
-from rasa.utils.endpoints import EndpointConfig, ClientResponseError
+from rasa.utils.endpoints import EndpointConfig
 from rasa_sdk.grpc_errors import ResourceNotFound, ResourceNotFoundType
 from rasa_sdk.grpc_py import action_webhook_pb2_grpc, action_webhook_pb2
 
@@ -30,7 +30,11 @@ class GRPCCustomActionExecutor(CustomActionExecutor):
     Executes custom actions by making gRPC requests to the action endpoint.
     """
 
-    def __init__(self, action_name: str, action_endpoint: EndpointConfig) -> None:
+    def __init__(
+        self,
+        action_name: str,
+        action_endpoint: EndpointConfig,
+    ) -> None:
         """Initializes the gRPC custom action executor.
 
         Args:
@@ -43,6 +47,43 @@ class GRPCCustomActionExecutor(CustomActionExecutor):
 
         parsed_url = urlparse(self.action_endpoint.url)
         self.request_url = parsed_url.netloc
+
+        self.cert_ca = (
+            file_as_bytes(self.action_endpoint.cafile)
+            if self.action_endpoint.cafile
+            else None
+        )
+
+        self.client_cert = None
+        self.client_key = None
+
+        client_cert_file = self.action_endpoint.kwargs.get(SSL_CLIENT_CERT_FIELD)
+        client_key_file = self.action_endpoint.kwargs.get(SSL_CLIENT_KEY_FIELD)
+        if client_cert_file and client_key_file:
+            self.client_cert = file_as_bytes(client_cert_file)
+            self.client_key = file_as_bytes(client_key_file)
+        elif client_cert_file:
+            structlogger.error(
+                f"rasa.core.actions.grpc_custom_action_executor.{SSL_CLIENT_KEY_FIELD}_missing",
+                event_info=(
+                    f"Client certificate file '{SSL_CLIENT_CERT_FIELD}' "
+                    f" is provided but client key file '{SSL_CLIENT_KEY_FIELD}'"
+                    f" is not provided in the endpoint configuration. "
+                    f"Both fields are required for client TLS authentication."
+                    f"Continuing without client TLS authentication."
+                ),
+            )
+        elif client_key_file:
+            structlogger.error(
+                f"rasa.core.actions.grpc_custom_action_executor.{SSL_CLIENT_CERT_FIELD}_missing",
+                event_info=(
+                    f"Client key file '{SSL_CLIENT_KEY_FIELD}' is provided but "
+                    f"client certificate file '{SSL_CLIENT_CERT_FIELD}' "
+                    f"is not provided in the endpoint configuration. "
+                    f"Both fields are required for client TLS authentication."
+                    f"Continuing without client TLS authentication."
+                ),
+            )
 
     async def run(
         self, tracker: "DialogueStateTracker", domain: Optional["Domain"] = None
@@ -74,7 +115,7 @@ class GRPCCustomActionExecutor(CustomActionExecutor):
             Response from the action server.
         """
 
-        client = self._create_grpc_client(self.request_url, self.action_endpoint.cafile)
+        client = self._create_grpc_client()
         request_proto = action_webhook_pb2.WebhookRequest()
         request = ParseDict(
             js_dict=json_body, message=request_proto, ignore_unknown_fields=True
@@ -82,17 +123,28 @@ class GRPCCustomActionExecutor(CustomActionExecutor):
         try:
             response = client.Webhook(request)
             return MessageToDict(response)
-        except grpc.RpcError as e:
-            status_code = e.code()
-            details = e.details()
+        except grpc.RpcError as rpc_error:
+            if not isinstance(rpc_error, grpc.Call):
+                raise RasaException(
+                    f"Failed to execute custom action '{self.action_name}'. "
+                    f"Unknown error occurred while calling the "
+                    f"action server over gRPC protocol."
+                )
+
+            status_code = rpc_error.code()
+            details = rpc_error.details()
             if status_code is not grpc.StatusCode.NOT_FOUND:
-                raise ClientResponseError(status=status_code, message=details, text="")
+                raise RasaException(
+                    f"Failed to execute custom action '{self.action_name}'. "
+                    f"Error: {details}"
+                )
 
             resource_not_found_error = ResourceNotFound.model_validate_json(details)
-            if not resource_not_found_error:
-                raise ClientResponseError(status=status_code, message=details, text="")
-
-            if resource_not_found_error.resource_type == ResourceNotFoundType.DOMAIN:
+            if (
+                resource_not_found_error
+                and resource_not_found_error.resource_type
+                == ResourceNotFoundType.DOMAIN
+            ):
                 structlogger.error(
                     "rasa.core.actions.grpc_custom_action_executor.domain_not_found",
                     event_info=(
@@ -101,72 +153,42 @@ class GRPCCustomActionExecutor(CustomActionExecutor):
                     ),
                 )
                 raise DomainNotFound()
-            elif resource_not_found_error.resource_type == ResourceNotFoundType.ACTION:
-                structlogger.error(
-                    "rasa.core.actions.grpc_custom_action_executor.action_not_found",
-                    event_info=(
-                        f"Failed to execute custom action '{self.action_name}'. "
-                        f"Could not find action. {resource_not_found_error.message}"
-                    ),
-                )
-            raise ClientResponseError(status=status_code, message=details, text="")
+            raise RasaException(
+                f"Failed to execute custom action '{self.action_name}'. "
+                f"Error: {details}"
+            )
 
-    @staticmethod
     def _create_grpc_client(
-        url: str, cert_file: Optional[str] = None
+        self,
     ) -> action_webhook_pb2_grpc.ActionServiceStub:
         """Create a gRPC client for the action server.
-
-        Args:
-            url: URL of the action server.
-            cert_file: Path to the certificate file for TLS encryption.
 
         Returns:
             gRPC client for the action server.
         """
-        channel = GRPCCustomActionExecutor._create_channel(url, cert_file)
+        channel = self._create_channel()
         return action_webhook_pb2_grpc.ActionServiceStub(channel)
 
-    @staticmethod
     def _create_channel(
-        url: str,
-        cert_ca_file: Optional[str] = None,
-        client_cert_file: Optional[str] = None,
-        client_key_file: Optional[str] = None,
+        self,
     ) -> grpc.Channel:
         """Create a gRPC channel for the action server.
-
-        Args:
-            url: URL of the action server.
-            cert_ca_file: Path to the certificate file for TLS encryption.
-            client_cert_file: Path to the client certificate
-                              file for mutual TLS authentication.
-            client_key_file: Path to the client key file for mutual TLS authentication.
 
         Returns:
             gRPC channel for the action server.
         """
-        if cert_ca_file:
-            cert_ca = file_as_bytes(cert_ca_file)
 
-            client_cert = None
-            client_key = None
-            if client_cert and client_key:
-                client_cert = file_as_bytes(client_cert_file)
-                client_key = file_as_bytes(client_key_file)
+        compression = grpc.Compression.Gzip
 
-            try:
-                credentials = grpc.ssl_channel_credentials(
-                    root_certificates=cert_ca,
-                    private_key=client_key,
-                    certificate_chain=client_cert,
-                )
-                return grpc.secure_channel(url, credentials)
-            except FileNotFoundError as e:
-                raise FileNotFoundException(
-                    f"Failed to find certificate file, "
-                    f"'{abspath(cert_ca_file)}' does not exist."
-                ) from e
-
-        else:
-            return grpc.insecure_channel(url)
+        if self.cert_ca:
+            credentials = grpc.ssl_channel_credentials(
+                root_certificates=self.cert_ca,
+                private_key=self.client_key,
+                certificate_chain=self.client_cert,
+            )
+            return grpc.secure_channel(
+                target=self.request_url,
+                credentials=credentials,
+                compression=compression,
+            )
+        return grpc.insecure_channel(target=self.request_url, compression=compression)
