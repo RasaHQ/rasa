@@ -167,7 +167,9 @@ class MessageProcessor:
                 raise ModelNotFound(f"Model {model_path} can not be loaded.")
 
     async def handle_message(
-        self, message: UserMessage, action_package_name: Union[Text, ModuleType] = None
+        self,
+        message: UserMessage,
+        action_package_name: Optional[Union[Text, ModuleType]] = None,
     ) -> Optional[List[Dict[Text, Any]]]:
         """Handle a single message with this processor."""
         # preprocess message if necessary
@@ -530,7 +532,7 @@ class MessageProcessor:
     async def predict_next_with_tracker_if_should(
         self,
         tracker: DialogueStateTracker,
-        action_package_name: Union[Text, ModuleType] = None,
+        action_package_name: Optional[Union[Text, ModuleType]] = None,
     ) -> Tuple[rasa.core.actions.action.Action, PolicyPrediction]:
         """Predicts the next action the bot should take after seeing x.
 
@@ -975,7 +977,7 @@ class MessageProcessor:
         self,
         output_channel: OutputChannel,
         tracker: DialogueStateTracker,
-        action_package_name: Union[Text, ModuleType] = None,
+        action_package_name: Optional[Union[Text, ModuleType]] = None,
     ) -> None:
         # keep taking actions decided by the policy until it chooses to 'listen'
         should_predict_another_action = True

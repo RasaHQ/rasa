@@ -14,7 +14,6 @@ from typing import (
     Union,
 )
 
-import aiohttp
 from rasa_sdk.executor import ActionExecutor
 import rasa.core
 import rasa.shared.utils.io
@@ -138,7 +137,7 @@ def action_for_index(
     index: int,
     domain: Domain,
     action_endpoint: Optional[EndpointConfig],
-    action_package_name: Union[Text, ModuleType] = None,
+    action_package_name: Optional[Union[Text, ModuleType]] = None,
 ) -> "Action":
     """Get an action based on its index in the list of available actions.
 
@@ -149,6 +148,7 @@ def action_for_index(
             provided by the user + the default actions.
         action_endpoint: Can be used to run `custom_actions`
             (e.g. using the `rasa-sdk`).
+        action_package_name: The name of the module containing all custom actions.
 
     Returns:
         The instantiated `Action` or `None` if no `Action` was found for the given
@@ -191,7 +191,7 @@ def action_for_name_or_text(
     action_name_or_text: Text,
     domain: Domain,
     action_endpoint: Optional[EndpointConfig],
-    action_package_name: Union[Text, ModuleType] = None,
+    action_package_name: Optional[Union[Text, ModuleType]] = None,
 ) -> "Action":
     """Retrieves an action by its name or by its text in case it's an end-to-end action.
 
@@ -199,6 +199,7 @@ def action_for_name_or_text(
         action_name_or_text: The name of the action.
         domain: The current model domain.
         action_endpoint: The endpoint to execute custom actions.
+        action_package_name: The name of the module containing all custom actions.
 
     Raises:
         ActionNotFoundException: If action not in current domain.
@@ -715,31 +716,36 @@ class ActionDeactivateLoop(Action):
 
 
 class DirectCustomActionExecutor(CustomActionExecutor):
-    def __init__(self, name: str, action_package: Text):
-        self._name = name
+    def __init__(self, action_name: str, action_package_name: Text):
+        """Initializes the direct custom action executor.
+
+        Args:
+            action_name: Name of the custom action.
+            action_package_name: The name of the module containing all custom actions.
+        """
+        self.action_name = action_name
         self.action_executor = ActionExecutor()
-        self.action_executor.register_package(action_package)
+        self.action_executor.register_package(action_package_name)
 
     async def run(
         self,
         tracker: "DialogueStateTracker",
         domain: Optional["Domain"] = None,
     ) -> Dict[Text, Any]:
-        logger.debug(f"Directly executing custom action '{self.name()}'")
+        logger.debug(f"Directly executing custom action '{self.action_name}'")
         tracker_state = tracker.current_state(EventVerbosity.ALL)
 
         action_call = {
-            "next_action": self._name,
+            "next_action": self.action_name,
             "sender_id": tracker.sender_id,
             "tracker": tracker_state,
             "version": rasa.__version__,
-            "domain": domain.as_dict(),
         }
 
-        return await self.action_executor.run(action_call)
+        if domain:
+            action_call["domain"] = domain.as_dict()
 
-    def name(self) -> Text:
-        return self._name
+        return await self.action_executor.run(action_call)
 
 
 class RemoteAction(Action):
@@ -747,14 +753,14 @@ class RemoteAction(Action):
         self,
         name: Text,
         action_endpoint: EndpointConfig,
-        action_package_name: Union[Text, ModuleType] = None,
+        action_package_name: Optional[Union[Text, ModuleType]] = None,
     ) -> None:
         self._name = name
         self.action_endpoint = action_endpoint
         self.executor = self._create_executor(action_package_name)
 
     def _create_executor(
-        self, action_package_name: Union[Text, ModuleType] = None
+        self, action_package_name: Optional[Union[Text, ModuleType]] = None
     ) -> CustomActionExecutor:
         """Creates an executor based on the action endpoint configuration.
 
@@ -765,7 +771,9 @@ class RemoteAction(Action):
             RasaException: If no valid action endpoint is configured.
         """
         if not self.action_endpoint:
-            return NoEndpointCustomActionExecutor(self.name())
+            return DirectCustomActionExecutor(
+                self._name, action_package_name or DEFAULT_ACTIONS_PATH
+            )
 
         url_schema = get_url_schema(self.action_endpoint.url)
 

@@ -1,7 +1,6 @@
 import json
 import logging
 import uuid
-from types import ModuleType
 from typing import (
     Text,
     List,
@@ -12,7 +11,6 @@ from typing import (
     Iterable,
     Awaitable,
     NoReturn,
-    Union,
 )
 
 import jwt

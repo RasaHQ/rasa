@@ -642,7 +642,7 @@ def create_app(
     jwt_private_key: Optional[Text] = None,
     jwt_method: Text = "HS256",
     endpoints: Optional[AvailableEndpoints] = None,
-    action_package_name: Union[Text, ModuleType] = None,
+    action_package_name: Optional[Union[Text, ModuleType]] = None,
 ) -> Sanic:
     """Class representing a Rasa HTTP server."""
     app = Sanic("rasa_server")

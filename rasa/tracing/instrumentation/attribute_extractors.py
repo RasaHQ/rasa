@@ -253,7 +253,7 @@ def extract_attrs_for_graph_trainer(
 
 def extract_headers(
     message: UserMessage,
-    action_package_name: Union[Text, ModuleType] = None,
+    action_package_name: Optional[Union[Text, ModuleType]] = None,
     **kwargs: Any,
 ) -> Any:
     """Extract the headers from the `UserMessage`."""
@@ -671,7 +671,9 @@ def extract_attrs_for_endpoint_config(
 
 
 def extract_attrs_for_custom_action_executor(
-    self: Union[HTTPCustomActionExecutor, GRPCCustomActionExecutor, DirectCustomActionExecutor],
+    self: Union[
+        HTTPCustomActionExecutor, GRPCCustomActionExecutor, DirectCustomActionExecutor
+    ],
     tracker: DialogueStateTracker,
     domain: Optional[Domain] = None,
 ) -> Dict[str, Any]:

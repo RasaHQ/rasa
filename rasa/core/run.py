@@ -121,7 +121,7 @@ def configure_app(
     server_listeners: Optional[List[Tuple[Callable, Text]]] = None,
     use_uvloop: Optional[bool] = True,
     keep_alive_timeout: int = constants.DEFAULT_KEEP_ALIVE_TIMEOUT,
-    action_package_name: Union[Text, ModuleType] = None,
+    action_package_name: Optional[Union[Text, ModuleType]] = None,
 ) -> Sanic:
     """Run the agent."""
     rasa.core.utils.configure_file_logging(
@@ -220,7 +220,7 @@ def serve_application(
     syslog_protocol: Optional[Text] = None,
     request_timeout: Optional[int] = None,
     server_listeners: Optional[List[Tuple[Callable, Text]]] = None,
-    action_package_name: Union[Text, ModuleType] = None,
+    action_package_name: Optional[Union[Text, ModuleType]] = None,
 ) -> None:
     """Run the API entrypoint."""
     if not channel and not credentials:

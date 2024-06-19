@@ -416,7 +416,7 @@ class Agent:
     async def handle_message(
         self,
         message: UserMessage,
-        action_package_name: Union[Text, ModuleType] = None,
+        action_package_name: Optional[Union[Text, ModuleType]] = None,
     ) -> Optional[List[Dict[Text, Any]]]:
         """Handle a single message."""
         if not self.is_ready():
