@@ -89,7 +89,7 @@ def configure_tracing(tracer_provider: Optional[TracerProvider]) -> None:
 
     custom_action_executor_subclasses = []
     for custom_action_executor_class in CustomActionExecutor.__subclasses__():
-        if not isinstance(custom_action_executor_class, RetryCustomActionExecutor):
+        if custom_action_executor_class != RetryCustomActionExecutor:
             custom_action_executor_subclasses.append(custom_action_executor_class)
 
     instrumentation.instrument(
