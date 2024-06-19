@@ -1270,7 +1270,7 @@ Use COMPRESS_ACTION_SERVER_REQUEST=True to turn the feature on.
   during training were used.
 
 ### Improved Documentation
-- [#11571](https://github.com/rasahq/rasa/issues/11571): Rasa SDK documentation lives now in Rasa Pro documentation under the _Rasa SDK_ category.
+- [#11571](https://github.com/rasahq/rasa/issues/11571): Rasa SDK documentation lives now in Rasa Open Source documentation under the _Rasa SDK_ category.
 
 ### Miscellaneous internal changes
 - [#11552](https://github.com/rasahq/rasa/issues/11552)
@@ -1345,7 +1345,7 @@ Yanked.
 ## [3.2.0] - 2022-06-14
 ### Deprecations and Removals
 - [#10989](https://github.com/rasahq/rasa/issues/10989): [NLU training data](https://rasa.com/docs/rasa-pro/nlu-based-assistants/nlu-training-data) in JSON format is deprecated and will be
-  removed in Rasa Pro 4.0.
+  removed in Rasa Open Source 4.0.
   Please use `rasa data convert nlu -f yaml --data <path to NLU data>` to convert your
   NLU JSON data to YAML format before support for NLU JSON data is removed.
 
@@ -1440,11 +1440,11 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   :::caution
   We can't guarantee the exact same output and hence model performance if your
   configuration uses `LanguageModelFeaturizer`. This applies to the case where the
-  model is re-trained with the new rasa pro version without changing the
+  model is re-trained with the new rasa open source version without changing the
   configuration, random seeds, and data as well as to the case where a model trained with
-  a previous version of rasa pro is loaded with this new version for inference.
+  a previous version of rasa open source is loaded with this new version for inference.
 
-  We suggest training a new model if you are upgrading to this version of Rasa Pro.
+  We suggest training a new model if you are upgrading to this version of Rasa Open Source.
 - [#10444](https://github.com/rasahq/rasa/issues/10444): Make `rasa data validate` check for duplicated intents, forms, responses
   and slots when using domains split between multiple files.
 - [#10899](https://github.com/rasahq/rasa/issues/10899): Add an `influence_conversation` flag to entites to provide a shorthand for ignoring an entity for all intents.
@@ -1691,22 +1691,22 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   To learn more about how to migrate your 2.0 assistant, please read the migration guide.
 
 ### Features
-- [#10150](https://github.com/rasahq/rasa/issues/10150): Training data version upgraded from `2.0` to `3.0` due to breaking changes to format in Rasa Pro 3.0
+- [#10150](https://github.com/rasahq/rasa/issues/10150): Training data version upgraded from `2.0` to `3.0` due to breaking changes to format in Rasa Open Source 3.0
 - [#10170](https://github.com/rasahq/rasa/issues/10170): A new experimental feature called `Markers` has been added.
   `Markers` allow you to define points of interest in conversations as a set of conditions that need to be met.
   A new command `rasa evaluate markers` allows you to apply these conditions to your existing tracker stores
   and outputs the points at which the conditions were satisfied.
-- [#9803](https://github.com/rasahq/rasa/issues/9803): Rasa Pro now uses the [model configuration](https://rasa.com/docs/rasa-pro/nlu-based-assistants/model-configuration) to build a
+- [#9803](https://github.com/rasahq/rasa/issues/9803): Rasa Open Source now uses the [model configuration](https://rasa.com/docs/rasa-pro/nlu-based-assistants/model-configuration) to build a
 
   [directed acyclic graph](https://en.wikipedia.org/wiki/Directed_acyclic_graph).
   This graph describes the dependencies between the items in your model configuration and
   how data flows between them. This has two major benefits:
 
-  - Rasa Pro can use the computational graph to optimize the execution of your
+  - Rasa Open Source can use the computational graph to optimize the execution of your
     model. Examples for this are efficient caching of training steps or executing
     independent steps in parallel.
-  - Rasa Pro can represent different model architectures flexibly. As long as the
-    graph remains acyclic Rasa Pro can in theory pass any data to any graph
+  - Rasa Open Source can represent different model architectures flexibly. As long as the
+    graph remains acyclic Rasa Open Source can in theory pass any data to any graph
     component based on the model configuration without having to tie the underlying
     software architecture to the used model architecture.
 
@@ -1754,7 +1754,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
     :::caution
     This **breaks backward compatibility of previously trained models**.
-    It is not possible to load models trained with previous versions of Rasa Pro. Please re-train
+    It is not possible to load models trained with previous versions of Rasa Open Source. Please re-train
     your assistant before trying to use this version.
 - [#8057](https://github.com/rasahq/rasa/issues/8057): Added authentication support for connecting to external RabbitMQ servers.
   Currently user has to hardcode a username and a password in a URL in order to connect to an external RabbitMQ server.
@@ -1809,7 +1809,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   - `DialogueStateTracker`
 - [#9193](https://github.com/rasahq/rasa/issues/9193): Added debug message that logs when a response condition is used.
 - [#9485](https://github.com/rasahq/rasa/issues/9485): The naming scheme for trained models was changed. Unless you provide a
-  `--fixed-model-name` to `rasa train`, Rasa Pro will now generate a new model
+  `--fixed-model-name` to `rasa train`, Rasa Open Source will now generate a new model
   name using the schema `<timestamp>-<random name>.tar.gz`, e.g.
   - `20211018-094821-composite-pita.tar.gz` (for a model containing a trained NLU and dialogue model)
   - `nlu-20211018-094821-composite-pita.tar.gz` (for a model containing only a trained NLU model but not a dialogue model)
@@ -1825,7 +1825,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 - [#9642](https://github.com/rasahq/rasa/issues/9642): Machine learning components like `DIETClassifier`, `ResponseSelector` and `TEDPolicy` using a `ranking_length` parameter will no longer report renormalised
   confidences for the top predictions by default.
 
-  A new parameter `renormalize_confidences` is added to these components which if set to `True`, renormalizes the confidences of top `ranking_length` number of predictions to sum up to 1. The default value is `False`, which means no renormalization will be applied by default. It is advised to leave it to `False` but if you are trying to reproduce the results from previous versions of Rasa Pro, you can set it to `True`.
+  A new parameter `renormalize_confidences` is added to these components which if set to `True`, renormalizes the confidences of top `ranking_length` number of predictions to sum up to 1. The default value is `False`, which means no renormalization will be applied by default. It is advised to leave it to `False` but if you are trying to reproduce the results from previous versions of Rasa Open Source, you can set it to `True`.
 
   Renormalization will only be applied if `model_confidence=softmax` is used.
 
@@ -1845,8 +1845,8 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 - [#8930](https://github.com/rasahq/rasa/issues/8930): Adds documentation on how to use `CRFEntityExtractor` with features from a dense featurizer (e.g. `LanguageModelFeaturizer`).
 - [#9366](https://github.com/rasahq/rasa/issues/9366): Updated docs (Domain, Forms, Default Actions, Migration Guide, CLI) to provide more detail over the new slot mappings changes.
 - [#9711](https://github.com/rasahq/rasa/issues/9711): Updated documentation publishing mechanisms to build one version of [the documentation](https://rasa.com/docs/rasa)
-  for each major version of Rasa Pro, starting from 2.x upwards. Previously, we were building one
-  version of the documentation for each minor version of Rasa Pro, resulting in a poor user
+  for each major version of Rasa Open Source, starting from 2.x upwards. Previously, we were building one
+  version of the documentation for each minor version of Rasa Open Source, resulting in a poor user
   experience and high maintenance costs.
 
 ### Miscellaneous internal changes
@@ -1976,7 +1976,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
   :::caution
   This **breaks backward compatibility of previously trained models**.
-  It is not possible to load models trained with previous versions of Rasa Pro. Please re-train
+  It is not possible to load models trained with previous versions of Rasa Open Source. Please re-train
   your assistant before trying to use this version.
 
   :::
@@ -2062,22 +2062,22 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
 ## [2.8.0] - 2021-07-12
 ### Deprecations and Removals
-- [#9045](https://github.com/rasahq/rasa/issues/9045): The option `model_confidence=linear_norm` is deprecated and will be removed in Rasa Pro `3.0.0`.
+- [#9045](https://github.com/rasahq/rasa/issues/9045): The option `model_confidence=linear_norm` is deprecated and will be removed in Rasa Open Source `3.0.0`.
 
-  Rasa Pro `2.3.0` introduced `linear_norm` as a possible value for `model_confidence`
+  Rasa Open Source `2.3.0` introduced `linear_norm` as a possible value for `model_confidence`
   parameter in machine learning components such as `DIETClassifier`, `ResponseSelector` and `TEDPolicy`.
   Based on user feedback, we have identified multiple problems with this option.
   Therefore, `model_confidence=linear_norm` is now deprecated and
-  will be removed in Rasa Pro `3.0.0`. If you were using `model_confidence=linear_norm` for any of the mentioned components,
+  will be removed in Rasa Open Source `3.0.0`. If you were using `model_confidence=linear_norm` for any of the mentioned components,
   we recommend to revert it back to `model_confidence=softmax` and re-train the assistant. After re-training,
   we also recommend to [re-tune the thresholds for fallback components](https://rasa.com/docs/rasa-pro/nlu-based-assistants/fallback-handoff#fallbacks).
 - [#9091](https://github.com/rasahq/rasa/issues/9091): The fallback mechanism for spaCy models has now been removed in Rasa `3.0.0`.
 
-  Rasa Pro `2.5.0` introduced support for spaCy 3.0. This introduced a
+  Rasa Open Source `2.5.0` introduced support for spaCy 3.0. This introduced a
   breaking feature because models would no longer be manually linked. To make
   the transition smooth Rasa would rely on the `language` parameter in the
   `config.yml` to fallback to a medium spaCy model if no model was configured
-  for the `SpacyNLP` component. In Rasa Pro `3.0.0` and onwards the
+  for the `SpacyNLP` component. In Rasa Open Source `3.0.0` and onwards the
   `SpacyNLP` component will require the model name (like `"en_core_web_md"`)
   to be passed explicitly.
 
@@ -2115,7 +2115,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
   - If a test story contains `action_unlikely_intent` and the policy ensemble does not trigger it, this leads to
     a test error (wrongly predicted action) and the corresponding story will be logged in `failed_test_stories.yml`.
-  - If the story does not contain `action_unlikely_intent` and Rasa Pro does predict it then
+  - If the story does not contain `action_unlikely_intent` and Rasa Open Source does predict it then
     the prediction of `action_unlikely_intent` will be ignored for the evaluation (and hence not lead
     to a prediction error) but the story will be logged in a file called `stories_with_warnings.yml`.
 
@@ -2125,7 +2125,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
   :::caution
   The introduction of a new default action **breaks backward compatibility of previously trained models**.
-  It is not possible to load models trained with previous versions of Rasa Pro. Please re-train
+  It is not possible to load models trained with previous versions of Rasa Open Source. Please re-train
   your assistant before trying to use this version.
 
   :::
@@ -2278,7 +2278,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   Please see the [migration guide](https://rasa.com/docs/rasa-pro/migration-guide) for more information.
 - [#8428](https://github.com/rasahq/rasa/issues/8428): `rasa.data.get_test_directory`, `rasa.data.get_core_nlu_directories`, and
   `rasa.shared.nlu.training_data.training_data.TrainingData::get_core_nlu_directories`
-  are deprecated and will be removed in Rasa Pro 3.0.0.
+  are deprecated and will be removed in Rasa Open Source 3.0.0.
 - [#8498](https://github.com/rasahq/rasa/issues/8498): Update the minimum compatible model version to "2.6.0".
   This means all models trained with an earlier version will have to be retrained.
 
@@ -2406,7 +2406,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
   Fix boolean casting issue for `force_training` and `save_to_default_model_directory` arguments
 - [#7477](https://github.com/rasahq/rasa/issues/7477): Add minimum compatible version to --version command
-- [#7660](https://github.com/rasahq/rasa/issues/7660): Updated warning for unexpected slot events during prediction time to Rasa Pro
+- [#7660](https://github.com/rasahq/rasa/issues/7660): Updated warning for unexpected slot events during prediction time to Rasa Open Source
   2.0 YAML training data format.
 - [#7701](https://github.com/rasahq/rasa/issues/7701): Hide dialogue turns predicted by `RulePolicy` in the tracker states
   for ML-only policies like `TEDPolicy`
@@ -2484,24 +2484,24 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
 ### Deprecations and Removals
 - [#6484](https://github.com/rasahq/rasa/issues/6484): NLG Server
-  - Changed request format to send `response` as well as `template` as a field. The `template` field will be removed in Rasa Pro 3.0.0.
+  - Changed request format to send `response` as well as `template` as a field. The `template` field will be removed in Rasa Open Source 3.0.0.
 
   `rasa.core.agent`
-  - The terminology `template` is deprecated and replaced by `response`. Support for `template` from the NLG response will be removed in Rasa Pro 3.0.0. Please see [here](https://rasa.com/docs/rasa-pro/production/nlg) for more details.
+  - The terminology `template` is deprecated and replaced by `response`. Support for `template` from the NLG response will be removed in Rasa Open Source 3.0.0. Please see [here](https://rasa.com/docs/rasa-pro/production/nlg) for more details.
 
   `rasa.core.nlg.generator`
   - `generate()` now takes in  `utter_action` as a parameter.
-  - The terminology `template` is deprecated and replaced by `response`. Support for `template` in the `NaturalLanguageGenerator` will be removed in Rasa Pro 3.0.0.
+  - The terminology `template` is deprecated and replaced by `response`. Support for `template` in the `NaturalLanguageGenerator` will be removed in Rasa Open Source 3.0.0.
 
   `rasa.shared.core.domain`
-  - The property `templates` is deprecated. Use `responses` instead. It will be removed in Rasa Pro 3.0.0.
-  - `retrieval_intent_templates` will be removed in Rasa Pro 3.0.0. Please use `retrieval_intent_responses` instead.
-  - `is_retrieval_intent_template` will be removed in Rasa Pro 3.0.0. Please use `is_retrieval_intent_response` instead.
-  - `check_missing_templates` will be removed in Rasa Pro 3.0.0. Please use `check_missing_responses` instead.
+  - The property `templates` is deprecated. Use `responses` instead. It will be removed in Rasa Open Source 3.0.0.
+  - `retrieval_intent_templates` will be removed in Rasa Open Source 3.0.0. Please use `retrieval_intent_responses` instead.
+  - `is_retrieval_intent_template` will be removed in Rasa Open Source 3.0.0. Please use `is_retrieval_intent_response` instead.
+  - `check_missing_templates` will be removed in Rasa Open Source 3.0.0. Please use `check_missing_responses` instead.
 
   Response Selector
-  - The field `template_name` will be deprecated in Rasa Pro 3.0.0. Please use `utter_action` instead. Please see [here](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#selectors) for more details.
-  - The field `response_templates` will be deprecated in Rasa Pro 3.0.0. Please use `responses` instead. Please see [here](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#selectors) for more details.
+  - The field `template_name` will be deprecated in Rasa Open Source 3.0.0. Please use `utter_action` instead. Please see [here](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#selectors) for more details.
+  - The field `response_templates` will be deprecated in Rasa Open Source 3.0.0. Please use `responses` instead. Please see [here](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#selectors) for more details.
 
 ### Improvements
 - [#7022](https://github.com/rasahq/rasa/issues/7022): The following endpoints now require the existence of the conversation for the specified conversation ID, raising an exception and returning a 404 status code.
@@ -2521,10 +2521,10 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
     If you want to use Tensorboard for `DIETClassifier`, `ResponseSelector`, or `TEDPolicy` and log metrics after
     every (mini)batch, please use 'batch' instead of 'minibatch' as 'tensorboard_log_level'.
 - [#7578](https://github.com/rasahq/rasa/issues/7578): When `TED` is configured to extract entities `rasa test` now evaluates them against the labels in the test stories. Results are saved in `/results` along with the results for the NLU components that extract entities.
-- [#7680](https://github.com/rasahq/rasa/issues/7680): We're now running integration tests for Rasa Pro, with initial coverage for `SQLTrackerStore` (with PostgreSQL),
+- [#7680](https://github.com/rasahq/rasa/issues/7680): We're now running integration tests for Rasa Open Source, with initial coverage for `SQLTrackerStore` (with PostgreSQL),
   `RedisLockStore` (with Redis) and `PikaEventBroker` (with RabbitMQ). The integration tests are now part of our
   CI, and can also be ran locally using `make test-integration`
-  (see [Rasa Pro README](https://github.com/RasaHQ/rasa#running-the-integration-tests) for more information).
+  (see [Rasa Open Source README](https://github.com/RasaHQ/rasa#running-the-integration-tests) for more information).
 - [#7763](https://github.com/rasahq/rasa/issues/7763): Allow tests to be located anywhere, not just in `tests` directory.
 - [#7893](https://github.com/rasahq/rasa/issues/7893): Model configuration files are now validated whether they match the expected schema.
 - [#7952](https://github.com/rasahq/rasa/issues/7952): Speed up `YAMLStoryReader.is_key_in_yaml` function by making it to check if key is in YAML without
@@ -2613,7 +2613,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
 
 ### Bugfixes
-- [#8014](https://github.com/rasahq/rasa/issues/8014): Setting `model_confidence=cosine` in `DIETClassifier`, `ResponseSelector` and `TEDPolicy` is deprecated and will no longer be available. This was introduced in Rasa Pro version `2.3.0` but post-release experiments suggest that using cosine similarity as model's confidences can change the ranking of predicted labels which is wrong.
+- [#8014](https://github.com/rasahq/rasa/issues/8014): Setting `model_confidence=cosine` in `DIETClassifier`, `ResponseSelector` and `TEDPolicy` is deprecated and will no longer be available. This was introduced in Rasa Open Source version `2.3.0` but post-release experiments suggest that using cosine similarity as model's confidences can change the ranking of predicted labels which is wrong.
 
   `model_confidence=inner` is deprecated and is replaced by `model_confidence=linear_norm` as the former produced an unbounded range of confidences which broke the logic of assistants in various other places.
 
@@ -2625,7 +2625,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   ```
   This should ease up [tuning fallback thresholds](https://rasa.com/docs/rasa-pro/nlu-based-assistants/fallback-handoff#fallbacks) as confidences for wrong predictions are better distributed across the range `[0, 1]`.
 
-  If you trained a model with `model_confidence=cosine` or `model_confidence=inner` setting using previous versions of Rasa Pro, please re-train by either removing the `model_confidence` option from the configuration or setting it to `linear_norm`.
+  If you trained a model with `model_confidence=cosine` or `model_confidence=inner` setting using previous versions of Rasa Open Source, please re-train by either removing the `model_confidence` option from the configuration or setting it to `linear_norm`.
 
   `model_confidence=cosine` is removed from the configuration generated by [auto-configuration](https://rasa.com/docs/rasa-pro/nlu-based-assistants/model-configuration#suggested-config).
 
@@ -2710,14 +2710,14 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 - [#7616](https://github.com/rasahq/rasa/issues/7616): Added two new parameters `constrain_similarities` and `model_confidence` to machine learning (ML) components - [DIETClassifier](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#dietclassifier), [ResponseSelector](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#dietclassifier) and [TEDPolicy](https://rasa.com/docs/rasa-pro/nlu-based-assistants/policies#ted-policy).
 
   Setting `constrain_similarities=True` adds a sigmoid cross-entropy loss on all similarity values to restrict them to an approximate range in `DotProductLoss`. This should help the models to perform better on real world test sets.
-  By default, the parameter is set to `False` to preserve the old behaviour, but users are encouraged to set it to `True` and re-train their assistants as it will be set to `True` by default from Rasa Pro 3.0.0 onwards.
+  By default, the parameter is set to `False` to preserve the old behaviour, but users are encouraged to set it to `True` and re-train their assistants as it will be set to `True` by default from Rasa Open Source 3.0.0 onwards.
 
   Parameter `model_confidence` affects how model's confidence for each label is computed during inference. It can take three values:
   1. `softmax` - Similarities between input and label embeddings are post-processed with a softmax function, as a result of which confidence for all labels sum up to 1.
   2. `cosine` - Cosine similarity between input label embeddings. Confidence for each label will be in the range `[-1,1]`.
   3. `inner` - Dot product similarity between input and label embeddings. Confidence for each label will be in an unbounded range.
 
-  Setting `model_confidence=cosine` should help users tune the fallback thresholds of their assistant better. The default value is `softmax` to preserve the old behaviour, but we recommend using `cosine` as that will be the new default value from Rasa Pro 3.0.0 onwards. The value of this option does not affect how confidences are computed for entity predictions in `DIETClassifier` and `TEDPolicy`.
+  Setting `model_confidence=cosine` should help users tune the fallback thresholds of their assistant better. The default value is `softmax` to preserve the old behaviour, but we recommend using `cosine` as that will be the new default value from Rasa Open Source 3.0.0 onwards. The value of this option does not affect how confidences are computed for entity predictions in `DIETClassifier` and `TEDPolicy`.
 
   With both the above recommendations, users should configure their ML component, e.g. `DIETClassifier`, as
   ```yaml
@@ -2728,11 +2728,11 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   ```
   Once the assistant is re-trained with the above configuration, users should also tune fallback confidence thresholds.
 
-  Configuration option `loss_type=softmax` is now deprecated and will be removed in Rasa Pro 3.0.0 . Use `loss_type=cross_entropy` instead.
+  Configuration option `loss_type=softmax` is now deprecated and will be removed in Rasa Open Source 3.0.0 . Use `loss_type=cross_entropy` instead.
 
   The default [auto-configuration](https://rasa.com/docs/rasa-pro/nlu-based-assistants/model-configuration#suggested-config) is changed to use `constrain_similarities=True` and `model_confidence=cosine` in ML components so that new users start with the recommended configuration.
 
-  **EDIT**: Some post-release experiments revealed that using `model_confidence=cosine` is wrong as it can change the order of predicted labels. That's why this option was removed in Rasa Pro version `2.3.3`. `model_confidence=inner` is deprecated as it produces an unbounded range of confidences which can break the logic of assistants in various other places. Please use `model_confidence=linear_norm` which will produce a linearly normalized version of dot product similarities with each value in the range `[0,1]`. Please read more about this change under the notes for release `2.3.4`.
+  **EDIT**: Some post-release experiments revealed that using `model_confidence=cosine` is wrong as it can change the order of predicted labels. That's why this option was removed in Rasa Open Source version `2.3.3`. `model_confidence=inner` is deprecated as it produces an unbounded range of confidences which can break the logic of assistants in various other places. Please use `model_confidence=linear_norm` which will produce a linearly normalized version of dot product similarities with each value in the range `[0,1]`. Please read more about this change under the notes for release `2.3.4`.
 
 - [#7817](https://github.com/rasahq/rasa/issues/7817): Use simple random uniform distribution of integers in negative sampling, because
   negative sampling with `tf.while_loop` and random shuffle inside creates a memory leak.
@@ -2863,7 +2863,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
 
 ### Bugfixes
-- [#7592](https://github.com/rasahq/rasa/issues/7592): Fixed incompatibility between Rasa Pro 2.2.x and Rasa X < 0.35.
+- [#7592](https://github.com/rasahq/rasa/issues/7592): Fixed incompatibility between Rasa Open Source 2.2.x and Rasa X < 0.35.
 
 
 ## [2.2.1] - 2020-12-17
@@ -2887,10 +2887,10 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
 
 ### Deprecations and Removals
-- [#6410](https://github.com/rasahq/rasa/issues/6410): `Domain.random_template_for` is deprecated and will be removed in Rasa Pro
+- [#6410](https://github.com/rasahq/rasa/issues/6410): `Domain.random_template_for` is deprecated and will be removed in Rasa Open Source
   3.0.0. You can alternatively use the `TemplatedNaturalLanguageGenerator`.
 
-  `Domain.action_names` is deprecated and will be removed in Rasa Pro
+  `Domain.action_names` is deprecated and will be removed in Rasa Open Source
   3.0.0. Please use `Domain.action_names_or_texts` instead.
 - [#7458](https://github.com/rasahq/rasa/issues/7458): Interfaces for `Policy.__init__` and `Policy.load` have changed.
   See [migration guide](https://rasa.com/docs/rasa-pro/migration-guide#rasa-21-to-rasa-22) for details.
@@ -2899,7 +2899,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   - reading and writing of NLU data in Markdown format
   - reading and writing of retrieval intent data in Markdown format
 
-  Support for Markdown data will be removed entirely in Rasa Pro 3.0.0.
+  Support for Markdown data will be removed entirely in Rasa Open Source 3.0.0.
 
   Please convert your existing Markdown data by using the commands
   from the [migration guide](https://rasa.com/docs/rasa-pro/migration-guide#rasa-21-to-rasa-22):
@@ -2939,7 +2939,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   model training ([`POST /model/train`](/pages/http-api#operation/trainModel))
   asynchronously.
   To trigger asynchronous processing specify
-  a callback URL in the query parameter `callback_url` which Rasa Pro should send
+  a callback URL in the query parameter `callback_url` which Rasa Open Source should send
   the results to. This URL will also be called in case of errors.
 - [#7496](https://github.com/rasahq/rasa/issues/7496): Make [TED Policy](https://rasa.com/docs/rasa-pro/nlu-based-assistants/policies#ted-policy) an end-to-end policy. Namely, make it possible to train TED on stories that contain
   intent and entities or user text and bot actions or bot text.
@@ -3022,8 +3022,8 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
 ### Improvements
 - [#7426](https://github.com/rasahq/rasa/issues/7426): Removed `multidict` from the project dependencies. `multidict` continues to be a second
-  order dependency of Rasa Pro but will be determined by the dependencies which
-  use it instead of by Rasa Pro directly.
+  order dependency of Rasa Open Source but will be determined by the dependencies which
+  use it instead of by Rasa Open Source directly.
 
   This resolves issues like the following:
 
@@ -3049,7 +3049,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 - [#7235](https://github.com/rasahq/rasa/issues/7235): Slots that use `initial_value` won't cause rule contradiction errors when `conversation_start: true` is used. Previously, two rules that differed only in their use of `conversation_start` would be flagged as contradicting when a slot used `initial_value`.
 
   In checking for incomplete rules, an action will be required to have set _only_ those slots that the same action has set in another rule. Previously, an action was expected to have set also slots which, despite being present after this action in another rule, were not actually set by this action.
-- [#7345](https://github.com/rasahq/rasa/issues/7345): Fixed Rasa Pro not being able to fetch models from certain URLs.
+- [#7345](https://github.com/rasahq/rasa/issues/7345): Fixed Rasa Open Source not being able to fetch models from certain URLs.
 
 
 ## [2.1.1] - 2020-11-23
@@ -3065,7 +3065,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 ### Deprecations and Removals
 - [#7136](https://github.com/rasahq/rasa/issues/7136): The [`Policy`](https://rasa.com/docs/rasa-pro/nlu-based-assistants/policies) interface was changed to return a `PolicyPrediction` object when
   `predict_action_probabilities` is called. Returning a list of probabilities directly
-  is deprecated and support for this will be removed in Rasa Pro 3.0.
+  is deprecated and support for this will be removed in Rasa Open Source 3.0.
 
   You can adapt your custom policy by wrapping your probabilities in a `PolicyPrediction`
   object:
@@ -3088,7 +3088,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   The same change was applied to the `PolicyEnsemble` interface. Instead of returning
   a tuple of action probabilities and policy name, it is now returning a
   `PolicyPrediction` object. Support for the old `PolicyEnsemble` interface will be
-  removed in Rasa Pro 3.0.
+  removed in Rasa Open Source 3.0.
 
   :::caution
   This change is model-breaking. Please retrain your models.
@@ -3112,7 +3112,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   Support for `RABBITMQ_SSL_KEY_PASSWORD` was removed entirely.
 
   The method [`Event Broker.close`](https://rasa.com/docs/rasa-pro/production/event-brokers) was changed to be asynchronous.
-  Support for synchronous implementations will be removed in Rasa Pro 3.0.0.
+  Support for synchronous implementations will be removed in Rasa Open Source 3.0.0.
   To adapt your implementation add the `async` keyword:
 
   ```python
@@ -3160,7 +3160,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 - [#6474](https://github.com/rasahq/rasa/issues/6474): Adapt the training data reader and emulator for wit.ai to their latest format.
   Update the instructions in the
   migrate from wit.ai documentation
-  to run Rasa Pro in wit.ai emulation mode.
+  to run Rasa Open Source in wit.ai emulation mode.
 - [#6498](https://github.com/rasahq/rasa/issues/6498): Adding configurable prefixes to Redis [Tracker](https://rasa.com/docs/rasa-pro/production/tracker-stores) and [Lock Stores](https://rasa.com/docs/rasa-pro/production/lock-stores) so that a single Redis instance (and logical DB) can support multiple conversation trackers and locks.
   By default, conversations will be prefixed with `tracker:...` and all locks prefixed with `lock:...`. Additionally, you can add an alphanumeric-only `prefix: value` in `endpoints.yml` such that keys in redis will take the form `value:tracker:...` and `value:lock:...` respectively.
 - [#6571](https://github.com/rasahq/rasa/issues/6571): Log the model's relative path when using CLI commands.
@@ -3206,7 +3206,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
   Specifying the `retrieve_events_from_previous_conversation_sessions`
   kwarg for the [Tracker Store](https://rasa.com/docs/rasa-pro/production/tracker-stores) class is deprecated and will be
-  removed in Rasa Pro 3.0. Please use the `retrieve_full_tracker()` method
+  removed in Rasa Open Source 3.0. Please use the `retrieve_full_tracker()` method
   instead.
 - [#6865](https://github.com/rasahq/rasa/issues/6865): Improve the `rasa data convert nlg` command and introduce the `rasa data convert responses` command
   to simplify the migration from pre-2.0 response selector format to the new format.
@@ -3242,7 +3242,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
   The action for [forms](https://rasa.com/docs/rasa-pro/nlu-based-assistants/forms) can now be overridden by defining a custom action
   with the same name as the form. This can be used to keep using the deprecated
-  Rasa Pro `FormAction` which is implemented within the Rasa SDK. Note that it is
+  Rasa Open Source `FormAction` which is implemented within the Rasa SDK. Note that it is
   **not** recommended to override the form action for anything else than using the
   deprecated Rasa SDK `FormAction`.
 - [#7102](https://github.com/rasahq/rasa/issues/7102): Changed the default model weights loaded for `HFTransformersNLP` component.
@@ -3335,7 +3335,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
 ### Bugfixes
 - [#5974](https://github.com/rasahq/rasa/issues/5974): `ActionRestart` will now trigger `ActionSessionStart` as a followup action.
-- [#7317](https://github.com/rasahq/rasa/issues/7317): Fixed Rasa Pro not being able to fetch models from certain URLs.
+- [#7317](https://github.com/rasahq/rasa/issues/7317): Fixed Rasa Open Source not being able to fetch models from certain URLs.
 
   This addresses an issue introduced in 2.0.3 where `rasa-production` could not use the models from `rasa-x` in Rasa X server mode.
 - [#7316](https://github.com/rasahq/rasa/issues/7316): `SingleStateFeaturizer` checks whether it was trained with `RegexInterpreter` as
@@ -3435,7 +3435,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   JSON payload when training a model using `POST /model/train` is now deprecated.
   Please use the query parameters `force_training` and `save_to_default_model_directory`
   instead. See the [API documentation](/pages/http-api) for more information.
-- [#6409](https://github.com/rasahq/rasa/issues/6409): The conversation event `form` was renamed to `active_loop`. Rasa Pro
+- [#6409](https://github.com/rasahq/rasa/issues/6409): The conversation event `form` was renamed to `active_loop`. Rasa Open Source
   will continue to be able to read and process old `form` events. Note that
   serialized trackers will no longer have the `active_form` field. Instead the
   `active_loop` field will contain the same information. Story representations
@@ -3476,11 +3476,11 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
   Please check the documentation for more information.
 - [#6463](https://github.com/rasahq/rasa/issues/6463): The conversation event `form_validation` was renamed to `loop_interrupted`.
-  Rasa Pro will continue to be able to read and process old `form_validation`
+  Rasa Open Source will continue to be able to read and process old `form_validation`
   events.
 - [#6658](https://github.com/rasahq/rasa/issues/6658): `SklearnPolicy` was deprecated. `TEDPolicy` is the preferred machine-learning policy for dialogue models.
 - [#6809](https://github.com/rasahq/rasa/issues/6809): [Slots](https://rasa.com/docs/rasa-pro/nlu-based-assistants/domain#slots) of type `unfeaturized` are
-  now deprecated and will be removed in Rasa Pro 3.0. Instead you should use
+  now deprecated and will be removed in Rasa Open Source 3.0. Instead you should use
   the property `influence_conversation: false` for every slot type as described in the
   [migration guide](https://rasa.com/docs/rasa-pro/migration-guide#unfeaturized-slots).
 - [#6934](https://github.com/rasahq/rasa/issues/6934): [Conversation sessions](https://rasa.com/docs/rasa-pro/nlu-based-assistants/domain#session-configuration) are now enabled by default
@@ -3557,7 +3557,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 - [#5957](https://github.com/rasahq/rasa/issues/5957): Add new entity extractor `RegexEntityExtractor`. The entity extractor extracts entities using the lookup tables
   and regexes defined in the training data. For more information see [RegexEntityExtractor](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#regexentityextractor).
 - [#5996](https://github.com/rasahq/rasa/issues/5996): Introduced a new `YAML` format for Core training data and implemented a parser
-  for it. Rasa Pro can now read stories in both `Markdown` and `YAML` format.
+  for it. Rasa Open Source can now read stories in both `Markdown` and `YAML` format.
 - [#6020](https://github.com/rasahq/rasa/issues/6020): You can now enable threaded message responses from Rasa through the Slack connector.
   This option is enabled using an optional configuration in the credentials.yml file
 
@@ -3574,7 +3574,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 - [#6066](https://github.com/rasahq/rasa/issues/6066): The NLU `interpreter` is now passed to the [Policies](https://rasa.com/docs/rasa-pro/nlu-based-assistants/policies) during training and
   inference time. Note that this requires an additional parameter `interpreter` in the
   method `predict_action_probabilities` of the `Policy` interface. In case a
-  custom `Policy` implementation doesn't provide this parameter Rasa Pro
+  custom `Policy` implementation doesn't provide this parameter Rasa Open Source
   will print a warning and omit passing the `interpreter`.
 - [#6088](https://github.com/rasahq/rasa/issues/6088): Added the new dialogue policy RulePolicy which will replace the old “rule-like”
   policies [Mapping Policy](https://rasa.com/docs/rasa/2.x/policies#mapping-policy),
@@ -3605,7 +3605,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
   The default value for `--domain` is still `domain.yml`.
 - [#6275](https://github.com/rasahq/rasa/issues/6275): Add optional metadata argument to `NaturalLanguageInterpreter`'s parse method.
-- [#6354](https://github.com/rasahq/rasa/issues/6354): The Rasa Pro API endpoint `POST /model/train` now supports training data in YAML
+- [#6354](https://github.com/rasahq/rasa/issues/6354): The Rasa Open Source API endpoint `POST /model/train` now supports training data in YAML
   format. Please specify the header `Content-Type: application/yaml` when
   training a model using YAML training data.
   See the [API documentation](/pages/http-api) for more information.
@@ -3793,7 +3793,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   Also, in order to keep the response templates more consistent, you should now add the `utter_` prefix to all response templates defined for retrieval intents. For example, a response template `chitchat/ask_name` becomes `utter_chitchat/ask_name`. Note that the NLU examples for this will still be under `chitchat/ask_name` intent.
   The example `responseselectorbot` should help clarify these changes further.
 - [#6613](https://github.com/rasahq/rasa/issues/6613): Added telemetry reporting. Rasa uses telemetry to report anonymous usage information.
-  This information is essential to help improve Rasa Pro for all users.
+  This information is essential to help improve Rasa Open Source for all users.
   Reporting will be opt-out. More information can be found in our
   [telemetry documentation](https://rasa.com/docs/rasa-pro/telemetry/telemetry).
 - [#6757](https://github.com/rasahq/rasa/issues/6757): Update `extract_other_slots` method inside `FormAction` to fill a slot from an entity
@@ -3813,7 +3813,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
   A new slot type [`any`](https://rasa.com/docs/rasa-pro/nlu-based-assistants/domain#any-slot) was added. Slots of this type can store
   any value. Slots of type `any` are always ignored during conversations.
-- [#6856](https://github.com/rasahq/rasa/issues/6856): Improved exception handling within Rasa Pro.
+- [#6856](https://github.com/rasahq/rasa/issues/6856): Improved exception handling within Rasa Open Source.
 
   All exceptions that are somewhat expected (e.g. errors in file formats like
   configurations or training data) will share a common base class
@@ -3962,7 +3962,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 ## [1.10.22] - 2021-02-05
 
 ### Bugfixes
-- [#7772](https://github.com/rasahq/rasa/issues/7754): Backported the Rasa Pro 2 `PikaEventBroker` implementation to address
+- [#7772](https://github.com/rasahq/rasa/issues/7754): Backported the Rasa Open Source 2 `PikaEventBroker` implementation to address
   problems when using it with multiple Sanic workers.
 
 ## [1.10.21] - 2021-02-01
@@ -4057,7 +4057,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   connection problems.
 
   Added a new parameter `socket_timeout` to the `RedisLockStore`. If Redis doesn't
-  answer within `socket_timeout` seconds to requests from Rasa Pro, an error
+  answer within `socket_timeout` seconds to requests from Rasa Open Source, an error
   is raised. This avoids seemingly infinitely blocking connections and exposes connection
   problems early.
 
@@ -4082,7 +4082,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
 ### Improvements
 
-- [#6255](https://github.com/rasahq/rasa/issues/6255): Rasa Pro will no longer add `responses` to the `actions` section of the
+- [#6255](https://github.com/rasahq/rasa/issues/6255): Rasa Open Source will no longer add `responses` to the `actions` section of the
   domain when persisting the domain as a file. This addresses related problems in Rasa X
   when Integrated Version Control introduced big diffs due to the added utterances
   in the `actions` section.
@@ -4154,7 +4154,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 * [#5972](https://github.com/rasahq/rasa/issues/5972): Remove the `clean_up_entities` method from the `DIETClassifier` and `CRFEntityExtractor` as it let to incorrect
   entity predictions.
 
-* [#5976](https://github.com/rasahq/rasa/issues/5976): Fix server crashes that occurred when Rasa Pro pulls a model from a
+* [#5976](https://github.com/rasahq/rasa/issues/5976): Fix server crashes that occurred when Rasa Open Source pulls a model from a
   [model server](https://rasa.com/docs/rasa-pro/production/model-storage#load-model-from-server) and an exception was thrown during
   model loading (such as a domain with invalid YAML).
 
@@ -4164,7 +4164,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
 * [#5521](https://github.com/rasahq/rasa/issues/5521): Responses used in ResponseSelector now support new lines with explicitly adding `\\n` between them.
 
-* [#5758](https://github.com/rasahq/rasa/issues/5758): Fixed a bug in [`rasa export`](https://rasa.com/docs/rasa-pro/command-line-interface#rasa-export)) which caused Rasa Pro to only migrate conversation events from the last [Session configuration](https://rasa.com/docs/rasa-pro/nlu-based-assistants/domain#session-configuration).
+* [#5758](https://github.com/rasahq/rasa/issues/5758): Fixed a bug in [`rasa export`](https://rasa.com/docs/rasa-pro/command-line-interface#rasa-export)) which caused Rasa Open Source to only migrate conversation events from the last [Session configuration](https://rasa.com/docs/rasa-pro/nlu-based-assistants/domain#session-configuration).
 
 ## [1.10.1] - 2020-05-15
 
@@ -4270,7 +4270,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 * [#5595](https://github.com/rasahq/rasa/issues/5595): Update `POST /model/train` endpoint to accept retrieval action responses
   at the `responses` key of the JSON payload.
 
-* [#5627](https://github.com/rasahq/rasa/issues/5627): All Rasa Pro images are now using Python 3.7 instead of Python 3.6.
+* [#5627](https://github.com/rasahq/rasa/issues/5627): All Rasa Open Source images are now using Python 3.7 instead of Python 3.6.
 
 * [#5635](https://github.com/rasahq/rasa/issues/5635): Update dependencies based on the `dependabot` check.
 
@@ -4401,7 +4401,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 ### Bugfixes
 
 * [#5492](https://github.com/rasahq/rasa/issues/5492): Fix an issue where the deprecated `queue` parameter for the [Pika Event Broker](https://rasa.com/docs/rasa-pro/production/event-brokers#pika-event-broker)
-  was ignored and Rasa Pro published the events to the `rasa_core_events`
+  was ignored and Rasa Open Source published the events to the `rasa_core_events`
   queue instead. Note that this does not change the fact that the `queue` argument
   is deprecated in favor of the `queues` argument.
 
