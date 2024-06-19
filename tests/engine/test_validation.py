@@ -1295,7 +1295,7 @@ def test_validate_routing_setup(router_component: Text, tmp_path: Path) -> None:
     model_configuration = recipe.graph_config_for_recipe(config, {})
 
     # When / Then - should not raise any errors
-    validate_coexistance_routing_setup(domain, model_configuration)
+    validate_coexistance_routing_setup(domain, model_configuration, FlowsList([]))
 
 
 def test_validate_llm_based_router_required_routing_setup(tmp_path: Path) -> None:
