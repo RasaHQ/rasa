@@ -26,6 +26,9 @@ if typing.TYPE_CHECKING:
     from rasa.shared.core.flows.flows_list import FlowsList
 
 
+FLOW_ID_REGEX = r"""^[a-zA-Z0-9_][a-zA-Z0-9_-]*?$"""
+
+
 class UnreachableFlowStepException(RasaException):
     """Raised when a flow step is unreachable."""
 
@@ -292,6 +295,21 @@ class SlotNamingException(RasaException):
         )
 
 
+class FlowIdNamingException(RasaException):
+    """Raised when a flow ID defined does not adhere to naming convention."""
+
+    def __init__(self, flow_id: str) -> None:
+        """Initializes the exception."""
+        self.flow_id = flow_id
+
+    def __str__(self) -> str:
+        """Return a string representation of the exception."""
+        return (
+            f"The flow ID was set to : {self.flow_id}, while it has "
+            f"to adhere to the following pattern: [a-zA-Z0-9_][a-zA-Z0-9_-]*?."
+        )
+
+
 def validate_flow(flow: Flow) -> None:
     """Validates the flow configuration.
 
@@ -308,6 +326,7 @@ def validate_flow(flow: Flow) -> None:
     validate_all_branches_have_an_else(flow)
     validate_not_using_builtin_ids(flow)
     validate_slot_names_to_be_collected(flow)
+    validate_flow_id(flow)
 
 
 def validate_flow_not_empty(flow: Flow) -> None:
@@ -492,3 +511,17 @@ def validate_slot_names_to_be_collected(flow: Flow) -> None:
             slot_name = step.collect
             if not slot_re.search(slot_name):
                 raise SlotNamingException(flow.id, step.id, slot_name)
+
+
+def validate_flow_id(flow: Flow) -> None:
+    """Validates if the flow id comply with a specified regex.
+    Flow IDs can start with an alphanumeric character or an underscore.
+    Followed by zero or more alphanumeric characters, hyphens, or underscores.
+    Args:
+        flow: The flow to validate.
+    Raises:
+        FlowIdNamingException: If the flow id does not comply with the regex.
+    """
+    flow_re = re.compile(FLOW_ID_REGEX)
+    if not flow_re.search(flow.id):
+        raise FlowIdNamingException(flow.id)

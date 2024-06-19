@@ -444,6 +444,12 @@ class DialogueStateTracker:
         return self._underlying_stack.copy()
 
     @property
+    def active_flow(self) -> Optional[Text]:
+        """Returns the name of the active flow."""
+        current_context = self.stack.current_context()
+        return current_context.get("flow_id")
+
+    @property
     def has_coexistence_routing_slot(self) -> bool:
         """Returns whether the coexistence routing slot is present."""
         if self.slots:

@@ -21,8 +21,9 @@ from rasa.dialogue_understanding.commands import (
     CannotHandleCommand,
 )
 from rasa.dialogue_understanding.generator.flow_retrieval import FlowRetrieval
-from rasa.dialogue_understanding.generator.llm_command_generator import (
-    LLMCommandGenerator,
+from rasa.dialogue_understanding.generator.single_step.single_step_llm_command_generator import (  # noqa: E501
+    SingleStepLLMCommandGenerator,
+    DEFAULT_COMMAND_PROMPT_TEMPLATE,
 )
 from rasa.dialogue_understanding.generator.constants import (
     FLOW_RETRIEVAL_KEY,
@@ -55,13 +56,13 @@ EXPECTED_RENDERED_FLOW_DESCRIPTION_PATH = (
 )
 
 
-class TestLLMCommandGenerator:
-    """Tests for the LLMCommandGenerator."""
+class TestSingleStepLLMCommandGenerator:
+    """Tests for the SingleStepLLMCommandGenerator."""
 
     @pytest.fixture
     def command_generator(self):
-        """Create an LLMCommandGenerator."""
-        return LLMCommandGenerator.create(
+        """Create an SingleStepLLMCommandGenerator."""
+        return SingleStepLLMCommandGenerator.create(
             config={}, resource=Mock(), model_storage=Mock(), execution_context=Mock()
         )
 
@@ -104,14 +105,70 @@ class TestLLMCommandGenerator:
             ],
         )
 
-    async def test_llm_command_generator_init_custom(
+    async def test_deprecation_warning_with_prompt(self, model_storage):
+        # Given
+        resource = Resource("llmcmdgen")
+        config = {"prompt": "data/test_prompt_templates/test_prompt.jinja2"}
+
+        # When
+        with patch(
+            "rasa.dialogue_understanding.generator.single_step.single_step_llm_command_generator.structlogger.warning"
+        ) as mock_warning:
+            SingleStepLLMCommandGenerator(
+                config,
+                model_storage,
+                resource,
+            )
+        mock_warning.assert_called_once_with(
+            "single_step_llm_command_generator.init",
+            event_info=(
+                "The config parameter 'prompt' is deprecated "
+                "and will be removed in Rasa 4.0.0. "
+                "Please use the config parameter 'prompt_template' instead. "
+            ),
+        )
+
+    async def test_prompt_template_handling(self, model_storage):
+        # Given
+        resource = Resource("llmcmdgen")
+        expected_template = "data/test_prompt_templates/test_prompt.jinja2"
+        config = {"prompt_template": expected_template}
+
+        # When
+        generator = SingleStepLLMCommandGenerator(
+            config,
+            model_storage,
+            resource,
+        )
+
+        # Then
+        assert generator.prompt_template.startswith("This is a test prompt.")
+
+    async def test_default_template_when_no_prompt_template_provided(
+        self, model_storage
+    ):
+        # Given
+        resource = Resource("llmcmdgen")
+        config = {}  # No prompt or prompt_template provided
+
+        # When
+        generator = SingleStepLLMCommandGenerator(
+            config,
+            model_storage,
+            resource,
+        )
+
+        # Then
+        assert generator.prompt_template == DEFAULT_COMMAND_PROMPT_TEMPLATE
+
+    async def test_single_step_llm_command_generator_init_custom(
         self,
         model_storage: ModelStorage,
     ) -> None:
         # Given
         resource = Resource("llmcmdgen")
         # When
-        generator = LLMCommandGenerator(
+        generator = SingleStepLLMCommandGenerator(
             {
                 "prompt": "data/test_prompt_templates/test_prompt.jinja2",
                 FLOW_RETRIEVAL_KEY: {FLOW_RETRIEVAL_ACTIVE_KEY: False},
@@ -123,12 +180,14 @@ class TestLLMCommandGenerator:
         assert generator.prompt_template.startswith("This is a test prompt.")
         assert generator.flow_retrieval is None
 
-    async def test_llm_command_generator_init_default(
+    async def test_single_step_llm_command_generator_init_default(
         self,
         model_storage: ModelStorage,
     ) -> None:
         # When
-        generator = LLMCommandGenerator({}, model_storage, Resource("llmcmdgen"))
+        generator = SingleStepLLMCommandGenerator(
+            {}, model_storage, Resource("llmcmdgen")
+        )
         # Then
         assert generator.prompt_template.startswith(
             "Your task is to analyze the current conversation"
@@ -152,14 +211,14 @@ class TestLLMCommandGenerator:
             ({"user_input": {}}, DEFAULT_MAX_USER_INPUT_CHARACTERS),
         ],
     )
-    def test_llm_command_generator_init_with_message_length_limit(
+    def test_single_step_llm_command_generator_init_with_message_length_limit(
         self,
         config: Dict[Text, Any],
         expected_limit: Optional[int],
         model_storage: ModelStorage,
         resource: Resource,
     ) -> None:
-        generator = LLMCommandGenerator(
+        generator = SingleStepLLMCommandGenerator(
             config,
             model_storage,
             resource,
@@ -167,7 +226,9 @@ class TestLLMCommandGenerator:
         assert generator.user_input_config.max_characters == expected_limit
 
     async def test_predict_commands_with_no_flows(
-        self, command_generator: LLMCommandGenerator, tracker: DialogueStateTracker
+        self,
+        command_generator: SingleStepLLMCommandGenerator,
+        tracker: DialogueStateTracker,
     ):
         """Test that predict_commands returns an empty list when flows is None."""
         # Given
@@ -180,7 +241,7 @@ class TestLLMCommandGenerator:
         assert not predicted_commands
 
     async def test_predict_commands_with_no_tracker(
-        self, command_generator: LLMCommandGenerator
+        self, command_generator: SingleStepLLMCommandGenerator
     ):
         """Test that predict_commands returns an empty list when tracker is None."""
         # When
@@ -192,7 +253,7 @@ class TestLLMCommandGenerator:
 
     async def test_predict_commands_sets_routing_slot(
         self,
-        command_generator: LLMCommandGenerator,
+        command_generator: SingleStepLLMCommandGenerator,
         flows: FlowsList,
         tracker_with_routing_slot: DialogueStateTracker,
     ):
@@ -227,13 +288,13 @@ class TestLLMCommandGenerator:
         ),
     )
     @patch(
-        "rasa.dialogue_understanding.generator.llm_command_generator"
-        ".LLMCommandGenerator"
+        "rasa.dialogue_understanding.generator.single_step.single_step_llm_command_generator"
+        ".SingleStepLLMCommandGenerator"
         ".render_template"
     )
     @patch(
-        "rasa.dialogue_understanding.generator.llm_command_generator"
-        ".LLMCommandGenerator"
+        "rasa.dialogue_understanding.generator.single_step.single_step_llm_command_generator"
+        ".SingleStepLLMCommandGenerator"
         ".invoke_llm"
     )
     async def test_predict_commands_calls_prompt_rendering_with_startable_flows_only(
@@ -242,7 +303,7 @@ class TestLLMCommandGenerator:
         mock_render_template: Mock,
         flow_guard_value: Any,
         expected_flow_ids: Set[Text],
-        command_generator: LLMCommandGenerator,
+        command_generator: SingleStepLLMCommandGenerator,
     ):
         # Given
         test_flows = flows_from_str(
@@ -279,7 +340,7 @@ class TestLLMCommandGenerator:
         # regardless of flow retrieval we want to make sure we are calling the
         # prompt rendering only with startable flows.
         config = {"flow_retrieval": {"active": False}}
-        command_generator = LLMCommandGenerator.create(
+        command_generator = SingleStepLLMCommandGenerator.create(
             config=config,
             resource=Mock(),
             model_storage=Mock(),
@@ -331,12 +392,12 @@ class TestLLMCommandGenerator:
         ],
     )
     @patch(
-        "rasa.dialogue_understanding.generator.llm_command_generator."
-        "LLMCommandGenerator.invoke_llm"
+        "rasa.dialogue_understanding.generator.single_step.single_step_llm_command_generator."
+        "SingleStepLLMCommandGenerator.invoke_llm"
     )
     @patch(
-        "rasa.dialogue_understanding.generator.llm_command_generator."
-        "LLMCommandGenerator.render_template"
+        "rasa.dialogue_understanding.generator.single_step.single_step_llm_command_generator."
+        "SingleStepLLMCommandGenerator.render_template"
     )
     @patch(
         "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.filter_flows"
@@ -348,7 +409,7 @@ class TestLLMCommandGenerator:
         mock_generate_action_list_using_llm: Mock,
         llm_response: Text,
         expected_commands: Command,
-        command_generator: LLMCommandGenerator,
+        command_generator: SingleStepLLMCommandGenerator,
         tracker_with_routing_slot: DialogueStateTracker,
     ):
         # Given
@@ -381,7 +442,7 @@ class TestLLMCommandGenerator:
     async def test_predict_commands_and_flow_retrieval_api_error_throws_exception(
         self,
         mock_flow_retrieval_filter_flows: Mock,
-        command_generator: LLMCommandGenerator,
+        command_generator: SingleStepLLMCommandGenerator,
         tracker_with_routing_slot: DialogueStateTracker,
     ) -> None:
         # Given
@@ -410,7 +471,7 @@ class TestLLMCommandGenerator:
 
     def test_render_template(
         self,
-        command_generator: LLMCommandGenerator,
+        command_generator: SingleStepLLMCommandGenerator,
     ):
         """Test that render_template renders the correct template string."""
         # Given
@@ -453,7 +514,7 @@ class TestLLMCommandGenerator:
 
     def test_render_template_call(
         self,
-        command_generator: LLMCommandGenerator,
+        command_generator: SingleStepLLMCommandGenerator,
     ):
         """Test that render_template renders the correct template string."""
         # Given
@@ -561,6 +622,18 @@ class TestLLMCommandGenerator:
                 "Clarify(some_flow, 02_benefits_learning_days)",
                 [ClarifyCommand(options=["02_benefits_learning_days", "some_flow"])],
             ),
+            # Clarify with single option is converted to a StartFlowCommand
+            ("Clarify(some_flow)", [StartFlowCommand(flow="some_flow")]),
+            # Clarify with multiple but same options is converted to a StartFlowCommand
+            (
+                "Clarify(some_flow, some_flow, some_flow, some_flow)",
+                [StartFlowCommand(flow="some_flow")],
+            ),
+            # Clarify with multiple but same options is converted to a StartFlowCommand
+            (
+                "Clarify(some_flow, some_flow)",
+                [StartFlowCommand(flow="some_flow")],
+            ),
         ],
     )
     def test_parse_commands_identifies_correct_command(
@@ -586,9 +659,11 @@ class TestLLMCommandGenerator:
             """
         )
         with patch.object(
-            LLMCommandGenerator, "get_nullable_slot_value", Mock(return_value=None)
+            SingleStepLLMCommandGenerator,
+            "get_nullable_slot_value",
+            Mock(return_value=None),
         ):
-            parsed_commands = LLMCommandGenerator.parse_commands(
+            parsed_commands = SingleStepLLMCommandGenerator.parse_commands(
                 input_action, Mock(), test_flows
             )
         # Then
@@ -605,7 +680,9 @@ class TestLLMCommandGenerator:
         prompt_file.write_text("This is a test prompt")
 
         config = {"prompt": str(prompt_file)}
-        generator = LLMCommandGenerator(config, model_storage, Resource("llmcmdgen"))
+        generator = SingleStepLLMCommandGenerator(
+            config, model_storage, Resource("llmcmdgen")
+        )
         fingerprint_1 = generator.fingerprint_addon(config)
 
         prompt_file.write_text("This is a test prompt. It has been changed.")
@@ -623,7 +700,9 @@ class TestLLMCommandGenerator:
         prompt_file.write_text("This is a test prompt")
 
         config = {"prompt": str(prompt_file)}
-        generator = LLMCommandGenerator(config, model_storage, Resource("llmcmdgen"))
+        generator = SingleStepLLMCommandGenerator(
+            config, model_storage, Resource("llmcmdgen")
+        )
 
         fingerprint_1 = generator.fingerprint_addon(config)
         fingerprint_2 = generator.fingerprint_addon(config)
@@ -634,7 +713,9 @@ class TestLLMCommandGenerator:
         self,
         model_storage: ModelStorage,
     ) -> None:
-        generator = LLMCommandGenerator({}, model_storage, Resource("llmcmdgen"))
+        generator = SingleStepLLMCommandGenerator(
+            {}, model_storage, Resource("llmcmdgen")
+        )
         fingerprint_1 = generator.fingerprint_addon({})
         fingerprint_2 = generator.fingerprint_addon({})
         assert fingerprint_1 is not None
@@ -648,7 +729,7 @@ class TestLLMCommandGenerator:
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         # Given
-        generator = LLMCommandGenerator(
+        generator = SingleStepLLMCommandGenerator(
             {FLOW_RETRIEVAL_KEY: {FLOW_RETRIEVAL_ACTIVE_KEY: False}},
             model_storage,
             resource,
@@ -670,7 +751,7 @@ class TestLLMCommandGenerator:
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         # Given
-        generator = LLMCommandGenerator(
+        generator = SingleStepLLMCommandGenerator(
             {},
             model_storage,
             resource,
@@ -693,7 +774,7 @@ class TestLLMCommandGenerator:
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         # Given
-        generator = LLMCommandGenerator(
+        generator = SingleStepLLMCommandGenerator(
             {},
             model_storage,
             resource,
@@ -715,7 +796,7 @@ class TestLLMCommandGenerator:
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         # Given
-        generator = LLMCommandGenerator(
+        generator = SingleStepLLMCommandGenerator(
             {FLOW_RETRIEVAL_KEY: {FLOW_RETRIEVAL_ACTIVE_KEY: False}},
             model_storage,
             resource,
@@ -724,7 +805,7 @@ class TestLLMCommandGenerator:
         domain.slots = []
         train_resource = generator.train(TrainingData(), flows, domain)
         # When
-        loaded = LLMCommandGenerator.load(
+        loaded = SingleStepLLMCommandGenerator.load(
             generator.config,
             model_storage,
             train_resource,
@@ -750,7 +831,7 @@ class TestLLMCommandGenerator:
     ) -> None:
         # Given
         config = {FLOW_RETRIEVAL_KEY: FlowRetrieval.get_default_config()}
-        generator = LLMCommandGenerator(
+        generator = SingleStepLLMCommandGenerator(
             config,
             model_storage,
             resource,
@@ -758,7 +839,7 @@ class TestLLMCommandGenerator:
         domain = Mock()
         train_resource = generator.train(TrainingData(), flows, domain)
         # When
-        loaded = LLMCommandGenerator.load(
+        loaded = SingleStepLLMCommandGenerator.load(
             generator.config,
             model_storage,
             train_resource,
@@ -790,10 +871,10 @@ class TestLLMCommandGenerator:
                 "data", "test_prompt_templates", "test_prompt.jinja2"
             )
         }
-        generator = LLMCommandGenerator(config, model_storage, resource)
+        generator = SingleStepLLMCommandGenerator(config, model_storage, resource)
         resource = generator.train(Mock(), FlowsList(underlying_flows=[]), Mock())
         # When
-        loaded = LLMCommandGenerator.load({}, model_storage, resource, Mock())
+        loaded = SingleStepLLMCommandGenerator.load({}, model_storage, resource, Mock())
         # Then
         assert loaded.prompt_template.startswith("This is a test prompt.")
 
@@ -809,16 +890,16 @@ class TestLLMCommandGenerator:
     ):
         # Given
         resource = Resource("llmcmdgen")
-        generator = LLMCommandGenerator({}, model_storage, resource)
+        generator = SingleStepLLMCommandGenerator({}, model_storage, resource)
         resource = generator.train(Mock(), FlowsList(underlying_flows=[]), Mock())
         # When
-        loaded = LLMCommandGenerator.load({}, model_storage, resource, Mock())
+        loaded = SingleStepLLMCommandGenerator.load({}, model_storage, resource, Mock())
         # Then
         assert loaded.prompt_template.startswith(
             "Your task is to analyze the current conversation"
         )
 
-    async def test_llm_command_generator_load_prompt_from_model_storage(
+    async def test_single_step_llm_command_generator_load_prompt_from_model_storage(
         self,
         model_storage: ModelStorage,
         tmp_path: Path,
@@ -834,17 +915,17 @@ class TestLLMCommandGenerator:
 
         # Persist the prompt file to the model storage.
         resource = Resource("llmcmdgen")
-        generator = LLMCommandGenerator(config, model_storage, resource)
+        generator = SingleStepLLMCommandGenerator(config, model_storage, resource)
         generator.persist()
 
         # Test loading the prompt from the model storage.
         # Case 1: No prompt in the config.
-        loaded = LLMCommandGenerator.load({}, model_storage, resource, Mock())
+        loaded = SingleStepLLMCommandGenerator.load({}, model_storage, resource, Mock())
         assert loaded.prompt_template == "This is a custom prompt"
         assert loaded.config["prompt"] is None
 
         # Case 2: Specifying a invalid prompt path in the config.
-        loaded = LLMCommandGenerator.load(
+        loaded = SingleStepLLMCommandGenerator.load(
             {"prompt": "test_prompt.jinja2"},
             model_storage,
             resource,

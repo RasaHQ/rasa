@@ -27,7 +27,7 @@ structlogger = structlog.get_logger()
 class DevelopmentInspectInput(SocketIOInput):
     """Internal Rasa Pro-only SocketIO-based channel.
 
-    It extends the Rasa Open Source SocketIO channel by
+    It extends the Rasa Pro SocketIO channel by
     adding the /inspect endpoint, which works hand in hand with `rasa inspect`.
     """
 

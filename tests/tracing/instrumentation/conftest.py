@@ -25,7 +25,7 @@ from rasa.core.actions.action import Action
 from rasa.core.agent import Agent
 from rasa.core.brokers.broker import EB, EventBroker
 from rasa.core.channels import OutputChannel, UserMessage
-from rasa.core.information_retrieval.information_retrieval import InformationRetrieval
+from rasa.core.information_retrieval import InformationRetrieval
 from rasa.core.lock import TicketLock
 from rasa.core.lock_store import LockStore
 from rasa.core.nlg import NaturalLanguageGenerator
@@ -33,9 +33,10 @@ from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import TrackerStore
 from rasa.dialogue_understanding.commands import Command, StartFlowCommand
-from rasa.dialogue_understanding.generator.llm_command_generator import (
+from rasa.dialogue_understanding.generator import (
     LLMCommandGenerator,
 )
+from rasa.dialogue_understanding.generator import MultiStepLLMCommandGenerator
 from rasa.dialogue_understanding.generator.nlu_command_adapter import NLUCommandAdapter
 from rasa.engine.caching import LocalTrainingCache, TrainingCache
 from rasa.engine.graph import (
@@ -328,6 +329,31 @@ class MockLLMCommandgenerator(LLMCommandGenerator):
         pass
 
 
+class MockMultiStepLLMCommandGenerator(MultiStepLLMCommandGenerator):
+    def __init__(
+        self,
+        config: Dict[str, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+    ) -> None:
+        self.fail_if_undefined("invoke_llm")
+        super().__init__(config, model_storage, resource)
+
+    def fail_if_undefined(self, method_name: Text) -> None:
+        if not (
+            hasattr(self.__class__.__base__, method_name)
+            and callable(getattr(self.__class__.__base__, method_name))
+        ):
+            pytest.fail(
+                f"method '{method_name}' not found in {self.__class__.__base__}. "
+                f"This likely means the method was renamed, which means the "
+                f"instrumentation needs to be adapted!"
+            )
+
+    async def invoke_llm(self, prompt: str) -> Optional[str]:
+        pass
+
+
 class MockCommand(Command):
     def __init__(self) -> None:
         pass
@@ -503,10 +529,14 @@ class MockInformationRetrieval(InformationRetrieval):
 
 class MockNLUCommandAdapter(NLUCommandAdapter):
     def __init__(
-        self, config: Dict[str, Any], model_storage: ModelStorage, resource: Resource
+        self,
+        config: Dict[str, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
     ) -> None:
         self.fail_if_undefined("predict_commands")
-        super().__init__(config, model_storage, resource)
+        super().__init__(config, model_storage, resource, execution_context)
 
     async def predict_commands(
         self,

@@ -20,7 +20,6 @@ from rasa.core.actions.action import (
     ActionDefaultAskAffirmation,
     ActionDefaultAskRephrase,
     ActionDefaultFallback,
-    ActionExecutionRejection,
     ActionRestart,
     ActionBotResponse,
     ActionRetrieveResponse,
@@ -32,6 +31,7 @@ from rasa.core.actions.action import (
     default_actions,
     ActionResetRouting,
 )
+from rasa.core.actions.action_exceptions import ActionExecutionRejection
 from rasa.core.actions.forms import FormAction
 from rasa.core.channels import CollectingOutputChannel, OutputChannel
 from rasa.core.channels.slack import SlackBot
@@ -165,8 +165,8 @@ async def test_remote_actions_are_compressed(
     monkeypatch: MonkeyPatch,
 ):
     endpoint = EndpointConfig("https://example.com/webhooks/actions")
-    remote_action = action.RemoteAction("my_action", endpoint)
     monkeypatch.setenv(COMPRESS_ACTION_SERVER_REQUEST_ENV_NAME, is_compression_enabled)
+    remote_action = action.RemoteAction("my_action", endpoint)
 
     with aioresponses() as mocked:
         mocked.post(
@@ -1192,12 +1192,14 @@ async def test_run_end_to_end_utterance_action():
     [
         (
             UserUttered(
+                "I am travelling to London.",
                 intent={"name": "inform"},
                 entities=[{"entity": "city", "value": "London"}],
             ),
             "location",
             "London",
             UserUttered(
+                "I am travelling to Berlin.",
                 intent={"name": "inform"},
                 entities=[{"entity": "city", "value": "Berlin"}],
             ),
@@ -1226,6 +1228,7 @@ async def test_run_end_to_end_utterance_action():
         ),
         (
             UserUttered(
+                text="I am travelling with Bob and Mary.",
                 intent={"name": "inform"},
                 entities=[
                     {"entity": "name", "value": "Bob"},
@@ -1235,6 +1238,7 @@ async def test_run_end_to_end_utterance_action():
             "guest_names",
             ["Bob", "Mary"],
             UserUttered(
+                text="I am travelling with John also.",
                 intent={"name": "inform"},
                 entities=[{"entity": "name", "value": "John"}],
             ),
@@ -1301,21 +1305,10 @@ async def test_action_extract_slots_predefined_mappings(
             domain,
         )
 
-    assert events == [SlotSet(slot_name, slot_value)]
+    assert SlotSet(slot_name, slot_value) in events
 
-    events.extend([user])
+    events.extend([BotUttered(), ActionExecuted("action_listen"), new_user])
     tracker.update_with_events(events)
-
-    new_events = await action_extract_slots.run(
-        CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.responses),
-        tracker,
-        domain,
-    )
-    assert new_events == [SlotSet(slot_name, slot_value)]
-
-    new_events.extend([BotUttered(), ActionExecuted("action_listen"), new_user])
-    tracker.update_with_events(new_events)
 
     updated_evts = await action_extract_slots.run(
         CollectingOutputChannel(),
@@ -1324,7 +1317,7 @@ async def test_action_extract_slots_predefined_mappings(
         domain,
     )
 
-    assert updated_evts == [SlotSet(slot_name, updated_value)]
+    assert SlotSet(slot_name, updated_value) in updated_evts
 
 
 async def test_action_extract_slots_with_from_trigger_mappings():

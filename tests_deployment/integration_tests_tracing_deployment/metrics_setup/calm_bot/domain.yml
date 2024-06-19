@@ -7,11 +7,11 @@ slots:
   transfer_money_recipient:
     type: text
     mappings:
-      - type: custom
+      - type: from_llm
   transfer_money_amount_of_money:
     type: text
     mappings:
-      - type: custom
+      - type: from_llm
 
 responses:
   utter_ask_transfer_money_amount_of_money:

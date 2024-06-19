@@ -53,7 +53,7 @@ if typing.TYPE_CHECKING:
     from rasa.shared.nlu.training_data.training_data import TrainingData
     from rasa.shared.importers.importer import TrainingDataImporter
     from rasa.core.utils import AvailableEndpoints
-    from rasa.e2e_test.e2e_test_case import TestCase, Fixture
+    from rasa.e2e_test.e2e_test_case import TestCase, Fixture, Metadata
 
 logger = logging.getLogger(__name__)
 
@@ -132,6 +132,9 @@ TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_COMPLETED_EVENT = (
     "Enterprise Search Policy Training Completed"
 )
 TELEMETRY_ENTERPRISE_SEARCH_POLICY_PREDICT_EVENT = "Enterprise Search Policy Predicted"
+TELEMETRY_MULTI_STEP_LLM_COMMAND_GENERATOR_INITIALISED_EVENT = (
+    "MultiStepLLMCommandGenerator Initialised"
+)
 
 # used to calculate the context on the first call and cache it afterwards
 TELEMETRY_CONTEXT = None
@@ -155,6 +158,15 @@ NUM_CALL_STEPS = "num_call_steps"
 NUM_SHARED_SLOTS_BETWEEN_FLOWS = "num_shared_slots_between_flows"
 LLM_COMMAND_GENERATOR_MODEL_NAME = "llm_command_generator_model_name"
 LLM_COMMAND_GENERATOR_CUSTOM_PROMPT_USED = "llm_command_generator_custom_prompt_used"
+MULTI_STEP_LLM_COMMAND_GENERATOR_MODEL_NAME = (
+    "multi_step_llm_command_generator_model_name"
+)
+MULTI_STEP_LLM_COMMAND_GENERATOR_START_OR_END_FLOWS_PROMPT = (
+    "multi_step_llm_command_generator_custom_start_or_end_flows_prompt"
+)
+MULTI_STEP_LLM_COMMAND_GENERATOR_FILL_SLOTS_PROMPT = (
+    "multi_step_llm_command_generator_custom_fill_slots_prompt"
+)
 FLOW_RETRIEVAL_ENABLED = "flow_retrieval_enabled"
 FLOW_RETRIEVAL_EMBEDDING_MODEL_NAME = "flow_retrieval_embedding_model_name"
 TRACING_BACKEND = "tracing_backend"
@@ -166,7 +178,7 @@ def print_telemetry_reporting_info() -> None:
     """Print telemetry information to std out."""
     message = textwrap.dedent(
         f"""
-        Rasa Open Source reports anonymous usage telemetry to help improve the product
+        Rasa Pro reports anonymous usage telemetry to help improve the product
         for all its users.
 
         If you'd like to opt-out, you can use `rasa telemetry disable`.
@@ -344,7 +356,7 @@ def telemetry_write_key() -> Optional[Text]:
     """Read the Segment write key from the segment key text file.
 
     The segment key text file should by present only in wheel/sdist packaged
-    versions of Rasa Open Source. This avoids running telemetry locally when
+    versions of Rasa Pro. This avoids running telemetry locally when
     developing on Rasa or when running CI builds.
 
     In local development, this should always return `None` to avoid logging telemetry.
@@ -608,7 +620,7 @@ def _track(
 
     It is OK to use this function from outside telemetry.py, but note that it
     is recommended to create a new track_xyz() function for complex telemetry
-    events, or events that are generated from many parts of the Rasa Open Source code.
+    events, or events that are generated from many parts of the Rasa Pro code.
 
     Args:
         event_name: Name of the event.
@@ -1050,7 +1062,7 @@ def _get_llm_command_generator_config(config: Dict[str, Any]) -> Optional[Dict]:
     retrieval embedding model.
     """
     from rasa.dialogue_understanding.generator import LLMCommandGenerator
-    from rasa.dialogue_understanding.generator.llm_command_generator import (
+    from rasa.dialogue_understanding.generator.constants import (
         LLM_CONFIG_KEY,
         DEFAULT_LLM_CONFIG,
         FLOW_RETRIEVAL_KEY,
@@ -1388,7 +1400,9 @@ def track_markers_parsed_count(
 
 @ensure_telemetry_enabled
 def track_e2e_test_run(
-    input_test_cases: List["TestCase"], input_fixtures: List["Fixture"]
+    input_test_cases: List["TestCase"],
+    input_fixtures: List["Fixture"],
+    input_metadata: List["Metadata"],
 ) -> None:
     """Track an end-to-end test run."""
     _track(
@@ -1397,6 +1411,8 @@ def track_e2e_test_run(
             "number_of_test_cases": len(input_test_cases),
             "number_of_fixtures": len(input_fixtures),
             "uses_fixtures": len(input_fixtures) > 0,
+            "uses_metadata": len(input_metadata) > 0,
+            "number_of_metadata": len(input_metadata),
         },
     )
 
@@ -1624,5 +1640,22 @@ def track_enterprise_search_policy_predict(
             "llm_type": llm_type,
             "llm_model": llm_model,
             "citation_enabled": citation_enabled,
+        },
+    )
+
+
+@ensure_telemetry_enabled
+def track_multi_step_llm_command_generator_init(
+    llm_model_name: Optional[str],
+    handle_flows_prompt: Optional[str],
+    fill_slots_prompt: Optional[str],
+) -> None:
+    """Track MultiStepLLMCommandGenerator initialisation event."""
+    _track(
+        TELEMETRY_MULTI_STEP_LLM_COMMAND_GENERATOR_INITIALISED_EVENT,
+        {
+            MULTI_STEP_LLM_COMMAND_GENERATOR_MODEL_NAME: llm_model_name,
+            MULTI_STEP_LLM_COMMAND_GENERATOR_START_OR_END_FLOWS_PROMPT: handle_flows_prompt,  # noqa
+            MULTI_STEP_LLM_COMMAND_GENERATOR_FILL_SLOTS_PROMPT: fill_slots_prompt,
         },
     )

@@ -189,7 +189,7 @@ class ConveRTFeaturizer(DenseFeaturizer, GraphComponent):
                 f"Parameter 'model_url' of "
                 f"'{ConveRTFeaturizer.__name__}' was "
                 f"set to '{model_url}' which is strictly reserved for pytests of "
-                f"Rasa Open Source only. Due to licensing issues you are "
+                f"Rasa Pro only. Due to licensing issues you are "
                 f"not allowed to use the model from this URL. "
                 f"You can either use a community hosted URL or if you have a "
                 f"local copy of the model, pass the path to the directory "

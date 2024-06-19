@@ -278,8 +278,15 @@ def validate_files(
             validator, max_history, fail_on_warnings
         )
         valid_flows = validator.verify_flows()
+        valid_CALM_slot_mappings = validator.validate_CALM_slot_mappings()
 
-        all_good = valid_domain and valid_nlu and valid_stories and valid_flows
+        all_good = (
+            valid_domain
+            and valid_nlu
+            and valid_stories
+            and valid_flows
+            and valid_CALM_slot_mappings
+        )
 
     validator.warn_if_config_mandatory_keys_are_not_set()
 

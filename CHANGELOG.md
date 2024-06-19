@@ -10,6 +10,24 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.8.10] - 2024-06-19
+                        
+Rasa Pro 3.8.10 (2024-06-19)                             
+### Improvements
+- [#702](https://github.com/rasahq/rasa/issues/702): Added NLG validation to the rasa model training process.
+
+### Bugfixes
+- [#729](https://github.com/rasahq/rasa/issues/729): Fixes Clarify command being dropped by command processor due to presence of coexistence slot - `route_session_to_calm`
+- [#733](https://github.com/rasahq/rasa/issues/733): Fix validation for LLMBasedRouter to check only for calm_entry.sticky
+
+
+## [3.8.9] - 2024-06-14
+                       
+Rasa Pro 3.8.9 (2024-06-14)                            
+### Improvements
+- [#712](https://github.com/rasahq/rasa/issues/712): Add validations for flow ID to allow only alphanumeric characters, underscores, and hyphens except for the first character.
+
+
 ## [3.8.8] - 2024-06-07
                        
 Rasa Pro 3.8.8 (2024-06-07)                            
@@ -706,7 +724,7 @@ Rasa Pro 3.6.0 (2023-06-14)
   - anonymization orchestrator that orchestrates the execution of the anonymization rules and publishes
   the anonymized event to the matched Kafka topic.
   - anonymization pipeline that contains a list of orchestrators and is registered to a singleton provider component,
-  which gets invoked in hook calls in Rasa Open Source when the pipeline must be retrieved for anonymizing events and logs.
+  which gets invoked in hook calls in Rasa Pro when the pipeline must be retrieved for anonymizing events and logs.
 
   Please read through the PII Management section in the official documentation to learn how to get started.
 - [#685](https://github.com/rasahq/rasa-plus/issues/685): Implemented support for real time evaluation of Markers with the Analytics

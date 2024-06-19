@@ -11,6 +11,7 @@ from rasa.shared.core.events import (
 from rasa.e2e_test.e2e_test_case import (
     ActualStepOutput,
     Fixture,
+    Metadata,
     TestCase,
     TestStep,
 )
@@ -35,11 +36,23 @@ def test_create_test_fixture_from_dict_invalid() -> None:
         Fixture.from_dict({"some_fixture_name": {"slot_a": 1, "slot_b": "some_value"}})
 
 
-def test_create_test_step_user_from_dict() -> None:
+def test_create_test_metadata_from_dict() -> None:
+    """Test creating a test metadata from a dictionary."""
+    result = Metadata.from_dict({"some_metadata_name": {"os": "linux", "name": "Tom"}})
+    assert result.name == "some_metadata_name"
+    assert result.metadata == {"os": "linux", "name": "Tom"}
+
+
+@pytest.mark.parametrize(
+    "input, metadata_name",
+    [({"user": "Hi!"}, ""), ({"user": "Hi!", "metadata": "user_info"}, "user_info")],
+)
+def test_create_test_step_user_from_dict(input: Dict, metadata_name: str) -> None:
     """Test creating a test step from a dictionary."""
-    result = TestStep.from_dict({"user": "Hi!"})
+    result = TestStep.from_dict(input)
     assert result.text == "Hi!"
     assert result.actor == "user"
+    assert result.metadata_name == metadata_name
 
 
 def test_create_test_step_bot_from_dict() -> None:
@@ -88,6 +101,7 @@ def test_create_test_case_from_dict() -> None:
                 {"user": "Hi!"},
                 {"bot": "Hey! How are you?"},
             ],
+            "metadata": "some_metadata",
         }
     )
     assert result.name == "book_trip"
@@ -103,6 +117,7 @@ def test_create_test_case_from_dict() -> None:
     "input",
     [
         {"user": "Hi!"},
+        {"user": "Hi!", "metadata": "user_info"},
         {"bot": "Hi!"},
         {"utter": "utter_greet"},
         {"slot_was_set": {"slot_a": 1}},

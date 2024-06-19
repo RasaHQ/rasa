@@ -7,7 +7,9 @@ from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Tuple, Union
 import tiktoken
 from numpy import ndarray
 
-from rasa.core.actions.action import HTTPCustomActionExecutor, DirectCustomActionExecutor
+from rasa.core.actions.action import DirectCustomActionExecutor
+from rasa.core.actions.grpc_custom_action_executor import GRPCCustomActionExecutor
+from rasa.core.actions.http_custom_action_executor import HTTPCustomActionExecutor
 from rasa.core.agent import Agent
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels import UserMessage
@@ -16,9 +18,6 @@ from rasa.core.nlg.contextual_response_rephraser import ContextualResponseRephra
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import TrackerStore
 from rasa.dialogue_understanding.commands import Command
-from rasa.dialogue_understanding.generator.llm_command_generator import (
-    LLMCommandGenerator,
-)
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.engine.graph import GraphModelConfiguration, GraphNode, ExecutionContext
 from rasa.engine.training.graph_trainer import GraphTrainer
@@ -41,7 +40,10 @@ if TYPE_CHECKING:
     from rasa.core.policies.enterprise_search_policy import EnterpriseSearchPolicy
     from rasa.core.policies.intentless_policy import IntentlessPolicy
     from rasa.core.policies.policy import PolicyPrediction
-    from rasa.dialogue_understanding.generator.command_generator import CommandGenerator
+    from rasa.dialogue_understanding.generator import (
+        CommandGenerator,
+        LLMBasedCommandGenerator,
+    )
     from rasa.utils.endpoints import EndpointConfig
 
 # This file contains all attribute extractors for tracing instrumentation.
@@ -321,11 +323,11 @@ def extract_llm_config(self: Any, default_llm_config: Dict[str, Any]) -> Dict[st
     return attributes
 
 
-def extract_attrs_for_llm_command_generator(
-    self: LLMCommandGenerator,
+def extract_attrs_for_llm_based_command_generator(
+    self: "LLMBasedCommandGenerator",
     prompt: str,
 ) -> Dict[str, Any]:
-    from rasa.dialogue_understanding.generator.llm_command_generator import (
+    from rasa.dialogue_understanding.generator.constants import (
         DEFAULT_LLM_CONFIG,
     )
 
@@ -669,13 +671,13 @@ def extract_attrs_for_endpoint_config(
 
 
 def extract_attrs_for_custom_action_executor(
-    self: Union[HTTPCustomActionExecutor, DirectCustomActionExecutor],
+    self: Union[HTTPCustomActionExecutor, GRPCCustomActionExecutor, DirectCustomActionExecutor],
     tracker: DialogueStateTracker,
-    domain: Domain,
+    domain: Optional[Domain] = None,
 ) -> Dict[str, Any]:
     attrs: Dict[str, Any] = {
         "class_name": self.__class__.__name__,
-        "action_name": self.name(),
+        "action_name": self.action_name,
         "sender_id": tracker.sender_id,
     }
     return attrs

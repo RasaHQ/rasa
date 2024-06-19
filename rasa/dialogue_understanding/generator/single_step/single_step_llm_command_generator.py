@@ -1,7 +1,6 @@
 import importlib.resources
 import re
 import structlog
-from deprecated import deprecated  # type: ignore
 from typing import Dict, Any, List, Optional, Text
 
 import rasa.shared.utils.io
@@ -32,6 +31,7 @@ from rasa.engine.graph import ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.shared.core.domain import Domain
 from rasa.shared.constants import ROUTE_TO_CALM_SLOT
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -48,7 +48,8 @@ from rasa.utils.log_utils import log_llm
 COMMAND_PROMPT_FILE_NAME = "command_prompt.jinja2"
 
 DEFAULT_COMMAND_PROMPT_TEMPLATE = importlib.resources.read_text(
-    "rasa.dialogue_understanding.generator", "command_prompt_template.jinja2"
+    "rasa.dialogue_understanding.generator.single_step",
+    "command_prompt_template.jinja2",
 )
 
 structlogger = structlog.get_logger()
@@ -60,14 +61,8 @@ structlogger = structlog.get_logger()
     ],
     is_trainable=True,
 )
-@deprecated(
-    reason=(
-        "Instead use SingleStepLLMCommandGenerator from "
-        "rasa.dialogue_understanding.generator"
-    )
-)
-class LLMCommandGenerator(LLMBasedCommandGenerator):
-    """An LLM-based command generator."""
+class SingleStepLLMCommandGenerator(LLMBasedCommandGenerator):
+    """A single step LLM-based command generator."""
 
     def __init__(
         self,
@@ -78,11 +73,26 @@ class LLMCommandGenerator(LLMBasedCommandGenerator):
         **kwargs: Any,
     ) -> None:
         super().__init__(
-            config, model_storage, resource, prompt_template=prompt_template, **kwargs
+            config,
+            model_storage,
+            resource,
+            prompt_template=prompt_template,
+            **kwargs,
         )
 
+        # Set the prompt template
+        if config.get("prompt"):
+            structlogger.warning(
+                "single_step_llm_command_generator.init",
+                event_info=(
+                    "The config parameter 'prompt' is deprecated "
+                    "and will be removed in Rasa 4.0.0. "
+                    "Please use the config parameter 'prompt_template' instead. "
+                ),
+            )
+        config_prompt = config.get("prompt") or config.get("prompt_template") or None
         self.prompt_template = prompt_template or get_prompt_template(
-            config.get("prompt"),
+            config_prompt,
             DEFAULT_COMMAND_PROMPT_TEMPLATE,
         )
 
@@ -91,9 +101,10 @@ class LLMCommandGenerator(LLMBasedCommandGenerator):
     ### Implementations of LLMBasedCommandGenerator parent
     @staticmethod
     def get_default_config() -> Dict[str, Any]:
-        """The component's default config."""
+        """The component's default config (see parent class for full docstring)."""
         return {
-            "prompt": None,
+            "prompt": None,  # Legacy
+            "prompt_template": None,
             USER_INPUT_CONFIG_KEY: None,
             LLM_CONFIG_KEY: None,
             FLOW_RETRIEVAL_KEY: FlowRetrieval.get_default_config(),
@@ -107,7 +118,7 @@ class LLMCommandGenerator(LLMBasedCommandGenerator):
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> "LLMCommandGenerator":
+    ) -> "SingleStepLLMCommandGenerator":
         """Loads trained component (see parent class for full docstring)."""
         # load prompt template from the model storage.
         prompt_template = cls.load_prompt_template_from_model_storage(
@@ -138,6 +149,7 @@ class LLMCommandGenerator(LLMBasedCommandGenerator):
         message: Message,
         flows: FlowsList,
         tracker: Optional[DialogueStateTracker] = None,
+        domain: Optional[Domain] = None,
     ) -> List[Command]:
         """Predict commands using the LLM.
 
@@ -163,7 +175,7 @@ class LLMCommandGenerator(LLMBasedCommandGenerator):
         flow_prompt = self.render_template(message, tracker, filtered_flows, flows)
         log_llm(
             logger=structlogger,
-            log_module="LLMCommandGenerator",
+            log_module="SingleStepLLMCommandGenerator",
             log_event="llm_command_generator.predict_commands.prompt_rendered",
             prompt=flow_prompt,
         )
@@ -171,7 +183,7 @@ class LLMCommandGenerator(LLMBasedCommandGenerator):
         action_list = await self.invoke_llm(flow_prompt)
         log_llm(
             logger=structlogger,
-            log_module="LLMCommandGenerator",
+            log_module="SingleStepLLMCommandGenerator",
             log_event="llm_command_generator.predict_commands.actions_generated",
             action_list=action_list,
         )
@@ -195,7 +207,7 @@ class LLMCommandGenerator(LLMBasedCommandGenerator):
 
         log_llm(
             logger=structlogger,
-            log_module="LLMCommandGenerator",
+            log_module="SingleStepLLMCommandGenerator",
             log_event="llm_command_generator.predict_commands.finished",
             commands=commands,
         )
@@ -259,7 +271,9 @@ class LLMCommandGenerator(LLMBasedCommandGenerator):
                 valid_options = [
                     flow for flow in options if flow in flows.user_flow_ids
                 ]
-                if len(valid_options) >= 1:
+                if len(set(valid_options)) == 1:
+                    commands.extend(cls.start_flow_by_name(valid_options[0], flows))
+                elif len(valid_options) > 1:
                     commands.append(ClarifyCommand(valid_options))
 
         return commands
@@ -267,8 +281,9 @@ class LLMCommandGenerator(LLMBasedCommandGenerator):
     @classmethod
     def fingerprint_addon(cls: Any, config: Dict[str, Any]) -> Optional[str]:
         """Add a fingerprint of the knowledge base for the graph."""
+        config_prompt = config.get("prompt") or config.get("prompt_template") or None
         prompt_template = get_prompt_template(
-            config.get("prompt"),
+            config_prompt,
             DEFAULT_COMMAND_PROMPT_TEMPLATE,
         )
         return deep_container_fingerprint(prompt_template)
