@@ -1597,7 +1597,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
 ## [3.0.0] - 2021-11-23
 ### Deprecations and Removals
-- [#6487](https://github.com/rasahq/rasa/issues/6487): Remove backwards compatibility code with Rasa Pro 1.x, Rasa Enterprise 0.35, and other outdated
+- [#6487](https://github.com/rasahq/rasa/issues/6487): Remove backwards compatibility code with Rasa Open Source 1.x, Rasa Enterprise 0.35, and other outdated
   backwards compatibility code in `rasa.cli.x`, `rasa.core.utils`, `rasa.model_testing`, `rasa.model_training`
   and `rasa.shared.core.events`.
 - [#8569](https://github.com/rasahq/rasa/issues/8569): Removed Python 3.6 support as [it reaches its end of life in December 2021](https://www.python.org/dev/peps/pep-0494/#lifespan).
@@ -1680,9 +1680,9 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   Use `training_states_labels_and_entities` and `training_states_and_labels` instead.
 - [#9455](https://github.com/rasahq/rasa/issues/9455): Follow through on deprecation warning for `NGramFeaturizer`
 - [#9598](https://github.com/rasahq/rasa/issues/9598): The CLI commands `rasa data convert config` and `rasa data convert responses` which
-  converted from the Rasa Pro 1 to the Rasa Pro 2 formats were removed.
-  Please use a Rasa Pro 2 installation to convert your training data before
-  moving to Rasa Pro 3.
+  converted from the Rasa Open Source 1 to the Rasa Open Source 2 formats were removed.
+  Please use a Rasa Open Source 2 installation to convert your training data before
+  moving to Rasa Open Source 3.
 - [#9766](https://github.com/rasahq/rasa/issues/9766): `rasa.core.agent.Agent.visualize` was removed. Please use `rasa visualize` or
   `rasa.core.visualize.visualize` instead.
 - [#9972](https://github.com/rasahq/rasa/issues/9972): Removed slot auto-fill functionality, making the key invalid to use in the domain file.
