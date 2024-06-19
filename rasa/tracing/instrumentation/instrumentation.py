@@ -23,7 +23,8 @@ import rasa.shared.utils.io
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.trace import SpanKind, Tracer
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
-from rasa.core.actions.action import Action, RemoteAction
+from rasa.core.actions.action import Action, RemoteAction, CustomActionExecutor
+from rasa.core.actions.custom_action_executor import RetryCustomActionExecutor
 from rasa.core.agent import Agent
 from rasa.core.channels import OutputChannel
 from rasa.core.information_retrieval.information_retrieval import InformationRetrieval
@@ -283,6 +284,9 @@ def instrument(
     multi_step_llm_command_generator_class: Optional[
         Type[MultiStepLLMCommandGeneratorType]
     ] = None,
+    custom_action_executor_subclasses: Optional[
+        List[Type[CustomActionExecutor]]
+    ] = None,
 ) -> None:
     """Substitute methods to be traced by their traced counterparts.
 
@@ -323,6 +327,9 @@ def instrument(
     :param multi_step_llm_command_generator_class: The `MultiStepLLMCommandGenerator`
         to be instrumented. If `None` is given, no `MultiStepLLMCommandGenerator` will
         be instrumented.
+    :param custom_action_executor_subclasses: The subclasses of `CustomActionExecutor`
+    to be instrumented. If `None` is given, no subclass of `CustomActionExecutor`
+    will be instrumented.
     """
     if agent_class is not None and not class_is_instrumented(agent_class):
         _instrument_method(
@@ -520,6 +527,22 @@ def instrument(
             attribute_extractors.extract_attrs_for_endpoint_config,
             metrics_recorder=record_request_size_in_bytes,
         )
+
+    if custom_action_executor_subclasses:
+        for custom_action_executor_subclass in custom_action_executor_subclasses:
+            if (
+                custom_action_executor_subclass is not None
+                and not class_is_instrumented(custom_action_executor_subclass)
+            ):
+                _instrument_method(
+                    tracer_provider.get_tracer(
+                        custom_action_executor_subclass.__module__
+                    ),
+                    custom_action_executor_subclass,
+                    "run",
+                    attribute_extractors.extract_attrs_for_custom_action_executor,
+                )
+                mark_class_as_instrumented(custom_action_executor_subclass)
 
 
 def _instrument_nlu_command_adapter_predict_commands(
@@ -919,6 +942,13 @@ def _instrument_run_action(
                 "sender_id": tracker.sender_id,
                 "message_id": tracker.latest_message.message_id or "default",  # type: ignore[union-attr]
             }
+            if isinstance(action, RemoteAction):
+                if isinstance(action.executor, RetryCustomActionExecutor):
+                    attrs["executor_class_name"] = type(
+                        action.executor._custom_action_executor
+                    ).__name__
+                else:
+                    attrs["executor_class_name"] = type(action.executor).__name__
             with tracer.start_as_current_span(
                 f"{self.__class__.__name__}.{fn.__name__}",
                 kind=SpanKind.CLIENT,

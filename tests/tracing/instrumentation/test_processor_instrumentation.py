@@ -121,7 +121,10 @@ async def test_propagation_to_action_server(
     captured_span = captured_spans[-1]
 
     assert captured_span.name == "MockMessageProcessor._run_action"
-    assert captured_span.attributes == {"action_name": "custom_action"}
+    assert captured_span.attributes == {
+        "action_name": "custom_action",
+        "executor_class_name": "HTTPCustomActionExecutor",
+    }
 
     span_context: SpanContext = captured_span.get_span_context()  # type: ignore
 

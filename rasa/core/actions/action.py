@@ -1,6 +1,4 @@
-import abc
 import copy
-import json
 import logging
 from typing import (
     List,
@@ -14,18 +12,16 @@ from typing import (
     cast,
 )
 
-import aiohttp
-
 import rasa.core
 import rasa.shared.utils.io
-from rasa.core.actions.constants import DEFAULT_SELECTIVE_DOMAIN, SELECTIVE_DOMAIN
-from rasa.core.constants import (
-    DEFAULT_REQUEST_TIMEOUT,
-    COMPRESS_ACTION_SERVER_REQUEST_ENV_NAME,
-    DEFAULT_COMPRESS_ACTION_SERVER_REQUEST,
+from rasa.core.actions.custom_action_executor import (
+    CustomActionExecutor,
+    RetryCustomActionExecutor,
+    NoEndpointCustomActionExecutor,
 )
+from rasa.core.actions.grpc_custom_action_executor import GRPCCustomActionExecutor
+from rasa.core.actions.http_custom_action_executor import HTTPCustomActionExecutor
 from rasa.core.policies.policy import PolicyPrediction
-from rasa.exceptions import ModelNotFound
 from rasa.nlu.constants import (
     RESPONSE_SELECTOR_DEFAULT_INTENT,
     RESPONSE_SELECTOR_PROPERTY_NAME,
@@ -85,8 +81,8 @@ from rasa.shared.nlu.constants import (
     INTENT_RANKING_KEY,
 )
 from rasa.shared.utils.schemas.events import EVENTS_SCHEMA
-from rasa.utils.common import get_bool_env_variable
 from rasa.utils.endpoints import EndpointConfig, ClientResponseError
+from rasa.utils.url_tools import get_url_schema, UrlSchema
 
 if TYPE_CHECKING:
     from rasa.core.nlg import NaturalLanguageGenerator
@@ -703,212 +699,10 @@ class ActionDeactivateLoop(Action):
         return [ActiveLoop(None), SlotSet(REQUESTED_SLOT, None)]
 
 
-class CustomActionExecutor(abc.ABC):
-    """Interface for custom action executors.
-
-    Provides an abstraction layer for executing custom actions
-    regardless of the communication protocol.
-    """
-
-    @abc.abstractmethod
-    async def run(
-        self,
-        tracker: "DialogueStateTracker",
-        domain: "Domain",
-    ) -> Dict[Text, Any]:
-        """Executes the custom action.
-
-        Args:
-            tracker: The current state of the dialogue.
-            domain: The domain object containing domain-specific information.
-
-        Returns:
-            The response from the execution of the custom action.
-        """
-        pass
-
-
-class HTTPCustomActionExecutor(CustomActionExecutor):
-    """HTTP-based implementation of the CustomActionExecutor.
-
-    Executes custom actions by making HTTP POST requests to the action endpoint.
-    """
-
-    def __init__(self, name: Text, action_endpoint: EndpointConfig) -> None:
-        self._name = name
-        self.action_endpoint = action_endpoint
-
-    def _get_domain_digest(self) -> Optional[Text]:
-        try:
-            return rasa.model.get_local_model()
-        except ModelNotFound as e:
-            logger.warning(
-                f"Model not found while running the action '{self._name}'.", exc_info=e
-            )
-            return None
-
-    def _is_selective_domain_enabled(self) -> bool:
-        """Check if selective domain handling is enabled.
-
-        Returns:
-            True if selective domain handling is enabled, otherwise False.
-        """
-        if self.action_endpoint is None:
-            return False
-        return bool(
-            self.action_endpoint.kwargs.get(SELECTIVE_DOMAIN, DEFAULT_SELECTIVE_DOMAIN)
-        )
-
-    def _action_call_format(
-        self,
-        tracker: "DialogueStateTracker",
-        domain: "Domain",
-        should_include_domain: bool = True,
-    ) -> Dict[Text, Any]:
-        """Create the JSON payload for the action server request.
-
-        Args:
-            tracker: The current state of the dialogue.
-            domain: The domain object containing domain-specific information.
-            should_include_domain: If domain context should be in the payload.
-
-        Returns:
-            A JSON payload to be sent to the action server.
-        """
-        from rasa.shared.core.trackers import EventVerbosity
-
-        tracker_state = tracker.current_state(EventVerbosity.ALL)
-
-        result = {
-            "next_action": self._name,
-            "sender_id": tracker.sender_id,
-            "tracker": tracker_state,
-            "version": rasa.__version__,
-        }
-
-        if should_include_domain and (
-            not self._is_selective_domain_enabled()
-            or domain.does_custom_action_explicitly_need_domain(self._name)
-        ):
-            result["domain"] = domain.as_dict()
-
-        if domain_digest := self._get_domain_digest():
-            result["domain_digest"] = domain_digest
-
-        return result
-
-    async def _perform_request_with_retries(
-        self,
-        json_body: Dict[Text, Any],
-        should_compress: bool,
-        tracker: "DialogueStateTracker",
-        domain: "Domain",
-    ) -> Any:
-        """Attempts to perform the request with retries if necessary."""
-        assert self.action_endpoint is not None
-        number_of_retries = 2
-        for _ in range(number_of_retries):
-            try:
-                return await self.action_endpoint.request(
-                    json=json_body,
-                    method="post",
-                    timeout=DEFAULT_REQUEST_TIMEOUT,
-                    compress=should_compress,
-                )
-            except ClientResponseError as e:
-                # Repeat the request because Domain was not in the payload
-                if e.status == 449:
-                    json_body = self._action_call_format(
-                        tracker=tracker, domain=domain, should_include_domain=True
-                    )
-                    continue
-                raise e
-
-    async def run(
-        self,
-        tracker: "DialogueStateTracker",
-        domain: "Domain",
-    ) -> Dict[Text, Any]:
-        """Execute the custom action using an HTTP POST request.
-
-        Args:
-            tracker: The current state of the dialogue.
-            domain: The domain object containing domain-specific information.
-
-        Returns:
-            A dictionary containing the response from the custom action endpoint.
-
-        Raises:
-            RasaException: If an error occurs while making the HTTP request.
-        """
-        try:
-            logger.debug(
-                "Calling action endpoint to run action '{}'.".format(self.name())
-            )
-
-            json_body = self._action_call_format(
-                tracker=tracker, domain=domain, should_include_domain=False
-            )
-
-            should_compress = get_bool_env_variable(
-                COMPRESS_ACTION_SERVER_REQUEST_ENV_NAME,
-                DEFAULT_COMPRESS_ACTION_SERVER_REQUEST,
-            )
-
-            response = await self._perform_request_with_retries(
-                json_body, should_compress, tracker, domain
-            )
-
-            if response is None:
-                response = {}
-
-            return response
-
-        except ClientResponseError as e:
-            if e.status == 400:
-                response_data = json.loads(e.text)
-                exception = ActionExecutionRejection(
-                    response_data["action_name"], response_data.get("error")
-                )
-                logger.error(exception.message)
-                raise exception
-            else:
-                raise RasaException(
-                    f"Failed to execute custom action '{self.name()}'"
-                ) from e
-
-        except aiohttp.ClientConnectionError as e:
-            logger.error(
-                f"Failed to run custom action '{self.name()}'. Couldn't connect "
-                f"to the server at '{self.action_endpoint.url}'. "
-                f"Is the server running? "
-                f"Error: {e}"
-            )
-            raise RasaException(
-                f"Failed to execute custom action '{self.name()}'. Couldn't connect "
-                f"to the server at '{self.action_endpoint.url}."
-            )
-
-        except aiohttp.ClientError as e:
-            # not all errors have a status attribute, but
-            # helpful to log if they got it
-
-            # noinspection PyUnresolvedReferences
-            status = getattr(e, "status", None)
-            raise RasaException(
-                "Failed to run custom action '{}'. Action server "
-                "responded with a non 200 status code of {}. "
-                "Make sure your action server properly runs actions "
-                "and returns a 200 once the action is executed. "
-                "Error: {}".format(self.name(), status, e)
-            )
-
-    def name(self) -> Text:
-        return self._name
-
-
 class RemoteAction(Action):
-    def __init__(self, name: Text, action_endpoint: EndpointConfig) -> None:
+    def __init__(
+        self, name: Text, action_endpoint: Optional[EndpointConfig] = None
+    ) -> None:
         self._name = name
         self.action_endpoint = action_endpoint
         self.executor = self._create_executor()
@@ -922,7 +716,31 @@ class RemoteAction(Action):
         Raises:
             RasaException: If no valid action endpoint is configured.
         """
-        return HTTPCustomActionExecutor(self.name(), self.action_endpoint)
+
+        if not self.action_endpoint:
+            return NoEndpointCustomActionExecutor(self.name())
+
+        url_schema = get_url_schema(self.action_endpoint.url)
+
+        if url_schema == UrlSchema.GRPC:
+            return RetryCustomActionExecutor(
+                GRPCCustomActionExecutor(self.name(), self.action_endpoint)
+            )
+        elif (
+            url_schema == UrlSchema.HTTP
+            or url_schema == UrlSchema.HTTPS
+            or url_schema == UrlSchema.NOT_SPECIFIED
+        ):
+            return RetryCustomActionExecutor(
+                HTTPCustomActionExecutor(self.name(), self.action_endpoint)
+            )
+        raise RasaException(
+            f"Failed to create a custom action executor. "
+            f"Please make sure to include an action endpoint configuration in your "
+            f"endpoints configuration file. Make sure that for grpc, http and https "
+            f"an url schema is set. "
+            f"Found url '{self.action_endpoint.url}'."
+        )
 
     @staticmethod
     def action_response_format_spec() -> Dict[Text, Any]:
@@ -998,16 +816,6 @@ class RemoteAction(Action):
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> List[Event]:
         """Runs action. Please see parent class for the full docstring."""
-        if not self.action_endpoint:
-            raise RasaException(
-                f"Failed to execute custom action '{self.name()}' "
-                f"because no endpoint is configured to run this "
-                f"custom action. Please take a look at "
-                f"the docs and set an endpoint configuration via the "
-                f"--endpoints flag. "
-                f"{DOCS_BASE_URL}/custom-actions"
-            )
-
         response = await self.executor.run(tracker=tracker, domain=domain)
         self._validate_action_result(response)
 
@@ -1022,21 +830,6 @@ class RemoteAction(Action):
 
     def name(self) -> Text:
         return self._name
-
-
-class ActionExecutionRejection(RasaException):
-    """Raising this exception allows other policies to predict a different action."""
-
-    def __init__(self, action_name: Text, message: Optional[Text] = None) -> None:
-        """Create a new ActionExecutionRejection exception."""
-        self.action_name = action_name
-        self.message = message or "Custom action '{}' rejected to run".format(
-            action_name
-        )
-        super(ActionExecutionRejection, self).__init__()
-
-    def __str__(self) -> Text:
-        return self.message
 
 
 class ActionRevertFallbackEvents(Action):

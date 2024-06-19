@@ -42,7 +42,7 @@ from rasa.tracing.constants import (
 from rasa.tracing.instrumentation import instrumentation
 from rasa.tracing.metric_instrument_provider import MetricInstrumentProvider
 from rasa.utils.endpoints import EndpointConfig
-from tests.integration_tests.tracing.conftest import send_message_to_rasa_server
+from tests.integration_tests.conftest import send_message_to_rasa_server
 
 ACTION_SERVER_TEST_URL = "http://localhost:5055/webhook"
 RASA_SERVER_TEST_URL = "http://localhost:5005"
@@ -383,7 +383,8 @@ async def test_record_callable_duration_metrics(
 
 @pytest.fixture(scope="module")
 def send_user_message() -> str:
-    return send_message_to_rasa_server(RASA_SERVER_TEST_URL, "list my contacts")
+    sender_id, _ = send_message_to_rasa_server(RASA_SERVER_TEST_URL, "list my contacts")
+    return sender_id
 
 
 def test_metrics_get_sent_to_otlp_collector(

@@ -9,6 +9,7 @@ import time
 from types import LambdaType
 from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Tuple, Union
 
+from rasa.core.actions.action_exceptions import ActionExecutionRejection
 from rasa.core.http_interpreter import RasaNLUHttpInterpreter
 from rasa.dialogue_understanding.commands import Command, SetSlotCommand
 from rasa.engine import loader
@@ -1136,7 +1137,7 @@ class MessageProcessor:
                 events = await action.run(
                     output_channel, nlg, temporary_tracker, self.domain
                 )
-        except rasa.core.actions.action.ActionExecutionRejection:
+        except ActionExecutionRejection:
             events = [
                 ActionExecutionRejected(
                     action.name(), prediction.policy_name, prediction.max_confidence

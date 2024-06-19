@@ -1,0 +1,199 @@
+x-license: &license
+  RASA_PRO_LICENSE: ${RASA_PRO_LICENSE}
+
+
+configs:
+  endpoints-http.yml:
+    content: |
+      action_endpoint:
+        url: "http://rasa-http-action-server:${RASA_SDK_HTTP_PORT}/webhook"
+  endpoints-https.yml:
+    content: |
+      action_endpoint:
+        url: "https://rasa-https-action-server:${RASA_SDK_HTTPS_PORT}/webhook"
+        cafile: "/certs/ca.pem"
+  endpoints-grpc.yml:
+    content: |
+      action_endpoint:
+        url: "grpc://rasa-grpc-action-server:${RASA_SDK_GRPC_PORT}"
+  endpoints-grpc-ssl.yml:
+    content: |
+      action_endpoint:
+        url: "grpc://rasa-grpc-ssl-action-server:${RASA_SDK_GRPC_SSL_PORT}"
+        cafile: "/certs/ca.pem"
+  action-server-endpoints.yml:
+    content: |
+        empty: "empty"
+
+services:
+  rasa-pro-grpc:
+    image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
+    volumes:
+      - "./simple_nlu_bot:/app"
+    configs:
+      - source: endpoints-grpc.yml
+        target: /endpoints-grpc.yml
+    entrypoint: ""
+    command: rasa run -p ${RASA_PORT} --enable-api --endpoints /endpoints-grpc.yml
+    networks: [ 'rasa-pro-network' ]
+    ports:
+      - "${RASA_GRPC_PORT}:${RASA_PORT}"
+    environment:
+      <<: *license
+    healthcheck:
+      test: curl localhost:${RASA_PORT} || exit 1
+      interval: 10s
+      retries: 10
+      start_period: 15s
+      timeout: 10s
+    user: ${USER_ID}
+    depends_on:
+      - rasa-grpc-action-server
+
+  rasa-grpc-action-server:
+    image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
+    volumes:
+      - "./simple_nlu_bot/actions:/app/actions"
+    configs:
+      - source: action-server-endpoints.yml
+        target: /app/endpoints.yml
+    networks: [ 'rasa-pro-network' ]
+    entrypoint: ""
+    command: rasa run actions -p ${RASA_SDK_GRPC_PORT} --grpc
+    ports:
+      - "${RASA_SDK_GRPC_PORT}:${RASA_SDK_GRPC_PORT}"
+    environment:
+      <<: *license
+    user: ${USER_ID}
+
+
+  rasa-pro-grpc-ssl:
+    image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
+    volumes:
+      - "./simple_nlu_bot:/app"
+      - "./certs/ca.pem:/certs/ca.pem"
+    configs:
+      - source: endpoints-grpc-ssl.yml
+        target: /endpoints-grpc-ssl.yml
+    entrypoint: ""
+    command: rasa run -p ${RASA_PORT} --enable-api --endpoints /endpoints-grpc-ssl.yml
+    networks: [ 'rasa-pro-network' ]
+    ports:
+      - "${RASA_GRPC_SSL_PORT}:${RASA_PORT}"
+    environment:
+      <<: *license
+    healthcheck:
+      test: curl localhost:${RASA_PORT} || exit 1
+      interval: 10s
+      retries: 10
+      start_period: 15s
+      timeout: 10s
+    user: ${USER_ID}
+    depends_on:
+      - rasa-grpc-ssl-action-server
+
+  rasa-grpc-ssl-action-server:
+    image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
+    volumes:
+      - "./certs/server.pem:/certs/server.pem"
+      - "./certs/server-key.pem:/certs/server-key.pem"
+      - "./simple_nlu_bot/actions:/app/actions"
+    configs:
+      - source: action-server-endpoints.yml
+        target: /app/endpoints.yml
+    networks: [ 'rasa-pro-network' ]
+    entrypoint: ""
+    command: rasa run actions -p ${RASA_SDK_GRPC_SSL_PORT} --grpc --ssl-certificate /certs/server.pem --ssl-keyfile /certs/server-key.pem
+    ports:
+      - "${RASA_SDK_GRPC_SSL_PORT}:${RASA_SDK_GRPC_SSL_PORT}"
+    environment:
+      <<: *license
+    user: ${USER_ID}
+
+
+  rasa-pro-http:
+    image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
+    volumes:
+      - "./simple_nlu_bot:/app"
+    configs:
+      - source: endpoints-http.yml
+        target: /endpoints-http.yml
+    entrypoint: ""
+    command: rasa run -p ${RASA_PORT} --enable-api --endpoints /endpoints-http.yml
+    networks: [ 'rasa-pro-network' ]
+    ports:
+      - "${RASA_HTTP_PORT}:${RASA_PORT}"
+    environment:
+      <<: *license
+    healthcheck:
+      test: curl localhost:${RASA_PORT} || exit 1
+      interval: 10s
+      retries: 10
+      start_period: 15s
+      timeout: 10s
+    user: ${USER_ID}
+    depends_on:
+      - rasa-http-action-server
+
+  rasa-http-action-server:
+    image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
+    volumes:
+      - "./simple_nlu_bot/actions:/app/actions"
+    configs:
+      - source: action-server-endpoints.yml
+        target: /app/endpoints.yml
+    networks: [ 'rasa-pro-network' ]
+    entrypoint: ""
+    command: rasa run actions -p ${RASA_SDK_HTTP_PORT}
+    ports:
+      - "${RASA_SDK_HTTP_PORT}:${RASA_SDK_HTTP_PORT}"
+    environment:
+      <<: *license
+    user: ${USER_ID}
+
+
+  rasa-pro-https:
+    image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
+    volumes:
+      - "./simple_nlu_bot:/app"
+      - "./certs/ca.pem:/certs/ca.pem"
+    configs:
+      - source: endpoints-https.yml
+        target: /endpoints-https.yml
+    entrypoint: ""
+    command: rasa run -p ${RASA_PORT} --enable-api --endpoints /endpoints-https.yml
+    networks: [ 'rasa-pro-network' ]
+    ports:
+      - "${RASA_HTTPS_PORT}:${RASA_PORT}"
+    environment:
+      <<: *license
+    healthcheck:
+      test: curl localhost:${RASA_PORT} || exit 1
+      interval: 10s
+      retries: 10
+      start_period: 15s
+      timeout: 10s
+    user: ${USER_ID}
+    depends_on:
+      - rasa-https-action-server
+
+  rasa-https-action-server:
+    image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
+    volumes:
+      - "./certs/server.pem:/certs/server.pem"
+      - "./certs/server-key.pem:/certs/server-key.pem"
+      - "./simple_nlu_bot/actions:/app/actions"
+    configs:
+      - source: action-server-endpoints.yml
+        target: /app/endpoints.yml
+    networks: [ 'rasa-pro-network' ]
+    entrypoint: ""
+    command: rasa run actions -p ${RASA_SDK_HTTPS_PORT}  --ssl-certificate /certs/server.pem --ssl-keyfile /certs/server-key.pem
+    ports:
+      - "${RASA_SDK_HTTPS_PORT}:${RASA_SDK_HTTPS_PORT}"
+    environment:
+      <<: *license
+    user: ${USER_ID}
+
+
+networks: { rasa-pro-network: { } }
