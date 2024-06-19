@@ -20,7 +20,6 @@ import rasa.shared.utils.io
 from rasa.core.actions.custom_action_executor import (
     CustomActionExecutor,
     RetryCustomActionExecutor,
-    NoEndpointCustomActionExecutor,
 )
 from rasa.core.actions.grpc_custom_action_executor import GRPCCustomActionExecutor
 from rasa.core.actions.http_custom_action_executor import HTTPCustomActionExecutor
