@@ -286,7 +286,7 @@ def test_removing_no_longer_compatible_cache_entries(
         fingerprint_key3, output3, output_fingerprint3, default_model_storage
     )
 
-    # Pretend we updated Rasa Open Source to a no longer compatible version
+    # Pretend we updated Rasa Pro to a no longer compatible version
     monkeypatch.setattr(rasa.engine.caching, "MINIMUM_COMPATIBLE_VERSION", "99999.8.10")
 
     cache_run_by_future_rasa = LocalTrainingCache()

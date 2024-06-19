@@ -178,7 +178,7 @@ def print_telemetry_reporting_info() -> None:
     """Print telemetry information to std out."""
     message = textwrap.dedent(
         f"""
-        Rasa Open Source reports anonymous usage telemetry to help improve the product
+        Rasa Pro reports anonymous usage telemetry to help improve the product
         for all its users.
 
         If you'd like to opt-out, you can use `rasa telemetry disable`.
@@ -356,7 +356,7 @@ def telemetry_write_key() -> Optional[Text]:
     """Read the Segment write key from the segment key text file.
 
     The segment key text file should by present only in wheel/sdist packaged
-    versions of Rasa Open Source. This avoids running telemetry locally when
+    versions of Rasa Pro. This avoids running telemetry locally when
     developing on Rasa or when running CI builds.
 
     In local development, this should always return `None` to avoid logging telemetry.
@@ -620,7 +620,7 @@ def _track(
 
     It is OK to use this function from outside telemetry.py, but note that it
     is recommended to create a new track_xyz() function for complex telemetry
-    events, or events that are generated from many parts of the Rasa Open Source code.
+    events, or events that are generated from many parts of the Rasa Pro code.
 
     Args:
         event_name: Name of the event.

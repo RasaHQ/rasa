@@ -713,7 +713,7 @@ Rasa Pro 3.6.0 (2023-06-14)
   - anonymization orchestrator that orchestrates the execution of the anonymization rules and publishes
   the anonymized event to the matched Kafka topic.
   - anonymization pipeline that contains a list of orchestrators and is registered to a singleton provider component,
-  which gets invoked in hook calls in Rasa Open Source when the pipeline must be retrieved for anonymizing events and logs.
+  which gets invoked in hook calls in Rasa Pro when the pipeline must be retrieved for anonymizing events and logs.
 
   Please read through the PII Management section in the official documentation to learn how to get started.
 - [#685](https://github.com/rasahq/rasa-plus/issues/685): Implemented support for real time evaluation of Markers with the Analytics

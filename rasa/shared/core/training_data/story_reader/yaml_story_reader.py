@@ -452,7 +452,7 @@ class YAMLStoryReader(StoryReader):
                 f"{self._get_item_title()}:\n"
                 f"User intent '{user_intent}' is a full retrieval intent. "
                 f"Stories shouldn't contain full retrieval intents. "
-                f"Rasa Open Source will only use base intent '{base_intent}' "
+                f"Rasa Pro will only use base intent '{base_intent}' "
                 f"for training.",
                 docs=self._get_docs_link(),
             )

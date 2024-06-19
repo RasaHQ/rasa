@@ -953,7 +953,7 @@ class Domain:
         Returns:
             The form names, a mapping of form names and required slots, and custom
             actions.
-            Returning custom actions for each forms means that Rasa Open Source should
+            Returning custom actions for each forms means that Rasa Pro should
             not use the default `FormAction` for the forms, but rather a custom action
             for it. This can e.g. be used to run the deprecated Rasa Open Source 1
             `FormAction` which is implemented in the Rasa SDK.

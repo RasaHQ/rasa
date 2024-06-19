@@ -317,7 +317,7 @@ async def test_no_pika_logs_if_no_debug_mode(caplog: LogCaptureFixture):
         with pytest.raises(Exception):
             await broker.connect()
 
-    # Only Rasa Open Source logs, but logs from the library itself.
+    # Only Rasa Pro logs, but logs from the library itself.
     assert all(
         record.name
         in ["rasa.core.brokers.pika", "asyncio", "ddtrace.internal.writer.writer"]

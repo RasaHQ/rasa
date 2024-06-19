@@ -567,14 +567,14 @@ def validate_training_data_format_version(
     """Validates version on the training data content using `version` field.
 
        Warns users if the file is not compatible with the current version of
-       Rasa Open Source.
+       Rasa Pro.
 
     Args:
         yaml_file_content: Raw content of training data file as a dictionary.
         filename: Name of the validated file.
 
     Returns:
-        `True` if the file can be processed by current version of Rasa Open Source,
+        `True` if the file can be processed by current version of Rasa Pro,
         `False` otherwise.
     """
     if filename:
@@ -594,7 +594,7 @@ def validate_training_data_format_version(
         logger.info(
             f"The '{KEY_TRAINING_DATA_FORMAT_VERSION}' key is missing in "
             f"the training data file {filename}. "
-            f"Rasa Open Source will read the file as a "
+            f"Rasa Pro will read the file as a "
             f"version '{LATEST_TRAINING_DATA_FORMAT_VERSION}' file. "
             f"See {DOCS_URL_TRAINING_DATA}."
         )
@@ -612,9 +612,9 @@ def validate_training_data_format_version(
         if parsed_version < latest_version:
             raise_warning(
                 f"Training data file {filename} has a lower "
-                f"format version than your Rasa Open Source installation: "
+                f"format version than your Rasa Pro installation: "
                 f"{version_value} < {LATEST_TRAINING_DATA_FORMAT_VERSION}. "
-                f"Rasa Open Source will read the file as a version "
+                f"Rasa Pro will read the file as a version "
                 f"{LATEST_TRAINING_DATA_FORMAT_VERSION} file. "
                 f"Please update your version key to "
                 f"{LATEST_TRAINING_DATA_FORMAT_VERSION}. "
@@ -630,7 +630,7 @@ def validate_training_data_format_version(
             f"'{KEY_TRAINING_DATA_FORMAT_VERSION}' as string, for example:\n"
             f"{KEY_TRAINING_DATA_FORMAT_VERSION}: "
             f"'{LATEST_TRAINING_DATA_FORMAT_VERSION}'\n"
-            f"Rasa Open Source will read the file as a "
+            f"Rasa Pro will read the file as a "
             f"version '{LATEST_TRAINING_DATA_FORMAT_VERSION}' file.",
             docs=DOCS_URL_TRAINING_DATA,
         )
@@ -638,9 +638,9 @@ def validate_training_data_format_version(
 
     raise_warning(
         f"Training data file {filename} has a greater "
-        f"format version than your Rasa Open Source installation: "
+        f"format version than your Rasa Pro installation: "
         f"{version_value} > {LATEST_TRAINING_DATA_FORMAT_VERSION}. "
-        f"Please consider updating to the latest version of Rasa Open Source."
+        f"Please consider updating to the latest version of Rasa Pro."
         f"This file will be skipped.",
         docs=DOCS_URL_TRAINING_DATA,
     )

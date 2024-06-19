@@ -53,7 +53,7 @@ help:
 	@echo "    release"
 	@echo "        Prepare a release."
 	@echo "    build-docker"
-	@echo "        Build Rasa Open Source Docker image."
+	@echo "        Build Rasa Pro Docker image."
 	@echo "    run-integration-containers"
 	@echo "        Run the integration test containers."
 	@echo "    stop-integration-containers"
