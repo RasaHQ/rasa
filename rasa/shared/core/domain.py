@@ -559,10 +559,12 @@ class Domain:
                     "domain.collect_slots.no_mappings_defined",
                     event_info=(
                         f"Slot '{slot_name}' has no mappings defined. "
-                        f"We will continue with an empty list of mappings."
+                        f"Assigning the default FROM_LLM slot mapping."
                     ),
                 )
-                slot_dict[slot_name][SLOT_MAPPINGS] = []
+                slot_dict[slot_name][SLOT_MAPPINGS] = [
+                    {MAPPING_TYPE: SlotMappingType.FROM_LLM.value}
+                ]
 
             slot = slot_class(slot_name, **slot_dict[slot_name])
             slots.append(slot)

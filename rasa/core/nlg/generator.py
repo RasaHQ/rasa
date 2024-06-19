@@ -32,7 +32,7 @@ class NaturalLanguageGenerator:
     @staticmethod
     def create(
         obj: Union["NaturalLanguageGenerator", EndpointConfig, None],
-        domain: Optional[Domain],
+        domain: Optional[Domain] = None,
     ) -> "NaturalLanguageGenerator":
         """Factory to create a generator."""
         if isinstance(obj, NaturalLanguageGenerator):

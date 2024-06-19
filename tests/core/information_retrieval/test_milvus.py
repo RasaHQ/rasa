@@ -2,9 +2,7 @@ from typing import Any
 
 from pytest import MonkeyPatch
 
-from rasa.core.information_retrieval.information_retrieval import (
-    InformationRetrievalException,
-)
+from rasa.core.information_retrieval import InformationRetrievalException
 from rasa.core.information_retrieval.milvus import Milvus_Store
 from langchain.schema.embeddings import Embeddings
 from langchain.schema import Document
@@ -54,10 +52,10 @@ async def test_milvus_store_search(
         "asimilarity_search_with_score",
         return_value=search_results,
     ):
-        hits = await milvus_store.search("test", threshold=threshold)
-        assert len(hits) == expected_count
-        if hits:
-            assert hits[0].metadata["id"] == expected_id
+        hits = await milvus_store.search("test", {}, threshold=threshold)
+        assert len(hits.results) == expected_count
+        if hits.results:
+            assert hits.results[0].metadata["id"] == expected_id
 
 
 async def test_milvus_search_raises_custom_exception(
@@ -83,7 +81,7 @@ async def test_milvus_search_raises_custom_exception(
     )
 
     with pytest.raises(InformationRetrievalException) as e:
-        await milvus_store.search("test")
+        await milvus_store.search("test", {})
 
     assert (
         f"An error occurred while searching for documents: {base_exception_msg}"

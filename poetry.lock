@@ -4000,13 +4000,13 @@ files = [
 
 [[package]]
 name = "pep440-version-utils"
-version = "1.0.0"
+version = "1.1.0"
 description = "Utilities to deal with pep440 versioning"
 optional = false
-python-versions = ">=3.8,<3.11"
+python-versions = "<3.13,>=3.8"
 files = [
-    {file = "pep440_version_utils-1.0.0-py3-none-any.whl", hash = "sha256:5140d35f9451eb02b28e76f0d5cd0f0d6d9d4154c3dec69653a5c8a08fb7ef97"},
-    {file = "pep440_version_utils-1.0.0.tar.gz", hash = "sha256:7ce03456ce4429e7d29547ccffd15c19dbb851c9e1960c2fa5b281959da1083a"},
+    {file = "pep440_version_utils-1.1.0-py3-none-any.whl", hash = "sha256:0f2fa61c2051db438ece8b1b94d364e52cb531b94061d5dbec1b7a6a5937cbfa"},
+    {file = "pep440_version_utils-1.1.0.tar.gz", hash = "sha256:a49de127db0363b3c0b9116c92fb394756779e90d061be19b938366acd163032"},
 ]
 
 [package.dependencies]
@@ -5002,15 +5002,6 @@ files = [
     {file = "python_crfsuite-0.9.9-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:5ab333b7cda21b1b5ab76f8e16e5f00654360df057e2092b273681d64850f714"},
     {file = "python_crfsuite-0.9.9-cp311-cp311-musllinux_1_1_i686.whl", hash = "sha256:ee6153ed8a26adaea645445b997c55d67505476976dfc40f4bbd46200b66de15"},
     {file = "python_crfsuite-0.9.9-cp311-cp311-musllinux_1_1_x86_64.whl", hash = "sha256:c32292f722e293cee87aac0d793abd8b53dc05126e4b6f0202c41e0e7d027005"},
-    {file = "python_crfsuite-0.9.9-cp311-cp311-win32.whl", hash = "sha256:3e8bbacff1d86cbc18e1d52f617c85521029127a09c86ed428cd8238384a9db3"},
-    {file = "python_crfsuite-0.9.9-cp311-cp311-win_amd64.whl", hash = "sha256:83f87b652108110263aa83c220baccc36c911f04cf422cf6632a5f42121bce6a"},
-    {file = "python_crfsuite-0.9.9-cp312-cp312-macosx_10_9_x86_64.whl", hash = "sha256:92f72eb554dac53218805958747b4cd417bd76039f083f66cc9881987d88e167"},
-    {file = "python_crfsuite-0.9.9-cp312-cp312-manylinux_2_12_i686.manylinux2010_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:5cdd1e823fa9dfe611a573a0c1371941e887ad8b8ffbc25e2d87e4cd6d4f22af"},
-    {file = "python_crfsuite-0.9.9-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:54f94d6fabb14ad8106dc65b5d38665bb0abb16527d4a6aa2ba233670c3480db"},
-    {file = "python_crfsuite-0.9.9-cp312-cp312-musllinux_1_1_i686.whl", hash = "sha256:65ebfab892c49c49b5e1030318d144c559e449bdf86b12983fa7ba0e88f7abdf"},
-    {file = "python_crfsuite-0.9.9-cp312-cp312-musllinux_1_1_x86_64.whl", hash = "sha256:5c1bb3d2802bb777affbe2855fc723aa32345ead2fe26ad18c7e1417bc104c53"},
-    {file = "python_crfsuite-0.9.9-cp312-cp312-win32.whl", hash = "sha256:abef974a2b520c0204cb15b0b799fdbc1c1a0af4be2b9ad7548800de95975345"},
-    {file = "python_crfsuite-0.9.9-cp312-cp312-win_amd64.whl", hash = "sha256:ccc4c4f1cd47c74553d03d915c7dd7c06fc23b41310f30f35f2e5c09cdeb9297"},
     {file = "python_crfsuite-0.9.9-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:01d279f1c8225aaf66290563312708c1905dce84f70ee5e374ecfb2dec1c2343"},
     {file = "python_crfsuite-0.9.9-cp36-cp36m-manylinux_2_12_i686.manylinux2010_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:5f29e94fcb9e2f8f52c7323668752b34dcffef91751b0d1e0789ecbbc0069842"},
     {file = "python_crfsuite-0.9.9-cp36-cp36m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:497a8b9c0df152ada10732c07853942a8725cb66fe5b6fe1a64f768ecf583291"},
@@ -5204,7 +5195,6 @@ files = [
     {file = "PyYAML-6.0.1-cp311-cp311-win_amd64.whl", hash = "sha256:bf07ee2fef7014951eeb99f56f39c9bb4af143d8aa3c21b1677805985307da34"},
     {file = "PyYAML-6.0.1-cp312-cp312-macosx_10_9_x86_64.whl", hash = "sha256:855fb52b0dc35af121542a76b9a84f8d1cd886ea97c84703eaa6d88e37a2ad28"},
     {file = "PyYAML-6.0.1-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:40df9b996c2b73138957fe23a16a4f0ba614f4c0efce1e9406a184b6d07fa3a9"},
-    {file = "PyYAML-6.0.1-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:a08c6f0fe150303c1c6b71ebcd7213c2858041a7e01975da3a99aed1e7a378ef"},
     {file = "PyYAML-6.0.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:6c22bec3fbe2524cde73d7ada88f6566758a8f7227bfbf93a408a9d86bcc12a0"},
     {file = "PyYAML-6.0.1-cp312-cp312-musllinux_1_1_x86_64.whl", hash = "sha256:8d4e9c88387b0f5c7d5f281e55304de64cf7f9c0021a3525bd3b1c542da3b0e4"},
     {file = "PyYAML-6.0.1-cp312-cp312-win32.whl", hash = "sha256:d483d2cdf104e7c9fa60c544d92981f12ad66a457afae824d146093b8c294c54"},
@@ -8213,4 +8203,4 @@ transformers = ["sentencepiece", "transformers"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8.1,<3.11"
-content-hash = "88bfa251b0d9a7cd8f79941bd2de780e60f3721c6c111127ef9de04e9d131380"
+content-hash = "c8dc4f45eb0566bc5024f435bb4905b74015116277a973cdadb59b6354e90a66"

@@ -1,28 +1,27 @@
 import os
+import random
 import textwrap
 from pathlib import Path
-from typing import Text, Dict, Any
 from threading import Thread
+from typing import Text, Dict, Any
 from unittest.mock import MagicMock, patch
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
-
 from pep440_version_utils import Version
 from pykwalify.errors import SchemaError
 
-from rasa.shared.core.flows.yaml_flows_io import FLOWS_SCHEMA_FILE, YAMLFlowsReader
-
-from rasa.shared.exceptions import YamlException, SchemaValidationError
+import rasa.shared.nlu.training_data.schemas.data_schema as schema
 import rasa.shared.utils.io
 import rasa.utils.io as io_utils
-import rasa.shared.nlu.training_data.schemas.data_schema as schema
 from rasa.shared.constants import (
     CONFIG_SCHEMA_FILE,
     DOMAIN_SCHEMA_FILE,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
     PACKAGE_NAME,
 )
+from rasa.shared.core.flows.yaml_flows_io import FLOWS_SCHEMA_FILE, YAMLFlowsReader
+from rasa.shared.exceptions import YamlException, SchemaValidationError
 from rasa.shared.nlu.training_data.formats.rasa_yaml import NLU_SCHEMA_FILE
 from rasa.shared.utils.yaml import (
     KEY_TRAINING_DATA_FORMAT_VERSION,
@@ -35,8 +34,11 @@ from rasa.shared.utils.yaml import (
     validate_training_data,
     validate_training_data_format_version,
 )
+from rasa.shared.utils.yaml import read_yaml_file
 
 python_module_path = "rasa.shared.utils.yaml"
+
+CONFIG_FOLDER = Path("data/test_config")
 
 
 @pytest.fixture
@@ -859,3 +861,26 @@ def test_flow_next_is_not_a_step():
         "Not a valid 'next' definition. Expected else block or if-then block."
         in validate_and_return_error_msg(flow)
     )
+
+
+def test_yaml_file_is_cached():
+    def check_cache_after_read(file_path, hits, misses, currsize):
+        read_yaml_file(file_path)
+        cache_info = read_yaml_file.cache_info()
+        assert cache_info.hits == hits
+        assert cache_info.misses == misses
+        assert cache_info.currsize == currsize
+
+    all_files = os.listdir(CONFIG_FOLDER)
+    yaml_files = [
+        f"{CONFIG_FOLDER}/{file}"
+        for file in all_files
+        if file.endswith((".yml", ".yaml"))
+    ]
+    first_yaml_file, second_yaml_file = random.sample(yaml_files, 2)
+
+    check_cache_after_read(first_yaml_file, 0, 1, 1)
+    check_cache_after_read(first_yaml_file, 1, 1, 1)
+    check_cache_after_read(second_yaml_file, 1, 2, 2)
+    check_cache_after_read(first_yaml_file, 2, 2, 2)
+    check_cache_after_read(second_yaml_file, 3, 2, 2)

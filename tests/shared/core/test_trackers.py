@@ -2023,3 +2023,17 @@ def test_get_startable_flows(flow_guard_value: Any, expected_flow_ids: List[Text
     result_flows = tracker.get_startable_flows(flows)
     # Then
     assert result_flows.flow_ids == expected_flow_ids
+
+
+def test_tracker_active_flow_property():
+    flow_id = "foo"
+    tracker = get_tracker([])
+
+    user_frame = UserFlowStackFrame(
+        flow_id=flow_id, step_id="first_step", frame_id="some-frame-id"
+    )
+    stack = DialogueStack(frames=[user_frame])
+
+    tracker.update_stack(stack)
+
+    assert tracker.active_flow == flow_id

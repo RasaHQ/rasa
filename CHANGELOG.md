@@ -10,6 +10,13 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.8.9] - 2024-06-14
+                       
+Rasa Pro 3.8.9 (2024-06-14)                            
+### Improvements
+- [#712](https://github.com/rasahq/rasa/issues/712): Add validations for flow ID to allow only alphanumeric characters, underscores, and hyphens except for the first character.
+
+
 ## [3.8.8] - 2024-06-07
                        
 Rasa Pro 3.8.8 (2024-06-07)                            

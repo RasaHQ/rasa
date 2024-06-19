@@ -10,7 +10,7 @@ from types import LambdaType
 from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Tuple, Union
 
 from rasa.core.http_interpreter import RasaNLUHttpInterpreter
-from rasa.dialogue_understanding.commands import SetSlotCommand
+from rasa.dialogue_understanding.commands import Command, SetSlotCommand
 from rasa.engine import loader
 from rasa.engine.constants import (
     PLACEHOLDER_MESSAGE,
@@ -180,7 +180,10 @@ class MessageProcessor:
             )
             return None
 
-        tracker = await self.run_action_extract_slots(message.output_channel, tracker)
+        if not self.message_contains_commands(tracker.latest_message):
+            tracker = await self.run_action_extract_slots(
+                message.output_channel, tracker
+            )
 
         await self._run_prediction_loop(message.output_channel, tracker)
 
@@ -822,7 +825,7 @@ class MessageProcessor:
         )
 
         commands = NLUCommandAdapter.convert_nlu_to_commands(
-            Message(parse_data), tracker, await self.get_flows()
+            Message(parse_data), tracker, await self.get_flows(), self.domain
         )
         return [command.as_dict() for command in commands]
 
@@ -1279,3 +1282,23 @@ class MessageProcessor:
         )
         policy_prediction = results[target]
         return policy_prediction
+
+    @staticmethod
+    def message_contains_commands(latest_message: Optional[UserUttered]) -> bool:
+        """Check if the latest message contains commands."""
+        if latest_message is None:
+            return False
+
+        commands = [
+            Command.command_from_json(command) for command in latest_message.commands
+        ]
+        filtered_commands = [
+            command
+            for command in commands
+            if not (
+                isinstance(command, SetSlotCommand)
+                and command.name == ROUTE_TO_CALM_SLOT
+            )
+        ]
+
+        return len(filtered_commands) > 0

@@ -20,7 +20,7 @@ from rasa.dialogue_understanding.commands import (
     ChangeFlowCommand,
     CannotHandleCommand,
 )
-from rasa.dialogue_understanding.generator.multi_step_llm_command_generator import (
+from rasa.dialogue_understanding.generator.multi_step.multi_step_llm_command_generator import (  # noqa: E501
     MultiStepLLMCommandGenerator,
 )
 from rasa.dialogue_understanding.generator.constants import (
@@ -73,7 +73,7 @@ class TestMultiStepLLMCommandGenerator:
     def model_storage(self, tmp_path_factory: TempPathFactory) -> ModelStorage:
         return LocalModelStorage(tmp_path_factory.mktemp(uuid.uuid4().hex))
 
-    async def test_llm_command_generator_init_custom_start_or_end_flow(
+    async def test_llm_command_generator_init_custom_handle_flow(
         self,
         model_storage: ModelStorage,
         resource: Resource,
@@ -81,8 +81,8 @@ class TestMultiStepLLMCommandGenerator:
         # When
         generator = MultiStepLLMCommandGenerator(
             {
-                "prompts": {
-                    "start_or_end_flow": {
+                "prompt_templates": {
+                    "handle_flows": {
                         "file_path": "data/test_prompt_templates/test_prompt.jinja2",
                     }
                 },
@@ -92,7 +92,7 @@ class TestMultiStepLLMCommandGenerator:
             resource,
         )
         # Then
-        assert generator.start_or_end_flows_prompt.startswith("This is a test prompt.")
+        assert generator.handle_flows_prompt.startswith("This is a test prompt.")
         assert generator.fill_slots_prompt.startswith("{% if flow_active %}\nYour")
         assert generator.flow_retrieval is None
 
@@ -104,7 +104,7 @@ class TestMultiStepLLMCommandGenerator:
         # When
         generator = MultiStepLLMCommandGenerator(
             {
-                "prompts": {
+                "prompt_templates": {
                     "fill_slots": {
                         "file_path": "data/test_prompt_templates/test_prompt.jinja2"
                     }
@@ -116,7 +116,7 @@ class TestMultiStepLLMCommandGenerator:
         )
         # Then
         assert generator.fill_slots_prompt.startswith("This is a test prompt.")
-        assert generator.start_or_end_flows_prompt.startswith(
+        assert generator.handle_flows_prompt.startswith(
             "Your task is to analyze the current situation"
         )
         assert generator.flow_retrieval is None
@@ -129,7 +129,7 @@ class TestMultiStepLLMCommandGenerator:
         # When
         generator = MultiStepLLMCommandGenerator({}, model_storage, resource)
         # Then
-        assert generator.start_or_end_flows_prompt.startswith(
+        assert generator.handle_flows_prompt.startswith(
             "Your task is to analyze the current situation"
         )
         assert generator.fill_slots_prompt.startswith("{% if flow_active %}\nYour")
@@ -139,7 +139,7 @@ class TestMultiStepLLMCommandGenerator:
         self,
         command_generator: MultiStepLLMCommandGenerator,
     ):
-        """Test predict_commands_for_starting_and_ending_flows calls llm correctly."""
+        """Test predict_commands_for_handling_flows calls llm correctly."""
         # Given
         llm_config = {
             "_type": "openai",
@@ -154,7 +154,7 @@ class TestMultiStepLLMCommandGenerator:
             "rasa.dialogue_understanding.generator.llm_based_command_generator.llm_factory",
             Mock(),
         ) as mock_llm_factory:
-            await command_generator.predict_commands_for_starting_and_ending_flows(
+            await command_generator.predict_commands_for_handling_flows(
                 Message(),
                 DialogueStateTracker.from_events(
                     "test",
@@ -165,11 +165,11 @@ class TestMultiStepLLMCommandGenerator:
             # Then
             mock_llm_factory.assert_called_once_with(None, llm_config)
 
-    async def test_predict_commands_for_starting_and_ending_flows_calls_llm_correctly(
+    async def test_predict_commands_for_handling_flows_calls_llm_correctly(
         self,
         command_generator: MultiStepLLMCommandGenerator,
     ):
-        """Test predict_commands_for_starting_and_ending_flows calls llm correctly."""
+        """Test predict_commands_for_handling_flows calls llm correctly."""
         with patch(
             "rasa.dialogue_understanding.generator.llm_based_command_generator.llm_factory",
             Mock(),
@@ -180,7 +180,7 @@ class TestMultiStepLLMCommandGenerator:
             mock_llm_factory.return_value = llm_mock
             llm_mock.apredict.return_value = "some value"
             # When
-            await command_generator.predict_commands_for_starting_and_ending_flows(
+            await command_generator.predict_commands_for_handling_flows(
                 Message(),
                 DialogueStateTracker.from_events(
                     "test",
@@ -205,7 +205,7 @@ class TestMultiStepLLMCommandGenerator:
         prompt_file = prompt_dir / "fill_slots.jinja2"
         prompt_file.write_text("This is a test prompt")
 
-        config = {"prompts": {"fill_slots": {"file_path": str(prompt_file)}}}
+        config = {"prompt_templates": {"fill_slots": {"file_path": str(prompt_file)}}}
         generator = MultiStepLLMCommandGenerator(config, model_storage, resource)
         fingerprint_1 = generator.fingerprint_addon(config)
 
@@ -223,13 +223,13 @@ class TestMultiStepLLMCommandGenerator:
         prompt_dir.mkdir(parents=True, exist_ok=True)
         prompt_file_dynamic = prompt_dir / "fill_slots.jinja2"
         prompt_file_dynamic.write_text("This is a dynamic prompt")
-        prompt_file_static = prompt_dir / "start_or_end_flow.jinja2"
+        prompt_file_static = prompt_dir / "handle_flow.jinja2"
         prompt_file_static.write_text("This is a static prompt")
 
         config = {
-            "prompts": {
+            "prompt_templates": {
                 "fill_slots": {"file_path": str(prompt_file_dynamic)},
-                "start_or_end_flow": {"file_path": str(prompt_file_static)},
+                "handle_flow": {"file_path": str(prompt_file_static)},
             }
         }
         generator = MultiStepLLMCommandGenerator(config, model_storage, resource)
@@ -250,7 +250,7 @@ class TestMultiStepLLMCommandGenerator:
         prompt_file = prompt_dir / "fill_slots.jinja2"
         prompt_file.write_text("This is a test prompt")
 
-        config = {"prompts": {"fill_slots": {"file_path": str(prompt_file)}}}
+        config = {"prompt_templates": {"fill_slots": {"file_path": str(prompt_file)}}}
         generator = MultiStepLLMCommandGenerator(config, model_storage, resource)
 
         fingerprint_1 = generator.fingerprint_addon(config)
@@ -285,7 +285,7 @@ class TestMultiStepLLMCommandGenerator:
         # When
         loaded = MultiStepLLMCommandGenerator.load({}, model_storage, resource, Mock())
         # Then
-        assert loaded.start_or_end_flows_prompt.startswith(
+        assert loaded.handle_flows_prompt.startswith(
             "Your task is to analyze the current situation"
         )
         assert loaded.fill_slots_prompt.startswith("{% if flow_active %}\nYour")
@@ -302,7 +302,7 @@ class TestMultiStepLLMCommandGenerator:
         prompt_file.write_text("This is a custom prompt")
 
         # Add the prompt file path to the config.
-        config = {"prompts": {"fill_slots": {"file_path": str(prompt_file)}}}
+        config = {"prompt_templates": {"fill_slots": {"file_path": str(prompt_file)}}}
 
         # Persist the prompt file to the model storage.
         resource = Resource("llmcmdgen")
@@ -313,18 +313,19 @@ class TestMultiStepLLMCommandGenerator:
         # Case 1: No prompt in the config.
         loaded = MultiStepLLMCommandGenerator.load({}, model_storage, resource, Mock())
         assert loaded.fill_slots_prompt == "This is a custom prompt"
-        assert loaded.config["prompts"] == {}
+        assert loaded.config["prompt_templates"] == {}
 
         # Case 2: Specifying a invalid prompt path in the config.
         loaded = MultiStepLLMCommandGenerator.load(
-            {"prompts": {"fill_slots": {"file_path": "test_prompt.jinja2"}}},
+            {"prompt_templates": {"fill_slots": {"file_path": "test_prompt.jinja2"}}},
             model_storage,
             resource,
             Mock(),
         )
         assert loaded.fill_slots_prompt == "This is a custom prompt"
         assert (
-            loaded.config["prompts"]["fill_slots"]["file_path"] == "test_prompt.jinja2"
+            loaded.config["prompt_templates"]["fill_slots"]["file_path"]
+            == "test_prompt.jinja2"
         )
 
     @pytest.mark.parametrize(

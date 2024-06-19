@@ -25,6 +25,7 @@ from rasa.shared.core.flows.validation import (
     UnresolvedFlowStepIdException,
     DuplicateNLUTriggerException,
     SlotNamingException,
+    FlowIdNamingException,
 )
 
 
@@ -477,3 +478,33 @@ def test_validation_fails_slot_name_does_not_adhere_to_pattern():
 
     with pytest.raises(SlotNamingException):
         flows_from_str(flow_config)
+
+
+@pytest.mark.parametrize("flow_id", ["abc def", "abcü", "abc+def", "/abc", "abc/def"])
+def test_validation_fails_flow_id_does_not_adhere_to_pattern(flow_id: str):
+    flow_config = f"""
+        flows:
+          {flow_id}:
+            description: test flow
+            steps:
+              - action: welcome
+        """
+
+    with pytest.raises(FlowIdNamingException):
+        flows_from_str(flow_config)
+
+
+@pytest.mark.parametrize(
+    "flow_id", ["abcdef", "abc-def", "abc_def", "_abc_def", "_abc", "01_abc"]
+)
+def test_validation_flow_id_passes_validation(flow_id: str):
+    flow_config = f"""
+        flows:
+          {flow_id}:
+            description: test flow
+            steps:
+              - action: welcome
+        """
+
+    flows = flows_from_str(flow_config)
+    assert flows.underlying_flows[0].id == flow_id

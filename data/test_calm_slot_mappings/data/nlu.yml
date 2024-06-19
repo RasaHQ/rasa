@@ -1,0 +1,85 @@
+version: "3.1"
+
+nlu:
+  - intent: greet
+    examples: |
+      - hey
+      - hello
+      - hi
+
+  - intent: inform_pizza
+    examples: |
+      - Can i get a pizza please?
+      - I would like to order a pizza.
+      - I would like to order a [margherita](pizza_type) pizza.
+      - I want to order a [pepperoni](pizza_type) pizza.
+      - I would like to order a [vegetarian](pizza_type) pizza.
+      - I want to order a [hawaiian](pizza_type) pizza.
+      - I would like to order a [diavola](pizza_type) pizza.
+      - I would like to order a [quattro formaggi](pizza_type) pizza.
+
+  - intent: goodbye
+    examples: |
+      - bye
+      - goodbye
+      - see you around
+      - see you later
+      - see you soon
+      - bye bye
+      - have a nice day
+      - take care
+
+  - intent: affirm
+    examples: |
+      - yes
+      - indeed
+      - of course
+      - that sounds good
+
+  - intent: deny
+    examples: |
+        - no
+        - never
+        - I don't think so
+        - don't like that
+
+  - intent: inform_address
+    examples: |
+      - 1234 Main Street
+      - 56 Elm Road
+      - 789 Maple Avenue
+      - 1011 Oak Drive
+      - 1213 Pine Lane
+      - 1415 Cedar Court
+
+  - intent: inform_num_pizza
+    examples: |
+      - [1](number) please
+      - [2](number) please
+      - [3](number) pizzas
+      - [4](number) pizzas
+
+  - intent: ask_availability
+    examples: |
+      - Do you have [2](number) tickets left for the store opening?
+      - Do you have [3](number) tickets left for the store opening?
+      - Are there any tickets left for the store launch event?
+      - Are there any tickets left for the store opening?
+      - Do you have [4](number) tickets left for the store launch event?
+
+  - intent: correct_order
+    examples: |
+      - I actually need to update my order.
+      - I need to change my order.
+      - I actually want to order [2](number) pizzas.
+      - Need [10](number) pizzas now instead.
+      - I made a mistake in the delivery address.
+      - I need to update the delivery address.
+      - I actually want to order a [vegetarian](pizza_type) pizza.
+      - I actually want to order [pepperoni](pizza_type) pizzas.
+      - Actually, I want to order [2](number) [margherita](pizza_type) pizzas.
+
+  - intent: request_payment
+    examples: |
+        - I would like to pay for my order.
+        - How can I pay for my order?

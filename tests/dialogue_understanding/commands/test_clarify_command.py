@@ -108,3 +108,19 @@ def test_run_command_uses_name_of_flow():
     frame = dialogue_stack_dump[0]
     assert frame["type"] == "pattern_clarification"
     assert frame["names"] == ["some foo"]
+
+
+def test_clarify_command_hash_equal():
+    command = ClarifyCommand(options=["foo", "bar", "baz"])
+    other_command = ClarifyCommand(options=["foo", "bar", "baz"])
+    assert hash(command) == hash(other_command)
+    assert command == other_command
+    assert command.options == other_command.options
+
+
+def test_clarify_command_hash_not_equal():
+    command = ClarifyCommand(options=["foo", "bar", "buzz"])
+    other_command = ClarifyCommand(options=["foo", "bar", "baz"])
+    assert hash(command) != hash(other_command)
+    assert command != other_command
+    assert command.options != other_command.options

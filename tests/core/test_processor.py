@@ -2336,3 +2336,21 @@ async def test_parse_message_with_multiple_set_slots_button(
     tracker = await processor.get_tracker(sender_id)
     assert tracker.get_slot("button_slot_a") is expected_value
     assert tracker.get_slot("button_slot_b") is expected_value
+
+
+def test_handle_message_with_commands_does_not_run_action_extract_slots(
+    flow_policy_bot_agent: Agent, monkeypatch: MonkeyPatch
+) -> None:
+    processor = flow_policy_bot_agent.processor
+    sender_id = uuid.uuid4().hex
+
+    mock_run_action_extract_slots = MagicMock()
+    monkeypatch.setattr(
+        processor, "run_action_extract_slots", mock_run_action_extract_slots
+    )
+
+    processor.handle_message(
+        UserMessage("/SetSlots(foo_slot_a=foo)", sender_id=sender_id)
+    )
+
+    mock_run_action_extract_slots.assert_not_called()

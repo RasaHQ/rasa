@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Text
+from typing import TYPE_CHECKING, List, Optional, Text, Any, Dict
 
 import structlog
 from langchain.document_loaders import DirectoryLoader, TextLoader
@@ -7,7 +7,8 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores.faiss import FAISS
 from rasa.utils.endpoints import EndpointConfig
 
-from rasa.core.information_retrieval.information_retrieval import (
+from rasa.core.information_retrieval import (
+    SearchResultList,
     InformationRetrieval,
     InformationRetrievalException,
 )
@@ -108,9 +109,13 @@ class FAISS_Store(InformationRetrieval):
         """Faiss does not need to connect to a server."""
         pass
 
-    async def search(self, query: Text, threshold: float = 0.0) -> List["Document"]:
+    async def search(
+        self, query: Text, tracker_state: Dict[str, Any], threshold: float = 0.0
+    ) -> SearchResultList:
         logger.debug("information_retrieval.faiss_store.search", query=query)
         try:
-            return await self.index.as_retriever().aget_relevant_documents(query)
+            documents = await self.index.as_retriever().aget_relevant_documents(query)
         except Exception as exc:
             raise InformationRetrievalException from exc
+
+        return SearchResultList.from_document_list(documents)

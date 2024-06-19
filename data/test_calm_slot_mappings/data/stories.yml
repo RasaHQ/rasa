@@ -1,0 +1,5 @@
+stories:
+  - story: availability for store launch event tickets
+    steps:
+      - intent: ask_availability
+      - action: utter_event_availability
