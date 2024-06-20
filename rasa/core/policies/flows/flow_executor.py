@@ -482,7 +482,10 @@ def validate_custom_slot_mappings(
     slot = tracker.slots.get(step.collect, None)
     slot_mappings = slot.mappings if slot else []
     for mapping in slot_mappings:
-        if mapping.get("type") == SlotMappingType.CUSTOM.value:
+        if (
+            mapping.get("type") == SlotMappingType.CUSTOM.value
+            and mapping.get("action") is None
+        ):
             # this is a slot that must be filled by a custom action
             # check if collect_action exists
             if step.collect_action not in available_actions:

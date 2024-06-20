@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Tuple, Union
 
 from rasa.core.actions.action_exceptions import ActionExecutionRejection
 from rasa.core.http_interpreter import RasaNLUHttpInterpreter
-from rasa.dialogue_understanding.commands import Command, SetSlotCommand
+from rasa.dialogue_understanding.commands import Command, NoopCommand, SetSlotCommand
 from rasa.engine import loader
 from rasa.engine.constants import (
     PLACEHOLDER_MESSAGE,
@@ -1300,6 +1300,7 @@ class MessageProcessor:
                 isinstance(command, SetSlotCommand)
                 and command.name == ROUTE_TO_CALM_SLOT
             )
+            and not isinstance(command, NoopCommand)
         ]
 
         return len(filtered_commands) > 0
