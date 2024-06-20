@@ -1,6 +1,8 @@
 import uuid
 from typing import List, Optional, Tuple
 import pytest
+import structlog
+
 from rasa.core.policies.flows import flow_executor
 from rasa.core.policies.flows.flow_exceptions import (
     FlowCircuitBreakerTrippedException,
@@ -52,6 +54,7 @@ from rasa.shared.core.flows.yaml_flows_io import flows_from_str
 from rasa.shared.core.slots import FloatSlot, TextSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from tests.dialogue_understanding.conftest import update_tracker_with_path_through_flow
+from tests.utilities import filter_logs
 
 
 def test_render_template_variables():
@@ -937,6 +940,50 @@ def test_run_step_action():
 
     assert isinstance(result, PauseFlowReturnPrediction)
     assert result.action_prediction.action_name == "utter_ask_foo"
+
+
+def test_run_step_action_check_warnings():
+    flows = flows_from_str(
+        """
+        flows:
+          my_flow:
+            description: fews steps from the pattern collect infomation.
+            steps:
+            - id: utter
+              action: utter_ask_foo
+            - id: action
+              action: action_ask_foo
+        """
+    )
+
+    user_flow_frame = UserFlowStackFrame(
+        flow_id="my_flow", step_id="START", frame_id="some-frame-id"
+    )
+    stack = DialogueStack(frames=[user_flow_frame])
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
+    flow = flows.flow_by_id("my_flow")
+    available_actions = ["utter_ask_foo"]
+
+    # Run the utter step of the collect.
+    step = flow.step_by_id("utter")
+    result = flow_executor.run_step(
+        step, flow, stack, tracker, available_actions, flows
+    )
+    assert isinstance(result, PauseFlowReturnPrediction)
+    assert result.action_prediction.action_name == "utter_ask_foo"
+
+    # Now run the associated action step of the collect.
+    step = flow.step_by_id("action")
+    expected_event = "flow.step.run.action.unknown"
+    expected_log_level = "warning"
+    with structlog.testing.capture_logs() as caplog:
+        result = flow_executor.run_step(
+            step, flow, stack, tracker, available_actions, flows
+        )
+        logs = filter_logs(caplog, expected_event, expected_log_level)
+        assert len(logs) == 1
+        assert isinstance(result, ContinueFlowWithNextStep)
 
 
 def test_run_step_link():
