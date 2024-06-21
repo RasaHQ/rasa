@@ -123,6 +123,8 @@ class DialogueStackFrame:
             The created `DialogueStackFrame`.
         """
         typ = data.get("type")
+        all_subclasses = _get_all_subclasses()
+        print(all_subclasses)
 
         for clazz in _get_all_subclasses():
             try:
