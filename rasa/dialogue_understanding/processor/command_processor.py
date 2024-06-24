@@ -622,6 +622,12 @@ def clean_up_chitchat_command(
 
 def should_slot_be_set(slot: Slot, command: SetSlotCommand) -> bool:
     """Check if a slot should be set by a command."""
+    if command.extractor == SetSlotExtractor.COMMAND_PAYLOAD_READER.value:
+        # if the command is issued by the command payload reader, it means the slot
+        # was set deterministically via a response button. In this case,
+        # we can always set it
+        return True
+
     slot_mappings = slot.mappings
 
     if not slot_mappings:
@@ -637,7 +643,7 @@ def should_slot_be_set(slot: Slot, command: SetSlotCommand) -> bool:
             and mapping_type == SlotMappingType.FROM_LLM
         )
         should_be_set_by_nlu = (
-            command.extractor != SetSlotExtractor.LLM.value
+            command.extractor == SetSlotExtractor.NLU.value
             and mapping_type.is_predefined_type()
         )
 

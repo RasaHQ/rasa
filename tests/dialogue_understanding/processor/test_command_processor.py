@@ -577,9 +577,24 @@ def test_clean_up_chitchat_commands(
     [
         ([], SetSlotExtractor.LLM.value),
         ([{}], SetSlotExtractor.LLM.value),
+        ([{"type": "from_llm"}], SetSlotExtractor.LLM.value),
         ([{"type": "from_entity", "entity": "name"}], SetSlotExtractor.NLU.value),
         ([{"type": "from_intent", "intent": "inform"}], SetSlotExtractor.NLU.value),
         ([{"type": "from_text", "intent": "inform"}], SetSlotExtractor.NLU.value),
+        ([{"type": "from_llm"}], SetSlotExtractor.COMMAND_PAYLOAD_READER.value),
+        ([{"type": "custom"}], SetSlotExtractor.COMMAND_PAYLOAD_READER.value),
+        (
+            [{"type": "from_entity", "entity": "name"}],
+            SetSlotExtractor.COMMAND_PAYLOAD_READER.value,
+        ),
+        (
+            [{"type": "from_intent", "intent": "inform"}],
+            SetSlotExtractor.COMMAND_PAYLOAD_READER.value,
+        ),
+        (
+            [{"type": "from_text", "intent": "inform"}],
+            SetSlotExtractor.COMMAND_PAYLOAD_READER.value,
+        ),
     ],
 )
 def test_command_processor_should_slot_be_set(
@@ -596,9 +611,12 @@ def test_command_processor_should_slot_be_set(
     [
         ([], SetSlotExtractor.NLU.value),
         ([{}], SetSlotExtractor.NLU.value),
+        ([{"type": "from_llm"}], SetSlotExtractor.NLU.value),
+        ([{"type": "custom"}], SetSlotExtractor.NLU.value),
         ([{"type": "from_entity", "entity": "name"}], SetSlotExtractor.LLM.value),
         ([{"type": "from_intent", "intent": "inform"}], SetSlotExtractor.LLM.value),
         ([{"type": "from_text", "intent": "inform"}], SetSlotExtractor.LLM.value),
+        ([{"type": "custom"}], SetSlotExtractor.LLM.value),
     ],
 )
 def test_command_processor_should_slot_be_set_invalid(
