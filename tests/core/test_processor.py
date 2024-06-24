@@ -16,7 +16,11 @@ from unittest.mock import MagicMock, Mock, patch, AsyncMock
 import freezegun
 import pytest
 
-from rasa.dialogue_understanding.commands import SetSlotCommand, StartFlowCommand
+from rasa.dialogue_understanding.commands import (
+    SetSlotCommand,
+    StartFlowCommand,
+    CannotHandleCommand,
+)
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 import rasa.shared.utils.io
 import tests.utilities
@@ -57,6 +61,7 @@ from rasa.shared.constants import (
     ASSISTANT_ID_KEY,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
     ROUTE_TO_CALM_SLOT,
+    RASA_PATTERN_CANNOT_HANDLE_INVALID_INTENT,
 )
 from rasa.shared.core.constants import (
     ACTION_CORRECT_FLOW_SLOT,
@@ -2119,13 +2124,17 @@ async def test_run_command_processor_setting_a_slot(
 async def test_handle_message_with_intent_trigger_and_no_nlu_trigger(
     flow_policy_bot_agent: Agent,
 ):
+    # Given
     processor = flow_policy_bot_agent.processor
+    processor.domain.intents.append("welcome")
     sender_id = uuid.uuid4().hex
     tracker = await processor.tracker_store.get_or_create_tracker(sender_id)
     tracker.slots[ROUTE_TO_CALM_SLOT] = BooleanSlot(ROUTE_TO_CALM_SLOT, [{}])
 
+    # When
     parse_data = await processor.parse_message(UserMessage("/welcome"), tracker)
 
+    # Then
     assert len(parse_data[COMMANDS]) == 1
     assert SetSlotCommand(ROUTE_TO_CALM_SLOT, False).as_dict() in parse_data[COMMANDS]
 
@@ -2143,6 +2152,36 @@ async def test_handle_message_with_intent_trigger_and_nlu_trigger(
     assert len(parse_data[COMMANDS]) == 2
     assert SetSlotCommand(ROUTE_TO_CALM_SLOT, True).as_dict() in parse_data[COMMANDS]
     assert StartFlowCommand("bar").as_dict() in parse_data[COMMANDS]
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        UserMessage("/invalid_intent"),
+        UserMessage("/"),
+        UserMessage("/ some random message without any intents"),
+    ],
+)
+async def test_run_command_processor_parsing_a_message_with_invalid_intent(
+    message: UserMessage,
+    flow_policy_bot_agent: Agent,
+):
+    # Given
+    processor = flow_policy_bot_agent.processor
+    sender_id = uuid.uuid4().hex
+    tracker = await processor.tracker_store.get_or_create_tracker(sender_id)
+    tracker.slots[ROUTE_TO_CALM_SLOT] = BooleanSlot(ROUTE_TO_CALM_SLOT, [{}])
+
+    # When
+    parse_data = await processor.parse_message(message, tracker)
+
+    # Then
+    assert len(parse_data[COMMANDS]) == 2
+    assert (
+        CannotHandleCommand(RASA_PATTERN_CANNOT_HANDLE_INVALID_INTENT).as_dict()
+        in parse_data[COMMANDS]
+    )
+    assert SetSlotCommand(ROUTE_TO_CALM_SLOT, True).as_dict() in parse_data[COMMANDS]
 
 
 async def test_update_full_retrieval_intent(
