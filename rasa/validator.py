@@ -43,6 +43,9 @@ from rasa.shared.core.domain import (
 from rasa.shared.core.generator import TrainingDataGenerator
 from rasa.shared.core.constants import SlotMappingType, MAPPING_TYPE
 from rasa.shared.core.slots import ListSlot, Slot
+from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
+    YAMLStoryReader,
+)
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.data import create_regex_pattern_reader
 from rasa.shared.importers.importer import TrainingDataImporter
@@ -1121,6 +1124,11 @@ class Validator:
                         )
                         all_good = False
                         continue
+
+                    if isinstance(regex_reader, YAMLStoryReader):
+                        # the payload could contain double curly braces
+                        # we need to remove 1 set of curly braces
+                        payload = payload.replace("{{", "{").replace("}}", "}")
 
                     resulting_message = regex_reader.unpack_regex_message(
                         message=Message(data={"text": payload}), domain=self.domain

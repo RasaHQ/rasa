@@ -2064,11 +2064,14 @@ def test_validate_button_payloads_valid_payloads(
         version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
          - inform
+        entities:
+        - confirmation
         slots:
           confirmation:
              type: bool
              mappings:
-              - type: custom
+              - type: from_entity
+                entity: confirmation
         responses:
             utter_ask_confirm:
             - buttons:
@@ -2084,6 +2087,37 @@ def test_validate_button_payloads_valid_payloads(
     captured = capsys.readouterr()
     log_levels = ["error", "warning"]
     assert all([log_level not in captured.out for log_level in log_levels])
+
+
+def test_validate_button_payloads_no_user_warning_raised_with_intent_payload() -> None:
+    """Test that no user warning is raised when the payload has double curly braces."""
+    payload = '/inform{{"confirmation": "true"}}'
+    test_domain = Domain.from_yaml(
+        f"""
+            version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+            intents:
+             - inform
+            entities:
+            - confirmation
+            slots:
+              confirmation:
+                 type: bool
+                 mappings:
+                  - type: from_entity
+                    entity: confirmation
+            responses:
+                utter_ask_confirm:
+                - buttons:
+                    - title: Yes
+                      payload: '{payload}'
+                  text: "Do you confirm?"
+            """
+    )
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        validator = Validator(test_domain, TrainingData(), StoryGraph([]), None, None)
+        assert validator.validate_button_payloads() is True
 
 
 @pytest.mark.parametrize(
