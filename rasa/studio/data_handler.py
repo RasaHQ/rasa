@@ -195,38 +195,44 @@ class StudioDataHandler:
         return base64.b64decode(data).decode("utf-8")
 
 
-def create_new_domain_from_diff(studio_domain, original_domain) -> Dict:
+def combine_domains(
+    studio_domain: Dict[str, Any], original_domain: Dict[str, Any]
+) -> Dict:
     """Create a new domain file from the diff."""
     if studio_domain is None or original_domain is None:
         return {}
-    return _domain_from_diff_rec(studio_domain, original_domain)
+    return _combine_domain_keys(studio_domain, original_domain)
 
 
-def _domain_from_diff_rec(studio: Dict, original: Dict) -> Dict:
-    ret_dict = {}
-    for key in studio:
-        if key not in original:
-            ret_dict[key] = studio[key]
-        elif isinstance(studio[key], dict):
-            ret_dict[key] = _domain_from_diff_rec(studio[key], original[key])
+def _combine_domain_keys(
+    first_domain: Dict[str, Any], second_domain: Dict[str, Any]
+) -> Dict[str, Any]:
+    combined_keys = {}
+    for key in first_domain:
+        if key not in second_domain:
+            combined_keys[key] = first_domain[key]
+        elif isinstance(first_domain[key], dict):
+            combined_keys[key] = _combine_domain_keys(
+                first_domain[key], second_domain[key]
+            )
             # remove empty diffs
-            if not ret_dict[key]:
-                del ret_dict[key]
+            if not combined_keys[key]:
+                del combined_keys[key]
             elif key not in [KEY_SLOTS, KEY_RESPONSES]:
-                # copy over the whole key not just the diff in case of items
-                # to get complete (valid) data not just the diff
-                ret_dict[key] = studio[key]
-        elif isinstance(studio[key], list):
-            ret_dict[key] = []
-            for item in studio[key]:
-                if item not in original[key]:
-                    ret_dict[key].append(item)
+                # for all keys except slots and responses, we want to keep the
+                # keys from the first domain
+                combined_keys[key] = first_domain[key]
+        elif isinstance(first_domain[key], list):
+            combined_keys[key] = []
+            for item in first_domain[key]:
+                if item not in second_domain[key]:
+                    combined_keys[key].append(item)
 
             # if list is empty, remove it
-            if not ret_dict[key]:
-                del ret_dict[key]
+            if not combined_keys[key]:
+                del combined_keys[key]
 
-    return ret_dict
+    return combined_keys
 
 
 def _diff_nlu_examples(
@@ -248,7 +254,7 @@ def _diff_nlu_examples(
     orig = list(
         filter(
             lambda x: x.get(match_key) == match_value,
-            original_nlu_examples,  # type: ignore[index]
+            original_nlu_examples,
         )
     )
     if len(orig) == 1:
@@ -259,8 +265,18 @@ def _diff_nlu_examples(
             nlu_diff.remove(new_example)
 
 
-def create_new_nlu_from_diff(studio_nlu, original_nlu) -> Dict:
+def create_new_nlu_from_diff(
+    studio_nlu: Dict[str, Any], original_nlu: Dict[str, Any]
+) -> Dict:
     """Create a new nlu file from the diff."""
+    # `or []` handles the case where the data contains the property as an empty
+    # key, example yaml:
+    # ```
+    # nlu:
+    # ```
+    # in this case, the yaml parser will return an empty dict (because it
+    # can't know that it is supposed to be a list, so we need to convert it
+    # to a list
     studio_nlu_data = studio_nlu.get("nlu", []) or []
     original_nlu_data = original_nlu.get("nlu", []) or []
 

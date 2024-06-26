@@ -615,7 +615,7 @@ from rasa.studio.data_handler import (
     ],
 )
 def test_diff_generator_domain(domain1: Dict, domain2: Dict, domain_diff: Dict) -> None:
-    actual_diff = data_handler.create_new_domain_from_diff(domain2, domain1)
+    actual_diff = data_handler.combine_domains(domain2, domain1)
     assert actual_diff == domain_diff
 
 

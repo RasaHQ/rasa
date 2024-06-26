@@ -74,7 +74,7 @@ def _handle_download_no_overwrite(
 
     if domain_path.is_dir():
         studio_domain_path = domain_path / STUDIO_DOMAIN_FILENAME
-        new_domain_data = data_handler.create_new_domain_from_diff(
+        new_domain_data = data_handler.combine_domains(
             data_from_studio.get_domain().as_dict(),
             data_original.get_domain().as_dict(),
         )
