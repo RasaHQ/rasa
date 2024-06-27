@@ -209,3 +209,11 @@ class FlowsList:
         return FlowsList(
             [f for f in self.underlying_flows if not f.is_startable_only_via_link()]
         )
+
+    def available_slot_names(self) -> Set[str]:
+        """Get all slot names collected by flows."""
+        return {
+            step.collect
+            for flow in self.underlying_flows
+            for step in flow.get_collect_steps()
+        }

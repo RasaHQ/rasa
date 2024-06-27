@@ -761,7 +761,8 @@ class MessageProcessor:
 
                 commands = parse_data.get(COMMANDS, [])
 
-                if tracker:
+                # add commands from intent payloads
+                if tracker and not commands:
                     nlu_adapted_commands = await self._nlu_to_commands(
                         parse_data, tracker
                     )
