@@ -296,11 +296,10 @@ def create_new_nlu_from_diff(
     return {"nlu": nlu_diff}
 
 
-def create_new_flows_from_diff(studio_flows, original_flows) -> List[Flow]:
+def create_new_flows_from_diff(
+    studio_flows: List[Flow], original_flows: List[Flow]
+) -> List[Flow]:
     """Create a new flows file from the diff."""
-    if studio_flows is None or original_flows is None:
-        return []
-
     flows_new = [new for new in studio_flows if new not in original_flows]
     return flows_new
 
