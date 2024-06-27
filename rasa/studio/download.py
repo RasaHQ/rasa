@@ -13,6 +13,7 @@ from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows.yaml_flows_io import YamlFlowsWriter
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.utils.yaml import read_yaml
+from rasa.studio import data_handler
 
 from rasa.studio.config import StudioConfig
 from rasa.studio.constants import (
@@ -21,7 +22,6 @@ from rasa.studio.constants import (
     STUDIO_NLU_FILENAME,
 )
 from rasa.studio.data_handler import (
-    DataDiffGenerator,
     StudioDataHandler,
     import_data_from_studio,
 )
@@ -74,11 +74,10 @@ def _handle_download_no_overwrite(
 
     if domain_path.is_dir():
         studio_domain_path = domain_path / STUDIO_DOMAIN_FILENAME
-        diff_eng = DataDiffGenerator(
-            original_domain=data_original.get_domain().as_dict(),
-            studio_domain=data_from_studio.get_domain().as_dict(),
+        new_domain_data = data_handler.combine_domains(
+            data_from_studio.get_domain().as_dict(),
+            data_original.get_domain().as_dict(),
         )
-        new_domain_data = diff_eng.create_new_domain_from_diff()
         studio_domain = Domain.from_dict(new_domain_data)
         if not studio_domain.is_empty():
             studio_domain.persist(studio_domain_path)
@@ -125,11 +124,10 @@ def _persist_nlu_diff(
     data_path: Path,
 ) -> None:
     """Creates a new nlu file from the diff of original and studio data."""
-    diff_eng = DataDiffGenerator(
-        original_nlu=read_yaml(data_original.get_nlu_data().nlu_as_yaml()),
-        studio_nlu=read_yaml(data_from_studio.get_nlu_data().nlu_as_yaml()),
+    new_nlu_data = data_handler.create_new_nlu_from_diff(
+        read_yaml(data_from_studio.get_nlu_data().nlu_as_yaml()),
+        read_yaml(data_original.get_nlu_data().nlu_as_yaml()),
     )
-    new_nlu_data = diff_eng.create_new_nlu_from_diff()
     if new_nlu_data["nlu"]:
         pretty_write_nlu_yaml(new_nlu_data, data_path)
     else:
@@ -142,11 +140,10 @@ def _persist_flows_diff(
     data_path: Path,
 ) -> None:
     """Creates a new flows file from the diff of original and studio data."""
-    diff_eng = DataDiffGenerator(
-        original_flows=data_original.get_flows().underlying_flows,
-        studio_flows=data_from_studio.get_flows().underlying_flows,
+    new_flows_data = data_handler.create_new_flows_from_diff(
+        data_from_studio.get_flows().underlying_flows,
+        data_original.get_flows().underlying_flows,
     )
-    new_flows_data = diff_eng.create_new_flows_from_diff()
     if new_flows_data:
         YamlFlowsWriter.dump(new_flows_data, data_path)
     else:
