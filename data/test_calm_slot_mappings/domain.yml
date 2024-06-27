@@ -85,6 +85,11 @@ responses:
 
   utter_ask_order_confirmation:
     - text: You have put in a order for {num_pizza} {pizza} pizzas. Please confirm these details are correct?
+      buttons:
+        - title: Yes
+          payload: /SetSlots(order_confirmation=True)
+        - title: No
+          payload: /SetSlots(order_confirmation=False)
 
   utter_cancel_order:
     - text: Your order has been cancelled.

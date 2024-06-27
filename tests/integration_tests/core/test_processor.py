@@ -102,7 +102,7 @@ async def test_processor_handle_message_calm_slots_with_nlu_pipeline(
         "I would like to order a diavola pizza",
         "2 please",
         "12 Elm Street",
-        "Yes",
+        "/SetSlots(order_confirmation=True)",
     ]
 
     response_texts = [
@@ -136,8 +136,8 @@ async def test_processor_handle_message_calm_slots_with_nlu_pipeline(
         [
             SetSlotCommand(
                 name="order_confirmation",
-                value=True,
-                extractor=SetSlotExtractor.NLU.value,
+                value="True",
+                extractor=SetSlotExtractor.COMMAND_PAYLOAD_READER.value,
             ).as_dict()
         ],
     ]

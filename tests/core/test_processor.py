@@ -2354,3 +2354,19 @@ def test_handle_message_with_commands_does_not_run_action_extract_slots(
     )
 
     mock_run_action_extract_slots.assert_not_called()
+
+
+def test_handle_message_with_commands_from_buttons_does_not_run_nlu_command_adapter(
+    flow_policy_bot_agent: Agent, monkeypatch: MonkeyPatch
+) -> None:
+    processor = flow_policy_bot_agent.processor
+    sender_id = uuid.uuid4().hex
+
+    mock_nlu_to_commands = MagicMock()
+    monkeypatch.setattr(processor, "_nlu_to_commands", mock_nlu_to_commands)
+
+    processor.handle_message(
+        UserMessage("/SetSlots(foo_slot_a=foo)", sender_id=sender_id)
+    )
+
+    mock_nlu_to_commands.assert_not_called()
