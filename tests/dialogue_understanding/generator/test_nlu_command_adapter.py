@@ -65,6 +65,11 @@ class TestNLUCommandAdapter:
                 - type: from_entity
                   entity: bar2
                   intent: foo
+            qux:
+              type: text
+              mappings:
+                - type: from_text
+                  intent: foo2
         """)
 
     @pytest.fixture
@@ -90,7 +95,9 @@ class TestNLUCommandAdapter:
                   - intent: foo
                 steps:
                 - id: first_step
-                  action: action_listen
+                  collect: baz2
+                - collect: baz
+                - action: action_listen
             """
         )
 
@@ -361,3 +368,33 @@ class TestNLUCommandAdapter:
         )
 
         assert predicted_commands == expected_commands
+
+    async def test_predict_commands_skips_slot_not_collected_by_flows(
+        self,
+        command_generator: NLUCommandAdapter,
+        flows: FlowsList,
+        domain: Domain,
+    ):
+        sender_id = uuid.uuid4().hex
+        tracker = DialogueStateTracker.from_events(sender_id, [], slots=domain.slots)
+
+        predicted_commands = await command_generator.predict_commands(
+            Message(
+                data={
+                    TEXT: "some message",
+                    INTENT: {
+                        INTENT_NAME_KEY: "foo2",
+                        PREDICTED_CONFIDENCE_KEY: 1.0,
+                    },
+                }
+            ),
+            flows=flows,
+            tracker=tracker,
+            domain=domain,
+        )
+
+        assert (
+            SetSlotCommand("qux", "some message", SetSlotExtractor.NLU.value)
+            not in predicted_commands
+        )
+        assert len(predicted_commands) == 0
