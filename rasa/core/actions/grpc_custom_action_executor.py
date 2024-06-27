@@ -1,9 +1,10 @@
+import json
 from typing import Any, Dict, Optional, TYPE_CHECKING
 from urllib.parse import urlparse
 
 import grpc
 import structlog
-from google.protobuf.json_format import ParseDict, MessageToDict
+from google.protobuf.json_format import ParseDict, MessageToDict, Parse
 
 from rasa.core.actions.action_exceptions import DomainNotFound
 from rasa.core.actions.constants import SSL_CLIENT_CERT_FIELD, SSL_CLIENT_KEY_FIELD
@@ -59,18 +60,10 @@ class GRPCCustomActionExecutor(CustomActionExecutor):
 
         client_cert_file = self.action_endpoint.kwargs.get(SSL_CLIENT_CERT_FIELD)
         client_key_file = self.action_endpoint.kwargs.get(SSL_CLIENT_KEY_FIELD)
-        if not client_key_file:
-            structlogger.error(
-                f"rasa.core.actions.grpc_custom_action_executor.{SSL_CLIENT_KEY_FIELD}_missing",
-                event_info=(
-                    f"Client certificate file '{SSL_CLIENT_CERT_FIELD}' "
-                    f" is provided but client key file '{SSL_CLIENT_KEY_FIELD}'"
-                    f" is not provided in the endpoint configuration. "
-                    f"Both fields are required for client TLS authentication."
-                    f"Continuing without client TLS authentication."
-                ),
-            )
-        if not client_cert_file:
+        if client_cert_file and client_key_file:
+            self.client_cert = file_as_bytes(client_cert_file)
+            self.client_key = file_as_bytes(client_key_file)
+        elif client_key_file and not client_cert_file:
             structlogger.error(
                 f"rasa.core.actions.grpc_custom_action_executor.{SSL_CLIENT_CERT_FIELD}_missing",
                 event_info=(
@@ -81,9 +74,17 @@ class GRPCCustomActionExecutor(CustomActionExecutor):
                     f"Continuing without client TLS authentication."
                 ),
             )
-        if client_cert_file and client_key_file:
-            self.client_cert = file_as_bytes(client_cert_file)
-            self.client_key = file_as_bytes(client_key_file)
+        elif client_cert_file and not client_key_file:
+            structlogger.error(
+                f"rasa.core.actions.grpc_custom_action_executor.{SSL_CLIENT_KEY_FIELD}_missing",
+                event_info=(
+                    f"Client certificate file '{SSL_CLIENT_CERT_FIELD}' "
+                    f" is provided but client key file '{SSL_CLIENT_KEY_FIELD}'"
+                    f" is not provided in the endpoint configuration. "
+                    f"Both fields are required for client TLS authentication."
+                    f"Continuing without client TLS authentication."
+                ),
+            )
 
     async def run(
         self, tracker: "DialogueStateTracker", domain: Optional["Domain"] = None
@@ -98,28 +99,24 @@ class GRPCCustomActionExecutor(CustomActionExecutor):
             Response from the action server.
         """
 
-        json_body = self.request_writer.create(tracker=tracker, domain=domain)
+        request = self._create_payload(tracker=tracker, domain=domain)
 
-        return self._request(json_body)
+        return self._request(request)
 
     def _request(
         self,
-        json_body: Dict[str, Any],
+        request: action_webhook_pb2.WebhookRequest,
     ) -> Dict[str, Any]:
         """Perform a single gRPC request to the action server.
 
         Args:
-            json_body: JSON body of the request.
+            request: gRPC Request to be sent to the action server.
 
         Returns:
             Response from the action server.
         """
 
         client = self._create_grpc_client()
-        request_proto = action_webhook_pb2.WebhookRequest()
-        request = ParseDict(
-            js_dict=json_body, message=request_proto, ignore_unknown_fields=True
-        )
         try:
             response = client.Webhook(request)
             return MessageToDict(response)
@@ -156,6 +153,44 @@ class GRPCCustomActionExecutor(CustomActionExecutor):
             raise RasaException(
                 f"Failed to execute custom action '{self.action_name}'. "
                 f"Error: {details}"
+            )
+
+    def _create_payload(
+        self,
+        tracker: "DialogueStateTracker",
+        domain: Optional["Domain"] = None,
+    ) -> action_webhook_pb2.WebhookRequest:
+        """Create the gRPC payload for the action server.
+
+        Args:
+            tracker: Tracker for the current conversation.
+            domain: Domain of the assistant.
+
+        Returns:
+            gRPC payload for the action server.
+        """
+        json_body = self.request_writer.create(tracker=tracker, domain=domain)
+
+        request_proto = action_webhook_pb2.WebhookRequest()
+
+        try:
+            return ParseDict(
+                js_dict=json_body, message=request_proto, ignore_unknown_fields=True
+            )
+        except Exception:
+            structlogger.warning(
+                (
+                    "rasa.core.actions.grpc_custom_action_executor."
+                    "create_grpc_payload_from_dict_failed"
+                ),
+                event_info=(
+                    "Failed to create gRPC payload from Python dictionary. "
+                    "Falling back to create payload from JSON intermediary."
+                ),
+            )
+            json_text = json.dumps(json_body)
+            return Parse(
+                text=json_text, message=request_proto, ignore_unknown_fields=True
             )
 
     def _create_grpc_client(
