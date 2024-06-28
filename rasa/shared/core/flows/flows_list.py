@@ -217,3 +217,7 @@ class FlowsList:
             for flow in self.underlying_flows
             for step in flow.get_collect_steps()
         }
+
+    def available_custom_actions(self) -> Set[str]:
+        """Get all custom actions collected by flows."""
+        return set().union(*[flow.custom_actions for flow in self.underlying_flows])

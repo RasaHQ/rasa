@@ -10,6 +10,7 @@ from types import LambdaType
 from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Tuple, Union
 
 from rasa.core.actions.action_exceptions import ActionExecutionRejection
+from rasa.core.actions.forms import FormAction
 from rasa.core.http_interpreter import RasaNLUHttpInterpreter
 from rasa.dialogue_understanding.commands import Command, NoopCommand, SetSlotCommand
 from rasa.engine import loader
@@ -212,8 +213,10 @@ class MessageProcessor:
         action_extract_slots = rasa.core.actions.action.action_for_name_or_text(
             ACTION_EXTRACT_SLOTS, self.domain, self.action_endpoint
         )
+        metadata = await self._add_flows_to_metadata()
+
         extraction_events = await action_extract_slots.run(
-            output_channel, self.nlg, tracker, self.domain
+            output_channel, self.nlg, tracker, self.domain, metadata
         )
 
         await self._send_bot_messages(extraction_events, tracker, output_channel)
@@ -1109,6 +1112,17 @@ class MessageProcessor:
         results = await self.graph_runner.run(inputs={}, targets=[target])
         return results[target]
 
+    async def _add_flows_to_metadata(self) -> Dict[Text, Any]:
+        """Convert the flows to metadata."""
+        flows = await self.get_flows()
+        flows_metadata = {}
+        for flow in flows.underlying_flows:
+            flow_as_json = flow.as_json()
+            flow_as_json.pop("id")
+            flows_metadata[flow.id] = flow_as_json
+
+        return {"all_flows": flows_metadata}
+
     async def _run_action(
         self,
         action: rasa.core.actions.action.Action,
@@ -1127,12 +1141,19 @@ class MessageProcessor:
 
             run_args = inspect.getfullargspec(action.run).args
             if "metadata" in run_args:
+                metadata: Optional[Dict] = prediction.action_metadata
+
+                if isinstance(action, FormAction):
+                    flows_metadata = await self._add_flows_to_metadata()
+                    metadata = prediction.action_metadata or {}
+                    metadata.update(flows_metadata)
+
                 events = await action.run(
                     output_channel,
                     nlg,
                     temporary_tracker,
                     self.domain,
-                    metadata=prediction.action_metadata,
+                    metadata=metadata,
                 )
             else:
                 events = await action.run(

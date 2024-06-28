@@ -223,6 +223,15 @@ class Flow:
         )
 
     @property
+    def custom_actions(self) -> Set[str]:
+        """Retrieve all custom actions of this flow."""
+        return {
+            step.custom_action
+            for step in self.step_sequence.steps_with_calls_resolved
+            if isinstance(step, ActionFlowStep) and step.custom_action is not None
+        }
+
+    @property
     def name(self) -> str:
         """Create a default name if none is present."""
         return self.custom_name or Flow.create_default_name(self.id)

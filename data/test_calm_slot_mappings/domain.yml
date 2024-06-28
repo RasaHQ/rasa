@@ -58,6 +58,8 @@ slots:
     type: bool
     mappings:
       - type: custom
+        # missing action on purpose for the integration test
+        # test_processor_handle_message_calm_slots_custom_action_invalid
   payment_option:
     type: text
     mappings:
@@ -95,19 +97,19 @@ responses:
     - text: Your order has been cancelled.
 
   utter_event_availability:
-    - text: "Yes, we have {num_tickets} places available for the store launch event."
+    - text: Yes, we have {num_tickets} places available for the store launch event.
 
   utter_ask_is_member:
-    - text: "Let's proceed with loging you in."
+    - text: Let's proceed with loging you in.
 
   utter_login_successful:
-    - text: "You have successfully logged in."
+    - text: You have successfully logged in.
 
   utter_cancel_auth:
-    - text: "Login failed. Please try again."
+    - text: Login failed. Please try again.
 
   utter_ask_payment_option:
-    - text: "How would you like to pay for your order?"
+    - text: How would you like to pay for your order?
 
   utter_ask_card_number:
-    - text: "Please provide your card number."
+    - text: Please provide your card number.
