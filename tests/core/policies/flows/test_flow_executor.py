@@ -24,6 +24,7 @@ from rasa.dialogue_understanding.patterns.search import SearchPatternFlowStackFr
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames.chit_chat_frame import ChitChatStackFrame
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
+    BaseFlowStackFrame,
     FlowStackFrameType,
     UserFlowStackFrame,
 )
@@ -1634,3 +1635,12 @@ def test_flow_executor_validate_custom_slot_mappings_invalid() -> None:
 
     assert not is_valid
     assert stack.current_context().get("flow_id") == "pattern_internal_error"
+
+    bottom_frame = stack.frames[0]
+    assert isinstance(bottom_frame, UserFlowStackFrame)
+    assert bottom_frame.flow_id == "my_flow"
+    assert bottom_frame.step_id == "1"
+
+    next_frame = stack.frames[1]
+    assert isinstance(next_frame, BaseFlowStackFrame)
+    assert next_frame.flow_id == "pattern_cancel_flow"
