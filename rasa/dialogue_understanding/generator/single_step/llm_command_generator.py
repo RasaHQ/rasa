@@ -36,9 +36,9 @@ class LLMCommandGenerator(SingleStepLLMCommandGenerator):
         **kwargs: Any,
     ) -> None:
         raise_deprecation_warning(
-            message="LLMCommandGenerator is deprecated and will be  "
-            "removed in Rasa 4.0.0. "
-            "Please use SingleStepLLMCommandGenerator instead."
+            message="`LLMCommandGenerator` has been renamed to `SingleStepLLMCommandGenerator`."
+                    "Support for the former name `LLMCommandGenerator` will be removed in Rasa `4.0.0`"
+                    "Please modify your assistant's configuration to use `SingleStepLLMCommandGenerator` instead."
         )
 
         super().__init__(
