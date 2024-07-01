@@ -1872,6 +1872,10 @@ async def test_grpc_custom_action_executor_run(
     domain: Domain,
     grpc_payload: action_webhook_pb2.WebhookRequest,
 ) -> None:
+    grpc_custom_action_executor.action_endpoint.headers = {"key": "value"}
     await grpc_custom_action_executor.run(tracker=tracker_without_tuple, domain=domain)
 
-    grpc_client.Webhook.assert_called_once_with(grpc_payload)
+    expected_metadata = [("key", "value")]
+    grpc_client.Webhook.assert_called_once_with(
+        grpc_payload, metadata=expected_metadata
+    )

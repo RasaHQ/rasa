@@ -1,5 +1,5 @@
 import json
-from typing import Any, Dict, Optional, TYPE_CHECKING
+from typing import Any, Dict, Optional, TYPE_CHECKING, List, Tuple
 from urllib.parse import urlparse
 
 import grpc
@@ -117,8 +117,9 @@ class GRPCCustomActionExecutor(CustomActionExecutor):
         """
 
         client = self._create_grpc_client()
+        metadata = self._build_metadata()
         try:
-            response = client.Webhook(request)
+            response = client.Webhook(request, metadata=metadata)
             return MessageToDict(response)
         except grpc.RpcError as rpc_error:
             if not isinstance(rpc_error, grpc.Call):
@@ -154,6 +155,17 @@ class GRPCCustomActionExecutor(CustomActionExecutor):
                 f"Failed to execute custom action '{self.action_name}'. "
                 f"Error: {details}"
             )
+
+    def _build_metadata(self) -> List[Tuple[str, Any]]:
+        """Build metadata for the gRPC request.
+
+        Returns:
+            Metadata for the gRPC request.
+        """
+        metadata = []
+        for key, value in self.action_endpoint.headers.items():
+            metadata.append((key, value))
+        return metadata
 
     def _create_payload(
         self,
