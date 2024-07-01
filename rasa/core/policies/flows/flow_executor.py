@@ -3,6 +3,8 @@ from __future__ import annotations
 from typing import Any, Dict, Text, List, Optional
 
 from jinja2 import Template
+from rasa.dialogue_understanding.commands import CancelFlowCommand
+from rasa.dialogue_understanding.patterns.cancel import CancelPatternFlowStackFrame
 from structlog.contextvars import (
     bound_contextvars,
 )
@@ -494,6 +496,20 @@ def validate_custom_slot_mappings(
                     action=step.collect_action,
                     collect=step.collect,
                 )
+                top_frame = stack.top()
+
+                if isinstance(top_frame, BaseFlowStackFrame):
+                    # we need to first cancel the top user flow
+                    # because we cannot collect one of its slots
+                    # and therefore should not proceed with the flow
+                    # after triggering pattern_internal_error
+                    canceled_frames = CancelFlowCommand.select_canceled_frames(stack)
+                    stack.push(
+                        CancelPatternFlowStackFrame(
+                            canceled_name=top_frame.flow_id,
+                            canceled_frames=canceled_frames,
+                        )
+                    )
                 stack.push(InternalErrorPatternFlowStackFrame())
                 return False
     return True
