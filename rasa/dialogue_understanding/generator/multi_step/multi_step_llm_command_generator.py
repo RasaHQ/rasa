@@ -28,6 +28,7 @@ from rasa.dialogue_understanding.generator.constants import (
     USER_INPUT_CONFIG_KEY,
     FLOW_RETRIEVAL_KEY,
 )
+from rasa.shared.constants import ROUTE_TO_CALM_SLOT
 from rasa.dialogue_understanding.generator.flow_retrieval import FlowRetrieval
 from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
 from rasa.dialogue_understanding.stack.utils import (
@@ -258,6 +259,11 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
         if not commands:
             # if action_list is None, we couldn't get any response from the LLM
             commands = [ErrorCommand()]
+        else:
+            # if the LLM command generator predicted valid commands and the
+            # coexistence feature is used, set the routing slot
+            if tracker.has_coexistence_routing_slot:
+                commands += [SetSlotCommand(ROUTE_TO_CALM_SLOT, True)]
 
         return commands
 
