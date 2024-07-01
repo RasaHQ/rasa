@@ -415,7 +415,7 @@ class EnterpriseSearchPolicy(Policy):
             logger.error(f"{logger_key}.search_error", error=e)
             return self._create_prediction_internal_error(domain, tracker)
 
-        if not documents:
+        if not documents.results:
             logger.info(f"{logger_key}.no_documents")
             return self._create_prediction_cannot_handle(domain, tracker)
 
