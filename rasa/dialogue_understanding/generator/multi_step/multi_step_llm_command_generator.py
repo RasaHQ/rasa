@@ -5,6 +5,7 @@ from typing import Dict, Any, List, Optional, Tuple, Union, Text
 import structlog
 from jinja2 import Template
 
+import rasa.shared.utils.io
 from rasa.dialogue_understanding.commands import (
     Command,
     ErrorCommand,
@@ -19,17 +20,16 @@ from rasa.dialogue_understanding.commands import (
     CannotHandleCommand,
 )
 from rasa.dialogue_understanding.commands.change_flow_command import ChangeFlowCommand
-from rasa.dialogue_understanding.generator.llm_based_command_generator import (
-    LLMBasedCommandGenerator,
-)
 from rasa.dialogue_understanding.generator.constants import (
     LLM_CONFIG_KEY,
     DEFAULT_LLM_CONFIG,
     USER_INPUT_CONFIG_KEY,
     FLOW_RETRIEVAL_KEY,
 )
-from rasa.shared.constants import ROUTE_TO_CALM_SLOT
 from rasa.dialogue_understanding.generator.flow_retrieval import FlowRetrieval
+from rasa.dialogue_understanding.generator.llm_based_command_generator import (
+    LLMBasedCommandGenerator,
+)
 from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
 from rasa.dialogue_understanding.stack.utils import (
     top_flow_frame,
@@ -41,14 +41,15 @@ from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import RASA_PATTERN_CANNOT_HANDLE_NOT_SUPPORTED
+from rasa.shared.constants import ROUTE_TO_CALM_SLOT
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows import FlowStep, Flow, FlowsList
 from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.exceptions import ProviderClientAPIException
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.utils.io import deep_container_fingerprint
-import rasa.shared.utils.io
 from rasa.shared.utils.llm import (
     get_prompt_template,
     tracker_as_readable_transcript,
@@ -188,57 +189,78 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
             # cannot do anything if there are no flows or no tracker
             return []
 
-        # retrieve flows
         try:
+            # retrieve relevant flows
             filtered_flows = await self.filter_flows(message, flows, tracker)
-        except Exception:
-            # e.g. in case of API problems (are being logged by the flow retrieval)
+
+            # 1st step: Handle active flow
+            if tracker.has_active_flow:
+                commands_from_active_flow = (
+                    await self._predict_commands_for_active_flow(
+                        message,
+                        tracker,
+                        available_flows=filtered_flows,
+                        all_flows=flows,
+                    )
+                )
+            else:
+                commands_from_active_flow = []
+
+            # 2nd step: Check if we need to switch to another flow
+            contains_change_flow_command = any(
+                isinstance(command, ChangeFlowCommand)
+                for command in commands_from_active_flow
+            )
+            should_change_flows = (
+                not commands_from_active_flow or contains_change_flow_command
+            )
+
+            if should_change_flows:
+                commands_for_handling_flows = (
+                    await self._predict_commands_for_handling_flows(
+                        message,
+                        tracker,
+                        available_flows=filtered_flows,
+                        all_flows=flows,
+                    )
+                )
+            else:
+                commands_for_handling_flows = []
+
+            if contains_change_flow_command:
+                commands_from_active_flow.pop(
+                    commands_from_active_flow.index(ChangeFlowCommand())
+                )
+
+            # 3rd step: Fill slots for started flows
+            newly_started_flows = FlowsList(
+                [
+                    flow
+                    for command in commands_for_handling_flows
+                    if (
+                        isinstance(command, StartFlowCommand)
+                        and (flow := filtered_flows.flow_by_id(command.flow))
+                        is not None
+                    )
+                ]
+            )
+
+            commands_for_newly_started_flows = (
+                await self._predict_commands_for_newly_started_flows(
+                    message,
+                    tracker,
+                    newly_started_flows=newly_started_flows,
+                    all_flows=flows,
+                )
+            )
+
+        # if any step resulted in API exception,
+        # the command prediction cannot be completed,
+        # raise ErrorCommand
+        except ProviderClientAPIException:
             return [ErrorCommand()]
 
-        if tracker.has_active_flow:
-            commands_from_active_flow = await self.predict_commands_for_active_flow(
-                message, tracker, available_flows=filtered_flows, all_flows=flows
-            )
-        else:
-            commands_from_active_flow = []
-
-        contains_change_flow_command = any(
-            isinstance(command, ChangeFlowCommand)
-            for command in commands_from_active_flow
-        )
-        change_flows = not commands_from_active_flow or contains_change_flow_command
-
-        if change_flows:
-            commands_for_handling_flows = (
-                await self.predict_commands_for_handling_flows(
-                    message, tracker, available_flows=filtered_flows, all_flows=flows
-                )
-            )
-        else:
-            commands_for_handling_flows = []
-
-        if contains_change_flow_command:
-            commands_from_active_flow.pop(
-                commands_from_active_flow.index(ChangeFlowCommand())
-            )
-
-        started_flows = FlowsList(
-            [
-                flow
-                for command in commands_for_handling_flows
-                if (
-                    isinstance(command, StartFlowCommand)
-                    and (flow := filtered_flows.flow_by_id(command.flow)) is not None
-                )
-            ]
-        )
-
-        commands_for_newly_started_flows = (
-            await self.predict_commands_for_newly_started_flows(
-                message, tracker, newly_started_flows=started_flows, all_flows=flows
-            )
-        )
-
+        # concatenate predicted commands
         commands = list(
             set(
                 commands_from_active_flow
@@ -247,16 +269,16 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
             )
         )
         commands = self._clean_up_commands(commands)
-        # do not refine slots as it does not work well
-        # commands = await self.refine_commands(commands, tracker, flows, message)
         structlogger.debug(
             "multi_step_llm_command_generator" ".predict_commands" ".finished",
             commands=commands,
         )
 
+        # if for any reason the final list of commands is empty,
+        # return CannotHandle
         if not commands:
             # if action_list is None, we couldn't get any response from the LLM
-            commands = [ErrorCommand()]
+            commands = [CannotHandleCommand()]
         else:
             # if the LLM command generator predicted valid commands and the
             # coexistence feature is used, set the routing slot
@@ -285,7 +307,7 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
             The parsed commands.
         """
         if not actions:
-            return [ErrorCommand()]
+            return []
 
         commands: List[Command] = []
 
@@ -430,7 +452,7 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
                 file_path = path / file_name
                 rasa.shared.utils.io.write_text_file(template, file_path)
 
-    async def predict_commands_for_active_flow(
+    async def _predict_commands_for_active_flow(
         self,
         message: Message,
         tracker: DialogueStateTracker,
@@ -445,11 +467,12 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
             available_flows: Startable and active flows.
             all_flows: All flows.
 
+        inputs = self._prepare_inputs(message, tracker, startable_flows, all_flows)
         Returns:
             Predicted commands for the active flow.
         """
 
-        inputs = self.prepare_inputs(message, tracker, available_flows, all_flows)
+        inputs = self._prepare_inputs(message, tracker, available_flows, all_flows)
 
         if inputs["current_flow"] is None:
             return []
@@ -469,13 +492,11 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
             ".actions_generated",
             action_list=actions,
         )
-        if actions is None:
-            return []
 
         commands = self.parse_commands(actions, tracker, available_flows)
         return commands
 
-    async def predict_commands_for_handling_flows(
+    async def _predict_commands_for_handling_flows(
         self,
         message: Message,
         tracker: DialogueStateTracker,
@@ -490,11 +511,12 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
             available_flows: Startable and active flows.
             all_flows: All flows.
 
+        inputs = self._prepare_inputs(message, tracker, startable_flows, all_flows, 2)
         Returns:
             Predicted commands for the starting/canceling flows.
         """
 
-        inputs = self.prepare_inputs(message, tracker, available_flows, all_flows, 2)
+        inputs = self._prepare_inputs(message, tracker, available_flows, all_flows, 2)
         prompt = Template(self.handle_flows_prompt).render(**inputs).strip()
         structlogger.debug(
             "multi_step_llm_command_generator"
@@ -510,8 +532,6 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
             ".actions_generated",
             action_list=actions,
         )
-        if actions is None:
-            return []
 
         commands = self.parse_commands(actions, tracker, available_flows, True)
         # filter out flows that are already started and active
@@ -540,7 +560,7 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
         ]
         return commands
 
-    async def predict_commands_for_newly_started_flows(
+    async def _predict_commands_for_newly_started_flows(
         self,
         message: Message,
         tracker: DialogueStateTracker,
@@ -564,7 +584,7 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
         tracker: DialogueStateTracker,
         newly_started_flows: FlowsList,
     ) -> List[Command]:
-        inputs = self.prepare_inputs_for_single_flow(
+        inputs = self._prepare_inputs_for_single_flow(
             message, tracker, newly_started_flow, max_turns=20
         )
 
@@ -589,8 +609,6 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
             flow=newly_started_flow.id,
             action_list=actions,
         )
-        if actions is None:
-            return []
 
         commands = self.parse_commands(actions, tracker, newly_started_flows)
 
@@ -610,7 +628,7 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
 
         return commands
 
-    def prepare_inputs(
+    def _prepare_inputs(
         self,
         message: Message,
         tracker: DialogueStateTracker,
@@ -699,7 +717,7 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
         }
         return inputs
 
-    def prepare_inputs_for_single_flow(
+    def _prepare_inputs_for_single_flow(
         self,
         message: Message,
         tracker: DialogueStateTracker,

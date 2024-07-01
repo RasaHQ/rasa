@@ -20,6 +20,12 @@ from rasa.dialogue_understanding.commands import (
     ClarifyCommand,
     CannotHandleCommand,
 )
+from rasa.dialogue_understanding.generator.constants import (
+    LLM_CONFIG_KEY,
+    DEFAULT_LLM_CONFIG,
+    FLOW_RETRIEVAL_KEY,
+    FLOW_RETRIEVAL_ACTIVE_KEY,
+)
 from rasa.dialogue_understanding.generator.flow_retrieval import (
     FlowRetrieval,
     DEFAULT_EMBEDDINGS_CONFIG,
@@ -28,12 +34,6 @@ from rasa.dialogue_understanding.generator.single_step.single_step_llm_command_g
     SingleStepLLMCommandGenerator,
     DEFAULT_COMMAND_PROMPT_TEMPLATE,
 )
-from rasa.dialogue_understanding.generator.constants import (
-    LLM_CONFIG_KEY,
-    DEFAULT_LLM_CONFIG,
-    FLOW_RETRIEVAL_KEY,
-    FLOW_RETRIEVAL_ACTIVE_KEY,
-)
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
@@ -41,12 +41,12 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import ROUTE_TO_CALM_SLOT
 from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
 from rasa.shared.core.flows import FlowsList
-
 from rasa.shared.core.slots import (
     BooleanSlot,
     TextSlot,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.exceptions import ProviderClientAPIException
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -371,9 +371,7 @@ class TestSingleStepLLMCommandGenerator:
         [
             (
                 None,
-                [
-                    ErrorCommand(),
-                ],
+                [ErrorCommand()],
             ),
             (
                 "StartFlow(this_flow_does_not_exists)",
@@ -446,7 +444,7 @@ class TestSingleStepLLMCommandGenerator:
     )
     async def test_predict_commands_and_flow_retrieval_api_error_throws_exception(
         self,
-        mock_flow_retrieval_filter_flows: Mock,
+        mock_flow_retrieval_filter_flows: AsyncMock,
         command_generator: SingleStepLLMCommandGenerator,
         tracker_with_routing_slot: DialogueStateTracker,
     ) -> None:
@@ -463,15 +461,19 @@ class TestSingleStepLLMCommandGenerator:
         )
         mock_message = Mock()
         mock_message.data = {TEXT: "some_message"}
-        mock_flow_retrieval_filter_flows.side_effect = Exception("Test Exception")
+        mock_flow_retrieval_filter_flows.side_effect = ProviderClientAPIException(
+            message="Test Exception", original_exception=Exception("API exception")
+        )
         # When
         predicted_commands = await command_generator.predict_commands(
             message=mock_message,
             flows=test_flows,
             tracker=tracker_with_routing_slot,
         )
+
         # Then
         mock_flow_retrieval_filter_flows.assert_called_once()
+
         assert predicted_commands == [ErrorCommand()]
 
     def test_render_template(

@@ -34,6 +34,7 @@ from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import TEXT, FLOWS_FROM_SEMANTIC_SEARCH
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.exceptions import ProviderClientAPIException
 from rasa.shared.utils.llm import (
     tracker_as_readable_transcript,
     embedder_factory,
@@ -406,4 +407,6 @@ class FlowRetrieval:
                 error=e,
                 query=query,
             )
-            raise
+            raise ProviderClientAPIException(
+                message="Cannot fetch flows from vector store", original_exception=e
+            )

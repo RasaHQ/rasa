@@ -1,14 +1,15 @@
-import structlog
 from typing import Dict, Any, Optional, Text
+
+import structlog
 from deprecated import deprecated  # type: ignore[import]
 
-
-from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.dialogue_understanding.generator.single_step.single_step_llm_command_generator import (  # noqa: E501
     SingleStepLLMCommandGenerator,
 )
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.shared.exceptions import ProviderClientAPIException
 from rasa.shared.utils.io import raise_deprecation_warning
 
 structlogger = structlog.get_logger()
@@ -48,3 +49,16 @@ class LLMCommandGenerator(SingleStepLLMCommandGenerator):
             prompt_template=prompt_template,
             **kwargs,
         )
+
+    async def invoke_llm(self, prompt: Text) -> Optional[Text]:
+        try:
+            return await super().invoke_llm(prompt)
+        except ProviderClientAPIException:
+            # Returning 'None' in case of a ProviderClientAPIException ensures
+            # backward compatibility with previous versions. In earlier
+            # implementations, 'invoke_llm' was expected to return 'None' when
+            # encountering API-related issues. This practice is maintained here
+            # to prevent breaking changes in how exceptions are handled and
+            # propagated in existing integrations, where callers might not yet
+            # be prepared to manage exceptions directly.
+            return None

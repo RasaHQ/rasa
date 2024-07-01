@@ -1,5 +1,5 @@
 import json
-from typing import Optional, Text
+from typing import Optional, Text, Dict, Any
 
 import jsonschema
 from ruamel.yaml.error import (
@@ -127,3 +127,37 @@ class ConnectionException(RasaException):
     It's used by our broker and tracker store classes, when
     they can't connect to services like postgres, dynamoDB, mongo.
     """
+
+
+class ProviderClientAPIException(RasaException):
+    """Raised for errors that occur during API interactions
+    with LLM / embedding providers.
+
+    Attributes:
+        original_exception (Exception): The original exception that was
+            caught and led to this custom exception.
+        message: (Optional[str]): Optional explanation of the error.
+    """
+
+    def __init__(
+        self,
+        original_exception: Exception,
+        message: Optional[str] = None,
+        info: Optional[Dict[Text, Any]] = None,
+    ):
+        super().__init__(
+            f"{message if message is not None else ''}"
+            f"\nOriginal error: {original_exception})"
+        )
+        self.message = message
+        self.original_exception = original_exception
+        self.info = info
+
+    def __str__(self) -> Text:
+        s = f"{self.__class__.__name__}:"
+        if self.message is not None:
+            s += f"\n{self.message}"
+        s += f"\nOriginal error: {self.original_exception}\n"
+        if self.info:
+            s += f"\nInfo: \n{self.info}\n"
+        return s
