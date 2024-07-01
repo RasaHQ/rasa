@@ -182,7 +182,7 @@ pycountry = "^22.3.5"
 pymilvus = "^2.3.6"
 qdrant-client = "^1.9.0"
 psutil = "^5.9.5"
-tenacity = "~8.4.1"
+tenacity = "~8.4.1" # pinned down because of langchain
 types-protobuf = "4.25.0.20240417"
 [[tool.poetry.dependencies.tensorflow-io-gcs-filesystem]]
 version = "==0.31"
@@ -238,6 +238,20 @@ metal = [ "tensorflow-metal",]
 rasa = "rasa.__main__:main"
 
 [tool.ruff.lint]
+# The following checks are disabled because they are not relevant for Rasa
+# - RUF001: Checks for ambiguous Unicode characters in strings. https://docs.astral.sh/ruff/rules/ambiguous-unicode-character-string/
+# - RUF002: Checks for ambiguous Unicode characters in docstrings. https://docs.astral.sh/ruff/rules/ambiguous-unicode-character-docstring/
+# - RUF003: Checks for ambiguous Unicode characters in comments. https://docs.astral.sh/ruff/rules/ambiguous-unicode-character-comment/
+# - RUF005: Use of + operator for string concatenation https://docs.astral.sh/ruff/rules/collection-literal-concatenation/
+# Following checks are currently disabled but will be enabled in the future
+# as part of the ticket https://rasahq.atlassian.net/browse/ATO-866
+# - D100: Missing docstring in public module
+# - D101: Missing docstring in public class
+# - D102: Missing docstring in public method
+# - D103: Missing docstring in public function
+# - D104: Missing docstring in public package
+# - D105: Missing docstring in magic method
+# - D107: Missing docstring in __init__
 ignore = [ "D100", "D101", "D102", "D103", "D104", "D105", "D107", "RUF001", "RUF002", "RUF003", "RUF005",]
 select = [ "D", "E", "F", "W", "RUF",]
 
