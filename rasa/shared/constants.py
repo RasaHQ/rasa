@@ -17,6 +17,7 @@ DOCS_URL_COMPONENTS = DOCS_URL_CONCEPTS + "/components/overview"
 DOCS_URL_GRAPH_COMPONENTS = DOCS_URL_CONCEPTS + "/components/custom-graph-components"
 DOCS_URL_GRAPH_RECIPE = DOCS_URL_CONCEPTS + "/components/graph-recipe"
 DOCS_URL_CATEGORICAL_SLOTS = DOCS_URL_CONCEPTS + "/domain#categorical-slot"
+DOCS_URL_DOMAIN = DOCS_URL_CONCEPTS + "/domain"
 
 # Docs URLs for NLU-based assistants
 DOCS_URL_TRAINING_DATA = DOCS_URL_NLU_BASED + "/training-data-format"

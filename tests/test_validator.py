@@ -2274,7 +2274,7 @@ def test_domain_slots_contain_all_mapping_type(
     ) in captured.out
 
 
-def test_validate_action_ask_defined_in_the_domain(
+def test_validate_custom_action_defined_in_the_domain(
     capsys: CaptureFixture,
 ) -> None:
     importer = RasaFileImporter(
@@ -2295,9 +2295,9 @@ def test_validate_action_ask_defined_in_the_domain(
         in captured.out
     )
     assert (
-        "The slot 'card_number' has a custom slot mapping, "
-        "but the action 'action_ask_card_number' is not defined "
-        "in the domain file. Please add the action to your domain file."
+        "The slot 'card_number' has a custom slot mapping, but neither the "
+        "action 'action_ask_card_number' nor another custom action are defined "
+        "in the domain file. Please add one of the actions to your domain file."
     ) in captured.out
 
 
