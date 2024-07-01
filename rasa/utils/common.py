@@ -103,6 +103,7 @@ EXPECTED_WARNINGS: List[Tuple[Type[Warning], str]] = [
         "non-integer arguments to randrange\\(\\) have been deprecated since",
     ),
     (DeprecationWarning, "invalid escape sequence*"),
+    # DeprecationWarning raised by Sanic: Running Sanic w/ LEGACY manager.
     (DeprecationWarning, "Support for will be dropped in version 23.3.*"),
 ]
 
