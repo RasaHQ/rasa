@@ -26,8 +26,10 @@ from rasa.shared.constants import (
     ASSISTANT_ID_DEFAULT_VALUE,
     ASSISTANT_ID_KEY,
     CONFIG_MANDATORY_KEYS,
+    DOCS_URL_DOMAIN,
     DOCS_URL_DOMAINS,
     DOCS_URL_FORMS,
+    DOCS_URL_RESPONSES,
     UTTER_PREFIX,
     DOCS_URL_ACTIONS,
     REQUIRED_SLOTS_KEY,
@@ -1146,6 +1148,9 @@ class Validator:
                                 f"for triggering a specific intent and entities or for "
                                 f"triggering a SetSlot command."
                             ),
+                            calm_docs_link=DOCS_URL_RESPONSES + "#payload-syntax",
+                            nlu_docs_link=DOCS_URL_RESPONSES
+                            + "#triggering-intents-or-passing-entities",
                         )
                         all_good = False
 
@@ -1234,6 +1239,7 @@ class Validator:
                     f"NLU or custom slot mappings. "
                     f"Please make sure that the slot has only one type of mapping."
                 ),
+                docs_link=DOCS_URL_DOMAIN + "#calm-slot-mappings",
             )
             all_good = False
 
@@ -1251,18 +1257,6 @@ class Validator:
         if not self.flows:
             return all_good
 
-        slot_collected_by_flows = any(
-            [
-                step.collect == slot.name
-                for flow in self.flows.underlying_flows
-                for step in flow.steps
-                if isinstance(step, CollectInformationFlowStep)
-            ]
-        )
-
-        if not slot_collected_by_flows:
-            return all_good
-
         is_custom_action_defined = any(
             [
                 mapping.get("action") is not None
@@ -1274,17 +1268,32 @@ class Validator:
         if is_custom_action_defined:
             return all_good
 
-        custom_action_name = f"action_ask_{slot.name}"
-        if custom_action_name not in self.domain.action_names_or_texts:
+        slot_collected_by_flows = any(
+            [
+                step.collect == slot.name
+                for flow in self.flows.underlying_flows
+                for step in flow.steps
+                if isinstance(step, CollectInformationFlowStep)
+            ]
+        )
+
+        if not slot_collected_by_flows:
+            # if the slot is not collected by any flow,
+            # it could be a DM1 custom slot
+            return all_good
+
+        custom_action_ask_name = f"action_ask_{slot.name}"
+        if custom_action_ask_name not in self.domain.action_names_or_texts:
             structlogger.error(
                 "validator.validate_slot_mappings_in_CALM.custom_action_not_in_domain",
                 slot_name=slot.name,
                 event_info=(
-                    f"The slot '{slot.name}' has a custom slot mapping, "
-                    f"but the action '{custom_action_name}' is not defined "
-                    f"in the domain file. "
-                    f"Please add the action to your domain file."
+                    f"The slot '{slot.name}' has a custom slot mapping, but "
+                    f"neither the action '{custom_action_ask_name}' nor "
+                    f"another custom action are defined in the domain file. "
+                    f"Please add one of the actions to your domain file."
                 ),
+                docs_link=DOCS_URL_DOMAIN + "#custom-slot-mappings",
             )
             all_good = False
 
@@ -1316,6 +1325,7 @@ class Validator:
                     f"pipeline. Please add the NLUCommandAdapter to the "
                     f"pipeline in the config file."
                 ),
+                docs_link=DOCS_URL_DOMAIN + "#nlu-based-predefined-slot-mappings",
             )
             all_good = False
 
