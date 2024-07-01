@@ -1,6 +1,6 @@
 import uuid
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional, List, Text
 from unittest.mock import Mock, patch, AsyncMock
 
 import pytest
@@ -20,20 +20,31 @@ from rasa.dialogue_understanding.commands import (
     ChangeFlowCommand,
     CannotHandleCommand,
 )
-from rasa.dialogue_understanding.generator.multi_step.multi_step_llm_command_generator import (  # noqa: E501
-    MultiStepLLMCommandGenerator,
-)
 from rasa.dialogue_understanding.generator.constants import (
     FLOW_RETRIEVAL_KEY,
     FLOW_RETRIEVAL_ACTIVE_KEY,
 )
+from rasa.dialogue_understanding.generator.multi_step.multi_step_llm_command_generator import (  # noqa: E501
+    MultiStepLLMCommandGenerator,
+)
+from rasa.dialogue_understanding.patterns.cancel import (
+    CancelPatternFlowStackFrame,
+    FLOW_PATTERN_CANCEL,
+)
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
+from rasa.dialogue_understanding.stack.frames import (
+    UserFlowStackFrame,
+    DialogueStackFrame,
+)
+from rasa.dialogue_understanding.stack.frames.flow_stack_frame import FlowStackFrameType
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import RASA_PATTERN_CANNOT_HANDLE_NOT_SUPPORTED
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import BotUttered, UserUttered
 from rasa.shared.core.flows import FlowsList
+from rasa.shared.core.flows.yaml_flows_io import flows_from_str_including_defaults
 from rasa.shared.core.slots import TextSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.training_data.message import Message
@@ -161,6 +172,7 @@ class TestMultiStepLLMCommandGenerator:
                     evts=[UserUttered("Hello", {"name": "greet", "confidence": 1.0})],
                 ),
                 FlowsList(underlying_flows=[]),
+                FlowsList(underlying_flows=[]),
             )
             # Then
             mock_llm_factory.assert_called_once_with(None, llm_config)
@@ -186,6 +198,7 @@ class TestMultiStepLLMCommandGenerator:
                     "test",
                     evts=[UserUttered("Hello", {"name": "greet", "confidence": 1.0})],
                 ),
+                FlowsList(underlying_flows=[]),
                 FlowsList(underlying_flows=[]),
             )
             # Then
@@ -526,14 +539,15 @@ class TestMultiStepLLMCommandGenerator:
                 - collect: test_slot_3
             """
         )
-        startable_test_flows = test_flows.exclude_link_only_flows()
+        available_test_flows = test_flows.exclude_link_only_flows()
         test_tracker.update_stack(stack)
 
         # When
         variables_to_render = command_generator.prepare_inputs(
             message=test_message,
             tracker=test_tracker,
-            flows=startable_test_flows,
+            available_flows=available_test_flows,
+            all_flows=test_flows,
         )
 
         # Then
@@ -715,3 +729,249 @@ class TestMultiStepLLMCommandGenerator:
         )
         # Then
         assert result_commands == output_commands
+
+    @pytest.mark.parametrize(
+        "stack_frames, available_flows_ids, current_flow_id,"
+        "top_flow_is_pattern, top_user_flow_id",
+        [
+            (
+                # Flow that can only be started via a specific link
+                [
+                    UserFlowStackFrame(
+                        frame_id="a",
+                        flow_id="link_initiated_flow",
+                        frame_type=FlowStackFrameType.LINK,
+                    ),
+                ],
+                ["flow_using_link", "calling_flow"],
+                "link_initiated_flow",
+                False,
+                None,
+            ),
+            # Scenario with a calling flow and a called flow
+            (
+                [
+                    UserFlowStackFrame(
+                        frame_id="c",
+                        flow_id="calling_flow",
+                        frame_type=FlowStackFrameType.REGULAR,
+                    ),
+                    UserFlowStackFrame(
+                        frame_id="b",
+                        flow_id="called_flow",
+                        frame_type=FlowStackFrameType.CALL,
+                    ),
+                ],
+                ["flow_using_link", "calling_flow"],
+                "calling_flow",
+                False,
+                None,
+            ),
+            # A frame that cannot initiate a flow
+            (
+                [CancelPatternFlowStackFrame()],
+                ["flow_using_link", "calling_flow"],
+                FLOW_PATTERN_CANCEL,
+                True,
+                None,
+            ),
+            (
+                [
+                    UserFlowStackFrame(
+                        frame_id="d",
+                        flow_id="calling_flow",
+                        frame_type=FlowStackFrameType.REGULAR,
+                    ),
+                    CancelPatternFlowStackFrame(),
+                ],
+                ["flow_using_link", "calling_flow"],
+                FLOW_PATTERN_CANCEL,
+                True,
+                "calling_flow",
+            ),
+        ],
+    )
+    def test_prepare_inputs_with_with_different_stack_frames(
+        self,
+        stack_frames: List[DialogueStackFrame],
+        available_flows_ids: List[Text],
+        current_flow_id: Text,
+        top_flow_is_pattern: bool,
+        top_user_flow_id: Text,
+    ):
+        # Given
+        all_flows = flows_from_str_including_defaults(
+            """
+            flows:
+                link_initiated_flow:
+                    if: False
+                    name: Link-Initiated Flow
+                    description: This flow can only be started via a link.
+                    steps:
+                        - id: step_a
+                          action: action_listen
+                flow_using_link:
+                    name: Flow Using Link
+                    description: This flow uses the Link-Initiated Flow.
+                    steps:
+                        - id: step_b
+                          link: link_initiated_flow
+                called_flow:
+                    if: False
+                    name: called Flow
+                    description: This is a called flow.
+                    steps:
+                        - id: step_c
+                          action: action_listen
+                calling_flow:
+                    name: calling Flow
+                    description: This flow calls another flow.
+                    steps:
+                        - id: step_d
+                          call: called_flow
+                          next: "END"
+            """
+        )
+        test_available_flows = all_flows.user_flows.exclude_link_only_flows()
+
+        mock_message = Mock()
+        config = {"flow_retrieval": {"active": False}}
+        command_generator = MultiStepLLMCommandGenerator.create(
+            config=config,
+            resource=Mock(),
+            model_storage=Mock(),
+            execution_context=Mock(),
+        )
+
+        # Initialize a tracker with the stack frames prepared for the test
+        tracker = DialogueStateTracker.from_events(
+            sender_id="test_user",
+            evts=[],
+        )
+        stack = DialogueStack.empty()
+        for frame in stack_frames:
+            stack.push(frame)
+        tracker.update_stack(stack)
+
+        # When / Then
+        # Validate input preparation with different stack configurations
+        input_results = command_generator.prepare_inputs(
+            message=mock_message,
+            tracker=tracker,
+            available_flows=test_available_flows,
+            all_flows=all_flows,
+        )
+
+        assert [
+            flow["name"] for flow in input_results["available_flows"]
+        ] == available_flows_ids
+        assert input_results["current_flow"] == current_flow_id
+        assert input_results["top_flow_is_pattern"] == top_flow_is_pattern
+        assert input_results["top_user_flow"] == top_user_flow_id
+
+    @patch(
+        "rasa.dialogue_understanding.generator"
+        ".multi_step.multi_step_llm_command_generator.MultiStepLLMCommandGenerator"
+        ".predict_commands_for_active_flow"
+    )
+    @patch(
+        "rasa.dialogue_understanding.generator"
+        ".multi_step.multi_step_llm_command_generator.MultiStepLLMCommandGenerator"
+        ".predict_commands_for_handling_flows"
+    )
+    @patch(
+        "rasa.dialogue_understanding.generator"
+        ".multi_step.multi_step_llm_command_generator.MultiStepLLMCommandGenerator"
+        ".predict_commands_for_newly_started_flows"
+    )
+    @patch(
+        "rasa.dialogue_understanding.generator"
+        ".multi_step.multi_step_llm_command_generator.MultiStepLLMCommandGenerator"
+        ".filter_flows"
+    )
+    async def test_predict_commands_methods_called_with_correct_parameters(
+        self,
+        mock_filter_flows: Mock,
+        mock_predict_new_flows: Mock,
+        mock_predict_handling_flows: Mock,
+        mock_predict_active_flows: Mock,
+    ):
+        # Given
+        all_flows = flows_from_str_including_defaults(
+            """
+            flows:
+                link_initiated_flow:
+                    if: False
+                    name: Link-Initiated Flow
+                    description: This flow can only be started via a link.
+                    steps:
+                        - id: step_a
+                          action: action_listen
+                flow_using_link:
+                    name: Flow Using Link
+                    description: This flow uses the Link-Initiated Flow.
+                    steps:
+                        - id: step_b
+                          link: link_initiated_flow
+                called_flow:
+                    if: False
+                    name: Called Flow
+                    description: |
+                        This is a flow that is typically
+                        triggered by another flow.
+                    steps:
+                        - id: step_c
+                          action: action_listen
+                calling_flow:
+                    name: Calling Flow
+                    description: This flow triggers the Called Flow.
+                    steps:
+                        - id: step_d
+                          call: called_flow
+                          next: "END"
+            """
+        )
+        test_available_flows = all_flows.user_flows.exclude_link_only_flows()
+
+        mock_message = Mock(spec=Message)
+        mock_tracker = Mock(spec=DialogueStateTracker, has_active_flow=True)
+        mock_domain = Mock(spec=Domain)
+        command_generator = MultiStepLLMCommandGenerator.create(
+            config={"flow_retrieval": {"active": False}},
+            resource=Mock(),
+            model_storage=Mock(),
+            execution_context=Mock(),
+        )
+
+        # Mock behavior setup
+        mock_filter_flows.return_value = test_available_flows
+        mock_predict_active_flows.return_value = [ChangeFlowCommand()]
+        mock_predict_handling_flows.return_value = [StartFlowCommand("calling_flow")]
+        mock_predict_new_flows.return_value = [
+            SetSlotCommand(name="test_slot", value="test_value")
+        ]
+
+        # When
+        await command_generator.predict_commands(
+            mock_message, all_flows, mock_tracker, mock_domain
+        )
+
+        # Then
+        mock_predict_active_flows.assert_called_once_with(
+            mock_message,
+            mock_tracker,
+            available_flows=test_available_flows,
+            all_flows=all_flows,
+        )
+        mock_predict_handling_flows.assert_called_once_with(
+            mock_message,
+            mock_tracker,
+            available_flows=test_available_flows,
+            all_flows=all_flows,
+        )
+        mock_predict_new_flows.assert_called_once_with(
+            mock_message,
+            mock_tracker,
+            newly_started_flows=FlowsList([all_flows.flow_by_id("calling_flow")]),
+            all_flows=all_flows,
+        )
