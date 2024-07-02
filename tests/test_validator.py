@@ -1992,3 +1992,133 @@ def test_validator_check_for_empty_paranthesis_all_good() -> None:
 
     validator = Validator(test_domain, TrainingData(), StoryGraph([]), None, None)
     assert validator.check_for_no_empty_paranthesis_in_responses() is True
+
+
+def test_validator_fail_as_both_utterance_and_action_defined_for_collect() -> None:
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        actions:
+            - action_ask_transfer_amount
+        responses:
+            utter_ask_transfer_amount:
+                - text: "How much money should I send?"
+        slots:
+            transfer_amount:
+                type: float
+                mappings: []
+        """
+    )
+    flows = flows_from_str(
+        """
+        flows:
+          flow_bar:
+            description: Test flow.
+            steps:
+            - collect: transfer_amount
+        """
+    )
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), flows, None)
+
+    expected_log_level = "error"
+    expected_log_event = "validator.verify_flows_steps_against_domain.collect_step"
+    expected_log_message = (
+        "The collect step 'transfer_amount' has an utterance "
+        "'utter_ask_transfer_amount' as well as an action "
+        "'action_ask_transfer_amount' defined. "
+        "You can just have one of them! "
+        "Please remove either the utterance or the action."
+    )
+    with structlog.testing.capture_logs() as caplog:
+        assert validator.verify_flows_steps_against_domain() is False
+        logs = filter_logs(
+            caplog, expected_log_event, expected_log_level, [expected_log_message]
+        )
+        assert len(logs) == 1
+
+
+def test_validator_fail_as_both_utterance_and_action_not_defined_for_collect() -> None:
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        slots:
+            transfer_amount:
+                type: float
+                mappings: []
+        """
+    )
+    flows = flows_from_str(
+        """
+        flows:
+          flow_bar:
+            description: Test flow.
+            steps:
+            - collect: transfer_amount
+        """
+    )
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), flows, None)
+
+    expected_log_level = "error"
+    expected_log_event = "validator.verify_flows_steps_against_domain.collect_step"
+    expected_log_message = (
+        "The collect step 'transfer_amount' has neither an utterance "
+        "nor an action defined. "
+        "You need to define either an utterance or an action."
+    )
+    with structlog.testing.capture_logs() as caplog:
+        assert validator.verify_flows_steps_against_domain() is False
+        logs = filter_logs(
+            caplog, expected_log_event, expected_log_level, [expected_log_message]
+        )
+        assert len(logs) == 1
+
+
+def test_validator_pass_as_only_utterance_defined_for_collect() -> None:
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        responses:
+            utter_ask_transfer_amount:
+                - text: "How much money should I send?"
+        slots:
+            transfer_amount:
+                type: float
+                mappings: []
+        """
+    )
+    flows = flows_from_str(
+        """
+        flows:
+          flow_bar:
+            description: Test flow.
+            steps:
+            - collect: transfer_amount
+        """
+    )
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), flows, None)
+    assert validator.verify_flows_steps_against_domain() is True
+
+
+def test_validator_pass_as_only_action_defined_for_collect() -> None:
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        actions:
+            - action_ask_transfer_amount
+        slots:
+            transfer_amount:
+                type: float
+                mappings: []
+        """
+    )
+    flows = flows_from_str(
+        """
+        flows:
+          flow_bar:
+            description: Test flow.
+            steps:
+            - collect: transfer_amount
+        """
+    )
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), flows, None)
+    assert validator.verify_flows_steps_against_domain() is True

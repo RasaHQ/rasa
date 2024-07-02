@@ -289,8 +289,12 @@ flows:
     domain_yaml = """
     actions:
     - action_transfer_money
+    - action_ask_transfer_recipient
     intents:
     - transfer_money
+    responses:
+      utter_ask_transfer_amount:
+        - text: "How much money should I send?"
     slots:
       transfer_recipient:
         type: text

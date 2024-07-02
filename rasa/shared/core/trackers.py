@@ -1058,19 +1058,20 @@ class DialogueStateTracker:
         Returns:
             List of flows that are active within the current state of the tracker
         """
-        from rasa.dialogue_understanding.stack.utils import top_flow_frame
+        from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
+        from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
+            FlowStackFrameType,
+        )
 
         active_flows = []
-
-        # get the current active flow if present
-        top_calling_frame = top_flow_frame(self.stack)
-        if top_calling_frame is not None:
-            active_flows.append(top_calling_frame.flow(flows))
-
-        # get the called flow if present
-        top_called_frame = top_flow_frame(self.stack, ignore_call_frames=False)
-        if top_called_frame is not None:
-            active_flows.append(top_called_frame.flow(flows))
+        for frame in reversed(self.stack.frames):
+            # The stack just contains the current active frames and we are just
+            # interested in the user flow stack frames.
+            if isinstance(frame, UserFlowStackFrame):
+                active_flows.append(frame.flow(flows))
+                if frame.frame_type != FlowStackFrameType.CALL:
+                    # Iterate unitl we reach a frame that is not a call frame.
+                    break
 
         return FlowsList(active_flows)
 

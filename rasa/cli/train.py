@@ -2,14 +2,17 @@ import argparse
 import structlog
 import sys
 import asyncio
-from typing import Dict, List, Optional, Text
+from pathlib import Path
+from typing import Dict, List, Optional, Text, Union
 
 from rasa.cli import SubParsersAction
 import rasa.cli.arguments.train as train_arguments
 
 import rasa.cli.utils
+import rasa.core.utils
 from rasa.shared.importers.importer import TrainingDataImporter
 import rasa.utils.common
+from rasa.core.nlg.generator import NaturalLanguageGenerator
 from rasa.core.train import do_compare_training
 from rasa.shared.constants import (
     CONFIG_MANDATORY_KEYS_CORE,
@@ -64,6 +67,22 @@ def add_subparser(
     train_arguments.set_train_nlu_arguments(train_nlu_parser)
 
 
+def _check_nlg_endpoint_validity(endpoint: Union[Path, str]) -> None:
+    try:
+        endpoints = rasa.core.utils.read_endpoints_from_path(endpoint)
+        NaturalLanguageGenerator.create(endpoints.nlg)
+    except Exception as e:
+        structlogger.error(
+            "cli.train.nlg_failed_to_initialise.validation_error",
+            exception=f"{e}",
+            event_info=(
+                f"The validation failed for NLG configuration defined in "
+                f"{endpoint}. Please make sure the NLG configuration is correct."
+            ),
+        )
+        sys.exit(1)
+
+
 def run_training(args: argparse.Namespace, can_exit: bool = False) -> Optional[Text]:
     """Trains a model.
 
@@ -81,6 +100,8 @@ def run_training(args: argparse.Namespace, can_exit: bool = False) -> Optional[T
         args.domain, "domain", DEFAULT_DOMAIN_PATHS, none_is_valid=True
     )
     config = rasa.cli.utils.get_validated_config(args.config, CONFIG_MANDATORY_KEYS)
+
+    _check_nlg_endpoint_validity(args.endpoints)
 
     training_files = [
         rasa.cli.utils.get_validated_path(

@@ -304,7 +304,7 @@ async def _train_graph(
     )
     rasa.engine.validation.validate(model_configuration)
     rasa.engine.validation.validate_coexistance_routing_setup(
-        domain, model_configuration
+        domain, model_configuration, flows
     )
     rasa.engine.validation.validate_flow_component_dependencies(
         flows, model_configuration
