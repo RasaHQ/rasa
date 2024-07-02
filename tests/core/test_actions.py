@@ -184,7 +184,7 @@ async def test_remote_action_runs(
     default_nlg: NaturalLanguageGenerator,
     default_tracker: DialogueStateTracker,
     domain: Domain,
-    monkeypatch: MonkeyPatch
+    monkeypatch: MonkeyPatch,
 ):
     monkeypatch.setattr(
         "rasa.core.actions.custom_action_executor.CustomActionRequestWriter._get_domain_digest",
@@ -248,7 +248,7 @@ async def test_remote_action_logs_events(
     default_nlg: NaturalLanguageGenerator,
     default_tracker: DialogueStateTracker,
     domain: Domain,
-    monkeypatch: MonkeyPatch
+    monkeypatch: MonkeyPatch,
 ):
     monkeypatch.setattr(
         "rasa.core.actions.custom_action_executor.CustomActionRequestWriter._get_domain_digest",
