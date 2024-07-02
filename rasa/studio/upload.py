@@ -177,15 +177,15 @@ def upload_calm_assistant(
     except Exception as e:
         if e.args[0] == max_recursion_error:
             rasa.shared.utils.cli.print_error(
-                f"{call_cyclic_error}\nError details: {str(e)}"
+                f"{call_cyclic_error}\nError details: {e!s}"
             )
         if e.args[0] == "Call flow reference not set.":
             rasa.shared.utils.cli.print_error(
-                f"{call_step_error}\nError details: {str(e)}"
+                f"{call_step_error}\nError details: {e!s}"
             )
         else:
             rasa.shared.utils.cli.print_error(
-                f"An error occurred while uploading the CALM assistant: {str(e)}"
+                f"An error occurred while uploading the CALM assistant: {e!s}"
             )
 
 
@@ -266,7 +266,12 @@ def make_request(endpoint: str, graphql_req: Dict) -> Tuple[str, bool]:
             error_msg = "An error occurred while uploading the assistant.\n"
 
             if "errors" in response and isinstance(response["errors"], list):
-                error_details = "; ".join([error.get("message", "Unknown error") for error in response["errors"]])
+                error_details = "; ".join(
+                    [
+                        error.get("message", "Unknown error")
+                        for error in response["errors"]
+                    ]
+                )
                 error_msg += f"{error_details}"
             else:
                 error_msg += " No detailed error information available."
@@ -291,12 +296,12 @@ def make_request(endpoint: str, graphql_req: Dict) -> Tuple[str, bool]:
             return error_msg, False
 
         if isinstance(e, RequestException):
-            error_msg = f"An error occurred while communicating with Rasa Studio: {str(e)}"
+            error_msg = f"An error occurred while communicating with Rasa Studio: {e!s}"
             logger.error(error_msg)
             return error_msg, False
 
         elif isinstance(e, Exception):
-            error_msg = f"An unexpected error occurred: {str(e)}"
+            error_msg = f"An unexpected error occurred: {e!s}"
             logger.error(error_msg)
             return error_msg, False
 
