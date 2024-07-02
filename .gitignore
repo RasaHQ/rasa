@@ -96,4 +96,5 @@ rasa.code-workspace
 report_integration.xml
 integration-results-tracing.xml
 integration-results-metric.xml
-custom-actions-integration-results.xml
+integration-results-custom-actions-with-nlu-bot-results.xml
+integration-results-custom-actions-with-calm-bot-results.xml
