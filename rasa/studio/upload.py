@@ -4,6 +4,7 @@ import logging
 from typing import Dict, Iterable, List, Set, Text, Tuple, Union
 
 import requests
+from requests import RequestException, Timeout, ConnectionError
 
 import rasa.cli.telemetry
 import rasa.cli.utils
@@ -171,21 +172,21 @@ def upload_calm_assistant(
         if status:
             rasa.shared.utils.cli.print_success(response)
         else:
-            logger.error(f"Failed to upload to Rasa Studio: {response}")
             rasa.shared.utils.cli.print_error(response)
 
     except Exception as e:
         if e.args[0] == max_recursion_error:
-            logger.error(call_cyclic_error)
-            logger.error(f"Error occurred while parsing flows: {e}")
-            return
-
+            rasa.shared.utils.cli.print_error(
+                f"{call_cyclic_error}\nError details: {str(e)}"
+            )
         if e.args[0] == "Call flow reference not set.":
-            logger.error(call_step_error)
-            logger.error(f"Error occurred while parsing flows: {e}")
-            return
+            rasa.shared.utils.cli.print_error(
+                f"{call_step_error}\nError details: {str(e)}"
+            )
         else:
-            logger.error(f"An error occurred while uploading the CALM assistant: {e}")
+            rasa.shared.utils.cli.print_error(
+                f"An error occurred while uploading the CALM assistant: {str(e)}"
+            )
 
 
 def upload_nlu_assistant(
@@ -235,6 +236,7 @@ def upload_nlu_assistant(
 
     logger.info("Uploading to Rasa Studio...")
     response, status = make_request(endpoint, graphql_req)
+
     if status:
         rasa.shared.utils.cli.print_success(response)
     else:
@@ -248,28 +250,55 @@ def make_request(endpoint: str, graphql_req: Dict) -> Tuple[str, bool]:
         endpoint: The studio endpoint
         graphql_req: The graphql request
     """
-    token = KeycloakTokenReader().get_token()
+    try:
+        token = KeycloakTokenReader().get_token()
+        res = requests.post(
+            endpoint,
+            json=graphql_req,
+            headers={
+                "Authorization": f"{token.token_type} {token.access_token}",
+                "Content-Type": "application/json",
+            },
+        )
 
-    res = requests.post(
-        endpoint,
-        json=graphql_req,
-        headers={
-            "Authorization": f"{token.token_type} {token.access_token}",
-            "Content-Type": "application/json",
-        },
-    )
+        response = res.json()
+        if _response_has_errors(response):
+            error_msg = "An error occurred while uploading the assistant.\n"
 
-    response = res.json()
+            if "errors" in response and isinstance(response["errors"], list):
+                error_details = "; ".join([error.get("message", "Unknown error") for error in response["errors"]])
+                error_msg += f"{error_details}"
+            else:
+                error_msg += " No detailed error information available."
 
-    if _response_has_errors(response):
-        print_errors_from_response(response)
+            logger.error(error_msg)
+            return error_msg, False
 
-    if res.status_code != 200:
-        return f"Upload failed with status code {res.status_code}", False
-    elif _response_has_errors(response):
-        return "Error while uploading data!", False
+        return "Upload successful!", True
 
-    return "Upload successful!", True
+    except (RequestException, Timeout, ConnectionError) as e:
+        if isinstance(e, ConnectionError):
+            error_msg = (
+                "Unable to connect to Rasa Studio. "
+                "Please check if Studio is running and the configured URL is correct."
+            )
+            logger.error(error_msg)
+            return error_msg, False
+
+        if isinstance(e, Timeout):
+            error_msg = "The request to Rasa Studio timed out. Please try again later."
+            logger.error(error_msg)
+            return error_msg, False
+
+        if isinstance(e, RequestException):
+            error_msg = f"An error occurred while communicating with Rasa Studio: {str(e)}"
+            logger.error(error_msg)
+            return error_msg, False
+
+        elif isinstance(e, Exception):
+            error_msg = f"An unexpected error occurred: {str(e)}"
+            logger.error(error_msg)
+            return error_msg, False
 
 
 def _response_has_errors(response: Dict) -> bool:
