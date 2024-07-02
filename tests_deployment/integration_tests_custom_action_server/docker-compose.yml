@@ -59,7 +59,7 @@ services:
         target: /app/endpoints.yml
     networks: [ 'rasa-pro-network' ]
     entrypoint: "python -m rasa_sdk"
-    command: --actions actions -p ${RASA_SDK_GRPC_PORT} --grpc
+    command: --actions actions -p 5055 --grpc
     environment:
       <<: *license
     user: ${USER_ID}
@@ -101,7 +101,7 @@ services:
         target: /app/endpoints.yml
     networks: [ 'rasa-pro-network' ]
     entrypoint: "python -m rasa_sdk"
-    command: --actions actions -p ${RASA_SDK_GRPC_SSL_PORT} --grpc --ssl-certificate /certs/server.pem --ssl-keyfile /certs/server-key.pem
+    command: --actions actions -p 5055 --grpc --ssl-certificate /certs/server.pem --ssl-keyfile /certs/server-key.pem
     environment:
       <<: *license
     user: ${USER_ID}
@@ -140,7 +140,7 @@ services:
         target: /app/endpoints.yml
     networks: [ 'rasa-pro-network' ]
     entrypoint: "python -m rasa_sdk"
-    command: --actions actions -p ${RASA_SDK_HTTP_PORT}
+    command: --actions actions -p 5055
     environment:
       <<: *license
     user: ${USER_ID}
@@ -182,7 +182,7 @@ services:
         target: /app/endpoints.yml
     networks: [ 'rasa-pro-network' ]
     entrypoint: "python -m rasa_sdk"
-    command: --actions actions -p ${RASA_SDK_HTTPS_PORT} --ssl-certificate /certs/server.pem --ssl-keyfile /certs/server-key.pem
+    command: --actions actions -p 5055 --ssl-certificate /certs/server.pem --ssl-keyfile /certs/server-key.pem
     environment:
       <<: *license
     user: ${USER_ID}

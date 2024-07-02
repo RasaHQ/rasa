@@ -36,37 +36,6 @@ permissions:
   issues: read
   
 jobs:
-  # This job is used to prepare common environment values for the integration tests.
-  # It prepares the environment variable values for:
-    # - POETRY_VERSION: The version of poetry to be used
-    # - RASA_IMAGE_TAG: The tag to be used for the Rasa docker image.
-  configure-env:
-    name: Configure environment
-    runs-on: ubuntu-22.04
-    outputs:
-      POETRY_VERSION: ${{ steps.configure-poetry-version.outputs.POETRY_VERSION }}
-      RASA_IMAGE_TAG: ${{ steps.configure-image-tag.outputs.RASA_IMAGE_TAG }}
-
-    steps:
-      - name: Check out code
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-
-      - name: Configure Poetry Version 🔢
-        id: configure-poetry-version
-        run: |
-          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
-        shell: bash
-
-      #   # Tag in format: pr_number-shortSHA or branch_name-shortSHA
-      - name: Configure image tag
-        id: configure-image-tag
-        run: |
-          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
-            echo "IMAGE_TAG=pr${{ github.event.number }}-$(git rev-parse --short $(cat $GITHUB_EVENT_PATH | jq -r .pull_request.head.sha))" >> $GITHUB_ENV
-          else
-            echo "IMAGE_TAG=$(echo "${GITHUB_REF##*/}" | tr '[:upper:]' '[:lower:]')-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-          fi
-
   check-poetry-lock-is-up-to-date:
     name: check poetry lock is up to date
     runs-on: ubuntu-22.04
@@ -425,7 +394,6 @@ jobs:
     name: Custom Action Integration Tests With NLU bot
     needs: rasa-private-dev-docker-image
     env:
-      BOT_PATH: "./tests_deployment/integration_tests_custom_action_server/simple_nlu_bot"
       RASA_SDK_IMAGE_TAG: latest
     runs-on: ubuntu-22.04-4core
 
@@ -477,7 +445,6 @@ jobs:
           RASA_IMAGE_TAG: ${{ env.IMAGE_TAG }}
           RASA_SDK_REPOSITORY: ${{ env.SDK_REPOSITORY }}
           RASA_SDK_IMAGE_TAG: ${{ env.RASA_SDK_IMAGE_TAG }}
-          BOT_PATH: ${{ env.BOT_PATH }}
 
       - name: Custom Actions Testing - Test Code with Services 🩺
         run: |
@@ -496,7 +463,7 @@ jobs:
           RASA_IMAGE_TAG: ${{ env.IMAGE_TAG }}
           RASA_SDK_REPOSITORY: ${{ env.SDK_REPOSITORY }}
           RASA_SDK_IMAGE_TAG: ${{ env.RASA_SDK_IMAGE_TAG }}
-          BOT_PATH: ${{ env.BOT_PATH }}
+          BOT_PATH: "./tests_deployment/integration_tests_custom_action_server/simple_nlu_bot"
 
       - name: Custom Action Integration Testing - Stop docker containers
         if: always()
@@ -516,7 +483,6 @@ jobs:
     runs-on: ubuntu-22.04-4core
     env:
       RASA_SDK_IMAGE_TAG: latest
-      BOT_PATH: "./tests_deployment/integration_tests_custom_action_server/simple_calm_bot"
     steps:
       - name: Check out code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -562,7 +528,6 @@ jobs:
           RASA_IMAGE_TAG: ${{ env.IMAGE_TAG }}
           RASA_SDK_REPOSITORY: ${{ env.SDK_REPOSITORY }}
           RASA_SDK_IMAGE_TAG: ${{ env.RASA_SDK_IMAGE_TAG }}
-          BOT_PATH: ${{ env.BOT_PATH }}
 
       - name: Custom Actions Testing -  Test Code with Services 🩺
         run: |
@@ -581,7 +546,7 @@ jobs:
           RASA_IMAGE_TAG: ${{ env.IMAGE_TAG }}
           RASA_SDK_REPOSITORY: ${{ env.SDK_REPOSITORY }}
           RASA_SDK_IMAGE_TAG: ${{ env.RASA_SDK_IMAGE_TAG }}
-          BOT_PATH: ${{ env.BOT_PATH }}
+          BOT_PATH: "./tests_deployment/integration_tests_custom_action_server/simple_calm_bot"
 
       - name: Custom Action Integration Testing - Stop docker containers
         if: always()
