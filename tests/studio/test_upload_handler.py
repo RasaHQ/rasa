@@ -913,10 +913,15 @@ def test_build_import_request_no_nlu() -> None:
             },
             "http://studio.test/api/graphql/",
             {
-                "json": {"data": {"importFromEncodedYaml": ""}},
+                "json": {
+                    "data": {"importFromEncodedYaml": ""},
+                    "errors": [{
+                        "message": "Upload failed with status code 405"
+                    }]
+                },
                 "status_code": 405,
             },
-            "Upload failed with status code 405",
+            "An error occurred while uploading the assistant: Upload failed with status code 405",
             False,
         ),
         (
@@ -934,10 +939,17 @@ def test_build_import_request_no_nlu() -> None:
             },
             "http://studio.test/api/graphql/",
             {
-                "json": {"data": {"importFromEncodedYaml": None}},
+                "json": {
+                    "data": {
+                        "importFromEncodedYaml": None
+                    },
+                    "errors": [{
+                        "message": "Any error message"
+                    }]
+                },
                 "status_code": 500,
             },
-            "Upload failed with status code 500",
+            "An error occurred while uploading the assistant: Any error message",
             False,
         ),
         (
@@ -976,10 +988,19 @@ def test_build_import_request_no_nlu() -> None:
             },
             "http://studio.test/api/graphql/",
             {
-                "json": {"data": {"uploadModernAssistant": ""}},
+                "json": {
+                    "data": {
+                        "importFromEncodedYaml": None
+                    },
+                    "errors": [{
+                        "message": "Upload failed with status code 405"
+                    }, {
+                        "message": "Another message"
+                    }]
+                },
                 "status_code": 405,
             },
-            "Upload failed with status code 405",
+            "An error occurred while uploading the assistant: Upload failed with status code 405; Another message",
             False,
         ),
         (
@@ -998,10 +1019,17 @@ def test_build_import_request_no_nlu() -> None:
             },
             "http://studio.test/api/graphql/",
             {
-                "json": {"data": {"uploadModernAssistant": None}},
+                "json": {
+                    "data": {
+                        "importFromEncodedYaml": None
+                    },
+                    "errors": [{
+                        "message": "Upload failed with status code 500"
+                    }]
+                },
                 "status_code": 500,
             },
-            "Upload failed with status code 500",
+            "An error occurred while uploading the assistant: Upload failed with status code 500",
             False,
         ),
     ],
