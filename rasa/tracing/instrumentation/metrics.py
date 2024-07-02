@@ -29,7 +29,7 @@ from rasa.tracing.constants import (
     CONTEXTUAL_RESPONSE_REPHRASER_LLM_RESPONSE_DURATION_METRIC_NAME,
     RASA_CLIENT_REQUEST_BODY_SIZE_METRIC_NAME,
     RASA_CLIENT_REQUEST_DURATION_METRIC_NAME,
-    ENDPOINT_REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME,
+    REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME,
 )
 from rasa.tracing.metric_instrument_provider import MetricInstrumentProvider
 from rasa.utils.endpoints import EndpointConfig
@@ -290,7 +290,5 @@ def record_request_size_in_bytes(attributes: Dict[str, Any]) -> None:
     if not metric_instrument:
         return None
 
-    request_body_size = attributes.pop(
-        ENDPOINT_REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME, 0
-    )
+    request_body_size = attributes.pop(REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME, 0)
     metric_instrument.record(amount=request_body_size, attributes=attributes)
