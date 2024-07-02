@@ -263,7 +263,7 @@ def make_request(endpoint: str, graphql_req: Dict) -> Tuple[str, bool]:
 
         response = res.json()
         if _response_has_errors(response):
-            error_msg = "An error occurred while uploading the assistant.\n"
+            error_msg = "An error occurred while uploading the assistant: "
 
             if "errors" in response and isinstance(response["errors"], list):
                 error_details = "; ".join(
@@ -281,7 +281,7 @@ def make_request(endpoint: str, graphql_req: Dict) -> Tuple[str, bool]:
 
         return "Upload successful!", True
 
-    except (RequestException, Timeout, ConnectionError) as e:
+    except Exception as e:
         if isinstance(e, ConnectionError):
             error_msg = (
                 "Unable to connect to Rasa Studio. "
@@ -312,11 +312,6 @@ def _response_has_errors(response: Dict) -> bool:
         and isinstance(response["errors"], list)
         and len(response["errors"]) > 0
     )
-
-
-def print_errors_from_response(response: Dict) -> None:
-    for error in response["errors"]:
-        logger.error(error["message"])
 
 
 def _add_missing_entities(
