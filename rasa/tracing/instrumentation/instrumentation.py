@@ -25,6 +25,7 @@ from opentelemetry.trace import SpanKind, Tracer
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 from rasa.core.actions.action import Action, RemoteAction, CustomActionExecutor
 from rasa.core.actions.custom_action_executor import RetryCustomActionExecutor
+from rasa.core.actions.grpc_custom_action_executor import GRPCCustomActionExecutor
 from rasa.core.agent import Agent
 from rasa.core.channels import OutputChannel
 from rasa.core.information_retrieval.information_retrieval import InformationRetrieval
@@ -570,8 +571,21 @@ def instrument(
                     ),
                     custom_action_executor_subclass,
                     "run",
-                    attribute_extractors.extract_attrs_for_custom_action_executor,
+                    attribute_extractors.extract_attrs_for_custom_action_executor_run,
                 )
+
+                if issubclass(
+                    custom_action_executor_subclass, GRPCCustomActionExecutor
+                ):
+                    _instrument_method(
+                        tracer=tracer_provider.get_tracer(
+                            custom_action_executor_subclass.__module__
+                        ),
+                        instrumented_class=custom_action_executor_subclass,
+                        method_name="_request",
+                        attr_extractor=attribute_extractors.extract_attrs_for_grpc_custom_action_executor_request,
+                    )
+
                 mark_class_as_instrumented(custom_action_executor_subclass)
 
 

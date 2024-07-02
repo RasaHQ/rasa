@@ -18,7 +18,7 @@ from rasa.tracing.constants import (
     MULTI_STEP_LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME,
     LLM_BASED_COMMAND_GENERATOR_CPU_MEMORY_USAGE_UNIT_NAME,
     RASA_CLIENT_REQUEST_BODY_SIZE_METRIC_NAME,
-    ENDPOINT_REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME,
+    REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME,
 )
 from rasa.tracing.instrumentation.metrics import (
     record_llm_based_command_generator_cpu_usage,
@@ -375,7 +375,7 @@ def test_record_request_size_in_bytes(
     record_request_size_in_bytes(
         attributes={
             "url": "http://localhost:5055/webhook",
-            ENDPOINT_REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME: request_body_size,
+            REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME: request_body_size,
         },
     )
 

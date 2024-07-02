@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Tuple, Union
 
 import tiktoken
 from numpy import ndarray
+from rasa_sdk.grpc_py import action_webhook_pb2
 
 from rasa.core.actions.grpc_custom_action_executor import GRPCCustomActionExecutor
 from rasa.core.actions.http_custom_action_executor import HTTPCustomActionExecutor
@@ -29,7 +30,7 @@ from rasa.shared.nlu.constants import INTENT_NAME_KEY, SET_SLOT_COMMAND
 from rasa.shared.utils.llm import combine_custom_and_default_config
 from rasa.tracing.constants import (
     PROMPT_TOKEN_LENGTH_ATTRIBUTE_NAME,
-    ENDPOINT_REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME,
+    REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME,
 )
 from rasa.utils.endpoints import concat_url
 
@@ -654,11 +655,11 @@ def extract_attrs_for_endpoint_config(
     attrs: Dict[str, Any] = {"url": concat_url(self.url, subpath)}
 
     if not request_body:
-        attrs.update({ENDPOINT_REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME: 0})
+        attrs.update({REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME: 0})
     else:
         attrs.update(
             {
-                ENDPOINT_REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME: len(
+                REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME: len(
                     json.dumps(request_body).encode("utf-8")
                 )
             }
@@ -667,7 +668,7 @@ def extract_attrs_for_endpoint_config(
     return attrs
 
 
-def extract_attrs_for_custom_action_executor(
+def extract_attrs_for_custom_action_executor_run(
     self: Union[HTTPCustomActionExecutor, GRPCCustomActionExecutor],
     tracker: DialogueStateTracker,
     domain: Optional[Domain] = None,
@@ -676,5 +677,21 @@ def extract_attrs_for_custom_action_executor(
         "class_name": self.__class__.__name__,
         "action_name": self.action_name,
         "sender_id": tracker.sender_id,
+        "url": self.action_endpoint.url,
     }
+    return attrs
+
+
+def extract_attrs_for_grpc_custom_action_executor_request(
+    self: GRPCCustomActionExecutor,
+    request: action_webhook_pb2.WebhookRequest,
+) -> Dict[str, Any]:
+    attrs: Dict[str, Any] = {"url": self.action_endpoint.url}
+
+    attrs.update(
+        {
+            REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME: request.ByteSize(),
+        }
+    )
+
     return attrs

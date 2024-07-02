@@ -9,7 +9,7 @@ ENDPOINTS_OTLP_BACKEND_TYPE = "otlp"
 
 # tracing attributes
 PROMPT_TOKEN_LENGTH_ATTRIBUTE_NAME = "len_prompt_tokens"
-ENDPOINT_REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME = "request_body_size_in_bytes"
+REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME = "request_body_size_in_bytes"
 
 # metrics constants
 LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME = "llm_command_generator_cpu_usage"
