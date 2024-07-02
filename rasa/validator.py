@@ -629,13 +629,13 @@ class Validator:
                 ),
             )
 
-    def _log_error_if_action_and_utterance_defined(
+    def _log_error_if_either_action_or_utterance_are_not_defined(
         self,
         collect: CollectInformationFlowStep,
         all_good: bool,
     ) -> bool:
-        """Validates that a collect step can just have an utterance or an action
-        defined.
+        """Validates that a collect step can have either an action or an utterance.
+        Also logs an error if neither an action nor an utterance is defined.
 
         Args:
             collect: the name of the slot to collect
@@ -668,6 +668,20 @@ class Validator:
                     f"'{collect.collect_action}' defined. "
                     f"You can just have one of them! "
                     f"Please remove either the utterance or the action."
+                ),
+            )
+            all_good = False
+
+        if not has_utterance_defined and not has_action_defined:
+            structlogger.error(
+                "validator.verify_flows_steps_against_domain.collect_step",
+                collect=collect.collect,
+                has_utterance_defined=has_utterance_defined,
+                has_action_defined=has_action_defined,
+                event_info=(
+                    f"The collect step '{collect.collect}' has neither an utterance "
+                    f"nor an action defined. "
+                    f"You need to define either an utterance or an action."
                 ),
             )
             all_good = False
@@ -730,8 +744,10 @@ class Validator:
         for flow in self.flows.underlying_flows:
             for step in flow.steps_with_calls_resolved:
                 if isinstance(step, CollectInformationFlowStep):
-                    all_good = self._log_error_if_action_and_utterance_defined(
-                        step, all_good
+                    all_good = (
+                        self._log_error_if_either_action_or_utterance_are_not_defined(
+                            step, all_good
+                        )
                     )
 
                     all_good = self._log_error_if_slot_not_in_domain(

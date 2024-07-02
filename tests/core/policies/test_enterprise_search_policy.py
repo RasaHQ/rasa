@@ -628,16 +628,17 @@ async def test_enterprise_search_policy_no_retrieval(
     mock_create_prediction_cannot_handle: MagicMock,
 ) -> None:
     tracker = enterprise_search_tracker
+    search_results = SearchResultList(results=[], metadata={})
 
     with patch("rasa.shared.utils.llm.llm_factory") as mock_llm_factory:
         mock_llm = MagicMock()
         mock_llm_factory.return_value = mock_llm.return_value
 
-        # mock self.vector_store.search() to return []
+        # mock self.vector_store.search() to return empty results
         with patch.object(
             mocked_enterprise_search_policy.vector_store,
             "search",
-            return_value=[],
+            return_value=search_results,
         ):
             await mocked_enterprise_search_policy.predict_action_probabilities(
                 tracker=tracker,
@@ -988,6 +989,7 @@ async def test_enterprise_search_policy_tracker_state_is_passed(
     enterprise_search_tracker: DialogueStateTracker,
 ) -> None:
     tracker = enterprise_search_tracker
+    search_results = SearchResultList(results=[], metadata={})
 
     with patch("rasa.shared.utils.llm.llm_factory") as mock_llm_factory:
         mock_llm = MagicMock()
@@ -997,7 +999,7 @@ async def test_enterprise_search_policy_tracker_state_is_passed(
         with patch.object(
             mocked_enterprise_search_policy.vector_store,
             "search",
-            return_value=[],
+            return_value=search_results,
         ) as mock_search:
             await mocked_enterprise_search_policy.predict_action_probabilities(
                 tracker=tracker,

@@ -12,7 +12,12 @@ from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Tuple, Union
 from rasa.core.actions.action_exceptions import ActionExecutionRejection
 from rasa.core.actions.forms import FormAction
 from rasa.core.http_interpreter import RasaNLUHttpInterpreter
-from rasa.dialogue_understanding.commands import Command, NoopCommand, SetSlotCommand
+from rasa.dialogue_understanding.commands import (
+    Command,
+    NoopCommand,
+    SetSlotCommand,
+    CannotHandleCommand,
+)
 from rasa.engine import loader
 from rasa.engine.constants import (
     PLACEHOLDER_MESSAGE,
@@ -65,6 +70,7 @@ from rasa.shared.constants import (
     ROUTE_TO_CALM_SLOT,
     DOCS_URL_NLU_BASED_POLICIES,
     UTTER_PREFIX,
+    RASA_PATTERN_CANNOT_HANDLE_INVALID_INTENT,
 )
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.lock_store import LockStore
@@ -745,47 +751,30 @@ class MessageProcessor:
                     message=processed_message, domain=self.domain
                 )
 
+            # Invalid use of slash syntax
+            if (
+                processed_message.starts_with_slash_syntax()
+                and not processed_message.has_intent()
+                and not processed_message.has_commands()
+            ):
+                parse_data = self._parse_invalid_use_of_slash_syntax(
+                    processed_message, tracker, only_output_properties
+                )
+
             # Intent or commands are not explicitly present. Pass message to graph.
-            if not (processed_message.has_intent() or processed_message.has_commands()):
+            elif not (
+                processed_message.has_intent() or processed_message.has_commands()
+            ):
                 parse_data = await self._parse_message_with_graph(
                     message, tracker, only_output_properties
                 )
+
+            # Intents or commands are presents. Bypasses the standard parsing
+            # pipeline.
             else:
-                parse_data = {
-                    TEXT: "",
-                    INTENT: {INTENT_NAME_KEY: None, PREDICTED_CONFIDENCE_KEY: 0.0},
-                    ENTITIES: [],
-                }
-                parse_data.update(
-                    processed_message.as_dict(
-                        only_output_properties=only_output_properties
-                    )
+                parse_data = await self._parse_message_with_commands_and_intents(
+                    processed_message, tracker, only_output_properties
                 )
-
-                commands = parse_data.get(COMMANDS, [])
-
-                # add commands from intent payloads
-                if tracker and not commands:
-                    nlu_adapted_commands = await self._nlu_to_commands(
-                        parse_data, tracker
-                    )
-                    commands += nlu_adapted_commands
-
-                    if (
-                        tracker.has_coexistence_routing_slot
-                        and tracker.get_slot(ROUTE_TO_CALM_SLOT) is None
-                    ):
-                        # if we are currently not routing to either CALM or dm1
-                        # we make a sticky routing to CALM if there are any commands
-                        # from the trigger intent parsing
-                        # or a sticky routing to dm1 if there are no commands
-                        commands += [
-                            SetSlotCommand(
-                                ROUTE_TO_CALM_SLOT, len(nlu_adapted_commands) > 0
-                            ).as_dict()
-                        ]
-
-                parse_data[COMMANDS] = commands
 
         self._update_full_retrieval_intent(parse_data)
         structlogger.debug(
@@ -797,6 +786,85 @@ class MessageProcessor:
 
         self._check_for_unseen_features(parse_data)
 
+        return parse_data
+
+    def _parse_invalid_use_of_slash_syntax(
+        self,
+        message: Message,
+        tracker: Optional[DialogueStateTracker] = None,
+        only_output_properties: bool = True,
+    ) -> Dict[Text, Any]:
+        structlogger.warning(
+            "processor.message.parse.invalid_use_of_slash_syntax",
+            event_info=(
+                "Message starts with '/', but no intents or commands are"
+                "passed. Returning CannotHandleCommand() as a fallback."
+            ),
+            message=message.get(TEXT),
+        )
+        parse_data: Dict[Text, Any] = {
+            TEXT: "",
+            INTENT: {INTENT_NAME_KEY: None, PREDICTED_CONFIDENCE_KEY: 0.0},
+            ENTITIES: [],
+        }
+        parse_data.update(
+            message.as_dict(only_output_properties=only_output_properties)
+        )
+        commands = parse_data.get(COMMANDS, [])
+        commands += [
+            CannotHandleCommand(RASA_PATTERN_CANNOT_HANDLE_INVALID_INTENT).as_dict()
+        ]
+
+        if (
+            tracker is not None
+            and tracker.has_coexistence_routing_slot
+            and tracker.get_slot(ROUTE_TO_CALM_SLOT) is None
+        ):
+            # if we are currently not routing to either CALM or dm1
+            # we make a sticky routing to CALM
+            commands += [SetSlotCommand(ROUTE_TO_CALM_SLOT, True).as_dict()]
+
+        parse_data[COMMANDS] = commands
+        return parse_data
+
+    async def _parse_message_with_commands_and_intents(
+        self,
+        message: Message,
+        tracker: Optional[DialogueStateTracker] = None,
+        only_output_properties: bool = True,
+    ) -> Dict[Text, Any]:
+        """Parses the message to handle commands or intent trigger."""
+        parse_data: Dict[Text, Any] = {
+            TEXT: "",
+            INTENT: {INTENT_NAME_KEY: None, PREDICTED_CONFIDENCE_KEY: 0.0},
+            ENTITIES: [],
+        }
+        parse_data.update(
+            message.as_dict(only_output_properties=only_output_properties)
+        )
+
+        commands = parse_data.get(COMMANDS, [])
+
+        # add commands from intent payloads
+        if tracker and not commands:
+            nlu_adapted_commands = await self._nlu_to_commands(parse_data, tracker)
+            commands += nlu_adapted_commands
+
+            if (
+                tracker.has_coexistence_routing_slot
+                and tracker.get_slot(ROUTE_TO_CALM_SLOT) is None
+            ):
+                # if we are currently not routing to either CALM or dm1
+                # we make a sticky routing to CALM if there are any commands
+                # from the trigger intent parsing
+                # or a sticky routing to dm1 if there are no commands
+                commands += [
+                    SetSlotCommand(
+                        ROUTE_TO_CALM_SLOT, len(nlu_adapted_commands) > 0
+                    ).as_dict()
+                ]
+
+        parse_data[COMMANDS] = commands
         return parse_data
 
     def _update_full_retrieval_intent(self, parse_data: Dict[Text, Any]) -> None:
@@ -832,7 +900,31 @@ class MessageProcessor:
         commands = NLUCommandAdapter.convert_nlu_to_commands(
             Message(parse_data), tracker, await self.get_flows(), self.domain
         )
+
+        # if there are no converted commands and parsed data contains invalid intent
+        # add CannotHandleCommand as fallback
+        if len(commands) == 0 and self._contains_undefined_intent(Message(parse_data)):
+            structlogger.warning(
+                "processor.message.nlu_to_commands.invalid_intent",
+                event_info=(
+                    f"No NLU commands converted and parsed data contains"
+                    f"invalid intent: {parse_data[INTENT]['name']}. "
+                    f"Returning CannotHandleCommand() as a fallback."
+                ),
+                invalid_intent=parse_data[INTENT]["name"],
+            )
+            commands.append(
+                CannotHandleCommand(RASA_PATTERN_CANNOT_HANDLE_INVALID_INTENT)
+            )
+
         return [command.as_dict() for command in commands]
+
+    def _contains_undefined_intent(self, message: Message) -> bool:
+        """Checks if the message contains an intent that is undefined
+        in the domain.
+        """
+        intent_name = message.get(INTENT, {}).get("name")
+        return intent_name is not None and intent_name not in self.domain.intents
 
     async def _parse_message_with_graph(
         self,

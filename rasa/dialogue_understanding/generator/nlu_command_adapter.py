@@ -126,8 +126,13 @@ class NLUCommandAdapter(GraphComponent, CommandGenerator):
         )
 
         structlogger.info("nlu_command_adapter.cleaning_commands", commands=commands)
-        commands = clean_up_commands(commands, tracker, flows, self._execution_context)
-        structlogger.info("nlu_command_adapter.clean_commands", clean_commands=commands)
+        if commands:
+            commands = clean_up_commands(
+                commands, tracker, flows, self._execution_context
+            )
+            structlogger.info(
+                "nlu_command_adapter.clean_commands", clean_commands=commands
+            )
 
         return commands
 

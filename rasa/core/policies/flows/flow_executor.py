@@ -471,6 +471,47 @@ def advance_flows_until_next_action(
         return FlowActionPrediction(None, 0.0, events=gathered_events)
 
 
+def validate_collect_step(
+    step: CollectInformationFlowStep,
+    stack: DialogueStack,
+    available_actions: List[str],
+) -> bool:
+    """Validate that a collect step can be executed.
+
+    A collect step can be executed if either the utter_ask or the action_ask
+    are defined in the domain."""
+    if step.utter in available_actions or step.collect_action in available_actions:
+        return True
+
+    structlogger.error(
+        "flow.step.run.collect_missing_utter_or_collect_action",
+        slot_name=step.collect,
+    )
+
+    cancel_flow_and_push_internal_error(stack)
+
+    return False
+
+
+def cancel_flow_and_push_internal_error(stack: DialogueStack) -> None:
+    """Cancel the top user flow and push the internal error pattern."""
+    top_frame = stack.top()
+
+    if isinstance(top_frame, BaseFlowStackFrame):
+        # we need to first cancel the top user flow
+        # because we cannot collect one of its slots
+        # and therefore should not proceed with the flow
+        # after triggering pattern_internal_error
+        canceled_frames = CancelFlowCommand.select_canceled_frames(stack)
+        stack.push(
+            CancelPatternFlowStackFrame(
+                canceled_name=top_frame.flow_id,
+                canceled_frames=canceled_frames,
+            )
+        )
+    stack.push(InternalErrorPatternFlowStackFrame())
+
+
 def validate_custom_slot_mappings(
     step: CollectInformationFlowStep,
     stack: DialogueStack,
@@ -491,27 +532,14 @@ def validate_custom_slot_mappings(
             # this is a slot that must be filled by a custom action
             # check if collect_action exists
             if step.collect_action not in available_actions:
-                structlogger.warning(
+                structlogger.error(
                     "flow.step.run.collect_action_not_found_for_custom_slot_mapping",
                     action=step.collect_action,
                     collect=step.collect,
                 )
-                top_frame = stack.top()
-
-                if isinstance(top_frame, BaseFlowStackFrame):
-                    # we need to first cancel the top user flow
-                    # because we cannot collect one of its slots
-                    # and therefore should not proceed with the flow
-                    # after triggering pattern_internal_error
-                    canceled_frames = CancelFlowCommand.select_canceled_frames(stack)
-                    stack.push(
-                        CancelPatternFlowStackFrame(
-                            canceled_name=top_frame.flow_id,
-                            canceled_frames=canceled_frames,
-                        )
-                    )
-                stack.push(InternalErrorPatternFlowStackFrame())
+                cancel_flow_and_push_internal_error(stack)
                 return False
+
     return True
 
 
@@ -548,10 +576,18 @@ def run_step(
         initial_events.append(FlowStarted(flow.id))
 
     if isinstance(step, CollectInformationFlowStep):
-        is_valid = validate_custom_slot_mappings(
+        is_step_valid = validate_collect_step(step, stack, available_actions)
+        if not is_step_valid:
+            # if we return any other FlowStepResult, the assistant will stay silent
+            # instead of triggering the internal error pattern
+            return ContinueFlowWithNextStep(events=initial_events)
+
+        is_mapping_valid = validate_custom_slot_mappings(
             step, stack, tracker, available_actions
         )
-        if not is_valid:
+        if not is_mapping_valid:
+            # if we return any other FlowStepResult, the assistant will stay silent
+            # instead of triggering the internal error pattern
             return ContinueFlowWithNextStep(events=initial_events)
 
         structlogger.debug("flow.step.run.collect")
@@ -577,7 +613,13 @@ def run_step(
         else:
             if step.action != "validate_{{context.collect}}":
                 # do not log about non-existing validation actions of collect steps
-                structlogger.warning("flow.step.run.action.unknown", action=action_name)
+                utter_action_name = render_template_variables(
+                    "{{context.utter}}", context
+                )
+                if utter_action_name not in available_actions:
+                    structlogger.warning(
+                        "flow.step.run.action.unknown", action=action_name
+                    )
             return ContinueFlowWithNextStep(events=initial_events)
 
     elif isinstance(step, LinkFlowStep):

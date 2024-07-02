@@ -1,42 +1,44 @@
 import uuid
-import pytest
 from typing import Dict, Any, Optional, Text
 from unittest.mock import Mock, AsyncMock, patch
+
+import pytest
 from _pytest.tmpdir import TempPathFactory
 from structlog.testing import capture_logs
+
+from rasa.dialogue_understanding.commands import (
+    Command,
+    ErrorCommand,
+    SetSlotCommand,
+)
 from rasa.dialogue_understanding.generator import (
     LLMBasedCommandGenerator,
     LLMCommandGenerator,
     SingleStepLLMCommandGenerator,
     MultiStepLLMCommandGenerator,
 )
-
 from rasa.dialogue_understanding.generator.constants import (
     FLOW_RETRIEVAL_KEY,
     FLOW_RETRIEVAL_ACTIVE_KEY,
 )
+from rasa.engine.graph import ExecutionContext
+from rasa.engine.storage.local_model_storage import LocalModelStorage
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
-from rasa.shared.core.slots import (
-    Slot,
-    TextSlot,
-)
-from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.dialogue_understanding.commands import (
-    Command,
-    ErrorCommand,
-    SetSlotCommand,
-)
-from rasa.shared.nlu.constants import TEXT
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.flows.steps.collect import (
     SlotRejection,
     CollectInformationFlowStep,
 )
+from rasa.shared.core.slots import (
+    Slot,
+    TextSlot,
+)
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.exceptions import ProviderClientAPIException
+from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.message import Message
-from rasa.engine.storage.storage import ModelStorage
-from rasa.engine.storage.local_model_storage import LocalModelStorage
-from rasa.engine.storage.resource import Resource
-from rasa.engine.graph import ExecutionContext
 from tests.utilities import flows_from_str
 
 
@@ -361,7 +363,9 @@ class TestLLMBasedCommandGenerator:
         generator = command_generator_fixture
         message = Mock()
         message.data = {TEXT: "some_message"}
-        mock_flow_retrieval_filter_flows.side_effect = Exception("Test Exception")
+        mock_flow_retrieval_filter_flows.side_effect = ProviderClientAPIException(
+            message="Test Exception", original_exception=Exception("API exception")
+        )
 
         commands = await generator.predict_commands(message, flows, tracker)
 
@@ -403,12 +407,17 @@ class TestLLMBasedCommandGenerator:
         else:
             raise ValueError("Unknown fixture type")
 
+    @patch(
+        "rasa.dialogue_understanding.generator.llm_based_command_generator.llm_factory"
+    )
     async def test_generate_action_list_calls_llm_factory_correctly(
         self,
+        mock_llm_factory: Mock,
         base_command_generator_fixture,
     ):
         """Test that _generate_action_list calls llm correctly."""
         command_generator = base_command_generator_fixture
+
         # Given
         llm_config = {
             "_type": "openai",
@@ -417,14 +426,13 @@ class TestLLMBasedCommandGenerator:
             "model_name": "gpt-4",
             "max_tokens": 256,
         }
+        mock_llm_factory.return_value = AsyncMock(**llm_config)
+
         # When
-        with patch(
-            "rasa.dialogue_understanding.generator.llm_based_command_generator.llm_factory",
-            Mock(),
-        ) as mock_llm_factory:
-            await command_generator.invoke_llm("some prompt")
-            # Then
-            mock_llm_factory.assert_called_once_with(None, llm_config)
+        await command_generator.invoke_llm("some prompt")
+
+        # Then
+        mock_llm_factory.assert_called_once_with(None, llm_config)
 
     async def test_generate_action_list_calls_llm_correctly(
         self,
@@ -446,24 +454,28 @@ class TestLLMBasedCommandGenerator:
             # Then
             predict_mock.assert_called_once_with("some prompt")
 
+    @patch(
+        "rasa.dialogue_understanding.generator.llm_based_command_generator.llm_factory"
+    )
     async def test_generate_action_list_catches_llm_exception(
         self,
+        mock_llm_factory: Mock,
         base_command_generator_fixture,
     ):
         """Test that _generate_action_list calls llm correctly."""
         command_generator = base_command_generator_fixture
+        mock_llm = AsyncMock()
+        mock_llm.apredict = AsyncMock(side_effect=Exception("API exception"))
+        mock_llm_factory.return_value = mock_llm
+
         # When
-        mock_llm = Mock(side_effect=Exception("some exception"))
-        with patch(
-            "rasa.dialogue_understanding.generator.llm_based_command_generator.llm_factory",
-            Mock(return_value=mock_llm),
-        ):
-            with capture_logs() as logs:
+        with capture_logs() as logs:
+            with pytest.raises(ProviderClientAPIException):
                 await command_generator.invoke_llm("some prompt")
-                # Then
-                print(logs)
-                assert len(logs) == 1
-                assert logs[0]["event"] == "llm_based_command_generator.llm.error"
+
+            # Then
+            assert len(logs) == 1
+            assert logs[0]["event"] == "llm_based_command_generator.llm.error"
 
     @pytest.mark.parametrize(
         "input_value, expected_output",

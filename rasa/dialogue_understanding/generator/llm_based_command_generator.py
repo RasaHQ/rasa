@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
-import structlog
 from functools import lru_cache
-from jinja2 import Template
 from typing import Dict, Any, List, Optional, Tuple, Union, Text
+
+import structlog
+from jinja2 import Template
 
 import rasa.shared.utils.io
 from rasa.dialogue_understanding.commands import (
@@ -26,6 +27,7 @@ from rasa.shared.core.flows import FlowStep, Flow, FlowsList
 from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import FileIOException
+from rasa.shared.exceptions import ProviderClientAPIException
 from rasa.shared.nlu.constants import FLOWS_IN_PROMPT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -275,6 +277,9 @@ class LLMBasedCommandGenerator(GraphComponent, CommandGenerator, ABC):
 
         Returns:
             The generated text.
+
+        Raises:
+            ProviderClientAPIException if an error during API call.
         """
         llm = llm_factory(self.config.get(LLM_CONFIG_KEY), DEFAULT_LLM_CONFIG)
         try:
@@ -283,7 +288,9 @@ class LLMBasedCommandGenerator(GraphComponent, CommandGenerator, ABC):
             # unfortunately, langchain does not wrap LLM exceptions which means
             # we have to catch all exceptions here
             structlogger.error("llm_based_command_generator.llm.error", error=e)
-            return None
+            raise ProviderClientAPIException(
+                message="LLM call exception", original_exception=e
+            )
 
     @staticmethod
     def start_flow_by_name(flow_name: str, flows: FlowsList) -> List[Command]:
