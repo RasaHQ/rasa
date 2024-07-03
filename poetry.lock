@@ -3718,28 +3718,28 @@ setuptools = ">=16.0"
 
 [[package]]
 name = "opentelemetry-exporter-jaeger"
-version = "1.15.0"
+version = "1.16.0"
 description = "Jaeger Exporters for OpenTelemetry"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "opentelemetry_exporter_jaeger-1.15.0-py3-none-any.whl", hash = "sha256:e8d1b8b95095736507fbef46eea4ee9472e9e7f415ee4461f9414d9d1590ac37"},
-    {file = "opentelemetry_exporter_jaeger-1.15.0.tar.gz", hash = "sha256:5d0e5a1b37589a4d7eb67be90aa1fec45431565f8e84ae4960437e77b779002e"},
+    {file = "opentelemetry_exporter_jaeger-1.16.0-py3-none-any.whl", hash = "sha256:1990169a4aea7e32cf88b9b213be884d99de769ea1ccb6da0f7de66ac26802ff"},
+    {file = "opentelemetry_exporter_jaeger-1.16.0.tar.gz", hash = "sha256:742716a764ad6bc7f7aabb3c10a7837699a39a46a3991ead0372425d8c214290"},
 ]
 
 [package.dependencies]
-opentelemetry-exporter-jaeger-proto-grpc = "1.15.0"
-opentelemetry-exporter-jaeger-thrift = "1.15.0"
+opentelemetry-exporter-jaeger-proto-grpc = "1.16.0"
+opentelemetry-exporter-jaeger-thrift = "1.16.0"
 
 [[package]]
 name = "opentelemetry-exporter-jaeger-proto-grpc"
-version = "1.15.0"
+version = "1.16.0"
 description = "Jaeger Protobuf Exporter for OpenTelemetry"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "opentelemetry_exporter_jaeger_proto_grpc-1.15.0-py3-none-any.whl", hash = "sha256:78c46b8b8c9ceabd1107cc85a85b463bd50a049e980c370483d0c3c577632991"},
-    {file = "opentelemetry_exporter_jaeger_proto_grpc-1.15.0.tar.gz", hash = "sha256:ff650cc786932cf0fce9809d18f680df7fb49955511009067322470a25b27c5c"},
+    {file = "opentelemetry_exporter_jaeger_proto_grpc-1.16.0-py3-none-any.whl", hash = "sha256:14cbb627feafe3298e021894e6594865815faa7f20b0140397526bf8a41ae498"},
+    {file = "opentelemetry_exporter_jaeger_proto_grpc-1.16.0.tar.gz", hash = "sha256:61249214c52062a94b13110cfc8c7f8bea85614a796c7aca7be8f486ae5daeb7"},
 ]
 
 [package.dependencies]
@@ -3750,13 +3750,13 @@ opentelemetry-sdk = ">=1.11,<2.0"
 
 [[package]]
 name = "opentelemetry-exporter-jaeger-thrift"
-version = "1.15.0"
+version = "1.16.0"
 description = "Jaeger Thrift Exporter for OpenTelemetry"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "opentelemetry_exporter_jaeger_thrift-1.15.0-py3-none-any.whl", hash = "sha256:a9d6dcdb203d10d6b0f72bfaeebf1e4822e2636d7d35ff67ed5a9fc672d76fc5"},
-    {file = "opentelemetry_exporter_jaeger_thrift-1.15.0.tar.gz", hash = "sha256:2d85ad991c49f63f2397bcbae3881b9d58e51797d2f9c6fe4e02d6372e92b3ec"},
+    {file = "opentelemetry_exporter_jaeger_thrift-1.16.0-py3-none-any.whl", hash = "sha256:3e4998479598b70d37ae6325586ac6cc1664be0e3360549d62d50e90d8c50e5f"},
+    {file = "opentelemetry_exporter_jaeger_thrift-1.16.0.tar.gz", hash = "sha256:f8b5cc53b88122c87dac14bf926ec3d934486202e2f708285e7487ffe6bdb4f6"},
 ]
 
 [package.dependencies]
@@ -3766,58 +3766,58 @@ thrift = ">=0.10.0"
 
 [[package]]
 name = "opentelemetry-exporter-otlp"
-version = "1.15.0"
+version = "1.16.0"
 description = "OpenTelemetry Collector Exporters"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "opentelemetry_exporter_otlp-1.15.0-py3-none-any.whl", hash = "sha256:79f22748b6a54808a0448093dfa189c8490e729f67c134d4c992533d9393b33e"},
-    {file = "opentelemetry_exporter_otlp-1.15.0.tar.gz", hash = "sha256:4f7c49751d9720e2e726e13b0bb958ccade4e29122c305d92c033da432c8d2c5"},
+    {file = "opentelemetry_exporter_otlp-1.16.0-py3-none-any.whl", hash = "sha256:e1a91a267afb7ae0196cb25ed0bc0a991ff5d9f3d6b3a7ff7c0bce57be2d72d5"},
+    {file = "opentelemetry_exporter_otlp-1.16.0.tar.gz", hash = "sha256:5d76b4a44aa5c11e93b9280eaf93ae497557cf01046485ec1c7bfb2c492dabc4"},
 ]
 
 [package.dependencies]
-opentelemetry-exporter-otlp-proto-grpc = "1.15.0"
-opentelemetry-exporter-otlp-proto-http = "1.15.0"
+opentelemetry-exporter-otlp-proto-grpc = "1.16.0"
+opentelemetry-exporter-otlp-proto-http = "1.16.0"
 
 [[package]]
 name = "opentelemetry-exporter-otlp-proto-grpc"
-version = "1.15.0"
+version = "1.16.0"
 description = "OpenTelemetry Collector Protobuf over gRPC Exporter"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "opentelemetry_exporter_otlp_proto_grpc-1.15.0-py3-none-any.whl", hash = "sha256:c2a5492ba7d140109968135d641d06ce3c5bd73c50665f787526065d57d7fd1d"},
-    {file = "opentelemetry_exporter_otlp_proto_grpc-1.15.0.tar.gz", hash = "sha256:844f2a4bb9bcda34e4eb6fe36765e5031aacb36dc60ed88c90fc246942ea26e7"},
+    {file = "opentelemetry_exporter_otlp_proto_grpc-1.16.0-py3-none-any.whl", hash = "sha256:ace2cedc43bc30e1b2475b14f72acf1a1528716965209d31fb0a72c59f0f4fe4"},
+    {file = "opentelemetry_exporter_otlp_proto_grpc-1.16.0.tar.gz", hash = "sha256:0853ea1e566c1fab5633e7f7bca2a650ba445b04ba02f93173920b0f5c561f63"},
 ]
 
 [package.dependencies]
 backoff = {version = ">=1.10.0,<3.0.0", markers = "python_version >= \"3.7\""}
 googleapis-common-protos = ">=1.52,<2.0"
 grpcio = ">=1.0.0,<2.0.0"
-opentelemetry-api = ">=1.12,<2.0"
-opentelemetry-proto = "1.15.0"
-opentelemetry-sdk = ">=1.12,<2.0"
+opentelemetry-api = ">=1.15,<2.0"
+opentelemetry-proto = "1.16.0"
+opentelemetry-sdk = ">=1.16.0,<1.17.0"
 
 [package.extras]
 test = ["pytest-grpc"]
 
 [[package]]
 name = "opentelemetry-exporter-otlp-proto-http"
-version = "1.15.0"
+version = "1.16.0"
 description = "OpenTelemetry Collector Protobuf over HTTP Exporter"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "opentelemetry_exporter_otlp_proto_http-1.15.0-py3-none-any.whl", hash = "sha256:3ec2a02196c8a54bf5cbf7fe623a5238625638e83b6047a983bdf96e2bbb74c0"},
-    {file = "opentelemetry_exporter_otlp_proto_http-1.15.0.tar.gz", hash = "sha256:11b2c814249a49b22f6cca7a06b05701f561d577b747f3660dfd67b6eb9daf9c"},
+    {file = "opentelemetry_exporter_otlp_proto_http-1.16.0-py3-none-any.whl", hash = "sha256:f27cabd0e071fb8cc258bcaaad51b0c228fef1156bf6e6b1f9ae738881d9bf51"},
+    {file = "opentelemetry_exporter_otlp_proto_http-1.16.0.tar.gz", hash = "sha256:d7f14ae8b41b3606ee3e4ab12d42cb48610d8419f1d8b92c7d3ff5813c7a10d7"},
 ]
 
 [package.dependencies]
 backoff = {version = ">=1.10.0,<3.0.0", markers = "python_version >= \"3.7\""}
 googleapis-common-protos = ">=1.52,<2.0"
-opentelemetry-api = ">=1.12,<2.0"
-opentelemetry-proto = "1.15.0"
-opentelemetry-sdk = ">=1.12,<2.0"
+opentelemetry-api = ">=1.15,<2.0"
+opentelemetry-proto = "1.16.0"
+opentelemetry-sdk = ">=1.16.0,<1.17.0"
 requests = ">=2.7,<3.0"
 
 [package.extras]
@@ -3825,13 +3825,13 @@ test = ["responses (==0.22.0)"]
 
 [[package]]
 name = "opentelemetry-proto"
-version = "1.15.0"
+version = "1.16.0"
 description = "OpenTelemetry Python Proto"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "opentelemetry_proto-1.15.0-py3-none-any.whl", hash = "sha256:044b6d044b4d10530f250856f933442b8753a17f94ae37c207607f733fb9a844"},
-    {file = "opentelemetry_proto-1.15.0.tar.gz", hash = "sha256:9c4008e40ac8cab359daac283fbe7002c5c29c77ea2674ad5626a249e64e0101"},
+    {file = "opentelemetry_proto-1.16.0-py3-none-any.whl", hash = "sha256:160326d300faf43c3f72c4a916516ee5b63289ceb9828294b698ef943697cbd5"},
+    {file = "opentelemetry_proto-1.16.0.tar.gz", hash = "sha256:e58832dfec64621972a9836f8ae163fb3063946eb02bdf43fae0f76f8cf46d0a"},
 ]
 
 [package.dependencies]
@@ -5298,23 +5298,23 @@ fire = "*"
 
 [[package]]
 name = "rasa-sdk"
-version = "3.9.0rc3"
+version = "3.9.0"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 optional = false
 python-versions = "<3.11,>=3.8"
 files = [
-    {file = "rasa_sdk-3.9.0rc3-py3-none-any.whl", hash = "sha256:b1ec7d28f6e8b7fda25ea8675b4268848dea734952fe99efbd6eb439ae149475"},
-    {file = "rasa_sdk-3.9.0rc3.tar.gz", hash = "sha256:7eac5a6df991659deac189b6495eae5595f8bb64f9b20301432001bfad1d76a4"},
+    {file = "rasa_sdk-3.9.0-py3-none-any.whl", hash = "sha256:c750aca4d62a2e11db245d6c6ea6693929a597b428c76492928e725263e8fd60"},
+    {file = "rasa_sdk-3.9.0.tar.gz", hash = "sha256:b96f5097cb567992f8e35f270d5e3cf867bf674ef94fc159478f84010f49fc59"},
 ]
 
 [package.dependencies]
 coloredlogs = ">=10,<16"
 grpcio = "1.59.3"
 grpcio-tools = "1.56.2"
-opentelemetry-api = "1.16.0"
-opentelemetry-exporter-jaeger = ">=1.15.0,<1.16.0"
-opentelemetry-exporter-otlp = ">=1.15.0,<1.16.0"
-opentelemetry-sdk = "1.16.0"
+opentelemetry-api = ">=1.16.0,<1.17.0"
+opentelemetry-exporter-jaeger = ">=1.16.0,<1.17.0"
+opentelemetry-exporter-otlp = ">=1.16.0,<1.17.0"
+opentelemetry-sdk = ">=1.16.0,<1.17.0"
 pluggy = ">=1.0.0,<2.0.0"
 prompt-toolkit = ">=3.0,<3.0.29"
 protobuf = "4.25.3"
@@ -8225,4 +8225,4 @@ transformers = ["sentencepiece", "transformers"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8.1,<3.11"
-content-hash = "5a97ef1754a00bbbd05ca77f48ee65a0ab69a329b41acd32dbfc9c47cb7176fa"
+content-hash = "4ae38ef0d7a4f3ac7f69e35b82e39c331fcfc5c38f5470b50acbd52efcd30fcd"
