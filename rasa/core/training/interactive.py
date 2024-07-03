@@ -3,6 +3,7 @@ import logging
 import os
 import textwrap
 import uuid
+import warnings
 from functools import partial
 from multiprocessing import Process
 from typing import (
@@ -1624,6 +1625,9 @@ def _serve_application(
 def start_visualization(image_path: Text, port: int) -> None:
     """Add routes to serve the conversation visualization files."""
     app = Sanic("rasa_interactive")
+
+    # Reset Sanic warnings filter that allows the triggering of Sanic warnings
+    warnings.filterwarnings("ignore", category=DeprecationWarning, module=r"sanic.*")
 
     # noinspection PyUnusedLocal
     @app.exception(NotFound)
