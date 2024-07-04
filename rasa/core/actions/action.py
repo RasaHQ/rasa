@@ -73,6 +73,7 @@ from rasa.shared.core.events import (
     Restarted,
     SessionStarted,
 )
+from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.slot_mappings import (
     SlotFillingManager,
     extract_slot_value,
@@ -1153,10 +1154,17 @@ class ActionExtractSlots(Action):
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
+        calm_custom_action_names: Optional[Set[str]] = None,
     ) -> Tuple[List[Event], Set[Text]]:
         custom_action = mapping.get("action")
 
         if not custom_action or custom_action in executed_custom_actions:
+            return [], executed_custom_actions
+
+        if (
+            calm_custom_action_names is not None
+            and custom_action in calm_custom_action_names
+        ):
             return [], executed_custom_actions
 
         slot_events = await self._run_custom_action(
@@ -1222,11 +1230,26 @@ class ActionExtractSlots(Action):
             if slot.name not in DEFAULT_SLOT_NAMES | KNOWLEDGE_BASE_SLOT_NAMES
         ]
 
+        calm_slot_names = set()
+        calm_custom_action_names = None
+        flows = None
+
+        if metadata is not None:
+            flows = metadata.get("all_flows")
+
+        if flows is not None:
+            flows = FlowsList.from_json(flows)
+            calm_slot_names = flows.available_slot_names()
+            calm_custom_action_names = flows.available_custom_actions()
+
         slot_filling_manager = SlotFillingManager(
             domain, tracker, action_endpoint=self._action_endpoint
         )
 
         for slot in user_slots:
+            if slot.name in calm_slot_names:
+                continue
+
             slot_value, is_extracted = extract_slot_value(slot, slot_filling_manager)
             if is_extracted:
                 slot_events.append(SlotSet(slot.name, slot_value))
@@ -1246,6 +1269,7 @@ class ActionExtractSlots(Action):
                         nlg,
                         tracker,
                         domain,
+                        calm_custom_action_names,
                     )
                     slot_events.extend(custom_evts)
 

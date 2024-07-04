@@ -14,6 +14,9 @@ inputs:
   RASA_IMAGE_TAG:
     description: 'Rasa image tag'
     required: true
+  BOT_PATH:
+    description: 'Path to the bot directory'
+    required: true
 
 runs:
   using: 'composite'
@@ -22,6 +25,7 @@ runs:
     run: |
       RASA_REPOSITORY=${{ inputs.RASA_DOCKER_REPOSITORY }} \
       RASA_IMAGE_TAG=${{ inputs.RASA_IMAGE_TAG }} \
+      BOT_PATH=${{ inputs.BOT_PATH }} \
       docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} \
         --env-file=${{ inputs.ENV_FILE_PATH }} \
         logs rasa-pro-grpc
@@ -31,6 +35,7 @@ runs:
     run: |
       RASA_REPOSITORY=${{ inputs.RASA_DOCKER_REPOSITORY }} \
       RASA_IMAGE_TAG=${{ inputs.RASA_IMAGE_TAG }} \
+      BOT_PATH=${{ inputs.BOT_PATH }} \
       docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} \
       --env-file=${{ inputs.ENV_FILE_PATH }} \
       logs rasa-pro-grpc-ssl
@@ -40,6 +45,7 @@ runs:
     run: |
       RASA_REPOSITORY=${{ inputs.RASA_DOCKER_REPOSITORY }} \
       RASA_IMAGE_TAG=${{ inputs.RASA_IMAGE_TAG }} \
+      BOT_PATH=${{ inputs.BOT_PATH }} \
       docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} \
       --env-file=${{ inputs.ENV_FILE_PATH }} \
       logs rasa-grpc-action-server
@@ -49,6 +55,7 @@ runs:
     run: |
       RASA_REPOSITORY=${{ inputs.RASA_DOCKER_REPOSITORY }} \
       RASA_IMAGE_TAG=${{ inputs.RASA_IMAGE_TAG }} \
+      BOT_PATH=${{ inputs.BOT_PATH }} \
       docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} \
       --env-file=${{ inputs.ENV_FILE_PATH }} \
       logs rasa-grpc-ssl-action-server
@@ -58,6 +65,7 @@ runs:
     run: |
       RASA_REPOSITORY=${{ inputs.RASA_DOCKER_REPOSITORY }} \
       RASA_IMAGE_TAG=${{ inputs.RASA_IMAGE_TAG }} \
+      BOT_PATH=${{ inputs.BOT_PATH }} \
       docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} \
         --env-file=${{ inputs.ENV_FILE_PATH }} \
         logs rasa-pro-http
@@ -67,6 +75,7 @@ runs:
     run: |
       RASA_REPOSITORY=${{ inputs.RASA_DOCKER_REPOSITORY }} \
       RASA_IMAGE_TAG=${{ inputs.RASA_IMAGE_TAG }} \
+      BOT_PATH=${{ inputs.BOT_PATH }} \
       docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} \
       --env-file=${{ inputs.ENV_FILE_PATH }} \
       logs rasa-pro-https
@@ -76,15 +85,17 @@ runs:
     run: |
       RASA_REPOSITORY=${{ inputs.RASA_DOCKER_REPOSITORY }} \
       RASA_IMAGE_TAG=${{ inputs.RASA_IMAGE_TAG }} \
+      BOT_PATH=${{ inputs.BOT_PATH }} \
       docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} \
       --env-file=${{ inputs.ENV_FILE_PATH }} \
-      logs rasa-grpc-action-server
+      logs rasa-http-action-server
     shell: bash
 
   - name: Check rasa-https-action-server container logs
     run: |
       RASA_REPOSITORY=${{ inputs.RASA_DOCKER_REPOSITORY }} \
       RASA_IMAGE_TAG=${{ inputs.RASA_IMAGE_TAG }} \
+      BOT_PATH=${{ inputs.BOT_PATH }} \
       docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} \
       --env-file=${{ inputs.ENV_FILE_PATH }} \
       logs rasa-https-action-server

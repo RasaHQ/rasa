@@ -28,6 +28,7 @@ class LoopAction(Action, ABC):
                 nlg,
                 tracker,
                 domain,
+                metadata,
             )
 
         if not await self.is_done(output_channel, nlg, tracker, domain, events):
@@ -60,6 +61,7 @@ class LoopAction(Action, ABC):
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
+        metadata: Optional[Dict[Text, Any]] = None,
     ) -> List[Event]:
         # can be overwritten
         return []
@@ -104,6 +106,7 @@ class LoopAction(Action, ABC):
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
+        metadata: Optional[Dict[Text, Any]] = None,
     ) -> List[Event]:
         events = self._default_activation_events()
         events += await self.activate(output_channel, nlg, tracker, domain)

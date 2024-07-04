@@ -44,7 +44,13 @@ from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.utils import AvailableEndpoints
-from rasa.dialogue_understanding.commands import SetSlotCommand, StartFlowCommand
+from rasa.dialogue_understanding.commands import (
+    SetSlotCommand,
+    StartFlowCommand,
+    ErrorCommand,
+    ChitChatAnswerCommand,
+    Command,
+)
 from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
 )
@@ -59,6 +65,7 @@ from rasa.shared.constants import (
     ASSISTANT_ID_KEY,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
     ROUTE_TO_CALM_SLOT,
+    RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
 )
 from rasa.shared.core.constants import (
     ACTION_CORRECT_FLOW_SLOT,
@@ -91,6 +98,7 @@ from rasa.shared.core.events import (
     ActionExecutionRejected,
     LoopInterrupted,
 )
+from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.slots import BooleanSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import (
@@ -156,30 +164,6 @@ async def test_parsing(default_processor: MessageProcessor):
         message = UserMessage("hi hello how are you?")
         parsed = await default_processor.parse_message(message)
         mocked_function.assert_called()
-
-
-async def test_check_for_unseen_feature(default_processor: MessageProcessor):
-    message = UserMessage('/greet{"name": "Joe"}')
-    old_domain = default_processor.domain
-    dict_for_new_domain = old_domain.as_dict()
-    dict_for_new_domain["intents"] = [
-        intent for intent in dict_for_new_domain["intents"] if intent != "greet"
-    ]
-    dict_for_new_domain["entities"] = [
-        entity for entity in dict_for_new_domain["entities"] if entity != "name"
-    ]
-    new_domain = Domain.from_dict(dict_for_new_domain)
-    default_processor.domain = new_domain
-
-    parsed = await default_processor.parse_message(message)
-    with pytest.warns(UserWarning) as record:
-        default_processor._check_for_unseen_features(parsed)
-    assert len(record) == 2
-
-    assert record[0].message.args[0].startswith("Parsed an intent 'greet'")
-    assert record[1].message.args[0].startswith("Parsed an entity 'name'")
-
-    default_processor.domain = old_domain
 
 
 @pytest.mark.parametrize("default_intent", DEFAULT_INTENTS)
@@ -2124,13 +2108,17 @@ async def test_run_command_processor_setting_a_slot(
 async def test_handle_message_with_intent_trigger_and_no_nlu_trigger(
     flow_policy_bot_agent: Agent,
 ):
+    # Given
     processor = flow_policy_bot_agent.processor
+    processor.domain.intents.append("welcome")
     sender_id = uuid.uuid4().hex
     tracker = await processor.tracker_store.get_or_create_tracker(sender_id)
     tracker.slots[ROUTE_TO_CALM_SLOT] = BooleanSlot(ROUTE_TO_CALM_SLOT, [{}])
 
+    # When
     parse_data = await processor.parse_message(UserMessage("/welcome"), tracker)
 
+    # Then
     assert len(parse_data[COMMANDS]) == 1
     assert SetSlotCommand(ROUTE_TO_CALM_SLOT, False).as_dict() in parse_data[COMMANDS]
 
@@ -2148,6 +2136,74 @@ async def test_handle_message_with_intent_trigger_and_nlu_trigger(
     assert len(parse_data[COMMANDS]) == 2
     assert SetSlotCommand(ROUTE_TO_CALM_SLOT, True).as_dict() in parse_data[COMMANDS]
     assert StartFlowCommand("bar").as_dict() in parse_data[COMMANDS]
+
+
+@pytest.mark.parametrize(
+    "message, predicted_commands",
+    [
+        (
+            UserMessage("/"),
+            [ErrorCommand(RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY)],
+        ),
+        (
+            UserMessage(" / / / "),
+            [ErrorCommand(RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY)],
+        ),
+        (
+            UserMessage("/ hey there!"),
+            [ChitChatAnswerCommand(), SetSlotCommand(ROUTE_TO_CALM_SLOT, True)],
+        ),
+        (
+            UserMessage("/ / / hey there!"),
+            [ChitChatAnswerCommand(), SetSlotCommand(ROUTE_TO_CALM_SLOT, True)],
+        ),
+        (
+            UserMessage("/ / / hey there! / /"),
+            [ChitChatAnswerCommand(), SetSlotCommand(ROUTE_TO_CALM_SLOT, True)],
+        ),
+        (
+            UserMessage("/invalid_intent"),
+            [ChitChatAnswerCommand(), SetSlotCommand(ROUTE_TO_CALM_SLOT, True)],
+        ),
+    ],
+)
+@patch(
+    "rasa.dialogue_understanding.generator"
+    ".single_step.single_step_llm_command_generator"
+    ".SingleStepLLMCommandGenerator.filter_flows"
+)
+@patch(
+    "rasa.dialogue_understanding.generator"
+    ".single_step.single_step_llm_command_generator"
+    ".SingleStepLLMCommandGenerator.invoke_llm"
+)
+async def test_run_command_processor_parsing_a_message_with_invalid_use_of_slash_syntax(
+    mock_invoke_llm: AsyncMock,
+    mock_filter_flows: AsyncMock,
+    message: UserMessage,
+    predicted_commands: List[Command],
+    flow_policy_bot_agent: Agent,
+    domain: Domain,
+):
+    # Given
+    processor = flow_policy_bot_agent.processor
+    sender_id = uuid.uuid4().hex
+    tracker = await processor.tracker_store.get_or_create_tracker(sender_id)
+    tracker.slots[ROUTE_TO_CALM_SLOT] = BooleanSlot(ROUTE_TO_CALM_SLOT, [{}])
+    # the return value here does not matter, it only matters
+    # that filter_flows is not raising an exception
+    mock_filter_flows.return_value = FlowsList(underlying_flows=[])
+    # the return value does not matter here, it only matters
+    # that we got the response from the LLM
+    mock_invoke_llm.return_value = "ChitChat()"
+
+    # When
+    parse_data = await processor.parse_message(message, tracker)
+
+    # Then
+    assert len(parse_data[COMMANDS]) == len(predicted_commands)
+    for predicted_command in predicted_commands:
+        assert predicted_command.as_dict() in parse_data[COMMANDS]
 
 
 async def test_update_full_retrieval_intent(
@@ -2354,3 +2410,19 @@ def test_handle_message_with_commands_does_not_run_action_extract_slots(
     )
 
     mock_run_action_extract_slots.assert_not_called()
+
+
+def test_handle_message_with_commands_from_buttons_does_not_run_nlu_command_adapter(
+    flow_policy_bot_agent: Agent, monkeypatch: MonkeyPatch
+) -> None:
+    processor = flow_policy_bot_agent.processor
+    sender_id = uuid.uuid4().hex
+
+    mock_nlu_to_commands = MagicMock()
+    monkeypatch.setattr(processor, "_nlu_to_commands", mock_nlu_to_commands)
+
+    processor.handle_message(
+        UserMessage("/SetSlots(foo_slot_a=foo)", sender_id=sender_id)
+    )
+
+    mock_nlu_to_commands.assert_not_called()

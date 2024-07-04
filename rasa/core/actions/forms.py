@@ -567,6 +567,7 @@ class FormAction(LoopAction):
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
+        metadata: Optional[Dict[Text, Any]] = None,
     ) -> List[Event]:
         """Activate form if the form is called for the first time.
 
@@ -598,7 +599,7 @@ class FormAction(LoopAction):
         )
 
         extraction_events = await action_extract_slots.run(
-            output_channel, nlg, tracker, domain
+            output_channel, nlg, tracker, domain, metadata
         )
 
         events_as_str = "\n".join(str(e) for e in extraction_events)
@@ -727,11 +728,14 @@ class FormAction(LoopAction):
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
+        metadata: Optional[Dict[Text, Any]] = None,
     ) -> List[Event]:
         events = self._default_activation_events()
 
         temp_tracker = tracker.copy()
         temp_tracker.update_with_events(events)
-        events += await self.activate(output_channel, nlg, temp_tracker, domain)
+        events += await self.activate(
+            output_channel, nlg, temp_tracker, domain, metadata
+        )
 
         return events

@@ -41,10 +41,13 @@ from rasa.telemetry import (
     TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_COMPLETED_EVENT,
     TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_STARTED_EVENT,
     TELEMETRY_ENTERPRISE_SEARCH_POLICY_PREDICT_EVENT,
+    TELEMETRY_SINGLE_STEP_LLM_COMMAND_GENERATOR_INITIALISED_EVENT,
     TELEMETRY_MULTI_STEP_LLM_COMMAND_GENERATOR_INITIALISED_EVENT,
+    SINGLE_STEP_LLM_COMMAND_GENERATOR_MODEL_NAME,
+    SINGLE_STEP_COMMAND_GENERATOR_CUSTOM_PROMPT_USED,
     MULTI_STEP_LLM_COMMAND_GENERATOR_MODEL_NAME,
     MULTI_STEP_LLM_COMMAND_GENERATOR_FILL_SLOTS_PROMPT,
-    MULTI_STEP_LLM_COMMAND_GENERATOR_START_OR_END_FLOWS_PROMPT,
+    MULTI_STEP_LLM_COMMAND_GENERATOR_HANDLE_FLOWS_PROMPT,
 )
 from rasa.utils.licensing import LICENSE_ENV_VAR
 
@@ -1298,6 +1301,28 @@ def test_track_enterprise_search_policy_predict(
 
 
 @patch("rasa.telemetry._track")
+def test_track_single_step_llm_command_generator_init(
+    mock_track: MagicMock,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE, "true")
+
+    telemetry.track_single_step_llm_command_generator_init(
+        "test_model", True, True, "flow_retrieval_embedding_model_name"
+    )
+
+    mock_track.assert_called_once_with(
+        TELEMETRY_SINGLE_STEP_LLM_COMMAND_GENERATOR_INITIALISED_EVENT,
+        {
+            SINGLE_STEP_LLM_COMMAND_GENERATOR_MODEL_NAME: "test_model",
+            SINGLE_STEP_COMMAND_GENERATOR_CUSTOM_PROMPT_USED: True,
+            FLOW_RETRIEVAL_ENABLED: True,
+            FLOW_RETRIEVAL_EMBEDDING_MODEL_NAME: "flow_retrieval_embedding_model_name",
+        },
+    )
+
+
+@patch("rasa.telemetry._track")
 def test_track_multi_step_llm_command_generator_init(
     mock_track: MagicMock,
     monkeypatch: MonkeyPatch,
@@ -1314,7 +1339,7 @@ def test_track_multi_step_llm_command_generator_init(
         TELEMETRY_MULTI_STEP_LLM_COMMAND_GENERATOR_INITIALISED_EVENT,
         {
             MULTI_STEP_LLM_COMMAND_GENERATOR_MODEL_NAME: "test_model",
-            MULTI_STEP_LLM_COMMAND_GENERATOR_START_OR_END_FLOWS_PROMPT: "test_prompt_text1",
+            MULTI_STEP_LLM_COMMAND_GENERATOR_HANDLE_FLOWS_PROMPT: "test_prompt_text1",
             MULTI_STEP_LLM_COMMAND_GENERATOR_FILL_SLOTS_PROMPT: "test_prompt_text2",
         },
     )

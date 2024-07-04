@@ -1,22 +1,29 @@
 import os
 from pathlib import Path
 from typing import Any, Dict, Generator, List
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, AsyncMock
 
 import pytest
+from pytest import MonkeyPatch
 from langchain.docstore.document import Document
 from langchain.embeddings import FakeEmbeddings
 from langchain.llms.fake import FakeListLLM
+from langchain.vectorstores import FAISS
+
+from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
+from rasa.dialogue_understanding.stack.frames import ChitChatStackFrame
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.graph_components.providers.forms_provider import Forms
 from rasa.graph_components.providers.responses_provider import Responses
+from rasa.shared.constants import ROUTE_TO_CALM_SLOT
 from rasa.shared.core.domain import ActionNotFoundException, Domain
 from rasa.shared.core.events import ActiveLoop, BotUttered, UserUttered
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.flows.yaml_flows_io import flows_from_str
 from rasa.shared.core.generator import TrackerWithCachedStates
+from rasa.shared.core.slots import BooleanSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.importers.importer import FlowSyncImporter
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -801,3 +808,70 @@ async def test_intentless_policy_fingerprint_addon_default_prompt_template(
     fingerprint_2 = intentless_policy.fingerprint_addon({})
     assert fingerprint_1 is not None
     assert fingerprint_1 == fingerprint_2
+
+
+async def test_intentless_policy_abstains_in_coexistence(
+    monkeypatch: MonkeyPatch,
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+) -> None:
+    """Test that the policy abstains in coexistence.
+
+    If the conversation is already handled by the nlu system, IntentlessPolicy
+    does not make a prediction.
+    """
+    test_domain = Domain.from_yaml(
+        """
+        responses:
+            utter_greet:
+                - text: Hi there!
+            utter_goodbye:
+                - text: Bye!
+        """
+    )
+
+    stack = DialogueStack(frames=[ChitChatStackFrame()])
+
+    tracker = DialogueStateTracker.from_events(
+        "test abstain",
+        domain=test_domain,
+        slots=test_domain.slots
+        + [BooleanSlot(ROUTE_TO_CALM_SLOT, mappings=[], initial_value=False)],
+        evts=[UserUttered("hello")],
+    )
+    tracker.update_stack(stack)
+
+    monkeypatch.setattr(
+        "rasa.core.policies.intentless_policy.llm_factory",
+        Mock(return_value=FakeListLLM(responses=["Hello there", "Goodbye"])),
+    )
+
+    monkeypatch.setattr(
+        "rasa.core.policies.intentless_policy.embedder_factory",
+        Mock(return_value=FakeEmbeddings(size=100)),
+    )
+
+    test_policy = IntentlessPolicy.create(
+        IntentlessPolicy.get_default_config(),
+        default_model_storage,
+        Resource("intentless_policy"),
+        default_execution_context,
+    )
+    mock_response_index = AsyncMock(spec=FAISS)
+    monkeypatch.setattr(test_policy, "response_index", mock_response_index)
+
+    mock_conversation_samples_index = AsyncMock(spec=FAISS)
+    monkeypatch.setattr(
+        test_policy, "conversation_samples_index", mock_conversation_samples_index
+    )
+
+    monkeypatch.setattr(
+        test_policy, "find_closest_response", AsyncMock(return_value=("Hi there!", 1.0))
+    )
+
+    prediction = await test_policy.predict_action_probabilities(
+        tracker=tracker, domain=test_domain
+    )
+
+    # check that the policy didn't predict anything
+    assert prediction.max_confidence == 0.0

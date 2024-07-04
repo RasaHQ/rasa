@@ -5,12 +5,19 @@ import psutil
 from rasa.core.nlg.contextual_response_rephraser import ContextualResponseRephraser
 from rasa.core.policies.enterprise_search_policy import EnterpriseSearchPolicy
 from rasa.core.policies.intentless_policy import IntentlessPolicy
-from rasa.dialogue_understanding.generator import LLMCommandGenerator
-from rasa.dialogue_understanding.generator import MultiStepLLMCommandGenerator
+from rasa.dialogue_understanding.generator import (
+    LLMCommandGenerator,
+    SingleStepLLMCommandGenerator,
+    MultiStepLLMCommandGenerator,
+)
 from rasa.tracing.constants import (
     LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME,
     LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME,
     LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME,
+    SINGLE_STEP_LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME,
+    SINGLE_STEP_LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME,
+    SINGLE_STEP_LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME,
+    SINGLE_STEP_LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME,
     MULTI_STEP_LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME,
     MULTI_STEP_LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME,
     MULTI_STEP_LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME,
@@ -22,7 +29,7 @@ from rasa.tracing.constants import (
     CONTEXTUAL_RESPONSE_REPHRASER_LLM_RESPONSE_DURATION_METRIC_NAME,
     RASA_CLIENT_REQUEST_BODY_SIZE_METRIC_NAME,
     RASA_CLIENT_REQUEST_DURATION_METRIC_NAME,
-    ENDPOINT_REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME,
+    REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME,
 )
 from rasa.tracing.metric_instrument_provider import MetricInstrumentProvider
 from rasa.utils.endpoints import EndpointConfig
@@ -133,6 +140,36 @@ def record_llm_command_generator_metrics(attributes: Dict[str, Any]) -> None:
     )
 
 
+def record_single_step_llm_command_generator_metrics(
+    attributes: Dict[str, Any],
+) -> None:
+    """
+    Record measurements for SingleStepLLMCommandGenerator specific metrics.
+
+    The recording is done by the opentelemetry.metrics.Histogram instruments.
+    These instruments are registered to the MetricInstrumentProvider internal singleton.
+
+    :param attributes: Extracted tracing attributes
+    :return: None
+    """
+    instrument_provider = MetricInstrumentProvider()
+
+    if not instrument_provider.instruments:
+        return None
+
+    record_llm_based_command_generator_cpu_usage(
+        instrument_provider, SINGLE_STEP_LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME
+    )
+    record_llm_based_command_generator_memory_usage(
+        instrument_provider, SINGLE_STEP_LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME
+    )
+    record_llm_based_command_generator_prompt_token(
+        instrument_provider,
+        attributes,
+        SINGLE_STEP_LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME,
+    )
+
+
 def record_multi_step_llm_command_generator_metrics(attributes: Dict[str, Any]) -> None:
     """
     Record measurements for MultiStepLLMCommandGenerator specific metrics.
@@ -167,6 +204,7 @@ def record_callable_duration_metrics(
     """
     Record duration of instrumented method calls invoked for the following components:
     - LLMCommandGenerator
+    - SingleStepLLMCommandGenerator
     - MultiStepLLMCommandGenerator
     - EnterpriseSearchPolicy
     - IntentlessPolicy
@@ -187,12 +225,17 @@ def record_callable_duration_metrics(
     metric_instrument = None
     attributes = {}
 
-    if isinstance(self, LLMCommandGenerator):
+    if type(self) == LLMCommandGenerator:
         metric_instrument = instrument_provider.get_instrument(
             LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME
         )
 
-    if isinstance(self, MultiStepLLMCommandGenerator):
+    if type(self) == SingleStepLLMCommandGenerator:
+        metric_instrument = instrument_provider.get_instrument(
+            SINGLE_STEP_LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME
+        )
+
+    if type(self) == MultiStepLLMCommandGenerator:
         metric_instrument = instrument_provider.get_instrument(
             MULTI_STEP_LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME
         )
@@ -247,7 +290,5 @@ def record_request_size_in_bytes(attributes: Dict[str, Any]) -> None:
     if not metric_instrument:
         return None
 
-    request_body_size = attributes.pop(
-        ENDPOINT_REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME, 0
-    )
+    request_body_size = attributes.pop(REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME, 0)
     metric_instrument.record(amount=request_body_size, attributes=attributes)

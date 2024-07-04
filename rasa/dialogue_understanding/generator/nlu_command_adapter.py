@@ -126,8 +126,13 @@ class NLUCommandAdapter(GraphComponent, CommandGenerator):
         )
 
         structlogger.info("nlu_command_adapter.cleaning_commands", commands=commands)
-        commands = clean_up_commands(commands, tracker, flows, self._execution_context)
-        structlogger.info("nlu_command_adapter.clean_commands", clean_commands=commands)
+        if commands:
+            commands = clean_up_commands(
+                commands, tracker, flows, self._execution_context
+            )
+            structlogger.info(
+                "nlu_command_adapter.clean_commands", clean_commands=commands
+            )
 
         return commands
 
@@ -171,7 +176,7 @@ class NLUCommandAdapter(GraphComponent, CommandGenerator):
             )
             commands = [commands[0]]
 
-        set_slot_commands = _issue_set_slot_commands(message, tracker, domain)
+        set_slot_commands = _issue_set_slot_commands(message, tracker, flows, domain)
         commands.extend(set_slot_commands)
 
         structlogger.info("nlu_command_adapter.predict_commands", commands=commands)
@@ -180,14 +185,25 @@ class NLUCommandAdapter(GraphComponent, CommandGenerator):
 
 
 def _issue_set_slot_commands(
-    message: Message, tracker: DialogueStateTracker, domain: Optional[Domain] = None
+    message: Message,
+    tracker: DialogueStateTracker,
+    flows: FlowsList,
+    domain: Optional[Domain] = None,
 ) -> List[Command]:
     """Issue SetSlotCommand for each slot that can be filled with NLU properties."""
     commands: List[Command] = []
     domain = domain if domain else Domain.empty()
     slot_filling_manager = SlotFillingManager(domain, tracker, message)
+    available_slot_names = flows.available_slot_names()
 
     for _, slot in tracker.slots.items():
+        # if a slot is not collected in available flows,
+        # it means that it is not a slot that can be filled by CALM,
+        # so we skip it
+        if slot.name not in available_slot_names:
+            structlogger.debug("nlu_command_adapter.skip_slot", slot=slot.name)
+            continue
+
         slot_value, is_extracted = extract_slot_value(slot, slot_filling_manager)
         if is_extracted:
             commands.append(

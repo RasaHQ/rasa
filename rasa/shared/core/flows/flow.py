@@ -223,6 +223,15 @@ class Flow:
         )
 
     @property
+    def custom_actions(self) -> Set[str]:
+        """Retrieve all custom actions of this flow."""
+        return {
+            step.custom_action
+            for step in self.step_sequence.steps_with_calls_resolved
+            if isinstance(step, ActionFlowStep) and step.custom_action is not None
+        }
+
+    @property
     def name(self) -> str:
         """Create a default name if none is present."""
         return self.custom_name or Flow.create_default_name(self.id)
@@ -263,6 +272,7 @@ class Flow:
                 "command_generator.validate_flow_starting_conditions.result",
                 predicate=predicate.description(),
                 is_startable=is_startable,
+                flow_id=self.id,
             )
             return is_startable
         # if there is any kind of exception when evaluating the predicate, the flow
@@ -306,6 +316,7 @@ class Flow:
                 "flow.is_startable_only_via_link.result",
                 predicate=self.guard_condition,
                 is_startable_via_link=is_startable_via_link,
+                flow_id=self.id,
             )
             return is_startable_via_link
         # if there is any kind of exception when evaluating the predicate, the flow
@@ -315,6 +326,7 @@ class Flow:
                 "flow.is_startable_only_via_link.error",
                 predicate=self.guard_condition,
                 error=str(e),
+                flow_id=self.id,
             )
             return False
 

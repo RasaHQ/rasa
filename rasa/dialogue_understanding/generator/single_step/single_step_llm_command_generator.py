@@ -20,12 +20,15 @@ from rasa.dialogue_understanding.generator.llm_based_command_generator import (
     LLMBasedCommandGenerator,
 )
 from rasa.dialogue_understanding.generator.constants import (
-    DEFAULT_LLM_CONFIG,  # noqa: F401
+    DEFAULT_LLM_CONFIG,
     LLM_CONFIG_KEY,
     USER_INPUT_CONFIG_KEY,
     FLOW_RETRIEVAL_KEY,
 )
-from rasa.dialogue_understanding.generator.flow_retrieval import FlowRetrieval
+from rasa.dialogue_understanding.generator.flow_retrieval import (
+    FlowRetrieval,
+    DEFAULT_EMBEDDINGS_CONFIG,
+)
 from rasa.dialogue_understanding.stack.utils import top_flow_frame
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
@@ -37,6 +40,7 @@ from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.exceptions import ProviderClientAPIException
 from rasa.shared.utils.io import deep_container_fingerprint
 from rasa.shared.utils.llm import (
     get_prompt_template,
@@ -44,6 +48,11 @@ from rasa.shared.utils.llm import (
     sanitize_message_for_prompt,
 )
 from rasa.utils.log_utils import log_llm
+
+from rasa.telemetry import (
+    track_single_step_llm_command_generator_init,
+)
+
 
 COMMAND_PROMPT_FILE_NAME = "command_prompt.jinja2"
 
@@ -97,6 +106,30 @@ class SingleStepLLMCommandGenerator(LLMBasedCommandGenerator):
         )
 
         self.trace_prompt_tokens = self.config.get("trace_prompt_tokens", False)
+        self._track(config)
+
+    def _track(self, config: Dict[str, Any]) -> None:
+        model_name = (config.get(LLM_CONFIG_KEY) or DEFAULT_LLM_CONFIG).get(
+            "model_name"
+        )
+        custom_prompt_used = (
+            config.get("prompt") or config.get("prompt_template")
+        ) is not None
+        flow_retrieval_config = config.get(FLOW_RETRIEVAL_KEY, {})
+        flow_retrieval_enabled = flow_retrieval_config.get("active", True)
+        flow_retrieval_embedding_model_name = (
+            flow_retrieval_config.get("embeddings", DEFAULT_EMBEDDINGS_CONFIG).get(
+                "model"
+            )
+            if flow_retrieval_enabled
+            else None
+        )
+        track_single_step_llm_command_generator_init(
+            llm_model_name=model_name,
+            custom_prompt_used=custom_prompt_used,
+            flow_retrieval_enabled=flow_retrieval_enabled,
+            flow_retrieval_embedding_model_name=flow_retrieval_embedding_model_name,
+        )
 
     ### Implementations of LLMBasedCommandGenerator parent
     @staticmethod
@@ -168,8 +201,7 @@ class SingleStepLLMCommandGenerator(LLMBasedCommandGenerator):
         # retrieve flows
         try:
             filtered_flows = await self.filter_flows(message, flows, tracker)
-        except Exception:
-            # e.g. in case of API problems (are being logged by the flow retrieval)
+        except ProviderClientAPIException:
             return [ErrorCommand()]
 
         flow_prompt = self.render_template(message, tracker, filtered_flows, flows)
@@ -180,7 +212,16 @@ class SingleStepLLMCommandGenerator(LLMBasedCommandGenerator):
             prompt=flow_prompt,
         )
 
-        action_list = await self.invoke_llm(flow_prompt)
+        try:
+            action_list = await self.invoke_llm(flow_prompt)
+            # The check for 'None' maintains compatibility with older versions
+            # of LLMCommandGenerator. In previous implementations, 'invoke_llm'
+            # might return 'None' to indicate a failure to generate actions.
+            if action_list is None:
+                return [ErrorCommand()]
+        except ProviderClientAPIException:
+            return [ErrorCommand()]
+
         log_llm(
             logger=structlogger,
             log_module="SingleStepLLMCommandGenerator",
@@ -188,22 +229,16 @@ class SingleStepLLMCommandGenerator(LLMBasedCommandGenerator):
             action_list=action_list,
         )
 
-        commands: List[Command]
+        commands = self.parse_commands(action_list, tracker, flows)
 
-        if action_list is None:
-            # if action_list is None, we couldn't get any response from the LLM
-            commands = [ErrorCommand()]
+        if not commands:
+            # no commands are parsed or there's an invalid command
+            commands = [CannotHandleCommand()]
         else:
-            commands = self.parse_commands(action_list, tracker, flows)
-
-            if not commands:
-                # no commands are parsed or there's an invalid command
-                commands = [CannotHandleCommand()]
-            else:
-                # if the LLM command generator predicted valid commands and the
-                # coexistence feature is used, set the routing slot
-                if tracker.has_coexistence_routing_slot:
-                    commands += [SetSlotCommand(ROUTE_TO_CALM_SLOT, True)]
+            # if the LLM command generator predicted valid commands and the
+            # coexistence feature is used, set the routing slot
+            if tracker.has_coexistence_routing_slot:
+                commands += [SetSlotCommand(ROUTE_TO_CALM_SLOT, True)]
 
         log_llm(
             logger=structlogger,

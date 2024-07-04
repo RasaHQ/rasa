@@ -10,6 +10,118 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.9.0] - 2024-07-03
+                       
+Rasa Pro 3.9.0 (2024-07-03)                            
+### Features
+- [#651](https://github.com/rasahq/rasa-private/issues/651): Introduce a new response [button payload format](https://rasa.com/docs/rasa-pro/concepts/responses#payload-syntax) that runs set slot CALM commands directly by
+  skipping the user message processing pipeline.
+- [#667](https://github.com/rasahq/rasa-private/issues/667): Added support for Information Retrieval custom components. It allows Enterprise Search Policy to be used with arbitrary search systems. Custom Information Retrievals can be implemented as a subclass of `rasa.core.information_retrieval.InformationRetrieval`
+- [#688](https://github.com/rasahq/rasa-private/issues/688): Enable slot filling in a CALM assistant to be configurable:
+  - either use NLU-based predefined slot mappings that instructs `NLUCommandAdapter` to issue SetSlot commands with values extracted from the user input via an entity extractor or intent classifier
+  - or use the new predefined slot mapping `from_llm` which enables LLM-based command generators to issue SetSlot commands
+  If no slot mapping is defined, the default behavior is to use the `from_llm` slot mapping.
+
+  In case you had been using `custom` slot mapping type for slots set with the prediction of the LLM-based command generator, you need to
+  update your assistant configuration to use the new `from_llm` slot mapping type.
+  Note that even if you have written custom slot validation actions (following the `validate_<slot_name>` convention)
+  for slots set by the LLM-based command generator, you need to update your assistant configuration to use the new `from_llm` slot mapping type.
+
+  For [slots that are set only via the custom action](https://rasa.com/docs/rasa-pro/concepts/domain#custom-slot-mappings)
+  e.g. slots set by external sources only, you need to add the action name to the slot mapping:
+
+  ```yaml
+  slots:
+    slot_name:
+      type: text
+      mappings:
+        - type: custom
+          action: custom_action_name
+  ```
+- [#707](https://github.com/rasahq/rasa-private/issues/707): Skip `SetSlot` commands issued by LLM based command generators for slots with NLU-based predefined slot mappings.
+  Instead, the command processor component will issue `CannotHandle` command to trigger `pattern_cannot_handle` if no other valid command is found.
+- [#724](https://github.com/rasahq/rasa-private/issues/724): Rasa now supports gRPC protocol for custom actions. 
+  This allows users to use gRPC to invoke custom actions. 
+  To connect to the action server using gRPC, specify: 
+  ```yaml title="endpoints.yml"
+  action_endpoint:
+      url: "grpc://<rasa-grpc-action-server>:<port>"
+  ```
+  Users can use secure (TLS) and insecure connections to communicate over gRPC. 
+  To use TLS specify the following in `endpoints.yml`:
+  ```yaml title="endpoints.yml"
+  action_endpoint:
+      url: "grpc://<rasa-grpc-action-server>:<port>"
+      cafile: "<ca_file>"
+  ```
+- [#725](https://github.com/rasahq/rasa-private/issues/725): Add `MultiStepLLMCommandGenerator` as an alternative LLM based command generator.
+  `MultiStepLLMCommandGenerator` breaks down the task of dialogue understanding into two steps:
+  handling the flows and filling the slots.
+  The component was designed to enable cheaper and smaller LLMs, such as `gpt-3.5-turbo`, as viable alternatives to 
+  costlier but more powerful models such as `gpt-4`.
+  To use the `MultiStepLLMCommandGenerator` add it to your pipeline:
+  ```
+  pipeline:
+    ...
+    - name: MultiStepLLMCommandGenerator
+    ...
+  ```
+
+### Improvements
+- [#516](https://github.com/rasahq/rasa-private/issues/516): Improve diagram display in the inspector by adding an horizontal scroll and an auto scroll to the active step.
+- [#613](https://github.com/rasahq/rasa-private/issues/613): Create a separate default prompt for Enterprise Search with source citation enabled and revert the default Enterprise Search prompt to that of `3.7.x`.
+- [#668](https://github.com/rasahq/rasa-private/issues/668): Refactored `RemoteAction` to utilize a new `CustomActionExecutor` interface by implementing `HTTPCustomActionExecutor` to handle HTTP requests for custom actions.
+- [#669](https://github.com/rasahq/rasa-private/issues/669): Implemented an optimization to reduce payload size by ensuring the Assistant sends the domain dictionary to the Action Server only once, which the server then stores. If the Action Server responds with a 449 status code indicating a missing domain context, the Assistant will repeat the API request including the domain dictionary in the payload, ensuring the server properly saves this data.
+- [#673](https://github.com/rasahq/rasa-private/issues/673): Integrate the capability of testing scenarios that reflect actual operational environments where conversations can be influenced by real-time external data.
+  This is done by injecting metadata when running end-to-end tests.
+- [#699](https://github.com/rasahq/rasa-private/issues/699): Introduced LRU caching for reading and parsing YAML files to enhance performance by avoiding multiple reads of the same file. Added `READ_YAML_FILE_CACHE_MAXSIZE` environment variable with a default value of 256 to configure the cache size.
+- [#708](https://github.com/rasahq/rasa-private/issues/708): Add validations for flow ID to allow only alphanumeric characters, underscores, and hyphens except for the first character.
+- [#725](https://github.com/rasahq/rasa-private/issues/725): The `LLMCommandGenerator` component has been renamed to `SingleStepLLMCommandGenerator`. There is no change to the functionality.
+    
+  Using the `LLMCommandGenerator` as the name of the component results in a deprecation warning as it will be permanently renamed to `SingleStepLLMCommandGenerator` in 4.0.0. Please modify the assistant’s configuration to use the `SingleStepLLMCommandGenerator` instead of the `LLMCommandGenerator` to avoid seeing the deprecation warning.
+- [#727](https://github.com/rasahq/rasa-private/issues/727): Make improvements to `rasa data validate` that check if the usage of slot mappings in a CALM assistant is valid:
+  - a slot cannot have both a `from_llm` mapping and either a nlu-predefined mapping or a custom slot mapping
+  - a slot collected in a flow by a custom action has an associated `action_ask_` defined in the domain
+  - a CALM assistant with slots that have nlu-based predefined mappings include `NLUCommandAdapter` in the config pipeline
+  - a NLU-based assistant cannot have slots that have a `from_llm` mapping
+- [#728](https://github.com/rasahq/rasa-private/issues/728): Modify post processing of commands - Clarify command with single option is converted into a StartFlow command.
+- [#779](https://github.com/rasahq/rasa-private/issues/779): Improve debug logging for predicate evaluation.
+
+### Bugfixes
+- [#665](https://github.com/rasahq/rasa-private/issues/665): Properly handle projects where `rasa studio download` is run in a project with
+  no NLU data.
+- [#726](https://github.com/rasahq/rasa-private/issues/726): Tracing is supported for actions called over gRPC protocol.
+- [#731](https://github.com/rasahq/rasa-private/issues/731): Fix the hash function of ClarifyCommand to return a hashed list of options.
+- [#736](https://github.com/rasahq/rasa-private/issues/736): Raise an error if action_reset_routing is used without the defined ROUTE_TO_CALM_SLOT / router.
+- [#748](https://github.com/rasahq/rasa-private/issues/748): Add a few bugfixes to the CALM slot mappings feature:
+  - Coexistence bot should ignore `NoOpCommand` when checking if the processed message contains commands.
+  - Update condition under which FlowPolicy triggers `pattern_internal_error` for slots with custom slot mappings.
+- [#753](https://github.com/rasahq/rasa-private/issues/753): Remove invalid warnings during collect step.
+- [#754](https://github.com/rasahq/rasa-private/issues/754): * Fixed issue where messages with invalid intent triggers ('/&lt;intent&gt;') were not handled correctly. Now triggering the `pattern_cannot_handle`.
+  * Introduced a new reason `cannot_handle_invalid_intent` for use in the pattern_cannot_handle switch mechanism to
+  improve error handling.
+- [#756](https://github.com/rasahq/rasa-private/issues/756): Validates that a collect step in a flow either has an action or an utterance defined in the domain to avoid the bot being silent.
+- [#758](https://github.com/rasahq/rasa-private/issues/758): Slots that are set via response buttons should not trigger `pattern_cannot_handle` regardless of the slots' mapping type.
+- [#759](https://github.com/rasahq/rasa-private/issues/759): Coerce "None", "null" or "undefined" slot values set via response buttons to be of type `NoneType` instead of `str`.
+- [#763](https://github.com/rasahq/rasa-private/issues/763): Avoid raising a `UserWarning` during validation of response buttons which contain double curly braces.
+- [#765](https://github.com/rasahq/rasa-private/issues/765): Do not run NLUCommandAdapter during message parsing when receiving a `/SetSlots` button payload.
+  This is because the NLUCommandAdapter run during message parsing (when the graph is skipped) is meant to handle intent button payloads only.
+- [#767](https://github.com/rasahq/rasa-private/issues/767): Exclude slots that are not collected in any flow from being set by the NLUCommandAdapter in a coexistence assistant.
+- [#769](https://github.com/rasahq/rasa-private/issues/769): Default action `action_extract_slots` should not run custom actions specified in custom slot mappings for slots
+  that are set by custom actions in the flows/CALM system of a coexistence assistant.
+- [#770](https://github.com/rasahq/rasa-private/issues/770): Fix pattern flows being unavailable during input preparation and template rendering in `MultiStepLLMCommandGenerator`.
+- [#778](https://github.com/rasahq/rasa-private/issues/778): Skip command cleaning when no commands are present in NLUCommandAdapter. 
+  Fix get active flows to return the correct active flows, including all the nested parent flows if present.
+- [#781](https://github.com/rasahq/rasa-private/issues/781): If FlowPolicy tries to collect a slot with a custom slot mapping without the `action` key or `action_ask` specified in the domain,
+  it will trigger `pattern_cancel_flow` first, then `pattern_internal_error`.
+- [#792](https://github.com/rasahq/rasa-private/issues/792): Cancel user flow in progress and invoke pattern_internal_error if the flow reached a collect step which 
+  does not have an associated utter_ask response or action_ask action defined in the domain.
+- [#793](https://github.com/rasahq/rasa-private/issues/793): IntentlessPolicy abstains from making a prediction during coexistence when it's the turn of the NLU-based system.
+
+### Miscellaneous internal changes
+- [#448](https://github.com/rasahq/rasa-private/issues/448), [#458](https://github.com/rasahq/rasa-private/issues/458), [#475](https://github.com/rasahq/rasa-private/issues/475), [#610](https://github.com/rasahq/rasa-private/issues/610), [#646](https://github.com/rasahq/rasa-private/issues/646), [#709](https://github.com/rasahq/rasa-private/issues/709), [#784](https://github.com/rasahq/rasa-private/issues/784), [#802](https://github.com/rasahq/rasa-private/issues/802), [#803](https://github.com/rasahq/rasa-private/issues/803)
+
+
 ## [3.8.10] - 2024-06-19
                         
 Rasa Pro 3.8.10 (2024-06-19)                             

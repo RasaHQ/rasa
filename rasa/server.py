@@ -4,6 +4,7 @@ import logging
 import multiprocessing
 import os
 import traceback
+import warnings
 from collections import defaultdict
 from functools import reduce, wraps
 from http import HTTPStatus
@@ -648,6 +649,9 @@ def create_app(
     app = Sanic("rasa_server")
     app.config.RESPONSE_TIMEOUT = response_timeout
     configure_cors(app, cors_origins)
+
+    # Reset Sanic warnings filter that allows the triggering of Sanic warnings
+    warnings.filterwarnings("ignore", category=DeprecationWarning, module=r"sanic.*")
 
     # Set up the Sanic-JWT extension
     if jwt_secret and jwt_method:

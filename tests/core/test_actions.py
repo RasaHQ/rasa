@@ -4,7 +4,7 @@ import textwrap
 import types
 from datetime import datetime
 from typing import List, Text, Any, Dict, Optional
-from unittest.mock import Mock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 from _pytest.logging import LogCaptureFixture
@@ -187,7 +187,13 @@ async def test_remote_action_runs(
     default_nlg: NaturalLanguageGenerator,
     default_tracker: DialogueStateTracker,
     domain: Domain,
+    monkeypatch: MonkeyPatch,
 ):
+    monkeypatch.setattr(
+        "rasa.core.actions.custom_action_executor.CustomActionRequestWriter._get_domain_digest",
+        Mock(return_value=None),
+    )
+
     endpoint = EndpointConfig("https://example.com/webhooks/actions")
     remote_action = action.RemoteAction("my_action", endpoint)
 
@@ -245,7 +251,13 @@ async def test_remote_action_logs_events(
     default_nlg: NaturalLanguageGenerator,
     default_tracker: DialogueStateTracker,
     domain: Domain,
+    monkeypatch: MonkeyPatch,
 ):
+    monkeypatch.setattr(
+        "rasa.core.actions.custom_action_executor.CustomActionRequestWriter._get_domain_digest",
+        Mock(return_value=None),
+    )
+
     endpoint = EndpointConfig("https://example.com/webhooks/actions")
     remote_action = action.RemoteAction("my_action", endpoint)
 
@@ -3062,3 +3074,75 @@ def test_default_actions_and_names_consistency():
         RULE_SNIPPET_ACTION_NAME
     }
     assert names_of_default_actions == names_of_executable_actions_in_constants
+
+
+async def test_action_extract_slots_with_flows_metadata(
+    caplog: LogCaptureFixture, monkeypatch: MonkeyPatch
+):
+    """Test that the action `action_extract_slots` can handle metadata with flows.
+
+    The action should not extract slots that are collected by flows or actions that are
+    run within flows.
+    """
+    monkeypatch.setattr(
+        "rasa.core.actions.custom_action_executor.CustomActionRequestWriter._get_domain_digest",
+        AsyncMock(return_value=None),
+    )
+
+    slot_name = "store_location"
+    action_name = "action_find_closest_store"
+    domain_yaml = textwrap.dedent(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+
+        slots:
+          {slot_name}:
+            type: text
+            mappings:
+            - type: custom
+              action: {action_name}
+
+        actions:
+        - {action_name}"""
+    )
+    domain = Domain.from_yaml(domain_yaml)
+
+    metadata = {"all_flows": {"find_store": {"steps": [{"action": action_name}]}}}
+
+    event = UserUttered("Hi")
+    tracker = DialogueStateTracker.from_events(
+        sender_id="test_id", evts=[event], slots=domain.slots
+    )
+
+    action_server_url = "https://my-action-server:5055/webhook"
+
+    with aioresponses() as mocked:
+        mocked.post(
+            action_server_url,
+            payload={
+                "events": [
+                    {"event": "slot", "name": slot_name, "value": "Shoreditch Branch"}
+                ]
+            },
+        )
+
+        action_server = EndpointConfig(action_server_url)
+        action_extract_slots = ActionExtractSlots(action_server)
+
+        with caplog.at_level(logging.DEBUG):
+            events = await action_extract_slots.run(
+                CollectingOutputChannel(),
+                TemplatedNaturalLanguageGenerator(domain.responses),
+                tracker,
+                domain,
+                metadata,
+            )
+
+        assert all(
+            [
+                f"Calling action endpoint to run action '{action_name}'."
+                not in record.message
+                for record in caplog.records
+            ]
+        )
+        assert events == []

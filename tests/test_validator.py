@@ -1994,6 +1994,136 @@ def test_validator_check_for_empty_paranthesis_all_good() -> None:
     assert validator.check_for_no_empty_paranthesis_in_responses() is True
 
 
+def test_validator_fail_as_both_utterance_and_action_defined_for_collect() -> None:
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        actions:
+            - action_ask_transfer_amount
+        responses:
+            utter_ask_transfer_amount:
+                - text: "How much money should I send?"
+        slots:
+            transfer_amount:
+                type: float
+                mappings: []
+        """
+    )
+    flows = flows_from_str(
+        """
+        flows:
+          flow_bar:
+            description: Test flow.
+            steps:
+            - collect: transfer_amount
+        """
+    )
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), flows, None)
+
+    expected_log_level = "error"
+    expected_log_event = "validator.verify_flows_steps_against_domain.collect_step"
+    expected_log_message = (
+        "The collect step 'transfer_amount' has an utterance "
+        "'utter_ask_transfer_amount' as well as an action "
+        "'action_ask_transfer_amount' defined. "
+        "You can just have one of them! "
+        "Please remove either the utterance or the action."
+    )
+    with structlog.testing.capture_logs() as caplog:
+        assert validator.verify_flows_steps_against_domain() is False
+        logs = filter_logs(
+            caplog, expected_log_event, expected_log_level, [expected_log_message]
+        )
+        assert len(logs) == 1
+
+
+def test_validator_fail_as_both_utterance_and_action_not_defined_for_collect() -> None:
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        slots:
+            transfer_amount:
+                type: float
+                mappings: []
+        """
+    )
+    flows = flows_from_str(
+        """
+        flows:
+          flow_bar:
+            description: Test flow.
+            steps:
+            - collect: transfer_amount
+        """
+    )
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), flows, None)
+
+    expected_log_level = "error"
+    expected_log_event = "validator.verify_flows_steps_against_domain.collect_step"
+    expected_log_message = (
+        "The collect step 'transfer_amount' has neither an utterance "
+        "nor an action defined. "
+        "You need to define either an utterance or an action."
+    )
+    with structlog.testing.capture_logs() as caplog:
+        assert validator.verify_flows_steps_against_domain() is False
+        logs = filter_logs(
+            caplog, expected_log_event, expected_log_level, [expected_log_message]
+        )
+        assert len(logs) == 1
+
+
+def test_validator_pass_as_only_utterance_defined_for_collect() -> None:
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        responses:
+            utter_ask_transfer_amount:
+                - text: "How much money should I send?"
+        slots:
+            transfer_amount:
+                type: float
+                mappings: []
+        """
+    )
+    flows = flows_from_str(
+        """
+        flows:
+          flow_bar:
+            description: Test flow.
+            steps:
+            - collect: transfer_amount
+        """
+    )
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), flows, None)
+    assert validator.verify_flows_steps_against_domain() is True
+
+
+def test_validator_pass_as_only_action_defined_for_collect() -> None:
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        actions:
+            - action_ask_transfer_amount
+        slots:
+            transfer_amount:
+                type: float
+                mappings: []
+        """
+    )
+    flows = flows_from_str(
+        """
+        flows:
+          flow_bar:
+            description: Test flow.
+            steps:
+            - collect: transfer_amount
+        """
+    )
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), flows, None)
+    assert validator.verify_flows_steps_against_domain() is True
+
+
 def test_validate_button_payloads_no_payload(capsys: CaptureFixture) -> None:
     test_domain = Domain.from_yaml(
         f"""
@@ -2064,11 +2194,14 @@ def test_validate_button_payloads_valid_payloads(
         version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
          - inform
+        entities:
+        - confirmation
         slots:
           confirmation:
              type: bool
              mappings:
-              - type: custom
+              - type: from_entity
+                entity: confirmation
         responses:
             utter_ask_confirm:
             - buttons:
@@ -2084,6 +2217,37 @@ def test_validate_button_payloads_valid_payloads(
     captured = capsys.readouterr()
     log_levels = ["error", "warning"]
     assert all([log_level not in captured.out for log_level in log_levels])
+
+
+def test_validate_button_payloads_no_user_warning_raised_with_intent_payload() -> None:
+    """Test that no user warning is raised when the payload has double curly braces."""
+    payload = '/inform{{"confirmation": "true"}}'
+    test_domain = Domain.from_yaml(
+        f"""
+            version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+            intents:
+             - inform
+            entities:
+            - confirmation
+            slots:
+              confirmation:
+                 type: bool
+                 mappings:
+                  - type: from_entity
+                    entity: confirmation
+            responses:
+                utter_ask_confirm:
+                - buttons:
+                    - title: Yes
+                      payload: '{payload}'
+                  text: "Do you confirm?"
+            """
+    )
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        validator = Validator(test_domain, TrainingData(), StoryGraph([]), None, None)
+        assert validator.validate_button_payloads() is True
 
 
 @pytest.mark.parametrize(
@@ -2240,7 +2404,7 @@ def test_domain_slots_contain_all_mapping_type(
     ) in captured.out
 
 
-def test_validate_action_ask_defined_in_the_domain(
+def test_validate_custom_action_defined_in_the_domain(
     capsys: CaptureFixture,
 ) -> None:
     importer = RasaFileImporter(
@@ -2261,9 +2425,9 @@ def test_validate_action_ask_defined_in_the_domain(
         in captured.out
     )
     assert (
-        "The slot 'card_number' has a custom slot mapping, "
-        "but the action 'action_ask_card_number' is not defined "
-        "in the domain file. Please add the action to your domain file."
+        "The slot 'card_number' has a custom slot mapping, but neither the "
+        "action 'action_ask_card_number' nor another custom action are defined "
+        "in the domain file. Please add one of the actions to your domain file."
     ) in captured.out
 
 

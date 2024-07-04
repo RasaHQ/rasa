@@ -26,8 +26,10 @@ from rasa.shared.constants import (
     ASSISTANT_ID_DEFAULT_VALUE,
     ASSISTANT_ID_KEY,
     CONFIG_MANDATORY_KEYS,
+    DOCS_URL_DOMAIN,
     DOCS_URL_DOMAINS,
     DOCS_URL_FORMS,
+    DOCS_URL_RESPONSES,
     UTTER_PREFIX,
     DOCS_URL_ACTIONS,
     REQUIRED_SLOTS_KEY,
@@ -43,6 +45,9 @@ from rasa.shared.core.domain import (
 from rasa.shared.core.generator import TrainingDataGenerator
 from rasa.shared.core.constants import SlotMappingType, MAPPING_TYPE
 from rasa.shared.core.slots import ListSlot, Slot
+from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
+    YAMLStoryReader,
+)
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.data import create_regex_pattern_reader
 from rasa.shared.importers.importer import TrainingDataImporter
@@ -624,13 +629,13 @@ class Validator:
                 ),
             )
 
-    def _log_error_if_action_and_utterance_defined(
+    def _log_error_if_either_action_or_utterance_are_not_defined(
         self,
         collect: CollectInformationFlowStep,
         all_good: bool,
     ) -> bool:
-        """Validates that a collect step can just have an utterance or an action
-        defined.
+        """Validates that a collect step can have either an action or an utterance.
+        Also logs an error if neither an action nor an utterance is defined.
 
         Args:
             collect: the name of the slot to collect
@@ -663,6 +668,20 @@ class Validator:
                     f"'{collect.collect_action}' defined. "
                     f"You can just have one of them! "
                     f"Please remove either the utterance or the action."
+                ),
+            )
+            all_good = False
+
+        if not has_utterance_defined and not has_action_defined:
+            structlogger.error(
+                "validator.verify_flows_steps_against_domain.collect_step",
+                collect=collect.collect,
+                has_utterance_defined=has_utterance_defined,
+                has_action_defined=has_action_defined,
+                event_info=(
+                    f"The collect step '{collect.collect}' has neither an utterance "
+                    f"nor an action defined. "
+                    f"You need to define either an utterance or an action."
                 ),
             )
             all_good = False
@@ -725,8 +744,10 @@ class Validator:
         for flow in self.flows.underlying_flows:
             for step in flow.steps_with_calls_resolved:
                 if isinstance(step, CollectInformationFlowStep):
-                    all_good = self._log_error_if_action_and_utterance_defined(
-                        step, all_good
+                    all_good = (
+                        self._log_error_if_either_action_or_utterance_are_not_defined(
+                            step, all_good
+                        )
                     )
 
                     all_good = self._log_error_if_slot_not_in_domain(
@@ -1122,6 +1143,11 @@ class Validator:
                         all_good = False
                         continue
 
+                    if isinstance(regex_reader, YAMLStoryReader):
+                        # the payload could contain double curly braces
+                        # we need to remove 1 set of curly braces
+                        payload = payload.replace("{{", "{").replace("}}", "}")
+
                     resulting_message = regex_reader.unpack_regex_message(
                         message=Message(data={"text": payload}), domain=self.domain
                     )
@@ -1138,6 +1164,9 @@ class Validator:
                                 f"for triggering a specific intent and entities or for "
                                 f"triggering a SetSlot command."
                             ),
+                            calm_docs_link=DOCS_URL_RESPONSES + "#payload-syntax",
+                            nlu_docs_link=DOCS_URL_RESPONSES
+                            + "#triggering-intents-or-passing-entities",
                         )
                         all_good = False
 
@@ -1226,6 +1255,7 @@ class Validator:
                     f"NLU or custom slot mappings. "
                     f"Please make sure that the slot has only one type of mapping."
                 ),
+                docs_link=DOCS_URL_DOMAIN + "#calm-slot-mappings",
             )
             all_good = False
 
@@ -1243,18 +1273,6 @@ class Validator:
         if not self.flows:
             return all_good
 
-        slot_collected_by_flows = any(
-            [
-                step.collect == slot.name
-                for flow in self.flows.underlying_flows
-                for step in flow.steps
-                if isinstance(step, CollectInformationFlowStep)
-            ]
-        )
-
-        if not slot_collected_by_flows:
-            return all_good
-
         is_custom_action_defined = any(
             [
                 mapping.get("action") is not None
@@ -1266,17 +1284,32 @@ class Validator:
         if is_custom_action_defined:
             return all_good
 
-        custom_action_name = f"action_ask_{slot.name}"
-        if custom_action_name not in self.domain.action_names_or_texts:
+        slot_collected_by_flows = any(
+            [
+                step.collect == slot.name
+                for flow in self.flows.underlying_flows
+                for step in flow.steps
+                if isinstance(step, CollectInformationFlowStep)
+            ]
+        )
+
+        if not slot_collected_by_flows:
+            # if the slot is not collected by any flow,
+            # it could be a DM1 custom slot
+            return all_good
+
+        custom_action_ask_name = f"action_ask_{slot.name}"
+        if custom_action_ask_name not in self.domain.action_names_or_texts:
             structlogger.error(
                 "validator.validate_slot_mappings_in_CALM.custom_action_not_in_domain",
                 slot_name=slot.name,
                 event_info=(
-                    f"The slot '{slot.name}' has a custom slot mapping, "
-                    f"but the action '{custom_action_name}' is not defined "
-                    f"in the domain file. "
-                    f"Please add the action to your domain file."
+                    f"The slot '{slot.name}' has a custom slot mapping, but "
+                    f"neither the action '{custom_action_ask_name}' nor "
+                    f"another custom action are defined in the domain file. "
+                    f"Please add one of the actions to your domain file."
                 ),
+                docs_link=DOCS_URL_DOMAIN + "#custom-slot-mappings",
             )
             all_good = False
 
@@ -1308,6 +1341,7 @@ class Validator:
                     f"pipeline. Please add the NLUCommandAdapter to the "
                     f"pipeline in the config file."
                 ),
+                docs_link=DOCS_URL_DOMAIN + "#nlu-based-predefined-slot-mappings",
             )
             all_good = False
 

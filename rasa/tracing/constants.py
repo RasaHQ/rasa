@@ -9,7 +9,7 @@ ENDPOINTS_OTLP_BACKEND_TYPE = "otlp"
 
 # tracing attributes
 PROMPT_TOKEN_LENGTH_ATTRIBUTE_NAME = "len_prompt_tokens"
-ENDPOINT_REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME = "request_body_size_in_bytes"
+REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME = "request_body_size_in_bytes"
 
 # metrics constants
 LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME = "llm_command_generator_cpu_usage"
@@ -19,6 +19,18 @@ LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME = (
 )
 LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME = (
     "llm_command_generator_llm_response_duration"
+)
+SINGLE_STEP_LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME = (
+    "single_step_llm_command_generator_cpu_usage"
+)
+SINGLE_STEP_LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME = (
+    "single_step_llm_command_generator_memory_usage"
+)
+SINGLE_STEP_LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME = (
+    "single_step_llm_command_generator_prompt_token_usage"
+)
+SINGLE_STEP_LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME = (
+    "single_step_llm_command_generator_llm_response_duration"
 )
 MULTI_STEP_LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME = (
     "multi_step_llm_command_generator_cpu_usage"

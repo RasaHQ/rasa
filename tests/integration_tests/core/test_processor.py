@@ -16,7 +16,7 @@ from rasa.dialogue_understanding.commands import (
 from rasa.dialogue_understanding.commands.set_slot_command import SetSlotExtractor
 from rasa.dialogue_understanding.processor.command_processor import CANNOT_HANDLE_REASON
 
-from rasa.shared.core.events import SlotSet
+from rasa.shared.core.events import BotUttered, SlotSet
 from rasa.shared.core.flows import FlowsList
 from rasa.utils.endpoints import EndpointConfig
 
@@ -102,7 +102,7 @@ async def test_processor_handle_message_calm_slots_with_nlu_pipeline(
         "I would like to order a diavola pizza",
         "2 please",
         "12 Elm Street",
-        "Yes",
+        "/SetSlots(order_confirmation=True)",
     ]
 
     response_texts = [
@@ -136,8 +136,8 @@ async def test_processor_handle_message_calm_slots_with_nlu_pipeline(
         [
             SetSlotCommand(
                 name="order_confirmation",
-                value=True,
-                extractor=SetSlotExtractor.NLU.value,
+                value="True",
+                extractor=SetSlotExtractor.COMMAND_PAYLOAD_READER.value,
             ).as_dict()
         ],
     ]
@@ -210,7 +210,8 @@ async def test_processor_handle_message_calm_slots_custom_action_invalid(
     """Test that custom slot mappings are validated correctly.
 
     If the custom action action_ask_<slot_name> is not defined in the domain,
-    FlowPolicy will trigger pattern_internal_error.
+    FlowPolicy will first cancel the user flow in progress and then
+    trigger pattern_internal_error.
     """
     monkeypatch.setattr(
         "rasa.dialogue_understanding.coexistence.llm_based_router.LLMBasedRouter._generate_answer_using_llm",
@@ -248,6 +249,10 @@ async def test_processor_handle_message_calm_slots_custom_action_invalid(
 
     tracker = await processor.get_tracker(sender_id)
     assert tracker.get_slot(slot_name) is None
+    assert (
+        tracker.get_last_event_for(BotUttered).metadata.get("utter_action")
+        == "utter_can_do_something_else"
+    )
 
     captured = capsys.readouterr()
     debug_log = "flow.step.run.collect_action_not_found_for_custom_slot_mapping"

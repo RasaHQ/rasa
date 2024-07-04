@@ -3,6 +3,7 @@ import logging
 import os
 import platform
 import uuid
+import warnings
 from asyncio import AbstractEventLoop
 from functools import partial
 from types import ModuleType
@@ -86,6 +87,10 @@ def _create_single_channel(channel: Text, credentials: Dict[Text, Any]) -> Any:
 
 def _create_app_without_api(cors: Optional[Union[Text, List[Text]]] = None) -> Sanic:
     app = Sanic("rasa_core_no_api", configure_logging=False)
+
+    # Reset Sanic warnings filter that allows the triggering of Sanic warnings
+    warnings.filterwarnings("ignore", category=DeprecationWarning, module=r"sanic.*")
+
     server.add_root_route(app)
     server.configure_cors(app, cors)
     return app
