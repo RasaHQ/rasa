@@ -14,7 +14,9 @@ from typing import (
     Union,
 )
 
+import structlog
 from rasa_sdk.executor import ActionExecutor
+
 import rasa.core
 import rasa.shared.utils.io
 from rasa.core.actions.custom_action_executor import (
@@ -95,6 +97,7 @@ if TYPE_CHECKING:
     from rasa.shared.core.events import IntentPrediction
 
 logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger(__name__)
 
 
 def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["Action"]:
@@ -732,7 +735,10 @@ class DirectCustomActionExecutor(CustomActionExecutor):
         tracker: "DialogueStateTracker",
         domain: Optional["Domain"] = None,
     ) -> Dict[Text, Any]:
-        logger.debug(f"Directly executing custom action '{self.action_name}'")
+        structlogger.debug(
+            "action.direct_custom_action_executor.run",
+            action_name=self.action_name,
+        )
         tracker_state = tracker.current_state(EventVerbosity.ALL)
 
         action_call = {
