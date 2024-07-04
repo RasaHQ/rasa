@@ -132,7 +132,6 @@ ifeq (,$(wildcard tests_deployment/.env))
 	TF_CPP_MIN_LOG_LEVEL=2 \
 	poetry run \
 		pytest $(INTEGRATION_TEST_FOLDER)/ \
-		pytest $(INTEGRATION_TEST_FOLDER) \
 			-n $(JOBS) \
 			-m $(INTEGRATION_TEST_PYTEST_MARKERS) \
 			--dist loadgroup  \
@@ -154,6 +153,7 @@ else
 			--junitxml=report_integration.xml && \
 	set +o allexport
 endif
+
 
 test-anonymization: PYTEST_MARKER=category_anonymization and (not flaky) and (not acceptance)
 test-anonymization: DD_ARGS := $(or $(DD_ARGS),)
