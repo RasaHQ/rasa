@@ -1,4 +1,4 @@
-x-license: &license
+x-environment: &environment
   RASA_PRO_LICENSE: ${RASA_PRO_LICENSE}
   OPENAI_API_KEY: ${OPENAI_API_KEY}
 
@@ -91,9 +91,11 @@ services:
     image: otel/opentelemetry-collector@sha256:cec18c72535bebeaca3615e841b19066b468f87a2e29b724b118b5b7bf8808ce
     command: ["--config=/etc/otel-collector-config.yml"]
     volumes:
-      - ./otel-collector-config.yml:/etc/otel-collector-config.yml
       - ./certs/cert.pem:/certs/cert.pem
       - ./certs/cert-key.pem:/certs/cert-key.pem
+    configs:
+      - source: otel-collector-config.yml
+        target: /etc/otel-collector-config.yml
     networks: [ 'rasa-pro-network' ]
     ports:
       - "4317"
@@ -111,14 +113,16 @@ services:
     image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
     volumes:
       - "./simple_bot:/app"
-      - "./endpoints-jaeger.yml:/app/endpoints.yml"
+    configs:
+      - source: endpoints-jaeger.yml
+        target: /app/endpoints.yml
     entrypoint: ""
     command: rasa run -p 5006 --enable-api
     networks: [ 'rasa-pro-network' ]
     ports:
       - "5006:5006"
     environment:
-      <<: *license
+      <<: *environment
     healthcheck:
       test: curl localhost:5006 || exit 1
       interval: 10s
@@ -131,15 +135,17 @@ services:
     image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
     volumes:
       - "./simple_bot:/app"
-      - "./endpoints-otlp.yml:/app/endpoints.yml"
       - "./certs/ca.pem:/certs/ca.pem"
+    configs:
+      - source: endpoints-otlp.yml
+        target: /app/endpoints.yml
     entrypoint: ""
     command: rasa run -p 5007 --enable-api
     networks: [ 'rasa-pro-network' ]
     ports:
       - "5007:5007"
     environment:
-      <<: *license
+      <<: *environment
     healthcheck:
       test: curl localhost:5007 || exit 1
       interval: 10s
@@ -152,14 +158,16 @@ services:
     image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
     volumes:
       - "./simple_bot:/app"
-      - "./endpoints-jaeger-no-action-server.yml:/app/endpoints.yml"
+    configs:
+      - source: endpoints-jaeger-no-action-server.yml
+        target: /app/endpoints.yml
     entrypoint: ""
     command: rasa run -p 5008 --enable-api
     networks: [ 'rasa-pro-network' ]
     ports:
       - "5008:5008"
     environment:
-      <<: *license
+      <<: *environment
     healthcheck:
       test: curl localhost:5008 || exit 1
       interval: 10s
@@ -172,15 +180,17 @@ services:
     image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
     volumes:
       - "./simple_bot:/app"
-      - "./endpoints-otlp-no-action-server.yml:/app/endpoints.yml"
       - "./certs/ca.pem:/certs/ca.pem"
+    configs:
+      - source: endpoints-otlp-no-action-server.yml
+        target: /app/endpoints.yml
     entrypoint: ""
     command: rasa run -p 5009 --enable-api
     networks: [ 'rasa-pro-network' ]
     ports:
       - "5009:5009"
     environment:
-      <<: *license
+      <<: *environment
     healthcheck:
       test: curl localhost:5009 || exit 1
       interval: 10s
@@ -192,30 +202,34 @@ services:
   action-server-jaeger:
     image: ${RASA_SDK_REPOSITORY}:latest
     volumes:
-      - "./endpoints-jaeger-for-action-server.yml:/app/endpoints.yml"
       - "./simple_bot/actions:/app/actions"
+    configs:
+      - source: endpoints-jaeger-for-action-server.yml
+        target: /app/endpoints.yml
     networks: [ 'rasa-pro-network' ]
     entrypoint: ""
     command: python -m rasa_sdk --actions actions -p 5056
     ports:
       - "5056:5056"
     environment:
-      <<: *license
+      <<: *environment
 
 
   action-server-otlp:
     image: ${RASA_SDK_REPOSITORY}:latest
     volumes:
-      - "./endpoints-otlp-for-action-server.yml:/app/endpoints.yml"
       - "./certs/ca.pem:/certs/ca.pem"
       - "./simple_bot/actions:/app/actions"
+    configs:
+      - source: endpoints-otlp-for-action-server.yml
+        target: /app/endpoints.yml
     networks: [ 'rasa-pro-network' ]
     entrypoint: ""
     command: python -m rasa_sdk --actions actions -p 5057
     ports:
       - "5057:5057"
     environment:
-      <<: *license
+      <<: *environment
 
 
 networks: { rasa-pro-network: { } }
