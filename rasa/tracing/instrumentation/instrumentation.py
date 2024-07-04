@@ -36,10 +36,8 @@ from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import TrackerStore
 from rasa.dialogue_understanding.commands import Command
-from rasa.dialogue_understanding.generator.single_step.llm_command_generator import (
-    LLMCommandGenerator,
-)
 from rasa.dialogue_understanding.generator import (
+    LLMCommandGenerator,
     MultiStepLLMCommandGenerator,
     SingleStepLLMCommandGenerator,
 )

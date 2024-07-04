@@ -682,3 +682,65 @@ class TestLLMBasedCommandGenerator:
         # When
         exceeds_limit = generator.check_if_message_exceeds_limit(message)
         assert exceeds_limit == expected_exceeds_limit
+
+    def test_import_rasa_generators_from_generator_module(
+        self, model_storage, resource
+    ):
+        """Test that rasa generator modules can be imported
+        without errors from generator module."""
+        from rasa.dialogue_understanding.generator import (
+            LLMCommandGenerator,
+            SingleStepLLMCommandGenerator,
+            MultiStepLLMCommandGenerator,
+        )
+
+        assert LLMCommandGenerator(
+            config={},
+            model_storage=model_storage,
+            resource=resource,
+            execution_context=Mock(spec=ExecutionContext),
+        )
+        assert SingleStepLLMCommandGenerator(
+            config={},
+            model_storage=model_storage,
+            resource=resource,
+            execution_context=Mock(spec=ExecutionContext),
+        )
+        assert MultiStepLLMCommandGenerator(
+            config={},
+            model_storage=model_storage,
+            resource=resource,
+            execution_context=Mock(spec=ExecutionContext),
+        )
+
+    def test_import_rasa_generators_directly(self, model_storage, resource):
+        """Test that rasa generator modules can be imported
+        without errors directly."""
+        from rasa.dialogue_understanding.generator.llm_command_generator import (
+            LLMCommandGenerator,
+        )
+        from rasa.dialogue_understanding.generator.multi_step.multi_step_llm_command_generator import (  # noqa: E501
+            MultiStepLLMCommandGenerator,
+        )
+        from rasa.dialogue_understanding.generator.single_step.single_step_llm_command_generator import (  # noqa: E501
+            SingleStepLLMCommandGenerator,
+        )
+
+        assert LLMCommandGenerator(
+            config={},
+            model_storage=model_storage,
+            resource=resource,
+            execution_context=Mock(spec=ExecutionContext),
+        )
+        assert SingleStepLLMCommandGenerator(
+            config={},
+            model_storage=model_storage,
+            resource=resource,
+            execution_context=Mock(spec=ExecutionContext),
+        )
+        assert MultiStepLLMCommandGenerator(
+            config={},
+            model_storage=model_storage,
+            resource=resource,
+            execution_context=Mock(spec=ExecutionContext),
+        )
