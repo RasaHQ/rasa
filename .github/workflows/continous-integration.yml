@@ -286,7 +286,7 @@ jobs:
         if: always()
         uses: ./.github/actions/debug-tracing-tests
         with:
-          COMPOSE_FILE_PATH: tests_deployment/integration_tests_tracing_deployment/docker-compose.intg.yml
+          COMPOSE_FILE_PATH: tests_deployment/integration_tests_tracing_deployment/docker-compose.yml
 
       - name: Tracing integration testing - Stop docker containers
         if: always()
