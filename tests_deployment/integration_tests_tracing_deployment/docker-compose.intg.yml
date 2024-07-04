@@ -1,7 +1,90 @@
-version: "3.8"
-
 x-license: &license
   RASA_PRO_LICENSE: ${RASA_PRO_LICENSE}
+  OPENAI_API_KEY: ${OPENAI_API_KEY}
+
+configs:
+  endpoints-jaeger.yml:
+    content: |
+      action_endpoint:
+        url: "http://action-server-jaeger:5056/webhook"
+      
+      tracing:
+        type: jaeger
+        host: jaeger
+        port: 6831
+        service_name: rasa-jaeger-testing
+        sync_export: ~
+  endpoints-jaeger-for-action-server.yml:
+    content: |
+      tracing:
+        type: jaeger
+        host: jaeger
+        port: 6831
+        service_name: action-server-jaeger-testing
+        sync_export: ~
+  endpoints-jaeger-no-action-server.yml:
+    content: |
+      tracing:
+        type: jaeger
+        host: jaeger
+        port: 6831
+        service_name: rasa-jaeger-testing
+        sync_export: ~
+  endpoints-otlp.yml:
+    content: |
+      action_endpoint:
+        url: "http://action-server-otlp:5057/webhook"
+      
+      tracing:
+        type: otlp
+        endpoint: otel-collector:4317
+        insecure: false
+        root_certificates: /certs/ca.pem
+        service_name: rasa-otlp-testing
+  endpoints-otlp-for-action-server.yml:
+    content: |
+      tracing:
+        type: otlp
+        endpoint: otel-collector:4317
+        insecure: false
+        root_certificates: /certs/ca.pem
+        service_name: action-server-otlp-testing
+  endpoints-otlp-no-action-server.yml:
+    content: |
+      tracing:
+        type: otlp
+        endpoint: otel-collector:4317
+        insecure: false
+        root_certificates: /certs/ca.pem
+        service_name: rasa-otlp-testing
+
+  otel-collector-config.yml:
+    content: |
+      receivers:
+        otlp:
+          protocols:
+            grpc:
+              tls_settings:
+                cert_file: /certs/cert.pem
+                key_file: /certs/cert-key.pem
+      
+      exporters:
+        jaeger:
+          endpoint: "jaeger:14250"
+          insecure: true
+        logging:
+      
+      processors:
+        batch:
+          timeout: 1s
+      
+      service:
+        pipelines:
+          traces:
+            receivers: [otlp]
+            exporters: [jaeger, logging]
+            processors: [batch]
+
 
 services:
   otel-collector:
