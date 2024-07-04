@@ -97,7 +97,7 @@ Rasa Pro 3.9.0 (2024-07-03)
   - Coexistence bot should ignore `NoOpCommand` when checking if the processed message contains commands.
   - Update condition under which FlowPolicy triggers `pattern_internal_error` for slots with custom slot mappings.
 - [#753](https://github.com/rasahq/rasa-private/issues/753): Remove invalid warnings during collect step.
-- [#754](https://github.com/rasahq/rasa-private/issues/754): * Fixed issue where messages with invalid intent triggers ('/<intent>') were not handled correctly. Now triggering the `pattern_cannot_handle`.
+- [#754](https://github.com/rasahq/rasa-private/issues/754): * Fixed issue where messages with invalid intent triggers ('/&lt;intent&gt;') were not handled correctly. Now triggering the `pattern_cannot_handle`.
   * Introduced a new reason `cannot_handle_invalid_intent` for use in the pattern_cannot_handle switch mechanism to
   improve error handling.
 - [#756](https://github.com/rasahq/rasa-private/issues/756): Validates that a collect step in a flow either has an action or an utterance defined in the domain to avoid the bot being silent.
