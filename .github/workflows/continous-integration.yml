@@ -393,11 +393,11 @@ jobs:
 
       - name: Configure image tag
         run: |
-          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
-            echo "IMAGE_TAG=pr${{ github.event.number }}-$(git rev-parse --short $(cat $GITHUB_EVENT_PATH | jq -r .pull_request.head.sha))" >> $GITHUB_ENV
-          else
-            echo "IMAGE_TAG=$(echo "${GITHUB_REF##*/}" | tr '[:upper:]' '[:lower:]')-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-          fi
+            if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+              echo "RASA_IMAGE_TAG=pr${{ github.event.number }}-$(git rev-parse --short $(cat $GITHUB_EVENT_PATH | jq -r .pull_request.head.sha))" >> $GITHUB_ENV
+            else
+              echo "RASA_IMAGE_TAG=$(echo "${GITHUB_REF##*/}" | tr '[:upper:]' '[:lower:]')-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+            fi
 
       - name: Prepare the job for integration tests
         uses: ./.github/actions/test-prerequisites
@@ -416,18 +416,18 @@ jobs:
       - name: Pull rasa-private dev image
         uses: ./.github/actions/pull-from-ecr
         with:
-            IMAGE_TAG: ${{ env.IMAGE_TAG }}
+            IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
             AWS_REGION: ${{ env.AWS_REGION }}
             AWS_ARN_ROLE_TO_ASSUME: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
-            REPOSITORY: ${{ env.REPOSITORY }}
+            REPOSITORY: ${{ env.RASA_PRIVATE_DEV_REPOSITORY }}
 
       - name: Custom Actions Integration Testing - Run docker containers
         run: |
           make run-action-server-nlu-containers
         env:
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
-          RASA_REPOSITORY: ${{ env.REPOSITORY }}
-          RASA_IMAGE_TAG: ${{ env.IMAGE_TAG }}
+          RASA_REPOSITORY: ${{ env.RASA_PRIVATE_DEV_REPOSITORY }}
+          RASA_IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
           RASA_SDK_REPOSITORY: ${{ env.SDK_REPOSITORY }}
           RASA_SDK_IMAGE_TAG: ${{ env.RASA_SDK_IMAGE_TAG }}
 
@@ -444,8 +444,8 @@ jobs:
         with:
           COMPOSE_FILE_PATH: tests_deployment/integration_tests_custom_action_server/docker-compose.yml
           ENV_FILE_PATH: tests_deployment/integration_tests_custom_action_server/env-file
-          RASA_REPOSITORY: ${{ env.REPOSITORY }}
-          RASA_IMAGE_TAG: ${{ env.IMAGE_TAG }}
+          RASA_REPOSITORY: ${{ env.RASA_PRIVATE_DEV_REPOSITORY }}
+          RASA_IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
           RASA_SDK_REPOSITORY: ${{ env.SDK_REPOSITORY }}
           RASA_SDK_IMAGE_TAG: ${{ env.RASA_SDK_IMAGE_TAG }}
           BOT_PATH: "./tests_deployment/integration_tests_custom_action_server/simple_nlu_bot"
@@ -476,9 +476,9 @@ jobs:
       - name: Configure image tag
         run: |
           if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
-            echo "IMAGE_TAG=pr${{ github.event.number }}-$(git rev-parse --short $(cat $GITHUB_EVENT_PATH | jq -r .pull_request.head.sha))" >> $GITHUB_ENV
+            echo "RASA_IMAGE_TAG=pr${{ github.event.number }}-$(git rev-parse --short $(cat $GITHUB_EVENT_PATH | jq -r .pull_request.head.sha))" >> $GITHUB_ENV
           else
-            echo "IMAGE_TAG=$(echo "${GITHUB_REF##*/}" | tr '[:upper:]' '[:lower:]')-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+            echo "RASA_IMAGE_TAG=$(echo "${GITHUB_REF##*/}" | tr '[:upper:]' '[:lower:]')-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
           fi
 
       - name: Prepare the job for integration tests
@@ -498,10 +498,10 @@ jobs:
       - name: Pull rasa-private dev image
         uses: ./.github/actions/pull-from-ecr
         with:
-          IMAGE_TAG: ${{ env.IMAGE_TAG }}
+          IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
           AWS_REGION: ${{ env.AWS_REGION }}
           AWS_ARN_ROLE_TO_ASSUME: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
-          REPOSITORY: ${{ env.REPOSITORY }}
+          REPOSITORY: ${{ env.RASA_PRIVATE_DEV_REPOSITORY }}
 
       - name: Custom Actions Integration Testing - Run docker containers
         run: |
@@ -509,8 +509,8 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
-          RASA_REPOSITORY: ${{ env.REPOSITORY }}
-          RASA_IMAGE_TAG: ${{ env.IMAGE_TAG }}
+          RASA_REPOSITORY: ${{ env.RASA_PRIVATE_DEV_REPOSITORY }}
+          RASA_IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
           RASA_SDK_REPOSITORY: ${{ env.SDK_REPOSITORY }}
           RASA_SDK_IMAGE_TAG: ${{ env.RASA_SDK_IMAGE_TAG }}
 
@@ -527,8 +527,8 @@ jobs:
         with:
           COMPOSE_FILE_PATH: tests_deployment/integration_tests_custom_action_server/docker-compose.yml
           ENV_FILE_PATH: tests_deployment/integration_tests_custom_action_server/env-file
-          RASA_REPOSITORY: ${{ env.REPOSITORY }}
-          RASA_IMAGE_TAG: ${{ env.IMAGE_TAG }}
+          RASA_REPOSITORY: ${{ env.RASA_PRIVATE_DEV_REPOSITORY }}
+          RASA_IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
           RASA_SDK_REPOSITORY: ${{ env.SDK_REPOSITORY }}
           RASA_SDK_IMAGE_TAG: ${{ env.RASA_SDK_IMAGE_TAG }}
           BOT_PATH: "./tests_deployment/integration_tests_custom_action_server/simple_calm_bot"
