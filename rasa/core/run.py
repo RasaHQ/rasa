@@ -126,7 +126,6 @@ def configure_app(
     server_listeners: Optional[List[Tuple[Callable, Text]]] = None,
     use_uvloop: Optional[bool] = True,
     keep_alive_timeout: int = constants.DEFAULT_KEEP_ALIVE_TIMEOUT,
-    action_package_name: Optional[Union[Text, ModuleType]] = None,
 ) -> Sanic:
     """Run the agent."""
     rasa.core.utils.configure_file_logging(
@@ -144,7 +143,6 @@ def configure_app(
                 jwt_private_key=jwt_private_key,
                 jwt_method=jwt_method,
                 endpoints=endpoints,
-                action_package_name=action_package_name,
             )
         )
     else:
@@ -225,7 +223,7 @@ def serve_application(
     syslog_protocol: Optional[Text] = None,
     request_timeout: Optional[int] = None,
     server_listeners: Optional[List[Tuple[Callable, Text]]] = None,
-    action_package_name: Optional[Union[Text, ModuleType]] = None,
+    actions_module: Optional[Union[Text, ModuleType]] = None,
 ) -> None:
     """Run the API entrypoint."""
     if not channel and not credentials:
@@ -252,7 +250,6 @@ def serve_application(
         syslog_protocol=syslog_protocol,
         request_timeout=request_timeout,
         server_listeners=server_listeners,
-        action_package_name=action_package_name,
     )
 
     ssl_context = server.create_ssl_context(
@@ -263,7 +260,13 @@ def serve_application(
     logger.info(f"Starting Rasa server on {protocol}://{interface}:{port}")
 
     app.register_listener(
-        partial(load_agent_on_start, model_path, endpoints, remote_storage),
+        partial(
+            load_agent_on_start,
+            model_path,
+            endpoints,
+            remote_storage,
+            actions_module=actions_module,
+        ),
         "before_server_start",
     )
 
@@ -298,6 +301,7 @@ async def load_agent_on_start(
     remote_storage: Optional[Text],
     app: Sanic,
     loop: AbstractEventLoop,
+    actions_module: Optional[Union[Text, ModuleType]] = None,
 ) -> Agent:
     """Load an agent.
 
@@ -309,6 +313,7 @@ async def load_agent_on_start(
         remote_storage=remote_storage,
         endpoints=endpoints,
         loop=loop,
+        actions_module=actions_module,
     )
     logger.info("Rasa server is up and running.")
     return app.ctx.agent

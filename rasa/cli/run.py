@@ -37,7 +37,7 @@ def add_subparser(
     )
     run_parser.set_defaults(func=run)
     run_parser.add_argument(
-        "--actions",
+        "--actions-module",
         type=action_arg,
         default=None,
         help="name of action package to be loaded",
@@ -93,7 +93,7 @@ def run(args: argparse.Namespace) -> None:
     args.credentials = rasa.cli.utils.get_validated_path(
         args.credentials, "credentials", DEFAULT_CREDENTIALS_PATH, True
     )
-    args.action_package_name = args.actions
+    args.actions_module = args.actions_module or DEFAULT_ACTIONS_PATH
 
     if args.enable_api:
         if not args.remote_storage:

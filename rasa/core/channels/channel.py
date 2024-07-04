@@ -102,7 +102,7 @@ def register(
     """Registers input channel blueprints with Sanic."""
 
     async def handler(message: UserMessage) -> None:
-        await app.ctx.agent.handle_message(message, app.ctx.action_package_name)
+        await app.ctx.agent.handle_message(message)
 
     for channel in input_channels:
         if route:

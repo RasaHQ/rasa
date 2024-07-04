@@ -32,7 +32,7 @@ def add_subparser(
     )
     inspect_parser.set_defaults(func=inspect)
     inspect_parser.add_argument(
-        "--actions",
+        "--actions-module",
         type=action_arg,
         default=None,
         help="name of action package to be loaded",

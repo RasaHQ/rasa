@@ -1,7 +1,6 @@
 import json
 import logging
 from pathlib import Path
-from types import ModuleType
 from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Tuple, Union
 
 import tiktoken
@@ -252,11 +251,7 @@ def extract_attrs_for_graph_trainer(
     }
 
 
-def extract_headers(
-    message: UserMessage,
-    action_package_name: Optional[Union[Text, ModuleType]] = None,
-    **kwargs: Any,
-) -> Any:
+def extract_headers(message: UserMessage, **kwargs: Any) -> Any:
     """Extract the headers from the `UserMessage`."""
     if message.headers:
         return message.headers
@@ -672,7 +667,9 @@ def extract_attrs_for_endpoint_config(
 
 
 def extract_attrs_for_custom_action_executor_run(
-    self: Union[HTTPCustomActionExecutor, GRPCCustomActionExecutor, DirectCustomActionExecutor],
+    self: Union[
+        HTTPCustomActionExecutor, GRPCCustomActionExecutor, DirectCustomActionExecutor
+    ],
     tracker: DialogueStateTracker,
     domain: Optional[Domain] = None,
 ) -> Dict[str, Any]:

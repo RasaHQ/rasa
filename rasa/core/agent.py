@@ -198,6 +198,7 @@ async def load_agent(
     remote_storage: Optional[Text] = None,
     endpoints: Optional[AvailableEndpoints] = None,
     loop: Optional[AbstractEventLoop] = None,
+    actions_module: Optional[Union[Text, ModuleType]] = None,
 ) -> Agent:
     """Loads agent from server, remote storage or disk.
 
@@ -207,6 +208,7 @@ async def load_agent(
         remote_storage: URL of remote storage for model.
         endpoints: Endpoint configuration.
         loop: Optional async loop to pass to broker creation.
+        actions_module: The name of the module containing all custom actions.
 
     Returns:
         The instantiated `Agent` or `None`.
@@ -241,6 +243,7 @@ async def load_agent(
         remote_storage=remote_storage,
         http_interpreter=http_interpreter,
         endpoints=endpoints,
+        actions_module=actions_module,
     )
 
     try:
@@ -303,6 +306,7 @@ class Agent:
         remote_storage: Optional[Text] = None,
         http_interpreter: Optional[RasaNLUHttpInterpreter] = None,
         endpoints: Optional[AvailableEndpoints] = None,
+        actions_module: Optional[Union[Text, ModuleType]] = None,
     ):
         """Initializes an `Agent`."""
         self.domain = domain
@@ -318,6 +322,7 @@ class Agent:
         self._set_fingerprint(fingerprint)
         self.model_server = model_server
         self.remote_storage = remote_storage
+        self.actions_module = actions_module
 
     @classmethod
     def load(
@@ -333,6 +338,7 @@ class Agent:
         remote_storage: Optional[Text] = None,
         http_interpreter: Optional[RasaNLUHttpInterpreter] = None,
         endpoints: Optional[AvailableEndpoints] = None,
+        actions_module: Optional[Union[Text, ModuleType]] = None,
     ) -> Agent:
         """Constructs a new agent and loads the processer and model."""
         agent = Agent(
@@ -346,12 +352,15 @@ class Agent:
             remote_storage=remote_storage,
             http_interpreter=http_interpreter,
             endpoints=endpoints,
+            actions_module=actions_module,
         )
         agent.load_model(model_path=model_path, fingerprint=fingerprint)
         return agent
 
     def load_model(
-        self, model_path: Union[Text, Path], fingerprint: Optional[Text] = None
+        self,
+        model_path: Union[Text, Path],
+        fingerprint: Optional[Text] = None,
     ) -> None:
         """Loads the agent's model and processor given a new model path."""
         self.processor = MessageProcessor(
@@ -362,6 +371,7 @@ class Agent:
             generator=self.nlg,
             http_interpreter=self.http_interpreter,
             endpoints=self.endpoints,
+            actions_module=self.actions_module,
         )
         self.domain = self.processor.domain
 
@@ -416,7 +426,6 @@ class Agent:
     async def handle_message(
         self,
         message: UserMessage,
-        action_package_name: Optional[Union[Text, ModuleType]] = None,
     ) -> Optional[List[Dict[Text, Any]]]:
         """Handle a single message."""
         if not self.is_ready():
@@ -426,7 +435,6 @@ class Agent:
         async with self.lock_store.lock(message.sender_id):
             return await self.processor.handle_message(  # type: ignore[union-attr]
                 message,
-                action_package_name,
             )
 
     @agent_must_be_ready

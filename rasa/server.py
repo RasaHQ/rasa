@@ -10,7 +10,6 @@ from functools import reduce, wraps
 from http import HTTPStatus
 from inspect import isawaitable
 from pathlib import Path
-from types import ModuleType
 from typing import (
     Any,
     Callable,
@@ -643,7 +642,6 @@ def create_app(
     jwt_private_key: Optional[Text] = None,
     jwt_method: Text = "HS256",
     endpoints: Optional[AvailableEndpoints] = None,
-    action_package_name: Optional[Union[Text, ModuleType]] = None,
 ) -> Sanic:
     """Class representing a Rasa HTTP server."""
     app = Sanic("rasa_server")
@@ -681,7 +679,6 @@ def create_app(
     # Initialize shared object of type unsigned int for tracking
     # the number of active training processes
     app.ctx.active_training_processes = multiprocessing.Value("I", 0)
-    app.ctx.action_package_name = action_package_name
 
     @app.exception(ErrorResponse)
     async def handle_error_response(
