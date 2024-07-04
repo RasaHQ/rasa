@@ -5,10 +5,7 @@ on:
     branches:
       - main
   pull_request:
-    branches:
-        - main
-        - 3.7.x
-        - 3.8.x
+
 concurrency:
   group: continous-integration-${{ github.ref }} # branch or tag name
   cancel-in-progress: true
