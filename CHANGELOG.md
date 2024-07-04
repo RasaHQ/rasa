@@ -10,6 +10,26 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.8.11] - 2024-07-04
+                        
+Rasa Pro 3.8.11 (2024-07-04)                             
+### Improvements
+- [#779](https://github.com/rasahq/rasa/issues/779): Improve debug logging for predicate evaluation.
+
+### Bugfixes
+- [#736](https://github.com/rasahq/rasa/issues/736): Raise an error if action_reset_routing is used without the defined ROUTE_TO_CALM_SLOT / router.
+- [#753](https://github.com/rasahq/rasa/issues/753): Remove invalid warnings during collect step.
+- [#754](https://github.com/rasahq/rasa/issues/754): * Fixed issue where messages with invalid intent triggers ('/<intent>') were not handled correctly. Now triggering the `pattern_cannot_handle`.
+  * Introduced a new reason `cannot_handle_invalid_intent` for use in the pattern_cannot_handle switch mechanism to
+  improve error handling.
+- [#756](https://github.com/rasahq/rasa/issues/756): Validates that a collect step in a flow either has an action or an utterance defined in the domain to avoid the bot being silent.
+- [#778](https://github.com/rasahq/rasa/issues/778): Skip command cleaning when no commands are present in NLUCommandAdapter. 
+  Fix get active flows to return the correct active flows, including all the nested parent flows if present.
+- [#800](https://github.com/rasahq/rasa/issues/800): Update the handling of incorrect use of slash syntax. Messages with undefined intents do not automatically trigger
+  `pattern_cannot_handle`; instead, they are sanitized (prepended slash(es) are removed) and passed through the graph.
+- [#815](https://github.com/rasahq/rasa/issues/815): Modify the validation to throw an error for a missing associated action/utterance in a collect step only if the slot does not have a defined initial value.
+
+
 ## [3.8.10] - 2024-06-19
                         
 Rasa Pro 3.8.10 (2024-06-19)                             
