@@ -15,7 +15,6 @@ from typing import (
 )
 
 import structlog
-from rasa_sdk.executor import ActionExecutor
 
 import rasa.core
 import rasa.shared.utils.io
@@ -82,7 +81,6 @@ from rasa.shared.core.slot_mappings import (
     extract_slot_value,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.core.trackers import EventVerbosity
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import (
     INTENT_NAME_KEY,
