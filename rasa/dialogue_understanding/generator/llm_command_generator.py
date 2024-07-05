@@ -252,6 +252,8 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             # cannot do anything if there are no flows or no tracker
             return []
 
+        commands: List[Command]
+
         # retrieve flows
         try:
             # If the flow retrieval is disabled, use the all the provided flows.
@@ -265,7 +267,11 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             filtered_flows = tracker.get_startable_flows(filtered_flows)
         except Exception:
             # e.g. in case of API problems (are being logged by the flow retrieval)
-            return [ErrorCommand()]
+            commands = [ErrorCommand()]
+            # if coexistence feature is used, set the routing slot
+            if tracker.has_coexistence_routing_slot:
+                commands += [SetSlotCommand(ROUTE_TO_CALM_SLOT, True)]
+            return commands
 
         # add the filtered flows to the message for evaluation purposes
         message.set(
@@ -296,22 +302,18 @@ class LLMCommandGenerator(GraphComponent, CommandGenerator):
             action_list=action_list,
         )
 
-        commands: List[Command]
-
         if action_list is None:
             # if action_list is None, we couldn't get any response from the LLM
             commands = [ErrorCommand()]
         else:
             commands = self.parse_commands(action_list, tracker, flows)
-
             if not commands:
                 # no commands are parsed or there's an invalid command
                 commands = [CannotHandleCommand()]
-            else:
-                # if the LLM command generator predicted valid commands and the
-                # coexistence feature is used, set the routing slot
-                if tracker.has_coexistence_routing_slot:
-                    commands += [SetSlotCommand(ROUTE_TO_CALM_SLOT, True)]
+
+        # if coexistence feature is used, set the routing slot
+        if tracker.has_coexistence_routing_slot:
+            commands += [SetSlotCommand(ROUTE_TO_CALM_SLOT, True)]
 
         log_llm(
             logger=structlogger,
