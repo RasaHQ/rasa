@@ -1,7 +1,7 @@
 import os.path
 import uuid
 from pathlib import Path
-from typing import Optional, Dict, Text, Any, Set
+from typing import Optional, Dict, Text, Any, Set, List
 from unittest.mock import Mock, patch, AsyncMock, MagicMock
 
 import pytest
@@ -389,7 +389,6 @@ class TestSingleStepLLMCommandGenerator:
                 "SetSlot(flow_name, some_flow)",
                 [
                     StartFlowCommand(flow="some_flow"),
-                    SetSlotCommand(ROUTE_TO_CALM_SLOT, True),
                 ],
             ),
         ],
@@ -411,7 +410,7 @@ class TestSingleStepLLMCommandGenerator:
         mock_render_template: Mock,
         mock_generate_action_list_using_llm: Mock,
         llm_response: Text,
-        expected_commands: Command,
+        expected_commands: List[Command],
         command_generator: SingleStepLLMCommandGenerator,
         tracker_with_routing_slot: DialogueStateTracker,
     ):
@@ -437,7 +436,13 @@ class TestSingleStepLLMCommandGenerator:
         )
         # Then
         mock_flow_retrieval_filter_flows.assert_called_once()
-        assert predicted_commands == expected_commands
+        assert len(predicted_commands) == len(expected_commands) + 1
+        for expected_command in expected_commands:
+            assert expected_command in predicted_commands
+
+        # route session must be present when there is a
+        # tracker with routing slot
+        assert SetSlotCommand(ROUTE_TO_CALM_SLOT, True) in predicted_commands
 
     @patch(
         "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.filter_flows"
@@ -474,7 +479,9 @@ class TestSingleStepLLMCommandGenerator:
         # Then
         mock_flow_retrieval_filter_flows.assert_called_once()
 
-        assert predicted_commands == [ErrorCommand()]
+        assert len(predicted_commands) == 2
+        assert ErrorCommand() in predicted_commands
+        assert SetSlotCommand(ROUTE_TO_CALM_SLOT, True) in predicted_commands
 
     def test_render_template(
         self,
