@@ -19,11 +19,10 @@ from typing import (
     TypeVar,
 )
 
+import rasa.shared.utils.io
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.trace import SpanKind, Tracer
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
-
-import rasa.shared.utils.io
 from rasa.core.actions.action import Action, RemoteAction, CustomActionExecutor
 from rasa.core.actions.custom_action_executor import RetryCustomActionExecutor
 from rasa.core.actions.grpc_custom_action_executor import GRPCCustomActionExecutor
@@ -37,14 +36,14 @@ from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import TrackerStore
 from rasa.dialogue_understanding.commands import Command
+from rasa.dialogue_understanding.generator.single_step.llm_command_generator import (
+    LLMCommandGenerator,
+)
 from rasa.dialogue_understanding.generator import (
     MultiStepLLMCommandGenerator,
     SingleStepLLMCommandGenerator,
 )
 from rasa.dialogue_understanding.generator.nlu_command_adapter import NLUCommandAdapter
-from rasa.dialogue_understanding.generator.single_step.llm_command_generator import (
-    LLMCommandGenerator,
-)
 from rasa.engine.graph import GraphNode
 from rasa.engine.training.graph_trainer import GraphTrainer
 from rasa.shared.constants import DOCS_BASE_URL
@@ -52,7 +51,6 @@ from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import SET_SLOT_COMMAND
 from rasa.shared.nlu.training_data.message import Message
-from rasa.tracing.instrumentation import attribute_extractors
 from rasa.tracing.instrumentation.intentless_policy_instrumentation import (
     _instrument_extract_ai_responses,
     _instrument_generate_answer,
@@ -67,6 +65,8 @@ from rasa.tracing.instrumentation.metrics import (
     record_request_size_in_bytes,
 )
 from rasa.utils.endpoints import EndpointConfig
+
+from rasa.tracing.instrumentation import attribute_extractors
 
 if TYPE_CHECKING:
     from langchain.schema import Document

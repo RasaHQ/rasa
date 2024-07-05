@@ -44,9 +44,10 @@ from rasa.tracing.constants import (
     ENDPOINTS_ROOT_CERTIFICATES_KEY,
     ENDPOINTS_METRICS_KEY,
 )
-from rasa.tracing.instrumentation import instrumentation
 from rasa.tracing.metric_instrument_provider import MetricInstrumentProvider
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
+
+from rasa.tracing.instrumentation import instrumentation
 
 TRACING_SERVICE_NAME = os.environ.get("TRACING_SERVICE_NAME", "rasa")
 
