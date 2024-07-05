@@ -292,7 +292,7 @@ run-tracing-integration-containers: train-nlu ## Run the tracing integration tes
 	USER_ID=$(USER_ID) \
 	docker compose \
 		-f $(TRACING_INTEGRATION_TEST_DOCKER_COMPOSE) \
-		up -d
+		up --wait
 
 stop-tracing-integration-containers: ## Stop the tracing integration test containers.
 	docker compose \
@@ -328,7 +328,7 @@ run-metrics-integration-containers: train-metrics-calm-bot ## Run the metrics in
 	USER_ID=$(USER_ID) \
 	docker compose \
 		-f $(PWD)/$(METRICS_SETUP_PATH)/docker-compose.yml \
-		up -d --wait
+		up --wait
 
 stop-metrics-integration-containers: ## Stop the metrics integration test containers.
 	docker compose \
