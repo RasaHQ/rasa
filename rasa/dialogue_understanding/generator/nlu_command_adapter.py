@@ -83,7 +83,7 @@ class NLUCommandAdapter(GraphComponent, CommandGenerator):
         message: Message,
         flows: FlowsList,
         tracker: Optional[DialogueStateTracker] = None,
-        domain: Optional[Domain] = None,
+        **kwargs: Any,
     ) -> List[Command]:
         """Creates commands using the predicted intents.
 
@@ -91,7 +91,7 @@ class NLUCommandAdapter(GraphComponent, CommandGenerator):
             message: The message from the user.
             flows: The flows available to the user.
             tracker: The tracker containing the current state of the conversation.
-            domain: The domain.
+            **kwargs: Keyword arguments for forward compatibility.
 
         Returns:
             The commands triggered by NLU.
@@ -100,6 +100,7 @@ class NLUCommandAdapter(GraphComponent, CommandGenerator):
             # cannot do anything if there are no flows or no tracker
             return []
 
+        domain = kwargs.get("domain", None)
         commands = self.convert_nlu_to_commands(message, tracker, flows, domain)
 
         commands_contain_start_flow = any(

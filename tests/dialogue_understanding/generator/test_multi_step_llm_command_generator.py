@@ -962,7 +962,7 @@ class TestMultiStepLLMCommandGenerator:
 
         # When
         await command_generator.predict_commands(
-            mock_message, all_flows, mock_tracker, mock_domain
+            mock_message, all_flows, mock_tracker, domain=mock_domain
         )
 
         # Then
@@ -1088,7 +1088,7 @@ class TestMultiStepLLMCommandGeneratorPredictCommandsErrorHandling:
 
         # When
         predicted_commands = await multi_step_llm_command_generator.predict_commands(
-            mock_message, filtered_flows, mock_tracker, mock_domain
+            mock_message, filtered_flows, mock_tracker, domain=mock_domain
         )
 
         # Then
@@ -1120,7 +1120,7 @@ class TestMultiStepLLMCommandGeneratorPredictCommandsErrorHandling:
 
         # When
         predicted_commands = await multi_step_llm_command_generator.predict_commands(
-            mock_message, filtered_flows, mock_tracker, mock_domain
+            mock_message, filtered_flows, mock_tracker, domain=mock_domain
         )
 
         # Then
@@ -1148,7 +1148,7 @@ class TestMultiStepLLMCommandGeneratorPredictCommandsErrorHandling:
 
         # When
         predicted_commands = await multi_step_llm_command_generator.predict_commands(
-            mock_message, filtered_flows, mock_tracker, mock_domain
+            mock_message, filtered_flows, mock_tracker, domain=mock_domain
         )
 
         # Then
@@ -1178,7 +1178,7 @@ class TestMultiStepLLMCommandGeneratorPredictCommandsErrorHandling:
 
         # When
         predicted_commands = await multi_step_llm_command_generator.predict_commands(
-            mock_message, filtered_flows, mock_tracker, mock_domain
+            mock_message, filtered_flows, mock_tracker, domain=mock_domain
         )
 
         # Then
@@ -1208,7 +1208,7 @@ class TestMultiStepLLMCommandGeneratorPredictCommandsErrorHandling:
 
         # When
         predicted_commands = await multi_step_llm_command_generator.predict_commands(
-            mock_message, filtered_flows, mock_tracker, mock_domain
+            mock_message, filtered_flows, mock_tracker, domain=mock_domain
         )
 
         # Then

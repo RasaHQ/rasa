@@ -1,5 +1,5 @@
 import uuid
-from typing import Dict, Any, Optional, Text
+from typing import Dict, Any, Optional, Text, ClassVar, List
 from unittest.mock import Mock, AsyncMock, patch
 
 import pytest
@@ -10,6 +10,7 @@ from rasa.dialogue_understanding.commands import (
     Command,
     ErrorCommand,
     SetSlotCommand,
+    ChitChatAnswerCommand,
 )
 from rasa.dialogue_understanding.generator import (
     LLMBasedCommandGenerator,
@@ -744,3 +745,37 @@ class TestLLMBasedCommandGenerator:
             resource=resource,
             execution_context=Mock(spec=ExecutionContext),
         )
+
+    base_classes: ClassVar[List[type]] = [
+        LLMCommandGenerator,
+        SingleStepLLMCommandGenerator,
+        MultiStepLLMCommandGenerator,
+    ]
+
+    @pytest.mark.parametrize("base_class", base_classes)
+    async def test_new_subclass_uses_own_predict_commands(
+        self, base_class, flows, model_storage, resource
+    ):
+        """Test that if custom component has overriden the predict_commands
+        method, it will be called and not the parent's."""
+
+        class CustomCommandGenerator(base_class):
+            async def predict_commands(
+                self,
+                message: Message,
+                flows: FlowsList,
+                tracker: DialogueStateTracker = None,
+            ):
+                return [ChitChatAnswerCommand()]
+
+        message = Mock()
+        message.data = {TEXT: "some_message"}
+        tracker = Mock(spec=DialogueStateTracker)
+        flows = FlowsList(underlying_flows=[])
+
+        generator = CustomCommandGenerator(
+            config={}, model_storage=model_storage, resource=resource
+        )
+        result = await generator.predict_commands(message, flows, tracker)
+
+        assert result == [ChitChatAnswerCommand()]
