@@ -18,5 +18,5 @@ class ConversationStep:
 class Conversation:
     name: str
     original_e2e_test_Case: TestCase
-    steps: List[Union[TestStep | ConversationStep]]
+    steps: List[Union[TestStep, ConversationStep]]
     file: Optional[str] = None
