@@ -80,3 +80,19 @@ def test_print_error(monkeypatch: MonkeyPatch):
         mock.call_args_list[0][0][0]
         == rasa.shared.utils.io.bcolors.FAIL + text + rasa.shared.utils.io.bcolors.ENDC
     )
+
+
+def test_pad_text() -> None:
+    assert (
+        rasa.shared.utils.cli.pad("hello world caption", char="*")
+        == "*" * 29 + " hello world caption " + "*" * 30
+    )
+
+
+def test_pad_uses_min_padding() -> None:
+    expected = "=" * 10 + " " + "foo" * 100 + " " + "=" * 10
+    assert rasa.shared.utils.cli.pad("foo" * 100, min=10) == expected
+
+
+def test_pad_empty() -> None:
+    assert rasa.shared.utils.cli.pad("") == "=" * 39 + " " * 2 + "=" * 39

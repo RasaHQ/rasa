@@ -354,34 +354,6 @@ def transform_results_output_to_yaml(yaml_string: Text) -> Text:
     return "".join(result)
 
 
-def pad(text: Text, char: Text = "=", min: int = 3) -> Text:
-    """Pad text to a certain length.
-
-    Uses `char` to pad the text to the specified length. If the text is longer
-    than the specified length, at least `min` are used.
-
-    The padding is applied to the left and right of the text (almost) equally.
-
-    Example:
-        >>> pad("Hello")
-        "========= Hello ========"
-        >>> pad("Hello", char="-")
-        "--------- Hello --------"
-
-    Args:
-        text: Text to pad.
-        min: Minimum length of the padding.
-        char: Character to pad with.
-
-    Returns:
-        Padded text.
-    """
-    width = shutil.get_terminal_size((80, 20)).columns
-    padding = max(width - len(text) - 2, min * 2)
-
-    return char * (padding // 2) + " " + text + " " + char * math.ceil(padding / 2)
-
-
 def color_difference(diff: List[Text]) -> Generator[Text, None, None]:
     """Colorize the difference between two strings.
 
@@ -422,7 +394,9 @@ def print_failed_case(fail: TestResult) -> None:
     fail_headline = (
         f"'{fail.test_case.name}' in {fail.test_case.file_with_line()} failed"
     )
-    rasa.shared.utils.cli.print_error(f"{pad(fail_headline, char='-')}\n")
+    rasa.shared.utils.cli.print_error(
+        f"{rasa.shared.utils.cli.pad(fail_headline, char='-')}\n"
+    )
     print(f"Mismatch starting at {fail.test_case.file}:{fail.error_line}: \n")
     rich.print(("\n".join(color_difference(fail.difference))))
 
@@ -436,7 +410,9 @@ def print_test_summary(failed: List[TestResult]) -> None:
         =================== short test summary info ===================
         FAILED test.md::test
     """
-    rasa.shared.utils.cli.print_info(pad("short test summary info"))
+    rasa.shared.utils.cli.print_info(
+        rasa.shared.utils.cli.pad("short test summary info")
+    )
 
     for f in failed:
         rasa.shared.utils.cli.print_error(
@@ -493,7 +469,7 @@ def print_test_result(
     if failed:
         # print failure headline
         print("\n")
-        rich.print(f"[bold]{pad('FAILURES', char='=')}[/bold]")
+        rich.print(f"[bold]{rasa.shared.utils.cli.pad('FAILURES', char='=')}[/bold]")
 
     # print failed test_Case
     for fail in failed:
@@ -502,11 +478,15 @@ def print_test_result(
     print_test_summary(failed)
 
     if fail_fast:
-        rasa.shared.utils.cli.print_error(pad("stopping after 1 failure", char="!"))
+        rasa.shared.utils.cli.print_error(
+            rasa.shared.utils.cli.pad("stopping after 1 failure", char="!")
+        )
         has_failed = True
     elif len(failed) + len(passed) == 0:
         # no tests were run, print error
-        rasa.shared.utils.cli.print_error(pad("no test cases found", char="!"))
+        rasa.shared.utils.cli.print_error(
+            rasa.shared.utils.cli.pad("no test cases found", char="!")
+        )
         print_e2e_help()
         has_failed = True
     elif failed:
