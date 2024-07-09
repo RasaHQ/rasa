@@ -66,7 +66,7 @@ jobs:
       - name: Prepare the job
         uses: ./.github/actions/test-prerequisites
         with:
-          DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+          PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
           POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
 
       - name: Install Dependencies 📦
@@ -233,7 +233,7 @@ jobs:
       - name: Prepare the job for integration tests
         uses: ./.github/actions/test-prerequisites
         with:
-            DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+            PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
             POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
 
       - name: Install Dependencies (Linux) 📦
@@ -331,7 +331,7 @@ jobs:
       - name: Prepare the job for integration tests
         uses: ./.github/actions/test-prerequisites
         with:
-            DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+            PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
             POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
 
       - name: Install Dependencies (Linux) 📦
@@ -499,7 +499,7 @@ jobs:
       - name: Prepare the job for integration tests
         uses: ./.github/actions/test-prerequisites
         with:
-          DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+          PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
           POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
 
       - name: Install Dependencies (Linux) 📦
@@ -593,7 +593,7 @@ jobs:
         - name: Prepare the job for integration tests
           uses: ./.github/actions/test-prerequisites
           with:
-              DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+              PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
               POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
 
         - name: Install Dependencies (Linux) 📦
@@ -681,7 +681,7 @@ jobs:
       - name: Prepare the job for integration tests
         uses: ./.github/actions/test-prerequisites
         with:
-            DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+            PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
             POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
 
       - name: Install Dependencies (Linux) 📦
@@ -743,7 +743,7 @@ jobs:
       - name: Prepare the job for integration tests
         uses: ./.github/actions/test-prerequisites
         with:
-            DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+            PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
             POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
 
       - name: Install Dependencies (Linux) 📦
@@ -795,7 +795,7 @@ jobs:
       - name: Prepare the job for integration tests
         uses: ./.github/actions/test-prerequisites
         with:
-          DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+          PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
           POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
 
       - name: Install Dependencies Full (Linux) 📦
@@ -865,7 +865,7 @@ jobs:
       - name: Prepare the job for unit tests
         uses: ./.github/actions/test-prerequisites
         with:
-            DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+            PYTHON_VERSION: ${{ matrix.python-version }}
             POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
 
       - name: Install Dependencies (Linux) 📦
@@ -928,7 +928,7 @@ jobs:
       - name: Prepare the job for unit tests
         uses: ./.github/actions/test-prerequisites
         with:
-          DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+          PYTHON_VERSION: ${{ matrix.python-version }}
           POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
 
       - name: Install Dependencies (Linux) 📦
