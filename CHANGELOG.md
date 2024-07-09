@@ -10,6 +10,14 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.9.2] - 2024-07-09
+                       
+Rasa Pro 3.9.2 (2024-07-09)                             
+
+### Bugfixes
+- [#829](https://github.com/rasahq/rasa-private/issues/829): Add key-word arguments in the predict_commands method of LLM-based CommandGenerator class to ensure custom components are not impacted by changes to the signature of the base classes.
+
+
 ## [3.9.1] - 2024-07-04
                        
 Rasa Pro 3.9.1 (2024-07-04)                            
