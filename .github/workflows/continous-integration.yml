@@ -416,7 +416,7 @@ jobs:
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
           RASA_IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
-          RASA_SDK_REPOSITORY: ${{ env.SDK_REPOSITORY }}
+          RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_DEV_REPOSITORY }}
           RASA_SDK_IMAGE_TAG: ${{ env.RASA_SDK_IMAGE_TAG }}
 
       - name: Custom Actions Testing - Test Code with Services 🩺
@@ -434,7 +434,7 @@ jobs:
           ENV_FILE_PATH: tests_deployment/integration_tests_custom_action_server/env-file
           RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
           RASA_IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
-          RASA_SDK_REPOSITORY: ${{ env.SDK_REPOSITORY }}
+          RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_DEV_REPOSITORY }}
           RASA_SDK_IMAGE_TAG: ${{ env.RASA_SDK_IMAGE_TAG }}
           BOT_PATH: "./tests_deployment/integration_tests_custom_action_server/simple_nlu_bot"
 
@@ -499,7 +499,7 @@ jobs:
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
           RASA_IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
-          RASA_SDK_REPOSITORY: ${{ env.SDK_REPOSITORY }}
+          RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_DEV_REPOSITORY }}
           RASA_SDK_IMAGE_TAG: ${{ env.RASA_SDK_IMAGE_TAG }}
 
       - name: Custom Actions Testing -  Test Code with Services 🩺
@@ -517,7 +517,7 @@ jobs:
           ENV_FILE_PATH: tests_deployment/integration_tests_custom_action_server/env-file
           RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
           RASA_IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
-          RASA_SDK_REPOSITORY: ${{ env.SDK_REPOSITORY }}
+          RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_DEV_REPOSITORY }}
           RASA_SDK_IMAGE_TAG: ${{ env.RASA_SDK_IMAGE_TAG }}
           BOT_PATH: "./tests_deployment/integration_tests_custom_action_server/simple_calm_bot"
 
