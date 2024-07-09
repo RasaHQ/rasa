@@ -82,10 +82,10 @@ services:
       - "./certs/ca.pem:/app/certs/ca.pem"
     configs:
       - source: endpoints-metrics.yml
-        target: /app/endpoints.yml
+        target: /endpoints-metrics.yml
     networks: [ 'rasa-pro-network' ]
     entrypoint: ""
-    command: rasa run -p 5005 --enable-api
+    command: rasa run -p 5005 --enable-api --endpoints /endpoints-metrics.yml
     ports:
       - "5005:5005"
     environment:

@@ -115,9 +115,9 @@ services:
       - "./simple_bot:/app"
     configs:
       - source: endpoints-jaeger.yml
-        target: /app/endpoints.yml
+        target: /endpoints-jaeger.yml
     entrypoint: ""
-    command: rasa run -p 5006 --enable-api
+    command: rasa run -p 5006 --enable-api --endpoints /endpoints-jaeger.yml
     networks: [ 'rasa-pro-network' ]
     ports:
       - "5006:5006"
@@ -138,9 +138,9 @@ services:
       - "./certs/ca.pem:/certs/ca.pem"
     configs:
       - source: endpoints-otlp.yml
-        target: /app/endpoints.yml
+        target: /endpoints-otlp.yml
     entrypoint: ""
-    command: rasa run -p 5007 --enable-api
+    command: rasa run -p 5007 --enable-api --endpoints /endpoints-otlp.yml
     networks: [ 'rasa-pro-network' ]
     ports:
       - "5007:5007"
@@ -160,9 +160,9 @@ services:
       - "./simple_bot:/app"
     configs:
       - source: endpoints-jaeger-no-action-server.yml
-        target: /app/endpoints.yml
+        target: /endpoints-jaeger-no-action-server.yml
     entrypoint: ""
-    command: rasa run -p 5008 --enable-api
+    command: rasa run -p 5008 --enable-api --endpoints /endpoints-jaeger-no-action-server.yml
     networks: [ 'rasa-pro-network' ]
     ports:
       - "5008:5008"
@@ -183,9 +183,9 @@ services:
       - "./certs/ca.pem:/certs/ca.pem"
     configs:
       - source: endpoints-otlp-no-action-server.yml
-        target: /app/endpoints.yml
+        target: /endpoints-otlp-no-action-server.yml
     entrypoint: ""
-    command: rasa run -p 5009 --enable-api
+    command: rasa run -p 5009 --enable-api --endpoints /endpoints-otlp-no-action-server.yml
     networks: [ 'rasa-pro-network' ]
     ports:
       - "5009:5009"
