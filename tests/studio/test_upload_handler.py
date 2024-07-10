@@ -1132,19 +1132,6 @@ def test_check_for_missing_primitives(
 
 
 @pytest.mark.parametrize(
-    "response, expected",
-    [
-        ({"errors": None}, False),
-        ({"errors": []}, False),
-        ({"errors": ["error"]}, True),
-        ({"errors": ["error", "error2"]}, True),
-    ],
-)
-def test_response_has_errors(response: Dict, expected: bool) -> None:
-    assert rasa.studio.upload._response_has_errors(response) == expected
-
-
-@pytest.mark.parametrize(
     "args, intents_from_files, entities_from_files, "
     "expected_intents, expected_entities",
     [

@@ -17,6 +17,7 @@ from rasa.studio.constants import (
     KEYCLOAK_REFRESH_EXPIRES_IN_KEY,
     KEYCLOAK_REFRESH_TOKEN,
 )
+from rasa.studio.error_handler import error_handler
 
 
 class StudioAuth:
@@ -31,14 +32,11 @@ class StudioAuth:
             realm_name=studio_config.realm_name,
         )
 
+    @error_handler.handle_error
     def login(self, username: Text, password: Text, totp: Optional[int] = None) -> None:
-
-        try:
-            token_dict = self.keycloak_openid.token(
-                username=username, password=password, totp=totp
-            )
-        except Exception as e:
-            raise RasaException(f"Could not login. Error: {e}")
+        token_dict = self.keycloak_openid.token(
+            username=username, password=password, totp=totp
+        )
 
         keycloak_token = self._resolve_token(token_dict)
 
