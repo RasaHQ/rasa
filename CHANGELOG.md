@@ -3382,12 +3382,8 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   intent classification and response selection.
 - [#7122](https://github.com/rasahq/rasa/issues/7122): Add validations for [slot mappings](https://rasa.com/docs/rasa-pro/nlu-based-assistants/forms#slot-mappings).
   If a slot mapping is not valid, an `InvalidDomain` error is raised.
-- [#7132](https://github.com/rasahq/rasa/issues/7132): Adapt the training data reader and emulator for LUIS to
-  [their latest format](https://westus.dev.cognitive.microsoft.com/docs/services/luis-endpoint-api-v3-0)
-  and add support for roles.
-  Update the instructions in the
-  "Migrate from LUIS" documentation page
-  to reflect the recent changes made to the UI of LUIS.
+- [#7132](https://github.com/rasahq/rasa/issues/7132): Adapt the training data reader and emulator for LUIS to their v3 format and add support for roles.
+  Update the instructions in the "Migrate from LUIS" documentation page to reflect the recent changes made to the UI of LUIS.
 - [#7160](https://github.com/rasahq/rasa/issues/7160): Adapt the training data reader and emulator for DialogFlow to
   [their latest format](https://cloud.google.com/dialogflow/es/docs/reference/rest/v2/DetectIntentResponse)
   and add support for regex entities.
