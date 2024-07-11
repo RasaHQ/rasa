@@ -198,7 +198,6 @@ async def load_agent(
     remote_storage: Optional[Text] = None,
     endpoints: Optional[AvailableEndpoints] = None,
     loop: Optional[AbstractEventLoop] = None,
-    actions_module: Optional[Union[Text, ModuleType]] = None,
 ) -> Agent:
     """Loads agent from server, remote storage or disk.
 
@@ -208,7 +207,6 @@ async def load_agent(
         remote_storage: URL of remote storage for model.
         endpoints: Endpoint configuration.
         loop: Optional async loop to pass to broker creation.
-        actions_module: The name of the module containing all custom actions.
 
     Returns:
         The instantiated `Agent` or `None`.
@@ -243,7 +241,6 @@ async def load_agent(
         remote_storage=remote_storage,
         http_interpreter=http_interpreter,
         endpoints=endpoints,
-        actions_module=actions_module,
     )
 
     try:
@@ -306,7 +303,6 @@ class Agent:
         remote_storage: Optional[Text] = None,
         http_interpreter: Optional[RasaNLUHttpInterpreter] = None,
         endpoints: Optional[AvailableEndpoints] = None,
-        actions_module: Optional[Union[Text, ModuleType]] = None,
     ):
         """Initializes an `Agent`."""
         self.domain = domain
@@ -322,7 +318,6 @@ class Agent:
         self._set_fingerprint(fingerprint)
         self.model_server = model_server
         self.remote_storage = remote_storage
-        self.actions_module = actions_module
 
     @classmethod
     def load(
@@ -338,7 +333,6 @@ class Agent:
         remote_storage: Optional[Text] = None,
         http_interpreter: Optional[RasaNLUHttpInterpreter] = None,
         endpoints: Optional[AvailableEndpoints] = None,
-        actions_module: Optional[Union[Text, ModuleType]] = None,
     ) -> Agent:
         """Constructs a new agent and loads the processer and model."""
         agent = Agent(
@@ -352,7 +346,6 @@ class Agent:
             remote_storage=remote_storage,
             http_interpreter=http_interpreter,
             endpoints=endpoints,
-            actions_module=actions_module,
         )
         agent.load_model(model_path=model_path, fingerprint=fingerprint)
         return agent
@@ -371,7 +364,6 @@ class Agent:
             generator=self.nlg,
             http_interpreter=self.http_interpreter,
             endpoints=self.endpoints,
-            actions_module=self.actions_module,
         )
         self.domain = self.processor.domain
 

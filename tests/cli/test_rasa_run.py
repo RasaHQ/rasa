@@ -35,8 +35,7 @@ def test_run_help(
 
     help_text = (
         f"""usage: {RASA_EXE} run [-h] [-v] [-vv] [--quiet]
-                [--logging-config-file LOGGING_CONFIG_FILE]
-                [--actions-module ACTIONS_MODULE] [-m MODEL]
+                [--logging-config-file LOGGING_CONFIG_FILE] [-m MODEL]
                 [--log-file LOG_FILE] [--use-syslog]
                 [--syslog-address SYSLOG_ADDRESS] [--syslog-port SYSLOG_PORT]
                 [--syslog-protocol SYSLOG_PROTOCOL] [--endpoints ENDPOINTS]

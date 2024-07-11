@@ -1,6 +1,6 @@
 import copy
 import logging
-from types import ModuleType
+from functools import lru_cache
 from typing import (
     Any,
     Dict,
@@ -11,7 +11,6 @@ from typing import (
     Tuple,
     Set,
     cast,
-    Union,
 )
 
 import structlog
@@ -22,9 +21,9 @@ from rasa.core.actions.custom_action_executor import (
     CustomActionExecutor,
     RetryCustomActionExecutor,
 )
+from rasa.core.actions.direct_custom_actions_executor import DirectCustomActionExecutor
 from rasa.core.actions.grpc_custom_action_executor import GRPCCustomActionExecutor
 from rasa.core.actions.http_custom_action_executor import HTTPCustomActionExecutor
-from rasa.core.actions.direct_custom_actions_executor import DirectCustomActionExecutor
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.nlu.constants import (
     RESPONSE_SELECTOR_DEFAULT_INTENT,
@@ -93,7 +92,6 @@ from rasa.utils.url_tools import get_url_schema, UrlSchema
 if TYPE_CHECKING:
     from rasa.core.nlg import NaturalLanguageGenerator
     from rasa.core.channels.channel import OutputChannel
-    from rasa.shared.core.events import IntentPrediction
 
 logger = logging.getLogger(__name__)
 structlogger = structlog.get_logger(__name__)
@@ -139,7 +137,6 @@ def action_for_index(
     index: int,
     domain: Domain,
     action_endpoint: Optional[EndpointConfig],
-    actions_module: Optional[Union[Text, ModuleType]] = None,
 ) -> "Action":
     """Get an action based on its index in the list of available actions.
 
@@ -150,7 +147,6 @@ def action_for_index(
             provided by the user + the default actions.
         action_endpoint: Can be used to run `custom_actions`
             (e.g. using the `rasa-sdk`).
-        actions_module: The name of the module containing all custom actions.
 
     Returns:
         The instantiated `Action` or `None` if no `Action` was found for the given
@@ -166,7 +162,6 @@ def action_for_index(
         domain.action_names_or_texts[index],
         domain,
         action_endpoint,
-        actions_module,
     )
 
 
@@ -193,7 +188,6 @@ def action_for_name_or_text(
     action_name_or_text: Text,
     domain: Domain,
     action_endpoint: Optional[EndpointConfig],
-    actions_module: Optional[Union[Text, ModuleType]] = None,
 ) -> "Action":
     """Retrieves an action by its name or by its text in case it's an end-to-end action.
 
@@ -201,7 +195,6 @@ def action_for_name_or_text(
         action_name_or_text: The name of the action.
         domain: The current model domain.
         action_endpoint: The endpoint to execute custom actions.
-        actions_module: The name of the module containing all custom actions.
 
     Raises:
         ActionNotFoundException: If action not in current domain.
@@ -243,7 +236,7 @@ def action_for_name_or_text(
         from rasa.core.actions.action_trigger_flow import ActionTriggerFlow
 
         return ActionTriggerFlow(action_name_or_text)
-    return RemoteAction(action_name_or_text, action_endpoint, actions_module)
+    return RemoteAction(action_name_or_text, action_endpoint)
 
 
 def create_bot_utterance(message: Dict[Text, Any]) -> BotUttered:
@@ -722,15 +715,13 @@ class RemoteAction(Action):
         self,
         name: Text,
         action_endpoint: EndpointConfig,
-        actions_module: Optional[Union[Text, ModuleType]] = None,
     ) -> None:
         self._name = name
         self.action_endpoint = action_endpoint
-        self.executor = self._create_executor(actions_module)
+        self.executor = self._create_executor()
 
-    def _create_executor(
-        self, actions_module: Optional[Union[Text, ModuleType]] = None
-    ) -> CustomActionExecutor:
+    @lru_cache(maxsize=1)
+    def _create_executor(self) -> CustomActionExecutor:
         """Creates an executor based on the action endpoint configuration.
 
         Returns:
@@ -739,9 +730,9 @@ class RemoteAction(Action):
         Raises:
             RasaException: If no valid action endpoint is configured.
         """
-        if not self.action_endpoint:
+        if not self.action_endpoint or not self.action_endpoint.url:
             return DirectCustomActionExecutor(
-                self._name, actions_module or DEFAULT_ACTIONS_PATH
+                self._name, self.action_endpoint.actions_module or DEFAULT_ACTIONS_PATH
             )
 
         url_schema = get_url_schema(self.action_endpoint.url)
@@ -750,13 +741,13 @@ class RemoteAction(Action):
             return RetryCustomActionExecutor(
                 GRPCCustomActionExecutor(self.name(), self.action_endpoint)
             )
-        elif url_schema == UrlSchema.HTTP or url_schema == UrlSchema.HTTPS:
+        elif (
+            url_schema == UrlSchema.HTTP
+            or url_schema == UrlSchema.HTTPS
+            or url_schema == UrlSchema.NOT_SPECIFIED
+        ):
             return RetryCustomActionExecutor(
                 HTTPCustomActionExecutor(self.name(), self.action_endpoint)
-            )
-        elif url_schema == UrlSchema.NOT_SPECIFIED:
-            return DirectCustomActionExecutor(
-                self._name, actions_module or DEFAULT_ACTIONS_PATH
             )
         raise RasaException(
             f"Failed to create a custom action executor. "

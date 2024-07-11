@@ -93,7 +93,6 @@ def run(args: argparse.Namespace) -> None:
     args.credentials = rasa.cli.utils.get_validated_path(
         args.credentials, "credentials", DEFAULT_CREDENTIALS_PATH, True
     )
-    args.actions_module = args.actions_module or DEFAULT_ACTIONS_PATH
 
     if args.enable_api:
         if not args.remote_storage:

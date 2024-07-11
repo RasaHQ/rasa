@@ -223,7 +223,6 @@ def serve_application(
     syslog_protocol: Optional[Text] = None,
     request_timeout: Optional[int] = None,
     server_listeners: Optional[List[Tuple[Callable, Text]]] = None,
-    actions_module: Optional[Union[Text, ModuleType]] = None,
 ) -> None:
     """Run the API entrypoint."""
     if not channel and not credentials:
@@ -265,7 +264,6 @@ def serve_application(
             model_path,
             endpoints,
             remote_storage,
-            actions_module=actions_module,
         ),
         "before_server_start",
     )
@@ -301,7 +299,6 @@ async def load_agent_on_start(
     remote_storage: Optional[Text],
     app: Sanic,
     loop: AbstractEventLoop,
-    actions_module: Optional[Union[Text, ModuleType]] = None,
 ) -> Agent:
     """Load an agent.
 
@@ -313,7 +310,6 @@ async def load_agent_on_start(
         remote_storage=remote_storage,
         endpoints=endpoints,
         loop=loop,
-        actions_module=actions_module,
     )
     logger.info("Rasa server is up and running.")
     return app.ctx.agent

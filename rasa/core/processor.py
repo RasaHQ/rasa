@@ -117,7 +117,6 @@ class MessageProcessor:
         on_circuit_break: Optional[LambdaType] = None,
         http_interpreter: Optional[RasaNLUHttpInterpreter] = None,
         endpoints: Optional["AvailableEndpoints"] = None,
-        actions_module: Optional[Union[Text, ModuleType]] = None,
     ) -> None:
         """Initializes a `MessageProcessor`."""
         self.nlg = generator
@@ -130,7 +129,6 @@ class MessageProcessor:
             model_path
         )
         self.endpoints = endpoints
-        self.actions_module = actions_module
 
         if self.model_metadata.assistant_id is None:
             rasa.shared.utils.io.raise_warning(
@@ -195,9 +193,7 @@ class MessageProcessor:
                 message.output_channel, tracker
             )
 
-        await self._run_prediction_loop(
-            message.output_channel, tracker, self.actions_module
-        )
+        await self._run_prediction_loop(message.output_channel, tracker)
 
         await self.run_anonymization_pipeline(tracker)
 
@@ -539,9 +535,7 @@ class MessageProcessor:
         return tracker
 
     async def predict_next_with_tracker_if_should(
-        self,
-        tracker: DialogueStateTracker,
-        actions_module: Optional[Union[Text, ModuleType]] = None,
+        self, tracker: DialogueStateTracker
     ) -> Tuple[rasa.core.actions.action.Action, PolicyPrediction]:
         """Predicts the next action the bot should take after seeing x.
 
@@ -569,7 +563,6 @@ class MessageProcessor:
             prediction.max_confidence_index,
             self.domain,
             self.action_endpoint,
-            actions_module,
         )
 
         logger.debug(
@@ -1042,7 +1035,6 @@ class MessageProcessor:
         self,
         output_channel: OutputChannel,
         tracker: DialogueStateTracker,
-        actions_module: Optional[Union[Text, ModuleType]] = None,
     ) -> None:
         # keep taking actions decided by the policy until it chooses to 'listen'
         should_predict_another_action = True
@@ -1054,7 +1046,7 @@ class MessageProcessor:
             # this actually just calls the policy's method by the same name
             try:
                 action, prediction = await self.predict_next_with_tracker_if_should(
-                    tracker, actions_module
+                    tracker
                 )
             except ActionLimitReached:
                 logger.warning(
