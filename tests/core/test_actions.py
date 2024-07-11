@@ -586,7 +586,7 @@ async def test_remote_action_without_endpoint(
     sys.modules["actions"] = actions
 
     MockCustomAction()
-    remote_action = action.RemoteAction("mock_custom_action", None)
+    remote_action = action.RemoteAction("mock_custom_action", EndpointConfig(None))
 
     result = await remote_action.run(
         default_channel, default_nlg, default_tracker, domain
