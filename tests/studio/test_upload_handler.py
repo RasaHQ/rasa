@@ -996,11 +996,9 @@ def test_build_import_request_no_nlu() -> None:
                 "status_code": 405,
             },
             (
-                (
-                    "Upload failed with the following errors: "
-                    "Upload failed with status code 405; "
-                    "Another message"
-                )
+                "Upload failed with the following errors: "
+                "Upload failed with status code 405; "
+                "Another message"
             ),
             False,
         ),

@@ -90,7 +90,7 @@ class ErrorHandler:
         )
         if e.response_code == 401:
             error_msg += "Please check if the credentials are correct."
-        elif e.error_message == "Can't connect to server":
+        elif e.error_message.startswith("Can't connect to server"):
             error_msg += (
                 "Please check if the server is running "
                 "and the configured URL is correct. \n"
@@ -135,13 +135,13 @@ class ErrorHandler:
 
     @staticmethod
     def handle_calm_assistant_error(e: Exception) -> Tuple[str, bool]:
-        if str(e) == MAX_RECURSION_ERROR:
+        if str(e.args[0]) == MAX_RECURSION_ERROR:
             logger.debug("Error details:")
             logger.debug(str(e))
             print_error(CALL_CYCLIC_ERROR)
             return CALL_CYCLIC_ERROR, False
 
-        elif str(e) == "Call flow reference not set.":
+        elif str(e.args[0]) == "Call flow reference not set.":
             logger.debug("Error details:")
             logger.debug(str(e))
             print_error(CALL_STEP_ERROR)

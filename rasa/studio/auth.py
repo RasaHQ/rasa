@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Text, Union, Tuple
 
 import jwt
-from keycloak import KeycloakOpenID
+from keycloak import KeycloakOpenID, KeycloakError
 from rasa.shared.exceptions import RasaException
 from rasa.shared.utils.yaml import read_yaml_file, write_yaml
 
@@ -48,13 +48,9 @@ class StudioAuth:
     def login(
         self, username: Text, password: Text, totp: Optional[int] = None
     ) -> Tuple[Text, bool]:
-        try:
-            token_dict = self.keycloak_openid.token(
-                username=username, password=password, totp=totp
-            )
-        except Exception as e:
-            raise RasaException(f"Could not login. Error: {e}")
-
+        token_dict = self.keycloak_openid.token(
+            username=username, password=password, totp=totp
+        )
         keycloak_token = self._resolve_token(token_dict)
 
         KeycloakTokenWriter.write_token_to_file(
@@ -67,7 +63,7 @@ class StudioAuth:
         try:
             token_dict = self.keycloak_openid.refresh_token(refresh_token)
         except Exception as e:
-            raise RasaException(f"Could not refresh token. Error: {e}")
+            raise KeycloakError(f"Could not refresh token. Error: {e}")
 
         keycloak_token = self._resolve_token(token_dict)
 
