@@ -63,12 +63,14 @@ class ErrorHandler:
     def _handle_graphql_errors(response: Dict) -> Tuple[str, bool]:
         error_msg = "Upload failed with the following errors: "
         if isinstance(response["errors"], list):
-            logger.error(error_msg)
-            for error in response["errors"]:
-                logger.error(error.get("message", "No error message available"))
+            error_details = "; ".join(
+                [error.get("message", "Unknown error") for error in response["errors"]]
+            )
+            error_msg += f"{error_details}"
         else:
             error_msg += "No detailed error information available."
 
+        logger.error(error_msg)
         logger.debug("Error details:")
         logger.debug(response)
         return error_msg, False

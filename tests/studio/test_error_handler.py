@@ -34,19 +34,18 @@ def test_handle_error_graphql_errors(error_handler, caplog):
     def function_with_graphql_errors():
         return {
             "data": {},
-            "errors": [{"message": "GraphQL error 1"}, {"message": "GraphQL error 2"}]
+            "errors": [{"message": "GraphQL error 1"}, {"message": "GraphQL error 2"}],
         }
 
     result = function_with_graphql_errors()
     assert result == (
-        "Upload failed with the following errors: ",
+        "Upload failed with the following errors: GraphQL error 1; GraphQL error 2",
         False,
     )
 
     assert "Upload failed with the following errors:" in caplog.text
     assert "GraphQL error 1" in caplog.text
     assert "GraphQL error 2" in caplog.text
-
 
 
 @pytest.mark.parametrize(

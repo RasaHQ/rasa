@@ -11,6 +11,7 @@ from rasa.shared.exceptions import RasaException
 
 import rasa.studio.upload
 from rasa.studio.config import StudioConfig
+from rasa.studio.error_handler import ErrorHandler
 
 CALM_DOMAIN_YAML = dedent(
     """\
@@ -920,7 +921,7 @@ def test_build_import_request_no_nlu() -> None:
                 "status_code": 405,
             },
             (
-                "An error occurred while uploading the assistant: "
+                "Upload failed with the following errors: "
                 "Upload failed with status code 405"
             ),
             False,
@@ -946,7 +947,7 @@ def test_build_import_request_no_nlu() -> None:
                 },
                 "status_code": 500,
             },
-            "An error occurred while uploading the assistant: Any error message",
+            "Upload failed with the following errors: Any error message",
             False,
         ),
         (
@@ -995,8 +996,11 @@ def test_build_import_request_no_nlu() -> None:
                 "status_code": 405,
             },
             (
-                "An error occurred while uploading the assistant: "
-                "Upload failed with status code 405; Another message"
+                (
+                    "Upload failed with the following errors: "
+                    "Upload failed with status code 405; "
+                    "Another message"
+                )
             ),
             False,
         ),
@@ -1023,7 +1027,7 @@ def test_build_import_request_no_nlu() -> None:
                 "status_code": 500,
             },
             (
-                "An error occurred while uploading the assistant: "
+                "Upload failed with the following errors: "
                 "Upload failed with status code 500"
             ),
             False,
@@ -1037,23 +1041,45 @@ def test_make_request(
     expected_response: str,
     expected_status: bool,
     endpoint: str,
+    caplog,
 ) -> None:
+    # Mock the requests.post method
     return_mock = MagicMock()
     return_mock.status_code = return_value["status_code"]
     return_mock.json.return_value = return_value["json"]
-    mock = MagicMock(return_value=return_mock)
+    mock_post = MagicMock(return_value=return_mock)
+    monkeypatch.setattr(rasa.studio.upload.requests, "post", mock_post)
+
+    # Mock the KeycloakTokenReader
     mock_token = MagicMock()
-    monkeypatch.setattr(rasa.studio.upload.requests, "post", mock)
-    monkeypatch.setattr(rasa.studio.upload, "KeycloakTokenReader", mock_token)
+    mock_token.get_token.return_value.token_type = "Bearer"
+    mock_token.get_token.return_value.access_token = "mock_token"
+    monkeypatch.setattr(rasa.studio.upload, "KeycloakTokenReader", lambda: mock_token)
 
-    ret_val, status = rasa.studio.upload.make_request(endpoint, graphQL_req)
+    # Create an instance of ErrorHandler
+    error_handler = ErrorHandler()
 
-    assert mock.called
-    assert mock.call_args[0][0] == endpoint
-    assert mock.call_args[1]["json"] == graphQL_req
+    # Apply the decorator to a test function
+    @error_handler.handle_error
+    def test_make_request_func(inner_endpoint: str, graphQL_req: Dict[str, Any]):
+        return rasa.studio.upload.make_request(inner_endpoint, graphQL_req)
 
-    assert mock_token.called
+    # Call the decorated function
+    ret_val, status = test_make_request_func(endpoint, graphQL_req)
 
+    # Assert that the mock was called with the correct arguments
+    assert mock_post.called
+    assert mock_post.call_args[0][0] == endpoint
+    assert mock_post.call_args[1]["json"] == graphQL_req
+    assert mock_post.call_args[1]["headers"] == {
+        "Authorization": "Bearer mock_token",
+        "Content-Type": "application/json",
+    }
+
+    # Assert that the KeycloakTokenReader was called
+    assert mock_token.get_token.called
+
+    # Check the return value and status
     assert ret_val == expected_response
     assert status == expected_status
 

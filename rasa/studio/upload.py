@@ -78,7 +78,7 @@ def extract_values(data: Dict, keys: List[Text]) -> Dict:
 @error_handler.handle_error
 def upload_calm_assistant(
     args: argparse.Namespace, assistant_name: str, endpoint: str
-) -> tuple[str, bool]:
+) -> Tuple[str, bool]:
     """Uploads the CALM assistant data to Rasa Studio.
 
     Args:
@@ -173,7 +173,7 @@ def upload_calm_assistant(
 @error_handler.handle_error
 def upload_nlu_assistant(
     args: argparse.Namespace, assistant_name: str, endpoint: str
-) -> tuple[str, bool]:
+) -> Tuple[str, bool]:
     """Uploads the classic (dm1) assistant data to Rasa Studio.
 
     Args:
