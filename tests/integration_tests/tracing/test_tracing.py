@@ -173,7 +173,6 @@ def test_missing_action_server_endpoint_does_not_stop_tracing(
     @wait_for_spans
     def _spans_for_user_turn() -> List[Span]:
         spans = _fetch_spans(jaeger_query_service, params)
-        print(spans)
         return _filter_spans_by_attributes(
             spans,
             {
@@ -303,7 +302,6 @@ def _collect_spans(response_chunk: "SpansResponseChunk") -> List[Dict[str, Any]]
 
 
 def _collect_span_attributes(span: "Span") -> Dict[str, str]:
-    print('Test', span, span.attributes)
     span_attributes = {
         attribute.key: attribute.value.string_value for attribute in span.attributes
     }
