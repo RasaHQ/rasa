@@ -5,7 +5,6 @@ from typing import List, Text
 
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import run as arguments
-from rasa.exceptions import ModelNotFound
 from rasa.shared.constants import (
     DOCS_BASE_URL,
     DEFAULT_ENDPOINTS_PATH,
@@ -13,6 +12,7 @@ from rasa.shared.constants import (
     DEFAULT_ACTIONS_PATH,
     DEFAULT_MODELS_PATH,
 )
+from rasa.exceptions import ModelNotFound
 
 logger = logging.getLogger(__name__)
 

@@ -258,12 +258,7 @@ def serve_application(
     logger.info(f"Starting Rasa server on {protocol}://{interface}:{port}")
 
     app.register_listener(
-        partial(
-            load_agent_on_start,
-            model_path,
-            endpoints,
-            remote_storage,
-        ),
+        partial(load_agent_on_start,model_path, endpoints, remote_storage),
         "before_server_start",
     )
 

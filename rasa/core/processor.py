@@ -560,9 +560,7 @@ class MessageProcessor:
         prediction = await self._predict_next_with_tracker(tracker)
 
         action = rasa.core.actions.action.action_for_index(
-            prediction.max_confidence_index,
-            self.domain,
-            self.action_endpoint,
+            prediction.max_confidence_index, self.domain, self.action_endpoint
         )
 
         logger.debug(
@@ -1032,9 +1030,7 @@ class MessageProcessor:
         )
 
     async def _run_prediction_loop(
-        self,
-        output_channel: OutputChannel,
-        tracker: DialogueStateTracker,
+        self, output_channel: OutputChannel, tracker: DialogueStateTracker
     ) -> None:
         # keep taking actions decided by the policy until it chooses to 'listen'
         should_predict_another_action = True
