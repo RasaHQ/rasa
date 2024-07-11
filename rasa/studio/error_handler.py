@@ -53,7 +53,7 @@ class ErrorHandler:
         return wrapper
 
     @staticmethod
-    def response_has_errors(response) -> bool:
+    def response_has_errors(response: Dict) -> bool:
         return (
             "errors" in response
             and isinstance(response["errors"], list)
