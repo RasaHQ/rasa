@@ -31,12 +31,6 @@ def add_subparser(
         ),
     )
     inspect_parser.set_defaults(func=inspect)
-    inspect_parser.add_argument(
-        "--actions-module",
-        type=action_arg,
-        default=None,
-        help="name of action package to be loaded",
-    )
 
     arguments.set_shell_arguments(inspect_parser)
     # it'd be confusing to expose those arguments to the user,

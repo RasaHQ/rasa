@@ -36,12 +36,6 @@ def add_subparser(
         help="Starts a Rasa server with your trained model.",
     )
     run_parser.set_defaults(func=run)
-    run_parser.add_argument(
-        "--actions-module",
-        type=action_arg,
-        default=None,
-        help="name of action package to be loaded",
-    )
 
     run_subparsers = run_parser.add_subparsers()
     sdk_subparser = run_subparsers.add_parser(
