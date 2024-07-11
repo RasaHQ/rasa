@@ -24,10 +24,7 @@ MAX_RECURSION_ERROR = "maximum recursion depth exceeded while calling a Python o
 
 class ErrorHandler:
     def __init__(self) -> None:
-        self.error_map: Dict[
-            Type[Exception],
-            Callable[[Any], Tuple[str, bool]]
-        ] = {
+        self.error_map: Dict[Type[Exception], Callable[[Any], Tuple[str, bool]]] = {
             RasaException: self._handle_rasa_exception,
             KeycloakError: self._handle_keycloak_error,
             ConnectionError: self._handle_connection_error,
