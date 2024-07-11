@@ -53,7 +53,7 @@ def mock_studio_config():
     with patch("rasa.studio.config.StudioConfig.read_config") as mock_config:
         mock_config.return_value = MagicMock(
             authentication_server_url="http://mock-auth-server:8081/auth/",
-            studio_url="http://mock-studio:4000/api/graphql"
+            studio_url="http://mock-studio:4000/api/graphql",
         )
         yield mock_config
 
@@ -86,7 +86,9 @@ def mock_studio_config():
         ),
     ],
 )
-def test_handle_error_exceptions(error_handler, mock_studio_config, exception, expected_message_template):
+def test_handle_error_exceptions(
+    error_handler, mock_studio_config, exception, expected_message_template
+):
     @error_handler.handle_error
     def function_with_exception():
         raise exception
@@ -95,8 +97,7 @@ def test_handle_error_exceptions(error_handler, mock_studio_config, exception, e
 
     config = mock_studio_config.return_value
     expected_message = expected_message_template.format(
-        auth_url=config.authentication_server_url,
-        studio_url=config.studio_url
+        auth_url=config.authentication_server_url, studio_url=config.studio_url
     )
 
     assert result == (expected_message, False)
