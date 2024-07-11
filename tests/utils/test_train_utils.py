@@ -288,7 +288,7 @@ def test_warning_incorrect_eval_num_epochs(component_config: Dict[Text, Text]):
     ],
 )
 def test_warning_eval_num_epochs_greater_than_epochs(
-    component_config: Dict[Text, Text]
+    component_config: Dict[Text, Text],
 ):
     warning = (
         f"'{EVAL_NUM_EPOCHS}={component_config[EVAL_NUM_EPOCHS]}' is "

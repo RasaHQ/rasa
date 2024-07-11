@@ -662,9 +662,9 @@ def encode_yaml(yaml):
                         "flows": (encode_yaml(CALM_FLOWS_YAML)),
                         "nlu": (encode_yaml(CALM_NLU_YAML)),
                         "config": (
-                            "cmVjaXBlOiBkZWZhdWx0LnYxCmxhbmd1YWdlOiBlbgpwaXBlbGluZToKLSBuYW1lOiBMTE1Db21t"
-                            "YW5kR2VuZXJhdG9yCiAgbGxtOgogICAgbW9kZWxfbmFtZTogZ3B0LTQKcG9saWNpZXM6Ci0gbmFt"
-                            "ZTogcmFzYS5jb3JlLnBvbGljaWVzLmZsb3dfcG9saWN5LkZsb3dQb2xpY3kK"
+                            "cmVjaXBlOiBkZWZhdWx0LnYxCmxhbmd1YWdlOiBlbgpwaXBlbGluZToKLSBuYW1lOiBTaW5nbGVTdGVwTExNQ29"
+                            "tbWFuZEdlbmVyYXRvcgogIGxsbToKICAgIG1vZGVsX25hbWU6IGdwdC00CnBvbGljaWVzOgotIG5hbWU"
+                            "6IHJhc2EuY29yZS5wb2xpY2llcy5mbG93X3BvbGljeS5GbG93UG9saWN5Cg=="
                         ),
                     }
                 },

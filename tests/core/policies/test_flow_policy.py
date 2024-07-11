@@ -3,6 +3,7 @@ import pytest
 from rasa.core.policies.flow_policy import (
     FlowPolicy,
 )
+from rasa.dialogue_understanding.patterns.cancel import CancelPatternFlowStackFrame
 from rasa.dialogue_understanding.patterns.internal_error import (
     InternalErrorPatternFlowStackFrame,
 )
@@ -16,6 +17,7 @@ from rasa.shared.core.events import (
     ActionExecuted,
     DialogueStackUpdated,
     FlowStarted,
+    UserUttered,
 )
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.slots import BooleanSlot
@@ -240,3 +242,79 @@ async def test_policy_triggers_error_pattern_if_internal_circuit_breaker_is_trip
     assert updated_stack.frames[0].step_id == "NEXT:END"
     # the pattern should be the other frame
     assert isinstance(updated_stack.frames[1], InternalErrorPatternFlowStackFrame)
+
+
+async def test_policy_cancels_user_flow_and_trigger_error_pattern_invalid_custom_slots(
+    default_flow_policy: FlowPolicy,
+):
+    test_flows = flows_from_str_with_defaults(
+        """
+        flows:
+          foo_flow:
+            description: flow foo
+            nlu_trigger:
+             - intent: foo_intent
+            steps:
+            - collect: bar_slot
+              next: END
+        """
+    )
+
+    domain = Domain.from_yaml("""
+    intents:
+    - foo_intent
+    slots:
+        bar_slot:
+          type: text
+          mappings:
+          - type: custom
+    """).merge(flows_default_domain())
+
+    tracker = DialogueStateTracker.from_events(
+        "test",
+        evts=[UserUttered("Hi", intent={"name": "foo_intent"})],
+        domain=domain,
+        slots=domain.slots,
+    )
+
+    stack = DialogueStack(
+        frames=[
+            UserFlowStackFrame(flow_id="foo_flow", step_id="START", frame_id="some-id")
+        ]
+    )
+    tracker.update_stack(stack)
+
+    prediction = await default_flow_policy.predict_action_probabilities(
+        tracker=tracker.copy(), domain=domain, flows=test_flows
+    )
+
+    assert prediction.max_confidence == 1.0
+
+    predicted_idx = prediction.max_confidence_index
+    assert domain.action_names_or_texts[predicted_idx] == "utter_internal_error_rasa"
+    # check that the stack was updated.
+    assert isinstance(prediction.optional_events[0], DialogueStackUpdated)
+    assert isinstance(prediction.optional_events[1], DialogueStackUpdated)
+    assert prediction.optional_events[2] == FlowStarted(flow_id="foo_flow")
+    assert isinstance(prediction.optional_events[3], DialogueStackUpdated)
+    assert prediction.optional_events[4] == FlowStarted(
+        flow_id="pattern_internal_error"
+    )
+    assert isinstance(prediction.optional_events[5], DialogueStackUpdated)
+
+    tracker.update_with_events(prediction.optional_events)
+    updated_stack = tracker.stack
+
+    # the user flow, the cancel flow and error patterns should be all on the stack
+    assert len(updated_stack.frames) == 3
+
+    first_frame = updated_stack.frames[0]
+    assert isinstance(first_frame, UserFlowStackFrame)
+    assert first_frame.flow_id == "foo_flow"
+    assert first_frame.step_id == "0_collect_bar_slot"
+    second_frame = updated_stack.frames[1]
+    assert isinstance(second_frame, CancelPatternFlowStackFrame)
+    assert second_frame.canceled_name == "foo_flow"
+    assert second_frame.canceled_frames == ["some-id"]
+    # the error pattern should be the other frame
+    assert isinstance(updated_stack.frames[2], InternalErrorPatternFlowStackFrame)

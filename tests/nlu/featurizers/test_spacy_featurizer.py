@@ -39,7 +39,6 @@ def test_spacy_featurizer_cls_vector(spacy_nlp):
 
 @pytest.mark.parametrize("sentence", ["hey how are you today"])
 def test_spacy_featurizer(sentence, spacy_nlp):
-
     ftr = create_spacy_featurizer({})
 
     doc = spacy_nlp(sentence)
@@ -160,7 +159,6 @@ def test_spacy_featurizer_can_be_case_sensitive(spacy_case_sensitive_nlp_compone
 
 
 def test_spacy_featurizer_train(spacy_nlp):
-
     featurizer = create_spacy_featurizer({})
 
     sentence = "Hey how are you today"

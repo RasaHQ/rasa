@@ -65,7 +65,6 @@ def filter_logs(
     filtered_logs = []
 
     for log in caplog:
-
         matches_event = event is None or log["event"] == event
         matches_log_level = log_level is None or log["log_level"] == log_level
         matches_message_parts = log_message_parts is None or contains_message_parts(log)

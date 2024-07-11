@@ -97,8 +97,9 @@ class TelegramOutput(Bot, OutputChannel):
                     reply_markup.add(KeyboardButton(button["title"]))
         else:
             logger.error(
-                "Trying to send text with buttons for unknown "
-                "button type {}".format(button_type)
+                "Trying to send text with buttons for unknown button type {}".format(
+                    button_type
+                )
             )
             return
 
@@ -215,7 +216,6 @@ class TelegramInput(InputChannel):
         @telegram_webhook.route("/webhook", methods=["GET", "POST"])
         async def message(request: Request) -> Any:
             if request.method == "POST":
-
                 request_dict = request.json
                 if isinstance(request_dict, Text):
                     request_dict = json.loads(request_dict)

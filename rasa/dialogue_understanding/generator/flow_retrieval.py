@@ -34,6 +34,7 @@ from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import TEXT, FLOWS_FROM_SEMANTIC_SEARCH
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.exceptions import ProviderClientAPIException
 from rasa.shared.utils.llm import (
     tracker_as_readable_transcript,
     embedder_factory,
@@ -93,11 +94,10 @@ class FlowRetrieval:
 
     @classmethod
     def validate_config(cls, config: Dict[Text, Any]) -> Dict[Text, Any]:
-
         if config[MAX_FLOWS_FROM_SEMANTIC_SEARCH_KEY] < 0:
-            config[
-                MAX_FLOWS_FROM_SEMANTIC_SEARCH_KEY
-            ] = DEFAULT_MAX_FLOWS_FROM_SEMANTIC_SEARCH
+            config[MAX_FLOWS_FROM_SEMANTIC_SEARCH_KEY] = (
+                DEFAULT_MAX_FLOWS_FROM_SEMANTIC_SEARCH
+            )
             structlogger.error(
                 f"flow_retrieval.validate_config.{MAX_FLOWS_FROM_SEMANTIC_SEARCH_KEY}.set_as_negative",
                 event_info=(
@@ -407,4 +407,6 @@ class FlowRetrieval:
                 error=e,
                 query=query,
             )
-            raise
+            raise ProviderClientAPIException(
+                message="Cannot fetch flows from vector store", original_exception=e
+            )

@@ -114,3 +114,12 @@ class CancelFlowCommand(Command):
             applied_events.append(FlowCancelled(user_frame.flow_id, user_frame.step_id))
 
         return applied_events + tracker.create_stack_updated_events(stack)
+
+    def __hash__(self) -> int:
+        return hash(self.command())
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, CancelFlowCommand):
+            return False
+
+        return True

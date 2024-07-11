@@ -55,3 +55,12 @@ class HumanHandoffCommand(Command):
             "command_executor.human_handoff.pushed_to_stack", command=self
         )
         return tracker.create_stack_updated_events(stack)
+
+    def __hash__(self) -> int:
+        return hash(self.command())
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, HumanHandoffCommand):
+            return False
+
+        return True

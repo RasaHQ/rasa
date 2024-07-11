@@ -1,8 +1,10 @@
 import abc
-import logging
+import structlog
 import os
 import shutil
 from typing import Optional, Text, Tuple, TYPE_CHECKING
+
+from rasa.shared.exceptions import RasaException
 
 import rasa.shared.utils.common
 import rasa.utils.common
@@ -10,7 +12,7 @@ import rasa.utils.common
 if TYPE_CHECKING:
     from azure.storage.blob import ContainerClient
 
-logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger()
 
 
 def get_persistor(name: Text) -> Optional["Persistor"]:
@@ -95,7 +97,6 @@ class Persistor(abc.ABC):
 
     @staticmethod
     def _tar_name(model_name: Text, include_extension: bool = True) -> Text:
-
         ext = ".tar.gz" if include_extension else ""
         return f"{model_name}{ext}"
 
@@ -129,20 +130,36 @@ class AWSPersistor(Persistor):
     def _ensure_bucket_exists(
         self, bucket_name: Text, region_name: Optional[Text] = None
     ) -> None:
-        import boto3
         import botocore
 
-        if not region_name:
-            region_name = boto3.DEFAULT_SESSION.region_name
-
-        bucket_config = {"LocationConstraint": region_name}
         # noinspection PyUnresolvedReferences
         try:
-            self.s3.create_bucket(
-                Bucket=bucket_name, CreateBucketConfiguration=bucket_config
-            )
-        except botocore.exceptions.ClientError:
-            pass  # bucket already exists
+            self.s3.meta.client.head_bucket(Bucket=bucket_name)
+        except botocore.exceptions.ClientError as e:
+            error_code = int(e.response["Error"]["Code"])
+            if error_code == 403:
+                log = (
+                    f"Access to the specified bucket '{bucket_name}' is forbidden. "
+                    "Please make sure you have the necessary "
+                    "permission to access the bucket."
+                )
+                structlogger.error(
+                    "aws_persistor.ensure_bucket_exists.bucket_access_forbidden",
+                    bucket_name=bucket_name,
+                    event_info=log,
+                )
+                raise RasaException(log)
+            elif error_code == 404:
+                log = (
+                    f"The specified bucket '{bucket_name}' does not exist. "
+                    "Please make sure to create the bucket first."
+                )
+                structlogger.error(
+                    "aws_persistor.ensure_bucket_exists.bucket_not_found",
+                    bucket_name=bucket_name,
+                    event_info=log,
+                )
+                raise RasaException(log)
 
     def _persist_tar(self, file_key: Text, tar_path: Text) -> None:
         """Uploads a model persisted in the `target_dir` to s3."""
@@ -180,10 +197,30 @@ class GCSPersistor(Persistor):
         from google.cloud import exceptions
 
         try:
-            self.storage_client.create_bucket(bucket_name)
-        except exceptions.Conflict:
-            # bucket exists
-            pass
+            self.storage_client.get_bucket(bucket_name)
+        except exceptions.NotFound:
+            log = (
+                f"The specified bucket '{bucket_name}' does not exist. "
+                "Please make sure to create the bucket first."
+            )
+            structlogger.error(
+                "gcp_persistor.ensure_bucket_exists.bucket_not_found",
+                bucket_name=bucket_name,
+                event_info=log,
+            )
+            raise RasaException(log)
+        except exceptions.Forbidden:
+            log = (
+                f"Access to the specified bucket '{bucket_name}' is forbidden. "
+                "Please make sure you have the necessary "
+                "permission to access the bucket. "
+            )
+            structlogger.error(
+                "gcp_persistor.ensure_bucket_exists.bucket_access_forbidden",
+                bucket_name=bucket_name,
+                event_info=log,
+            )
+            raise RasaException(log)
 
     def _persist_tar(self, file_key: Text, tar_path: Text) -> None:
         """Uploads a model persisted in the `target_dir` to GCS."""
@@ -210,18 +247,23 @@ class AzurePersistor(Persistor):
             account_url=f"https://{azure_account_name}.blob.core.windows.net/",
             credential=azure_account_key,
         )
-
-        self._ensure_container_exists(azure_container)
         self.container_name = azure_container
+        self._ensure_container_exists()
 
-    def _ensure_container_exists(self, container_name: Text) -> None:
-        from azure.core.exceptions import ResourceExistsError
-
-        try:
-            self.blob_service.create_container(container_name)
-        except ResourceExistsError:
-            # no need to create the container, it already exists
+    def _ensure_container_exists(self) -> None:
+        if self._container_client().exists():
             pass
+        else:
+            log = (
+                f"The specified container '{self.container_name}' does not exist."
+                "Please make sure to create the container first."
+            )
+            structlogger.error(
+                "azure_persistor.ensure_container_exists.container_not_found",
+                container_name=self.container_name,
+                event_info=log,
+            )
+            raise RasaException(log)
 
     def _container_client(self) -> "ContainerClient":
         return self.blob_service.get_container_client(self.container_name)

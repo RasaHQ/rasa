@@ -2,7 +2,7 @@ import datetime
 import logging
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Text, Union
+from typing import Any, Dict, List, Optional, Text, Union
 from unittest.mock import MagicMock, Mock
 
 import pytest
@@ -36,6 +36,7 @@ import rasa.cli.e2e_test
 from rasa.e2e_test.e2e_test_case import (
     ActualStepOutput,
     Fixture,
+    Metadata,
     TestCase,
     TestStep,
 )
@@ -49,6 +50,19 @@ else:
     class AsyncMock(MagicMock):
         async def __call__(self, *args: Any, **kwargs: Any) -> Any:
             return super().__call__(*args, **kwargs)
+
+
+@pytest.fixture
+def test_suite_metadata() -> List[Metadata]:
+    return [
+        Metadata(name="device_info", metadata={"os": "linux"}),
+        Metadata(name="user_info", metadata={"name": "Tom"}),
+    ]
+
+
+@pytest.fixture
+def test_case_metadata() -> Metadata:
+    return Metadata(name="device_info", metadata={"os": "linux"})
 
 
 def test_generate_test_result_successful() -> None:
@@ -759,10 +773,12 @@ async def test_set_up_fixtures(
     fixture_path = (
         Path(__file__).parent.parent.parent / "data" / "end_to_end_testing_input_files"
     )
-    test_cases, input_fixtures = rasa.cli.e2e_test.read_test_cases(str(fixture_path))
+    test_suite = rasa.cli.e2e_test.read_test_cases(str(fixture_path))
 
-    test_case = next(iter(filter(lambda x: x.name == test_case_name, test_cases)))
-    test_fixtures = runner.filter_fixtures_for_test_case(test_case, input_fixtures)
+    test_case = next(
+        iter(filter(lambda x: x.name == test_case_name, test_suite.test_cases))
+    )
+    test_fixtures = runner.filter_fixtures_for_test_case(test_case, test_suite.fixtures)
     sender_id = f"{test_case.name}_{datetime.datetime.now()}"
 
     await runner.set_up_fixtures(test_fixtures, sender_id=sender_id)
@@ -774,7 +790,7 @@ async def test_set_up_fixtures(
 
 @pytest.mark.parametrize("slot_was_set", ["location", {"location": "Paris"}])
 def test_find_test_failure_with_slot_was_set_step(
-    slot_was_set: Union[Text, Dict]
+    slot_was_set: Union[Text, Dict],
 ) -> None:
     test_turns: TEST_TURNS_TYPE = {
         -1: ActualStepOutput.from_test_step(
@@ -817,7 +833,7 @@ def test_find_test_failure_with_slot_was_set_step(
 
 @pytest.mark.parametrize("slot_was_set", ["location", {"location": "Paris"}])
 def test_find_test_failure_with_slot_was_set_step_fail(
-    slot_was_set: Union[Text, Dict]
+    slot_was_set: Union[Text, Dict],
 ) -> None:
     test_turns: TEST_TURNS_TYPE = {
         -1: ActualStepOutput.from_test_step(
@@ -864,6 +880,8 @@ def test_find_test_failure_with_slot_was_set_step_fail(
 
 async def test_run_prediction_loop(
     monkeypatch: MonkeyPatch,
+    test_suite_metadata: List[Metadata],
+    test_case_metadata: Metadata,
 ) -> None:
     def mock_init(self: Any, *args: Any, **kwargs: Any) -> None:
         domain = Domain.from_dict(
@@ -906,14 +924,17 @@ async def test_run_prediction_loop(
     steps = [
         TestStep.from_dict({"user": "Hi!"}),
         TestStep.from_dict({"bot": "Hey! How can I help?"}),
-        TestStep.from_dict({"user": "I would like to book a trip."}),
+        TestStep.from_dict(
+            {"user": "I would like to book a trip.", "metadata": "user_info"}
+        ),
         TestStep.from_dict({"bot": "Ok, where would you like to travel?"}),
         TestStep.from_dict({"user": "I want to go to Paris."}),
         TestStep.from_dict({"bot": "Paris is a great city! Let me check the flights."}),
     ]
     sender_id = "test_run_prediction_loop"
-
-    test_turns = await runner.run_prediction_loop(collector, steps, sender_id)
+    test_turns = await runner.run_prediction_loop(
+        collector, steps, sender_id, test_case_metadata, test_suite_metadata
+    )
     # there should be one more turn than steps because we capture events before
     # the first step in -1 index
     assert len(test_turns) == len(steps) + 1
@@ -971,16 +992,21 @@ async def test_run_prediction_loop_warning_for_no_user_text(
 
 @pytest.mark.parametrize("fail_fast, expected_len", [(True, 1), (False, 2)])
 async def test_run_tests_with_fail_fast(
-    monkeypatch: MonkeyPatch, fail_fast: bool, expected_len: int
+    monkeypatch: MonkeyPatch,
+    fail_fast: bool,
+    expected_len: int,
+    test_suite_metadata: List[Metadata],
 ) -> None:
     test_cases = [
         TestCase(
             steps=[
                 TestStep.from_dict({"user": "Hi!"}),
                 TestStep.from_dict({"bot": "Hey! How can I help?"}),
+                TestStep.from_dict({"user": "Hello!", "metadata": "user_info"}),
             ],
             name="test_hi",
             fixture_names=["premium"],
+            metadata_name="device_info",
         ),
         TestCase(
             steps=[
@@ -1024,7 +1050,12 @@ async def test_run_tests_with_fail_fast(
 
     runner = E2ETestRunner()
 
-    results = await runner.run_tests(test_cases, test_fixtures, fail_fast=fail_fast)
+    results = await runner.run_tests(
+        test_cases,
+        test_fixtures,
+        fail_fast=fail_fast,
+        input_metadata=test_suite_metadata,
+    )
 
     assert len(results) == expected_len
     assert results[0] == TestResult(
@@ -1592,3 +1623,84 @@ def test_bot_event_text_message_formatting() -> None:
 
     assert result.pass_status is True
     assert result.difference == []
+
+
+@pytest.mark.parametrize(
+    "metadata_name, expected",
+    [
+        (
+            "device_info",
+            Metadata(name="device_info", metadata={"os": "linux"}),
+        ),
+        (
+            "incorrect_metadata_name",
+            None,
+        ),
+        ("", None),
+    ],
+)
+def test_filter_metadata_for_input(
+    metadata_name: Text, test_suite_metadata, expected: Optional[Metadata]
+) -> None:
+    result = E2ETestRunner.filter_metadata_for_input(metadata_name, test_suite_metadata)
+
+    assert result == expected
+
+
+def test_filter_metadata_for_input_undefined_metadata_name(
+    caplog: LogCaptureFixture,
+) -> None:
+    metadata_name = "incorrect_metadata_name"
+    with caplog.at_level(logging.WARNING):
+        E2ETestRunner.filter_metadata_for_input(
+            metadata_name,
+            [Metadata(name="device_info", metadata={"os": "linux"})],
+        )
+
+    assert (
+        f"Metadata '{metadata_name}' is not defined in the input metadata."
+        in caplog.text
+    )
+
+
+@pytest.mark.parametrize(
+    "test_case_metadata_dict, step_metadata_dict, expected",
+    [
+        ({"os": "linux"}, {"name": "Tom"}, {"os": "linux", "name": "Tom"}),
+        (
+            {"os": "linux"},
+            {
+                "name": "Tom",
+                "os": "windows",
+            },
+            {"os": "windows", "name": "Tom"},
+        ),
+        ({}, {"name": "Tom"}, {"name": "Tom"}),
+        ({"os": "linux"}, {}, {"os": "linux"}),
+        ({}, {}, {}),
+    ],
+)
+def test_merge_metadata(
+    test_case_metadata_dict: Dict[Text, Text],
+    step_metadata_dict: Dict[Text, Text],
+    expected: Dict[Text, Text],
+) -> None:
+    result = E2ETestRunner.merge_metadata(
+        "Test_case", "step_text", test_case_metadata_dict, step_metadata_dict
+    )
+
+    assert result == expected
+
+
+def test_merge_metadata_warning(
+    caplog: LogCaptureFixture,
+) -> None:
+    with caplog.at_level(logging.WARNING):
+        E2ETestRunner.merge_metadata(
+            "Test_case_name_123",
+            "Hi!",
+            {"os": "linux"},
+            {"name": "Tom", "os": "windows"},
+        )
+    assert f"Metadata {['os']} exist in both the test case " in caplog.text
+    assert "'Test_case_name' and the user step 'Hi!'. " in caplog.text

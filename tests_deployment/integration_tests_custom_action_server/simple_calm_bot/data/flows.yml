@@ -1,0 +1,16 @@
+flows:
+  transfer_money:
+    description: This flow lets users send money to friends and family.
+    name: transfer money
+    steps:
+      - collect: transfer_money_recipient
+        description: the name of a person
+      - collect: transfer_money_amount_of_money
+        description: the amount of money without any currency designation
+      - action: utter_transfer_complete
+
+  list_contacts:
+    description: This flow lists the user's contacts.
+    name: list contacts
+    steps:
+      - action: action_list_contacts

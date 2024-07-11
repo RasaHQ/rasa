@@ -6,10 +6,17 @@ actions:
 slots:
   remove_contact_name:
     type: text
+    mappings:
+      - type: custom
+        action: remove_contact
   remove_contact_handle:
     type: text
+    mappings:
+      - type: from_llm
   remove_contact_confirmation:
     type: text
+    mappings:
+      - type: from_llm
 
 responses:
   utter_ask_remove_contact_handle:
@@ -22,9 +29,9 @@ responses:
      - text: "Removed {remove_contact_handle}({remove_contact_name}) from your contacts."
   utter_ask_remove_contact_confirmation:
     - buttons:
-        - payload: "yes"
+        - payload: "/SetSlots(remove_contact_confirmation=true)"
           title: Yes
-        - payload: "false"
+        - payload: "/SetSlots(remove_contact_confirmation=false)"
           title: No, cancel the removal
       text: "Should I remove {remove_contact_handle} from your contact list?"
   utter_remove_contact_cancelled:

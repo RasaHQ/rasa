@@ -64,9 +64,7 @@ def test_tracing_flow_executor_advance_flows(
         FlowsList(underlying_flows=[flow]),
     )
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
 
@@ -102,9 +100,7 @@ def test_tracing_flow_executor_run_step(
         FlowsList(underlying_flows=[flow]),
     )
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
 
@@ -140,9 +136,7 @@ def test_tracing_flow_executor_advance_flows_until_next_action(
         FlowsList(underlying_flows=[flow]),
     )
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
 

@@ -124,7 +124,6 @@ def test_studio_config_read_config_from_file(
     expected: StudioConfig,
     mock_read_global_config_value: MagicMock,
 ) -> None:
-
     mock_read_global_config_value.return_value = input_dict
 
     result = StudioConfig.read_config()
@@ -169,7 +168,6 @@ def test_studio_config_read_config_from_file_no_file(
     file_content: Dict[Text, Text],
     mock_read_global_config_value: MagicMock,
 ) -> None:
-
     mock_read_global_config_value.exists.return_value = file_content
 
     with pytest.raises(ValueError):

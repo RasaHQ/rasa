@@ -4,6 +4,7 @@ import logging
 import multiprocessing
 import os
 import traceback
+import warnings
 from collections import defaultdict
 from functools import reduce, wraps
 from http import HTTPStatus
@@ -25,6 +26,12 @@ from typing import (
 
 import aiohttp
 import jsonschema
+from sanic import Sanic, response
+from sanic.request import Request
+from sanic.response import HTTPResponse
+from sanic_cors import CORS
+from sanic_jwt import Initialize, exceptions
+
 import rasa
 import rasa.core.utils
 import rasa.nlu.test
@@ -70,11 +77,6 @@ from rasa.shared.utils.schemas.events import EVENTS_SCHEMA
 from rasa.shared.utils.yaml import validate_training_data
 from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
 from rasa.utils.endpoints import EndpointConfig
-from sanic import Sanic, response
-from sanic.request import Request
-from sanic.response import HTTPResponse
-from sanic_cors import CORS
-from sanic_jwt import Initialize, exceptions
 
 if TYPE_CHECKING:
     from ssl import SSLContext
@@ -233,7 +235,6 @@ def requires_auth(
         async def decorated(
             request: Request, *args: Any, **kwargs: Any
         ) -> response.HTTPResponse:
-
             provided = request.args.get("token", None)
 
             # noinspection PyProtectedMember
@@ -646,6 +647,9 @@ def create_app(
     app = Sanic("rasa_server")
     app.config.RESPONSE_TIMEOUT = response_timeout
     configure_cors(app, cors_origins)
+
+    # Reset Sanic warnings filter that allows the triggering of Sanic warnings
+    warnings.filterwarnings("ignore", category=DeprecationWarning, module=r"sanic.*")
 
     # Set up the Sanic-JWT extension
     if jwt_secret and jwt_method:

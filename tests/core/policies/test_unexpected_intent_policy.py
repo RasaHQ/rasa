@@ -61,7 +61,6 @@ from tests.core.policies.test_ted_policy import TestTEDPolicy
 class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
     @staticmethod
     def _policy_class_to_test() -> Type[UnexpecTEDIntentPolicy]:
-
         return UnexpecTEDIntentPolicy
 
     @pytest.fixture(scope="class")
@@ -106,7 +105,6 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
     def test_label_data_assembly(
         self, trained_policy: UnexpecTEDIntentPolicy, default_domain: Domain
     ):
-
         # Construct input data
         state_featurizer = trained_policy.featurizer.state_featurizer
         encoded_all_labels = state_featurizer.encode_all_labels(
@@ -854,7 +852,6 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
             all_similarities: np.array,
             label_index: int,
         ):
-
             expected_score = all_similarities[0][label_index]
             expected_threshold = (
                 all_thresholds[label_index] if label_index in all_thresholds else None

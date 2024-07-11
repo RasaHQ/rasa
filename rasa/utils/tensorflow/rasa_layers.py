@@ -418,7 +418,7 @@ class RasaFeatureCombiningLayer(RasaCustomLayer):
 
     @staticmethod
     def _get_present_feature_types(
-        attribute_signature: Dict[Text, List[FeatureSignature]]
+        attribute_signature: Dict[Text, List[FeatureSignature]],
     ) -> Dict[Text, bool]:
         """Determines feature types that are present.
 
@@ -444,13 +444,13 @@ class RasaFeatureCombiningLayer(RasaCustomLayer):
         for feature_type, present in self._feature_types_present.items():
             if not present:
                 continue
-            self._tf_layers[
-                f"sparse_dense.{feature_type}"
-            ] = ConcatenateSparseDenseFeatures(
-                attribute=attribute,
-                feature_type=feature_type,
-                feature_type_signature=attribute_signature[feature_type],
-                config=config,
+            self._tf_layers[f"sparse_dense.{feature_type}"] = (
+                ConcatenateSparseDenseFeatures(
+                    attribute=attribute,
+                    feature_type=feature_type,
+                    feature_type_signature=attribute_signature[feature_type],
+                    config=config,
+                )
             )
 
     def _prepare_sequence_sentence_concat(
@@ -853,13 +853,13 @@ class RasaSequenceLayer(RasaCustomLayer):
                 [not signature.is_sparse for signature in attribute_signature[SEQUENCE]]
             )
             if not expect_dense_seq_features:
-                self._tf_layers[
-                    self.SPARSE_TO_DENSE_FOR_TOKEN_IDS
-                ] = layers.DenseForSparse(
-                    units=2,
-                    use_bias=False,
-                    trainable=False,
-                    name=f"{self.SPARSE_TO_DENSE_FOR_TOKEN_IDS}.{attribute}",
+                self._tf_layers[self.SPARSE_TO_DENSE_FOR_TOKEN_IDS] = (
+                    layers.DenseForSparse(
+                        units=2,
+                        use_bias=False,
+                        trainable=False,
+                        name=f"{self.SPARSE_TO_DENSE_FOR_TOKEN_IDS}.{attribute}",
+                    )
                 )
 
     def _calculate_output_units(

@@ -116,7 +116,7 @@ jobs:
         id: build
         continue-on-error: true
         run: |
-          docker buildx build . --platform=linux/arm64,linux/amd64 -t ${{env.RELEASE_REGISTRY}}:${{ matrix.supported_tag }}-${{ steps.date.outputs.date }} --build-arg VERSION_NUMBER=${{ matrix.supported_tag }} -f docker/Dockerfile.patch --push
+          docker buildx build . --platform=linux/arm64,linux/amd64 -t ${{env.RELEASE_REGISTRY}}:${{ matrix.supported_tag }}-latest --build-arg VERSION_NUMBER=${{ matrix.supported_tag }} -f docker/Dockerfile.patch --push
 
       - name: Alert Slack if build fails
         if: steps.build.outcome == 'failure'
@@ -153,7 +153,7 @@ jobs:
           severity: 'HIGH,CRITICAL'
           ignore-unfixed: true
           security-checks: 'vuln'
-          image-ref: '${{env.RELEASE_REGISTRY}}:${{ matrix.supported_tag }}-${{ steps.date.outputs.date }}'
+          image-ref: '${{env.RELEASE_REGISTRY}}:${{ matrix.supported_tag }}-latest'
           vuln-type: 'os'
 
       - id: auth-security-reports

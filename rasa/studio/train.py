@@ -19,11 +19,11 @@ from rasa.shared.constants import (
 from rasa.shared.core.flows.yaml_flows_io import YamlFlowsWriter
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.utils.yaml import read_yaml, write_yaml
+from rasa.studio import data_handler
 from rasa.utils.common import get_temp_dir_name
 
 from rasa.studio.config import StudioConfig
 from rasa.studio.data_handler import (
-    DataDiffGenerator,
     StudioDataHandler,
     import_data_from_studio,
 )
@@ -50,9 +50,9 @@ def handle_train(args: argparse.Namespace) -> Optional[str]:
         handler, domain, args.data
     )
 
-    domain = data_original.get_domain().merge(data_form_studio.get_domain())  # type: ignore[assignment]  # noqa: E501
+    domain = data_original.get_domain().merge(data_form_studio.get_domain())  # type: ignore[assignment]
 
-    domain_file = _create_temp_file(read_yaml(domain.as_yaml()), "domain.yml")  # type: ignore[union-attr]  # noqa: E501
+    domain_file = _create_temp_file(read_yaml(domain.as_yaml()), "domain.yml")  # type: ignore[union-attr]
 
     studio_training_files = make_training_files(
         handler, data_form_studio, data_original
@@ -116,11 +116,10 @@ def make_training_files(
         training_files.append(training_file)
 
     if handler.has_flows():
-        diff = DataDiffGenerator(
-            original_flows=data_original.get_flows().underlying_flows,
-            studio_flows=data_form_studio.get_flows().underlying_flows,
+        diff_flows = data_handler.create_new_flows_from_diff(
+            data_form_studio.get_flows().underlying_flows,
+            data_original.get_flows().underlying_flows,
         )
-        diff_flows = diff.create_new_flows_from_diff()
         tmp_dir = get_temp_dir_name()
         training_file = Path(tmp_dir, "flows.yml")
         YamlFlowsWriter.dump(diff_flows, training_file)

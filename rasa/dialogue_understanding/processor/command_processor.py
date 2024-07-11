@@ -16,6 +16,7 @@ from rasa.dialogue_understanding.commands import (
 from rasa.dialogue_understanding.commands.handle_code_change_command import (
     HandleCodeChangeCommand,
 )
+from rasa.dialogue_understanding.commands.set_slot_command import SetSlotExtractor
 from rasa.dialogue_understanding.patterns.chitchat import FLOW_PATTERN_CHITCHAT
 from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
@@ -36,15 +37,22 @@ from rasa.shared.constants import (
     ROUTE_TO_CALM_SLOT,
     RASA_PATTERN_CANNOT_HANDLE_CHITCHAT,
 )
-from rasa.shared.core.constants import ACTION_TRIGGER_CHITCHAT
+from rasa.shared.core.constants import ACTION_TRIGGER_CHITCHAT, SlotMappingType
 from rasa.shared.core.constants import FLOW_HASHES_SLOT
 from rasa.shared.core.events import Event, SlotSet
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
+from rasa.shared.core.slots import Slot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import COMMANDS
 
 structlogger = structlog.get_logger()
+
+CANNOT_HANDLE_REASON = (
+    "A command generator attempted to set a slot "
+    "with a value extracted by an extractor "
+    "that is incompatible with the slot mapping type."
+)
 
 
 def contains_command(commands: List[Command], typ: Type[Command]) -> bool:
@@ -118,7 +126,7 @@ def validate_state_of_commands(commands: List[Command]) -> None:
     ]
     if free_form_answer_commands != commands[: len(free_form_answer_commands)]:
         structlogger.error(
-            "command_processor.validate_state_of_commands.free_form_answer_commands_not_at_beginning",  # noqa: E501
+            "command_processor.validate_state_of_commands.free_form_answer_commands_not_at_beginning",
             commands=commands,
         )
         raise ValueError(
@@ -341,7 +349,6 @@ def clean_up_commands(
     clean_commands: List[Command] = []
 
     for command in commands:
-
         if isinstance(command, SetSlotCommand):
             clean_commands = clean_up_slot_command(
                 clean_commands, command, tracker, all_flows, slots_so_far
@@ -355,6 +362,19 @@ def clean_up_commands(
                 ".skip_command_flow_already_cancelled",
                 command=command,
             )
+
+        # if there is a cannot handle command after the previous step,
+        # we don't want to add another one
+        elif isinstance(command, CannotHandleCommand) and contains_command(
+            clean_commands, CannotHandleCommand
+        ):
+            structlogger.debug(
+                "command_processor"
+                ".clean_up_commands"
+                ".skip_command_already_has_cannot_handle",
+                command=command,
+            )
+
         elif isinstance(command, StartFlowCommand) and command.flow == active_flow:
             # drop a start flow command if the starting flow is equal to the currently
             # active flow
@@ -387,6 +407,13 @@ def clean_up_commands(
                 )
         else:
             clean_commands.append(command)
+
+    # when coexistence is enabled, by default there will be a SetSlotCommand
+    # for the ROUTE_TO_CALM_SLOT slot.
+    if tracker.has_coexistence_routing_slot and len(clean_commands) > 2:
+        clean_commands = filter_cannot_handle_command_for_skipped_slots(clean_commands)
+    elif not tracker.has_coexistence_routing_slot and len(clean_commands) > 1:
+        clean_commands = filter_cannot_handle_command_for_skipped_slots(clean_commands)
 
     structlogger.debug(
         "command_processor.clean_up_commands.final_commands",
@@ -461,6 +488,21 @@ def clean_up_slot_command(
 
     resulting_commands = commands_so_far[:]
     if command.name in slots_so_far and command.name != ROUTE_TO_CALM_SLOT:
+        slot = tracker.slots.get(command.name)
+        if slot is None:
+            structlogger.debug(
+                "command_processor.clean_up_slot_command.skip_command_slot_not_in_domain",
+                command=command,
+            )
+            return resulting_commands
+
+        if not should_slot_be_set(slot, command):
+            cannot_handle = CannotHandleCommand(reason=CANNOT_HANDLE_REASON)
+            if cannot_handle not in resulting_commands:
+                resulting_commands.append(cannot_handle)
+
+            return resulting_commands
+
         current_collect_info = get_current_collect_step(stack, all_flows)
 
         if current_collect_info and current_collect_info.collect == command.name:
@@ -576,3 +618,69 @@ def clean_up_chitchat_command(
         )
 
     return resulting_commands
+
+
+def should_slot_be_set(slot: Slot, command: SetSlotCommand) -> bool:
+    """Check if a slot should be set by a command."""
+    if command.extractor == SetSlotExtractor.COMMAND_PAYLOAD_READER.value:
+        # if the command is issued by the command payload reader, it means the slot
+        # was set deterministically via a response button. In this case,
+        # we can always set it
+        return True
+
+    slot_mappings = slot.mappings
+
+    if not slot_mappings:
+        slot_mappings = [{"type": SlotMappingType.FROM_LLM.value}]
+
+    for mapping in slot_mappings:
+        mapping_type = SlotMappingType(
+            mapping.get("type", SlotMappingType.FROM_LLM.value)
+        )
+
+        should_be_set_by_llm = (
+            command.extractor == SetSlotExtractor.LLM.value
+            and mapping_type == SlotMappingType.FROM_LLM
+        )
+        should_be_set_by_nlu = (
+            command.extractor == SetSlotExtractor.NLU.value
+            and mapping_type.is_predefined_type()
+        )
+
+        if should_be_set_by_llm or should_be_set_by_nlu:
+            # if the extractor matches the mapping type, we can continue
+            # setting the slot
+            break
+
+        structlogger.debug(
+            "command_processor.clean_up_slot_command.skip_command.extractor_"
+            "does_not_match_slot_mapping",
+            extractor=command.extractor,
+            slot_name=slot.name,
+            mapping_type=mapping_type.value,
+        )
+        return False
+
+    return True
+
+
+def filter_cannot_handle_command_for_skipped_slots(
+    clean_commands: List[Command],
+) -> List[Command]:
+    """Filter out a 'cannot handle' command for skipped slots.
+
+    This is used to filter out a 'cannot handle' command for skipped slots
+    in case other commands are present.
+
+    Returns:
+        The filtered commands.
+    """
+    return [
+        command
+        for command in clean_commands
+        if not (
+            isinstance(command, CannotHandleCommand)
+            and command.reason
+            and CANNOT_HANDLE_REASON == command.reason
+        )
+    ]

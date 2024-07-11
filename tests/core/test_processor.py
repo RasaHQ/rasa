@@ -16,14 +16,7 @@ from unittest.mock import MagicMock, Mock, patch, AsyncMock
 import freezegun
 import pytest
 
-from rasa.dialogue_understanding.commands import (
-    SetSlotCommand,
-    StartFlowCommand,
-    ErrorCommand,
-    ChitChatAnswerCommand,
-    Command,
-)
-from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
+from rasa.dialogue_understanding.commands.set_slot_command import SetSlotExtractor
 import rasa.shared.utils.io
 import tests.utilities
 from _pytest.logging import LogCaptureFixture
@@ -33,10 +26,10 @@ from rasa.core import jobs
 from rasa.core.actions.action import (
     ActionBotResponse,
     ActionListen,
-    ActionExecutionRejection,
     ActionSendText,
     ActionUnlikelyIntent,
 )
+from rasa.core.actions.action_exceptions import ActionExecutionRejection
 from rasa.core.agent import Agent, load_agent
 from rasa.core.channels.channel import (
     CollectingOutputChannel,
@@ -50,9 +43,16 @@ from rasa.core.policies.ensemble import DefaultPolicyPredictionEnsemble
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import InMemoryTrackerStore
+from rasa.core.utils import AvailableEndpoints
+from rasa.dialogue_understanding.commands import (
+    SetSlotCommand,
+    StartFlowCommand,
+    CannotHandleCommand,
+)
 from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
 )
+from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.storage import ModelStorage
@@ -63,7 +63,7 @@ from rasa.shared.constants import (
     ASSISTANT_ID_KEY,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
     ROUTE_TO_CALM_SLOT,
-    RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
+    RASA_PATTERN_CANNOT_HANDLE_INVALID_INTENT,
 )
 from rasa.shared.core.constants import (
     ACTION_CORRECT_FLOW_SLOT,
@@ -96,7 +96,6 @@ from rasa.shared.core.events import (
     ActionExecutionRejected,
     LoopInterrupted,
 )
-from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.slots import BooleanSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import (
@@ -1392,7 +1391,10 @@ async def test_predict_next_action_with_hidden_rules(
     model_path = await trained_async(
         str(domain_path), str(config_path), [str(training_data_path)]
     )
-    agent = await load_agent(model_path=model_path)
+
+    action_endpoint = EndpointConfig("https://example.com/webhooks/actions")
+    endpoints = AvailableEndpoints(action=action_endpoint)
+    agent = await load_agent(model_path=model_path, endpoints=endpoints)
     processor = agent.processor
 
     tracker = DialogueStateTracker.from_events(
@@ -2134,71 +2136,33 @@ async def test_handle_message_with_intent_trigger_and_nlu_trigger(
 
 
 @pytest.mark.parametrize(
-    "message, predicted_commands",
+    "message",
     [
-        (
-            UserMessage("/"),
-            [ErrorCommand(RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY)],
-        ),
-        (
-            UserMessage(" / / / "),
-            [ErrorCommand(RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY)],
-        ),
-        (
-            UserMessage("/ hey there!"),
-            [ChitChatAnswerCommand(), SetSlotCommand(ROUTE_TO_CALM_SLOT, True)],
-        ),
-        (
-            UserMessage("/ / / hey there!"),
-            [ChitChatAnswerCommand(), SetSlotCommand(ROUTE_TO_CALM_SLOT, True)],
-        ),
-        (
-            UserMessage("/ / / hey there! / /"),
-            [ChitChatAnswerCommand(), SetSlotCommand(ROUTE_TO_CALM_SLOT, True)],
-        ),
-        (
-            UserMessage("/invalid_intent"),
-            [ChitChatAnswerCommand(), SetSlotCommand(ROUTE_TO_CALM_SLOT, True)],
-        ),
+        UserMessage("/invalid_intent"),
+        UserMessage("/"),
+        UserMessage("/ some random message without any intents"),
     ],
 )
-@patch(
-    "rasa.dialogue_understanding.generator"
-    ".flow_retrieval"
-    ".FlowRetrieval.filter_flows"
-)
-@patch(
-    "rasa.dialogue_understanding.generator"
-    ".llm_command_generator"
-    ".LLMCommandGenerator._generate_action_list_using_llm"
-)
-async def test_run_command_processor_parsing_a_message_with_invalid_use_of_slash_syntax(
-    mock_generate_action_list_using_llm: AsyncMock,
-    mock_filter_flows: AsyncMock,
+async def test_run_command_processor_parsing_a_message_with_invalid_intent(
     message: UserMessage,
-    predicted_commands: List[Command],
     flow_policy_bot_agent: Agent,
-    domain: Domain,
 ):
     # Given
     processor = flow_policy_bot_agent.processor
     sender_id = uuid.uuid4().hex
     tracker = await processor.tracker_store.get_or_create_tracker(sender_id)
     tracker.slots[ROUTE_TO_CALM_SLOT] = BooleanSlot(ROUTE_TO_CALM_SLOT, [{}])
-    # the return value here does not matter, it only matters
-    # that filter_flows is not raising an exception
-    mock_filter_flows.return_value = FlowsList(underlying_flows=[])
-    # the return value does not matter here, it only matters
-    # that we got the response from the LLM
-    mock_generate_action_list_using_llm.return_value = "ChitChat()"
 
     # When
     parse_data = await processor.parse_message(message, tracker)
 
     # Then
-    assert len(parse_data[COMMANDS]) == len(predicted_commands)
-    for predicted_command in predicted_commands:
-        assert predicted_command.as_dict() in parse_data[COMMANDS]
+    assert len(parse_data[COMMANDS]) == 2
+    assert (
+        CannotHandleCommand(RASA_PATTERN_CANNOT_HANDLE_INVALID_INTENT).as_dict()
+        in parse_data[COMMANDS]
+    )
+    assert SetSlotCommand(ROUTE_TO_CALM_SLOT, True).as_dict() in parse_data[COMMANDS]
 
 
 async def test_update_full_retrieval_intent(
@@ -2313,7 +2277,7 @@ async def test_predict_does_not_block_on_command_generator_llm_calls(
     # we should have a trained model now and can start an agent with it
     # let's patch the LLM though, as we don't want to make external calls
     with patch(
-        "rasa.dialogue_understanding.generator.llm_command_generator.llm_factory",
+        "rasa.dialogue_understanding.generator.llm_based_command_generator.llm_factory",
         Mock(),
     ) as mock_llm_factory:
         llm_mock = Mock()
@@ -2346,3 +2310,78 @@ async def test_predict_does_not_block_on_command_generator_llm_calls(
         # than 10 seconds, if it takes longer this is a sign that the
         # calls are not done in parallel but sequentially.
         assert time_needed < 10
+
+
+async def test_parse_message_with_set_slot_button(
+    flow_policy_bot_agent: Agent,
+):
+    processor = flow_policy_bot_agent.processor
+    sender_id = uuid.uuid4().hex
+    tracker = await processor.tracker_store.get_or_create_tracker(sender_id)
+
+    parse_data = await processor.parse_message(
+        UserMessage("/SetSlots(foo_slot_a=foo)"), tracker
+    )
+
+    assert len(parse_data[COMMANDS]) == 1
+    assert (
+        SetSlotCommand(
+            "foo_slot_a", "foo", SetSlotExtractor.COMMAND_PAYLOAD_READER.value
+        ).as_dict()
+        in parse_data[COMMANDS]
+    )
+
+
+@pytest.mark.parametrize(
+    "slot_value, expected_value", [("true", True), ("false", False)]
+)
+async def test_parse_message_with_multiple_set_slots_button(
+    flow_policy_bot_agent: Agent, slot_value: str, expected_value: bool
+) -> None:
+    processor = flow_policy_bot_agent.processor
+    sender_id = uuid.uuid4().hex
+
+    await processor.handle_message(
+        UserMessage(
+            f"/SetSlots(button_slot_a={slot_value}, button_slot_b={slot_value})",
+            sender_id=sender_id,
+        ),
+    )
+
+    tracker = await processor.get_tracker(sender_id)
+    assert tracker.get_slot("button_slot_a") is expected_value
+    assert tracker.get_slot("button_slot_b") is expected_value
+
+
+def test_handle_message_with_commands_does_not_run_action_extract_slots(
+    flow_policy_bot_agent: Agent, monkeypatch: MonkeyPatch
+) -> None:
+    processor = flow_policy_bot_agent.processor
+    sender_id = uuid.uuid4().hex
+
+    mock_run_action_extract_slots = MagicMock()
+    monkeypatch.setattr(
+        processor, "run_action_extract_slots", mock_run_action_extract_slots
+    )
+
+    processor.handle_message(
+        UserMessage("/SetSlots(foo_slot_a=foo)", sender_id=sender_id)
+    )
+
+    mock_run_action_extract_slots.assert_not_called()
+
+
+def test_handle_message_with_commands_from_buttons_does_not_run_nlu_command_adapter(
+    flow_policy_bot_agent: Agent, monkeypatch: MonkeyPatch
+) -> None:
+    processor = flow_policy_bot_agent.processor
+    sender_id = uuid.uuid4().hex
+
+    mock_nlu_to_commands = MagicMock()
+    monkeypatch.setattr(processor, "_nlu_to_commands", mock_nlu_to_commands)
+
+    processor.handle_message(
+        UserMessage("/SetSlots(foo_slot_a=foo)", sender_id=sender_id)
+    )
+
+    mock_nlu_to_commands.assert_not_called()

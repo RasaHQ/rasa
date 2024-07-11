@@ -256,7 +256,7 @@ class AudiocodesInput(InputChannel):
     ) -> Blueprint:
         ac_webhook = Blueprint("ac_webhook", __name__)
 
-        @ac_webhook.websocket("/conversation/<conversation_id>/websocket")  # type: ignore[misc] # noqa: E501
+        @ac_webhook.websocket("/conversation/<conversation_id>/websocket")  # type: ignore[misc]
         async def new_client_connection(
             request: Request, ws: Any, conversation_id: Text
         ) -> None:

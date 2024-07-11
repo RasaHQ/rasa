@@ -84,9 +84,7 @@ async def test_tracing(
     else:
         getattr(processor, method_name)(*method_args)
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1
@@ -118,14 +116,15 @@ async def test_propagation_to_action_server(
     assert "traceparent" in remote_action.action_endpoint.headers
     id_list = remote_action.action_endpoint.headers["traceparent"].split("-")
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     captured_span = captured_spans[-1]
 
     assert captured_span.name == "MockMessageProcessor._run_action"
-    assert captured_span.attributes == {"action_name": "custom_action"}
+    assert captured_span.attributes == {
+        "action_name": "custom_action",
+        "executor_class_name": "HTTPCustomActionExecutor",
+    }
 
     span_context: SpanContext = captured_span.get_span_context()  # type: ignore
 

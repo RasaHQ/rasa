@@ -1,0 +1,62 @@
+{% if flow_active %}
+Your task is to extract slots from a task-oriented conversation. We call these tasks flows.
+
+===
+Here are the available flows, read them carefully. They represent the central business logic:
+{% for flow in available_flows %}
+- {{ flow.name }}: {{ flow.description }}
+{%- endfor %}
+{% else %}
+Extract slots for a business process.
+
+The current user message started the process "{{ current_flow }}".
+Here are its slots: {% for slot in flow_slots -%}
+- {{ slot.name }} ({{slot.type}}){% if slot.description %}: {{ slot.description}} {% endif %}{% if slot.allowed_values %}(allowed values: {{ slot.allowed_values }}){% endif %}
+{% endfor %}
+{% endif %}
+===
+Here is the current conversation:
+{{ current_conversation }}
+
+===
+{% if flow_active %}
+You are currently in the flow {% if top_flow_is_pattern%}"{{ top_user_flow }}"{% else %}"{{ current_flow }}"{% endif %}.
+This flow has the following slots:
+{% for slot in flow_slots -%}
+- {{ slot.name }}
+{% endfor %}{% if top_flow_is_pattern%}{% for slot in top_user_flow_slots -%}
+- {{ slot.name }}
+{% endfor %}{% endif %}
+You have just asked the user for the slot "{{ current_slot }}" ({{current_slot_type}}).
+{% if current_slot_description %}Slot description: "{{ current_slot_description }}"{% endif %}
+{% if current_slot_allowed_values %}Allowed values for this slot: {{ current_slot_allowed_values }}{% endif %}
+The user answered "{{ last_user_message }}".
+
+===
+{% endif %}
+Based on this information, generate a list of actions. These are the available actions:
+1. Setting or correcting slots, described by "SetSlot(slot_name, slot_value)". An example would be
+"SetSlot(recipient, Freddy)". DO NOT set a slot with an arbitrary value!
+{% if flow_active %}
+2. Indicating that the users intent goes beyond responding to a question from the AI and setting a slot, described by
+"ChangeFlow()". Add this action, for example, if the user might want to start a different flow, cancel the current one,
+skip a question, ask a question or engages in chitchat. DO NOT add the name of the flow inside "ChangeFlow" command.
+{% else %}
+2. Finishing your action list, described by "Done()" once everything is taken care of.
+
+===
+Analyze the latest user message and see if there is any additional information the user already provided to fill the
+slots.
+If they did not provide information for the slots already, do not fill them.
+Also, if they had provided some information but had cancelled the process and are now trying to restart the process do
+not fill slots with information given previously when they cancelled the process.
+{% endif %}
+===
+
+Summarize the last user message in the context of the conversation. Then generate a final list of actions.
+===
+{% if flow_active %}
+The user saying "{{ last_user_message }}" after being asked for the slot "{{ current_slot }}" means that they might
+{% else %}
+The user saying "{{ last_user_message }}" means that they might
+{% endif %}

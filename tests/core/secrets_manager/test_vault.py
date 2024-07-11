@@ -229,7 +229,7 @@ def test_vault_token_manager_renew_token_fails_to_renew(
     monkeypatch.setattr(token_manager.client.auth.token, "renew_self", mock_renew_self)
     monkeypatch.setattr(token_manager, "TIME_TO_WAIT_BETWEEN_RETRIES_IN_SECONDS", 0)
 
-    with (pytest.raises(RasaException)):
+    with pytest.raises(RasaException):
         token_manager._renew_token()
 
 
@@ -432,7 +432,7 @@ def test_vault_secret_manager_load_secrets_without_transit_keys(
     mock_get_vault_endpoint_reader.assert_called_once_with(
         endpoint_trait=endpoint_trait
     )
-    vault_credentials_processor_instance.get_transit_keys_per_endpoint_property.assert_called_once()  # noqa: E501
+    vault_credentials_processor_instance.get_transit_keys_per_endpoint_property.assert_called_once()
 
 
 def test_vault_secret_manager_load_secrets_with_transit_keys(
@@ -486,7 +486,7 @@ def test_vault_secret_manager_load_secrets_with_transit_keys(
     mock_get_vault_endpoint_reader.assert_called_once_with(
         endpoint_trait=endpoint_trait
     )
-    tracker_store_validator_instance.get_transit_keys_per_endpoint_property.assert_called_once()  # noqa: E501
+    tracker_store_validator_instance.get_transit_keys_per_endpoint_property.assert_called_once()
 
 
 @pytest.mark.usefixtures("mock_hvac_client")
@@ -592,7 +592,7 @@ def test_vault_endpoint_reader_get_credentials_location_mismatched_source(
 
     processor = VaultEndpointConfigReader(endpoint_config=endpoint_config)
 
-    with (pytest.raises(RasaException)):
+    with pytest.raises(RasaException):
         processor.get_credentials_location("username")
 
 

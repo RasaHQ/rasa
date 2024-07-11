@@ -8,6 +8,10 @@ from rasa.core.policies.flows.flow_exceptions import (
     FlowCircuitBreakerTrippedException,
     NoNextStepInFlowException,
 )
+from rasa.core.policies.flows.flow_executor import (
+    validate_custom_slot_mappings,
+    validate_collect_step,
+)
 from rasa.core.policies.flows.flow_step_result import (
     ContinueFlowWithNextStep,
     PauseFlowReturnPrediction,
@@ -25,6 +29,7 @@ from rasa.dialogue_understanding.patterns.search import SearchPatternFlowStackFr
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames.chit_chat_frame import ChitChatStackFrame
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
+    BaseFlowStackFrame,
     FlowStackFrameType,
     UserFlowStackFrame,
 )
@@ -49,7 +54,10 @@ from rasa.shared.core.flows.flow import (
 )
 from rasa.shared.core.flows.flow_step_links import FlowStepLinks
 from rasa.shared.core.flows.steps import SetSlotsFlowStep
-from rasa.shared.core.flows.steps.collect import SlotRejection
+from rasa.shared.core.flows.steps.collect import (
+    CollectInformationFlowStep,
+    SlotRejection,
+)
 from rasa.shared.core.flows.yaml_flows_io import flows_from_str
 from rasa.shared.core.slots import FloatSlot, TextSlot
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -1549,7 +1557,18 @@ def test_flow_policy_events_after_interruption() -> None:
     )
     tracker.update_stack(stack)
 
-    available_actions = []
+    available_actions = [
+        "utter_ask_num_rooms",
+        "utter_ask_start_date",
+        "utter_ask_end_date",
+        "action_check_balance",
+        "utter_current_balance",
+        "action_search_hotels",
+        "utter_continue_interrupted",
+        "action_listen",
+        "utter_how_else_can_i_help",
+        "utter_collect_information",
+    ]
     result = flow_executor.advance_flows_until_next_action(
         tracker=tracker,
         available_actions=available_actions,
@@ -1630,3 +1649,119 @@ def test_flow_executor_is_condition_satisfied_with_categorical_slots(
 
     context = {}
     assert flow_executor.is_condition_satisfied(predicate, context, tracker) == expected
+
+
+def test_flow_executor_validate_custom_slot_mappings_valid() -> None:
+    domain = Domain.from_yaml(
+        """
+    slots:
+        loyalty_points:
+            type: float
+            mappings:
+                - type: custom
+    actions:
+        - action_ask_loyalty_points
+    """
+    )
+    step = CollectInformationFlowStep.from_json({"collect": "loyalty_points"})
+    stack = DialogueStack(frames=[UserFlowStackFrame(flow_id="my_flow", step_id="1")])
+    tracker = DialogueStateTracker.from_events("test", [], slots=domain.slots)
+    tracker.update_stack(stack)
+
+    is_valid = validate_custom_slot_mappings(
+        step, stack, tracker, domain.action_names_or_texts
+    )
+
+    assert is_valid
+    assert stack.current_context().get("flow_id") == "my_flow"
+
+
+def test_flow_executor_validate_custom_slot_mappings_invalid() -> None:
+    domain = Domain.from_yaml(
+        """
+    slots:
+        loyalty_points:
+            type: float
+            mappings:
+                - type: custom
+    responses:
+        utter_ask_loyalty_points:
+            - text: "Let's proceed checking how many loyalty points you have."
+    """
+    )
+    step = CollectInformationFlowStep.from_json({"collect": "loyalty_points"})
+    stack = DialogueStack(frames=[UserFlowStackFrame(flow_id="my_flow", step_id="1")])
+    tracker = DialogueStateTracker.from_events("test", [], slots=domain.slots)
+    tracker.update_stack(stack)
+
+    is_valid = validate_custom_slot_mappings(
+        step, stack, tracker, domain.action_names_or_texts
+    )
+
+    assert not is_valid
+    assert stack.current_context().get("flow_id") == "pattern_internal_error"
+
+    bottom_frame = stack.frames[0]
+    assert isinstance(bottom_frame, UserFlowStackFrame)
+    assert bottom_frame.flow_id == "my_flow"
+    assert bottom_frame.step_id == "1"
+
+    next_frame = stack.frames[1]
+    assert isinstance(next_frame, BaseFlowStackFrame)
+    assert next_frame.flow_id == "pattern_cancel_flow"
+
+
+def test_flow_executor_validate_collect_step_invalid() -> None:
+    test_domain = Domain.from_yaml(
+        """
+    slots:
+        loyalty_points:
+            type: float
+            mappings:
+                - type: from_llm
+    """
+    )
+    step = CollectInformationFlowStep.from_json({"collect": "loyalty_points"})
+    stack = DialogueStack(frames=[UserFlowStackFrame(flow_id="my_flow", step_id="1")])
+    tracker = DialogueStateTracker.from_events("test", [], slots=test_domain.slots)
+    tracker.update_stack(stack)
+
+    is_step_valid = validate_collect_step(
+        step, stack, test_domain.action_names_or_texts, tracker.slots
+    )
+
+    assert not is_step_valid
+    assert stack.current_context().get("flow_id") == "pattern_internal_error"
+
+    bottom_frame = stack.frames[0]
+    assert isinstance(bottom_frame, UserFlowStackFrame)
+    assert bottom_frame.flow_id == "my_flow"
+    assert bottom_frame.step_id == "1"
+
+    next_frame = stack.frames[1]
+    assert isinstance(next_frame, BaseFlowStackFrame)
+    assert next_frame.flow_id == "pattern_cancel_flow"
+
+
+def test_flow_executor_validate_collect_step_with_initial_value_defined() -> None:
+    test_domain = Domain.from_yaml(
+        """
+    slots:
+        loyalty_points:
+            type: float
+            initial_value: 0.0
+            mappings:
+                - type: from_llm
+    """
+    )
+    step = CollectInformationFlowStep.from_json({"collect": "loyalty_points"})
+    stack = DialogueStack(frames=[UserFlowStackFrame(flow_id="my_flow", step_id="1")])
+    tracker = DialogueStateTracker.from_events("test", [], slots=test_domain.slots)
+    tracker.update_stack(stack)
+
+    is_valid = validate_collect_step(
+        step, stack, test_domain.action_names_or_texts, tracker.slots
+    )
+
+    assert is_valid
+    assert stack.current_context().get("flow_id") == "my_flow"

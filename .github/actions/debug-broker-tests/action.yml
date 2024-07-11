@@ -1,0 +1,20 @@
+name: Debug broker test containers
+description: Encapsulates steps for broker test debugging
+
+inputs:
+  COMPOSE_FILE_PATH:
+    description: 'Broker tests docker compose path'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+  - name: Check zookeeper logs
+    run: |
+      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs zookeeper
+    shell: bash
+
+  - name: Check kafka container logs
+    run: |
+      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs kafka
+    shell: bash

@@ -106,7 +106,6 @@ def tracker_as_readable_transcript(
     # using `applied_events` rather than `events` means that only events after the
     # most recent `Restart` or `SessionStarted` are included in the transcript
     for event in tracker.applied_events():
-
         if isinstance(event, UserUttered):
             if event.has_triggered_error:
                 first_error = event.error_commands[0]
@@ -273,7 +272,7 @@ def llm_factory(
     #   packages/langchain/llms/openai.py:189: UserWarning: You are trying to
     #   use a chat model. This way of initializing it is no longer supported.
     #   Instead, please use: `from langchain.chat_models import ChatOpenAI
-    with (warnings.catch_warnings()):
+    with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=UserWarning)
         if is_azure_config(config):
             # Azure deployments are treated differently. This is done as the

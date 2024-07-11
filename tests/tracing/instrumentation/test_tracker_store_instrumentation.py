@@ -36,9 +36,7 @@ async def test_tracing_for_stream_events(
     tracker_store = MockTrackerStore(event_broker)
     await tracker_store._stream_new_events(event_broker, NEW_EVENTS_IN_TRACKER, "test")
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1

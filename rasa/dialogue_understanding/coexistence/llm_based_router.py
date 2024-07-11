@@ -13,7 +13,7 @@ from rasa.dialogue_understanding.coexistence.constants import (
 )
 from rasa.dialogue_understanding.commands import Command, SetSlotCommand
 from rasa.dialogue_understanding.commands.noop_command import NoopCommand
-from rasa.dialogue_understanding.generator.llm_command_generator import LLM_CONFIG_KEY
+from rasa.dialogue_understanding.generator.constants import LLM_CONFIG_KEY
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
@@ -196,7 +196,7 @@ class LLMBasedRouter(GraphComponent):
             structlogger.info("llm_based_router.predicated_commands", commands=commands)
             return commands
         elif route_session_to_calm is True:
-            # don't set any commands so that the `LLMCommandGenerator` is triggered
+            # don't set any commands so that a `LLMBasedCommandGenerator` is triggered
             # and can predict the actual commands.
             return []
         else:
@@ -231,7 +231,6 @@ class LLMBasedRouter(GraphComponent):
             return [SetSlotCommand(ROUTE_TO_CALM_SLOT, False)]
 
     def render_template(self, message: Message) -> str:
-
         inputs = {
             "user_message": message.get(TEXT),
             f"{CALM_ENTRY}_{STICKY}": self.config[CALM_ENTRY][STICKY],

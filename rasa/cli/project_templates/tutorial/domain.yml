@@ -3,8 +3,12 @@ version: "3.1"
 slots:
   recipient:
     type: text
+    mappings:
+      - type: from_llm
   amount:
     type: float
+    mappings:
+      - type: from_llm
 
 responses:
   utter_ask_recipient:

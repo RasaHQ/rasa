@@ -2,17 +2,25 @@ from typing import Optional, List, Text, Type
 from unittest.mock import Mock, patch
 
 import pytest
-from rasa.dialogue_understanding.commands import Command, StartFlowCommand, ErrorCommand
+
+from rasa.dialogue_understanding.commands import (
+    Command,
+    SetSlotCommand,
+    StartFlowCommand,
+    ErrorCommand,
+)
 from rasa.dialogue_understanding.commands.chit_chat_answer_command import (
     ChitChatAnswerCommand,
 )
+from rasa.dialogue_understanding.commands.set_slot_command import SetSlotExtractor
 from rasa.dialogue_understanding.generator.command_generator import CommandGenerator
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
-from rasa.dialogue_understanding.stack.frames.flow_stack_frame import UserFlowStackFrame
+from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
 from rasa.shared.constants import (
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
 )
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows import Flow, FlowsList
 from rasa.shared.core.flows.yaml_flows_io import flows_from_str
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -26,6 +34,7 @@ class WackyCommandGenerator(CommandGenerator):
         message: Message,
         flows: FlowsList,
         tracker: Optional[DialogueStateTracker] = None,
+        domain: Optional[Domain] = None,
     ) -> List[Command]:
         if message.get(TEXT) == "Hi":
             raise ValueError("Message too banal - I am quitting.")
@@ -122,6 +131,7 @@ async def test_command_generator_no_active_flows_to_add_to_available_flows(
     # Given
     generator = WackyCommandGenerator({})
     messages = [Message.build("What is your purpose?")]
+    domain = Domain.empty()
 
     tracker = DialogueStateTracker.from_dict("sender_id", [])
 
@@ -155,16 +165,10 @@ async def test_command_generator_no_active_flows_to_add_to_available_flows(
     )
 
     # When
-    await generator.process(
-        messages,
-        all_flows,
-        tracker,
-    )
+    await generator.process(messages, all_flows, tracker, domain)
     # Then
     mock_evaluate_and_predict.assert_called_once_with(
-        messages[0],
-        FlowsList([all_flows.flow_by_id("my_flow")]),
-        tracker,
+        messages[0], FlowsList([all_flows.flow_by_id("my_flow")]), tracker, domain
     )
     mock_check_commands_against_startable_flows.assert_called_once()
 
@@ -327,3 +331,67 @@ async def test_evaluate_and_predict_commands(
     assert isinstance(commands[0], expected_command_type)
     if isinstance(commands[0], ErrorCommand):
         assert commands[0].error_type == expected_error_type
+
+
+@pytest.mark.parametrize(
+    "active_flow, input_commands, expected_commands",
+    [
+        (
+            "auth_user",
+            [SetSlotCommand("auth_token", "ABCD12EF", SetSlotExtractor.LLM.value)],
+            [SetSlotCommand("auth_token", "ABCD12EF", SetSlotExtractor.LLM.value)],
+        ),
+        (
+            "auth_user_2",
+            [SetSlotCommand("auth_token", "ABCD12EF", SetSlotExtractor.LLM.value)],
+            [],
+        ),
+        (
+            "loyalty_points",
+            [StartFlowCommand("loyalty_points")],
+            [StartFlowCommand("loyalty_points")],
+        ),
+        (
+            "some_flow",
+            [SetSlotCommand("nlu_slot", "some_value", SetSlotExtractor.NLU.value)],
+            [SetSlotCommand("nlu_slot", "some_value", SetSlotExtractor.NLU.value)],
+        ),
+    ],
+)
+def test_command_generator_check_commands_against_slot_mappings_active_flow(
+    active_flow: Text, input_commands: List[Command], expected_commands: List[Command]
+):
+    # Given
+    generator = CommandGenerator({})
+    slot_name = "auth_token"
+    flow_id = "auth_user"
+    domain = Domain.from_yaml(f"""
+    entities:
+    - nlu_entity
+    slots:
+      {slot_name}:
+        type: text
+        mappings:
+            - type: from_llm
+              conditions:
+                - active_flow: {flow_id}
+      nlu_slot:
+        type: text
+        mappings:
+        - type: from_entity
+          entity: nlu_entity
+    """)
+    tracker = DialogueStateTracker.from_events("test", [], slots=domain.slots)
+    user_frame = UserFlowStackFrame(
+        flow_id=active_flow, step_id="first_step", frame_id="some-frame-id"
+    )
+    stack = DialogueStack(frames=[user_frame])
+    tracker.update_stack(stack)
+
+    # When
+    actual_commands = generator._check_commands_against_slot_mappings(
+        input_commands, tracker, domain
+    )
+
+    # Then
+    assert actual_commands == expected_commands

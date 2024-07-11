@@ -4,9 +4,9 @@ from typing import Sequence, Text
 import pytest
 from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
+
 from rasa.shared.data import TrainingType
 from rasa.shared.importers.rasa import RasaFileImporter
-
 from rasa.tracing.instrumentation import instrumentation
 from tests.tracing.instrumentation.conftest import (
     MockGraphTrainer,
@@ -38,7 +38,6 @@ async def test_tracing_for_training_without_finetuning(
         tracer_provider,
         graph_trainer_class=MockGraphTrainer,
     )
-
     expected_training_type = training_type.model_type
     expected_language = "en"
     expected_recipe_name = "graph.v1"
@@ -57,9 +56,7 @@ async def test_tracing_for_training_without_finetuning(
         is_finetuning=False,
     )
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1
@@ -120,9 +117,7 @@ async def test_tracing_for_training_with_finetuning(
         is_finetuning=False,
     )
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1
@@ -144,9 +139,9 @@ async def test_tracing_for_training_with_finetuning(
         "finetuning_validator"
     )
     finetuning_validator_schema_node.constructor_name = "load"
-    graph_model_config.train_schema.nodes[
-        "finetuning_validator"
-    ] = finetuning_validator_schema_node
+    graph_model_config.train_schema.nodes["finetuning_validator"] = (
+        finetuning_validator_schema_node
+    )
 
     await graph_trainer.train(
         graph_model_config,
@@ -155,9 +150,9 @@ async def test_tracing_for_training_with_finetuning(
         is_finetuning=True,
     )
 
-    finetuning_captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    finetuning_captured_spans: Sequence[ReadableSpan] = (
+        span_exporter.get_finished_spans()
+    )  # type: ignore
 
     num_finetuning_captured_spans = (
         len(finetuning_captured_spans)

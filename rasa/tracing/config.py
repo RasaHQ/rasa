@@ -16,6 +16,10 @@ from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
+from rasa.core.actions.custom_action_executor import (
+    CustomActionExecutor,
+    RetryCustomActionExecutor,
+)
 from rasa.core.agent import Agent
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import TrackerStore
@@ -23,8 +27,10 @@ from rasa.dialogue_understanding.commands import (
     Command,
     FreeFormAnswerCommand,
 )
-from rasa.dialogue_understanding.generator.llm_command_generator import (
+from rasa.dialogue_understanding.generator import (
     LLMCommandGenerator,
+    SingleStepLLMCommandGenerator,
+    MultiStepLLMCommandGenerator,
 )
 from rasa.dialogue_understanding.generator.nlu_command_adapter import NLUCommandAdapter
 from rasa.engine.graph import GraphNode
@@ -82,6 +88,11 @@ def configure_tracing(tracer_provider: Optional[TracerProvider]) -> None:
         for vector_store_class in InformationRetrieval.__subclasses__()
     ]
 
+    custom_action_executor_subclasses = []
+    for custom_action_executor_class in CustomActionExecutor.__subclasses__():
+        if custom_action_executor_class != RetryCustomActionExecutor:
+            custom_action_executor_subclasses.append(custom_action_executor_class)
+
     instrumentation.instrument(
         tracer_provider=tracer_provider,
         agent_class=Agent,
@@ -96,6 +107,9 @@ def configure_tracing(tracer_provider: Optional[TracerProvider]) -> None:
         vector_store_subclasses=vector_store_subclasses,
         nlu_command_adapter_class=NLUCommandAdapter,
         endpoint_config_class=EndpointConfig,
+        single_step_llm_command_generator_class=SingleStepLLMCommandGenerator,
+        multi_step_llm_command_generator_class=MultiStepLLMCommandGenerator,
+        custom_action_executor_subclasses=custom_action_executor_subclasses,
     )
 
 

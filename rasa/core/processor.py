@@ -3,15 +3,21 @@ import copy
 import logging
 import structlog
 import os
-import re
 from pathlib import Path
 import tarfile
 import time
 from types import LambdaType
 from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Tuple, Union
 
+from rasa.core.actions.action_exceptions import ActionExecutionRejection
+from rasa.core.actions.forms import FormAction
 from rasa.core.http_interpreter import RasaNLUHttpInterpreter
-from rasa.dialogue_understanding.commands import SetSlotCommand, CannotHandleCommand
+from rasa.dialogue_understanding.commands import (
+    Command,
+    NoopCommand,
+    SetSlotCommand,
+    CannotHandleCommand,
+)
 from rasa.engine import loader
 from rasa.engine.constants import (
     PLACEHOLDER_MESSAGE,
@@ -24,7 +30,7 @@ from rasa.engine.storage.storage import ModelMetadata
 from rasa.model import get_latest_model
 from rasa.plugin import plugin_manager
 from rasa.shared.core.flows import FlowsList
-from rasa.shared.data import TrainingType
+from rasa.shared.data import TrainingType, create_regex_pattern_reader
 import rasa.shared.utils.io
 import rasa.core.actions.action
 from rasa.core import jobs
@@ -73,9 +79,6 @@ import rasa.core.tracker_store
 import rasa.core.actions.action
 import rasa.shared.core.trackers
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
-from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
-    YAMLStoryReader,
-)
 from rasa.shared.nlu.constants import (
     COMMANDS,
     ENTITIES,
@@ -143,7 +146,7 @@ class MessageProcessor:
 
     @staticmethod
     def _load_model(
-        model_path: Union[Text, Path]
+        model_path: Union[Text, Path],
     ) -> Tuple[Text, ModelMetadata, GraphRunner]:
         """Unpacks a model from a given path using the graph model loader."""
         try:
@@ -185,7 +188,10 @@ class MessageProcessor:
             )
             return None
 
-        tracker = await self.run_action_extract_slots(message.output_channel, tracker)
+        if not self.message_contains_commands(tracker.latest_message):
+            tracker = await self.run_action_extract_slots(
+                message.output_channel, tracker
+            )
 
         await self._run_prediction_loop(message.output_channel, tracker)
 
@@ -213,8 +219,10 @@ class MessageProcessor:
         action_extract_slots = rasa.core.actions.action.action_for_name_or_text(
             ACTION_EXTRACT_SLOTS, self.domain, self.action_endpoint
         )
+        metadata = await self._add_flows_to_metadata()
+
         extraction_events = await action_extract_slots.run(
-            output_channel, self.nlg, tracker, self.domain
+            output_channel, self.nlg, tracker, self.domain, metadata
         )
 
         await self._send_bot_messages(extraction_events, tracker, output_channel)
@@ -735,28 +743,37 @@ class MessageProcessor:
         if self.http_interpreter:
             parse_data = await self.http_interpreter.parse(message)
         else:
-            msg = YAMLStoryReader.unpack_regex_message(
-                message=Message({TEXT: message.text}), domain=self.domain
-            )
+            regex_reader = create_regex_pattern_reader(message, self.domain)
 
-            # Invalid use of slash syntax, sanitize the message before passing
-            # it to the graph
+            processed_message = Message({TEXT: message.text})
+            if regex_reader:
+                processed_message = regex_reader.unpack_regex_message(
+                    message=processed_message, domain=self.domain
+                )
+
+            # Invalid use of slash syntax
             if (
-                msg.data.get(TEXT, "").strip().startswith("/")
-                and msg.data.get(INTENT) is None
+                processed_message.starts_with_slash_syntax()
+                and not processed_message.has_intent()
+                and not processed_message.has_commands()
             ):
-                message = self._sanitize_message(message)
+                parse_data = self._parse_invalid_use_of_slash_syntax(
+                    processed_message, tracker, only_output_properties
+                )
 
-            # No intent trigger used. Pass message to graph.
-            if msg.data.get(INTENT) is None:
+            # Intent or commands are not explicitly present. Pass message to graph.
+            elif not (
+                processed_message.has_intent() or processed_message.has_commands()
+            ):
                 parse_data = await self._parse_message_with_graph(
                     message, tracker, only_output_properties
                 )
 
-            # Intent trigger is used.
+            # Intents or commands are presents. Bypasses the standard parsing
+            # pipeline.
             else:
-                parse_data = await self._parse_message_with_intent_trigger(
-                    msg, tracker, only_output_properties
+                parse_data = await self._parse_message_with_commands_and_intents(
+                    processed_message, tracker, only_output_properties
                 )
 
         self._update_full_retrieval_intent(parse_data)
@@ -771,36 +788,68 @@ class MessageProcessor:
 
         return parse_data
 
-    def _sanitize_message(self, message: UserMessage) -> UserMessage:
-        """Sanitize user message by removing prepended slashes before the
-        actual content.
-        """
-        # Regex pattern to match leading slashes and any whitespace before
-        # actual content
-        pattern = r"^[/\s]+"
-        # Remove the matched pattern from the beginning of the message
-        message.text = re.sub(pattern, "", message.text).strip()
-        return message
-
-    async def _parse_message_with_intent_trigger(
+    def _parse_invalid_use_of_slash_syntax(
         self,
         message: Message,
         tracker: Optional[DialogueStateTracker] = None,
         only_output_properties: bool = True,
     ) -> Dict[Text, Any]:
-        """Parses a message with intent triggers."""
+        structlogger.warning(
+            "processor.message.parse.invalid_use_of_slash_syntax",
+            event_info=(
+                "Message starts with '/', but no intents or commands are"
+                "passed. Returning CannotHandleCommand() as a fallback."
+            ),
+            message=message.get(TEXT),
+        )
         parse_data: Dict[Text, Any] = {
             TEXT: "",
             INTENT: {INTENT_NAME_KEY: None, PREDICTED_CONFIDENCE_KEY: 0.0},
             ENTITIES: [],
-            COMMANDS: [],
+        }
+        parse_data.update(
+            message.as_dict(only_output_properties=only_output_properties)
+        )
+        commands = parse_data.get(COMMANDS, [])
+        commands += [
+            CannotHandleCommand(RASA_PATTERN_CANNOT_HANDLE_INVALID_INTENT).as_dict()
+        ]
+
+        if (
+            tracker is not None
+            and tracker.has_coexistence_routing_slot
+            and tracker.get_slot(ROUTE_TO_CALM_SLOT) is None
+        ):
+            # if we are currently not routing to either CALM or dm1
+            # we make a sticky routing to CALM
+            commands += [SetSlotCommand(ROUTE_TO_CALM_SLOT, True).as_dict()]
+
+        parse_data[COMMANDS] = commands
+        return parse_data
+
+    async def _parse_message_with_commands_and_intents(
+        self,
+        message: Message,
+        tracker: Optional[DialogueStateTracker] = None,
+        only_output_properties: bool = True,
+    ) -> Dict[Text, Any]:
+        """Parses the message to handle commands or intent trigger."""
+        parse_data: Dict[Text, Any] = {
+            TEXT: "",
+            INTENT: {INTENT_NAME_KEY: None, PREDICTED_CONFIDENCE_KEY: 0.0},
+            ENTITIES: [],
         }
         parse_data.update(
             message.as_dict(only_output_properties=only_output_properties)
         )
 
-        if tracker:
-            commands = await self._nlu_to_commands(parse_data, tracker)
+        commands = parse_data.get(COMMANDS, [])
+
+        # add commands from intent payloads
+        if tracker and not commands:
+            nlu_adapted_commands = await self._nlu_to_commands(parse_data, tracker)
+            commands += nlu_adapted_commands
+
             if (
                 tracker.has_coexistence_routing_slot
                 and tracker.get_slot(ROUTE_TO_CALM_SLOT) is None
@@ -809,11 +858,13 @@ class MessageProcessor:
                 # we make a sticky routing to CALM if there are any commands
                 # from the trigger intent parsing
                 # or a sticky routing to dm1 if there are no commands
-                commands.append(
-                    SetSlotCommand(ROUTE_TO_CALM_SLOT, len(commands) > 0).as_dict()
-                )
-            parse_data[COMMANDS] = commands
+                commands += [
+                    SetSlotCommand(
+                        ROUTE_TO_CALM_SLOT, len(nlu_adapted_commands) > 0
+                    ).as_dict()
+                ]
 
+        parse_data[COMMANDS] = commands
         return parse_data
 
     def _update_full_retrieval_intent(self, parse_data: Dict[Text, Any]) -> None:
@@ -847,7 +898,7 @@ class MessageProcessor:
         )
 
         commands = NLUCommandAdapter.convert_nlu_to_commands(
-            Message(parse_data), tracker, await self.get_flows()
+            Message(parse_data), tracker, await self.get_flows(), self.domain
         )
 
         # if there are no converted commands and parsed data contains invalid intent
@@ -912,7 +963,6 @@ class MessageProcessor:
     async def _handle_message_with_tracker(
         self, message: UserMessage, tracker: DialogueStateTracker
     ) -> None:
-
         if message.parse_data:
             parse_data = message.parse_data
         else:
@@ -1154,6 +1204,17 @@ class MessageProcessor:
         results = await self.graph_runner.run(inputs={}, targets=[target])
         return results[target]
 
+    async def _add_flows_to_metadata(self) -> Dict[Text, Any]:
+        """Convert the flows to metadata."""
+        flows = await self.get_flows()
+        flows_metadata = {}
+        for flow in flows.underlying_flows:
+            flow_as_json = flow.as_json()
+            flow_as_json.pop("id")
+            flows_metadata[flow.id] = flow_as_json
+
+        return {"all_flows": flows_metadata}
+
     async def _run_action(
         self,
         action: rasa.core.actions.action.Action,
@@ -1172,18 +1233,25 @@ class MessageProcessor:
 
             run_args = inspect.getfullargspec(action.run).args
             if "metadata" in run_args:
+                metadata: Optional[Dict] = prediction.action_metadata
+
+                if isinstance(action, FormAction):
+                    flows_metadata = await self._add_flows_to_metadata()
+                    metadata = prediction.action_metadata or {}
+                    metadata.update(flows_metadata)
+
                 events = await action.run(
                     output_channel,
                     nlg,
                     temporary_tracker,
                     self.domain,
-                    metadata=prediction.action_metadata,
+                    metadata=metadata,
                 )
             else:
                 events = await action.run(
                     output_channel, nlg, temporary_tracker, self.domain
                 )
-        except rasa.core.actions.action.ActionExecutionRejection:
+        except ActionExecutionRejection:
             events = [
                 ActionExecutionRejected(
                     action.name(), prediction.policy_name, prediction.max_confidence
@@ -1312,7 +1380,7 @@ class MessageProcessor:
 
             logger.error(
                 f"Trying to run unknown follow-up action '{followup_action}'. "
-                "Instead of running that, Rasa Open Source will ignore the action "
+                "Instead of running that, Rasa Pro will ignore the action "
                 "and predict the next action."
             )
 
@@ -1329,3 +1397,24 @@ class MessageProcessor:
         )
         policy_prediction = results[target]
         return policy_prediction
+
+    @staticmethod
+    def message_contains_commands(latest_message: Optional[UserUttered]) -> bool:
+        """Check if the latest message contains commands."""
+        if latest_message is None:
+            return False
+
+        commands = [
+            Command.command_from_json(command) for command in latest_message.commands
+        ]
+        filtered_commands = [
+            command
+            for command in commands
+            if not (
+                isinstance(command, SetSlotCommand)
+                and command.name == ROUTE_TO_CALM_SLOT
+            )
+            and not isinstance(command, NoopCommand)
+        ]
+
+        return len(filtered_commands) > 0

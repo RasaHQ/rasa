@@ -10,6 +10,16 @@ on:
         description: 'Tag version:'
         required: true
 
+# SECRETS
+# - SLACK_BOT_TOKEN: token to post to RasaHQ slack account
+# - RASA_TELEMETRY_WRITE_KEY: key to write to segment. Used to report telemetry.
+#                                 The key will be added to the distributions
+# - RASA_EXCEPTION_WRITE_KEY: key to write to sentry. Used to report exceptions.
+#                                 The key will be added to the distributions.
+#                                 Key can be found at https://sentry.io/settings/rasahq/projects/rasa-open-source/install/python/
+# - SENTRY_AUTH_TOKEN: authentication used to tell Sentry about any new releases
+#                      created at https://sentry.io/settings/account/api/auth-tokens/
+
 env:
   TARGET_IMAGE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-pro"
 
@@ -42,7 +52,7 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           ref: ${{ env.TAG_VERSION }}
-
+          
       - name: Set up QEMU
         uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
 
@@ -108,7 +118,7 @@ jobs:
            export TARGET_IMAGE_REGISTRY=${{ env.TARGET_IMAGE_REGISTRY }}
            docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl base-builder --push
 
-      - name: Build Docker rasa deps image 🛠
+      - name: Build Docker Rasa dependencies image 🛠
         if: steps.check_image.outputs.rasa_deps_exists == 'false' || steps.check_image.outputs.base_builder_exists == 'false'
         run: |
           export IMAGE_TAG=${{ steps.check_image.outputs.base_image_hash }}
@@ -128,7 +138,7 @@ jobs:
         env:
            BASE_IMAGE_HASH: ${{ steps.check_image.outputs.base_image_hash }}
            RASA_DEPS_IMAGE_HASH: ${{ steps.check_image.outputs.rasa_deps_image_hash }}
-
+      
       - name: Set up Python 3.9 🐍
         uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
         with:
@@ -138,7 +148,7 @@ jobs:
         uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844 # v8
         with:
            poetry-version: ${{ env.POETRY_VERSION }}
-
+      
       - name: Build ⚒️ Distributions
         run: poetry build
 
@@ -150,7 +160,7 @@ jobs:
            password: ${{ secrets.PYPI_PASSWORD }}
            repository_url: "https://pypi.rasa.com/simple/"
            packages_dir: ${{ format('{0}/dist', github.workspace) }}
-
+    
       # Push library to GCP Artifact Registry rasa-plus-py
       - name: Release via GCP Artifact Registry
         run: |
