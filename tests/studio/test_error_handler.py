@@ -1,4 +1,4 @@
-from unittest.mock import patch, Mock
+from unittest.mock import patch, Mock, MagicMock
 
 import pytest
 
@@ -48,20 +48,30 @@ def test_handle_error_graphql_errors(error_handler, caplog):
     assert "GraphQL error 2" in caplog.text
 
 
+@pytest.fixture
+def mock_studio_config():
+    with patch("rasa.studio.config.StudioConfig.read_config") as mock_config:
+        mock_config.return_value = MagicMock(
+            authentication_server_url="http://mock-auth-server:8081/auth/",
+            studio_url="http://mock-studio:4000/api/graphql"
+        )
+        yield mock_config
+
+
 @pytest.mark.parametrize(
-    "exception,expected_message",
+    "exception,expected_message_template",
     [
         (RasaException("Rasa error"), "Rasa-specific error occurred: Rasa error"),
         (
             KeycloakError("Keycloak error"),
             (
-                "Unable to authenticate with Keycloak at http://localhost:8081/auth/ "
+                "Unable to authenticate with Keycloak at {auth_url} "
                 "Error message: Keycloak error"
             ),
         ),
         (
             ConnectionError(),
-            "Unable to connect to Rasa Studio at http://localhost:4000/api/graphql \n"
+            "Unable to connect to Rasa Studio at {studio_url} \n"
             "Please check if Studio is running and the configured URL is correct. \n"
             "You may need to reconfigure Rasa Studio using 'rasa studio config'.",
         ),
@@ -76,12 +86,19 @@ def test_handle_error_graphql_errors(error_handler, caplog):
         ),
     ],
 )
-def test_handle_error_exceptions(error_handler, exception, expected_message):
+def test_handle_error_exceptions(error_handler, mock_studio_config, exception, expected_message_template):
     @error_handler.handle_error
     def function_with_exception():
         raise exception
 
     result = function_with_exception()
+
+    config = mock_studio_config.return_value
+    expected_message = expected_message_template.format(
+        auth_url=config.authentication_server_url,
+        studio_url=config.studio_url
+    )
+
     assert result == (expected_message, False)
 
 
