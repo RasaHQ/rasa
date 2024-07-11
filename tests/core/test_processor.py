@@ -19,7 +19,9 @@ import pytest
 from rasa.dialogue_understanding.commands import (
     SetSlotCommand,
     StartFlowCommand,
-    CannotHandleCommand,
+    ErrorCommand,
+    ChitChatAnswerCommand,
+    Command,
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 import rasa.shared.utils.io
@@ -61,7 +63,7 @@ from rasa.shared.constants import (
     ASSISTANT_ID_KEY,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
     ROUTE_TO_CALM_SLOT,
-    RASA_PATTERN_CANNOT_HANDLE_INVALID_INTENT,
+    RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
 )
 from rasa.shared.core.constants import (
     ACTION_CORRECT_FLOW_SLOT,
@@ -94,6 +96,7 @@ from rasa.shared.core.events import (
     ActionExecutionRejected,
     LoopInterrupted,
 )
+from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.slots import BooleanSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import (
@@ -159,30 +162,6 @@ async def test_parsing(default_processor: MessageProcessor):
         message = UserMessage("hi hello how are you?")
         parsed = await default_processor.parse_message(message)
         mocked_function.assert_called()
-
-
-async def test_check_for_unseen_feature(default_processor: MessageProcessor):
-    message = UserMessage('/greet{"name": "Joe"}')
-    old_domain = default_processor.domain
-    dict_for_new_domain = old_domain.as_dict()
-    dict_for_new_domain["intents"] = [
-        intent for intent in dict_for_new_domain["intents"] if intent != "greet"
-    ]
-    dict_for_new_domain["entities"] = [
-        entity for entity in dict_for_new_domain["entities"] if entity != "name"
-    ]
-    new_domain = Domain.from_dict(dict_for_new_domain)
-    default_processor.domain = new_domain
-
-    parsed = await default_processor.parse_message(message)
-    with pytest.warns(UserWarning) as record:
-        default_processor._check_for_unseen_features(parsed)
-    assert len(record) == 2
-
-    assert record[0].message.args[0].startswith("Parsed an intent 'greet'")
-    assert record[1].message.args[0].startswith("Parsed an entity 'name'")
-
-    default_processor.domain = old_domain
 
 
 @pytest.mark.parametrize("default_intent", DEFAULT_INTENTS)
@@ -2155,33 +2134,71 @@ async def test_handle_message_with_intent_trigger_and_nlu_trigger(
 
 
 @pytest.mark.parametrize(
-    "message",
+    "message, predicted_commands",
     [
-        UserMessage("/invalid_intent"),
-        UserMessage("/"),
-        UserMessage("/ some random message without any intents"),
+        (
+            UserMessage("/"),
+            [ErrorCommand(RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY)],
+        ),
+        (
+            UserMessage(" / / / "),
+            [ErrorCommand(RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY)],
+        ),
+        (
+            UserMessage("/ hey there!"),
+            [ChitChatAnswerCommand(), SetSlotCommand(ROUTE_TO_CALM_SLOT, True)],
+        ),
+        (
+            UserMessage("/ / / hey there!"),
+            [ChitChatAnswerCommand(), SetSlotCommand(ROUTE_TO_CALM_SLOT, True)],
+        ),
+        (
+            UserMessage("/ / / hey there! / /"),
+            [ChitChatAnswerCommand(), SetSlotCommand(ROUTE_TO_CALM_SLOT, True)],
+        ),
+        (
+            UserMessage("/invalid_intent"),
+            [ChitChatAnswerCommand(), SetSlotCommand(ROUTE_TO_CALM_SLOT, True)],
+        ),
     ],
 )
-async def test_run_command_processor_parsing_a_message_with_invalid_intent(
+@patch(
+    "rasa.dialogue_understanding.generator"
+    ".flow_retrieval"
+    ".FlowRetrieval.filter_flows"
+)
+@patch(
+    "rasa.dialogue_understanding.generator"
+    ".llm_command_generator"
+    ".LLMCommandGenerator._generate_action_list_using_llm"
+)
+async def test_run_command_processor_parsing_a_message_with_invalid_use_of_slash_syntax(
+    mock_generate_action_list_using_llm: AsyncMock,
+    mock_filter_flows: AsyncMock,
     message: UserMessage,
+    predicted_commands: List[Command],
     flow_policy_bot_agent: Agent,
+    domain: Domain,
 ):
     # Given
     processor = flow_policy_bot_agent.processor
     sender_id = uuid.uuid4().hex
     tracker = await processor.tracker_store.get_or_create_tracker(sender_id)
     tracker.slots[ROUTE_TO_CALM_SLOT] = BooleanSlot(ROUTE_TO_CALM_SLOT, [{}])
+    # the return value here does not matter, it only matters
+    # that filter_flows is not raising an exception
+    mock_filter_flows.return_value = FlowsList(underlying_flows=[])
+    # the return value does not matter here, it only matters
+    # that we got the response from the LLM
+    mock_generate_action_list_using_llm.return_value = "ChitChat()"
 
     # When
     parse_data = await processor.parse_message(message, tracker)
 
     # Then
-    assert len(parse_data[COMMANDS]) == 2
-    assert (
-        CannotHandleCommand(RASA_PATTERN_CANNOT_HANDLE_INVALID_INTENT).as_dict()
-        in parse_data[COMMANDS]
-    )
-    assert SetSlotCommand(ROUTE_TO_CALM_SLOT, True).as_dict() in parse_data[COMMANDS]
+    assert len(parse_data[COMMANDS]) == len(predicted_commands)
+    for predicted_command in predicted_commands:
+        assert predicted_command.as_dict() in parse_data[COMMANDS]
 
 
 async def test_update_full_retrieval_intent(

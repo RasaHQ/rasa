@@ -3,6 +3,7 @@ import copy
 import logging
 import structlog
 import os
+import re
 from pathlib import Path
 import tarfile
 import time
@@ -64,7 +65,6 @@ from rasa.shared.constants import (
     DOCS_URL_NLU_BASED_POLICIES,
     UTTER_PREFIX,
     RASA_PATTERN_CANNOT_HANDLE_INVALID_INTENT,
-    INTENT_MESSAGE_PREFIX,
 )
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.lock_store import LockStore
@@ -736,18 +736,19 @@ class MessageProcessor:
             parse_data = await self.http_interpreter.parse(message)
         else:
             msg = YAMLStoryReader.unpack_regex_message(
-                message=Message({TEXT: message.text})
+                message=Message({TEXT: message.text}), domain=self.domain
             )
 
-            # Invalid intent trigger used: Message starts with slash syntax '/'
-            # but no intent is explicitly present.
-            if msg.data.get(INTENT) is None and self._is_invalid_intent_trigger(msg):
-                parse_data = self._parse_invalid_intent_trigger_message(
-                    msg, tracker, only_output_properties
-                )
+            # Invalid use of slash syntax, sanitize the message before passing
+            # it to the graph
+            if (
+                msg.data.get(TEXT, "").strip().startswith("/")
+                and msg.data.get(INTENT) is None
+            ):
+                message = self._sanitize_message(message)
 
             # No intent trigger used. Pass message to graph.
-            elif msg.data.get(INTENT) is None:
+            if msg.data.get(INTENT) is None:
                 parse_data = await self._parse_message_with_graph(
                     message, tracker, only_output_properties
                 )
@@ -770,44 +771,16 @@ class MessageProcessor:
 
         return parse_data
 
-    def _parse_invalid_intent_trigger_message(
-        self,
-        message: Message,
-        tracker: Optional[DialogueStateTracker] = None,
-        only_output_properties: bool = True,
-    ) -> Dict[Text, Any]:
-        structlogger.warning(
-            "processor.message.parse",
-            event_info=(
-                "Message starts with '/', but no intents are defined. "
-                "Returning CannotHandleCommand() as a fallback."
-            ),
-            message=message.get(TEXT),
-        )
-        parse_data: Dict[Text, Any] = {
-            TEXT: "",
-            INTENT: {INTENT_NAME_KEY: None, PREDICTED_CONFIDENCE_KEY: 0.0},
-            ENTITIES: [],
-            COMMANDS: [
-                CannotHandleCommand(RASA_PATTERN_CANNOT_HANDLE_INVALID_INTENT).as_dict()
-            ],
-        }
-
-        if (
-            tracker is not None
-            and tracker.has_coexistence_routing_slot
-            and tracker.get_slot(ROUTE_TO_CALM_SLOT) is None
-        ):
-            # if we are currently not routing to either CALM or dm1
-            # we make a sticky routing to CALM
-            parse_data[COMMANDS].append(
-                SetSlotCommand(ROUTE_TO_CALM_SLOT, True).as_dict()
-            )
-
-        parse_data.update(
-            message.as_dict(only_output_properties=only_output_properties)
-        )
-        return parse_data
+    def _sanitize_message(self, message: UserMessage) -> UserMessage:
+        """Sanitize user message by removing prepended slashes before the
+        actual content.
+        """
+        # Regex pattern to match leading slashes and any whitespace before
+        # actual content
+        pattern = r"^[/\s]+"
+        # Remove the matched pattern from the beginning of the message
+        message.text = re.sub(pattern, "", message.text).strip()
+        return message
 
     async def _parse_message_with_intent_trigger(
         self,
@@ -901,16 +874,6 @@ class MessageProcessor:
         """
         intent_name = message.get(INTENT, {}).get("name")
         return intent_name is not None and intent_name not in self.domain.intents
-
-    def _is_invalid_intent_trigger(self, message: Message) -> bool:
-        """Checks if the message is an invalid intent trigger. Message is an
-        invalid message trigger if it starts with slash syntax and has no
-        intents defined.
-        """
-        starts_with_intent_prefix = message.get(TEXT, "").startswith(
-            INTENT_MESSAGE_PREFIX
-        )
-        return starts_with_intent_prefix and message.get(INTENT) is None
 
     async def _parse_message_with_graph(
         self,

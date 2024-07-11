@@ -620,6 +620,7 @@ class Validator:
         self,
         collect: CollectInformationFlowStep,
         all_good: bool,
+        domain_slots: Dict[Text, Slot],
     ) -> bool:
         """Validates that a collect step can have either an action or an utterance.
         Also logs an error if neither an action nor an utterance is defined.
@@ -659,7 +660,14 @@ class Validator:
             )
             all_good = False
 
-        if not has_utterance_defined and not has_action_defined:
+        slot = domain_slots.get(collect.collect)
+        slot_has_initial_value_defind = slot and slot.initial_value is not None
+
+        if (
+            not slot_has_initial_value_defind
+            and not has_utterance_defined
+            and not has_action_defined
+        ):
             structlogger.error(
                 "validator.verify_flows_steps_against_domain.collect_step",
                 collect=collect.collect,
@@ -667,7 +675,7 @@ class Validator:
                 has_action_defined=has_action_defined,
                 event_info=(
                     f"The collect step '{collect.collect}' has neither an utterance "
-                    f"nor an action defined. "
+                    f"nor an action defined, or an initial value defined in the domain."
                     f"You need to define either an utterance or an action."
                 ),
             )
@@ -733,7 +741,7 @@ class Validator:
                 if isinstance(step, CollectInformationFlowStep):
                     all_good = (
                         self._log_error_if_either_action_or_utterance_are_not_defined(
-                            step, all_good
+                            step, all_good, domain_slots
                         )
                     )
 
