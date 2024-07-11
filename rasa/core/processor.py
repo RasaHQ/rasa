@@ -7,7 +7,7 @@ import re
 from pathlib import Path
 import tarfile
 import time
-from types import LambdaType, ModuleType
+from types import LambdaType
 from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Tuple, Union
 from rasa.core.actions.action_exceptions import ActionExecutionRejection
 from rasa.core.actions.forms import FormAction

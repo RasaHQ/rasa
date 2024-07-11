@@ -3,8 +3,6 @@ import logging
 import os
 from typing import List, Text
 
-from rasa_sdk.cli.arguments import action_arg
-
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import run as arguments
 from rasa.exceptions import ModelNotFound

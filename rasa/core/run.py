@@ -6,7 +6,6 @@ import uuid
 import warnings
 from asyncio import AbstractEventLoop
 from functools import partial
-from types import ModuleType
 from typing import (
     Any,
     Callable,

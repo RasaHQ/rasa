@@ -6,7 +6,6 @@ import os
 import uuid
 from asyncio import AbstractEventLoop, CancelledError
 from pathlib import Path
-from types import ModuleType
 from typing import Any, Callable, Dict, List, Optional, Text, Union
 
 import aiohttp

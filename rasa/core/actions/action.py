@@ -92,6 +92,7 @@ from rasa.utils.url_tools import get_url_schema, UrlSchema
 if TYPE_CHECKING:
     from rasa.core.nlg import NaturalLanguageGenerator
     from rasa.core.channels.channel import OutputChannel
+    from rasa.shared.core.events import IntentPrediction
 
 logger = logging.getLogger(__name__)
 structlogger = structlog.get_logger(__name__)

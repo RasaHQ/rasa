@@ -2,12 +2,12 @@ import argparse
 import webbrowser
 from asyncio import AbstractEventLoop
 from typing import List, Text
-from rasa_sdk.cli.arguments import action_arg
+
+from sanic import Sanic
+
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import shell as arguments
 from rasa.core import constants
-from sanic import Sanic
-
 from rasa.utils.cli import remove_argument_from_parser
 
 
