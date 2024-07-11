@@ -13,7 +13,6 @@ from typing import (
     cast,
 )
 
-import structlog
 
 import rasa.core
 import rasa.shared.utils.io
@@ -95,7 +94,7 @@ if TYPE_CHECKING:
     from rasa.shared.core.events import IntentPrediction
 
 logger = logging.getLogger(__name__)
-structlogger = structlog.get_logger(__name__)
+
 
 
 def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["Action"]:
@@ -732,9 +731,12 @@ class RemoteAction(Action):
             RasaException: If no valid action endpoint is configured.
         """
         if not self.action_endpoint or not self.action_endpoint.url:
-            return DirectCustomActionExecutor(
-                self._name, self.action_endpoint.actions_module or DEFAULT_ACTIONS_PATH
+            actions_module = (
+                self.action_endpoint.actions_module
+                if self.action_endpoint
+                else DEFAULT_ACTIONS_PATH
             )
+            return DirectCustomActionExecutor(self._name, actions_module)
 
         url_schema = get_url_schema(self.action_endpoint.url)
 
