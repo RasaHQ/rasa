@@ -896,7 +896,7 @@ def test_build_import_request_no_nlu() -> None:
                 "json": {"data": {"importFromEncodedYaml": ""}},
                 "status_code": 200,
             },
-            "Upload successful!",
+            "Upload successful",
             True,
         ),
         (
@@ -968,7 +968,7 @@ def test_build_import_request_no_nlu() -> None:
                 "json": {"data": {"uploadModernAssistant": ""}},
                 "status_code": 200,
             },
-            "Upload successful!",
+            "Upload successful",
             True,
         ),
         (

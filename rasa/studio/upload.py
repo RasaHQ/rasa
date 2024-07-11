@@ -23,10 +23,6 @@ from rasa.studio.error_handler import error_handler
 
 logger = logging.getLogger(__name__)
 
-call_step_error = "Call flow reference not set. Check whether flows exist and are correctly referenced."  # noqa: E501
-call_cyclic_error = "Possible CALL cyclic dependencies in flows. Please check that flows do not call each other."  # noqa: E501
-max_recursion_error = "maximum recursion depth exceeded while calling a Python object"
-
 
 def _get_selected_entities_and_intents(
     args: argparse.Namespace,
@@ -167,7 +163,9 @@ def upload_calm_assistant(
     )
 
     logger.info("Uploading to Rasa Studio...")
-    return make_request(endpoint, graphql_req)
+    result, success = make_request(endpoint, graphql_req)
+
+    return result, success
 
 
 @error_handler.handle_error
@@ -217,7 +215,9 @@ def upload_nlu_assistant(
     graphql_req = build_request(assistant_name, nlu_examples_yaml, domain_yaml)
 
     logger.info("Uploading to Rasa Studio...")
-    return make_request(endpoint, graphql_req)
+    result, success = make_request(endpoint, graphql_req)
+
+    return result, success
 
 
 def make_request(endpoint: str, graphql_req: Dict) -> Tuple[str, bool]:
@@ -238,7 +238,10 @@ def make_request(endpoint: str, graphql_req: Dict) -> Tuple[str, bool]:
     )
 
     res.raise_for_status()  # This will raise an HTTPError for bad responses
-    return res.json()
+
+    if error_handler.response_has_errors(res.json()):
+        return res.json(), False
+    return "Upload successful", True
 
 
 def _add_missing_entities(

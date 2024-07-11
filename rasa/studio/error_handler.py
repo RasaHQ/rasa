@@ -6,6 +6,7 @@ from keycloak.exceptions import KeycloakError
 from requests.exceptions import RequestException, Timeout, ConnectionError
 
 from rasa.shared.exceptions import RasaException
+from rasa.shared.utils.cli import print_success, print_error
 from rasa.studio.config import StudioConfig
 
 logger = logging.getLogger(__name__)
@@ -37,10 +38,12 @@ class ErrorHandler:
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             try:
-                result = func(*args, **kwargs)
-                if self._response_has_errors(result):
+                result, success = func(*args, **kwargs)
+                if self.response_has_errors(result):
                     return self._handle_graphql_errors(result)
-                return "Upload successful!", True
+                else:
+                    print_success(result)
+                    return result, success
             except Exception as e:
                 for error_type, handler in self.error_map.items():
                     if isinstance(e, error_type):
@@ -50,7 +53,7 @@ class ErrorHandler:
         return wrapper
 
     @staticmethod
-    def _response_has_errors(response: Dict) -> bool:
+    def response_has_errors(response) -> bool:
         return (
             "errors" in response
             and isinstance(response["errors"], list)
@@ -68,15 +71,15 @@ class ErrorHandler:
         else:
             error_msg += "No detailed error information available."
 
-        logger.error(error_msg)
         logger.debug("Error details:")
         logger.debug(response)
+        print_error(error_msg)
         return error_msg, False
 
     @staticmethod
     def _handle_rasa_exception(e: RasaException) -> Tuple[str, bool]:
         error_msg = f"Rasa-specific error occurred: {e!s}"
-        logger.error(error_msg)
+        print_error(error_msg)
         return error_msg, False
 
     @staticmethod
@@ -96,7 +99,7 @@ class ErrorHandler:
             )
         else:
             error_msg += f"Error message: {e.error_message}"
-        logger.error(error_msg)
+        print_error(error_msg)
         return error_msg, False
 
     @staticmethod
@@ -107,48 +110,53 @@ class ErrorHandler:
             "Please check if Studio is running and the configured URL is correct. \n"
             "You may need to reconfigure Rasa Studio using 'rasa studio config'."
         )
-        logger.error(error_msg)
         logger.debug("Error details:")
         logger.debug(str(e))
+        print_error(error_msg)
         return error_msg, False
 
     @staticmethod
     def _handle_timeout_error(e: Timeout) -> Tuple[str, bool]:
         error_msg = "The request to Rasa Studio timed out. Please try again later."
-        logger.error(error_msg)
+        print_error(error_msg)
         return error_msg, False
 
     @staticmethod
     def _handle_request_exception(e: RequestException) -> Tuple[str, bool]:
         error_msg = f"An error occurred while communicating with Rasa Studio: {e!s}"
-        logger.error(error_msg)
+        print_error(error_msg)
         return error_msg, False
 
     @staticmethod
     def _handle_unexpected_error(e: Exception) -> Tuple[str, bool]:
         error_msg = f"An unexpected error occurred: {e!s}"
-        logger.error(error_msg)
+        print_error(error_msg)
         return error_msg, False
 
     @staticmethod
-    def handle_calm_assistant_error(e: Exception) -> None:
+    def handle_calm_assistant_error(e: Exception) -> Tuple[str, bool]:
         if str(e) == MAX_RECURSION_ERROR:
-            logger.error(CALL_CYCLIC_ERROR)
             logger.debug("Error details:")
             logger.debug(str(e))
+            print_error(CALL_CYCLIC_ERROR)
+            return CALL_CYCLIC_ERROR, False
+
         elif str(e) == "Call flow reference not set.":
-            logger.error(CALL_STEP_ERROR)
             logger.debug("Error details:")
             logger.debug(str(e))
+            print_error(CALL_STEP_ERROR)
+            return CALL_STEP_ERROR, False
+
         else:
-            logger.error(f"An unexpected error occurred: {e!s}")
             logger.debug("Error details:")
             logger.debug(str(e))
+            print_error(f"An unexpected error occurred: {e!s}")
+            return f"An unexpected error occurred: {e!s}", False
 
     @staticmethod
     def handle_upload_error(status: bool, response: str) -> None:
         if not status:
-            logger.error(f"Upload failed: {response}")
+            print_error(f"Upload failed: {response}")
 
     def add_error_handler(
         self,

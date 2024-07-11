@@ -3,7 +3,7 @@ from __future__ import annotations
 import datetime
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Text, Union
+from typing import Any, Dict, List, Optional, Text, Union, Tuple
 
 import jwt
 from keycloak import KeycloakOpenID
@@ -33,7 +33,9 @@ class StudioAuth:
         )
 
     @error_handler.handle_error
-    def login(self, username: Text, password: Text, totp: Optional[int] = None) -> None:
+    def login(
+        self, username: Text, password: Text, totp: Optional[int] = None
+    ) -> Tuple[Text, bool]:
         token_dict = self.keycloak_openid.token(
             username=username, password=password, totp=totp
         )
@@ -44,7 +46,9 @@ class StudioAuth:
             keycloak_token, token_file_location=DEFAULT_TOKEN_FILE_PATH
         )
 
-    def refresh_token(self, refresh_token: Text) -> None:
+        return "Login successful.", True
+
+    def refresh_token(self, refresh_token: Text) -> tuple[str, bool]:
         try:
             token_dict = self.keycloak_openid.refresh_token(refresh_token)
         except Exception as e:
@@ -55,6 +59,8 @@ class StudioAuth:
         KeycloakTokenWriter.write_token_to_file(
             keycloak_token, token_file_location=DEFAULT_TOKEN_FILE_PATH
         )
+
+        return "Token refreshed successfully.", True
 
     @staticmethod
     def _resolve_token(token_dict: Dict[Text, Any]) -> KeycloakToken:

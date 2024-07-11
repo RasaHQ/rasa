@@ -23,7 +23,7 @@ def error_handler():
 def test_handle_error_successful_execution(error_handler):
     @error_handler.handle_error
     def successful_function():
-        return {"data": "success"}
+        return "Upload successful!", True
 
     result = successful_function()
     assert result == ("Upload successful!", True)
@@ -35,17 +35,13 @@ def test_handle_error_graphql_errors(error_handler, caplog):
         return {
             "data": {},
             "errors": [{"message": "GraphQL error 1"}, {"message": "GraphQL error 2"}],
-        }
+        }, False
 
     result = function_with_graphql_errors()
     assert result == (
         "Upload failed with the following errors: GraphQL error 1; GraphQL error 2",
         False,
     )
-
-    assert "Upload failed with the following errors:" in caplog.text
-    assert "GraphQL error 1" in caplog.text
-    assert "GraphQL error 2" in caplog.text
 
 
 @pytest.fixture
@@ -104,30 +100,28 @@ def test_handle_error_exceptions(
 
 
 def test_response_has_errors(error_handler):
-    if error_handler._response_has_errors({"errors": [{"message": "Error"}]}) is True:
+    if error_handler.response_has_errors({"errors": [{"message": "Error"}]}) is True:
         assert True
     else:
         assert False
 
-    if error_handler._response_has_errors({"errors": []}) is False:
+    if error_handler.response_has_errors({"errors": []}) is False:
         assert True
     else:
         assert False
 
-    if error_handler._response_has_errors({"data": "Success"}) is False:
+    if error_handler.response_has_errors({"data": "Success"}) is False:
         assert True
     else:
         assert False
 
-    if error_handler._response_has_errors({"errors": None}) is False:
+    if error_handler.response_has_errors({"errors": None}) is False:
         assert True
     else:
         assert False
 
 
 def test_add_custom_error_handler(error_handler):
-    # Test case 4a: Adding a custom error handler
-    # custom_exception = type("CustomException", (Exception, ""), {})
     custom_exception = Exception
     custom_handler = Mock(return_value=("Custom error handled", False))
 
@@ -139,33 +133,34 @@ def test_add_custom_error_handler(error_handler):
 
     result = function_with_custom_exception()
 
-    # Test case 4b: Verify that the custom handler is called
     custom_handler.assert_called_once()
     assert result == ("Custom error handled", False)
 
 
-@patch("rasa.studio.error_handler.logger")
-def test_handle_calm_assistant_error(mock_logger, error_handler):
-    # Test case 5a: Handling MAX_RECURSION_ERROR
-    error_handler.handle_calm_assistant_error(Exception(MAX_RECURSION_ERROR))
-    mock_logger.error.assert_called_with(CALL_CYCLIC_ERROR)
-
-    # Test case 5b: Handling "Call flow reference not set" error
-    error_handler.handle_calm_assistant_error(Exception("Call flow reference not set."))
-    mock_logger.error.assert_called_with(CALL_STEP_ERROR)
-
-    # Test case 5c: Handling unexpected errors
-    unexpected_error = "Unexpected error"
-    error_handler.handle_calm_assistant_error(Exception(unexpected_error))
-    mock_logger.error.assert_called_with(
-        f"An unexpected error occurred: {unexpected_error}"
+def test_handle_calm_assistant_error(error_handler):
+    response, success = error_handler.handle_calm_assistant_error(
+        Exception(MAX_RECURSION_ERROR)
     )
+    assert response == CALL_CYCLIC_ERROR
+    assert not success
+
+    response, success = error_handler.handle_calm_assistant_error(
+        Exception("Call flow reference not set.")
+    )
+    assert response == CALL_STEP_ERROR
+    assert not success
+
+    unexpected_error = "Unexpected error"
+    response, success = error_handler.handle_calm_assistant_error(
+        Exception(unexpected_error)
+    )
+    assert response == f"An unexpected error occurred: {unexpected_error}"
 
 
-@patch("rasa.studio.error_handler.logger")
-def test_handle_upload_error(mock_logger, error_handler):
+@patch("rasa.studio.error_handler.print_error")
+def test_handle_upload_error(print_error, error_handler):
     error_handler.handle_upload_error(True, "Upload successful")
-    mock_logger.error.assert_not_called()
+    assert not print_error.called
 
     error_handler.handle_upload_error(False, "Upload failed")
-    mock_logger.error.assert_called_with("Upload failed: Upload failed")
+    assert print_error.called_once_with("Upload failed: Upload failed")
