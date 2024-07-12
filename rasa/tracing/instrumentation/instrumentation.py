@@ -526,11 +526,13 @@ def _instrument_information_retrieval_search(
 ) -> None:
     def tracing_information_retrieval_search_wrapper(fn: Callable) -> Callable:
         @functools.wraps(fn)
-        def wrapper(self: InformationRetrieval, query: Text) -> List["Document"]:
+        async def wrapper(
+            self: InformationRetrieval, query: Text, threshold: float = 0.0
+        ) -> List["Document"]:
             with tracer.start_as_current_span(
                 f"{self.__class__.__name__}.{fn.__name__}"
             ) as span:
-                documents = fn(self, query)
+                documents = await fn(self, query, threshold)
                 span.set_attributes(
                     {
                         "query": query,

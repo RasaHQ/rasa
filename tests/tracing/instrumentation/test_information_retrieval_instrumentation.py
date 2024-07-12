@@ -7,7 +7,7 @@ from rasa.tracing.instrumentation import instrumentation
 from tests.tracing.instrumentation.conftest import MockInformationRetrieval
 
 
-def test_tracing_information_retrieval_search(
+async def test_tracing_information_retrieval_search(
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
     previous_num_captured_spans: int,
@@ -20,7 +20,7 @@ def test_tracing_information_retrieval_search(
     )
 
     mock_information_retrieval = component_class()
-    mock_information_retrieval.search(
+    await mock_information_retrieval.search(
         query="What functionality does Finley support?",
     )
     captured_spans: Sequence[

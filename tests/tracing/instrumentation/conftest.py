@@ -492,9 +492,10 @@ class MockInformationRetrieval(InformationRetrieval):
     ) -> None:
         pass
 
-    def search(
+    async def search(
         self,
         query: Text,
+        threshold: float = 0.0,
     ) -> List[Document]:
         return [
             Document(page_content="Some content", metadata={"source": "docs/test.txt"})
