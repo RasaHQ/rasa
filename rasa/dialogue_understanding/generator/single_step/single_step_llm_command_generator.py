@@ -38,7 +38,7 @@ from rasa.shared.core.domain import Domain
 from rasa.shared.constants import ROUTE_TO_CALM_SLOT
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.nlu.constants import TEXT
+from rasa.shared.nlu.constants import TEXT, LLM_COMMANDS, LLM_PROMPT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.exceptions import ProviderClientAPIException
 from rasa.shared.utils.io import deep_container_fingerprint
@@ -268,7 +268,25 @@ class SingleStepLLMCommandGenerator(LLMBasedCommandGenerator):
 
         commands = self.parse_commands(action_list, tracker, flows)
 
+        self._update_message_parse_data_for_fine_tuning(message, commands, flow_prompt)
+
         return commands
+
+    @staticmethod
+    def _update_message_parse_data_for_fine_tuning(
+        message: Message, commands: List[Command], prompt: str
+    ) -> None:
+        from rasa.llm_fine_tuning.annotation_module import preparing_fine_tuning_data
+
+        if preparing_fine_tuning_data:
+            # Add commands and prompt to the message object in order to create
+            # prompt -> commands pairs for fine-tuning
+            message.set(
+                LLM_COMMANDS,
+                [command.as_dict() for command in commands],
+                add_to_output=True,
+            )
+            message.set(LLM_PROMPT, prompt, add_to_output=True)
 
     @classmethod
     def parse_commands(
