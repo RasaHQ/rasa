@@ -42,4 +42,4 @@ action_endpoint:
 #  queue: queue
 
 nlg:
-  type: rasa.core.ContextualResponseRephraser
+  type: rephrase
