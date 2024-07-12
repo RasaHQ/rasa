@@ -11,7 +11,6 @@ from rasa.shared.constants import (
     OPENAI_API_TYPE_ENV_VAR,
     OPENAI_API_VERSION_ENV_VAR,
     OPENAI_API_BASE_ENV_VAR,
-    REQUESTS_CA_BUNDLE_ENV_VAR,
     OPENAI_API_BASE_NO_PREFIX_CONFIG_KEY,
     OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY,
     OPENAI_API_VERSION_CONFIG_KEY,
@@ -37,10 +36,6 @@ if TYPE_CHECKING:
     from langchain.schema.embeddings import Embeddings
     from langchain.llms.base import BaseLLM
     from rasa.shared.core.trackers import DialogueStateTracker
-    from rasa.shared.providers.openai.clients import (
-        AioHTTPSessionAzureChatOpenAI,
-        AioHTTPSessionOpenAIChat,
-    )
 
 structlogger = structlog.get_logger()
 
@@ -232,19 +227,11 @@ def preprocess_config_for_azure(config: Dict[str, Any]) -> Dict[str, Any]:
     return config
 
 
-def process_config_for_aiohttp_chat_openai(config: Dict[str, Any]) -> Dict[str, Any]:
-    config = config.copy()
-    config.pop(LANGCHAIN_TYPE_CONFIG_KEY)
-    return config
-
-
 def llm_factory(
     custom_config: Optional[Dict[str, Any]], default_config: Dict[str, Any]
 ) -> Union[
     "BaseLLM",
     "AzureChatOpenAI",
-    "AioHTTPSessionAzureChatOpenAI",
-    "AioHTTPSessionOpenAIChat",
 ]:
     """Creates an LLM from the given config.
 
@@ -279,24 +266,9 @@ def llm_factory(
             # GPT-3.5 Turbo newer versions 0613 and 1106 only support the
             # Chat Completions API.
             from langchain.chat_models import AzureChatOpenAI
-            from rasa.shared.providers.openai.clients import (
-                AioHTTPSessionAzureChatOpenAI,
-            )
 
             transformed_config = preprocess_config_for_azure(config.copy())
-            if os.environ.get(REQUESTS_CA_BUNDLE_ENV_VAR) is None:
-                return AzureChatOpenAI(**transformed_config)
-            else:
-                return AioHTTPSessionAzureChatOpenAI(**transformed_config)
-
-        if (
-            os.environ.get(REQUESTS_CA_BUNDLE_ENV_VAR) is not None
-            and config.get(LANGCHAIN_TYPE_CONFIG_KEY) == "openai"
-        ):
-            from rasa.shared.providers.openai.clients import AioHTTPSessionOpenAIChat
-
-            config = process_config_for_aiohttp_chat_openai(config)
-            return AioHTTPSessionOpenAIChat(**config.copy())
+            return AzureChatOpenAI(**transformed_config)
 
         return load_llm_from_config(config.copy())
 
@@ -326,12 +298,10 @@ def embedder_factory(
         SpacyEmbeddings,
         VertexAIEmbeddings,
     )
-    from rasa.shared.providers.openai.clients import AioHTTPSessionOpenAIEmbeddings
 
     type_to_embedding_cls_dict: Dict[str, Type[Embeddings]] = {
         "azure": OpenAIEmbeddings,
         "openai": OpenAIEmbeddings,
-        "openai-aiohttp-session": AioHTTPSessionOpenAIEmbeddings,
         "cohere": CohereEmbeddings,
         "spacy": SpacyEmbeddings,
         "vertexai": VertexAIEmbeddings,
@@ -344,12 +314,6 @@ def embedder_factory(
 
     config = combine_custom_and_default_config(custom_config, default_config)
     embedding_type = config.get(LANGCHAIN_TYPE_CONFIG_KEY)
-
-    if (
-        os.environ.get(REQUESTS_CA_BUNDLE_ENV_VAR) is not None
-        and embedding_type is not None
-    ):
-        embedding_type = f"{embedding_type}-aiohttp-session"
 
     structlogger.debug("llmfactory.create.embedder", config=config)
 

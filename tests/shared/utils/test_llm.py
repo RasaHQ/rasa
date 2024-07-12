@@ -295,17 +295,6 @@ def test_embedder_factory_ignores_irrelevant_default_args(
     assert isinstance(embedder, OpenAIEmbeddings)
 
 
-def test_embedder_factory_aiohttp_session_openai_embeddings(
-    monkeypatch: MonkeyPatch,
-) -> None:
-    from rasa.shared.providers.openai.clients import AioHTTPSessionOpenAIEmbeddings
-
-    monkeypatch.setenv("OPENAI_API_KEY", "test")
-    monkeypatch.setenv("REQUESTS_CA_BUNDLE", "path/to/certificate.pam")
-    embedder = embedder_factory({"type": "openai"}, {"_type": "foobar", "foo": "bar"})
-    assert isinstance(embedder, AioHTTPSessionOpenAIEmbeddings)
-
-
 @pytest.mark.parametrize(
     "input_slot, expected_slot_values",
     [
@@ -542,40 +531,6 @@ def test_llm_factory_azure_openai_models_with_many_env_set(
     assert llm.openai_api_base == "http://test"
     assert llm.openai_api_type == "azure"
     assert llm.openai_api_version == "test_dev"
-
-
-def test_llm_factory_aiohttp_session_azure_open_ai_models(monkeypatch: MonkeyPatch):
-    from rasa.shared.providers.openai.clients import AioHTTPSessionAzureChatOpenAI
-
-    monkeypatch.setenv("OPENAI_API_KEY", "test")
-    monkeypatch.setenv("REQUESTS_CA_BUNDLE", "path/to/custom/certificate.pam")
-    llm = llm_factory(
-        {
-            "openai_api_type": "azure",
-            "openai_api_base": "http://test",
-            "openai_api_version": "test_dev",
-            "deployment_name": "test",
-        },
-        {"_type": "openai"},
-    )
-    assert isinstance(llm, AioHTTPSessionAzureChatOpenAI)
-    assert llm.openai_api_type == "azure"
-    assert llm.openai_api_base == "http://test"
-    assert llm.openai_api_version == "test_dev"
-    assert llm.deployment_name == "test"
-
-
-def test_llm_factory_aiohttp_session_openai_models(monkeypatch: MonkeyPatch):
-    from rasa.shared.providers.openai.clients import AioHTTPSessionOpenAIChat
-
-    monkeypatch.setenv("OPENAI_API_KEY", "test")
-    monkeypatch.setenv("REQUESTS_CA_BUNDLE", "path/to/custom/certificate.pam")
-    llm = llm_factory(
-        {"type": "openai", "model_name": "gpt-4"},
-        {"_type": "openai"},
-    )
-    assert isinstance(llm, AioHTTPSessionOpenAIChat)
-    assert llm.model_name == "gpt-4"
 
 
 def test_get_prompt_template_returns_default_prompt() -> None:
