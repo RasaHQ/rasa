@@ -695,13 +695,13 @@ async def test_payload_from_button_question(text_input: str, button: str) -> Non
 
 
 def test_rasa_version_raises_no_warnings(
-    run_in_simple_project: Callable[..., RunResult]
+    run_in_simple_project: Callable[..., RunResult],
 ):
     # Run the CLI command "rasa --version"
     result = run_in_simple_project("--version")
 
     # Get the standard output and error
-    stderr = '\n'.join(result.stderr.lines)
+    stderr = "\n".join(result.stderr.lines)
 
     # Check if there are any warnings in the output
     assert "warning" not in stderr.lower()

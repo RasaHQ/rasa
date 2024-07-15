@@ -75,6 +75,9 @@ EXPECTED_WARNINGS: List[Tuple[Type[Warning], str]] = [
         "shape. This may consume a large amount of memory.",
     ),
     (UserWarning, "Slot auto-fill has been removed in 3.0 .*"),
+    # Cannot fix this deprecation warning since we need to support two
+    # numpy versions as long as we keep python 37 around
+    (DeprecationWarning, "the `interpolation=` argument to quantile was renamed"),
     # the next two warnings are triggered by adding 3.10 support,
     # for more info: https://docs.python.org/3.10/whatsnew/3.10.html#deprecated
     (DeprecationWarning, "the load_module*"),
