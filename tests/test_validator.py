@@ -402,7 +402,7 @@ def test_verify_actions_in_stories_not_in_domain(tmp_path: Path, domain_path: Te
     validator = Validator.from_importer(importer)
 
     expected_event = "validator.verify_actions_in_stories_rules.not_in_domain"
-    expected_log_level = "warning"
+    expected_log_level = "error"
     expected_log_message = (
         "The action 'action_test_1' is used in "
         "the 'story path 1' block, but it is "
@@ -435,7 +435,7 @@ def test_verify_actions_in_rules_not_in_domain(tmp_path: Path, domain_path: Text
     validator = Validator.from_importer(importer)
 
     expected_event = "validator.verify_actions_in_stories_rules.not_in_domain"
-    expected_log_level = "warning"
+    expected_log_level = "error"
     expected_log_message = (
         "The action 'action_test_2' is used in the "
         "'rule path 1' block, but it is not listed in "
