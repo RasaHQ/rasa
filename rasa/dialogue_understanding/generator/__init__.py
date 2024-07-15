@@ -2,7 +2,7 @@ from rasa.dialogue_understanding.generator.command_generator import CommandGener
 from rasa.dialogue_understanding.generator.llm_based_command_generator import (
     LLMBasedCommandGenerator,
 )
-from rasa.dialogue_understanding.generator.single_step.llm_command_generator import (
+from rasa.dialogue_understanding.generator.llm_command_generator import (
     LLMCommandGenerator,
 )
 from rasa.dialogue_understanding.generator.multi_step.multi_step_llm_command_generator import (  # noqa: E501

@@ -28,6 +28,10 @@ runs:
   using: 'composite'
 
   steps:
+  - name: List containers
+    run: sudo docker ps -a
+    shell: bash
+
   - name: Check rasa-pro-grpc container logs
     env:
       RASA_REPOSITORY: ${{ inputs.RASA_REPOSITORY }}
