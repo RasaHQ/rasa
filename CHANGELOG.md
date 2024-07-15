@@ -10,6 +10,22 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.9.2] - 2024-07-09
+                       
+Rasa Pro 3.9.2 (2024-07-09)                             
+
+### Bugfixes
+- [#829](https://github.com/rasahq/rasa-private/issues/829): Add key-word arguments in the predict_commands method of LLM-based CommandGenerator class to ensure custom components are not impacted by changes to the signature of the base classes.
+
+
+## [3.9.1] - 2024-07-04
+                       
+Rasa Pro 3.9.1 (2024-07-04)                            
+### Bugfixes
+- [#805](https://github.com/rasahq/rasa-private/issues/805): Modify the validation to throw an error for a missing associated action/utterance in a collect step only if the slot does not have a defined initial value.
+- [#809](https://github.com/rasahq/rasa-private/issues/809): Modify the collect step validation in flow executor to trigger `pattern_internal_error` for a missing associated action/utterance in a collect step only if the slot does not have a defined initial value.
+
+
 ## [3.9.0] - 2024-07-03
                        
 Rasa Pro 3.9.0 (2024-07-03)                            

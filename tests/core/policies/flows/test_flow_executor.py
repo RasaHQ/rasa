@@ -1652,7 +1652,8 @@ def test_flow_executor_is_condition_satisfied_with_categorical_slots(
 
 
 def test_flow_executor_validate_custom_slot_mappings_valid() -> None:
-    domain = Domain.from_yaml("""
+    domain = Domain.from_yaml(
+        """
     slots:
         loyalty_points:
             type: float
@@ -1660,7 +1661,8 @@ def test_flow_executor_validate_custom_slot_mappings_valid() -> None:
                 - type: custom
     actions:
         - action_ask_loyalty_points
-    """)
+    """
+    )
     step = CollectInformationFlowStep.from_json({"collect": "loyalty_points"})
     stack = DialogueStack(frames=[UserFlowStackFrame(flow_id="my_flow", step_id="1")])
     tracker = DialogueStateTracker.from_events("test", [], slots=domain.slots)
@@ -1675,7 +1677,8 @@ def test_flow_executor_validate_custom_slot_mappings_valid() -> None:
 
 
 def test_flow_executor_validate_custom_slot_mappings_invalid() -> None:
-    domain = Domain.from_yaml("""
+    domain = Domain.from_yaml(
+        """
     slots:
         loyalty_points:
             type: float
@@ -1684,7 +1687,8 @@ def test_flow_executor_validate_custom_slot_mappings_invalid() -> None:
     responses:
         utter_ask_loyalty_points:
             - text: "Let's proceed checking how many loyalty points you have."
-    """)
+    """
+    )
     step = CollectInformationFlowStep.from_json({"collect": "loyalty_points"})
     stack = DialogueStack(frames=[UserFlowStackFrame(flow_id="my_flow", step_id="1")])
     tracker = DialogueStateTracker.from_events("test", [], slots=domain.slots)
@@ -1708,20 +1712,22 @@ def test_flow_executor_validate_custom_slot_mappings_invalid() -> None:
 
 
 def test_flow_executor_validate_collect_step_invalid() -> None:
-    test_domain = Domain.from_yaml("""
+    test_domain = Domain.from_yaml(
+        """
     slots:
         loyalty_points:
             type: float
             mappings:
                 - type: from_llm
-    """)
+    """
+    )
     step = CollectInformationFlowStep.from_json({"collect": "loyalty_points"})
     stack = DialogueStack(frames=[UserFlowStackFrame(flow_id="my_flow", step_id="1")])
     tracker = DialogueStateTracker.from_events("test", [], slots=test_domain.slots)
     tracker.update_stack(stack)
 
     is_step_valid = validate_collect_step(
-        step, stack, test_domain.action_names_or_texts
+        step, stack, test_domain.action_names_or_texts, tracker.slots
     )
 
     assert not is_step_valid
@@ -1735,3 +1741,27 @@ def test_flow_executor_validate_collect_step_invalid() -> None:
     next_frame = stack.frames[1]
     assert isinstance(next_frame, BaseFlowStackFrame)
     assert next_frame.flow_id == "pattern_cancel_flow"
+
+
+def test_flow_executor_validate_collect_step_with_initial_value_defined() -> None:
+    test_domain = Domain.from_yaml(
+        """
+    slots:
+        loyalty_points:
+            type: float
+            initial_value: 0.0
+            mappings:
+                - type: from_llm
+    """
+    )
+    step = CollectInformationFlowStep.from_json({"collect": "loyalty_points"})
+    stack = DialogueStack(frames=[UserFlowStackFrame(flow_id="my_flow", step_id="1")])
+    tracker = DialogueStateTracker.from_events("test", [], slots=test_domain.slots)
+    tracker.update_stack(stack)
+
+    is_valid = validate_collect_step(
+        step, stack, test_domain.action_names_or_texts, tracker.slots
+    )
+
+    assert is_valid
+    assert stack.current_context().get("flow_id") == "my_flow"

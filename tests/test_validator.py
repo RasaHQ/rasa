@@ -2062,7 +2062,7 @@ def test_validator_fail_as_both_utterance_and_action_not_defined_for_collect() -
     expected_log_event = "validator.verify_flows_steps_against_domain.collect_step"
     expected_log_message = (
         "The collect step 'transfer_amount' has neither an utterance "
-        "nor an action defined. "
+        "nor an action defined, or an initial value defined in the domain."
         "You need to define either an utterance or an action."
     )
     with structlog.testing.capture_logs() as caplog:
@@ -2108,6 +2108,30 @@ def test_validator_pass_as_only_action_defined_for_collect() -> None:
         slots:
             transfer_amount:
                 type: float
+                mappings: []
+        """
+    )
+    flows = flows_from_str(
+        """
+        flows:
+          flow_bar:
+            description: Test flow.
+            steps:
+            - collect: transfer_amount
+        """
+    )
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), flows, None)
+    assert validator.verify_flows_steps_against_domain() is True
+
+
+def test_validator_pass_as_initial_slot_value_defined_for_collect() -> None:
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        slots:
+            transfer_amount:
+                type: float
+                initial_value: 100
                 mappings: []
         """
     )
