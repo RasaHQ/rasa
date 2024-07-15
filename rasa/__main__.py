@@ -25,6 +25,7 @@ from rasa.cli import (
     visualize,
     x,
     evaluate,
+    llm_fine_tuning,
 )
 from rasa.cli.arguments.default_arguments import add_logging_options
 from rasa.cli.utils import (
@@ -75,6 +76,7 @@ def create_argument_parser() -> argparse.ArgumentParser:
     export.add_subparser(subparsers, parents=parent_parsers)
     x.add_subparser(subparsers, parents=parent_parsers)
     evaluate.add_subparser(subparsers, parents=parent_parsers)
+    llm_fine_tuning.add_subparser(subparsers, parent_parsers)
     plugin_manager().hook.refine_cli(
         subparsers=subparsers, parent_parsers=parent_parsers
     )

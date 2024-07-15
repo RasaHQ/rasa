@@ -23,7 +23,6 @@ from rasa.cli.e2e_test import (
     color_difference,
     execute_e2e_tests,
     is_test_case_file,
-    pad,
     read_test_cases,
     split_into_passed_failed,
     transform_results_output_to_yaml,
@@ -135,22 +134,6 @@ def test_find_test_sets_file(e2e_input_folder: Path) -> None:
     assert input_test_cases[7].file == str(
         e2e_input_folder / "e2e_test_cases_with_metadata.yml"
     )
-
-
-def test_pad_text() -> None:
-    assert (
-        pad("hello world caption", char="*")
-        == "*" * 29 + " hello world caption " + "*" * 30
-    )
-
-
-def test_pad_uses_min_padding() -> None:
-    expected = "=" * 10 + " " + "foo" * 100 + " " + "=" * 10
-    assert pad("foo" * 100, min=10) == expected
-
-
-def test_pad_empty() -> None:
-    assert pad("") == "=" * 39 + " " * 2 + "=" * 39
 
 
 def test_color_difference_empty() -> None:
