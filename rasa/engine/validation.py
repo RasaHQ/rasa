@@ -1,5 +1,6 @@
 import dataclasses
 import inspect
+import re
 import logging
 import sys
 import typing
@@ -30,7 +31,9 @@ from rasa.dialogue_understanding.coexistence.constants import (
     STICKY,
     NON_STICKY,
 )
-from rasa.dialogue_understanding.generator import LLMCommandGenerator
+from rasa.dialogue_understanding.generator import (
+    LLMBasedCommandGenerator,
+)
 from rasa.dialogue_understanding.patterns.chitchat import FLOW_PATTERN_CHITCHAT
 from rasa.engine.constants import RESERVED_PLACEHOLDERS
 from rasa.engine.exceptions import GraphSchemaValidationException
@@ -45,12 +48,17 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.training.fingerprinting import Fingerprintable
 from rasa.shared.constants import DOCS_URL_GRAPH_COMPONENTS, ROUTE_TO_CALM_SLOT
-from rasa.shared.core.constants import ACTION_TRIGGER_CHITCHAT
+from rasa.shared.core.constants import ACTION_RESET_ROUTING, ACTION_TRIGGER_CHITCHAT
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows import FlowsList, Flow
 from rasa.shared.core.slots import Slot
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.training_data.message import Message
+
+from rasa.dialogue_understanding.coexistence.intent_based_router import (
+    IntentBasedRouter,
+)
+from rasa.dialogue_understanding.coexistence.llm_based_router import LLMBasedRouter
 
 TypeAnnotation = Union[TypeVar, Text, Type, Optional[AvailableEndpoints]]
 
@@ -209,7 +217,7 @@ def _validate_interface_usage(node: SchemaNode) -> None:
         raise GraphSchemaValidationException(
             f"Your model uses a component with class '{node.uses.__name__}'. "
             f"This class does not implement the '{GraphComponent.__name__}' interface "
-            f"and can hence not be run within Rasa Open Source. Please use a different "
+            f"and can hence not be run within Rasa Pro. Please use a different "
             f"component or implement the '{GraphComponent}' interface in class "
             f"'{node.uses.__name__}'. "
             f"See {DOCS_URL_GRAPH_COMPONENTS} for more information."
@@ -635,202 +643,231 @@ def _validate_chitchat_dependencies(
         )
 
 
-def validate_coexistance_routing_setup(
-    domain: Domain, model_configuration: GraphModelConfiguration
-) -> None:
-    import re
-    from rasa.dialogue_understanding.coexistence.intent_based_router import (
-        IntentBasedRouter,
-    )
-    from rasa.dialogue_understanding.coexistence.llm_based_router import LLMBasedRouter
+def get_component_index(schema: GraphSchema, component_class: Type) -> Optional[int]:
+    """Extracts the index of a component of the given class in the schema.
+    This function assumes that each component's node name is stored in a way
+    that includes the index as part of the name, formatted as
+    "run_{ComponentName}{Index}", which is how it's created by the recipe.
+    """
+    # the index of the component is at the end of the node name
+    pattern = re.compile(r"\d+$")
+    for node_name, node in schema.nodes.items():
+        if issubclass(node.uses, component_class):
+            match = pattern.search(node_name)
+            if match:
+                index = int(match.group())
+                return index
+    # index is not found or there is no component with the given class
+    return None
 
-    def get_component_index(
-        schema: GraphSchema, component_class: Type
-    ) -> Optional[int]:
-        """Extracts the index of a component of the given class in the schema.
-        This function assumes that each component's node name is stored in a way
-        that includes the index as part of the name, formatted as
-        "run_{ComponentName}{Index}", which is how it's created by the recipe.
-        """
-        # the index of the component is at the end of the node name
-        pattern = re.compile(r"\d+$")
-        for node_name, node in schema.nodes.items():
-            if issubclass(node.uses, component_class):
-                match = pattern.search(node_name)
-                if match:
-                    index = int(match.group())
-                    return index
-        # index is not found or there is no component with the given class
-        return None
 
-    def get_component_config(
-        schema: GraphSchema, component_class: Type
-    ) -> Optional[Dict[str, Any]]:
-        """Extracts the config of a component of the given class in the schema."""
-        for node_name, node in schema.nodes.items():
-            if issubclass(node.uses, component_class):
-                return node.config
-        return None
+def get_component_config(
+    schema: GraphSchema, component_class: Type
+) -> Optional[Dict[str, Any]]:
+    """Extracts the config of a component of the given class in the schema."""
+    for node_name, node in schema.nodes.items():
+        if issubclass(node.uses, component_class):
+            return node.config
+    return None
 
-    def validate_router_exclusivity(schema: GraphSchema) -> None:
-        """Validate that intent-based and llm-based routers are not
-        defined at the same time.
-        """
-        if schema.has_node(IntentBasedRouter) and schema.has_node(LLMBasedRouter):
-            structlogger.error(
-                "validation.coexistance.both_routers_defined",
-                event_info=(
-                    "Both LLMBasedRouter and IntentBasedRouter are in the config. "
-                    "Please use only one of them."
-                ),
-            )
-            sys.exit(1)
 
-    def validate_intent_based_router_position(schema: GraphSchema) -> None:
-        """Validate that if intent-based router is defined, it is positioned before
-        the llm command generator.
-        """
-        intent_based_router_pos = get_component_index(schema, IntentBasedRouter)
-        llm_command_generator_pos = get_component_index(schema, LLMCommandGenerator)
-        if (
-            intent_based_router_pos is not None
-            and llm_command_generator_pos is not None
-            and intent_based_router_pos > llm_command_generator_pos
-        ):
-            structlogger.error(
-                "validation.coexistance.wrong_order_of_components",
-                event_info=(
-                    "IntentBasedRouter should come before LLMCommandGenerator "
-                    "in the pipeline."
-                ),
-            )
-            sys.exit(1)
-
-    def validate_that_slots_are_defined_if_router_is_defined(
-        schema: GraphSchema, routing_slots: List[Slot]
-    ) -> None:
-        # check whether intent-based or llm-based type of router is present
-        for router_type in [IntentBasedRouter, LLMBasedRouter]:
-            router_present = schema.has_node(router_type)
-            slot_has_issue = (
-                len(routing_slots) == 0 or routing_slots[0].type_name != "bool"
-            )
-            if router_present and slot_has_issue:
-                structlogger.error(
-                    f"validation.coexistance.{ROUTE_TO_CALM_SLOT}_not_in_domain",
-                    event_info=(
-                        f"{router_type.__name__} is in the config, but the slot "
-                        f"{ROUTE_TO_CALM_SLOT} is not in the domain or not of "
-                        f"type bool."
-                    ),
-                )
-                sys.exit(1)
-
-    def validate_that_router_is_defined_if_router_slots_are_in_domain(
-        schema: GraphSchema,
-        routing_slots: List[Slot],
-    ) -> None:
-        defined_router_slots = len(routing_slots) > 0
-        router_present = schema.has_node(IntentBasedRouter) or schema.has_node(
-            LLMBasedRouter
+def validate_router_exclusivity(schema: GraphSchema) -> None:
+    """Validate that intent-based and llm-based routers are not
+    defined at the same time.
+    """
+    if schema.has_node(IntentBasedRouter) and schema.has_node(LLMBasedRouter):
+        structlogger.error(
+            "validation.coexistance.both_routers_defined",
+            event_info=(
+                "Both LLMBasedRouter and IntentBasedRouter are in the config. "
+                "Please use only one of them."
+            ),
         )
-        if defined_router_slots and (
-            not router_present or routing_slots[0].type_name != "bool"
-        ):
+        sys.exit(1)
+
+
+def validate_intent_based_router_position(schema: GraphSchema) -> None:
+    """Validate that if intent-based router is defined, it is positioned before
+    the llm command generator.
+    """
+    intent_based_router_pos = get_component_index(schema, IntentBasedRouter)
+    llm_command_generator_pos = get_component_index(schema, LLMBasedCommandGenerator)
+    if (
+        intent_based_router_pos is not None
+        and llm_command_generator_pos is not None
+        and intent_based_router_pos > llm_command_generator_pos
+    ):
+        structlogger.error(
+            "validation.coexistance.wrong_order_of_components",
+            event_info=(
+                "IntentBasedRouter should come before "
+                "a LLMBasedCommandGenerator in the pipeline."
+            ),
+        )
+        sys.exit(1)
+
+
+def validate_that_slots_are_defined_if_router_is_defined(
+    schema: GraphSchema, routing_slots: List[Slot]
+) -> None:
+    # check whether intent-based or llm-based type of router is present
+    for router_type in [IntentBasedRouter, LLMBasedRouter]:
+        router_present = schema.has_node(router_type)
+        slot_has_issue = len(routing_slots) == 0 or routing_slots[0].type_name != "bool"
+        if router_present and slot_has_issue:
             structlogger.error(
-                f"validation.coexistance"
-                f".{ROUTE_TO_CALM_SLOT}_in_domain_with_no_router_defined",
+                f"validation.coexistance.{ROUTE_TO_CALM_SLOT}_not_in_domain",
                 event_info=(
-                    f"The slot {ROUTE_TO_CALM_SLOT} is in the domain but the "
-                    f"LLMBasedRouter or the IntentBasedRouter is not in the config or "
-                    f"the type of the slot is not bool."
+                    f"{router_type.__name__} is in the config, but the slot "
+                    f"{ROUTE_TO_CALM_SLOT} is not in the domain or not of "
+                    f"type bool."
                 ),
             )
             sys.exit(1)
 
-    def valid_nlu_entry_config(config: Optional[Dict[str, Any]]) -> bool:
-        return (
+
+def validate_that_router_is_defined_if_router_slots_are_in_domain(
+    schema: GraphSchema,
+    routing_slots: List[Slot],
+) -> None:
+    defined_router_slots = len(routing_slots) > 0
+    router_present = schema.has_node(IntentBasedRouter) or schema.has_node(
+        LLMBasedRouter
+    )
+    if defined_router_slots and (
+        not router_present or routing_slots[0].type_name != "bool"
+    ):
+        structlogger.error(
+            f"validation.coexistance"
+            f".{ROUTE_TO_CALM_SLOT}_in_domain_with_no_router_defined",
+            event_info=(
+                f"The slot {ROUTE_TO_CALM_SLOT} is in the domain but the "
+                f"LLMBasedRouter or the IntentBasedRouter is not in the config or "
+                f"the type of the slot is not bool."
+            ),
+        )
+        sys.exit(1)
+
+
+def valid_nlu_entry_config(config: Optional[Dict[str, Any]]) -> bool:
+    return (
+        config is not None
+        and NLU_ENTRY in config
+        and isinstance(config[NLU_ENTRY], dict)
+        and STICKY in config[NLU_ENTRY]
+        and NON_STICKY in config[NLU_ENTRY]
+    )
+
+
+def valid_calm_entry_config(config: Optional[Dict[str, Any]]) -> bool:
+    return (
+        config is not None
+        and CALM_ENTRY in config
+        and isinstance(config[CALM_ENTRY], dict)
+        and STICKY in config[CALM_ENTRY]
+    )
+
+
+def validate_configuration(
+    schema: GraphSchema,
+) -> None:
+    """Validate the configuration of the existing coexistence routers."""
+    if schema.has_node(IntentBasedRouter, include_subtypes=False):
+        config = get_component_config(schema, IntentBasedRouter)
+        if not valid_calm_entry_config(config) or not valid_nlu_entry_config(config):
+            structlogger.error(
+                "validation.coexistance.invalid_configuration",
+                event_info=(
+                    "The configuration of the IntentBasedRouter is invalid. "
+                    "Please check the documentation.",
+                ),
+            )
+            sys.exit(1)
+
+    if schema.has_node(LLMBasedRouter, include_subtypes=False):
+        config = get_component_config(schema, LLMBasedRouter)
+        if not valid_calm_entry_config(config) or (
             config is not None
             and NLU_ENTRY in config
-            and isinstance(config[NLU_ENTRY], dict)
-            and STICKY in config[NLU_ENTRY]
-            and NON_STICKY in config[NLU_ENTRY]
-        )
+            and not valid_nlu_entry_config(config)
+        ):
+            structlogger.error(
+                "validation.coexistance.invalid_configuration",
+                event_info=(
+                    "The configuration of the LLMBasedRouter is invalid. "
+                    "Please check the documentation.",
+                ),
+            )
+            sys.exit(1)
 
-    def valid_calm_entry_config(config: Optional[Dict[str, Any]]) -> bool:
-        return (
-            config is not None
-            and CALM_ENTRY in config
-            and isinstance(config[CALM_ENTRY], dict)
-            and STICKY in config[CALM_ENTRY]
-        )
 
-    def validate_configuration(
-        schema: GraphSchema,
-    ) -> None:
-        """Validate the configuration of the existing coexistence routers."""
-        if schema.has_node(IntentBasedRouter, include_subtypes=False):
-            config = get_component_config(schema, IntentBasedRouter)
-            if not valid_calm_entry_config(config) or not valid_nlu_entry_config(
-                config
-            ):
-                structlogger.error(
-                    "validation.coexistance.invalid_configuration",
-                    event_info=(
-                        "The configuration of the IntentBasedRouter is invalid. "
-                        "Please check the documentation.",
-                    ),
-                )
-                sys.exit(1)
-
-        if schema.has_node(LLMBasedRouter, include_subtypes=False):
-            config = get_component_config(schema, LLMBasedRouter)
-            if not valid_calm_entry_config(config) or (
-                config is not None
-                and NLU_ENTRY in config
-                and not valid_nlu_entry_config(config)
-            ):
-                structlogger.error(
-                    "validation.coexistance.invalid_configuration",
-                    event_info=(
-                        "The configuration of the LLMBasedRouter is invalid. "
-                        "Please check the documentation.",
-                    ),
-                )
-                sys.exit(1)
-
+def validate_coexistance_routing_setup(
+    domain: Domain, model_configuration: GraphModelConfiguration, flows: FlowsList
+) -> None:
     schema = model_configuration.predict_schema
     routing_slots = [s for s in domain.slots if s.name == ROUTE_TO_CALM_SLOT]
+
+    def validate_that_router_or_router_slot_are_defined_if_action_reset_routing_is_used(
+        schema: GraphSchema, flows: FlowsList, routing_slots: List[Slot]
+    ) -> None:
+        slot_has_issue = len(routing_slots) == 0 or routing_slots[0].type_name != "bool"
+        router_present = schema.has_node(LLMBasedRouter) or schema.has_node(
+            IntentBasedRouter
+        )
+
+        if router_present or not slot_has_issue:
+            return
+
+        faulty_flows_with_action_reset_routing = [
+            flow for flow in flows if flow.has_action_step(ACTION_RESET_ROUTING)
+        ]
+
+        if faulty_flows_with_action_reset_routing:
+            for flow in faulty_flows_with_action_reset_routing:
+                structlogger.error(
+                    f"validation.coexistance.{ACTION_RESET_ROUTING}_present_in_flow"
+                    f"_without_router_or_{ROUTE_TO_CALM_SLOT}_slot",
+                    event_info=(
+                        f"The action - {ACTION_RESET_ROUTING} is used in the flow - "
+                        f"{flow.id}, but a router (LLMBasedRouter/IntentBasedRouter) or"
+                        f" {ROUTE_TO_CALM_SLOT} are not defined.",
+                    ),
+                )
+            sys.exit(1)
 
     validate_router_exclusivity(schema)
     validate_intent_based_router_position(schema)
     validate_that_slots_are_defined_if_router_is_defined(schema, routing_slots)
     validate_that_router_is_defined_if_router_slots_are_in_domain(schema, routing_slots)
     validate_configuration(schema)
+    validate_that_router_or_router_slot_are_defined_if_action_reset_routing_is_used(
+        schema, flows, routing_slots
+    )
+
+
+def validate_command_generator_exclusivity(schema: GraphSchema) -> None:
+    """Validate that multiple command generators are not defined at same time."""
+    from rasa.dialogue_understanding.generator import (
+        LLMBasedCommandGenerator,
+    )
+
+    count = schema.count_nodes_of_a_given_type(
+        LLMBasedCommandGenerator, include_subtypes=True
+    )
+
+    if count > 1:
+        structlogger.error(
+            "validation.command_generator.multiple_command_generator_defined",
+            event_info=(
+                "Multiple LLM based command generators are defined in the config. "
+                "Please use only one LLM based command generator."
+            ),
+        )
+        sys.exit(1)
 
 
 def validate_command_generator_setup(
     model_configuration: GraphModelConfiguration,
 ) -> None:
-    def validate_command_generator_exclusivity(schema: GraphSchema) -> None:
-        """Validate that multiple command generators are not defined at same time."""
-        from rasa.dialogue_understanding.generator import (
-            MultiStepLLMCommandGenerator,
-            SingleStepLLMCommandGenerator,
-        )
-
-        if schema.has_node(MultiStepLLMCommandGenerator) and (
-            schema.has_node(SingleStepLLMCommandGenerator)
-            or schema.has_node(LLMCommandGenerator)
-        ):
-            structlogger.error(
-                "validation.command_generator.multiple_command_generator_defined",
-                event_info=(
-                    "Multiple command generators are defined in the config. "
-                    "Please use only one command generator."
-                ),
-            )
-            sys.exit(1)
-
     schema = model_configuration.predict_schema
     validate_command_generator_exclusivity(schema)

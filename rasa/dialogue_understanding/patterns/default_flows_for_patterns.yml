@@ -55,7 +55,7 @@ responses:
         template: jinja
 
   utter_free_chitchat_response:
-    - text: "placeholder_this_utterance_needs_the_rephraser"
+    - text: placeholder_this_utterance_needs_the_rephraser
       metadata:
         rephrase: True
         rephrase_prompt: |
@@ -100,11 +100,11 @@ slots:
   confirm_correction:
     type: bool
     mappings:
-      - type: custom
+      - type: from_llm
 
 flows:
   pattern_cancel_flow:
-    description: A meta flow that's started when a flow is cancelled.
+    description: Conversation repair flow that starts when a flow is cancelled
     name: pattern_cancel_flow
     steps:
       - action: action_cancel_flow
@@ -112,77 +112,77 @@ flows:
 
   pattern_cannot_handle:
     description: |
-      pattern that is triggered when the command generators fail to create (any) valid commands
+      Conversation repair flow for addressing failed command generation scenarios
     name: pattern cannot handle
     steps:
       - noop: true
         next:
           # chitchat fallback
-          - if: "'{{context.reason}}' == 'cannot_handle_chitchat'"
+          - if: "'{{context.reason}}' = 'cannot_handle_chitchat'"
             then:
               - action: utter_cannot_handle
                 next: "END"
           # fallback for things that are not supported
-          - if: "'{{context.reason}}' == 'cannot_handle_not_supported'"
+          - if: "'{{context.reason}}' = 'cannot_handle_not_supported'"
             then:
               - action: utter_cannot_handle
-                next: "END"
+                next: END
           # default
           - else:
               - action: utter_ask_rephrase
-                next: "END"
+                next: END
 
   pattern_chitchat:
-    description: handle interactions with the user that are not task-oriented
+    description: Conversation repair flow for off-topic interactions that won't disrupt the main conversation
     name: pattern chitchat
     steps:
       - action: action_trigger_chitchat
 
   pattern_clarification:
-    description: handle clarifications with the user
+    description: Conversation repair flow for handling ambiguous requests that could match multiple flows
     name: pattern clarification
     steps:
       - action: action_clarify_flows
       - action: utter_clarification_options_rasa
 
   pattern_code_change:
-    description: flow used to clean the stack after a bot update
+    description: Conversation repair flow for cleaning the stack after an assistant update
     name: pattern code change
     steps:
       - action: utter_inform_code_change
       - action: action_clean_stack
 
   pattern_collect_information:
-    description: flow used to fill a slot
+    description: Flow for collecting information from users
     name: pattern collect information
     steps:
-      - id: "start"
+      - id: start
         action: action_run_slot_rejections
       - action: validate_{{context.collect}}
         next:
         - if: "slots.{{context.collect}} is not null"
-          then: "END"
-        - else: "ask_collect"
-      - id: "ask_collect"
+          then: END
+        - else: ask_collect
+      - id: ask_collect
         action: "{{context.utter}}"
       - action: "{{context.collect_action}}"
       - action: action_listen
-        next: "start"
+        next: start
 
   pattern_completed:
-    description: a flow has been completed and there is nothing else to be done
+    description: Flow that asks if the user needs more help after completing their initiated use cases
     name: pattern completed
     steps:
       - action: utter_can_do_something_else
 
   pattern_continue_interrupted:
-    description: A flow that should will be started to continue an interrupted flow.
+    description: Conversation repair flow for managing when users switch between different flows
     name: pattern continue interrupted
     steps:
       - action: utter_flow_continue_interrupted
 
   pattern_correction:
-    description: Handle a correction of a slot value.
+    description: Conversation repair flow for managing user input changes or error corrections
     name: pattern correction
     steps:
       - action: action_correct_flow_slot
@@ -190,36 +190,36 @@ flows:
           - if: not context.is_reset_only
             then:
               - action: utter_corrected_previous_input
-                next: "END"
-          - else: "END"
+                next: END
+          - else: END
 
   pattern_human_handoff:
-    description: human handoff
+    description: Conversation repair flow for switching users to a human agent if their request can't be handled
     name: pattern human handoff
     steps:
       - action: utter_human_handoff_not_available
 
   pattern_internal_error:
-    description: internal error
+    description: Conversation repair flow for informing users about internal errors
     name: pattern internal error
     steps:
       - noop: true
         next:
-        - if: "'{{context.error_type}}' == 'rasa_internal_error_user_input_too_long'"
+        - if: "'{{context.error_type}}' = 'rasa_internal_error_user_input_too_long'"
           then:
           - action: utter_user_input_too_long_error_rasa
-            next: "END"
-        - if: "'{{context.error_type}}' == 'rasa_internal_error_user_input_empty'"
+            next: END
+        - if: "'{{context.error_type}}' = 'rasa_internal_error_user_input_empty'"
           then:
             - action: utter_user_input_empty_error_rasa
-              next: "END"
+              next: END
         - else:
             - action: utter_internal_error_rasa
-              next: "END"
+              next: END
 
 
   pattern_restart:
-    description: flow used to restart the conversation
+    description: Flow for restarting the conversation
     name: pattern restart
     nlu_trigger:
       - intent: restart
@@ -227,14 +227,14 @@ flows:
       - action: action_restart
 
   pattern_search:
-    description: handle a knowledge-based question or request
+    description: Flow for handling knowledge-based questions
     name: pattern search
     steps:
       - action: utter_no_knowledge_base
       # - action: action_trigger_search to use doc search policy if present
 
   pattern_session_start:
-    description: flow used to start the conversation
+    description: Flow for starting the conversation
     name: pattern session start
     nlu_trigger:
       - intent: session_start
@@ -242,7 +242,7 @@ flows:
       - action: action_session_start
 
   pattern_skip_question:
-    description: flow used to handle users intent to skip questions (steps)
+    description: Conversation repair flow for managing user intents to skip questions (steps)
     name: pattern skip question
     steps:
       - action: utter_skip_question_answer

@@ -1994,6 +1994,160 @@ def test_validator_check_for_empty_paranthesis_all_good() -> None:
     assert validator.check_for_no_empty_paranthesis_in_responses() is True
 
 
+def test_validator_fail_as_both_utterance_and_action_defined_for_collect() -> None:
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        actions:
+            - action_ask_transfer_amount
+        responses:
+            utter_ask_transfer_amount:
+                - text: "How much money should I send?"
+        slots:
+            transfer_amount:
+                type: float
+                mappings: []
+        """
+    )
+    flows = flows_from_str(
+        """
+        flows:
+          flow_bar:
+            description: Test flow.
+            steps:
+            - collect: transfer_amount
+        """
+    )
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), flows, None)
+
+    expected_log_level = "error"
+    expected_log_event = "validator.verify_flows_steps_against_domain.collect_step"
+    expected_log_message = (
+        "The collect step 'transfer_amount' has an utterance "
+        "'utter_ask_transfer_amount' as well as an action "
+        "'action_ask_transfer_amount' defined. "
+        "You can just have one of them! "
+        "Please remove either the utterance or the action."
+    )
+    with structlog.testing.capture_logs() as caplog:
+        assert validator.verify_flows_steps_against_domain() is False
+        logs = filter_logs(
+            caplog, expected_log_event, expected_log_level, [expected_log_message]
+        )
+        assert len(logs) == 1
+
+
+def test_validator_fail_as_both_utterance_and_action_not_defined_for_collect() -> None:
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        slots:
+            transfer_amount:
+                type: float
+                mappings: []
+        """
+    )
+    flows = flows_from_str(
+        """
+        flows:
+          flow_bar:
+            description: Test flow.
+            steps:
+            - collect: transfer_amount
+        """
+    )
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), flows, None)
+
+    expected_log_level = "error"
+    expected_log_event = "validator.verify_flows_steps_against_domain.collect_step"
+    expected_log_message = (
+        "The collect step 'transfer_amount' has neither an utterance "
+        "nor an action defined, or an initial value defined in the domain."
+        "You need to define either an utterance or an action."
+    )
+    with structlog.testing.capture_logs() as caplog:
+        assert validator.verify_flows_steps_against_domain() is False
+        logs = filter_logs(
+            caplog, expected_log_event, expected_log_level, [expected_log_message]
+        )
+        assert len(logs) == 1
+
+
+def test_validator_pass_as_only_utterance_defined_for_collect() -> None:
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        responses:
+            utter_ask_transfer_amount:
+                - text: "How much money should I send?"
+        slots:
+            transfer_amount:
+                type: float
+                mappings: []
+        """
+    )
+    flows = flows_from_str(
+        """
+        flows:
+          flow_bar:
+            description: Test flow.
+            steps:
+            - collect: transfer_amount
+        """
+    )
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), flows, None)
+    assert validator.verify_flows_steps_against_domain() is True
+
+
+def test_validator_pass_as_only_action_defined_for_collect() -> None:
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        actions:
+            - action_ask_transfer_amount
+        slots:
+            transfer_amount:
+                type: float
+                mappings: []
+        """
+    )
+    flows = flows_from_str(
+        """
+        flows:
+          flow_bar:
+            description: Test flow.
+            steps:
+            - collect: transfer_amount
+        """
+    )
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), flows, None)
+    assert validator.verify_flows_steps_against_domain() is True
+
+
+def test_validator_pass_as_initial_slot_value_defined_for_collect() -> None:
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        slots:
+            transfer_amount:
+                type: float
+                initial_value: 100
+                mappings: []
+        """
+    )
+    flows = flows_from_str(
+        """
+        flows:
+          flow_bar:
+            description: Test flow.
+            steps:
+            - collect: transfer_amount
+        """
+    )
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), flows, None)
+    assert validator.verify_flows_steps_against_domain() is True
+
+
 def test_validate_button_payloads_no_payload(capsys: CaptureFixture) -> None:
     test_domain = Domain.from_yaml(
         f"""
@@ -2064,11 +2218,14 @@ def test_validate_button_payloads_valid_payloads(
         version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
          - inform
+        entities:
+        - confirmation
         slots:
           confirmation:
              type: bool
              mappings:
-              - type: custom
+              - type: from_entity
+                entity: confirmation
         responses:
             utter_ask_confirm:
             - buttons:
@@ -2084,6 +2241,37 @@ def test_validate_button_payloads_valid_payloads(
     captured = capsys.readouterr()
     log_levels = ["error", "warning"]
     assert all([log_level not in captured.out for log_level in log_levels])
+
+
+def test_validate_button_payloads_no_user_warning_raised_with_intent_payload() -> None:
+    """Test that no user warning is raised when the payload has double curly braces."""
+    payload = '/inform{{"confirmation": "true"}}'
+    test_domain = Domain.from_yaml(
+        f"""
+            version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+            intents:
+             - inform
+            entities:
+            - confirmation
+            slots:
+              confirmation:
+                 type: bool
+                 mappings:
+                  - type: from_entity
+                    entity: confirmation
+            responses:
+                utter_ask_confirm:
+                - buttons:
+                    - title: Yes
+                      payload: '{payload}'
+                  text: "Do you confirm?"
+            """
+    )
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        validator = Validator(test_domain, TrainingData(), StoryGraph([]), None, None)
+        assert validator.validate_button_payloads() is True
 
 
 @pytest.mark.parametrize(
@@ -2185,3 +2373,171 @@ def test_validate_button_payloads_unique_slot_names(capsys: CaptureFixture) -> N
         "to set the slot 'name' multiple times. Please make sure "
         "that each slot is set only once."
     ) in captured.out
+
+
+def test_validate_CALM_slot_mappings_success(
+    capsys: CaptureFixture,
+) -> None:
+    importer = RasaFileImporter(
+        config_file="data/test_calm_slot_mappings/config.yml",
+        domain_path="data/test_calm_slot_mappings/validation/domain_valid.yml",
+        training_data_paths=[
+            "data/test_calm_slot_mappings/data/flows.yml",
+            "data/test_calm_slot_mappings/data/nlu.yml",
+            "data/test_calm_slot_mappings/data/stories.yml",
+        ],
+    )
+    validator = Validator.from_importer(importer)
+    assert validator.validate_CALM_slot_mappings() is True
+
+    captured = capsys.readouterr()
+    log_level = "error"
+    assert log_level not in captured.out
+
+
+@pytest.mark.parametrize(
+    "domain_path",
+    [
+        "data/test_calm_slot_mappings/validation/domain_with_llm_and_custom_mappings.yml",
+        "data/test_calm_slot_mappings/validation/domain_with_llm_and_nlu_mappings.yml",
+    ],
+)
+def test_domain_slots_contain_all_mapping_type(
+    capsys: CaptureFixture, domain_path: str
+) -> None:
+    importer = RasaFileImporter(
+        config_file="data/test_calm_slot_mappings/config.yml",
+        domain_path=domain_path,
+        training_data_paths=[
+            "data/test_calm_slot_mappings/validation/flows.yml",
+        ],
+    )
+    validator = Validator.from_importer(importer)
+    assert validator.validate_CALM_slot_mappings() is False
+
+    captured = capsys.readouterr()
+    log_level = "error"
+    assert log_level in captured.out
+    assert (
+        "validator.validate_slot_mappings_in_CALM.llm_and_nlu_mappings" in captured.out
+    )
+    assert (
+        "The slot 'card_number' has both LLM and "
+        "NLU or custom slot mappings. "
+        "Please make sure that the slot has only one type of mapping."
+    ) in captured.out
+
+
+def test_validate_custom_action_defined_in_the_domain(
+    capsys: CaptureFixture,
+) -> None:
+    importer = RasaFileImporter(
+        config_file="data/test_calm_slot_mappings/config.yml",
+        domain_path="data/test_calm_slot_mappings/validation/domain_action_ask_missing.yml",
+        training_data_paths=[
+            "data/test_calm_slot_mappings/validation/flows.yml",
+        ],
+    )
+    validator = Validator.from_importer(importer)
+    assert validator.validate_CALM_slot_mappings() is False
+
+    captured = capsys.readouterr()
+    log_level = "error"
+    assert log_level in captured.out
+    assert (
+        "validator.validate_slot_mappings_in_CALM.custom_action_not_in_domain"
+        in captured.out
+    )
+    assert (
+        "The slot 'card_number' has a custom slot mapping, but neither the "
+        "action 'action_ask_card_number' nor another custom action are defined "
+        "in the domain file. Please add one of the actions to your domain file."
+    ) in captured.out
+
+
+def test_validate_nlu_command_adapter_not_in_config(
+    capsys: CaptureFixture,
+) -> None:
+    importer = RasaFileImporter(
+        config_file="data/test_calm_slot_mappings/validation/config_nlu_command_adapter_missing.yml",
+        domain_path="data/test_calm_slot_mappings/validation/domain_valid_nlu_mappings.yml",
+        training_data_paths=[
+            "data/test_calm_slot_mappings/validation/flows.yml",
+        ],
+    )
+    validator = Validator.from_importer(importer)
+    assert validator.validate_CALM_slot_mappings() is False
+
+    captured = capsys.readouterr()
+    log_level = "error"
+    assert log_level in captured.out
+    assert (
+        "validator.validate_slot_mappings_in_CALM.nlu_mappings_without_adapter"
+        in captured.out
+    )
+    assert (
+        "The slot 'card_number' has NLU slot mappings, "
+        "but the NLUCommandAdapter is not present in the "
+        "pipeline. Please add the NLUCommandAdapter to the "
+        "pipeline in the config file."
+    ) in captured.out
+
+
+def test_validate_llm_slot_mappings_in_nlu_based_assistant(
+    capsys: CaptureFixture,
+) -> None:
+    importer = RasaFileImporter(
+        domain_path="data/test_calm_slot_mappings/validation/domain_valid_llm_mappings.yml",
+        training_data_paths=[
+            "data/test_calm_slot_mappings/validation/stories.yml",
+        ],
+    )
+    validator = Validator.from_importer(importer)
+    assert validator.validate_CALM_slot_mappings() is False
+
+    captured = capsys.readouterr()
+    log_level = "error"
+    assert log_level in captured.out
+    assert (
+        "validator.validate_slot_mappings_in_CALM.llm_mappings_without_flows"
+        in captured.out
+    )
+    assert (
+        "The slot 'num_people' has LLM slot mappings, "
+        "but no flows are present in the training data files. "
+        "Please add flows to the training data files."
+    ) in captured.out
+
+
+def test_validate_llm_slot_mapping_with_action_ask_success(
+    capsys: CaptureFixture,
+) -> None:
+    importer = RasaFileImporter(
+        domain_path="data/test_calm_slot_mappings/validation/domain_valid_llm_mappings.yml",
+        training_data_paths=[
+            "data/test_calm_slot_mappings/validation/flows.yml",
+        ],
+    )
+    validator = Validator.from_importer(importer)
+    assert validator.validate_CALM_slot_mappings() is True
+
+    captured = capsys.readouterr()
+    log_level = "error"
+    assert log_level not in captured.out
+
+
+def test_validate_custom_slot_mappings_with_action_property_success(
+    capsys: CaptureFixture,
+) -> None:
+    importer = RasaFileImporter(
+        domain_path="data/test_calm_slot_mappings/validation/domain_custom_mappings_valid.yml",
+        training_data_paths=[
+            "data/test_calm_slot_mappings/validation/flows_for_valid_custom_slot_mappings.yml",
+        ],
+    )
+    validator = Validator.from_importer(importer)
+    assert validator.validate_CALM_slot_mappings() is True
+
+    captured = capsys.readouterr()
+    log_level = "error"
+    assert log_level not in captured.out

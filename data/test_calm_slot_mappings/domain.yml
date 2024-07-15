@@ -1,0 +1,115 @@
+version: "3.1"
+
+intents:
+  - greet
+  - inform_pizza
+  - affirm
+  - deny
+  - inform_address
+  - inform_num_pizza
+  - ask_availability
+  - correct_order
+  - request_payment
+
+entities:
+  - pizza_type
+  - number
+  - payment_option
+
+slots:
+  pizza:
+    type: text
+    mappings:
+        - type: from_entity
+          entity: pizza_type
+  num_pizza:
+    type: float
+    mappings:
+        - type: from_entity
+          entity: number
+          conditions:
+            - active_flow: order_pizza
+  address:
+    type: text
+    mappings:
+      - type: from_text
+        intent: inform_address
+  order_confirmation:
+    type: bool
+    mappings:
+        - type: from_intent
+          intent: affirm
+          value: true
+          conditions:
+            - active_flow: order_pizza
+        - type: from_intent
+          intent: deny
+          value: false
+          conditions:
+            - active_flow: order_pizza
+  route_session_to_calm:
+    type: bool
+  num_tickets:
+    type: float
+    mappings:
+      - type: from_entity
+        entity: number
+  is_member:
+    type: bool
+    mappings:
+      - type: custom
+        # missing action on purpose for the integration test
+        # test_processor_handle_message_calm_slots_custom_action_invalid
+  payment_option:
+    type: text
+    mappings:
+      - type: from_entity
+        entity: payment_option
+        conditions:
+          - active_flow: payment_flow
+  card_number:
+    type: text
+    mappings:
+      - type: from_llm
+
+responses:
+  utter_ask_pizza:
+    - text: What type of pizza would you like to order?
+
+  utter_place_order:
+    - text: Thank you for your order. Your pizza will be delivered to {address} in 30 minutes.
+
+  utter_ask_num_pizza:
+    - text: How many pizzas would you like to order?
+
+  utter_ask_address:
+    - text: What is the delivery address?
+
+  utter_ask_order_confirmation:
+    - text: You have put in a order for {num_pizza} {pizza} pizzas. Please confirm these details are correct?
+      buttons:
+        - title: Yes
+          payload: /SetSlots(order_confirmation=True)
+        - title: No
+          payload: /SetSlots(order_confirmation=False)
+
+  utter_cancel_order:
+    - text: Your order has been cancelled.
+
+  utter_event_availability:
+    - text: Yes, we have {num_tickets} places available for the store launch event.
+
+  utter_ask_is_member:
+    - text: Let's proceed with loging you in.
+
+  utter_login_successful:
+    - text: You have successfully logged in.
+
+  utter_cancel_auth:
+    - text: Login failed. Please try again.
+
+  utter_ask_payment_option:
+    - text: How would you like to pay for your order?
+
+  utter_ask_card_number:
+    - text: Please provide your card number.

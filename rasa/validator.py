@@ -26,8 +26,10 @@ from rasa.shared.constants import (
     ASSISTANT_ID_DEFAULT_VALUE,
     ASSISTANT_ID_KEY,
     CONFIG_MANDATORY_KEYS,
+    DOCS_URL_DOMAIN,
     DOCS_URL_DOMAINS,
     DOCS_URL_FORMS,
+    DOCS_URL_RESPONSES,
     UTTER_PREFIX,
     DOCS_URL_ACTIONS,
     REQUIRED_SLOTS_KEY,
@@ -43,6 +45,9 @@ from rasa.shared.core.domain import (
 from rasa.shared.core.generator import TrainingDataGenerator
 from rasa.shared.core.constants import SlotMappingType, MAPPING_TYPE
 from rasa.shared.core.slots import ListSlot, Slot
+from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
+    YAMLStoryReader,
+)
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.data import create_regex_pattern_reader
 from rasa.shared.importers.importer import TrainingDataImporter
@@ -624,13 +629,14 @@ class Validator:
                 ),
             )
 
-    def _log_error_if_action_and_utterance_defined(
+    def _log_error_if_either_action_or_utterance_are_not_defined(
         self,
         collect: CollectInformationFlowStep,
         all_good: bool,
+        domain_slots: Dict[Text, Slot],
     ) -> bool:
-        """Validates that a collect step can just have an utterance or an action
-        defined.
+        """Validates that a collect step can have either an action or an utterance.
+        Also logs an error if neither an action nor an utterance is defined.
 
         Args:
             collect: the name of the slot to collect
@@ -663,6 +669,27 @@ class Validator:
                     f"'{collect.collect_action}' defined. "
                     f"You can just have one of them! "
                     f"Please remove either the utterance or the action."
+                ),
+            )
+            all_good = False
+
+        slot = domain_slots.get(collect.collect)
+        slot_has_initial_value_defind = slot and slot.initial_value is not None
+
+        if (
+            not slot_has_initial_value_defind
+            and not has_utterance_defined
+            and not has_action_defined
+        ):
+            structlogger.error(
+                "validator.verify_flows_steps_against_domain.collect_step",
+                collect=collect.collect,
+                has_utterance_defined=has_utterance_defined,
+                has_action_defined=has_action_defined,
+                event_info=(
+                    f"The collect step '{collect.collect}' has neither an utterance "
+                    f"nor an action defined, or an initial value defined in the domain."
+                    f"You need to define either an utterance or an action."
                 ),
             )
             all_good = False
@@ -725,8 +752,10 @@ class Validator:
         for flow in self.flows.underlying_flows:
             for step in flow.steps_with_calls_resolved:
                 if isinstance(step, CollectInformationFlowStep):
-                    all_good = self._log_error_if_action_and_utterance_defined(
-                        step, all_good
+                    all_good = (
+                        self._log_error_if_either_action_or_utterance_are_not_defined(
+                            step, all_good, domain_slots
+                        )
                     )
 
                     all_good = self._log_error_if_slot_not_in_domain(
@@ -1122,6 +1151,11 @@ class Validator:
                         all_good = False
                         continue
 
+                    if isinstance(regex_reader, YAMLStoryReader):
+                        # the payload could contain double curly braces
+                        # we need to remove 1 set of curly braces
+                        payload = payload.replace("{{", "{").replace("}}", "}")
+
                     resulting_message = regex_reader.unpack_regex_message(
                         message=Message(data={"text": payload}), domain=self.domain
                     )
@@ -1138,6 +1172,9 @@ class Validator:
                                 f"for triggering a specific intent and entities or for "
                                 f"triggering a SetSlot command."
                             ),
+                            calm_docs_link=DOCS_URL_RESPONSES + "#payload-syntax",
+                            nlu_docs_link=DOCS_URL_RESPONSES
+                            + "#triggering-intents-or-passing-entities",
                         )
                         all_good = False
 
@@ -1162,3 +1199,178 @@ class Validator:
                             slot_names.add(slot_name)
 
         return all_good
+
+    def validate_CALM_slot_mappings(self) -> bool:
+        """Check if the usage of slot mappings in a CALM assistant is valid."""
+        all_good = True
+
+        for slot in self.domain._user_slots:
+            nlu_mappings = any(
+                [
+                    SlotMappingType(
+                        mapping.get("type", SlotMappingType.FROM_LLM.value)
+                    ).is_predefined_type()
+                    for mapping in slot.mappings
+                ]
+            )
+            llm_mappings = any(
+                [
+                    SlotMappingType(mapping.get("type", SlotMappingType.FROM_LLM.value))
+                    == SlotMappingType.FROM_LLM
+                    for mapping in slot.mappings
+                ]
+            )
+            custom_mappings = any(
+                [
+                    SlotMappingType(mapping.get("type", SlotMappingType.FROM_LLM.value))
+                    == SlotMappingType.CUSTOM
+                    for mapping in slot.mappings
+                ]
+            )
+
+            all_good = self._slot_contains_all_mappings_types(
+                llm_mappings, nlu_mappings, custom_mappings, slot.name, all_good
+            )
+
+            all_good = self._custom_action_name_is_defined_in_the_domain(
+                custom_mappings, slot, all_good
+            )
+
+            all_good = self._config_contains_nlu_command_adapter(
+                nlu_mappings, slot.name, all_good
+            )
+
+            all_good = self._uses_from_llm_mappings_in_a_NLU_based_assistant(
+                llm_mappings, slot.name, all_good
+            )
+
+        return all_good
+
+    @staticmethod
+    def _slot_contains_all_mappings_types(
+        llm_mappings: bool,
+        nlu_mappings: bool,
+        custom_mappings: bool,
+        slot_name: str,
+        all_good: bool,
+    ) -> bool:
+        if llm_mappings and (nlu_mappings or custom_mappings):
+            structlogger.error(
+                "validator.validate_slot_mappings_in_CALM.llm_and_nlu_mappings",
+                slot_name=slot_name,
+                event_info=(
+                    f"The slot '{slot_name}' has both LLM and "
+                    f"NLU or custom slot mappings. "
+                    f"Please make sure that the slot has only one type of mapping."
+                ),
+                docs_link=DOCS_URL_DOMAIN + "#calm-slot-mappings",
+            )
+            all_good = False
+
+        return all_good
+
+    def _custom_action_name_is_defined_in_the_domain(
+        self,
+        custom_mappings: bool,
+        slot: Slot,
+        all_good: bool,
+    ) -> bool:
+        if not custom_mappings:
+            return all_good
+
+        if not self.flows:
+            return all_good
+
+        is_custom_action_defined = any(
+            [
+                mapping.get("action") is not None
+                and mapping.get("action") in self.domain.action_names_or_texts
+                for mapping in slot.mappings
+            ]
+        )
+
+        if is_custom_action_defined:
+            return all_good
+
+        slot_collected_by_flows = any(
+            [
+                step.collect == slot.name
+                for flow in self.flows.underlying_flows
+                for step in flow.steps
+                if isinstance(step, CollectInformationFlowStep)
+            ]
+        )
+
+        if not slot_collected_by_flows:
+            # if the slot is not collected by any flow,
+            # it could be a DM1 custom slot
+            return all_good
+
+        custom_action_ask_name = f"action_ask_{slot.name}"
+        if custom_action_ask_name not in self.domain.action_names_or_texts:
+            structlogger.error(
+                "validator.validate_slot_mappings_in_CALM.custom_action_not_in_domain",
+                slot_name=slot.name,
+                event_info=(
+                    f"The slot '{slot.name}' has a custom slot mapping, but "
+                    f"neither the action '{custom_action_ask_name}' nor "
+                    f"another custom action are defined in the domain file. "
+                    f"Please add one of the actions to your domain file."
+                ),
+                docs_link=DOCS_URL_DOMAIN + "#custom-slot-mappings",
+            )
+            all_good = False
+
+        return all_good
+
+    def _config_contains_nlu_command_adapter(
+        self, nlu_mappings: bool, slot_name: str, all_good: bool
+    ) -> bool:
+        if not nlu_mappings:
+            return all_good
+
+        if not self.flows:
+            return all_good
+
+        contains_nlu_command_adapter = any(
+            [
+                component.get("name") == "NLUCommandAdapter"
+                for component in self.config.get("pipeline", [])
+            ]
+        )
+
+        if not contains_nlu_command_adapter:
+            structlogger.error(
+                "validator.validate_slot_mappings_in_CALM.nlu_mappings_without_adapter",
+                slot_name=slot_name,
+                event_info=(
+                    f"The slot '{slot_name}' has NLU slot mappings, "
+                    f"but the NLUCommandAdapter is not present in the "
+                    f"pipeline. Please add the NLUCommandAdapter to the "
+                    f"pipeline in the config file."
+                ),
+                docs_link=DOCS_URL_DOMAIN + "#nlu-based-predefined-slot-mappings",
+            )
+            all_good = False
+
+        return all_good
+
+    def _uses_from_llm_mappings_in_a_NLU_based_assistant(
+        self, llm_mappings: bool, slot_name: str, all_good: bool
+    ) -> bool:
+        if not llm_mappings:
+            return all_good
+
+        if self.flows:
+            return all_good
+
+        structlogger.error(
+            "validator.validate_slot_mappings_in_CALM.llm_mappings_without_flows",
+            slot_name=slot_name,
+            event_info=(
+                f"The slot '{slot_name}' has LLM slot mappings, "
+                f"but no flows are present in the training data files. "
+                f"Please add flows to the training data files."
+            ),
+        )
+        return False

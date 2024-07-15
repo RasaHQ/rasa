@@ -22,7 +22,14 @@ from rasa.exceptions import RasaException
 from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH, DEFAULT_MODELS_PATH
 
 from rasa.e2e_test.constants import SCHEMA_FILE_PATH, KEY_TEST_CASE
-from rasa.e2e_test.e2e_test_case import KEY_FIXTURES, Fixture, TestCase
+from rasa.e2e_test.e2e_test_case import (
+    KEY_FIXTURES,
+    KEY_METADATA,
+    Fixture,
+    Metadata,
+    TestCase,
+    TestSuite,
+)
 from rasa.e2e_test.e2e_test_result import TestResult
 from rasa.e2e_test.e2e_test_runner import E2ETestRunner
 import rasa.utils.io
@@ -194,15 +201,14 @@ def validate_test_case(test_case_name: Text, input_test_cases: List[TestCase]) -
         sys.exit(1)
 
 
-def read_test_cases(path: Text) -> Tuple[List[TestCase], List[Fixture]]:
+def read_test_cases(path: Text) -> TestSuite:
     """Read test cases from the given path.
 
     Args:
         path: Path to the file or folder containing test cases.
 
     Returns:
-        Tuple consisting of the list of all test cases and the
-        list of all global fixtures found in the file or folder.
+        TestSuite.
     """
     path, test_case_name = extract_test_case_from_path(path)
     validate_path_to_test_cases(path)
@@ -212,6 +218,7 @@ def read_test_cases(path: Text) -> Tuple[List[TestCase], List[Fixture]]:
 
     input_test_cases = []
     fixtures: Dict[Text, Fixture] = {}
+    metadata: Dict[Text, Metadata] = {}
 
     for test_file in test_files:
         test_file_content = parse_raw_yaml(Path(test_file).read_text())
@@ -233,6 +240,7 @@ def read_test_cases(path: Text) -> Tuple[List[TestCase], List[Fixture]]:
 
         input_test_cases.extend(test_cases)
         fixtures_content = test_file_content.get(KEY_FIXTURES) or []
+        metadata_contents = test_file_content.get(KEY_METADATA) or []
         for fixture in fixtures_content:
             fixture_obj = Fixture.from_dict(fixture_dict=fixture)
 
@@ -240,8 +248,15 @@ def read_test_cases(path: Text) -> Tuple[List[TestCase], List[Fixture]]:
             if fixtures.get(fixture_obj.name) is None:
                 fixtures[fixture_obj.name] = fixture_obj
 
+        for metadata_content in metadata_contents:
+            metadata_obj = Metadata.from_dict(metadata_dict=metadata_content)
+
+            # avoid adding duplicates from across multiple files
+            if metadata.get(metadata_obj.name) is None:
+                metadata[metadata_obj.name] = metadata_obj
+
     validate_test_case(test_case_name, input_test_cases)
-    return input_test_cases, list(fixtures.values())
+    return TestSuite(input_test_cases, list(fixtures.values()), list(metadata.values()))
 
 
 def execute_e2e_tests(args: argparse.Namespace) -> None:
@@ -269,7 +284,7 @@ def execute_e2e_tests(args: argparse.Namespace) -> None:
         args, "path-to-test-cases", DEFAULT_E2E_INPUT_TESTS_PATH
     )
 
-    input_test_cases, input_fixtures = read_test_cases(path_to_test_cases)
+    test_suite = read_test_cases(path_to_test_cases)
 
     try:
         test_runner = E2ETestRunner(
@@ -283,7 +298,12 @@ def execute_e2e_tests(args: argparse.Namespace) -> None:
         sys.exit(1)
 
     results = asyncio.run(
-        test_runner.run_tests(input_test_cases, input_fixtures, args.fail_fast)
+        test_runner.run_tests(
+            test_suite.test_cases,
+            test_suite.fixtures,
+            args.fail_fast,
+            input_metadata=test_suite.metadata,
+        )
     )
 
     if args.e2e_results is not None:
@@ -334,34 +354,6 @@ def transform_results_output_to_yaml(yaml_string: Text) -> Text:
     return "".join(result)
 
 
-def pad(text: Text, char: Text = "=", min: int = 3) -> Text:
-    """Pad text to a certain length.
-
-    Uses `char` to pad the text to the specified length. If the text is longer
-    than the specified length, at least `min` are used.
-
-    The padding is applied to the left and right of the text (almost) equally.
-
-    Example:
-        >>> pad("Hello")
-        "========= Hello ========"
-        >>> pad("Hello", char="-")
-        "--------- Hello --------"
-
-    Args:
-        text: Text to pad.
-        min: Minimum length of the padding.
-        char: Character to pad with.
-
-    Returns:
-        Padded text.
-    """
-    width = shutil.get_terminal_size((80, 20)).columns
-    padding = max(width - len(text) - 2, min * 2)
-
-    return char * (padding // 2) + " " + text + " " + char * math.ceil(padding / 2)
-
-
 def color_difference(diff: List[Text]) -> Generator[Text, None, None]:
     """Colorize the difference between two strings.
 
@@ -402,7 +394,9 @@ def print_failed_case(fail: TestResult) -> None:
     fail_headline = (
         f"'{fail.test_case.name}' in {fail.test_case.file_with_line()} failed"
     )
-    rasa.shared.utils.cli.print_error(f"{pad(fail_headline, char='-')}\n")
+    rasa.shared.utils.cli.print_error(
+        f"{rasa.shared.utils.cli.pad(fail_headline, char='-')}\n"
+    )
     print(f"Mismatch starting at {fail.test_case.file}:{fail.error_line}: \n")
     rich.print(("\n".join(color_difference(fail.difference))))
 
@@ -416,7 +410,9 @@ def print_test_summary(failed: List[TestResult]) -> None:
         =================== short test summary info ===================
         FAILED test.md::test
     """
-    rasa.shared.utils.cli.print_info(pad("short test summary info"))
+    rasa.shared.utils.cli.print_info(
+        rasa.shared.utils.cli.pad("short test summary info")
+    )
 
     for f in failed:
         rasa.shared.utils.cli.print_error(
@@ -473,7 +469,7 @@ def print_test_result(
     if failed:
         # print failure headline
         print("\n")
-        rich.print(f"[bold]{pad('FAILURES', char='=')}[/bold]")
+        rich.print(f"[bold]{rasa.shared.utils.cli.pad('FAILURES', char='=')}[/bold]")
 
     # print failed test_Case
     for fail in failed:
@@ -482,11 +478,15 @@ def print_test_result(
     print_test_summary(failed)
 
     if fail_fast:
-        rasa.shared.utils.cli.print_error(pad("stopping after 1 failure", char="!"))
+        rasa.shared.utils.cli.print_error(
+            rasa.shared.utils.cli.pad("stopping after 1 failure", char="!")
+        )
         has_failed = True
     elif len(failed) + len(passed) == 0:
         # no tests were run, print error
-        rasa.shared.utils.cli.print_error(pad("no test cases found", char="!"))
+        rasa.shared.utils.cli.print_error(
+            rasa.shared.utils.cli.pad("no test cases found", char="!")
+        )
         print_e2e_help()
         has_failed = True
     elif failed:

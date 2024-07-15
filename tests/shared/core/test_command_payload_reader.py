@@ -130,3 +130,34 @@ def test_command_payload_reader_unpack_regex_message_prevent_ReDoS(
 
     log_output = capsys.readouterr().out
     assert "too.many.slots" in log_output
+
+
+@pytest.mark.parametrize(
+    "user_text",
+    [
+        "/SetSlots(address=null)",
+        "/SetSlots(address=None)",
+        "/SetSlots(address=undefined)",
+        "/SetSlots(address=none)",
+        "/SetSlots(address=Null)",
+    ],
+)
+def test_command_payload_reader_unpack_regex_message_null_value(user_text: str) -> None:
+    message = Message({TEXT: user_text})
+    domain = Domain.from_yaml(
+        """
+        slots:
+          address:
+            type: text
+        """
+    )
+
+    processed_message = CommandPayloadReader.unpack_regex_message(message, domain)
+    assert processed_message.get(COMMANDS) == [
+        {
+            "command": SET_SLOT_COMMAND,
+            "name": "address",
+            "value": None,
+            "extractor": SetSlotExtractor.COMMAND_PAYLOAD_READER.value,
+        }
+    ]

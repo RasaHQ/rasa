@@ -482,3 +482,290 @@ def test_e2e_test_cases_schema_just_slot_name(
         )
     except YamlValidationException as exc:
         assert False, f"'validate_yaml_content_using_schema' raised an exception {exc}"
+
+
+@pytest.mark.parametrize(
+    "test_case_file_content",
+    [
+        (
+            """
+metadata:
+  - user_info:
+      language: English
+      location: Europe
+
+test_cases:
+  - test_case: "test_premium_booking"
+    steps:
+      - user: "Hi!"
+"""
+        ),
+    ],
+)
+def test_e2e_test_cases_schema_with_global_metadata(
+    test_case_file_content: Text,
+    e2e_schema: Union[List[Any], Dict[Text, Any]],
+) -> None:
+    e2e_schema = read_e2e_test_schema()
+    parsed_yaml_content = parse_raw_yaml(test_case_file_content)
+    try:
+        validate_yaml_content_using_schema(
+            yaml_content=parsed_yaml_content, schema_content=e2e_schema
+        )
+    except YamlValidationException as exc:
+        assert False, f"'validate_yaml_content_using_schema' raised an exception {exc}"
+
+
+@pytest.mark.parametrize(
+    "test_case_file_content",
+    [
+        (
+            """
+metadata:
+  - 2device_info:
+      os: linux
+
+test_cases:
+  - test_case: "test_premium_booking"
+    steps:
+      - user: "Hi!"
+"""
+        ),
+    ],
+)
+def test_e2e_test_cases_schema_global_metadata_name_must_not_start_with_number(
+    test_case_file_content: Text,
+    e2e_schema: Union[List[Any], Dict[Text, Any]],
+) -> None:
+    e2e_schema = read_e2e_test_schema()
+    parsed_yaml_content = parse_raw_yaml(test_case_file_content)
+    with pytest.raises(YamlValidationException):
+        validate_yaml_content_using_schema(
+            yaml_content=parsed_yaml_content, schema_content=e2e_schema
+        )
+
+
+@pytest.mark.parametrize(
+    "test_case_file_content",
+    [
+        (
+            """
+metadata:
+  user_info:
+      language: English
+      location: Europe
+
+test_cases:
+  - test_case: "test_premium_booking"
+    steps:
+      - user: "Hi!"
+"""
+        ),
+    ],
+)
+def test_e2e_test_cases_schema_global_metadata_should_be_a_list_of_dict_not_a_dict(
+    test_case_file_content: Text,
+    e2e_schema: Union[List[Any], Dict[Text, Any]],
+) -> None:
+    e2e_schema = read_e2e_test_schema()
+    parsed_yaml_content = parse_raw_yaml(test_case_file_content)
+    with pytest.raises(YamlValidationException):
+        validate_yaml_content_using_schema(
+            yaml_content=parsed_yaml_content, schema_content=e2e_schema
+        )
+
+
+@pytest.mark.parametrize(
+    "test_case_file_content",
+    [
+        (
+            """
+metadata:
+  - user_info:
+      language: English
+      location: Europe
+  -
+
+test_cases:
+  - test_case: "test_premium_booking"
+    steps:
+      - user: "Hi!"
+"""
+        ),
+    ],
+)
+def test_e2e_test_cases_schema_global_metadata_list_should_not_have_an_empty_item(
+    test_case_file_content: Text,
+    e2e_schema: Union[List[Any], Dict[Text, Any]],
+) -> None:
+    e2e_schema = read_e2e_test_schema()
+    parsed_yaml_content = parse_raw_yaml(test_case_file_content)
+    with pytest.raises(YamlValidationException):
+        validate_yaml_content_using_schema(
+            yaml_content=parsed_yaml_content, schema_content=e2e_schema
+        )
+
+
+@pytest.mark.parametrize(
+    "test_case_file_content",
+    [
+        (
+            """
+metadata:
+  - user_info:
+
+test_cases:
+  - test_case: "test_premium_booking"
+    steps:
+      - user: "Hi!"
+"""
+        ),
+    ],
+)
+def test_e2e_test_cases_schema_global_metadata_list_item_is_not_an_empty_dict(
+    test_case_file_content: Text,
+    e2e_schema: Union[List[Any], Dict[Text, Any]],
+) -> None:
+    e2e_schema = read_e2e_test_schema()
+    parsed_yaml_content = parse_raw_yaml(test_case_file_content)
+    with pytest.raises(YamlValidationException):
+        validate_yaml_content_using_schema(
+            yaml_content=parsed_yaml_content, schema_content=e2e_schema
+        )
+
+
+@pytest.mark.parametrize(
+    "test_case_file_content",
+    [
+        (
+            """
+metadata:
+  - :
+    os: linux
+
+test_cases:
+  - test_case: "test_premium_booking"
+    steps:
+      - user: "Hi!"
+"""
+        ),
+    ],
+)
+def test_e2e_test_cases_schema_global_metadata_list_item_has_a_name(
+    test_case_file_content: Text,
+    e2e_schema: Union[List[Any], Dict[Text, Any]],
+) -> None:
+    e2e_schema = read_e2e_test_schema()
+    parsed_yaml_content = parse_raw_yaml(test_case_file_content)
+    with pytest.raises(YamlValidationException):
+        validate_yaml_content_using_schema(
+            yaml_content=parsed_yaml_content, schema_content=e2e_schema
+        )
+
+
+@pytest.mark.parametrize(
+    "test_case_file_content",
+    [
+        (
+            """
+test_cases:
+  - test_case: "test_premium_booking"
+    metadata: "user_info"
+    steps:
+      - user: "Hi!"
+"""
+        ),
+    ],
+)
+def test_e2e_test_cases_schema_with_metadata_in_test_case(
+    test_case_file_content: Text,
+    e2e_schema: Union[List[Any], Dict[Text, Any]],
+) -> None:
+    e2e_schema = read_e2e_test_schema()
+    parsed_yaml_content = parse_raw_yaml(test_case_file_content)
+    try:
+        validate_yaml_content_using_schema(
+            yaml_content=parsed_yaml_content, schema_content=e2e_schema
+        )
+    except YamlValidationException as exc:
+        assert False, f"'validate_yaml_content_using_schema' raised an exception {exc}"
+
+
+@pytest.mark.parametrize(
+    "test_case_file_content",
+    [
+        (
+            """
+test_cases:
+  - test_case: "test_premium_booking"
+    metadata: "2user_info"
+    steps:
+      - user: "Hi!"
+"""
+        ),
+    ],
+)
+def test_e2e_test_cases_schema_metadata_name_in_test_case_must_not_start_with_number(
+    test_case_file_content: Text,
+    e2e_schema: Union[List[Any], Dict[Text, Any]],
+) -> None:
+    e2e_schema = read_e2e_test_schema()
+    parsed_yaml_content = parse_raw_yaml(test_case_file_content)
+    with pytest.raises(YamlValidationException):
+        validate_yaml_content_using_schema(
+            yaml_content=parsed_yaml_content, schema_content=e2e_schema
+        )
+
+
+@pytest.mark.parametrize(
+    "test_case_file_content",
+    [
+        (
+            """
+test_cases:
+  - test_case: "test_premium_booking"
+    steps:
+      - user: "Hi!"
+        metadata: "user_info"
+"""
+        ),
+    ],
+)
+def test_e2e_test_cases_schema_with_metadata_in_user_step(
+    test_case_file_content: Text,
+    e2e_schema: Union[List[Any], Dict[Text, Any]],
+) -> None:
+    e2e_schema = read_e2e_test_schema()
+    parsed_yaml_content = parse_raw_yaml(test_case_file_content)
+    try:
+        validate_yaml_content_using_schema(
+            yaml_content=parsed_yaml_content, schema_content=e2e_schema
+        )
+    except YamlValidationException as exc:
+        assert False, f"'validate_yaml_content_using_schema' raised an exception {exc}"
+
+
+@pytest.mark.parametrize(
+    "test_case_file_content",
+    [
+        (
+            """
+test_cases:
+  - test_case: "test_premium_booking"
+    steps:
+      - user: "Hi!"
+        metadata: "2user_info"
+"""
+        ),
+    ],
+)
+def test_e2e_test_cases_schema_metadata_name_in_user_step_must_not_start_with_number(
+    test_case_file_content: Text,
+    e2e_schema: Union[List[Any], Dict[Text, Any]],
+) -> None:
+    e2e_schema = read_e2e_test_schema()
+    parsed_yaml_content = parse_raw_yaml(test_case_file_content)
+    with pytest.raises(YamlValidationException):
+        validate_yaml_content_using_schema(
+            yaml_content=parsed_yaml_content, schema_content=e2e_schema
+        )

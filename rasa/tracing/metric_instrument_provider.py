@@ -9,7 +9,15 @@ from rasa.tracing.constants import (
     LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME,
     LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME,
     LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME,
-    LLM_COMMAND_GENERATOR_CPU_MEMORY_USAGE_UNIT_NAME,
+    LLM_BASED_COMMAND_GENERATOR_CPU_MEMORY_USAGE_UNIT_NAME,
+    SINGLE_STEP_LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME,
+    SINGLE_STEP_LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME,
+    SINGLE_STEP_LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME,
+    SINGLE_STEP_LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME,
+    MULTI_STEP_LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME,
+    MULTI_STEP_LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME,
+    MULTI_STEP_LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME,
+    MULTI_STEP_LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME,
     DURATION_UNIT_NAME,
     ENTERPRISE_SEARCH_POLICY_LLM_RESPONSE_DURATION_METRIC_NAME,
     INTENTLESS_POLICY_LLM_RESPONSE_DURATION_METRIC_NAME,
@@ -34,6 +42,8 @@ class MetricInstrumentProvider(metaclass=Singleton):
 
         instruments = {
             **self._create_llm_command_generator_instruments(meter),
+            **self._create_single_step_llm_command_generator_instruments(meter),
+            **self._create_multi_step_llm_command_generator_instruments(meter),
             **self._create_llm_response_duration_instruments(meter),
             **self._create_client_request_instruments(meter),
         }
@@ -49,13 +59,13 @@ class MetricInstrumentProvider(metaclass=Singleton):
         llm_command_generator_cpu_usage = meter.create_histogram(
             name=LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME,
             description="CPU percentage for LLMCommandGenerator",
-            unit=LLM_COMMAND_GENERATOR_CPU_MEMORY_USAGE_UNIT_NAME,
+            unit=LLM_BASED_COMMAND_GENERATOR_CPU_MEMORY_USAGE_UNIT_NAME,
         )
 
         llm_command_generator_memory_usage = meter.create_histogram(
             name=LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME,
             description="RAM memory usage for LLMCommandGenerator",
-            unit=LLM_COMMAND_GENERATOR_CPU_MEMORY_USAGE_UNIT_NAME,
+            unit=LLM_BASED_COMMAND_GENERATOR_CPU_MEMORY_USAGE_UNIT_NAME,
         )
 
         llm_command_generator_prompt_token_usage = meter.create_histogram(
@@ -75,6 +85,76 @@ class MetricInstrumentProvider(metaclass=Singleton):
             LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME: llm_command_generator_memory_usage,  # noqa: E501
             LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME: llm_command_generator_prompt_token_usage,  # noqa: E501
             LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME: llm_response_duration_llm_command_generator,  # noqa: E501
+        }
+
+    @staticmethod
+    def _create_single_step_llm_command_generator_instruments(
+        meter: Meter,
+    ) -> Dict[str, Any]:
+        single_step_llm_command_generator_cpu_usage = meter.create_histogram(
+            name=SINGLE_STEP_LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME,
+            description="CPU percentage for SingleStepLLMCommandGenerator",
+            unit=LLM_BASED_COMMAND_GENERATOR_CPU_MEMORY_USAGE_UNIT_NAME,
+        )
+
+        single_step_llm_command_generator_memory_usage = meter.create_histogram(
+            name=SINGLE_STEP_LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME,
+            description="RAM memory usage for SingleStepLLMCommandGenerator",
+            unit=LLM_BASED_COMMAND_GENERATOR_CPU_MEMORY_USAGE_UNIT_NAME,
+        )
+
+        single_step_llm_command_generator_prompt_token_usage = meter.create_histogram(
+            name=SINGLE_STEP_LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME,
+            description="SingleStepLLMCommandGenerator prompt token length",
+            unit="1",
+        )
+
+        single_step_llm_response_duration_llm_command_generator = meter.create_histogram(  # noqa: E501
+            name=SINGLE_STEP_LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME,
+            description="The duration of SingleStepLLMCommandGenerator's LLM call",
+            unit=DURATION_UNIT_NAME,
+        )
+
+        return {
+            SINGLE_STEP_LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME: single_step_llm_command_generator_cpu_usage,  # noqa: E501
+            SINGLE_STEP_LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME: single_step_llm_command_generator_memory_usage,  # noqa: E501
+            SINGLE_STEP_LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME: single_step_llm_command_generator_prompt_token_usage,  # noqa: E501
+            SINGLE_STEP_LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME: single_step_llm_response_duration_llm_command_generator,  # noqa: E501
+        }
+
+    @staticmethod
+    def _create_multi_step_llm_command_generator_instruments(
+        meter: Meter,
+    ) -> Dict[str, Any]:
+        multi_step_llm_command_generator_cpu_usage = meter.create_histogram(
+            name=MULTI_STEP_LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME,
+            description="CPU percentage for MultiStepLLMCommandGenerator",
+            unit=LLM_BASED_COMMAND_GENERATOR_CPU_MEMORY_USAGE_UNIT_NAME,
+        )
+
+        multi_step_llm_command_generator_memory_usage = meter.create_histogram(
+            name=MULTI_STEP_LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME,
+            description="RAM memory usage for MultiStepLLMCommandGenerator",
+            unit=LLM_BASED_COMMAND_GENERATOR_CPU_MEMORY_USAGE_UNIT_NAME,
+        )
+
+        multi_step_llm_command_generator_prompt_token_usage = meter.create_histogram(
+            name=MULTI_STEP_LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME,
+            description="MultiStepLLMCommandGenerator prompt token length",
+            unit="1",
+        )
+
+        multi_step_llm_response_duration_llm_command_generator = meter.create_histogram(
+            name=MULTI_STEP_LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME,
+            description="The duration of MultiStepLLMCommandGenerator's LLM call",
+            unit=DURATION_UNIT_NAME,
+        )
+
+        return {
+            MULTI_STEP_LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME: multi_step_llm_command_generator_cpu_usage,  # noqa: E501
+            MULTI_STEP_LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME: multi_step_llm_command_generator_memory_usage,  # noqa: E501
+            MULTI_STEP_LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME: multi_step_llm_command_generator_prompt_token_usage,  # noqa: E501
+            MULTI_STEP_LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME: multi_step_llm_response_duration_llm_command_generator,  # noqa: E501
         }
 
     @staticmethod

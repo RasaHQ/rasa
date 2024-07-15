@@ -1,39 +1,24 @@
-from io import StringIO
-from pathlib import Path
-import re
-from collections import OrderedDict
 import logging
 import os
+import re
+from collections import OrderedDict
+from dataclasses import dataclass
+from dataclasses import field
+from functools import lru_cache
+from io import StringIO
+from pathlib import Path
 from typing import Dict, List, Optional, Any, Callable, Union
 
-
+import jsonschema
 from importlib_resources import files
 from packaging import version
 from packaging.version import LegacyVersion
 from pykwalify.core import Core
 from pykwalify.errors import SchemaError
-from dataclasses import dataclass
-import jsonschema
-from dataclasses import field
+from ruamel import yaml as yaml
 from ruamel.yaml import RoundTripRepresenter, YAMLError
 from ruamel.yaml.constructor import DuplicateKeyError, BaseConstructor, ScalarNode
-from ruamel import yaml as yaml
 
-from rasa.shared.utils.constants import DEFAULT_ENCODING
-from rasa.shared.utils.io import (
-    read_file,
-    convert_to_ordered_dict,
-    raise_warning,
-    read_json_file,
-)
-
-from rasa.shared.exceptions import (
-    YamlException,
-    YamlSyntaxException,
-    SchemaValidationError,
-    RasaException,
-    FileNotFoundException,
-)
 from rasa.shared.constants import (
     MODEL_CONFIG_SCHEMA_FILE,
     CONFIG_SCHEMA_FILE,
@@ -43,11 +28,32 @@ from rasa.shared.constants import (
     SCHEMA_EXTENSIONS_FILE,
     RESPONSES_SCHEMA_FILE,
 )
+from rasa.shared.exceptions import (
+    YamlException,
+    YamlSyntaxException,
+    SchemaValidationError,
+    RasaException,
+    FileNotFoundException,
+)
+from rasa.shared.utils.constants import (
+    DEFAULT_ENCODING,
+    READ_YAML_FILE_CACHE_MAXSIZE_ENV_VAR,
+    DEFAULT_READ_YAML_FILE_CACHE_MAXSIZE,
+)
+from rasa.shared.utils.io import (
+    read_file,
+    convert_to_ordered_dict,
+    raise_warning,
+    read_json_file,
+)
 
 logger = logging.getLogger(__name__)
 
 KEY_TRAINING_DATA_FORMAT_VERSION = "version"
 YAML_VERSION = (1, 2)
+READ_YAML_FILE_CACHE_MAXSIZE = os.environ.get(
+    READ_YAML_FILE_CACHE_MAXSIZE_ENV_VAR, DEFAULT_READ_YAML_FILE_CACHE_MAXSIZE
+)
 
 
 @dataclass
@@ -362,8 +368,9 @@ def _is_ascii(text: str) -> bool:
     return all(ord(character) < 128 for character in text)
 
 
+@lru_cache(maxsize=READ_YAML_FILE_CACHE_MAXSIZE)
 def read_yaml_file(
-    filename: Union[str, Path], reader_type: Union[str, List[str]] = "safe"
+    filename: Union[str, Path], reader_type: str = "safe"
 ) -> Union[List[Any], Dict[str, Any]]:
     """Parses a yaml file.
 
@@ -560,14 +567,14 @@ def validate_training_data_format_version(
     """Validates version on the training data content using `version` field.
 
        Warns users if the file is not compatible with the current version of
-       Rasa Open Source.
+       Rasa Pro.
 
     Args:
         yaml_file_content: Raw content of training data file as a dictionary.
         filename: Name of the validated file.
 
     Returns:
-        `True` if the file can be processed by current version of Rasa Open Source,
+        `True` if the file can be processed by current version of Rasa Pro,
         `False` otherwise.
     """
     if filename:
@@ -587,7 +594,7 @@ def validate_training_data_format_version(
         logger.info(
             f"The '{KEY_TRAINING_DATA_FORMAT_VERSION}' key is missing in "
             f"the training data file {filename}. "
-            f"Rasa Open Source will read the file as a "
+            f"Rasa Pro will read the file as a "
             f"version '{LATEST_TRAINING_DATA_FORMAT_VERSION}' file. "
             f"See {DOCS_URL_TRAINING_DATA}."
         )
@@ -605,9 +612,9 @@ def validate_training_data_format_version(
         if parsed_version < latest_version:
             raise_warning(
                 f"Training data file {filename} has a lower "
-                f"format version than your Rasa Open Source installation: "
+                f"format version than your Rasa Pro installation: "
                 f"{version_value} < {LATEST_TRAINING_DATA_FORMAT_VERSION}. "
-                f"Rasa Open Source will read the file as a version "
+                f"Rasa Pro will read the file as a version "
                 f"{LATEST_TRAINING_DATA_FORMAT_VERSION} file. "
                 f"Please update your version key to "
                 f"{LATEST_TRAINING_DATA_FORMAT_VERSION}. "
@@ -623,7 +630,7 @@ def validate_training_data_format_version(
             f"'{KEY_TRAINING_DATA_FORMAT_VERSION}' as string, for example:\n"
             f"{KEY_TRAINING_DATA_FORMAT_VERSION}: "
             f"'{LATEST_TRAINING_DATA_FORMAT_VERSION}'\n"
-            f"Rasa Open Source will read the file as a "
+            f"Rasa Pro will read the file as a "
             f"version '{LATEST_TRAINING_DATA_FORMAT_VERSION}' file.",
             docs=DOCS_URL_TRAINING_DATA,
         )
@@ -631,9 +638,9 @@ def validate_training_data_format_version(
 
     raise_warning(
         f"Training data file {filename} has a greater "
-        f"format version than your Rasa Open Source installation: "
+        f"format version than your Rasa Pro installation: "
         f"{version_value} > {LATEST_TRAINING_DATA_FORMAT_VERSION}. "
-        f"Please consider updating to the latest version of Rasa Open Source."
+        f"Please consider updating to the latest version of Rasa Pro."
         f"This file will be skipped.",
         docs=DOCS_URL_TRAINING_DATA,
     )

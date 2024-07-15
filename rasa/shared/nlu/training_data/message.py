@@ -484,3 +484,7 @@ class Message:
     def has_commands(self) -> bool:
         """Checks if the message has any commands."""
         return self.data.get(COMMANDS) is not None
+
+    def starts_with_slash_syntax(self) -> bool:
+        """Checks if the message text starts with a slash syntax."""
+        return self.data.get(TEXT, "").strip().startswith("/")

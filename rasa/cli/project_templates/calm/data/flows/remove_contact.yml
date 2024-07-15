@@ -8,7 +8,7 @@ flows:
       - collect: "remove_contact_confirmation"
         ask_before_filling: true
         next:
-          - if: "not slots.remove_contact_confirmation"
+          - if: "slots.remove_contact_confirmation is not true"
             then:
               - action: utter_remove_contact_cancelled
                 next: END

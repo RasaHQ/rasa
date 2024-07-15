@@ -10,11 +10,11 @@
 
 <hr />
 
-<img align="right" height="255" src="https://www.rasa.com/assets/img/sara/sara-open-source-2.0.png" alt="An image of Sara, the Rasa mascot bird, holding a flag that reads Open Source with one wing, and a wrench in the other" title="Rasa Open Source">
+<img align="right" height="255" src="https://www.rasa.com/assets/img/sara/sara-open-source-2.0.png" alt="An image of Sara, the Rasa mascot bird, holding a flag that reads Open Source with one wing, and a wrench in the other" title="Rasa Pro">
 
 Rasa Pro is an open core product that extends Rasa Open Source. With over 50 million downloads, Rasa Open Source is the most popular open source framework for building chat and voice-based AI assistants.
 
-Rasa Pro extends Rasa Open Source with CALM, a generative AI-native approach to developing assistants, combined with enterprise-ready analytics, security, and observability capabilities. A paid license is required to run Rasa Pro, but all Rasa Pro code is visible to end users and can be customized as needed.
+Rasa Pro introduces CALM, a generative AI-native approach to developing assistants, combined with enterprise-ready analytics, security, and observability capabilities. A paid license is required to run Rasa Pro, but all Rasa Pro code is visible to end users and can be customized as needed.
 
 Rasa Pro is the pro-code component of our enterprise solution, Rasa Platform, for implementing resilient and trustworthy AI assistants at scale. Rasa Studio complements Rasa Pro with a low-code user interface, enabling anyone on your team to create and improve your assistant.
 

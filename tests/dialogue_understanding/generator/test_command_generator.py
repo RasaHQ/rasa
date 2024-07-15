@@ -2,16 +2,27 @@ from typing import Optional, List, Text, Type
 from unittest.mock import Mock, patch
 
 import pytest
-from rasa.dialogue_understanding.commands import Command, StartFlowCommand, ErrorCommand
+
+from rasa.dialogue_understanding.commands import (
+    Command,
+    SetSlotCommand,
+    StartFlowCommand,
+    ErrorCommand,
+)
 from rasa.dialogue_understanding.commands.chit_chat_answer_command import (
     ChitChatAnswerCommand,
 )
+from rasa.dialogue_understanding.commands.set_slot_command import SetSlotExtractor
 from rasa.dialogue_understanding.generator.command_generator import CommandGenerator
+from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
+from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
 from rasa.shared.constants import (
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
 )
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows import Flow, FlowsList
+from rasa.shared.core.flows.yaml_flows_io import flows_from_str
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import TEXT, COMMANDS
 from rasa.shared.nlu.training_data.message import Message
@@ -23,6 +34,7 @@ class WackyCommandGenerator(CommandGenerator):
         message: Message,
         flows: FlowsList,
         tracker: Optional[DialogueStateTracker] = None,
+        domain: Optional[Domain] = None,
     ) -> List[Command]:
         if message.get(TEXT) == "Hi":
             raise ValueError("Message too banal - I am quitting.")
@@ -109,67 +121,123 @@ async def test_command_processor_checks_flow_guards(
 )
 @patch(
     "rasa.dialogue_understanding.generator.command_generator"
-    ".CommandGenerator.get_startable_flows"
-)
-@patch(
-    "rasa.dialogue_understanding.generator.command_generator"
-    ".CommandGenerator.get_active_flows"
-)
-@patch(
-    "rasa.dialogue_understanding.generator.command_generator"
     ".CommandGenerator._evaluate_and_predict"
 )
-async def test_command_generator_adds_active_flows_to_avaialble_flows(
+async def test_command_generator_no_active_flows_to_add_to_available_flows(
     mock_evaluate_and_predict: Mock,
-    mock_get_active_flows: Mock,
-    mock_get_startable_flows: Mock,
     mock_check_commands_against_startable_flows: Mock,
 ):
     """Test that the command processor checks flow guards."""
     # Given
     generator = WackyCommandGenerator({})
     messages = [Message.build("What is your purpose?")]
+    domain = Domain.empty()
 
-    mock_tracker = Mock()
+    tracker = DialogueStateTracker.from_dict("sender_id", [])
 
-    mock_get_active_flows.return_value = FlowsList(
-        [Flow("active_flow"), Flow("called_flow")]
-    )
-    mock_get_startable_flows.return_value = FlowsList(
-        [Flow("startable_flow_1"), Flow("startable_flow_2")]
+    all_flows = flows_from_str(
+        """
+        flows:
+          my_flow:
+            name: foo flow
+            description: foo flow
+            steps:
+            - id: collect_foo
+              collect: foo
+            - id: call_flow_1
+              call: call_flow_1
+            - id: collect_baz
+              collect: baz
+          call_flow_1:
+            if: False
+            name: call flow 1
+            description: call flow 1
+            steps:
+            - call: call_flow_2
+          call_flow_2:
+            if: False
+            name: call flow 2
+            description: call flow 2
+            steps:
+            - id: collect_buzz
+              collect: buzz
+        """
     )
 
     # When
-    await generator.process(
-        messages,
-        FlowsList(
-            [
-                Flow("other_flow_1"),
-                Flow("other_flow_2"),
-                Flow("active_flow"),
-                Flow("called_flow"),
-                Flow("startable_flow_1"),
-                Flow("startable_flow_2"),
-            ]
-        ),
-        mock_tracker,
-    )
+    await generator.process(messages, all_flows, tracker, domain)
     # Then
     mock_evaluate_and_predict.assert_called_once_with(
-        messages[0],
-        FlowsList(
-            [
-                Flow("startable_flow_1"),
-                Flow("startable_flow_2"),
-                Flow("active_flow"),
-                Flow("called_flow"),
-            ]
-        ),
-        mock_tracker,
+        messages[0], FlowsList([all_flows.flow_by_id("my_flow")]), tracker, domain
     )
-    mock_get_startable_flows.assert_called_once()
-    mock_get_active_flows.assert_called_once()
     mock_check_commands_against_startable_flows.assert_called_once()
+
+
+async def test_command_generator_add_active_flows_to_available_flows() -> None:
+    """Test that the command processor checks flow guard and gets active flows."""
+    # Given
+    generator = WackyCommandGenerator({})
+
+    user_frame = UserFlowStackFrame(
+        flow_id="my_flow", step_id="collect_foo", frame_id="some-frame-id"
+    )
+    user_frame_2 = UserFlowStackFrame(
+        flow_id="call_flow_1",
+        step_id="call_flow_1",
+        frame_id="some-frame-id",
+        frame_type="call",
+    )
+    user_frame_3 = UserFlowStackFrame(
+        flow_id="call_flow_2",
+        step_id="collect_buzz",
+        frame_id="some-frame-id",
+        frame_type="call",
+    )
+
+    stack = DialogueStack(frames=[user_frame, user_frame_2, user_frame_3])
+    tracker = DialogueStateTracker.from_events("test", evts=[])
+    tracker.update_stack(stack)
+
+    all_flows = flows_from_str(
+        """
+        flows:
+          my_flow:
+            name: foo flow
+            description: foo flow
+            steps:
+            - id: collect_foo
+              collect: foo
+            - id: call_flow_1
+              call: call_flow_1
+            - id: collect_baz
+              collect: baz
+          call_flow_1:
+            if: False
+            name: call flow 1
+            description: call flow 1
+            steps:
+            - call: call_flow_2
+          call_flow_2:
+            if: False
+            name: call flow 2
+            description: call flow 2
+            steps:
+            - id: collect_buzz
+              collect: buzz
+        """
+    )
+
+    # When
+    result = generator.get_active_flows(all_flows, tracker)
+    # Then
+    expected_flows = FlowsList(
+        [
+            all_flows.flow_by_id("call_flow_2"),
+            all_flows.flow_by_id("call_flow_1"),
+            all_flows.flow_by_id("my_flow"),
+        ]
+    )
+    assert result == expected_flows
 
 
 @patch(
@@ -263,3 +331,67 @@ async def test_evaluate_and_predict_commands(
     assert isinstance(commands[0], expected_command_type)
     if isinstance(commands[0], ErrorCommand):
         assert commands[0].error_type == expected_error_type
+
+
+@pytest.mark.parametrize(
+    "active_flow, input_commands, expected_commands",
+    [
+        (
+            "auth_user",
+            [SetSlotCommand("auth_token", "ABCD12EF", SetSlotExtractor.LLM.value)],
+            [SetSlotCommand("auth_token", "ABCD12EF", SetSlotExtractor.LLM.value)],
+        ),
+        (
+            "auth_user_2",
+            [SetSlotCommand("auth_token", "ABCD12EF", SetSlotExtractor.LLM.value)],
+            [],
+        ),
+        (
+            "loyalty_points",
+            [StartFlowCommand("loyalty_points")],
+            [StartFlowCommand("loyalty_points")],
+        ),
+        (
+            "some_flow",
+            [SetSlotCommand("nlu_slot", "some_value", SetSlotExtractor.NLU.value)],
+            [SetSlotCommand("nlu_slot", "some_value", SetSlotExtractor.NLU.value)],
+        ),
+    ],
+)
+def test_command_generator_check_commands_against_slot_mappings_active_flow(
+    active_flow: Text, input_commands: List[Command], expected_commands: List[Command]
+):
+    # Given
+    generator = CommandGenerator({})
+    slot_name = "auth_token"
+    flow_id = "auth_user"
+    domain = Domain.from_yaml(f"""
+    entities:
+    - nlu_entity
+    slots:
+      {slot_name}:
+        type: text
+        mappings:
+            - type: from_llm
+              conditions:
+                - active_flow: {flow_id}
+      nlu_slot:
+        type: text
+        mappings:
+        - type: from_entity
+          entity: nlu_entity
+    """)
+    tracker = DialogueStateTracker.from_events("test", [], slots=domain.slots)
+    user_frame = UserFlowStackFrame(
+        flow_id=active_flow, step_id="first_step", frame_id="some-frame-id"
+    )
+    stack = DialogueStack(frames=[user_frame])
+    tracker.update_stack(stack)
+
+    # When
+    actual_commands = generator._check_commands_against_slot_mappings(
+        input_commands, tracker, domain
+    )
+
+    # Then
+    assert actual_commands == expected_commands

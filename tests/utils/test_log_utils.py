@@ -18,12 +18,12 @@ attribute = "some attribute text"
     ("log_module, environment_variables, logging_output"),
     [
         (
-            "LLMCommandGenerator",
+            "SingleStepLLMCommandGenerator",
             {},
             [{"event": log_event, "log_level": "debug", "attribute": attribute}],
         ),
         (
-            "LLMCommandGenerator",
+            "SingleStepLLMCommandGenerator",
             {
                 "LOG_LEVEL_LLM": "INFO",
                 "LOG_LEVEL_LLM_COMMAND_GENERATOR": "DEBUG",
@@ -31,7 +31,7 @@ attribute = "some attribute text"
             [{"event": log_event, "log_level": "info", "attribute": attribute}],
         ),
         (
-            "LLMCommandGenerator",
+            "SingleStepLLMCommandGenerator",
             {
                 "LOG_LEVEL_LLM": "DEBUG",
                 "LOG_LEVEL_LLM_COMMAND_GENERATOR": "INFO",

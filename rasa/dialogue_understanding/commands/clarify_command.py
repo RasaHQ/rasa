@@ -77,7 +77,7 @@ class ClarifyCommand(Command):
         return tracker.create_stack_updated_events(stack)
 
     def __hash__(self) -> int:
-        return hash(self.options)
+        return hash(tuple(self.options))
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, ClarifyCommand):

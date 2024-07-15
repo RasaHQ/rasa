@@ -71,6 +71,12 @@ class CommandPayloadReader:
                 )
                 return message
 
+            slot_value = (
+                slot_value
+                if slot_value.lower() not in {"none", "null", "undefined"}
+                else None
+            )
+
             # Create new SetSlot commands from the extracted attributes.
             commands.append(
                 {

@@ -3,7 +3,7 @@ import textwrap
 from collections import namedtuple
 from pathlib import Path
 from typing import Any, Callable, Dict, Text, Tuple, Type, Optional, List
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import pytest
 import structlog
@@ -22,18 +22,33 @@ from rasa.engine.graph import (
 from rasa.engine.recipes.recipe import Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.engine.validation import validate_coexistance_routing_setup
+from rasa.engine.validation import (
+    validate_coexistance_routing_setup,
+    validate_intent_based_router_position,
+    validate_command_generator_exclusivity,
+)
 from rasa.shared.constants import (
     LATEST_TRAINING_DATA_FORMAT_VERSION,
     ROUTE_TO_CALM_SLOT,
 )
+from rasa.shared.core.constants import ACTION_RESET_ROUTING
 from rasa.shared.core.domain import Domain
+from rasa.shared.core.flows import FlowsList
 from rasa.shared.data import TrainingType
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from tests.utilities import filter_logs
+from tests.utilities import filter_logs, flows_from_str
+
+from rasa.dialogue_understanding.coexistence.intent_based_router import (
+    IntentBasedRouter,
+)
+from rasa.dialogue_understanding.generator import (
+    SingleStepLLMCommandGenerator,
+    MultiStepLLMCommandGenerator,
+    LLMCommandGenerator,
+)
 
 
 class TestComponentWithoutRun(GraphComponent):
@@ -1260,6 +1275,45 @@ def test_validate_routing_setup(router_component: Text, tmp_path: Path) -> None:
                   nlu_entry:
                     sticky: 'nlu entry sticky'
                     non_sticky: 'nlu entry non sticky'
+                - name: SingleStepLLMCommandGenerator
+            """
+        )
+    importer = RasaFileImporter(config_file=config_file_name)
+    config = importer.get_config()
+    domain_yaml = textwrap.dedent(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        slots:
+          {ROUTE_TO_CALM_SLOT}:
+            type: bool
+            mappings: []
+            initial_value: false
+        """
+    )
+    domain = Domain.from_yaml(domain_yaml)
+    recipe = Recipe.recipe_for_name(config.get("recipe"))
+    model_configuration = recipe.graph_config_for_recipe(config, {})
+
+    # When / Then - should not raise any errors
+    validate_coexistance_routing_setup(domain, model_configuration, FlowsList([]))
+
+
+def test_validate_llm_based_router_required_routing_setup(tmp_path: Path) -> None:
+    # Given
+    config_file_name = tmp_path / "config.yml"
+    with open(config_file_name, "w") as file:
+        file.write(
+            """
+                recipe: default.v1
+                language: en
+                pipeline:
+                - name: WhitespaceTokenizer
+                - name: CountVectorsFeaturizer
+                - name: LogisticRegressionClassifier
+                - name: CRFEntityExtractor
+                - name: LLMBasedRouter
+                  calm_entry:
+                    sticky: 'calm entry sticky'
                 - name: LLMCommandGenerator
             """
         )
@@ -1280,7 +1334,7 @@ def test_validate_routing_setup(router_component: Text, tmp_path: Path) -> None:
     model_configuration = recipe.graph_config_for_recipe(config, {})
 
     # When / Then - should not raise any errors
-    validate_coexistance_routing_setup(domain, model_configuration)
+    validate_coexistance_routing_setup(domain, model_configuration, FlowsList([]))
 
 
 def test_validate_routing_setup_with_unrequired_calm_slot(tmp_path: Path) -> None:
@@ -1327,7 +1381,9 @@ def test_validate_routing_setup_with_unrequired_calm_slot(tmp_path: Path) -> Non
     # When / Then
     with structlog.testing.capture_logs() as caplog:
         with pytest.raises(SystemExit):
-            validate_coexistance_routing_setup(domain, model_configuration)
+            validate_coexistance_routing_setup(
+                domain, model_configuration, FlowsList([])
+            )
 
         logs = filter_logs(
             caplog, expected_event, expected_log_level, [expected_log_message]
@@ -1376,7 +1432,9 @@ def test_validate_routing_setup_with_router_and_no_calm_slot(
     # When / Then
     with structlog.testing.capture_logs() as caplog:
         with pytest.raises(SystemExit):
-            validate_coexistance_routing_setup(domain, model_configuration)
+            validate_coexistance_routing_setup(
+                domain, model_configuration, FlowsList([])
+            )
 
         logs = filter_logs(
             caplog, expected_event, expected_log_level, [expected_log_message]
@@ -1401,7 +1459,7 @@ def test_validate_routing_setup_with_wrong_component_order(
                 recipe: default.v1
                 language: en
                 pipeline:
-                - name: LLMCommandGenerator
+                - name: SingleStepLLMCommandGenerator
                 - name: {router_component}
             """
         )
@@ -1414,7 +1472,7 @@ def test_validate_routing_setup_with_wrong_component_order(
 
     # When / Then
     with pytest.raises(SystemExit):
-        validate_coexistance_routing_setup(domain, model_configuration)
+        validate_coexistance_routing_setup(domain, model_configuration, FlowsList([]))
 
 
 def test_validate_routing_setup_with_both_coexistence_components(
@@ -1439,7 +1497,7 @@ def test_validate_routing_setup_with_both_coexistence_components(
     model_configuration = recipe.graph_config_for_recipe(config, {})
 
     with pytest.raises(SystemExit):
-        validate_coexistance_routing_setup(domain, model_configuration)
+        validate_coexistance_routing_setup(domain, model_configuration, FlowsList([]))
 
 
 @pytest.mark.parametrize(
@@ -1516,20 +1574,6 @@ def test_validate_routing_setup_with_both_coexistence_components(
                 - sticky: handles calm sticky
             """,
         ),
-        (
-            "LLMBasedRouter",
-            """
-            recipe: default.v1
-            language: en
-            pipeline:
-            - name: LLMBasedRouter
-              calm_entry:
-                sticky: handles calm sticky
-              nlu_entry:
-                - sticky: handles nlu sticky
-                - non_sticky: handles nlu non sticky
-            """,
-        ),
     ],
 )
 def test_validate_coexistence_configuration(
@@ -1568,9 +1612,175 @@ def test_validate_coexistence_configuration(
     # When / Then
     with structlog.testing.capture_logs() as caplog:
         with pytest.raises(SystemExit):
-            validate_coexistance_routing_setup(domain, model_configuration)
+            validate_coexistance_routing_setup(
+                domain, model_configuration, FlowsList([])
+            )
 
         logs = filter_logs(
             caplog, expected_event, expected_log_level, [expected_log_message]
         )
         assert len(logs) == 1
+
+
+def test_validate_routing_setup_with_unrequired_action_reset_routing(
+    tmp_path: Path,
+) -> None:
+    # Given
+    config_file_name = tmp_path / "config.yml"
+    with open(config_file_name, "w") as file:
+        file.write(
+            """
+                recipe: default.v1
+                language: en
+                pipeline:
+                - name: WhitespaceTokenizer
+                - name: CountVectorsFeaturizer
+                - name: LogisticRegressionClassifier
+                - name: CRFEntityExtractor
+            """
+        )
+
+    importer = RasaFileImporter(config_file=config_file_name)
+    config = importer.get_config()
+    domain = Domain.empty()
+    recipe = Recipe.recipe_for_name(config.get("recipe"))
+    model_configuration = recipe.graph_config_for_recipe(config, {})
+    flows_list = flows_from_str(
+        """
+        flows:
+          abc_x:
+            description: an additional flow
+            steps:
+              - action: utter_greet
+              - action: action_reset_routing
+    """
+    )
+
+    expected_event = (
+        f"validation.coexistance.{ACTION_RESET_ROUTING}_present_in_flow"
+        f"_without_router_or_{ROUTE_TO_CALM_SLOT}_slot"
+    )
+    expected_log_level = "error"
+    expected_log_message = (
+        f"The action - {ACTION_RESET_ROUTING} is used in the flow - "
+        f"abc_x, but a router (LLMBasedRouter/IntentBasedRouter) or"
+        f" {ROUTE_TO_CALM_SLOT} are not defined."
+    )
+
+    # When / Then
+    with structlog.testing.capture_logs() as caplog:
+        with pytest.raises(SystemExit):
+            validate_coexistance_routing_setup(domain, model_configuration, flows_list)
+
+        logs = filter_logs(
+            caplog, expected_event, expected_log_level, [expected_log_message]
+        )
+        assert len(logs) == 1
+
+
+@pytest.fixture
+def mock_schema():
+    return Mock(spec=GraphSchema)
+
+
+@pytest.mark.parametrize(
+    "router_index, generator_index, should_exit",
+    [
+        (2, 3, False),  # Router before generator
+        (4, 3, True),  # Router after generator
+        (None, 3, False),  # Router absent
+        (2, None, False),  # Generator absent
+        (None, None, False),  # Both absent
+    ],
+)
+def test_validate_intent_based_router_position(
+    mock_schema, router_index, generator_index, should_exit
+):
+    with patch(
+        "rasa.engine.validation.get_component_index",
+        side_effect=lambda schema, cls: router_index
+        if cls is IntentBasedRouter
+        else generator_index,
+    ), patch("rasa.engine.validation.structlogger.error") as mock_error, patch(
+        "sys.exit"
+    ) as mock_exit:
+        validate_intent_based_router_position(mock_schema)
+
+        if should_exit:
+            mock_error.assert_called_once()
+            mock_exit.assert_called_once_with(1)
+        else:
+            mock_error.assert_not_called()
+            mock_exit.assert_not_called()
+
+
+@pytest.fixture
+def patch_structlogger():
+    with patch("rasa.engine.validation.structlogger.error") as mock:
+        yield mock
+
+
+@pytest.fixture
+def patch_exit():
+    with patch("sys.exit") as mock:
+        yield mock
+
+
+@pytest.mark.parametrize(
+    "generator_types, should_exit",
+    [
+        ([], False),
+        ([SingleStepLLMCommandGenerator], False),
+        # creating custom implementation of SingleStepLLMCommandGenerator
+        (
+            [
+                type(
+                    "CustomSingleStepLLMCommandGenerator",
+                    (SingleStepLLMCommandGenerator,),
+                    {},
+                )
+            ],
+            False,
+        ),
+        ([MultiStepLLMCommandGenerator], False),
+        # creating custom implementation of MultiStepLLMCommandGenerator
+        (
+            [
+                type(
+                    "CustomMultiStepLLMCommandGenerator",
+                    (MultiStepLLMCommandGenerator,),
+                    {},
+                )
+            ],
+            False,
+        ),
+        ([LLMCommandGenerator], False),
+        ([SingleStepLLMCommandGenerator, MultiStepLLMCommandGenerator], True),
+        ([SingleStepLLMCommandGenerator, LLMCommandGenerator], True),
+        ([MultiStepLLMCommandGenerator, LLMCommandGenerator], True),
+        (
+            [
+                SingleStepLLMCommandGenerator,
+                MultiStepLLMCommandGenerator,
+                LLMCommandGenerator,
+            ],
+            True,
+        ),
+    ],
+)
+def test_validate_command_generator_exclusivity(
+    patch_structlogger, patch_exit, generator_types, should_exit
+):
+    test_schema = GraphSchema({})
+    for i, component in enumerate(generator_types):
+        test_schema.nodes[str(i)] = SchemaNode(
+            needs={}, uses=component, constructor_name="create", fn="train", config={}
+        )
+    validate_command_generator_exclusivity(test_schema)
+
+    if should_exit:
+        patch_structlogger.assert_called_once()
+        patch_exit.assert_called_once_with(1)
+    else:
+        patch_structlogger.assert_not_called()
+        patch_exit.assert_not_called()

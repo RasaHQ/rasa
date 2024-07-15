@@ -7,6 +7,7 @@ import pytest
 import requests
 
 from tests.conftest import wait
+from tests.integration_tests.conftest import send_message_to_rasa_server
 from tests.integration_tests.tracing.conftest import (
     ACTION_SERVER_ACTION_TRIGGERED,
     ACTION_SERVER_JAEGER_TRACING_SERVICE_NAME,
@@ -25,7 +26,6 @@ from tests.integration_tests.tracing.conftest import (
     RASA_SERVER_PROCESSOR_SUB_SPAN_NAME,
     RASA_SERVER_TRIGGER_MESSAGE,
     TraceQueryTimestamps,
-    send_message_to_rasa_server,
 )
 
 if typing.TYPE_CHECKING:
@@ -55,7 +55,7 @@ def test_traces_get_sent_to_backend(
     from api_v3.query_service_pb2 import TraceQueryParameters
     from model_pb2 import Span
 
-    sender_id = send_message_to_rasa_server(rasa_server_endpoint)
+    sender_id, _ = send_message_to_rasa_server(rasa_server_endpoint)
     params = TraceQueryParameters(
         service_name=tracing_service_name,
         operation_name="Agent.handle_message",
@@ -97,7 +97,7 @@ def test_trace_context_propagated_to_action_server(
     from api_v3.query_service_pb2 import TraceQueryParameters
     from model_pb2 import Span
 
-    sender_id = send_message_to_rasa_server(
+    sender_id, _ = send_message_to_rasa_server(
         rasa_server_endpoint, ACTION_SERVER_TRIGGER_MESSAGE
     )
 
@@ -157,7 +157,7 @@ def test_missing_action_server_endpoint_does_not_stop_tracing(
     from api_v3.query_service_pb2 import TraceQueryParameters
     from model_pb2 import Span
 
-    sender_id = send_message_to_rasa_server(
+    sender_id, _ = send_message_to_rasa_server(
         rasa_server_endpoint, ACTION_SERVER_TRIGGER_MESSAGE
     )
     tracker = _fetch_tracker(server_location=rasa_server_endpoint, sender_id=sender_id)

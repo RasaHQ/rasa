@@ -2,7 +2,7 @@ import logging
 import textwrap
 from datetime import datetime
 from typing import List, Text, Any, Dict, Optional
-from unittest.mock import Mock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 from pytest import MonkeyPatch
@@ -17,7 +17,6 @@ from rasa.core.actions.action import (
     ActionDefaultAskAffirmation,
     ActionDefaultAskRephrase,
     ActionDefaultFallback,
-    ActionExecutionRejection,
     ActionRestart,
     ActionBotResponse,
     ActionRetrieveResponse,
@@ -29,6 +28,7 @@ from rasa.core.actions.action import (
     default_actions,
     ActionResetRouting,
 )
+from rasa.core.actions.action_exceptions import ActionExecutionRejection
 from rasa.core.actions.forms import FormAction
 from rasa.core.channels import CollectingOutputChannel, OutputChannel
 from rasa.core.channels.slack import SlackBot
@@ -162,8 +162,8 @@ async def test_remote_actions_are_compressed(
     monkeypatch: MonkeyPatch,
 ):
     endpoint = EndpointConfig("https://example.com/webhooks/actions")
-    remote_action = action.RemoteAction("my_action", endpoint)
     monkeypatch.setenv(COMPRESS_ACTION_SERVER_REQUEST_ENV_NAME, is_compression_enabled)
+    remote_action = action.RemoteAction("my_action", endpoint)
 
     with aioresponses() as mocked:
         mocked.post(
@@ -184,7 +184,13 @@ async def test_remote_action_runs(
     default_nlg: NaturalLanguageGenerator,
     default_tracker: DialogueStateTracker,
     domain: Domain,
+    monkeypatch: MonkeyPatch,
 ):
+    monkeypatch.setattr(
+        "rasa.core.actions.custom_action_executor.CustomActionRequestWriter._get_domain_digest",
+        Mock(return_value=None),
+    )
+
     endpoint = EndpointConfig("https://example.com/webhooks/actions")
     remote_action = action.RemoteAction("my_action", endpoint)
 
@@ -242,7 +248,13 @@ async def test_remote_action_logs_events(
     default_nlg: NaturalLanguageGenerator,
     default_tracker: DialogueStateTracker,
     domain: Domain,
+    monkeypatch: MonkeyPatch,
 ):
+    monkeypatch.setattr(
+        "rasa.core.actions.custom_action_executor.CustomActionRequestWriter._get_domain_digest",
+        Mock(return_value=None),
+    )
+
     endpoint = EndpointConfig("https://example.com/webhooks/actions")
     remote_action = action.RemoteAction("my_action", endpoint)
 
@@ -1180,12 +1192,14 @@ async def test_run_end_to_end_utterance_action():
     [
         (
             UserUttered(
+                "I am travelling to London.",
                 intent={"name": "inform"},
                 entities=[{"entity": "city", "value": "London"}],
             ),
             "location",
             "London",
             UserUttered(
+                "I am travelling to Berlin.",
                 intent={"name": "inform"},
                 entities=[{"entity": "city", "value": "Berlin"}],
             ),
@@ -1214,6 +1228,7 @@ async def test_run_end_to_end_utterance_action():
         ),
         (
             UserUttered(
+                text="I am travelling with Bob and Mary.",
                 intent={"name": "inform"},
                 entities=[
                     {"entity": "name", "value": "Bob"},
@@ -1223,6 +1238,7 @@ async def test_run_end_to_end_utterance_action():
             "guest_names",
             ["Bob", "Mary"],
             UserUttered(
+                text="I am travelling with John also.",
                 intent={"name": "inform"},
                 entities=[{"entity": "name", "value": "John"}],
             ),
@@ -1289,21 +1305,10 @@ async def test_action_extract_slots_predefined_mappings(
             domain,
         )
 
-    assert events == [SlotSet(slot_name, slot_value)]
+    assert SlotSet(slot_name, slot_value) in events
 
-    events.extend([user])
+    events.extend([BotUttered(), ActionExecuted("action_listen"), new_user])
     tracker.update_with_events(events)
-
-    new_events = await action_extract_slots.run(
-        CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.responses),
-        tracker,
-        domain,
-    )
-    assert new_events == [SlotSet(slot_name, slot_value)]
-
-    new_events.extend([BotUttered(), ActionExecuted("action_listen"), new_user])
-    tracker.update_with_events(new_events)
 
     updated_evts = await action_extract_slots.run(
         CollectingOutputChannel(),
@@ -1312,7 +1317,7 @@ async def test_action_extract_slots_predefined_mappings(
         domain,
     )
 
-    assert updated_evts == [SlotSet(slot_name, updated_value)]
+    assert SlotSet(slot_name, updated_value) in updated_evts
 
 
 async def test_action_extract_slots_with_from_trigger_mappings():
@@ -3057,3 +3062,75 @@ def test_default_actions_and_names_consistency():
         RULE_SNIPPET_ACTION_NAME
     }
     assert names_of_default_actions == names_of_executable_actions_in_constants
+
+
+async def test_action_extract_slots_with_flows_metadata(
+    caplog: LogCaptureFixture, monkeypatch: MonkeyPatch
+):
+    """Test that the action `action_extract_slots` can handle metadata with flows.
+
+    The action should not extract slots that are collected by flows or actions that are
+    run within flows.
+    """
+    monkeypatch.setattr(
+        "rasa.core.actions.custom_action_executor.CustomActionRequestWriter._get_domain_digest",
+        AsyncMock(return_value=None),
+    )
+
+    slot_name = "store_location"
+    action_name = "action_find_closest_store"
+    domain_yaml = textwrap.dedent(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+
+        slots:
+          {slot_name}:
+            type: text
+            mappings:
+            - type: custom
+              action: {action_name}
+
+        actions:
+        - {action_name}"""
+    )
+    domain = Domain.from_yaml(domain_yaml)
+
+    metadata = {"all_flows": {"find_store": {"steps": [{"action": action_name}]}}}
+
+    event = UserUttered("Hi")
+    tracker = DialogueStateTracker.from_events(
+        sender_id="test_id", evts=[event], slots=domain.slots
+    )
+
+    action_server_url = "https://my-action-server:5055/webhook"
+
+    with aioresponses() as mocked:
+        mocked.post(
+            action_server_url,
+            payload={
+                "events": [
+                    {"event": "slot", "name": slot_name, "value": "Shoreditch Branch"}
+                ]
+            },
+        )
+
+        action_server = EndpointConfig(action_server_url)
+        action_extract_slots = ActionExtractSlots(action_server)
+
+        with caplog.at_level(logging.DEBUG):
+            events = await action_extract_slots.run(
+                CollectingOutputChannel(),
+                TemplatedNaturalLanguageGenerator(domain.responses),
+                tracker,
+                domain,
+                metadata,
+            )
+
+        assert all(
+            [
+                f"Calling action endpoint to run action '{action_name}'."
+                not in record.message
+                for record in caplog.records
+            ]
+        )
+        assert events == []

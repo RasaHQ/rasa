@@ -1,49 +1,51 @@
 import uuid
-import pytest
-from typing import Dict, Any, Optional, Text
+from typing import Dict, Any, Optional, Text, ClassVar, List
 from unittest.mock import Mock, AsyncMock, patch
+
+import pytest
 from _pytest.tmpdir import TempPathFactory
+from rasa.shared.constants import ROUTE_TO_CALM_SLOT
 from structlog.testing import capture_logs
-from rasa.dialogue_understanding.generator.llm_based_command_generator import (
+
+from rasa.dialogue_understanding.commands import (
+    Command,
+    ErrorCommand,
+    SetSlotCommand,
+    ChitChatAnswerCommand,
+)
+from rasa.dialogue_understanding.generator import (
     LLMBasedCommandGenerator,
-)
-from rasa.dialogue_understanding.generator.llm_command_generator import (
     LLMCommandGenerator,
-)
-from rasa.dialogue_understanding.generator.multi_step_llm_command_generator import (
+    SingleStepLLMCommandGenerator,
     MultiStepLLMCommandGenerator,
 )
 from rasa.dialogue_understanding.generator.constants import (
     FLOW_RETRIEVAL_KEY,
     FLOW_RETRIEVAL_ACTIVE_KEY,
 )
+from rasa.engine.graph import ExecutionContext
+from rasa.engine.storage.local_model_storage import LocalModelStorage
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
-from rasa.shared.core.slots import (
-    Slot,
-    TextSlot,
-)
-from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.dialogue_understanding.commands import (
-    Command,
-    ErrorCommand,
-    SetSlotCommand,
-)
-from rasa.shared.nlu.constants import TEXT
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.flows.steps.collect import (
     SlotRejection,
     CollectInformationFlowStep,
 )
+from rasa.shared.core.slots import (
+    Slot,
+    TextSlot,
+)
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.exceptions import ProviderClientAPIException
+from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.message import Message
-from rasa.engine.storage.storage import ModelStorage
-from rasa.engine.storage.local_model_storage import LocalModelStorage
-from rasa.engine.storage.resource import Resource
-from rasa.engine.graph import ExecutionContext
 from tests.utilities import flows_from_str
 
 
 class TestLLMBasedCommandGenerator:
-    """Tests for the MultiStepLLMCommandGenerator."""
+    """Tests for the LLMBasedCommandGenerator."""
 
     @pytest.fixture
     def flows(self) -> FlowsList:
@@ -133,6 +135,15 @@ class TestLLMBasedCommandGenerator:
         )
 
     @pytest.fixture
+    def single_step_llm_command_generator_fixture(self, model_storage, resource):
+        return SingleStepLLMCommandGenerator.create(
+            config={},
+            model_storage=model_storage,
+            resource=resource,
+            execution_context=Mock(spec=ExecutionContext),
+        )
+
+    @pytest.fixture
     def multi_step_llm_command_generator_fixture(self, model_storage, resource):
         return MultiStepLLMCommandGenerator.create(
             config={},
@@ -147,11 +158,11 @@ class TestLLMBasedCommandGenerator:
     def command_generator_fixture(
         self,
         request,
-        llm_command_generator_fixture,
+        single_step_llm_command_generator_fixture,
         multi_step_llm_command_generator_fixture,
     ):
         if request.param == "implementation_single_step":
-            return llm_command_generator_fixture
+            return single_step_llm_command_generator_fixture
         elif request.param == "implementation_multi_step":
             return multi_step_llm_command_generator_fixture
         else:
@@ -354,15 +365,17 @@ class TestLLMBasedCommandGenerator:
         generator = command_generator_fixture
         message = Mock()
         message.data = {TEXT: "some_message"}
-        mock_flow_retrieval_filter_flows.side_effect = Exception("Test Exception")
+        mock_flow_retrieval_filter_flows.side_effect = ProviderClientAPIException(
+            message="Test Exception", original_exception=Exception("API exception")
+        )
 
-        commands = await generator.predict_commands(message, flows, tracker)
+        predicted_commands = await generator.predict_commands(message, flows, tracker)
 
         mock_flow_retrieval_filter_flows.assert_called_once()
-        assert len(commands) == 1
-        assert isinstance(commands[0], ErrorCommand)
-        assert commands[0].error_type == "rasa_internal_error_default"
-        assert commands[0].info == {}
+
+        assert len(predicted_commands) == 2
+        assert ErrorCommand() in predicted_commands
+        assert SetSlotCommand(ROUTE_TO_CALM_SLOT, True) in predicted_commands
 
     ### Tests for methods implemented in the base class
     # Parameterized fixture
@@ -377,7 +390,7 @@ class TestLLMBasedCommandGenerator:
         self,
         request,
         base_class_fixture,
-        llm_command_generator_fixture,
+        single_step_llm_command_generator_fixture,
         multi_step_llm_command_generator_fixture,
         model_storage,
         resource,
@@ -390,18 +403,23 @@ class TestLLMBasedCommandGenerator:
                 config=config, model_storage=model_storage, resource=resource
             )
         if request.param == "implementation_single_step":
-            return llm_command_generator_fixture
+            return single_step_llm_command_generator_fixture
         elif request.param == "implementation_multi_step":
             return multi_step_llm_command_generator_fixture
         else:
             raise ValueError("Unknown fixture type")
 
+    @patch(
+        "rasa.dialogue_understanding.generator.llm_based_command_generator.llm_factory"
+    )
     async def test_generate_action_list_calls_llm_factory_correctly(
         self,
+        mock_llm_factory: Mock,
         base_command_generator_fixture,
     ):
         """Test that _generate_action_list calls llm correctly."""
         command_generator = base_command_generator_fixture
+
         # Given
         llm_config = {
             "_type": "openai",
@@ -410,14 +428,13 @@ class TestLLMBasedCommandGenerator:
             "model_name": "gpt-4",
             "max_tokens": 256,
         }
+        mock_llm_factory.return_value = AsyncMock(**llm_config)
+
         # When
-        with patch(
-            "rasa.dialogue_understanding.generator.llm_based_command_generator.llm_factory",
-            Mock(),
-        ) as mock_llm_factory:
-            await command_generator.invoke_llm("some prompt")
-            # Then
-            mock_llm_factory.assert_called_once_with(None, llm_config)
+        await command_generator.invoke_llm("some prompt")
+
+        # Then
+        mock_llm_factory.assert_called_once_with(None, llm_config)
 
     async def test_generate_action_list_calls_llm_correctly(
         self,
@@ -439,24 +456,28 @@ class TestLLMBasedCommandGenerator:
             # Then
             predict_mock.assert_called_once_with("some prompt")
 
+    @patch(
+        "rasa.dialogue_understanding.generator.llm_based_command_generator.llm_factory"
+    )
     async def test_generate_action_list_catches_llm_exception(
         self,
+        mock_llm_factory: Mock,
         base_command_generator_fixture,
     ):
         """Test that _generate_action_list calls llm correctly."""
         command_generator = base_command_generator_fixture
+        mock_llm = AsyncMock()
+        mock_llm.apredict = AsyncMock(side_effect=Exception("API exception"))
+        mock_llm_factory.return_value = mock_llm
+
         # When
-        mock_llm = Mock(side_effect=Exception("some exception"))
-        with patch(
-            "rasa.dialogue_understanding.generator.llm_based_command_generator.llm_factory",
-            Mock(return_value=mock_llm),
-        ):
-            with capture_logs() as logs:
+        with capture_logs() as logs:
+            with pytest.raises(ProviderClientAPIException):
                 await command_generator.invoke_llm("some prompt")
-                # Then
-                print(logs)
-                assert len(logs) == 1
-                assert logs[0]["event"] == "llm_based_command_generator.llm.error"
+
+            # Then
+            assert len(logs) == 1
+            assert logs[0]["event"] == "llm_based_command_generator.llm.error"
 
     @pytest.mark.parametrize(
         "input_value, expected_output",
@@ -663,3 +684,99 @@ class TestLLMBasedCommandGenerator:
         # When
         exceeds_limit = generator.check_if_message_exceeds_limit(message)
         assert exceeds_limit == expected_exceeds_limit
+
+    def test_import_rasa_generators_from_generator_module(
+        self, model_storage, resource
+    ):
+        """Test that rasa generator modules can be imported
+        without errors from generator module."""
+        from rasa.dialogue_understanding.generator import (
+            LLMCommandGenerator,
+            SingleStepLLMCommandGenerator,
+            MultiStepLLMCommandGenerator,
+        )
+
+        assert LLMCommandGenerator(
+            config={},
+            model_storage=model_storage,
+            resource=resource,
+            execution_context=Mock(spec=ExecutionContext),
+        )
+        assert SingleStepLLMCommandGenerator(
+            config={},
+            model_storage=model_storage,
+            resource=resource,
+            execution_context=Mock(spec=ExecutionContext),
+        )
+        assert MultiStepLLMCommandGenerator(
+            config={},
+            model_storage=model_storage,
+            resource=resource,
+            execution_context=Mock(spec=ExecutionContext),
+        )
+
+    def test_import_rasa_generators_directly(self, model_storage, resource):
+        """Test that rasa generator modules can be imported
+        without errors directly."""
+        from rasa.dialogue_understanding.generator.llm_command_generator import (
+            LLMCommandGenerator,
+        )
+        from rasa.dialogue_understanding.generator.multi_step.multi_step_llm_command_generator import (  # noqa: E501
+            MultiStepLLMCommandGenerator,
+        )
+        from rasa.dialogue_understanding.generator.single_step.single_step_llm_command_generator import (  # noqa: E501
+            SingleStepLLMCommandGenerator,
+        )
+
+        assert LLMCommandGenerator(
+            config={},
+            model_storage=model_storage,
+            resource=resource,
+            execution_context=Mock(spec=ExecutionContext),
+        )
+        assert SingleStepLLMCommandGenerator(
+            config={},
+            model_storage=model_storage,
+            resource=resource,
+            execution_context=Mock(spec=ExecutionContext),
+        )
+        assert MultiStepLLMCommandGenerator(
+            config={},
+            model_storage=model_storage,
+            resource=resource,
+            execution_context=Mock(spec=ExecutionContext),
+        )
+
+    base_classes: ClassVar[List[type]] = [
+        LLMCommandGenerator,
+        SingleStepLLMCommandGenerator,
+        MultiStepLLMCommandGenerator,
+    ]
+
+    @pytest.mark.parametrize("base_class", base_classes)
+    async def test_new_subclass_uses_own_predict_commands(
+        self, base_class, flows, model_storage, resource
+    ):
+        """Test that if custom component has overriden the predict_commands
+        method, it will be called and not the parent's."""
+
+        class CustomCommandGenerator(base_class):
+            async def predict_commands(
+                self,
+                message: Message,
+                flows: FlowsList,
+                tracker: DialogueStateTracker = None,
+            ):
+                return [ChitChatAnswerCommand()]
+
+        message = Mock()
+        message.data = {TEXT: "some_message"}
+        tracker = Mock(spec=DialogueStateTracker)
+        flows = FlowsList(underlying_flows=[])
+
+        generator = CustomCommandGenerator(
+            config={}, model_storage=model_storage, resource=resource
+        )
+        result = await generator.predict_commands(message, flows, tracker)
+
+        assert result == [ChitChatAnswerCommand()]

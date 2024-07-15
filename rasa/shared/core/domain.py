@@ -559,10 +559,12 @@ class Domain:
                     "domain.collect_slots.no_mappings_defined",
                     event_info=(
                         f"Slot '{slot_name}' has no mappings defined. "
-                        f"We will continue with an empty list of mappings."
+                        f"Assigning the default FROM_LLM slot mapping."
                     ),
                 )
-                slot_dict[slot_name][SLOT_MAPPINGS] = []
+                slot_dict[slot_name][SLOT_MAPPINGS] = [
+                    {MAPPING_TYPE: SlotMappingType.FROM_LLM.value}
+                ]
 
             slot = slot_class(slot_name, **slot_dict[slot_name])
             slots.append(slot)
@@ -951,7 +953,7 @@ class Domain:
         Returns:
             The form names, a mapping of form names and required slots, and custom
             actions.
-            Returning custom actions for each forms means that Rasa Open Source should
+            Returning custom actions for each forms means that Rasa Pro should
             not use the default `FormAction` for the forms, but rather a custom action
             for it. This can e.g. be used to run the deprecated Rasa Open Source 1
             `FormAction` which is implemented in the Rasa SDK.

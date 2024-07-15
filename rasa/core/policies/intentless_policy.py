@@ -27,7 +27,7 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.graph_components.providers.forms_provider import Forms
 from rasa.graph_components.providers.responses_provider import Responses
-from rasa.shared.constants import REQUIRED_SLOTS_KEY
+from rasa.shared.constants import REQUIRED_SLOTS_KEY, ROUTE_TO_CALM_SLOT
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.shared.core.domain import KEY_RESPONSES_TEXT, Domain
 from rasa.shared.core.events import (
@@ -523,6 +523,21 @@ class IntentlessPolicy(Policy):
                 self.prompt_template, path / INTENTLESS_PROMPT_TEMPLATE_FILE_NAME
             )
 
+    def should_abstain_in_coexistence(
+        self, tracker: DialogueStateTracker, is_calm_policy: bool
+    ) -> bool:
+        """Whether a policy should abstain making predictions in coexistence.
+
+        IntentlessPolicy should not make a prediction when the routing slot is set
+        to False. This is because the NLU based policies should handle the
+        prediction in these cases. Only when the routing slot is None or True,
+        IntentlessPolicy should make a prediction.
+        """
+        return (
+            tracker.has_coexistence_routing_slot
+            and tracker.get_slot(ROUTE_TO_CALM_SLOT) is False
+        )
+
     async def predict_action_probabilities(
         self,
         tracker: DialogueStateTracker,
@@ -543,7 +558,9 @@ class IntentlessPolicy(Policy):
         Returns:
              The prediction.
         """
-        if not self.supports_current_stack_frame(tracker):
+        if not self.supports_current_stack_frame(
+            tracker
+        ) or self.should_abstain_in_coexistence(tracker, True):
             return self._prediction(self._default_predictions(domain))
 
         if tracker.has_bot_message_after_latest_user_message():
@@ -670,7 +687,7 @@ class IntentlessPolicy(Policy):
         if tracker.latest_message.text.startswith("/"):
             # we don't want to generate a response if the user is trying to
             # execute a "command" - this should be handled by the regex
-            # intent classifier in rasa open source.
+            # intent classifier in rasa pro.
             structlogger.debug("intentless_policy.prediction.skip_slash")
             return None, 0.0
 

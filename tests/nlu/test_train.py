@@ -98,6 +98,7 @@ def pipelines_for_tests() -> List[Tuple[Text, List[Dict[Text, Any]]]]:
             ),
         ),
         ("fallback", as_pipeline("KeywordIntentClassifier", "FallbackClassifier")),
+        ("calm", as_pipeline("NLUCommandAdapter", "SingleStepLLMCommandGenerator")),
         ("calm", as_pipeline("NLUCommandAdapter", "LLMCommandGenerator")),
     ]
 
@@ -119,7 +120,7 @@ def coexistence_pipelines_for_tests() -> List[Tuple[Text, List[Dict[Text, Any]]]
                 "LogisticRegressionClassifier",
                 "CRFEntityExtractor",
                 "NLUCommandAdapter",
-                "LLMCommandGenerator",
+                "SingleStepLLMCommandGenerator",
             ),
         ),
         (
@@ -135,7 +136,7 @@ def coexistence_pipelines_for_tests() -> List[Tuple[Text, List[Dict[Text, Any]]]
                 "LogisticRegressionClassifier",
                 "CRFEntityExtractor",
                 "NLUCommandAdapter",
-                "LLMCommandGenerator",
+                "SingleStepLLMCommandGenerator",
             ),
         ),
     ]
