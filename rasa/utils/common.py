@@ -51,22 +51,17 @@ EXPECTED_WARNINGS: List[Tuple[Type[Warning], str]] = [
         np.VisibleDeprecationWarning,
         "Creating an ndarray from ragged nested sequences.*",
     ),
-    # raised by langchain -> faiss
-    (
-        DeprecationWarning,
-        "distutils Version classes are deprecated. Use packaging.version instead",
-    ),
     # raised by pycountry (rasa-plus anonymization), magic_filter, google rpc
     # and probably other dependencies that use pkg_resources instead of importlib
     (DeprecationWarning, ".*pkg_resources.*"),
-    # This warning is triggered by sanic-cors 2.0.0.
+    # This warning is triggered by sanic-cors 2.0.0 and by langchain -> faiss.
     # The warning can be removed after the packages are updated:
     # sanic-cors: ^2.1.0
     # packaging`: 23.2 (introduces breaking changes)
     # pep440-version-utils (also requires update on packaging)
     (
         DeprecationWarning,
-        "distutils Version classes are deprecated. Use packaging.version instead.",
+        "distutils Version classes are deprecated. Use packaging.version instead",
     ),
     # cf. https://github.com/tensorflow/tensorflow/issues/38168
     (
