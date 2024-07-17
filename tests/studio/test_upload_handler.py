@@ -11,7 +11,7 @@ from rasa.shared.exceptions import RasaException
 
 import rasa.studio.upload
 from rasa.studio.config import StudioConfig
-from rasa.studio.error_handler import ErrorHandler
+from rasa.studio.results_logger import ResultsLogger
 
 CALM_DOMAIN_YAML = dedent(
     """\
@@ -1054,11 +1054,11 @@ def test_make_request(
     mock_token.get_token.return_value.access_token = "mock_token"
     monkeypatch.setattr(rasa.studio.upload, "KeycloakTokenReader", lambda: mock_token)
 
-    # Create an instance of ErrorHandler
-    error_handler = ErrorHandler()
+    # Create an instance of ResultsLogger
+    results_logger = ResultsLogger()
 
     # Apply the decorator to a test function
-    @error_handler.handle_error
+    @results_logger.wrap
     def test_make_request_func(inner_endpoint: str, graphQL_req: Dict[str, Any]):
         return rasa.studio.upload.make_request(inner_endpoint, graphQL_req)
 

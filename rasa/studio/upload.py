@@ -16,10 +16,10 @@ from rasa.shared.core.flows.yaml_flows_io import YamlFlowsWriter
 from rasa.shared.exceptions import RasaException
 from rasa.shared.importers.importer import TrainingDataImporter, FlowSyncImporter
 from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
-from rasa.shared.utils.yaml import dump_obj_as_yaml_to_string
+from rasa.shared.utils.yaml import dump_obj_as_yaml_to_string, read_yaml_file
 from rasa.studio.auth import KeycloakTokenReader
 from rasa.studio.config import StudioConfig
-from rasa.studio.error_handler import error_handler
+from rasa.studio.results_logger import results_logger
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +71,7 @@ def extract_values(data: Dict, keys: List[Text]) -> Dict:
     return {key: data.get(key) for key in keys if data.get(key)}
 
 
-@error_handler.handle_error
+@results_logger.wrap
 def upload_calm_assistant(
     args: argparse.Namespace, assistant_name: str, endpoint: str
 ) -> Tuple[str, bool]:
@@ -99,6 +99,7 @@ def upload_calm_assistant(
     # Prepare config and domain
     config_from_files = importer.get_config()
     domain_from_files = importer.get_domain().as_dict()
+    endpoints_from_files = read_yaml_file(args.endpoints)
 
     # Extract domain and config values
     domain_keys = [
@@ -118,6 +119,17 @@ def upload_calm_assistant(
         "llm",
         "policies",
         "model_name",
+        "assistant_id"
+    ]
+
+    endpoints_keys = [
+        "action",
+        "event_broker",
+        "lock_store",
+        "model",
+        "nlg",
+        "tracker_store",
+        "vector_store"
     ]
 
     domain = extract_values(domain_from_files, domain_keys)
@@ -128,7 +140,12 @@ def upload_calm_assistant(
     if isinstance(training_data_paths, list):
         training_data_paths.append(args.flows)
     elif isinstance(training_data_paths, str):
-        training_data_paths = [training_data_paths, args.flows]
+        if isinstance(args.flows, list):
+            training_data_paths = [training_data_paths] + args.flows
+        elif isinstance(args.flows, str):
+            training_data_paths = [training_data_paths, args.flows]
+        else:
+            raise RasaException("Invalid flows path")
 
     # Prepare flows
     flow_importer = FlowSyncImporter.load_from_dict(
@@ -159,6 +176,7 @@ def upload_calm_assistant(
         flows_yaml=YamlFlowsWriter().dumps(flows),
         domain_yaml=dump_obj_as_yaml_to_string(domain),
         config_yaml=dump_obj_as_yaml_to_string(config),
+        endpoints=dump_obj_as_yaml_to_string(endpoints_from_files),
         nlu_yaml=nlu_examples_yaml,
     )
 
@@ -167,8 +185,7 @@ def upload_calm_assistant(
 
     return result, success
 
-
-@error_handler.handle_error
+@results_logger.wrap
 def upload_nlu_assistant(
     args: argparse.Namespace, assistant_name: str, endpoint: str
 ) -> Tuple[str, bool]:
@@ -237,9 +254,7 @@ def make_request(endpoint: str, graphql_req: Dict) -> Tuple[str, bool]:
         },
     )
 
-    res.raise_for_status()  # This will raise an HTTPError for bad responses
-
-    if error_handler.response_has_errors(res.json()):
+    if results_logger.response_has_errors(res.json()):
         return res.json(), False
     return "Upload successful", True
 
@@ -263,6 +278,7 @@ def build_import_request(
     flows_yaml: str,
     domain_yaml: str,
     config_yaml: str,
+    endpoints: str,
     nlu_yaml: str = "",
 ) -> Dict:
     # b64encode expects bytes and returns bytes so we need to decode to string
@@ -270,6 +286,7 @@ def build_import_request(
     base64_flows = base64.b64encode(flows_yaml.encode("utf-8")).decode("utf-8")
     base64_config = base64.b64encode(config_yaml.encode("utf-8")).decode("utf-8")
     base64_nlu = base64.b64encode(nlu_yaml.encode("utf-8")).decode("utf-8")
+    base64_endpoints = base64.b64encode(endpoints.encode("utf-8")).decode("utf-8")
 
     graphql_req = {
         "query": (
@@ -283,6 +300,7 @@ def build_import_request(
                 "flows": base64_flows,
                 "nlu": base64_nlu,
                 "config": base64_config,
+                "endpoints": base64_endpoints,
             }
         },
     }

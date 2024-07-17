@@ -2,26 +2,23 @@ from unittest.mock import patch, Mock, MagicMock
 
 import pytest
 
-from rasa.studio.error_handler import (
-    ErrorHandler,
+from rasa.studio.results_logger import (
+    ResultsLogger,
     RasaException,
     KeycloakError,
     ConnectionError,
     Timeout,
     RequestException,
-    CALL_CYCLIC_ERROR,
-    CALL_STEP_ERROR,
-    MAX_RECURSION_ERROR,
 )
 
 
 @pytest.fixture
-def error_handler():
-    return ErrorHandler()
+def results_logger():
+    return ResultsLogger()
 
 
-def test_handle_error_successful_execution(error_handler):
-    @error_handler.handle_error
+def test_handle_error_successful_execution(results_logger):
+    @results_logger.wrap
     def successful_function():
         return "Upload successful!", True
 
@@ -29,8 +26,8 @@ def test_handle_error_successful_execution(error_handler):
     assert result == ("Upload successful!", True)
 
 
-def test_handle_error_graphql_errors(error_handler, caplog):
-    @error_handler.handle_error
+def test_handle_error_graphql_errors(results_logger, caplog):
+    @results_logger.wrap
     def function_with_graphql_errors():
         return {
             "data": {},
@@ -57,7 +54,7 @@ def mock_studio_config():
 @pytest.mark.parametrize(
     "exception,expected_message_template",
     [
-        (RasaException("Rasa error"), "Rasa-specific error occurred: Rasa error"),
+        (RasaException("Rasa error"), "Error: Rasa error"),
         (
             KeycloakError("Keycloak error"),
             (
@@ -71,10 +68,10 @@ def mock_studio_config():
             "Please check if Studio is running and the configured URL is correct. \n"
             "You may need to reconfigure Rasa Studio using 'rasa studio config'.",
         ),
-        (Timeout(), "The request to Rasa Studio timed out. Please try again later."),
+        (Timeout(), "The request timed out. Please try again later."),
         (
             RequestException("Request failed"),
-            "An error occurred while communicating with Rasa Studio: Request failed",
+            "An error occurred while communicating with the server: Request failed",
         ),
         (
             Exception("Unexpected error"),
@@ -83,9 +80,9 @@ def mock_studio_config():
     ],
 )
 def test_handle_error_exceptions(
-    error_handler, mock_studio_config, exception, expected_message_template
+    results_logger, mock_studio_config, exception, expected_message_template
 ):
-    @error_handler.handle_error
+    @results_logger.wrap
     def function_with_exception():
         raise exception
 
@@ -99,35 +96,35 @@ def test_handle_error_exceptions(
     assert result == (expected_message, False)
 
 
-def test_response_has_errors(error_handler):
-    if error_handler.response_has_errors({"errors": [{"message": "Error"}]}) is True:
+def test_response_has_errors(results_logger):
+    if results_logger.response_has_errors({"errors": [{"message": "Error"}]}) is True:
         assert True
     else:
         assert False
 
-    if error_handler.response_has_errors({"errors": []}) is False:
+    if results_logger.response_has_errors({"errors": []}) is False:
         assert True
     else:
         assert False
 
-    if error_handler.response_has_errors({"data": "Success"}) is False:
+    if results_logger.response_has_errors({"data": "Success"}) is False:
         assert True
     else:
         assert False
 
-    if error_handler.response_has_errors({"errors": None}) is False:
+    if results_logger.response_has_errors({"errors": None}) is False:
         assert True
     else:
         assert False
 
 
-def test_add_custom_error_handler(error_handler):
+def test_add_custom_results_logger(results_logger):
     custom_exception = Exception
     custom_handler = Mock(return_value=("Custom error handled", False))
 
-    error_handler.add_error_handler(custom_exception, custom_handler)
+    results_logger.add_error_handler(custom_exception, custom_handler)
 
-    @error_handler.handle_error
+    @results_logger.wrap
     def function_with_custom_exception():
         raise custom_exception("Custom error")
 
@@ -135,32 +132,3 @@ def test_add_custom_error_handler(error_handler):
 
     custom_handler.assert_called_once()
     assert result == ("Custom error handled", False)
-
-
-def test_handle_calm_assistant_error(error_handler):
-    response, success = error_handler.handle_calm_assistant_error(
-        Exception(MAX_RECURSION_ERROR)
-    )
-    assert response == CALL_CYCLIC_ERROR
-    assert not success
-
-    response, success = error_handler.handle_calm_assistant_error(
-        Exception("Call flow reference not set.")
-    )
-    assert response == CALL_STEP_ERROR
-    assert not success
-
-    unexpected_error = "Unexpected error"
-    response, success = error_handler.handle_calm_assistant_error(
-        Exception(unexpected_error)
-    )
-    assert response == f"An unexpected error occurred: {unexpected_error}"
-
-
-@patch("rasa.studio.error_handler.print_error")
-def test_handle_upload_error(print_error, error_handler):
-    error_handler.handle_upload_error(True, "Upload successful")
-    assert not print_error.called
-
-    error_handler.handle_upload_error(False, "Upload failed")
-    assert print_error.called_once_with("Upload failed: Upload failed")

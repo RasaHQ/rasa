@@ -17,7 +17,7 @@ from rasa.studio.constants import (
     KEYCLOAK_REFRESH_EXPIRES_IN_KEY,
     KEYCLOAK_REFRESH_TOKEN,
 )
-from rasa.studio.error_handler import error_handler
+from rasa.studio.results_logger import results_logger
 
 
 class StudioAuth:
@@ -44,7 +44,7 @@ class StudioAuth:
         except Exception:
             return False
 
-    @error_handler.handle_error
+    @results_logger.wrap
     def login(
         self, username: Text, password: Text, totp: Optional[int] = None
     ) -> Tuple[Text, bool]:
