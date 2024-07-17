@@ -55,14 +55,6 @@ def set_upload_arguments(parser: argparse.ArgumentParser) -> None:
     add_endpoint_param(parser, help_text="Path to the endpoints file.")
 
     parser.add_argument(
-        "assistant_name",
-        default=None,
-        nargs=1,
-        type=str,
-        help="Name of the assistant on Rasa Studio",
-    )
-
-    parser.add_argument(
         "--entities",
         default=None,
         nargs="+",

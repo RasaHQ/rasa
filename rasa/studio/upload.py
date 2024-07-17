@@ -16,7 +16,8 @@ from rasa.shared.core.flows.yaml_flows_io import YamlFlowsWriter
 from rasa.shared.exceptions import RasaException
 from rasa.shared.importers.importer import TrainingDataImporter, FlowSyncImporter
 from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
-from rasa.shared.utils.yaml import dump_obj_as_yaml_to_string
+from rasa.shared.utils.yaml import dump_obj_as_yaml_to_string, read_yaml_file
+from rasa.shared.utils.cli import print_error, print_info
 from rasa.studio.auth import KeycloakTokenReader
 from rasa.studio.config import StudioConfig
 from rasa.studio.error_handler import error_handler
@@ -46,7 +47,6 @@ def _get_selected_entities_and_intents(
 
 def handle_upload(args: argparse.Namespace) -> None:
     """Uploads primitives to rasa studio."""
-    assistant_name = args.assistant_name[0]
     endpoint = StudioConfig.read_config().studio_url
     if not endpoint:
         rasa.shared.utils.cli.print_error_and_exit(
@@ -61,9 +61,9 @@ def handle_upload(args: argparse.Namespace) -> None:
 
         # check safely if args.calm is set and not fail if not
         if hasattr(args, "calm") and args.calm:
-            upload_calm_assistant(args, assistant_name, endpoint)
+            upload_calm_assistant(args, endpoint)
         else:
-            upload_nlu_assistant(args, assistant_name, endpoint)
+            upload_nlu_assistant(args, endpoint)
 
 
 def extract_values(data: Dict, keys: List[Text]) -> Dict:
@@ -72,9 +72,7 @@ def extract_values(data: Dict, keys: List[Text]) -> Dict:
 
 
 @error_handler.handle_error
-def upload_calm_assistant(
-    args: argparse.Namespace, assistant_name: str, endpoint: str
-) -> Tuple[str, bool]:
+def upload_calm_assistant(args: argparse.Namespace, endpoint: str) -> Tuple[str, bool]:
     """Uploads the CALM assistant data to Rasa Studio.
 
     Args:
@@ -84,7 +82,6 @@ def upload_calm_assistant(
             - flows: The path to the flows
             - endpoints: The path to the endpoints
             - config: The path to the config
-        assistant_name: The name of the assistant
         endpoint: The studio endpoint
     Returns:
         None
@@ -99,6 +96,7 @@ def upload_calm_assistant(
     # Prepare config and domain
     config_from_files = importer.get_config()
     domain_from_files = importer.get_domain().as_dict()
+    endpoints_from_files = read_yaml_file(args.endpoints)
 
     # Extract domain and config values
     domain_keys = [
@@ -118,10 +116,33 @@ def upload_calm_assistant(
         "llm",
         "policies",
         "model_name",
+        "assistant_id",
     ]
 
     domain = extract_values(domain_from_files, domain_keys)
     config = extract_values(config_from_files, config_keys)
+
+    config_assistant_id = config.get("assistant_id", None)
+    assistant_name = None
+
+    while not assistant_name:
+        assistant_name = (
+            input(
+                f"Please enter assistant name: (default: " f"{config_assistant_id})\t"
+            )
+            or config_assistant_id
+        )
+        if not assistant_name:
+            print_error("Assistant name cannot be empty. Please try again.")
+
+    # if assistant_name exists and different from config assistant_id,
+    # notify user and upload with new assistant_name
+    if config_assistant_id and assistant_name != config_assistant_id:
+        print_info(
+            f"Assistant name '{assistant_name}' is different "
+            f"from the one in the config file: '{config_assistant_id}'."
+        )
+        print_info(f"Uploading assistant with the new name '{assistant_name}'.")
 
     training_data_paths = args.data
 
@@ -159,6 +180,7 @@ def upload_calm_assistant(
         flows_yaml=YamlFlowsWriter().dumps(flows),
         domain_yaml=dump_obj_as_yaml_to_string(domain),
         config_yaml=dump_obj_as_yaml_to_string(config),
+        endpoints=dump_obj_as_yaml_to_string(endpoints_from_files),
         nlu_yaml=nlu_examples_yaml,
     )
 
@@ -237,8 +259,6 @@ def make_request(endpoint: str, graphql_req: Dict) -> Tuple[str, bool]:
         },
     )
 
-    res.raise_for_status()  # This will raise an HTTPError for bad responses
-
     if error_handler.response_has_errors(res.json()):
         return res.json(), False
     return "Upload successful", True
@@ -263,6 +283,7 @@ def build_import_request(
     flows_yaml: str,
     domain_yaml: str,
     config_yaml: str,
+    endpoints: str,
     nlu_yaml: str = "",
 ) -> Dict:
     # b64encode expects bytes and returns bytes so we need to decode to string
@@ -270,6 +291,7 @@ def build_import_request(
     base64_flows = base64.b64encode(flows_yaml.encode("utf-8")).decode("utf-8")
     base64_config = base64.b64encode(config_yaml.encode("utf-8")).decode("utf-8")
     base64_nlu = base64.b64encode(nlu_yaml.encode("utf-8")).decode("utf-8")
+    base64_endpoints = base64.b64encode(endpoints.encode("utf-8")).decode("utf-8")
 
     graphql_req = {
         "query": (
@@ -283,6 +305,7 @@ def build_import_request(
                 "flows": base64_flows,
                 "nlu": base64_nlu,
                 "config": base64_config,
+                "endpoints": base64_endpoints,
             }
         },
     }

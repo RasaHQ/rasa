@@ -589,6 +589,25 @@ CALM_NLU_YAML = dedent(
     """  # noqa: E501
 )
 
+CALM_CONFIG_YAML = dedent(
+    """\
+    recipe: default.v1
+    language: en
+    pipeline:
+    - name: LLMCommandGenerator
+      llm:
+        model_name: gpt-4
+        request_timeout: 7
+        max_tokens: 256
+
+    policies:
+    - name: FlowPolicy
+    - name: IntentlessPolicy
+    """
+)
+
+CALM_ENDPOINTS_YAML = "nlg: \ntype: rephrase\n"
+
 
 def encode_yaml(yaml):
     return base64.b64encode(yaml.encode("utf-8")).decode("utf-8")
@@ -759,7 +778,7 @@ def test_handle_upload_no_domain_path_specified(
         domain=str(domain_dir),
     )
 
-    mock.assert_called_once_with(expected_args, assistant_name, endpoint)
+    mock.assert_called_once_with(expected_args, endpoint)
 
 
 @pytest.mark.parametrize(
@@ -836,16 +855,24 @@ def test_build_import_request(assistant_name: str) -> None:
 
     base64_flows = encode_yaml(CALM_FLOWS_YAML)
     base64_domain = encode_yaml(CALM_DOMAIN_YAML)
-    base64_config = encode_yaml("")
+    base64_config = encode_yaml(CALM_CONFIG_YAML)
+    base64_endpoints = encode_yaml(CALM_ENDPOINTS_YAML)
     base64_nlu = encode_yaml(CALM_NLU_YAML)
 
     graphql_req = rasa.studio.upload.build_import_request(
-        assistant_name, CALM_FLOWS_YAML, CALM_DOMAIN_YAML, base64_config, CALM_NLU_YAML
+        assistant_name=assistant_name,
+        flows_yaml=CALM_FLOWS_YAML,
+        domain_yaml=CALM_DOMAIN_YAML,
+        config_yaml=CALM_CONFIG_YAML,
+        endpoints=CALM_ENDPOINTS_YAML,
+        nlu_yaml=CALM_NLU_YAML,
     )
 
     assert graphql_req["variables"]["input"]["domain"] == base64_domain
     assert graphql_req["variables"]["input"]["flows"] == base64_flows
     assert graphql_req["variables"]["input"]["assistantName"] == assistant_name
+    assert graphql_req["variables"]["input"]["config"] == base64_config
+    assert graphql_req["variables"]["input"]["endpoints"] == base64_endpoints
     assert graphql_req["variables"]["input"]["nlu"] == base64_nlu
 
 
@@ -860,18 +887,21 @@ def test_build_import_request_no_nlu() -> None:
     base64_flows = encode_yaml(CALM_FLOWS_YAML)
     base64_domain = encode_yaml(CALM_DOMAIN_YAML)
     base64_config = encode_yaml(empty_string)
+    base64_endpoints = encode_yaml(empty_string)
 
     graphql_req = rasa.studio.upload.build_import_request(
         assistant_name,
         flows_yaml=CALM_FLOWS_YAML,
         domain_yaml=CALM_DOMAIN_YAML,
         config_yaml=empty_string,
+        endpoints=empty_string,
     )
 
     assert graphql_req["variables"]["input"]["domain"] == base64_domain
     assert graphql_req["variables"]["input"]["flows"] == base64_flows
     assert graphql_req["variables"]["input"]["assistantName"] == assistant_name
     assert graphql_req["variables"]["input"]["config"] == base64_config
+    assert graphql_req["variables"]["input"]["endpoints"] == base64_endpoints
     assert graphql_req["variables"]["input"]["nlu"] == empty_string
 
 
