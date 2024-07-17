@@ -51,6 +51,11 @@ def class_from_module_path(
     return klass
 
 
+# calls to inspect are expensive and the individual types this function sees
+# are limited (basically all possible slot and event classes which are in the
+# order of tens). caching speeds up, for example, tracker copying in the tracker
+# store.
+@functools.lru_cache(maxsize=100)
 def all_subclasses(cls: Any) -> List[Any]:
     """Returns all known (imported) subclasses of a class."""
     classes = cls.__subclasses__() + [
