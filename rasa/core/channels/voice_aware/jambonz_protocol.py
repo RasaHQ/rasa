@@ -82,7 +82,7 @@ async def handle_new_session(
     user_msg = UserMessage(
         text="/session_start",
         output_channel=output_channel,
-        sender_id=message.call_id,
+        sender_id=message.call_sid,
         metadata={},
     )
     await send_config_ack(message.message_id, ws)
@@ -111,7 +111,7 @@ async def handle_verb_hook(
         )
         structlogger.debug(
             "jambonz.websocket.message.transcript",
-            call_sid=transcript_result.call_id,
+            call_sid=transcript_result.call_sid,
             transcript=most_likely_transcript.text,
             confidence=most_likely_transcript.confidence,
             number_of_transcripts=len(transcript_result.transcripts),
@@ -128,7 +128,7 @@ async def handle_verb_hook(
 async def handle_call_status(call_status: CallStatusChanged) -> None:
     structlogger.debug(
         "jambonz.websocket.message.call_status_changed",
-        call_sid=call_status.call_sid.get("call_sid"),
+        call_sid=call_status.call_sid,
         message=call_status.status,
     )
 
