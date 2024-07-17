@@ -16,7 +16,7 @@ from rasa.shared.core.flows.yaml_flows_io import YamlFlowsWriter
 from rasa.shared.exceptions import RasaException
 from rasa.shared.importers.importer import TrainingDataImporter, FlowSyncImporter
 from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
-from rasa.shared.utils.yaml import dump_obj_as_yaml_to_string, read_yaml_file
+from rasa.shared.utils.yaml import dump_obj_as_yaml_to_string
 from rasa.studio.auth import KeycloakTokenReader
 from rasa.studio.config import StudioConfig
 from rasa.studio.results_logger import results_logger
@@ -99,7 +99,6 @@ def upload_calm_assistant(
     # Prepare config and domain
     config_from_files = importer.get_config()
     domain_from_files = importer.get_domain().as_dict()
-    endpoints_from_files = read_yaml_file(args.endpoints)
 
     # Extract domain and config values
     domain_keys = [
@@ -166,7 +165,6 @@ def upload_calm_assistant(
         flows_yaml=YamlFlowsWriter().dumps(flows),
         domain_yaml=dump_obj_as_yaml_to_string(domain),
         config_yaml=dump_obj_as_yaml_to_string(config),
-        endpoints=dump_obj_as_yaml_to_string(endpoints_from_files),
         nlu_yaml=nlu_examples_yaml,
     )
 
@@ -269,7 +267,6 @@ def build_import_request(
     flows_yaml: str,
     domain_yaml: str,
     config_yaml: str,
-    endpoints: str,
     nlu_yaml: str = "",
 ) -> Dict:
     # b64encode expects bytes and returns bytes so we need to decode to string
@@ -277,7 +274,6 @@ def build_import_request(
     base64_flows = base64.b64encode(flows_yaml.encode("utf-8")).decode("utf-8")
     base64_config = base64.b64encode(config_yaml.encode("utf-8")).decode("utf-8")
     base64_nlu = base64.b64encode(nlu_yaml.encode("utf-8")).decode("utf-8")
-    base64_endpoints = base64.b64encode(endpoints.encode("utf-8")).decode("utf-8")
 
     graphql_req = {
         "query": (
@@ -291,7 +287,6 @@ def build_import_request(
                 "flows": base64_flows,
                 "nlu": base64_nlu,
                 "config": base64_config,
-                "endpoints": base64_endpoints,
             }
         },
     }
