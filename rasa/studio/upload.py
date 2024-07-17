@@ -119,17 +119,7 @@ def upload_calm_assistant(
         "llm",
         "policies",
         "model_name",
-        "assistant_id"
-    ]
-
-    endpoints_keys = [
-        "action",
-        "event_broker",
-        "lock_store",
-        "model",
-        "nlg",
-        "tracker_store",
-        "vector_store"
+        "assistant_id",
     ]
 
     domain = extract_values(domain_from_files, domain_keys)
@@ -184,6 +174,7 @@ def upload_calm_assistant(
     result, success = make_request(endpoint, graphql_req)
 
     return result, success
+
 
 @results_logger.wrap
 def upload_nlu_assistant(
