@@ -373,7 +373,7 @@ class Validator:
                     continue
 
                 if event.name not in self.domain.action_names_or_texts:
-                    structlogger.warn(
+                    structlogger.error(
                         "validator.verify_forms_in_stories_rules.not_in_domain",
                         form=event.name,
                         block=story.block_name,
@@ -412,7 +412,7 @@ class Validator:
                     continue
 
                 if event.action_name not in self.domain.action_names_or_texts:
-                    structlogger.warn(
+                    structlogger.error(
                         "validator.verify_actions_in_stories_rules.not_in_domain",
                         action=event.action_name,
                         block=story.block_name,
