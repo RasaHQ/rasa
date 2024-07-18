@@ -3,12 +3,12 @@ import copy
 import logging
 import structlog
 import os
+import re
 from pathlib import Path
 import tarfile
 import time
 from types import LambdaType
 from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Tuple, Union
-
 from rasa.core.actions.action_exceptions import ActionExecutionRejection
 from rasa.core.actions.forms import FormAction
 from rasa.core.http_interpreter import RasaNLUHttpInterpreter
@@ -751,20 +751,17 @@ class MessageProcessor:
                     message=processed_message, domain=self.domain
                 )
 
-            # Invalid use of slash syntax
+            # Invalid use of slash syntax, sanitize the message before passing
+            # it to the graph
             if (
                 processed_message.starts_with_slash_syntax()
                 and not processed_message.has_intent()
                 and not processed_message.has_commands()
             ):
-                parse_data = self._parse_invalid_use_of_slash_syntax(
-                    processed_message, tracker, only_output_properties
-                )
+                message = self._sanitize_message(message)
 
             # Intent or commands are not explicitly present. Pass message to graph.
-            elif not (
-                processed_message.has_intent() or processed_message.has_commands()
-            ):
+            if not (processed_message.has_intent() or processed_message.has_commands()):
                 parse_data = await self._parse_message_with_graph(
                     message, tracker, only_output_properties
                 )
@@ -788,44 +785,16 @@ class MessageProcessor:
 
         return parse_data
 
-    def _parse_invalid_use_of_slash_syntax(
-        self,
-        message: Message,
-        tracker: Optional[DialogueStateTracker] = None,
-        only_output_properties: bool = True,
-    ) -> Dict[Text, Any]:
-        structlogger.warning(
-            "processor.message.parse.invalid_use_of_slash_syntax",
-            event_info=(
-                "Message starts with '/', but no intents or commands are"
-                "passed. Returning CannotHandleCommand() as a fallback."
-            ),
-            message=message.get(TEXT),
-        )
-        parse_data: Dict[Text, Any] = {
-            TEXT: "",
-            INTENT: {INTENT_NAME_KEY: None, PREDICTED_CONFIDENCE_KEY: 0.0},
-            ENTITIES: [],
-        }
-        parse_data.update(
-            message.as_dict(only_output_properties=only_output_properties)
-        )
-        commands = parse_data.get(COMMANDS, [])
-        commands += [
-            CannotHandleCommand(RASA_PATTERN_CANNOT_HANDLE_INVALID_INTENT).as_dict()
-        ]
-
-        if (
-            tracker is not None
-            and tracker.has_coexistence_routing_slot
-            and tracker.get_slot(ROUTE_TO_CALM_SLOT) is None
-        ):
-            # if we are currently not routing to either CALM or dm1
-            # we make a sticky routing to CALM
-            commands += [SetSlotCommand(ROUTE_TO_CALM_SLOT, True).as_dict()]
-
-        parse_data[COMMANDS] = commands
-        return parse_data
+    def _sanitize_message(self, message: UserMessage) -> UserMessage:
+        """Sanitize user message by removing prepended slashes before the
+        actual content.
+        """
+        # Regex pattern to match leading slashes and any whitespace before
+        # actual content
+        pattern = r"^[/\s]+"
+        # Remove the matched pattern from the beginning of the message
+        message.text = re.sub(pattern, "", message.text).strip()
+        return message
 
     async def _parse_message_with_commands_and_intents(
         self,

@@ -122,7 +122,7 @@ Rasa Pro 3.9.0 (2024-07-03)
   - Coexistence bot should ignore `NoOpCommand` when checking if the processed message contains commands.
   - Update condition under which FlowPolicy triggers `pattern_internal_error` for slots with custom slot mappings.
 - [#753](https://github.com/rasahq/rasa-private/issues/753): Remove invalid warnings during collect step.
-- [#754](https://github.com/rasahq/rasa-private/issues/754): * Fixed issue where messages with invalid intent triggers ('/<intent>') were not handled correctly. Now triggering the `pattern_cannot_handle`.
+- [#754](https://github.com/rasahq/rasa-private/issues/754): * Fixed issue where messages with invalid intent triggers ('/&lt;intent&gt;') were not handled correctly. Now triggering the `pattern_cannot_handle`.
   * Introduced a new reason `cannot_handle_invalid_intent` for use in the pattern_cannot_handle switch mechanism to
   improve error handling.
 - [#756](https://github.com/rasahq/rasa-private/issues/756): Validates that a collect step in a flow either has an action or an utterance defined in the domain to avoid the bot being silent.
@@ -3407,12 +3407,8 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   intent classification and response selection.
 - [#7122](https://github.com/rasahq/rasa/issues/7122): Add validations for [slot mappings](https://rasa.com/docs/rasa-pro/nlu-based-assistants/forms#slot-mappings).
   If a slot mapping is not valid, an `InvalidDomain` error is raised.
-- [#7132](https://github.com/rasahq/rasa/issues/7132): Adapt the training data reader and emulator for LUIS to
-  [their latest format](https://westus.dev.cognitive.microsoft.com/docs/services/luis-endpoint-api-v3-0)
-  and add support for roles.
-  Update the instructions in the
-  "Migrate from LUIS" documentation page
-  to reflect the recent changes made to the UI of LUIS.
+- [#7132](https://github.com/rasahq/rasa/issues/7132): Adapt the training data reader and emulator for LUIS to their v3 format and add support for roles.
+  Update the instructions in the "Migrate from LUIS" documentation page to reflect the recent changes made to the UI of LUIS.
 - [#7160](https://github.com/rasahq/rasa/issues/7160): Adapt the training data reader and emulator for DialogFlow to
   [their latest format](https://cloud.google.com/dialogflow/es/docs/reference/rest/v2/DetectIntentResponse)
   and add support for regex entities.

@@ -1,9 +1,0 @@
-action_endpoint:
-  url: "http://action-server-jaeger:5056/webhook"
-
-tracing:
-  type: jaeger
-  host: jaeger
-  port: 6831
-  service_name: rasa-jaeger-testing
-  sync_export: ~

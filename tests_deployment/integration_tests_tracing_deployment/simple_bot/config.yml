@@ -3,7 +3,8 @@ recipe: default.v1
 language: en
 
 pipeline:
-  - name: KeywordIntentClassifier
+- name: KeywordIntentClassifier
 
 policies:
-  - name: RulePolicy
+- name: RulePolicy
+assistant_id: 20240611-145717-dull-broker
