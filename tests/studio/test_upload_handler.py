@@ -715,11 +715,14 @@ def test_handle_upload(
         mock_config,
     )
 
-    rasa.studio.upload.handle_upload(args)
+    try:
+        rasa.studio.upload.handle_upload(args)
+    except Exception as e:
+        pytest.fail(f"handle_upload raised an exception: {e}")
 
-    assert mock.post.called
-    assert mock.post.call_args[0][0] == endpoint
-    assert mock.post.call_args[1]["json"] == expected
+    assert mock.post.called, "requests.post was not called"
+    assert mock.post.call_args[0][0] == endpoint, f"Incorrect endpoint: {mock.post.call_args[0][0]}"
+    assert mock.post.call_args[1]["json"] == expected, f"Incorrect JSON payload: {mock.post.call_args[1]['json']}"
 
 
 @pytest.mark.parametrize(
