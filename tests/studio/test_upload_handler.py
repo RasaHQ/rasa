@@ -665,6 +665,7 @@ def encode_yaml(yaml):
                 data=["data/upload/calm/"],
                 config="data/upload/calm/config.yml",
                 flows="data/upload/flows.yml",
+                endpoints="data/upload/calm/endpoints.yml",
             ),
             "http://studio.amazonaws.com/api/graphql",
             {
@@ -684,6 +685,7 @@ def encode_yaml(yaml):
                                    "6IGdwdC00CnBvbGljaWVzOgotIG5hbWU6IHJhc2EuY29y"
                                    "ZS5wb2xpY2llcy5mbG93X3BvbGljeS5GbG93UG9saWN5C"
                                    "mFzc2lzdGFudF9pZDogdGVzdA=="),
+                        "endpoints": (encode_yaml(CALM_ENDPOINTS_YAML)),
                     }
                 },
             },
