@@ -20,7 +20,7 @@ from rasa.shared.utils.yaml import dump_obj_as_yaml_to_string, read_yaml_file
 from rasa.shared.utils.cli import print_error, print_info
 from rasa.studio.auth import KeycloakTokenReader
 from rasa.studio.config import StudioConfig
-from rasa.studio.error_handler import error_handler
+from rasa.studio.results_logger import results_logger
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +71,7 @@ def extract_values(data: Dict, keys: List[Text]) -> Dict:
     return {key: data.get(key) for key in keys if data.get(key)}
 
 
-@error_handler.handle_error
+@results_logger.wrap
 def upload_calm_assistant(args: argparse.Namespace, endpoint: str) -> Tuple[str, bool]:
     """Uploads the CALM assistant data to Rasa Studio.
 
@@ -149,7 +149,12 @@ def upload_calm_assistant(args: argparse.Namespace, endpoint: str) -> Tuple[str,
     if isinstance(training_data_paths, list):
         training_data_paths.append(args.flows)
     elif isinstance(training_data_paths, str):
-        training_data_paths = [training_data_paths, args.flows]
+        if isinstance(args.flows, list):
+            training_data_paths = [training_data_paths] + args.flows
+        elif isinstance(args.flows, str):
+            training_data_paths = [training_data_paths, args.flows]
+        else:
+            raise RasaException("Invalid flows path")
 
     # Prepare flows
     flow_importer = FlowSyncImporter.load_from_dict(
@@ -190,7 +195,7 @@ def upload_calm_assistant(args: argparse.Namespace, endpoint: str) -> Tuple[str,
     return result, success
 
 
-@error_handler.handle_error
+@results_logger.wrap
 def upload_nlu_assistant(
     args: argparse.Namespace, assistant_name: str, endpoint: str
 ) -> Tuple[str, bool]:
@@ -259,7 +264,7 @@ def make_request(endpoint: str, graphql_req: Dict) -> Tuple[str, bool]:
         },
     )
 
-    if error_handler.response_has_errors(res.json()):
+    if results_logger.response_has_errors(res.json()):
         return res.json(), False
     return "Upload successful", True
 

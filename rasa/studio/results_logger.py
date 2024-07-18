@@ -11,19 +11,8 @@ from rasa.studio.config import StudioConfig
 
 logger = logging.getLogger(__name__)
 
-# Define these constants at the module level
-CALL_STEP_ERROR = (
-    "Call flow reference not set. Check whether "
-    "flows exist and are correctly referenced."
-)
-CALL_CYCLIC_ERROR = (
-    "Possible CALL cyclic dependencies in flows. Please "
-    "check that flows do not call each other."
-)
-MAX_RECURSION_ERROR = "maximum recursion depth exceeded while calling a Python object"
 
-
-class ErrorHandler:
+class ResultsLogger:
     def __init__(self) -> None:
         self.error_map: Dict[Type[Exception], Callable[[Any], Tuple[str, bool]]] = {
             RasaException: self._handle_rasa_exception,
@@ -34,7 +23,7 @@ class ErrorHandler:
             Exception: self._handle_unexpected_error,
         }
 
-    def handle_error(self, func: Callable) -> Callable:
+    def wrap(self, func: Callable) -> Callable:
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             try:
@@ -78,7 +67,7 @@ class ErrorHandler:
 
     @staticmethod
     def _handle_rasa_exception(e: RasaException) -> Tuple[str, bool]:
-        error_msg = f"Rasa-specific error occurred: {e!s}"
+        error_msg = f"Error: {e!s}"
         print_error(error_msg)
         return error_msg, False
 
@@ -117,13 +106,13 @@ class ErrorHandler:
 
     @staticmethod
     def _handle_timeout_error(e: Timeout) -> Tuple[str, bool]:
-        error_msg = "The request to Rasa Studio timed out. Please try again later."
+        error_msg = "The request timed out. Please try again later."
         print_error(error_msg)
         return error_msg, False
 
     @staticmethod
     def _handle_request_exception(e: RequestException) -> Tuple[str, bool]:
-        error_msg = f"An error occurred while communicating with Rasa Studio: {e!s}"
+        error_msg = f"An error occurred while communicating with the server: {e!s}"
         print_error(error_msg)
         return error_msg, False
 
@@ -133,31 +122,6 @@ class ErrorHandler:
         print_error(error_msg)
         return error_msg, False
 
-    @staticmethod
-    def handle_calm_assistant_error(e: Exception) -> Tuple[str, bool]:
-        if str(e.args[0]) == MAX_RECURSION_ERROR:
-            logger.debug("Error details:")
-            logger.debug(str(e))
-            print_error(CALL_CYCLIC_ERROR)
-            return CALL_CYCLIC_ERROR, False
-
-        elif str(e.args[0]) == "Call flow reference not set.":
-            logger.debug("Error details:")
-            logger.debug(str(e))
-            print_error(CALL_STEP_ERROR)
-            return CALL_STEP_ERROR, False
-
-        else:
-            logger.debug("Error details:")
-            logger.debug(str(e))
-            print_error(f"An unexpected error occurred: {e!s}")
-            return f"An unexpected error occurred: {e!s}", False
-
-    @staticmethod
-    def handle_upload_error(status: bool, response: str) -> None:
-        if not status:
-            print_error(f"Upload failed: {response}")
-
     def add_error_handler(
         self,
         error_type: Type[Exception],
@@ -166,4 +130,4 @@ class ErrorHandler:
         self.error_map[error_type] = handler
 
 
-error_handler: ErrorHandler = ErrorHandler()
+results_logger: ResultsLogger = ResultsLogger()
