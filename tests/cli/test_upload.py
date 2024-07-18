@@ -10,7 +10,7 @@ def test_rasa_upload_help(run: Callable[..., RunResult]) -> None:
                 [--flows FLOWS [FLOWS ...]] [-c CONFIG]
                 [--entities ENTITIES [ENTITIES ...]]
                 [--intents INTENTS [INTENTS ...]] [--calm]
-                assistant_name"""
+                """
     lines = help_text.split("\n")
 
     output = run("studio", "upload", "--help")
