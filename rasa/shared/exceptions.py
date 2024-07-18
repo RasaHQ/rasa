@@ -161,3 +161,7 @@ class ProviderClientAPIException(RasaException):
         if self.info:
             s += f"\nInfo: \n{self.info}\n"
         return s
+
+
+class ProviderClientValidationError(RasaException):
+    """Raised for errors that occur during validation of the API client."""

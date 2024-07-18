@@ -1,13 +1,24 @@
-from typing import Protocol, Dict, List
+from typing import Protocol, Dict, List, runtime_checkable, Union
 
 from rasa.shared.providers.llm.llm_response import LLMResponse
 
 
+@runtime_checkable
 class LLMClient(Protocol):
     """
     Protocol for an LLM client that specifies the interface for interacting
     with the API.
     """
+
+    @classmethod
+    def from_config(cls, config: dict) -> "LLMClient":
+        """
+        Initializes the llm client with the given configuration.
+
+        This class method should be implemented to parse the given
+        configuration and create an instance of an llm client.
+        """
+        ...
 
     @property
     def config(self) -> Dict:
@@ -19,25 +30,7 @@ class LLMClient(Protocol):
         """
         ...
 
-    @property
-    def model(self) -> str:
-        """Returns the model name.
-
-        This property should be implemented to return a string representing the
-        model name client sends the API requests to.
-        """
-        ...
-
-    @property
-    def provider(self) -> str:
-        """Returns the provider name.
-
-        This property should be implemented to return a string representing the
-        provider name.
-        """
-        ...
-
-    def completion(self, messages: List[str]) -> LLMResponse:
+    def completion(self, messages: Union[List[str], str]) -> LLMResponse:
         """
         Synchronously generate completions for given list of messages.
 
@@ -45,13 +38,14 @@ class LLMClient(Protocol):
         strings) and return a list of completions (as strings).
 
         Args:
-            messages: List of messages to generate the completions for.
+            messages: List of messages or a single message to generate the
+                completion for.
         Returns:
-            List of message completions.
+            LLMResponse
         """
         ...
 
-    async def acompletion(self, messages: List[str]) -> LLMResponse:
+    async def acompletion(self, messages: Union[List[str], str]) -> LLMResponse:
         """
         Asynchronously generate completions for given list of messages.
 
@@ -59,8 +53,24 @@ class LLMClient(Protocol):
         strings) and return a list of completions (as strings).
 
         Args:
-            messages: List of messages to generate the completion for.
+            messages: List of messages or a single message to generate the
+                completion for.
         Returns:
-            List of message completions.
+            LLMResponse
+        """
+        ...
+
+    def validate_client_setup(self, *args, **kwargs) -> None:  # type: ignore
+        """
+        Perform client setup validation.
+
+        This method should be implemented to validate whether the client can be
+        used with the parameters provided through configuration or environment
+        variables.
+
+        If there are any issues, the client should raise
+        ProviderClientValidationError.
+
+        If no validation is needed, this check can simply pass.
         """
         ...
