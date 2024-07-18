@@ -2,21 +2,16 @@ import asyncio
 import copy
 import datetime
 import difflib
-import logging
 from asyncio import CancelledError
 from typing import Any, Dict, List, Optional, Text, Tuple, Union
 from urllib.parse import urlparse
 
 import rasa.shared.utils.io
 import requests
+import structlog
 from rasa.core.channels import CollectingOutputChannel, UserMessage
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.utils import AvailableEndpoints
-from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
-from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.exceptions import RasaException
-from rasa.utils.endpoints import EndpointConfig
-
 from rasa.e2e_test.e2e_test_case import (
     ActualStepOutput,
     Fixture,
@@ -30,10 +25,16 @@ from rasa.e2e_test.e2e_test_result import (
     TestFailure,
     TestResult,
 )
-
+from rasa.llm_fine_tuning.conversations import Conversation
+from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.exceptions import RasaException
 from rasa.telemetry import track_e2e_test_run
+from rasa.utils.endpoints import EndpointConfig
+from tqdm import tqdm
 
-logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger()
+
 TEST_TURNS_TYPE = Dict[int, Union[TestStep, ActualStepOutput]]
 
 
@@ -55,12 +56,13 @@ class E2ETestRunner:
         """
         import rasa.core.agent
 
-        logger.warning(
-            "Started running end-to-end testing. "
+        structlogger.warning(
+            "e2e_test_runner.init",
+            message="Started running end-to-end testing. "
             "Note that this feature is not intended for use in a "
             "production environment. Don't use it to process sensitive data. "
             "If you do, it's at your own risk. "
-            "We're looking forward to your feedback."
+            "We're looking forward to your feedback.",
         )
 
         if endpoints:
@@ -96,6 +98,8 @@ class E2ETestRunner:
             collector: Output channel.
             steps: List of steps to run.
             sender_id: The test case name with added timestamp suffix.
+            test_case_metadata: Metadata of test case.
+            input_metadata: List of metadata.
 
         Returns:
             Test turns: {turn_sequence (int) : TestStep or ActualStepOutput}.
@@ -103,7 +107,10 @@ class E2ETestRunner:
         turns: TEST_TURNS_TYPE = {}
         event_cursor = 0
 
-        tracker = await self.agent.processor.fetch_tracker_with_initial_session(  # type: ignore[union-attr]
+        if not self.agent.processor:
+            return turns
+
+        tracker = await self.agent.processor.fetch_tracker_with_initial_session(
             sender_id
         )
         # turn -1 i used to contain events that happen during
@@ -148,16 +155,18 @@ class E2ETestRunner:
                     )
                 )
             except CancelledError:
-                logger.error(
-                    f"Message handling timed out for user message '{step.text}'.",
+                structlogger.error(
+                    "e2e_test_runner.run_prediction_loop",
+                    error=f"Message handling timed out for user message '{step.text}'.",
                     exc_info=True,
                 )
             except Exception:
-                logger.exception(
-                    f"An exception occurred while handling "
-                    f"user message '{step.text}'."
+                structlogger.error(
+                    "e2e_test_runner.run_prediction_loop",
+                    error=f"An exception occurred while handling "
+                    f"user message '{step.text}'.",
                 )
-            tracker = await self.agent.tracker_store.retrieve(sender_id)
+            tracker = await self.agent.tracker_store.retrieve(sender_id)  # type: ignore[assignment]
             turns[position], event_cursor = self.get_actual_step_output(
                 tracker, step, event_cursor
             )
@@ -194,11 +203,12 @@ class E2ETestRunner:
 
         if keys_to_overwrite:
             test_case_name = sender_id.rsplit("_", 1)[0]
-            logger.warning(
-                f"Metadata {keys_to_overwrite} exist in both the test case "
+            structlogger.warning(
+                "e2e_test_runner.merge_metadata",
+                message=f"Metadata {keys_to_overwrite} exist in both the test case "
                 f"'{test_case_name}' and the user step '{step_text}'. "
                 "The user step metadata takes precedence and will "
-                "override the test case metadata."
+                "override the test case metadata.",
             )
 
         merged_metadata = copy.deepcopy(test_case_metadata)
@@ -238,9 +248,10 @@ class E2ETestRunner:
                 event_cursor,
             )
         else:
-            logger.warning(
-                f"No events found for '{tracker.sender_id}' after processing test "
-                f"step '{test_step.text}'."
+            structlogger.warning(
+                "e2e_test_runner.get_actual_step_output",
+                message=f"No events found for '{tracker.sender_id}' after processing "
+                f"test step '{test_step.text}'.",
             )
             # if there are no events, we still want to return an
             # ActualStepOutput object with the test step as the
@@ -592,7 +603,10 @@ class E2ETestRunner:
         """
         if not fixtures:
             return
-        tracker = await self.agent.processor.fetch_tracker_with_initial_session(  # type: ignore[union-attr]
+        if not self.agent.processor:
+            return
+
+        tracker = await self.agent.processor.fetch_tracker_with_initial_session(
             sender_id
         )
 
@@ -647,8 +661,10 @@ class E2ETestRunner:
         )
 
         if not filtered_metadata:
-            logger.warning(
-                f"Metadata '{metadata_name}' is not defined in the input metadata."
+            structlogger.warning(
+                "e2e_test_runner.filter_metadata_for_inout",
+                message=f"Metadata '{metadata_name}' is not defined in the input "
+                f"metadata.",
             )
             return None
 
@@ -679,32 +695,13 @@ class E2ETestRunner:
         track_e2e_test_run(input_test_cases, input_fixtures, input_metadata)
 
         for test_case in input_test_cases:
-            collector = CollectingOutputChannel()
-
             # add timestamp suffix to ensure sender_id is unique
             sender_id = f"{test_case.name}_{datetime.datetime.now()}"
-
-            if input_fixtures:
-                test_fixtures = self.filter_fixtures_for_test_case(
-                    test_case, input_fixtures
-                )
-                await self.set_up_fixtures(test_fixtures, sender_id)
-
-            test_case_metadata = None
-            if input_metadata:
-                test_case_metadata = self.filter_metadata_for_input(
-                    test_case.metadata_name, input_metadata
-                )
-
-            tracker = await self.run_prediction_loop(
-                collector,
-                test_case.steps,
-                sender_id,
-                test_case_metadata,
-                input_metadata,
+            test_turns = await self._run_test_case(
+                sender_id, input_fixtures, input_metadata, test_case
             )
 
-            test_result = self.generate_test_result(tracker, test_case)
+            test_result = self.generate_test_result(test_turns, test_case)
             results.append(test_result)
 
             if fail_fast and not test_result.pass_status:
@@ -712,26 +709,111 @@ class E2ETestRunner:
 
         return results
 
+    async def _run_test_case(
+        self,
+        sender_id: str,
+        input_fixtures: List[Fixture],
+        input_metadata: Optional[List[Metadata]],
+        test_case: TestCase,
+    ) -> TEST_TURNS_TYPE:
+        collector = CollectingOutputChannel()
+
+        if input_fixtures:
+            test_fixtures = self.filter_fixtures_for_test_case(
+                test_case, input_fixtures
+            )
+            await self.set_up_fixtures(test_fixtures, sender_id)
+
+        test_case_metadata = None
+        if input_metadata:
+            test_case_metadata = self.filter_metadata_for_input(
+                test_case.metadata_name, input_metadata
+            )
+
+        return await self.run_prediction_loop(
+            collector,
+            test_case.steps,
+            sender_id,
+            test_case_metadata,
+            input_metadata,
+        )
+
+    async def run_tests_for_fine_tuning(
+        self,
+        input_test_cases: List[TestCase],
+        input_fixtures: List[Fixture],
+        input_metadata: Optional[List[Metadata]],
+    ) -> List[Conversation]:
+        """Runs the test cases for fine-tuning.
+
+        Converts passing test cases into conversation objects containing the
+        prompts and llm commands per user message.
+
+        Args:
+            input_test_cases: Input test cases.
+            input_fixtures: Input fixtures.
+            input_metadata: Input metadata.
+
+        Returns:
+            List of conversations.
+        """
+        import rasa.llm_fine_tuning.annotation_module
+
+        conversations = []
+
+        for i in tqdm(range(len(input_test_cases))):
+            test_case = input_test_cases[i]
+            # add timestamp suffix to ensure sender_id is unique
+            sender_id = f"{test_case.name}_{datetime.datetime.now()}"
+            test_turns = await self._run_test_case(
+                sender_id, input_fixtures, input_metadata, test_case
+            )
+
+            # check if the e2e test is passing, only convert passing e2e tests into
+            # conversations
+            test_failures = self.find_test_failures(test_turns, test_case)
+            if len(test_failures) > 0:
+                structlogger.warning(
+                    "annotation_module.skip_test_case.failing_e2e_test",
+                    test_case=test_case.name,
+                    file=test_case.file,
+                )
+                continue
+
+            tracker = await self.agent.tracker_store.retrieve(sender_id)
+            conversation = rasa.llm_fine_tuning.annotation_module.generate_conversation(
+                test_turns, test_case, tracker
+            )
+
+            if conversation:
+                conversations.append(conversation)
+
+        return conversations
+
     @staticmethod
     def _action_server_is_reachable(endpoints: AvailableEndpoints) -> None:
         """Calls the action server health endpoint."""
         if not endpoints.action:
-            logger.debug(
-                "No action endpoint configured. Skipping the health check of the "
-                "action server."
+            structlogger.debug(
+                "e2e_test_runner._action_server_is_reachable",
+                message="No action endpoint configured. Skipping the health check "
+                "of the action server.",
             )
             return
 
         if not endpoints.action.url:
-            logger.debug(
-                "Action endpoint URL is not defined in the endpoint configuration."
+            structlogger.debug(
+                "e2e_test_runner._action_server_is_reachable",
+                message="Action endpoint URL is not defined in the endpoint "
+                "configuration.",
             )
             return
 
-        logger.debug(
-            "Detected action URL in the endpoint configuration.\n"
+        structlogger.debug(
+            "e2e_test_runner._action_server_is_reachable",
+            message="Detected action URL in the endpoint configuration.\n"
             f"Action Server URL: {endpoints.action.url}\n"
-            "Sending a health request to the action endpoint."
+            "Sending a health request to the action endpoint.",
         )
         url = urlparse(endpoints.action.url)
         # replace /<path> with just /health
@@ -755,8 +837,9 @@ class E2ETestRunner:
                 " is properly configured and that the '/health' endpoint is available."
             )
 
-        logger.debug(
-            "Action endpoint has responded successfully.\n"
+        structlogger.debug(
+            "e2e_test_runner._action_server_is_reachable",
+            message="Action endpoint has responded successfully.\n"
             f"Response message: {response.text}\n"
-            f"Response status code: {response.status_code}."
+            f"Response status code: {response.status_code}.",
         )

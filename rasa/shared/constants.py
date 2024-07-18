@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import List, Text
 
-
 DOCS_BASE_URL = "https://rasa.com/docs/rasa-pro"
 DOCS_URL_CONCEPTS = DOCS_BASE_URL + "/concepts"
 DOCS_URL_NLU_BASED = DOCS_BASE_URL + "/nlu-based-assistants"
@@ -83,6 +82,8 @@ ENV_LOG_LEVEL_LLM_MODULE_NAMES = {
     "EnterpriseSearchPolicy": "LOG_LEVEL_LLM_ENTERPRISE_SEARCH",
     "IntentlessPolicy": "LOG_LEVEL_LLM_INTENTLESS_POLICY",
     "ContextualResponseRephraser": "LOG_LEVEL_LLM_REPHRASER",
+    "NLUCommandAdapter": "LOG_LEVEL_NLU_COMMAND_ADAPTER",
+    "LLMBasedRouter": "LOG_LEVEL_LLM_BASED_ROUTER",
 }
 TCP_PROTOCOL = "TCP"
 
@@ -160,7 +161,6 @@ LANGCHAIN_TYPE_CONFIG_KEY = "_type"
 
 REQUESTS_CA_BUNDLE_ENV_VAR = "REQUESTS_CA_BUNDLE"
 REQUESTS_SSL_CONTEXT_PURPOSE_ENV_VAR = "REQUESTS_SSL_CONTEXT_PURPOSE"
-
 
 RASA_DEFAULT_FLOW_PATTERN_PREFIX = "pattern_"
 CONTEXT = "context"
