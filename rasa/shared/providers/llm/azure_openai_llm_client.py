@@ -186,7 +186,7 @@ class AzureOpenAILLMClient(_BaseLiteLLMClient):
     def model(self) -> str:
         """
         Returns the name of the model deployed on Azure. If model name is not
-        provided, returns deployment name.
+        provided, returns "N/A".
         """
         if self._model is None:
             return "N/A"

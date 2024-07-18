@@ -1,18 +1,18 @@
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from typing import Optional
 
 from rasa.shared.constants import (
+    MODEL_KEY,
+    MODEL_NAME_KEY,
     OPENAI_API_BASE_CONFIG_KEY,
     OPENAI_API_BASE_NO_PREFIX_CONFIG_KEY,
+    OPENAI_API_TYPE_CONFIG_KEY,
+    OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY,
     OPENAI_API_VERSION_CONFIG_KEY,
     OPENAI_API_VERSION_NO_PREFIX_CONFIG_KEY,
     OPENAI_DEPLOYMENT_CONFIG_KEY,
     OPENAI_DEPLOYMENT_NAME_CONFIG_KEY,
     OPENAI_ENGINE_CONFIG_KEY,
-    MODEL_KEY,
-    OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY,
-    MODEL_NAME_KEY,
-    OPENAI_API_TYPE_CONFIG_KEY,
 )
 from rasa.shared.utils.io import raise_deprecation_warning
 
@@ -20,10 +20,10 @@ from rasa.shared.utils.io import raise_deprecation_warning
 @dataclass
 class AzureOpenAIClientConfig:
     deployment: str
-    api_base: str
-    api_version: str
-    api_type: Optional[str] = None
-    model: Optional[str] = None
+    model: Optional[str]
+    api_base: Optional[str]
+    api_type: Optional[str]
+    api_version: Optional[str]
     model_parameters: dict = field(default_factory=dict)
 
     @classmethod
@@ -31,11 +31,11 @@ class AzureOpenAIClientConfig:
         config = cls._process_config(config)
         this = AzureOpenAIClientConfig(
             deployment=config.pop(OPENAI_DEPLOYMENT_CONFIG_KEY),
-            model=config.pop(MODEL_KEY, None),
+            model=config.pop(MODEL_KEY),
             api_base=config.pop(OPENAI_API_BASE_NO_PREFIX_CONFIG_KEY),
+            api_type=config.pop(OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY),
             api_version=config.pop(OPENAI_API_VERSION_NO_PREFIX_CONFIG_KEY),
-            api_type=config.pop(OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY, None),
-            # The rest of parameters are considered as model parameters
+            # The rest of parameters are considered as model parameters.
             model_parameters=config,
         )
         return this
@@ -77,23 +77,23 @@ class AzureOpenAIClientConfig:
             OPENAI_API_BASE_NO_PREFIX_CONFIG_KEY
         ) or config.get(OPENAI_API_BASE_CONFIG_KEY)
 
+        # Use `api_type` and if there are any aliases replace them
+        config[OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY] = config.get(
+            OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY
+        ) or config.get(OPENAI_API_TYPE_CONFIG_KEY)
+
         # Use `api_version` and if there are any aliases replace them
         config[OPENAI_API_VERSION_NO_PREFIX_CONFIG_KEY] = config.get(
             OPENAI_API_VERSION_NO_PREFIX_CONFIG_KEY
         ) or config.get(OPENAI_API_VERSION_CONFIG_KEY)
 
-        # Use `api_type` and if there are any aliases replace them
-        config[OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY] = config.get(
-            OPENAI_API_TYPE_CONFIG_KEY
-        ) or config.get(OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY)
-
         # Pop all aliases from the config
         for key in [
+            OPENAI_API_BASE_CONFIG_KEY,
+            OPENAI_API_TYPE_CONFIG_KEY,
+            OPENAI_API_VERSION_CONFIG_KEY,
             OPENAI_DEPLOYMENT_NAME_CONFIG_KEY,
             OPENAI_ENGINE_CONFIG_KEY,
-            OPENAI_API_BASE_CONFIG_KEY,
-            OPENAI_API_VERSION_CONFIG_KEY,
-            OPENAI_API_TYPE_CONFIG_KEY,
             MODEL_NAME_KEY,
         ]:
             config.pop(key, None)
@@ -102,46 +102,20 @@ class AzureOpenAIClientConfig:
 
     @staticmethod
     def _raise_deprecation_warnings(config: dict) -> None:
-        # Check for `deployment` aliases and raise deprecation warnings
-        for deprecated_deployment_alias in [
-            OPENAI_DEPLOYMENT_NAME_CONFIG_KEY,
-            OPENAI_ENGINE_CONFIG_KEY,
-        ]:
-            if deprecated_deployment_alias in config:
+        # Check for `deployment`, `api_base`, `api_type`, `api_version` aliases and
+        # raise deprecation warnings.
+        _mapper_deprecated_keys_to_new_keys = {
+            OPENAI_DEPLOYMENT_NAME_CONFIG_KEY: OPENAI_DEPLOYMENT_CONFIG_KEY,
+            OPENAI_ENGINE_CONFIG_KEY: OPENAI_DEPLOYMENT_CONFIG_KEY,
+            OPENAI_API_BASE_CONFIG_KEY: OPENAI_API_BASE_NO_PREFIX_CONFIG_KEY,
+            OPENAI_API_TYPE_CONFIG_KEY: OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY,
+            OPENAI_API_VERSION_CONFIG_KEY: OPENAI_API_VERSION_NO_PREFIX_CONFIG_KEY,
+        }
+        for deprecated_key, new_key in _mapper_deprecated_keys_to_new_keys.items():
+            if deprecated_key in config:
                 raise_deprecation_warning(
                     message=(
-                        f"'{deprecated_deployment_alias}' is deprecated and "
-                        f"will be removed in version 4.0.0. Use "
-                        f"'{OPENAI_DEPLOYMENT_CONFIG_KEY}' instead."
+                        f"'{deprecated_key}' is deprecated and will be removed in "
+                        f"version 4.0.0. Use '{new_key}' instead."
                     )
                 )
-
-        # Check for `api_base` aliases and raise deprecation warnings
-        if OPENAI_API_BASE_CONFIG_KEY in config:
-            raise_deprecation_warning(
-                message=(
-                    f"'{OPENAI_API_BASE_CONFIG_KEY}' is deprecated and will be"
-                    f"removed in version 4.0.0. Use "
-                    f"'{OPENAI_API_BASE_NO_PREFIX_CONFIG_KEY}' instead."
-                )
-            )
-
-        # Check for `api_version` aliases and raise deprecation warnings
-        if OPENAI_API_VERSION_CONFIG_KEY in config:
-            raise_deprecation_warning(
-                message=(
-                    f"'{OPENAI_API_VERSION_CONFIG_KEY}' is deprecated and will be"
-                    f"removed in version 4.0.0. Use "
-                    f"'{OPENAI_API_VERSION_NO_PREFIX_CONFIG_KEY}' instead."
-                )
-            )
-
-        # Check for `api_type` aliases and raise deprecation warnings
-        if OPENAI_API_TYPE_CONFIG_KEY in config:
-            raise_deprecation_warning(
-                message=(
-                    f"'{OPENAI_API_TYPE_CONFIG_KEY}' is deprecated and will be"
-                    f"removed in version 4.0.0. Use "
-                    f"'{OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY}' instead."
-                )
-            )

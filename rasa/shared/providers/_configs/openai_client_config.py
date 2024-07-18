@@ -1,15 +1,15 @@
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from typing import Optional
 
 from rasa.shared.constants import (
-    OPENAI_API_BASE_NO_PREFIX_CONFIG_KEY,
-    OPENAI_API_VERSION_NO_PREFIX_CONFIG_KEY,
     MODEL_KEY,
     MODEL_NAME_KEY,
     OPENAI_API_BASE_CONFIG_KEY,
-    OPENAI_API_VERSION_CONFIG_KEY,
-    OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY,
+    OPENAI_API_BASE_NO_PREFIX_CONFIG_KEY,
     OPENAI_API_TYPE_CONFIG_KEY,
+    OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY,
+    OPENAI_API_VERSION_CONFIG_KEY,
+    OPENAI_API_VERSION_NO_PREFIX_CONFIG_KEY,
 )
 from rasa.shared.utils.io import raise_deprecation_warning
 
@@ -31,8 +31,9 @@ class OpenAIClientConfig:
         this = OpenAIClientConfig(
             model=config.pop(MODEL_KEY),
             api_base=config.pop(OPENAI_API_BASE_NO_PREFIX_CONFIG_KEY),
+            api_type=config.pop(OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY),
             api_version=config.pop(OPENAI_API_VERSION_NO_PREFIX_CONFIG_KEY),
-            api_type=config.pop(OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY, None),
+            # The rest of parameters are considered as model parameters.
             model_parameters=config,
         )
         return this
@@ -75,15 +76,15 @@ class OpenAIClientConfig:
         # In reality, LiteLLM is not using this at all
         # It's here for backward compatibility
         config[OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY] = config.get(
-            OPENAI_API_TYPE_CONFIG_KEY
-        ) or config.get(OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY)
+            OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY
+        ) or config.get(OPENAI_API_TYPE_CONFIG_KEY)
 
         # Pop the keys so there are no duplicates
         for key in [
             MODEL_NAME_KEY,
             OPENAI_API_BASE_CONFIG_KEY,
-            OPENAI_API_VERSION_CONFIG_KEY,
             OPENAI_API_TYPE_CONFIG_KEY,
+            OPENAI_API_VERSION_CONFIG_KEY,
         ]:
             config.pop(key, None)
 
@@ -91,31 +92,19 @@ class OpenAIClientConfig:
 
     @staticmethod
     def _raise_deprecation_warnings(config: dict) -> None:
-        # Check for `model` aliases and raise deprecation warnings
-        if MODEL_NAME_KEY in config:
-            raise_deprecation_warning(
-                message=(
-                    f"'{MODEL_NAME_KEY}' is deprecated and will be removed in "
-                    f"version 4.0.0. Use '{MODEL_KEY}' instead."
+        # Check for `model`, `api_base`, `api_type`, `api_version` aliases and
+        # raise deprecation warnings.
+        _mapper_deprecated_keys_to_new_keys = {
+            MODEL_NAME_KEY: MODEL_KEY,
+            OPENAI_API_BASE_CONFIG_KEY: OPENAI_API_BASE_NO_PREFIX_CONFIG_KEY,
+            OPENAI_API_TYPE_CONFIG_KEY: OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY,
+            OPENAI_API_VERSION_CONFIG_KEY: OPENAI_API_VERSION_NO_PREFIX_CONFIG_KEY,
+        }
+        for deprecated_key, new_key in _mapper_deprecated_keys_to_new_keys.items():
+            if deprecated_key in config:
+                raise_deprecation_warning(
+                    message=(
+                        f"'{deprecated_key}' is deprecated and will be removed in "
+                        f"version 4.0.0. Use '{new_key}' instead."
+                    )
                 )
-            )
-
-        # Check for `api_base` aliases and raise deprecation warnings
-        if OPENAI_API_BASE_CONFIG_KEY in config:
-            raise_deprecation_warning(
-                message=(
-                    f"'{OPENAI_API_BASE_CONFIG_KEY}' is deprecated and will be "
-                    f"removed in version 4.0.0. Use "
-                    f"'{OPENAI_API_BASE_NO_PREFIX_CONFIG_KEY}' instead."
-                )
-            )
-
-        # Check for `api_versions` aliases and raise deprecation warnings
-        if OPENAI_API_VERSION_CONFIG_KEY in config:
-            raise_deprecation_warning(
-                message=(
-                    f"'{OPENAI_API_VERSION_CONFIG_KEY}' is deprecated and will be "
-                    f"removed in version 4.0.0. Use "
-                    f"'{OPENAI_API_VERSION_NO_PREFIX_CONFIG_KEY}' instead."
-                )
-            )
