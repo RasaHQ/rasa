@@ -653,7 +653,7 @@ def encode_yaml(yaml):
                             "maXJzdF9uYW1lIn0KICAgIC0gTWlsaWNhCiAgICAtIEthcmluCiAgICAtIFN0Z"
                             "XZlbgogICAgLSBJJ20gWzE4XShhZ2UpCiAgICAtIEkgYW0gWzMyXShhZ2UpIHl"
                             "lYXJzIG9sZAogICAgLSA5Cg=="
-                        )
+                        ),
                     }
                 },
             },
@@ -686,7 +686,7 @@ def encode_yaml(yaml):
                             "tbWFuZEdlbmVyYXRvcgogIGxsbToKICAgIG1vZGVsX25hbWU6IGdwdC00CnBvbGljaWVzOgotIG5hbWU"
                             "6IHJhc2EuY29yZS5wb2xpY2llcy5mbG93X3BvbGljeS5GbG93UG9saWN5Cg=="
                         ),
-                        "endpoints": "bmxnOgogIHR5cGU6IHJlcGhyYXNlCg=="
+                        "endpoints": "bmxnOgogIHR5cGU6IHJlcGhyYXNlCg==",
                     }
                 },
             },

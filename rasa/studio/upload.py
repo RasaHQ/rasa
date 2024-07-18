@@ -196,9 +196,7 @@ def upload_calm_assistant(args: argparse.Namespace, endpoint: str) -> Tuple[str,
 
 
 @results_logger.wrap
-def upload_nlu_assistant(
-    args: argparse.Namespace, endpoint: str
-) -> Tuple[str, bool]:
+def upload_nlu_assistant(args: argparse.Namespace, endpoint: str) -> Tuple[str, bool]:
     """Uploads the classic (dm1) assistant data to Rasa Studio.
 
     Args:
