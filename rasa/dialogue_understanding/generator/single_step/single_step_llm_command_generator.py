@@ -1,7 +1,8 @@
 import importlib.resources
 import re
-import structlog
 from typing import Dict, Any, List, Optional, Text
+
+import structlog
 
 import rasa.shared.utils.io
 from rasa.dialogue_understanding.commands import (
@@ -16,9 +17,6 @@ from rasa.dialogue_understanding.commands import (
     ClarifyCommand,
     CannotHandleCommand,
 )
-from rasa.dialogue_understanding.generator.llm_based_command_generator import (
-    LLMBasedCommandGenerator,
-)
 from rasa.dialogue_understanding.generator.constants import (
     DEFAULT_LLM_CONFIG,
     LLM_CONFIG_KEY,
@@ -29,6 +27,9 @@ from rasa.dialogue_understanding.generator.flow_retrieval import (
     FlowRetrieval,
     DEFAULT_EMBEDDINGS_CONFIG,
 )
+from rasa.dialogue_understanding.generator.llm_based_command_generator import (
+    LLMBasedCommandGenerator,
+)
 from rasa.dialogue_understanding.stack.utils import top_flow_frame
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
@@ -37,21 +38,19 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import ROUTE_TO_CALM_SLOT
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.exceptions import ProviderClientAPIException
 from rasa.shared.nlu.constants import TEXT, LLM_COMMANDS, LLM_PROMPT
 from rasa.shared.nlu.training_data.message import Message
-from rasa.shared.exceptions import ProviderClientAPIException
 from rasa.shared.utils.io import deep_container_fingerprint
 from rasa.shared.utils.llm import (
     get_prompt_template,
     tracker_as_readable_transcript,
     sanitize_message_for_prompt,
 )
-from rasa.utils.log_utils import log_llm
-
 from rasa.telemetry import (
     track_single_step_llm_command_generator_init,
 )
-
+from rasa.utils.log_utils import log_llm
 
 COMMAND_PROMPT_FILE_NAME = "command_prompt.jinja2"
 

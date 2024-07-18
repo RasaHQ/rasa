@@ -1,20 +1,27 @@
 import argparse
+import asyncio
 import sys
 from typing import List, Any, Dict
 
 import structlog
 
+import rasa.cli.utils
 import rasa.shared.utils.cli
 import rasa.shared.utils.io
 import rasa.shared.utils.yaml
-import rasa.cli.utils
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments.default_arguments import add_endpoint_param, add_model_param
 from rasa.cli.e2e_test import read_test_cases, validate_model_path
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.utils import AvailableEndpoints
+from rasa.dialogue_understanding.generator.constants import LLM_CONFIG_KEY
 from rasa.e2e_test.e2e_test_runner import E2ETestRunner
 from rasa.llm_fine_tuning.annotation_module import annotate_e2e_tests
+from rasa.llm_fine_tuning.conversation_storage import (
+    StorageContext,
+    StorageType,
+    FileStorageStrategy,
+)
 from rasa.llm_fine_tuning.llm_data_preparation_module import convert_to_fine_tuning_data
 from rasa.llm_fine_tuning.paraphrasing_module import create_paraphrased_conversations
 from rasa.llm_fine_tuning.train_test_split_module import split_llm_fine_tuning_data
@@ -22,7 +29,6 @@ from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH, DEFAULT_MODELS_PATH
 
 DEFAULT_INPUT_E2E_TEST_PATH = "e2e_tests"
 DEFAULT_OUTPUT_FOLDER = "output"
-DEFAULT_REPHRASING_CONFIG_FILE = "rephrasing_config.yaml"
 RESULT_SUMMARY_FILE = "result_summary.yaml"
 PARAMETERS_FILE = "params.yaml"
 
@@ -117,7 +123,7 @@ def add_data_preparation_arguments(parser: argparse.ArgumentParser) -> None:
     rephrasing_arguments.add_argument(
         "--rephrase-config",
         type=str,
-        default=DEFAULT_REPHRASING_CONFIG_FILE,
+        default=None,
         help="Path to config file that contains the configuration of the "
         "rephrasing module.",
     )
@@ -157,22 +163,45 @@ def prepare_llm_fine_tuning_data(args: argparse.Namespace) -> None:
     # set up the e2e test runner
     e2e_test_runner = set_up_e2e_test_runner(args)
 
+    if e2e_test_runner.agent.processor is None:
+        rasa.shared.utils.cli.print_error(
+            "No processor: Not able to retrieve flows and config from trained model."
+        )
+        sys.exit(0)
+
+    flows = asyncio.run(e2e_test_runner.agent.processor.get_flows())
+    llm_command_generator_config = _get_llm_command_generator_config(e2e_test_runner)
+
+    # set up storage context
+    storage_context = create_storage_context(StorageType.FILE, output_dir)
+
     statistics = {}
 
     # 1. annotate e2e tests
     log_start_of_module("Annotation")
-    conversations = annotate_e2e_tests(e2e_test_runner, test_suite, output_dir)
+    conversations = annotate_e2e_tests(e2e_test_runner, test_suite, storage_context)
     statistics["num_input_e2e_tests"] = len(test_suite.test_cases)
     statistics["num_annotated_conversations"] = len(conversations)
     log_end_of_module("Annotation", statistics)
 
     # 2. paraphrase conversations
     log_start_of_module("Rephrasing")
-    conversations, rephrase_config = create_paraphrased_conversations(
-        conversations, args.rephrase_config, args.num_rephrases, output_dir
+    conversations, rephrase_config = asyncio.run(
+        create_paraphrased_conversations(
+            conversations,
+            args.rephrase_config,
+            args.num_rephrases,
+            flows,
+            llm_command_generator_config,
+            storage_context,
+        )
     )
-    statistics["num_passing_rephrased_user_messages"] = 0  # TODO
-    statistics["num_failing_rephrased_user_messages"] = 0  # TODO
+    statistics["num_passing_rephrased_user_messages"] = sum(
+        [conversation.get_number_of_rephrases(True) for conversation in conversations]
+    )
+    statistics["num_failing_rephrased_user_messages"] = sum(
+        [conversation.get_number_of_rephrases(False) for conversation in conversations]
+    )
     log_end_of_module("Rephrasing", statistics)
 
     # 3. create fine-tuning dataset
@@ -199,6 +228,27 @@ def prepare_llm_fine_tuning_data(args: argparse.Namespace) -> None:
     rasa.shared.utils.cli.print_success(
         f"Data and intermediate results are written " f"to '{output_dir}'."
     )
+
+
+def _get_llm_command_generator_config(e2e_test_runner: E2ETestRunner) -> Dict[str, Any]:
+    from rasa.dialogue_understanding.generator.constants import DEFAULT_LLM_CONFIG
+
+    train_schema = e2e_test_runner.agent.processor.model_metadata.train_schema  # type: ignore
+
+    for node in train_schema.nodes:
+        if "SingleStepLLMCommandGenerator" in node:
+            return {
+                **DEFAULT_LLM_CONFIG,
+                **train_schema.nodes[node].config.get(LLM_CONFIG_KEY),
+            }
+
+    rasa.shared.utils.cli.print_error(
+        "The provided model was not trained with the 'SingleStepLLMCommandGenerator'."
+        "Without the 'SingleStepLLMCommandGenerator' no data for fine-tuning can be "
+        "created. Please add the 'SingleStepLLMCommandGenerator' to your config and"
+        "train your model."
+    )
+    sys.exit(0)
 
 
 def log_start_of_module(module_name: str) -> None:
@@ -292,3 +342,14 @@ def set_up_e2e_test_runner(args: argparse.Namespace) -> E2ETestRunner:
             "cli.finetune_llm.prepare_data.set_up_e2e_test_runner", error=error.message
         )
         sys.exit(1)
+
+
+def create_storage_context(
+    storage_type: StorageType, output_dir: str
+) -> StorageContext:
+    if storage_type == StorageType.FILE:
+        strategy = FileStorageStrategy(output_dir)
+    else:
+        raise ValueError("Unsupported storage type")
+
+    return StorageContext(strategy)
