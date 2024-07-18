@@ -619,7 +619,7 @@ def encode_yaml(yaml):
         (
             argparse.Namespace(
                 assistant_name=["test"],
-                domain="data/upload/domain.yml",
+                domain="data/upload/",
                 data=["data/upload/data/nlu.yml"],
                 entities=["name"],
                 intents=["greet", "inform"],
@@ -660,7 +660,6 @@ def encode_yaml(yaml):
         ),
         (
             argparse.Namespace(
-                assistant_name=["test"],
                 calm=True,
                 domain="data/upload/calm/domain/domain.yml",
                 data=["data/upload/calm/"],
@@ -676,15 +675,15 @@ def encode_yaml(yaml):
                 ),
                 "variables": {
                     "input": {
-                        "assistantName": "test",
                         "domain": (encode_yaml(CALM_DOMAIN_YAML)),
                         "flows": (encode_yaml(CALM_FLOWS_YAML)),
                         "nlu": (encode_yaml(CALM_NLU_YAML)),
-                        "config": (
-                            "cmVjaXBlOiBkZWZhdWx0LnYxCmxhbmd1YWdlOiBlbgpwaXBlbGluZToKLSBuYW1lOiBTaW5nbGVTdGVwTExNQ29"
-                            "tbWFuZEdlbmVyYXRvcgogIGxsbToKICAgIG1vZGVsX25hbWU6IGdwdC00CnBvbGljaWVzOgotIG5hbWU"
-                            "6IHJhc2EuY29yZS5wb2xpY2llcy5mbG93X3BvbGljeS5GbG93UG9saWN5Cg=="
-                        ),
+                        "config": ("cmVjaXBlOiBkZWZhdWx0LnYxCmxhbmd1YWdlOiBlbgpwa"
+                                   "XBlbGluZToKLSBuYW1lOiBTaW5nbGVTdGVwTExNQ29tbW"
+                                   "FuZEdlbmVyYXRvcgogIGxsbToKICAgIG1vZGVsX25hbWU"
+                                   "6IGdwdC00CnBvbGljaWVzOgotIG5hbWU6IHJhc2EuY29y"
+                                   "ZS5wb2xpY2llcy5mbG93X3BvbGljeS5GbG93UG9saWN5C"
+                                   "mFzc2lzdGFudF9pZDogdGVzdA=="),
                     }
                 },
             },
