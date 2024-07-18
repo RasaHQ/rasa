@@ -618,9 +618,9 @@ def encode_yaml(yaml):
     [
         (
             argparse.Namespace(
-                assistant_name=["test"],
-                domain="data/upload/",
-                data=["data/upload/data/nlu.yml"],
+                assistant_name="test",
+                domain="data/upload",
+                data="data/upload/data",
                 entities=["name"],
                 intents=["greet", "inform"],
             ),
@@ -653,13 +653,14 @@ def encode_yaml(yaml):
                             "maXJzdF9uYW1lIn0KICAgIC0gTWlsaWNhCiAgICAtIEthcmluCiAgICAtIFN0Z"
                             "XZlbgogICAgLSBJJ20gWzE4XShhZ2UpCiAgICAtIEkgYW0gWzMyXShhZ2UpIHl"
                             "lYXJzIG9sZAogICAgLSA5Cg=="
-                        ),
+                        )
                     }
                 },
             },
         ),
         (
             argparse.Namespace(
+                assistant_name=["test"],
                 calm=True,
                 domain="data/upload/calm/domain/domain.yml",
                 data=["data/upload/calm/"],
@@ -676,16 +677,16 @@ def encode_yaml(yaml):
                 ),
                 "variables": {
                     "input": {
-                        "domain": (encode_yaml(CALM_DOMAIN_YAML)),
-                        "flows": (encode_yaml(CALM_FLOWS_YAML)),
-                        "nlu": (encode_yaml(CALM_NLU_YAML)),
-                        "config": ("cmVjaXBlOiBkZWZhdWx0LnYxCmxhbmd1YWdlOiBlbgpwa"
-                                   "XBlbGluZToKLSBuYW1lOiBTaW5nbGVTdGVwTExNQ29tbW"
-                                   "FuZEdlbmVyYXRvcgogIGxsbToKICAgIG1vZGVsX25hbWU"
-                                   "6IGdwdC00CnBvbGljaWVzOgotIG5hbWU6IHJhc2EuY29y"
-                                   "ZS5wb2xpY2llcy5mbG93X3BvbGljeS5GbG93UG9saWN5C"
-                                   "mFzc2lzdGFudF9pZDogdGVzdA=="),
-                        "endpoints": (encode_yaml(CALM_ENDPOINTS_YAML)),
+                        "assistantName": "test",
+                        "domain": encode_yaml(CALM_DOMAIN_YAML),
+                        "flows": encode_yaml(CALM_FLOWS_YAML),
+                        "nlu": encode_yaml(CALM_NLU_YAML),
+                        "config": (
+                            "cmVjaXBlOiBkZWZhdWx0LnYxCmxhbmd1YWdlOiBlbgpwaXBlbGluZToKLSBuYW1lOiBTaW5nbGVTdGVwTExNQ29"
+                            "tbWFuZEdlbmVyYXRvcgogIGxsbToKICAgIG1vZGVsX25hbWU6IGdwdC00CnBvbGljaWVzOgotIG5hbWU"
+                            "6IHJhc2EuY29yZS5wb2xpY2llcy5mbG93X3BvbGljeS5GbG93UG9saWN5Cg=="
+                        ),
+                        "endpoints": "bmxnOgogIHR5cGU6IHJlcGhyYXNlCg=="
                     }
                 },
             },
@@ -714,15 +715,12 @@ def test_handle_upload(
         "StudioConfig",
         mock_config,
     )
+    monkeypatch.setattr("builtins.input", lambda _: "test")  # Mock user input
+    rasa.studio.upload.handle_upload(args)
 
-    try:
-        rasa.studio.upload.handle_upload(args)
-    except Exception as e:
-        pytest.fail(f"handle_upload raised an exception: {e}")
-
-    assert mock.post.called, "requests.post was not called"
-    assert mock.post.call_args[0][0] == endpoint, f"Incorrect endpoint: {mock.post.call_args[0][0]}"
-    assert mock.post.call_args[1]["json"] == expected, f"Incorrect JSON payload: {mock.post.call_args[1]['json']}"
+    assert mock.post.called
+    assert mock.post.call_args[0][0] == endpoint
+    assert mock.post.call_args[1]["json"] == expected
 
 
 @pytest.mark.parametrize(
@@ -1088,7 +1086,6 @@ def test_make_request(
     mock_token.get_token.return_value.access_token = "mock_token"
     monkeypatch.setattr(rasa.studio.upload, "KeycloakTokenReader", lambda: mock_token)
 
-    # Create an instance of ResultsLogger
     results_logger = ResultsLogger()
 
     # Apply the decorator to a test function

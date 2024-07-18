@@ -197,7 +197,7 @@ def upload_calm_assistant(args: argparse.Namespace, endpoint: str) -> Tuple[str,
 
 @results_logger.wrap
 def upload_nlu_assistant(
-    args: argparse.Namespace, assistant_name: str, endpoint: str
+    args: argparse.Namespace, endpoint: str
 ) -> Tuple[str, bool]:
     """Uploads the classic (dm1) assistant data to Rasa Studio.
 
@@ -207,11 +207,11 @@ def upload_nlu_assistant(
             - domain: The path to the domain
             - intents: The intents to upload
             - entities: The entities to upload
-        assistant_name: The name of the assistant
         endpoint: The studio endpoint
     Returns:
         None
     """
+    assistant_name = args.assistant_name
     logger.info("Found DM1 assistant data, parsing...")
     importer = TrainingDataImporter.load_from_dict(
         domain_path=args.domain, training_data_paths=args.data
