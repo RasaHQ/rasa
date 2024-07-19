@@ -980,7 +980,9 @@ class TestSingleStepLLMCommandGenerator:
         self,
         model_storage: ModelStorage,
         tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
+        monkeypatch.setenv("OPENAI_API_KEY", "some key")
         # Create and write prompt file.
         prompt_dir = Path(tmp_path) / "prompt"
         prompt_dir.mkdir(parents=True, exist_ok=True)
