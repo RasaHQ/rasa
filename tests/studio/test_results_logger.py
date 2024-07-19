@@ -97,25 +97,10 @@ def test_handle_error_exceptions(
 
 
 def test_response_has_errors(results_logger):
-    if results_logger.response_has_errors({"errors": [{"message": "Error"}]}) is True:
-        assert True
-    else:
-        assert False
-
-    if results_logger.response_has_errors({"errors": []}) is False:
-        assert True
-    else:
-        assert False
-
-    if results_logger.response_has_errors({"data": "Success"}) is False:
-        assert True
-    else:
-        assert False
-
-    if results_logger.response_has_errors({"errors": None}) is False:
-        assert True
-    else:
-        assert False
+    assert results_logger.response_has_errors({"errors": [{"message": "Error"}]})
+    assert not results_logger.response_has_errors({"errors": []})
+    assert not results_logger.response_has_errors({"data": "Success"})
+    assert not results_logger.response_has_errors({"errors": None})
 
 
 def test_add_custom_results_logger(results_logger):
