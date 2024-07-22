@@ -1,6 +1,0 @@
-tracing:
-  type: jaeger
-  host: jaeger
-  port: 6831
-  service_name: rasa-jaeger-testing
-  sync_export: ~

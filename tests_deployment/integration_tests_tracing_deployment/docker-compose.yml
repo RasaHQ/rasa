@@ -1,0 +1,235 @@
+x-environment: &environment
+  RASA_PRO_LICENSE: ${RASA_PRO_LICENSE}
+  OPENAI_API_KEY: ${OPENAI_API_KEY}
+
+configs:
+  endpoints-jaeger.yml:
+    content: |
+      action_endpoint:
+        url: "http://action-server-jaeger:5056/webhook"
+      
+      tracing:
+        type: jaeger
+        host: jaeger
+        port: 6831
+        service_name: rasa-jaeger-testing
+        sync_export: ~
+  endpoints-jaeger-for-action-server.yml:
+    content: |
+      tracing:
+        type: jaeger
+        host: jaeger
+        port: 6831
+        service_name: action-server-jaeger-testing
+        sync_export: ~
+  endpoints-jaeger-no-action-server.yml:
+    content: |
+      tracing:
+        type: jaeger
+        host: jaeger
+        port: 6831
+        service_name: rasa-jaeger-testing
+        sync_export: ~
+  endpoints-otlp.yml:
+    content: |
+      action_endpoint:
+        url: "http://action-server-otlp:5057/webhook"
+      
+      tracing:
+        type: otlp
+        endpoint: otel-collector:4317
+        insecure: false
+        root_certificates: /certs/ca.pem
+        service_name: rasa-otlp-testing
+  endpoints-otlp-for-action-server.yml:
+    content: |
+      tracing:
+        type: otlp
+        endpoint: otel-collector:4317
+        insecure: false
+        root_certificates: /certs/ca.pem
+        service_name: action-server-otlp-testing
+  endpoints-otlp-no-action-server.yml:
+    content: |
+      tracing:
+        type: otlp
+        endpoint: otel-collector:4317
+        insecure: false
+        root_certificates: /certs/ca.pem
+        service_name: rasa-otlp-testing
+
+  otel-collector-config.yml:
+    content: |
+      receivers:
+        otlp:
+          protocols:
+            grpc:
+              tls_settings:
+                cert_file: /certs/cert.pem
+                key_file: /certs/cert-key.pem
+      
+      exporters:
+        jaeger:
+          endpoint: "jaeger:14250"
+          insecure: true
+        logging:
+      
+      processors:
+        batch:
+          timeout: 1s
+      
+      service:
+        pipelines:
+          traces:
+            receivers: [otlp]
+            exporters: [jaeger, logging]
+            processors: [batch]
+
+
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector@sha256:cec18c72535bebeaca3615e841b19066b468f87a2e29b724b118b5b7bf8808ce
+    command: ["--config=/etc/otel-collector-config.yml"]
+    volumes:
+      - ./certs/cert.pem:/certs/cert.pem
+      - ./certs/cert-key.pem:/certs/cert-key.pem
+    configs:
+      - source: otel-collector-config.yml
+        target: /etc/otel-collector-config.yml
+    networks: [ 'rasa-pro-network' ]
+    ports:
+      - "4317"
+
+  jaeger:
+    image: jaegertracing/all-in-one@sha256:2fe77574dc1a9fe4da54c086c0c98feacce3ff87ab9addba933b7fc9b6d8de19
+    networks: [ 'rasa-pro-network' ]
+    ports:
+      - "16686:16686"
+      - "14250"
+      - "6831:6831/udp"
+      - "16685:16685"
+
+  rasa-pro-jaeger:
+    image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
+    volumes:
+      - "./simple_bot:/app"
+    configs:
+      - source: endpoints-jaeger.yml
+        target: /endpoints-jaeger.yml
+    entrypoint: ""
+    command: rasa run -p 5006 --enable-api --endpoints /endpoints-jaeger.yml
+    networks: [ 'rasa-pro-network' ]
+    ports:
+      - "5006:5006"
+    environment:
+      <<: *environment
+    healthcheck:
+      test: curl localhost:5006 || exit 1
+      interval: 10s
+      retries: 10
+      start_period: 15s
+      timeout: 10s
+    user: ${USER_ID}
+
+  rasa-pro-otlp:
+    image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
+    volumes:
+      - "./simple_bot:/app"
+      - "./certs/ca.pem:/certs/ca.pem"
+    configs:
+      - source: endpoints-otlp.yml
+        target: /endpoints-otlp.yml
+    entrypoint: ""
+    command: rasa run -p 5007 --enable-api --endpoints /endpoints-otlp.yml
+    networks: [ 'rasa-pro-network' ]
+    ports:
+      - "5007:5007"
+    environment:
+      <<: *environment
+    healthcheck:
+      test: curl localhost:5007 || exit 1
+      interval: 10s
+      retries: 10
+      start_period: 15s
+      timeout: 10s
+    user: ${USER_ID}
+
+  rasa-pro-jaeger-no-action-server:
+    image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
+    volumes:
+      - "./simple_bot:/app"
+    configs:
+      - source: endpoints-jaeger-no-action-server.yml
+        target: /endpoints-jaeger-no-action-server.yml
+    entrypoint: ""
+    command: rasa run -p 5008 --enable-api --endpoints /endpoints-jaeger-no-action-server.yml
+    networks: [ 'rasa-pro-network' ]
+    ports:
+      - "5008:5008"
+    environment:
+      <<: *environment
+    healthcheck:
+      test: curl localhost:5008 || exit 1
+      interval: 10s
+      retries: 10
+      start_period: 15s
+      timeout: 10s
+    user: ${USER_ID}
+
+  rasa-pro-otlp-no-action-server:
+    image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
+    volumes:
+      - "./simple_bot:/app"
+      - "./certs/ca.pem:/certs/ca.pem"
+    configs:
+      - source: endpoints-otlp-no-action-server.yml
+        target: /endpoints-otlp-no-action-server.yml
+    entrypoint: ""
+    command: rasa run -p 5009 --enable-api --endpoints /endpoints-otlp-no-action-server.yml
+    networks: [ 'rasa-pro-network' ]
+    ports:
+      - "5009:5009"
+    environment:
+      <<: *environment
+    healthcheck:
+      test: curl localhost:5009 || exit 1
+      interval: 10s
+      retries: 10
+      start_period: 15s
+      timeout: 10s
+    user: ${USER_ID}
+
+  action-server-jaeger:
+    image: ${RASA_SDK_REPOSITORY}:latest
+    volumes:
+      - "./simple_bot/actions:/app/actions"
+    configs:
+      - source: endpoints-jaeger-for-action-server.yml
+        target: /app/endpoints.yml
+    networks: [ 'rasa-pro-network' ]
+    entrypoint: ""
+    command: python -m rasa_sdk --actions actions -p 5056
+    ports:
+      - "5056:5056"
+    environment:
+      <<: *environment
+
+
+  action-server-otlp:
+    image: ${RASA_SDK_REPOSITORY}:latest
+    volumes:
+      - "./certs/ca.pem:/certs/ca.pem"
+      - "./simple_bot/actions:/app/actions"
+    configs:
+      - source: endpoints-otlp-for-action-server.yml
+        target: /app/endpoints.yml
+    networks: [ 'rasa-pro-network' ]
+    entrypoint: ""
+    command: python -m rasa_sdk --actions actions -p 5057
+    ports:
+      - "5057:5057"
+    environment:
+      <<: *environment
+
+
+networks: { rasa-pro-network: { } }

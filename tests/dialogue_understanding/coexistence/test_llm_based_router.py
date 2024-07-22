@@ -205,7 +205,7 @@ class TestLLMBasedRouter:
                 assert (
                     logs[3]["event"] == "llm_based_router.parse_answer.invalid_answer"
                 )
-                assert logs[4]["event"] == "llm_based_router.predicated_commands"
+                assert logs[4]["event"] == "llm_based_router.final_commands"
 
     def test_render_template(
         self,

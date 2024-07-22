@@ -1,7 +1,7 @@
 import os.path
 import uuid
 from pathlib import Path
-from typing import Optional, Dict, Text, Any, Set
+from typing import Optional, Dict, Text, Any, Set, List
 from unittest.mock import Mock, patch, AsyncMock, MagicMock
 
 import pytest
@@ -35,6 +35,7 @@ from rasa.dialogue_understanding.generator.single_step.single_step_llm_command_g
     DEFAULT_COMMAND_PROMPT_TEMPLATE,
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
+from rasa.llm_fine_tuning.annotation_module import set_preparing_fine_tuning_data
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
@@ -47,7 +48,7 @@ from rasa.shared.core.slots import (
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import ProviderClientAPIException
-from rasa.shared.nlu.constants import TEXT
+from rasa.shared.nlu.constants import TEXT, LLM_PROMPT, LLM_COMMANDS
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.utils.llm import (
@@ -282,6 +283,68 @@ class TestSingleStepLLMCommandGenerator:
         assert StartFlowCommand("test_flow") in predicted_commands
         assert SetSlotCommand(ROUTE_TO_CALM_SLOT, True) in predicted_commands
 
+    async def test_predict_commands_does_not_set_llm_commands_and_prompt(
+        self,
+        command_generator: SingleStepLLMCommandGenerator,
+        flows: FlowsList,
+        tracker: DialogueStateTracker,
+    ):
+        """Test that predict_commands sets the routing slot to True."""
+        message = Message.build(text="start test_flow")
+
+        # When
+        with patch(
+            "rasa.dialogue_understanding.generator.llm_based_command_generator.llm_factory",
+            Mock(),
+        ) as mock_llm_factory:
+            llm_mock = Mock()
+            apredict_mock = AsyncMock(return_value="StartFlow(test_flow)")
+            llm_mock.apredict = apredict_mock
+            mock_llm_factory.return_value = llm_mock
+            await command_generator.predict_commands(
+                message,
+                flows=flows,
+                tracker=tracker,
+            )
+
+        # Then
+        assert message.get(LLM_PROMPT) is None
+        assert message.get(LLM_COMMANDS) is None
+
+    async def test_predict_commands_sets_llm_commands_and_prompt(
+        self,
+        command_generator: SingleStepLLMCommandGenerator,
+        flows: FlowsList,
+        tracker: DialogueStateTracker,
+    ):
+        """Test that predict_commands sets the routing slot to True."""
+        message = Message.build(text="start test_flow")
+
+        # When
+        with set_preparing_fine_tuning_data():
+            with patch(
+                "rasa.dialogue_understanding.generator.llm_based_command_generator.llm_factory",
+                Mock(),
+            ) as mock_llm_factory:
+                llm_mock = Mock()
+                apredict_mock = AsyncMock(return_value="StartFlow(test_flow)")
+                llm_mock.apredict = apredict_mock
+                mock_llm_factory.return_value = llm_mock
+                await command_generator.predict_commands(
+                    message,
+                    flows=flows,
+                    tracker=tracker,
+                )
+
+        # Then
+        assert message.get(LLM_PROMPT) is not None
+        assert message.get(LLM_PROMPT).startswith(
+            "Your task is to analyze the current conversation context"
+        )
+        assert message.get(LLM_COMMANDS) == [
+            {"command": "start flow", "flow": "test_flow"}
+        ]
+
     @pytest.mark.parametrize(
         "flow_guard_value, expected_flow_ids",
         (
@@ -389,7 +452,6 @@ class TestSingleStepLLMCommandGenerator:
                 "SetSlot(flow_name, some_flow)",
                 [
                     StartFlowCommand(flow="some_flow"),
-                    SetSlotCommand(ROUTE_TO_CALM_SLOT, True),
                 ],
             ),
         ],
@@ -411,7 +473,7 @@ class TestSingleStepLLMCommandGenerator:
         mock_render_template: Mock,
         mock_generate_action_list_using_llm: Mock,
         llm_response: Text,
-        expected_commands: Command,
+        expected_commands: List[Command],
         command_generator: SingleStepLLMCommandGenerator,
         tracker_with_routing_slot: DialogueStateTracker,
     ):
@@ -437,7 +499,13 @@ class TestSingleStepLLMCommandGenerator:
         )
         # Then
         mock_flow_retrieval_filter_flows.assert_called_once()
-        assert predicted_commands == expected_commands
+        assert len(predicted_commands) == len(expected_commands) + 1
+        for expected_command in expected_commands:
+            assert expected_command in predicted_commands
+
+        # route session must be present when there is a
+        # tracker with routing slot
+        assert SetSlotCommand(ROUTE_TO_CALM_SLOT, True) in predicted_commands
 
     @patch(
         "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.filter_flows"
@@ -474,7 +542,9 @@ class TestSingleStepLLMCommandGenerator:
         # Then
         mock_flow_retrieval_filter_flows.assert_called_once()
 
-        assert predicted_commands == [ErrorCommand()]
+        assert len(predicted_commands) == 2
+        assert ErrorCommand() in predicted_commands
+        assert SetSlotCommand(ROUTE_TO_CALM_SLOT, True) in predicted_commands
 
     def test_render_template(
         self,
@@ -910,7 +980,9 @@ class TestSingleStepLLMCommandGenerator:
         self,
         model_storage: ModelStorage,
         tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
+        monkeypatch.setenv("OPENAI_API_KEY", "some key")
         # Create and write prompt file.
         prompt_dir = Path(tmp_path) / "prompt"
         prompt_dir.mkdir(parents=True, exist_ok=True)
