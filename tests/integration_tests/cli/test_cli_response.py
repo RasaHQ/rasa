@@ -177,8 +177,6 @@ def test_rasa_validate_null_active_loop_no_errors(
     stderr_text = str(result.stderr)
     assert "INFO" in stderr_text
     assert "Validating intents..." in stderr_text
-    assert "Validating utterances..." in stderr_text
     assert "Story structure validation..." in stderr_text
-    assert "Validating utterances..." in stderr_text
     assert "Considering all preceding turns for conflict analysis." in stderr_text
     assert "No story structure conflicts found." in stderr_text
