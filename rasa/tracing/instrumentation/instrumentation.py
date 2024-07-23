@@ -13,7 +13,6 @@ from typing import (
     Dict,
     List,
     Optional,
-    TYPE_CHECKING,
     Text,
     Type,
     TypeVar,
@@ -28,7 +27,10 @@ from rasa.core.actions.custom_action_executor import RetryCustomActionExecutor
 from rasa.core.actions.grpc_custom_action_executor import GRPCCustomActionExecutor
 from rasa.core.agent import Agent
 from rasa.core.channels import OutputChannel
-from rasa.core.information_retrieval.information_retrieval import InformationRetrieval
+from rasa.core.information_retrieval.information_retrieval import (
+    InformationRetrieval,
+    SearchResultList,
+)
 from rasa.core.lock_store import LockStore
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.flows.flow_step_result import FlowActionPrediction
@@ -36,10 +38,8 @@ from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import TrackerStore
 from rasa.dialogue_understanding.commands import Command
-from rasa.dialogue_understanding.generator.single_step.llm_command_generator import (
-    LLMCommandGenerator,
-)
 from rasa.dialogue_understanding.generator import (
+    LLMCommandGenerator,
     MultiStepLLMCommandGenerator,
     SingleStepLLMCommandGenerator,
 )
@@ -68,8 +68,6 @@ from rasa.utils.endpoints import EndpointConfig
 
 from rasa.tracing.instrumentation import attribute_extractors
 
-if TYPE_CHECKING:
-    from langchain.schema import Document
 
 # The `TypeVar` representing the return type for a function to be wrapped.
 S = TypeVar("S")
@@ -678,16 +676,21 @@ def _instrument_information_retrieval_search(
 ) -> None:
     def tracing_information_retrieval_search_wrapper(fn: Callable) -> Callable:
         @functools.wraps(fn)
-        def wrapper(self: InformationRetrieval, query: Text) -> List["Document"]:
+        async def wrapper(
+            self: InformationRetrieval,
+            query: Text,
+            tracker_state: Dict[str, Any],
+            threshold: float = 0.0,
+        ) -> SearchResultList:
             with tracer.start_as_current_span(
                 f"{self.__class__.__name__}.{fn.__name__}"
             ) as span:
-                documents = fn(self, query)
+                documents = await fn(self, query, tracker_state, threshold)
                 span.set_attributes(
                     {
                         "query": query,
                         "document_metadata": json.dumps(
-                            [document.metadata for document in documents]
+                            [document.metadata for document in documents.results]
                         ),
                     }
                 )

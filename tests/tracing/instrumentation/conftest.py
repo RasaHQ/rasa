@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from asyncio import AbstractEventLoop
 from contextlib import asynccontextmanager
-from langchain.schema import Document
 from pathlib import Path
 from typing import (
     Any,
@@ -25,7 +24,11 @@ from rasa.core.actions.action import Action
 from rasa.core.agent import Agent
 from rasa.core.brokers.broker import EB, EventBroker
 from rasa.core.channels import OutputChannel, UserMessage
-from rasa.core.information_retrieval import InformationRetrieval
+from rasa.core.information_retrieval import (
+    SearchResult,
+    SearchResultList,
+    InformationRetrieval,
+)
 from rasa.core.lock import TicketLock
 from rasa.core.lock_store import LockStore
 from rasa.core.nlg import NaturalLanguageGenerator
@@ -544,13 +547,18 @@ class MockInformationRetrieval(InformationRetrieval):
     ) -> None:
         pass
 
-    def search(
+    async def search(
         self,
         query: Text,
-    ) -> List[Document]:
-        return [
-            Document(page_content="Some content", metadata={"source": "docs/test.txt"})
-        ]
+        tracker_state: Dict[Text, Any],
+        threshold: float = 0.0,
+    ) -> SearchResultList:
+        return SearchResultList(
+            results=[
+                SearchResult(text="Some content", metadata={"source": "docs/test.txt"}),
+            ],
+            metadata={"total_results": 1},
+        )
 
 
 class MockNLUCommandAdapter(NLUCommandAdapter):

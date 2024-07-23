@@ -171,7 +171,7 @@ class CommandGenerator:
         # if no errors, try predicting commands
         try:
             return await self.predict_commands(
-                message, startable_flows, tracker, domain
+                message, startable_flows, tracker, domain=domain
             )
         except NotImplementedError:
             raise
@@ -184,7 +184,7 @@ class CommandGenerator:
         message: Message,
         flows: FlowsList,
         tracker: Optional[DialogueStateTracker] = None,
-        domain: Optional[Domain] = None,
+        **kwargs: Any,
     ) -> List[Command]:
         """Predict commands for a single message.
 
@@ -192,8 +192,7 @@ class CommandGenerator:
             message: The message to predict commands for.
             flows: The flows to use for command prediction.
             tracker: The tracker containing the conversation history up to now.
-            domain: The domain.
-
+            **kwargs: Keyword arguments for forward compatibility.
         Returns:
         The predicted commands.
         """

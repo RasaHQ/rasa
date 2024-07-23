@@ -1,3 +1,4 @@
+import os
 import uuid
 from typing import List, Text, Any, Dict
 from unittest.mock import Mock, patch
@@ -132,6 +133,10 @@ class TestFlowRetrieval:
     @pytest.fixture(scope="session")
     def resource(self) -> Resource:
         return Resource(uuid.uuid4().hex)
+
+    @pytest.fixture(scope="session", autouse=True)
+    def set_open_ai_env_variable(self) -> None:
+        os.environ["OPENAI_API_KEY"] = "test"
 
     @pytest.fixture(scope="function")
     def flow_search(

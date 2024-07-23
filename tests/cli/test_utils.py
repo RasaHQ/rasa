@@ -1,23 +1,22 @@
+import argparse
 import contextlib
 import copy
-import re
-import argparse
-import structlog
 import io
 import os
 import pathlib
+import re
 import sys
 import tempfile
-from typing import Any, Dict, Text
 from pathlib import Path
-from rasa.shared.importers.importer import TrainingDataImporter
-from rasa.shared.utils.yaml import read_yaml_file, write_yaml
-from rasa.utils.common import EXPECTED_WARNINGS
-from ruamel.yaml import YAML
+from typing import Any, Dict, Text, Callable
 
 import pytest
+import structlog
+from _pytest.pytester import RunResult
+from ruamel.yaml import YAML
 
 import rasa.cli.utils
+import rasa.shared.utils.io
 from rasa.shared.constants import (
     ASSISTANT_ID_DEFAULT_VALUE,
     ASSISTANT_ID_KEY,
@@ -27,7 +26,9 @@ from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
 )
-import rasa.shared.utils.io
+from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.utils.yaml import read_yaml_file, write_yaml
+from rasa.utils.common import EXPECTED_WARNINGS
 from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
 from tests.cli.conftest import RASA_EXE
 from tests.conftest import AsyncMock
@@ -691,3 +692,16 @@ async def test_payload_from_button_question(text_input: str, button: str) -> Non
     question.ask_async.return_value = text_input
     result = await rasa.cli.utils.payload_from_button_question(question)
     assert result == button
+
+
+def test_rasa_version_raises_no_warnings(
+    run_in_simple_project: Callable[..., RunResult],
+):
+    # Run the CLI command "rasa --version"
+    result = run_in_simple_project("--version")
+
+    # Get the standard output and error
+    stderr = "\n".join(result.stderr.lines)
+
+    # Check if there are any warnings in the output
+    assert "warning" not in stderr.lower()

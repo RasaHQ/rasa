@@ -2,7 +2,6 @@ from typing import Dict, Text, Any, Optional, List
 
 import structlog
 
-
 from rasa.dialogue_understanding.commands import (
     Command,
     StartFlowCommand,
@@ -25,6 +24,7 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import ENTITIES, INTENT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.utils.log_utils import log_llm
 
 structlogger = structlog.get_logger()
 
@@ -83,7 +83,7 @@ class NLUCommandAdapter(GraphComponent, CommandGenerator):
         message: Message,
         flows: FlowsList,
         tracker: Optional[DialogueStateTracker] = None,
-        domain: Optional[Domain] = None,
+        **kwargs: Any,
     ) -> List[Command]:
         """Creates commands using the predicted intents.
 
@@ -91,7 +91,7 @@ class NLUCommandAdapter(GraphComponent, CommandGenerator):
             message: The message from the user.
             flows: The flows available to the user.
             tracker: The tracker containing the current state of the conversation.
-            domain: The domain.
+            **kwargs: Keyword arguments for forward compatibility.
 
         Returns:
             The commands triggered by NLU.
@@ -100,6 +100,7 @@ class NLUCommandAdapter(GraphComponent, CommandGenerator):
             # cannot do anything if there are no flows or no tracker
             return []
 
+        domain = kwargs.get("domain", None)
         commands = self.convert_nlu_to_commands(message, tracker, flows, domain)
 
         commands_contain_start_flow = any(
@@ -125,13 +126,22 @@ class NLUCommandAdapter(GraphComponent, CommandGenerator):
             clean_up_commands,
         )
 
-        structlogger.info("nlu_command_adapter.cleaning_commands", commands=commands)
+        log_llm(
+            logger=structlogger,
+            log_module="NLUCommandAdapter",
+            log_event="nlu_command_adapter.predict_commands.finished",
+            commands=commands,
+        )
+
         if commands:
             commands = clean_up_commands(
                 commands, tracker, flows, self._execution_context
             )
-            structlogger.info(
-                "nlu_command_adapter.clean_commands", clean_commands=commands
+            log_llm(
+                logger=structlogger,
+                log_module="NLUCommandAdapter",
+                log_event="nlu_command_adapter.clean_commands",
+                commands=commands,
             )
 
         return commands
@@ -179,7 +189,12 @@ class NLUCommandAdapter(GraphComponent, CommandGenerator):
         set_slot_commands = _issue_set_slot_commands(message, tracker, flows, domain)
         commands.extend(set_slot_commands)
 
-        structlogger.info("nlu_command_adapter.predict_commands", commands=commands)
+        log_llm(
+            logger=structlogger,
+            log_module="NLUCommandAdapter",
+            log_event="nlu_command_adapter.predict_commands",
+            commands=commands,
+        )
 
         return commands
 

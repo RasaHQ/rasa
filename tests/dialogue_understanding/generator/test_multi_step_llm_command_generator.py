@@ -962,7 +962,7 @@ class TestMultiStepLLMCommandGenerator:
 
         # When
         await command_generator.predict_commands(
-            mock_message, all_flows, mock_tracker, mock_domain
+            mock_message, all_flows, mock_tracker, domain=mock_domain
         )
 
         # Then
@@ -1088,7 +1088,7 @@ class TestMultiStepLLMCommandGeneratorPredictCommandsErrorHandling:
 
         # When
         predicted_commands = await multi_step_llm_command_generator.predict_commands(
-            mock_message, filtered_flows, mock_tracker, mock_domain
+            mock_message, filtered_flows, mock_tracker, domain=mock_domain
         )
 
         # Then
@@ -1120,11 +1120,13 @@ class TestMultiStepLLMCommandGeneratorPredictCommandsErrorHandling:
 
         # When
         predicted_commands = await multi_step_llm_command_generator.predict_commands(
-            mock_message, filtered_flows, mock_tracker, mock_domain
+            mock_message, filtered_flows, mock_tracker, domain=mock_domain
         )
 
         # Then
-        assert predicted_commands == [ErrorCommand()]
+        assert len(predicted_commands) == 2
+        assert ErrorCommand() in predicted_commands
+        assert SetSlotCommand(ROUTE_TO_CALM_SLOT, True) in predicted_commands
 
     async def test_predict_commands_for_active_flow_raises_an_exception(
         self,
@@ -1148,11 +1150,13 @@ class TestMultiStepLLMCommandGeneratorPredictCommandsErrorHandling:
 
         # When
         predicted_commands = await multi_step_llm_command_generator.predict_commands(
-            mock_message, filtered_flows, mock_tracker, mock_domain
+            mock_message, filtered_flows, mock_tracker, domain=mock_domain
         )
 
         # Then
-        assert predicted_commands == [ErrorCommand()]
+        assert len(predicted_commands) == 2
+        assert ErrorCommand() in predicted_commands
+        assert SetSlotCommand(ROUTE_TO_CALM_SLOT, True) in predicted_commands
 
     async def test_predict_commands_for_handling_flows_raises_an_exception(
         self,
@@ -1178,11 +1182,13 @@ class TestMultiStepLLMCommandGeneratorPredictCommandsErrorHandling:
 
         # When
         predicted_commands = await multi_step_llm_command_generator.predict_commands(
-            mock_message, filtered_flows, mock_tracker, mock_domain
+            mock_message, filtered_flows, mock_tracker, domain=mock_domain
         )
 
         # Then
-        assert predicted_commands == [ErrorCommand()]
+        assert len(predicted_commands) == 2
+        assert ErrorCommand() in predicted_commands
+        assert SetSlotCommand(ROUTE_TO_CALM_SLOT, True) in predicted_commands
 
     async def test_predict_commands_for_newly_started_flows_raises_an_exception(
         self,
@@ -1208,8 +1214,10 @@ class TestMultiStepLLMCommandGeneratorPredictCommandsErrorHandling:
 
         # When
         predicted_commands = await multi_step_llm_command_generator.predict_commands(
-            mock_message, filtered_flows, mock_tracker, mock_domain
+            mock_message, filtered_flows, mock_tracker, domain=mock_domain
         )
 
         # Then
-        assert predicted_commands == [ErrorCommand()]
+        assert len(predicted_commands) == 2
+        assert ErrorCommand() in predicted_commands
+        assert SetSlotCommand(ROUTE_TO_CALM_SLOT, True) in predicted_commands
