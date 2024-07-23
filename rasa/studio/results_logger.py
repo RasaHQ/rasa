@@ -63,24 +63,21 @@ def response_has_errors(response: Dict) -> bool:
 
 
 def _handle_graphql_errors(response: Dict) -> StudioResult:
-    error_msg = "Upload failed with the following errors: "
-    if isinstance(response["errors"], list):
+    if isinstance(response.get("errors"), list):
         error_details = "; ".join(
             [error.get("message", "Unknown error") for error in response["errors"]]
         )
-        error_msg += f"{error_details}"
     else:
-        error_msg += "No detailed error information available."
+        error_details = "No detailed error information available."
 
     structlogger.debug("studio.graphql_error", response=response)
-    print_error(error_msg)
-    return StudioResult(error_msg, False)
+    print_error(error_details)
+    return StudioResult(error_details, False)
 
 
 def _handle_rasa_exception(e: RasaException) -> StudioResult:
-    error_msg = f"Error: {e!s}"
-    print_error(error_msg)
-    return StudioResult(error_msg, False)
+    print_error(e)
+    return StudioResult(message=str(e), was_successful=False)
 
 
 def _handle_keycloak_error(e: KeycloakError) -> StudioResult:
@@ -106,7 +103,7 @@ def _handle_keycloak_error(e: KeycloakError) -> StudioResult:
 def _handle_connection_error(e: ConnectionError) -> StudioResult:
     studio_url = StudioConfig.read_config().studio_url
     error_msg = (
-        f"Unable to connect to Rasa Studio at {studio_url} \n"
+        f"Unable to reach Rasa Studio API at {studio_url} \n"
         "Please check if Studio is running and the configured URL is correct. \n"
         "You may need to reconfigure Rasa Studio using 'rasa studio config'."
     )

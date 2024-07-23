@@ -27,7 +27,7 @@ def test_handle_error_graphql_errors():
 
     result = function_with_graphql_errors()
     assert result == StudioResult(
-        "Upload failed with the following errors: GraphQL error 1; GraphQL error 2",
+        "GraphQL error 1; GraphQL error 2",
         False,
     )
 
@@ -45,7 +45,7 @@ def mock_studio_config():
 @pytest.mark.parametrize(
     "exception,expected_result",
     [
-        (RasaException("Rasa error"), StudioResult("Error: Rasa error", False)),
+        (RasaException("Rasa error"), StudioResult("Rasa error", False)),
         (
             KeycloakError("Keycloak error"),
             StudioResult(
@@ -58,7 +58,7 @@ def mock_studio_config():
         (
             ConnectionError(),
             StudioResult(
-                "Unable to connect to Rasa Studio at "
+                "Unable to reach Rasa Studio API at "
                 "http://mock-studio:4000/api/graphql \n"
                 "Please check if Studio is running and "
                 "the configured URL is correct. \n"

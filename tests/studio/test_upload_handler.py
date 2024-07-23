@@ -906,7 +906,6 @@ def mock_keycloak_token(monkeypatch):
             {"errors": [{"message": "Upload failed with status code 405"}]},
             405,
             StudioResult(
-                "Upload failed with the following errors: "
                 "Upload failed with status code 405",
                 False,
             ),
@@ -921,9 +920,7 @@ def mock_keycloak_token(monkeypatch):
             "UploadModernAssistant",
             {"errors": [{"message": "Error 1"}, {"message": "Error 2"}]},
             500,
-            StudioResult(
-                "Upload failed with the following errors: Error 1; Error 2", False
-            ),
+            StudioResult("Error 1; Error 2", False),
         ),
     ],
 )
