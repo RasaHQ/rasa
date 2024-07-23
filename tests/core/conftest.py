@@ -1,16 +1,11 @@
-import asyncio
 import os
+import asyncio
 import uuid
 from datetime import datetime
-from typing import Generator, Callable, Dict, Text, List, Any
+from typing import Generator, Callable, Dict, Text
 from unittest.mock import patch, Mock
 
 import pytest
-from rasa_sdk import Action, Tracker
-from rasa_sdk.executor import CollectingDispatcher
-from sanic.request import Request
-from scipy import sparse
-
 from rasa.core.agent import Agent
 from rasa.core.channels.channel import CollectingOutputChannel, OutputChannel
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator, NaturalLanguageGenerator
@@ -27,6 +22,8 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.nlu.training_data.features import Features
 from rasa.utils.endpoints import EndpointConfig
+from sanic.request import Request
+from scipy import sparse
 from tests.core.utilities import tracker_from_dialogue
 from tests.dialogues import TEST_MOODBOT_DIALOGUE
 
