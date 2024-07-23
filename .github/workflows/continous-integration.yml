@@ -856,7 +856,7 @@ jobs:
         run: pip install pytest-github-actions-annotate-failures
 
       - name: Install ddtrace on Linux
-        run: poetry run pip install -U 'ddtrace<2.0.0'
+        run: poetry run pip install -U 'ddtrace<=2.9.3'
 
       - name: Test Code 🔍 (multi-process)
         env:
@@ -923,7 +923,7 @@ jobs:
         run: pip install pytest-github-actions-annotate-failures
 
       - name: Install ddtrace on Linux
-        run: poetry run pip install -U 'ddtrace<2.0.0'
+        run: poetry run pip install -U 'ddtrace<=2.9.3'
 
       - name: Test Code 🔍 (multi-process)
         env:
