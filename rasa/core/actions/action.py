@@ -733,9 +733,7 @@ class RemoteAction(Action):
             return NoEndpointCustomActionExecutor(self.name())
 
         if self.action_endpoint and self.action_endpoint.actions_module:
-            return DirectCustomActionExecutor(
-                self.name(), self.action_endpoint
-            )
+            return DirectCustomActionExecutor(self.name(), self.action_endpoint)
 
         url_schema = get_url_schema(self.action_endpoint.url)
 
