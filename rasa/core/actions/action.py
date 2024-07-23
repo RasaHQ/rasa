@@ -19,6 +19,7 @@ import rasa.shared.utils.io
 from rasa.core.actions.custom_action_executor import (
     CustomActionExecutor,
     RetryCustomActionExecutor,
+    NoEndpointCustomActionExecutor,
 )
 from rasa.core.actions.direct_custom_actions_executor import DirectCustomActionExecutor
 from rasa.core.actions.grpc_custom_action_executor import GRPCCustomActionExecutor
@@ -36,7 +37,6 @@ from rasa.shared.constants import (
     ROUTE_TO_CALM_SLOT,
     UTTER_PREFIX,
     FLOW_PREFIX,
-    DEFAULT_ACTIONS_PATH,
 )
 from rasa.shared.core.constants import (
     ACTION_RESET_ROUTING,
@@ -729,13 +729,13 @@ class RemoteAction(Action):
         Raises:
             RasaException: If no valid action endpoint is configured.
         """
-        if not self.action_endpoint or not self.action_endpoint.url:
-            actions_module = (
-                self.action_endpoint.actions_module
-                if self.action_endpoint
-                else DEFAULT_ACTIONS_PATH
+        if not self.action_endpoint:
+            return NoEndpointCustomActionExecutor(self.name())
+
+        if self.action_endpoint and self.action_endpoint.actions_module:
+            return DirectCustomActionExecutor(
+                self._name, self.action_endpoint.actions_module
             )
-            return DirectCustomActionExecutor(self._name, actions_module)
 
         url_schema = get_url_schema(self.action_endpoint.url)
 

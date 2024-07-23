@@ -581,20 +581,11 @@ async def test_remote_action_multiple_events_payload(
 async def test_remote_action_without_endpoint(
     default_channel, default_nlg, default_tracker, domain: Domain
 ):
-    # Dynamically create 'actions' module
-    actions = types.ModuleType("actions")
-    sys.modules["actions"] = actions
+    remote_action = action.RemoteAction("my_action", None)
 
-    MockCustomAction()
-    remote_action = action.RemoteAction("mock_custom_action", EndpointConfig(None))
-
-    result = await remote_action.run(
-        default_channel, default_nlg, default_tracker, domain
-    )
-    assert result == [SlotSet(key="name", value="rasa")]
-
-    # Clean up the dummy module
-    del sys.modules["actions"]
+    with pytest.raises(Exception) as execinfo:
+        await remote_action.run(default_channel, default_nlg, default_tracker, domain)
+    assert "Failed to execute custom action" in str(execinfo.value)
 
 
 async def test_remote_action_endpoint_not_running(

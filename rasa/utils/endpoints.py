@@ -92,7 +92,7 @@ class EndpointConfig:
         **kwargs: Any,
     ) -> None:
         """Creates an `EndpointConfig` instance."""
-        self.url = url if actions_module is None else None
+        self.url = url
         self.params = params or {}
         self.headers = headers or {}
         self.basic_auth = basic_auth or {}
