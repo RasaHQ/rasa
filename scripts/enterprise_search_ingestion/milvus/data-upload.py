@@ -4,7 +4,8 @@ import logging
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores import Milvus
-from langchain.document_loaders import DirectoryLoader, TextLoader
+from langchain_community.document_loaders.directory import DirectoryLoader
+from langchain_community.document_loaders.text import TextLoader
 from pathlib import Path
 from langchain.schema import Document
 from typing import List

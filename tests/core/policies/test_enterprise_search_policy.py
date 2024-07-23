@@ -4,8 +4,8 @@ from typing import List
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
-from langchain.embeddings import FakeEmbeddings
-from langchain.llms.fake import FakeListLLM
+from langchain_community.embeddings import FakeEmbeddings
+from langchain_community.llms.fake import FakeListLLM
 from pytest import MonkeyPatch
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import (

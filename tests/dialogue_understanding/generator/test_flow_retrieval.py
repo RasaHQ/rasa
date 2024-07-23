@@ -6,8 +6,8 @@ import pytest
 from _pytest.tmpdir import TempPathFactory
 from langchain.docstore.document import Document
 from langchain.embeddings import OpenAIEmbeddings
-from langchain.vectorstores.faiss import FAISS
-from langchain.vectorstores.utils import DistanceStrategy
+from langchain_community.vectorstores.faiss import FAISS
+from langchain_community.vectorstores.utils import DistanceStrategy
 from rasa.dialogue_understanding.generator.flow_retrieval import (
     FlowRetrieval,
     SHOULD_EMBED_SLOTS_KEY,

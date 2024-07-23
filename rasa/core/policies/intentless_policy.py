@@ -9,7 +9,7 @@ import tiktoken
 from jinja2 import Template
 from langchain.docstore.document import Document
 from langchain.schema.embeddings import Embeddings
-from langchain.vectorstores import FAISS
+from langchain_community.vectorstores.faiss import FAISS
 
 from rasa import telemetry
 from rasa.core.constants import (

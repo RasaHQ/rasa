@@ -1,4 +1,4 @@
-from langchain.embeddings import FakeEmbeddings
+from langchain_community.embeddings import FakeEmbeddings
 from langchain.schema.embeddings import Embeddings
 import pytest
 from unittest.mock import Mock

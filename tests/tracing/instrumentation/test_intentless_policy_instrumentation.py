@@ -4,8 +4,8 @@ from unittest.mock import Mock, patch
 
 import pytest
 from pytest import LogCaptureFixture
-from langchain.embeddings import FakeEmbeddings
-from langchain.llms.fake import FakeListLLM
+from langchain_community.embeddings import FakeEmbeddings
+from langchain_community.llms.fake import FakeListLLM
 from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 

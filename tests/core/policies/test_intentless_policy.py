@@ -6,9 +6,9 @@ from unittest.mock import Mock, patch, AsyncMock
 import pytest
 from pytest import MonkeyPatch
 from langchain.docstore.document import Document
-from langchain.embeddings import FakeEmbeddings
-from langchain.llms.fake import FakeListLLM
-from langchain.vectorstores import FAISS
+from langchain_community.embeddings import FakeEmbeddings
+from langchain_community.llms.fake import FakeListLLM
+from langchain_community.vectorstores import FAISS
 
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import ChitChatStackFrame

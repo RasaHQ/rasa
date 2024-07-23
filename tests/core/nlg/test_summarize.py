@@ -2,7 +2,7 @@ from typing import Any
 from unittest.mock import patch
 
 from langchain import OpenAI
-from langchain.llms.fake import FakeListLLM
+from langchain_community.llms.fake import FakeListLLM
 from openai import OpenAIError
 from pytest import MonkeyPatch
 from rasa.shared.core.events import UserUttered

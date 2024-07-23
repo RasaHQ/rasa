@@ -5,8 +5,8 @@ from unittest.mock import Mock, patch
 import pytest
 from langchain.callbacks.manager import CallbackManagerForLLMRun
 from langchain.docstore.document import Document
-from langchain.embeddings import FakeEmbeddings
-from langchain.llms.fake import FakeListLLM
+from langchain_community.embeddings import FakeEmbeddings
+from langchain_community.llms.fake import FakeListLLM
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage

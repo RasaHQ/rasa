@@ -4,10 +4,10 @@ from typing import Any, Dict, List, Optional, Text
 
 import rasa.shared.utils.io
 import structlog
-from langchain.chains import LLMChain
+from langchain.chains.llm import LLMChain
 from langchain.docstore.document import Document
 from langchain.prompts import PromptTemplate
-from langchain.vectorstores import FAISS
+from langchain_community.vectorstores.faiss import FAISS
 
 from rasa import telemetry
 from rasa.engine.graph import ExecutionContext, GraphComponent
