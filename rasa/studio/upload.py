@@ -7,7 +7,7 @@ import requests
 
 import rasa.cli.telemetry
 import rasa.cli.utils
-from rasa.shared.utils.cli import print_success, print_error, print_info
+from rasa.shared.utils.cli import print_error, print_info
 import rasa.shared.utils.cli
 import rasa.shared.utils.io
 from rasa.shared.constants import (
