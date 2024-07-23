@@ -202,12 +202,8 @@ def test_data_validate_not_used_debug_message(
         str(test_config),
         "--debug",
     )
-
-    for message in [
-        "The intent 'goodbye' is not used in any story, rule or flow.",
-        "The utterance 'utter_chatter' is not used in any story, rule or flow.",
-    ]:
-        assert message in str(result.stderr)
+    message = "The intent 'goodbye' is not used in any story, rule or flow."
+    assert message in str(result.stderr)
 
 
 def test_data_validate_failed_to_load_domain(

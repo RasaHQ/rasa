@@ -10,6 +10,31 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.9.3] - 2024-07-18
+                       
+Rasa Pro 3.9.3 (2024-07-18)                            
+### Bugfixes
+- [#821](https://github.com/rasahq/rasa-private/issues/821): Refactor the supported remote storage (AWS, GCS, Azure) verification check before downloading Rasa model by fixing the initial implementation which attempted to create the object storage to check existence.
+- [#850](https://github.com/rasahq/rasa-private/issues/850): Fix `TypeError: InformationRetrieval.search() got an unexpected keyword argument` when tracing is enabled with `EnterpriseSearchPolicy`.
+- [#859](https://github.com/rasahq/rasa-private/issues/859): Change `warning` log level to `error` log level for `Validator` methods that verify that forms and actions used in stories and rules are present in the domain.
+
+
+## [3.9.2] - 2024-07-09
+                       
+Rasa Pro 3.9.2 (2024-07-09)                             
+
+### Bugfixes
+- [#829](https://github.com/rasahq/rasa-private/issues/829): Add key-word arguments in the predict_commands method of LLM-based CommandGenerator class to ensure custom components are not impacted by changes to the signature of the base classes.
+
+
+## [3.9.1] - 2024-07-04
+                       
+Rasa Pro 3.9.1 (2024-07-04)                            
+### Bugfixes
+- [#805](https://github.com/rasahq/rasa-private/issues/805): Modify the validation to throw an error for a missing associated action/utterance in a collect step only if the slot does not have a defined initial value.
+- [#809](https://github.com/rasahq/rasa-private/issues/809): Modify the collect step validation in flow executor to trigger `pattern_internal_error` for a missing associated action/utterance in a collect step only if the slot does not have a defined initial value.
+
+
 ## [3.9.0] - 2024-07-03
                        
 Rasa Pro 3.9.0 (2024-07-03)                            

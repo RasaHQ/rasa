@@ -5,10 +5,7 @@ on:
     branches:
       - main
   pull_request:
-    branches:
-        - main
-        - 3.7.x
-        - 3.8.x
+
 concurrency:
   group: continous-integration-${{ github.ref }} # branch or tag name
   cancel-in-progress: true
@@ -350,7 +347,7 @@ jobs:
         if: always()
         uses: ./.github/actions/debug-metric-tests
         with:
-          COMPOSE_FILE_PATH: tests_deployment/integration_tests_tracing_deployment/metrics_setup/docker-compose.yml
+          COMPOSE_FILE_PATH: tests_deployment/integration_tests_metrics_setup/docker-compose.yml
 
       - name: Metric Integration Testing - Stop docker containers
         run: |

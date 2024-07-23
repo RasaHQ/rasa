@@ -320,40 +320,6 @@ class Validator:
 
         return everything_is_alright
 
-    def verify_utterances_in_dialogues(self, ignore_warnings: bool = True) -> bool:
-        """Verifies usage of utterances in stories or flows.
-
-        Checks whether utterances used in the stories are valid,
-        and whether all valid utterances are used in stories.
-        """
-        utterance_actions = self._gather_utterance_actions()
-
-        stories_utterances = self._utterances_used_in_stories()
-        flow_utterances = self.flows.utterances
-
-        all_used_utterances = flow_utterances.union(stories_utterances)
-
-        everything_is_alright = (
-            ignore_warnings
-            or self._does_story_only_use_valid_actions(
-                stories_utterances, list(utterance_actions)
-            )
-        )
-
-        for utterance in utterance_actions:
-            if utterance not in all_used_utterances:
-                structlogger.warn(
-                    "validator.verify_utterances_in_dialogues.not_used",
-                    utterance=utterance,
-                    event_info=(
-                        f"The utterance '{utterance}' is not used in "
-                        f"any story, rule or flow."
-                    ),
-                )
-                everything_is_alright = ignore_warnings or everything_is_alright
-
-        return everything_is_alright
-
     def verify_forms_in_stories_rules(self) -> bool:
         """Verifies that forms referenced in active_loop directives are present."""
         all_forms_exist = True
@@ -373,7 +339,7 @@ class Validator:
                     continue
 
                 if event.name not in self.domain.action_names_or_texts:
-                    structlogger.warn(
+                    structlogger.error(
                         "validator.verify_forms_in_stories_rules.not_in_domain",
                         form=event.name,
                         block=story.block_name,
@@ -412,7 +378,7 @@ class Validator:
                     continue
 
                 if event.action_name not in self.domain.action_names_or_texts:
-                    structlogger.warn(
+                    structlogger.error(
                         "validator.verify_actions_in_stories_rules.not_in_domain",
                         action=event.action_name,
                         block=story.block_name,
@@ -491,12 +457,7 @@ class Validator:
             ignore_warnings
         )
 
-        structlogger.info(
-            "validator.verify_utterances_in_dialogues.start",
-            event_info="Validating utterances...",
-        )
-        stories_are_valid = self.verify_utterances_in_dialogues(ignore_warnings)
-        return intents_are_valid and stories_are_valid and there_is_no_duplication
+        return intents_are_valid and there_is_no_duplication
 
     def verify_form_slots(self) -> bool:
         """Verifies that form slots match the slot mappings in domain."""
@@ -633,6 +594,7 @@ class Validator:
         self,
         collect: CollectInformationFlowStep,
         all_good: bool,
+        domain_slots: Dict[Text, Slot],
     ) -> bool:
         """Validates that a collect step can have either an action or an utterance.
         Also logs an error if neither an action nor an utterance is defined.
@@ -672,7 +634,14 @@ class Validator:
             )
             all_good = False
 
-        if not has_utterance_defined and not has_action_defined:
+        slot = domain_slots.get(collect.collect)
+        slot_has_initial_value_defind = slot and slot.initial_value is not None
+
+        if (
+            not slot_has_initial_value_defind
+            and not has_utterance_defined
+            and not has_action_defined
+        ):
             structlogger.error(
                 "validator.verify_flows_steps_against_domain.collect_step",
                 collect=collect.collect,
@@ -680,7 +649,7 @@ class Validator:
                 has_action_defined=has_action_defined,
                 event_info=(
                     f"The collect step '{collect.collect}' has neither an utterance "
-                    f"nor an action defined. "
+                    f"nor an action defined, or an initial value defined in the domain."
                     f"You need to define either an utterance or an action."
                 ),
             )
@@ -746,7 +715,7 @@ class Validator:
                 if isinstance(step, CollectInformationFlowStep):
                     all_good = (
                         self._log_error_if_either_action_or_utterance_are_not_defined(
-                            step, all_good
+                            step, all_good, domain_slots
                         )
                     )
 

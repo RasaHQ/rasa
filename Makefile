@@ -15,6 +15,7 @@ METRICS_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/tracing/test_metrics.
 CUSTOM_ACTIONS_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/actions/custom_actions
 NLU_CUSTOM_ACTIONS_INTEGRATION_TEST_PATH = $(CUSTOM_ACTIONS_INTEGRATION_TEST_PATH)/test_custom_actions_with_nlu.py
 CALM_CUSTOM_ACTIONS_INTEGRATION_TEST_PATH = $(CUSTOM_ACTIONS_INTEGRATION_TEST_PATH)/test_custom_actions_with_calm.py
+INTEGRATION_TEST_DEPLOYMENT_PATH = $(PWD)/tests_deployment
 BASE_IMAGE_HASH ?= localdev
 BASE_BUILDER_IMAGE_HASH ?= localdev
 RASA_DEPS_IMAGE_HASH ?= localdev
@@ -127,7 +128,7 @@ test: clean  ## Run Rasa unit tests using pytest.
 test-integration:  ## Run general integration tests using pytest. It will run all integration tests except ones for metrics, tracing and custom actions.
 	# OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
 	# TF_CPP_MIN_LOG_LEVEL=2 sets C code log level for tensorflow to error suppressing lower log events
-ifeq (,$(wildcard tests_deployment/.env))
+ifeq (,$(wildcard $(INTEGRATION_TEST_DEPLOYMENT_PATH)/.env))
 	OMP_NUM_THREADS=1 \
 	TF_CPP_MIN_LOG_LEVEL=2 \
 	poetry run \
@@ -140,7 +141,7 @@ ifeq (,$(wildcard tests_deployment/.env))
 			--junitxml=report_integration.xml
 else
 	set -o allexport; \
-	source tests_deployment/.env && \
+	source $(INTEGRATION_TEST_DEPLOYMENT_PATH)/.env && \
 	OMP_NUM_THREADS=1 \
 	TF_CPP_MIN_LOG_LEVEL=2 \
 	poetry run \
@@ -261,22 +262,22 @@ build-docker-rasa-image:  ## Build Rasa Pro Docker image. Make sure to run build
 build-docker: build-docker-base build-docker-builder build-docker-rasa-deps build-docker-rasa-image  ## Build Rasa Pro Docker image.
 
 build-tests-deployment-env: ## Create environment files (.env) for docker-compose.
-	cd tests_deployment && \
+	cd $(INTEGRATION_TEST_DEPLOYMENT_PATH) && \
 	test -f .env || cat .env.example >> .env
 
 run-integration-containers: build-tests-deployment-env ## Run the integration test containers.
-	cd tests_deployment && \
+	cd $(INTEGRATION_TEST_DEPLOYMENT_PATH) && \
 	docker-compose -f docker-compose.integration.yml up &
 
 stop-integration-containers: ## Stop the integration test containers.
-	cd tests_deployment && \
+	cd $(INTEGRATION_TEST_DEPLOYMENT_PATH) && \
 	docker-compose -f docker-compose.integration.yml down
 
 tag-release-auto:  ## Tag a release automatically.
 	poetry run python scripts/release.py tag --skip-confirmation
 
-TRACING_INTEGRATION_TEST_PATH = tests_deployment/integration_tests_tracing_deployment
-TRACING_INTEGRATION_TEST_DOCKER_COMPOSE = $(TRACING_INTEGRATION_TEST_PATH)/docker-compose.yml
+TRACING_INTEGRATION_TEST_DEPLOYMENT_PATH = $(INTEGRATION_TEST_DEPLOYMENT_PATH)/integration_tests_tracing_deployment
+TRACING_INTEGRATION_TEST_DOCKER_COMPOSE = $(TRACING_INTEGRATION_TEST_DEPLOYMENT_PATH)/docker-compose.yml
 
 train-nlu:  ## Train the simple NLU bot for tracing integration tests.
 	docker run \
@@ -284,7 +285,7 @@ train-nlu:  ## Train the simple NLU bot for tracing integration tests.
 		-u $(USER_ID) \
 		--name rasa-pro-training-${RASA_IMAGE_TAG} \
 		-e RASA_PRO_LICENSE=${RASA_PRO_LICENSE} \
-		-v $(PWD)/$(TRACING_INTEGRATION_TEST_PATH)/simple_bot\:/app \
+		-v $(TRACING_INTEGRATION_TEST_DEPLOYMENT_PATH)/simple_bot\:/app \
 		${RASA_REPOSITORY}\:${RASA_IMAGE_TAG} \
 		train --fixed-model-name model
 
@@ -310,7 +311,7 @@ test-tracing-integration:  ## Run the tracing integration tests. Make sure to ru
 			--junitxml=integration-results-tracing.xml
 
 
-METRICS_SETUP_PATH = $(TRACING_INTEGRATION_TEST_PATH)/metrics_setup
+METRICS_SETUP_PATH = $(INTEGRATION_TEST_DEPLOYMENT_PATH)/integration_tests_metrics_setup
 
 # We need to set the user ID used to run rasa for Linux OS (in Github workflows user ID is 1000)
 train-metrics-calm-bot:  ## Train the calm bot for tracing integration tests.
@@ -320,19 +321,19 @@ train-metrics-calm-bot:  ## Train the calm bot for tracing integration tests.
 		--name rasa-pro-training-${RASA_IMAGE_TAG} \
 		-e RASA_PRO_LICENSE=${RASA_PRO_LICENSE} \
 		-e OPENAI_API_KEY=${OPENAI_API_KEY} \
-		-v $(PWD)/$(METRICS_SETUP_PATH)/calm_bot\:/app \
+		-v $(METRICS_SETUP_PATH)/calm_bot\:/app \
 		${RASA_REPOSITORY}\:${RASA_IMAGE_TAG} \
 		train --fixed-model-name model
 
 run-metrics-integration-containers: train-metrics-calm-bot ## Run the metrics integration test containers.
 	USER_ID=$(USER_ID) \
 	docker compose \
-		-f $(PWD)/$(METRICS_SETUP_PATH)/docker-compose.yml \
+		-f $(METRICS_SETUP_PATH)/docker-compose.yml \
 		up --wait
 
 stop-metrics-integration-containers: ## Stop the metrics integration test containers.
 	docker compose \
-		-f $(PWD)/$(METRICS_SETUP_PATH)/docker-compose.yml \
+		-f $(METRICS_SETUP_PATH)/docker-compose.yml \
 		down
 
 test-metrics-integration:  ## Run the metrics integration tests. Make sure to run run-metrics-integration-containers before running this target.
@@ -342,9 +343,9 @@ test-metrics-integration:  ## Run the metrics integration tests. Make sure to ru
 			--junitxml=integration-results-metric.xml
 
 
-RASA_CUSTOM_ACTION_SERVER_INTEGRATION_TESTS_PATH = $(PWD)/tests_deployment/integration_tests_custom_action_server
-RASA_CUSTOM_ACTION_SERVER_INTEGRATION_TESTS_DOCKER_COMPOSE_PATH = $(RASA_CUSTOM_ACTION_SERVER_INTEGRATION_TESTS_PATH)/docker-compose.yml
-RASA_CUSTOM_ACTION_SERVER_INTEGRATION_TESTS_ENV_FILE = $(RASA_CUSTOM_ACTION_SERVER_INTEGRATION_TESTS_PATH)/env-file
+ACTION_SERVER_INTEGRATION_TESTS_DEPLOYMENT_PATH = $(INTEGRATION_TEST_DEPLOYMENT_PATH)/integration_tests_custom_action_server
+ACTION_SERVER_INTEGRATION_TESTS_DOCKER_COMPOSE_PATH = $(ACTION_SERVER_INTEGRATION_TESTS_DEPLOYMENT_PATH)/docker-compose.yml
+ACTION_SERVER_INTEGRATION_TESTS_ENV_FILE = $(ACTION_SERVER_INTEGRATION_TESTS_DEPLOYMENT_PATH)/env-file
 NLU_BOT_DIRECTORY = simple_nlu_bot
 CALM_BOT_DIRECTORY = simple_calm_bot
 
@@ -364,7 +365,7 @@ TRAIN_BOT_COMMAND = docker run --rm \
 
 train-action-server-nlu-bot: DOCKER_ENV_VARS = -e RASA_PRO_LICENSE=${RASA_PRO_LICENSE}
 train-action-server-nlu-bot: CONTAINER_NAME = rasa-pro-training-nlu-bot-${RASA_IMAGE_TAG}
-train-action-server-nlu-bot: BOT_PATH = $(RASA_CUSTOM_ACTION_SERVER_INTEGRATION_TESTS_PATH)/$(NLU_BOT_DIRECTORY)
+train-action-server-nlu-bot: BOT_PATH = $(ACTION_SERVER_INTEGRATION_TESTS_DEPLOYMENT_PATH)/$(NLU_BOT_DIRECTORY)
 train-action-server-nlu-bot: ## Train the NLU bot for action server integration tests.
 	$(TRAIN_BOT_COMMAND)
 
@@ -372,7 +373,7 @@ train-action-server-nlu-bot: ## Train the NLU bot for action server integration 
 
 train-action-server-calm-bot: DOCKER_ENV_VARS = -e RASA_PRO_LICENSE=${RASA_PRO_LICENSE} -e OPENAI_API_KEY=${OPENAI_API_KEY}
 train-action-server-calm-bot: CONTAINER_NAME = rasa-pro-training-calm-bot-${RASA_IMAGE_TAG}
-train-action-server-calm-bot: BOT_PATH = $(RASA_CUSTOM_ACTION_SERVER_INTEGRATION_TESTS_PATH)/$(CALM_BOT_DIRECTORY)
+train-action-server-calm-bot: BOT_PATH = $(ACTION_SERVER_INTEGRATION_TESTS_DEPLOYMENT_PATH)/$(CALM_BOT_DIRECTORY)
 train-action-server-calm-bot: ## Train the CALM bot for action server integration tests.
 	$(TRAIN_BOT_COMMAND)
 
@@ -388,8 +389,8 @@ train-action-server-calm-bot: ## Train the CALM bot for action server integratio
 RUN_ACTION_SERVER_CONTAINERS_COMMAND = USER_ID=$(USER_ID) \
 	BOT_PATH=$(BOT_PATH) \
 	docker compose \
-		-f $(RASA_CUSTOM_ACTION_SERVER_INTEGRATION_TESTS_DOCKER_COMPOSE_PATH) \
-		--env-file $(RASA_CUSTOM_ACTION_SERVER_INTEGRATION_TESTS_ENV_FILE) \
+		-f $(ACTION_SERVER_INTEGRATION_TESTS_DOCKER_COMPOSE_PATH) \
+		--env-file $(ACTION_SERVER_INTEGRATION_TESTS_ENV_FILE) \
 		up --wait
 
 # This target is mutually exclusive with run-action-server-calm-containers
@@ -412,8 +413,8 @@ run-action-server-calm-containers: train-action-server-calm-bot
 STOP_ACTION_SERVER_CONTAINERS_COMMAND = USER_ID=$(USER_ID) \
 	BOT_PATH=$(BOT_PATH) \
 	docker compose \
-		-f $(RASA_CUSTOM_ACTION_SERVER_INTEGRATION_TESTS_DOCKER_COMPOSE_PATH) \
-		--env-file $(RASA_CUSTOM_ACTION_SERVER_INTEGRATION_TESTS_ENV_FILE) \
+		-f $(ACTION_SERVER_INTEGRATION_TESTS_DOCKER_COMPOSE_PATH) \
+		--env-file $(ACTION_SERVER_INTEGRATION_TESTS_ENV_FILE) \
 		down
 
 stop-action-server-nlu-containers: BOT_PATH = "./${NLU_BOT_DIRECTORY}"

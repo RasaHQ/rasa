@@ -1,8 +1,8 @@
+import argparse
 from typing import Callable
+from unittest.mock import patch
 
 import pytest
-import argparse
-from unittest.mock import patch
 from pytest import RunResult
 
 from rasa.cli.llm_fine_tuning import (
@@ -11,6 +11,12 @@ from rasa.cli.llm_fine_tuning import (
     restricted_float,
     write_params,
     write_statistics,
+    create_storage_context,
+)
+from rasa.llm_fine_tuning.conversation_storage import (
+    StorageType,
+    StorageContext,
+    FileStorageStrategy,
 )
 
 
@@ -94,7 +100,6 @@ def test_restricted_float():
         restricted_float("invalid")
 
 
-# Test for write_params function
 @patch("rasa.shared.utils.yaml.write_yaml")
 def test_write_params(mock_write_yaml, args):
     rephrase_config = {"some_key": "some_value"}
@@ -115,7 +120,6 @@ def test_write_params(mock_write_yaml, args):
     mock_write_yaml.assert_called_once_with(yaml_data, f"{args.out}/{PARAMETERS_FILE}")
 
 
-# Test for write_statistics function
 @patch("rasa.shared.utils.yaml.write_yaml")
 def test_write_statistics(mock_write_yaml, args):
     statistics = {"stat1": 1, "stat2": 2}
@@ -124,3 +128,11 @@ def test_write_statistics(mock_write_yaml, args):
     mock_write_yaml.assert_called_once_with(
         statistics, f"{args.out}/{RESULT_SUMMARY_FILE}"
     )
+
+
+def test_create_storage_context():
+    context = create_storage_context(StorageType.FILE, "output")
+
+    assert isinstance(context, StorageContext) is True
+    assert isinstance(context.strategy, FileStorageStrategy) is True
+    assert context.strategy.output_dir == "output"

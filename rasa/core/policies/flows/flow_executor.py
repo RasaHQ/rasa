@@ -77,6 +77,7 @@ from rasa.shared.core.flows.flow import (
     FlowStep,
 )
 from rasa.shared.core.flows.steps.collect import SlotRejection
+from rasa.shared.core.slots import Slot
 from rasa.shared.core.trackers import (
     DialogueStateTracker,
 )
@@ -475,12 +476,21 @@ def validate_collect_step(
     step: CollectInformationFlowStep,
     stack: DialogueStack,
     available_actions: List[str],
+    slots: Dict[Text, Slot],
 ) -> bool:
     """Validate that a collect step can be executed.
 
-    A collect step can be executed if either the utter_ask or the action_ask
-    are defined in the domain."""
-    if step.utter in available_actions or step.collect_action in available_actions:
+    A collect step can be executed if either the `utter_ask` or the `action_ask` is
+    defined in the domain. If neither is defined, the collect step can still be
+    executed if the slot has an initial value defined in the domain, which would cause
+    the step to be skipped."""
+    slot = slots.get(step.collect)
+    slot_has_initial_value_defined = slot and slot.initial_value is not None
+    if (
+        slot_has_initial_value_defined
+        or step.utter in available_actions
+        or step.collect_action in available_actions
+    ):
         return True
 
     structlogger.error(
@@ -576,7 +586,9 @@ def run_step(
         initial_events.append(FlowStarted(flow.id))
 
     if isinstance(step, CollectInformationFlowStep):
-        is_step_valid = validate_collect_step(step, stack, available_actions)
+        is_step_valid = validate_collect_step(
+            step, stack, available_actions, tracker.slots
+        )
         if not is_step_valid:
             # if we return any other FlowStepResult, the assistant will stay silent
             # instead of triggering the internal error pattern
