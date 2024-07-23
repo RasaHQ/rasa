@@ -272,13 +272,3 @@ async def nlu_trigger_flow_policy_bot_agent(
     return Agent.load(
         model_path=trained_nlu_trigger_flow_policy_bot, action_endpoint=endpoint
     )
-
-
-class MockCustomAction(Action):
-    def name(self) -> str:
-        return "mock_custom_action"
-
-    def run(
-        self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[str, Any]
-    ) -> List[Dict[Text, Any]]:
-        return [{"event": "slot", "value": "rasa", "name": "name"}]
