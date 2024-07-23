@@ -10,6 +10,15 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.9.3] - 2024-07-18
+                       
+Rasa Pro 3.9.3 (2024-07-18)                            
+### Bugfixes
+- [#821](https://github.com/rasahq/rasa-private/issues/821): Refactor the supported remote storage (AWS, GCS, Azure) verification check before downloading Rasa model by fixing the initial implementation which attempted to create the object storage to check existence.
+- [#850](https://github.com/rasahq/rasa-private/issues/850): Fix `TypeError: InformationRetrieval.search() got an unexpected keyword argument` when tracing is enabled with `EnterpriseSearchPolicy`.
+- [#859](https://github.com/rasahq/rasa-private/issues/859): Change `warning` log level to `error` log level for `Validator` methods that verify that forms and actions used in stories and rules are present in the domain.
+
+
 ## [3.9.2] - 2024-07-09
                        
 Rasa Pro 3.9.2 (2024-07-09)                             

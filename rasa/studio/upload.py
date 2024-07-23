@@ -7,6 +7,7 @@ import requests
 
 import rasa.cli.telemetry
 import rasa.cli.utils
+from rasa.shared.utils.cli import print_success, print_error, print_info
 import rasa.shared.utils.cli
 import rasa.shared.utils.io
 from rasa.shared.constants import (
@@ -17,10 +18,10 @@ from rasa.shared.exceptions import RasaException
 from rasa.shared.importers.importer import TrainingDataImporter, FlowSyncImporter
 from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
 from rasa.shared.utils.yaml import dump_obj_as_yaml_to_string, read_yaml_file
-from rasa.shared.utils.cli import print_error, print_info
+from rasa.studio import results_logger
 from rasa.studio.auth import KeycloakTokenReader
 from rasa.studio.config import StudioConfig
-from rasa.studio.results_logger import results_logger
+from rasa.studio.results_logger import with_studio_error_handler
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +72,7 @@ def extract_values(data: Dict, keys: List[Text]) -> Dict:
     return {key: data.get(key) for key in keys if data.get(key)}
 
 
-@results_logger.wrap
+@with_studio_error_handler
 def upload_calm_assistant(args: argparse.Namespace, endpoint: str) -> Tuple[str, bool]:
     """Uploads the CALM assistant data to Rasa Studio.
 
@@ -195,7 +196,7 @@ def upload_calm_assistant(args: argparse.Namespace, endpoint: str) -> Tuple[str,
     return result, success
 
 
-@results_logger.wrap
+@with_studio_error_handler
 def upload_nlu_assistant(args: argparse.Namespace, endpoint: str) -> Tuple[str, bool]:
     """Uploads the classic (dm1) assistant data to Rasa Studio.
 
