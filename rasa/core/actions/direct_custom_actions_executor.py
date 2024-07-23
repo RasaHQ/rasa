@@ -15,12 +15,13 @@ from rasa.core.actions.custom_action_executor import (
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.trackers import EventVerbosity
+from rasa.utils.endpoints import EndpointConfig
 
 structlogger = structlog.get_logger(__name__)
 
 
 class DirectCustomActionExecutor(CustomActionExecutor):
-    def __init__(self, action_name: str, actions_module: Text):
+    def __init__(self, action_name: str, action_endpoint: EndpointConfig):
         """Initializes the direct custom action executor.
 
         Args:
@@ -28,8 +29,9 @@ class DirectCustomActionExecutor(CustomActionExecutor):
             actions_module: The name of the module containing all custom actions.
         """
         self.action_name = action_name
+        self.action_endpoint = action_endpoint
         self.action_executor = ActionExecutor()
-        self.action_executor.register_package(actions_module)
+        self.action_executor.register_package(self.action_endpoint.actions_module)
 
     async def run(
         self,
