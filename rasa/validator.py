@@ -7,6 +7,7 @@ from typing import Set, Text, Optional, Dict, Any, List, Tuple
 
 from jinja2 import Template
 from pypred import Predicate
+from pypred.ast import Literal, CompareOperator, NegateOperator
 
 import rasa.core.training.story_conflict
 from rasa.core.channels import UserMessage
@@ -44,7 +45,7 @@ from rasa.shared.core.domain import (
 )
 from rasa.shared.core.generator import TrainingDataGenerator
 from rasa.shared.core.constants import SlotMappingType, MAPPING_TYPE
-from rasa.shared.core.slots import ListSlot, Slot
+from rasa.shared.core.slots import BooleanSlot, CategoricalSlot, ListSlot, Slot
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     YAMLStoryReader,
 )
@@ -932,6 +933,60 @@ class Validator:
 
         return pred, all_good
 
+    def _validate_categorical_and_boolean_values_check(
+        self,
+        predicate: Predicate,
+    ) -> bool:
+        """Validates the categorical and boolean slot checks.
+
+        Validates that the categorical and boolean slots
+        sare checked against valid values.
+
+        Args:
+            predicate: condition that is supposed to be validated
+
+        Returns:
+            False, if validation failed, true, otherwise
+        """
+        if isinstance(predicate.ast, NegateOperator):
+            ast_to_check = predicate.ast.left
+        else:
+            ast_to_check = predicate.ast
+        try:
+            # slot name can be in either left or right subtree
+            if isinstance(ast_to_check.left, Literal):
+                conditioned_variable = ast_to_check.left.value.split(".")
+                slot_value = ast_to_check.right.value
+            else:
+                conditioned_variable = ast_to_check.right.value.split(".")
+                slot_value = ast_to_check.left.value
+        except AttributeError:
+            return True
+
+        # do validation only on slots, not on context variables
+        if conditioned_variable[0] == "slots":
+            slot_name = conditioned_variable[1]
+        else:
+            return True
+        try:
+            slot = next(s for s in self.domain.slots if s.name == slot_name)
+        except StopIteration:
+            return False
+        if isinstance(slot, CategoricalSlot):
+            # slot_value can either be a string or a list of Literal objects
+            if isinstance(slot_value, str):
+                slot_value = [Literal(slot_value)]
+            if not all(
+                [re.sub(r"\'|\"", "", sv.value) in slot.values for sv in slot_value]
+            ):
+                return False
+        elif isinstance(slot, BooleanSlot):
+            if isinstance(ast_to_check, CompareOperator) and not isinstance(
+                ast_to_check.right.value, bool
+            ):
+                return False
+        return True
+
     def verify_predicates(self) -> bool:
         """Validate predicates used in flow step links and slot rejections."""
         all_good = True
@@ -985,6 +1040,23 @@ class Validator:
                                 ),
                             )
                             all_good = False
+
+                        all_good = self._validate_categorical_and_boolean_values_check(
+                            predicate
+                        )
+                        if not all_good:
+                            structlogger.error(
+                                "validator.verify_predicates.link.invalid_condition",
+                                step=step.id,
+                                link=link.condition,
+                                flow=flow.id,
+                                event_info=(
+                                    f"Detected invalid condition '{link.condition}' "
+                                    f"at step '{step.id}' for flow id '{flow.id}'. "
+                                    f"Please make sure that all conditions are valid."
+                                ),
+                            )
+
                 if isinstance(step, CollectInformationFlowStep):
                     predicates = [predicate.if_ for predicate in step.rejections]
                     for predicate in predicates:
