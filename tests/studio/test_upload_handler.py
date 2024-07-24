@@ -623,6 +623,7 @@ def encode_yaml(yaml):
                 data="data/upload/data",
                 entities=["name"],
                 intents=["greet", "inform"],
+                config="data/upload/config.yml",
             ),
             "http://studio.amazonaws.com/api/graphql",
             {

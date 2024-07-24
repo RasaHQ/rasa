@@ -12,6 +12,7 @@ import rasa.shared.utils.cli
 import rasa.shared.utils.io
 from rasa.shared.constants import (
     DEFAULT_DOMAIN_PATHS,
+    DEFAULT_CONFIG_PATH,
 )
 from rasa.shared.core.flows.yaml_flows_io import YamlFlowsWriter
 from rasa.shared.exceptions import RasaException
@@ -58,6 +59,10 @@ def handle_upload(args: argparse.Namespace) -> None:
 
         args.domain = rasa.cli.utils.get_validated_path(
             args.domain, "domain", DEFAULT_DOMAIN_PATHS
+        )
+
+        args.config = rasa.cli.utils.get_validated_path(
+            args.config, "config", DEFAULT_CONFIG_PATH
         )
 
         # check safely if args.calm is set and not fail if not
