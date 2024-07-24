@@ -619,7 +619,6 @@ def encode_yaml(yaml):
     [
         (
             argparse.Namespace(
-                assistant_name="test",
                 domain="data/upload",
                 data="data/upload/data",
                 entities=["name"],

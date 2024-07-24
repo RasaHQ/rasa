@@ -67,9 +67,43 @@ def handle_upload(args: argparse.Namespace) -> None:
             upload_nlu_assistant(args, endpoint)
 
 
+config_keys = [
+    "recipe",
+    "language",
+    "pipeline",
+    "llm",
+    "policies",
+    "model_name",
+    "assistant_id",
+]
+
+
 def extract_values(data: Dict, keys: List[Text]) -> Dict:
     """Extracts values for given keys from a dictionary."""
     return {key: data.get(key) for key in keys if data.get(key)}
+
+
+def _get_assistant_name(config):
+    config_assistant_id = config.get("assistant_id", None)
+    assistant_name = None
+    while not assistant_name:
+        assistant_name = (
+            input(
+                f"Please enter assistant name: (default: " f"{config_assistant_id})\t"
+            )
+            or config_assistant_id
+        )
+        if not assistant_name:
+            print_error("Assistant name cannot be empty. Please try again.")
+    # if assistant_name exists and different from config assistant_id,
+    # notify user and upload with new assistant_name
+    if config_assistant_id and assistant_name != config_assistant_id:
+        print_info(
+            f"Assistant name '{assistant_name}' is different "
+            f"from the one in the config file: '{config_assistant_id}'."
+        )
+        print_info(f"Uploading assistant with the new name '{assistant_name}'.")
+    return assistant_name
 
 
 @with_studio_error_handler
@@ -110,40 +144,11 @@ def upload_calm_assistant(args: argparse.Namespace, endpoint: str) -> Tuple[str,
         "forms",
         "session_config",
     ]
-    config_keys = [
-        "recipe",
-        "language",
-        "pipeline",
-        "llm",
-        "policies",
-        "model_name",
-        "assistant_id",
-    ]
 
     domain = extract_values(domain_from_files, domain_keys)
     config = extract_values(config_from_files, config_keys)
 
-    config_assistant_id = config.get("assistant_id", None)
-    assistant_name = None
-
-    while not assistant_name:
-        assistant_name = (
-            input(
-                f"Please enter assistant name: (default: " f"{config_assistant_id})\t"
-            )
-            or config_assistant_id
-        )
-        if not assistant_name:
-            print_error("Assistant name cannot be empty. Please try again.")
-
-    # if assistant_name exists and different from config assistant_id,
-    # notify user and upload with new assistant_name
-    if config_assistant_id and assistant_name != config_assistant_id:
-        print_info(
-            f"Assistant name '{assistant_name}' is different "
-            f"from the one in the config file: '{config_assistant_id}'."
-        )
-        print_info(f"Uploading assistant with the new name '{assistant_name}'.")
+    assistant_name = _get_assistant_name(config)
 
     training_data_paths = args.data
 
@@ -210,10 +215,9 @@ def upload_nlu_assistant(args: argparse.Namespace, endpoint: str) -> Tuple[str, 
     Returns:
         None
     """
-    assistant_name = args.assistant_name
     logger.info("Found DM1 assistant data, parsing...")
     importer = TrainingDataImporter.load_from_dict(
-        domain_path=args.domain, training_data_paths=args.data
+        domain_path=args.domain, training_data_paths=args.data, config_path=args.config
     )
 
     intents_from_files = importer.get_nlu_data().intents
@@ -222,6 +226,11 @@ def upload_nlu_assistant(args: argparse.Namespace, endpoint: str) -> Tuple[str, 
     entities, intents = _get_selected_entities_and_intents(
         args, intents_from_files, entities_from_files
     )
+
+    config_from_files = importer.get_config()
+    config = extract_values(config_from_files, config_keys)
+
+    assistant_name = _get_assistant_name(config)
 
     logger.info("Validating data...")
     _check_for_missing_primitives(
@@ -347,13 +356,12 @@ def _filter_domain(
     entities: List[Union[str, Dict]], intents: List[str], domain_from_files: Dict
 ) -> Dict:
     """Filters the domain to only include the selected entities and intents."""
-    domain = {
-        "version": domain_from_files["version"],
-        "intents": intents,
-        "entities": _remove_not_selected_entities(
-            entities, domain_from_files["entities"]
-        ),
-    }
+    domain = {}
+    domain["version"] = domain_from_files["version"]
+    domain["intents"] = intents
+    domain["entities"] = _remove_not_selected_entities(
+        entities, domain_from_files.get("entities", [])
+    )
 
     return domain
 
