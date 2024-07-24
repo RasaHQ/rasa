@@ -1,7 +1,7 @@
 import argparse
 import base64
 import logging
-from typing import Dict, Iterable, List, Set, Text, Tuple, Union
+from typing import Dict, Iterable, List, Set, Text, Tuple, Union, Any
 
 import requests
 
@@ -88,7 +88,7 @@ def extract_values(data: Dict, keys: List[Text]) -> Dict:
     return {key: data.get(key) for key in keys if data.get(key)}
 
 
-def _get_assistant_name(config):
+def _get_assistant_name(config: Dict[Text, Any]) -> str:
     config_assistant_id = config.get("assistant_id", None)
     assistant_name = None
     while not assistant_name:
