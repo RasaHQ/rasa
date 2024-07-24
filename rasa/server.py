@@ -519,7 +519,18 @@ def add_root_route(app: Sanic) -> None:
     @app.get("/")
     async def hello(request: Request) -> HTTPResponse:
         """Check if the server is running and responds with the version."""
-        return response.text("Hello from Rasa: " + rasa.__version__)
+        html_content = f"""
+        <html>
+            <body>
+                <p>Hello from Rasa: {rasa.__version__}</p>
+                <a href="./webhooks/inspector/inspect.html">Go to the inspector</a>
+                <script>
+                    window.location.replace("./webhooks/inspector/inspect.html");
+                </script>
+            </body>
+        </html>
+        """
+        return response.html(html_content)
 
 
 def async_if_callback_url(f: Callable[..., Coroutine]) -> Callable:
