@@ -43,14 +43,15 @@ def test_data_convert_help(run: Callable[..., RunResult]):
     output = run("--help")
 
     help_text = f"""usage: {RASA_EXE} [-h] [--version]
-            {{init,run,shell,train,interactive,telemetry,test,visualize,data,export,x,evaluate,studio,license,markers,inspect}}
-            ..."""
+    {{init,run,shell,train,interactive,telemetry,test,visualize,data,export,x,evaluate,
+    llm,studio,license,markers,inspect}}
+    ..."""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
-    printed_help = set(output.outlines)
+    printed_help = " ".join(set(output.outlines))
     for line in lines:
-        assert line in printed_help
+        assert line.strip() in printed_help
 
 
 @pytest.mark.xfail(

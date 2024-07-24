@@ -1,5 +1,4 @@
 import datetime
-import logging
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Text, Union
@@ -8,10 +7,24 @@ from unittest.mock import MagicMock, Mock
 import pytest
 import requests
 from pytest import LogCaptureFixture, MonkeyPatch
+from ruamel.yaml.scalarstring import DoubleQuotedScalarString
+from structlog.testing import capture_logs
+
+import rasa.cli.e2e_test
 from rasa.core.agent import Agent
 from rasa.core.channels import CollectingOutputChannel
 from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.utils import AvailableEndpoints
+from rasa.e2e_test.e2e_test_case import (
+    ActualStepOutput,
+    Fixture,
+    Metadata,
+    TestCase,
+    TestStep,
+)
+from rasa.e2e_test.e2e_test_result import TestResult
+from rasa.e2e_test.e2e_test_runner import TEST_TURNS_TYPE, E2ETestRunner
+from rasa.llm_fine_tuning.conversations import Conversation
 from rasa.shared.core.constants import (
     REQUESTED_SLOT,
     SESSION_START_METADATA_SLOT,
@@ -30,18 +43,6 @@ from rasa.shared.core.events import (
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
 from rasa.utils.endpoints import EndpointConfig
-from ruamel.yaml.scalarstring import DoubleQuotedScalarString
-
-import rasa.cli.e2e_test
-from rasa.e2e_test.e2e_test_case import (
-    ActualStepOutput,
-    Fixture,
-    Metadata,
-    TestCase,
-    TestStep,
-)
-from rasa.e2e_test.e2e_test_result import TestResult
-from rasa.e2e_test.e2e_test_runner import TEST_TURNS_TYPE, E2ETestRunner
 
 if sys.version_info[:2] >= (3, 8):
     from unittest.mock import AsyncMock
@@ -1063,6 +1064,68 @@ async def test_run_tests_with_fail_fast(
     )
 
 
+async def test_run_tests_for_fine_tuning(
+    monkeypatch: MonkeyPatch,
+):
+    mock_test_cases = [MagicMock(spec=TestCase), MagicMock(spec=TestCase)]
+    mock_test_cases[0].name = "test_case_1"
+    mock_test_cases[0].steps = []
+    mock_test_cases[1].name = "test_case_2"
+    mock_test_cases[1].steps = []
+
+    def mock_init(self: Any, *args: Any, **kwargs: Any) -> None:
+        domain = Domain.empty()
+        self.agent = Agent(
+            domain=domain, tracker_store=InMemoryTrackerStore(domain=domain)
+        )
+        processor = AsyncMock()
+        # using the actual tracker store instead of a mocked one
+        processor.fetch_tracker_with_initial_session = (
+            self.agent.tracker_store.get_or_create_tracker
+        )
+        self.agent.processor = processor
+
+    monkeypatch.setattr(
+        "rasa.e2e_test.e2e_test_runner.E2ETestRunner.__init__", mock_init
+    )
+    monkeypatch.setattr(
+        "rasa.e2e_test.e2e_test_runner.E2ETestRunner.run_prediction_loop",
+        AsyncMock(),
+    )
+
+    mock_find_test_failures = MagicMock(side_effect=[[], ["failure"]])
+    monkeypatch.setattr(
+        "rasa.e2e_test.e2e_test_runner.E2ETestRunner.find_test_failures",
+        mock_find_test_failures,
+    )
+
+    # Mock generate_conversation to return a conversation object
+    mock_generate_conversation = Mock()
+    mock_conversation_1 = MagicMock(spec=Conversation)
+    mock_conversation_2 = None
+    mock_generate_conversation.side_effect = [mock_conversation_1, mock_conversation_2]
+    monkeypatch.setattr(
+        "rasa.llm_fine_tuning.annotation_module.generate_conversation",
+        mock_generate_conversation,
+    )
+
+    runner = E2ETestRunner()
+
+    with capture_logs() as logs:
+        result = await runner.run_tests_for_fine_tuning(
+            mock_test_cases,
+            [],
+            None,
+        )
+
+        assert len(logs) == 1
+        assert logs[0]["log_level"] == "warning"
+        assert logs[0]["test_case"] == "test_case_2"
+
+    # Verify the result contains only the passing test case conversation
+    assert result == [mock_conversation_1]
+
+
 @pytest.mark.parametrize(
     "default_slot_set_event",
     [
@@ -1524,12 +1587,15 @@ def test_action_server_is_reachable(
     mock = MagicMock()
     mock.return_value.status_code = 200
     monkeypatch.setattr(rasa.e2e_test.e2e_test_runner.requests, "get", mock)
-    with caplog.at_level(logging.DEBUG):
+
+    with capture_logs() as logs:
         E2ETestRunner._action_server_is_reachable(endpoint)
 
-    assert mock.called
-    assert mock.call_args[0][0] == "http://localhost:5055/health"
-    assert "Action endpoint has responded successfully." in caplog.text
+        assert mock.called
+        assert mock.call_args[0][0] == "http://localhost:5055/health"
+        assert len(logs) == 2
+        assert logs[1]["log_level"] == "debug"
+        assert "Action endpoint has responded successfully." in logs[1]["message"]
 
 
 def test_action_server_is_reachable_bad_response(monkeypatch: MonkeyPatch) -> None:
@@ -1573,26 +1639,30 @@ def test_action_server_is_not_reachable_url_not_defined(
     caplog: LogCaptureFixture,
 ) -> None:
     endpoint = AvailableEndpoints(action=EndpointConfig())
-    with caplog.at_level(logging.DEBUG):
+    with capture_logs() as logs:
         E2ETestRunner._action_server_is_reachable(endpoint)
 
-    assert (
-        "Action endpoint URL is not defined in the endpoint configuration."
-        in caplog.text
-    )
+        assert len(logs) == 1
+        assert logs[0]["log_level"] == "debug"
+        assert (
+            logs[0]["message"] == "Action endpoint URL is not defined in the endpoint "
+            "configuration."
+        )
 
 
 def test_action_server_is_not_reachable_action_not_defined(
     caplog: LogCaptureFixture,
 ) -> None:
     endpoint = AvailableEndpoints()
-    with caplog.at_level(logging.DEBUG):
+    with capture_logs() as logs:
         E2ETestRunner._action_server_is_reachable(endpoint)
 
-    assert (
-        "No action endpoint configured. Skipping the health check of the "
-        "action server." in caplog.text
-    )
+        assert len(logs) == 1
+        assert logs[0]["log_level"] == "debug"
+        assert (
+            logs[0]["message"] == "No action endpoint configured. Skipping the health "
+            "check of the action server."
+        )
 
 
 def test_bot_event_text_message_formatting() -> None:
@@ -1651,16 +1721,17 @@ def test_filter_metadata_for_input_undefined_metadata_name(
     caplog: LogCaptureFixture,
 ) -> None:
     metadata_name = "incorrect_metadata_name"
-    with caplog.at_level(logging.WARNING):
+    with capture_logs() as logs:
         E2ETestRunner.filter_metadata_for_input(
             metadata_name,
             [Metadata(name="device_info", metadata={"os": "linux"})],
         )
 
-    assert (
-        f"Metadata '{metadata_name}' is not defined in the input metadata."
-        in caplog.text
-    )
+        assert len(logs) == 1
+        assert (
+            f"Metadata '{metadata_name}' is not defined in the input metadata."
+            in logs[0]["message"]
+        )
 
 
 @pytest.mark.parametrize(
@@ -1695,12 +1766,14 @@ def test_merge_metadata(
 def test_merge_metadata_warning(
     caplog: LogCaptureFixture,
 ) -> None:
-    with caplog.at_level(logging.WARNING):
+    with capture_logs() as logs:
         E2ETestRunner.merge_metadata(
             "Test_case_name_123",
             "Hi!",
             {"os": "linux"},
             {"name": "Tom", "os": "windows"},
         )
-    assert f"Metadata {['os']} exist in both the test case " in caplog.text
-    assert "'Test_case_name' and the user step 'Hi!'. " in caplog.text
+
+        assert len(logs) == 1
+        assert f"Metadata {['os']} exist in both the test case " in logs[0]["message"]
+        assert "'Test_case_name' and the user step 'Hi!'. " in logs[0]["message"]

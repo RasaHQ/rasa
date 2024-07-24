@@ -369,6 +369,10 @@ steps.
 
 Please refer to the [Rasa Product Release and Maintenance Policy](https://rasa.com/rasa-product-release-and-maintenance-policy/) page.
 
+### Active workflows on the CI
+
+Please refer to the [WORKFLOW_README FILE](https://github.com/RasaHQ/rasa-private/blob/main/WORKFLOW_README.md)
+
 ## Troubleshooting
 
 - When running docker commands, if you encounter this error: `OSError No space left on device`, consider running:
