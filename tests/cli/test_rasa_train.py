@@ -537,11 +537,8 @@ def test_train_validation_debug_messages(
     log_output = "\n".join(result.outlines + result.errlines)
 
     assert result.ret == 0
-    for message in [
-        "The intent 'goodbye' is not used in any story, rule or flow.",
-        "The utterance 'utter_chatter' is not used in any story, rule or flow.",
-    ]:
-        assert message in log_output
+    message = "The intent 'goodbye' is not used in any story, rule or flow."
+    assert message in log_output
 
 
 def test_train_validation_fail_on_warnings(

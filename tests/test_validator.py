@@ -103,31 +103,6 @@ def test_verify_intents_does_fail_on_invalid_data(nlu_data_path: Text):
     assert not validator.verify_intents(ignore_warnings=False)
 
 
-def test_verify_valid_responses():
-    importer = RasaFileImporter(
-        domain_path="data/test_domains/selectors.yml",
-        training_data_paths=[
-            "data/test_selectors/nlu.yml",
-            "data/test_selectors/stories.yml",
-        ],
-    )
-    validator = Validator.from_importer(importer)
-    assert validator.verify_utterances_in_dialogues()
-
-
-def test_verify_valid_responses_in_rules(nlu_data_path: Text):
-    importer = RasaFileImporter(
-        domain_path="data/test_domains/default.yml",
-        training_data_paths=[
-            nlu_data_path,
-            "data/test_yaml_stories/rules_without_stories_and_wrong_names.yml",
-        ],
-    )
-    validator = Validator.from_importer(importer)
-    # force validator to not ignore warnings (default is True)
-    assert not validator.verify_utterances_in_dialogues(ignore_warnings=False)
-
-
 def test_verify_story_structure(stories_path: Text):
     importer = RasaFileImporter(
         domain_path="data/test_domains/default.yml", training_data_paths=[stories_path]
@@ -297,21 +272,6 @@ def test_verify_logging_message_for_intent_not_used_in_story(
 
     with structlog.testing.capture_logs() as caplog:
         validator_under_test.verify_intents_in_stories_or_flows(ignore_warnings=False)
-        logs = filter_logs(
-            caplog, expected_event, expected_log_level, [expected_log_message]
-        )
-        assert len(logs) == 1
-
-
-def test_verify_logging_message_for_unused_utterance(validator_under_test: Validator):
-    expected_event = "validator.verify_utterances_in_dialogues.not_used"
-    expected_log_level = "warning"
-    expected_log_message = (
-        "The utterance 'utter_chatter' is not used " "in any story, rule or flow."
-    )
-
-    with structlog.testing.capture_logs() as caplog:
-        validator_under_test.verify_utterances_in_dialogues(ignore_warnings=False)
         logs = filter_logs(
             caplog, expected_event, expected_log_level, [expected_log_message]
         )
@@ -488,19 +448,6 @@ def test_verify_form_slots_invalid_domain(tmp_path: Path):
             caplog, expected_event, expected_log_level, [expected_log_message]
         )
         assert len(logs) == 1
-
-
-def test_response_selector_responses_in_domain_no_errors():
-    importer = RasaFileImporter(
-        config_file="data/test_config/config_defaults.yml",
-        domain_path="data/test_domains/response_selector_responses_in_domain.yml",
-        training_data_paths=[
-            "data/test_yaml_stories/test_base_retrieval_intent_story.yml"
-        ],
-    )
-    validator = Validator.from_importer(importer)
-    # force validator to not ignore warnings (default is True)
-    assert validator.verify_utterances_in_dialogues(ignore_warnings=False)
 
 
 def test_invalid_domain_mapping_policy():
@@ -860,45 +807,6 @@ def test_verify_from_trigger_intent_slot_mapping_not_in_forms_does_not_warn(
     with warnings.catch_warnings():
         warnings.simplefilter("error")
         assert validator.verify_slot_mappings()
-
-
-def test_verify_utterances_does_not_error_when_no_utterance_template_provided(
-    tmp_path: Path, nlu_data_path: Path
-):
-    story_file_name = tmp_path / "stories.yml"
-    with open(story_file_name, "w") as file:
-        file.write(
-            f"""
-            version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
-            stories:
-            - story: path 1
-              steps:
-              - intent: greet
-              - action: utter_greet
-            """
-        )
-    domain_file_name = tmp_path / "domain.yml"
-    with open(domain_file_name, "w") as file:
-        file.write(
-            f"""
-            version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
-            intents:
-              - greet
-            actions:
-              - utter_greet
-            """
-        )
-    importer = RasaFileImporter(
-        config_file="data/test_moodbot/config.yml",
-        domain_path=domain_file_name,
-        training_data_paths=[story_file_name, nlu_data_path],
-    )
-
-    validator = Validator.from_importer(importer)
-    # force validator to not ignore warnings (default is True)
-    assert not validator.verify_utterances_in_dialogues(ignore_warnings=False)
-    # test whether ignoring warnings actually works
-    assert validator.verify_utterances_in_dialogues(ignore_warnings=True)
 
 
 @pytest.mark.parametrize(
@@ -1469,102 +1377,6 @@ def domain_file_name(tmp_path: Path) -> Path:
                 """
         )
     return domain_file_name
-
-
-def test_verify_utterances_in_dialogues_finds_all_responses_in_flows(
-    tmp_path: Path, nlu_data_path: Path, domain_file_name: Path
-):
-    flows_file_name = tmp_path / "flows.yml"
-    with open(flows_file_name, "w") as file:
-        file.write(
-            f"""
-                    version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
-                    flows:
-                      transfer_money:
-                        description: This flow lets users send money.
-                        name: Transfer money
-                        steps:
-                        - id: "ask_recipient"
-                          collect: transfer_recipient
-                          utter: utter_ask_recipient
-                          next: "ask_amount"
-                        - id: "ask_amount"
-                          collect: amount
-                          rejections:
-                            - if: slots.amount > 1000
-                              utter: utter_amount_too_high
-                          next: "summarize_transfer"
-                        - id: "summarize_transfer"
-                          action: utter_transfer_summary
-                    """
-        )
-
-    importer = RasaFileImporter(
-        config_file="data/test_moodbot/config.yml",
-        domain_path=str(domain_file_name),
-        training_data_paths=[str(flows_file_name), str(nlu_data_path)],
-    )
-
-    validator = Validator.from_importer(importer)
-
-    with warnings.catch_warnings() as record:
-        warnings.simplefilter("error")
-        # force validator to not ignore warnings (default is True)
-        assert validator.verify_utterances_in_dialogues(ignore_warnings=False)
-        assert record is None
-
-
-def test_verify_utterances_in_dialogues_missing_responses_in_flows(
-    tmp_path: Path,
-    nlu_data_path: Path,
-    domain_file_name: Path,
-):
-    flows_file_name = tmp_path / "flows.yml"
-    # remove utter_ask_recipient from this flows file,
-    # but it is listed in the domain file
-    with open(flows_file_name, "w") as file:
-        file.write(
-            f"""
-                    version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
-                    flows:
-                      transfer_money:
-                        description: This flow lets users send money.
-                        name: Transfer money
-                        steps:
-                        - id: "ask_recipient"
-                          collect: transfer_money_recipient
-                          next: "ask_amount"
-                        - id: "ask_amount"
-                          collect: transfer_money_amount
-                          rejections:
-                            - if: slots.transfer_money_amount > 1000
-                              utter: utter_amount_too_high
-                          next: "summarize_transfer"
-                        - id: "summarize_transfer"
-                          action: utter_transfer_summary
-                    """
-        )
-
-    importer = RasaFileImporter(
-        config_file="data/test_moodbot/config.yml",
-        domain_path=str(domain_file_name),
-        training_data_paths=[str(flows_file_name), str(nlu_data_path)],
-    )
-
-    validator = Validator.from_importer(importer)
-
-    expected_event = "validator.verify_utterances_in_dialogues.not_used"
-    expected_log_level = "warning"
-    expected_log_message = (
-        "The utterance 'utter_ask_recipient' is not used in " "any story, rule or flow."
-    )
-    with structlog.testing.capture_logs() as caplog:
-        # force validator to not ignore warnings (default is True)
-        validator.verify_utterances_in_dialogues(ignore_warnings=False)
-        logs = filter_logs(
-            caplog, expected_event, expected_log_level, [expected_log_message]
-        )
-        assert len(logs) == 1
 
 
 @pytest.mark.parametrize("predicate", ["account_type is null", "not account_type"])
