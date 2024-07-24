@@ -934,8 +934,7 @@ class Validator:
         return pred, all_good
 
     def _validate_categorical_and_boolean_values_check(
-        self,
-        predicate: Predicate,
+        self, predicate: Predicate, all_good: bool
     ) -> bool:
         """Validates the categorical and boolean slot checks.
 
@@ -944,9 +943,10 @@ class Validator:
 
         Args:
             predicate: condition that is supposed to be validated
+            all_good: flag whether all the validations have passed so far
 
         Returns:
-            False, if validation failed, true, otherwise
+            False, if validation failed, previous value of all_good, otherwise
         """
         if isinstance(predicate.ast, NegateOperator):
             ast_to_check = predicate.ast.left
@@ -961,13 +961,13 @@ class Validator:
                 conditioned_variable = ast_to_check.right.value.split(".")
                 slot_value = ast_to_check.left.value
         except AttributeError:
-            return True
+            return all_good
 
         # do validation only on slots, not on context variables
         if conditioned_variable[0] == "slots":
             slot_name = conditioned_variable[1]
         else:
-            return True
+            return all_good
         try:
             slot = next(s for s in self.domain.slots if s.name == slot_name)
         except StopIteration:
@@ -985,7 +985,7 @@ class Validator:
                 ast_to_check.right.value, bool
             ):
                 return False
-        return True
+        return all_good
 
     def verify_predicates(self) -> bool:
         """Validate predicates used in flow step links and slot rejections."""
@@ -1042,7 +1042,7 @@ class Validator:
                             all_good = False
 
                         all_good = self._validate_categorical_and_boolean_values_check(
-                            predicate
+                            predicate, all_good=all_good
                         )
                         if not all_good:
                             structlogger.error(
