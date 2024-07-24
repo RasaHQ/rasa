@@ -745,6 +745,7 @@ def test_handle_upload_no_domain_path_specified(
         assistant_name=[assistant_name],
         # this is the default value when running the cmd without specifying -d flag
         domain="domain.yml",
+        config="config.yml",
         calm=is_calm_bot,
     )
 
@@ -753,9 +754,14 @@ def test_handle_upload_no_domain_path_specified(
     domain_path = domain_dir / "domain.yml"
     domain_path.write_text("test domain")
 
+    # default config path
+    config_path = tmp_path / "config.yml"
+    config_path.write_text("test config")
+
     domain_paths = [str(domain_dir), str(tmp_path / "domain.yml")]
     # we need to monkeypatch the DEFAULT_DOMAIN_PATHS to be able to use temporary paths
     monkeypatch.setattr(rasa.studio.upload, "DEFAULT_DOMAIN_PATHS", domain_paths)
+    monkeypatch.setattr(rasa.studio.upload, "DEFAULT_CONFIG_PATH", str(config_path))
 
     mock_config = MagicMock()
     mock_config.read_config.return_value = StudioConfig(
@@ -777,8 +783,9 @@ def test_handle_upload_no_domain_path_specified(
 
     expected_args = argparse.Namespace(
         assistant_name=[assistant_name],
-        calm=is_calm_bot,
         domain=str(domain_dir),
+        config=str(config_path),
+        calm=is_calm_bot,
     )
 
     mock.assert_called_once_with(expected_args, endpoint)
