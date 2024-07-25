@@ -9,6 +9,10 @@ inputs:
 runs:
   using: 'composite'
   steps:
+  - name: List containers
+    run: sudo docker ps -a
+    shell: bash
+
   - name: Check otlp-collector container logs
     run: |
       docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs otlp-collector

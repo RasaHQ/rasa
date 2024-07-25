@@ -31,6 +31,7 @@ ENV HOME=/app
 # update permissions & change user to not run as root
 WORKDIR /app
 RUN chgrp -R 0 /app && chmod -R g=u /app && chmod o+wr /app
+VOLUME /app
 USER 1001
 
 # create a volume for temporary data
@@ -38,8 +39,6 @@ VOLUME /tmp
 
 # change shell
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-
-RUN ls -la /opt/venv/bin
 
 # the entry point
 EXPOSE 5005
