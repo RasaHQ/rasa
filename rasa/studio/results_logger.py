@@ -131,5 +131,7 @@ def _handle_request_exception(e: RequestException) -> StudioResult:
 
 def _handle_unexpected_error(e: Exception) -> StudioResult:
     error_msg = f"An unexpected error occurred: {e!s}"
-    structlogger.exception("studio.unexpected_error", event_info=error_msg, exception=str(e))
+    structlogger.exception(
+        "studio.unexpected_error", event_info=error_msg, exception=str(e)
+    )
     return StudioResult(error_msg, was_successful=False)

@@ -20,10 +20,15 @@ def test_handle_error_successful_execution():
 def test_handle_error_graphql_errors():
     @with_studio_error_handler
     def function_with_graphql_errors():
-        return StudioResult.error({
-            "data": {},
-            "errors": [{"message": "GraphQL error 1"}, {"message": "GraphQL error 2"}],
-        })
+        return StudioResult.error(
+            {
+                "data": {},
+                "errors": [
+                    {"message": "GraphQL error 1"},
+                    {"message": "GraphQL error 2"},
+                ],
+            }
+        )
 
     result = function_with_graphql_errors()
     assert result == StudioResult(
