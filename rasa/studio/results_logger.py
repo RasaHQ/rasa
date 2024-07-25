@@ -27,7 +27,8 @@ class StudioResult:
         """Create a StudioResult from a GraphQL error response.
 
         Factory will evaluate the response and return a StudioResult with the
-        appropriate message and success status."""
+        appropriate message and success status.
+        """
         if isinstance(response.get("errors"), list):
             error_details = "; ".join(
                 [error.get("message", "Unknown error") for error in response["errors"]]
