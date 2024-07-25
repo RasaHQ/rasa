@@ -59,6 +59,7 @@ class StudioAuth:
 
         return StudioResult.success("Login successful.")
 
+    @with_studio_error_handler
     def refresh_token(self, refresh_token: Text) -> StudioResult:
         try:
             token_dict = self.keycloak_openid.refresh_token(refresh_token)
