@@ -3,6 +3,7 @@ from functools import wraps
 from typing import Callable, Any, Dict
 
 import structlog
+from traceback import format_exc
 from keycloak.exceptions import KeycloakError
 from requests.exceptions import RequestException, Timeout, ConnectionError
 
@@ -77,6 +78,7 @@ def _handle_graphql_errors(response: Dict) -> StudioResult:
 
 def _handle_rasa_exception(e: RasaException) -> StudioResult:
     print_error(e)
+    structlogger.debug("studio.rasa_error", error=format_exc())
     return StudioResult(message=str(e), was_successful=False)
 
 
@@ -127,4 +129,5 @@ def _handle_request_exception(e: RequestException) -> StudioResult:
 def _handle_unexpected_error(e: Exception) -> StudioResult:
     error_msg = f"An unexpected error occurred: {e!s}"
     print_error(error_msg)
+    structlogger.debug("studio.unexpected_error", error=format_exc())
     return StudioResult(error_msg, False)

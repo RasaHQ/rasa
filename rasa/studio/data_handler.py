@@ -50,7 +50,7 @@ class StudioDataHandler:
                 "query ExportAsEncodedYaml($input: ExportAsEncodedYamlInput!) "
                 "{ exportAsEncodedYaml(input: $input) "
                 "{ ... on ExportModernAsEncodedYamlOutput "
-                "{ nlu flows domain } "
+                "{ nlu flows domain config endpoints } "
                 "... on ExportClassicAsEncodedYamlOutput "
                 "{ nlu domain }}}"
             ),
