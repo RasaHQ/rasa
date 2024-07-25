@@ -142,6 +142,8 @@ def upload_calm_assistant(
         training_data_paths=training_data_paths
     )
 
+    raise RasaException()
+
     user_flows = flow_importer.get_flows().user_flows
     flows = list(user_flows)
 

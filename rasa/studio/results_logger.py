@@ -80,7 +80,7 @@ def response_has_errors(response: Dict) -> bool:
 
 def _handle_rasa_exception(e: RasaException) -> StudioResult:
     error_msg = "Rasa internal exception was raised while interacting with Studio."
-    structlogger.error("studio.rasa_error", event_info=error_msg, exception=e)
+    structlogger.error("studio.rasa_error", event_info=error_msg, exception=str(e))
     return StudioResult(message=str(e), was_successful=False)
 
 
@@ -100,7 +100,7 @@ def _handle_keycloak_error(e: KeycloakError) -> StudioResult:
         )
     else:
         error_msg += f"Error message: {e.error_message}"
-    structlogger.error("studio.keycloak_error", event_info=error_msg, exception=e)
+    structlogger.error("studio.keycloak_error", event_info=error_msg, exception=str(e))
     return StudioResult(error_msg, was_successful=False)
 
 
@@ -111,25 +111,25 @@ def _handle_connection_error(e: ConnectionError) -> StudioResult:
         "Please check if Studio is running and the configured URL is correct. \n"
         "You may need to reconfigure Rasa Studio using 'rasa studio config'."
     )
-    structlogger.error("studio.graphql_error", event_info=error_msg, exception=e)
+    structlogger.error("studio.graphql_error", event_info=error_msg, exception=str(e))
     return StudioResult(error_msg, was_successful=False)
 
 
 def _handle_timeout_error(e: Timeout) -> StudioResult:
     error_msg = "The request timed out. Please try again later."
-    structlogger.error("studio.graphql_timeout", event_info=error_msg, exception=e)
+    structlogger.error("studio.graphql_timeout", event_info=error_msg, exception=str(e))
     return StudioResult(error_msg, was_successful=False)
 
 
 def _handle_request_exception(e: RequestException) -> StudioResult:
     error_msg = f"An error occurred while communicating with the server: {e!s}"
     structlogger.error(
-        "studio.graphql.request_exception", event_info=error_msg, exception=e
+        "studio.graphql.request_exception", event_info=error_msg, exception=str(e)
     )
     return StudioResult(error_msg, was_successful=False)
 
 
 def _handle_unexpected_error(e: Exception) -> StudioResult:
     error_msg = f"An unexpected error occurred: {e!s}"
-    structlogger.exception("studio.unexpected_error", event_info=error_msg, exception=e)
+    structlogger.exception("studio.unexpected_error", event_info=error_msg, exception=str(e))
     return StudioResult(error_msg, was_successful=False)
