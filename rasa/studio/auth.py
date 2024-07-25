@@ -57,7 +57,7 @@ class StudioAuth:
             keycloak_token, token_file_location=DEFAULT_TOKEN_FILE_PATH
         )
 
-        return StudioResult("Login successful.", True)
+        return StudioResult("Login successful.", was_successful=True)
 
     def refresh_token(self, refresh_token: Text) -> StudioResult:
         try:
@@ -71,7 +71,7 @@ class StudioAuth:
             keycloak_token, token_file_location=DEFAULT_TOKEN_FILE_PATH
         )
 
-        return StudioResult("Token refreshed successfully.", True)
+        return StudioResult("Token refreshed successfully.", was_successful=True)
 
     @staticmethod
     def _resolve_token(token_dict: Dict[Text, Any]) -> KeycloakToken:

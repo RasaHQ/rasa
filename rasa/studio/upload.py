@@ -20,7 +20,7 @@ from rasa.shared.utils.yaml import dump_obj_as_yaml_to_string
 from rasa.studio import results_logger
 from rasa.studio.auth import KeycloakTokenReader
 from rasa.studio.config import StudioConfig
-from rasa.studio.results_logger import with_studio_error_handler
+from rasa.studio.results_logger import StudioResult, with_studio_error_handler
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +75,7 @@ def extract_values(data: Dict, keys: List[Text]) -> Dict:
 @with_studio_error_handler
 def upload_calm_assistant(
     args: argparse.Namespace, assistant_name: str, endpoint: str
-) -> Tuple[str, bool]:
+) -> StudioResult:
     """Uploads the CALM assistant data to Rasa Studio.
 
     Args:
@@ -170,15 +170,13 @@ def upload_calm_assistant(
     )
 
     logger.info("Uploading to Rasa Studio...")
-    result, success = make_request(endpoint, graphql_req)
-
-    return result, success
+    return make_request(endpoint, graphql_req)
 
 
 @with_studio_error_handler
 def upload_nlu_assistant(
     args: argparse.Namespace, assistant_name: str, endpoint: str
-) -> Tuple[str, bool]:
+) -> StudioResult:
     """Uploads the classic (dm1) assistant data to Rasa Studio.
 
     Args:
@@ -222,12 +220,10 @@ def upload_nlu_assistant(
     graphql_req = build_request(assistant_name, nlu_examples_yaml, domain_yaml)
 
     logger.info("Uploading to Rasa Studio...")
-    result, success = make_request(endpoint, graphql_req)
-
-    return result, success
+    return make_request(endpoint, graphql_req)
 
 
-def make_request(endpoint: str, graphql_req: Dict) -> Tuple[str, bool]:
+def make_request(endpoint: str, graphql_req: Dict) -> StudioResult:
     """Makes a request to the studio endpoint to upload data.
 
     Args:
@@ -245,8 +241,8 @@ def make_request(endpoint: str, graphql_req: Dict) -> Tuple[str, bool]:
     )
 
     if results_logger.response_has_errors(res.json()):
-        return res.json(), False
-    return "Upload successful", True
+        return StudioResult.error(res.json())
+    return StudioResult.success("Upload successful")
 
 
 def _add_missing_entities(
