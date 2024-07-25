@@ -3,7 +3,6 @@ from functools import wraps
 from typing import Callable, Any, Dict
 
 import structlog
-from traceback import format_exc
 from keycloak.exceptions import KeycloakError
 from requests.exceptions import RequestException, Timeout, ConnectionError
 
@@ -15,30 +14,46 @@ structlogger = structlog.get_logger()
 
 
 @dataclass
-# pick whatever name makes sense across uses, picked this one as it seems
-# fitting here, but you probably can come up with a better name knowing
-# the other parts of the code
 class StudioResult:
     message: str
     was_successful: bool
 
+    @staticmethod
+    def success(message: str) -> "StudioResult":
+        return StudioResult(message, was_successful=True)
 
-def with_studio_error_handler(func: Callable) -> Callable:
+    @staticmethod
+    def error(response: Dict[str, Any]) -> "StudioResult":
+        """Create a StudioResult from a GraphQL error response.
+
+        Factory will evaluate the response and return a StudioResult with the
+        appropriate message and success status.
+        """
+        if isinstance(response.get("errors"), list):
+            error_details = "; ".join(
+                [error.get("message", "Unknown error") for error in response["errors"]]
+            )
+        else:
+            error_details = "No detailed error information available."
+
+        structlogger.warn(
+            "studio.graphql_error", event_info=error_details, response=response
+        )
+        return StudioResult(error_details, was_successful=False)
+
+
+def with_studio_error_handler(
+    func: Callable[..., StudioResult],
+) -> Callable[..., StudioResult]:
     @wraps(func)
     def wrapper(*args: Any, **kwargs: Any) -> Any:
         try:
             result = func(*args, **kwargs)
-            if isinstance(result, tuple) and len(result) == 2:
-                message, success = result
-                if response_has_errors(message):
-                    return _handle_graphql_errors(message)
-                else:
-                    print_success(message)
-                    return StudioResult(message, success)
+            if result.was_successful:
+                print_success(result.message)
             else:
-                return (
-                    result  # Assuming the function might directly return a StudioResult
-                )
+                print_error(result.message)
+            return result
         except RasaException as e:
             return _handle_rasa_exception(e)
         except KeycloakError as e:
@@ -63,22 +78,9 @@ def response_has_errors(response: Dict) -> bool:
     )
 
 
-def _handle_graphql_errors(response: Dict) -> StudioResult:
-    if isinstance(response.get("errors"), list):
-        error_details = "; ".join(
-            [error.get("message", "Unknown error") for error in response["errors"]]
-        )
-    else:
-        error_details = "No detailed error information available."
-
-    structlogger.debug("studio.graphql_error", response=response)
-    print_error(error_details)
-    return StudioResult(error_details, False)
-
-
 def _handle_rasa_exception(e: RasaException) -> StudioResult:
-    print_error(e)
-    structlogger.debug("studio.rasa_error", error=format_exc())
+    error_msg = "Rasa internal exception was raised while interacting with Studio."
+    structlogger.error("studio.rasa_error", event_info=error_msg, exception=str(e))
     return StudioResult(message=str(e), was_successful=False)
 
 
@@ -98,8 +100,8 @@ def _handle_keycloak_error(e: KeycloakError) -> StudioResult:
         )
     else:
         error_msg += f"Error message: {e.error_message}"
-    print_error(error_msg)
-    return StudioResult(error_msg, False)
+    structlogger.error("studio.keycloak_error", event_info=error_msg, exception=str(e))
+    return StudioResult(error_msg, was_successful=False)
 
 
 def _handle_connection_error(e: ConnectionError) -> StudioResult:
@@ -109,25 +111,27 @@ def _handle_connection_error(e: ConnectionError) -> StudioResult:
         "Please check if Studio is running and the configured URL is correct. \n"
         "You may need to reconfigure Rasa Studio using 'rasa studio config'."
     )
-    structlogger.debug("studio.graphql_error", response=str(e))
-    print_error(error_msg)
-    return StudioResult(error_msg, False)
+    structlogger.error("studio.graphql_error", event_info=error_msg, exception=str(e))
+    return StudioResult(error_msg, was_successful=False)
 
 
 def _handle_timeout_error(e: Timeout) -> StudioResult:
     error_msg = "The request timed out. Please try again later."
-    print_error(error_msg)
-    return StudioResult(error_msg, False)
+    structlogger.error("studio.graphql_timeout", event_info=error_msg, exception=str(e))
+    return StudioResult(error_msg, was_successful=False)
 
 
 def _handle_request_exception(e: RequestException) -> StudioResult:
     error_msg = f"An error occurred while communicating with the server: {e!s}"
-    print_error(error_msg)
-    return StudioResult(error_msg, False)
+    structlogger.error(
+        "studio.graphql.request_exception", event_info=error_msg, exception=str(e)
+    )
+    return StudioResult(error_msg, was_successful=False)
 
 
 def _handle_unexpected_error(e: Exception) -> StudioResult:
     error_msg = f"An unexpected error occurred: {e!s}"
-    print_error(error_msg)
-    structlogger.debug("studio.unexpected_error", error=format_exc())
-    return StudioResult(error_msg, False)
+    structlogger.exception(
+        "studio.unexpected_error", event_info=error_msg, exception=str(e)
+    )
+    return StudioResult(error_msg, was_successful=False)

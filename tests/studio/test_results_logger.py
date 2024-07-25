@@ -11,19 +11,24 @@ from rasa.studio.results_logger import with_studio_error_handler, StudioResult
 def test_handle_error_successful_execution():
     @with_studio_error_handler
     def successful_function():
-        return StudioResult(message="Upload successful!", was_successful=True)
+        return StudioResult.success(message="Upload successful!")
 
     result = successful_function()
-    assert result == StudioResult("Upload successful!", True)
+    assert result == StudioResult.success(message="Upload successful!")
 
 
 def test_handle_error_graphql_errors():
     @with_studio_error_handler
     def function_with_graphql_errors():
-        return {
-            "data": {},
-            "errors": [{"message": "GraphQL error 1"}, {"message": "GraphQL error 2"}],
-        }, False
+        return StudioResult.error(
+            {
+                "data": {},
+                "errors": [
+                    {"message": "GraphQL error 1"},
+                    {"message": "GraphQL error 2"},
+                ],
+            }
+        )
 
     result = function_with_graphql_errors()
     assert result == StudioResult(
@@ -47,11 +52,21 @@ def mock_studio_config():
     [
         (RasaException("Rasa error"), StudioResult("Rasa error", False)),
         (
-            KeycloakError("Keycloak error"),
+            KeycloakError("Can't connect to server "),
             StudioResult(
                 "Unable to authenticate with Keycloak at "
-                "http://mock-auth-server:8081/auth/ "
-                "Error message: Keycloak error",
+                "http://mock-auth-server:8081/auth/ Please check if the "
+                "server is running and the configured URL is correct. \n"
+                "You may need to reconfigure Rasa Studio using 'rasa "
+                "studio config'.",
+                False,
+            ),
+        ),
+        (
+            KeycloakError("some error message"),
+            StudioResult(
+                "Unable to authenticate with Keycloak at "
+                "http://mock-auth-server:8081/auth/ Error message: some error message",
                 False,
             ),
         ),

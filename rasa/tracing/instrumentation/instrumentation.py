@@ -597,11 +597,12 @@ def _instrument_nlu_command_adapter_predict_commands(
             message: Message,
             flows: FlowsList,
             tracker: Optional[DialogueStateTracker] = None,
+            **kwargs: Any,
         ) -> List[Command]:
             with tracer.start_as_current_span(
                 f"{self.__class__.__name__}.{fn.__name__}"
             ) as span:
-                commands = await fn(self, message, flows, tracker)
+                commands = await fn(self, message, flows, tracker, **kwargs)
 
                 span.set_attributes(
                     {

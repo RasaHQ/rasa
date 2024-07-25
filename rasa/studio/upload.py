@@ -7,7 +7,7 @@ import requests
 
 import rasa.cli.telemetry
 import rasa.cli.utils
-from rasa.shared.utils.cli import print_error, print_info
+from rasa.shared.utils.cli import print_info
 import rasa.shared.utils.cli
 import rasa.shared.utils.io
 from rasa.shared.constants import (
@@ -22,7 +22,7 @@ from rasa.shared.utils.yaml import dump_obj_as_yaml_to_string, read_yaml_file
 from rasa.studio import results_logger
 from rasa.studio.auth import KeycloakTokenReader
 from rasa.studio.config import StudioConfig
-from rasa.studio.results_logger import with_studio_error_handler
+from rasa.studio.results_logger import StudioResult, with_studio_error_handler
 
 logger = logging.getLogger(__name__)
 
@@ -112,7 +112,8 @@ def _get_assistant_name(config: Dict[Text, Any]) -> str:
 
 
 @with_studio_error_handler
-def upload_calm_assistant(args: argparse.Namespace, endpoint: str) -> Tuple[str, bool]:
+def upload_calm_assistant(args: argparse.Namespace, endpoint: str
+) -> StudioResult:
     """Uploads the CALM assistant data to Rasa Studio.
 
     Args:
@@ -201,13 +202,12 @@ def upload_calm_assistant(args: argparse.Namespace, endpoint: str) -> Tuple[str,
     )
 
     logger.info("Uploading to Rasa Studio...")
-    result, success = make_request(endpoint, graphql_req)
-
-    return result, success
+    return make_request(endpoint, graphql_req)
 
 
 @with_studio_error_handler
-def upload_nlu_assistant(args: argparse.Namespace, endpoint: str) -> Tuple[str, bool]:
+def upload_nlu_assistant(args: argparse.Namespace, endpoint: str
+) -> StudioResult:
     """Uploads the classic (dm1) assistant data to Rasa Studio.
 
     Args:
@@ -255,12 +255,11 @@ def upload_nlu_assistant(args: argparse.Namespace, endpoint: str) -> Tuple[str, 
     graphql_req = build_request(assistant_name, nlu_examples_yaml, domain_yaml)
 
     logger.info("Uploading to Rasa Studio...")
-    result, success = make_request(endpoint, graphql_req)
-
-    return result, success
+    return make_request(endpoint, graphql_req)
 
 
-def make_request(endpoint: str, graphql_req: Dict) -> Tuple[str, bool]:
+def make_request(endpoint: str, graphql_req: Dict
+) -> StudioResult:
     """Makes a request to the studio endpoint to upload data.
 
     Args:
@@ -278,8 +277,8 @@ def make_request(endpoint: str, graphql_req: Dict) -> Tuple[str, bool]:
     )
 
     if results_logger.response_has_errors(res.json()):
-        return res.json(), False
-    return "Upload successful", True
+        return StudioResult.error(res.json())
+    return StudioResult.success("Upload successful")
 
 
 def _add_missing_entities(
