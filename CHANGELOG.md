@@ -10,6 +10,16 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.9.4] - 2024-07-25
+                       
+Rasa Pro 3.9.4 (2024-07-25)                            
+### Bugfixes
+- [#904](https://github.com/rasahq/rasa-private/issues/904): Fix instrumentation not accounting for `kwargs` that are passed to `NLUCommandAdapter.predict_commands`.
+
+### Miscellaneous internal changes
+- [#887](https://github.com/rasahq/rasa-private/issues/887)
+
+
 ## [3.9.3] - 2024-07-18
                        
 Rasa Pro 3.9.3 (2024-07-18)                            
