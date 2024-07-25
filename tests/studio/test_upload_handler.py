@@ -11,6 +11,8 @@ from rasa.shared.exceptions import RasaException
 
 import rasa.studio.upload
 from rasa.studio.config import StudioConfig
+from rasa.studio.results_logger import with_studio_error_handler, StudioResult
+from rasa.studio.upload import make_request
 
 CALM_DOMAIN_YAML = dedent(
     """\
@@ -874,164 +876,104 @@ def test_build_import_request_no_nlu() -> None:
     assert graphql_req["variables"]["input"]["nlu"] == empty_string
 
 
+@pytest.fixture
+def mock_requests(monkeypatch):
+    mock = MagicMock()
+    monkeypatch.setattr("rasa.studio.upload.requests", mock)
+    return mock
+
+
+@pytest.fixture
+def mock_keycloak_token(monkeypatch):
+    mock = MagicMock()
+    mock.get_token.return_value.token_type = "Bearer"
+    mock.get_token.return_value.access_token = "mock_token"
+    monkeypatch.setattr("rasa.studio.upload.KeycloakTokenReader", lambda: mock)
+    return mock
+
+
 @pytest.mark.parametrize(
-    "graphQL_req, endpoint, return_value, expected_response, expected_status",
+    "query_type, response_data, status_code, expected_result",
     [
         (
-            {
-                "query": """\
-                    mutation ImportFromEncodedYaml($input: ImportFromEncodedYamlInput!)\
-                        {\n  importFromEncodedYaml(input: $input)\n}""",
-                "variables": {
-                    "input": {
-                        "assistantName": "test",
-                        "domain": "dmFyY2FzZSxvYWRpbmcgY29udGVudCBvZiB0aGUgZGF0WJhc2U=",
-                        "nlu": "hcyBhIGxvYWRpbmcgY29udGVudCBvZiB0aGUgZGF0YWJhc2U=",
-                    }
-                },
-            },
-            "http://studio.test/api/graphql/",
-            {
-                "json": {"data": {"importFromEncodedYaml": ""}},
-                "status_code": 200,
-            },
-            "Upload successful!",
-            True,
+            "ImportFromEncodedYaml",
+            {"data": {"importFromEncodedYaml": ""}},
+            200,
+            StudioResult("Upload successful", True),
         ),
         (
-            {
-                "query": """\
-                    mutation ImportFromEncodedYaml($input: ImportFromEncodedYamlInput!)\
-                        {\n  importFromEncodedYaml(input: $input)\n}""",
-                "variables": {
-                    "input": {
-                        "assistantName": "test",
-                        "domain": "dmFyY2FzZSxvYWRpbmcgY29udGVudCBvZiB0aGUgZGF0WJhc2U=",
-                        "nlu": "hcyBhIGxvYWRpbmcgY29udGVudCBvZiB0aGUgZGF0YWJhc2U=",
-                    }
-                },
-            },
-            "http://studio.test/api/graphql/",
-            {
-                "json": {"data": {"importFromEncodedYaml": ""}},
-                "status_code": 405,
-            },
-            "Upload failed with status code 405",
-            False,
+            "ImportFromEncodedYaml",
+            {"errors": [{"message": "Upload failed with status code 405"}]},
+            405,
+            StudioResult(
+                "Upload failed with status code 405",
+                False,
+            ),
         ),
         (
-            {
-                "query": """\
-                    mutation ImportFromEncodedYaml($input: ImportFromEncodedYamlInput!)\
-                        {\n  importFromEncodedYaml(input: $input)\n}""",
-                "variables": {
-                    "input": {
-                        "assistantName": "test",
-                        "domain": "dmFyY2FzZSxvYWRpbmcgY29udGVudCBvZiB0aGUgZGF0WJhc2U=",
-                        "nlu": "hcyBhIGxvYWRpbmcgY29udGVudCBvZiB0aGUgZGF0YWJhc2U=",
-                    }
-                },
-            },
-            "http://studio.test/api/graphql/",
-            {
-                "json": {"data": {"importFromEncodedYaml": None}},
-                "status_code": 500,
-            },
-            "Upload failed with status code 500",
-            False,
+            "UploadModernAssistant",
+            {"data": {"uploadModernAssistant": ""}},
+            200,
+            StudioResult("Upload successful", True),
         ),
         (
-            {
-                "query": """\
-          mutation UploadModernAssistant($input: UploadModernAssistantInput!)\
-              {\n  uploadModernAssistant(input: $input)\n}""",
-                "variables": {
-                    "input": {
-                        "assistantName": "test",
-                        "domain": encode_yaml(CALM_DOMAIN_YAML),
-                        "flows": encode_yaml(CALM_FLOWS_YAML),
-                    }
-                },
-            },
-            "http://studio.test/api/graphql/",
-            {
-                "json": {"data": {"uploadModernAssistant": ""}},
-                "status_code": 200,
-            },
-            "Upload successful!",
-            True,
-        ),
-        (
-            {
-                "query": """\
-          mutation UploadModernAssistant($input: UploadModernAssistantInput!)\
-              {\n  uploadModernAssistant(input: $input)\n}""",
-                "variables": {
-                    "input": {
-                        "assistantName": "test",
-                        "domain": encode_yaml(CALM_DOMAIN_YAML),
-                        "flows": encode_yaml(CALM_FLOWS_YAML),
-                    }
-                },
-            },
-            "http://studio.test/api/graphql/",
-            {
-                "json": {"data": {"uploadModernAssistant": ""}},
-                "status_code": 405,
-            },
-            "Upload failed with status code 405",
-            False,
-        ),
-        (
-            {
-                "query": """\
-          mutation UploadModernAssistant($input: UploadModernAssistantInput!)\
-              {\n  uploadModernAssistant(input: $input)\n}""",
-                "variables": {
-                    "input": {
-                        "assistantName": "test",
-                        "domain": encode_yaml(CALM_DOMAIN_YAML),
-                        "flows": encode_yaml(CALM_FLOWS_YAML),
-                        "config": "",
-                    }
-                },
-            },
-            "http://studio.test/api/graphql/",
-            {
-                "json": {"data": {"uploadModernAssistant": None}},
-                "status_code": 500,
-            },
-            "Upload failed with status code 500",
-            False,
+            "UploadModernAssistant",
+            {"errors": [{"message": "Error 1"}, {"message": "Error 2"}]},
+            500,
+            StudioResult("Error 1; Error 2", False),
         ),
     ],
 )
 def test_make_request(
-    monkeypatch: MonkeyPatch,
-    graphQL_req: Dict[str, Any],
-    return_value: Dict[str, Any],
-    expected_response: str,
-    expected_status: bool,
-    endpoint: str,
-) -> None:
-    return_mock = MagicMock()
-    return_mock.status_code = return_value["status_code"]
-    return_mock.json.return_value = return_value["json"]
-    mock = MagicMock(return_value=return_mock)
-    mock_token = MagicMock()
-    monkeypatch.setattr(rasa.studio.upload.requests, "post", mock)
-    monkeypatch.setattr(rasa.studio.upload, "KeycloakTokenReader", mock_token)
+    mock_requests,
+    mock_keycloak_token,
+    query_type,
+    response_data,
+    status_code,
+    expected_result,
+):
+    # Arrange
+    endpoint = "http://studio.test/api/graphql/"
+    graphql_req = {
+        "query": f"mutation {query_type}"
+        f"($input: {query_type}Input!) "
+        f"{{\n  {query_type.lower()}"
+        f"(input: $input)\n}}",
+        "variables": {
+            "input": {
+                "assistantName": "test",
+                "domain": "base64_encoded_domain",
+                "nlu": "base64_encoded_nlu",
+            }
+        },
+    }
 
-    ret_val, status = rasa.studio.upload.make_request(endpoint, graphQL_req)
+    mock_response = MagicMock()
+    mock_response.status_code = status_code
+    mock_response.json.return_value = response_data
+    mock_requests.post.return_value = mock_response
 
-    assert mock.called
-    assert mock.call_args[0][0] == endpoint
-    assert mock.call_args[1]["json"] == graphQL_req
+    # Act
+    @with_studio_error_handler
+    def test_make_request_func():
+        return make_request(endpoint, graphql_req)
 
-    assert mock_token.called
+    result = test_make_request_func()
 
-    assert ret_val == expected_response
-    assert status == expected_status
+    # Assert
+    assert isinstance(result, StudioResult)
+    assert result.message == expected_result.message
+    assert result.was_successful == expected_result.was_successful
+
+    mock_requests.post.assert_called_once_with(
+        endpoint,
+        json=graphql_req,
+        headers={
+            "Authorization": "Bearer mock_token",
+            "Content-Type": "application/json",
+        },
+    )
+    mock_keycloak_token.get_token.assert_called_once()
 
 
 @pytest.mark.parametrize(
@@ -1105,19 +1047,6 @@ def test_check_for_missing_primitives(
         assert "The following entities were not found in the domain: age" in str(
             excinfo.value
         )
-
-
-@pytest.mark.parametrize(
-    "response, expected",
-    [
-        ({"errors": None}, False),
-        ({"errors": []}, False),
-        ({"errors": ["error"]}, True),
-        ({"errors": ["error", "error2"]}, True),
-    ],
-)
-def test_response_has_errors(response: Dict, expected: bool) -> None:
-    assert rasa.studio.upload._response_has_errors(response) == expected
 
 
 @pytest.mark.parametrize(

@@ -17,8 +17,10 @@ from rasa.shared.exceptions import RasaException
 from rasa.shared.importers.importer import TrainingDataImporter, FlowSyncImporter
 from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
 from rasa.shared.utils.yaml import dump_obj_as_yaml_to_string
+from rasa.studio import results_logger
 from rasa.studio.auth import KeycloakTokenReader
 from rasa.studio.config import StudioConfig
+from rasa.studio.results_logger import StudioResult, with_studio_error_handler
 
 logger = logging.getLogger(__name__)
 
@@ -70,9 +72,10 @@ def extract_values(data: Dict, keys: List[Text]) -> Dict:
     return {key: data.get(key) for key in keys if data.get(key)}
 
 
+@with_studio_error_handler
 def upload_calm_assistant(
     args: argparse.Namespace, assistant_name: str, endpoint: str
-) -> None:
+) -> StudioResult:
     """Uploads the CALM assistant data to Rasa Studio.
 
     Args:
@@ -89,94 +92,91 @@ def upload_calm_assistant(
     """
     logger.info("Parsing CALM assistant data...")
 
-    try:
-        importer = TrainingDataImporter.load_from_dict(
-            domain_path=args.domain,
-            config_path=args.config,
-        )
+    importer = TrainingDataImporter.load_from_dict(
+        domain_path=args.domain,
+        config_path=args.config,
+    )
 
-        # Prepare config and domain
-        config_from_files = importer.get_config()
-        domain_from_files = importer.get_domain().as_dict()
+    # Prepare config and domain
+    config_from_files = importer.get_config()
+    domain_from_files = importer.get_domain().as_dict()
 
-        # Extract domain and config values
-        domain_keys = [
-            "version",
-            "actions",
-            "responses",
-            "slots",
-            "intents",
-            "entities",
-            "forms",
-            "session_config",
-        ]
-        config_keys = [
-            "recipe",
-            "language",
-            "pipeline",
-            "llm",
-            "policies",
-            "model_name",
-        ]
+    # Extract domain and config values
+    domain_keys = [
+        "version",
+        "actions",
+        "responses",
+        "slots",
+        "intents",
+        "entities",
+        "forms",
+        "session_config",
+    ]
+    config_keys = [
+        "recipe",
+        "language",
+        "pipeline",
+        "llm",
+        "policies",
+        "model_name",
+        "assistant_id",
+    ]
 
-        domain = extract_values(domain_from_files, domain_keys)
-        config = extract_values(config_from_files, config_keys)
+    domain = extract_values(domain_from_files, domain_keys)
+    config = extract_values(config_from_files, config_keys)
 
-        training_data_paths = args.data
+    training_data_paths = args.data
 
-        if isinstance(training_data_paths, list):
-            training_data_paths.append(args.flows)
-        elif isinstance(training_data_paths, str):
+    if isinstance(training_data_paths, list):
+        training_data_paths.append(args.flows)
+    elif isinstance(training_data_paths, str):
+        if isinstance(args.flows, list):
+            training_data_paths = [training_data_paths] + args.flows
+        elif isinstance(args.flows, str):
             training_data_paths = [training_data_paths, args.flows]
-
-        # Prepare flows
-        flow_importer = FlowSyncImporter.load_from_dict(
-            training_data_paths=training_data_paths
-        )
-
-        user_flows = flow_importer.get_flows().user_flows
-        flows = list(user_flows)
-
-        # We instantiate the TrainingDataImporter again on purpose to avoid
-        # adding patterns to domain's actions. More info https://t.ly/W8uuc
-        nlu_importer = TrainingDataImporter.load_from_dict(
-            domain_path=args.domain, training_data_paths=args.data
-        )
-        nlu_data = nlu_importer.get_nlu_data()
-
-        intents_from_files = nlu_data.intents
-
-        nlu_examples = nlu_data.filter_training_examples(
-            lambda ex: ex.get("intent") in intents_from_files
-        )
-
-        nlu_examples_yaml = RasaYAMLWriter().dumps(nlu_examples)
-
-        # Build GraphQL request
-        graphql_req = build_import_request(
-            assistant_name,
-            flows_yaml=YamlFlowsWriter().dumps(flows),
-            domain_yaml=dump_obj_as_yaml_to_string(domain),
-            config_yaml=dump_obj_as_yaml_to_string(config),
-            nlu_yaml=nlu_examples_yaml,
-        )
-
-        logger.info("Uploading to Rasa Studio...")
-        response, status = make_request(endpoint, graphql_req)
-
-        if status:
-            rasa.shared.utils.cli.print_success(response)
         else:
-            logger.error(f"Failed to upload to Rasa Studio: {response}")
-            rasa.shared.utils.cli.print_error(response)
+            raise RasaException("Invalid flows path")
 
-    except Exception as e:
-        logger.error(f"An error occurred while uploading the CALM assistant: {e}")
+    # Prepare flows
+    flow_importer = FlowSyncImporter.load_from_dict(
+        training_data_paths=training_data_paths
+    )
+
+    user_flows = flow_importer.get_flows().user_flows
+    flows = list(user_flows)
+
+    # We instantiate the TrainingDataImporter again on purpose to avoid
+    # adding patterns to domain's actions. More info https://t.ly/W8uuc
+    nlu_importer = TrainingDataImporter.load_from_dict(
+        domain_path=args.domain, training_data_paths=args.data
+    )
+    nlu_data = nlu_importer.get_nlu_data()
+
+    intents_from_files = nlu_data.intents
+
+    nlu_examples = nlu_data.filter_training_examples(
+        lambda ex: ex.get("intent") in intents_from_files
+    )
+
+    nlu_examples_yaml = RasaYAMLWriter().dumps(nlu_examples)
+
+    # Build GraphQL request
+    graphql_req = build_import_request(
+        assistant_name,
+        flows_yaml=YamlFlowsWriter().dumps(flows),
+        domain_yaml=dump_obj_as_yaml_to_string(domain),
+        config_yaml=dump_obj_as_yaml_to_string(config),
+        nlu_yaml=nlu_examples_yaml,
+    )
+
+    logger.info("Uploading to Rasa Studio...")
+    return make_request(endpoint, graphql_req)
 
 
+@with_studio_error_handler
 def upload_nlu_assistant(
     args: argparse.Namespace, assistant_name: str, endpoint: str
-) -> None:
+) -> StudioResult:
     """Uploads the classic (dm1) assistant data to Rasa Studio.
 
     Args:
@@ -220,14 +220,10 @@ def upload_nlu_assistant(
     graphql_req = build_request(assistant_name, nlu_examples_yaml, domain_yaml)
 
     logger.info("Uploading to Rasa Studio...")
-    response, status = make_request(endpoint, graphql_req)
-    if status:
-        rasa.shared.utils.cli.print_success(response)
-    else:
-        rasa.shared.utils.cli.print_error(response)
+    return make_request(endpoint, graphql_req)
 
 
-def make_request(endpoint: str, graphql_req: Dict) -> Tuple[str, bool]:
+def make_request(endpoint: str, graphql_req: Dict) -> StudioResult:
     """Makes a request to the studio endpoint to upload data.
 
     Args:
@@ -235,7 +231,6 @@ def make_request(endpoint: str, graphql_req: Dict) -> Tuple[str, bool]:
         graphql_req: The graphql request
     """
     token = KeycloakTokenReader().get_token()
-
     res = requests.post(
         endpoint,
         json=graphql_req,
@@ -245,30 +240,9 @@ def make_request(endpoint: str, graphql_req: Dict) -> Tuple[str, bool]:
         },
     )
 
-    response = res.json()
-
-    if _response_has_errors(response):
-        print_errors_from_response(response)
-
-    if res.status_code != 200:
-        return f"Upload failed with status code {res.status_code}", False
-    elif _response_has_errors(response):
-        return "Error while uploading data!", False
-
-    return "Upload successful!", True
-
-
-def _response_has_errors(response: Dict) -> bool:
-    return (
-        "errors" in response
-        and isinstance(response["errors"], list)
-        and len(response["errors"]) > 0
-    )
-
-
-def print_errors_from_response(response: Dict) -> None:
-    for error in response["errors"]:
-        logger.error(error["message"])
+    if results_logger.response_has_errors(res.json()):
+        return StudioResult.error(res.json())
+    return StudioResult.success("Upload successful")
 
 
 def _add_missing_entities(
