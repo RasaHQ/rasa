@@ -683,9 +683,13 @@ def encode_yaml(yaml):
                         "flows": encode_yaml(CALM_FLOWS_YAML),
                         "nlu": encode_yaml(CALM_NLU_YAML),
                         "config": (
-                            "cmVjaXBlOiBkZWZhdWx0LnYxCmxhbmd1YWdlOiBlbgpwaXBlbGluZToKLSBuYW1lOiBTaW5nbGVTdGVwTExNQ29"
-                            "tbWFuZEdlbmVyYXRvcgogIGxsbToKICAgIG1vZGVsX25hbWU6IGdwdC00CnBvbGljaWVzOgotIG5hbWU"
-                            "6IHJhc2EuY29yZS5wb2xpY2llcy5mbG93X3BvbGljeS5GbG93UG9saWN5Cg=="
+                            "cmVjaXBlOiBkZWZhdWx0LnYxCmxhbmd1YWdlOiBlbgp"
+                            "waXBlbGluZToKLSBuYW1lOiBTaW5nbGVTdGVwTExNQ2"
+                            "9tbWFuZEdlbmVyYXRvcgogIGxsbToKICAgIG1vZGVsX"
+                            "25hbWU6IGdwdC00CnBvbGljaWVzOgotIG5hbWU6IHJh"
+                            "c2EuY29yZS5wb2xpY2llcy5mbG93X3BvbGljeS5GbG9"
+                            "3UG9saWN5CmFzc2lzdGFudElkOiBhNWI1ZDNjNS04OG"
+                            "NmLTRmZTUtODM1Mi1jNDJlN2NmYWE3YjYK"
                         ),
                         "endpoints": "bmxnOgogIHR5cGU6IHJlcGhyYXNlCg==",
                     }

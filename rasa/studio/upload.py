@@ -7,7 +7,7 @@ import requests
 
 import rasa.cli.telemetry
 import rasa.cli.utils
-from rasa.shared.utils.cli import print_info
+from rasa.shared.utils.cli import print_info, print_error
 import rasa.shared.utils.cli
 import rasa.shared.utils.io
 from rasa.shared.constants import (
@@ -112,8 +112,7 @@ def _get_assistant_name(config: Dict[Text, Any]) -> str:
 
 
 @with_studio_error_handler
-def upload_calm_assistant(args: argparse.Namespace, endpoint: str
-) -> StudioResult:
+def upload_calm_assistant(args: argparse.Namespace, endpoint: str) -> StudioResult:
     """Uploads the CALM assistant data to Rasa Studio.
 
     Args:
@@ -135,9 +134,10 @@ def upload_calm_assistant(args: argparse.Namespace, endpoint: str
     )
 
     # Prepare config and domain
-    config_from_files = importer.get_config()
+    config = importer.get_config()
     domain_from_files = importer.get_domain().as_dict()
     endpoints_from_files = read_yaml_file(args.endpoints)
+    config_from_files = read_yaml_file(args.config)
 
     # Extract domain and config values
     domain_keys = [
@@ -152,7 +152,7 @@ def upload_calm_assistant(args: argparse.Namespace, endpoint: str
     ]
 
     domain = extract_values(domain_from_files, domain_keys)
-    config = extract_values(config_from_files, config_keys)
+    config = extract_values(config, config_keys)
 
     assistant_name = _get_assistant_name(config)
 
@@ -196,7 +196,7 @@ def upload_calm_assistant(args: argparse.Namespace, endpoint: str
         assistant_name,
         flows_yaml=YamlFlowsWriter().dumps(flows),
         domain_yaml=dump_obj_as_yaml_to_string(domain),
-        config_yaml=dump_obj_as_yaml_to_string(config),
+        config_yaml=dump_obj_as_yaml_to_string(config_from_files),
         endpoints=dump_obj_as_yaml_to_string(endpoints_from_files),
         nlu_yaml=nlu_examples_yaml,
     )
@@ -206,8 +206,7 @@ def upload_calm_assistant(args: argparse.Namespace, endpoint: str
 
 
 @with_studio_error_handler
-def upload_nlu_assistant(args: argparse.Namespace, endpoint: str
-) -> StudioResult:
+def upload_nlu_assistant(args: argparse.Namespace, endpoint: str) -> StudioResult:
     """Uploads the classic (dm1) assistant data to Rasa Studio.
 
     Args:
@@ -258,8 +257,7 @@ def upload_nlu_assistant(args: argparse.Namespace, endpoint: str
     return make_request(endpoint, graphql_req)
 
 
-def make_request(endpoint: str, graphql_req: Dict
-) -> StudioResult:
+def make_request(endpoint: str, graphql_req: Dict) -> StudioResult:
     """Makes a request to the studio endpoint to upload data.
 
     Args:
