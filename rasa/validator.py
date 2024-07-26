@@ -966,6 +966,10 @@ class Validator:
         # do validation only on slots, not on context variables
         if conditioned_variable[0] == "slots":
             slot_name = conditioned_variable[1]
+            # slots.{{context.variable}}, it gets evaluated to `slots.None`
+            #   it has to be validated durint runtime
+            if slot_name == "None":
+                return all_good
         else:
             return all_good
         try:
@@ -973,12 +977,18 @@ class Validator:
         except StopIteration:
             return False
         if isinstance(slot, CategoricalSlot):
-            # slot_value can either be a string or a list of Literal objects
+            valid_slot_values = slot.values + [None]
+            # slot_value can either be None, a string or a list of Literal objects
+            if slot_value is None:
+                slot_value = [None]
             if isinstance(slot_value, str):
                 slot_value = [Literal(slot_value)]
-            if not all(
-                [re.sub(r"\'|\"", "", sv.value) in slot.values for sv in slot_value]
-            ):
+
+            slot_values_validity = [
+                sv is None or re.sub(r"\'|\"", "", sv.value) in valid_slot_values
+                for sv in slot_value
+            ]
+            if not all(slot_values_validity):
                 return False
         elif isinstance(slot, BooleanSlot):
             if isinstance(ast_to_check, CompareOperator) and not isinstance(
