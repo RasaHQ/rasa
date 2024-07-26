@@ -35,7 +35,7 @@ class DirectCustomActionExecutor(CustomActionExecutor):
         self.action_executor = ActionExecutor()
         self.register_actions_from_a_module()
 
-    def register_actions_from_a_module(self):
+    def register_actions_from_a_module(self) -> None:
         module_name = self.action_endpoint.actions_module
         if not find_spec(module_name):
             raise RasaException(f"Actions module '{module_name}' does not exist.")
