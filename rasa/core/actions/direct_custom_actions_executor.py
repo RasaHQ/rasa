@@ -1,3 +1,4 @@
+from importlib.util import find_spec
 from typing import (
     Any,
     Dict,
@@ -15,6 +16,7 @@ from rasa.core.actions.custom_action_executor import (
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.trackers import EventVerbosity
+from rasa.shared.exceptions import RasaException
 from rasa.utils.endpoints import EndpointConfig
 
 structlogger = structlog.get_logger(__name__)
@@ -26,12 +28,19 @@ class DirectCustomActionExecutor(CustomActionExecutor):
 
         Args:
             action_name: Name of the custom action.
-            actions_module: The name of the module containing all custom actions.
+            action_endpoint: The endpoint to execute custom actions.
         """
         self.action_name = action_name
         self.action_endpoint = action_endpoint
         self.action_executor = ActionExecutor()
-        self.action_executor.register_package(self.action_endpoint.actions_module)
+        self.register_actions_from_a_module()
+
+    def register_actions_from_a_module(self):
+        module_name = self.action_endpoint.actions_module
+        if not find_spec(module_name):
+            raise RasaException(f"Actions module '{module_name}' does not exist.")
+
+        self.action_executor.register_package(module_name)
 
     async def run(
         self,

@@ -13,7 +13,6 @@ from typing import (
     cast,
 )
 
-
 import rasa.core
 import rasa.shared.utils.io
 from rasa.core.actions.custom_action_executor import (
@@ -84,6 +83,7 @@ from rasa.shared.nlu.constants import (
     INTENT_NAME_KEY,
     INTENT_RANKING_KEY,
 )
+from rasa.shared.utils.io import raise_warning
 from rasa.shared.utils.schemas.events import EVENTS_SCHEMA
 from rasa.utils.endpoints import EndpointConfig, ClientResponseError
 from rasa.utils.url_tools import get_url_schema, UrlSchema
@@ -713,7 +713,7 @@ class RemoteAction(Action):
     def __init__(
         self,
         name: Text,
-        action_endpoint: EndpointConfig,
+        action_endpoint: Optional[EndpointConfig] = None,
     ) -> None:
         self._name = name
         self.action_endpoint = action_endpoint
@@ -731,6 +731,13 @@ class RemoteAction(Action):
         """
         if not self.action_endpoint:
             return NoEndpointCustomActionExecutor(self.name())
+
+        if self.action_endpoint.url and self.action_endpoint.actions_module:
+            raise_warning(
+                "Both 'actions_module' and 'url' are defined. "
+                "As they are mutually exclusive and 'actions_module' "
+                "is prioritized, actions will be executed by the assistant."
+            )
 
         if self.action_endpoint and self.action_endpoint.actions_module:
             return DirectCustomActionExecutor(self.name(), self.action_endpoint)

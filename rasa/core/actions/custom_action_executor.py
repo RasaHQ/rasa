@@ -52,13 +52,13 @@ class NoEndpointCustomActionExecutor(CustomActionExecutor):
     Raises RasaException when executed.
     """
 
-    def __init__(self, name: str) -> None:
+    def __init__(self, action_name: str) -> None:
         """Initializes the custom action executor.
 
         Args:
-            name: The name of the custom action.
+            action_name: The name of the custom action.
         """
-        self.name = name
+        self.name = action_name
 
     async def run(
         self,

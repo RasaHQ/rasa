@@ -682,8 +682,8 @@ def extract_attrs_for_custom_action_executor_run(
         "class_name": self.__class__.__name__,
         "action_name": self.action_name,
         "sender_id": tracker.sender_id,
-        "url": url,
-        "actions_module": actions_module,
+        "url": str(url),
+        "actions_module": str(actions_module),
     }
     return attrs
 
