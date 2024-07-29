@@ -19,6 +19,7 @@ from rasa.core.secrets_manager.vault import (
     VaultTokenManager,
 )
 
+# file deepcode ignore NoHardcodedPasswords/test: Test credentials
 
 @pytest.fixture
 def mock_hvac_client(monkeypatch: MonkeyPatch) -> MagicMock:

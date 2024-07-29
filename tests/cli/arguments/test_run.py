@@ -13,6 +13,7 @@ from rasa.env import (
     AUTH_TOKEN_ENV,
 )
 
+# file deepcode ignore HardcodedNonCryptoSecret/test: Test credentials
 
 @pytest.mark.parametrize(
     "env_variables, input_args, expected",
