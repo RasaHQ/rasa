@@ -58,7 +58,7 @@ class NoEndpointCustomActionExecutor(CustomActionExecutor):
         Args:
             action_name: The name of the custom action.
         """
-        self.name = action_name
+        self.action_name = action_name
 
     async def run(
         self,
