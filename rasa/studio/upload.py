@@ -7,7 +7,6 @@ import structlog
 
 import rasa.cli.telemetry
 import rasa.cli.utils
-from rasa.shared.utils.cli import print_info, print_error
 import rasa.shared.utils.cli
 import rasa.shared.utils.io
 from rasa.shared.constants import (
@@ -38,7 +37,7 @@ def _get_selected_entities_and_intents(
         entities = entities_from_files
         structlogger.info(
             "rasa.studio.upload.entities_empty",
-            event_info="No entities specified. Using all entities from files."
+            event_info="No entities specified. Using all entities from files.",
         )
 
     intents = args.intents
@@ -47,7 +46,8 @@ def _get_selected_entities_and_intents(
         intents = intents_from_files
         structlogger.info(
             "rasa.studio.upload.intents_empty",
-            event_info="No intents specified. Using all intents from files.")
+            event_info="No intents specified. Using all intents from files.",
+        )
 
     return list(entities), list(intents)
 
@@ -104,15 +104,19 @@ def _get_assistant_name(config: Dict[Text, Any]) -> str:
             or config_assistant_id
         )
         if not assistant_name:
-            structlogger.error("rasa.studio.upload.assistant_name_empty",
-                              event_info="Assistant name cannot be empty. Please try again.")
+            structlogger.error(
+                "rasa.studio.upload.assistant_name_empty",
+                event_info="Assistant name cannot be empty. Please try again.",
+            )
     # if assistant_name exists and different from config assistant_id,
     # notify user and upload with new assistant_name
     if config_assistant_id and assistant_name != config_assistant_id:
         structlogger.info(
             "rasa.studio.upload.assistant_name_mismatch",
-            event_info=(f"Assistant name '{assistant_name}' is different"
-                        f" from the one in the config file: '{config_assistant_id}'.")
+            event_info=(
+                f"Assistant name '{assistant_name}' is different"
+                f" from the one in the config file: '{config_assistant_id}'."
+            ),
         )
         structlogger.info(f"Uploading assistant with the new name '{assistant_name}'.")
 
