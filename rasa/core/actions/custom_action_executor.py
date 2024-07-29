@@ -75,7 +75,7 @@ class NoEndpointCustomActionExecutor(CustomActionExecutor):
             The response from the execution of the custom action.
         """
         raise RasaException(
-            f"Failed to execute custom action '{self.name}' "
+            f"Failed to execute custom action '{self.action_name}' "
             f"because no endpoint is configured to run this "
             f"custom action. Please take a look at "
             f"the docs and set an endpoint configuration via the "
