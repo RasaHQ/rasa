@@ -210,7 +210,6 @@ def test_missing_action_server_endpoint_does_not_stop_tracing(
             RASA_JAEGER_TRACING_SERVICE_NAME,
             RASA_SERVER_JAEGER_NO_ACTION_SERVER,
             DIRECT_CUSTOM_ACTION_EXECUTION_SUB_SPAN_NAME,
-
         ),
         (
             RASA_OTLP_TRACING_SERVICE_NAME,
@@ -250,9 +249,7 @@ def test_context_propagated_to_subspans_in_rasa_server(
         )
 
     spans_for_user_turn = _spans_for_user_turn()
-    processor_sub_spans = _filter_spans_by_name(
-        spans_for_user_turn, sub_span_name
-    )
+    processor_sub_spans = _filter_spans_by_name(spans_for_user_turn, sub_span_name)
     sub_parent_spans = _filter_spans_by_name(
         spans_for_user_turn, RASA_SERVER_PROCESSOR_SPAN_NAME
     )
