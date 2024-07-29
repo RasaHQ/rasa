@@ -1,9 +1,9 @@
 import argparse
 import base64
-import logging
 from typing import Dict, Iterable, List, Set, Text, Tuple, Union, Any
 
 import requests
+import structlog
 
 import rasa.cli.telemetry
 import rasa.cli.utils
@@ -24,7 +24,7 @@ from rasa.studio.auth import KeycloakTokenReader
 from rasa.studio.config import StudioConfig
 from rasa.studio.results_logger import StudioResult, with_studio_error_handler
 
-logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger()
 
 
 def _get_selected_entities_and_intents(
@@ -36,13 +36,18 @@ def _get_selected_entities_and_intents(
 
     if entities is None or len(entities) == 0:
         entities = entities_from_files
-        logger.info("No entities specified. Using all entities from files.")
+        structlogger.info(
+            "rasa.studio.upload.entities_empty",
+            event_info="No entities specified. Using all entities from files."
+        )
 
     intents = args.intents
 
     if intents is None or len(intents) == 0:
         intents = intents_from_files
-        logger.info("No intents specified. Using all intents from files.")
+        structlogger.info(
+            "rasa.studio.upload.intents_empty",
+            event_info="No intents specified. Using all intents from files.")
 
     return list(entities), list(intents)
 
@@ -55,7 +60,7 @@ def handle_upload(args: argparse.Namespace) -> None:
             "No GraphQL endpoint found in config. Please run `rasa studio config`."
         )
     else:
-        logger.info("Loading data...")
+        structlogger.info("Loading data...")
 
         args.domain = rasa.cli.utils.get_validated_path(
             args.domain, "domain", DEFAULT_DOMAIN_PATHS
@@ -99,15 +104,18 @@ def _get_assistant_name(config: Dict[Text, Any]) -> str:
             or config_assistant_id
         )
         if not assistant_name:
-            print_error("Assistant name cannot be empty. Please try again.")
+            structlogger.error("rasa.studio.upload.assistant_name_empty",
+                              event_info="Assistant name cannot be empty. Please try again.")
     # if assistant_name exists and different from config assistant_id,
     # notify user and upload with new assistant_name
     if config_assistant_id and assistant_name != config_assistant_id:
-        print_info(
-            f"Assistant name '{assistant_name}' is different "
-            f"from the one in the config file: '{config_assistant_id}'."
+        structlogger.info(
+            "rasa.studio.upload.assistant_name_mismatch",
+            event_info=(f"Assistant name '{assistant_name}' is different"
+                        f" from the one in the config file: '{config_assistant_id}'.")
         )
-        print_info(f"Uploading assistant with the new name '{assistant_name}'.")
+        structlogger.info(f"Uploading assistant with the new name '{assistant_name}'.")
+
     return assistant_name
 
 
@@ -126,7 +134,7 @@ def upload_calm_assistant(args: argparse.Namespace, endpoint: str) -> StudioResu
     Returns:
         None
     """
-    logger.info("Parsing CALM assistant data...")
+    structlogger.info("Parsing CALM assistant data...")
 
     importer = TrainingDataImporter.load_from_dict(
         domain_path=args.domain,
@@ -152,7 +160,6 @@ def upload_calm_assistant(args: argparse.Namespace, endpoint: str) -> StudioResu
     ]
 
     domain = extract_values(domain_from_files, domain_keys)
-    config = extract_values(config, config_keys)
 
     assistant_name = _get_assistant_name(config)
 
@@ -201,7 +208,7 @@ def upload_calm_assistant(args: argparse.Namespace, endpoint: str) -> StudioResu
         nlu_yaml=nlu_examples_yaml,
     )
 
-    logger.info("Uploading to Rasa Studio...")
+    structlogger.info("Uploading to Rasa Studio...")
     return make_request(endpoint, graphql_req)
 
 
@@ -219,7 +226,7 @@ def upload_nlu_assistant(args: argparse.Namespace, endpoint: str) -> StudioResul
     Returns:
         None
     """
-    logger.info("Found DM1 assistant data, parsing...")
+    structlogger.info("Found DM1 assistant data, parsing...")
     importer = TrainingDataImporter.load_from_dict(
         domain_path=args.domain, training_data_paths=args.data, config_path=args.config
     )
@@ -236,7 +243,7 @@ def upload_nlu_assistant(args: argparse.Namespace, endpoint: str) -> StudioResul
 
     assistant_name = _get_assistant_name(config)
 
-    logger.info("Validating data...")
+    structlogger.info("Validating data...")
     _check_for_missing_primitives(
         intents, entities, intents_from_files, entities_from_files
     )
@@ -253,7 +260,7 @@ def upload_nlu_assistant(args: argparse.Namespace, endpoint: str) -> StudioResul
 
     graphql_req = build_request(assistant_name, nlu_examples_yaml, domain_yaml)
 
-    logger.info("Uploading to Rasa Studio...")
+    structlogger.info("Uploading to Rasa Studio...")
     return make_request(endpoint, graphql_req)
 
 
@@ -286,7 +293,7 @@ def _add_missing_entities(
     all_entities.extend(entities)
     for entity in entities_from_intents:
         if entity not in entities:
-            logger.warning(
+            structlogger.warning(
                 f"Adding entity '{entity}' to upload since it is used in an intent."
             )
             all_entities.append(entity)
