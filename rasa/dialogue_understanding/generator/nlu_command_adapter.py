@@ -8,6 +8,9 @@ from rasa.dialogue_understanding.commands import (
     SetSlotCommand,
 )
 from rasa.dialogue_understanding.commands.set_slot_command import SetSlotExtractor
+from rasa.dialogue_understanding.commands.utils import (
+    triggerable_pattern_to_command_class,
+)
 from rasa.dialogue_understanding.generator import CommandGenerator
 from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
@@ -171,7 +174,12 @@ class NLUCommandAdapter(GraphComponent, CommandGenerator):
 
         for flow in flows:
             if flow.nlu_triggers and flow.nlu_triggers.is_triggered(message):
-                commands.append(StartFlowCommand(flow.id))
+                if flow.is_rasa_default_flow:
+                    pattern_command = triggerable_pattern_to_command_class.get(flow.id)
+                    if pattern_command:
+                        commands.append(pattern_command())
+                else:
+                    commands.append(StartFlowCommand(flow.id))
 
         # there should be just one flow that can be triggered by the predicted intent
         # this is checked when loading the flows
