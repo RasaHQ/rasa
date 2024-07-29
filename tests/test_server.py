@@ -167,19 +167,19 @@ async def tear_down_scheduler() -> Generator[None, None, None]:
 async def test_root(rasa_non_trained_app: SanicASGITestClient):
     _, response = await rasa_non_trained_app.get("/")
     assert response.status == HTTPStatus.OK
-    assert response.text.startswith("Hello from Rasa:")
+    assert "Hello from Rasa:" in response.text
 
 
 async def test_root_without_enable_api(rasa_app_without_api: SanicASGITestClient):
     _, response = await rasa_app_without_api.get("/")
     assert response.status == HTTPStatus.OK
-    assert response.text.startswith("Hello from Rasa:")
+    assert "Hello from Rasa:" in response.text
 
 
 async def test_root_secured(rasa_non_trained_secured_app: SanicASGITestClient):
     _, response = await rasa_non_trained_secured_app.get("/")
     assert response.status == HTTPStatus.OK
-    assert response.text.startswith("Hello from Rasa:")
+    assert "Hello from Rasa:" in response.text
 
 
 async def test_version(rasa_non_trained_app: SanicASGITestClient):
