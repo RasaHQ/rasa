@@ -199,12 +199,12 @@ def test_missing_action_server_endpoint_does_not_stop_tracing(
         (
             RASA_JAEGER_TRACING_SERVICE_NAME,
             RASA_SERVER_JAEGER_NO_ACTION_SERVER,
-            RASA_SERVER_PROCESSOR_SPAN_NAME,
+            RASA_SERVER_PROCESSOR_SUB_SPAN_NAME,
         ),
         (
             RASA_OTLP_TRACING_SERVICE_NAME,
             RASA_SERVER_OTLP_NO_ACTION_SERVER,
-            RASA_SERVER_PROCESSOR_SPAN_NAME,
+            RASA_SERVER_PROCESSOR_SUB_SPAN_NAME,
         ),
         (
             RASA_JAEGER_TRACING_SERVICE_NAME,
