@@ -24,6 +24,8 @@ configs:
         sync_export: ~
   endpoints-jaeger-no-action-server.yml:
     content: |
+      action_endpoint:
+        actions_module: actions
       tracing:
         type: jaeger
         host: jaeger
