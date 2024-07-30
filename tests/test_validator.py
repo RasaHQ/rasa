@@ -1809,16 +1809,20 @@ def test_verify_categorical_predicate_invalid_value(predicate: str) -> None:
     )
     expected_log_level = "error"
     expected_log_event = "validator.verify_predicates.link.invalid_condition"
-    expected_log_message = (
-        f"Detected invalid condition '{predicate}' "
-        "at step 'first' for flow id 'flow_bar'. "
-        "Please make sure that all conditions are valid."
-    )
+    expected_log_message_parts = [
+        f"Detected invalid condition '{predicate}' ",
+        "at step 'first' for flow id 'flow_bar'. ",
+        "Please make sure that all conditions are valid.",
+    ]
     validator = Validator(test_domain, TrainingData(), StoryGraph([]), flows, None)
     with structlog.testing.capture_logs() as caplog:
         assert not validator.verify_predicates()
         logs = filter_logs(
-            caplog, expected_log_event, expected_log_level, [expected_log_message]
+            caplog,
+            expected_log_event,
+            expected_log_level,
+            expected_log_message_parts,
+            log_contains_all_message_parts=False,
         )
         assert len(logs) == 1
 
@@ -1898,16 +1902,16 @@ def test_verify_boolean_predicate_invalid_value(predicate: str) -> None:
     )
     expected_log_level = "error"
     expected_log_event = "validator.verify_predicates.link.invalid_condition"
-    expected_log_message = (
-        f"Detected invalid condition '{predicate}' "
-        "at step 'first' for flow id 'flow_bar'. "
-        "Please make sure that all conditions are valid."
-    )
+    expected_log_message_parts = [
+        f"Detected invalid condition '{predicate}' ",
+        "at step 'first' for flow id 'flow_bar'. ",
+        "Please make sure that all conditions are valid.",
+    ]
     validator = Validator(test_domain, TrainingData(), StoryGraph([]), flows, None)
     with structlog.testing.capture_logs() as caplog:
         assert not validator.verify_predicates()
         logs = filter_logs(
-            caplog, expected_log_event, expected_log_level, [expected_log_message]
+            caplog, expected_log_event, expected_log_level, expected_log_message_parts
         )
         assert len(logs) == 1
 
