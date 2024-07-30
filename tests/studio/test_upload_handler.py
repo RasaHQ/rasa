@@ -1,11 +1,13 @@
 import argparse
 import base64
+from io import StringIO
 from pathlib import Path
 from textwrap import dedent
 from typing import Any, Dict, List, Set, Text, Union
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
+import questionary
 from pytest import MonkeyPatch
 from rasa.shared.exceptions import RasaException
 
@@ -614,6 +616,10 @@ def encode_yaml(yaml):
     return base64.b64encode(yaml.encode("utf-8")).decode("utf-8")
 
 
+def mock_questionary_text(question, default=""):
+    return MagicMock(ask=lambda: "test")
+
+
 @pytest.mark.parametrize(
     "args, endpoint, expected",
     [
@@ -720,7 +726,9 @@ def test_handle_upload(
         "StudioConfig",
         mock_config,
     )
-    monkeypatch.setattr("builtins.input", lambda _: "test")  # Mock user input
+
+    monkeypatch.setattr(questionary, "text", mock_questionary_text)
+
     rasa.studio.upload.handle_upload(args)
 
     assert mock.post.called
