@@ -1,7 +1,9 @@
 import argparse
 import base64
+import sys
 from typing import Dict, Iterable, List, Set, Text, Tuple, Union, Any
 
+import questionary
 import requests
 import structlog
 
@@ -60,7 +62,9 @@ def handle_upload(args: argparse.Namespace) -> None:
             "No GraphQL endpoint found in config. Please run `rasa studio config`."
         )
     else:
-        structlogger.info("Loading data...")
+        structlogger.info(
+            "rasa.studio.upload.loading_data", event_info="Loading data..."
+        )
 
         args.domain = rasa.cli.utils.get_validated_path(
             args.domain, "domain", DEFAULT_DOMAIN_PATHS
@@ -94,23 +98,21 @@ def extract_values(data: Dict, keys: List[Text]) -> Dict:
 
 
 def _get_assistant_name(config: Dict[Text, Any]) -> str:
-    config_assistant_id = config.get("assistant_id", None)
-    assistant_name = None
-    while not assistant_name:
-        assistant_name = (
-            input(
-                f"Please enter assistant name: (default: " f"{config_assistant_id})\t"
-            )
-            or config_assistant_id
+    config_assistant_id = config.get("assistant_id", "")
+    assistant_name = questionary.text(
+        "Please provide the assistant name", default=config_assistant_id
+    ).ask()
+    if not assistant_name:
+        structlogger.error(
+            "rasa.studio.upload.assistant_name_empty",
+            event_info="Assistant name cannot be empty.",
         )
-        if not assistant_name:
-            structlogger.error(
-                "rasa.studio.upload.assistant_name_empty",
-                event_info="Assistant name cannot be empty. Please try again.",
-            )
+        sys.exit(1)
+
     # if assistant_name exists and different from config assistant_id,
     # notify user and upload with new assistant_name
-    if config_assistant_id and assistant_name != config_assistant_id:
+    same = assistant_name == config_assistant_id
+    if not same and config_assistant_id != "":
         structlogger.info(
             "rasa.studio.upload.assistant_name_mismatch",
             event_info=(
@@ -118,8 +120,8 @@ def _get_assistant_name(config: Dict[Text, Any]) -> str:
                 f" from the one in the config file: '{config_assistant_id}'."
             ),
         )
-        structlogger.info(f"Uploading assistant with the new name '{assistant_name}'.")
 
+    structlogger.info(f"Uploading assistant with the name '{assistant_name}'.")
     return assistant_name
 
 
@@ -138,7 +140,9 @@ def upload_calm_assistant(args: argparse.Namespace, endpoint: str) -> StudioResu
     Returns:
         None
     """
-    structlogger.info("Parsing CALM assistant data...")
+    structlogger.info(
+        "rasa.studio.upload.loading_data", event_info="Parsing CALM assistant data..."
+    )
 
     importer = TrainingDataImporter.load_from_dict(
         domain_path=args.domain,
@@ -369,14 +373,14 @@ def _filter_domain(
     entities: List[Union[str, Dict]], intents: List[str], domain_from_files: Dict
 ) -> Dict:
     """Filters the domain to only include the selected entities and intents."""
-    domain = {}
-    domain["version"] = domain_from_files["version"]
-    domain["intents"] = intents
-    domain["entities"] = _remove_not_selected_entities(
+    selected_entities = _remove_not_selected_entities(
         entities, domain_from_files.get("entities", [])
     )
-
-    return domain
+    return {
+        "version": domain_from_files["version"],
+        "intents": intents,
+        "entities": selected_entities,
+    }
 
 
 def _check_for_missing_primitives(
