@@ -276,10 +276,10 @@ class TrackerStore:
     async def retrieve_full_tracker(
         self, conversation_id: Text
     ) -> Optional[DialogueStateTracker]:
-        """Retrieve method for fetching all tracker events across conversation sessions\
-        that may be overridden by specific tracker.
+        """Retrieve method for fetching all tracker events.
 
-        The default implementation uses `self.retrieve()`.
+        Fetches events across conversation sessions. The default implementation
+        uses `self.retrieve()`.
 
         Args:
             conversation_id: The conversation ID to retrieve the tracker for.
@@ -338,6 +338,28 @@ class TrackerStore:
     async def keys(self) -> Iterable[Text]:
         """Returns the set of values for the tracker store's primary key."""
         raise NotImplementedError()
+
+    async def count_conversations(self, after_timestamp: float = 0.0) -> int:
+        """Returns the number of conversations that have occurred after a timestamp.
+
+        By default, this method returns the number of conversations that
+        have occurred after the Unix epoch (i.e. timestamp 0). A conversation
+        is considered to have occurred after a timestamp if at least one event
+        happened after that timestamp.
+        """
+        tracker_keys = await self.keys()
+
+        conversation_count = 0
+        for key in tracker_keys:
+            tracker = await self.retrieve(key)
+            if tracker is None or not tracker.events:
+                continue
+
+            last_event = tracker.events[-1]
+            if last_event.timestamp >= after_timestamp:
+                conversation_count += 1
+
+        return conversation_count
 
     def deserialise_tracker(
         self, sender_id: Text, serialised_tracker: Union[Text, bytes]
@@ -1045,6 +1067,8 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
     from sqlalchemy.orm import DeclarativeBase
 
     class Base(DeclarativeBase):
+        """Base class for all tracker store tables."""
+
         pass
 
     class SQLEvent(Base):
@@ -1131,8 +1155,10 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
         login_db: Optional[Text] = None,
         query: Optional[Dict] = None,
     ) -> Union[Text, "URL"]:
-        """Build an SQLAlchemy `URL` object representing the parameters needed
-        to connect to an SQL database.
+        """Build an SQLAlchemy `URL` object.
+
+        The URL object represents the parameters needed to connect to an
+        SQL database.
 
         Args:
             dialect: SQL database type.
@@ -1259,6 +1285,20 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
             conversation_id, fetch_events_from_all_sessions=True
         )
 
+    async def count_conversations(self, after_timestamp: float = 0.0) -> int:
+        """Returns the number of conversations that have occurred after a timestamp.
+
+        By default, this method returns the number of conversations that
+        have occurred after the Unix epoch (i.e. timestamp 0).
+        """
+        with self.session_scope() as session:
+            query = (
+                session.query(self.SQLEvent.sender_id)
+                .distinct()
+                .filter(self.SQLEvent.timestamp >= after_timestamp)
+            )
+            return query.count()
+
     async def _retrieve(
         self, sender_id: Text, fetch_events_from_all_sessions: bool
     ) -> Optional[DialogueStateTracker]:
@@ -1288,6 +1328,7 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
         self, session: "Session", sender_id: Text, fetch_events_from_all_sessions: bool
     ) -> "Query":
         """Provide the query to retrieve the conversation events for a specific sender.
+
         The events are ordered by ID to ensure correct sequence of events.
         As `timestamp` is not guaranteed to be unique and low-precision (float), it
         cannot be used to order the events.
