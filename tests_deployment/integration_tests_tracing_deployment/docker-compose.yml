@@ -53,6 +53,8 @@ configs:
         service_name: action-server-otlp-testing
   endpoints-otlp-no-action-server.yml:
     content: |
+      action_endpoint:
+        actions_module: actions
       tracing:
         type: otlp
         endpoint: otel-collector:4317

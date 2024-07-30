@@ -38,7 +38,11 @@ class DirectCustomActionExecutor(CustomActionExecutor):
     def register_actions_from_a_module(self) -> None:
         module_name = self.action_endpoint.actions_module
         if not find_spec(module_name):
-            raise RasaException(f"You've provided the custom actions module '{module_name}' to run directly by the rasa server, however this module does not exist. Please check for typos in your `endpoints.yml` file.")
+            raise RasaException(
+                f"You've provided the custom actions module '{module_name}' "
+                f"to run directly by the rasa server, however this module does "
+                f"not exist. Please check for typos in your `endpoints.yml` file."
+            )
 
         self.action_executor.register_package(module_name)
 

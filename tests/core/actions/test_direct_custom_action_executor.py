@@ -1,78 +1,59 @@
-from unittest.mock import AsyncMock
-from unittest.mock import patch, Mock
+import copy
 
 import pytest
 
 from rasa.core.actions.action import RemoteAction
 from rasa.core.actions.direct_custom_actions_executor import DirectCustomActionExecutor
-from rasa.shared.constants import DEFAULT_ACTIONS_PATH
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
-from rasa.utils.endpoints import EndpointConfig
+from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
+
+DUMMY_ACTIONS_MODULE_PATH = "data.dummy_actions_module"
+DUMMY_INVALID_ACTIONS_MODULE_PATH = "data.dummy_invalid_actions_module"
+DUMMY_ACTION_NAME = "my_action"
+DUMMY_DOMAIN_PATH = "data/test_domains/default.yml"
+
+ENDPOINTS_FILE_PATH = "data/test_endpoints/endpoints_actions_module.yml"
+mock_endpoint = read_endpoint_config(
+    ENDPOINTS_FILE_PATH, endpoint_type="action_endpoint"
+)
 
 
 @pytest.fixture
 def direct_custom_action_executor() -> DirectCustomActionExecutor:
-    endpoint = EndpointConfig(actions_module=DEFAULT_ACTIONS_PATH)
-    with patch(
-        "rasa.core.actions.direct_custom_actions_executor.find_spec",
-        return_value=Mock(),
-    ), patch("importlib.import_module", return_value=Mock()):
-        return DirectCustomActionExecutor(
-            action_name="my_action", action_endpoint=endpoint
-        )
+    return DirectCustomActionExecutor(
+        action_name=DUMMY_ACTION_NAME, action_endpoint=mock_endpoint
+    )
 
 
 @pytest.fixture
 def remote_action() -> RemoteAction:
-    endpoint = EndpointConfig(actions_module=DEFAULT_ACTIONS_PATH)
-    with patch(
-        "rasa.core.actions.direct_custom_actions_executor.find_spec",
-        return_value=Mock(),
-    ), patch("importlib.import_module", return_value=Mock()):
-        return RemoteAction("my_action", endpoint)
+    return RemoteAction(DUMMY_ACTION_NAME, mock_endpoint)
 
 
-@pytest.mark.parametrize(
-    "actions_module, should_raise_exception",
-    [
-        ("valid_actions_module", False),
-        ("invalid_actions_module", True),
-    ],
-)
-def test_executor_with_valid_and_invalid_module(actions_module, should_raise_exception):
-    endpoint = EndpointConfig(url=None, actions_module=actions_module)
-    return_value = None if should_raise_exception else Mock()
+def test_executor_initialized_with_valid_actions_module():
+    DirectCustomActionExecutor(action_name="some_action", action_endpoint=mock_endpoint)
 
-    with patch(
-        "rasa.core.actions.direct_custom_actions_executor.find_spec",
-        return_value=return_value,
-    ), patch("importlib.import_module", return_value=return_value):
-        if should_raise_exception:
-            with pytest.raises(
-                RasaException,
-                match="Actions module 'invalid_actions_module' does not exist.",
-            ):
-                DirectCustomActionExecutor(
-                    action_name="some_action", action_endpoint=endpoint
-                )
-        else:
-            DirectCustomActionExecutor(
-                action_name="some_action", action_endpoint=endpoint
-            )
+
+def test_executor_initialized_with_invalid_actions_module():
+    endpoint = EndpointConfig(actions_module=DUMMY_INVALID_ACTIONS_MODULE_PATH)
+    message = (
+        f"You've provided the custom actions module '{DUMMY_INVALID_ACTIONS_MODULE_PATH}' "
+        f"to run directly by the rasa server, however this module does "
+        f"not exist. Please check for typos in your `endpoints.yml` file."
+    )
+    with pytest.raises(RasaException, match=message):
+        DirectCustomActionExecutor(action_name="some_action", action_endpoint=endpoint)
 
 
 def test_warning_raised_for_url_and_actions_module_defined():
     endpoint = EndpointConfig(
-        url="http://localhost:5055/webhook", actions_module=DEFAULT_ACTIONS_PATH
+        url="http://localhost:5055/webhook", actions_module=DUMMY_ACTIONS_MODULE_PATH
     )
     with pytest.warns(
         UserWarning, match="Both 'actions_module' and 'url' are defined."
     ):
-        try:
-            RemoteAction("my_action", endpoint)
-        except RasaException:
-            pass
+        RemoteAction(DUMMY_ACTION_NAME, endpoint)
 
 
 def test_remote_action_initializes_direct_custom_action_executor(
@@ -83,39 +64,35 @@ def test_remote_action_initializes_direct_custom_action_executor(
 
 def test_remote_action_uses_action_endpoint_with_url_and_actions_module_defined():
     endpoint = EndpointConfig(
-        url="http://localhost:5055/webhook", actions_module=DEFAULT_ACTIONS_PATH
+        url="http://localhost:5055/webhook", actions_module=DUMMY_ACTIONS_MODULE_PATH
     )
-    with patch(
-        "rasa.core.actions.direct_custom_actions_executor.find_spec",
-        return_value=Mock(),
-    ), patch("importlib.import_module", return_value=Mock()):
-        remote_action = RemoteAction("my_action", endpoint)
-        assert isinstance(remote_action.executor, DirectCustomActionExecutor)
+    remote_action = RemoteAction(DUMMY_ACTION_NAME, endpoint)
+    assert isinstance(remote_action.executor, DirectCustomActionExecutor)
 
 
 def test_remote_action_executor_cached():
-    with patch(
-        "rasa.core.actions.direct_custom_actions_executor.find_spec",
-        return_value=Mock(),
-    ), patch("importlib.import_module", return_value=Mock()):
-        actions_module_endpoint = EndpointConfig(actions_module=DEFAULT_ACTIONS_PATH)
-        remote_action = RemoteAction("my_action", actions_module_endpoint)
+    """
+    Ensure the executor for a RemoteAction instance remains
+    `DirectCustomActionExecutor` after the action endpoint is updated.
 
-        remote_action.action_endpoint = actions_module_endpoint
-        assert isinstance(remote_action.executor, DirectCustomActionExecutor)
+    Assertions:
+    - Initially, the executor is `DirectCustomActionExecutor`.
+    - After setting a new HTTP endpoint, the executor is still
+      `DirectCustomActionExecutor` at the same location.
+    """
+    remote_action = RemoteAction(DUMMY_ACTION_NAME, mock_endpoint)
+    assert isinstance(remote_action.executor, DirectCustomActionExecutor)
 
-        url_endpoint = EndpointConfig(url="http://localhost:5055/webhook")
-        remote_action.action_endpoint = url_endpoint
-        remote_action.executor = remote_action._create_executor()
-        assert isinstance(remote_action.executor, DirectCustomActionExecutor)
+    initial_executor_id = id(remote_action.executor)
+    remote_action.executor = remote_action._create_executor()
+    assert id(remote_action.executor) == initial_executor_id
 
 
 def test_direct_custom_action_executor_valid_initialization(
     direct_custom_action_executor: DirectCustomActionExecutor,
 ):
-    endpoint = EndpointConfig(actions_module=DEFAULT_ACTIONS_PATH)
-    assert direct_custom_action_executor.action_name == "my_action"
-    assert direct_custom_action_executor.action_endpoint == endpoint
+    assert direct_custom_action_executor.action_name == DUMMY_ACTION_NAME
+    assert direct_custom_action_executor.action_endpoint == mock_endpoint
 
 
 @pytest.mark.asyncio
@@ -123,10 +100,9 @@ async def test_executor_runs_action(
     direct_custom_action_executor: DirectCustomActionExecutor,
 ):
     tracker = DialogueStateTracker(sender_id="test", slots={})
-    with patch.object(
-        direct_custom_action_executor.action_executor, "run", new_callable=AsyncMock
-    ) as mock_run:
-        mock_run.return_value = {"events": [], "responses": [{"text": "Hello"}]}
-        result = await direct_custom_action_executor.run(tracker)
-        assert isinstance(result, dict)
-        assert "events" in result
+    from rasa.shared.core.domain import Domain
+
+    domain = Domain.from_file(path=DUMMY_DOMAIN_PATH)
+    result = await direct_custom_action_executor.run(tracker, domain=domain)
+    assert isinstance(result, dict)
+    assert "events" in result
