@@ -1777,6 +1777,7 @@ def test_verify_categorical_predicate_valid_value(predicate: str) -> None:
     "predicate",
     [
         "slots.account_type is savings",
+        "slots.account_type == savings",
         "{'savings' 'investment'} contains slots.account_type",
     ],
 )
