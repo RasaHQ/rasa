@@ -33,7 +33,6 @@ class DirectCustomActionExecutor(CustomActionExecutor):
         self.action_name = action_name
         self.action_endpoint = action_endpoint
         self.action_executor = ActionExecutor()
-        self.register_actions_from_a_module()
 
     def register_actions_from_a_module(self) -> None:
         module_name = self.action_endpoint.actions_module
@@ -55,8 +54,9 @@ class DirectCustomActionExecutor(CustomActionExecutor):
             "action.direct_custom_action_executor.run",
             action_name=self.action_name,
         )
-        tracker_state = tracker.current_state(EventVerbosity.ALL)
+        self.register_actions_from_a_module()
 
+        tracker_state = tracker.current_state(EventVerbosity.ALL)
         action_call = {
             "next_action": self.action_name,
             "sender_id": tracker.sender_id,

@@ -1,9 +1,12 @@
-import copy
+from typing import Callable
 
 import pytest
+from pytest import LogCaptureFixture
 
 from rasa.core.actions.action import RemoteAction
 from rasa.core.actions.direct_custom_actions_executor import DirectCustomActionExecutor
+from rasa.core.agent import Agent
+from rasa.core.channels.channel import UserMessage
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
@@ -35,15 +38,20 @@ def test_executor_initialized_with_valid_actions_module():
     DirectCustomActionExecutor(action_name="some_action", action_endpoint=mock_endpoint)
 
 
-def test_executor_initialized_with_invalid_actions_module():
+async def test_executor_initialized_with_invalid_actions_module():
     endpoint = EndpointConfig(actions_module=DUMMY_INVALID_ACTIONS_MODULE_PATH)
+    executor = DirectCustomActionExecutor(
+        action_name="some_action", action_endpoint=endpoint
+    )
+    tracker = DialogueStateTracker(sender_id="test", slots={})
+
     message = (
         f"You've provided the custom actions module '{DUMMY_INVALID_ACTIONS_MODULE_PATH}' "
         f"to run directly by the rasa server, however this module does "
         f"not exist. Please check for typos in your `endpoints.yml` file."
     )
     with pytest.raises(RasaException, match=message):
-        DirectCustomActionExecutor(action_name="some_action", action_endpoint=endpoint)
+        await executor.run(tracker)
 
 
 def test_warning_raised_for_url_and_actions_module_defined():
@@ -106,3 +114,37 @@ async def test_executor_runs_action(
     result = await direct_custom_action_executor.run(tracker, domain=domain)
     assert isinstance(result, dict)
     assert "events" in result
+
+
+async def test_executor_runs_action_invalid_actions_module(
+    trained_async: Callable,
+    caplog: LogCaptureFixture,
+):
+    """
+    Ensure that the inappropriately configured actions_module doesn't
+    break the execution of the assistant, but raises an exception log.
+    """
+    parent_folder = "data/test_custom_action_triggers_action_extract_slots"
+    domain_path = f"{parent_folder}/domain.yml"
+    config_path = f"{parent_folder}/config.yml"
+    stories_path = f"{parent_folder}/stories.yml"
+    nlu_path = f"{parent_folder}/nlu.yml"
+    model_path = await trained_async(domain_path, config_path, [stories_path, nlu_path])
+    agent = Agent.load(model_path)
+
+    # Set MessageProcessor to use the DirectCustomActionExecutor
+    # with an invalid actions_module
+    processor = agent.processor
+    endpoint = EndpointConfig(actions_module=DUMMY_INVALID_ACTIONS_MODULE_PATH)
+    processor.action_endpoint = endpoint
+
+    # Trigger the custom action execution and ensure the exception log is raised
+    message = UserMessage(text="Activate custom action.")
+    await processor.handle_message(message)
+
+    message = (
+        "Encountered an exception while running action 'action_force_next_utter'."
+        "Bot will continue, but the actions events are lost. "
+        "Please check the logs of your action server for more information."
+    )
+    assert message in caplog.messages
