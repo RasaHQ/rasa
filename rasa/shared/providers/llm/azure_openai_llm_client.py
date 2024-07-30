@@ -1,4 +1,5 @@
 import os
+import re
 from typing import Dict, Any, Optional
 
 import structlog
@@ -26,7 +27,7 @@ from rasa.shared.utils.io import raise_deprecation_warning
 structlogger = structlog.get_logger()
 
 
-AZURE_PROVIDER = "azure"
+_AZURE_PROVIDER = "azure"
 
 
 class AzureOpenAILLMClient(_BaseLiteLLMClient):
@@ -42,7 +43,7 @@ class AzureOpenAILLMClient(_BaseLiteLLMClient):
             it will be set via environment variables.
         api_version (Optional[str]): The version of the API to use. If not provided,
             it will be set via environment variable.
-        model_parameters (Optional[Dict[str, Any]]): Configuration parameters specific
+        kwargs (Optional[Dict[str, Any]]): Optional configuration parameters specific
             to the model deployment.
 
     Raises:
@@ -58,11 +59,11 @@ class AzureOpenAILLMClient(_BaseLiteLLMClient):
         api_type: Optional[str] = None,
         api_base: Optional[str] = None,
         api_version: Optional[str] = None,
-        model_parameters: Optional[Dict[str, Any]] = None,
+        **kwargs: Any,
     ):
         self._deployment = deployment
         self._model = model
-        self._model_parameters = model_parameters or {}
+        self._extra_parameters = kwargs or {}
 
         # Set api_base with the following priority:
         # parameter -> Azure Env Var -> (deprecated) OpenAI Env Var
@@ -164,7 +165,7 @@ class AzureOpenAILLMClient(_BaseLiteLLMClient):
             azure_openai_config.api_type,
             azure_openai_config.api_base,
             azure_openai_config.api_version,
-            azure_openai_config.model_parameters,
+            **azure_openai_config.extra_parameters,
         )
 
     @property
@@ -178,31 +179,20 @@ class AzureOpenAILLMClient(_BaseLiteLLMClient):
             api_base=self._api_base,
             api_version=self._api_version,
             api_type=self._api_type,
-            model_parameters=self._model_parameters,
+            extra_parameters=self._extra_parameters,
         )
         return config.to_dict()
-
-    @property
-    def model(self) -> str:
-        """
-        Returns the name of the model deployed on Azure. If model name is not
-        provided, returns "N/A".
-        """
-        if self._model is None:
-            return "N/A"
-        return self._model
-
-    @property
-    def provider(self) -> str:
-        return AZURE_PROVIDER
 
     @property
     def deployment(self) -> str:
         return self._deployment
 
     @property
-    def model_parameters(self) -> Dict[str, Any]:
-        return self._model_parameters
+    def model(self) -> Optional[str]:
+        """
+        Returns the name of the model deployed on Azure.
+        """
+        return self._model
 
     @property
     def api_base(self) -> Optional[str]:
@@ -223,18 +213,35 @@ class AzureOpenAILLMClient(_BaseLiteLLMClient):
         return self._api_type
 
     @property
+    def _litellm_model_name(self) -> str:
+        """Returns the value of LiteLLM's model parameter to be used in
+        completion/acompletion in LiteLLM format:
+
+        <provider>/<model or deployment name>
+        """
+        regex_patter = rf"^{_AZURE_PROVIDER}/"
+        if not re.match(regex_patter, self._deployment):
+            return f"{_AZURE_PROVIDER}/{self._deployment}"
+        return self._deployment
+
+    @property
+    def _litellm_extra_parameters(self) -> Dict[str, Any]:
+        return self._extra_parameters
+
+    @property
     def _completion_fn_args(self) -> Dict[str, Any]:
         """Returns the completion arguments for invoking a call through
         LiteLLM's completion functions.
         """
-        return {
-            "model": f"{self.provider}/{self.deployment}",
-            "drop_params": True,
-            "api_base": self.api_base,
-            "api_version": self.api_version,
-            "api_key": self._api_key,
-            **self.model_parameters,
-        }
+        fn_args = super()._completion_fn_args
+        fn_args.update(
+            {
+                "api_base": self.api_base,
+                "api_version": self.api_version,
+                "api_key": self._api_key,
+            }
+        )
+        return fn_args
 
     def validate_client_setup(self) -> None:
         """Validates that all required configuration parameters are set."""

@@ -17,7 +17,6 @@ from rasa.shared.constants import (
 from rasa.shared.exceptions import ProviderClientValidationError
 from rasa.shared.providers.llm.azure_openai_llm_client import (
     AzureOpenAILLMClient,
-    AZURE_PROVIDER,
 )
 from rasa.shared.providers.llm.llm_client import LLMClient
 from tests.utilities import filter_logs
@@ -47,7 +46,7 @@ class TestAzureOpenAILLMClient:
 
         # Then
         assert client.deployment == "test_deployment"
-        assert client.model == "N/A"
+        assert client.model is None
         assert client.api_base == "https://my.api.base.com/my_model"
         assert client.api_version == "2023-01-01"
         assert client._api_key == "my key"
@@ -69,7 +68,7 @@ class TestAzureOpenAILLMClient:
 
         # Then
         assert client.deployment == "test_deployment"
-        assert client.model == "N/A"
+        assert client.model is None
         assert client.api_base == "https://my.api.base.com/my_model"
         assert client.api_version == "2023-01-01"
         assert client._api_key == "my key"
@@ -106,7 +105,7 @@ class TestAzureOpenAILLMClient:
         "expected_deployment,"
         "expected_api_base,"
         "expected_api_version,"
-        "expected_model_parameters",
+        "expected_extra_parameters",
         [
             (
                 {
@@ -152,7 +151,7 @@ class TestAzureOpenAILLMClient:
         expected_deployment: str,
         expected_api_base: str,
         expected_api_version: str,
-        expected_model_parameters: dict,
+        expected_extra_parameters: dict,
         monkeypatch: MonkeyPatch,
     ):
         # Given
@@ -165,11 +164,10 @@ class TestAzureOpenAILLMClient:
         assert client.deployment == expected_deployment
         assert client.api_base == expected_api_base
         assert client.api_version == expected_api_version
-        assert client.provider == AZURE_PROVIDER
-        assert len(client.model_parameters) == len(expected_model_parameters)
-        for parameter_key, parameter_value in expected_model_parameters.items():
-            assert parameter_key in client.model_parameters
-            assert client.model_parameters[parameter_key] == parameter_value
+        assert len(client._extra_parameters) == len(expected_extra_parameters)
+        for parameter_key, parameter_value in expected_extra_parameters.items():
+            assert parameter_key in client._extra_parameters
+            assert client._extra_parameters[parameter_key] == parameter_value
 
     def test_completion(self, monkeypatch: MonkeyPatch):
         # Given
@@ -181,7 +179,7 @@ class TestAzureOpenAILLMClient:
             deployment="test_deployment",
             api_base="https://my.api.base.com/my_model",
             api_version="2023-01-01",
-            model_parameters={"mock_response": test_response},
+            mock_response=test_response,
         )
 
         # When
@@ -204,7 +202,7 @@ class TestAzureOpenAILLMClient:
             deployment="test_deployment",
             api_base="https://my.api.base.com/my_model",
             api_version="2023-01-01",
-            model_parameters={"mock_response": test_response},
+            mock_response=test_response,
         )
 
         # When

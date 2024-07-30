@@ -55,8 +55,10 @@ class _BaseLiteLLMEmbeddingClient:
 
     @property
     @abstractmethod
-    def model_parameters(self) -> Dict[str, Any]:
-        """Returns the model parameters."""
+    def extra_parameters(self) -> Dict[str, Any]:
+        """Returns a dictionary of extra parameters which include model
+        parameters as well as LiteLLM specific input parameters.
+        """
         pass
 
     @property

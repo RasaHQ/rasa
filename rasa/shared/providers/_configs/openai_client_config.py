@@ -14,27 +14,31 @@ from rasa.shared.constants import (
 from rasa.shared.utils.io import raise_deprecation_warning
 
 
+OPENAI_API_TYPE = "openai"
+
+
 @dataclass
 class OpenAIClientConfig:
     model: str
     api_base: Optional[str]
     api_version: Optional[str]
-    model_parameters: dict = field(default_factory=dict)
+    extra_parameters: dict = field(default_factory=dict)
 
     # API Type is not used by LiteLLM backend for OpenAI client,
     # but we define it here for backward compatibility.
-    api_type: Optional[str] = None
+    api_type: Optional[str] = OPENAI_API_TYPE
 
     @classmethod
     def from_dict(cls, config: dict) -> "OpenAIClientConfig":
         config = cls._process_config(config)
         this = OpenAIClientConfig(
             model=config.pop(MODEL_KEY),
-            api_base=config.pop(OPENAI_API_BASE_NO_PREFIX_CONFIG_KEY),
-            api_type=config.pop(OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY),
-            api_version=config.pop(OPENAI_API_VERSION_NO_PREFIX_CONFIG_KEY),
-            # The rest of parameters are considered as model parameters.
-            model_parameters=config,
+            api_base=config.pop(OPENAI_API_BASE_NO_PREFIX_CONFIG_KEY, None),
+            api_type=config.pop(OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY, OPENAI_API_TYPE),
+            api_version=config.pop(OPENAI_API_VERSION_NO_PREFIX_CONFIG_KEY, None),
+            # The rest of parameters (e.g. model parameters) are considered
+            # as extra parameters
+            extra_parameters=config,
         )
         return this
 

@@ -58,7 +58,7 @@ class TestAzureOpenAIEmbeddingClient:
             "api_base": "https://test",
             "api_type": "test",
             "api_version": "v1",
-            "model_parameters": {},
+            "extra_parameters": {},
         }
 
     def test_model(self, client: AzureOpenAIEmbeddingClient) -> None:
@@ -80,7 +80,7 @@ class TestAzureOpenAIEmbeddingClient:
         assert client.api_version == "v1"
 
     def test_model_parameters(self, client: AzureOpenAIEmbeddingClient) -> None:
-        assert client.model_parameters == {}
+        assert client.extra_parameters == {}
 
     def test_embedding_fn_args(self, client: AzureOpenAIEmbeddingClient) -> None:
         assert client._embedding_fn_args == {
@@ -281,7 +281,7 @@ class TestAzureOpenAIEmbeddingClient:
         assert client.api_base == "https://test"
         assert client.api_type == "test"
         assert client.api_version == "v1"
-        assert client.model_parameters == {}
+        assert client.extra_parameters == {}
 
     def test_openai_embedding_client_init_with_env_vars(
         self, monkeypatch: MonkeyPatch
@@ -300,5 +300,5 @@ class TestAzureOpenAIEmbeddingClient:
         assert client.api_type == "env_test"
         assert client.api_version == "env_v1"
         assert client.model == "gpt-2024"
-        assert client.model_parameters == {}
+        assert client.extra_parameters == {}
         assert os.environ.get(AZURE_API_KEY_ENV_VAR) == "some_key"

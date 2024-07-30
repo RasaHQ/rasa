@@ -17,14 +17,17 @@ from rasa.shared.constants import (
 from rasa.shared.utils.io import raise_deprecation_warning
 
 
+AZURE_API_TYPE = "azure"
+
+
 @dataclass
 class AzureOpenAIClientConfig:
     deployment: str
     model: Optional[str]
     api_base: Optional[str]
-    api_type: Optional[str]
     api_version: Optional[str]
-    model_parameters: dict = field(default_factory=dict)
+    api_type: Optional[str] = AZURE_API_TYPE
+    extra_parameters: dict = field(default_factory=dict)
 
     @classmethod
     def from_dict(cls, config: dict) -> "AzureOpenAIClientConfig":
@@ -32,11 +35,12 @@ class AzureOpenAIClientConfig:
         this = AzureOpenAIClientConfig(
             deployment=config.pop(OPENAI_DEPLOYMENT_CONFIG_KEY),
             model=config.pop(MODEL_KEY),
-            api_base=config.pop(OPENAI_API_BASE_NO_PREFIX_CONFIG_KEY),
-            api_type=config.pop(OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY),
-            api_version=config.pop(OPENAI_API_VERSION_NO_PREFIX_CONFIG_KEY),
-            # The rest of parameters are considered as model parameters.
-            model_parameters=config,
+            api_base=config.pop(OPENAI_API_BASE_NO_PREFIX_CONFIG_KEY, None),
+            api_type=config.pop(OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY, AZURE_API_TYPE),
+            api_version=config.pop(OPENAI_API_VERSION_NO_PREFIX_CONFIG_KEY, None),
+            # The rest of parameters (e.g. model parameters) are considered
+            # as extra parameters
+            extra_parameters=config,
         )
         return this
 

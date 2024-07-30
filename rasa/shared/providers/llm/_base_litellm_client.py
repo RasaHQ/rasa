@@ -47,31 +47,32 @@ class _BaseLiteLLMClient:
 
     @property
     @abstractmethod
-    def model(self) -> str:
-        """Returns the model or deployment name."""
+    def _litellm_model_name(self) -> str:
+        """Returns the value of LiteLLM's model parameter to be used in
+        completion/acompletion in LiteLLM format:
+
+        <provider>/<model or deployment name>
+        """
         pass
 
     @property
-    @abstractmethod
-    def provider(self) -> str:
-        """Return the provider name."""
-        pass
+    def _litellm_extra_parameters(self) -> Dict[str, Any]:
+        """Returns a dictionary of extra parameters which include model
+        parameters as well as LiteLLM specific input parameters.
 
-    @property
-    @abstractmethod
-    def model_parameters(self) -> Dict[str, Any]:
-        pass
+        By default, this returns an empty dictionary (no extra parameters).
+        """
+        return {}
 
     @property
     def _completion_fn_args(self) -> dict:
         return {
-            "model": f"{self.provider}/{self.model}",
+            **self._litellm_extra_parameters,
+            "model": self._litellm_model_name,
             # Since all providers covered by LiteLLM use the OpenAI format, but
-            # not all support every OpenAI parameter, drop_params ensures that
-            # unsupported request parameters are removed, preventing API
-            # exceptions.
-            "drop_params": True,
-            **self.model_parameters,
+            # not all support every OpenAI parameter, raise an exception if
+            # provider/model uses unsupported parameter
+            "drop_params": False,
         }
 
     def validate_client_setup(self) -> None:
@@ -82,10 +83,11 @@ class _BaseLiteLLMClient:
             ProviderClientValidationError if validation fails.
         """
         self._validate_environment_variables()
+        self._validate_api_key_not_in_config()
 
     def _validate_environment_variables(self) -> None:
         """Validate that the required environment variables are set."""
-        validation_info = validate_environment(f"{self.provider}/{self.model}")
+        validation_info = validate_environment(self._litellm_model_name)
         if missing_environment_variables := validation_info.get(
             _VALIDATE_ENVIRONMENT_MISSING_KEYS_KEY
         ):
@@ -100,6 +102,18 @@ class _BaseLiteLLMClient:
             )
             raise ProviderClientValidationError(event_info)
 
+    def _validate_api_key_not_in_config(self) -> None:
+        if "api_key" in self._litellm_extra_parameters:
+            event_info = (
+                "API Key is set through `api_key` extra parameter."
+                "Set API keys through environment variables."
+            )
+            structlogger.error(
+                "base_litellm_client.validate_api_key_not_in_config",
+                event_info=event_info,
+            )
+            raise ProviderClientValidationError(event_info)
+
     def completion(self, messages: Union[List[str], str]) -> LLMResponse:
         """
         Synchronously generate completions for given list of messages.
@@ -109,6 +123,8 @@ class _BaseLiteLLMClient:
                 completion for.
         Returns:
             List of message completions.
+        Raises:
+            ProviderClientAPIException: If the API request fails.
         """
         try:
             formatted_messages = self._format_messages(messages)
@@ -128,6 +144,8 @@ class _BaseLiteLLMClient:
                 completion for.
         Returns:
             List of message completions.
+        Raises:
+            ProviderClientAPIException: If the API request fails.
         """
         try:
             formatted_messages = self._format_messages(messages)
@@ -156,10 +174,22 @@ class _BaseLiteLLMClient:
             response.model_extra
             and (usage := response.model_extra.get("usage")) is not None
         ):
-            formatted_response.usage = LLMUsage(
-                prompt_tokens=usage.prompt_tokens,
-                completion_tokens=usage.completion_tokens,
+            # We use `.get()` for accessing litellm.utils.Usage attributes.
+            # litellm.utils.Usage does not set the attributes if
+            # `prompt_tokens` or `completion_tokens` are absent (None).
+            prompt_tokens = (
+                num_tokens
+                if isinstance(num_tokens := usage.get("prompt_tokens", 0), (int, float))
+                else 0
             )
+            completion_tokens = (
+                num_tokens
+                if isinstance(
+                    num_tokens := usage.get("completion_tokens", 0), (int, float)
+                )
+                else 0
+            )
+            formatted_response.usage = LLMUsage(prompt_tokens, completion_tokens)
         structlogger.debug(
             "base_litellm_client.formatted_response",
             formatted_response=formatted_response.to_dict(),

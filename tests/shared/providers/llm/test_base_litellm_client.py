@@ -1,6 +1,6 @@
-from typing import Dict, Any, Union, List
+from typing import Dict, Any, Union, List, Optional
 from unittest.mock import Mock, AsyncMock
-
+from litellm.utils import Usage
 import pytest
 from litellm import ModelResponse
 from pytest import MonkeyPatch
@@ -24,21 +24,17 @@ class TestLiteLLMClient(_BaseLiteLLMClient):
         return {}
 
     @property
-    def model(self) -> str:
-        return "test_model"
+    def _litellm_model_name(self) -> str:
+        return "openai/test_model"
 
     @property
-    def provider(self) -> str:
-        return "test_provider"
-
-    @property
-    def model_parameters(self) -> Dict[str, Any]:
+    def _litellm_extra_parameters(self) -> Dict[str, Any]:
         return {"test_parameter": "test_value"}
 
 
 class TestBaseLLMClient:
     @pytest.fixture
-    def client(self) -> LLMClient:
+    def client(self) -> TestLiteLLMClient:
         return TestLiteLLMClient()
 
     @pytest.fixture
@@ -49,7 +45,7 @@ class TestBaseLLMClient:
                 {"message": {"content": "Hello from LiteLLM!", "role": "assistant"}}
             ],
             created=1234567890,
-            model=client.model,
+            model="test_model",
             object="text_completion",
             usage={"prompt_tokens": 10, "completion_tokens": 10, "total_tokens": 20},
         )
@@ -85,13 +81,40 @@ class TestBaseLLMClient:
         formated_response = client._format_response(litellm_model_response)
 
         # Then
-        assert formated_response.model == client.model
         assert formated_response.id == "id123"
         assert formated_response.created == 1234567890
-        assert formated_response.model == client.model
+        assert formated_response.model == "test_model"
         assert formated_response.usage.prompt_tokens == 10
         assert formated_response.usage.completion_tokens == 10
         assert formated_response.usage.total_tokens == 20
+
+    @pytest.mark.parametrize("usage", (None, Usage()))
+    def test_format_response_with_uninitialized_usage(
+        self, usage: Optional[Usage], client: TestLiteLLMClient
+    ):
+        # Given
+        model_response = ModelResponse(
+            id="id123",
+            choices=[
+                {"message": {"content": "Hello from LiteLLM!", "role": "assistant"}}
+            ],
+            created=1234567890,
+            model="test_model",
+            object="text_completion",
+            usage=usage,
+        )
+
+        # When
+        formated_response = client._format_response(model_response)
+
+        # Then
+        assert formated_response.id == "id123"
+        assert formated_response.created == 1234567890
+        assert formated_response.model == "test_model"
+        assert formated_response.usage is not None
+        assert formated_response.usage.prompt_tokens == 0
+        assert formated_response.usage.completion_tokens == 0
+        assert formated_response.usage.total_tokens == 0
 
     def test_conforms_to_protocol(self, client):
         assert isinstance(client, LLMClient)
@@ -106,7 +129,7 @@ class TestBaseLLMClient:
         ],
     )
     def test_completion(
-        self, test_prompt: str, client: LLMClient, mock_completion: Mock
+        self, test_prompt: str, client: TestLiteLLMClient, mock_completion: Mock
     ):
         # Given
         prompt_content = test_prompt if isinstance(test_prompt, str) else test_prompt[0]
@@ -117,8 +140,8 @@ class TestBaseLLMClient:
         # Then
         mock_completion.assert_called_once_with(
             messages=[{"content": prompt_content, "role": "user"}],
-            model=f"{client.provider}/{client.model}",
-            drop_params=True,
+            model=client._litellm_model_name,
+            drop_params=False,
             test_parameter="test_value",
         )
         assert isinstance(response, LLMResponse)
@@ -143,7 +166,7 @@ class TestBaseLLMClient:
     async def test_acompletion(
         self,
         test_prompt: Union[List[str], str],
-        client: LLMClient,
+        client: TestLiteLLMClient,
         mock_acompletion: Mock,
     ):
         # Given
@@ -155,8 +178,8 @@ class TestBaseLLMClient:
         # Then
         mock_acompletion.assert_called_once_with(
             messages=[{"content": prompt_content, "role": "user"}],
-            model=f"{client.provider}/{client.model}",
-            drop_params=True,
+            model=client._litellm_model_name,
+            drop_params=False,
             test_parameter="test_value",
         )
         assert isinstance(response, LLMResponse)

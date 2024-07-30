@@ -1,9 +1,10 @@
-from typing import Protocol, Dict, List, TYPE_CHECKING
+from typing import Protocol, Dict, List, TYPE_CHECKING, runtime_checkable
 
 if TYPE_CHECKING:
     from rasa.shared.providers.embedding.embedding_response import EmbeddingResponse
 
 
+@runtime_checkable
 class EmbeddingClient(Protocol):
     @property
     def config(self) -> Dict:

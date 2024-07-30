@@ -3,16 +3,16 @@ from pytest import MonkeyPatch
 
 from rasa.shared.constants import OPENAI_API_BASE_ENV_VAR, OPENAI_API_KEY_ENV_VAR
 from rasa.shared.providers.llm.llm_client import LLMClient
-from rasa.shared.providers.llm.openai_llm_client import OpenAILLMClient, OPENAI_PROVIDER
+from rasa.shared.providers.llm.openai_llm_client import (
+    OpenAILLMClient,
+)
 
 
 class TestOpenAILLMClient:
     @pytest.fixture
-    def client(self, monkeypatch: MonkeyPatch) -> LLMClient:
+    def client(self, monkeypatch: MonkeyPatch) -> OpenAILLMClient:
         monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "my key")
-        return OpenAILLMClient(
-            model="test_model",
-        )
+        return OpenAILLMClient(model="test_model")
 
     def test_conforms_to_protocol(self, client: LLMClient, monkeypatch: MonkeyPatch):
         monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "my key")
@@ -32,7 +32,7 @@ class TestOpenAILLMClient:
         assert client.api_base == "https://my.api.base.com/my_model"
 
     @pytest.mark.parametrize(
-        "config, expected_model, expected_api_base, expected_model_parameters",
+        "config, expected_model, expected_api_base, expected_extra_parameters",
         [
             (
                 {"model": "test_model", "temperature": 0.2, "max_tokens": 1000},
@@ -66,7 +66,7 @@ class TestOpenAILLMClient:
         config: dict,
         expected_model: str,
         expected_api_base: str,
-        expected_model_parameters: dict,
+        expected_extra_parameters: dict,
         monkeypatch: MonkeyPatch,
     ):
         # Given
@@ -78,11 +78,10 @@ class TestOpenAILLMClient:
         # Then
         assert client.model == expected_model
         assert client.api_base == expected_api_base
-        assert client.provider == OPENAI_PROVIDER
-        assert len(client.model_parameters) == len(expected_model_parameters)
-        for parameter_key, parameter_value in expected_model_parameters.items():
-            assert parameter_key in client.model_parameters
-            assert client.model_parameters[parameter_key] == parameter_value
+        assert len(client._litellm_extra_parameters) == len(expected_extra_parameters)
+        for parameter_key, parameter_value in expected_extra_parameters.items():
+            assert parameter_key in client._litellm_extra_parameters
+            assert client._litellm_extra_parameters[parameter_key] == parameter_value
 
     def test_completion(
         self,
@@ -94,7 +93,7 @@ class TestOpenAILLMClient:
         test_prompt = "Hello, this is a test prompt."
         test_response = "Hello, this is mocked response!"
         # LiteLLM supports mocking response for testing purposes
-        client._model_parameters = {"mock_response": test_response}
+        client._extra_parameters = {"mock_response": test_response}
 
         # When
         response = client.completion([test_prompt])
@@ -115,7 +114,7 @@ class TestOpenAILLMClient:
         test_prompt = "Hello, this is a test prompt."
         test_response = "Hello, this is mocked response!"
         # LiteLLM supports mocking response for testing purposes
-        client._model_parameters = {"mock_response": test_response}
+        client._extra_parameters = {"mock_response": test_response}
 
         # When
         response = await client.acompletion([test_prompt])

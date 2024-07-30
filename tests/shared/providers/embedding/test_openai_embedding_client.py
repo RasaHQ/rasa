@@ -50,7 +50,7 @@ class TestOpenAIEmbeddingClient:
             "api_version": "v1",
             "api_type": "test",
             "model": "gpt-1000",
-            "model_parameters": {},
+            "extra_parameters": {},
         }
 
     def test_model(self, client: OpenAIEmbeddingClient) -> None:
@@ -69,7 +69,7 @@ class TestOpenAIEmbeddingClient:
         assert client.api_version == "v1"
 
     def test_model_parameters(self, client: OpenAIEmbeddingClient) -> None:
-        assert client.model_parameters == {}
+        assert client.extra_parameters == {}
 
     def test_embedding_fn_args(self, client: OpenAIEmbeddingClient) -> None:
         assert client._embedding_fn_args == {
@@ -183,7 +183,7 @@ class TestOpenAIEmbeddingClient:
         assert client.api_base == "https://test"
         assert client.api_type == "test"
         assert client.api_version == "v1"
-        assert client.model_parameters == {}
+        assert client.extra_parameters == {}
 
     def test_openai_embedding_client_init_with_env_vars(
         self, monkeypatch: MonkeyPatch
@@ -202,5 +202,5 @@ class TestOpenAIEmbeddingClient:
         assert client.api_type == "env_test"
         assert client.api_version == "env_v1"
         assert client.model == "gpt-1000"
-        assert client.model_parameters == {}
+        assert client.extra_parameters == {}
         assert os.environ.get(OPENAI_API_KEY_ENV_VAR) == "some_key"
