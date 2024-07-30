@@ -1733,6 +1733,8 @@ def test_verify_predicates_reference_namespaces(predicate: str) -> None:
     [
         "{'credit' 'debit'} contains slots.account_type",
         "slots.account_type is 'debit'",
+        "slots.account_type == 'debit'",
+        "slots.account_type != 'debit'",
         "not slots.account_type",
         "context.collect is not null",
         "not context.collect",
@@ -1778,6 +1780,7 @@ def test_verify_categorical_predicate_valid_value(predicate: str) -> None:
     [
         "slots.account_type is savings",
         "slots.account_type == savings",
+        "slots.account_type != savings",
         "{'savings' 'investment'} contains slots.account_type",
     ],
 )

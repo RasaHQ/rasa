@@ -1080,7 +1080,7 @@ class Validator:
                 event_info=(
                     f"Detected invalid condition '{link_condition}' "
                     f"at step '{step_id}' for flow id '{flow_id}'. "
-                    f"Slot {slot_name} is not defined. "
+                    f"Slot {slot_name} is not defined in the domain file. "
                     f"Please make sure that all conditions are valid."
                 ),
             )
