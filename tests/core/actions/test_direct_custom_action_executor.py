@@ -46,9 +46,10 @@ async def test_executor_initialized_with_invalid_actions_module():
     tracker = DialogueStateTracker(sender_id="test", slots={})
 
     message = (
-        f"You've provided the custom actions module '{DUMMY_INVALID_ACTIONS_MODULE_PATH}' "
-        f"to run directly by the rasa server, however this module does "
-        f"not exist. Please check for typos in your `endpoints.yml` file."
+        f"You've provided the custom actions module "
+        f"'{DUMMY_INVALID_ACTIONS_MODULE_PATH}' to run directly by the rasa server, "
+        f"however this module does not exist. "
+        f"Please check for typos in your `endpoints.yml` file."
     )
     with pytest.raises(RasaException, match=message):
         await executor.run(tracker)
