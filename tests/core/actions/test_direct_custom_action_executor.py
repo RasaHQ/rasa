@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Dict, Text, Any
 
 import pytest
 from pytest import LogCaptureFixture
@@ -17,25 +17,36 @@ DUMMY_ACTION_NAME = "my_action"
 DUMMY_DOMAIN_PATH = "data/test_domains/default.yml"
 
 ENDPOINTS_FILE_PATH = "data/test_endpoints/endpoints_actions_module.yml"
-mock_endpoint = read_endpoint_config(
-    ENDPOINTS_FILE_PATH, endpoint_type="action_endpoint"
-)
 
 
 @pytest.fixture
-def direct_custom_action_executor() -> DirectCustomActionExecutor:
+def mock_endpoint() -> EndpointConfig:
+    return read_endpoint_config(ENDPOINTS_FILE_PATH, endpoint_type="action_endpoint")
+
+
+@pytest.fixture
+def direct_custom_action_executor(
+    mock_endpoint: EndpointConfig,
+) -> DirectCustomActionExecutor:
     return DirectCustomActionExecutor(
         action_name=DUMMY_ACTION_NAME, action_endpoint=mock_endpoint
     )
 
 
 @pytest.fixture
-def remote_action() -> RemoteAction:
+def remote_action(mock_endpoint: EndpointConfig) -> RemoteAction:
     return RemoteAction(DUMMY_ACTION_NAME, mock_endpoint)
 
 
-def test_executor_initialized_with_valid_actions_module():
-    DirectCustomActionExecutor(action_name="some_action", action_endpoint=mock_endpoint)
+def test_executor_initialized_with_valid_actions_module(mock_endpoint: EndpointConfig):
+    try:
+        DirectCustomActionExecutor(
+            action_name=DUMMY_ACTION_NAME, action_endpoint=mock_endpoint
+        )
+    except Exception as exc:
+        assert (
+            False
+        ), f"Instantiating 'DirectCustomActionExecutor' raised an exception {exc}"
 
 
 async def test_executor_initialized_with_invalid_actions_module():
@@ -79,14 +90,14 @@ def test_remote_action_uses_action_endpoint_with_url_and_actions_module_defined(
     assert isinstance(remote_action.executor, DirectCustomActionExecutor)
 
 
-def test_remote_action_executor_cached():
+def test_remote_action_executor_cached(mock_endpoint: EndpointConfig):
     """
-    Ensure the executor for a RemoteAction instance remains
-    `DirectCustomActionExecutor` after the action endpoint is updated.
+    Ensure the executor for the RemoteAction instance is being
+    cached after the action endpoint is updated.
 
     Assertions:
     - Initially, the executor is `DirectCustomActionExecutor`.
-    - After setting a new HTTP endpoint, the executor is still
+    - After recreating the executor instance, the executor is still
       `DirectCustomActionExecutor` at the same location.
     """
     remote_action = RemoteAction(DUMMY_ACTION_NAME, mock_endpoint)
@@ -99,6 +110,7 @@ def test_remote_action_executor_cached():
 
 def test_direct_custom_action_executor_valid_initialization(
     direct_custom_action_executor: DirectCustomActionExecutor,
+    mock_endpoint: EndpointConfig,
 ):
     assert direct_custom_action_executor.action_name == DUMMY_ACTION_NAME
     assert direct_custom_action_executor.action_endpoint == mock_endpoint
@@ -118,24 +130,15 @@ async def test_executor_runs_action(
 
 
 async def test_executor_runs_action_invalid_actions_module(
-    trained_async: Callable,
-    caplog: LogCaptureFixture,
+    trained_async: Callable, caplog: LogCaptureFixture, custom_actions_agent: Agent
 ):
     """
     Ensure that the inappropriately configured actions_module doesn't
     break the execution of the assistant, but raises an exception log.
     """
-    parent_folder = "data/test_custom_action_triggers_action_extract_slots"
-    domain_path = f"{parent_folder}/domain.yml"
-    config_path = f"{parent_folder}/config.yml"
-    stories_path = f"{parent_folder}/stories.yml"
-    nlu_path = f"{parent_folder}/nlu.yml"
-    model_path = await trained_async(domain_path, config_path, [stories_path, nlu_path])
-    agent = Agent.load(model_path)
-
     # Set MessageProcessor to use the DirectCustomActionExecutor
     # with an invalid actions_module
-    processor = agent.processor
+    processor = custom_actions_agent.processor
     endpoint = EndpointConfig(actions_module=DUMMY_INVALID_ACTIONS_MODULE_PATH)
     processor.action_endpoint = endpoint
 

@@ -1645,16 +1645,9 @@ async def test_loads_correct_model_from_path(
 async def test_custom_action_triggers_action_extract_slots(
     trained_async: Callable,
     caplog: LogCaptureFixture,
+    custom_actions_agent: Agent,
 ):
-    parent_folder = "data/test_custom_action_triggers_action_extract_slots"
-    domain_path = f"{parent_folder}/domain.yml"
-    config_path = f"{parent_folder}/config.yml"
-    stories_path = f"{parent_folder}/stories.yml"
-    nlu_path = f"{parent_folder}/nlu.yml"
-
-    model_path = await trained_async(domain_path, config_path, [stories_path, nlu_path])
-    agent = Agent.load(model_path)
-    processor = agent.processor
+    processor = custom_actions_agent.processor
 
     action_server_url = "http://some-url"
     endpoint = EndpointConfig(action_server_url)
