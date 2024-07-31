@@ -6,10 +6,13 @@ from rasa.core.channels.voice_aware.jambonz_protocol import (
     send_ws_text_message,
     websocket_message_handler,
 )
+from rasa.core.channels.voice_aware.utils import validate_voice_license_scope
 from rasa.shared.exceptions import RasaException
 from sanic import Blueprint, response, Websocket
 from sanic.request import Request
 from sanic.response import HTTPResponse
+
+from rasa.shared.utils.common import mark_as_experimental_feature
 
 
 structlogger = structlog.get_logger()
@@ -30,6 +33,8 @@ class JambonzVoiceAwareInput(InputChannel):
 
     def __init__(self) -> None:
         """Initializes the JambonzVoiceAwareInput channel."""
+        mark_as_experimental_feature("Jambonz Channel")
+        validate_voice_license_scope()
 
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
