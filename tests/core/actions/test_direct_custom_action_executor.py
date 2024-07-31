@@ -1,4 +1,4 @@
-from typing import Callable, Dict, Text, Any
+from typing import Callable
 
 import pytest
 from pytest import LogCaptureFixture
