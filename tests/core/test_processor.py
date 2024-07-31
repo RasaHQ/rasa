@@ -16,6 +16,7 @@ from unittest.mock import MagicMock, Mock, patch, AsyncMock
 import freezegun
 import pytest
 
+from rasa.core.constants import UTTER_SOURCE_METADATA_KEY
 from rasa.dialogue_understanding.commands.set_slot_command import SetSlotExtractor
 import rasa.shared.utils.io
 import tests.utilities
@@ -918,7 +919,12 @@ async def test_handle_message_with_session_start(
                 "utter_greet", policy="AugmentedMemoizationPolicy", confidence=1.0
             ),
             BotUttered(
-                "hey there Core!", data={}, metadata={"utter_action": "utter_greet"}
+                "hey there Core!",
+                data={},
+                metadata={
+                    "utter_action": "utter_greet",
+                    UTTER_SOURCE_METADATA_KEY: "TemplatedNaturalLanguageGenerator",
+                },
             ),
             ActionExecuted(ACTION_LISTEN_NAME, confidence=1.0),
             ActionExecuted(ACTION_SESSION_START_NAME),
@@ -946,7 +952,10 @@ async def test_handle_message_with_session_start(
             BotUttered(
                 "hey there post-session start hello!",
                 data={},
-                metadata={"utter_action": "utter_greet"},
+                metadata={
+                    "utter_action": "utter_greet",
+                    UTTER_SOURCE_METADATA_KEY: "TemplatedNaturalLanguageGenerator",
+                },
             ),
             ActionExecuted(ACTION_LISTEN_NAME),
         ],
