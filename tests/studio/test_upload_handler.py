@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Set, Text, Union
 from unittest.mock import MagicMock
 
 import pytest
+import questionary
 from pytest import MonkeyPatch
 from rasa.shared.exceptions import RasaException
 
@@ -590,9 +591,32 @@ CALM_NLU_YAML = dedent(
     """  # noqa: E501
 )
 
+CALM_CONFIG_YAML = dedent(
+    """\
+    recipe: default.v1
+    language: en
+    pipeline:
+    - name: LLMCommandGenerator
+      llm:
+        model_name: gpt-4
+        request_timeout: 7
+        max_tokens: 256
+
+    policies:
+    - name: FlowPolicy
+    - name: IntentlessPolicy
+    """
+)
+
+CALM_ENDPOINTS_YAML = "nlg: \ntype: rephrase\n"
+
 
 def encode_yaml(yaml):
     return base64.b64encode(yaml.encode("utf-8")).decode("utf-8")
+
+
+def mock_questionary_text(question, default=""):
+    return MagicMock(ask=lambda: "test")
 
 
 @pytest.mark.parametrize(
@@ -600,11 +624,11 @@ def encode_yaml(yaml):
     [
         (
             argparse.Namespace(
-                assistant_name=["test"],
-                domain="data/upload/domain.yml",
-                data=["data/upload/data/nlu.yml"],
+                domain="data/upload",
+                data="data/upload/data",
                 entities=["name"],
                 intents=["greet", "inform"],
+                config="data/upload/config.yml",
             ),
             "http://studio.amazonaws.com/api/graphql",
             {
@@ -648,6 +672,7 @@ def encode_yaml(yaml):
                 data=["data/upload/calm/"],
                 config="data/upload/calm/config.yml",
                 flows="data/upload/flows.yml",
+                endpoints="data/upload/calm/endpoints.yml",
             ),
             "http://studio.amazonaws.com/api/graphql",
             {
@@ -659,14 +684,19 @@ def encode_yaml(yaml):
                 "variables": {
                     "input": {
                         "assistantName": "test",
-                        "domain": (encode_yaml(CALM_DOMAIN_YAML)),
-                        "flows": (encode_yaml(CALM_FLOWS_YAML)),
-                        "nlu": (encode_yaml(CALM_NLU_YAML)),
+                        "domain": encode_yaml(CALM_DOMAIN_YAML),
+                        "flows": encode_yaml(CALM_FLOWS_YAML),
+                        "nlu": encode_yaml(CALM_NLU_YAML),
                         "config": (
-                            "cmVjaXBlOiBkZWZhdWx0LnYxCmxhbmd1YWdlOiBlbgpwaXBlbGluZToKLSBuYW1lOiBTaW5nbGVTdGVwTExNQ29"
-                            "tbWFuZEdlbmVyYXRvcgogIGxsbToKICAgIG1vZGVsX25hbWU6IGdwdC00CnBvbGljaWVzOgotIG5hbWU"
-                            "6IHJhc2EuY29yZS5wb2xpY2llcy5mbG93X3BvbGljeS5GbG93UG9saWN5Cg=="
+                            "cmVjaXBlOiBkZWZhdWx0LnYxCmxhbmd1YWdlOiBlbgp"
+                            "waXBlbGluZToKLSBuYW1lOiBTaW5nbGVTdGVwTExNQ2"
+                            "9tbWFuZEdlbmVyYXRvcgogIGxsbToKICAgIG1vZGVsX"
+                            "25hbWU6IGdwdC00CnBvbGljaWVzOgotIG5hbWU6IHJh"
+                            "c2EuY29yZS5wb2xpY2llcy5mbG93X3BvbGljeS5GbG9"
+                            "3UG9saWN5CmFzc2lzdGFudElkOiBhNWI1ZDNjNS04OG"
+                            "NmLTRmZTUtODM1Mi1jNDJlN2NmYWE3YjYK"
                         ),
+                        "endpoints": "bmxnOgogIHR5cGU6IHJlcGhyYXNlCg==",
                     }
                 },
             },
@@ -696,6 +726,8 @@ def test_handle_upload(
         mock_config,
     )
 
+    monkeypatch.setattr(questionary, "text", mock_questionary_text)
+
     rasa.studio.upload.handle_upload(args)
 
     assert mock.post.called
@@ -724,6 +756,7 @@ def test_handle_upload_no_domain_path_specified(
         assistant_name=[assistant_name],
         # this is the default value when running the cmd without specifying -d flag
         domain="domain.yml",
+        config="config.yml",
         calm=is_calm_bot,
     )
 
@@ -732,9 +765,14 @@ def test_handle_upload_no_domain_path_specified(
     domain_path = domain_dir / "domain.yml"
     domain_path.write_text("test domain")
 
+    # default config path
+    config_path = tmp_path / "config.yml"
+    config_path.write_text("test config")
+
     domain_paths = [str(domain_dir), str(tmp_path / "domain.yml")]
     # we need to monkeypatch the DEFAULT_DOMAIN_PATHS to be able to use temporary paths
     monkeypatch.setattr(rasa.studio.upload, "DEFAULT_DOMAIN_PATHS", domain_paths)
+    monkeypatch.setattr(rasa.studio.upload, "DEFAULT_CONFIG_PATH", str(config_path))
 
     mock_config = MagicMock()
     mock_config.read_config.return_value = StudioConfig(
@@ -756,11 +794,12 @@ def test_handle_upload_no_domain_path_specified(
 
     expected_args = argparse.Namespace(
         assistant_name=[assistant_name],
-        calm=is_calm_bot,
         domain=str(domain_dir),
+        config=str(config_path),
+        calm=is_calm_bot,
     )
 
-    mock.assert_called_once_with(expected_args, assistant_name, endpoint)
+    mock.assert_called_once_with(expected_args, endpoint)
 
 
 @pytest.mark.parametrize(
@@ -837,16 +876,24 @@ def test_build_import_request(assistant_name: str) -> None:
 
     base64_flows = encode_yaml(CALM_FLOWS_YAML)
     base64_domain = encode_yaml(CALM_DOMAIN_YAML)
-    base64_config = encode_yaml("")
+    base64_config = encode_yaml(CALM_CONFIG_YAML)
+    base64_endpoints = encode_yaml(CALM_ENDPOINTS_YAML)
     base64_nlu = encode_yaml(CALM_NLU_YAML)
 
     graphql_req = rasa.studio.upload.build_import_request(
-        assistant_name, CALM_FLOWS_YAML, CALM_DOMAIN_YAML, base64_config, CALM_NLU_YAML
+        assistant_name=assistant_name,
+        flows_yaml=CALM_FLOWS_YAML,
+        domain_yaml=CALM_DOMAIN_YAML,
+        config_yaml=CALM_CONFIG_YAML,
+        endpoints=CALM_ENDPOINTS_YAML,
+        nlu_yaml=CALM_NLU_YAML,
     )
 
     assert graphql_req["variables"]["input"]["domain"] == base64_domain
     assert graphql_req["variables"]["input"]["flows"] == base64_flows
     assert graphql_req["variables"]["input"]["assistantName"] == assistant_name
+    assert graphql_req["variables"]["input"]["config"] == base64_config
+    assert graphql_req["variables"]["input"]["endpoints"] == base64_endpoints
     assert graphql_req["variables"]["input"]["nlu"] == base64_nlu
 
 
@@ -861,18 +908,21 @@ def test_build_import_request_no_nlu() -> None:
     base64_flows = encode_yaml(CALM_FLOWS_YAML)
     base64_domain = encode_yaml(CALM_DOMAIN_YAML)
     base64_config = encode_yaml(empty_string)
+    base64_endpoints = encode_yaml(empty_string)
 
     graphql_req = rasa.studio.upload.build_import_request(
         assistant_name,
         flows_yaml=CALM_FLOWS_YAML,
         domain_yaml=CALM_DOMAIN_YAML,
         config_yaml=empty_string,
+        endpoints=empty_string,
     )
 
     assert graphql_req["variables"]["input"]["domain"] == base64_domain
     assert graphql_req["variables"]["input"]["flows"] == base64_flows
     assert graphql_req["variables"]["input"]["assistantName"] == assistant_name
     assert graphql_req["variables"]["input"]["config"] == base64_config
+    assert graphql_req["variables"]["input"]["endpoints"] == base64_endpoints
     assert graphql_req["variables"]["input"]["nlu"] == empty_string
 
 

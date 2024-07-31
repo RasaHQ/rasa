@@ -1,9 +1,11 @@
 import argparse
 import base64
-import logging
-from typing import Dict, Iterable, List, Set, Text, Tuple, Union
+import sys
+from typing import Dict, Iterable, List, Set, Text, Tuple, Union, Any
 
+import questionary
 import requests
+import structlog
 
 import rasa.cli.telemetry
 import rasa.cli.utils
@@ -11,18 +13,19 @@ import rasa.shared.utils.cli
 import rasa.shared.utils.io
 from rasa.shared.constants import (
     DEFAULT_DOMAIN_PATHS,
+    DEFAULT_CONFIG_PATH,
 )
 from rasa.shared.core.flows.yaml_flows_io import YamlFlowsWriter
 from rasa.shared.exceptions import RasaException
 from rasa.shared.importers.importer import TrainingDataImporter, FlowSyncImporter
 from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
-from rasa.shared.utils.yaml import dump_obj_as_yaml_to_string
+from rasa.shared.utils.yaml import dump_obj_as_yaml_to_string, read_yaml_file
 from rasa.studio import results_logger
 from rasa.studio.auth import KeycloakTokenReader
 from rasa.studio.config import StudioConfig
 from rasa.studio.results_logger import StudioResult, with_studio_error_handler
 
-logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger()
 
 
 def _get_selected_entities_and_intents(
@@ -34,37 +37,59 @@ def _get_selected_entities_and_intents(
 
     if entities is None or len(entities) == 0:
         entities = entities_from_files
-        logger.info("No entities specified. Using all entities from files.")
+        structlogger.info(
+            "rasa.studio.upload.entities_empty",
+            event_info="No entities specified. Using all entities from files.",
+        )
 
     intents = args.intents
 
     if intents is None or len(intents) == 0:
         intents = intents_from_files
-        logger.info("No intents specified. Using all intents from files.")
+        structlogger.info(
+            "rasa.studio.upload.intents_empty",
+            event_info="No intents specified. Using all intents from files.",
+        )
 
     return list(entities), list(intents)
 
 
 def handle_upload(args: argparse.Namespace) -> None:
     """Uploads primitives to rasa studio."""
-    assistant_name = args.assistant_name[0]
     endpoint = StudioConfig.read_config().studio_url
     if not endpoint:
         rasa.shared.utils.cli.print_error_and_exit(
             "No GraphQL endpoint found in config. Please run `rasa studio config`."
         )
     else:
-        logger.info("Loading data...")
+        structlogger.info(
+            "rasa.studio.upload.loading_data", event_info="Loading data..."
+        )
 
         args.domain = rasa.cli.utils.get_validated_path(
             args.domain, "domain", DEFAULT_DOMAIN_PATHS
         )
 
+        args.config = rasa.cli.utils.get_validated_path(
+            args.config, "config", DEFAULT_CONFIG_PATH
+        )
+
         # check safely if args.calm is set and not fail if not
         if hasattr(args, "calm") and args.calm:
-            upload_calm_assistant(args, assistant_name, endpoint)
+            upload_calm_assistant(args, endpoint)
         else:
-            upload_nlu_assistant(args, assistant_name, endpoint)
+            upload_nlu_assistant(args, endpoint)
+
+
+config_keys = [
+    "recipe",
+    "language",
+    "pipeline",
+    "llm",
+    "policies",
+    "model_name",
+    "assistant_id",
+]
 
 
 def extract_values(data: Dict, keys: List[Text]) -> Dict:
@@ -72,10 +97,36 @@ def extract_values(data: Dict, keys: List[Text]) -> Dict:
     return {key: data.get(key) for key in keys if data.get(key)}
 
 
+def _get_assistant_name(config: Dict[Text, Any]) -> str:
+    config_assistant_id = config.get("assistant_id", "")
+    assistant_name = questionary.text(
+        "Please provide the assistant name", default=config_assistant_id
+    ).ask()
+    if not assistant_name:
+        structlogger.error(
+            "rasa.studio.upload.assistant_name_empty",
+            event_info="Assistant name cannot be empty.",
+        )
+        sys.exit(1)
+
+    # if assistant_name exists and different from config assistant_id,
+    # notify user and upload with new assistant_name
+    same = assistant_name == config_assistant_id
+    if not same and config_assistant_id != "":
+        structlogger.info(
+            "rasa.studio.upload.assistant_name_mismatch",
+            event_info=(
+                f"Assistant name '{assistant_name}' is different"
+                f" from the one in the config file: '{config_assistant_id}'."
+            ),
+        )
+
+    structlogger.info(f"Uploading assistant with the name '{assistant_name}'.")
+    return assistant_name
+
+
 @with_studio_error_handler
-def upload_calm_assistant(
-    args: argparse.Namespace, assistant_name: str, endpoint: str
-) -> StudioResult:
+def upload_calm_assistant(args: argparse.Namespace, endpoint: str) -> StudioResult:
     """Uploads the CALM assistant data to Rasa Studio.
 
     Args:
@@ -85,12 +136,13 @@ def upload_calm_assistant(
             - flows: The path to the flows
             - endpoints: The path to the endpoints
             - config: The path to the config
-        assistant_name: The name of the assistant
         endpoint: The studio endpoint
     Returns:
         None
     """
-    logger.info("Parsing CALM assistant data...")
+    structlogger.info(
+        "rasa.studio.upload.loading_data", event_info="Parsing CALM assistant data..."
+    )
 
     importer = TrainingDataImporter.load_from_dict(
         domain_path=args.domain,
@@ -98,8 +150,10 @@ def upload_calm_assistant(
     )
 
     # Prepare config and domain
-    config_from_files = importer.get_config()
+    config = importer.get_config()
     domain_from_files = importer.get_domain().as_dict()
+    endpoints_from_files = read_yaml_file(args.endpoints)
+    config_from_files = read_yaml_file(args.config)
 
     # Extract domain and config values
     domain_keys = [
@@ -112,18 +166,10 @@ def upload_calm_assistant(
         "forms",
         "session_config",
     ]
-    config_keys = [
-        "recipe",
-        "language",
-        "pipeline",
-        "llm",
-        "policies",
-        "model_name",
-        "assistant_id",
-    ]
 
     domain = extract_values(domain_from_files, domain_keys)
-    config = extract_values(config_from_files, config_keys)
+
+    assistant_name = _get_assistant_name(config)
 
     training_data_paths = args.data
 
@@ -165,18 +211,17 @@ def upload_calm_assistant(
         assistant_name,
         flows_yaml=YamlFlowsWriter().dumps(flows),
         domain_yaml=dump_obj_as_yaml_to_string(domain),
-        config_yaml=dump_obj_as_yaml_to_string(config),
+        config_yaml=dump_obj_as_yaml_to_string(config_from_files),
+        endpoints=dump_obj_as_yaml_to_string(endpoints_from_files),
         nlu_yaml=nlu_examples_yaml,
     )
 
-    logger.info("Uploading to Rasa Studio...")
+    structlogger.info("Uploading to Rasa Studio...")
     return make_request(endpoint, graphql_req)
 
 
 @with_studio_error_handler
-def upload_nlu_assistant(
-    args: argparse.Namespace, assistant_name: str, endpoint: str
-) -> StudioResult:
+def upload_nlu_assistant(args: argparse.Namespace, endpoint: str) -> StudioResult:
     """Uploads the classic (dm1) assistant data to Rasa Studio.
 
     Args:
@@ -185,14 +230,13 @@ def upload_nlu_assistant(
             - domain: The path to the domain
             - intents: The intents to upload
             - entities: The entities to upload
-        assistant_name: The name of the assistant
         endpoint: The studio endpoint
     Returns:
         None
     """
-    logger.info("Found DM1 assistant data, parsing...")
+    structlogger.info("Found DM1 assistant data, parsing...")
     importer = TrainingDataImporter.load_from_dict(
-        domain_path=args.domain, training_data_paths=args.data
+        domain_path=args.domain, training_data_paths=args.data, config_path=args.config
     )
 
     intents_from_files = importer.get_nlu_data().intents
@@ -202,7 +246,12 @@ def upload_nlu_assistant(
         args, intents_from_files, entities_from_files
     )
 
-    logger.info("Validating data...")
+    config_from_files = importer.get_config()
+    config = extract_values(config_from_files, config_keys)
+
+    assistant_name = _get_assistant_name(config)
+
+    structlogger.info("Validating data...")
     _check_for_missing_primitives(
         intents, entities, intents_from_files, entities_from_files
     )
@@ -219,7 +268,7 @@ def upload_nlu_assistant(
 
     graphql_req = build_request(assistant_name, nlu_examples_yaml, domain_yaml)
 
-    logger.info("Uploading to Rasa Studio...")
+    structlogger.info("Uploading to Rasa Studio...")
     return make_request(endpoint, graphql_req)
 
 
@@ -252,7 +301,7 @@ def _add_missing_entities(
     all_entities.extend(entities)
     for entity in entities_from_intents:
         if entity not in entities:
-            logger.warning(
+            structlogger.warning(
                 f"Adding entity '{entity}' to upload since it is used in an intent."
             )
             all_entities.append(entity)
@@ -264,6 +313,7 @@ def build_import_request(
     flows_yaml: str,
     domain_yaml: str,
     config_yaml: str,
+    endpoints: str,
     nlu_yaml: str = "",
 ) -> Dict:
     # b64encode expects bytes and returns bytes so we need to decode to string
@@ -271,6 +321,7 @@ def build_import_request(
     base64_flows = base64.b64encode(flows_yaml.encode("utf-8")).decode("utf-8")
     base64_config = base64.b64encode(config_yaml.encode("utf-8")).decode("utf-8")
     base64_nlu = base64.b64encode(nlu_yaml.encode("utf-8")).decode("utf-8")
+    base64_endpoints = base64.b64encode(endpoints.encode("utf-8")).decode("utf-8")
 
     graphql_req = {
         "query": (
@@ -284,6 +335,7 @@ def build_import_request(
                 "flows": base64_flows,
                 "nlu": base64_nlu,
                 "config": base64_config,
+                "endpoints": base64_endpoints,
             }
         },
     }
@@ -321,15 +373,14 @@ def _filter_domain(
     entities: List[Union[str, Dict]], intents: List[str], domain_from_files: Dict
 ) -> Dict:
     """Filters the domain to only include the selected entities and intents."""
-    domain = {
+    selected_entities = _remove_not_selected_entities(
+        entities, domain_from_files.get("entities", [])
+    )
+    return {
         "version": domain_from_files["version"],
         "intents": intents,
-        "entities": _remove_not_selected_entities(
-            entities, domain_from_files["entities"]
-        ),
+        "entities": selected_entities,
     }
-
-    return domain
 
 
 def _check_for_missing_primitives(
