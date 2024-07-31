@@ -136,11 +136,11 @@ def traceable(
         else:
             span_name = f"{self.__class__.__name__}.{fn.__name__}"
         with tracer.start_as_current_span(span_name, attributes=attrs):
-            start_time = time.process_time_ns()
+            start_time = time.perf_counter_ns()
 
             result = fn(self, *args, **kwargs)
 
-            end_time = time.process_time_ns()
+            end_time = time.perf_counter_ns()
             record_callable_duration_metrics(self, start_time, end_time)
 
             if metrics_recorder:
@@ -192,11 +192,11 @@ def traceable_async(
         ):
             TraceContextTextMapPropagator().inject(headers)
 
-            start_time = time.process_time_ns()
+            start_time = time.perf_counter_ns()
 
             result = await fn(self, *args, **kwargs)
 
-            end_time = time.process_time_ns()
+            end_time = time.perf_counter_ns()
             record_callable_duration_metrics(self, start_time, end_time, **attrs)
 
             if metrics_recorder:
