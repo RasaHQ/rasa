@@ -1,11 +1,12 @@
 import copy
 import logging
+from functools import lru_cache
 from typing import (
-    List,
-    Text,
-    Optional,
-    Dict,
     Any,
+    Dict,
+    Text,
+    List,
+    Optional,
     TYPE_CHECKING,
     Tuple,
     Set,
@@ -19,6 +20,7 @@ from rasa.core.actions.custom_action_executor import (
     RetryCustomActionExecutor,
     NoEndpointCustomActionExecutor,
 )
+from rasa.core.actions.direct_custom_actions_executor import DirectCustomActionExecutor
 from rasa.core.actions.grpc_custom_action_executor import GRPCCustomActionExecutor
 from rasa.core.actions.http_custom_action_executor import HTTPCustomActionExecutor
 from rasa.core.constants import (
@@ -85,6 +87,7 @@ from rasa.shared.nlu.constants import (
     INTENT_NAME_KEY,
     INTENT_RANKING_KEY,
 )
+from rasa.shared.utils.io import raise_warning
 from rasa.shared.utils.schemas.events import EVENTS_SCHEMA
 from rasa.utils.endpoints import EndpointConfig, ClientResponseError
 from rasa.utils.url_tools import get_url_schema, UrlSchema
@@ -134,7 +137,9 @@ def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["A
 
 
 def action_for_index(
-    index: int, domain: Domain, action_endpoint: Optional[EndpointConfig]
+    index: int,
+    domain: Domain,
+    action_endpoint: Optional[EndpointConfig],
 ) -> "Action":
     """Get an action based on its index in the list of available actions.
 
@@ -157,7 +162,9 @@ def action_for_index(
         )
 
     return action_for_name_or_text(
-        domain.action_names_or_texts[index], domain, action_endpoint
+        domain.action_names_or_texts[index],
+        domain,
+        action_endpoint,
     )
 
 
@@ -181,7 +188,9 @@ def is_retrieval_action(action_name: Text, retrieval_intents: List[Text]) -> boo
 
 
 def action_for_name_or_text(
-    action_name_or_text: Text, domain: Domain, action_endpoint: Optional[EndpointConfig]
+    action_name_or_text: Text,
+    domain: Domain,
+    action_endpoint: Optional[EndpointConfig],
 ) -> "Action":
     """Retrieves an action by its name or by its text in case it's an end-to-end action.
 
@@ -706,12 +715,15 @@ class ActionDeactivateLoop(Action):
 
 class RemoteAction(Action):
     def __init__(
-        self, name: Text, action_endpoint: Optional[EndpointConfig] = None
+        self,
+        name: Text,
+        action_endpoint: Optional[EndpointConfig] = None,
     ) -> None:
         self._name = name
         self.action_endpoint = action_endpoint
         self.executor = self._create_executor()
 
+    @lru_cache(maxsize=1)
     def _create_executor(self) -> CustomActionExecutor:
         """Creates an executor based on the action endpoint configuration.
 
@@ -721,9 +733,18 @@ class RemoteAction(Action):
         Raises:
             RasaException: If no valid action endpoint is configured.
         """
-
         if not self.action_endpoint:
             return NoEndpointCustomActionExecutor(self.name())
+
+        if self.action_endpoint.url and self.action_endpoint.actions_module:
+            raise_warning(
+                "Both 'actions_module' and 'url' are defined. "
+                "As they are mutually exclusive and 'actions_module' "
+                "is prioritized, actions will be executed by the assistant."
+            )
+
+        if self.action_endpoint and self.action_endpoint.actions_module:
+            return DirectCustomActionExecutor(self.name(), self.action_endpoint)
 
         url_schema = get_url_schema(self.action_endpoint.url)
 
