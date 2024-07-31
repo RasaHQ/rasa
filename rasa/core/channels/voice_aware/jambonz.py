@@ -17,7 +17,7 @@ from rasa.shared.utils.common import mark_as_experimental_feature
 
 structlogger = structlog.get_logger()
 
-CHANNEL_NAME = "jambonz_voice_aware"
+CHANNEL_NAME = "jambonz"
 
 
 class JambonzVoiceAwareInput(InputChannel):
