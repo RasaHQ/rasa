@@ -67,9 +67,6 @@ class TestAzureOpenAIEmbeddingClient:
     def test_deployment(self, client: AzureOpenAIEmbeddingClient) -> None:
         assert client.deployment == "some_azure_deployment"
 
-    def test_provider(self, client: AzureOpenAIEmbeddingClient) -> None:
-        assert client.provider == "azure"
-
     def test_api_base(self, client: AzureOpenAIEmbeddingClient) -> None:
         assert client.api_base == "https://test"
 
@@ -80,7 +77,10 @@ class TestAzureOpenAIEmbeddingClient:
         assert client.api_version == "v1"
 
     def test_model_parameters(self, client: AzureOpenAIEmbeddingClient) -> None:
-        assert client.extra_parameters == {}
+        assert client._litellm_extra_parameters == {}
+
+    def test_get_litellm_model_name(self, client: AzureOpenAIEmbeddingClient) -> None:
+        assert client._litellm_model_name == "azure/some_azure_deployment"
 
     def test_embedding_fn_args(self, client: AzureOpenAIEmbeddingClient) -> None:
         assert client._embedding_fn_args == {
@@ -134,7 +134,6 @@ class TestAzureOpenAIEmbeddingClient:
         # Then
         assert response.data == [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]
         assert response.model == "gpt-2024"
-        assert response.model == client.model
         assert response.usage.prompt_tokens == 10
         assert response.usage.completion_tokens == 20
         assert response.usage.total_tokens == 30
@@ -159,7 +158,6 @@ class TestAzureOpenAIEmbeddingClient:
         # Then
         assert response.data == [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]
         assert response.model == "gpt-2024"
-        assert response.model == client.model
         assert response.usage.prompt_tokens == 10
         assert response.usage.completion_tokens == 20
         assert response.usage.total_tokens == 30
@@ -281,7 +279,7 @@ class TestAzureOpenAIEmbeddingClient:
         assert client.api_base == "https://test"
         assert client.api_type == "test"
         assert client.api_version == "v1"
-        assert client.extra_parameters == {}
+        assert client._litellm_extra_parameters == {}
 
     def test_openai_embedding_client_init_with_env_vars(
         self, monkeypatch: MonkeyPatch
@@ -300,5 +298,5 @@ class TestAzureOpenAIEmbeddingClient:
         assert client.api_type == "env_test"
         assert client.api_version == "env_v1"
         assert client.model == "gpt-2024"
-        assert client.extra_parameters == {}
+        assert client._litellm_extra_parameters == {}
         assert os.environ.get(AZURE_API_KEY_ENV_VAR) == "some_key"

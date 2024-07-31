@@ -56,9 +56,6 @@ class TestOpenAIEmbeddingClient:
     def test_model(self, client: OpenAIEmbeddingClient) -> None:
         assert client.model == "gpt-1000"
 
-    def test_provider(self, client: OpenAIEmbeddingClient) -> None:
-        assert client.provider == "openai"
-
     def test_api_base(self, client: OpenAIEmbeddingClient) -> None:
         assert client.api_base == "https://test"
 
@@ -69,7 +66,10 @@ class TestOpenAIEmbeddingClient:
         assert client.api_version == "v1"
 
     def test_model_parameters(self, client: OpenAIEmbeddingClient) -> None:
-        assert client.extra_parameters == {}
+        assert client._litellm_extra_parameters == {}
+
+    def test_get_litellm_model_name(self, client: OpenAIEmbeddingClient) -> None:
+        assert client._litellm_model_name == "openai/gpt-1000"
 
     def test_embedding_fn_args(self, client: OpenAIEmbeddingClient) -> None:
         assert client._embedding_fn_args == {
@@ -136,7 +136,6 @@ class TestOpenAIEmbeddingClient:
         # Then
         assert response.data == [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]
         assert response.model == "gpt-1000"
-        assert response.model == client.model
         assert response.usage.prompt_tokens == 10
         assert response.usage.completion_tokens == 20
         assert response.usage.total_tokens == 30
@@ -161,7 +160,6 @@ class TestOpenAIEmbeddingClient:
         # Then
         assert response.data == [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]
         assert response.model == "gpt-1000"
-        assert response.model == client.model
         assert response.usage.prompt_tokens == 10
         assert response.usage.completion_tokens == 20
         assert response.usage.total_tokens == 30
@@ -183,7 +181,7 @@ class TestOpenAIEmbeddingClient:
         assert client.api_base == "https://test"
         assert client.api_type == "test"
         assert client.api_version == "v1"
-        assert client.extra_parameters == {}
+        assert client._litellm_extra_parameters == {}
 
     def test_openai_embedding_client_init_with_env_vars(
         self, monkeypatch: MonkeyPatch
@@ -202,5 +200,5 @@ class TestOpenAIEmbeddingClient:
         assert client.api_type == "env_test"
         assert client.api_version == "env_v1"
         assert client.model == "gpt-1000"
-        assert client.extra_parameters == {}
+        assert client._litellm_extra_parameters == {}
         assert os.environ.get(OPENAI_API_KEY_ENV_VAR) == "some_key"

@@ -71,7 +71,7 @@ class OpenAIEmbeddingClient(_BaseLiteLLMEmbeddingClient):
             api_base=self.api_base,
             api_type=self.api_type,
             api_version=self.api_version,
-            extra_parameters=self.extra_parameters,
+            extra_parameters=self._extra_parameters,
         )
         return config.to_dict()
 
@@ -84,11 +84,6 @@ class OpenAIEmbeddingClient(_BaseLiteLLMEmbeddingClient):
             String representing the model name.
         """
         return self._model
-
-    @property
-    def provider(self) -> str:
-        """Return the provider name."""
-        return OPENAI_PROVIDER
 
     @property
     def api_base(self) -> Optional[str]:
@@ -121,7 +116,7 @@ class OpenAIEmbeddingClient(_BaseLiteLLMEmbeddingClient):
         return self._api_version
 
     @property
-    def extra_parameters(self) -> Dict[str, Any]:
+    def _litellm_extra_parameters(self) -> Dict[str, Any]:
         """
         Returns the model parameters for the openai embedding client.
 
@@ -133,9 +128,16 @@ class OpenAIEmbeddingClient(_BaseLiteLLMEmbeddingClient):
     @property
     def _embedding_fn_args(self) -> Dict[str, Any]:
         return {
-            "model": f"{self.provider}/{self.model}",
+            "model": self._litellm_model_name,
             "api_base": self.api_base,
             "api_type": self.api_type,
             "api_version": self.api_version,
-            **self.extra_parameters,
+            **self._litellm_extra_parameters,
         }
+
+    @property
+    def _litellm_model_name(self) -> str:
+        """Returns the LiteLLM model name for the openai embedding client."""
+        if self._model and f"{OPENAI_PROVIDER}/" not in self._model:
+            return f"{OPENAI_PROVIDER}/{self._model}"
+        return self._model

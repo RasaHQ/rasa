@@ -109,7 +109,7 @@ class AzureOpenAIEmbeddingClient(_BaseLiteLLMEmbeddingClient):
             api_base=self.api_base,
             api_type=self.api_type,
             api_version=self.api_version,
-            extra_parameters=self.extra_parameters,
+            extra_parameters=self._extra_parameters,
         )
         return config.to_dict()
 
@@ -129,11 +129,6 @@ class AzureOpenAIEmbeddingClient(_BaseLiteLLMEmbeddingClient):
         return self._deployment
 
     @property
-    def provider(self) -> str:
-        """Return the provider name."""
-        return AZURE_PROVIDER
-
-    @property
     def api_base(self) -> Optional[str]:
         """Returns the base API URL for the oazure penai embedding client."""
         return self._api_base
@@ -149,7 +144,7 @@ class AzureOpenAIEmbeddingClient(_BaseLiteLLMEmbeddingClient):
         return self._api_version
 
     @property
-    def extra_parameters(self) -> Dict[str, Any]:
+    def _litellm_extra_parameters(self) -> Dict[str, Any]:
         """
         Returns the model parameters for the azure openai embedding client.
 
@@ -161,13 +156,20 @@ class AzureOpenAIEmbeddingClient(_BaseLiteLLMEmbeddingClient):
     @property
     def _embedding_fn_args(self) -> dict:
         return {
-            **self.extra_parameters,
-            "model": f"{self.provider}/{self.deployment}",
+            **self._litellm_extra_parameters,
+            "model": self._litellm_model_name,
             "api_base": self.api_base,
             "api_type": self.api_type,
             "api_version": self.api_version,
             "api_key": self._api_key,
         }
+
+    @property
+    def _litellm_model_name(self) -> str:
+        """Get the model name formatted for azure openai embedding client."""
+        if self.deployment and f"{AZURE_PROVIDER}/" not in self.deployment:
+            return f"{AZURE_PROVIDER}/{self.deployment}"
+        return self.deployment
 
     def validate_client_setup(self) -> None:
         """Perform client validation. By default only environment variables

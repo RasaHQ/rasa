@@ -43,23 +43,12 @@ class _BaseLiteLLMEmbeddingClient:
 
     @property
     @abstractmethod
-    def model(self) -> str:
-        """Returns the model or deployment name."""
-        pass
-
-    @property
-    @abstractmethod
-    def provider(self) -> str:
-        """Return the provider name."""
-        pass
-
-    @property
-    @abstractmethod
-    def extra_parameters(self) -> Dict[str, Any]:
+    def _litellm_extra_parameters(self) -> Dict[str, Any]:
         """Returns a dictionary of extra parameters which include model
         parameters as well as LiteLLM specific input parameters.
+        By default, this returns an empty dictionary (no extra parameters).
         """
-        pass
+        return {}
 
     @property
     @abstractmethod
@@ -67,14 +56,25 @@ class _BaseLiteLLMEmbeddingClient:
         """Returns the arguments to be passed to the embedding function."""
         pass
 
+    @property
+    @abstractmethod
+    def _litellm_model_name(self) -> str:
+        """Returns the model name in LiteLLM format based on the Provider/API type."""
+        pass
+
     def validate_client_setup(self) -> None:
         """Perform client validation. By default only environment variables
-        are validated.
+        are validated. Override this method to add more validation steps.
 
         Raises:
             ProviderClientValidationError if validation fails.
         """
-        validation_info = validate_environment(f"{self.provider}/{self.model}")
+        self._validate_environment_variables()
+        self._validate_api_key_not_in_config()
+
+    def _validate_environment_variables(self) -> None:
+        """Validate that the required environment variables are set."""
+        validation_info = validate_environment(self._litellm_model_name)
         if missing_environment_variables := validation_info.get(
             _VALIDATE_ENVIRONMENT_MISSING_KEYS_KEY
         ):
@@ -86,6 +86,18 @@ class _BaseLiteLLMEmbeddingClient:
                 "base_litellm_embedding_client.validate_environment_variables",
                 event_info=event_info,
                 missing_environment_variables=missing_environment_variables,
+            )
+            raise ProviderClientValidationError(event_info)
+
+    def _validate_api_key_not_in_config(self) -> None:
+        if "api_key" in self._litellm_extra_parameters:
+            event_info = (
+                "API Key is set through `api_key` extra parameter."
+                "Set API keys through environment variables."
+            )
+            structlogger.error(
+                "base_litellm_client.validate_api_key_not_in_config",
+                event_info=event_info,
             )
             raise ProviderClientValidationError(event_info)
 
@@ -157,9 +169,21 @@ class _BaseLiteLLMEmbeddingClient:
         )
         if response.usage and (usage := response.usage.get("model_extra")) is not None:
             formatted_response.usage = EmbeddingUsage(
-                completion_tokens=usage["completion_tokens"],
-                prompt_tokens=usage["prompt_tokens"],
-                total_tokens=usage["total_tokens"],
+                completion_tokens=(
+                    num_tokens
+                    if isinstance(num_tokens := usage.get("completion_tokens", 0), int)
+                    else 0
+                ),
+                prompt_tokens=(
+                    num_tokens
+                    if isinstance(num_tokens := usage.get("prompt_tokens", 0), int)
+                    else 0
+                ),
+                total_tokens=(
+                    num_tokens
+                    if isinstance(num_tokens := usage.get("total_tokens", 0), int)
+                    else 0
+                ),
             )
         log_response = formatted_response.to_dict()
         log_response["data"] = "Embedding response data not shown here for brevity."
