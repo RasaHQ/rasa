@@ -1,10 +1,9 @@
 import argparse
 import base64
-from io import StringIO
 from pathlib import Path
 from textwrap import dedent
 from typing import Any, Dict, List, Set, Text, Union
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 import questionary
