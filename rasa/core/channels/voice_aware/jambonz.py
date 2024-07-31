@@ -18,6 +18,8 @@ CHANNEL_NAME = "jambonz_voice_aware"
 
 
 class JambonzVoiceAwareInput(InputChannel):
+    """Connector for the Jambonz platform."""
+
     @classmethod
     def name(cls) -> Text:
         return CHANNEL_NAME
@@ -70,6 +72,7 @@ class JambonzWebsocketOutput(OutputChannel):
             message=text_message,
         )
 
+        # send message to jambonz
         await send_ws_text_message(self.ws, message.get("text"))
 
     async def send_text_message(

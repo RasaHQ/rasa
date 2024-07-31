@@ -13,6 +13,8 @@ structlogger = structlog.get_logger()
 
 @dataclass
 class NewSessionMessage:
+    """Message indicating a new session has been started."""
+
     call_sid: str
     message_id: str
 
@@ -26,12 +28,16 @@ class NewSessionMessage:
 
 @dataclass
 class Transcript:
+    """Transcript of a spoken utterance."""
+
     text: str
     confidence: float
 
 
 @dataclass
 class TranscriptResult:
+    """Result of an ASR call with potential transcripts."""
+
     call_sid: str
     message_id: str
     is_final: bool
@@ -53,6 +59,10 @@ class TranscriptResult:
 
     @staticmethod
     def from_dtmf_result(message: Dict[str, Any]) -> "TranscriptResult":
+        """Create a transcript result from a DTMF result.
+
+        We use the dtmf as the text with confidence 1.0
+        """
         return TranscriptResult(
             message.get("call_sid"),
             message.get("msgid"),
@@ -65,6 +75,8 @@ class TranscriptResult:
 
 @dataclass
 class CallStatusChanged:
+    """Message indicating a change in the call status."""
+
     call_sid: str
     status: str
 
@@ -77,6 +89,8 @@ class CallStatusChanged:
 
 @dataclass
 class SessionReconnect:
+    """Message indicating a session has reconnected."""
+
     call_sid: str
 
     @staticmethod
@@ -86,6 +100,8 @@ class SessionReconnect:
 
 @dataclass
 class VerbStatusChanged:
+    """Message indicating a change in the status of a verb."""
+
     call_sid: str
     event: str
     id: str
@@ -103,6 +119,8 @@ class VerbStatusChanged:
 
 @dataclass
 class GatherTimeout:
+    """Message indicating a gather timeout."""
+
     call_sid: str
 
     @staticmethod
@@ -188,7 +206,8 @@ async def handle_gather_completed(
 ) -> None:
     """Handle changes to commands we have send to jambonz.
 
-    This includes results of gather calles with their transcription."""
+    This includes results of gather calles with their transcription.
+    """
     from rasa.core.channels.voice_aware.jambonz import JambonzWebsocketOutput
 
     if not transcript_result.is_final:
@@ -238,6 +257,7 @@ async def handle_gather_timeout(gather_timeout: GatherTimeout, ws: Websocket) ->
 
 
 async def handle_call_status(call_status: CallStatusChanged) -> None:
+    """Handle changes in the call status."""
     structlogger.debug(
         "jambonz.websocket.message.call_status_changed",
         call_sid=call_status.call_sid,
@@ -246,6 +266,7 @@ async def handle_call_status(call_status: CallStatusChanged) -> None:
 
 
 async def handle_session_reconnect(session_reconnect: SessionReconnect) -> None:
+    """Handle session reconnect message."""
     # there is nothing we need to do atm when a session reconnects.
     # this happens if jambonz looses the websocket connection and reconnects
     structlogger.debug(
@@ -255,6 +276,7 @@ async def handle_session_reconnect(session_reconnect: SessionReconnect) -> None:
 
 
 async def handle_verb_status(verb_status: VerbStatusChanged) -> None:
+    """Handle changes in the status of a verb."""
     structlogger.debug(
         "jambonz.websocket.message.verb_status_changed",
         call_sid=verb_status.call_sid,
@@ -265,6 +287,7 @@ async def handle_verb_status(verb_status: VerbStatusChanged) -> None:
 
 
 async def send_config_ack(message_id: str, ws: Websocket) -> None:
+    """Send an ack message to jambonz including the configuration."""
     await ws.send(
         json.dumps(
             {
@@ -277,6 +300,7 @@ async def send_config_ack(message_id: str, ws: Websocket) -> None:
 
 
 async def send_gather_input(ws: Websocket) -> None:
+    """Send a gather input command to jambonz."""
     await ws.send(
         json.dumps(
             {
@@ -299,6 +323,7 @@ async def send_gather_input(ws: Websocket) -> None:
 
 
 async def send_ws_text_message(ws: Websocket, text: Text) -> None:
+    """Send a text message to the websocket using the jambonz interface."""
     await ws.send(
         json.dumps(
             {
