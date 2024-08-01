@@ -10,8 +10,8 @@ from rasa.cli.arguments.default_arguments import (
 from rasa.shared.constants import DEFAULT_CONVERTED_DATA_PATH
 
 
-def set_convert_arguments(parser: argparse.ArgumentParser, data_type: Text) -> None:
-    """Sets convert command arguments."""
+def set_convert_nlu_arguments(parser: argparse.ArgumentParser, data_type: Text) -> None:
+    """Sets convert nlu command arguments."""
     parser.add_argument(
         "-f",
         "--format",
@@ -30,6 +30,31 @@ def set_convert_arguments(parser: argparse.ArgumentParser, data_type: Text) -> N
     )
 
     parser.add_argument("-l", "--language", default="en", help="Language of data.")
+
+
+def set_convert_e2e_arguments(parser: argparse.ArgumentParser) -> None:
+    """Sets convert e2e command arguments.
+
+    Args:
+        parser: Parser we are going to attach arguments to.
+    """
+    parser.add_argument(
+        "path",
+        type=str,
+        help="Path to the input CSV or XLS/XLSX file.",
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        type=str,
+        default="e2e_tests",
+        help="Output directory to store the tests.",
+    )
+    parser.add_argument(
+        "--sheet-name",
+        type=str,
+        help="Worksheet name containing relevant data. Mandatory for Excel file input.",
+    )
 
 
 def set_split_arguments(parser: argparse.ArgumentParser) -> None:
