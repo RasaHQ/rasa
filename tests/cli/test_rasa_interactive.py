@@ -14,8 +14,10 @@ from rasa.model_training import TrainingResult
 
 from tests.cli.conftest import RASA_EXE
 
-# file deepcode ignore CodeInjection/test: These tests explicitly test command execution for the Rasa CLI.
-# file deepcode ignore PT/test: These tests explicitly test command execution for the Rasa CLI.
+# file deepcode ignore CodeInjection/test: These tests explicitly test command 
+# execution for the Rasa CLI.
+# file deepcode ignore PT/test: These tests explicitly test command execution
+# for the Rasa CLI.
 
 def test_interactive_help(run: Callable[..., RunResult]):
     output = run("interactive", "--help")

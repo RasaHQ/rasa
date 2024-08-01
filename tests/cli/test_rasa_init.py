@@ -99,7 +99,8 @@ def test_train_data_in_project_dir(monkeypatch: MonkeyPatch, tmp_path: Path):
     # go back to local project folder so we can test it is created correctly.
     with enable_cache(Path(".rasa", "cache")):
         mock_stdin([])
-        # file deepcode ignore PT/test: Test function, seems unlikely to be exploitable in any real sense.
+        # file deepcode ignore PT/test: Test function, seems unlikely to be
+        # exploitable in any real sense.
         scaffold.init_project(args, str(new_project_folder_path))
     assert os.getcwd() == str(new_project_folder_path)
     assert os.path.exists(".rasa/cache")
