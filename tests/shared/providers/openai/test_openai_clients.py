@@ -19,6 +19,7 @@ structlogger = structlog.get_logger()
 
 # file deepcode ignore HardcodedNonCryptoSecret/test: Test Credentials
 
+
 @pytest.fixture
 def mock_request(monkeypatch: MonkeyPatch) -> AsyncMock:
     mock_request = AsyncMock()
