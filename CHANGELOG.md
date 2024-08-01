@@ -10,6 +10,16 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.9.5] - 2024-08-01
+                       
+Rasa Pro 3.9.5 (2024-08-01)                            
+### Improvements
+- [#932](https://github.com/rasahq/rasa-private/issues/932): Enabled generative chitchat in the `tutorial` template with instructions on how to turn it off added to the documentation.
+
+### Bugfixes
+- [#921](https://github.com/rasahq/rasa-private/issues/921): Update the usage of `time.process_time_ns` with `time.perf_counter_ns` to fix the inconsistencies between duration metrics and trace spans duration.
+
+
 ## [3.9.4] - 2024-07-25
                        
 Rasa Pro 3.9.4 (2024-07-25)                            
