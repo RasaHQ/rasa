@@ -68,7 +68,7 @@ class JambonzWebsocketOutput(OutputChannel):
         """Add metadata and add message.
 
         Message is added to the list of
-        activities to be sent to the VoiceAI Connect server.
+        activities to be sent to the Jambonz Websocket server.
         """
         text_message = message.get("text", "")
         structlogger.debug(
