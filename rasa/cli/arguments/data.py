@@ -53,7 +53,7 @@ def set_convert_e2e_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--sheet-name",
         type=str,
-        help="Name of the sheet within the XLS file containing the relevant data.",
+        help="Worksheet name containing relevant data. Mandatory for Excel file input.",
     )
 
 

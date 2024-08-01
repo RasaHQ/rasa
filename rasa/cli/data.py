@@ -3,24 +3,25 @@ import logging
 import pathlib
 from typing import List
 
+import rasa.cli.utils
 import rasa.shared.core.domain
+import rasa.shared.data
+import rasa.shared.nlu.training_data.loading
+import rasa.shared.nlu.training_data.util
+import rasa.shared.utils.cli
+import rasa.shared.utils.io
+import rasa.utils.common
 from rasa import telemetry
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import data as arguments
 from rasa.cli.arguments import default_arguments
-import rasa.cli.utils
+from rasa.cli.data_convert_e2e import data_to_e2e_tests_conversion
 from rasa.shared.constants import (
     DEFAULT_DATA_PATH,
     DEFAULT_CONFIG_PATH,
     DEFAULT_DOMAIN_PATHS,
 )
-import rasa.shared.data
 from rasa.shared.importers.importer import TrainingDataImporter
-import rasa.shared.nlu.training_data.loading
-import rasa.shared.nlu.training_data.util
-import rasa.shared.utils.cli
-import rasa.utils.common
-import rasa.shared.utils.io
 from rasa.shared.utils.yaml import read_yaml_file, write_yaml
 
 logger = logging.getLogger(__name__)
@@ -79,8 +80,7 @@ def _add_data_convert_parsers(
         parents=parents,
         help="Convert input sample conversations into E2E test cases.",
     )
-    # Print help until the proper function gets attached.
-    convert_e2e_parser.set_defaults(func=lambda _: convert_e2e_parser.print_help(None))
+    convert_e2e_parser.set_defaults(func=data_to_e2e_tests_conversion)
     arguments.set_convert_e2e_arguments(convert_e2e_parser)
 
 
