@@ -71,7 +71,17 @@ def _add_data_convert_parsers(
         help="Converts NLU data between formats.",
     )
     convert_nlu_parser.set_defaults(func=_convert_nlu_data)
-    arguments.set_convert_arguments(convert_nlu_parser, data_type="Rasa NLU")
+    arguments.set_convert_nlu_arguments(convert_nlu_parser, data_type="Rasa NLU")
+
+    convert_e2e_parser = convert_subparsers.add_parser(
+        "e2e",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        parents=parents,
+        help="Convert input sample conversations into E2E test cases.",
+    )
+    # Print help until the proper function gets attached.
+    convert_e2e_parser.set_defaults(func=lambda _: convert_e2e_parser.print_help(None))
+    arguments.set_convert_e2e_arguments(convert_e2e_parser)
 
 
 def _add_data_split_parsers(
