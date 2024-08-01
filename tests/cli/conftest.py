@@ -64,10 +64,10 @@ def trained_simple_project(tmp_path_factory: TempPathFactory) -> Text:
 
     os.environ["LOG_LEVEL"] = "DEBUG"
 
-    # Very low risk - an exploit 
+    # Very low risk - an exploit
     # would first need to compromise the host running the tests and maliciously
     # edit the environment variables.
-    # deepcode ignore CommandInjection/test: 
+    # deepcode ignore CommandInjection/test:
     check_call([shutil.which(RASA_EXE), "train"], cwd=path)
 
     return str(path)

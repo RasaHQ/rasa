@@ -1,23 +1,23 @@
 import argparse
 from typing import Callable, Text
-from unittest.mock import Mock, ANY
+from unittest.mock import ANY, Mock
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.pytester import RunResult
 
 import rasa
+from rasa.cli import interactive, train
 from rasa.core.train import do_interactive_learning
 from rasa.core.training import interactive as interactive_learning
-from rasa.cli import interactive, train
 from rasa.model_training import TrainingResult
-
 from tests.cli.conftest import RASA_EXE
 
-# file deepcode ignore CodeInjection/test: These tests explicitly test command 
+# file deepcode ignore CodeInjection/test: These tests explicitly test command
 # execution for the Rasa CLI.
 # file deepcode ignore PT/test: These tests explicitly test command execution
 # for the Rasa CLI.
+
 
 def test_interactive_help(run: Callable[..., RunResult]):
     output = run("interactive", "--help")
