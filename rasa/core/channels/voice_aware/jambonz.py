@@ -8,7 +8,7 @@ from rasa.core.channels.voice_aware.jambonz_protocol import (
 )
 from rasa.core.channels.voice_aware.utils import validate_voice_license_scope
 from rasa.shared.exceptions import RasaException
-from sanic import Blueprint, response, Websocket
+from sanic import Blueprint, response, Websocket  # type: ignore[attr-defined]
 from sanic.request import Request
 from sanic.response import HTTPResponse
 
@@ -46,7 +46,7 @@ class JambonzVoiceAwareInput(InputChannel):
             """Server health route."""
             return response.json({"status": "ok"})
 
-        @jambonz_webhook.websocket("/websocket", subprotocols=["ws.jambonz.org"])
+        @jambonz_webhook.websocket("/websocket", subprotocols=["ws.jambonz.org"])  # type: ignore
         async def websocket(request: Request, ws: Websocket) -> None:
             """Triggered on new websocket connection."""
             async for message in ws:

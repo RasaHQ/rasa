@@ -5,7 +5,7 @@ from typing import Any, Awaitable, Callable, Dict, List, Text
 
 import structlog
 from rasa.core.channels.channel import UserMessage
-from sanic import Websocket
+from sanic import Websocket  # type: ignore[attr-defined]
 
 
 structlogger = structlog.get_logger()
