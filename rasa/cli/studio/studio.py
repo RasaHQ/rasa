@@ -114,7 +114,6 @@ def _studio_login(args: argparse.Namespace) -> None:
             password = questionary.password("Please enter your password").unsafe_ask()
 
         studio_auth.login(username, password)
-        rasa.shared.utils.cli.print_success("Successfully logged in to Rasa Studio.")
     except KeyboardInterrupt:
         rasa.shared.utils.cli.print_error("Login to Rasa Studio aborted.")
     except Exception as e:
