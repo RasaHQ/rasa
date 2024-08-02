@@ -18,8 +18,7 @@ ALLOWED_EXTENSIONS = [CSV, *EXCEL_EXTENSIONS]
 
 
 class E2ETestConverter:
-    """
-    E2ETestConvertor class is responsible for reading input CSV or XLS/XLSX files,
+    """E2ETestConvertor class is responsible for reading input CSV or XLS/XLSX files,
     splitting the data into distinct conversations, converting them into test cases,
     and storing the test cases into a YAML file at a specified directory.
 
@@ -49,8 +48,7 @@ class E2ETestConverter:
         self.sheet_name = sheet_name
 
     def get_and_validate_input_file_extension(self) -> Text:
-        """
-        Validates the input file extension and checks for required properties
+        """Validates the input file extension and checks for required properties
         like sheet name for XLSX files.
 
         Raises:
@@ -120,8 +118,7 @@ class E2ETestConverter:
             raise RasaException("The file could not be read.")
 
     def run(self) -> None:
-        """
-        Executes the E2E test conversion process: reads the file, generates tests,
+        """Executes the E2E test conversion process: reads the file, generates tests,
         and writes them to a YAML file.
         """
         self.read_file()
