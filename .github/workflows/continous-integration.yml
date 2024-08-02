@@ -20,18 +20,18 @@ concurrency:
 
 env:
   AWS_REGION: us-east-1
-  REPOSITORY: 329710836760.dkr.ecr.us-east-1.amazonaws.com/rasa-private-dev
-  SDK_REPOSITORY: 329710836760.dkr.ecr.us-east-1.amazonaws.com/rasa-sdk-dev
+  RASA_PRO_DEV_REPOSITORY: 329710836760.dkr.ecr.us-east-1.amazonaws.com/rasa-private-dev
+  RASA_SDK_DEV_REPOSITORY: 329710836760.dkr.ecr.us-east-1.amazonaws.com/rasa-sdk-dev
   DEFAULT_PYTHON_VERSION: "3.10"
   NODE_VERSION_INSPECTOR_BUILD: 16
-  
+
 permissions:
   checks: write
   id-token: write
   pull-requests: write
   contents: read
   issues: read
-  
+
 jobs:
   check-poetry-lock-is-up-to-date:
     name: check poetry lock is up to date
@@ -63,7 +63,7 @@ jobs:
       - name: Prepare the job
         uses: ./.github/actions/test-prerequisites
         with:
-          DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+          PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
           POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
 
       - name: Install Dependencies 📦
@@ -129,13 +129,12 @@ jobs:
         with:
           mask-password: "true"
 
-      # Tag in format: pr_number-shortSHA or branch_name-shortSHA
       - name: Set image tag
         run: |
           if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
-            echo "IMAGE_TAG=pr${{ github.event.number }}-$(git rev-parse --short $(cat $GITHUB_EVENT_PATH | jq -r .pull_request.head.sha))" >> $GITHUB_ENV
+            echo "RASA_IMAGE_TAG=pr${{ github.event.number }}-$(git rev-parse --short $(cat $GITHUB_EVENT_PATH | jq -r .pull_request.head.sha))" >> $GITHUB_ENV
           else
-          echo "IMAGE_TAG=$(echo "${GITHUB_REF##*/}" | tr '[:upper:]' '[:lower:]')-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+            echo "RASA_IMAGE_TAG=$(echo "${GITHUB_REF##*/}" | tr '[:upper:]' '[:lower:]')-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
           fi
 
       - name: Build base image
@@ -144,19 +143,26 @@ jobs:
 
       - name: Build base builder image
         run: |
-          BASE_IMAGE_HASH=localdev PLATFORM=${{ env.PLATFORM }} make build-docker-builder
+          BASE_IMAGE_HASH=localdev \
+          PLATFORM=${{ env.PLATFORM }} \
+          make build-docker-builder
 
       - name: Build Rasa Dependencies Image
         run: |
-          BASE_BUILDER_IMAGE_HASH=localdev POETRY_VERSION=$POETRY_VERSION PLATFORM=${{ env.PLATFORM }} make build-docker-rasa-deps
+          BASE_BUILDER_IMAGE_HASH=localdev \
+          POETRY_VERSION=$POETRY_VERSION \
+          PLATFORM=${{ env.PLATFORM }} \
+          make build-docker-rasa-deps
 
       - name: Build, tag, and push image to Amazon ECR
-        env:
-          IMAGE_TAG: ${{ env.IMAGE_TAG }}
         run: |
-          IMAGE_TAG=$IMAGE_TAG BASE_IMAGE_HASH=localdev RASA_DEPS_IMAGE_HASH=localdev PLATFORM=${{ env.PLATFORM }} make build-docker-rasa-image
-          docker tag $IMAGE_TAG $REPOSITORY:$IMAGE_TAG
-          docker push $REPOSITORY:$IMAGE_TAG
+          RASA_REPOSITORY=${{ env.RASA_PRO_DEV_REPOSITORY }} \
+          RASA_IMAGE_TAG=${{ env.RASA_IMAGE_TAG }} \
+          BASE_IMAGE_HASH=localdev \
+          RASA_DEPS_IMAGE_HASH=localdev \
+          PLATFORM=${{ env.PLATFORM }} \
+          make build-docker-rasa-image
+          docker push ${{ env.RASA_PRO_DEV_REPOSITORY }}:${{ env.RASA_IMAGE_TAG }}
 
   check_inspector_build:
     name: Check Inspector Build
@@ -214,61 +220,49 @@ jobs:
       - name: Check out code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
-        # Tag in format: pr_number-shortSHA or branch_name-shortSHA
       - name: Configure image tag
         run: |
-            if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
-              echo "IMAGE_TAG=pr${{ github.event.number }}-$(git rev-parse --short $(cat $GITHUB_EVENT_PATH | jq -r .pull_request.head.sha))" >> $GITHUB_ENV
-            else
-              echo "IMAGE_TAG=$(echo "${GITHUB_REF##*/}" | tr '[:upper:]' '[:lower:]')-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-            fi
+          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+            echo "RASA_IMAGE_TAG=pr${{ github.event.number }}-$(git rev-parse --short $(cat $GITHUB_EVENT_PATH | jq -r .pull_request.head.sha))" >> $GITHUB_ENV
+          else
+            echo "RASA_IMAGE_TAG=$(echo "${GITHUB_REF##*/}" | tr '[:upper:]' '[:lower:]')-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+          fi
 
       - name: Prepare the job for integration tests
         uses: ./.github/actions/test-prerequisites
         with:
-            DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+            PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
             POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
 
       - name: Install Dependencies (Linux) 📦
+        shell: bash
         run: |
           make install
-        shell: bash
-
-      - name: Setup buildx
-        uses: ./.github/actions/setup-build-x
 
       - name: Pull rasa-private dev image
         uses: ./.github/actions/pull-from-ecr
         with:
-            IMAGE_TAG: ${{ env.IMAGE_TAG }}
-            AWS_REGION: ${{ env.AWS_REGION }}
-            AWS_ARN_ROLE_TO_ASSUME: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
-            REPOSITORY: ${{ env.REPOSITORY }}
+          AWS_REGION: ${{ env.AWS_REGION }}
+          AWS_ARN_ROLE_TO_ASSUME: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
+          IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
+          REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
 
       - name: Pull rasa-sdk dev image
         uses: ./.github/actions/pull-from-ecr
         with:
           AWS_REGION: ${{ env.AWS_REGION }}
           AWS_ARN_ROLE_TO_ASSUME: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
-          REPOSITORY: ${{ env.SDK_REPOSITORY }}
           IMAGE_TAG: latest
+          REPOSITORY: ${{ env.RASA_SDK_DEV_REPOSITORY }}
 
       - name: Tracing integration testing - Run docker containers
+        env:
+          RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
+          RASA_IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_DEV_REPOSITORY }}
         run: |
           make run-tracing-integration-containers
-        env:
-          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
-          TARGET_IMAGE_REGISTRY: ${{ env.REPOSITORY }}
-          SDK_TARGET_IMAGE_REGISTRY: ${{ env.SDK_REPOSITORY }}
-          IMAGE_TAG: ${{ env.IMAGE_TAG }}
-
-      - name: Tracing integration testing -  Wait for container startup ⏳
-        timeout-minutes: 15
-        run: |
-          bash $CHECK_CONNECTION_SCRIPT http://localhost:5006
-          bash $CHECK_CONNECTION_SCRIPT http://localhost:5007
-        env:
-          CHECK_CONNECTION_SCRIPT: tests_deployment/integration_tests_tracing_deployment/check_connection.sh
 
       - name: Tracing integration testing - Test Code with Services 🩺
         env:
@@ -276,20 +270,15 @@ jobs:
           RASA_TELEMETRY_WRITE_KEY: ${{ secrets.SEGMENT_WRITE_DEV_KEY }}
         run: |
           make test-tracing-integration
-      
-      - name: Show container logs
-        if: always()
-        uses: ./.github/actions/debug-tracing-tests
-        with:
-          COMPOSE_FILE_PATH: tests_deployment/integration_tests_tracing_deployment/docker-compose.intg.yml
 
       - name: Show container logs
         if: always()
         uses: ./.github/actions/debug-tracing-tests
         with:
-          COMPOSE_FILE_PATH: tests_deployment/integration_tests_tracing_deployment/docker-compose.intg.yml
+          COMPOSE_FILE_PATH: tests_deployment/integration_tests_tracing_deployment/docker-compose.yml
 
       - name: Tracing integration testing - Stop docker containers
+        if: always()
         run: |
           make stop-tracing-integration-containers
 
@@ -308,70 +297,57 @@ jobs:
       - name: Check out code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
-      - name: Read Poetry Version 🔢
-        run: |
-          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
-        shell: bash
-
     #   # Tag in format: pr_number-shortSHA or branch_name-shortSHA
       - name: Configure image tag
         run: |
-            if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
-              echo "IMAGE_TAG=pr${{ github.event.number }}-$(git rev-parse --short $(cat $GITHUB_EVENT_PATH | jq -r .pull_request.head.sha))" >> $GITHUB_ENV
-            else
-              echo "IMAGE_TAG=$(echo "${GITHUB_REF##*/}" | tr '[:upper:]' '[:lower:]')-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-            fi
+          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+            echo "RASA_IMAGE_TAG=pr${{ github.event.number }}-$(git rev-parse --short $(cat $GITHUB_EVENT_PATH | jq -r .pull_request.head.sha))" >> $GITHUB_ENV
+          else
+            echo "RASA_IMAGE_TAG=$(echo "${GITHUB_REF##*/}" | tr '[:upper:]' '[:lower:]')-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+          fi
 
       - name: Prepare the job for integration tests
         uses: ./.github/actions/test-prerequisites
         with:
-            DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+            PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
             POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
 
       - name: Install Dependencies (Linux) 📦
+        shell: bash
         run: |
           make install
-        shell: bash
-
-      - name: Setup buildx
-        uses: ./.github/actions/setup-build-x
 
       - name: Pull rasa-private dev image
         uses: ./.github/actions/pull-from-ecr
         with:
-            IMAGE_TAG: ${{ env.IMAGE_TAG }}
-            AWS_REGION: ${{ env.AWS_REGION }}
-            AWS_ARN_ROLE_TO_ASSUME: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
-            REPOSITORY: ${{ env.REPOSITORY }}
+          AWS_REGION: ${{ env.AWS_REGION }}
+          AWS_ARN_ROLE_TO_ASSUME: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
+          IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
+          REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
 
       - name: Metric Integration Testing - Run docker containers
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
+          RASA_IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          RASA_SDK_REPOSITORY: rasa/rasa-sdk
+          RASA_SDK_IMAGE_TAG: latest
         run: |
           make run-metrics-integration-containers
-        env:
-          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          TARGET_IMAGE_REGISTRY: ${{ env.REPOSITORY }}
-          IMAGE_TAG: ${{ env.IMAGE_TAG }}
-
-      - name: Metric Integration Testing - Wait for container startup ⏳
-        timeout-minutes: 15
-        run: |
-          bash $CHECK_CONNECTION_SCRIPT http://localhost:5005
-        env:
-          CHECK_CONNECTION_SCRIPT: tests_deployment/integration_tests_tracing_deployment/check_connection.sh
 
       - name: Metric Integration Testing -  Test Code with Services 🩺
-        run: |
-          make test-metrics-integration
         env:
           PYTHONIOENCODING: "utf-8"
           RASA_TELEMETRY_WRITE_KEY: ${{ secrets.SEGMENT_WRITE_DEV_KEY }}
+        run: |
+          make test-metrics-integration
 
       - name: Show container logs
         if: always()
         uses: ./.github/actions/debug-metric-tests
         with:
-          COMPOSE_FILE_PATH: tests_deployment/integration_tests_tracing_deployment/metrics_setup/docker-compose.yml
+          COMPOSE_FILE_PATH: tests_deployment/integration_tests_metrics_setup/docker-compose.yml
 
       - name: Metric Integration Testing - Stop docker containers
         run: |
@@ -387,7 +363,10 @@ jobs:
   custom-action-integration-test-with-nlu-bot:
     name: Custom Action Integration Tests With NLU bot
     needs: rasa-private-dev-docker-image
+    env:
+      RASA_SDK_IMAGE_TAG: latest
     runs-on: ubuntu-22.04-4core
+
     steps:
       - name: Check out code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -397,13 +376,12 @@ jobs:
           echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
         shell: bash
 
-    #   # Tag in format: pr_number-shortSHA or branch_name-shortSHA
       - name: Configure image tag
         run: |
             if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
-              echo "IMAGE_TAG=pr${{ github.event.number }}-$(git rev-parse --short $(cat $GITHUB_EVENT_PATH | jq -r .pull_request.head.sha))" >> $GITHUB_ENV
+              echo "RASA_IMAGE_TAG=pr${{ github.event.number }}-$(git rev-parse --short $(cat $GITHUB_EVENT_PATH | jq -r .pull_request.head.sha))" >> $GITHUB_ENV
             else
-              echo "IMAGE_TAG=$(echo "${GITHUB_REF##*/}" | tr '[:upper:]' '[:lower:]')-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+              echo "RASA_IMAGE_TAG=$(echo "${GITHUB_REF##*/}" | tr '[:upper:]' '[:lower:]')-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
             fi
 
       - name: Prepare the job for integration tests
@@ -423,20 +401,22 @@ jobs:
       - name: Pull rasa-private dev image
         uses: ./.github/actions/pull-from-ecr
         with:
-            IMAGE_TAG: ${{ env.IMAGE_TAG }}
+            IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
             AWS_REGION: ${{ env.AWS_REGION }}
             AWS_ARN_ROLE_TO_ASSUME: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
-            REPOSITORY: ${{ env.REPOSITORY }}
+            REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
 
       - name: Custom Actions Integration Testing - Run docker containers
         run: |
           make run-action-server-nlu-containers
         env:
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
-          RASA_REPOSITORY: ${{ env.REPOSITORY }}
-          RASA_IMAGE_TAG: ${{ env.IMAGE_TAG }}
+          RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
+          RASA_IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
+          RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_DEV_REPOSITORY }}
+          RASA_SDK_IMAGE_TAG: ${{ env.RASA_SDK_IMAGE_TAG }}
 
-      - name: Custom Actions Testing -  Test Code with Services 🩺
+      - name: Custom Actions Testing - Test Code with Services 🩺
         run: |
           make test-custom-action-integration-with-nlu-bot
         env:
@@ -449,8 +429,10 @@ jobs:
         with:
           COMPOSE_FILE_PATH: tests_deployment/integration_tests_custom_action_server/docker-compose.yml
           ENV_FILE_PATH: tests_deployment/integration_tests_custom_action_server/env-file
-          RASA_REPOSITORY: ${{ env.REPOSITORY }}
-          RASA_IMAGE_TAG: ${{ env.IMAGE_TAG }}
+          RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
+          RASA_IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
+          RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_DEV_REPOSITORY }}
+          RASA_SDK_IMAGE_TAG: ${{ env.RASA_SDK_IMAGE_TAG }}
           BOT_PATH: "./tests_deployment/integration_tests_custom_action_server/simple_nlu_bot"
 
       - name: Custom Action Integration Testing - Stop docker containers
@@ -469,6 +451,8 @@ jobs:
     name: Custom Action Integration Tests With CALM bot
     needs: rasa-private-dev-docker-image
     runs-on: ubuntu-22.04-4core
+    env:
+      RASA_SDK_IMAGE_TAG: latest
     steps:
       - name: Check out code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -477,15 +461,15 @@ jobs:
       - name: Configure image tag
         run: |
           if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
-            echo "IMAGE_TAG=pr${{ github.event.number }}-$(git rev-parse --short $(cat $GITHUB_EVENT_PATH | jq -r .pull_request.head.sha))" >> $GITHUB_ENV
+            echo "RASA_IMAGE_TAG=pr${{ github.event.number }}-$(git rev-parse --short $(cat $GITHUB_EVENT_PATH | jq -r .pull_request.head.sha))" >> $GITHUB_ENV
           else
-            echo "IMAGE_TAG=$(echo "${GITHUB_REF##*/}" | tr '[:upper:]' '[:lower:]')-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+            echo "RASA_IMAGE_TAG=$(echo "${GITHUB_REF##*/}" | tr '[:upper:]' '[:lower:]')-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
           fi
 
       - name: Prepare the job for integration tests
         uses: ./.github/actions/test-prerequisites
         with:
-          DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+          PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
           POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
 
       - name: Install Dependencies (Linux) 📦
@@ -499,10 +483,10 @@ jobs:
       - name: Pull rasa-private dev image
         uses: ./.github/actions/pull-from-ecr
         with:
-          IMAGE_TAG: ${{ env.IMAGE_TAG }}
+          IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
           AWS_REGION: ${{ env.AWS_REGION }}
           AWS_ARN_ROLE_TO_ASSUME: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
-          REPOSITORY: ${{ env.REPOSITORY }}
+          REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
 
       - name: Custom Actions Integration Testing - Run docker containers
         run: |
@@ -510,8 +494,10 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
-          RASA_REPOSITORY: ${{ env.REPOSITORY }}
-          RASA_IMAGE_TAG: ${{ env.IMAGE_TAG }}
+          RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
+          RASA_IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
+          RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_DEV_REPOSITORY }}
+          RASA_SDK_IMAGE_TAG: ${{ env.RASA_SDK_IMAGE_TAG }}
 
       - name: Custom Actions Testing -  Test Code with Services 🩺
         run: |
@@ -526,8 +512,10 @@ jobs:
         with:
           COMPOSE_FILE_PATH: tests_deployment/integration_tests_custom_action_server/docker-compose.yml
           ENV_FILE_PATH: tests_deployment/integration_tests_custom_action_server/env-file
-          RASA_REPOSITORY: ${{ env.REPOSITORY }}
-          RASA_IMAGE_TAG: ${{ env.IMAGE_TAG }}
+          RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
+          RASA_IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
+          RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_DEV_REPOSITORY }}
+          RASA_SDK_IMAGE_TAG: ${{ env.RASA_SDK_IMAGE_TAG }}
           BOT_PATH: "./tests_deployment/integration_tests_custom_action_server/simple_calm_bot"
 
       - name: Custom Action Integration Testing - Stop docker containers
@@ -575,7 +563,7 @@ jobs:
         - name: Prepare the job for integration tests
           uses: ./.github/actions/test-prerequisites
           with:
-              DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+              PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
               POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
 
         - name: Install Dependencies (Linux) 📦
@@ -663,7 +651,7 @@ jobs:
       - name: Prepare the job for integration tests
         uses: ./.github/actions/test-prerequisites
         with:
-            DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+            PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
             POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
 
       - name: Install Dependencies (Linux) 📦
@@ -725,7 +713,7 @@ jobs:
       - name: Prepare the job for integration tests
         uses: ./.github/actions/test-prerequisites
         with:
-            DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+            PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
             POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
 
       - name: Install Dependencies (Linux) 📦
@@ -777,7 +765,7 @@ jobs:
       - name: Prepare the job for integration tests
         uses: ./.github/actions/test-prerequisites
         with:
-          DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+          PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
           POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
 
       - name: Install Dependencies Full (Linux) 📦
@@ -790,7 +778,7 @@ jobs:
 
       - name: Run kafka and zookeeper containers for integration testing
         run: |
-          docker-compose -f tests_deployment/docker-compose.kafka.yml up -d
+          docker compose -f tests_deployment/docker-compose.kafka.yml up -d
 
       - name: Test Code with Services 🩺(broker_integration_test)
         env:
@@ -819,7 +807,7 @@ jobs:
 
       - name: Stop kafka and zookeeper containers for integration testing
         run: |
-          docker-compose -f tests_deployment/docker-compose.kafka.yml down
+          docker compose -f tests_deployment/docker-compose.kafka.yml down
 
   unit-test:
     name: Run Unit Tests
@@ -847,7 +835,7 @@ jobs:
       - name: Prepare the job for unit tests
         uses: ./.github/actions/test-prerequisites
         with:
-            DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+            PYTHON_VERSION: ${{ matrix.python-version }}
             POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
 
       - name: Install Dependencies (Linux) 📦
@@ -910,7 +898,7 @@ jobs:
       - name: Prepare the job for unit tests
         uses: ./.github/actions/test-prerequisites
         with:
-          DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+          PYTHON_VERSION: ${{ matrix.python-version }}
           POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
 
       - name: Install Dependencies (Linux) 📦

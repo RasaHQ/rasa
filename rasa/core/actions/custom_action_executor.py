@@ -52,13 +52,13 @@ class NoEndpointCustomActionExecutor(CustomActionExecutor):
     Raises RasaException when executed.
     """
 
-    def __init__(self, name: str) -> None:
+    def __init__(self, action_name: str) -> None:
         """Initializes the custom action executor.
 
         Args:
-            name: The name of the custom action.
+            action_name: The name of the custom action.
         """
-        self.name = name
+        self.action_name = action_name
 
     async def run(
         self,
@@ -75,7 +75,7 @@ class NoEndpointCustomActionExecutor(CustomActionExecutor):
             The response from the execution of the custom action.
         """
         raise RasaException(
-            f"Failed to execute custom action '{self.name}' "
+            f"Failed to execute custom action '{self.action_name}' "
             f"because no endpoint is configured to run this "
             f"custom action. Please take a look at "
             f"the docs and set an endpoint configuration via the "

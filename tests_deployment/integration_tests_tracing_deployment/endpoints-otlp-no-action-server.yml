@@ -1,6 +1,0 @@
-tracing:
-  type: otlp
-  endpoint: otel-collector:4317
-  insecure: false
-  root_certificates: /certs/ca.pem
-  service_name: rasa-otlp-testing

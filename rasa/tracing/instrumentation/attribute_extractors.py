@@ -7,13 +7,14 @@ import tiktoken
 from numpy import ndarray
 from rasa_sdk.grpc_py import action_webhook_pb2
 
+from rasa.core.actions.action import DirectCustomActionExecutor
 from rasa.core.actions.grpc_custom_action_executor import GRPCCustomActionExecutor
 from rasa.core.actions.http_custom_action_executor import HTTPCustomActionExecutor
 from rasa.core.agent import Agent
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels import UserMessage
-from rasa.core.nlg.contextual_response_rephraser import ContextualResponseRephraser
 from rasa.core.lock_store import LOCK_LIFETIME, LockStore
+from rasa.core.nlg.contextual_response_rephraser import ContextualResponseRephraser
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import TrackerStore
 from rasa.dialogue_understanding.commands import Command
@@ -250,10 +251,7 @@ def extract_attrs_for_graph_trainer(
     }
 
 
-def extract_headers(
-    message: UserMessage,
-    **kwargs: Any,
-) -> Any:
+def extract_headers(message: UserMessage, **kwargs: Any) -> Any:
     """Extract the headers from the `UserMessage`."""
     if message.headers:
         return message.headers
@@ -669,15 +667,23 @@ def extract_attrs_for_endpoint_config(
 
 
 def extract_attrs_for_custom_action_executor_run(
-    self: Union[HTTPCustomActionExecutor, GRPCCustomActionExecutor],
+    self: Union[
+        HTTPCustomActionExecutor, GRPCCustomActionExecutor, DirectCustomActionExecutor
+    ],
     tracker: DialogueStateTracker,
     domain: Optional[Domain] = None,
 ) -> Dict[str, Any]:
+    actions_module, url = None, None
+    if hasattr(self, "action_endpoint"):
+        url = self.action_endpoint.url
+        actions_module = self.action_endpoint.actions_module
+
     attrs: Dict[str, Any] = {
         "class_name": self.__class__.__name__,
         "action_name": self.action_name,
         "sender_id": tracker.sender_id,
-        "url": self.action_endpoint.url,
+        "url": str(url),
+        "actions_module": str(actions_module),
     }
     return attrs
 

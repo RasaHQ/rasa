@@ -3,12 +3,16 @@ import logging
 import os
 from decimal import Decimal
 from pathlib import Path
-from typing import Any, Dict, Optional, Set, Text, Tuple, Union
+from typing import Any, Dict, Optional, Set, TYPE_CHECKING, Text, Tuple, Union
 
 import numpy as np
 
 import rasa.shared.utils.io
 from rasa.constants import DEFAULT_SANIC_WORKERS, ENV_SANIC_WORKERS
+from rasa.core.constants import (
+    DOMAIN_GROUND_TRUTH_METADATA_KEY,
+    UTTER_SOURCE_METADATA_KEY,
+)
 from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH, TCP_PROTOCOL
 
 from rasa.core.lock_store import LockStore, RedisLockStore, InMemoryLockStore
@@ -17,6 +21,10 @@ from sanic import Sanic
 from socket import SOCK_DGRAM, SOCK_STREAM
 import rasa.cli.utils as cli_utils
 from rasa.utils.io import write_yaml
+
+if TYPE_CHECKING:
+    from rasa.core.nlg import NaturalLanguageGenerator
+    from rasa.shared.core.domain import Domain
 
 logger = logging.getLogger(__name__)
 
@@ -337,3 +345,25 @@ def number_of_sanic_workers(lock_store: Union[EndpointConfig, LockStore, None]) 
         f"configuration has been found."
     )
     return _log_and_get_default_number_of_workers()
+
+
+def add_bot_utterance_metadata(
+    message: Dict[str, Any],
+    domain_response_name: str,
+    nlg: "NaturalLanguageGenerator",
+    domain: "Domain",
+) -> Dict[str, Any]:
+    """Add metadata to the bot message."""
+    from rasa.core import ContextualResponseRephraser
+
+    message["utter_action"] = domain_response_name
+    message[UTTER_SOURCE_METADATA_KEY] = nlg.__class__.__name__
+
+    if isinstance(nlg, ContextualResponseRephraser):
+        message[DOMAIN_GROUND_TRUTH_METADATA_KEY] = [
+            response.get("text")
+            for response in domain.responses.get(domain_response_name, [])
+            if response.get("text") is not None
+        ]
+
+    return message

@@ -158,8 +158,8 @@ jobs:
         with:
            user: "github-ci"
            password: ${{ secrets.PYPI_PASSWORD }}
-           repository_url: "https://pypi.rasa.com/simple/"
-           packages_dir: ${{ format('{0}/dist', github.workspace) }}
+           repository-url: "https://pypi.rasa.com/simple/"
+           packages-dir: ${{ format('{0}/dist', github.workspace) }}
     
       # Push library to GCP Artifact Registry rasa-plus-py
       - name: Release via GCP Artifact Registry

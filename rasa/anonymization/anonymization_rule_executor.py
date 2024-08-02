@@ -123,7 +123,7 @@ class AnonymizationRuleExecutor:
             else None
         )
 
-        self.anonymizer_engine = AnonymizerEngine()
+        self.anonymizer_engine = AnonymizerEngine()  # type: ignore
 
     @staticmethod
     def _validate_anonymization_rule_list(
@@ -146,7 +146,7 @@ class AnonymizationRuleExecutor:
 
         return True
 
-    def run(self, text: Text) -> Text:
+    def run(self, text: Text) -> Optional[Text]:
         """Anonymizes the given text using the given anonymization rule list."""
         if (
             self.analyzer is None

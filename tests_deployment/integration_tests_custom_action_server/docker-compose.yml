@@ -51,15 +51,15 @@ services:
       - rasa-grpc-action-server
 
   rasa-grpc-action-server:
-    image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
+    image: ${RASA_SDK_REPOSITORY}:${RASA_SDK_IMAGE_TAG}
     volumes:
       - "${BOT_PATH}/actions:/app/actions"
     configs:
       - source: action-server-endpoints.yml
         target: /app/endpoints.yml
     networks: [ 'rasa-pro-network' ]
-    entrypoint: ""
-    command: rasa run actions -p 5055 --grpc
+    entrypoint: "python -m rasa_sdk"
+    command: --actions actions -p 5055 --grpc
     environment:
       <<: *license
     user: ${USER_ID}
@@ -91,7 +91,7 @@ services:
       - rasa-grpc-ssl-action-server
 
   rasa-grpc-ssl-action-server:
-    image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
+    image: ${RASA_SDK_REPOSITORY}:${RASA_SDK_IMAGE_TAG}
     volumes:
       - "./certs/server.pem:/certs/server.pem"
       - "./certs/server-key.pem:/certs/server-key.pem"
@@ -100,8 +100,8 @@ services:
       - source: action-server-endpoints.yml
         target: /app/endpoints.yml
     networks: [ 'rasa-pro-network' ]
-    entrypoint: ""
-    command: rasa run actions -p 5055 --grpc --ssl-certificate /certs/server.pem --ssl-keyfile /certs/server-key.pem
+    entrypoint: "python -m rasa_sdk"
+    command: --actions actions -p 5055 --grpc --ssl-certificate /certs/server.pem --ssl-keyfile /certs/server-key.pem
     environment:
       <<: *license
     user: ${USER_ID}
@@ -132,15 +132,15 @@ services:
       - rasa-http-action-server
 
   rasa-http-action-server:
-    image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
+    image: ${RASA_SDK_REPOSITORY}:${RASA_SDK_IMAGE_TAG}
     volumes:
       - "${BOT_PATH}/actions:/app/actions"
     configs:
       - source: action-server-endpoints.yml
         target: /app/endpoints.yml
     networks: [ 'rasa-pro-network' ]
-    entrypoint: ""
-    command: rasa run actions -p 5055
+    entrypoint: "python -m rasa_sdk"
+    command: --actions actions -p 5055
     environment:
       <<: *license
     user: ${USER_ID}
@@ -172,7 +172,7 @@ services:
       - rasa-https-action-server
 
   rasa-https-action-server:
-    image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
+    image: ${RASA_SDK_REPOSITORY}:${RASA_SDK_IMAGE_TAG}
     volumes:
       - "./certs/server.pem:/certs/server.pem"
       - "./certs/server-key.pem:/certs/server-key.pem"
@@ -181,8 +181,8 @@ services:
       - source: action-server-endpoints.yml
         target: /app/endpoints.yml
     networks: [ 'rasa-pro-network' ]
-    entrypoint: ""
-    command: rasa run actions -p 5055 --ssl-certificate /certs/server.pem --ssl-keyfile /certs/server-key.pem
+    entrypoint: "python -m rasa_sdk"
+    command: --actions actions -p 5055 --ssl-certificate /certs/server.pem --ssl-keyfile /certs/server-key.pem
     environment:
       <<: *license
     user: ${USER_ID}

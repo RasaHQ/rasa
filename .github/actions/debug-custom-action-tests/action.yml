@@ -8,7 +8,7 @@ inputs:
   ENV_FILE_PATH:
     description: 'Custom action environment file path'
     required: true
-  RASA_DOCKER_REPOSITORY:
+  RASA_REPOSITORY:
     description: 'Rasa repository path'
     required: true
   RASA_IMAGE_TAG:
@@ -17,85 +17,120 @@ inputs:
   BOT_PATH:
     description: 'Path to the bot directory'
     required: true
+  RASA_SDK_REPOSITORY:
+    description: 'Rasa SDK repository path'
+    required: true
+  RASA_SDK_IMAGE_TAG:
+    description: 'Rasa SDK image tag'
+    required: true
 
 runs:
   using: 'composite'
+
   steps:
+  - name: List containers
+    run: sudo docker ps -a
+    shell: bash
+
   - name: Check rasa-pro-grpc container logs
+    env:
+      RASA_REPOSITORY: ${{ inputs.RASA_REPOSITORY }}
+      RASA_IMAGE_TAG: ${{ inputs.RASA_IMAGE_TAG }}
+      RASA_SDK_REPOSITORY: ${{ inputs.RASA_SDK_REPOSITORY }}
+      RASA_SDK_IMAGE_TAG: ${{ inputs.RASA_SDK_IMAGE_TAG }}
+      BOT_PATH: ${{ inputs.BOT_PATH }}
     run: |
-      RASA_REPOSITORY=${{ inputs.RASA_DOCKER_REPOSITORY }} \
-      RASA_IMAGE_TAG=${{ inputs.RASA_IMAGE_TAG }} \
-      BOT_PATH=${{ inputs.BOT_PATH }} \
       docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} \
         --env-file=${{ inputs.ENV_FILE_PATH }} \
         logs rasa-pro-grpc
     shell: bash
   
   - name: Check rasa-pro-grpc-ssl container logs
+    env:
+      RASA_REPOSITORY: ${{ inputs.RASA_REPOSITORY }}
+      RASA_IMAGE_TAG: ${{ inputs.RASA_IMAGE_TAG }}
+      RASA_SDK_REPOSITORY: ${{ inputs.RASA_SDK_REPOSITORY }}
+      RASA_SDK_IMAGE_TAG: ${{ inputs.RASA_SDK_IMAGE_TAG }}
+      BOT_PATH: ${{ inputs.BOT_PATH }}
     run: |
-      RASA_REPOSITORY=${{ inputs.RASA_DOCKER_REPOSITORY }} \
-      RASA_IMAGE_TAG=${{ inputs.RASA_IMAGE_TAG }} \
-      BOT_PATH=${{ inputs.BOT_PATH }} \
       docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} \
       --env-file=${{ inputs.ENV_FILE_PATH }} \
       logs rasa-pro-grpc-ssl
     shell: bash
   
   - name: Check rasa-grpc-action-server container logs
+    env:
+      RASA_REPOSITORY: ${{ inputs.RASA_REPOSITORY }}
+      RASA_IMAGE_TAG: ${{ inputs.RASA_IMAGE_TAG }}
+      RASA_SDK_REPOSITORY: ${{ inputs.RASA_SDK_REPOSITORY }}
+      RASA_SDK_IMAGE_TAG: ${{ inputs.RASA_SDK_IMAGE_TAG }}
+      BOT_PATH: ${{ inputs.BOT_PATH }}
     run: |
-      RASA_REPOSITORY=${{ inputs.RASA_DOCKER_REPOSITORY }} \
-      RASA_IMAGE_TAG=${{ inputs.RASA_IMAGE_TAG }} \
-      BOT_PATH=${{ inputs.BOT_PATH }} \
       docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} \
       --env-file=${{ inputs.ENV_FILE_PATH }} \
       logs rasa-grpc-action-server
     shell: bash
   
   - name: Check rasa-grpc-ssl-action-server container logs
+    env:
+      RASA_REPOSITORY: ${{ inputs.RASA_REPOSITORY }}
+      RASA_IMAGE_TAG: ${{ inputs.RASA_IMAGE_TAG }}
+      RASA_SDK_REPOSITORY: ${{ inputs.RASA_SDK_REPOSITORY }}
+      RASA_SDK_IMAGE_TAG: ${{ inputs.RASA_SDK_IMAGE_TAG }}
+      BOT_PATH: ${{ inputs.BOT_PATH }}
     run: |
-      RASA_REPOSITORY=${{ inputs.RASA_DOCKER_REPOSITORY }} \
-      RASA_IMAGE_TAG=${{ inputs.RASA_IMAGE_TAG }} \
-      BOT_PATH=${{ inputs.BOT_PATH }} \
       docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} \
       --env-file=${{ inputs.ENV_FILE_PATH }} \
       logs rasa-grpc-ssl-action-server
     shell: bash
 
   - name: Check rasa-pro-http container logs
+    env:
+      RASA_REPOSITORY: ${{ inputs.RASA_REPOSITORY }}
+      RASA_IMAGE_TAG: ${{ inputs.RASA_IMAGE_TAG }}
+      RASA_SDK_REPOSITORY: ${{ inputs.RASA_SDK_REPOSITORY }}
+      RASA_SDK_IMAGE_TAG: ${{ inputs.RASA_SDK_IMAGE_TAG }}
+      BOT_PATH: ${{ inputs.BOT_PATH }}
     run: |
-      RASA_REPOSITORY=${{ inputs.RASA_DOCKER_REPOSITORY }} \
-      RASA_IMAGE_TAG=${{ inputs.RASA_IMAGE_TAG }} \
-      BOT_PATH=${{ inputs.BOT_PATH }} \
       docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} \
         --env-file=${{ inputs.ENV_FILE_PATH }} \
         logs rasa-pro-http
     shell: bash
 
   - name: Check rasa-pro-https container logs
+    env:
+      RASA_REPOSITORY: ${{ inputs.RASA_REPOSITORY }}
+      RASA_IMAGE_TAG: ${{ inputs.RASA_IMAGE_TAG }}
+      RASA_SDK_REPOSITORY: ${{ inputs.RASA_SDK_REPOSITORY }}
+      RASA_SDK_IMAGE_TAG: ${{ inputs.RASA_SDK_IMAGE_TAG }}
+      BOT_PATH: ${{ inputs.BOT_PATH }}
     run: |
-      RASA_REPOSITORY=${{ inputs.RASA_DOCKER_REPOSITORY }} \
-      RASA_IMAGE_TAG=${{ inputs.RASA_IMAGE_TAG }} \
-      BOT_PATH=${{ inputs.BOT_PATH }} \
       docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} \
       --env-file=${{ inputs.ENV_FILE_PATH }} \
       logs rasa-pro-https
     shell: bash
 
   - name: Check rasa-http-action-server container logs
+    env:
+      RASA_REPOSITORY: ${{ inputs.RASA_REPOSITORY }}
+      RASA_IMAGE_TAG: ${{ inputs.RASA_IMAGE_TAG }}
+      RASA_SDK_REPOSITORY: ${{ inputs.RASA_SDK_REPOSITORY }}
+      RASA_SDK_IMAGE_TAG: ${{ inputs.RASA_SDK_IMAGE_TAG }}
+      BOT_PATH: ${{ inputs.BOT_PATH }}
     run: |
-      RASA_REPOSITORY=${{ inputs.RASA_DOCKER_REPOSITORY }} \
-      RASA_IMAGE_TAG=${{ inputs.RASA_IMAGE_TAG }} \
-      BOT_PATH=${{ inputs.BOT_PATH }} \
       docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} \
       --env-file=${{ inputs.ENV_FILE_PATH }} \
       logs rasa-http-action-server
     shell: bash
 
   - name: Check rasa-https-action-server container logs
+    env:
+      RASA_REPOSITORY: ${{ inputs.RASA_REPOSITORY }}
+      RASA_IMAGE_TAG: ${{ inputs.RASA_IMAGE_TAG }}
+      RASA_SDK_REPOSITORY: ${{ inputs.RASA_SDK_REPOSITORY }}
+      RASA_SDK_IMAGE_TAG: ${{ inputs.RASA_SDK_IMAGE_TAG }}
+      BOT_PATH: ${{ inputs.BOT_PATH }}
     run: |
-      RASA_REPOSITORY=${{ inputs.RASA_DOCKER_REPOSITORY }} \
-      RASA_IMAGE_TAG=${{ inputs.RASA_IMAGE_TAG }} \
-      BOT_PATH=${{ inputs.BOT_PATH }} \
       docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} \
       --env-file=${{ inputs.ENV_FILE_PATH }} \
       logs rasa-https-action-server

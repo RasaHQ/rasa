@@ -4,6 +4,7 @@ from unittest.mock import Mock, AsyncMock, patch
 
 import pytest
 from _pytest.tmpdir import TempPathFactory
+from rasa.shared.constants import ROUTE_TO_CALM_SLOT
 from structlog.testing import capture_logs
 
 from rasa.dialogue_understanding.commands import (
@@ -368,13 +369,13 @@ class TestLLMBasedCommandGenerator:
             message="Test Exception", original_exception=Exception("API exception")
         )
 
-        commands = await generator.predict_commands(message, flows, tracker)
+        predicted_commands = await generator.predict_commands(message, flows, tracker)
 
         mock_flow_retrieval_filter_flows.assert_called_once()
-        assert len(commands) == 1
-        assert isinstance(commands[0], ErrorCommand)
-        assert commands[0].error_type == "rasa_internal_error_default"
-        assert commands[0].info == {}
+
+        assert len(predicted_commands) == 2
+        assert ErrorCommand() in predicted_commands
+        assert SetSlotCommand(ROUTE_TO_CALM_SLOT, True) in predicted_commands
 
     ### Tests for methods implemented in the base class
     # Parameterized fixture

@@ -7,6 +7,8 @@ import pytest
 from langchain.embeddings import FakeEmbeddings
 from langchain.llms.fake import FakeListLLM
 from pytest import MonkeyPatch
+
+from rasa.core.constants import UTTER_SOURCE_METADATA_KEY
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import (
     ChitChatStackFrame,
@@ -30,6 +32,8 @@ from rasa.core.information_retrieval import (
 )
 from rasa.core.policies.enterprise_search_policy import (
     LLM_CONFIG_KEY,
+    SEARCH_QUERY_METADATA_KEY,
+    SEARCH_RESULTS_METADATA_KEY,
     USE_LLM_PROPERTY,
     EnterpriseSearchPolicy,
     VectorStoreConfigurationError,
@@ -1116,7 +1120,14 @@ async def test_enterprise_search_policy_response_with_use_llm_true(
                 )
 
                 assert isinstance(prediction, PolicyPrediction)
+
+                message_metadata = prediction.action_metadata.get("message")
+                assert message_metadata.get("text") == "LLM generated response"
                 assert (
-                    prediction.action_metadata.get("message").get("text")
-                    == "LLM generated response"
+                    message_metadata.get(UTTER_SOURCE_METADATA_KEY)
+                    == "EnterpriseSearchPolicy"
                 )
+                assert SEARCH_QUERY_METADATA_KEY in message_metadata
+                assert message_metadata.get(SEARCH_RESULTS_METADATA_KEY) == [
+                    result.text for result in search_results.results
+                ]

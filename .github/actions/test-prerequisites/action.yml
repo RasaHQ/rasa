@@ -2,7 +2,7 @@ name: Test prerequisites
 description: Encapsulates steps for Testing
 
 inputs:
-  DEFAULT_PYTHON_VERSION:
+  PYTHON_VERSION:
     description: 'Default Python Version'
     required: true
   POETRY_CACHE_VERSION:
@@ -12,11 +12,11 @@ inputs:
 runs:
   using: 'composite'
   steps:
-      - name: Set up Python ${{ inputs.DEFAULT_PYTHON_VERSION }} 🐍
+      - name: Set up Python ${{ inputs.PYTHON_VERSION }} 🐍
         id: setup-python
         uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
         with:
-          python-version: ${{ inputs.DEFAULT_PYTHON_VERSION }}
+          python-version: ${{ inputs.PYTHON_VERSION }}
 
       - name: Read Poetry Version 🔢
         run: |
