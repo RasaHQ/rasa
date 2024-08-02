@@ -387,7 +387,7 @@ Rasa Pro 3.8.0 (2024-04-03)
   export LOG_LEVEL_LLM_COMMAND_GENERATOR=INFO
   export LOG_LEVEL_LLM_ENTERPRISE_SEARCH=INFO
   export LOG_LEVEL_LLM_INTENTLESS_POLICY=DEBUG
-  export LOG_LEVEL_LLM_PROMPT_REPHRASER=DEBUG
+  export LOG_LEVEL_LLM_REPHRASER=DEBUG
   ```
 - [#209](https://github.com/rasahq/rasa-private/issues/209): If the user wants to chat with the assistant at the end of `rasa init`,
   we are now calling `rasa inspect` instead of `rasa shell`.
