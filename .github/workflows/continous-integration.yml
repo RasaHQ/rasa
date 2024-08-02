@@ -778,7 +778,7 @@ jobs:
 
       - name: Run kafka and zookeeper containers for integration testing
         run: |
-          docker-compose -f tests_deployment/docker-compose.kafka.yml up -d
+          docker compose -f tests_deployment/docker-compose.kafka.yml up -d
 
       - name: Test Code with Services 🩺(broker_integration_test)
         env:
@@ -807,7 +807,7 @@ jobs:
 
       - name: Stop kafka and zookeeper containers for integration testing
         run: |
-          docker-compose -f tests_deployment/docker-compose.kafka.yml down
+          docker compose -f tests_deployment/docker-compose.kafka.yml down
 
   unit-test:
     name: Run Unit Tests
