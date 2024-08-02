@@ -153,5 +153,5 @@ def convert_data_to_e2e_tests(args: argparse.Namespace) -> None:
     except RasaException as exc:
         structlogger.error("e2e_test_converter.failed.run", exc=exc)
         print_error_and_exit(
-            f"Failed to convert the data into E2E tests. " f"Error: {exc}"
+            f"Failed to convert the data into E2E tests. Error: {exc}"
         )
