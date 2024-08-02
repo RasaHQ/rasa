@@ -1,10 +1,10 @@
 import argparse
-import os
-from typing import Text, Dict, List, Optional
 
+from typing import Text, Dict, List, Optional
+from pathlib import Path
 import pandas as pd
 import structlog
-
+from csv import Error as CSVError
 from rasa.exceptions import RasaException
 
 structlogger = structlog.get_logger()
@@ -30,7 +30,7 @@ class E2ETestConverter:
 
     input_path: Text
     sheet_name: Text = None
-    data: List[Dict]
+    _data: Optional[List[Dict]] = None
 
     def __init__(
         self,
@@ -47,6 +47,24 @@ class E2ETestConverter:
         self.input_path = path
         self.sheet_name = sheet_name
 
+    @property
+    def data(self) -> Optional[List[Dict]]:
+        """Getter for the data attribute.
+
+        Returns:
+            Optional[List[Dict]]: Parsed data from the input file.
+        """
+        return self._data
+
+    @data.setter
+    def data(self, value: List[Dict]) -> None:
+        """Setter for the data attribute.
+
+        Args:
+            value (List[Dict]): Data to be set.
+        """
+        self._data = value
+
     def get_and_validate_input_file_extension(self) -> Text:
         """Validates the input file extension and checks for required properties
         like sheet name for XLSX files.
@@ -55,7 +73,7 @@ class E2ETestConverter:
             RasaException: If the directory path is provided, file extension
             is not supported or sheet name is missing.
         """
-        input_file_extension = os.path.splitext(self.input_path)[-1].lower()
+        input_file_extension = Path(self.input_path).suffix.lower()
         if not input_file_extension:
             raise RasaException(
                 "The path must point to a specific file, not a directory."
@@ -114,8 +132,14 @@ class E2ETestConverter:
                 "e2e_test_generator.read_file",
                 input_file_extension=input_file_extension,
             )
-        except Exception:
-            raise RasaException("The file could not be read.")
+        except pd.errors.ParserError:
+            raise RasaException("The file could not be read due to a parsing error.")
+        except pd.errors.EmptyDataError:
+            raise RasaException("The file is empty and could not be read.")
+        except CSVError:
+            raise RasaException("There was an error with reading the CSV file.")
+        except ValueError:
+            raise RasaException("There was a value error while reading the file.")
 
     def run(self) -> None:
         """Executes the E2E test conversion process: reads the file, generates tests,
@@ -124,7 +148,7 @@ class E2ETestConverter:
         self.read_file()
 
 
-def data_to_e2e_tests_conversion(args: argparse.Namespace) -> None:
+def convert_data_to_e2e_tests(args: argparse.Namespace) -> None:
     converter = E2ETestConverter(**vars(args))
     try:
         converter.run()

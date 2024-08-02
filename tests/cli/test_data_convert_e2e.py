@@ -1,10 +1,10 @@
 from pathlib import Path
 
-import pytest
 import pandas as pd
-from rasa.cli.data_convert_e2e import E2ETestConverter
-from rasa.shared.exceptions import RasaException
+import pytest
 
+from rasa.e2e_test.data_convert_e2e import E2ETestConverter
+from rasa.shared.exceptions import RasaException
 
 SAMPLE_CONVERSATIONS_CSV_PATH = "data/test_data_convert_e2e/sample_conversations.csv"
 SAMPLE_CONVERSATIONS_XLSX_PATH = "data/test_data_convert_e2e/sample_conversations.xlsx"
