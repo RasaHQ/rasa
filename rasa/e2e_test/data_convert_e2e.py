@@ -1,10 +1,11 @@
 import argparse
-
-from typing import Text, Dict, List, Optional
+from csv import Error as CSVError
 from pathlib import Path
+from typing import Text, Dict, List, Optional, Any
+from rasa.shared.utils.cli import print_error_and_exit
 import pandas as pd
 import structlog
-from csv import Error as CSVError
+
 from rasa.exceptions import RasaException
 
 structlogger = structlog.get_logger()
@@ -27,16 +28,11 @@ class E2ETestConverter:
         sheet_name (Text): Name of the sheet in XLSX file (if applicable).
         data (List[Dict]): Parsed data from the input file.
     """
-
-    input_path: Text
-    sheet_name: Text = None
-    _data: Optional[List[Dict]] = None
-
     def __init__(
         self,
         path: Text,
         sheet_name: Optional[Text] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         """Initializes the E2ETestConverter with necessary parameters.
 
@@ -44,8 +40,9 @@ class E2ETestConverter:
             input_path (Text): Path to the input file.
             sheet_name (Text): Name of the sheet in XLSX file.
         """
-        self.input_path = path
-        self.sheet_name = sheet_name
+        self.input_path: Text = path
+        self.sheet_name: Optional[Text] = sheet_name
+        self._data: Optional[List[Dict]] = None
 
     @property
     def data(self) -> Optional[List[Dict]]:
@@ -152,5 +149,8 @@ def convert_data_to_e2e_tests(args: argparse.Namespace) -> None:
     converter = E2ETestConverter(**vars(args))
     try:
         converter.run()
-    except ValueError as e:
-        structlogger.warning("e2e_test_generator.running_failed", e=e)
+    except RasaException as exc:
+        structlogger.error("e2e_test_converter.failed.run", exc=exc)
+        print_error_and_exit(
+            f"Failed to convert the data into E2E tests. " f"Error: {exc}"
+        )
