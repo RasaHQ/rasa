@@ -15,7 +15,7 @@ from rasa import telemetry
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import data as arguments
 from rasa.cli.arguments import default_arguments
-from rasa.cli.data_convert_e2e import data_to_e2e_tests_conversion
+from rasa.e2e_test.data_convert_e2e import convert_data_to_e2e_tests
 from rasa.shared.constants import (
     DEFAULT_DATA_PATH,
     DEFAULT_CONFIG_PATH,
@@ -80,7 +80,7 @@ def _add_data_convert_parsers(
         parents=parents,
         help="Convert input sample conversations into E2E test cases.",
     )
-    convert_e2e_parser.set_defaults(func=data_to_e2e_tests_conversion)
+    convert_e2e_parser.set_defaults(func=convert_data_to_e2e_tests)
     arguments.set_convert_e2e_arguments(convert_e2e_parser)
 
 
