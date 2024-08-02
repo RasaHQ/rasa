@@ -28,6 +28,7 @@ class E2ETestConverter:
         sheet_name (Text): Name of the sheet in XLSX file (if applicable).
         data (List[Dict]): Parsed data from the input file.
     """
+
     def __init__(
         self,
         path: Text,
