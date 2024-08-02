@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Text, Union
 
 import jwt
-from keycloak import KeycloakOpenID
+from keycloak import KeycloakOpenID, KeycloakError
 from rasa.shared.exceptions import RasaException
 from rasa.shared.utils.yaml import read_yaml_file, write_yaml
 
@@ -17,6 +17,7 @@ from rasa.studio.constants import (
     KEYCLOAK_REFRESH_EXPIRES_IN_KEY,
     KEYCLOAK_REFRESH_TOKEN,
 )
+from rasa.studio.results_logger import with_studio_error_handler, StudioResult
 
 
 class StudioAuth:
@@ -43,31 +44,35 @@ class StudioAuth:
         except Exception:
             return False
 
-    def login(self, username: Text, password: Text, totp: Optional[int] = None) -> None:
-        try:
-            token_dict = self.keycloak_openid.token(
-                username=username, password=password, totp=totp
-            )
-        except Exception as e:
-            raise RasaException(f"Could not login. Error: {e}")
-
+    @with_studio_error_handler
+    def login(
+        self, username: Text, password: Text, totp: Optional[int] = None
+    ) -> StudioResult:
+        token_dict = self.keycloak_openid.token(
+            username=username, password=password, totp=totp
+        )
         keycloak_token = self._resolve_token(token_dict)
 
         KeycloakTokenWriter.write_token_to_file(
             keycloak_token, token_file_location=DEFAULT_TOKEN_FILE_PATH
         )
 
-    def refresh_token(self, refresh_token: Text) -> None:
+        return StudioResult.success("Login successful.")
+
+    @with_studio_error_handler
+    def refresh_token(self, refresh_token: Text) -> StudioResult:
         try:
             token_dict = self.keycloak_openid.refresh_token(refresh_token)
         except Exception as e:
-            raise RasaException(f"Could not refresh token. Error: {e}")
+            raise KeycloakError(f"Could not refresh token. Error: {e}")
 
         keycloak_token = self._resolve_token(token_dict)
 
         KeycloakTokenWriter.write_token_to_file(
             keycloak_token, token_file_location=DEFAULT_TOKEN_FILE_PATH
         )
+
+        return StudioResult.success("Token refreshed successfully.")
 
     @staticmethod
     def _resolve_token(token_dict: Dict[Text, Any]) -> KeycloakToken:
