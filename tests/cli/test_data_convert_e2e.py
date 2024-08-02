@@ -124,7 +124,9 @@ def test_convert_e2e_read_empty_csv(tmp_path: Path):
     file_path.touch()
 
     converter = E2ETestConverter(path=str(file_path))
-    with pytest.raises(RasaException, match="The file could not be read."):
+    with pytest.raises(
+        RasaException, match="There was an error with reading the CSV file."
+    ):
         converter.read_file()
 
 
@@ -135,5 +137,7 @@ def test_convert_e2e_read_empty_xlsx(tmp_path: Path):
     converter = E2ETestConverter(
         path=str(file_path), sheet_name=SAMPLE_CONVERSATION_XLSX_SHEET_NAME
     )
-    with pytest.raises(RasaException, match="The file could not be read."):
+    with pytest.raises(
+        RasaException, match="There was a value error while reading the file."
+    ):
         converter.read_file()
