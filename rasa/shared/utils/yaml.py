@@ -4,7 +4,7 @@ import re
 from collections import OrderedDict
 import logging
 import os
-from typing import Dict, List, Optional, Any, Callable, Union
+from typing import Dict, List, Optional, Any, Callable, Tuple, Union
 
 
 from importlib_resources import files
@@ -143,15 +143,58 @@ class YamlValidationException(YamlException, ValueError):
             msg += f":\n{error_msg}"
         return msg
 
+    def _calculate_number_of_lines(
+        self, current: Any, target: str = None
+    ) -> Tuple[int, bool]:
+        """Counts the number of lines that are missing due to the ruamel yaml parser logic.
+
+        Since not all nodes returned from the ruamel yaml parser
+        have line numbers attached (arrays have them, dicts have
+        them, but strings don't), this method calculates the number
+        of lines that are missing when just returning line of the parent element
+
+        Args:
+        current: current content
+        target: target key to find the line number of
+
+        Returns:
+            The schema as a dictionary.
+        """
+        if isinstance(current, list):
+            return current[-1].lc.line + 1, True
+
+        keys_to_check = list(current.keys())
+        if target:
+            keys_to_check = keys_to_check[: keys_to_check.index(target)]
+        try:
+            # find the last key that has a line number attached
+            last_key_with_lc = [
+                key for key in reversed(keys_to_check) if hasattr(current[key], "lc")
+            ][0]
+        except IndexError:
+            # otherwise return the number of elements on that level up to the target
+            if target:
+                return list(current.keys()).index(target), False
+            return len(list(current.keys())), False
+
+        offset = current[last_key_with_lc].lc.line if not target else 0
+        child_offset, found_lc = self._calculate_number_of_lines(
+            current[last_key_with_lc]
+        )
+        if not found_lc:
+            child_offset += offset
+        if target:
+            child_offset += 1
+        last_idx_with_lc = keys_to_check.index(last_key_with_lc)
+        child_offset += len(keys_to_check[last_idx_with_lc + 1 :])
+
+        return child_offset, True
+
     def _line_number_for_path(self, current: Any, path: List[str]) -> Optional[int]:
         """Get line number for a yaml path in the current content.
 
         Implemented using recursion: algorithm goes down the path navigating to the
-        leaf in the YAML tree. Unfortunately, not all nodes returned from the
-        ruamel yaml parser have line numbers attached (arrays have them, dicts have
-        them), e.g. strings don't have attached line numbers.
-        If we arrive at a node that has no line number attached, we'll return the
-        line number of the parent - that is as close as it gets.
+        leaf in the YAML tree.
 
         Args:
             current: current content
@@ -172,7 +215,15 @@ class YamlValidationException(YamlException, ValueError):
 
         if head:
             if isinstance(current, dict) and head in current:
-                return self._line_number_for_path(current[head], tail) or this_line
+                line = self._line_number_for_path(current[head], tail)
+                if line is None:
+                    line_offset, found_lc = self._calculate_number_of_lines(
+                        current, head
+                    )
+                    if found_lc:
+                        return line_offset
+                    return this_line + line_offset
+                return line
             elif isinstance(current, list) and head.isdigit():
                 return self._line_number_for_path(current[int(head)], tail) or this_line
             else:
