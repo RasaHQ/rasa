@@ -128,7 +128,7 @@ def test_convert_e2e_read_empty_csv(tmp_path: Path):
         converter.read_file()
 
 
-def test_convert_e2e_xlsx_exception_handling(tmp_path: Path):
+def test_convert_e2e_read_empty_xlsx(tmp_path: Path):
     file_path = tmp_path / "empty.xlsx"
     file_path.touch()
 
