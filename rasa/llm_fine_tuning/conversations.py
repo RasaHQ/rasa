@@ -57,6 +57,9 @@ class ConversationStep:
                 output.append("HumanHandoff()")
         return output
 
+    def commands_as_string(self) -> str:
+        return ", ".join(self._commands_to_str())
+
 
 @dataclass
 class Conversation:
@@ -101,3 +104,6 @@ class Conversation:
             len(step.passed_rephrasings) if passing else len(step.failed_rephrasings)
             for step in self.iterate_over_annotated_user_steps()
         )
+
+    def get_full_name(self) -> str:
+        return f"{self.original_e2e_test_case.file}::{self.name}"
