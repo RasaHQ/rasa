@@ -13,7 +13,6 @@ from rasa.shared.constants import (
     OPENAI_API_VERSION_ENV_VAR,
     OPENAI_API_BASE_NO_PREFIX_CONFIG_KEY,
     API_KEY,
-    OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY,
     OPENAI_API_VERSION_NO_PREFIX_CONFIG_KEY,
 )
 from rasa.shared.exceptions import ProviderClientValidationError
@@ -88,7 +87,32 @@ class AzureOpenAIEmbeddingClient(_BaseLiteLLMEmbeddingClient):
 
     @classmethod
     def from_config(cls, config: Dict[str, Any]) -> "AzureOpenAIEmbeddingClient":
-        azure_openai_config = AzureOpenAIClientConfig.from_dict(config)
+        """
+        Initializes the client from given configuration.
+
+        Args:
+            config (Dict[str, Any]): Configuration.
+
+        Raises:
+            ValueError: Raised in cases of invalid configuration:
+                - If any of the required configuration keys are missing.
+                - If `api_type` has a value different from `azure`.
+
+        Returns:
+            AzureOpenAIEmbeddingClient: Initialized client.
+        """
+        try:
+            azure_openai_config = AzureOpenAIClientConfig.from_dict(config)
+        except ValueError as e:
+            message = "Cannot instantiate a client from the passed configuration."
+            structlogger.error(
+                "azure_openai_embedding_client.from_config.error",
+                message=message,
+                config=config,
+                original_error=e,
+            )
+            raise
+
         return cls(
             deployment=azure_openai_config.deployment,
             model=azure_openai_config.model,
@@ -119,8 +143,6 @@ class AzureOpenAIEmbeddingClient(_BaseLiteLLMEmbeddingClient):
         Returns the name of the model deployed on Azure. If model name is not
         provided, returns "N/A".
         """
-        if self._model is None:
-            return "N/A"
         return self._model
 
     @property
@@ -195,13 +217,6 @@ class AzureOpenAIEmbeddingClient(_BaseLiteLLMEmbeddingClient):
                 "deprecated_env_key": OPENAI_API_KEY_ENV_VAR,
                 "value_from_config": None,
                 "new_env_key": AZURE_API_KEY_ENV_VAR,
-            },
-            {
-                "param_name": "API type",
-                "config_key": OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY,
-                "deprecated_env_key": OPENAI_API_TYPE_ENV_VAR,
-                "value_from_config": self.api_type,
-                "new_env_key": AZURE_API_TYPE_ENV_VAR,
             },
             {
                 "param_name": "API version",

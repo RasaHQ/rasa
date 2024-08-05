@@ -29,6 +29,7 @@ class TestAzureOpenAILLMClient:
             deployment="test_deployment",
             api_base="https://my.api.base.com/my_model",
             api_version="2023-01-01",
+            api_type="azure",
         )
         assert isinstance(client, LLMClient)
 
@@ -110,6 +111,7 @@ class TestAzureOpenAILLMClient:
             (
                 {
                     "deployment": "test_deployment_name",
+                    "api_type": "azure",
                     "api_base": "https://my.api.base.com/my_model",
                     "api_version": "2023-01-01",
                     "temperature": 0.2,
@@ -124,6 +126,7 @@ class TestAzureOpenAILLMClient:
             (
                 {
                     "deployment_name": "test_deployment_name",
+                    "openai_api_type": "azure",
                     "openai_api_base": "https://my.api.base.com/my_model",
                     "openai_api_version": "2023-01-01",
                 },
@@ -135,6 +138,7 @@ class TestAzureOpenAILLMClient:
             (
                 {
                     "engine": "test_deployment_name",
+                    "type": "azure",
                     "openai_api_base": "https://my.api.base.com/my_model",
                     "openai_api_version": "2023-01-01",
                 },
@@ -168,6 +172,37 @@ class TestAzureOpenAILLMClient:
         for parameter_key, parameter_value in expected_extra_parameters.items():
             assert parameter_key in client._extra_parameters
             assert client._extra_parameters[parameter_key] == parameter_value
+
+    @pytest.mark.parametrize(
+        "invalid_config",
+        [
+            {
+                # Missing `api_type`
+                "deployment": "test_deployment_name",
+                "api_base": "https://my.api.base.com/my_model",
+                "api_version": "2023-01-01",
+            },
+            {
+                # Bypassing with LiteLLM only approach
+                "model": "azure/test_deployment_name",
+                "api_base": "https://my.api.base.com/my_model",
+                "api_version": "2023-01-01",
+            },
+            {
+                # Invalid value for `api_type`
+                "deployment": "test_deployment_name",
+                "api_type": "invalid_value",
+                "api_base": "https://my.api.base.com/my_model",
+                "api_version": "2023-01-01",
+            },
+        ],
+    )
+    def test_from_config_fails_if_required_keys_are_not_present(
+        self, invalid_config: dict, monkeypatch: MonkeyPatch
+    ):
+        monkeypatch.setenv(AZURE_API_KEY_ENV_VAR, "my key")
+        with pytest.raises(ValueError):
+            AzureOpenAILLMClient.from_config(invalid_config)
 
     def test_completion(self, monkeypatch: MonkeyPatch):
         # Given

@@ -29,8 +29,8 @@ DEFAULT_REPHRASING_PROMPT_TEMPLATE = importlib.resources.read_text(
 )
 
 DEFAULT_LLM_CONFIG = {
-    "type": "openai",
-    "model_name": "gpt-3.5-turbo",
+    "api_type": "openai",
+    "model": "gpt-3.5-turbo",
     "request_timeout": 7,
     "temperature": 0.0,
     "max_tokens": 4096,
@@ -92,7 +92,8 @@ class ConversationRephraser:
     async def _invoke_llm(self, prompt: str) -> str:
         llm = llm_factory(self.config.get(LLM_CONFIG_KEY), DEFAULT_LLM_CONFIG)
         try:
-            return await llm.apredict(prompt)
+            llm_response = await llm.acompletion(prompt)
+            return llm_response.choices[0]
         except Exception as e:
             # unfortunately, langchain does not wrap LLM exceptions which means
             # we have to catch all exceptions here

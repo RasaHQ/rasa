@@ -27,6 +27,8 @@ from rasa.shared.core.slots import BooleanSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.importers.importer import FlowSyncImporter
 from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.providers.llm.llm_client import LLMClient
+from rasa.shared.providers.llm.openai_llm_client import OpenAILLMClient
 from rasa.shared.utils.llm import tracker_as_readable_transcript
 
 from rasa.core.policies.intentless_policy import (
@@ -98,14 +100,24 @@ def trackers_for_training() -> List[TrackerWithCachedStates]:
 
 
 @pytest.fixture
+def llm_client() -> LLMClient:
+    client = OpenAILLMClient(
+        model="test-gpt",
+        mock_response="Hello there",
+    )
+    return client
+
+
+@pytest.fixture
 def intentless_policy(
+    llm_client: LLMClient,
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
     monkeypatch: pytest.MonkeyPatch,
 ) -> Generator[IntentlessPolicy, None, None]:
     with patch(
         "rasa.core.policies.intentless_policy.llm_factory",
-        Mock(return_value=FakeListLLM(responses=["Hello there", "Goodbye"])),
+        Mock(return_value=llm_client),
     ):
         with patch(
             "rasa.core.policies.intentless_policy.embedder_factory",

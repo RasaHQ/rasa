@@ -42,6 +42,7 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import FileIOException, RasaCoreException
 from rasa.shared.nlu.constants import PREDICTED_CONFIDENCE_KEY
 from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.providers.llm.llm_client import LLMClient
 from rasa.shared.utils.io import deep_container_fingerprint
 from rasa.shared.utils.llm import (
     AI,
@@ -70,7 +71,6 @@ from rasa.utils.log_utils import log_llm
 
 if TYPE_CHECKING:
     from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
-    from langchain.llms.base import BaseLLM
 
 structlogger = structlog.get_logger()
 
@@ -92,11 +92,11 @@ NLU_ABSTENTION_THRESHOLD = "nlu_abstention_threshold"
 PROMPT = "prompt"
 
 DEFAULT_LLM_CONFIG = {
-    "_type": "openai",
-    "request_timeout": 5,
+    "api_type": "openai",
+    "model": DEFAULT_OPENAI_CHAT_MODEL_NAME,
     "temperature": 0.0,
-    "model_name": DEFAULT_OPENAI_CHAT_MODEL_NAME,
     "max_tokens": DEFAULT_OPENAI_MAX_GENERATED_TOKENS,
+    "request_timeout": 5,
 }
 
 DEFAULT_EMBEDDINGS_CONFIG = {
@@ -636,9 +636,10 @@ class IntentlessPolicy(Policy):
         )
         return await self._generate_llm_answer(llm, prompt)
 
-    async def _generate_llm_answer(self, llm: "BaseLLM", prompt: str) -> Optional[str]:
+    async def _generate_llm_answer(self, llm: LLMClient, prompt: str) -> Optional[str]:
         try:
-            return await llm.apredict(prompt)
+            llm_response = await llm.acompletion(prompt)
+            return llm_response.choices[0]
         except Exception as e:
             # unfortunately, langchain does not wrap LLM exceptions which means
             # we have to catch all exceptions here

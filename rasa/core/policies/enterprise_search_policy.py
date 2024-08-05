@@ -8,6 +8,7 @@ import rasa.shared.utils.io
 import structlog
 from jinja2 import Template
 from pydantic import ValidationError
+from rasa.shared.providers.llm.llm_client import LLMClient
 from rasa.telemetry import (
     track_enterprise_search_policy_predict,
     track_enterprise_search_policy_train_completed,
@@ -70,7 +71,6 @@ from rasa.core.information_retrieval import (
 
 if TYPE_CHECKING:
     from langchain.schema.embeddings import Embeddings
-    from langchain.llms.base import BaseLLM
     from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 
 from rasa.utils.log_utils import log_llm
@@ -96,11 +96,11 @@ DEFAULT_VECTOR_STORE = {
 }
 
 DEFAULT_LLM_CONFIG = {
-    "_type": "openai",
+    "api_type": "openai",
+    "model": DEFAULT_OPENAI_CHAT_MODEL_NAME,
     "request_timeout": 10,
     "temperature": 0.0,
     "max_tokens": 256,
-    "model_name": DEFAULT_OPENAI_CHAT_MODEL_NAME,
     "max_retries": 1,
 }
 
@@ -493,10 +493,11 @@ class EnterpriseSearchPolicy(Policy):
         return prompt
 
     async def _generate_llm_answer(
-        self, llm: "BaseLLM", prompt: Text
+        self, llm: LLMClient, prompt: Text
     ) -> Optional[Text]:
         try:
-            llm_answer = await llm.apredict(prompt)
+            llm_response = await llm.acompletion(prompt)
+            llm_answer = llm_response.choices[0]
         except Exception as e:
             # unfortunately, langchain does not wrap LLM exceptions which means
             # we have to catch all exceptions here

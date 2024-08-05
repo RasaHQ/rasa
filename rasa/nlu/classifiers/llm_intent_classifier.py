@@ -51,10 +51,10 @@ RASA_PRO_BETA_LLM_INTENT = "RASA_PRO_BETA_LLM_INTENT"
 DEFAULT_NUMBER_OF_INTENT_EXAMPLES = 10
 
 DEFAULT_LLM_CONFIG = {
-    "_type": "openai",
+    "api_type": "openai",
+    "model": DEFAULT_OPENAI_GENERATE_MODEL_NAME,
     "request_timeout": 5,
     "temperature": DEFAULT_OPENAI_TEMPERATURE,
-    "model_name": DEFAULT_OPENAI_GENERATE_MODEL_NAME,
     "max_tokens": DEFAULT_OPENAI_MAX_GENERATED_TOKENS,
 }
 

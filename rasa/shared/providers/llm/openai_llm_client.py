@@ -2,6 +2,8 @@ import os
 import re
 from typing import Dict, Any, Optional
 
+import structlog
+
 from rasa.shared.constants import (
     OPENAI_API_BASE_ENV_VAR,
     OPENAI_API_VERSION_ENV_VAR,
@@ -10,6 +12,7 @@ from rasa.shared.constants import (
 from rasa.shared.providers._configs.openai_client_config import OpenAIClientConfig
 from rasa.shared.providers.llm._base_litellm_client import _BaseLiteLLMClient
 
+structlogger = structlog.get_logger()
 _OPENAI_PROVIDER = "openai"
 
 
@@ -54,7 +57,31 @@ class OpenAILLMClient(_BaseLiteLLMClient):
 
     @classmethod
     def from_config(cls, config: Dict[str, Any]) -> "OpenAILLMClient":
-        openai_config = OpenAIClientConfig.from_dict(config)
+        """
+        Initializes the client from given configuration.
+
+        Args:
+            config (Dict[str, Any]): Configuration.
+
+        Raises:
+            KeyError: If any of the required configuration keys are missing.
+            ValueError: If `api_type` has a value different from `openai`.
+
+        Returns:
+            AzureOpenAILLMClient: Initialized client.
+        """
+        try:
+            openai_config = OpenAIClientConfig.from_dict(config)
+        except (KeyError, ValueError) as e:
+            message = "Cannot instantiate a client from the passed configuration."
+            structlogger.error(
+                "azure_openai_llm_client.from_config.error",
+                message=message,
+                config=config,
+                original_error=e,
+            )
+            raise
+
         return cls(
             openai_config.model,
             openai_config.api_base,
@@ -66,11 +93,11 @@ class OpenAILLMClient(_BaseLiteLLMClient):
     @property
     def config(self) -> dict:
         config = OpenAIClientConfig(
-            self.model,
-            self.api_base,
-            self.api_version,
-            self._litellm_extra_parameters,
-            self.api_type,
+            model=self.model,
+            api_type=self.api_type,
+            api_base=self.api_base,
+            api_version=self.api_version,
+            extra_parameters=self._litellm_extra_parameters,
         )
         return config.to_dict()
 

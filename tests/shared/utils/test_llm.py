@@ -2,7 +2,6 @@ from typing import Text, Any, Dict, Optional
 
 import pytest
 from langchain import OpenAI
-from langchain.chat_models import AzureChatOpenAI
 from langchain.embeddings import OpenAIEmbeddings
 from pathlib import Path
 from pytest import MonkeyPatch
@@ -20,6 +19,10 @@ from rasa.shared.core.slots import (
     Slot,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.exceptions import ProviderClientValidationError
+from rasa.shared.providers.llm.azure_openai_llm_client import AzureOpenAILLMClient
+from rasa.shared.providers.llm.default_litellm_llm_client import DefaultLiteLLMClient
+from rasa.shared.providers.llm.openai_llm_client import OpenAILLMClient
 from rasa.shared.utils.llm import (
     get_prompt_template,
     sanitize_message_for_prompt,
@@ -28,6 +31,7 @@ from rasa.shared.utils.llm import (
     llm_factory,
     ERROR_PLACEHOLDER,
     allowed_values_for_slot,
+    get_provider_from_config,
 )
 
 
@@ -209,24 +213,317 @@ def test_sanitize_message_for_prompt_handles_string_with_newlines():
     assert sanitize_message_for_prompt("hello\nworld") == "hello world"
 
 
-@pytest.mark.skip(
-    reason="This test is going to be updated with the LLM factory update."
+@pytest.mark.parametrize(
+    "config, expected_provider",
+    (
+        # LiteLLM naming convention
+        ({"model": "openai/test-gpt"}, "openai"),
+        ({"model": "azure/my-test-gpt-deployment"}, "azure"),
+        ({"model": "cohere/command"}, "cohere"),
+        ({"model": "bedrock/test-model-on-bedrock"}, "bedrock"),
+        # Relying on api_type
+        ({"api_type": "openai"}, "openai"),
+        ({"api_type": "azure"}, "azure"),
+        # Relying on deprecated api_type aliases
+        ({"type": "openai"}, "openai"),
+        ({"type": "azure"}, "azure"),
+        ({"_type": "openai"}, "openai"),
+        ({"_type": "azure"}, "azure"),
+        ({"openai_api_type": "openai"}, "openai"),
+        ({"openai_api_type": "azure"}, "azure"),
+        # Relying on azure openai specific config
+        ({"deployment": "my-test-deployment-on-azure"}, "azure"),
+        # Relying on LiteLLM's list of known models
+        ({"model": "gpt-4"}, "openai"),
+        ({"model": "text-embedding-3-small"}, "openai"),
+        # Unkown provider
+        ({"model": "unknown-model"}, None),
+        ({"model": "unknown-provider/unknown-model"}, None),
+    ),
 )
-def test_llm_factory(monkeypatch: MonkeyPatch) -> None:
+def test_get_provider_from_config(config: dict, expected_provider: Optional[str]):
+    # When
+    provider = get_provider_from_config(config)
+    assert provider == expected_provider
+
+
+def test_llm_factory(monkeypatch: MonkeyPatch):
     monkeypatch.setenv("OPENAI_API_KEY", "test")
 
-    llm = llm_factory(None, {"_type": "openai"})
-    assert isinstance(llm, OpenAI)
+    llm = llm_factory(None, {"model": "openai/test-gpt", "api_type": "openai"})
+    assert isinstance(llm, OpenAILLMClient)
 
 
-@pytest.mark.skip(
-    reason="This test is going to be updated with the LLM factory update."
+@pytest.mark.parametrize(
+    "config,"
+    "expected_model,"
+    "expected_api_type,"
+    "expected_api_base,"
+    "expected_api_version",
+    (
+        (
+            {"model": "openai/test-gpt", "api_type": "openai"},
+            "openai/test-gpt",
+            "openai",
+            None,
+            None,
+        ),
+        # No LiteLLM prefix, but a known model
+        ({"model": "gpt-4", "api_type": "openai"}, "gpt-4", "openai", None, None),
+        # Deprecated 'model_name'
+        (
+            {"model_name": "openai/test-gpt", "api_type": "openai"},
+            "openai/test-gpt",
+            "openai",
+            None,
+            None,
+        ),
+        ({"model": "test-gpt", "api_type": "openai"}, "test-gpt", "openai", None, None),
+        (
+            {"model": "test-gpt", "openai_api_type": "openai"},
+            "test-gpt",
+            "openai",
+            None,
+            None,
+        ),
+        # With `api_type` deprecated aliases
+        ({"model": "test-gpt", "type": "openai"}, "test-gpt", "openai", None, None),
+        ({"model": "test-gpt", "_type": "openai"}, "test-gpt", "openai", None, None),
+        # With api_base and deprecated aliases
+        (
+            {
+                "model": "gpt-4",
+                "api_base": "https://my-test-base",
+                "api_type": "openai",
+            },
+            "gpt-4",
+            "openai",
+            "https://my-test-base",
+            None,
+        ),
+        (
+            {
+                "model": "gpt-4",
+                "openai_api_base": "https://my-test-base",
+                "api_type": "openai",
+            },
+            "gpt-4",
+            "openai",
+            "https://my-test-base",
+            None,
+        ),
+        # With api_version and deprecated aliases
+        (
+            {"model": "gpt-4", "api_version": "v1", "api_type": "openai"},
+            "gpt-4",
+            "openai",
+            None,
+            "v1",
+        ),
+        (
+            {"model": "gpt-4", "openai_api_version": "v2", "api_type": "openai"},
+            "gpt-4",
+            "openai",
+            None,
+            "v2",
+        ),
+    ),
 )
-def test_llm_factory_handles_type_without_underscore(monkeypatch: MonkeyPatch) -> None:
+def test_llm_factory_returns_openai_llm_client(
+    config: dict,
+    expected_model: str,
+    expected_api_type: str,
+    expected_api_base: str,
+    expected_api_version: str,
+    monkeypatch: MonkeyPatch,
+):
+    # Given
+    # Client cannot be instantiated without the required environment variable
     monkeypatch.setenv("OPENAI_API_KEY", "test")
 
-    llm = llm_factory({"type": "openai"}, {})
-    assert isinstance(llm, OpenAI)
+    # When
+    client = llm_factory(config, {})
+
+    # Then
+    assert isinstance(client, OpenAILLMClient)
+    assert client.model == expected_model
+    assert client.api_type == expected_api_type
+    assert client.api_base == expected_api_base
+    assert client.api_version == expected_api_version
+
+
+def test_llm_factory_raises_exception_when_openai_client_setup_is_invalid():
+    """OpenAI client requires the OPENAI_API_KEY environment variable
+    to be set.
+    """
+    with pytest.raises(ProviderClientValidationError):
+        llm_factory({"model": "openai/gpt-4", "api_type": "openai"}, {})
+
+
+@pytest.mark.parametrize(
+    "config,"
+    "expected_deployment,"
+    "expected_api_type,"
+    "expected_api_base,"
+    "expected_api_version",
+    (
+        (
+            {
+                "deployment": "azure/my-test-gpt-deployment-on-azure",
+                "api_type": "azure",
+                "api_base": "https://my-test-base",
+                "api_version": "v1",
+            },
+            "azure/my-test-gpt-deployment-on-azure",
+            "azure",
+            "https://my-test-base",
+            "v1",
+        ),
+        # Deprecated aliases
+        (
+            {
+                "deployment_name": "azure/my-test-gpt-deployment-on-azure",
+                "openai_api_type": "azure",
+                "openai_api_base": "https://my-test-base",
+                "openai_api_version": "v1",
+            },
+            "azure/my-test-gpt-deployment-on-azure",
+            "azure",
+            "https://my-test-base",
+            "v1",
+        ),
+        (
+            {
+                "engine": "azure/my-test-gpt-deployment-on-azure",
+                "api_type": "azure",
+                "api_base": "https://my-test-base",
+                "api_version": "v1",
+            },
+            "azure/my-test-gpt-deployment-on-azure",
+            "azure",
+            "https://my-test-base",
+            "v1",
+        ),
+        # With `api_type` deprecated aliases
+        (
+            {
+                "deployment": "azure/my-test-gpt-deployment-on-azure",
+                "api_base": "https://my-test-base",
+                "api_version": "v1",
+                "api_type": "azure",
+            },
+            "azure/my-test-gpt-deployment-on-azure",
+            "azure",
+            "https://my-test-base",
+            "v1",
+        ),
+        (
+            {
+                "deployment": "azure/my-test-gpt-deployment-on-azure",
+                "api_base": "https://my-test-base",
+                "api_version": "v1",
+                "type": "azure",
+            },
+            "azure/my-test-gpt-deployment-on-azure",
+            "azure",
+            "https://my-test-base",
+            "v1",
+        ),
+        (
+            {
+                "deployment": "azure/my-test-gpt-deployment-on-azure",
+                "api_base": "https://my-test-base",
+                "api_version": "v1",
+                "_type": "azure",
+            },
+            "azure/my-test-gpt-deployment-on-azure",
+            "azure",
+            "https://my-test-base",
+            "v1",
+        ),
+    ),
+)
+def test_llm_factory_returns_azure_openai_llm_client(
+    config: dict,
+    expected_deployment: str,
+    expected_api_type: str,
+    expected_api_base: str,
+    expected_api_version: str,
+    monkeypatch: MonkeyPatch,
+):
+    # Given
+    # Client cannot be instantiated without the required environment variable
+    monkeypatch.setenv("AZURE_API_KEY", "test")
+
+    # When
+    client = llm_factory(config, {})
+
+    # Then
+    assert isinstance(client, AzureOpenAILLMClient)
+    assert client.deployment == expected_deployment
+    assert client.api_type == expected_api_type
+    assert client.api_base == expected_api_base
+    assert client.api_version == expected_api_version
+
+
+def test_llm_factory_returns_azure_openai_llm_client_with_env_vars_settings(
+    monkeypatch: MonkeyPatch,
+):
+    monkeypatch.setenv("AZURE_API_KEY", "test")
+    monkeypatch.setenv("AZURE_API_BASE", "https://my-test-base")
+    monkeypatch.setenv("AZURE_API_VERSION", "v1")
+    client = llm_factory(
+        {"deployment": "azure/my-test-gpt-deployment-on-azure", "api_type": "azure"}, {}
+    )
+    assert isinstance(client, AzureOpenAILLMClient)
+    assert client.deployment == "azure/my-test-gpt-deployment-on-azure"
+    assert client.api_type == "azure"
+    assert client.api_base == "https://my-test-base"
+    assert client.api_version == "v1"
+
+
+def test_llm_factory_raises_exception_when_azure_openai_client_setup_is_invalid(
+    monkeypatch: MonkeyPatch,
+):
+    """OpenAI client requires the following environment variables
+    to be set:
+    - AZURE_API_KEY
+    - AZURE_API_BASE
+    - AZURE_API_VERSION
+    """
+
+    required_env_vars = ["AZURE_API_KEY", "AZURE_API_BASE", "AZURE_API_VERSION"]
+
+    for env_var in required_env_vars:
+        monkeypatch.setenv(env_var, "test")
+        with pytest.raises(ProviderClientValidationError):
+            llm_factory(
+                {
+                    "deployment": "azure/my-test-gpt-deployment-on-azure",
+                    "api_type": "azure",
+                },
+                {},
+            )
+        monkeypatch.delenv(env_var, raising=False)
+
+
+@pytest.mark.parametrize(
+    "config, api_key_env",
+    (
+        ({"model": "cohere/command"}, "COHERE_API_KEY"),
+        ({"model": "anthropic/claude"}, "ANTHROPIC_API_KEY"),
+    ),
+)
+def test_llm_factory_returns_default_litellm_client(
+    config: dict, api_key_env: str, monkeypatch: MonkeyPatch
+):
+    # Given
+    # Client cannot be instantiated without the required environment variable
+    monkeypatch.setenv(api_key_env, "test")
+    # When
+    client = llm_factory(config, {})
+    # Then
+    assert isinstance(client, DefaultLiteLLMClient)
 
 
 @pytest.mark.skip(
@@ -252,21 +549,6 @@ def test_llm_factory_ignores_irrelevant_default_args(monkeypatch: MonkeyPatch) -
     # since the default argument should be removed, this should be the default -
     # which is not -1
     assert llm.temperature != -1
-
-
-@pytest.mark.skip(
-    reason="This test is going to be updated with the LLM factory update."
-)
-def test_llm_factory_fails_on_invalid_args(monkeypatch: MonkeyPatch) -> None:
-    monkeypatch.setenv("OPENAI_API_KEY", "test")
-
-    # since the types of the custom config and the default are the same
-    # all default arguments should be kept. since the "foo" argument
-    # is not a valid argument for the OpenAI class, this should fail
-    llm = llm_factory({"type": "openai"}, {"_type": "openai", "temperature": -1})
-    assert isinstance(llm, OpenAI)
-    # since the default argument should NOT be removed, this should be -1 now
-    assert llm.temperature == -1
 
 
 @pytest.mark.skip(
@@ -346,251 +628,6 @@ def test_allowed_values_for_slot(
     allowed_values = allowed_values_for_slot(input_slot)
     # Then
     assert allowed_values == expected_slot_values
-
-
-@pytest.mark.skip(
-    reason="This test is going to be updated with the LLM factory update."
-)
-def test_llm_factory_azure_openai_models_no_param_transformation(
-    monkeypatch: MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("OPENAI_API_KEY", "test")
-
-    llm = llm_factory(
-        {
-            "openai_api_type": "azure",
-            "openai_api_base": "http://test",
-            "openai_api_version": "test_dev",
-            "deployment_name": "test",
-        },
-        {"_type": "openai"},
-    )
-    assert isinstance(llm, AzureChatOpenAI)
-    assert llm.openai_api_type == "azure"
-    assert llm.openai_api_base == "http://test/openai"
-    assert llm.openai_api_version == "test_dev"
-    assert llm.deployment_name == "test"
-
-
-@pytest.mark.skip(
-    reason="This test is going to be updated with the LLM factory update."
-)
-def test_llm_factory_azure_openai_models_with_api_type(
-    monkeypatch: MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("OPENAI_API_KEY", "test")
-
-    llm = llm_factory(
-        {
-            "api_type": "azure",
-            "openai_api_base": "http://test",
-            "openai_api_version": "test_dev",
-            "deployment_name": "test",
-        },
-        {"_type": "openai"},
-    )
-    assert isinstance(llm, AzureChatOpenAI)
-    assert llm.openai_api_type == "azure"
-    assert llm.openai_api_base == "http://test"
-    assert llm.openai_api_version == "test_dev"
-    assert llm.deployment_name == "test"
-    assert not hasattr(llm, "api_type")
-
-
-@pytest.mark.skip(
-    reason="This test is going to be updated with the LLM factory update."
-)
-def test_llm_factory_azure_openai_models_with_api_version(
-    monkeypatch: MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("OPENAI_API_KEY", "test")
-
-    llm = llm_factory(
-        {
-            "api_version": "test_dev",
-            "openai_api_type": "azure",
-            "openai_api_base": "http://test",
-            "deployment_name": "test",
-        },
-        {"_type": "openai"},
-    )
-    assert isinstance(llm, AzureChatOpenAI)
-    assert llm.openai_api_type == "azure"
-    assert llm.openai_api_base == "http://test"
-    assert llm.openai_api_version == "test_dev"
-    assert llm.deployment_name == "test"
-    assert not hasattr(llm, "api_version")
-
-
-@pytest.mark.skip(
-    reason="This test is going to be updated with the LLM factory update."
-)
-def test_llm_factory_azure_openai_models_with_api_base(
-    monkeypatch: MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("OPENAI_API_KEY", "test")
-
-    llm = llm_factory(
-        {
-            "openai_api_type": "azure",
-            "api_base": "http://test",
-            "openai_api_version": "test_dev",
-            "engine": "test",
-        },
-        {"_type": "openai"},
-    )
-    assert isinstance(llm, AzureChatOpenAI)
-    assert llm.openai_api_type == "azure"
-    assert llm.openai_api_base == "http://test"
-    assert llm.openai_api_version == "test_dev"
-    assert llm.deployment_name == "test"
-    assert not hasattr(llm, "api_base")
-
-
-@pytest.mark.skip(
-    reason="This test is going to be updated with the LLM factory update."
-)
-def test_llm_factory_azure_openai_models_with_deployment(
-    monkeypatch: MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("OPENAI_API_KEY", "test")
-
-    llm = llm_factory(
-        {
-            "openai_api_type": "azure",
-            "openai_api_base": "http://test",
-            "openai_api_version": "test_dev",
-            "deployment": "test",
-        },
-        {"_type": "openai"},
-    )
-    assert isinstance(llm, AzureChatOpenAI)
-    assert llm.openai_api_type == "azure"
-    assert llm.openai_api_base == "http://test"
-    assert llm.openai_api_version == "test_dev"
-    assert llm.deployment_name == "test"
-    assert not hasattr(llm, "deployment")
-
-
-@pytest.mark.skip(
-    reason="This test is going to be updated with the LLM factory update."
-)
-def test_llm_factory_azure_openai_models_with_engine(
-    monkeypatch: MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("OPENAI_API_KEY", "test")
-
-    llm = llm_factory(
-        {
-            "openai_api_type": "azure",
-            "openai_api_base": "http://test",
-            "openai_api_version": "test_dev",
-            "engine": "test",
-        },
-        {"_type": "openai"},
-    )
-    assert isinstance(llm, AzureChatOpenAI)
-    assert llm.openai_api_type == "azure"
-    assert llm.openai_api_base == "http://test"
-    assert llm.openai_api_version == "test_dev"
-    assert llm.deployment_name == "test"
-    assert not hasattr(llm, "engine")
-
-
-@pytest.mark.skip(
-    reason="This test is going to be updated with the LLM factory update."
-)
-def test_llm_factory_azure_openai_models_with_api_base_in_env(
-    monkeypatch: MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("OPENAI_API_KEY", "test")
-    monkeypatch.setenv("OPENAI_API_BASE", "http://test")
-
-    llm = llm_factory(
-        {
-            "openai_api_type": "azure",
-            "openai_api_version": "test_dev",
-            "deployment_name": "test",
-        },
-        {"_type": "openai"},
-    )
-    assert isinstance(llm, AzureChatOpenAI)
-    assert llm.openai_api_type == "azure"
-    assert llm.openai_api_version == "test_dev"
-    assert llm.deployment_name == "test"
-    assert llm.openai_api_base == "http://test"
-
-
-@pytest.mark.skip(
-    reason="This test is going to be updated with the LLM factory update."
-)
-def test_llm_factory_azure_openai_models_with_api_version_in_env(
-    monkeypatch: MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("OPENAI_API_KEY", "test")
-    monkeypatch.setenv("OPENAI_API_VERSION", "test_dev")
-
-    llm = llm_factory(
-        {
-            "openai_api_type": "azure",
-            "openai_api_base": "http://test",
-            "deployment_name": "test",
-        },
-        {"_type": "openai"},
-    )
-    assert isinstance(llm, AzureChatOpenAI)
-    assert llm.openai_api_base == "http://test"
-    assert llm.openai_api_type == "azure"
-    assert llm.deployment_name == "test"
-    assert llm.openai_api_version == "test_dev"
-
-
-@pytest.mark.skip(
-    reason="This test is going to be updated with the LLM factory update."
-)
-def test_llm_factory_azure_openai_models_with_api_type_in_env(
-    monkeypatch: MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("OPENAI_API_KEY", "test")
-    monkeypatch.setenv("OPENAI_API_TYPE", "azure")
-
-    llm = llm_factory(
-        {
-            "openai_api_base": "http://test",
-            "openai_api_version": "test_dev",
-            "deployment_name": "test",
-        },
-        {"_type": "openai"},
-    )
-    assert isinstance(llm, AzureChatOpenAI)
-    assert llm.openai_api_base == "http://test"
-    assert llm.deployment_name == "test"
-    assert llm.openai_api_version == "test_dev"
-    assert llm.openai_api_type == "azure"
-
-
-@pytest.mark.skip(
-    reason="This test is going to be updated with the LLM factory update."
-)
-def test_llm_factory_azure_openai_models_with_many_env_set(
-    monkeypatch: MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("OPENAI_API_KEY", "test")
-    monkeypatch.setenv("OPENAI_API_BASE", "http://test")
-    monkeypatch.setenv("OPENAI_API_TYPE", "azure")
-    monkeypatch.setenv("OPENAI_API_VERSION", "test_dev")
-
-    llm = llm_factory(
-        {
-            "deployment_name": "test",
-        },
-        {"_type": "openai"},
-    )
-    assert isinstance(llm, AzureChatOpenAI)
-    assert llm.deployment_name == "test"
-    assert llm.openai_api_base == "http://test"
-    assert llm.openai_api_type == "azure"
-    assert llm.openai_api_version == "test_dev"
 
 
 def test_get_prompt_template_returns_default_prompt() -> None:

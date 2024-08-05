@@ -12,7 +12,7 @@ class TestOpenAILLMClient:
     @pytest.fixture
     def client(self, monkeypatch: MonkeyPatch) -> OpenAILLMClient:
         monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "my key")
-        return OpenAILLMClient(model="test_model")
+        return OpenAILLMClient(model="test_model", api_type="openai")
 
     def test_conforms_to_protocol(self, client: LLMClient, monkeypatch: MonkeyPatch):
         monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "my key")
@@ -35,28 +35,53 @@ class TestOpenAILLMClient:
         "config, expected_model, expected_api_base, expected_extra_parameters",
         [
             (
-                {"model": "test_model", "temperature": 0.2, "max_tokens": 1000},
+                {
+                    "model": "test_model",
+                    "api_type": "openai",
+                    "temperature": 0.2,
+                    "max_tokens": 1000,
+                },
                 "test_model",
                 None,
                 {"temperature": 0.2, "max_tokens": 1000},
             ),
-            # use deprecated alias for model
-            ({"model_name": "test_model"}, "test_model", None, {}),
-            # use api base
+            # Use deprecated alias for model
             (
-                {"model": "test_model", "api_base": "https://my.api.base.com/my_model"},
+                {"model_name": "test_model", "api_type": "openai"},
+                "test_model",
+                None,
+                {},
+            ),
+            # Use api base
+            (
+                {
+                    "model": "test_model",
+                    "api_type": "openai",
+                    "api_base": "https://my.api.base.com/my_model",
+                },
                 "test_model",
                 "https://my.api.base.com/my_model",
                 {},
             ),
-            # deprecated alias to api base
+            # Deprecated alias to api base
             (
                 {
                     "model": "test_model",
+                    "api_type": "openai",
                     "openai_api_base": "https://my.api.base.com/my_model",
                 },
                 "test_model",
                 "https://my.api.base.com/my_model",
+                {},
+            ),
+            # Deprecated alias to api type
+            (
+                {
+                    "model": "test_model",
+                    "openai_api_type": "openai",
+                },
+                "test_model",
+                None,
                 {},
             ),
         ],
@@ -82,6 +107,31 @@ class TestOpenAILLMClient:
         for parameter_key, parameter_value in expected_extra_parameters.items():
             assert parameter_key in client._litellm_extra_parameters
             assert client._litellm_extra_parameters[parameter_key] == parameter_value
+
+    @pytest.mark.parametrize(
+        "invalid_config",
+        [
+            {
+                # Missing `api_type`
+                "model": "test-gpt",
+            },
+            {
+                # Bypassing with LiteLLM only approach
+                "model": "openai/test-gpt",
+            },
+            {
+                # Invalid value for `api_type`
+                "model": "test-gpt",
+                "api_type": "invalid_value",
+            },
+        ],
+    )
+    def test_from_config_fails_if_required_keys_are_not_present(
+        self,
+        invalid_config: dict,
+    ):
+        with pytest.raises(ValueError):
+            OpenAILLMClient.from_config(invalid_config)
 
     def test_completion(
         self,

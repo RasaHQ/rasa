@@ -11,7 +11,6 @@ from rasa.shared.constants import (
     AZURE_API_VERSION_ENV_VAR,
     OPENAI_API_BASE_ENV_VAR,
     OPENAI_API_KEY_ENV_VAR,
-    OPENAI_API_TYPE_ENV_VAR,
     OPENAI_API_VERSION_ENV_VAR,
 )
 from rasa.shared.exceptions import ProviderClientValidationError
@@ -30,7 +29,7 @@ class TestAzureOpenAIEmbeddingClient:
             "deployment": "some_azure_deployment",
             "model": "gpt-2024",
             "api_base": "https://test",
-            "api_type": "test",
+            "api_type": "azure",
             "api_version": "v1",
         }
         return AzureOpenAIEmbeddingClient.from_config(config)
@@ -56,7 +55,7 @@ class TestAzureOpenAIEmbeddingClient:
             "deployment": "some_azure_deployment",
             "model": "gpt-2024",
             "api_base": "https://test",
-            "api_type": "test",
+            "api_type": "azure",
             "api_version": "v1",
             "extra_parameters": {},
         }
@@ -71,7 +70,7 @@ class TestAzureOpenAIEmbeddingClient:
         assert client.api_base == "https://test"
 
     def test_api_type(self, client: AzureOpenAIEmbeddingClient) -> None:
-        assert client.api_type == "test"
+        assert client.api_type == "azure"
 
     def test_api_version(self, client: AzureOpenAIEmbeddingClient) -> None:
         assert client.api_version == "v1"
@@ -85,7 +84,7 @@ class TestAzureOpenAIEmbeddingClient:
     def test_embedding_fn_args(self, client: AzureOpenAIEmbeddingClient) -> None:
         assert client._embedding_fn_args == {
             "api_base": "https://test",
-            "api_type": "test",
+            "api_type": "azure",
             "api_version": "v1",
             "model": "azure/some_azure_deployment",
             "api_key": "my key",
@@ -169,9 +168,12 @@ class TestAzureOpenAIEmbeddingClient:
         # Given
         monkeypatch.setenv(AZURE_API_BASE_ENV_VAR, "https://test")
         monkeypatch.setenv(AZURE_API_KEY_ENV_VAR, "key")
-        monkeypatch.setenv(AZURE_API_TYPE_ENV_VAR, "some_type")
         monkeypatch.setenv(AZURE_API_VERSION_ENV_VAR, "some_version")
-        config = {"deployment": "some_azure_deployment", "model": "gpt-2024"}
+        config = {
+            "deployment": "some_azure_deployment",
+            "api_type": "azure",
+            "model": "gpt-2024",
+        }
 
         # When
         with pytest.warns(None) as record:
@@ -183,10 +185,9 @@ class TestAzureOpenAIEmbeddingClient:
         # Then
         assert os.environ.get(AZURE_API_BASE_ENV_VAR) == "https://test"
         assert os.environ.get(AZURE_API_KEY_ENV_VAR) == "key"
-        assert os.environ.get(AZURE_API_TYPE_ENV_VAR) == "some_type"
         assert os.environ.get(AZURE_API_VERSION_ENV_VAR) == "some_version"
         assert client.api_base == "https://test"
-        assert client.api_type == "some_type"
+        assert client.api_type == "azure"
         assert client.api_version == "some_version"
 
     def test_azure_openai_embedding_client_validation_with_deprecated_env_vars(
@@ -196,16 +197,19 @@ class TestAzureOpenAIEmbeddingClient:
         # Given
         monkeypatch.setenv(OPENAI_API_BASE_ENV_VAR, "https://test")
         monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "key")
-        monkeypatch.setenv(OPENAI_API_TYPE_ENV_VAR, "deprecated")
         monkeypatch.setenv(OPENAI_API_VERSION_ENV_VAR, "deprecated_v1")
-        config = {"deployment": "some_azure_deployment", "model": "gpt-2024"}
+        config = {
+            "deployment": "some_azure_deployment",
+            "api_type": "azure",
+            "model": "gpt-2024",
+        }
 
         # When
         with pytest.warns(FutureWarning) as record:
             client = AzureOpenAIEmbeddingClient.from_config(config)
 
         # Then
-        assert len(record) == 4
+        assert len(record) == 3
         assert record[0].message.args[0] == (
             "Usage of OPENAI_API_BASE environment variable for setting the API base of "
             "Azure OpenAI client is deprecated and will be removed in 4.0.0. Please "
@@ -217,17 +221,12 @@ class TestAzureOpenAIEmbeddingClient:
             "use AZURE_API_KEY instead."
         )
         assert record[2].message.args[0] == (
-            "Usage of OPENAI_API_TYPE environment variable for setting the API type of "
-            "Azure OpenAI client is deprecated and will be removed in 4.0.0. Please "
-            "use AZURE_API_TYPE instead."
-        )
-        assert record[3].message.args[0] == (
             "Usage of OPENAI_API_VERSION environment variable for setting the API "
             "version of Azure OpenAI client is deprecated and will be removed in 4.0.0."
             " Please use AZURE_API_VERSION instead."
         )
         assert client.api_base == "https://test"
-        assert client.api_type == "deprecated"
+        assert client.api_type == "azure"
         assert client.api_version == "deprecated_v1"
         assert os.environ.get(OPENAI_API_KEY_ENV_VAR) == "key"
 
@@ -237,7 +236,11 @@ class TestAzureOpenAIEmbeddingClient:
         # Given
         # Did not set the required environment variables
         # api_base, api_key, api_type, api_version
-        config = {"deployment": "some_azure_deployment", "model": "gpt-2024"}
+        config = {
+            "deployment": "some_azure_deployment",
+            "api_type": "azure",
+            "model": "gpt-2024",
+        }
 
         # When
         with pytest.raises(
@@ -250,11 +253,10 @@ class TestAzureOpenAIEmbeddingClient:
         logs = filter_logs(caplog, expected_event, expected_log_level, [])
 
         # Then
-        assert len(logs) == 4
+        assert len(logs) == 3
         event_info_string = " ".join([log["event_info"] for log in logs])
         assert "AZURE_API_BASE" in event_info_string
         assert "AZURE_API_KEY" in event_info_string
-        assert "AZURE_API_TYPE" in event_info_string
         assert "AZURE_API_VERSION" in event_info_string
         assert str(exc.value) == (
             "Missing required environment variables/config keys for API calls."

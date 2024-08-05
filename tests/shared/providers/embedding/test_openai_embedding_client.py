@@ -22,7 +22,7 @@ class TestOpenAIEmbeddingClient:
         monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "my key")
         config = {
             "api_base": "https://test",
-            "api_type": "test",
+            "api_type": "openai",
             "api_version": "v1",
             "model": "gpt-1000",
         }
@@ -48,7 +48,7 @@ class TestOpenAIEmbeddingClient:
         assert client.config == {
             "api_base": "https://test",
             "api_version": "v1",
-            "api_type": "test",
+            "api_type": "openai",
             "model": "gpt-1000",
             "extra_parameters": {},
         }
@@ -60,7 +60,7 @@ class TestOpenAIEmbeddingClient:
         assert client.api_base == "https://test"
 
     def test_api_type(self, client: OpenAIEmbeddingClient) -> None:
-        assert client.api_type == "test"
+        assert client.api_type == "openai"
 
     def test_api_version(self, client: OpenAIEmbeddingClient) -> None:
         assert client.api_version == "v1"
@@ -74,7 +74,7 @@ class TestOpenAIEmbeddingClient:
     def test_embedding_fn_args(self, client: OpenAIEmbeddingClient) -> None:
         assert client._embedding_fn_args == {
             "api_base": "https://test",
-            "api_type": "test",
+            "api_type": "openai",
             "api_version": "v1",
             "model": "openai/gpt-1000",
         }
@@ -172,14 +172,14 @@ class TestOpenAIEmbeddingClient:
         client = OpenAIEmbeddingClient(
             model="gpt-1000",
             api_base="https://test",
-            api_type="test",
+            api_type="openai",
             api_version="v1",
         )
 
         # Then
         assert client.model == "gpt-1000"
         assert client.api_base == "https://test"
-        assert client.api_type == "test"
+        assert client.api_type == "openai"
         assert client.api_version == "v1"
         assert client._litellm_extra_parameters == {}
 
@@ -189,7 +189,7 @@ class TestOpenAIEmbeddingClient:
         # Given
         monkeypatch.setenv(OPENAI_API_BASE_ENV_VAR, "https://test/env")
         monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "some_key")
-        monkeypatch.setenv(OPENAI_API_TYPE_ENV_VAR, "env_test")
+        monkeypatch.setenv(OPENAI_API_TYPE_ENV_VAR, "openai")
         monkeypatch.setenv(OPENAI_API_VERSION_ENV_VAR, "env_v1")
 
         # When
@@ -197,7 +197,7 @@ class TestOpenAIEmbeddingClient:
 
         # Then
         assert client.api_base == "https://test/env"
-        assert client.api_type == "env_test"
+        assert client.api_type == "openai"
         assert client.api_version == "env_v1"
         assert client.model == "gpt-1000"
         assert client._litellm_extra_parameters == {}

@@ -4,11 +4,11 @@ from rasa.shared.utils.llm import (
 )
 
 DEFAULT_LLM_CONFIG = {
-    "_type": "openai",
-    "request_timeout": 7,
+    "api_type": "openai",
+    "model": DEFAULT_OPENAI_CHAT_MODEL_NAME_ADVANCED,
     "temperature": 0.0,
-    "model_name": DEFAULT_OPENAI_CHAT_MODEL_NAME_ADVANCED,
     "max_tokens": DEFAULT_OPENAI_MAX_GENERATED_TOKENS,
+    "request_timeout": 7,
 }
 
 LLM_CONFIG_KEY = "llm"

@@ -161,11 +161,10 @@ class TestMultiStepLLMCommandGenerator:
     ):
         """Test predict_commands_for_handling_flows calls llm correctly."""
         # Given
-        llm_config = {
-            "_type": "openai",
+        expected_llm_config = {
+            "model": "gpt-4",
             "request_timeout": 7,
             "temperature": 0.0,
-            "model_name": "gpt-4",
             "max_tokens": 256,
         }
         mock_llm = AsyncMock()
@@ -184,36 +183,37 @@ class TestMultiStepLLMCommandGenerator:
         )
 
         # Then
-        mock_llm_factory.assert_called_once_with(None, llm_config)
+        mock_llm_factory.assert_called_once_with(None, expected_llm_config)
 
+    @patch(
+        "rasa.dialogue_understanding.generator.llm_based_command_generator.llm_factory"
+    )
     async def test_predict_commands_for_handling_flows_calls_llm_correctly(
         self,
+        mock_llm_factory: Mock,
         command_generator: MultiStepLLMCommandGenerator,
     ):
         """Test predict_commands_for_handling_flows calls llm correctly."""
-        with patch(
-            "rasa.dialogue_understanding.generator.llm_based_command_generator.llm_factory",
-            Mock(),
-        ) as mock_llm_factory:
-            llm_mock = Mock()
-            predict_mock = AsyncMock()
-            llm_mock.apredict = predict_mock
-            mock_llm_factory.return_value = llm_mock
-            llm_mock.apredict.return_value = "some value"
-            # When
-            await command_generator._predict_commands_for_handling_flows(
-                Message(),
-                DialogueStateTracker.from_events(
-                    "test",
-                    evts=[UserUttered("Hello", {"name": "greet", "confidence": 1.0})],
-                ),
-                FlowsList(underlying_flows=[]),
-                FlowsList(underlying_flows=[]),
-            )
-            # Then
-            predict_mock.assert_called_once()
-            args, _ = predict_mock.call_args
-            assert args[0].startswith("Your task is to analyze the current")
+
+        llm_mock = Mock()
+        predict_mock = AsyncMock()
+        llm_mock.acompletion = predict_mock
+        mock_llm_factory.return_value = llm_mock
+        llm_mock.apredict.return_value = "some value"
+        # When
+        await command_generator._predict_commands_for_handling_flows(
+            Message(),
+            DialogueStateTracker.from_events(
+                "test",
+                evts=[UserUttered("Hello", {"name": "greet", "confidence": 1.0})],
+            ),
+            FlowsList(underlying_flows=[]),
+            FlowsList(underlying_flows=[]),
+        )
+        # Then
+        predict_mock.assert_called_once()
+        args, _ = predict_mock.call_args
+        assert args[0].startswith("Your task is to analyze the current")
 
     ### Test fingerprint
     async def test_llm_command_generator_fingerprint_addon_diff_in_prompt_template(

@@ -4,7 +4,7 @@ from rasa.shared.constants import MODEL_KEY
 from rasa.shared.providers.llm._base_litellm_client import _BaseLiteLLMClient
 
 
-class LiteLLMClient(_BaseLiteLLMClient):
+class DefaultLiteLLMClient(_BaseLiteLLMClient):
     """A default client for interfacing with LiteLLM LLM endpoints.
 
     Parameters:
@@ -26,7 +26,7 @@ class LiteLLMClient(_BaseLiteLLMClient):
         self.validate_client_setup()
 
     @classmethod
-    def from_config(cls, config: Dict[str, Any]) -> "LiteLLMClient":
+    def from_config(cls, config: Dict[str, Any]) -> "DefaultLiteLLMClient":
         return cls(
             model=config.pop(MODEL_KEY),
             # Pass the rest of the configuration as extra parameters

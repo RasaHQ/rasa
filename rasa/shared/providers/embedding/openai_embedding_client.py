@@ -1,5 +1,7 @@
-from typing import Any, Dict, Optional
 import os
+from typing import Any, Dict, Optional
+
+import structlog
 
 from rasa.shared.constants import (
     OPENAI_API_BASE_ENV_VAR,
@@ -11,6 +13,7 @@ from rasa.shared.providers.embedding._base_litellm_embedding_client import (
     _BaseLiteLLMEmbeddingClient,
 )
 
+structlogger = structlog.get_logger()
 OPENAI_PROVIDER = "openai"
 
 
@@ -49,6 +52,31 @@ class OpenAIEmbeddingClient(_BaseLiteLLMEmbeddingClient):
 
     @classmethod
     def from_config(cls, config: Dict[str, Any]) -> "OpenAIEmbeddingClient":
+        """
+        Initializes the client from given configuration.
+
+        Args:
+            config (Dict[str, Any]): Configuration.
+
+        Raises:
+            ValueError: Raised in cases of invalid configuration:
+                - If any of the required configuration keys are missing.
+                - If `api_type` has a value different from `azure`.
+
+        Returns:
+            OpenAIEmbeddingClient: Initialized client.
+        """
+        try:
+            openai_config = OpenAIClientConfig.from_dict(config)
+        except ValueError as e:
+            message = "Cannot instantiate a client from the passed configuration."
+            structlogger.error(
+                "openai_embedding_client.from_config.error",
+                message=message,
+                config=config,
+                original_error=e,
+            )
+            raise
         openai_config = OpenAIClientConfig.from_dict(config)
         return cls(
             model=openai_config.model,

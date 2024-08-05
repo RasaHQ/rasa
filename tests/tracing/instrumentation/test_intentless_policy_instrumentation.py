@@ -5,7 +5,6 @@ from unittest.mock import Mock, patch
 import pytest
 from pytest import LogCaptureFixture
 from langchain_community.embeddings import FakeEmbeddings
-from langchain_community.llms.fake import FakeListLLM
 from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 
@@ -16,19 +15,28 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import DialogueStackUpdated
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.providers.llm.llm_client import LLMClient
+from rasa.shared.providers.llm.openai_llm_client import OpenAILLMClient
 from rasa.tracing.instrumentation import instrumentation
 
 
 @pytest.fixture
+def llm_client() -> LLMClient:
+    client = OpenAILLMClient(
+        model="test-gpt",
+        mock_response="Hello there",
+    )
+    return client
+
+
+@pytest.fixture
 def intentless_policy_generator(
+    llm_client: LLMClient,
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
     monkeypatch: pytest.MonkeyPatch,
 ) -> Generator[IntentlessPolicy, None, None]:
-    with patch(
-        "rasa.core.policies.intentless_policy.llm_factory",
-        Mock(return_value=FakeListLLM(responses=["Hello there", "Goodbye"])),
-    ):
+    with patch("rasa.core.policies.intentless_policy.llm_factory", llm_client):
         with patch(
             "rasa.core.policies.intentless_policy.embedder_factory",
             Mock(return_value=FakeEmbeddings(size=100)),

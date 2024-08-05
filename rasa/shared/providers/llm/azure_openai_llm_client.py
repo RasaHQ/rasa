@@ -25,8 +25,6 @@ from rasa.shared.providers.llm._base_litellm_client import _BaseLiteLLMClient
 from rasa.shared.utils.io import raise_deprecation_warning
 
 structlogger = structlog.get_logger()
-
-
 _AZURE_PROVIDER = "azure"
 
 
@@ -94,15 +92,19 @@ class AzureOpenAILLMClient(_BaseLiteLLMClient):
             or os.getenv(OPENAI_API_TYPE_ENV_VAR)
         )
 
-        # run helper function to check and raise deprecation warning if
+        # Run helper function to check and raise deprecation warning if
         # deprecated environment variables were used for initialization of the
         # client settings
-        self._raise_deprecation_warnings()
+        self._raise_evn_var_deprecation_warnings()
 
         # validate the client settings
         self.validate_client_setup()
 
-    def _raise_deprecation_warnings(self) -> None:
+    def _raise_evn_var_deprecation_warnings(self) -> None:
+        """Helper function to check and raise deprecation warning if
+        deprecated environment variables were used for initialization of
+        some client settings.
+        """
         deprecation_mapping = {
             "API Base": {
                 "current_value": self.api_base,
@@ -118,11 +120,6 @@ class AzureOpenAILLMClient(_BaseLiteLLMClient):
                 "current_value": self._api_key,
                 "env_var": AZURE_API_KEY_ENV_VAR,
                 "deprecated_var": OPENAI_API_KEY_ENV_VAR,
-            },
-            "API Type": {
-                "current_value": self._api_type,
-                "env_var": AZURE_API_TYPE_ENV_VAR,
-                "deprecated_var": OPENAI_API_TYPE_ENV_VAR,
             },
         }
 
@@ -158,7 +155,32 @@ class AzureOpenAILLMClient(_BaseLiteLLMClient):
 
     @classmethod
     def from_config(cls, config: Dict[str, Any]) -> "AzureOpenAILLMClient":
-        azure_openai_config = AzureOpenAIClientConfig.from_dict(config)
+        """
+        Initializes the client from given configuration.
+
+        Args:
+            config (Dict[str, Any]): Configuration.
+
+        Raises:
+            ValueError:
+                If any of the required configuration keys are missing.
+                If `api_type` has a value different from `azure`.
+
+        Returns:
+            AzureOpenAILLMClient: Initialized client.
+        """
+        try:
+            azure_openai_config = AzureOpenAIClientConfig.from_dict(config)
+        except ValueError as e:
+            message = "Cannot instantiate a client from the passed configuration."
+            structlogger.error(
+                "azure_openai_llm_client.from_config.error",
+                message=message,
+                config=config,
+                original_error=e,
+            )
+            raise
+
         return cls(
             azure_openai_config.deployment,
             azure_openai_config.model,
@@ -219,8 +241,8 @@ class AzureOpenAILLMClient(_BaseLiteLLMClient):
 
         <provider>/<model or deployment name>
         """
-        regex_patter = rf"^{_AZURE_PROVIDER}/"
-        if not re.match(regex_patter, self._deployment):
+        regex_pattern = rf"^{_AZURE_PROVIDER}/"
+        if not re.match(regex_pattern, self._deployment):
             return f"{_AZURE_PROVIDER}/{self._deployment}"
         return self._deployment
 
