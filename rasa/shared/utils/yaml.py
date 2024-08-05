@@ -219,6 +219,9 @@ class YamlValidationException(YamlException, ValueError):
 
         head, tail = path[0], path[1:]
 
+        if head == "":
+            return current.lc.line
+
         if head:
             if isinstance(current, dict) and head in current:
                 line = self._line_number_for_path(current[head], tail)
@@ -440,7 +443,7 @@ def read_yaml_file(
 
 
 def read_config_file(
-    filename: Union[Path, str], reader_type: Union[str, List[str]] = "safe"
+    filename: Union[Path, str], reader_type: Union[str, List[str]] = ["safe", "rt"]
 ) -> Dict[str, Any]:
     """Parses a yaml configuration file. Content needs to be a dictionary.
 
@@ -567,7 +570,7 @@ def is_key_in_yaml(file_path: Union[str, Path], *keys: str) -> bool:
 def read_validated_yaml(
     filename: Union[str, Path],
     schema: str,
-    reader_type: Union[str, List[str]] = "safe",
+    reader_type: Union[str, List[str]] = ["safe", "rt"],
 ) -> Any:
     """Validates YAML file content and returns parsed content.
 
