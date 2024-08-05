@@ -144,9 +144,9 @@ class YamlValidationException(YamlException, ValueError):
         return msg
 
     def _calculate_number_of_lines(
-        self, current: Any, target: str = None
+        self, current: Any, target: Optional[str] = None
     ) -> Tuple[int, bool]:
-        """Counts the number of lines that are missing due to the ruamel yaml parser logic.
+        """Counts the lines that are missing due to the ruamel yaml parser logic.
 
         Since not all nodes returned from the ruamel yaml parser
         have line numbers attached (arrays have them, dicts have
@@ -168,10 +168,16 @@ class YamlValidationException(YamlException, ValueError):
             keys_to_check = keys_to_check[: keys_to_check.index(target)]
         try:
             # find the last key that has a line number attached
-            last_key_with_lc = [
-                key for key in reversed(keys_to_check) if hasattr(current[key], "lc")
-            ][0]
-        except IndexError:
+            last_key_with_lc = next(
+                iter(
+                    [
+                        key
+                        for key in reversed(keys_to_check)
+                        if hasattr(current[key], "lc")
+                    ]
+                )
+            )
+        except StopIteration:
             # otherwise return the number of elements on that level up to the target
             if target:
                 return list(current.keys()).index(target), False
