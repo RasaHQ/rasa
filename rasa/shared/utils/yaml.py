@@ -443,7 +443,7 @@ def read_yaml_file(
 
 
 def read_config_file(
-    filename: Union[Path, str], reader_type: Union[str, List[str]] = ["safe", "rt"]
+    filename: Union[Path, str], reader_type: Union[str, List[str]] = "safe"
 ) -> Dict[str, Any]:
     """Parses a yaml configuration file. Content needs to be a dictionary.
 
@@ -570,7 +570,7 @@ def is_key_in_yaml(file_path: Union[str, Path], *keys: str) -> bool:
 def read_validated_yaml(
     filename: Union[str, Path],
     schema: str,
-    reader_type: Union[str, List[str]] = ["safe", "rt"],
+    reader_type: Union[str, List[str]] = "safe",
 ) -> Any:
     """Validates YAML file content and returns parsed content.
 
