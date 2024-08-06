@@ -1,12 +1,11 @@
 from pathlib import Path
-from unittest.mock import patch, MagicMock, Mock, AsyncMock
+from unittest.mock import patch, Mock, AsyncMock
 
 import pandas as pd
 import pytest
 
 from rasa.e2e_test.data_convert_e2e import E2ETestConverter
 from rasa.shared.exceptions import RasaException
-
 
 SAMPLE_CONVERSATIONS_CSV_PATH = "data/test_data_convert_e2e/sample_conversations.csv"
 SAMPLE_CONVERSATIONS_XLSX_PATH = "data/test_data_convert_e2e/sample_conversations.xlsx"
@@ -54,8 +53,7 @@ def sample_converter() -> E2ETestConverter:
 
 def test_convert_e2e_read_data_from_csv():
     converter = E2ETestConverter(path=SAMPLE_CONVERSATIONS_CSV_PATH)
-    converter.read_file()
-    assert converter.data is not None
+    assert converter.read_file() is not None
 
 
 def test_convert_e2e_data_integrity_from_csv(tmp_path: Path, data_frame: pd.DataFrame):
@@ -63,8 +61,7 @@ def test_convert_e2e_data_integrity_from_csv(tmp_path: Path, data_frame: pd.Data
     data_frame.to_csv(file_path, index=False)
 
     converter = E2ETestConverter(path=str(file_path))
-    converter.read_file()
-    assert converter.data == DATA_FRAME_OUTPUT_DATA
+    assert converter.read_file() == DATA_FRAME_OUTPUT_DATA
 
 
 def test_convert_e2e_read_empty_values_from_csv(
@@ -74,8 +71,7 @@ def test_convert_e2e_read_empty_values_from_csv(
     data_frame_empty_values.to_csv(file_path, index=False)
 
     converter = E2ETestConverter(path=str(file_path))
-    converter.read_file()
-    assert converter.data == DATA_FRAME_OUTPUT_DATA_EMPTY_VALUES
+    assert converter.read_file() == DATA_FRAME_OUTPUT_DATA_EMPTY_VALUES
 
 
 def test_convert_e2e_read_data_from_xlsx():
@@ -83,8 +79,7 @@ def test_convert_e2e_read_data_from_xlsx():
         path=SAMPLE_CONVERSATIONS_XLSX_PATH,
         sheet_name=SAMPLE_CONVERSATION_XLSX_SHEET_NAME,
     )
-    converter.read_file()
-    assert converter.data is not None
+    assert converter.read_file() is not None
 
 
 def test_convert_e2e_from_xlsx_without_sheet_name():
@@ -100,8 +95,7 @@ def test_convert_e2e_data_integrity_from_xlsx(tmp_path: Path, data_frame: pd.Dat
     converter = E2ETestConverter(
         path=str(file_path), sheet_name=SAMPLE_CONVERSATION_XLSX_SHEET_NAME
     )
-    converter.read_file()
-    assert converter.data == DATA_FRAME_OUTPUT_DATA
+    assert converter.read_file() == DATA_FRAME_OUTPUT_DATA
 
 
 def test_convert_e2e_read_empty_values_from_xlsx(
@@ -113,8 +107,7 @@ def test_convert_e2e_read_empty_values_from_xlsx(
     converter = E2ETestConverter(
         path=str(file_path), sheet_name=SAMPLE_CONVERSATION_XLSX_SHEET_NAME
     )
-    converter.read_file()
-    assert converter.data == DATA_FRAME_OUTPUT_DATA_EMPTY_VALUES
+    assert converter.read_file() == DATA_FRAME_OUTPUT_DATA_EMPTY_VALUES
 
 
 def test_convert_e2e_with_unsupported_extension():
@@ -160,13 +153,17 @@ def test_converter_e2e_is_yaml_valid(sample_converter: E2ETestConverter):
     - test_case: user_greeting_the_assistant
       steps:
         - user: "Hi"
-        - bot: "Hello"
+          assertions:
+            - bot_uttered:
+                text_matches: "Hello"
     """
     invalid_yaml = """
     - test_case: user_greeting_the_assistant
       steps
         - user: "Hi"
-        - bot: "Hello"
+          assertions:
+            - bot_uttered:
+                text_matches: "Hello"
     """
 
     assert sample_converter.is_yaml_valid(valid_yaml) is True
@@ -181,7 +178,7 @@ def test_convert_e2e_remove_markdown_code_syntax(sample_converter: E2ETestConver
     - user: "Hi"
       assertion:
         - bot_uttered:
-          text_matches: "Hello"
+            text_matches: "Hello"
 ```
     """
     expected_output = """
@@ -190,7 +187,7 @@ def test_convert_e2e_remove_markdown_code_syntax(sample_converter: E2ETestConver
     - user: "Hi"
       assertion:
         - bot_uttered:
-          text_matches: "Hello"
+            text_matches: "Hello"
     """.strip()
     assert (
         sample_converter.remove_markdown_code_syntax(markdown_string) == expected_output
@@ -204,9 +201,7 @@ def test_convert_e2e_split_data_into_conversations(sample_converter: E2ETestConv
         {},  # Empty row indicates conversation splitter
         DUMMY_CONVERSATION_3,
     ]
-    sample_converter.data = sample_data
 
-    sample_converter.split_data_into_conversations()
     expected_output = [
         [
             DUMMY_CONVERSATION_1,
@@ -216,15 +211,17 @@ def test_convert_e2e_split_data_into_conversations(sample_converter: E2ETestConv
             DUMMY_CONVERSATION_3,
         ],
     ]
-    assert sample_converter.conversations == expected_output
+    assert (
+        sample_converter.split_data_into_conversations(sample_data) == expected_output
+    )
 
 
 def test_convert_e2e_split_sample_conversation_data_into_conversations(
     sample_converter: E2ETestConverter,
 ):
-    sample_converter.read_file()
-    sample_converter.split_data_into_conversations()
-    assert len(sample_converter.conversations) == NUMBER_OF_SAMPLE_CONVERSATIONS
+    data = sample_converter.read_file()
+    conversations = sample_converter.split_data_into_conversations(data)
+    assert len(conversations) == NUMBER_OF_SAMPLE_CONVERSATIONS
 
 
 def test_convert_e2e_render_template(sample_converter):
@@ -239,8 +236,8 @@ def test_convert_e2e_render_template(sample_converter):
 
 
 @pytest.mark.asyncio
-async def test_convert_conversations_into_tests(sample_converter):
-    sample_converter.conversations = [
+async def test_convert_e2e_conversations_into_tests(sample_converter):
+    conversations = [
         [
             DUMMY_CONVERSATION_1,
         ],
@@ -262,13 +259,15 @@ async def test_convert_conversations_into_tests(sample_converter):
         )
         llm_mock.apredict = apredict_mock
         mock_llm_factory.return_value = llm_mock
-        await sample_converter.convert_conversations_into_tests()
+        yaml_tests_string = await sample_converter.convert_conversations_into_tests(
+            conversations
+        )
         expected_output = "conversation 1 response\nconversation 2 response"
-        assert sample_converter.yaml_tests_string.strip() == expected_output
+        assert yaml_tests_string.strip() == expected_output
 
 
 @pytest.mark.asyncio
-async def test_convert_conversations_into_tests(sample_converter):
+async def test_convert_e2e_single_conversation_into_test(sample_converter):
     conversation = [DUMMY_CONVERSATION_1]
 
     with patch(
@@ -281,7 +280,6 @@ async def test_convert_conversations_into_tests(sample_converter):
         )
         llm_mock.apredict = apredict_mock
         mock_llm_factory.return_value = llm_mock
-        await sample_converter.convert_conversations_into_tests()
         yaml_test = await sample_converter.convert_single_conversation_into_test(
             conversation
         )

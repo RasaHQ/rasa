@@ -32,10 +32,8 @@ NUMBER_OF_LLM_ATTEMPTS = 3
 DEFAULT_LLM_CONFIG = {
     "_type": "openai",
     "request_timeout": 60,
-    "temperature": 0.0,
     "max_tokens": 2048,
     "model_name": "gpt-4o-mini",
-    "max_retries": 1,
 }
 
 
@@ -43,52 +41,25 @@ class E2ETestConverter:
     """E2ETestConvertor class is responsible for reading input CSV or XLS/XLSX files,
     splitting the data into distinct conversations, converting them into test cases,
     and storing the test cases into a YAML file at a specified directory.
-
-    Attributes:
-        input_path (Text): Path to the input file.
-        sheet_name (Text): Name of the sheet in XLSX file (if applicable).
-        data (List[Dict]): Parsed data from the input file.
     """
 
     def __init__(
         self,
         path: Text,
         sheet_name: Optional[Text] = None,
+        prompt_template: Text = DEFAULT_E2E_TEST_GENERATOR_PROMPT_TEMPLATE,
         **kwargs: Any,
     ) -> None:
         """Initializes the E2ETestConverter with necessary parameters.
 
         Args:
-            input_path (Text): Path to the input file.
+            path (Text): Path to the input file.
             sheet_name (Text): Name of the sheet in XLSX file.
-            conversations (List[List[Dict[Text, Any]]]): List of conversations.
             prompt_template (Text): Path to the jinja2 template.
-            yaml_tests_string (Text): YAML representation of the test cases.
         """
         self.input_path: Text = path
         self.sheet_name: Optional[Text] = sheet_name
-        self._data: List[Dict] = []
-        self.conversations: List[List[Dict[Text, Any]]] = []
-        self.prompt_template: Text = DEFAULT_E2E_TEST_GENERATOR_PROMPT_TEMPLATE
-        self.yaml_tests_string: Text = ""
-
-    @property
-    def data(self) -> List[Dict]:
-        """Getter for the data attribute.
-
-        Returns:
-            Optional[List[Dict]]: Parsed data from the input file.
-        """
-        return self._data
-
-    @data.setter
-    def data(self, value: List[Dict]) -> None:
-        """Setter for the data attribute.
-
-        Args:
-            value (List[Dict]): Data to be set.
-        """
-        self._data = value
+        self.prompt_template: Text = prompt_template
 
     @staticmethod
     def is_yaml_valid(yaml_string: Text) -> bool:
@@ -109,13 +80,19 @@ class E2ETestConverter:
 
     @staticmethod
     def remove_markdown_code_syntax(markdown_string: Text) -> Text:
-        """Remove Markdown code formatting from the string.
+        """
+        Remove Markdown code formatting from the string.
 
         Args:
             markdown_string (Text): string to be parsed.
 
         Returns:
             Text: Parsed string.
+
+        Example:
+            >>> markdown_string = "```yaml\nkey: value\n```"
+            >>> remove_markdown_formatting(markdown_string)
+            'key: value'
         """
         if not markdown_string:
             return ""
@@ -140,9 +117,42 @@ class E2ETestConverter:
 
         try:
             return await llm.apredict(prompt)
-        except Exception as e:
-            structlogger.debug("e2e_test_generator.llm_response_error", e=e)
+        except Exception as exc:
+            structlogger.debug("e2e_test_generator.llm_response_error", exc=exc)
             return None
+
+    @staticmethod
+    def split_data_into_conversations(
+        input_data: List[Dict],
+    ) -> List[List[Dict[Text, Any]]]:
+        """Splits the data into conversations using empty row as a separator.
+
+        Arguments:
+            input_data (List[Dict]): The list of rows of the input file.
+
+        Returns:
+            List[List[Dict[Text, Any]]]: List of conversations
+        """
+        conversations, conversation = [], []
+
+        for row in input_data:
+            # Remove empty values from the row
+            row = {key: value for key, value in row.items() if value}
+
+            # Iterate through each row until the empty row separator is hit
+            if row:
+                conversation.append(row)
+            else:
+                # If the current conversation exists, add it to the list
+                if conversation:
+                    conversations.append(conversation)
+                    conversation = []
+
+        # Add last conversation to the list as it might not have a separator after it
+        if conversation:
+            conversations.append(conversation)
+
+        return conversations
 
     def get_and_validate_input_file_extension(self) -> Text:
         """Validates the input file extension and checks for required properties
@@ -191,11 +201,14 @@ class E2ETestConverter:
         df = df.fillna("")
         return df.to_dict(orient="records")
 
-    def read_file(self) -> None:
+    def read_file(self) -> List[Dict]:
         """Calls the appropriate file reading method based on the file extension.
 
         Raises:
             RasaException: If the file could not be read.
+
+        Returns:
+            List[Dict]: Parsed data from the input file as a list of dictionaries.
         """
         extension_to_method = {
             CSV: self.read_csv,
@@ -206,11 +219,11 @@ class E2ETestConverter:
         input_file_extension = self.get_and_validate_input_file_extension()
 
         try:
-            self.data = extension_to_method[input_file_extension]()
             structlogger.debug(
                 "e2e_test_generator.read_file",
                 input_file_extension=input_file_extension,
             )
+            return extension_to_method[input_file_extension]()
         except pd.errors.ParserError:
             raise RasaException("The file could not be read due to a parsing error.")
         except pd.errors.EmptyDataError:
@@ -219,31 +232,6 @@ class E2ETestConverter:
             raise RasaException("There was an error with reading the CSV file.")
         except ValueError:
             raise RasaException("There was a value error while reading the file.")
-
-    def split_data_into_conversations(self) -> None:
-        """Splits the data into conversations using empty row as a separator.
-
-        Returns:
-            List[List[Dict[Text, Any]]]: List of conversations
-        """
-        conversation = []
-
-        for row in self.data:
-            # Remove empty values from the row
-            row = {key: value for key, value in row.items() if value}
-
-            # Iterate through each row until the empty row separator is hit
-            if row:
-                conversation.append(row)
-            else:
-                # If the current conversation exists, add it to the list
-                if conversation:
-                    self.conversations.append(conversation)
-                    conversation = []
-
-        # Add last conversation to the list as it might not have a separator after it
-        if conversation:
-            self.conversations.append(conversation)
 
     def render_template(self, conversation: List[Dict[Text, Any]]) -> Text:
         """Renders a jinja2 template.
@@ -281,33 +269,42 @@ class E2ETestConverter:
 
         return yaml_test_case
 
-    async def convert_conversations_into_tests(self) -> None:
-        """Generates test cases from the parsed data."""
+    async def convert_conversations_into_tests(
+        self, conversations: List[List[Dict[Text, Any]]]
+    ) -> Text:
+        """Generates test cases from the parsed data.
+
+        Arguments:
+            conversations (List[List[Dict[Text, Any]]]): The list of conversation rows.
+
+        Returns:
+            Text: YAML representation of the test cases.
+        """
         # Convert all conversations into YAML test cases asynchronously.
         tasks = [
             asyncio.ensure_future(
                 self.convert_single_conversation_into_test(conversation)
             )
-            for conversation in self.conversations
+            for conversation in conversations
         ]
         results = await asyncio.gather(*tasks)
 
         structlogger.debug("e2e_test_generator.test_generation_finished")
-        self.yaml_tests_string = "\n".join(results)
+        return "\n".join(results)
 
-    def run(self) -> None:
+    async def run(self) -> None:
         """Executes the E2E test conversion process: reads the file, generates tests,
         and writes them to a YAML file.
         """
-        self.read_file()
-        self.split_data_into_conversations()
-        asyncio.run(self.convert_conversations_into_tests())
+        input_data = self.read_file()
+        conversations = self.split_data_into_conversations(input_data)
+        yaml_tests_string = await self.convert_conversations_into_tests(conversations)
 
 
 def convert_data_to_e2e_tests(args: argparse.Namespace) -> None:
     converter = E2ETestConverter(**vars(args))
     try:
-        converter.run()
+        asyncio.run(converter.run())
     except RasaException as exc:
         structlogger.error("e2e_test_converter.failed.run", exc=exc)
         print_error_and_exit(f"Failed to convert the data into E2E tests. Error: {exc}")
