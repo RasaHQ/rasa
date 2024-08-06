@@ -97,7 +97,10 @@ async def test_find_conflicts_or():
     conflicts = find_story_conflicts(trackers, domain, 5)
 
     assert len(conflicts) == 1
-    assert conflicts[0].conflicting_actions == ["utter_default", "utter_goodbye"]
+    assert sorted(conflicts[0].conflicting_actions) == [
+        "utter_default",
+        "utter_goodbye",
+    ]
 
 
 async def test_find_conflicts_slots_that_break():

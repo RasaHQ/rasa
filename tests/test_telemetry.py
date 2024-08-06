@@ -13,6 +13,7 @@ import responses
 
 from rasa import telemetry
 import rasa.constants
+from rasa.utils import licensing
 import rasa.utils.licensing
 from rasa.anonymization.anonymisation_rule_yaml_reader import KEY_ANONYMIZATION_RULES
 from rasa.dialogue_understanding.generator.constants import (
@@ -273,12 +274,10 @@ def test_segment_does_not_get_called_without_license(monkeypatch: MonkeyPatch):
     def mock_get_license_hash(*args, **kwargs):
         return None
 
-    monkeypatch.setattr(telemetry, "get_license_hash", mock_get_license_hash)
+    monkeypatch.setattr(licensing, "get_license_hash", mock_get_license_hash)
 
     mock_license_property = MagicMock(return_value=None)
-    monkeypatch.setattr(
-        rasa.telemetry, "property_of_active_license", mock_license_property
-    )
+    monkeypatch.setattr(licensing, "property_of_active_license", mock_license_property)
 
     telemetry.initialize_telemetry()
 
@@ -509,7 +508,8 @@ def test_context_contains_os():
 
 
 def test_context_contains_license_hash(monkeypatch: MonkeyPatch) -> None:
-    monkeypatch.setattr(telemetry, "get_license_hash", lambda: "1234567890")
+    monkeypatch.setattr(licensing, "get_license_hash", lambda: "1234567890")
+    monkeypatch.setattr(licensing, "property_of_active_license", lambda _: None)
     context = telemetry._default_context_fields()
 
     assert "license_hash" in context

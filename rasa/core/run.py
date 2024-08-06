@@ -24,6 +24,7 @@ import rasa.core.utils
 import rasa.shared.utils.common
 import rasa.shared.utils.io
 import rasa.utils
+from rasa.utils import licensing
 import rasa.utils.common
 import rasa.utils.io
 from rasa import server, telemetry
@@ -260,6 +261,10 @@ def serve_application(
     app.register_listener(
         partial(load_agent_on_start, model_path, endpoints, remote_storage),
         "before_server_start",
+    )
+
+    app.register_listener(
+        licensing.validate_limited_server_license, "after_server_start"
     )
 
     app.register_listener(close_resources, "after_server_stop")
