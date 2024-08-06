@@ -4,7 +4,12 @@ from unittest.mock import patch, Mock, AsyncMock
 import pandas as pd
 import pytest
 
-from rasa.e2e_test.data_convert_e2e import E2ETestConverter
+from rasa.e2e_test.data_convert_e2e import (
+    E2ETestConverter,
+    ConversationEntry,
+    Conversation,
+    Conversations,
+)
 from rasa.shared.exceptions import RasaException
 
 SAMPLE_CONVERSATIONS_CSV_PATH = "data/test_data_convert_e2e/sample_conversations.csv"
@@ -49,6 +54,40 @@ def data_frame_empty_values() -> pd.DataFrame:
 @pytest.fixture
 def sample_converter() -> E2ETestConverter:
     return E2ETestConverter(path=SAMPLE_CONVERSATIONS_CSV_PATH)
+
+
+def test_conversation_entry():
+    entry = ConversationEntry(data=DUMMY_CONVERSATION_1)
+    assert entry.as_dict() == DUMMY_CONVERSATION_1
+
+
+def test_conversation():
+    entries = [
+        ConversationEntry(data=DUMMY_CONVERSATION_1),
+        ConversationEntry(data=DUMMY_CONVERSATION_2),
+    ]
+    conversation = Conversation(entries=entries)
+    expected_dict = [DUMMY_CONVERSATION_1, DUMMY_CONVERSATION_2]
+    assert conversation.as_dict() == expected_dict
+
+
+def test_conversations():
+    entries1 = [
+        ConversationEntry(data=DUMMY_CONVERSATION_1),
+        ConversationEntry(data=DUMMY_CONVERSATION_2),
+    ]
+    entries2 = [
+        ConversationEntry(data=DUMMY_CONVERSATION_2),
+        ConversationEntry(data=DUMMY_CONVERSATION_3),
+    ]
+    conversation1 = Conversation(entries=entries1)
+    conversation2 = Conversation(entries=entries2)
+    conversations = Conversations(conversations=[conversation1, conversation2])
+    expected_dict = [
+        [DUMMY_CONVERSATION_1, DUMMY_CONVERSATION_2],
+        [DUMMY_CONVERSATION_2, DUMMY_CONVERSATION_3],
+    ]
+    assert conversations.as_dict() == expected_dict
 
 
 def test_convert_e2e_read_data_from_csv():

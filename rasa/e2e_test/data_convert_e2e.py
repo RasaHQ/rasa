@@ -3,9 +3,11 @@ import asyncio
 import importlib
 import re
 from csv import Error as CSVError
+from dataclasses import dataclass, field
 from pathlib import Path
 from textwrap import dedent
-from typing import Text, Dict, List, Optional, Any
+from typing import List, Dict, Any, Text
+from typing import Optional
 
 import pandas as pd
 import structlog
@@ -35,6 +37,36 @@ DEFAULT_LLM_CONFIG = {
     "max_tokens": 2048,
     "model_name": "gpt-4o-mini",
 }
+
+
+@dataclass
+class ConversationEntry:
+    """Class for storing an entry in a conversation."""
+
+    data: Dict[Text, Any]
+
+    def as_dict(self) -> Dict[Text, Any]:
+        return self.data
+
+
+@dataclass
+class Conversation:
+    """Class for storing a single conversation."""
+
+    entries: List[ConversationEntry]
+
+    def as_dict(self) -> List[Dict[Text, Any]]:
+        return [entry.as_dict() for entry in self.entries]
+
+
+@dataclass
+class Conversations:
+    """Class for storing multiple conversations."""
+
+    conversations: List[Conversation]
+
+    def as_dict(self) -> List[List[Dict[Text, Any]]]:
+        return [conversation.as_dict() for conversation in self.conversations]
 
 
 class E2ETestConverter:
@@ -74,8 +106,8 @@ class E2ETestConverter:
         try:
             yaml.safe_load(yaml_string)
             return True
-        except Exception as e:
-            structlogger.debug("e2e_test_generator.yaml_string_invalid", e=e)
+        except Exception as exc:
+            structlogger.debug("e2e_test_generator.yaml_string_invalid", exc=exc)
             return False
 
     @staticmethod
@@ -98,8 +130,6 @@ class E2ETestConverter:
             return ""
 
         dedented_string = dedent(markdown_string)
-
-        # Updated regex to handle optional language identifier after opening triple backticks.
         regex = r"^```.*\n|```$"
         return re.sub(regex, "", dedented_string, flags=re.MULTILINE).strip()
 
@@ -124,14 +154,14 @@ class E2ETestConverter:
     @staticmethod
     def split_data_into_conversations(
         input_data: List[Dict],
-    ) -> List[List[Dict[Text, Any]]]:
+    ) -> Conversations:
         """Splits the data into conversations using empty row as a separator.
 
         Arguments:
             input_data (List[Dict]): The list of rows of the input file.
 
         Returns:
-            List[List[Dict[Text, Any]]]: List of conversations
+            Conversations: List of conversations
         """
         conversations, conversation = [], []
 
@@ -233,11 +263,11 @@ class E2ETestConverter:
         except ValueError:
             raise RasaException("There was a value error while reading the file.")
 
-    def render_template(self, conversation: List[Dict[Text, Any]]) -> Text:
+    def render_template(self, conversation: Conversation) -> Text:
         """Renders a jinja2 template.
 
         Arguments:
-            conversation (List[Dict[Text, Any]]): The list of rows of a conversation.
+            conversation (Conversation): The list of rows of a conversation.
 
         Returns:
             Text: The rendered template string.
@@ -246,12 +276,12 @@ class E2ETestConverter:
         return Template(self.prompt_template).render(**kwargs)
 
     async def convert_single_conversation_into_test(
-        self, conversation: List[Dict[Text, Any]]
+        self, conversation: Conversation
     ) -> Text:
         """Uses LLM to convert a conversation to a YAML test case.
 
         Arguments:
-            conversation (List[Dict[Text, Any]]): The list of rows of a conversation.
+            conversation (Conversation): The list of rows of a conversation.
 
         Returns:
             Text: YAML representation of the conversation.
@@ -270,12 +300,12 @@ class E2ETestConverter:
         return yaml_test_case
 
     async def convert_conversations_into_tests(
-        self, conversations: List[List[Dict[Text, Any]]]
+        self, conversations: Conversations
     ) -> Text:
         """Generates test cases from the parsed data.
 
         Arguments:
-            conversations (List[List[Dict[Text, Any]]]): The list of conversation rows.
+            conversations (Conversations): The list of conversation rows.
 
         Returns:
             Text: YAML representation of the test cases.
