@@ -45,6 +45,10 @@ class ConversationEntry:
 
     data: Dict[Text, Any]
 
+    @classmethod
+    def from_dict(cls, data: Dict[Text, Any]) -> "ConversationEntry":
+        return cls(data=data)
+
     def as_dict(self) -> Dict[Text, Any]:
         return self.data
 
@@ -53,9 +57,12 @@ class ConversationEntry:
 class Conversation:
     """Class for storing a single conversation."""
 
-    entries: List[ConversationEntry]
+    entries: List[ConversationEntry] = field(default_factory=list)
 
-    def as_dict(self) -> List[Dict[Text, Any]]:
+    def add_entry(self, entry: ConversationEntry) -> None:
+        self.entries.append(entry)
+
+    def as_list(self) -> List[Dict[Text, Any]]:
         return [entry.as_dict() for entry in self.entries]
 
 
@@ -63,10 +70,13 @@ class Conversation:
 class Conversations:
     """Class for storing multiple conversations."""
 
-    conversations: List[Conversation]
+    conversations: List[Conversation] = field(default_factory=list)
 
-    def as_dict(self) -> List[List[Dict[Text, Any]]]:
-        return [conversation.as_dict() for conversation in self.conversations]
+    def add_conversation(self, conversation: Conversation) -> None:
+        self.conversations.append(conversation)
+
+    def as_list(self) -> List[List[Dict[Text, Any]]]:
+        return [conversation.as_list() for conversation in self.conversations]
 
 
 class E2ETestConverter:
@@ -163,24 +173,26 @@ class E2ETestConverter:
         Returns:
             Conversations: List of conversations
         """
-        conversations, conversation = [], []
+        conversations = Conversations()
+        conversation = Conversation()
 
+        # Iterate through each row until the empty row separator is hit
         for row in input_data:
             # Remove empty values from the row
             row = {key: value for key, value in row.items() if value}
 
-            # Iterate through each row until the empty row separator is hit
             if row:
-                conversation.append(row)
+                conversation_entry = ConversationEntry.from_dict(row)
+                conversation.add_entry(conversation_entry)
             else:
                 # If the current conversation exists, add it to the list
                 if conversation:
-                    conversations.append(conversation)
-                    conversation = []
+                    conversations.add_conversation(conversation)
+                    conversation = Conversation()
 
         # Add last conversation to the list as it might not have a separator after it
         if conversation:
-            conversations.append(conversation)
+            conversations.add_conversation(conversation)
 
         return conversations
 
@@ -272,7 +284,7 @@ class E2ETestConverter:
         Returns:
             Text: The rendered template string.
         """
-        kwargs = {"conversation": conversation}
+        kwargs = {"conversation": conversation.as_list()}
         return Template(self.prompt_template).render(**kwargs)
 
     async def convert_single_conversation_into_test(
@@ -315,7 +327,7 @@ class E2ETestConverter:
             asyncio.ensure_future(
                 self.convert_single_conversation_into_test(conversation)
             )
-            for conversation in conversations
+            for conversation in conversations.conversations
         ]
         results = await asyncio.gather(*tasks)
 

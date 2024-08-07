@@ -67,8 +67,8 @@ def test_conversation():
         ConversationEntry(data=DUMMY_CONVERSATION_2),
     ]
     conversation = Conversation(entries=entries)
-    expected_dict = [DUMMY_CONVERSATION_1, DUMMY_CONVERSATION_2]
-    assert conversation.as_dict() == expected_dict
+    expected_list = [DUMMY_CONVERSATION_1, DUMMY_CONVERSATION_2]
+    assert conversation.as_list() == expected_list
 
 
 def test_conversations():
@@ -83,11 +83,11 @@ def test_conversations():
     conversation1 = Conversation(entries=entries1)
     conversation2 = Conversation(entries=entries2)
     conversations = Conversations(conversations=[conversation1, conversation2])
-    expected_dict = [
+    expected_list = [
         [DUMMY_CONVERSATION_1, DUMMY_CONVERSATION_2],
         [DUMMY_CONVERSATION_2, DUMMY_CONVERSATION_3],
     ]
-    assert conversations.as_dict() == expected_dict
+    assert conversations.as_list() == expected_list
 
 
 def test_convert_e2e_read_data_from_csv():
@@ -241,7 +241,7 @@ def test_convert_e2e_split_data_into_conversations(sample_converter: E2ETestConv
         DUMMY_CONVERSATION_3,
     ]
 
-    expected_output = [
+    expected_list = [
         [
             DUMMY_CONVERSATION_1,
             DUMMY_CONVERSATION_2,
@@ -251,7 +251,8 @@ def test_convert_e2e_split_data_into_conversations(sample_converter: E2ETestConv
         ],
     ]
     assert (
-        sample_converter.split_data_into_conversations(sample_data) == expected_output
+        sample_converter.split_data_into_conversations(sample_data).as_list()
+        == expected_list
     )
 
 
@@ -260,14 +261,15 @@ def test_convert_e2e_split_sample_conversation_data_into_conversations(
 ):
     data = sample_converter.read_file()
     conversations = sample_converter.split_data_into_conversations(data)
-    assert len(conversations) == NUMBER_OF_SAMPLE_CONVERSATIONS
+    assert len(conversations.as_list()) == NUMBER_OF_SAMPLE_CONVERSATIONS
 
 
 def test_convert_e2e_render_template(sample_converter):
-    conversation = [
-        DUMMY_CONVERSATION_1,
-        DUMMY_CONVERSATION_2,
+    conversation_entries = [
+        ConversationEntry(data=DUMMY_CONVERSATION_1),
+        ConversationEntry(data=DUMMY_CONVERSATION_2),
     ]
+    conversation = Conversation(entries=conversation_entries)
     sample_converter.prompt_template = "{{ conversation }}"
     rendered = sample_converter.render_template(conversation)
     expected_output = f"[{DUMMY_CONVERSATION_1}, {DUMMY_CONVERSATION_2}]"
@@ -276,14 +278,20 @@ def test_convert_e2e_render_template(sample_converter):
 
 @pytest.mark.asyncio
 async def test_convert_e2e_conversations_into_tests(sample_converter):
-    conversations = [
-        [
-            DUMMY_CONVERSATION_1,
-        ],
-        [
-            DUMMY_CONVERSATION_3,
-        ],
-    ]
+    conversations = Conversations(
+        conversations=[
+            Conversation(
+                entries=[
+                    ConversationEntry(data=DUMMY_CONVERSATION_1),
+                ]
+            ),
+            Conversation(
+                entries=[
+                    ConversationEntry(data=DUMMY_CONVERSATION_3),
+                ]
+            ),
+        ]
+    )
 
     with patch(
         "rasa.e2e_test.data_convert_e2e.llm_factory",
@@ -307,7 +315,11 @@ async def test_convert_e2e_conversations_into_tests(sample_converter):
 
 @pytest.mark.asyncio
 async def test_convert_e2e_single_conversation_into_test(sample_converter):
-    conversation = [DUMMY_CONVERSATION_1]
+    conversation = Conversation(
+        entries=[
+            ConversationEntry(data=DUMMY_CONVERSATION_1),
+        ]
+    )
 
     with patch(
         "rasa.e2e_test.data_convert_e2e.llm_factory",
