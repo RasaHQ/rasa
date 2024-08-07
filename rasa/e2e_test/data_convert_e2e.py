@@ -91,8 +91,8 @@ class E2ETestConverter:
     def __init__(
         self,
         path: str,
-        sheet_name: Optional[str] = None,
         output: str = DEFAULT_E2E_OUTPUT_TESTS_DIRECTORY,
+        sheet_name: Optional[str] = None,
         prompt_template: str = DEFAULT_E2E_TEST_GENERATOR_PROMPT_TEMPLATE,
         **kwargs: Any,
     ) -> None:
@@ -100,6 +100,7 @@ class E2ETestConverter:
 
         Args:
             path (str): Path to the input file.
+            output (str): Directory to save the generated tests.
             sheet_name (str): Name of the sheet in XLSX file.
             prompt_template (str): Path to the jinja2 template.
         """
