@@ -1,0 +1,36 @@
+Your task is to write a YAML representation of a test case that contains the conversation between the user and a bot based on the sample data provided.
+
+You will receive a sample of conversation data.
+You need to understand which message would relate to the user (human) and which message would relate to the bot (assistant).
+
+## Sample Conversation Data
+
+The following is the sample conversation data:
+{{ conversation }}
+
+## Test Case YAML Schema
+
+This is an example of an E2E test conversation in YAML format:
+- test_case: snakecase_description_of_the_test_case
+  steps:
+  - user: "<...>"
+    assertions:
+      - bot_uttered:
+          text_matches: <...>
+  - user: "<...>"
+    assertions:
+      - bot_uttered:
+          text_matches: <...>
+  - ...
+
+## Instructions
+
+A test case should start with "- test_case:".
+The test case should contain a unique snake case description and steps of the user-bot turns.
+"text_matches" refers to a message produced by the bot (assistant).
+Text messages should be identical to the ones in the sample conversation data. You must not alter the messages.
+Make sure to output the YAML structure compliant with the schema example above.
+
+## YAML Test Case Output
+
+Your YAML test case:
