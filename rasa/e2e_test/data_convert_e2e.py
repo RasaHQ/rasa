@@ -307,8 +307,7 @@ class E2ETestConverter:
         yaml_test_case = ""
         prompt_template = self.render_template(conversation)
 
-        for idx in range(NUMBER_OF_LLM_ATTEMPTS):
-            print("ATTEMPT NUMBER", idx + 1)
+        for _ in range(NUMBER_OF_LLM_ATTEMPTS):
             response = await self.generate_llm_response(prompt_template)
             yaml_test_case = self.remove_markdown_code_syntax(response)
             if not self.is_yaml_valid(yaml_test_case):
