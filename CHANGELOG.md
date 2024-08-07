@@ -10,6 +10,13 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.9.6] - 2024-08-07
+                       
+Rasa Pro 3.9.6 (2024-08-07)                            
+### Miscellaneous internal changes
+- [#954](https://github.com/rasahq/rasa-private/issues/954)
+- [#926](https://github.com/rasahq/rasa-private/issues/926)
+
 ## [3.9.5] - 2024-08-01
                        
 Rasa Pro 3.9.5 (2024-08-01)                            
