@@ -128,8 +128,7 @@ class E2ETestConverter:
 
     @staticmethod
     def remove_markdown_code_syntax(markdown_string: str) -> str:
-        """
-        Remove Markdown code formatting from the string.
+        """Remove Markdown code formatting from the string.
 
         Args:
             markdown_string (str): string to be parsed.
@@ -341,8 +340,7 @@ class E2ETestConverter:
         return "\n".join(results)
 
     def write_tests_to_yaml(self, tests: str) -> None:
-        """
-        Writes the generated test cases to a YAML file
+        """Writes the generated test cases to a YAML file
         in the specified output directory.
 
         Args:
