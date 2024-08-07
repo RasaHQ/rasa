@@ -346,7 +346,7 @@ class E2ETestConverter:
         in the specified output directory.
 
         Args:
-            tests str: string containing the generated test cases.
+            tests (str): string containing the generated test cases.
         """
         output_dir = Path(self.output_path)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
