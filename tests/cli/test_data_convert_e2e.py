@@ -366,7 +366,7 @@ def test_convert_e2e_write_tests_to_yaml_correct_content():
         converter.write_tests_to_yaml(test_yaml_string)
 
         output_files = list(Path(tmpdir).glob("e2e_tests_*.yml"))
-        with open(output_files[0], 'r') as file:
+        with open(output_files[0], "r") as file:
             written_content = file.read()
 
         written_yaml_data = ruamel.yaml.safe_load(written_content)
@@ -400,7 +400,7 @@ def test_convert_e2e_write_tests_to_yaml_correct_timestamp():
     fixed_timestamp = datetime(2024, 1, 1, 12, 0, 0)
     expected_timestamp_str = fixed_timestamp.strftime("%Y%m%d_%H%M%S")
 
-    with patch('rasa.e2e_test.data_convert_e2e.datetime') as mock_datetime:
+    with patch("rasa.e2e_test.data_convert_e2e.datetime") as mock_datetime:
         mock_datetime.now.return_value = fixed_timestamp
         mock_datetime.now.strftime = datetime.strftime
 
@@ -408,5 +408,7 @@ def test_convert_e2e_write_tests_to_yaml_correct_timestamp():
             converter.output_path = tmpdir
             converter.write_tests_to_yaml("")
 
-            output_files = list(Path(tmpdir).glob(f"e2e_tests_{expected_timestamp_str}.yml"))
+            output_files = list(
+                Path(tmpdir).glob(f"e2e_tests_{expected_timestamp_str}.yml")
+            )
             assert len(output_files) == 1
