@@ -19,19 +19,21 @@ Guidelines:
 Format:
 - Each original user message should be prefixed with "USER: ".
 - Enumerate the rephrasing.
-- Separate each user message set with "&&&".
+- Separate each user message set with a line break.
 
 ===
 Example output for 3 rephrasings of 2 user messages:
+"""
 USER: Show invoices
 1. I want to see my bills.
 2. I mean bills
 3. Yes, I want to see the invoices.
-&&&
+
 USER: I'd like to book a car
 1. I need to reserve a car.
 2. Could I arrange for a car rental?
-3. I'm interested in hiring a car.'
+3. I'm interested in hiring a car.
+"""
 
 ===
 Expected output:

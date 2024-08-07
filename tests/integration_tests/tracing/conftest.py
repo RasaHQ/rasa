@@ -31,7 +31,8 @@ TraceQueryTimestamps = collections.namedtuple(
 RASA_SERVER_PARENT_SPAN_NAME = "Agent.handle_message"
 RASA_SERVER_PROCESSOR_SPAN_NAME = "MessageProcessor.handle_message"
 RASA_SERVER_PROCESSOR_SUB_SPAN_NAME = "MessageProcessor.log_message"
-RASA_SERVER_TRIGGER_MESSAGE = "/greet"
+DIRECT_CUSTOM_ACTION_EXECUTION_SUB_SPAN_NAME = "DirectCustomActionExecutor.run"
+RASA_SERVER_TRIGGER_MESSAGE = "/goodbye"
 
 
 @pytest.fixture

@@ -267,11 +267,11 @@ build-tests-deployment-env: ## Create environment files (.env) for docker-compos
 
 run-integration-containers: build-tests-deployment-env ## Run the integration test containers.
 	cd $(INTEGRATION_TEST_DEPLOYMENT_PATH) && \
-	docker-compose -f docker-compose.integration.yml up &
+	docker compose -f docker-compose.integration.yml up &
 
 stop-integration-containers: ## Stop the integration test containers.
 	cd $(INTEGRATION_TEST_DEPLOYMENT_PATH) && \
-	docker-compose -f docker-compose.integration.yml down
+	docker compose -f docker-compose.integration.yml down
 
 tag-release-auto:  ## Tag a release automatically.
 	poetry run python scripts/release.py tag --skip-confirmation

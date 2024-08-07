@@ -13,7 +13,7 @@ from rasa.cli.llm_fine_tuning import (
     write_statistics,
     create_storage_context,
 )
-from rasa.llm_fine_tuning.conversation_storage import (
+from rasa.llm_fine_tuning.storage import (
     StorageType,
     StorageContext,
     FileStorageStrategy,

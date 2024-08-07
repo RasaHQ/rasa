@@ -3,11 +3,12 @@ from contextlib import contextmanager
 from typing import List, Generator, Optional, Tuple, Union
 
 import structlog
+
 from rasa.dialogue_understanding.commands import Command
 from rasa.e2e_test.e2e_test_case import TestSuite, TestCase, ActualStepOutput, TestStep
 from rasa.e2e_test.e2e_test_runner import E2ETestRunner, TEST_TURNS_TYPE
-from rasa.llm_fine_tuning.conversation_storage import StorageContext
 from rasa.llm_fine_tuning.conversations import Conversation, ConversationStep
+from rasa.llm_fine_tuning.storage import StorageContext
 from rasa.shared.core.constants import USER
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import LLM_PROMPT, LLM_COMMANDS
