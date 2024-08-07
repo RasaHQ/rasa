@@ -812,7 +812,7 @@ jobs:
       - name: Run kafka and zookeeper containers for integration testing
         if: needs.changes.outputs.backend == 'true'
         run: |
-          docker-compose -f tests_deployment/docker-compose.kafka.yml up -d
+          docker compose -f tests_deployment/docker-compose.kafka.yml up -d
 
       - name: Test Code with Services 🩺
         if: needs.changes.outputs.backend == 'true'
@@ -826,7 +826,7 @@ jobs:
       - name: Stop kafka and zookeeper containers for integration testing
         if: needs.changes.outputs.backend == 'true'
         run: |
-          docker-compose -f tests_deployment/docker-compose.kafka.yml down
+          docker compose -f tests_deployment/docker-compose.kafka.yml down
 
   sequential_integration_test:
     name: Run Sequential Integration Tests

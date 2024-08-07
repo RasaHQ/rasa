@@ -229,11 +229,11 @@ build-tests-deployment-env: ## Create environment files (.env) for docker-compos
 
 run-integration-containers: build-tests-deployment-env ## Run the integration test containers.
 	cd tests_deployment && \
-	docker-compose -f docker-compose.integration.yml up &
+	docker compose -f docker-compose.integration.yml up &
 
 stop-integration-containers: ## Stop the integration test containers.
 	cd tests_deployment && \
-	docker-compose -f docker-compose.integration.yml down
+	docker compose -f docker-compose.integration.yml down
 
 tag-release-auto:
 	poetry run python scripts/release.py tag --skip-confirmation
@@ -244,10 +244,10 @@ tests_deployment/integration_tests_tracing_deployment/simple_bot/models/model.ta
 train: tests_deployment/integration_tests_tracing_deployment/simple_bot/models/model.tar.gz
 
 run-tracing-integration-containers: train ## Run the tracing integration test containers.
-	docker-compose -f tests_deployment/integration_tests_tracing_deployment/docker-compose.intg.yml up -d
+	docker compose -f tests_deployment/integration_tests_tracing_deployment/docker-compose.intg.yml up -d
 
 stop-tracing-integration-containers: ## Stop the tracing integration test containers.
-	docker-compose -f tests_deployment/integration_tests_tracing_deployment/docker-compose.intg.yml down
+	docker compose -f tests_deployment/integration_tests_tracing_deployment/docker-compose.intg.yml down
 
 test-tracing-integration:
 	PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python PYTHONPATH=./vendor/jaeger-python-proto poetry run pytest $(TRACING_INTEGRATION_TEST_FOLDER) -n $(JOBS) --ignore $(METRICS_INTEGRATION_TEST_PATH)
