@@ -5,6 +5,7 @@ from typing import Any
 import ruamel
 import structlog
 
+from rasa.cli.e2e_test import KEY_TEST_CASES
 
 structlogger = structlog.get_logger()
 
@@ -40,7 +41,7 @@ class E2ETestYAMLWriter:
 
         yaml_data = ruamel.yaml.safe_load(tests)
 
-        test_cases_yaml = [{"test_cases": yaml_data}]
+        test_cases_yaml = [{KEY_TEST_CASES: yaml_data}]
         with open(output_file, "w") as outfile:
             yaml = ruamel.yaml.YAML()
             yaml.dump(test_cases_yaml, outfile)

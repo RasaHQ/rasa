@@ -1,3 +1,4 @@
+import textwrap
 from pathlib import Path
 from unittest.mock import patch, Mock, AsyncMock
 
@@ -11,7 +12,6 @@ from rasa.e2e_test.e2e_test_converter import (
     Conversations,
 )
 from rasa.shared.exceptions import RasaException
-
 
 SAMPLE_CONVERSATIONS_CSV_PATH = "data/test_data_convert_e2e/sample_conversations.csv"
 SAMPLE_CONVERSATIONS_XLSX_PATH = "data/test_data_convert_e2e/sample_conversations.xlsx"
@@ -40,6 +40,15 @@ DATA_FRAME_OUTPUT_DATA_EMPTY_VALUES = [
 DUMMY_CONVERSATION_1 = {"column1": "user: Hello", "column2": "bot: Hi"}
 DUMMY_CONVERSATION_2 = {"column1": "user: How are you?", "column2": "bot: I am fine"}
 DUMMY_CONVERSATION_3 = {"column1": "user: Goodbye", "column2": "bot: Bye"}
+
+DUMMY_YAML_TEST = """
+- test_case: user_greeting_the_assistant
+  steps:
+  - user: "Hi"
+    assertions:
+      - bot_uttered:
+          text_matches: "Hello"
+""".strip()
 
 
 @pytest.fixture(autouse=True)
@@ -188,47 +197,9 @@ def test_convert_e2e_read_empty_xlsx(tmp_path: Path):
         converter.read_file()
 
 
-def test_converter_e2e_is_yaml_valid(sample_converter: E2ETestConverter):
-    valid_yaml = """
-    - test_case: user_greeting_the_assistant
-      steps:
-        - user: "Hi"
-          assertions:
-            - bot_uttered:
-                text_matches: "Hello"
-    """
-    invalid_yaml = """
-    - test_case: user_greeting_the_assistant
-      steps
-        - user: "Hi"
-          assertions:
-            - bot_uttered:
-                text_matches: "Hello"
-    """
-
-    assert sample_converter.is_yaml_valid(valid_yaml) is True
-    assert sample_converter.is_yaml_valid(invalid_yaml) is False
-
-
 def test_convert_e2e_remove_markdown_code_syntax(sample_converter: E2ETestConverter):
-    markdown_string = """
-```yaml
-- test_case: user_greeting_the_assistant
-  steps:
-    - user: "Hi"
-      assertion:
-        - bot_uttered:
-            text_matches: "Hello"
-```
-    """
-    expected_output = """
-- test_case: user_greeting_the_assistant
-  steps:
-    - user: "Hi"
-      assertion:
-        - bot_uttered:
-            text_matches: "Hello"
-    """.strip()
+    markdown_string = f"```yaml\n{DUMMY_YAML_TEST}\n```"
+    expected_output = DUMMY_YAML_TEST
     assert (
         sample_converter.remove_markdown_code_syntax(markdown_string) == expected_output
     )
@@ -301,8 +272,8 @@ async def test_convert_e2e_conversations_into_tests(sample_converter):
         llm_mock = Mock()
         apredict_mock = AsyncMock(
             side_effect=[
-                "```yaml\nconversation 1 response\n```",
-                "```yaml\nconversation 2 response\n```",
+                f"```yaml\n{DUMMY_YAML_TEST}\n```",
+                f"```yaml\n{DUMMY_YAML_TEST}\n```",
             ]
         )
         llm_mock.apredict = apredict_mock
@@ -310,7 +281,7 @@ async def test_convert_e2e_conversations_into_tests(sample_converter):
         yaml_tests_string = await sample_converter.convert_conversations_into_tests(
             conversations
         )
-        expected_output = "conversation 1 response\nconversation 2 response"
+        expected_output = f"{DUMMY_YAML_TEST}\n{DUMMY_YAML_TEST}"
         assert yaml_tests_string.strip() == expected_output
 
 
@@ -336,3 +307,11 @@ async def test_convert_e2e_single_conversation_into_test(sample_converter):
             conversation
         )
         assert yaml_test.strip() == "test_case: valid_yaml"
+
+
+def test_convert_e2e_yaml_is_valid(sample_converter: E2ETestConverter):
+    assert sample_converter.is_yaml_valid(DUMMY_YAML_TEST) is True
+
+
+def test_convert_e2e_yaml_is_not_valid(sample_converter: E2ETestConverter):
+    assert sample_converter.is_yaml_valid(DUMMY_YAML_TEST[1:]) is False
