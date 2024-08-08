@@ -1,4 +1,5 @@
 import logging
+from collections import OrderedDict
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Text, Union
 
@@ -13,6 +14,7 @@ from rasa.e2e_test.constants import (
     KEY_SLOT_SET,
     KEY_STEPS,
     KEY_TEST_CASE,
+    KEY_TEST_CASES,
     KEY_USER_INPUT,
 )
 
@@ -46,6 +48,15 @@ class Fixture:
                 for slot_name, slot_value in slot_dict.items()
             },
         )
+
+    def as_dict(self) -> Dict[Text, Any]:
+        """Returns the fixture as a dictionary."""
+        return {
+            self.name: [
+                {slot_name: slot_value}
+                for slot_name, slot_value in self.slots_set.items()
+            ]
+        }
 
 
 @dataclass(frozen=True)
@@ -128,6 +139,32 @@ class TestStep:
     def as_dict(self) -> Dict[Text, Any]:
         """Returns the underlying dictionary of the test step."""
         return self._underlying or {}
+
+    def as_dict_yaml_format(self) -> Dict[Text, Any]:
+        """Returns the test step as a dictionary in YAML format."""
+        if not self._underlying:
+            return {}
+
+        result = self._underlying.copy()
+
+        # Handle 'slot_was_set'
+        if KEY_SLOT_SET in self._underlying and isinstance(
+            self._underlying[KEY_SLOT_SET], OrderedDict
+        ):
+            result[KEY_SLOT_SET] = [
+                {key: value} for key, value in self._underlying[KEY_SLOT_SET].items()
+            ]
+
+        # Handle 'slot_was_not_set'
+        if KEY_SLOT_NOT_SET in self._underlying and isinstance(
+            self._underlying[KEY_SLOT_NOT_SET], OrderedDict
+        ):
+            result[KEY_SLOT_NOT_SET] = [
+                {key: value}
+                for key, value in self._underlying[KEY_SLOT_NOT_SET].items()
+            ]
+
+        return result
 
     def matches_event(self, other: Union[BotUttered, SlotSet, None]) -> bool:
         """Compares the test step with BotUttered or SlotSet event.
@@ -313,12 +350,24 @@ class TestCase:
             name=input_test_case.get(KEY_TEST_CASE, "default"),
             steps=steps,
             file=file,
-            line=input_test_case.lc.line + 1
-            if hasattr(input_test_case, "lc")
-            else None,
+            line=(
+                input_test_case.lc.line + 1 if hasattr(input_test_case, "lc") else None
+            ),
             fixture_names=input_test_case.get(KEY_FIXTURES),
             metadata_name=input_test_case.get(KEY_METADATA),
         )
+
+    def as_dict(self) -> Dict[Text, Any]:
+        """Returns the test case as a dictionary."""
+        result = {
+            KEY_TEST_CASE: self.name,
+            KEY_STEPS: [step.as_dict_yaml_format() for step in self.steps],
+        }
+        if self.fixture_names:
+            result[KEY_FIXTURES] = self.fixture_names
+        if self.metadata_name:
+            result[KEY_METADATA] = self.metadata_name
+        return result
 
     def file_with_line(self) -> Text:
         """Returns the file name and line number of the test case."""
@@ -356,6 +405,10 @@ class Metadata:
             },
         )
 
+    def as_dict(self) -> Dict[Text, Any]:
+        """Returns the metadata as a dictionary."""
+        return {self.name: self.metadata}
+
 
 @dataclass(frozen=True)
 class TestSuite:
@@ -364,3 +417,11 @@ class TestSuite:
     test_cases: List[TestCase]
     fixtures: List[Fixture]
     metadata: List[Metadata]
+
+    def as_dict(self) -> Dict[Text, Any]:
+        """Returns the test suite as a dictionary."""
+        return {
+            KEY_FIXTURES: [fixture.as_dict() for fixture in self.fixtures],
+            KEY_METADATA: [metadata.as_dict() for metadata in self.metadata],
+            KEY_TEST_CASES: [test_case.as_dict() for test_case in self.test_cases],
+        }

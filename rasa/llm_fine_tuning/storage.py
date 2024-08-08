@@ -8,9 +8,12 @@ from typing import List, Optional, TYPE_CHECKING
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.llm_fine_tuning.conversations import Conversation
+from rasa.shared.utils.yaml import write_yaml
 
 if TYPE_CHECKING:
     from rasa.llm_fine_tuning.llm_data_preparation_module import LLMDataExample
+    from rasa.llm_fine_tuning.train_test_split_module import DataExampleFormat
+    from rasa.e2e_test.e2e_test_case import TestSuite
 
 
 class StorageType(Enum):
@@ -29,6 +32,22 @@ class StorageStrategy(ABC):
 
     def write_llm_data(
         self, llm_data: List["LLMDataExample"], storage_location: Optional[str]
+    ) -> None:
+        pass
+
+    def write_formatted_finetuning_data(
+        self,
+        formatted_data: List["DataExampleFormat"],
+        module_storage_location: Optional[str],
+        file_name: Optional[str],
+    ) -> None:
+        pass
+
+    def write_e2e_test_suite_to_yaml_file(
+        self,
+        e2e_test_suite: "TestSuite",
+        module_storage_location: Optional[str],
+        file_name: Optional[str],
     ) -> None:
         pass
 
@@ -82,6 +101,37 @@ class FileStorageStrategy(StorageStrategy):
                 json.dump(example.as_dict(), outfile)
                 outfile.write("\n")
 
+    def write_formatted_finetuning_data(
+        self,
+        formatted_data: List["DataExampleFormat"],
+        module_storage_location: Optional[str],
+        file_name: Optional[str],
+    ) -> None:
+        file_path = self._get_file_path(module_storage_location, file_name)
+        self._create_output_dir(file_path)
+
+        with open(str(file_path), "w") as file:
+            for example in formatted_data:
+                json.dump(example.as_dict(), file)
+                file.write("\n")
+
+    def write_e2e_test_suite_to_yaml_file(
+        self,
+        e2e_test_suite: "TestSuite",
+        module_storage_location: Optional[str],
+        file_name: Optional[str],
+    ) -> None:
+        """Write the e2e TestSuite data to a YAML file.
+
+        Args:
+            e2e_test_suite: The TestSuite object to write.
+            module_storage_location: The location where the file should be stored.
+            file_path: The path to the file where the data should be written.
+        """
+        file_path = self._get_file_path(module_storage_location, file_name)
+        self._create_output_dir(file_path)
+        write_yaml(e2e_test_suite.as_dict(), str(file_path))
+
 
 class StorageContext:
     def __init__(self, strategy: StorageStrategy) -> None:
@@ -102,3 +152,23 @@ class StorageContext:
         self, llm_data: List["LLMDataExample"], file_path: Optional[str] = None
     ) -> None:
         self.strategy.write_llm_data(llm_data, file_path)
+
+    def write_formatted_finetuning_data(
+        self,
+        formatted_data: List["DataExampleFormat"],
+        module_storage_location: Optional[str] = None,
+        file_name: Optional[str] = None,
+    ) -> None:
+        self.strategy.write_formatted_finetuning_data(
+            formatted_data, module_storage_location, file_name
+        )
+
+    def write_e2e_test_suite_to_yaml_file(
+        self,
+        e2e_test_suite: "TestSuite",
+        module_storage_location: Optional[str] = None,
+        file_name: Optional[str] = None,
+    ) -> None:
+        self.strategy.write_e2e_test_suite_to_yaml_file(
+            e2e_test_suite, module_storage_location, file_name
+        )
