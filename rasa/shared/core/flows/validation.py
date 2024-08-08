@@ -9,6 +9,9 @@ from rasa.shared.constants import (
     RASA_DEFAULT_FLOW_PATTERN_PREFIX,
     RASA_PATTERN_HUMAN_HANDOFF,
 )
+from rasa.shared.constants import (
+    RASA_PATTERN_INTERNAL_ERROR,
+)
 from rasa.shared.core.flows.flow import Flow
 from rasa.shared.core.flows.flow_step import (
     FlowStep,
@@ -488,17 +491,27 @@ def validate_patterns_are_not_called_or_linked(flows: "FlowsList") -> None:
 def validate_patterns_are_not_calling_or_linking_other_flows(
     flows: "FlowsList",
 ) -> None:
-    """Validates that patterns do not contain call or link steps."""
+    """Validates that patterns do not contain call or link steps.
+
+    Link steps to user flows are allowed for all patterns but 'pattern_internal_error'.
+    Link steps to other patterns, except for 'pattern_human_handoff', are forbidden.
+    """
     for flow in flows.underlying_flows:
         if not flow.is_rasa_default_flow:
             continue
         for step in flow.steps:
-            if (
-                isinstance(step, LinkFlowStep)
-                and step.link == RASA_PATTERN_HUMAN_HANDOFF
-            ):
-                continue
-            if isinstance(step, (LinkFlowStep, CallFlowStep)):
+            if isinstance(step, LinkFlowStep):
+                if step.link == RASA_PATTERN_HUMAN_HANDOFF:
+                    # links to 'pattern_human_handoff' are allowed
+                    continue
+                if flow.id == RASA_PATTERN_INTERNAL_ERROR:
+                    # 'pattern_internal_error' is not allowed to link at all
+                    raise PatternReferencedFlowException(flow.id, step.id)
+                if step.link.startswith(RASA_DEFAULT_FLOW_PATTERN_PREFIX):
+                    # all other patterns are allowed to link to user flows, but not
+                    # to other patterns
+                    raise PatternReferencedFlowException(flow.id, step.id)
+            if isinstance(step, CallFlowStep):
                 raise PatternReferencedFlowException(flow.id, step.id)
 
 
