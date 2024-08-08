@@ -1,13 +1,11 @@
 import pytest
 
+from rasa.shared.constants import RASA_PATTERN_HUMAN_HANDOFF
+from rasa.shared.core.flows.steps import LinkFlowStep
 from rasa.shared.core.flows.steps.constants import (
     START_STEP,
     END_STEP,
     CONTINUE_STEP_PREFIX,
-)
-from rasa.shared.core.flows.yaml_flows_io import (
-    flows_from_str,
-    flows_from_str_including_defaults,
 )
 from rasa.shared.core.flows.validation import (
     DuplicatedStepIdException,
@@ -26,6 +24,10 @@ from rasa.shared.core.flows.validation import (
     DuplicateNLUTriggerException,
     SlotNamingException,
     FlowIdNamingException,
+)
+from rasa.shared.core.flows.yaml_flows_io import (
+    flows_from_str,
+    flows_from_str_including_defaults,
 )
 
 
@@ -508,3 +510,48 @@ def test_validation_flow_id_passes_validation(flow_id: str):
 
     flows = flows_from_str(flow_config)
     assert flows.underlying_flows[0].id == flow_id
+
+
+def test_validation_linking_to_a_pattern_human_handoff():
+    flow_config = f"""
+        flows:
+          test_flow:
+            description: test flow
+            steps:
+              - action: welcome
+              - link: {RASA_PATTERN_HUMAN_HANDOFF}
+        """
+
+    flows = flows_from_str_including_defaults(flow_config)
+    assert isinstance(flows.underlying_flows[0].steps[1], LinkFlowStep)
+    assert flows.underlying_flows[0].steps[1].link == RASA_PATTERN_HUMAN_HANDOFF
+
+
+@pytest.mark.parametrize("linked_flow", ["pattern_chitchat", "pattern_internal_error"])
+def test_validation_fails_pattern_linking_to_a_pattern(linked_flow: str):
+    flow_config = f"""
+        flows:
+          pattern_test_pattern:
+            description: test pattern
+            steps:
+              - action: welcome
+              - link: {linked_flow}
+        """
+
+    with pytest.raises(ReferenceToPatternException):
+        flows_from_str_including_defaults(flow_config)
+
+
+def test_validation_pattern_linking_to_a_pattern_human_handoff():
+    flow_config = f"""
+        flows:
+          pattern_test_pattern:
+            description: test pattern
+            steps:
+              - action: welcome
+              - link: {RASA_PATTERN_HUMAN_HANDOFF}
+        """
+
+    flows = flows_from_str_including_defaults(flow_config)
+    assert isinstance(flows.underlying_flows[0].steps[1], LinkFlowStep)
+    assert flows.underlying_flows[0].steps[1].link == RASA_PATTERN_HUMAN_HANDOFF

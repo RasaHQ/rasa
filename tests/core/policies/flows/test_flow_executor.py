@@ -1,5 +1,6 @@
 import uuid
 from typing import List, Optional, Tuple
+
 import pytest
 import structlog
 
@@ -25,6 +26,9 @@ from rasa.dialogue_understanding.patterns.completed import (
 from rasa.dialogue_understanding.patterns.continue_interrupted import (
     ContinueInterruptedPatternFlowStackFrame,
 )
+from rasa.dialogue_understanding.patterns.human_handoff import (
+    HumanHandoffPatternFlowStackFrame,
+)
 from rasa.dialogue_understanding.patterns.search import SearchPatternFlowStackFrame
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames.chit_chat_frame import ChitChatStackFrame
@@ -33,7 +37,6 @@ from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
     FlowStackFrameType,
     UserFlowStackFrame,
 )
-from rasa.shared.core.events import DialogueStackUpdated
 from rasa.dialogue_understanding.stack.frames.search_frame import SearchStackFrame
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -46,6 +49,7 @@ from rasa.shared.core.events import (
     SlotSet,
     UserUttered,
 )
+from rasa.shared.core.events import DialogueStackUpdated
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.flows.flow import (
     END_STEP,
@@ -58,7 +62,10 @@ from rasa.shared.core.flows.steps.collect import (
     CollectInformationFlowStep,
     SlotRejection,
 )
-from rasa.shared.core.flows.yaml_flows_io import flows_from_str
+from rasa.shared.core.flows.yaml_flows_io import (
+    flows_from_str,
+    flows_from_str_including_defaults,
+)
 from rasa.shared.core.slots import FloatSlot, TextSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from tests.dialogue_understanding.conftest import update_tracker_with_path_through_flow
@@ -1039,6 +1046,45 @@ def test_run_step_link():
     assert isinstance(linked_flow, UserFlowStackFrame)
     assert linked_flow.frame_type == FlowStackFrameType.LINK
     assert linked_flow.flow_id == "bar_flow"
+
+
+def test_run_step_link_human_handoff():
+    flows = flows_from_str_including_defaults(
+        """
+        flows:
+          my_flow:
+            description: flow my_flow
+            steps:
+            - id: link
+              link: pattern_human_handoff
+        """
+    )
+
+    user_flow_frame = UserFlowStackFrame(
+        flow_id="my_flow", step_id="START", frame_id="some-frame-id"
+    )
+    stack = DialogueStack(frames=[user_flow_frame])
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
+    flow = flows.flow_by_id("my_flow")
+
+    assert flow is not None
+    step = flow.step_by_id("link")
+
+    available_actions = []
+
+    # test that my_flow is still on top to be wrapped up and that the linked
+    # flow was inserted just below
+    result = flow_executor.run_step(
+        step, flow, stack, tracker, available_actions, flows
+    )
+
+    assert isinstance(result, ContinueFlowWithNextStep)
+    top = stack.top()
+    assert isinstance(top, UserFlowStackFrame)
+    assert top.flow_id == "my_flow"
+    linked_flow = stack.frames[0]
+    assert isinstance(linked_flow, HumanHandoffPatternFlowStackFrame)
 
 
 def test_run_step_call():
