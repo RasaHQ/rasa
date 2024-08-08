@@ -1,25 +1,22 @@
-import argparse
 import asyncio
 import importlib
 import re
 from csv import Error as CSVError
 from dataclasses import dataclass, field
-from datetime import datetime
 from pathlib import Path
 from textwrap import dedent
 from typing import List, Dict, Any
 from typing import Optional
 
 import pandas as pd
+import ruamel
 import structlog
 from jinja2 import Template
-import ruamel
 
 from rasa.exceptions import RasaException
-from rasa.shared.utils.cli import print_error_and_exit
 from rasa.shared.utils.llm import llm_factory
 
-yaml = ruamel.yaml.YAML()
+
 structlogger = structlog.get_logger()
 
 DEFAULT_E2E_OUTPUT_TESTS_DIRECTORY = "e2e_tests"
@@ -83,15 +80,13 @@ class Conversations:
 
 
 class E2ETestConverter:
-    """E2ETestConvertor class is responsible for reading input CSV or XLS/XLSX files,
-    splitting the data into distinct conversations, converting them into test cases,
-    and storing the test cases into a YAML file at a specified directory.
+    """E2ETestConverter class is responsible for reading input CSV or XLS/XLSX files,
+    splitting the data into distinct conversations, and converting them into test cases.
     """
 
     def __init__(
         self,
         path: str,
-        output: str = DEFAULT_E2E_OUTPUT_TESTS_DIRECTORY,
         sheet_name: Optional[str] = None,
         prompt_template: str = DEFAULT_E2E_TEST_GENERATOR_PROMPT_TEMPLATE,
         **kwargs: Any,
@@ -100,12 +95,10 @@ class E2ETestConverter:
 
         Args:
             path (str): Path to the input file.
-            output (str): Directory to save the generated tests.
             sheet_name (str): Name of the sheet in XLSX file.
             prompt_template (str): Path to the jinja2 template.
         """
         self.input_path: str = path
-        self.output_path = output
         self.sheet_name: Optional[str] = sheet_name
         self.prompt_template: str = prompt_template
 
@@ -339,44 +332,10 @@ class E2ETestConverter:
         structlogger.debug("e2e_test_generator.test_generation_finished")
         return "\n".join(results)
 
-    def write_tests_to_yaml(self, tests: str) -> None:
-        """Writes the generated test cases to a YAML file
-        in the specified output directory.
-
-        Args:
-            tests (str): string containing the generated test cases.
-        """
-        output_dir = Path(self.output_path)
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_file = output_dir / f"e2e_tests_{timestamp}.yml"
-
-        if not output_dir.exists():
-            output_dir.mkdir(parents=True, exist_ok=True)
-
-        yaml_data = ruamel.yaml.safe_load(tests)
-
-        test_cases_yaml = [{"test_cases": yaml_data}]
-        with open(output_file, "w") as outfile:
-            yaml.dump(test_cases_yaml, outfile)
-
-        structlogger.debug(
-            "e2e_test_generator.tests_written_to_yaml", output_file=output_file
-        )
-
-    async def run(self) -> None:
+    def run(self) -> str:
         """Executes the E2E test conversion process: reads the file, generates tests,
         and writes them to a YAML file.
         """
         input_data = self.read_file()
         conversations = self.split_data_into_conversations(input_data)
-        yaml_tests_string = await self.convert_conversations_into_tests(conversations)
-        self.write_tests_to_yaml(yaml_tests_string)
-
-
-def convert_data_to_e2e_tests(args: argparse.Namespace) -> None:
-    converter = E2ETestConverter(**vars(args))
-    try:
-        asyncio.run(converter.run())
-    except RasaException as exc:
-        structlogger.error("e2e_test_converter.failed.run", exc=exc)
-        print_error_and_exit(f"Failed to convert the data into E2E tests. Error: {exc}")
+        return asyncio.run(self.convert_conversations_into_tests(conversations))
