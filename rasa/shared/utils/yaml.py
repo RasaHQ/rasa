@@ -20,6 +20,8 @@ from ruamel.yaml import RoundTripRepresenter, YAMLError
 from ruamel.yaml.constructor import DuplicateKeyError, BaseConstructor, ScalarNode
 
 from rasa.shared.constants import (
+    ASSERTIONS_SCHEMA_EXTENSIONS_FILE,
+    ASSERTIONS_SCHEMA_FILE,
     MODEL_CONFIG_SCHEMA_FILE,
     CONFIG_SCHEMA_FILE,
     DOCS_URL_TRAINING_DATA,
@@ -706,3 +708,31 @@ def validate_yaml_with_jsonschema(
             errors,
             content=source_data,
         )
+
+
+def validate_yaml_data_using_schema_with_assertions(
+    yaml_data: Any,
+    schema_content: Union[List[Any], Dict[str, Any]],
+    package_name: str = PACKAGE_NAME,
+) -> None:
+    """Validate raw yaml content using a schema with assertions sub-schema.
+
+    Args:
+        yaml_data: the parsed yaml data to be validated
+        schema_content: the content of the YAML schema
+        package_name: the name of the package the schema is located in. defaults
+        to `rasa`.
+    """
+    # test case assertions are part of the schema extension
+    # it will be included if the schema explicitly references it with
+    # include: assertions
+    e2e_test_cases_schema_content = read_schema_file(
+        ASSERTIONS_SCHEMA_FILE, package_name
+    )
+
+    schema_content = dict(schema_content, **e2e_test_cases_schema_content)
+    schema_extensions = [
+        str(files(package_name).joinpath(ASSERTIONS_SCHEMA_EXTENSIONS_FILE))
+    ]
+
+    validate_yaml_content_using_schema(yaml_data, schema_content, schema_extensions)

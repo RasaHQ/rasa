@@ -17,6 +17,7 @@ from rasa.core.policies.flows.flow_step_result import (
     ContinueFlowWithNextStep,
     PauseFlowReturnPrediction,
 )
+from rasa.dialogue_understanding.patterns.clarify import ClarifyPatternFlowStackFrame
 from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
 )
@@ -1811,3 +1812,41 @@ def test_flow_executor_validate_collect_step_with_initial_value_defined() -> Non
 
     assert is_valid
     assert stack.current_context().get("flow_id") == "my_flow"
+
+
+def test_run_step_adds_metadata_to_flow_started_event():
+    flows = flows_from_str(
+        """
+        flows:
+          pattern_clarification:
+            description: Conversation repair flow
+            name: pattern clarification
+            steps:
+            - id: start
+              action: action_clarify_flows
+            - action: utter_clarification_options_rasa
+        """
+    )
+    pattern_clarification_frame = ClarifyPatternFlowStackFrame(
+        step_id="start", frame_id="some-frame-id", names=["foo", "bar"]
+    )
+    stack = DialogueStack(frames=[pattern_clarification_frame])
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
+    flow = flows.flow_by_id("pattern_clarification")
+
+    assert flow is not None
+    step = flow.step_by_id("start")
+
+    available_actions = ["action_clarify_flows"]
+
+    result = flow_executor.run_step(
+        step, flow, stack, tracker, available_actions, flows
+    )
+
+    expected_event = FlowStarted(
+        flow_id="pattern_clarification", metadata=stack.current_context()
+    )
+    assert result.events == [expected_event]
+
+    assert expected_event.metadata.get("names") == ["foo", "bar"]

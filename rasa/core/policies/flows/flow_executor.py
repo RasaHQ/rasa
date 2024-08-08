@@ -587,7 +587,7 @@ def run_step(
     """
     initial_events: List[Event] = []
     if step == flow.first_step_in_flow():
-        initial_events.append(FlowStarted(flow.id))
+        initial_events.append(FlowStarted(flow.id, metadata=stack.current_context()))
 
     if isinstance(step, CollectInformationFlowStep):
         return _run_collect_information_step(

@@ -1,3 +1,4 @@
+import copy
 import datetime
 import sys
 from pathlib import Path
@@ -6,7 +7,7 @@ from unittest.mock import MagicMock, Mock
 
 import pytest
 import requests
-from pytest import LogCaptureFixture, MonkeyPatch
+from pytest import LogCaptureFixture, MonkeyPatch, CaptureFixture
 from ruamel.yaml.scalarstring import DoubleQuotedScalarString
 from structlog.testing import capture_logs
 
@@ -37,6 +38,10 @@ from rasa.shared.core.events import (
     ActionExecuted,
     BotUttered,
     Event,
+    FlowCancelled,
+    FlowCompleted,
+    FlowStarted,
+    SessionStarted,
     SlotSet,
     UserUttered,
 )
@@ -46,11 +51,6 @@ from rasa.utils.endpoints import EndpointConfig
 
 if sys.version_info[:2] >= (3, 8):
     from unittest.mock import AsyncMock
-else:
-
-    class AsyncMock(MagicMock):
-        async def __call__(self, *args: Any, **kwargs: Any) -> Any:
-            return super().__call__(*args, **kwargs)
 
 
 @pytest.fixture
@@ -64,6 +64,134 @@ def test_suite_metadata() -> List[Metadata]:
 @pytest.fixture
 def test_case_metadata() -> Metadata:
     return Metadata(name="device_info", metadata={"os": "linux"})
+
+
+@pytest.fixture
+def mock_e2e_test_runner(monkeypatch: MonkeyPatch) -> E2ETestRunner:
+    def mock_init(self: Any, *args: Any, **kwargs: Any) -> None:
+        domain = Domain.from_dict(
+            {
+                "entities": ["city"],
+                "slots": {
+                    "city": {
+                        "type": "text",
+                        "mappings": [{"type": "from_entity", "entity": "city"}],
+                    }
+                },
+            }
+        )
+        self.agent = Agent(
+            domain=domain, tracker_store=InMemoryTrackerStore(domain=domain)
+        )
+        processor = AsyncMock()
+        # using the actual tracker store instead of a mocked one
+        processor.fetch_tracker_with_initial_session = (
+            self.agent.tracker_store.get_or_create_tracker
+        )
+        self.agent.processor = processor
+
+    monkeypatch.setattr(
+        "rasa.e2e_test.e2e_test_runner.E2ETestRunner.__init__", mock_init
+    )
+
+    async def mock_handle_message(self: Any, message: Any) -> None:
+        tracker = await self.tracker_store.get_or_create_tracker(message.sender_id)
+        tracker.update(UserUttered(message.text))
+        await self.tracker_store.save(tracker)
+
+    monkeypatch.setattr("rasa.core.agent.Agent.handle_message", mock_handle_message)
+
+    return E2ETestRunner()
+
+
+@pytest.fixture
+def assertions_tracker(default_agent: Agent) -> DialogueStateTracker:
+    tracker = DialogueStateTracker.from_events(
+        "test_assertions_tracker",
+        [
+            SessionStarted(),
+            UserUttered("send money"),
+            FlowStarted("transfer_money"),
+            FlowStarted("check_balance"),
+            FlowCancelled("check_balance", step_id="action_check_balance"),
+            SlotSet("amount", 100),
+            BotUttered(
+                "How would you like to transfer?",
+                data={
+                    "buttons": [
+                        {"title": "Bank transfer", "payload": "/transfer_bank"},
+                        {"title": "Card payment", "payload": "/card_payment"},
+                    ]
+                },
+                metadata={"utter_action": "utter_ask_transfer_method"},
+            ),
+            ActionExecuted(action_name="action_transfer_money"),
+            FlowCompleted("transfer_money", step_id="action_transfer_money"),
+        ],
+    )
+
+    return tracker
+
+
+@pytest.fixture
+def assertions_tracker_with_duplicate_user_msg(
+    default_agent: Agent,
+) -> DialogueStateTracker:
+    tracker = DialogueStateTracker(
+        "test_assertions_tracker_duplicate_user_msg",
+        [],
+    )
+    tracker.model_id = "test_model"
+    tracker.assistant_id = "test_assistant"
+
+    tracker.update_with_events(
+        [
+            SessionStarted(),
+            UserUttered("send money"),
+            BotUttered("How much would you like to transfer?"),
+            UserUttered("100 dollars"),
+            SlotSet("amount", 100),
+            BotUttered("Who is the recipient"),
+            UserUttered("Jane Doe"),
+            SlotSet("recipient", "Jane Doe"),
+            BotUttered("Please confirm if you'd like to proceed with the transfer?"),
+            UserUttered("Yes", metadata={"turn_idx": 1}),
+            BotUttered("Transfer completed, anything else I can help you with?"),
+            UserUttered("Please make the same transfer to John Doe"),
+            SlotSet("recipient", "John Doe"),
+            SlotSet("amount", 100),
+            BotUttered("Please confirm if you'd like to proceed with the transfer?"),
+            UserUttered("Yes", metadata={"turn_idx": 2}),
+            FlowCompleted("transfer_money", step_id="action_transfer_money"),
+        ],
+    )
+
+    return tracker
+
+
+@pytest.fixture
+def assertions_e2e_test_runner(
+    default_agent: Agent,
+    assertions_tracker: DialogueStateTracker,
+    monkeypatch: MonkeyPatch,
+) -> E2ETestRunner:
+    def mock_init(self, *args, **kwargs) -> None:
+        self.agent = default_agent
+
+    monkeypatch.setattr(
+        "rasa.e2e_test.e2e_test_runner.E2ETestRunner.__init__", mock_init
+    )
+
+    test_runner = E2ETestRunner()
+
+    async def mock_get_tracker(self, *args, **kwargs) -> DialogueStateTracker:
+        return assertions_tracker
+
+    monkeypatch.setattr(test_runner.agent.processor, "get_tracker", mock_get_tracker)
+
+    monkeypatch.setattr(test_runner.agent.tracker_store, "retrieve", mock_get_tracker)
+
+    return test_runner
 
 
 def test_generate_test_result_successful() -> None:
@@ -880,46 +1008,12 @@ def test_find_test_failure_with_slot_was_set_step_fail(
 
 
 async def test_run_prediction_loop(
-    monkeypatch: MonkeyPatch,
     test_suite_metadata: List[Metadata],
     test_case_metadata: Metadata,
+    mock_e2e_test_runner: E2ETestRunner,
 ) -> None:
-    def mock_init(self: Any, *args: Any, **kwargs: Any) -> None:
-        domain = Domain.from_dict(
-            {
-                "entities": ["city"],
-                "slots": {
-                    "city": {
-                        "type": "text",
-                        "mappings": [{"type": "from_entity", "entity": "city"}],
-                    }
-                },
-            }
-        )
-        self.agent = Agent(
-            domain=domain, tracker_store=InMemoryTrackerStore(domain=domain)
-        )
-        processor = AsyncMock()
-        # using the actual tracker store instead of a mocked one
-        processor.fetch_tracker_with_initial_session = (
-            self.agent.tracker_store.get_or_create_tracker
-        )
-        self.agent.processor = processor
-
-    monkeypatch.setattr(
-        "rasa.e2e_test.e2e_test_runner.E2ETestRunner.__init__", mock_init
-    )
-
-    async def mock_handle_message(self: Any, message: Any) -> None:
-        tracker = await self.tracker_store.get_or_create_tracker(message.sender_id)
-        tracker.update(UserUttered(message.text))
-        await self.tracker_store.save(tracker)
-
-    monkeypatch.setattr("rasa.core.agent.Agent.handle_message", mock_handle_message)
-
-    runner = E2ETestRunner()
-    assert runner.agent is not None
-    assert runner.agent.tracker_store is not None
+    assert mock_e2e_test_runner.agent is not None
+    assert mock_e2e_test_runner.agent.tracker_store is not None
 
     collector = CollectingOutputChannel()
     steps = [
@@ -933,7 +1027,7 @@ async def test_run_prediction_loop(
         TestStep.from_dict({"bot": "Paris is a great city! Let me check the flights."}),
     ]
     sender_id = "test_run_prediction_loop"
-    test_turns = await runner.run_prediction_loop(
+    test_turns = await mock_e2e_test_runner.run_prediction_loop(
         collector, steps, sender_id, test_case_metadata, test_suite_metadata
     )
     # there should be one more turn than steps because we capture events before
@@ -944,36 +1038,8 @@ async def test_run_prediction_loop(
 
 
 async def test_run_prediction_loop_warning_for_no_user_text(
-    monkeypatch: MonkeyPatch,
+    mock_e2e_test_runner: E2ETestRunner,
 ) -> None:
-    def mock_init(self: Any, *args: Any, **kwargs: Any) -> None:
-        domain = Domain.from_dict(
-            {
-                "entities": ["city"],
-                "slots": {
-                    "city": {
-                        "type": "text",
-                        "mappings": [{"type": "from_entity", "entity": "city"}],
-                    }
-                },
-            }
-        )
-        self.agent = Agent(
-            domain=domain, tracker_store=InMemoryTrackerStore(domain=domain)
-        )
-        processor = AsyncMock()
-        # using the actual tracker store instead of a mocked one
-        processor.fetch_tracker_with_initial_session = (
-            self.agent.tracker_store.get_or_create_tracker
-        )
-        self.agent.processor = processor
-
-    monkeypatch.setattr(
-        "rasa.e2e_test.e2e_test_runner.E2ETestRunner.__init__", mock_init
-    )
-
-    runner = E2ETestRunner()
-
     collector = CollectingOutputChannel()
     steps = [
         TestStep.from_dict({"user": ""}),
@@ -988,7 +1054,7 @@ async def test_run_prediction_loop_warning_for_no_user_text(
     )
 
     with pytest.warns(UserWarning, match=match_msg):
-        await runner.run_prediction_loop(collector, steps, sender_id)
+        await mock_e2e_test_runner.run_prediction_loop(collector, steps, sender_id)
 
 
 @pytest.mark.parametrize("fail_fast, expected_len", [(True, 1), (False, 2)])
@@ -1777,3 +1843,357 @@ def test_merge_metadata_warning(
         assert len(logs) == 1
         assert f"Metadata {['os']} exist in both the test case " in logs[0]["message"]
         assert "'Test_case_name' and the user step 'Hi!'. " in logs[0]["message"]
+
+
+@pytest.mark.parametrize(
+    "assertion",
+    [
+        {"flow_started": "transfer_money"},
+        {
+            "flow_cancelled": {
+                "flow_id": "check_balance",
+                "flow_step_id": "action_check_balance",
+            }
+        },
+        {"slot_was_set": [{"name": "amount", "value": 100}]},
+        {"slot_was_not_set": [{"name": "card_type"}]},
+        {"slot_was_not_set": [{"name": "amount", "value": 200}]},
+        {
+            "bot_uttered": {
+                "text_matches": "How would you like to transfer?",
+                "utter_name": "utter_ask_transfer_method",
+                "buttons": [
+                    {"title": "Bank transfer", "payload": "/transfer_bank"},
+                    {"title": "Card payment", "payload": "/card_payment"},
+                ],
+            }
+        },
+        {"action_executed": "action_transfer_money"},
+        {
+            "flow_completed": {
+                "flow_id": "transfer_money",
+                "flow_step_id": "action_transfer_money",
+            }
+        },
+    ],
+)
+async def test_run_assertions_all_valid(
+    assertion: Dict[str, Any], assertions_e2e_test_runner: E2ETestRunner
+) -> None:
+    test_case = TestCase(
+        name="test_case_transfer_money",
+        steps=[
+            TestStep.from_dict({"user": "send money", "assertions": [assertion]}),
+        ],
+    )
+
+    results = await assertions_e2e_test_runner.run_tests(
+        [test_case], [], input_metadata=[]
+    )
+    assert len(results) == 1
+    assert isinstance(results[0], TestResult)
+    assert results[0].pass_status is True
+    assert results[0].difference == []
+    assert results[0].assertion_failure is None
+
+
+async def test_run_assertions_with_duplicate_user_messages(
+    default_agent: Agent,
+    monkeypatch: MonkeyPatch,
+    assertions_tracker_with_duplicate_user_msg: DialogueStateTracker,
+) -> None:
+    def mock_init(self, *args, **kwargs) -> None:
+        self.agent = default_agent
+
+    monkeypatch.setattr(
+        "rasa.e2e_test.e2e_test_runner.E2ETestRunner.__init__", mock_init
+    )
+
+    test_runner = E2ETestRunner()
+
+    async def mock_get_tracker(self, *args, **kwargs) -> DialogueStateTracker:
+        return assertions_tracker_with_duplicate_user_msg
+
+    monkeypatch.setattr(test_runner.agent.processor, "get_tracker", mock_get_tracker)
+
+    test_case = TestCase(
+        name="test_case_transfer_money",
+        steps=[
+            TestStep.from_dict(
+                {
+                    "user": "send money",
+                    "assertions": [
+                        {
+                            "bot_uttered": {
+                                "text_matches": "How much would you like to transfer?"
+                            }
+                        }
+                    ],
+                }
+            ),
+            TestStep.from_dict(
+                {
+                    "user": "100 dollars",
+                    "assertions": [
+                        {"slot_was_set": [{"name": "amount", "value": 100}]}
+                    ],
+                }
+            ),
+            TestStep.from_dict(
+                {
+                    "user": "Jane Doe",
+                    "assertions": [
+                        {
+                            "slot_was_set": [
+                                {"name": "recipient", "value": "Jane Doe"}
+                            ],
+                            "bot_uttered": {
+                                "text_matches": "Please confirm if you'd like to "
+                                "proceed with the transfer?"
+                            },
+                        }
+                    ],
+                }
+            ),
+            TestStep.from_dict(
+                {
+                    "user": "Yes",
+                    "assertions": [
+                        {
+                            "bot_uttered": {
+                                "text_matches": "Transfer completed, "
+                                "anything else I can help you with?"
+                            }
+                        }
+                    ],
+                    "metadata": "turn_1",
+                }
+            ),
+            TestStep.from_dict(
+                {
+                    "user": "Please make the same transfer to John Doe",
+                    "assertions": [
+                        {
+                            "slot_was_set": [
+                                {"name": "recipient", "value": "John Doe"},
+                                {"name": "amount", "value": 100},
+                            ],
+                            "bot_uttered": {
+                                "text_matches": "Please confirm if you'd like to "
+                                "proceed with the transfer?"
+                            },
+                        }
+                    ],
+                }
+            ),
+            TestStep.from_dict(
+                {
+                    "user": "Yes",
+                    "assertions": [
+                        {
+                            "flow_completed": {
+                                "flow_id": "transfer_money",
+                                "flow_step_id": "action_transfer_money",
+                            }
+                        }
+                    ],
+                    "metadata": "turn_2",
+                }
+            ),
+        ],
+    )
+
+    input_metadata = [
+        Metadata(name="turn_1", metadata={"turn_idx": 1}),
+        Metadata(name="turn_2", metadata={"turn_idx": 2}),
+    ]
+
+    result = await test_runner.run_assertions(
+        "test_assertions_tracker_duplicate_user_msg", test_case, input_metadata
+    )
+    assert isinstance(result, TestResult)
+    assert result.pass_status is True
+    assert result.assertion_failure is None
+
+
+async def test_run_assertions_with_user_message_not_found(
+    default_agent: Agent,
+    monkeypatch: MonkeyPatch,
+    capsys: CaptureFixture,
+) -> None:
+    def mock_init(self, *args, **kwargs) -> None:
+        self.agent = default_agent
+
+    monkeypatch.setattr(
+        "rasa.e2e_test.e2e_test_runner.E2ETestRunner.__init__", mock_init
+    )
+
+    test_runner = E2ETestRunner()
+
+    async def mock_get_tracker(self, *args, **kwargs) -> DialogueStateTracker:
+        return DialogueStateTracker("no_user_event", slots=[])
+
+    monkeypatch.setattr(test_runner.agent.processor, "get_tracker", mock_get_tracker)
+
+    test_case = TestCase(
+        name="test_case_transfer_money",
+        steps=[
+            TestStep.from_dict(
+                {
+                    "user": "send money",
+                    "assertions": [
+                        {
+                            "bot_uttered": {
+                                "text_matches": "How much would you like to transfer?"
+                            }
+                        }
+                    ],
+                    "metadata": "test_info",
+                }
+            ),
+        ],
+    )
+
+    input_metadata = [
+        Metadata(name="test_info", metadata={"foo": "bar"}),
+    ]
+
+    result = await test_runner.run_assertions(
+        "no_user_event", test_case, input_metadata
+    )
+    assert isinstance(result, TestResult)
+    assert result.pass_status is False
+    assert result.assertion_failure is None
+
+    captured = capsys.readouterr()
+    error_message = (
+        "User message 'send money' was not found in the actual events. "
+        "The user message properties which were searched: "
+        "{'text': 'send money', 'metadata': {'foo': 'bar', "
+        "'model_id': None, 'assistant_id': None}}\n"
+    )
+    assert error_message in captured.out
+
+
+def test_get_additional_splitting_conditions(
+    assertions_tracker_with_duplicate_user_msg: DialogueStateTracker,
+    default_agent: Agent,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    def mock_init(self, *args, **kwargs) -> None:
+        self.agent = default_agent
+
+    monkeypatch.setattr(
+        "rasa.e2e_test.e2e_test_runner.E2ETestRunner.__init__", mock_init
+    )
+
+    test_runner = E2ETestRunner()
+
+    async def mock_get_tracker(self, *args, **kwargs) -> DialogueStateTracker:
+        return assertions_tracker_with_duplicate_user_msg
+
+    monkeypatch.setattr(test_runner.agent.processor, "get_tracker", mock_get_tracker)
+
+    test_step = TestStep.from_dict(
+        {
+            "user": "send money",
+            "assertions": [
+                {
+                    "bot_uttered": {
+                        "text_matches": "How much would you like to transfer?"
+                    }
+                }
+            ],
+            "metadata": "step_info",
+        }
+    )
+    test_case = TestCase(
+        name="test_case_transfer_money",
+        steps=[test_step],
+        metadata_name="test_case_info",
+    )
+
+    input_metadata = [
+        Metadata(name="step_info", metadata={"foo": "bar"}),
+        Metadata(name="test_case_info", metadata={"baz": "qux"}),
+    ]
+
+    additional_splitting_conditions = test_runner._get_additional_splitting_conditions(
+        test_step, input_metadata, assertions_tracker_with_duplicate_user_msg, test_case
+    )
+
+    assert additional_splitting_conditions == {
+        "text": test_step.text,
+        "metadata": {
+            "foo": "bar",
+            "baz": "qux",
+            "model_id": assertions_tracker_with_duplicate_user_msg.model_id,
+            "assistant_id": assertions_tracker_with_duplicate_user_msg.assistant_id,
+        },
+    }
+
+
+def test_get_current_user_turn_and_prior_events(
+    assertions_e2e_test_runner: E2ETestRunner,
+    assertions_tracker: DialogueStateTracker,
+) -> None:
+    test_step = TestStep.from_dict(
+        {
+            "user": "send money",
+            "assertions": [
+                {
+                    "bot_uttered": {
+                        "text_matches": "How much would you like to transfer?"
+                    }
+                }
+            ],
+        }
+    )
+
+    additional_splitting_conditions = {"text": test_step.text}
+
+    current_user_turn, prior_events = (
+        assertions_e2e_test_runner._get_current_user_turn_and_prior_events(
+            assertions_tracker, additional_splitting_conditions, test_step
+        )
+    )
+
+    assert prior_events == [assertions_tracker.events[0]]
+    assert current_user_turn == list(assertions_tracker.events)[1:]
+
+
+def test_slice_turn_events(
+    assertions_e2e_test_runner: E2ETestRunner,
+    assertions_tracker: DialogueStateTracker,
+) -> None:
+    test_step = TestStep.from_dict(
+        {
+            "user": "send money",
+            "assertions": [{"flow_started": "transfer_money"}],
+            "assertion_order_enabled": True,
+        }
+    )
+
+    additional_splitting_conditions = {"text": test_step.text}
+
+    current_user_turn, prior_events = (
+        assertions_e2e_test_runner._get_current_user_turn_and_prior_events(
+            assertions_tracker, additional_splitting_conditions, test_step
+        )
+    )
+
+    matching_event = FlowStarted("transfer_money")
+    sliced_turn_events, new_prior_events = (
+        assertions_e2e_test_runner._slice_turn_events(
+            test_step, matching_event, current_user_turn, copy.deepcopy(prior_events)
+        )
+    )
+
+    # we skip the first event in the current user turn, as it is the user
+    # message that we are splitting on
+    # we also skip the second event in the user turn, because it was already
+    # verified by the assertion
+    assert sliced_turn_events == current_user_turn[2:]
+
+    # the skipped events should be added to the prior events
+    assert new_prior_events == prior_events + current_user_turn[:2]

@@ -53,6 +53,11 @@ mapping:
                   metadata:
                     type: "str"
                     pattern: ^[a-zA-Z_]+[a-zA-Z0-9_]*$
+                  assertion_order_enabled:
+                    type: bool
+                  assertions:
+                    # see e2e_test/assertions.yml
+                    include: assertions
               - type: map
                 mapping:
                   utter:
