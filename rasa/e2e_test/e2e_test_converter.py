@@ -1,4 +1,3 @@
-import argparse
 import asyncio
 import importlib
 import re
@@ -6,20 +5,21 @@ from csv import Error as CSVError
 from dataclasses import dataclass, field
 from pathlib import Path
 from textwrap import dedent
-from typing import List, Dict, Any, Text
+from typing import List, Dict, Any
 from typing import Optional
 
 import pandas as pd
+import ruamel
 import structlog
 from jinja2 import Template
-from ruamel import yaml
 
 from rasa.exceptions import RasaException
-from rasa.shared.utils.cli import print_error_and_exit
 from rasa.shared.utils.llm import llm_factory
+
 
 structlogger = structlog.get_logger()
 
+DEFAULT_E2E_OUTPUT_TESTS_DIRECTORY = "e2e_tests"
 DEFAULT_E2E_TEST_GENERATOR_PROMPT_TEMPLATE = importlib.resources.read_text(
     "rasa.e2e_test", "e2e_test_converter_prompt.jinja2"
 )
@@ -43,13 +43,13 @@ DEFAULT_LLM_CONFIG = {
 class ConversationEntry:
     """Class for storing an entry in a conversation."""
 
-    data: Dict[Text, Any]
+    data: Dict[str, Any]
 
     @classmethod
-    def from_dict(cls, data: Dict[Text, Any]) -> "ConversationEntry":
+    def from_dict(cls, data: Dict[str, Any]) -> "ConversationEntry":
         return cls(data=data)
 
-    def as_dict(self) -> Dict[Text, Any]:
+    def as_dict(self) -> Dict[str, Any]:
         return self.data
 
 
@@ -62,7 +62,7 @@ class Conversation:
     def add_entry(self, entry: ConversationEntry) -> None:
         self.entries.append(entry)
 
-    def as_list(self) -> List[Dict[Text, Any]]:
+    def as_list(self) -> List[Dict[str, Any]]:
         return [entry.as_dict() for entry in self.entries]
 
 
@@ -75,61 +75,59 @@ class Conversations:
     def add_conversation(self, conversation: Conversation) -> None:
         self.conversations.append(conversation)
 
-    def as_list(self) -> List[List[Dict[Text, Any]]]:
+    def as_list(self) -> List[List[Dict[str, Any]]]:
         return [conversation.as_list() for conversation in self.conversations]
 
 
 class E2ETestConverter:
-    """E2ETestConvertor class is responsible for reading input CSV or XLS/XLSX files,
-    splitting the data into distinct conversations, converting them into test cases,
-    and storing the test cases into a YAML file at a specified directory.
+    """E2ETestConverter class is responsible for reading input CSV or XLS/XLSX files,
+    splitting the data into distinct conversations, and converting them into test cases.
     """
 
     def __init__(
         self,
-        path: Text,
-        sheet_name: Optional[Text] = None,
-        prompt_template: Text = DEFAULT_E2E_TEST_GENERATOR_PROMPT_TEMPLATE,
+        path: str,
+        sheet_name: Optional[str] = None,
+        prompt_template: str = DEFAULT_E2E_TEST_GENERATOR_PROMPT_TEMPLATE,
         **kwargs: Any,
     ) -> None:
         """Initializes the E2ETestConverter with necessary parameters.
 
         Args:
-            path (Text): Path to the input file.
-            sheet_name (Text): Name of the sheet in XLSX file.
-            prompt_template (Text): Path to the jinja2 template.
+            path (str): Path to the input file.
+            sheet_name (str): Name of the sheet in XLSX file.
+            prompt_template (str): Path to the jinja2 template.
         """
-        self.input_path: Text = path
-        self.sheet_name: Optional[Text] = sheet_name
-        self.prompt_template: Text = prompt_template
+        self.input_path: str = path
+        self.sheet_name: Optional[str] = sheet_name
+        self.prompt_template: str = prompt_template
 
     @staticmethod
-    def is_yaml_valid(yaml_string: Text) -> bool:
+    def is_yaml_valid(yaml_string: str) -> bool:
         """Validate the string against the YAML format.
 
         Args:
-            yaml_string (Text): String to be validated
+            yaml_string (str): String to be validated
 
         Returns:
             bool: True if valid, False otherwise
         """
         try:
-            yaml.safe_load(yaml_string)
+            ruamel.yaml.safe_load(yaml_string)
             return True
         except Exception as exc:
             structlogger.debug("e2e_test_generator.yaml_string_invalid", exc=exc)
             return False
 
     @staticmethod
-    def remove_markdown_code_syntax(markdown_string: Text) -> Text:
-        """
-        Remove Markdown code formatting from the string.
+    def remove_markdown_code_syntax(markdown_string: str) -> str:
+        """Remove Markdown code formatting from the string.
 
         Args:
-            markdown_string (Text): string to be parsed.
+            markdown_string (str): string to be parsed.
 
         Returns:
-            Text: Parsed string.
+            str: Parsed string.
 
         Example:
             >>> markdown_string = "```yaml\nkey: value\n```"
@@ -144,14 +142,14 @@ class E2ETestConverter:
         return re.sub(regex, "", dedented_string, flags=re.MULTILINE).strip()
 
     @staticmethod
-    async def generate_llm_response(prompt: Text) -> Optional[Text]:
+    async def generate_llm_response(prompt: str) -> Optional[str]:
         """Use LLM to generate a response.
 
         Args:
-            prompt (Text): the prompt to send to the LLM.
+            prompt (str): the prompt to send to the LLM.
 
         Returns:
-            Optional[Text]: Generated response.
+            Optional[str]: Generated response.
         """
         llm = llm_factory(DEFAULT_LLM_CONFIG, DEFAULT_LLM_CONFIG)
 
@@ -196,7 +194,7 @@ class E2ETestConverter:
 
         return conversations
 
-    def get_and_validate_input_file_extension(self) -> Text:
+    def get_and_validate_input_file_extension(self) -> str:
         """Validates the input file extension and checks for required properties
         like sheet name for XLSX files.
 
@@ -275,28 +273,28 @@ class E2ETestConverter:
         except ValueError:
             raise RasaException("There was a value error while reading the file.")
 
-    def render_template(self, conversation: Conversation) -> Text:
+    def render_template(self, conversation: Conversation) -> str:
         """Renders a jinja2 template.
 
         Arguments:
             conversation (Conversation): The list of rows of a conversation.
 
         Returns:
-            Text: The rendered template string.
+            str: The rendered template string.
         """
         kwargs = {"conversation": conversation.as_list()}
         return Template(self.prompt_template).render(**kwargs)
 
     async def convert_single_conversation_into_test(
         self, conversation: Conversation
-    ) -> Text:
+    ) -> str:
         """Uses LLM to convert a conversation to a YAML test case.
 
         Arguments:
             conversation (Conversation): The list of rows of a conversation.
 
         Returns:
-            Text: YAML representation of the conversation.
+            str: YAML representation of the conversation.
         """
         yaml_test_case = ""
         prompt_template = self.render_template(conversation)
@@ -313,14 +311,14 @@ class E2ETestConverter:
 
     async def convert_conversations_into_tests(
         self, conversations: Conversations
-    ) -> Text:
+    ) -> str:
         """Generates test cases from the parsed data.
 
         Arguments:
             conversations (Conversations): The list of conversation rows.
 
         Returns:
-            Text: YAML representation of the test cases.
+            str: YAML representation of the test cases.
         """
         # Convert all conversations into YAML test cases asynchronously.
         tasks = [
@@ -334,19 +332,10 @@ class E2ETestConverter:
         structlogger.debug("e2e_test_generator.test_generation_finished")
         return "\n".join(results)
 
-    async def run(self) -> None:
-        """Executes the E2E test conversion process: reads the file, generates tests,
-        and writes them to a YAML file.
+    def run(self) -> str:
+        """Executes the E2E test conversion process: reads the file,
+        splits the data into conversations, and generates test cases.
         """
         input_data = self.read_file()
         conversations = self.split_data_into_conversations(input_data)
-        yaml_tests_string = await self.convert_conversations_into_tests(conversations)
-
-
-def convert_data_to_e2e_tests(args: argparse.Namespace) -> None:
-    converter = E2ETestConverter(**vars(args))
-    try:
-        asyncio.run(converter.run())
-    except RasaException as exc:
-        structlogger.error("e2e_test_converter.failed.run", exc=exc)
-        print_error_and_exit(f"Failed to convert the data into E2E tests. Error: {exc}")
+        return asyncio.run(self.convert_conversations_into_tests(conversations))

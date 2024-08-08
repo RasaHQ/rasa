@@ -4,13 +4,14 @@ from unittest.mock import patch, Mock, AsyncMock
 import pandas as pd
 import pytest
 
-from rasa.e2e_test.data_convert_e2e import (
+from rasa.e2e_test.e2e_test_converter import (
     E2ETestConverter,
     ConversationEntry,
     Conversation,
     Conversations,
 )
 from rasa.shared.exceptions import RasaException
+
 
 SAMPLE_CONVERSATIONS_CSV_PATH = "data/test_data_convert_e2e/sample_conversations.csv"
 SAMPLE_CONVERSATIONS_XLSX_PATH = "data/test_data_convert_e2e/sample_conversations.xlsx"
@@ -294,7 +295,7 @@ async def test_convert_e2e_conversations_into_tests(sample_converter):
     )
 
     with patch(
-        "rasa.e2e_test.data_convert_e2e.llm_factory",
+        "rasa.e2e_test.e2e_test_converter.llm_factory",
         Mock(),
     ) as mock_llm_factory:
         llm_mock = Mock()
@@ -322,7 +323,7 @@ async def test_convert_e2e_single_conversation_into_test(sample_converter):
     )
 
     with patch(
-        "rasa.e2e_test.data_convert_e2e.llm_factory",
+        "rasa.e2e_test.e2e_test_converter.llm_factory",
         Mock(),
     ) as mock_llm_factory:
         llm_mock = Mock()
