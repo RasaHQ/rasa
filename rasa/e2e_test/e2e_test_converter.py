@@ -333,8 +333,8 @@ class E2ETestConverter:
         return "\n".join(results)
 
     def run(self) -> str:
-        """Executes the E2E test conversion process: reads the file, generates tests,
-        and writes them to a YAML file.
+        """Executes the E2E test conversion process: reads the file,
+        splits the data into conversations, and generates test cases.
         """
         input_data = self.read_file()
         conversations = self.split_data_into_conversations(input_data)

@@ -11,13 +11,13 @@ structlogger = structlog.get_logger()
 DEFAULT_E2E_OUTPUT_TESTS_DIRECTORY = "e2e_tests"
 
 
-class E2EYAMLWriter:
+class E2ETestYAMLWriter:
     def __init__(
         self,
         output_path: str = DEFAULT_E2E_OUTPUT_TESTS_DIRECTORY,
         **kwargs: Any,
     ) -> None:
-        """Initializes the E2ETestConverter with necessary parameters.
+        """Initializes the E2ETestYAMLWriter with necessary parameters.
 
         Args:
             output (str): Directory to save the generated tests.
@@ -45,6 +45,6 @@ class E2EYAMLWriter:
             yaml = ruamel.yaml.YAML()
             yaml.dump(test_cases_yaml, outfile)
 
-        structlogger.debug(
+        structlogger.info(
             "e2e_test_generator.tests_written_to_yaml", output_file=output_file
         )

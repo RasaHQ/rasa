@@ -4,11 +4,11 @@ from unittest.mock import patch
 
 import ruamel
 
-from rasa.e2e_test.e2e_yaml_utils import E2EYAMLWriter
+from rasa.e2e_test.e2e_yaml_utils import E2ETestYAMLWriter
 
 
 def test_e2e_write_tests_to_yaml_creates_file(tmp_path: Path):
-    writer = E2EYAMLWriter(output_path=str(tmp_path))
+    writer = E2ETestYAMLWriter(output_path=str(tmp_path))
     writer.write_to_file("")
 
     output_files = list(tmp_path.glob("e2e_tests_*.yml"))
@@ -16,7 +16,7 @@ def test_e2e_write_tests_to_yaml_creates_file(tmp_path: Path):
 
 
 def test_e2e_write_tests_to_yaml_correct_content(tmp_path: Path):
-    writer = E2EYAMLWriter(output_path=str(tmp_path))
+    writer = E2ETestYAMLWriter(output_path=str(tmp_path))
     test_yaml_string = """
     - test_case: user_greeting_the_assistant
       steps:
@@ -39,7 +39,7 @@ def test_e2e_write_tests_to_yaml_correct_content(tmp_path: Path):
 
 def test_e2e_write_tests_to_yaml_creates_directory(tmp_path: Path):
     output_path = tmp_path / "nested"
-    writer = E2EYAMLWriter(output_path=str(output_path))
+    writer = E2ETestYAMLWriter(output_path=str(output_path))
     test_yaml_string = """
     - test_case: user_greeting_the_assistant
       steps:
@@ -53,7 +53,7 @@ def test_e2e_write_tests_to_yaml_creates_directory(tmp_path: Path):
 
 
 def test_e2e_write_tests_to_yaml_correct_timestamp(tmp_path: Path):
-    writer = E2EYAMLWriter(output_path=str(tmp_path))
+    writer = E2ETestYAMLWriter(output_path=str(tmp_path))
 
     fixed_timestamp = datetime(2024, 1, 1, 12, 0, 0)
     expected_timestamp_str = fixed_timestamp.strftime("%Y%m%d_%H%M%S")

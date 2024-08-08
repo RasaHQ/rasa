@@ -16,7 +16,7 @@ from rasa.cli import SubParsersAction
 from rasa.cli.arguments import data as arguments
 from rasa.cli.arguments import default_arguments
 from rasa.e2e_test.e2e_test_converter import E2ETestConverter
-from rasa.e2e_test.e2e_yaml_utils import E2EYAMLWriter
+from rasa.e2e_test.e2e_yaml_utils import E2ETestYAMLWriter
 from rasa.shared.constants import (
     DEFAULT_DATA_PATH,
     DEFAULT_CONFIG_PATH,
@@ -305,13 +305,17 @@ def _migrate_domain(args: argparse.Namespace) -> None:
 
 
 def convert_data_to_e2e_tests(args: argparse.Namespace) -> None:
+    """Converts sample conversation data into E2E test cases
+    and stores them in the output YAML file.
+
+    Args:
+        args: The arguments passed in from the CLI.
+    """
     try:
-        # Convert the sample conversation data into a YAML test cases string
         converter = E2ETestConverter(**vars(args))
         yaml_tests_string = converter.run()
 
-        # Write the YAML test cases string to the output path
-        writer = E2EYAMLWriter(output_path=args.output)
+        writer = E2ETestYAMLWriter(output_path=args.output)
         writer.write_to_file(yaml_tests_string)
     except RasaException as exc:
         rasa.shared.utils.cli.print_error_and_exit(
