@@ -148,10 +148,11 @@ class StudioDataHandler:
         response = self._make_request(GQL_req)
         self._extract_data(response)
 
-    def get_config(self):
+    # rasa/studio/data_handler.py:151: error: Function is missing a return type annotation  [no-untyped-def]
+    def get_config(self) -> Optional[str]:
         return self.config
 
-    def get_endpoints(self):
+    def get_endpoints(self) -> Optional[str]:
         return self.endpoints
 
     def _validate_response(self, response: dict) -> bool:

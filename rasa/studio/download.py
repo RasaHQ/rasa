@@ -108,19 +108,21 @@ def _handle_download_config_and_endpoints(
         config_path: Path to the existing or new config file
         endpoints_path: Path to the existing or new endpoints file
     """
+    write_config = False
+    write_endpoints = False
     if config_path.is_file():
-        if not questionary.confirm(
+        if questionary.confirm(
             f"Config file '{config_path}' already exists. "
             f"Do you want to overwrite it?"
         ).ask():
-            config_path = None
+            write_config = True
 
     if endpoints_path.is_file():
-        if not questionary.confirm(
+        if questionary.confirm(
             f"Endpoints file '{endpoints_path}' already exists. "
             f"Do you want to overwrite it?"
         ).ask():
-            endpoints_path = None
+            write_endpoints = True
 
     config_data = handler.get_config()
     if not config_data:
@@ -135,10 +137,12 @@ def _handle_download_config_and_endpoints(
         event_info="Downloaded config and endpoints files from Rasa Studio.",
     )
 
-    with open(config_path, "w") as f:
-        f.write(config_data)
-    with open(endpoints_path, "w") as f:
-        f.write(endpoints_data)
+    if write_config:
+        with open(config_path, "w") as f:
+            f.write(config_data)
+    if write_endpoints:
+        with open(endpoints_path, "w") as f:
+            f.write(endpoints_data)
 
 
 def _handle_download_no_overwrite(
