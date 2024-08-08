@@ -212,9 +212,9 @@ def record_callable_duration_metrics(
     - EndpointConfig
 
     :param self: The instance on which the instrumented method is called on.
-    :param start_time: Start time measured by time.process_time_ns()
+    :param start_time: Start time measured by time.perf_counter_ns()
     before the method is called.
-    :param end_time: End time measured by time.process_time_ns()
+    :param end_time: End time measured by time.perf_counter_ns()
     after the method is called.
     :return: None
     """

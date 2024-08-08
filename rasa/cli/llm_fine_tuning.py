@@ -17,14 +17,18 @@ from rasa.core.utils import AvailableEndpoints
 from rasa.dialogue_understanding.generator.constants import LLM_CONFIG_KEY
 from rasa.e2e_test.e2e_test_runner import E2ETestRunner
 from rasa.llm_fine_tuning.annotation_module import annotate_e2e_tests
-from rasa.llm_fine_tuning.conversation_storage import (
+from rasa.llm_fine_tuning.llm_data_preparation_module import convert_to_fine_tuning_data
+from rasa.llm_fine_tuning.paraphrasing_module import create_paraphrased_conversations
+from rasa.llm_fine_tuning.storage import (
     StorageContext,
     StorageType,
     FileStorageStrategy,
 )
-from rasa.llm_fine_tuning.llm_data_preparation_module import convert_to_fine_tuning_data
-from rasa.llm_fine_tuning.paraphrasing_module import create_paraphrased_conversations
-from rasa.llm_fine_tuning.train_test_split_module import split_llm_fine_tuning_data
+from rasa.llm_fine_tuning.train_test_split_module import (
+    split_llm_fine_tuning_data,
+    ALPACA_DATA_FORMAT,
+    SHAREGPT_DATA_FORMAT,
+)
 from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH, DEFAULT_MODELS_PATH
 
 DEFAULT_INPUT_E2E_TEST_PATH = "e2e_tests"
@@ -132,15 +136,16 @@ def add_data_preparation_arguments(parser: argparse.ArgumentParser) -> None:
     train_test_split_arguments.add_argument(
         "--train-frac",
         type=restricted_float,
+        default=0.8,
         help="The amount of data that should go into the training dataset. The value "
         "should be >0.0 and <=1.0.",
     )
     train_test_split_arguments.add_argument(
         "--output-format",
-        choices=["alpaca", "sharegpt", "azure-gpt"],
+        choices=[ALPACA_DATA_FORMAT, SHAREGPT_DATA_FORMAT],
         type=str,
         nargs="?",
-        default="alpaca",
+        default=ALPACA_DATA_FORMAT,
         help="Format of the output file.",
     )
 
@@ -182,6 +187,9 @@ def prepare_llm_fine_tuning_data(args: argparse.Namespace) -> None:
     conversations = annotate_e2e_tests(e2e_test_runner, test_suite, storage_context)
     statistics["num_input_e2e_tests"] = len(test_suite.test_cases)
     statistics["num_annotated_conversations"] = len(conversations)
+    statistics["num_user_messages_across_conversations"] = sum(
+        [len(conversation.get_user_messages()) for conversation in conversations]
+    )
     log_end_of_module("Annotation", statistics)
 
     # 2. paraphrase conversations
@@ -206,16 +214,18 @@ def prepare_llm_fine_tuning_data(args: argparse.Namespace) -> None:
 
     # 3. create fine-tuning dataset
     log_start_of_module("LLM Data Preparation")
-    llm_fine_tuning_data = convert_to_fine_tuning_data(conversations, output_dir)
-    statistics["num_rephrased_conversations"] = 0  # TODO
-    statistics["num_user_messages_across_conversations"] = 0  # TODO
-    statistics["num_ft_data_points"] = 0  # TODO
+    llm_fine_tuning_data = convert_to_fine_tuning_data(conversations, storage_context)
+    statistics["num_ft_data_points"] = len(llm_fine_tuning_data)
     log_end_of_module("LLM Data Preparation", statistics)
 
     # 4. create train/test split
     log_start_of_module("Train/Test Split")
     train_data, val_data = split_llm_fine_tuning_data(
-        llm_fine_tuning_data, args.train_frac, args.output_format, output_dir
+        llm_fine_tuning_data,
+        args.train_frac,
+        args.output_format,
+        storage_context,
+        test_suite,
     )
     statistics["num_train_data_points"] = len(train_data)
     statistics["num_val_data_points"] = len(val_data)

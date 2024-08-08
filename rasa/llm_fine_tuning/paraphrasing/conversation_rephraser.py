@@ -1,5 +1,6 @@
 import importlib.resources
-from typing import Dict, Any, List
+import re
+from typing import Dict, Any, List, Tuple, Optional
 
 import structlog
 from jinja2 import Template
@@ -18,7 +19,7 @@ from rasa.shared.utils.llm import (
     USER,
 )
 
-SEPARATOR = "&&&"
+SEPARATOR = "\n\n"
 
 PROMPT_TEMPLATE_KEY = "prompt_template"
 
@@ -118,6 +119,55 @@ class ConversationRephraser:
             user_messages=user_messages,
         )
 
+    @staticmethod
+    def _extract_rephrasings(block: str) -> Tuple[Optional[str], Optional[List[str]]]:
+        """Extract the rephrasings for a specific user message.
+
+        Expected format looks like this:
+        USER: <user message>
+        1. <rephrased message 1>
+        2. <rephrased message 2>
+        3. <rephrased message 3>
+        ...
+
+        Args:
+            block: String that contains the user message and its rephrasings.
+
+        Returns:
+            The original user message and the list of rephrasings.
+        """
+        if not block.strip():
+            return None, None
+
+        # Split the block by new line character
+        lines = block.strip().split("\n")
+        # Filter out empty lines and lines that are equal to """
+        lines = [line.strip() for line in lines]
+        lines = [line for line in lines if line and line != '"""']
+
+        # We need at least the original user message and one rephrasing
+        if len(lines) < 2:
+            return None, None
+
+        # Extract the user message from the first line
+        # (ideally prefixed with 'USER: ')
+        if lines[0].startswith("USER:"):
+            original_user_message = lines[0][len(f"{USER}:") :].strip()
+        else:
+            original_user_message = lines[0]
+
+        # Extract rephrasings
+        rephrasings = []
+        for line in lines[1:]:
+            # Remove bullets or numbering and any extra whitespace
+            line = re.sub(r"^\s*[-\d\.]+", "", line).strip()
+            if line.startswith("USER:"):
+                line = line[len(f"{USER}:") :].strip()
+            if line:
+                rephrasings.append(line)
+
+        return original_user_message, rephrasings
+
     def _parse_output(
         self, output: str, user_messages: List[str]
     ) -> List[RephrasedUserMessage]:
@@ -125,27 +175,13 @@ class ConversationRephraser:
             RephrasedUserMessage(message, []) for message in user_messages
         ]
 
-        # Each user message block is seperator by '&&&'
+        # Each user message block is seperator by new line
         message_blocks = output.split(SEPARATOR)
         for block in message_blocks:
-            if not block.strip():
-                continue
+            original_user_message, rephrasings = self._extract_rephrasings(block)
 
-            # Split the block by new line character
-            lines = block.strip().split("\n")
-            if not lines[0].startswith(f"{USER}: "):
+            if not original_user_message or not rephrasings:
                 continue
-
-            # Extract the user message from the first line (prefixed with 'USER: ')
-            original_user_message = lines[0][len(f"{USER}: ") :]
-            if original_user_message not in user_messages:
-                continue
-
-            # Remove the numbering and extract the rephrasings
-            try:
-                rephrasings = [line.split(". ")[1] for line in lines[1:]]
-            except Exception:
-                rephrasings = []
 
             # Add the rephrasings to the correct user message
             for rephrased_message in rephrased_messages:

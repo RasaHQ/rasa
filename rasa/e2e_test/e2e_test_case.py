@@ -1,10 +1,14 @@
 import logging
+from collections import OrderedDict
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Text, Union
 
+from rasa.e2e_test.assertions import Assertion
 from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
 
 from rasa.e2e_test.constants import (
+    KEY_ASSERTIONS,
+    KEY_ASSERTION_ORDER_ENABLED,
     KEY_BOT_INPUT,
     KEY_BOT_UTTERED,
     KEY_FIXTURES,
@@ -13,8 +17,10 @@ from rasa.e2e_test.constants import (
     KEY_SLOT_SET,
     KEY_STEPS,
     KEY_TEST_CASE,
+    KEY_TEST_CASES,
     KEY_USER_INPUT,
 )
+from rasa.shared.exceptions import RasaException
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +53,15 @@ class Fixture:
             },
         )
 
+    def as_dict(self) -> Dict[Text, Any]:
+        """Returns the fixture as a dictionary."""
+        return {
+            self.name: [
+                {slot_name: slot_value}
+                for slot_name, slot_value in self.slots_set.items()
+            ]
+        }
+
 
 @dataclass(frozen=True)
 class TestStep:
@@ -65,6 +80,8 @@ class TestStep:
     _slot_instance: Optional[Union[Text, Dict[Text, Any]]] = None
     _underlying: Optional[Dict[Text, Any]] = None
     metadata_name: Optional[Text] = None
+    assertions: Optional[List[Assertion]] = None
+    assertion_order_enabled: bool = False
 
     @staticmethod
     def from_dict(test_step_dict: Dict[Text, Any]) -> "TestStep":
@@ -73,7 +90,7 @@ class TestStep:
         Example:
             >>> TestStep.from_dict({"user": "hello"})
             TestStep(text="hello", actor="user")
-            >>> TestStep.from_dict({"user": "hello", metadata: "some_metadata"})
+            >>> TestStep.from_dict({"user": "hello", "metadata": "some_metadata"})
             TestStep(text="hello", actor="user", metadata_name="some_metadata")
             >>> TestStep.from_dict({"bot": "hello world"})
             TestStep(text="hello world", actor="bot")
@@ -85,6 +102,15 @@ class TestStep:
         slot_instance = test_step_dict.get(KEY_SLOT_SET)
         if test_step_dict.get(KEY_SLOT_NOT_SET):
             slot_instance = test_step_dict.get(KEY_SLOT_NOT_SET)
+
+        assertions = (
+            [
+                Assertion.create_typed_assertion(data)
+                for data in test_step_dict.get(KEY_ASSERTIONS, [])
+            ]
+            if KEY_ASSERTIONS in test_step_dict
+            else None
+        )
 
         return TestStep(
             text=test_step_dict.get(
@@ -99,6 +125,10 @@ class TestStep:
             _slot_instance=slot_instance,
             _underlying=test_step_dict,
             metadata_name=test_step_dict.get(KEY_METADATA, ""),
+            assertions=assertions,
+            assertion_order_enabled=test_step_dict.get(
+                KEY_ASSERTION_ORDER_ENABLED, False
+            ),
         )
 
     @staticmethod
@@ -110,7 +140,7 @@ class TestStep:
             and KEY_SLOT_SET not in test_step_dict
             and KEY_SLOT_NOT_SET not in test_step_dict
         ):
-            raise ValueError(
+            raise RasaException(
                 f"Test step is missing either the {KEY_USER_INPUT}, {KEY_BOT_INPUT}, "
                 f"{KEY_SLOT_NOT_SET}, {KEY_SLOT_SET} "
                 f"or {KEY_BOT_UTTERED} key: {test_step_dict}"
@@ -120,14 +150,66 @@ class TestStep:
             test_step_dict.get(KEY_SLOT_SET) is not None
             and test_step_dict.get(KEY_SLOT_NOT_SET) is not None
         ):
-            raise ValueError(
+            raise RasaException(
                 f"Test step has both {KEY_SLOT_SET} and {KEY_SLOT_NOT_SET} keys: "
                 f"{test_step_dict}. You must only use one of the keys in a test step."
+            )
+
+        if KEY_USER_INPUT not in test_step_dict and KEY_ASSERTIONS in test_step_dict:
+            raise RasaException(
+                f"Test step with assertions must only be used with the "
+                f"'{KEY_USER_INPUT}' key: {test_step_dict}"
+            )
+
+        if (
+            KEY_USER_INPUT not in test_step_dict
+            and KEY_ASSERTION_ORDER_ENABLED in test_step_dict
+        ):
+            raise RasaException(
+                f"Test step with '{KEY_ASSERTION_ORDER_ENABLED}' key must "
+                f"only be used with the '{KEY_USER_INPUT}' key: "
+                f"{test_step_dict}"
+            )
+
+        if (
+            KEY_ASSERTION_ORDER_ENABLED in test_step_dict
+            and KEY_ASSERTIONS not in test_step_dict
+        ):
+            raise RasaException(
+                f"You must specify the '{KEY_ASSERTIONS}' key in the user test step "
+                f"where you are using '{KEY_ASSERTION_ORDER_ENABLED}' key: "
+                f"{test_step_dict}"
             )
 
     def as_dict(self) -> Dict[Text, Any]:
         """Returns the underlying dictionary of the test step."""
         return self._underlying or {}
+
+    def as_dict_yaml_format(self) -> Dict[Text, Any]:
+        """Returns the test step as a dictionary in YAML format."""
+        if not self._underlying:
+            return {}
+
+        result = self._underlying.copy()
+
+        # Handle 'slot_was_set'
+        if KEY_SLOT_SET in self._underlying and isinstance(
+            self._underlying[KEY_SLOT_SET], OrderedDict
+        ):
+            result[KEY_SLOT_SET] = [
+                {key: value} for key, value in self._underlying[KEY_SLOT_SET].items()
+            ]
+
+        # Handle 'slot_was_not_set'
+        if KEY_SLOT_NOT_SET in self._underlying and isinstance(
+            self._underlying[KEY_SLOT_NOT_SET], OrderedDict
+        ):
+            result[KEY_SLOT_NOT_SET] = [
+                {key: value}
+                for key, value in self._underlying[KEY_SLOT_NOT_SET].items()
+            ]
+
+        return result
 
     def matches_event(self, other: Union[BotUttered, SlotSet, None]) -> bool:
         """Compares the test step with BotUttered or SlotSet event.
@@ -313,12 +395,24 @@ class TestCase:
             name=input_test_case.get(KEY_TEST_CASE, "default"),
             steps=steps,
             file=file,
-            line=input_test_case.lc.line + 1
-            if hasattr(input_test_case, "lc")
-            else None,
+            line=(
+                input_test_case.lc.line + 1 if hasattr(input_test_case, "lc") else None
+            ),
             fixture_names=input_test_case.get(KEY_FIXTURES),
             metadata_name=input_test_case.get(KEY_METADATA),
         )
+
+    def as_dict(self) -> Dict[Text, Any]:
+        """Returns the test case as a dictionary."""
+        result = {
+            KEY_TEST_CASE: self.name,
+            KEY_STEPS: [step.as_dict_yaml_format() for step in self.steps],
+        }
+        if self.fixture_names:
+            result[KEY_FIXTURES] = self.fixture_names
+        if self.metadata_name:
+            result[KEY_METADATA] = self.metadata_name
+        return result
 
     def file_with_line(self) -> Text:
         """Returns the file name and line number of the test case."""
@@ -327,6 +421,15 @@ class TestCase:
 
         line = str(self.line) if self.line is not None else ""
         return f"{self.file}:{line}"
+
+    def uses_assertions(self) -> bool:
+        """Checks if the test case uses assertions."""
+        try:
+            next(step for step in self.steps if step.assertions is not None)
+        except StopIteration:
+            return False
+
+        return True
 
 
 @dataclass(frozen=True)
@@ -356,6 +459,10 @@ class Metadata:
             },
         )
 
+    def as_dict(self) -> Dict[Text, Any]:
+        """Returns the metadata as a dictionary."""
+        return {self.name: self.metadata}
+
 
 @dataclass(frozen=True)
 class TestSuite:
@@ -364,3 +471,11 @@ class TestSuite:
     test_cases: List[TestCase]
     fixtures: List[Fixture]
     metadata: List[Metadata]
+
+    def as_dict(self) -> Dict[Text, Any]:
+        """Returns the test suite as a dictionary."""
+        return {
+            KEY_FIXTURES: [fixture.as_dict() for fixture in self.fixtures],
+            KEY_METADATA: [metadata.as_dict() for metadata in self.metadata],
+            KEY_TEST_CASES: [test_case.as_dict() for test_case in self.test_cases],
+        }
