@@ -3,11 +3,16 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
+import questionary
+import structlog
+
 import rasa.cli.utils
 import rasa.shared.utils.cli
 from rasa.shared.constants import (
     DEFAULT_DATA_PATH,
     DEFAULT_DOMAIN_PATHS,
+    DEFAULT_CONFIG_PATH,
+    DEFAULT_ENDPOINTS_PATH,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows.yaml_flows_io import YamlFlowsWriter
@@ -28,6 +33,7 @@ from rasa.studio.data_handler import (
 from rasa.utils.mapper import RasaPrimitiveStorageMapper
 
 logger = logging.getLogger(__name__)
+structlogger = structlog.getLogger(__name__)
 
 
 def handle_download(args: argparse.Namespace) -> None:
@@ -40,6 +46,24 @@ def handle_download(args: argparse.Namespace) -> None:
     )
     domain_path = Path(domain_path)
 
+    config_file_exists_in_path = rasa.cli.utils.get_validated_path(
+        args.config, "config", DEFAULT_CONFIG_PATH, none_is_valid=True
+    )
+
+    if config_file_exists_in_path:
+        config_path = Path(config_file_exists_in_path)
+    else:
+        config_path = Path(args.config)
+
+    endpoints_file_exists_in_path = rasa.cli.utils.get_validated_path(
+        args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, none_is_valid=True
+    )
+
+    if endpoints_file_exists_in_path:
+        endpoints_path = Path(endpoints_file_exists_in_path)
+    else:
+        endpoints_path = Path(args.endpoints)
+
     data_paths = [
         Path(
             rasa.cli.utils.get_validated_path(
@@ -48,6 +72,12 @@ def handle_download(args: argparse.Namespace) -> None:
         )
         for f in args.data
     ]
+
+    _handle_download_config_and_endpoints(
+        handler=handler,
+        config_path=config_path,
+        endpoints_path=endpoints_path,
+    )
 
     if not args.overwrite:
         _handle_download_no_overwrite(
@@ -61,6 +91,55 @@ def handle_download(args: argparse.Namespace) -> None:
             domain_path=domain_path,
             data_paths=data_paths,
         )
+
+
+def _handle_download_config_and_endpoints(
+    handler: StudioDataHandler,
+    config_path: Path,
+    endpoints_path: Path,
+) -> None:
+    """
+    This method handles the download of the config and endpoints files from Rasa Studio.
+    If the files already exist in the specified paths, the user is prompted to confirm
+    if they want to overwrite them. If user chooses to not overwrite, download skips
+    the these files but other data is still overwritten. --overwrite flag doesn't apply.
+
+    Args:
+        handler: StudioDataHandler object
+        config_path: Path to the existing or new config file
+        endpoints_path: Path to the existing or new endpoints file
+    """
+    if config_path.is_file():
+        if not questionary.confirm(
+            f"Config file '{config_path}' already exists. "
+            f"Do you want to overwrite it?"
+        ).ask():
+            config_path = None
+
+    if endpoints_path.is_file():
+        if not questionary.confirm(
+            f"Endpoints file '{endpoints_path}' already exists. "
+            f"Do you want to overwrite it?"
+        ).ask():
+            endpoints_path = None
+
+    config_data = handler.get_config()
+    if not config_data:
+        raise ValueError("No config data found.")
+
+    endpoints_data = handler.get_endpoints()
+    if not endpoints_data:
+        raise ValueError("No endpoints data found.")
+
+    structlogger.info(
+        "studio.download.config_endpoints",
+        event_info="Downloaded config and endpoints files from Rasa Studio.",
+    )
+
+    with open(config_path, "w") as f:
+        f.write(config_data)
+    with open(endpoints_path, "w") as f:
+        f.write(endpoints_data)
 
 
 def _handle_download_no_overwrite(
@@ -180,6 +259,7 @@ def _handle_download_with_overwrite(
     mapper = RasaPrimitiveStorageMapper(
         domain_path=domain_path, training_data_paths=data_paths
     )
+
     if domain_path.is_file():
         domain_merged = data_from_studio.get_domain().merge(data_original.get_domain())
         domain_merged.persist(domain_path)

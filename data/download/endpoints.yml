@@ -1,0 +1,9 @@
+# This file contains the different endpoints your bot can use.
+
+# Server which runs your custom actions.
+# https://rasa.com/docs/rasa/custom-actions
+# action_endpoint:
+#   url: ${ACTIONS_SERVER_URL}
+
+nlg:
+  type: rephrase
