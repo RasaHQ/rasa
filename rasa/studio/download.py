@@ -98,8 +98,7 @@ def _handle_download_config_and_endpoints(
     config_path: Path,
     endpoints_path: Path,
 ) -> None:
-    """
-    This method handles the download of the config and endpoints files from Rasa Studio.
+    """This method handles the download of the config and endpoints files from Rasa Studio.
     If the files already exist in the specified paths, the user is prompted to confirm
     if they want to overwrite them. If user chooses to not overwrite, download skips
     the these files but other data is still overwritten. --overwrite flag doesn't apply.
