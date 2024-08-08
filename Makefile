@@ -267,7 +267,7 @@ build-docker-rasa-image:
 
 build-docker: build-docker-base build-docker-builder build-docker-rasa-deps build-docker-rasa-image
 
-build-tests-deployment-env: ## Create environment files (.env) for docker-compose.
+build-tests-deployment-env: ## Create environment files (.env) for docker compose.
 	cd tests_deployment && \
 	test -f .env || cat .env.example >> .env
 
@@ -288,10 +288,10 @@ tests_deployment/integration_tests_tracing_deployment/simple_bot/models/model.ta
 train: tests_deployment/integration_tests_tracing_deployment/simple_bot/models/model.tar.gz
 
 run-tracing-integration-containers: train ## Run the tracing integration test containers.
-	docker-compose -f tests_deployment/integration_tests_tracing_deployment/docker-compose.intg.yml up -d
+	docker compose -f tests_deployment/integration_tests_tracing_deployment/docker-compose.intg.yml up -d
 
 stop-tracing-integration-containers: ## Stop the tracing integration test containers.
-	docker-compose -f tests_deployment/integration_tests_tracing_deployment/docker-compose.intg.yml down
+	docker compose -f tests_deployment/integration_tests_tracing_deployment/docker-compose.intg.yml down
 
 test-tracing-integration:
 	PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python \
