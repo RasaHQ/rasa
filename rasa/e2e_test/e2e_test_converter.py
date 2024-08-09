@@ -235,9 +235,9 @@ class E2ETestConverter:
         Returns:
             List[Dict]: Parsed data from the CSV file as a list of dictionaries.
         """
-        df = pd.read_csv(self.input_path, sep=None, engine="python")
-        df = df.fillna("")
-        return df.to_dict(orient="records")
+        data_frame = pd.read_csv(self.input_path, sep=None, engine="python")
+        data_frame = data_frame.fillna("")
+        return data_frame.to_dict(orient="records")
 
     def read_xlsx(self) -> List[Dict]:
         """Reads an XLSX file and converts it into a list of dictionaries.
@@ -245,9 +245,9 @@ class E2ETestConverter:
         Returns:
             List[Dict]: Parsed data from the XLSX file as a list of dictionaries.
         """
-        df = pd.read_excel(self.input_path, sheet_name=self.sheet_name)
-        df = df.fillna("")
-        return df.to_dict(orient="records")
+        data_frame = pd.read_excel(self.input_path, sheet_name=self.sheet_name)
+        data_frame = data_frame.fillna("")
+        return data_frame.to_dict(orient="records")
 
     def read_file(self) -> List[Dict]:
         """Calls the appropriate file reading method based on the file extension.
