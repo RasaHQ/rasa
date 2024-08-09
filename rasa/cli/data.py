@@ -24,6 +24,7 @@ from rasa.shared.constants import (
 )
 from rasa.shared.exceptions import RasaException
 from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.utils.common import minimal_kwargs
 from rasa.shared.utils.yaml import read_yaml_file, write_yaml
 from rasa.utils.beta import ensure_beta_feature_is_enabled
 
@@ -314,13 +315,14 @@ def convert_data_to_e2e_tests(args: argparse.Namespace) -> None:
     Args:
         args: The arguments passed in from the CLI.
     """
-    ensure_beta_feature_is_enabled(
-        "conversion of sample conversations into end-to-end tests",
-        RASA_PRO_BETA_E2E_CONVERSION_ENV_VAR_NAME,
-    )
-
     try:
-        converter = E2ETestConverter(**vars(args))
+        ensure_beta_feature_is_enabled(
+            "conversion of sample conversations into end-to-end tests",
+            RASA_PRO_BETA_E2E_CONVERSION_ENV_VAR_NAME,
+        )
+
+        kwargs = minimal_kwargs(vars(args), E2ETestConverter)
+        converter = E2ETestConverter(**kwargs)
         yaml_tests_string = converter.run()
 
         writer = E2ETestYAMLWriter(output_path=args.output)

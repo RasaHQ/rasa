@@ -1,8 +1,8 @@
 import asyncio
-import importlib
 import re
 from csv import Error as CSVError
 from dataclasses import dataclass, field
+from importlib.resources import read_text
 from pathlib import Path
 from textwrap import dedent
 from typing import List, Dict, Any
@@ -14,8 +14,8 @@ import structlog
 from jinja2 import Template
 from ruamel.yaml.scanner import ScannerError
 
-from rasa.e2e_test.constants import KEY_TEST_CASES
 from rasa.cli.e2e_test import read_e2e_test_schema
+from rasa.e2e_test.constants import KEY_TEST_CASES
 from rasa.exceptions import RasaException
 from rasa.shared.utils.llm import llm_factory
 from rasa.shared.utils.yaml import (
@@ -26,9 +26,8 @@ from rasa.shared.utils.yaml import (
 structlogger = structlog.get_logger()
 
 DEFAULT_E2E_OUTPUT_TESTS_DIRECTORY = "e2e_tests"
-DEFAULT_E2E_TEST_GENERATOR_PROMPT_TEMPLATE = importlib.resources.read_text(
-    "rasa.e2e_test", "e2e_test_converter_prompt.jinja2"
-)
+E2E_TEST_MODULE = "rasa.e2e_test"
+DEFAULT_E2E_TEST_CONVERTER_PROMPT_PATH = "e2e_test_converter_prompt.jinja2"
 
 CSV = ".csv"
 XLSX = ".xlsx"
@@ -94,7 +93,6 @@ class E2ETestConverter:
         self,
         path: str,
         sheet_name: Optional[str] = None,
-        prompt_template: str = DEFAULT_E2E_TEST_GENERATOR_PROMPT_TEMPLATE,
         **kwargs: Any,
     ) -> None:
         """Initializes the E2ETestConverter with necessary parameters.
@@ -102,12 +100,13 @@ class E2ETestConverter:
         Args:
             path (str): Path to the input file.
             sheet_name (str): Name of the sheet in XLSX file.
-            prompt_template (str): Path to the jinja2 template.
         """
         self.input_path: str = path
         self.sheet_name: Optional[str] = sheet_name
-        self.prompt_template: str = prompt_template
         self.e2e_schema = read_e2e_test_schema()
+        self.prompt_template: str = read_text(
+            E2E_TEST_MODULE, DEFAULT_E2E_TEST_CONVERTER_PROMPT_PATH
+        )
 
     @staticmethod
     def remove_markdown_code_syntax(markdown_string: str) -> str:
