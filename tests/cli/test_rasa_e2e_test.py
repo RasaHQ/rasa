@@ -11,6 +11,7 @@ import pytest
 from pytest import LogCaptureFixture, MonkeyPatch, RunResult
 from rasa.core.agent import Agent
 from rasa.core.tracker_store import InMemoryTrackerStore
+from rasa.e2e_test.assertions import AssertionFailure, FlowStartedAssertion
 from rasa.exceptions import RasaException
 from rasa.shared.constants import DEFAULT_MODELS_PATH
 from rasa.shared.core.domain import Domain
@@ -23,7 +24,7 @@ from rasa.cli.e2e_test import (
     color_difference,
     execute_e2e_tests,
     is_test_case_file,
-    pad,
+    print_failed_case,
     read_test_cases,
     split_into_passed_failed,
     transform_results_output_to_yaml,
@@ -135,22 +136,6 @@ def test_find_test_sets_file(e2e_input_folder: Path) -> None:
     assert input_test_cases[7].file == str(
         e2e_input_folder / "e2e_test_cases_with_metadata.yml"
     )
-
-
-def test_pad_text() -> None:
-    assert (
-        pad("hello world caption", char="*")
-        == "*" * 29 + " hello world caption " + "*" * 30
-    )
-
-
-def test_pad_uses_min_padding() -> None:
-    expected = "=" * 10 + " " + "foo" * 100 + " " + "=" * 10
-    assert pad("foo" * 100, min=10) == expected
-
-
-def test_pad_empty() -> None:
-    assert pad("") == "=" * 39 + " " * 2 + "=" * 39
 
 
 def test_color_difference_empty() -> None:
@@ -658,3 +643,39 @@ def test_read_single_test_case(
     assert len(input_test_cases) == 1
     assert input_test_cases[0].name == test_case
     assert len(input_test_cases[0].steps) == number_of_steps
+
+
+@pytest.mark.parametrize(
+    "test_result",
+    [
+        TestResult(
+            test_case=TestCase(
+                name="some test case",
+                steps=[TestStep(actor="some actor")],
+                file="test.yaml",
+            ),
+            pass_status=True,
+            difference=[],
+            assertion_failure=AssertionFailure(
+                assertion=FlowStartedAssertion(flow_id="test_flow_id"),
+                error_message="Test error message",
+                actual_events_transcript=["test_event"],
+            ),
+            error_line=1,
+        ),
+    ],
+)
+@patch("rasa.shared.utils.cli.print_error")
+def test_print_failed_case(
+    mock_print_error: MagicMock,
+    test_result: TestResult,
+) -> None:
+    print_failed_case(test_result)
+
+    mock_print_error.assert_any_call("Mismatch starting at test.yaml:1: \n")
+    mock_print_error.assert_any_call(
+        "Assertion type 'flow_started' failed with this error message: "
+        "Test error message\n"
+    )
+    mock_print_error.assert_any_call("Actual events transcript:\n")
+    mock_print_error.assert_called_with("test_event")

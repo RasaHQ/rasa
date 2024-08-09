@@ -105,3 +105,7 @@ DEFAULT_TEMPLATE_ENGINE = RASA_FORMAT_TEMPLATE_ENGINE
 # configuration parameter used to specify the template engine to use
 # for a response
 TEMPLATE_ENGINE_CONFIG_KEY = "template"
+
+# metadata keys for bot utterance events
+UTTER_SOURCE_METADATA_KEY = "utter_source"
+DOMAIN_GROUND_TRUTH_METADATA_KEY = "domain_ground_truth"

@@ -9,6 +9,7 @@ import structlog
 from jsonschema import ValidationError, validate
 from rasa.core import jobs
 from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
+from rasa.core.channels.voice_aware.utils import validate_voice_license_scope
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.shared.exceptions import RasaException
 from sanic import Blueprint, response
@@ -16,11 +17,6 @@ from sanic.exceptions import NotFound, SanicException, ServerError
 from sanic.request import Request
 from sanic.response import HTTPResponse
 
-from rasa.utils.licensing import (
-    PRODUCT_AREA,
-    VOICE_SCOPE,
-    validate_license_from_env,
-)
 
 logger = logging.getLogger(__name__)
 structlogger = structlog.get_logger()
@@ -28,17 +24,6 @@ structlogger = structlog.get_logger()
 CHANNEL_NAME = "audiocodes"
 KEEP_ALIVE_SECONDS = 120
 KEEP_ALIVE_EXPIRATION_FACTOR = 1.5
-
-
-def validate_voice_license_scope() -> None:
-    """Validate that the correct license scope is present."""
-    logger.info(
-        f"Validating current Rasa Pro license scope which must include "
-        f"the '{VOICE_SCOPE}' scope to use the voice channel."
-    )
-
-    voice_product_scope = PRODUCT_AREA + " " + VOICE_SCOPE
-    validate_license_from_env(product_area=voice_product_scope)
 
 
 class Unauthorized(SanicException):

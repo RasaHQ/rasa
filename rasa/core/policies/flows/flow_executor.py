@@ -2,12 +2,13 @@ from __future__ import annotations
 
 from typing import Any, Dict, Text, List, Optional
 
+import structlog
 from jinja2 import Template
-from rasa.dialogue_understanding.commands import CancelFlowCommand
-from rasa.dialogue_understanding.patterns.cancel import CancelPatternFlowStackFrame
+from pypred import Predicate
 from structlog.contextvars import (
     bound_contextvars,
 )
+
 from rasa.core.policies.flows.flow_exceptions import (
     FlowCircuitBreakerTrippedException,
     FlowException,
@@ -19,6 +20,20 @@ from rasa.core.policies.flows.flow_step_result import (
     FlowStepResult,
     PauseFlowReturnPrediction,
 )
+from rasa.dialogue_understanding.commands import CancelFlowCommand
+from rasa.dialogue_understanding.patterns.cancel import CancelPatternFlowStackFrame
+from rasa.dialogue_understanding.patterns.collect_information import (
+    CollectInformationPatternFlowStackFrame,
+)
+from rasa.dialogue_understanding.patterns.completed import (
+    CompletedPatternFlowStackFrame,
+)
+from rasa.dialogue_understanding.patterns.continue_interrupted import (
+    ContinueInterruptedPatternFlowStackFrame,
+)
+from rasa.dialogue_understanding.patterns.human_handoff import (
+    HumanHandoffPatternFlowStackFrame,
+)
 from rasa.dialogue_understanding.patterns.internal_error import (
     InternalErrorPatternFlowStackFrame,
 )
@@ -29,24 +44,13 @@ from rasa.dialogue_understanding.stack.frames import (
     DialogueStackFrame,
     UserFlowStackFrame,
 )
-from rasa.dialogue_understanding.patterns.collect_information import (
-    CollectInformationPatternFlowStackFrame,
-)
-from rasa.dialogue_understanding.patterns.completed import (
-    CompletedPatternFlowStackFrame,
-)
-from rasa.dialogue_understanding.patterns.continue_interrupted import (
-    ContinueInterruptedPatternFlowStackFrame,
-)
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
     FlowStackFrameType,
 )
 from rasa.dialogue_understanding.stack.utils import (
     top_user_flow_frame,
 )
-
-from pypred import Predicate
-
+from rasa.shared.constants import RASA_PATTERN_HUMAN_HANDOFF
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, SlotMappingType
 from rasa.shared.core.events import (
     Event,
@@ -56,6 +60,11 @@ from rasa.shared.core.events import (
     SlotSet,
 )
 from rasa.shared.core.flows import FlowsList
+from rasa.shared.core.flows.flow import (
+    END_STEP,
+    Flow,
+    FlowStep,
+)
 from rasa.shared.core.flows.flow_step_links import (
     StaticFlowStepLink,
     IfFlowStepLink,
@@ -71,17 +80,11 @@ from rasa.shared.core.flows.steps import (
     CollectInformationFlowStep,
     NoOperationFlowStep,
 )
-from rasa.shared.core.flows.flow import (
-    END_STEP,
-    Flow,
-    FlowStep,
-)
 from rasa.shared.core.flows.steps.collect import SlotRejection
 from rasa.shared.core.slots import Slot
 from rasa.shared.core.trackers import (
     DialogueStateTracker,
 )
-import structlog
 
 structlogger = structlog.get_logger()
 
@@ -483,7 +486,8 @@ def validate_collect_step(
     A collect step can be executed if either the `utter_ask` or the `action_ask` is
     defined in the domain. If neither is defined, the collect step can still be
     executed if the slot has an initial value defined in the domain, which would cause
-    the step to be skipped."""
+    the step to be skipped.
+    """
     slot = slots.get(step.collect)
     slot_has_initial_value_defined = slot and slot.initial_value is not None
     if (
@@ -583,102 +587,148 @@ def run_step(
     """
     initial_events: List[Event] = []
     if step == flow.first_step_in_flow():
-        initial_events.append(FlowStarted(flow.id))
+        initial_events.append(FlowStarted(flow.id, metadata=stack.current_context()))
 
     if isinstance(step, CollectInformationFlowStep):
-        is_step_valid = validate_collect_step(
-            step, stack, available_actions, tracker.slots
+        return _run_collect_information_step(
+            available_actions, initial_events, stack, step, tracker
         )
-        if not is_step_valid:
-            # if we return any other FlowStepResult, the assistant will stay silent
-            # instead of triggering the internal error pattern
-            return ContinueFlowWithNextStep(events=initial_events)
-
-        is_mapping_valid = validate_custom_slot_mappings(
-            step, stack, tracker, available_actions
-        )
-        if not is_mapping_valid:
-            # if we return any other FlowStepResult, the assistant will stay silent
-            # instead of triggering the internal error pattern
-            return ContinueFlowWithNextStep(events=initial_events)
-
-        structlogger.debug("flow.step.run.collect")
-        trigger_pattern_ask_collect_information(
-            step.collect, stack, step.rejections, step.utter, step.collect_action
-        )
-
-        events: List[Event] = events_for_collect_step_execution(step, tracker)
-        return ContinueFlowWithNextStep(events=initial_events + events)
 
     elif isinstance(step, ActionFlowStep):
         if not step.action:
             raise FlowException(f"Action not specified for step {step}")
-
-        context = {"context": stack.current_context()}
-        action_name = render_template_variables(step.action, context)
-
-        if action_name in available_actions:
-            structlogger.debug("flow.step.run.action", context=context)
-            return PauseFlowReturnPrediction(
-                FlowActionPrediction(action_name, 1.0, events=initial_events)
-            )
-        else:
-            if step.action != "validate_{{context.collect}}":
-                # do not log about non-existing validation actions of collect steps
-                utter_action_name = render_template_variables(
-                    "{{context.utter}}", context
-                )
-                if utter_action_name not in available_actions:
-                    structlogger.warning(
-                        "flow.step.run.action.unknown", action=action_name
-                    )
-            return ContinueFlowWithNextStep(events=initial_events)
+        return _run_action_step(available_actions, initial_events, stack, step)
 
     elif isinstance(step, LinkFlowStep):
-        structlogger.debug("flow.step.run.link")
-        stack.push(
-            UserFlowStackFrame(
-                flow_id=step.link,
-                frame_type=FlowStackFrameType.LINK,
-            ),
-            # push this below the current stack frame so that we can
-            # complete the current flow first and then continue with the
-            # linked flow
-            index=-1,
-        )
-        return ContinueFlowWithNextStep(events=initial_events)
+        return _run_link_step(initial_events, stack, step)
 
     elif isinstance(step, CallFlowStep):
-        structlogger.debug("flow.step.run.call")
-        stack.push(
-            UserFlowStackFrame(
-                flow_id=step.call,
-                frame_type=FlowStackFrameType.CALL,
-            ),
-        )
-        return ContinueFlowWithNextStep()
+        return _run_call_step(stack, step)
 
     elif isinstance(step, SetSlotsFlowStep):
-        structlogger.debug("flow.step.run.slot")
-        slot_events: List[Event] = events_from_set_slots_step(step)
-        return ContinueFlowWithNextStep(events=initial_events + slot_events)
+        return _run_set_slot_step(initial_events, step)
 
     elif isinstance(step, NoOperationFlowStep):
         structlogger.debug("flow.step.run.no_operation")
         return ContinueFlowWithNextStep(events=initial_events)
 
     elif isinstance(step, EndFlowStep):
-        # this is the end of the flow, so we'll pop it from the stack
-        structlogger.debug("flow.step.run.flow_end")
-        current_frame = stack.pop()
-        trigger_pattern_completed(current_frame, stack, flows)
-        resumed_events = trigger_pattern_continue_interrupted(
-            current_frame, stack, flows
-        )
-        reset_events: List[Event] = reset_scoped_slots(current_frame, flow, tracker)
-        return ContinueFlowWithNextStep(
-            events=initial_events + reset_events + resumed_events, has_flow_ended=True
-        )
+        return _run_end_step(flow, flows, initial_events, stack, tracker)
 
     else:
         raise FlowException(f"Unknown flow step type {type(step)}")
+
+
+def _run_end_step(
+    flow: Flow,
+    flows: FlowsList,
+    initial_events: List[Event],
+    stack: DialogueStack,
+    tracker: DialogueStateTracker,
+) -> FlowStepResult:
+    # this is the end of the flow, so we'll pop it from the stack
+    structlogger.debug("flow.step.run.flow_end")
+    current_frame = stack.pop()
+    trigger_pattern_completed(current_frame, stack, flows)
+    resumed_events = trigger_pattern_continue_interrupted(current_frame, stack, flows)
+    reset_events: List[Event] = reset_scoped_slots(current_frame, flow, tracker)
+    return ContinueFlowWithNextStep(
+        events=initial_events + reset_events + resumed_events, has_flow_ended=True
+    )
+
+
+def _run_set_slot_step(
+    initial_events: List[Event], step: SetSlotsFlowStep
+) -> FlowStepResult:
+    structlogger.debug("flow.step.run.slot")
+    slot_events: List[Event] = events_from_set_slots_step(step)
+    return ContinueFlowWithNextStep(events=initial_events + slot_events)
+
+
+def _run_call_step(stack: DialogueStack, step: CallFlowStep) -> FlowStepResult:
+    structlogger.debug("flow.step.run.call")
+    stack.push(
+        UserFlowStackFrame(
+            flow_id=step.call,
+            frame_type=FlowStackFrameType.CALL,
+        ),
+    )
+    return ContinueFlowWithNextStep()
+
+
+def _run_link_step(
+    initial_events: List[Event], stack: DialogueStack, step: LinkFlowStep
+) -> FlowStepResult:
+    structlogger.debug("flow.step.run.link")
+
+    if step.link == RASA_PATTERN_HUMAN_HANDOFF:
+        linked_stack_frame: DialogueStackFrame = HumanHandoffPatternFlowStackFrame()
+    else:
+        linked_stack_frame = UserFlowStackFrame(
+            flow_id=step.link,
+            frame_type=FlowStackFrameType.LINK,
+        )
+
+    stack.push(
+        linked_stack_frame,
+        # push this below the current stack frame so that we can
+        # complete the current flow first and then continue with the
+        # linked flow
+        index=-1,
+    )
+
+    return ContinueFlowWithNextStep(events=initial_events)
+
+
+def _run_action_step(
+    available_actions: List[str],
+    initial_events: List[Event],
+    stack: DialogueStack,
+    step: ActionFlowStep,
+) -> FlowStepResult:
+    context = {"context": stack.current_context()}
+    action_name = render_template_variables(step.action, context)
+
+    if action_name in available_actions:
+        structlogger.debug("flow.step.run.action", context=context)
+        return PauseFlowReturnPrediction(
+            FlowActionPrediction(action_name, 1.0, events=initial_events)
+        )
+    else:
+        if step.action != "validate_{{context.collect}}":
+            # do not log about non-existing validation actions of collect steps
+            utter_action_name = render_template_variables("{{context.utter}}", context)
+            if utter_action_name not in available_actions:
+                structlogger.warning("flow.step.run.action.unknown", action=action_name)
+        return ContinueFlowWithNextStep(events=initial_events)
+
+
+def _run_collect_information_step(
+    available_actions: List[str],
+    initial_events: List[Event],
+    stack: DialogueStack,
+    step: CollectInformationFlowStep,
+    tracker: DialogueStateTracker,
+) -> FlowStepResult:
+    is_step_valid = validate_collect_step(step, stack, available_actions, tracker.slots)
+
+    if not is_step_valid:
+        # if we return any other FlowStepResult, the assistant will stay silent
+        # instead of triggering the internal error pattern
+        return ContinueFlowWithNextStep(events=initial_events)
+    is_mapping_valid = validate_custom_slot_mappings(
+        step, stack, tracker, available_actions
+    )
+
+    if not is_mapping_valid:
+        # if we return any other FlowStepResult, the assistant will stay silent
+        # instead of triggering the internal error pattern
+        return ContinueFlowWithNextStep(events=initial_events)
+
+    structlogger.debug("flow.step.run.collect")
+    trigger_pattern_ask_collect_information(
+        step.collect, stack, step.rejections, step.utter, step.collect_action
+    )
+
+    events: List[Event] = events_for_collect_step_execution(step, tracker)
+    return ContinueFlowWithNextStep(events=initial_events + events)

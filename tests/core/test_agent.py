@@ -15,6 +15,7 @@ from sanic.request import Request
 from sanic.response import ResponseStream
 
 import rasa.core
+from rasa.core.constants import UTTER_SOURCE_METADATA_KEY
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.utils import AvailableEndpoints
 from rasa.exceptions import ModelNotFound
@@ -261,7 +262,10 @@ async def test_agent_handle_message_full_model(default_agent: Agent):
                     "image": None,
                     "custom": None,
                 },
-                {"utter_action": "utter_greet"},
+                {
+                    "utter_action": "utter_greet",
+                    UTTER_SOURCE_METADATA_KEY: "TemplatedNaturalLanguageGenerator",
+                },
             ),
             ActionExecuted(action_name="action_listen"),
         ],
@@ -322,7 +326,10 @@ async def test_agent_handle_message_only_core(trained_core_model: Text):
                     "image": None,
                     "custom": None,
                 },
-                {"utter_action": "utter_greet"},
+                {
+                    "utter_action": "utter_greet",
+                    UTTER_SOURCE_METADATA_KEY: "TemplatedNaturalLanguageGenerator",
+                },
             ),
             ActionExecuted(action_name="action_listen"),
         ],

@@ -36,13 +36,16 @@ import rasa.utils.io
 from rasa.shared.utils.yaml import (
     parse_raw_yaml,
     read_schema_file,
-    validate_yaml_content_using_schema,
+    validate_yaml_data_using_schema_with_assertions,
     is_key_in_yaml,
 )
+from rasa.utils.beta import BetaNotEnabledException, ensure_beta_feature_is_enabled
 
 DEFAULT_E2E_INPUT_TESTS_PATH = "tests/e2e_test_cases.yml"
 DEFAULT_E2E_OUTPUT_TESTS_PATH = "tests/e2e_results.yml"
 KEY_TEST_CASES = "test_cases"
+
+RASA_PRO_BETA_E2E_ASSERTIONS_ENV_VAR_NAME = "RASA_PRO_BETA_E2E_ASSERTIONS"
 
 logger = logging.getLogger(__name__)
 
@@ -220,9 +223,14 @@ def read_test_cases(path: Text) -> TestSuite:
     fixtures: Dict[Text, Fixture] = {}
     metadata: Dict[Text, Metadata] = {}
 
+    beta_flag_verified = False
+
     for test_file in test_files:
         test_file_content = parse_raw_yaml(Path(test_file).read_text())
-        validate_yaml_content_using_schema(test_file_content, e2e_test_schema)
+
+        validate_yaml_data_using_schema_with_assertions(
+            yaml_data=test_file_content, schema_content=e2e_test_schema
+        )
 
         test_cases_content = test_file_content.get(KEY_TEST_CASES) or []
 
@@ -237,6 +245,10 @@ def read_test_cases(path: Text) -> TestSuite:
                 TestCase.from_dict(test_case_dict, file=test_file)
                 for test_case_dict in test_cases_content
             ]
+
+        beta_flag_verified = verify_beta_feature_flag_for_assertions(
+            test_cases, beta_flag_verified
+        )
 
         input_test_cases.extend(test_cases)
         fixtures_content = test_file_content.get(KEY_FIXTURES) or []
@@ -354,34 +366,6 @@ def transform_results_output_to_yaml(yaml_string: Text) -> Text:
     return "".join(result)
 
 
-def pad(text: Text, char: Text = "=", min: int = 3) -> Text:
-    """Pad text to a certain length.
-
-    Uses `char` to pad the text to the specified length. If the text is longer
-    than the specified length, at least `min` are used.
-
-    The padding is applied to the left and right of the text (almost) equally.
-
-    Example:
-        >>> pad("Hello")
-        "========= Hello ========"
-        >>> pad("Hello", char="-")
-        "--------- Hello --------"
-
-    Args:
-        text: Text to pad.
-        min: Minimum length of the padding.
-        char: Character to pad with.
-
-    Returns:
-        Padded text.
-    """
-    width = shutil.get_terminal_size((80, 20)).columns
-    padding = max(width - len(text) - 2, min * 2)
-
-    return char * (padding // 2) + " " + text + " " + char * math.ceil(padding / 2)
-
-
 def color_difference(diff: List[Text]) -> Generator[Text, None, None]:
     """Colorize the difference between two strings.
 
@@ -422,9 +406,24 @@ def print_failed_case(fail: TestResult) -> None:
     fail_headline = (
         f"'{fail.test_case.name}' in {fail.test_case.file_with_line()} failed"
     )
-    rasa.shared.utils.cli.print_error(f"{pad(fail_headline, char='-')}\n")
-    print(f"Mismatch starting at {fail.test_case.file}:{fail.error_line}: \n")
-    rich.print(("\n".join(color_difference(fail.difference))))
+    rasa.shared.utils.cli.print_error(
+        f"{rasa.shared.utils.cli.pad(fail_headline, char='-')}\n"
+    )
+    rasa.shared.utils.cli.print_error(
+        f"Mismatch starting at {fail.test_case.file}:{fail.error_line}: \n"
+    )
+    if fail.difference:
+        rich.print(("\n".join(color_difference(fail.difference))))
+
+    if fail.assertion_failure:
+        rasa.shared.utils.cli.print_error(
+            f"Assertion type '{fail.assertion_failure.assertion.type()}' failed "
+            f"with this error message: {fail.assertion_failure.error_message}\n"
+        )
+        rasa.shared.utils.cli.print_error("Actual events transcript:\n")
+        rasa.shared.utils.cli.print_error(
+            "\n".join(fail.assertion_failure.actual_events_transcript)
+        )
 
 
 def print_test_summary(failed: List[TestResult]) -> None:
@@ -436,7 +435,9 @@ def print_test_summary(failed: List[TestResult]) -> None:
         =================== short test summary info ===================
         FAILED test.md::test
     """
-    rasa.shared.utils.cli.print_info(pad("short test summary info"))
+    rasa.shared.utils.cli.print_info(
+        rasa.shared.utils.cli.pad("short test summary info")
+    )
 
     for f in failed:
         rasa.shared.utils.cli.print_error(
@@ -493,7 +494,7 @@ def print_test_result(
     if failed:
         # print failure headline
         print("\n")
-        rich.print(f"[bold]{pad('FAILURES', char='=')}[/bold]")
+        rich.print(f"[bold]{rasa.shared.utils.cli.pad('FAILURES', char='=')}[/bold]")
 
     # print failed test_Case
     for fail in failed:
@@ -502,11 +503,15 @@ def print_test_result(
     print_test_summary(failed)
 
     if fail_fast:
-        rasa.shared.utils.cli.print_error(pad("stopping after 1 failure", char="!"))
+        rasa.shared.utils.cli.print_error(
+            rasa.shared.utils.cli.pad("stopping after 1 failure", char="!")
+        )
         has_failed = True
     elif len(failed) + len(passed) == 0:
         # no tests were run, print error
-        rasa.shared.utils.cli.print_error(pad("no test cases found", char="!"))
+        rasa.shared.utils.cli.print_error(
+            rasa.shared.utils.cli.pad("no test cases found", char="!")
+        )
         print_e2e_help()
         has_failed = True
     elif failed:
@@ -584,3 +589,34 @@ def read_e2e_test_schema() -> Union[List[Any], Dict[Text, Any]]:
         The content of the schema.
     """
     return read_schema_file(SCHEMA_FILE_PATH)
+
+
+def has_test_case_with_assertions(test_cases: List[TestCase]) -> bool:
+    """Check if the test cases contain assertions."""
+    try:
+        next(test_case for test_case in test_cases if test_case.uses_assertions())
+    except StopIteration:
+        return False
+
+    return True
+
+
+def verify_beta_feature_flag_for_assertions(
+    test_cases: List[TestCase], beta_flag_verified: bool
+) -> bool:
+    """Verify the beta feature flag for assertions."""
+    if beta_flag_verified:
+        return True
+
+    if not has_test_case_with_assertions(test_cases):
+        return beta_flag_verified
+
+    try:
+        ensure_beta_feature_is_enabled(
+            "end-to-end testing with assertions",
+            RASA_PRO_BETA_E2E_ASSERTIONS_ENV_VAR_NAME,
+        )
+    except BetaNotEnabledException as exc:
+        rasa.shared.utils.cli.print_error_and_exit(str(exc))
+
+    return True

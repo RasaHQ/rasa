@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import List, Text
 
-
 DOCS_BASE_URL = "https://rasa.com/docs/rasa-pro"
 DOCS_URL_CONCEPTS = DOCS_BASE_URL + "/concepts"
 DOCS_URL_NLU_BASED = DOCS_BASE_URL + "/nlu-based-assistants"
@@ -51,6 +50,8 @@ MODEL_CONFIG_SCHEMA_FILE = "shared/utils/schemas/model_config.yml"
 CONFIG_SCHEMA_FILE = "shared/utils/schemas/config.yml"
 RESPONSES_SCHEMA_FILE = "shared/nlu/training_data/schemas/responses.yml"
 SCHEMA_EXTENSIONS_FILE = "shared/utils/pykwalify_extensions.py"
+ASSERTIONS_SCHEMA_FILE = "e2e_test/assertions_schema.yml"
+ASSERTIONS_SCHEMA_EXTENSIONS_FILE = "e2e_test/pykwalify_extensions.py"
 LATEST_TRAINING_DATA_FORMAT_VERSION = "3.1"
 
 DOMAIN_SCHEMA_FILE = "shared/utils/schemas/domain.yml"
@@ -83,6 +84,8 @@ ENV_LOG_LEVEL_LLM_MODULE_NAMES = {
     "EnterpriseSearchPolicy": "LOG_LEVEL_LLM_ENTERPRISE_SEARCH",
     "IntentlessPolicy": "LOG_LEVEL_LLM_INTENTLESS_POLICY",
     "ContextualResponseRephraser": "LOG_LEVEL_LLM_REPHRASER",
+    "NLUCommandAdapter": "LOG_LEVEL_NLU_COMMAND_ADAPTER",
+    "LLMBasedRouter": "LOG_LEVEL_LLM_BASED_ROUTER",
 }
 TCP_PROTOCOL = "TCP"
 
@@ -161,9 +164,11 @@ LANGCHAIN_TYPE_CONFIG_KEY = "_type"
 REQUESTS_CA_BUNDLE_ENV_VAR = "REQUESTS_CA_BUNDLE"
 REQUESTS_SSL_CONTEXT_PURPOSE_ENV_VAR = "REQUESTS_SSL_CONTEXT_PURPOSE"
 
-
 RASA_DEFAULT_FLOW_PATTERN_PREFIX = "pattern_"
 CONTEXT = "context"
+
+RASA_PATTERN_INTERNAL_ERROR = "pattern_internal_error"
+RASA_PATTERN_HUMAN_HANDOFF = "pattern_human_handoff"
 
 RASA_INTERNAL_ERROR_PREFIX = "rasa_internal_error_"
 RASA_PATTERN_INTERNAL_ERROR_DEFAULT = RASA_INTERNAL_ERROR_PREFIX + "default"

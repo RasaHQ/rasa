@@ -1124,7 +1124,9 @@ class TestMultiStepLLMCommandGeneratorPredictCommandsErrorHandling:
         )
 
         # Then
-        assert predicted_commands == [ErrorCommand()]
+        assert len(predicted_commands) == 2
+        assert ErrorCommand() in predicted_commands
+        assert SetSlotCommand(ROUTE_TO_CALM_SLOT, True) in predicted_commands
 
     async def test_predict_commands_for_active_flow_raises_an_exception(
         self,
@@ -1152,7 +1154,9 @@ class TestMultiStepLLMCommandGeneratorPredictCommandsErrorHandling:
         )
 
         # Then
-        assert predicted_commands == [ErrorCommand()]
+        assert len(predicted_commands) == 2
+        assert ErrorCommand() in predicted_commands
+        assert SetSlotCommand(ROUTE_TO_CALM_SLOT, True) in predicted_commands
 
     async def test_predict_commands_for_handling_flows_raises_an_exception(
         self,
@@ -1182,7 +1186,9 @@ class TestMultiStepLLMCommandGeneratorPredictCommandsErrorHandling:
         )
 
         # Then
-        assert predicted_commands == [ErrorCommand()]
+        assert len(predicted_commands) == 2
+        assert ErrorCommand() in predicted_commands
+        assert SetSlotCommand(ROUTE_TO_CALM_SLOT, True) in predicted_commands
 
     async def test_predict_commands_for_newly_started_flows_raises_an_exception(
         self,
@@ -1212,4 +1218,6 @@ class TestMultiStepLLMCommandGeneratorPredictCommandsErrorHandling:
         )
 
         # Then
-        assert predicted_commands == [ErrorCommand()]
+        assert len(predicted_commands) == 2
+        assert ErrorCommand() in predicted_commands
+        assert SetSlotCommand(ROUTE_TO_CALM_SLOT, True) in predicted_commands
