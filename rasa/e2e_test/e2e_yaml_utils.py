@@ -5,7 +5,7 @@ from typing import Any
 import ruamel
 import structlog
 
-from rasa.cli.e2e_test import KEY_TEST_CASES
+from rasa.e2e_test.constants import KEY_TEST_CASES
 
 structlogger = structlog.get_logger()
 

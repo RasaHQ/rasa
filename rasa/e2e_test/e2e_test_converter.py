@@ -14,6 +14,7 @@ import structlog
 from jinja2 import Template
 from ruamel.yaml.scanner import ScannerError
 
+from rasa.e2e_test.constants import KEY_TEST_CASES
 from rasa.cli.e2e_test import read_e2e_test_schema
 from rasa.exceptions import RasaException
 from rasa.shared.utils.llm import llm_factory
@@ -28,7 +29,6 @@ DEFAULT_E2E_OUTPUT_TESTS_DIRECTORY = "e2e_tests"
 DEFAULT_E2E_TEST_GENERATOR_PROMPT_TEMPLATE = importlib.resources.read_text(
     "rasa.e2e_test", "e2e_test_converter_prompt.jinja2"
 )
-e2e_schema = read_e2e_test_schema()
 
 CSV = ".csv"
 XLSX = ".xlsx"
@@ -119,9 +119,10 @@ class E2ETestConverter:
             bool: True if valid, False otherwise
         """
         try:
+            e2e_schema = read_e2e_test_schema()
             yaml_data = ruamel.yaml.safe_load(yaml_string)
             validate_yaml_data_using_schema_with_assertions(
-                yaml_data={"test_cases": yaml_data}, schema_content=e2e_schema
+                yaml_data={KEY_TEST_CASES: yaml_data}, schema_content=e2e_schema
             )
             return True
         except (YamlValidationException, ScannerError) as exc:
