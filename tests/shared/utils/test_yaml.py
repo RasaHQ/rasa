@@ -862,3 +862,81 @@ def test_flow_next_is_not_a_step():
         "Not a valid 'next' definition. Expected else block or if-then block."
         in validate_and_return_error_msg(flow)
     )
+
+
+@pytest.mark.parametrize(
+    "faulty_yaml, expected_error_line",
+    [
+        (
+            """flows:
+  say_goodbye:
+    description: Start this flow when a person says bye/goodbye
+    name:
+    steps:
+      - action: cancel_flow
+      - action: utter_flow_canceled_rasa
+      - action: utter_goodbye""",
+            4,
+        ),
+        (
+            """flows:
+  say_goodbye:
+    description: Start this flow when a person says bye/goodbye
+    steps:
+      - action: utter_goodbye
+      - action: utter_goodbye
+    name: asd
+  say_error:""",
+            8,
+        ),
+        (
+            """flows:
+  say_goodbye:
+    steps:
+      - action: utter_goodbye
+      - action: utter_goodbye
+    description: Start this flow when a person says bye/goodbye
+    name: asd
+  say_error:""",
+            8,
+        ),
+        (
+            """flows:
+  say_goodbye:
+    description: Start this flow when a person says bye/goodbye
+    name: asd
+    steps:
+      - action: utter_goodbye
+      - action: utter_goodbye
+  say_error:""",
+            8,
+        ),
+        (
+            """flows:
+  say_goodbye:
+    description: Start this flow when a person says bye/goodbye
+    name: asd
+    steps:
+      - action: utter_goodbye
+      - action: utter_goodbye
+  say_error:
+    name: asd
+    steps:
+      - action: utter_goodbye
+    description:
+    """,
+            12,
+        ),
+    ],
+)
+def test_yaml_validation_exception_line_number(
+    faulty_yaml: str, expected_error_line: int
+):
+    with pytest.raises(YamlValidationException) as e:
+        validate_yaml_with_jsonschema(
+            faulty_yaml,
+            FLOWS_SCHEMA_FILE,
+            humanize_error=YAMLFlowsReader.humanize_flow_error,
+        )
+
+    assert f"in Line {expected_error_line}" in str(e.value)

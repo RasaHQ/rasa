@@ -144,27 +144,34 @@ class YamlValidationException(YamlException, ValueError):
         return msg
 
     def _calculate_number_of_lines(
-        self, current: Any, target: Optional[str] = None
+        self,
+        current: Union[List[Dict[str, Any]], Dict[str, Any]],
+        target: Optional[str] = None,
     ) -> Tuple[int, bool]:
         """Counts the lines that are missing due to the ruamel yaml parser logic.
 
         Since not all nodes returned from the ruamel yaml parser
         have line numbers attached (arrays have them, dicts have
         them, but strings don't), this method calculates the number
-        of lines that are missing when just returning line of the parent element
+        of lines that are missing instead of just returning line of the parent element
 
         Args:
         current: current content
         target: target key to find the line number of
 
         Returns:
-            The schema as a dictionary.
+            A tuple containing a number of missing lines
+            and a flag indicating if an element with a line number was found
         """
         if isinstance(current, list):
-            return current[-1].lc.line + 1, True
+            # return the line number of the last list element
+            line_number = current[-1].lc.line + 1
+            logger.debug(f"Returning from list: last element at {line_number}")
+            return line_number, True
 
         keys_to_check = list(current.keys())
         if target:
+            # If target is specified, only check keys before it
             keys_to_check = keys_to_check[: keys_to_check.index(target)]
         try:
             # find the last key that has a line number attached
@@ -177,13 +184,16 @@ class YamlValidationException(YamlException, ValueError):
                     ]
                 )
             )
+            logger.debug(f"Last key with line number: {last_key_with_lc}")
         except StopIteration:
             # otherwise return the number of elements on that level up to the target
+            logger.debug(f"No line number found in {current}")
             if target:
                 return list(current.keys()).index(target), False
             return len(list(current.keys())), False
 
         offset = current[last_key_with_lc].lc.line if not target else 0
+        # Recursively calculate the number of lines for the element associated with the last key with a line number
         child_offset, found_lc = self._calculate_number_of_lines(
             current[last_key_with_lc]
         )
@@ -191,9 +201,12 @@ class YamlValidationException(YamlException, ValueError):
             child_offset += offset
         if target:
             child_offset += 1
+        # add the number of trailing keys without line numbers to the offset
         last_idx_with_lc = keys_to_check.index(last_key_with_lc)
         child_offset += len(keys_to_check[last_idx_with_lc + 1 :])
 
+        logger.debug(f"Analysed {current}, found {child_offset} lines")
+        # Return the calculated child offset and True indicating a line number was found
         return child_offset, True
 
     def _line_number_for_path(self, current: Any, path: List[str]) -> Optional[int]:
