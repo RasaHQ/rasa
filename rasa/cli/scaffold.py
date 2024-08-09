@@ -213,8 +213,9 @@ def run(args: argparse.Namespace) -> None:
     print_success("Welcome to Rasa! 🤖\n")
     print(
         "By installing and using this software, you agree to be bound by the terms "
-        "and conditions of the End-User License Agreement (EULA) available at "
-        "https://rasa.com/eula. Please review the EULA carefully before proceeding.\n"
+        "and conditions of the Developer Terms available at "
+        "https://rasa.com/developer-terms. "
+        "Please review the Developer Terms carefully before proceeding.\n"
     )
     if args.no_prompt:
         print(
