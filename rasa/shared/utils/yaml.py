@@ -18,6 +18,7 @@ from dataclasses import field
 from ruamel.yaml import RoundTripRepresenter, YAMLError
 from ruamel.yaml.constructor import DuplicateKeyError, BaseConstructor, ScalarNode
 from ruamel import yaml as yaml
+from ruamel.yaml.comments import CommentedSeq, CommentedMap
 
 from rasa.shared.utils.constants import DEFAULT_ENCODING
 from rasa.shared.utils.io import (
@@ -145,7 +146,7 @@ class YamlValidationException(YamlException, ValueError):
 
     def _calculate_number_of_lines(
         self,
-        current: Union[List[Dict[str, Any]], Dict[str, Any]],
+        current: Union[CommentedSeq, CommentedMap],
         target: Optional[str] = None,
     ) -> Tuple[int, bool]:
         """Counts the lines that are missing due to the ruamel yaml parser logic.
