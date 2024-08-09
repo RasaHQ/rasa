@@ -4,15 +4,11 @@ from pathlib import Path
 from typing import Callable
 from unittest.mock import patch, Mock
 
-import pytest
 from _pytest.fixtures import FixtureRequest
 from _pytest.pytester import RunResult
 
 from rasa.cli.data import convert_data_to_e2e_tests
-from rasa.e2e_test.e2e_test_converter import E2ETestConverter
-from rasa.e2e_test.e2e_yaml_utils import E2ETestYAMLWriter
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
-from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.training_data.formats import RasaYAMLReader
 from rasa.shared.utils.yaml import read_yaml_file
 from tests.cli.conftest import RASA_EXE
