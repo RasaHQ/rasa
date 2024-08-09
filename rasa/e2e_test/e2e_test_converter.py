@@ -307,11 +307,21 @@ class E2ETestConverter:
         yaml_test_case = ""
         prompt_template = self.render_template(conversation)
 
-        for _ in range(NUMBER_OF_LLM_ATTEMPTS):
+        for idx in range(NUMBER_OF_LLM_ATTEMPTS):
             response = await self.generate_llm_response(prompt_template)
             yaml_test_case = self.remove_markdown_code_syntax(response)
             if not self.is_yaml_valid(yaml_test_case):
-                structlogger.debug("e2e_test_generator.invalid_yaml_format")
+                if idx < NUMBER_OF_LLM_ATTEMPTS - 1:
+                    event_info = "Invalid YAML format. Retrying the request."
+                else:
+                    event_info = (
+                        "Invalid YAML format. Failed to convert the "
+                        "conversation into a test case."
+                    )
+                structlogger.debug(
+                    "e2e_test_generator.invalid_yaml_format",
+                    event_info=event_info,
+                )
                 continue
             break
 
