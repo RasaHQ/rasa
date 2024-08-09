@@ -193,7 +193,8 @@ class YamlValidationException(YamlException, ValueError):
             return len(list(current.keys())), False
 
         offset = current[last_key_with_lc].lc.line if not target else 0
-        # Recursively calculate the number of lines for the element associated with the last key with a line number
+        # Recursively calculate the number of lines
+        # for the element associated with the last key with a line number
         child_offset, found_lc = self._calculate_number_of_lines(
             current[last_key_with_lc]
         )
