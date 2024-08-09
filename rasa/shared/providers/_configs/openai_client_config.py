@@ -53,6 +53,14 @@ class OpenAIClientConfig:
                 api_type=self.api_type,
             )
             raise ValueError(message)
+        if self.model is None:
+            message = "Model cannot be set to None."
+            structlogger.error(
+                "openai_client_config.validation_error",
+                message=message,
+                model=self.model,
+            )
+            raise ValueError(message)
 
     @classmethod
     def from_dict(cls, config: dict) -> "OpenAIClientConfig":
@@ -68,7 +76,11 @@ class OpenAIClientConfig:
         Returns:
             AzureOpenAIClientConfig
         """
-        config = cls._process_config(config)
+        # Check for deprecated keys
+        _raise_deprecation_warnings(config)
+        # Resolve any potential aliases
+        config = _resolve_aliases(config)
+        # Validate that the required keys are present
         cls._validate_required_keys(config)
         this = OpenAIClientConfig(
             # Required parameters
@@ -86,14 +98,6 @@ class OpenAIClientConfig:
     def to_dict(self) -> dict:
         """Converts the config instance into a dictionary."""
         return asdict(self)
-
-    @staticmethod
-    def _process_config(config: dict) -> dict:
-        # Check for deprecated keys
-        _raise_deprecation_warnings(config)
-        # Resolve any potential aliases
-        config = _resolve_aliases(config)
-        return config
 
     @staticmethod
     def _validate_required_keys(config: dict) -> None:
@@ -120,7 +124,8 @@ class OpenAIClientConfig:
 
 def _resolve_aliases(config: dict) -> dict:
     """
-    Process the configuration for the OpenAI llm/embedding client.
+    Resolves all the aliases in the configuration for the OpenAI llm/embedding
+    client. It does not add new keys if the keys were not previously defined.
 
     Args:
         config: Dictionary containing the configuration.
@@ -132,17 +137,21 @@ def _resolve_aliases(config: dict) -> dict:
     config = config.copy()
 
     # Use `model` and if there are any aliases replace them
-    config[MODEL_KEY] = config.get(MODEL_NAME_KEY) or config.get(MODEL_KEY)
+    model = config.get(MODEL_NAME_KEY) or config.get(MODEL_KEY)
+    if model is not None:
+        config[MODEL_KEY] = model
 
     # Use `api_type` and if there are any aliases replace them
     # In reality, LiteLLM is not using this at all
     # It's here for backward compatibility
-    config[OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY] = (
+    api_type = (
         config.get(OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY)
         or config.get(OPENAI_API_TYPE_CONFIG_KEY)
         or config.get(RASA_TYPE_CONFIG_KEY)
         or config.get(LANGCHAIN_TYPE_CONFIG_KEY)
     )
+    if api_type is not None:
+        config[OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY] = api_type
 
     # Use `api_base` and if there are any aliases replace them
     api_base = config.get(OPENAI_API_BASE_NO_PREFIX_CONFIG_KEY) or config.get(
@@ -158,7 +167,7 @@ def _resolve_aliases(config: dict) -> dict:
     if api_version is not None:
         config[OPENAI_API_VERSION_NO_PREFIX_CONFIG_KEY] = api_version
 
-    # Pop the keys so there are no duplicates
+    # Pop the alias keys so there are no duplicates
     for key in [
         MODEL_NAME_KEY,
         OPENAI_API_BASE_CONFIG_KEY,

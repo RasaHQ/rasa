@@ -1,8 +1,10 @@
-from pytest import MonkeyPatch
-from unittest.mock import patch
 import os
+from unittest.mock import patch
+
+import litellm
 import pytest
 import structlog
+from pytest import MonkeyPatch
 
 from rasa.shared.constants import (
     AZURE_API_BASE_ENV_VAR,
@@ -14,10 +16,10 @@ from rasa.shared.constants import (
     OPENAI_API_VERSION_ENV_VAR,
 )
 from rasa.shared.exceptions import ProviderClientValidationError
-from rasa.shared.providers.embedding.embedding_client import EmbeddingClient
 from rasa.shared.providers.embedding.azure_openai_embedding_client import (
     AzureOpenAIEmbeddingClient,
 )
+from rasa.shared.providers.embedding.embedding_client import EmbeddingClient
 from tests.utilities import filter_logs
 
 
@@ -35,20 +37,17 @@ class TestAzureOpenAIEmbeddingClient:
         return AzureOpenAIEmbeddingClient.from_config(config)
 
     @pytest.fixture
-    def mock_response_obj(self) -> object:
-        class MockResponse:
-            def __init__(self):
-                self.data = [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]
-                self.model = "gpt-2024"
-                self.usage = {
-                    "model_extra": {
-                        "prompt_tokens": 10,
-                        "completion_tokens": 20,
-                        "total_tokens": 30,
-                    }
-                }
-
-        return MockResponse()
+    def embedding_response(self) -> litellm.EmbeddingResponse:
+        return litellm.EmbeddingResponse(
+            model="gpt-2024",
+            data=[
+                {"embedding": [0.1, 0.2, 0.3], "index": 0, "object": "embedding"},
+                {"embedding": [0.4, 0.5, 0.6], "index": 1, "object": "embedding"},
+            ],
+            usage=litellm.Usage(
+                prompt_tokens=10, completion_tokens=20, total_tokens=30
+            ),
+        )
 
     def test_config(self, client: AzureOpenAIEmbeddingClient) -> None:
         assert client.config == {
@@ -87,6 +86,7 @@ class TestAzureOpenAIEmbeddingClient:
             "api_type": "azure",
             "api_version": "v1",
             "model": "azure/some_azure_deployment",
+            # API key is added through environment variable
             "api_key": "my key",
         }
 
@@ -116,7 +116,7 @@ class TestAzureOpenAIEmbeddingClient:
     def test_azure_openai_embedding_client_embed(
         self,
         client: AzureOpenAIEmbeddingClient,
-        mock_response_obj: object,
+        embedding_response: litellm.EmbeddingResponse,
         monkeypatch: MonkeyPatch,
     ) -> None:
         # Given
@@ -126,7 +126,7 @@ class TestAzureOpenAIEmbeddingClient:
         # When
         with patch(
             "rasa.shared.providers.embedding._base_litellm_embedding_client.embedding",
-            return_value=mock_response_obj,
+            return_value=embedding_response,
         ):
             response = client.embed([test_doc])
 
@@ -140,7 +140,7 @@ class TestAzureOpenAIEmbeddingClient:
     async def test_azure_openai_embedding_client_aembed(
         self,
         client: AzureOpenAIEmbeddingClient,
-        mock_response_obj: object,
+        embedding_response: litellm.EmbeddingResponse,
         monkeypatch: MonkeyPatch,
     ) -> None:
         # Given
@@ -150,7 +150,7 @@ class TestAzureOpenAIEmbeddingClient:
         # When
         with patch(
             "rasa.shared.providers.embedding._base_litellm_embedding_client.aembedding",
-            return_value=mock_response_obj,
+            return_value=embedding_response,
         ):
             response = await client.aembed([test_doc])
 
@@ -235,7 +235,7 @@ class TestAzureOpenAIEmbeddingClient:
     ) -> None:
         # Given
         # Did not set the required environment variables
-        # api_base, api_key, api_type, api_version
+        # api_base, api_key, api_version
         config = {
             "deployment": "some_azure_deployment",
             "api_type": "azure",

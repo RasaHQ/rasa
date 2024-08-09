@@ -57,6 +57,14 @@ class AzureOpenAIClientConfig:
                 api_type=self.api_type,
             )
             raise ValueError(message)
+        if self.deployment is None:
+            message = "Deployment cannot be set to None."
+            structlogger.error(
+                "azure_openai_client_config.validation_error",
+                message=message,
+                deployment=self.deployment,
+            )
+            raise ValueError(message)
 
     @classmethod
     def from_dict(cls, config: dict) -> "AzureOpenAIClientConfig":
@@ -74,7 +82,11 @@ class AzureOpenAIClientConfig:
         Returns:
             AzureOpenAIClientConfig
         """
-        config = cls._process_config(config)
+        # Check for deprecated keys
+        _raise_deprecation_warnings(config)
+        # Resolve any potential aliases
+        config = _resolve_aliases(config)
+        # Validate that required keys are set
         cls._validate_required_keys(config)
         this = AzureOpenAIClientConfig(
             # Required parameters
@@ -95,14 +107,6 @@ class AzureOpenAIClientConfig:
     def to_dict(self) -> dict:
         """Converts the config instance into a dictionary."""
         return asdict(self)
-
-    @staticmethod
-    def _process_config(config: dict) -> dict:
-        # Check for deprecated keys
-        _raise_deprecation_warnings(config)
-        # Resolve any potential aliases
-        config = _resolve_aliases(config)
-        return config
 
     @staticmethod
     def _validate_required_keys(config: dict) -> None:
@@ -140,6 +144,8 @@ def _resolve_aliases(config: dict) -> dict:
     maintaining backward compatibility and avoids modifying the original
     dictionary to ensure consistency across multiple usages.
 
+    It does not add new keys if the keys were not previously defined.
+
     Args:
         config: Dictionary containing the configuration.
     Returns:
@@ -151,21 +157,25 @@ def _resolve_aliases(config: dict) -> dict:
     config = config.copy()
 
     # Use `deployment` and if there are any aliases replace them
-    config[OPENAI_DEPLOYMENT_CONFIG_KEY] = (
+    deployment = (
         config.get(OPENAI_DEPLOYMENT_NAME_CONFIG_KEY)
         or config.get(OPENAI_DEPLOYMENT_CONFIG_KEY)
         or config.get(OPENAI_ENGINE_CONFIG_KEY)
     )
+    if deployment is not None:
+        config[OPENAI_DEPLOYMENT_CONFIG_KEY] = deployment
 
     # Use `api_type` and if there are any aliases replace them
     # In reality, LiteLLM is not using this at all
     # It's here for backward compatibility
-    config[OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY] = (
+    api_type = (
         config.get(OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY)
         or config.get(OPENAI_API_TYPE_CONFIG_KEY)
         or config.get(RASA_TYPE_CONFIG_KEY)
         or config.get(LANGCHAIN_TYPE_CONFIG_KEY)
     )
+    if api_type is not None:
+        config[OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY] = api_type
 
     # Use `model` and if there are any aliases replace them
     # In reality, LiteLLM is not using this at all

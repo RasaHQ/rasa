@@ -1,6 +1,9 @@
 from typing import Dict, Any
 
 from rasa.shared.constants import MODEL_KEY
+from rasa.shared.providers._configs.default_litellm_client_config import (
+    DefaultLiteLLMClientConfig,
+)
 from rasa.shared.providers.llm._base_litellm_client import _BaseLiteLLMClient
 
 
@@ -27,10 +30,11 @@ class DefaultLiteLLMClient(_BaseLiteLLMClient):
 
     @classmethod
     def from_config(cls, config: Dict[str, Any]) -> "DefaultLiteLLMClient":
+        default_config = DefaultLiteLLMClientConfig.from_dict(config)
         return cls(
-            model=config.pop(MODEL_KEY),
+            model=default_config.model,
             # Pass the rest of the configuration as extra parameters
-            **config,
+            **default_config.extra_parameters,
         )
 
     @property

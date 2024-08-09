@@ -77,7 +77,7 @@ class OpenAIEmbeddingClient(_BaseLiteLLMEmbeddingClient):
                 original_error=e,
             )
             raise
-        openai_config = OpenAIClientConfig.from_dict(config)
+
         return cls(
             model=openai_config.model,
             api_base=openai_config.api_base,

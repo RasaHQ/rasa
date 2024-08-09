@@ -35,6 +35,9 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import TEXT, FLOWS_FROM_SEMANTIC_SEARCH
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.exceptions import ProviderClientAPIException
+from rasa.shared.providers.embedding._langchain_embedding_client_adapter import (
+    _LangchainEmbeddingClientAdapter,
+)
 from rasa.shared.utils.llm import (
     tracker_as_readable_transcript,
     embedder_factory,
@@ -171,9 +174,10 @@ class FlowRetrieval:
         Returns:
             The embedder.
         """
-        return embedder_factory(
+        client = embedder_factory(
             config.get(EMBEDDINGS_CONFIG_KEY), DEFAULT_EMBEDDINGS_CONFIG
         )
+        return _LangchainEmbeddingClientAdapter(client)
 
     def persist(self) -> None:
         self._persist_vector_store()

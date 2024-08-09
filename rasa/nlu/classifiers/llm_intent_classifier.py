@@ -8,7 +8,7 @@ from langchain.chains.llm import LLMChain
 from langchain.docstore.document import Document
 from langchain.prompts import PromptTemplate
 from langchain_community.vectorstores.faiss import FAISS
-
+from langchain_core.embeddings.embeddings import Embeddings
 from rasa import telemetry
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
@@ -27,6 +27,9 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.providers.embedding._langchain_embedding_client_adapter import (
+    _LangchainEmbeddingClientAdapter,
+)
 from rasa.shared.utils.io import deep_container_fingerprint
 from rasa.shared.utils.llm import (
     DEFAULT_OPENAI_GENERATE_MODEL_NAME,
@@ -171,9 +174,7 @@ class LLMIntentClassifier(GraphComponent, IntentClassifier):
             for ex in training_data.intent_examples
         ]
 
-        embedder = embedder_factory(
-            self.component_config.get(EMBEDDINGS_CONFIG_KEY), DEFAULT_EMBEDDINGS_CONFIG
-        )
+        embedder = self._create_embedder(self.component_config)
 
         self.example_docsearch = (
             FAISS.from_texts(texts, embedder, metadatas) if texts else None
@@ -475,9 +476,8 @@ class LLMIntentClassifier(GraphComponent, IntentClassifier):
         available_intents = None
         prompt_template = None
 
-        embedder = embedder_factory(
-            config.get(EMBEDDINGS_CONFIG_KEY), DEFAULT_EMBEDDINGS_CONFIG
-        )
+        embedder = cls._create_embedder(config)
+
         try:
             with model_storage.read_from(resource) as path:
                 example_docsearch = load_faiss_vector_store(
@@ -517,3 +517,10 @@ class LLMIntentClassifier(GraphComponent, IntentClassifier):
             DEFAULT_INTENT_CLASSIFICATION_PROMPT_TEMPLATE,
         )
         return deep_container_fingerprint(prompt_template)
+
+    @classmethod
+    def _create_embedder(cls, config: Dict[Text, Any]) -> Embeddings:
+        client = embedder_factory(
+            config.get(EMBEDDINGS_CONFIG_KEY), DEFAULT_EMBEDDINGS_CONFIG
+        )
+        return _LangchainEmbeddingClientAdapter(client)

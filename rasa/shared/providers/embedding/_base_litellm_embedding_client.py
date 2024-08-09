@@ -1,6 +1,7 @@
 from abc import abstractmethod
 from typing import Any, Dict, List
 
+import litellm
 import structlog
 from litellm import aembedding, embedding, validate_environment
 
@@ -43,6 +44,12 @@ class _BaseLiteLLMEmbeddingClient:
 
     @property
     @abstractmethod
+    def _litellm_model_name(self) -> str:
+        """Returns the model name in LiteLLM format based on the Provider/API type."""
+        pass
+
+    @property
+    @abstractmethod
     def _litellm_extra_parameters(self) -> Dict[str, Any]:
         """Returns a dictionary of extra parameters which include model
         parameters as well as LiteLLM specific input parameters.
@@ -54,13 +61,10 @@ class _BaseLiteLLMEmbeddingClient:
     @abstractmethod
     def _embedding_fn_args(self) -> Dict[str, Any]:
         """Returns the arguments to be passed to the embedding function."""
-        pass
-
-    @property
-    @abstractmethod
-    def _litellm_model_name(self) -> str:
-        """Returns the model name in LiteLLM format based on the Provider/API type."""
-        pass
+        return {
+            **self._litellm_extra_parameters,
+            "model": self._litellm_model_name,
+        }
 
     def validate_client_setup(self) -> None:
         """Perform client validation. By default only environment variables
@@ -161,30 +165,61 @@ class _BaseLiteLLMEmbeddingClient:
                 message="Failed to embed documents", original_exception=e
             )
 
-    def _format_response(self, response: Any) -> EmbeddingResponse:
-        """Parses the LiteLLM response to Rasa format."""
+    def _format_response(
+        self, response: litellm.EmbeddingResponse
+    ) -> EmbeddingResponse:
+        """Parses the LiteLLM EmbeddingResponse to Rasa format.
+
+        Raises:
+            ValueError: If any response data is None.
+        """
+
+        # If data is not available (None), raise a ValueError
+        if response.data is None:
+            message = (
+                "Failed to embed documents. Received 'None' " "instead of embeddings."
+            )
+            structlogger.error(
+                "base_litellm_client.format_response.data_is_none",
+                message=message,
+                response=response.to_dict(),
+            )
+            raise ValueError(message)
+
+        # Sort the embeddings by the "index" key
+        response.data.sort(key=lambda x: x["index"])
+        # Extract the embedding vectors
+        embeddings = [data["embedding"] for data in response.data]
         formatted_response = EmbeddingResponse(
-            data=response.data,
+            data=embeddings,
             model=response.model,
         )
-        if response.usage and (usage := response.usage.get("model_extra")) is not None:
-            formatted_response.usage = EmbeddingUsage(
-                completion_tokens=(
-                    num_tokens
-                    if isinstance(num_tokens := usage.get("completion_tokens", 0), int)
-                    else 0
-                ),
-                prompt_tokens=(
-                    num_tokens
-                    if isinstance(num_tokens := usage.get("prompt_tokens", 0), int)
-                    else 0
-                ),
-                total_tokens=(
-                    num_tokens
-                    if isinstance(num_tokens := usage.get("total_tokens", 0), int)
-                    else 0
-                ),
+
+        # Process additional usage information if available
+        if response.usage:
+            completion_tokens = (
+                response.usage.completion_tokens
+                if hasattr(response.usage, "completion_tokens")
+                else 0
             )
+            prompt_tokens = (
+                response.usage.prompt_tokens
+                if hasattr(response.usage, "prompt_tokens")
+                else 0
+            )
+            total_tokens = (
+                response.usage.total_tokens
+                if hasattr(response.usage, "total_tokens")
+                else 0
+            )
+
+            formatted_response.usage = EmbeddingUsage(
+                completion_tokens=completion_tokens,
+                prompt_tokens=prompt_tokens,
+                total_tokens=total_tokens,
+            )
+
+        # Log the response with masked data for brevity
         log_response = formatted_response.to_dict()
         log_response["data"] = "Embedding response data not shown here for brevity."
         structlogger.debug(

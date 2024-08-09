@@ -1,7 +1,9 @@
-from pytest import MonkeyPatch
-from unittest.mock import patch
 import os
+from unittest.mock import patch
+
+import litellm
 import pytest
+from pytest import MonkeyPatch
 
 from rasa.shared.constants import (
     OPENAI_API_BASE_ENV_VAR,
@@ -29,20 +31,17 @@ class TestOpenAIEmbeddingClient:
         return OpenAIEmbeddingClient.from_config(config)
 
     @pytest.fixture
-    def mock_response_obj(self) -> object:
-        class MockResponse:
-            def __init__(self):
-                self.data = [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]
-                self.model = "gpt-1000"
-                self.usage = {
-                    "model_extra": {
-                        "prompt_tokens": 10,
-                        "completion_tokens": 20,
-                        "total_tokens": 30,
-                    }
-                }
-
-        return MockResponse()
+    def embedding_response(self) -> litellm.EmbeddingResponse:
+        return litellm.EmbeddingResponse(
+            model="gpt-1000",
+            data=[
+                {"embedding": [0.1, 0.2, 0.3], "index": 0, "object": "embedding"},
+                {"embedding": [0.4, 0.5, 0.6], "index": 1, "object": "embedding"},
+            ],
+            usage=litellm.Usage(
+                prompt_tokens=10, completion_tokens=20, total_tokens=30
+            ),
+        )
 
     def test_config(self, client: OpenAIEmbeddingClient) -> None:
         assert client.config == {
@@ -119,7 +118,7 @@ class TestOpenAIEmbeddingClient:
     def test_openai_embedding_client_embed(
         self,
         client: OpenAIEmbeddingClient,
-        mock_response_obj: object,
+        embedding_response: litellm.EmbeddingResponse,
         monkeypatch: MonkeyPatch,
     ) -> None:
         # Given
@@ -129,7 +128,7 @@ class TestOpenAIEmbeddingClient:
         # When
         with patch(
             "rasa.shared.providers.embedding._base_litellm_embedding_client.embedding",
-            return_value=mock_response_obj,
+            return_value=embedding_response,
         ):
             response = client.embed([test_doc])
 
@@ -143,7 +142,7 @@ class TestOpenAIEmbeddingClient:
     async def test_openai_embedding_client_aembed(
         self,
         client: OpenAIEmbeddingClient,
-        mock_response_obj: object,
+        embedding_response: litellm.EmbeddingResponse,
         monkeypatch: MonkeyPatch,
     ) -> None:
         # Given
@@ -153,7 +152,7 @@ class TestOpenAIEmbeddingClient:
         # When
         with patch(
             "rasa.shared.providers.embedding._base_litellm_embedding_client.aembedding",
-            return_value=mock_response_obj,
+            return_value=embedding_response,
         ):
             response = await client.aembed([test_doc])
 

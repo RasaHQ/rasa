@@ -3,8 +3,8 @@ from typing import Any, Dict, Generator, Optional, Sequence
 from unittest.mock import Mock, patch
 
 import pytest
+from pytest import MonkeyPatch
 from pytest import LogCaptureFixture
-from langchain_community.embeddings import FakeEmbeddings
 from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 
@@ -12,34 +12,31 @@ from rasa.core.policies.intentless_policy import IntentlessPolicy
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.shared.constants import OPENAI_API_KEY_ENV_VAR
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import DialogueStackUpdated
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.providers.embedding.embedding_client import EmbeddingClient
 from rasa.shared.providers.llm.llm_client import LLMClient
-from rasa.shared.providers.llm.openai_llm_client import OpenAILLMClient
 from rasa.tracing.instrumentation import instrumentation
 
 
 @pytest.fixture
-def llm_client() -> LLMClient:
-    client = OpenAILLMClient(
-        model="test-gpt",
-        mock_response="Hello there",
-    )
-    return client
-
-
-@pytest.fixture
 def intentless_policy_generator(
-    llm_client: LLMClient,
+    fake_llm_client: LLMClient,
+    fake_embedding_client: EmbeddingClient,
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
     monkeypatch: pytest.MonkeyPatch,
 ) -> Generator[IntentlessPolicy, None, None]:
-    with patch("rasa.core.policies.intentless_policy.llm_factory", llm_client):
+    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "my key")
+    with patch(
+        "rasa.core.policies.intentless_policy.llm_factory",
+        Mock(return_value=fake_llm_client),
+    ):
         with patch(
             "rasa.core.policies.intentless_policy.embedder_factory",
-            Mock(return_value=FakeEmbeddings(size=100)),
+            Mock(return_value=fake_embedding_client),
         ):
             yield IntentlessPolicy.create(
                 IntentlessPolicy.get_default_config(),
@@ -54,6 +51,7 @@ async def test_tracing_intentless_policy_generate_answer(
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
     previous_num_captured_spans: int,
+    monkeypatch: MonkeyPatch,
 ) -> None:
     component_class = IntentlessPolicy
 
@@ -86,7 +84,10 @@ def test_tracing_intentless_policy_extract_ai_responses(
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
     previous_num_captured_spans: int,
+    monkeypatch: MonkeyPatch,
 ) -> None:
+    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "my key")
+
     component_class = IntentlessPolicy
 
     instrumentation.instrument(
@@ -123,7 +124,10 @@ def test_tracing_intentless_policy_select_few_shot_conversations(
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
     previous_num_captured_spans: int,
+    monkeypatch: MonkeyPatch,
 ) -> None:
+    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "my key")
+
     component_class = IntentlessPolicy
 
     instrumentation.instrument(
@@ -155,7 +159,9 @@ def test_tracing_intentless_policy_select_response_examples(
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
     previous_num_captured_spans: int,
+    monkeypatch: MonkeyPatch,
 ) -> None:
+    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "my key")
     component_class = IntentlessPolicy
 
     instrumentation.instrument(
@@ -187,7 +193,9 @@ async def test_tracing_intentless_policy_find_closest_response(
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
     previous_num_captured_spans: int,
+    monkeypatch: MonkeyPatch,
 ) -> None:
+    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "my key")
     component_class = IntentlessPolicy
 
     instrumentation.instrument(
@@ -260,7 +268,9 @@ def test_tracing_intentless_policy_prediction_result(
     previous_num_captured_spans: int,
     action_name: Optional[str],
     expected_attributes: Dict[str, Any],
+    monkeypatch: MonkeyPatch,
 ) -> None:
+    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "my key")
     component_class = IntentlessPolicy
 
     instrumentation.instrument(
@@ -286,7 +296,9 @@ async def test_tracing_intentless_policy_generate_llm_answer_len_prompt_tokens(
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
     previous_num_captured_spans: int,
+    monkeypatch: MonkeyPatch,
 ) -> None:
+    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "my key")
     component_class = IntentlessPolicy
 
     instrumentation.instrument(
@@ -326,7 +338,9 @@ async def test_intentless_policy_generate_llm_answer_len_prompt_tokens_non_opena
     span_exporter: InMemorySpanExporter,
     previous_num_captured_spans: int,
     caplog: LogCaptureFixture,
+    monkeypatch: MonkeyPatch,
 ) -> None:
+    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "my key")
     component_class = IntentlessPolicy
 
     instrumentation.instrument(

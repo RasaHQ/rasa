@@ -1,4 +1,6 @@
 from unittest.mock import patch
+
+import litellm
 import pytest
 
 from rasa.shared.providers.embedding.default_litellm_embedding_client import (
@@ -18,20 +20,17 @@ class TestDefaultLiteLLMEmbeddingClient:
         return DefaultLiteLLMEmbeddingClient.from_config(config)
 
     @pytest.fixture
-    def mock_response_obj(self) -> object:
-        class MockResponse:
-            def __init__(self):
-                self.data = [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]
-                self.model = "mock-gpt"
-                self.usage = {
-                    "model_extra": {
-                        "prompt_tokens": 10,
-                        "completion_tokens": 20,
-                        "total_tokens": 30,
-                    }
-                }
-
-        return MockResponse()
+    def embedding_response(self) -> litellm.EmbeddingResponse:
+        return litellm.EmbeddingResponse(
+            model="mock-gpt",
+            data=[
+                {"embedding": [0.1, 0.2, 0.3], "index": 0, "object": "embedding"},
+                {"embedding": [0.4, 0.5, 0.6], "index": 1, "object": "embedding"},
+            ],
+            usage=litellm.Usage(
+                prompt_tokens=10, completion_tokens=20, total_tokens=30
+            ),
+        )
 
     def test_config(self, client: DefaultLiteLLMEmbeddingClient) -> None:
         assert client.config == {
@@ -95,7 +94,7 @@ class TestDefaultLiteLLMEmbeddingClient:
     def test_default_litellm_embedding_client_embed(
         self,
         client: DefaultLiteLLMEmbeddingClient,
-        mock_response_obj: object,
+        embedding_response: litellm.EmbeddingResponse,
     ) -> None:
         # Given
         test_doc = "this is a test doc."
@@ -103,7 +102,7 @@ class TestDefaultLiteLLMEmbeddingClient:
         # When
         with patch(
             "rasa.shared.providers.embedding._base_litellm_embedding_client.embedding",
-            return_value=mock_response_obj,
+            return_value=embedding_response,
         ):
             response = client.embed([test_doc])
 
@@ -117,7 +116,7 @@ class TestDefaultLiteLLMEmbeddingClient:
     async def test_default_litellm_embedding_client_aembed(
         self,
         client: DefaultLiteLLMEmbeddingClient,
-        mock_response_obj: object,
+        embedding_response: litellm.EmbeddingResponse,
     ) -> None:
         # Given
         test_doc = "this is a test doc."
@@ -125,7 +124,7 @@ class TestDefaultLiteLLMEmbeddingClient:
         # When
         with patch(
             "rasa.shared.providers.embedding._base_litellm_embedding_client.aembedding",
-            return_value=mock_response_obj,
+            return_value=embedding_response,
         ):
             response = await client.aembed([test_doc])
 

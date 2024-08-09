@@ -4,10 +4,10 @@ from unittest.mock import Mock, AsyncMock, patch
 
 import pytest
 from _pytest.tmpdir import TempPathFactory
-from rasa.shared.constants import ROUTE_TO_CALM_SLOT
+from rasa.shared.constants import ROUTE_TO_CALM_SLOT, OPENAI_API_KEY_ENV_VAR
 from rasa.shared.providers.llm.openai_llm_client import OpenAILLMClient
 from structlog.testing import capture_logs
-
+from pytest import MonkeyPatch
 from rasa.dialogue_understanding.commands import (
     Command,
     ErrorCommand,
@@ -279,8 +279,10 @@ class TestLLMBasedCommandGenerator:
         model_storage: ModelStorage,
         resource: Resource,
         flows: FlowsList,
+        monkeypatch: MonkeyPatch,
     ):
         # Given
+        monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "my key")
         config = {
             FLOW_RETRIEVAL_KEY: {FLOW_RETRIEVAL_ACTIVE_KEY: flow_retrieval_active},
         }
@@ -319,8 +321,10 @@ class TestLLMBasedCommandGenerator:
         model_storage: ModelStorage,
         resource: Resource,
         flows: FlowsList,
+        monkeypatch: MonkeyPatch,
     ):
         # Given
+        monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "my key")
         config = {
             FLOW_RETRIEVAL_KEY: {FLOW_RETRIEVAL_ACTIVE_KEY: True},
         }
@@ -425,6 +429,7 @@ class TestLLMBasedCommandGenerator:
         # Given
         expected_llm_config = {
             "model": "gpt-4",
+            "api_type": "openai",
             "request_timeout": 7,
             "temperature": 0.0,
             "max_tokens": 256,

@@ -5,7 +5,6 @@ import structlog
 from rasa.shared.constants import (
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
-    LANGCHAIN_TYPE_CONFIG_KEY,
     MODEL_KEY,
 )
 from rasa.shared.core.events import BotUttered, UserUttered
@@ -19,15 +18,16 @@ from rasa.shared.providers._configs.azure_openai_client_config import (
     is_azure_openai_config,
 )
 from rasa.shared.providers._configs.openai_client_config import is_openai_config
+from rasa.shared.providers.embedding.embedding_client import EmbeddingClient
 from rasa.shared.providers.llm.llm_client import LLMClient
 from rasa.shared.providers.mappings import (
     get_llm_client_from_provider,
     AZURE_OPENAI_PROVIDER,
     OPENAI_PROVIDER,
+    get_embedding_client_from_provider,
 )
 
 if TYPE_CHECKING:
-    from langchain.schema.embeddings import Embeddings
     from rasa.shared.core.trackers import DialogueStateTracker
 
 structlogger = structlog.get_logger()
@@ -149,7 +149,11 @@ def combine_custom_and_default_config(
     # the default config, don't merge
     custom_config_provider = get_provider_from_config(custom_config)
     default_config_provider = get_provider_from_config(default_config)
-    if custom_config_provider != default_config_provider:
+
+    if (
+        custom_config_provider is not None
+        and custom_config_provider != default_config_provider
+    ):
         return custom_config.copy()
 
     # Otherwise, override default settings with custom settings
@@ -202,7 +206,7 @@ def llm_factory(
         default_config: The default config.
 
     Returns:
-    Instantiated LLM based on the configuration.
+        Instantiated LLM based on the configuration.
     """
     config = combine_custom_and_default_config(custom_config, default_config)
     provider = get_provider_from_config(config)
@@ -214,7 +218,7 @@ def llm_factory(
 
 def embedder_factory(
     custom_config: Optional[Dict[str, Any]], default_config: Dict[str, Any]
-) -> "Embeddings":
+) -> EmbeddingClient:
     """Creates an Embedder from the given config.
 
     Args:
@@ -223,47 +227,14 @@ def embedder_factory(
 
 
     Returns:
-    Instantiated Embedder based on the configuration.
+        Instantiated Embedder based on the configuration.
     """
-    from langchain.schema.embeddings import Embeddings
-    from langchain.embeddings import (
-        CohereEmbeddings,
-        HuggingFaceHubEmbeddings,
-        HuggingFaceInstructEmbeddings,
-        HuggingFaceEmbeddings,
-        HuggingFaceBgeEmbeddings,
-        LlamaCppEmbeddings,
-        OpenAIEmbeddings,
-        SpacyEmbeddings,
-        VertexAIEmbeddings,
-    )
-
-    type_to_embedding_cls_dict: Dict[str, Type[Embeddings]] = {
-        "azure": OpenAIEmbeddings,
-        "openai": OpenAIEmbeddings,
-        "cohere": CohereEmbeddings,
-        "spacy": SpacyEmbeddings,
-        "vertexai": VertexAIEmbeddings,
-        "huggingface_instruct": HuggingFaceInstructEmbeddings,
-        "huggingface_hub": HuggingFaceHubEmbeddings,
-        "huggingface_bge": HuggingFaceBgeEmbeddings,
-        "huggingface": HuggingFaceEmbeddings,
-        "llamacpp": LlamaCppEmbeddings,
-    }
-
     config = combine_custom_and_default_config(custom_config, default_config)
-    embedding_type = config.get(LANGCHAIN_TYPE_CONFIG_KEY)
-
-    structlogger.debug("llmfactory.create.embedder", config=config)
-
-    if not embedding_type:
-        return OpenAIEmbeddings()
-    elif embeddings_cls := type_to_embedding_cls_dict.get(embedding_type):
-        parameters = config.copy()
-        parameters.pop(LANGCHAIN_TYPE_CONFIG_KEY)
-        return embeddings_cls(**parameters)
-    else:
-        raise ValueError(f"Unsupported embeddings type '{embedding_type}'")
+    provider = get_provider_from_config(config)
+    # TODO: ensure_cache()
+    client_clazz: Type[EmbeddingClient] = get_embedding_client_from_provider(provider)
+    client = client_clazz.from_config(config)
+    return client
 
 
 def get_prompt_template(

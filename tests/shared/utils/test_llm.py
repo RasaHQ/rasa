@@ -1,8 +1,6 @@
 from typing import Text, Any, Dict, Optional
 
 import pytest
-from langchain import OpenAI
-from langchain.embeddings import OpenAIEmbeddings
 from pathlib import Path
 from pytest import MonkeyPatch
 from rasa.shared.constants import (
@@ -20,6 +18,15 @@ from rasa.shared.core.slots import (
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import ProviderClientValidationError
+from rasa.shared.providers.embedding.azure_openai_embedding_client import (
+    AzureOpenAIEmbeddingClient,
+)
+from rasa.shared.providers.embedding.default_litellm_embedding_client import (
+    DefaultLiteLLMEmbeddingClient,
+)
+from rasa.shared.providers.embedding.openai_embedding_client import (
+    OpenAIEmbeddingClient,
+)
 from rasa.shared.providers.llm.azure_openai_llm_client import AzureOpenAILLMClient
 from rasa.shared.providers.llm.default_litellm_llm_client import DefaultLiteLLMClient
 from rasa.shared.providers.llm.openai_llm_client import OpenAILLMClient
@@ -526,85 +533,330 @@ def test_llm_factory_returns_default_litellm_client(
     assert isinstance(client, DefaultLiteLLMClient)
 
 
-@pytest.mark.skip(
-    reason="This test is going to be updated with the LLM factory update."
-)
+def test_llm_factory_raises_exception_when_default_client_setup_is_invalid():
+    # Given
+    # config not containing `model` key
+    config = {"some_random_key": "cohere/command"}
+    # When / Then
+    with pytest.raises(ValueError):
+        llm_factory(config, {})
+
+
 def test_llm_factory_uses_custom_type(monkeypatch: MonkeyPatch) -> None:
     monkeypatch.setenv("OPENAI_API_KEY", "test")
 
-    llm = llm_factory({"type": "openai"}, {"_type": "foobar"})
-    assert isinstance(llm, OpenAI)
+    llm = llm_factory(
+        {"type": "openai", "model": "test-gpt"}, {"_type": "foobar", "model": "foo"}
+    )
+    assert isinstance(llm, OpenAILLMClient)
 
 
-@pytest.mark.skip(
-    reason="This test is going to be updated with the LLM factory update."
-)
 def test_llm_factory_ignores_irrelevant_default_args(monkeypatch: MonkeyPatch) -> None:
     monkeypatch.setenv("OPENAI_API_KEY", "test")
-
     # since the types of the custom config and the default are different
     # all default arguments should be removed.
-    llm = llm_factory({"type": "openai"}, {"_type": "foobar", "temperature": -1})
-    assert isinstance(llm, OpenAI)
+    llm = llm_factory(
+        {"type": "openai", "model": "test-gpt"}, {"_type": "foobar", "temperature": -1}
+    )
+    assert isinstance(llm, OpenAILLMClient)
     # since the default argument should be removed, this should be the default -
     # which is not -1
-    assert llm.temperature != -1
+    assert llm._extra_parameters.get("temperature") != -1
 
 
-@pytest.mark.skip(
-    reason="This test is going to be updated with the LLM factory update."
-)
 def test_llm_factory_uses_additional_args_from_custom(monkeypatch: MonkeyPatch) -> None:
     monkeypatch.setenv("OPENAI_API_KEY", "test")
 
-    llm = llm_factory({"temperature": -1}, {"_type": "openai"})
-    assert isinstance(llm, OpenAI)
-    assert llm.temperature == -1
+    llm = llm_factory({"temperature": -1}, {"api_type": "openai", "model": "test-gpt"})
+    assert isinstance(llm, OpenAILLMClient)
+    assert llm._extra_parameters.get("temperature") == -1
 
 
-@pytest.mark.skip(
-    reason="This test is going to be updated with the embedding factory update."
-)
 def test_embedder_factory(monkeypatch: MonkeyPatch) -> None:
     monkeypatch.setenv("OPENAI_API_KEY", "test")
+    embedder = embedder_factory(None, {"api_type": "openai", "model": "test-embedding"})
+    assert isinstance(embedder, OpenAIEmbeddingClient)
 
-    embedder = embedder_factory(None, {"_type": "openai"})
-    assert isinstance(embedder, OpenAIEmbeddings)
 
-
-@pytest.mark.skip(
-    reason="This test is going to be updated with the embedding factory update."
+@pytest.mark.parametrize(
+    "config,"
+    "expected_model,"
+    "expected_api_type,"
+    "expected_api_base,"
+    "expected_api_version",
+    (
+        (
+            {"model": "openai/test-embeddings", "api_type": "openai"},
+            "openai/test-embeddings",
+            "openai",
+            None,
+            None,
+        ),
+        # Deprecated 'model_name'
+        (
+            {"model_name": "test-embeddings", "api_type": "openai"},
+            "test-embeddings",
+            "openai",
+            None,
+            None,
+        ),
+        # With `api_type` deprecated aliases
+        (
+            {"model": "test-embeddings", "type": "openai"},
+            "test-embeddings",
+            "openai",
+            None,
+            None,
+        ),
+        (
+            {"model": "test-embeddings", "_type": "openai"},
+            "test-embeddings",
+            "openai",
+            None,
+            None,
+        ),
+        # With api_base and deprecated aliases
+        (
+            {
+                "model": "test-embeddings",
+                "api_base": "https://my-test-base",
+                "api_type": "openai",
+            },
+            "test-embeddings",
+            "openai",
+            "https://my-test-base",
+            None,
+        ),
+        (
+            {
+                "model": "test-embeddings",
+                "openai_api_base": "https://my-test-base",
+                "api_type": "openai",
+            },
+            "test-embeddings",
+            "openai",
+            "https://my-test-base",
+            None,
+        ),
+        # With api_version and deprecated aliases
+        (
+            {"model": "test-embeddings", "api_version": "v1", "api_type": "openai"},
+            "test-embeddings",
+            "openai",
+            None,
+            "v1",
+        ),
+        (
+            {
+                "model": "test-embeddings",
+                "openai_api_version": "v2",
+                "api_type": "openai",
+            },
+            "test-embeddings",
+            "openai",
+            None,
+            "v2",
+        ),
+    ),
 )
-def test_embedder_factory_handles_type_without_underscore(
+def test_embedder_factory_returns_openai_embedding_client(
+    config: dict,
+    expected_model: str,
+    expected_api_type: str,
+    expected_api_base: str,
+    expected_api_version: str,
     monkeypatch: MonkeyPatch,
-) -> None:
+):
+    # Given
+    # Client cannot be instantiated without the required environment variable
     monkeypatch.setenv("OPENAI_API_KEY", "test")
 
-    embedder = embedder_factory({"type": "openai"}, {})
-    assert isinstance(embedder, OpenAIEmbeddings)
+    # When
+    client = embedder_factory(config, {})
+
+    # Then
+    assert isinstance(client, OpenAIEmbeddingClient)
+    assert client.model == expected_model
+    assert client.api_type == expected_api_type
+    assert client.api_base == expected_api_base
+    assert client.api_version == expected_api_version
 
 
-@pytest.mark.skip(
-    reason="This test is going to be updated with the embedding factory update."
+def test_embedder_factory_raises_exception_when_openai_client_setup_is_invalid():
+    """OpenAI client requires the OPENAI_API_KEY environment variable
+    to be set.
+    """
+    with pytest.raises(ProviderClientValidationError):
+        embedder_factory({"model": "openai/gpt-4", "api_type": "openai"}, {})
+
+
+@pytest.mark.parametrize(
+    "config,"
+    "expected_deployment,"
+    "expected_api_type,"
+    "expected_api_base,"
+    "expected_api_version",
+    (
+        (
+            {
+                "deployment": "my-test-embedding-deployment-on-azure",
+                "api_type": "azure",
+                "api_base": "https://my-test-base",
+                "api_version": "v1",
+            },
+            "my-test-embedding-deployment-on-azure",
+            "azure",
+            "https://my-test-base",
+            "v1",
+        ),
+        # Deprecated aliases
+        (
+            {
+                "deployment_name": "my-test-embedding-deployment-on-azure",
+                "openai_api_type": "azure",
+                "openai_api_base": "https://my-test-base",
+                "openai_api_version": "v1",
+            },
+            "my-test-embedding-deployment-on-azure",
+            "azure",
+            "https://my-test-base",
+            "v1",
+        ),
+        (
+            {
+                "engine": "my-test-embedding-deployment-on-azure",
+                "api_type": "azure",
+                "api_base": "https://my-test-base",
+                "api_version": "v1",
+            },
+            "my-test-embedding-deployment-on-azure",
+            "azure",
+            "https://my-test-base",
+            "v1",
+        ),
+        # With `api_type` deprecated aliases
+        (
+            {
+                "deployment": "azure/my-test-embedding-deployment-on-azure",
+                "api_base": "https://my-test-base",
+                "api_version": "v1",
+                "api_type": "azure",
+            },
+            "azure/my-test-embedding-deployment-on-azure",
+            "azure",
+            "https://my-test-base",
+            "v1",
+        ),
+        (
+            {
+                "deployment": "azure/my-test-embedding-deployment-on-azure",
+                "api_base": "https://my-test-base",
+                "api_version": "v1",
+                "type": "azure",
+            },
+            "azure/my-test-embedding-deployment-on-azure",
+            "azure",
+            "https://my-test-base",
+            "v1",
+        ),
+        (
+            {
+                "deployment": "azure/my-test-embedding-deployment-on-azure",
+                "api_base": "https://my-test-base",
+                "api_version": "v1",
+                "_type": "azure",
+            },
+            "azure/my-test-embedding-deployment-on-azure",
+            "azure",
+            "https://my-test-base",
+            "v1",
+        ),
+    ),
 )
+def test_embedder_factory_returns_azure_openai_embedding_client(
+    config: dict,
+    expected_deployment: str,
+    expected_api_type: str,
+    expected_api_base: str,
+    expected_api_version: str,
+    monkeypatch: MonkeyPatch,
+):
+    # Given
+    # Client cannot be instantiated without the required environment variable
+    monkeypatch.setenv("AZURE_API_KEY", "test")
+
+    # When
+    client = embedder_factory(config, {})
+
+    # Then
+    assert isinstance(client, AzureOpenAIEmbeddingClient)
+    assert client.deployment == expected_deployment
+    assert client.api_type == expected_api_type
+    assert client.api_base == expected_api_base
+    assert client.api_version == expected_api_version
+
+
+def test_embedder_factory_raises_exception_when_azure_openai_client_setup_is_invalid(
+    monkeypatch: MonkeyPatch,
+):
+    """Azure OpenAI client requires the following environment variables
+    to be set:
+    - AZURE_API_KEY
+    - AZURE_API_BASE
+    - AZURE_API_VERSION
+    """
+
+    required_env_vars = ["AZURE_API_KEY", "AZURE_API_BASE", "AZURE_API_VERSION"]
+
+    for env_var in required_env_vars:
+        monkeypatch.setenv(env_var, "test")
+        with pytest.raises(ProviderClientValidationError):
+            embedder_factory(
+                {
+                    "deployment": "my-test-embedding-deployment-on-azure",
+                    "api_type": "azure",
+                },
+                {},
+            )
+        monkeypatch.delenv(env_var, raising=False)
+
+
+@pytest.mark.parametrize(
+    "config, api_key_env",
+    (
+        ({"model": "cohere/embed-english-v3.0"}, "COHERE_API_KEY"),
+        ({"model": "huggingface/microsoft/codebert-base"}, "HUGGINGFACE_API_KEY"),
+    ),
+)
+def test_embedder_factory_returns_default_litellm_client(
+    config: dict, api_key_env: str, monkeypatch: MonkeyPatch
+):
+    # Given
+    # Client cannot be instantiated without the required environment variable
+    monkeypatch.setenv(api_key_env, "test")
+    # When
+    client = embedder_factory(config, {})
+    # Then
+    assert isinstance(client, DefaultLiteLLMEmbeddingClient)
+
+
+def test_embedder_factory_raises_exception_when_default_client_setup_is_invalid():
+    # Given
+    # config not containing `model` key
+    config = {"some_random_key": "cohere/command"}
+    # When / Then
+    with pytest.raises(ValueError):
+        embedder_factory(config, {})
+
+
 def test_embedder_factory_uses_custom_type(monkeypatch: MonkeyPatch) -> None:
     monkeypatch.setenv("OPENAI_API_KEY", "test")
 
-    embedder = embedder_factory({"type": "openai"}, {"_type": "foobar"})
-    assert isinstance(embedder, OpenAIEmbeddings)
-
-
-@pytest.mark.skip(
-    reason="This test is going to be updated with the embedding factory update."
-)
-def test_embedder_factory_ignores_irrelevant_default_args(
-    monkeypatch: MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("OPENAI_API_KEY", "test")
-
-    # embedders don't expect args, they should just be ignored
-    embedder = embedder_factory({"type": "openai"}, {"_type": "foobar", "foo": "bar"})
-    assert isinstance(embedder, OpenAIEmbeddings)
+    embedder = embedder_factory(
+        {"type": "openai", "model": "test-embedding"},
+        {"_type": "foobar", "model": "foo"},
+    )
+    assert isinstance(embedder, OpenAIEmbeddingClient)
 
 
 @pytest.mark.parametrize(

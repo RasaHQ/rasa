@@ -44,6 +44,7 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import (
     RASA_PATTERN_CANNOT_HANDLE_NOT_SUPPORTED,
     ROUTE_TO_CALM_SLOT,
+    OPENAI_API_KEY_ENV_VAR,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import BotUttered, UserUttered
@@ -163,6 +164,7 @@ class TestMultiStepLLMCommandGenerator:
         # Given
         expected_llm_config = {
             "model": "gpt-4",
+            "api_type": "openai",
             "request_timeout": 7,
             "temperature": 0.0,
             "max_tokens": 256,
@@ -296,8 +298,12 @@ class TestMultiStepLLMCommandGenerator:
         model_storage: ModelStorage,
         flows: FlowsList,
         resource: Resource,
+        monkeypatch: MonkeyPatch,
     ):
         # Given
+        # Set an environment variable
+        monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "my key")
+
         generator = MultiStepLLMCommandGenerator(
             {FLOW_RETRIEVAL_KEY: {FLOW_RETRIEVAL_ACTIVE_KEY: False}},
             model_storage,
@@ -313,10 +319,10 @@ class TestMultiStepLLMCommandGenerator:
         assert loaded.fill_slots_prompt.startswith("{% if flow_active %}\nYour")
 
     async def test_llm_command_generator_load_prompt_from_model_storage(
-        self,
-        model_storage: ModelStorage,
-        tmp_path: Path,
+        self, model_storage: ModelStorage, tmp_path: Path, monkeypatch: MonkeyPatch
     ) -> None:
+        # Set an environment variable
+        monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "my key")
         # Create and write prompt file.
         prompt_dir = Path(tmp_path) / "prompt"
         prompt_dir.mkdir(parents=True, exist_ok=True)

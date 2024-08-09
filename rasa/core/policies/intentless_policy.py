@@ -42,6 +42,9 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import FileIOException, RasaCoreException
 from rasa.shared.nlu.constants import PREDICTED_CONFIDENCE_KEY
 from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.providers.embedding._langchain_embedding_client_adapter import (
+    _LangchainEmbeddingClientAdapter,
+)
 from rasa.shared.providers.llm.llm_client import LLMClient
 from rasa.shared.utils.io import deep_container_fingerprint
 from rasa.shared.utils.llm import (
@@ -418,9 +421,10 @@ class IntentlessPolicy(Policy):
         Returns:
         The embedder.
         """
-        return embedder_factory(
+        client = embedder_factory(
             config.get(EMBEDDINGS_CONFIG_KEY), DEFAULT_EMBEDDINGS_CONFIG
         )
+        return _LangchainEmbeddingClientAdapter(client)
 
     def embeddings_property(self, prop: str) -> Optional[str]:
         """Returns the property of the embeddings config."""

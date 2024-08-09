@@ -6,6 +6,16 @@ if TYPE_CHECKING:
 
 @runtime_checkable
 class EmbeddingClient(Protocol):
+    @classmethod
+    def from_config(cls, config: dict) -> "EmbeddingClient":
+        """
+        Initializes the embedding client with the given configuration.
+
+        This class method should be implemented to parse the given
+        configuration and create an instance of llm client.
+        """
+        ...
+
     @property
     def config(self) -> Dict:
         """

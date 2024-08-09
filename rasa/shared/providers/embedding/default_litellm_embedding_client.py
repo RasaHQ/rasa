@@ -1,6 +1,9 @@
 from typing import Any, Dict
 
 from rasa.shared.constants import MODEL_KEY
+from rasa.shared.providers._configs.default_litellm_client_config import (
+    DefaultLiteLLMClientConfig,
+)
 from rasa.shared.providers.embedding._base_litellm_embedding_client import (
     _BaseLiteLLMEmbeddingClient,
 )
@@ -28,10 +31,11 @@ class DefaultLiteLLMEmbeddingClient(_BaseLiteLLMEmbeddingClient):
 
     @classmethod
     def from_config(cls, config: Dict[str, Any]) -> "DefaultLiteLLMEmbeddingClient":
+        default_config = DefaultLiteLLMClientConfig.from_dict(config)
         return cls(
-            model=config.pop(MODEL_KEY),
+            model=default_config.model,
             # Pass the rest of the configuration as extra parameters
-            **config,
+            **default_config.extra_parameters,
         )
 
     @property

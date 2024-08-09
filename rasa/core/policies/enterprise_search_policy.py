@@ -8,6 +8,10 @@ import rasa.shared.utils.io
 import structlog
 from jinja2 import Template
 from pydantic import ValidationError
+
+from rasa.shared.providers.embedding._langchain_embedding_client_adapter import (
+    _LangchainEmbeddingClientAdapter,
+)
 from rasa.shared.providers.llm.llm_client import LLMClient
 from rasa.telemetry import (
     track_enterprise_search_policy_predict,
@@ -209,9 +213,10 @@ class EnterpriseSearchPolicy(Policy):
         Returns:
         The embedder.
         """
-        return embedder_factory(
+        client = embedder_factory(
             config.get(EMBEDDINGS_CONFIG_KEY), DEFAULT_EMBEDDINGS_CONFIG
         )
+        return _LangchainEmbeddingClientAdapter(client)
 
     def train(  # type: ignore[override]
         self,

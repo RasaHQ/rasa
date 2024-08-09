@@ -78,10 +78,13 @@ class AzureOpenAIEmbeddingClient(_BaseLiteLLMEmbeddingClient):
             or os.environ.get(AZURE_API_VERSION_ENV_VAR)
             or os.environ.get(OPENAI_API_VERSION_ENV_VAR)
         )
-        # Litellm does not support use of OPENAI_API_KEY, so we need to map it.
-        self._api_key = os.environ.get(OPENAI_API_KEY_ENV_VAR) or os.environ.get(
-            AZURE_API_KEY_ENV_VAR
+        # Litellm does not support use of OPENAI_API_KEY, so we need to map it
+        # because of backward compatibility. However, we're first looking at
+        # AZURE_API_KEY.
+        self._api_key = os.environ.get(AZURE_API_KEY_ENV_VAR) or os.environ.get(
+            OPENAI_API_KEY_ENV_VAR
         )
+
         self._extra_parameters = kwargs or {}
         self.validate_client_setup()
 
@@ -138,7 +141,7 @@ class AzureOpenAIEmbeddingClient(_BaseLiteLLMEmbeddingClient):
         return config.to_dict()
 
     @property
-    def model(self) -> str:
+    def model(self) -> Optional[str]:
         """
         Returns the name of the model deployed on Azure. If model name is not
         provided, returns "N/A".
