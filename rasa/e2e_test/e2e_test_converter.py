@@ -107,27 +107,7 @@ class E2ETestConverter:
         self.input_path: str = path
         self.sheet_name: Optional[str] = sheet_name
         self.prompt_template: str = prompt_template
-
-    @staticmethod
-    def is_yaml_valid(yaml_string: str) -> bool:
-        """Validate the string against the YAML format.
-
-        Args:
-            yaml_string (str): String to be validated
-
-        Returns:
-            bool: True if valid, False otherwise
-        """
-        try:
-            e2e_schema = read_e2e_test_schema()
-            yaml_data = ruamel.yaml.safe_load(yaml_string)
-            validate_yaml_data_using_schema_with_assertions(
-                yaml_data={KEY_TEST_CASES: yaml_data}, schema_content=e2e_schema
-            )
-            return True
-        except (YamlValidationException, ScannerError) as exc:
-            structlogger.debug("e2e_test_generator.yaml_string_invalid", exc=exc)
-            return False
+        self.e2e_schema = read_e2e_test_schema()
 
     @staticmethod
     def remove_markdown_code_syntax(markdown_string: str) -> str:
@@ -203,6 +183,25 @@ class E2ETestConverter:
             conversations.add_conversation(conversation)
 
         return conversations
+
+    def is_yaml_valid(self, yaml_string: str) -> bool:
+        """Validate the string against the YAML format.
+
+        Args:
+            yaml_string (str): String to be validated
+
+        Returns:
+            bool: True if valid, False otherwise
+        """
+        try:
+            yaml_data = ruamel.yaml.safe_load(yaml_string)
+            validate_yaml_data_using_schema_with_assertions(
+                yaml_data={KEY_TEST_CASES: yaml_data}, schema_content=self.e2e_schema
+            )
+            return True
+        except (YamlValidationException, ScannerError) as exc:
+            structlogger.debug("e2e_test_generator.yaml_string_invalid", exc=exc)
+            return False
 
     def get_and_validate_input_file_extension(self) -> str:
         """Validates the input file extension and checks for required properties

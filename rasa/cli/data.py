@@ -25,8 +25,11 @@ from rasa.shared.constants import (
 from rasa.shared.exceptions import RasaException
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.utils.yaml import read_yaml_file, write_yaml
+from rasa.utils.beta import ensure_beta_feature_is_enabled
 
 logger = logging.getLogger(__name__)
+
+RASA_PRO_BETA_E2E_CONVERSION_ENV_VAR_NAME = "RASA_PRO_BETA_E2E_CONVERSION"
 
 
 def add_subparser(
@@ -311,6 +314,11 @@ def convert_data_to_e2e_tests(args: argparse.Namespace) -> None:
     Args:
         args: The arguments passed in from the CLI.
     """
+    ensure_beta_feature_is_enabled(
+        "conversion of sample conversations into end-to-end tests",
+        RASA_PRO_BETA_E2E_CONVERSION_ENV_VAR_NAME,
+    )
+
     try:
         converter = E2ETestConverter(**vars(args))
         yaml_tests_string = converter.run()
