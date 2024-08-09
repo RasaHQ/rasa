@@ -774,6 +774,39 @@ async def test_tracker_store_retrieve_with_events_from_previous_sessions(
     assert len(actual.events) == len(tracker.events)
 
 
+@pytest.mark.parametrize(
+    "tracker_store_type,tracker_store_kwargs",
+    [
+        (MockedMongoTrackerStore, {}),
+        (SQLTrackerStore, {"host": "sqlite:///"}),
+        (InMemoryTrackerStore, {}),
+    ],
+)
+async def test_tracker_store_counts_conversations(
+    tracker_store_type: Type[TrackerStore], tracker_store_kwargs: Dict
+):
+    tracker_store = tracker_store_type(Domain.empty(), **tracker_store_kwargs)
+
+    # Create two trackers
+    tracker1 = DialogueStateTracker.from_events("1", [SessionStarted(timestamp=1)])
+    tracker2 = DialogueStateTracker.from_events("2", [SessionStarted(timestamp=3)])
+    await tracker_store.save(tracker1)
+    await tracker_store.save(tracker2)
+
+    # Assert that the tracker store counts the conversations correctly
+    assert await tracker_store.count_conversations() == 2
+    assert await tracker_store.count_conversations(after_timestamp=2) == 1
+    assert await tracker_store.count_conversations(after_timestamp=4) == 0
+
+    # Create another tracker
+    tracker3 = DialogueStateTracker.from_events("3", [SessionStarted(timestamp=5)])
+    await tracker_store.save(tracker3)
+
+    # Assert that the tracker store counts the conversations correctly
+    assert await tracker_store.count_conversations() == 3
+    assert await tracker_store.count_conversations(after_timestamp=4) == 1
+
+
 def test_session_scope_error(
     monkeypatch: MonkeyPatch, capsys: CaptureFixture, domain: Domain
 ):
