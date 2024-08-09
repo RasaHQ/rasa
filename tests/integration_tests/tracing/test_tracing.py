@@ -1,6 +1,7 @@
 import functools
 import threading
 import typing
+import uuid
 from typing import Any, Callable, Dict, List, Text
 
 import pytest
@@ -250,6 +251,65 @@ def test_context_propagated_to_subspans_in_rasa_server(
 
     assert processor_sub_span.trace_id == sub_parent_span.trace_id
     assert sub_parent_span.trace_id == parent_span.trace_id
+
+
+@pytest.mark.parametrize(
+    "tracing_service_name, rasa_server_endpoint",
+    [
+        (
+            RASA_JAEGER_TRACING_SERVICE_NAME,
+            RASA_SERVER_JAEGER_NO_ACTION_SERVER,
+        ),
+        (
+            RASA_OTLP_TRACING_SERVICE_NAME,
+            RASA_SERVER_OTLP_NO_ACTION_SERVER,
+        ),
+    ],
+)
+def test_headers_context_propagated_to_rasa(
+    jaeger_query_service: "QueryServiceStub",
+    tracing_service_name: Text,
+    rasa_server_endpoint: Text,
+    trace_query_timestamps: TraceQueryTimestamps,
+) -> None:
+    if tracing_service_name == RASA_OTLP_TRACING_SERVICE_NAME:
+        pytest.skip("Temporary disabled due to TLS timeout error")
+
+    from api_v3.query_service_pb2 import TraceQueryParameters
+    from model_pb2 import Span
+
+    sender_id = str(uuid.uuid4())
+    traceparent = "00-ec6fbe3de34342bac2e9fe6e955354cb-c04faeec2b0670e4-01"
+    requests.post(
+        f"{rasa_server_endpoint}/webhooks/rest/webhook",
+        json={"sender": sender_id, "message": RASA_SERVER_TRIGGER_MESSAGE},
+        headers={"traceparent": traceparent},
+    )
+
+    params = TraceQueryParameters(
+        service_name=tracing_service_name,
+        operation_name=RASA_SERVER_PARENT_SPAN_NAME,
+        start_time_min=trace_query_timestamps.min_time,
+        start_time_max=trace_query_timestamps.max_time,
+    )
+
+    @wait_for_spans
+    def _spans_for_user_turn() -> List[Span]:
+        spans = _fetch_spans(jaeger_query_service, params)
+        return _filter_spans_by_attributes(
+            spans,
+            {"sender_id": sender_id},
+        )
+
+    spans_for_user_turn = _spans_for_user_turn()
+    parent_spans = _filter_spans_by_name(
+        spans_for_user_turn, RASA_SERVER_PARENT_SPAN_NAME
+    )
+    parent_span = parent_spans[0]
+
+    assert int.from_bytes(parent_span.trace_id, byteorder="big") == int(
+        traceparent.split("-")[1], 16
+    )
 
 
 def _fetch_tracker(server_location: Text, sender_id: Text = "test") -> Dict[str, Any]:

@@ -18,6 +18,9 @@ from typing import (
     TypeVar,
 )
 
+from multidict import MultiDict
+from opentelemetry.context import Context
+
 import rasa.shared.utils.io
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.trace import SpanKind, Tracer
@@ -105,6 +108,24 @@ def _check_extractor_argument_list(
     return are_arglists_congruent
 
 
+def extract_tracing_context_from_headers(
+    headers: Dict[str, Any],
+) -> Optional[Context]:
+    """Extracts the tracing context from the headers."""
+    tracing_carrier = MultiDict(
+        [
+            (key, value)
+            for key, value in headers.items()
+            if key.lower() not in ("content-length", "content-encoding")
+        ]
+    )
+    context = (
+        TraceContextTextMapPropagator().extract(headers) if tracing_carrier else None
+    )
+
+    return context
+
+
 def traceable(
     fn: Callable[[T, Any, Any], S],
     tracer: Tracer,
@@ -178,6 +199,7 @@ def traceable_async(
             else {}
         )
         headers = header_extractor(*args, **kwargs) if header_extractor else {}
+        context = extract_tracing_context_from_headers(headers)
 
         if issubclass(self.__class__, GraphNode) and fn.__name__ == "__call__":
             span_name = f"{self.__class__.__name__}." + attrs.get(
@@ -189,8 +211,14 @@ def traceable_async(
         with tracer.start_as_current_span(
             span_name,
             attributes=attrs,
-        ):
+            context=context,
+        ) as span:
             TraceContextTextMapPropagator().inject(headers)
+
+            ctx = span.get_span_context()
+            logger.debug(
+                f"The trace id for the current span '{span_name}' is '{ctx.trace_id}'."
+            )
 
             start_time = time.perf_counter_ns()
 
