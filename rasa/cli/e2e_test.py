@@ -21,7 +21,7 @@ from rasa.core.utils import AvailableEndpoints
 from rasa.exceptions import RasaException
 from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH, DEFAULT_MODELS_PATH
 
-from rasa.e2e_test.constants import SCHEMA_FILE_PATH, KEY_TEST_CASE
+from rasa.e2e_test.constants import SCHEMA_FILE_PATH, KEY_TEST_CASE, KEY_TEST_CASES
 from rasa.e2e_test.e2e_test_case import (
     KEY_FIXTURES,
     KEY_METADATA,
@@ -43,7 +43,6 @@ from rasa.utils.beta import BetaNotEnabledException, ensure_beta_feature_is_enab
 
 DEFAULT_E2E_INPUT_TESTS_PATH = "tests/e2e_test_cases.yml"
 DEFAULT_E2E_OUTPUT_TESTS_PATH = "tests/e2e_results.yml"
-KEY_TEST_CASES = "test_cases"
 
 RASA_PRO_BETA_E2E_ASSERTIONS_ENV_VAR_NAME = "RASA_PRO_BETA_E2E_ASSERTIONS"
 

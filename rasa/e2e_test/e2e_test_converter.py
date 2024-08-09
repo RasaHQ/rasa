@@ -12,10 +12,16 @@ import pandas as pd
 import ruamel
 import structlog
 from jinja2 import Template
+from ruamel.yaml.scanner import ScannerError
 
+from rasa.e2e_test.constants import KEY_TEST_CASES
+from rasa.cli.e2e_test import read_e2e_test_schema
 from rasa.exceptions import RasaException
 from rasa.shared.utils.llm import llm_factory
-
+from rasa.shared.utils.yaml import (
+    validate_yaml_data_using_schema_with_assertions,
+    YamlValidationException,
+)
 
 structlogger = structlog.get_logger()
 
@@ -113,9 +119,13 @@ class E2ETestConverter:
             bool: True if valid, False otherwise
         """
         try:
-            ruamel.yaml.safe_load(yaml_string)
+            e2e_schema = read_e2e_test_schema()
+            yaml_data = ruamel.yaml.safe_load(yaml_string)
+            validate_yaml_data_using_schema_with_assertions(
+                yaml_data={KEY_TEST_CASES: yaml_data}, schema_content=e2e_schema
+            )
             return True
-        except Exception as exc:
+        except (YamlValidationException, ScannerError) as exc:
             structlogger.debug("e2e_test_generator.yaml_string_invalid", exc=exc)
             return False
 
