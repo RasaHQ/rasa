@@ -24,7 +24,11 @@ from rasa.llm_fine_tuning.storage import (
     StorageType,
     FileStorageStrategy,
 )
-from rasa.llm_fine_tuning.train_test_split_module import split_llm_fine_tuning_data
+from rasa.llm_fine_tuning.train_test_split_module import (
+    split_llm_fine_tuning_data,
+    ALPACA_DATA_FORMAT,
+    SHAREGPT_DATA_FORMAT,
+)
 from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH, DEFAULT_MODELS_PATH
 
 DEFAULT_INPUT_E2E_TEST_PATH = "e2e_tests"
@@ -132,15 +136,16 @@ def add_data_preparation_arguments(parser: argparse.ArgumentParser) -> None:
     train_test_split_arguments.add_argument(
         "--train-frac",
         type=restricted_float,
+        default=0.8,
         help="The amount of data that should go into the training dataset. The value "
         "should be >0.0 and <=1.0.",
     )
     train_test_split_arguments.add_argument(
         "--output-format",
-        choices=["alpaca", "sharegpt", "azure-gpt"],
+        choices=[ALPACA_DATA_FORMAT, SHAREGPT_DATA_FORMAT],
         type=str,
         nargs="?",
-        default="alpaca",
+        default=ALPACA_DATA_FORMAT,
         help="Format of the output file.",
     )
 
@@ -216,7 +221,11 @@ def prepare_llm_fine_tuning_data(args: argparse.Namespace) -> None:
     # 4. create train/test split
     log_start_of_module("Train/Test Split")
     train_data, val_data = split_llm_fine_tuning_data(
-        llm_fine_tuning_data, args.train_frac, args.output_format, output_dir
+        llm_fine_tuning_data,
+        args.train_frac,
+        args.output_format,
+        storage_context,
+        test_suite,
     )
     statistics["num_train_data_points"] = len(train_data)
     statistics["num_val_data_points"] = len(val_data)

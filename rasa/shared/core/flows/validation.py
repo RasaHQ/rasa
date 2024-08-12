@@ -1,11 +1,18 @@
 from __future__ import annotations
 
-from collections import defaultdict
 import re
-from typing import Optional, Set, Text, List
 import typing
-from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
+from collections import defaultdict
+from typing import Optional, Set, Text, List
 
+from rasa.shared.constants import (
+    RASA_DEFAULT_FLOW_PATTERN_PREFIX,
+    RASA_PATTERN_HUMAN_HANDOFF,
+)
+from rasa.shared.constants import (
+    RASA_PATTERN_INTERNAL_ERROR,
+)
+from rasa.shared.core.flows.flow import Flow
 from rasa.shared.core.flows.flow_step import (
     FlowStep,
 )
@@ -15,16 +22,14 @@ from rasa.shared.core.flows.flow_step_links import (
     ElseFlowStepLink,
 )
 from rasa.shared.core.flows.flow_step_sequence import FlowStepSequence
-from rasa.shared.core.flows.steps.constants import CONTINUE_STEP_PREFIX, DEFAULT_STEPS
 from rasa.shared.core.flows.steps.call import CallFlowStep
-from rasa.shared.core.flows.steps.link import LinkFlowStep
 from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
-from rasa.shared.core.flows.flow import Flow
+from rasa.shared.core.flows.steps.constants import CONTINUE_STEP_PREFIX, DEFAULT_STEPS
+from rasa.shared.core.flows.steps.link import LinkFlowStep
 from rasa.shared.exceptions import RasaException
 
 if typing.TYPE_CHECKING:
     from rasa.shared.core.flows.flows_list import FlowsList
-
 
 FLOW_ID_REGEX = r"""^[a-zA-Z0-9_][a-zA-Z0-9_-]*?$"""
 
@@ -464,11 +469,16 @@ def validate_linked_flows_exists(flows: "FlowsList") -> None:
 
 
 def validate_patterns_are_not_called_or_linked(flows: "FlowsList") -> None:
-    """Validates that patterns are never called or linked."""
+    """Validates that patterns are never called or linked.
+
+    Exception: pattern_human_handoff can be linked.
+    """
     for flow in flows.underlying_flows:
         for step in flow.steps:
-            if isinstance(step, LinkFlowStep) and step.link.startswith(
-                RASA_DEFAULT_FLOW_PATTERN_PREFIX
+            if (
+                isinstance(step, LinkFlowStep)
+                and step.link.startswith(RASA_DEFAULT_FLOW_PATTERN_PREFIX)
+                and step.link != RASA_PATTERN_HUMAN_HANDOFF
             ):
                 raise ReferenceToPatternException(step.link, flow.id, step.id)
 
@@ -481,12 +491,27 @@ def validate_patterns_are_not_called_or_linked(flows: "FlowsList") -> None:
 def validate_patterns_are_not_calling_or_linking_other_flows(
     flows: "FlowsList",
 ) -> None:
-    """Validates that patterns do not contain call or link steps."""
+    """Validates that patterns do not contain call or link steps.
+
+    Link steps to user flows are allowed for all patterns but 'pattern_internal_error'.
+    Link steps to other patterns, except for 'pattern_human_handoff', are forbidden.
+    """
     for flow in flows.underlying_flows:
         if not flow.is_rasa_default_flow:
             continue
         for step in flow.steps:
-            if isinstance(step, (LinkFlowStep, CallFlowStep)):
+            if isinstance(step, LinkFlowStep):
+                if step.link == RASA_PATTERN_HUMAN_HANDOFF:
+                    # links to 'pattern_human_handoff' are allowed
+                    continue
+                if flow.id == RASA_PATTERN_INTERNAL_ERROR:
+                    # 'pattern_internal_error' is not allowed to link at all
+                    raise PatternReferencedFlowException(flow.id, step.id)
+                if step.link.startswith(RASA_DEFAULT_FLOW_PATTERN_PREFIX):
+                    # all other patterns are allowed to link to user flows, but not
+                    # to other patterns
+                    raise PatternReferencedFlowException(flow.id, step.id)
+            if isinstance(step, CallFlowStep):
                 raise PatternReferencedFlowException(flow.id, step.id)
 
 
@@ -517,8 +542,10 @@ def validate_flow_id(flow: Flow) -> None:
     """Validates if the flow id comply with a specified regex.
     Flow IDs can start with an alphanumeric character or an underscore.
     Followed by zero or more alphanumeric characters, hyphens, or underscores.
+
     Args:
         flow: The flow to validate.
+
     Raises:
         FlowIdNamingException: If the flow id does not comply with the regex.
     """

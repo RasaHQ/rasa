@@ -28,9 +28,9 @@ def display_license_information(_: argparse.Namespace) -> None:
     """Display licensing information to stdout."""
     rasa.shared.utils.cli.print_info(
         "By installing and using this software, you agree to be "
-        "bound by the terms and conditions of the End-User License Agreement "
-        "(EULA) available at https://rasa.com/eula. "
-        "Please review the EULA carefully before proceeding.\n\n"
+        "bound by the terms and conditions of the Developer Terms "
+        "available at https://rasa.com/developer-terms. "
+        "Please review the Developer Terms carefully before proceeding.\n\n"
         "Rasa Pro relies on several 3rd-party dependencies. "
         "The ones below require a license disclorure:\n",
         PSYCOPG2_LICENSE_DISCLOSURE,

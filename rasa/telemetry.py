@@ -43,7 +43,6 @@ from rasa.shared.core.flows.steps import (
 )
 from rasa.shared.exceptions import RasaException
 from rasa.utils import common as rasa_utils
-from rasa.utils.licensing import property_of_active_license, get_license_hash
 
 if typing.TYPE_CHECKING:
     from rasa.core.brokers.broker import EventBroker
@@ -138,6 +137,11 @@ TELEMETRY_SINGLE_STEP_LLM_COMMAND_GENERATOR_INITIALISED_EVENT = (
 TELEMETRY_MULTI_STEP_LLM_COMMAND_GENERATOR_INITIALISED_EVENT = (
     "MultiStepLLMCommandGenerator Initialised"
 )
+
+# licensing events
+TELEMETRY_CONVERSATION_COUNT = "Conversation Count"
+TELEMETRY_CONVERSATION_SOFT_LIMIT_REACHED = "Conversation Soft Limit Reached"
+TELEMETRY_CONVERSATION_HARD_LIMIT_REACHED = "Conversation Hard Limit Reached"
 
 # used to calculate the context on the first call and cache it afterwards
 TELEMETRY_CONTEXT = None
@@ -254,6 +258,12 @@ def is_telemetry_enabled() -> bool:
     Returns:
         `True`, if telemetry is enabled, `False` otherwise.
     """
+    from rasa.utils import licensing
+
+    if licensing.is_champion_server_license():
+        logger.debug("Telemetry is enabled for developer licenses.")
+        return True
+
     telemetry_environ = os.environ.get(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE)
 
     if telemetry_environ is not None:
@@ -594,6 +604,8 @@ def _default_context_fields() -> Dict[Text, Any]:
     Return:
         A new context containing information about the runtime environment.
     """
+    from rasa.utils.licensing import property_of_active_license, get_license_hash
+
     global TELEMETRY_CONTEXT
 
     if not TELEMETRY_CONTEXT:
@@ -737,6 +749,8 @@ def get_telemetry_id() -> Optional[Text]:
     Returns:
         The identifier, if it is configured correctly.
     """
+    from rasa.utils.licensing import property_of_active_license
+
     return property_of_active_license(lambda active_license: active_license.jti)
 
 
@@ -1066,9 +1080,10 @@ def _collect_flow_statistics(flows: List[Flow]) -> Dict[str, Any]:
 
 
 def _get_llm_command_generator_config(config: Dict[str, Any]) -> Optional[Dict]:
-    """Returns the configuration for the LLMCommandGenerator including the model name,
-    whether a custom prompt is used, whether flow retrieval is enabled, and flow
-    retrieval embedding model.
+    """Returns the configuration for the LLMCommandGenerator.
+
+    Includes the model name, whether a custom prompt is used, whether flow
+    retrieval is enabled, and flow retrieval embedding model.
     """
     from rasa.dialogue_understanding.generator import LLMCommandGenerator
     from rasa.dialogue_understanding.generator.constants import (
@@ -1685,5 +1700,45 @@ def track_multi_step_llm_command_generator_init(
             MULTI_STEP_LLM_COMMAND_GENERATOR_MODEL_NAME: llm_model_name,
             MULTI_STEP_LLM_COMMAND_GENERATOR_HANDLE_FLOWS_PROMPT: handle_flows_prompt,
             MULTI_STEP_LLM_COMMAND_GENERATOR_FILL_SLOTS_PROMPT: fill_slots_prompt,
+        },
+    )
+
+
+def track_conversation_count_hard_limit(
+    conversation_count: int, tracked_month: datetime
+) -> None:
+    """Track when the number of conversations reaches the hard limit."""
+    _track(
+        TELEMETRY_CONVERSATION_HARD_LIMIT_REACHED,
+        {
+            "conversation_count": conversation_count,
+            "year": tracked_month.year,
+            "month": tracked_month.month,
+        },
+    )
+
+
+def track_conversation_count_soft_limit(
+    conversation_count: int, tracked_month: datetime
+) -> None:
+    """Track when the number of conversations reaches the soft limit."""
+    _track(
+        TELEMETRY_CONVERSATION_SOFT_LIMIT_REACHED,
+        {
+            "conversation_count": conversation_count,
+            "year": tracked_month.year,
+            "month": tracked_month.month,
+        },
+    )
+
+
+def track_conversation_count(conversation_count: int, tracked_month: datetime) -> None:
+    """Track the number of conversations."""
+    _track(
+        TELEMETRY_CONVERSATION_COUNT,
+        {
+            "conversation_count": conversation_count,
+            "year": tracked_month.year,
+            "month": tracked_month.month,
         },
     )

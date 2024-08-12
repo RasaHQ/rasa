@@ -19,4 +19,4 @@ def test_rasa_license(run: Callable[..., RunResult]) -> None:
     output = run("license")
     printed_license = "\n".join(line.strip() for line in output.outlines)
     assert "psycopg2 & psycopg2-binary" in printed_license
-    assert "/eula" in printed_license
+    assert "/developer-terms" in printed_license
