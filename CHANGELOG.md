@@ -10,6 +10,20 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.8.12] - 2024-08-12
+                        
+Rasa Pro 3.8.12 (2024-08-12)                             
+### Bugfixes
+- [#851](https://github.com/rasahq/rasa/issues/851): Fix `TypeError: InformationRetrieval.search() got an unexpected keyword argument` when tracing is enabled with `EnterpriseSearchPolicy`.
+- [#916](https://github.com/rasahq/rasa/issues/916): Fix extraction of tracing context from the request headers and injection into the Rasa server tracing context.
+- [#921](https://github.com/rasahq/rasa/issues/921): Update the usage of `time.process_time_ns` with `time.perf_counter_ns` to fix the inconsistencies between duration metrics and trace spans duration.
+- [#957](https://github.com/rasahq/rasa/issues/957): `YamlValidationException` will correctly return line number of the element where the error ocurred when line number of that element is not returned by `ruamel.yaml` (for elements of primitive types, e.g. `str`, `int`, etc.), instead of returning the line number of the parent element.
+- [#964](https://github.com/rasahq/rasa/issues/964): Updated `setuptools` to fix security vulnarability.
+
+### Miscellaneous internal changes
+- [#887](https://github.com/rasahq/rasa/issues/887), [#955](https://github.com/rasahq/rasa/issues/955)
+
+
 ## [3.8.11] - 2024-07-04
                         
 Rasa Pro 3.8.11 (2024-07-04)                             
