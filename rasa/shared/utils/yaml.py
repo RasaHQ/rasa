@@ -4,7 +4,7 @@ import re
 from collections import OrderedDict
 import logging
 import os
-from typing import Dict, List, Optional, Any, Callable, Union
+from typing import Dict, List, Optional, Any, Callable, Tuple, Union
 
 
 from importlib_resources import files
@@ -18,6 +18,7 @@ from dataclasses import field
 from ruamel.yaml import RoundTripRepresenter, YAMLError
 from ruamel.yaml.constructor import DuplicateKeyError, BaseConstructor, ScalarNode
 from ruamel import yaml as yaml
+from ruamel.yaml.comments import CommentedSeq, CommentedMap
 
 from rasa.shared.utils.constants import DEFAULT_ENCODING
 from rasa.shared.utils.io import (
@@ -143,15 +144,78 @@ class YamlValidationException(YamlException, ValueError):
             msg += f":\n{error_msg}"
         return msg
 
+    def _calculate_number_of_lines(
+        self,
+        current: Union[CommentedSeq, CommentedMap],
+        target: Optional[str] = None,
+    ) -> Tuple[int, bool]:
+        """Counts the lines that are missing due to the ruamel yaml parser logic.
+
+        Since not all nodes returned from the ruamel yaml parser
+        have line numbers attached (arrays have them, dicts have
+        them, but strings don't), this method calculates the number
+        of lines that are missing instead of just returning line of the parent element
+
+        Args:
+        current: current content
+        target: target key to find the line number of
+
+        Returns:
+            A tuple containing a number of missing lines
+            and a flag indicating if an element with a line number was found
+        """
+        if isinstance(current, list):
+            # return the line number of the last list element
+            line_number = current[-1].lc.line + 1
+            logger.debug(f"Returning from list: last element at {line_number}")
+            return line_number, True
+
+        keys_to_check = list(current.keys())
+        if target:
+            # If target is specified, only check keys before it
+            keys_to_check = keys_to_check[: keys_to_check.index(target)]
+        try:
+            # find the last key that has a line number attached
+            last_key_with_lc = next(
+                iter(
+                    [
+                        key
+                        for key in reversed(keys_to_check)
+                        if hasattr(current[key], "lc")
+                    ]
+                )
+            )
+            logger.debug(f"Last key with line number: {last_key_with_lc}")
+        except StopIteration:
+            # otherwise return the number of elements on that level up to the target
+            logger.debug(f"No line number found in {current}")
+            if target:
+                return list(current.keys()).index(target), False
+            return len(list(current.keys())), False
+
+        offset = current[last_key_with_lc].lc.line if not target else 0
+        # Recursively calculate the number of lines
+        # for the element associated with the last key with a line number
+        child_offset, found_lc = self._calculate_number_of_lines(
+            current[last_key_with_lc]
+        )
+        if not found_lc:
+            child_offset += offset
+        if target:
+            child_offset += 1
+        # add the number of trailing keys without line numbers to the offset
+        last_idx_with_lc = keys_to_check.index(last_key_with_lc)
+        child_offset += len(keys_to_check[last_idx_with_lc + 1 :])
+
+        logger.debug(f"Analysed {current}, found {child_offset} lines")
+        # Return the calculated child offset and True indicating a line number was found
+        return child_offset, True
+
     def _line_number_for_path(self, current: Any, path: List[str]) -> Optional[int]:
         """Get line number for a yaml path in the current content.
 
         Implemented using recursion: algorithm goes down the path navigating to the
-        leaf in the YAML tree. Unfortunately, not all nodes returned from the
-        ruamel yaml parser have line numbers attached (arrays have them, dicts have
-        them), e.g. strings don't have attached line numbers.
-        If we arrive at a node that has no line number attached, we'll return the
-        line number of the parent - that is as close as it gets.
+        leaf in the YAML tree.
 
         Args:
             current: current content
@@ -170,9 +234,20 @@ class YamlValidationException(YamlException, ValueError):
 
         head, tail = path[0], path[1:]
 
+        if head == "":
+            return current.lc.line
+
         if head:
             if isinstance(current, dict) and head in current:
-                return self._line_number_for_path(current[head], tail) or this_line
+                line = self._line_number_for_path(current[head], tail)
+                if line is None:
+                    line_offset, found_lc = self._calculate_number_of_lines(
+                        current, head
+                    )
+                    if found_lc:
+                        return line_offset
+                    return this_line + line_offset
+                return line
             elif isinstance(current, list) and head.isdigit():
                 return self._line_number_for_path(current[int(head)], tail) or this_line
             else:
