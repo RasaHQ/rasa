@@ -12,6 +12,7 @@ import structlog
 from rasa.core.channels import CollectingOutputChannel, UserMessage
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.utils import AvailableEndpoints
+from rasa.e2e_test.e2e_config import create_llm_judge_config
 from rasa.e2e_test.e2e_test_case import (
     ActualStepOutput,
     Fixture,
@@ -46,6 +47,7 @@ class E2ETestRunner:
         model_server: Optional[EndpointConfig] = None,
         remote_storage: Optional[Text] = None,
         endpoints: Optional[AvailableEndpoints] = None,
+        **kwargs: Any,
     ) -> None:
         """Initializes the E2E test suite runner.
 
@@ -54,6 +56,7 @@ class E2ETestRunner:
             model_server: Model server configuration.
             remote_storage: Remote storage configuration.
             endpoints: Endpoints configuration.
+            **kwargs: Additional arguments
         """
         import rasa.core.agent
 
@@ -80,6 +83,9 @@ class E2ETestRunner:
                 "Please check that the agent was able to "
                 "load the trained model."
             )
+
+        test_case_path = kwargs.get("test_case_path")
+        self.llm_judge_config = create_llm_judge_config(test_case_path)
 
     async def run_prediction_loop(
         self,
