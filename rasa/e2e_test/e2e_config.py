@@ -161,10 +161,14 @@ def get_conftest_path(test_case_path: Optional[Path]) -> Optional[Path]:
 
         test_case_path = test_case_path.parent
 
-        plausible_config_path = test_case_path / "config.yml"
-        if plausible_config_path.exists():
-            # we reached the root of the assistant project
-            return None
+        plausible_config_paths = [
+            test_case_path / "config.yml",
+            test_case_path / "config",
+        ]
+        for plausible_config_path in plausible_config_paths:
+            if plausible_config_path.exists():
+                # we reached the root of the assistant project
+                return None
 
 
 def find_conftest_path(path: Path) -> Generator[Path, None, None]:
