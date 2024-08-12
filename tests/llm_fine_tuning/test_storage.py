@@ -1,18 +1,19 @@
 from pathlib import Path
 from unittest.mock import patch, MagicMock, call, Mock
+
 import pytest
 
 import rasa.shared.utils.io
 from rasa.cli.e2e_test import read_test_cases
 from rasa.llm_fine_tuning.llm_data_preparation_module import LLMDataExample
-from rasa.llm_fine_tuning.train_test_split_module import (
-    AlpacaDataExample,
-    ShareGPTDataExample,
-    ShareGPTMessageFormat,
-)
 from rasa.llm_fine_tuning.storage import (
     FileStorageStrategy,
     StorageContext,
+)
+from rasa.llm_fine_tuning.train_test_split_module import (
+    InstructionDataFormat,
+    ConversationalDataFormat,
+    ConversationalMessageDataFormat,
 )
 
 
@@ -97,8 +98,8 @@ def test_write_llm_data(tmpdir: str):
 def test_write_formatted_finetuning_data_alpaca_format(tmpdir: str):
     # Arrange
     formatted_data = [
-        AlpacaDataExample("value1", "value2"),
-        AlpacaDataExample("value3", "value4"),
+        InstructionDataFormat("value1", "value2"),
+        InstructionDataFormat("value3", "value4"),
     ]
     output_dir = tmpdir
     storage_location = "4_train_test_split"
@@ -122,11 +123,11 @@ def test_write_formatted_finetuning_data_alpaca_format(tmpdir: str):
 def test_write_formatted_finetuning_data_sharegpt_format(tmpdir: str):
     # Arrange
     formatted_data = [
-        ShareGPTDataExample(
+        ConversationalDataFormat(
             [
-                ShareGPTMessageFormat("role1", "text1"),
-                ShareGPTMessageFormat("role2", "text2"),
-                ShareGPTMessageFormat("role3", "text3"),
+                ConversationalMessageDataFormat("role1", "text1"),
+                ConversationalMessageDataFormat("role2", "text2"),
+                ConversationalMessageDataFormat("role3", "text3"),
             ]
         )
     ]

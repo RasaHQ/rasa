@@ -1,5 +1,6 @@
-from unittest.mock import call, MagicMock
 from typing import List
+from unittest.mock import call, MagicMock
+
 import pytest
 import structlog
 
@@ -9,11 +10,12 @@ from rasa.llm_fine_tuning.llm_data_preparation_module import LLMDataExample
 from rasa.llm_fine_tuning.train_test_split_module import (
     _get_minimum_test_case_groups_to_cover_all_commands,
     split_llm_fine_tuning_data,
-    AlpacaDataExample,
-    ShareGPTDataExample,
-    ShareGPTMessageFormat,
+    InstructionDataFormat,
+    ConversationalDataFormat,
+    ConversationalMessageDataFormat,
+    INSTRUCTION_DATA_FORMAT,
+    CONVERSATIONAL_DATA_FORMAT,
 )
-
 from tests.utilities import filter_logs
 
 
@@ -65,7 +67,7 @@ def test_split_llm_fine_tuning_data_train_alpaca_format_50_percent_split_frac(
         train_data, val_data = split_llm_fine_tuning_data(
             llm_fine_tuning_data,
             0.5,
-            "alpaca",
+            INSTRUCTION_DATA_FORMAT,
             storage_context,
             test_suite,
         )
@@ -74,11 +76,11 @@ def test_split_llm_fine_tuning_data_train_alpaca_format_50_percent_split_frac(
     assert len(val_data) == 2
     assert train_data == (
         [
-            AlpacaDataExample(
+            InstructionDataFormat(
                 prompt="test_prompt has rephrased_user_utterance_1",
                 completion="StartFlow(abc), SetSlot(xyz, temp)",
             ),
-            AlpacaDataExample(
+            InstructionDataFormat(
                 prompt="test_prompt has rephrased_user_utterance_2",
                 completion="StartFlow(abc), SetSlot(xyz, temp)",
             ),
@@ -86,11 +88,11 @@ def test_split_llm_fine_tuning_data_train_alpaca_format_50_percent_split_frac(
     )
     assert val_data == (
         [
-            AlpacaDataExample(
+            InstructionDataFormat(
                 prompt="test_prompt has rephrased_user_utterance_A",
                 completion="StartFlow(def)",
             ),
-            AlpacaDataExample(
+            InstructionDataFormat(
                 prompt="test_prompt has rephrased_user_utterance_B",
                 completion="StartFlow(def)",
             ),
@@ -129,7 +131,7 @@ def test_split_llm_fine_tuning_data_train_alpaca_format_100_percent_split_frac(
         train_data, val_data = split_llm_fine_tuning_data(
             llm_fine_tuning_data,
             1.0,
-            "alpaca",
+            INSTRUCTION_DATA_FORMAT,
             storage_context,
             test_suite,
         )
@@ -138,19 +140,19 @@ def test_split_llm_fine_tuning_data_train_alpaca_format_100_percent_split_frac(
     assert len(val_data) == 0
     assert train_data == (
         [
-            AlpacaDataExample(
+            InstructionDataFormat(
                 prompt="test_prompt has rephrased_user_utterance_1",
                 completion="StartFlow(abc), SetSlot(xyz, temp)",
             ),
-            AlpacaDataExample(
+            InstructionDataFormat(
                 prompt="test_prompt has rephrased_user_utterance_2",
                 completion="StartFlow(abc), SetSlot(xyz, temp)",
             ),
-            AlpacaDataExample(
+            InstructionDataFormat(
                 prompt="test_prompt has rephrased_user_utterance_A",
                 completion="StartFlow(def)",
             ),
-            AlpacaDataExample(
+            InstructionDataFormat(
                 prompt="test_prompt has rephrased_user_utterance_B",
                 completion="StartFlow(def)",
             ),
@@ -196,7 +198,7 @@ def test_split_llm_fine_tuning_data_train_sharegpt_format(
         train_data, val_data = split_llm_fine_tuning_data(
             llm_fine_tuning_data,
             0.5,
-            "sharegpt",
+            CONVERSATIONAL_DATA_FORMAT,
             storage_context,
             test_suite,
         )
@@ -205,24 +207,24 @@ def test_split_llm_fine_tuning_data_train_sharegpt_format(
     assert len(val_data) == 2
     assert train_data == (
         [
-            ShareGPTDataExample(
+            ConversationalDataFormat(
                 messages=[
-                    ShareGPTMessageFormat(
+                    ConversationalMessageDataFormat(
                         role="user",
                         content="test_prompt has rephrased_user_utterance_1",
                     ),
-                    ShareGPTMessageFormat(
+                    ConversationalMessageDataFormat(
                         role="assistant", content="StartFlow(abc), SetSlot(xyz, temp)"
                     ),
                 ]
             ),
-            ShareGPTDataExample(
+            ConversationalDataFormat(
                 messages=[
-                    ShareGPTMessageFormat(
+                    ConversationalMessageDataFormat(
                         role="user",
                         content="test_prompt has rephrased_user_utterance_2",
                     ),
-                    ShareGPTMessageFormat(
+                    ConversationalMessageDataFormat(
                         role="assistant", content="StartFlow(abc), SetSlot(xyz, temp)"
                     ),
                 ]
@@ -231,22 +233,26 @@ def test_split_llm_fine_tuning_data_train_sharegpt_format(
     )
     assert val_data == (
         [
-            ShareGPTDataExample(
+            ConversationalDataFormat(
                 messages=[
-                    ShareGPTMessageFormat(
+                    ConversationalMessageDataFormat(
                         role="user",
                         content="test_prompt has rephrased_user_utterance_A",
                     ),
-                    ShareGPTMessageFormat(role="assistant", content="StartFlow(def)"),
+                    ConversationalMessageDataFormat(
+                        role="assistant", content="StartFlow(def)"
+                    ),
                 ]
             ),
-            ShareGPTDataExample(
+            ConversationalDataFormat(
                 messages=[
-                    ShareGPTMessageFormat(
+                    ConversationalMessageDataFormat(
                         role="user",
                         content="test_prompt has rephrased_user_utterance_B",
                     ),
-                    ShareGPTMessageFormat(role="assistant", content="StartFlow(def)"),
+                    ConversationalMessageDataFormat(
+                        role="assistant", content="StartFlow(def)"
+                    ),
                 ]
             ),
         ]
@@ -288,8 +294,8 @@ def test_split_llm_fine_tuning_data_train_unsupported_format(
         )
 
     assert str(e.value) == (
-        "Output format 'some_format' is not supported. Supported formats are 'alpaca'"
-        " and 'sharegpt'."
+        f"Output format 'some_format' is not supported. Supported formats are "
+        f"'{INSTRUCTION_DATA_FORMAT}' and '{CONVERSATIONAL_DATA_FORMAT}'."
     )
 
 
