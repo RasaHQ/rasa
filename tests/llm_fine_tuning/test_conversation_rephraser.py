@@ -1,4 +1,5 @@
 import asyncio
+from typing import Optional, List
 from unittest.mock import patch, MagicMock, Mock
 
 import pytest
@@ -104,18 +105,107 @@ def test_invoke_llm_failure(mock_llm_factory: Mock, rephraser: ConversationRephr
         assert result is None
 
 
-def test_parse_output(rephraser: ConversationRephraser):
-    output = """
-    USER: Show invoices
-    1. I want to see my bills.
-    2. I mean bills
-    3. Yes, I want to see the invoices.
-    &&&
-    USER: I'd like to book a car
-    1. I need to reserve a car.
-    2. Could I arrange for a car rental?
-    3. I'm interested in hiring a car.'
-    """
+@pytest.mark.parametrize(
+    "block, expected_user_message, expected_rephrasings",
+    (
+        (
+            """
+            USER: Max
+            1. My name is Max.
+            2. I go by the name Max.
+            3. I am identified as Max.
+            """,
+            "Max",
+            ["My name is Max.", "I go by the name Max.", "I am identified as Max."],
+        ),
+        (
+            """
+            USER: Max
+            1. USER: My name is Max.
+            2. USER: I go by the name Max.
+            3. USER: I am identified as Max.
+            """,
+            "Max",
+            ["My name is Max.", "I go by the name Max.", "I am identified as Max."],
+        ),
+        (
+            """
+            Max
+            1. My name is Max.
+            2. I go by the name Max.
+            3. I am identified as Max.
+            """,
+            "Max",
+            ["My name is Max.", "I go by the name Max.", "I am identified as Max."],
+        ),
+        (
+            """
+            USER: Max
+            - My name is Max.
+            - I go by the name Max.
+            - I am identified as Max.
+            """,
+            "Max",
+            ["My name is Max.", "I go by the name Max.", "I am identified as Max."],
+        ),
+        (
+            """
+
+            """,
+            None,
+            None,
+        ),
+        (
+            """
+            USER: Max
+            """,
+            None,
+            None,
+        ),
+    ),
+)
+def test_extract_rephrasings(
+    block: str,
+    expected_user_message: Optional[str],
+    expected_rephrasings: Optional[List[str]],
+    rephraser: ConversationRephraser,
+):
+    user_message, rephrasings = rephraser._extract_rephrasings(block)
+
+    assert user_message == expected_user_message
+    assert rephrasings == expected_rephrasings
+
+
+@pytest.mark.parametrize(
+    "output",
+    (
+        """
+        USER: Show invoices
+        1. I want to see my bills.
+        2. I mean bills
+        3. Yes, I want to see the invoices.
+
+        USER: I'd like to book a car
+        1. I need to reserve a car.
+        2. Could I arrange for a car rental?
+        3. I'm interested in hiring a car.'
+        """,
+        """
+        \"\"\"
+        Show invoices
+        1. I want to see my bills.
+        2. I mean bills
+        3. Yes, I want to see the invoices.
+
+        USER: I'd like to book a car
+        - I need to reserve a car.
+        - Could I arrange for a car rental?
+        - I'm interested in hiring a car.'
+        \"\"\"
+        """,
+    ),
+)
+def test_parse_output(output: str, rephraser: ConversationRephraser):
     number_of_rephrasings = 3
     user_messages = ["Show invoices", "I'd like to book a car"]
 
@@ -136,7 +226,7 @@ def test_parse_output_insufficient_rephrasings(rephraser: ConversationRephraser)
     1. I want to see my bills.
     2. I mean bills
     3. Yes, I want to see the invoices.
-    &&&
+
     USER: I'd like to book a car
     1. I need to reserve a car.
     3. I'm interested in hiring a car.'
@@ -156,7 +246,6 @@ def test_parse_output_insufficient_rephrasings(rephraser: ConversationRephraser)
     "input_message",
     (
         "USER: invalid user message",
-        "Show invoices",
         "USER Show invoices",
         "USER - Show invoices",
     ),
@@ -165,7 +254,7 @@ def test_parse_output_invalid_user_message(input_message: str):
     output = f"""
     {input_message}
     1. I want to see my bills.
-    &&&
+
     USER: I'd like to book a car
     1. I need to reserve a car.
     """
@@ -186,31 +275,6 @@ def test_parse_output_invalid_user_message(input_message: str):
     ]
 
     assert rephrased_messages == expected_rephrase_message
-
-
-def test_parse_output_invalid_format(rephraser: ConversationRephraser):
-    output = """
-    Show invoices
-    1. I want to see my bills.
-    2. I mean bills
-    3. Yes, I want to see the invoices.
-
-    USER: I'd like to book a car
-    1. I need to reserve a car.
-    2. Could I arrange for a car rental?
-    3. I'm interested in hiring a car.'
-    """
-    user_messages = ["Show invoices", "I'd like to book a car"]
-
-    rephrased_messages = rephraser._parse_output(output, user_messages)
-
-    # Assertions
-    assert rephrased_messages is not None
-    assert len(rephrased_messages) == len(user_messages)
-    assert rephrased_messages[0].original_user_message == user_messages[0]
-    assert rephrased_messages[1].original_user_message == user_messages[1]
-    assert len(rephrased_messages[0].rephrasings) == 0
-    assert len(rephrased_messages[1].rephrasings) == 0
 
 
 def test_render_template(rephraser: ConversationRephraser, conversation: Conversation):

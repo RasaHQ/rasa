@@ -5,10 +5,16 @@ import pytz
 import time
 from datetime import datetime
 from dateutil import parser
+from pytest import CaptureFixture
 from typing import Type, Optional, Text, List, Any, Dict
 
 import rasa.shared.utils.common
 import rasa.shared.core.events
+from rasa.core.constants import UTTER_SOURCE_METADATA_KEY
+from rasa.core.policies.enterprise_search_policy import (
+    SEARCH_QUERY_METADATA_KEY,
+    SEARCH_RESULTS_METADATA_KEY,
+)
 from rasa.core.test import (
     WronglyClassifiedUserUtterance,
     WarningPredictedAction,
@@ -912,3 +918,37 @@ def test_session_started_event_is_not_serialised():
 def test_remove_parse_data(event: Dict[Text, Any]):
     reduced_event = rasa.shared.core.events.remove_parse_data(event)
     assert "parse_data" not in reduced_event
+
+
+def test_clean_up_metadata_in_bot_event(capsys: CaptureFixture) -> None:
+    bot_event = BotUttered(
+        "Finley is your intelligent assistant for the FinX app.",
+        metadata={
+            SEARCH_RESULTS_METADATA_KEY: [
+                {
+                    "text": "Q: Who is Finley?\nA: Finley is your smart "
+                    "assistant for the FinX App."
+                }
+            ],
+            UTTER_SOURCE_METADATA_KEY: "EnterpriseSearchPolicy",
+            SEARCH_QUERY_METADATA_KEY: "Who is Finley?",
+        },
+    )
+
+    assert SEARCH_RESULTS_METADATA_KEY not in repr(bot_event)
+    out, _ = capsys.readouterr()
+    assert "debug" in out
+    assert "search_results.metadata.removed" in out
+    assert (
+        "Removed search_results metadata key only "
+        "from the string representation of the bot event."
+    ) in out
+
+    assert SEARCH_RESULTS_METADATA_KEY not in str(bot_event)
+    out, _ = capsys.readouterr()
+    assert "debug" in out
+    assert "search_results.metadata.removed" in out
+    assert (
+        "Removed search_results metadata key only "
+        "from the string representation of the bot event."
+    ) in out

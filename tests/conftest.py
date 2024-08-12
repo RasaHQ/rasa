@@ -1124,3 +1124,20 @@ def fake_embedding_client() -> EmbeddingClient:
     client = FakeEmbeddingClient()
 
     return client
+
+
+@pytest.fixture(scope="session")
+async def trained_custom_actions_model(
+    trained_async: Callable,
+) -> Text:
+    parent_folder = "data/test_custom_action_triggers_action_extract_slots"
+    domain_path = f"{parent_folder}/domain.yml"
+    config_path = f"{parent_folder}/config.yml"
+    stories_path = f"{parent_folder}/stories.yml"
+    nlu_path = f"{parent_folder}/nlu.yml"
+    return await trained_async(domain_path, config_path, [stories_path, nlu_path])
+
+
+@pytest.fixture
+def custom_actions_agent(trained_custom_actions_model: Text) -> Agent:
+    return Agent.load(trained_custom_actions_model)

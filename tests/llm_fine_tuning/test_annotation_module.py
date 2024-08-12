@@ -2,6 +2,8 @@ from typing import Dict, Any, List
 from unittest.mock import MagicMock, patch, Mock
 
 import pytest
+from structlog.testing import capture_logs
+
 from rasa.dialogue_understanding.commands import StartFlowCommand
 from rasa.e2e_test.e2e_test_case import TestSuite, TestCase, TestStep, ActualStepOutput
 from rasa.e2e_test.e2e_test_runner import E2ETestRunner
@@ -11,12 +13,11 @@ from rasa.llm_fine_tuning.annotation_module import (
     _convert_to_conversation_step,
     _extract_llm_prompt_and_commands,
 )
-from rasa.llm_fine_tuning.conversation_storage import StorageContext
 from rasa.llm_fine_tuning.conversations import Conversation, ConversationStep
+from rasa.llm_fine_tuning.storage import StorageContext
 from rasa.shared.core.events import UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import LLM_PROMPT, LLM_COMMANDS
-from structlog.testing import capture_logs
 
 
 @pytest.fixture

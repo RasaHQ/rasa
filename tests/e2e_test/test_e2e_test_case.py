@@ -1,4 +1,4 @@
-from typing import Dict, List, Union
+from typing import Any, Dict, List, Union
 
 import pytest
 from rasa.shared.core.events import (
@@ -15,6 +15,7 @@ from rasa.e2e_test.e2e_test_case import (
     TestCase,
     TestStep,
 )
+from rasa.shared.exceptions import RasaException
 
 
 def test_create_test_fixture_from_dict() -> None:
@@ -89,7 +90,7 @@ def test_create_test_step_utter_from_dict() -> None:
 
 def test_create_test_step_from_dict_invalid() -> None:
     """Test creating a test step from a dictionary."""
-    with pytest.raises(ValueError):
+    with pytest.raises(RasaException):
         TestStep.from_dict({"invalid": "Hi!"})
 
 
@@ -114,7 +115,7 @@ def test_create_test_case_from_dict() -> None:
 
 
 @pytest.mark.parametrize(
-    "input",
+    "test_input",
     [
         {"user": "Hi!"},
         {"user": "Hi!", "metadata": "user_info"},
@@ -124,15 +125,32 @@ def test_create_test_case_from_dict() -> None:
         {"slot_was_set": "slot_a"},
         {"slot_was_not_set": {"slot_a": 1}},
         {"slot_was_not_set": "slot_a"},
+        {
+            "user": "How can I pay for my credit card?",
+            "assertions": [{"flow_started": "pay_credit_card_bill"}],
+        },
+        {
+            "user": "How can I pay for my credit card?",
+            "assertions": [
+                {
+                    "pattern_clarification_contains": [
+                        "transfer_money",
+                        "apply_credit_card",
+                        "pay_credit_card_bill",
+                    ]
+                }
+            ],
+            "assertion_order_enabled": True,
+        },
     ],
 )
-def test_test_step_from_dict_validation_pass(input: Dict) -> None:
-    step = TestStep.from_dict(input)
-    assert step.as_dict() == input
+def test_test_step_from_dict_validation_pass(test_input: Dict[str, Any]) -> None:
+    step = TestStep.from_dict(test_input)
+    assert step.as_dict() == test_input
 
 
 @pytest.mark.parametrize(
-    "input, expected_error",
+    "test_input, expected_error",
     [
         ({}, "Test step is missing either the"),
         (
@@ -144,14 +162,27 @@ def test_test_step_from_dict_validation_pass(input: Dict) -> None:
             "Test step has both slot_was_set and slot_was_not_set keys",
         ),
         ({"random": 123}, "Test step is missing either the"),
+        (
+            {"bot": "Hello!", "assertions": [{"flow_started": "welcome_flow"}]},
+            "Test step with assertions must only be used with the 'user' key:",
+        ),
+        (
+            {"bot": "Hello!", "assertion_order_enabled": True},
+            "Test step with 'assertion_order_enabled' key must only "
+            "be used with the 'user' key:",
+        ),
+        (
+            {"user": "Hello!", "assertion_order_enabled": True},
+            "You must specify the 'assertions' key in the user "
+            "test step where you are using 'assertion_order_enabled' key:",
+        ),
     ],
 )
 def test_test_step_from_dict_validation_exception(
-    input: Dict, expected_error: str
+    test_input: Dict, expected_error: str
 ) -> None:
-    with pytest.raises(ValueError) as excinfo:
-        TestStep.from_dict(input)
-    assert excinfo.match(expected_error)
+    with pytest.raises(RasaException, match=expected_error):
+        TestStep.from_dict(test_input)
 
 
 @pytest.mark.parametrize(

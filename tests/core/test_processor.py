@@ -16,6 +16,7 @@ from unittest.mock import MagicMock, Mock, patch, AsyncMock
 import freezegun
 import pytest
 
+from rasa.core.constants import UTTER_SOURCE_METADATA_KEY
 from rasa.dialogue_understanding.commands.set_slot_command import SetSlotExtractor
 import rasa.shared.utils.io
 import tests.utilities
@@ -919,7 +920,12 @@ async def test_handle_message_with_session_start(
                 "utter_greet", policy="AugmentedMemoizationPolicy", confidence=1.0
             ),
             BotUttered(
-                "hey there Core!", data={}, metadata={"utter_action": "utter_greet"}
+                "hey there Core!",
+                data={},
+                metadata={
+                    "utter_action": "utter_greet",
+                    UTTER_SOURCE_METADATA_KEY: "TemplatedNaturalLanguageGenerator",
+                },
             ),
             ActionExecuted(ACTION_LISTEN_NAME, confidence=1.0),
             ActionExecuted(ACTION_SESSION_START_NAME),
@@ -947,7 +953,10 @@ async def test_handle_message_with_session_start(
             BotUttered(
                 "hey there post-session start hello!",
                 data={},
-                metadata={"utter_action": "utter_greet"},
+                metadata={
+                    "utter_action": "utter_greet",
+                    UTTER_SOURCE_METADATA_KEY: "TemplatedNaturalLanguageGenerator",
+                },
             ),
             ActionExecuted(ACTION_LISTEN_NAME),
         ],
@@ -1646,16 +1655,9 @@ async def test_loads_correct_model_from_path(
 async def test_custom_action_triggers_action_extract_slots(
     trained_async: Callable,
     caplog: LogCaptureFixture,
+    custom_actions_agent: Agent,
 ):
-    parent_folder = "data/test_custom_action_triggers_action_extract_slots"
-    domain_path = f"{parent_folder}/domain.yml"
-    config_path = f"{parent_folder}/config.yml"
-    stories_path = f"{parent_folder}/stories.yml"
-    nlu_path = f"{parent_folder}/nlu.yml"
-
-    model_path = await trained_async(domain_path, config_path, [stories_path, nlu_path])
-    agent = Agent.load(model_path)
-    processor = agent.processor
+    processor = custom_actions_agent.processor
 
     action_server_url = "http://some-url"
     endpoint = EndpointConfig(action_server_url)

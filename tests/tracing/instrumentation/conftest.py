@@ -577,6 +577,7 @@ class MockNLUCommandAdapter(NLUCommandAdapter):
         message: Message,
         flows: FlowsList,
         tracker: Optional[DialogueStateTracker] = None,
+        **kwargs: Any,
     ) -> List[Command]:
         return [StartFlowCommand(flow="health_advice")]
 

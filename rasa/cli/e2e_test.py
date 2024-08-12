@@ -4,6 +4,7 @@ import logging
 import math
 import shutil
 import sys
+from functools import lru_cache
 from pathlib import Path
 from textwrap import dedent
 from typing import Any, Dict, Generator, List, Optional, Text, Tuple, Union
@@ -36,13 +37,16 @@ import rasa.utils.io
 from rasa.shared.utils.yaml import (
     parse_raw_yaml,
     read_schema_file,
-    validate_yaml_content_using_schema,
+    validate_yaml_data_using_schema_with_assertions,
     is_key_in_yaml,
 )
+from rasa.utils.beta import BetaNotEnabledException, ensure_beta_feature_is_enabled
 
 DEFAULT_E2E_INPUT_TESTS_PATH = "tests/e2e_test_cases.yml"
 DEFAULT_E2E_OUTPUT_TESTS_PATH = "tests/e2e_results.yml"
 KEY_TEST_CASES = "test_cases"
+
+RASA_PRO_BETA_E2E_ASSERTIONS_ENV_VAR_NAME = "RASA_PRO_BETA_E2E_ASSERTIONS"
 
 logger = logging.getLogger(__name__)
 
@@ -170,6 +174,7 @@ def validate_path_to_test_cases(path: Text) -> None:
         sys.exit(1)
 
 
+@lru_cache(maxsize=1)
 def extract_test_case_from_path(path: Text) -> Tuple[Text, Text]:
     """Extract test case from path if specified.
 
@@ -220,9 +225,14 @@ def read_test_cases(path: Text) -> TestSuite:
     fixtures: Dict[Text, Fixture] = {}
     metadata: Dict[Text, Metadata] = {}
 
+    beta_flag_verified = False
+
     for test_file in test_files:
         test_file_content = parse_raw_yaml(Path(test_file).read_text())
-        validate_yaml_content_using_schema(test_file_content, e2e_test_schema)
+
+        validate_yaml_data_using_schema_with_assertions(
+            yaml_data=test_file_content, schema_content=e2e_test_schema
+        )
 
         test_cases_content = test_file_content.get(KEY_TEST_CASES) or []
 
@@ -237,6 +247,10 @@ def read_test_cases(path: Text) -> TestSuite:
                 TestCase.from_dict(test_case_dict, file=test_file)
                 for test_case_dict in test_cases_content
             ]
+
+        beta_flag_verified = verify_beta_feature_flag_for_assertions(
+            test_cases, beta_flag_verified
+        )
 
         input_test_cases.extend(test_cases)
         fixtures_content = test_file_content.get(KEY_FIXTURES) or []
@@ -286,12 +300,15 @@ def execute_e2e_tests(args: argparse.Namespace) -> None:
 
     test_suite = read_test_cases(path_to_test_cases)
 
+    test_case_path, _ = extract_test_case_from_path(path_to_test_cases)
+
     try:
         test_runner = E2ETestRunner(
             remote_storage=args.remote_storage,
             model_path=args.model,
             model_server=endpoints.model,
             endpoints=endpoints,
+            test_case_path=Path(test_case_path),
         )
     except AgentNotReady as error:
         logger.error(msg=error.message)
@@ -397,8 +414,21 @@ def print_failed_case(fail: TestResult) -> None:
     rasa.shared.utils.cli.print_error(
         f"{rasa.shared.utils.cli.pad(fail_headline, char='-')}\n"
     )
-    print(f"Mismatch starting at {fail.test_case.file}:{fail.error_line}: \n")
-    rich.print(("\n".join(color_difference(fail.difference))))
+    rasa.shared.utils.cli.print_error(
+        f"Mismatch starting at {fail.test_case.file}:{fail.error_line}: \n"
+    )
+    if fail.difference:
+        rich.print(("\n".join(color_difference(fail.difference))))
+
+    if fail.assertion_failure:
+        rasa.shared.utils.cli.print_error(
+            f"Assertion type '{fail.assertion_failure.assertion.type()}' failed "
+            f"with this error message: {fail.assertion_failure.error_message}\n"
+        )
+        rasa.shared.utils.cli.print_error("Actual events transcript:\n")
+        rasa.shared.utils.cli.print_error(
+            "\n".join(fail.assertion_failure.actual_events_transcript)
+        )
 
 
 def print_test_summary(failed: List[TestResult]) -> None:
@@ -564,3 +594,34 @@ def read_e2e_test_schema() -> Union[List[Any], Dict[Text, Any]]:
         The content of the schema.
     """
     return read_schema_file(SCHEMA_FILE_PATH)
+
+
+def has_test_case_with_assertions(test_cases: List[TestCase]) -> bool:
+    """Check if the test cases contain assertions."""
+    try:
+        next(test_case for test_case in test_cases if test_case.uses_assertions())
+    except StopIteration:
+        return False
+
+    return True
+
+
+def verify_beta_feature_flag_for_assertions(
+    test_cases: List[TestCase], beta_flag_verified: bool
+) -> bool:
+    """Verify the beta feature flag for assertions."""
+    if beta_flag_verified:
+        return True
+
+    if not has_test_case_with_assertions(test_cases):
+        return beta_flag_verified
+
+    try:
+        ensure_beta_feature_is_enabled(
+            "end-to-end testing with assertions",
+            RASA_PRO_BETA_E2E_ASSERTIONS_ENV_VAR_NAME,
+        )
+    except BetaNotEnabledException as exc:
+        rasa.shared.utils.cli.print_error_and_exit(str(exc))
+
+    return True

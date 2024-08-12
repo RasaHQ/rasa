@@ -930,16 +930,42 @@ class BotUttered(SkipEventInMDStoryMixin):
 
         return self.__members() == other.__members()
 
+    def _clean_up_metadata(self) -> Dict[str, Any]:
+        """Removes search_results metadata key from the metadata.
+
+        This is intended to prevent increasing the string representation
+        character length of the bot event.
+        """
+        from rasa.core.policies.enterprise_search_policy import (
+            SEARCH_RESULTS_METADATA_KEY,
+        )
+
+        metadata = copy.deepcopy(self.metadata)
+
+        if SEARCH_RESULTS_METADATA_KEY in self.metadata:
+            metadata.pop(SEARCH_RESULTS_METADATA_KEY)
+            structlogger.debug(
+                "search_results.metadata.removed",
+                event_info="Removed search_results metadata key only "
+                "from the string representation of the bot event.",
+            )
+
+        return metadata
+
     def __str__(self) -> Text:
         """Returns text representation of event."""
+        metadata = self._clean_up_metadata()
+
         return "BotUttered(text: {}, data: {}, metadata: {})".format(
-            self.text, json.dumps(self.data), json.dumps(self.metadata)
+            self.text, json.dumps(self.data), json.dumps(metadata)
         )
 
     def __repr__(self) -> Text:
         """Returns text representation of event for debugging."""
+        metadata = self._clean_up_metadata()
+
         return "BotUttered('{}', {}, {}, {})".format(
-            self.text, json.dumps(self.data), json.dumps(self.metadata), self.timestamp
+            self.text, json.dumps(self.data), json.dumps(metadata), self.timestamp
         )
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:

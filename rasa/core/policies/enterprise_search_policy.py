@@ -23,6 +23,7 @@ from rasa.core.constants import (
     POLICY_MAX_HISTORY,
     POLICY_PRIORITY,
     SEARCH_POLICY_PRIORITY,
+    UTTER_SOURCE_METADATA_KEY,
 )
 from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.core.utils import AvailableEndpoints
@@ -116,6 +117,9 @@ DEFAULT_EMBEDDINGS_CONFIG = {
 EMBEDDINGS_CONFIG_KEY = "embeddings"
 LLM_CONFIG_KEY = "llm"
 ENTERPRISE_SEARCH_PROMPT_FILE_NAME = "enterprise_search_policy_prompt.jinja2"
+
+SEARCH_RESULTS_METADATA_KEY = "search_results"
+SEARCH_QUERY_METADATA_KEY = "search_query"
 
 DEFAULT_ENTERPRISE_SEARCH_PROMPT_TEMPLATE = importlib.resources.read_text(
     "rasa.core.policies", "enterprise_search_prompt_template.jinja2"
@@ -451,6 +455,11 @@ class EnterpriseSearchPolicy(Policy):
         action_metadata = {
             "message": {
                 "text": response,
+                SEARCH_RESULTS_METADATA_KEY: [
+                    result.text for result in documents.results
+                ],
+                UTTER_SOURCE_METADATA_KEY: self.__class__.__name__,
+                SEARCH_QUERY_METADATA_KEY: search_query,
             }
         }
 

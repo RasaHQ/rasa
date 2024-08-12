@@ -127,7 +127,7 @@ jobs:
 
       - name: Copy Segment write key to the package
         env:
-           RASA_TELEMETRY_WRITE_KEY: ${{ secrets.RASA_OSS_TELEMETRY_WRITE_KEY }}
+           RASA_TELEMETRY_WRITE_KEY: ${{ secrets.RASA_PRO_SEGMENT_WRITE_KEY }}
            RASA_EXCEPTION_WRITE_KEY: ${{ secrets.RASA_OSS_EXCEPTION_WRITE_KEY }}
         run: |
            ./scripts/write_keys_file.sh
@@ -158,8 +158,8 @@ jobs:
         with:
            user: "github-ci"
            password: ${{ secrets.PYPI_PASSWORD }}
-           repository_url: "https://pypi.rasa.com/simple/"
-           packages_dir: ${{ format('{0}/dist', github.workspace) }}
+           repository-url: "https://pypi.rasa.com/simple/"
+           packages-dir: ${{ format('{0}/dist', github.workspace) }}
     
       # Push library to GCP Artifact Registry rasa-plus-py
       - name: Release via GCP Artifact Registry

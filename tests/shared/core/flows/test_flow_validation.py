@@ -1,13 +1,13 @@
+import textwrap
+
 import pytest
 
+from rasa.shared.constants import RASA_PATTERN_HUMAN_HANDOFF
+from rasa.shared.core.flows.steps import LinkFlowStep
 from rasa.shared.core.flows.steps.constants import (
     START_STEP,
     END_STEP,
     CONTINUE_STEP_PREFIX,
-)
-from rasa.shared.core.flows.yaml_flows_io import (
-    flows_from_str,
-    flows_from_str_including_defaults,
 )
 from rasa.shared.core.flows.validation import (
     DuplicatedStepIdException,
@@ -26,7 +26,14 @@ from rasa.shared.core.flows.validation import (
     DuplicateNLUTriggerException,
     SlotNamingException,
     FlowIdNamingException,
+    validate_patterns_are_not_calling_or_linking_other_flows,
 )
+from rasa.shared.core.flows.yaml_flows_io import (
+    flows_from_str,
+    flows_from_str_including_defaults,
+    YAMLFlowsReader,
+)
+from rasa.shared.importers.importer import FlowSyncImporter
 
 
 def test_validation_does_not_always_fail() -> None:
@@ -415,7 +422,49 @@ def test_validation_fails_for_a_called_pattern():
         flows_from_str_including_defaults(flow_config)
 
 
-def test_validation_fails_for_pattern_with_a_link_step():
+def test_validation_fails_for_pattern_with_a_link_step_to_a_pattern():
+    flow_config = """
+        flows:
+          pattern_correction:
+            description: pattern correction
+            steps:
+              - link: pattern_linked_pattern
+
+          pattern_linked_pattern:
+            description: pattern linked pattern
+            steps:
+              - action: action_listen
+        """
+
+    flows = YAMLFlowsReader.read_from_string(textwrap.dedent(flow_config))
+    flows = FlowSyncImporter.merge_with_default_flows(flows)
+
+    with pytest.raises(PatternReferencedFlowException):
+        validate_patterns_are_not_calling_or_linking_other_flows(flows)
+
+
+def test_validation_fails_for_pattern_internal_error_with_a_link_step():
+    flow_config = """
+        flows:
+          foo:
+            description: foo flow
+            steps:
+              - action: action_listen
+
+          pattern_internal_error:
+            description: pattern internal error
+            steps:
+              - link: foo
+        """
+
+    flows = YAMLFlowsReader.read_from_string(textwrap.dedent(flow_config))
+    flows = FlowSyncImporter.merge_with_default_flows(flows)
+
+    with pytest.raises(PatternReferencedFlowException):
+        validate_patterns_are_not_calling_or_linking_other_flows(flows)
+
+
+def test_validation_pattern_with_a_link_step_to_a_user_flow():
     flow_config = """
         flows:
           foo:
@@ -429,8 +478,9 @@ def test_validation_fails_for_pattern_with_a_link_step():
               - link: foo
         """
 
-    with pytest.raises(PatternReferencedFlowException):
-        flows_from_str(flow_config)
+    flows = flows_from_str(flow_config)
+    assert flows.underlying_flows[0].id == "foo"
+    assert flows.underlying_flows[1].id == "pattern_correction"
 
 
 def test_validation_fails_for_pattern_with_a_call_step():
@@ -508,3 +558,48 @@ def test_validation_flow_id_passes_validation(flow_id: str):
 
     flows = flows_from_str(flow_config)
     assert flows.underlying_flows[0].id == flow_id
+
+
+def test_validation_linking_to_a_pattern_human_handoff():
+    flow_config = f"""
+        flows:
+          test_flow:
+            description: test flow
+            steps:
+              - action: welcome
+              - link: {RASA_PATTERN_HUMAN_HANDOFF}
+        """
+
+    flows = flows_from_str_including_defaults(flow_config)
+    assert isinstance(flows.underlying_flows[0].steps[1], LinkFlowStep)
+    assert flows.underlying_flows[0].steps[1].link == RASA_PATTERN_HUMAN_HANDOFF
+
+
+@pytest.mark.parametrize("linked_flow", ["pattern_chitchat", "pattern_internal_error"])
+def test_validation_fails_pattern_linking_to_a_pattern(linked_flow: str):
+    flow_config = f"""
+        flows:
+          pattern_test_pattern:
+            description: test pattern
+            steps:
+              - action: welcome
+              - link: {linked_flow}
+        """
+
+    with pytest.raises(ReferenceToPatternException):
+        flows_from_str_including_defaults(flow_config)
+
+
+def test_validation_pattern_linking_to_a_pattern_human_handoff():
+    flow_config = f"""
+        flows:
+          pattern_test_pattern:
+            description: test pattern
+            steps:
+              - action: welcome
+              - link: {RASA_PATTERN_HUMAN_HANDOFF}
+        """
+
+    flows = flows_from_str_including_defaults(flow_config)
+    assert isinstance(flows.underlying_flows[0].steps[1], LinkFlowStep)
+    assert flows.underlying_flows[0].steps[1].link == RASA_PATTERN_HUMAN_HANDOFF

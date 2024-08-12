@@ -10,6 +10,33 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.9.6] - 2024-08-07
+                       
+Rasa Pro 3.9.6 (2024-08-07)                            
+### Miscellaneous internal changes
+- [#954](https://github.com/rasahq/rasa-private/issues/954)
+- [#926](https://github.com/rasahq/rasa-private/issues/926)
+
+## [3.9.5] - 2024-08-01
+                       
+Rasa Pro 3.9.5 (2024-08-01)                            
+### Improvements
+- [#932](https://github.com/rasahq/rasa-private/issues/932): Enabled generative chitchat in the `tutorial` template with instructions on how to turn it off added to the documentation.
+
+### Bugfixes
+- [#921](https://github.com/rasahq/rasa-private/issues/921): Update the usage of `time.process_time_ns` with `time.perf_counter_ns` to fix the inconsistencies between duration metrics and trace spans duration.
+
+
+## [3.9.4] - 2024-07-25
+                       
+Rasa Pro 3.9.4 (2024-07-25)                            
+### Bugfixes
+- [#904](https://github.com/rasahq/rasa-private/issues/904): Fix instrumentation not accounting for `kwargs` that are passed to `NLUCommandAdapter.predict_commands`.
+
+### Miscellaneous internal changes
+- [#887](https://github.com/rasahq/rasa-private/issues/887)
+
+
 ## [3.9.3] - 2024-07-18
                        
 Rasa Pro 3.9.3 (2024-07-18)                            
@@ -367,7 +394,7 @@ Rasa Pro 3.8.0 (2024-04-03)
   export LOG_LEVEL_LLM_COMMAND_GENERATOR=INFO
   export LOG_LEVEL_LLM_ENTERPRISE_SEARCH=INFO
   export LOG_LEVEL_LLM_INTENTLESS_POLICY=DEBUG
-  export LOG_LEVEL_LLM_PROMPT_REPHRASER=DEBUG
+  export LOG_LEVEL_LLM_REPHRASER=DEBUG
   ```
 - [#209](https://github.com/rasahq/rasa-private/issues/209): If the user wants to chat with the assistant at the end of `rasa init`,
   we are now calling `rasa inspect` instead of `rasa shell`.

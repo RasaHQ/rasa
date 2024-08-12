@@ -12,6 +12,7 @@ import structlog
 from rasa.core.channels import CollectingOutputChannel, UserMessage
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.utils import AvailableEndpoints
+from rasa.e2e_test.e2e_config import create_llm_judge_config
 from rasa.e2e_test.e2e_test_case import (
     ActualStepOutput,
     Fixture,
@@ -26,12 +27,13 @@ from rasa.e2e_test.e2e_test_result import (
     TestResult,
 )
 from rasa.llm_fine_tuning.conversations import Conversation
-from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
+from rasa.shared.core.events import BotUttered, Event, SlotSet, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
 from rasa.telemetry import track_e2e_test_run
 from rasa.utils.endpoints import EndpointConfig
 from tqdm import tqdm
+
 
 structlogger = structlog.get_logger()
 
@@ -45,6 +47,7 @@ class E2ETestRunner:
         model_server: Optional[EndpointConfig] = None,
         remote_storage: Optional[Text] = None,
         endpoints: Optional[AvailableEndpoints] = None,
+        **kwargs: Any,
     ) -> None:
         """Initializes the E2E test suite runner.
 
@@ -53,16 +56,13 @@ class E2ETestRunner:
             model_server: Model server configuration.
             remote_storage: Remote storage configuration.
             endpoints: Endpoints configuration.
+            **kwargs: Additional arguments
         """
         import rasa.core.agent
 
-        structlogger.warning(
+        structlogger.info(
             "e2e_test_runner.init",
-            message="Started running end-to-end testing. "
-            "Note that this feature is not intended for use in a "
-            "production environment. Don't use it to process sensitive data. "
-            "If you do, it's at your own risk. "
-            "We're looking forward to your feedback.",
+            event_info="Started running end-to-end testing.",
         )
 
         if endpoints:
@@ -83,6 +83,9 @@ class E2ETestRunner:
                 "Please check that the agent was able to "
                 "load the trained model."
             )
+
+        test_case_path = kwargs.get("test_case_path")
+        self.llm_judge_config = create_llm_judge_config(test_case_path)
 
     async def run_prediction_loop(
         self,
@@ -118,7 +121,12 @@ class E2ETestRunner:
         # TestStep is a placeholder just for the sake of having a turn
         # to specify the actor
         turns[-1], event_cursor = self.get_actual_step_output(
-            tracker, TestStep(actor="bot", text=None), event_cursor
+            tracker,
+            TestStep(
+                actor="bot",
+                text=None,
+            ),
+            event_cursor,
         )
 
         for position, step in enumerate(steps):
@@ -282,20 +290,206 @@ class E2ETestRunner:
         Returns:
         Test result.
         """
-        test_failures = cls.find_test_failures(test_turns, test_case)
         difference = []
-        first_failure = None
+        error_line = None
+        test_failures = cls.find_test_failures(test_turns, test_case)
         if test_failures:
             first_failure = test_failures[0][0]
             difference = cls.human_readable_diff(test_turns, test_failures)
-        else:
-            difference = []
+            error_line = first_failure.error_line if first_failure else None
 
         return TestResult(
             pass_status=len(test_failures) == 0,
             test_case=test_case,
             difference=difference,
-            error_line=first_failure.error_line if first_failure else None,
+            error_line=error_line,
+        )
+
+    def _get_additional_splitting_conditions(
+        self,
+        step: TestStep,
+        input_metadata: List[Metadata],
+        tracker: DialogueStateTracker,
+        test_case: TestCase,
+    ) -> Dict[str, Any]:
+        """Returns additional splitting conditions for the user message."""
+        additional_splitting_conditions: Dict[str, Any] = {"text": step.text}
+
+        if not step.metadata_name:
+            return additional_splitting_conditions
+
+        step_metadata = self.filter_metadata_for_input(
+            step.metadata_name, input_metadata
+        )
+        step_metadata_dict = step_metadata.metadata if step_metadata else {}
+
+        test_case_metadata = self.filter_metadata_for_input(
+            test_case.metadata_name, input_metadata
+        )
+        test_case_metadata_as_dict = (
+            test_case_metadata.metadata if test_case_metadata else {}
+        )
+
+        metadata: Dict[str, Any] = self.merge_metadata(
+            tracker.sender_id,
+            step.text,
+            test_case_metadata_as_dict,
+            step_metadata_dict,
+        )
+        metadata["model_id"] = tracker.model_id
+        metadata["assistant_id"] = tracker.assistant_id
+
+        additional_splitting_conditions["metadata"] = metadata
+
+        return additional_splitting_conditions
+
+    @staticmethod
+    def _get_current_user_turn_and_prior_events(
+        tracker: DialogueStateTracker,
+        additional_splitting_conditions: Dict[str, Any],
+        step: TestStep,
+    ) -> Tuple[List[Event], List[Event]]:
+        """Returns the current user turn and prior events."""
+        actual_events = tracker.events
+
+        # this returns 2 lists, the first list contains the events until the user
+        # message and the second list contains the events after the
+        # user message, including the user message
+        step_events = rasa.shared.core.events.split_events(
+            actual_events,
+            UserUttered,
+            additional_splitting_conditions=additional_splitting_conditions,
+            include_splitting_event=True,
+        )
+
+        if len(step_events) < 2:
+            structlogger.error(
+                "e2e_test_runner.run_assertions.user_message_not_found",
+                message=f"User message '{step.text}' was not found in "
+                f"the actual events. The user message "
+                f"properties which were searched: "
+                f"{additional_splitting_conditions}",
+            )
+            return [], []
+
+        post_step_events = step_events[1]
+        prior_events = step_events[0]
+
+        # subset of events until the next user message
+        turn_events = []
+        for event in post_step_events:
+            # we reached the next user message
+            if isinstance(event, UserUttered) and step.text != event.text:
+                break
+
+            turn_events.append(event)
+
+        return turn_events, prior_events
+
+    @staticmethod
+    def _slice_turn_events(
+        step: TestStep,
+        matching_event: Event,
+        turn_events: List[Event],
+        prior_events: List[Event],
+    ) -> Tuple[List[Event], List[Event]]:
+        """Slices the turn events when assertion order is enabled."""
+        if not step.assertion_order_enabled:
+            return turn_events, prior_events
+
+        if not matching_event:
+            return turn_events, prior_events
+
+        matching_event_index = turn_events.index(matching_event)
+        if matching_event_index + 1 < len(turn_events):
+            prior_events += turn_events[: matching_event_index + 1]
+            turn_events = turn_events[matching_event_index + 1 :]
+
+        return turn_events, prior_events
+
+    async def run_assertions(
+        self,
+        sender_id: str,
+        test_case: TestCase,
+        input_metadata: Optional[List[Metadata]],
+    ) -> TestResult:
+        """Runs the assertions defined in the test case."""
+        tracker = await self.agent.processor.get_tracker(sender_id)  # type: ignore[union-attr]
+
+        assertion_failure = None
+        assertion_failure_found = False
+        input_metadata = input_metadata if input_metadata else []
+
+        for step in test_case.steps:
+            if not step.assertions:
+                structlogger.debug(
+                    "e2e_test_runner.run_assertions.no_assertions.skipping_step",
+                    step=step,
+                )
+                continue
+
+            additional_splitting_conditions = self._get_additional_splitting_conditions(
+                step, input_metadata, tracker, test_case
+            )
+
+            turn_events, prior_events = self._get_current_user_turn_and_prior_events(
+                tracker, additional_splitting_conditions, step
+            )
+
+            if not turn_events:
+                return TestResult(
+                    pass_status=False,
+                    test_case=test_case,
+                    difference=[],
+                    error_line=step.line,
+                    assertion_failure=None,
+                )
+
+            for assertion in step.assertions:
+                structlogger.debug(
+                    "e2e_test_runner.run_assertions.running_assertion",
+                    test_case_name=test_case.name,
+                    step_text=step.text,
+                    assertion_type=assertion.type(),
+                )
+
+                assertion_order_error_msg = ""
+
+                if step.assertion_order_enabled:
+                    assertion_order_error_msg = (
+                        " You have enabled assertion order, "
+                        "you should check the order in which the "
+                        "assertions are listed for this user step."
+                    )
+
+                assertion_failure, matching_event = assertion.run(
+                    turn_events,
+                    prior_events=prior_events,
+                    assertion_order_error_message=assertion_order_error_msg,
+                )
+                if assertion_failure:
+                    assertion_failure_found = True
+                    structlogger.debug(
+                        "e2e_test_runner.run_assertions.assertion_failure_found",
+                        test_case_name=test_case.name,
+                        error_line=assertion_failure.error_line,
+                    )
+                    break
+
+                turn_events, prior_events = self._slice_turn_events(
+                    step, matching_event, turn_events, copy.deepcopy(prior_events)
+                )
+
+            if assertion_failure_found:
+                # don't continue with the next steps if an assertion failed
+                break
+
+        return TestResult(
+            pass_status=not assertion_failure,
+            test_case=test_case,
+            difference=[],
+            error_line=assertion_failure.error_line if assertion_failure else None,
+            assertion_failure=assertion_failure,
         )
 
     @classmethod
@@ -662,7 +856,7 @@ class E2ETestRunner:
 
         if not filtered_metadata:
             structlogger.warning(
-                "e2e_test_runner.filter_metadata_for_inout",
+                "e2e_test_runner.filter_metadata_for_input",
                 message=f"Metadata '{metadata_name}' is not defined in the input "
                 f"metadata.",
             )
@@ -701,7 +895,13 @@ class E2ETestRunner:
                 sender_id, input_fixtures, input_metadata, test_case
             )
 
-            test_result = self.generate_test_result(test_turns, test_case)
+            if not test_case.uses_assertions():
+                test_result = self.generate_test_result(test_turns, test_case)
+            else:
+                test_result = await self.run_assertions(
+                    sender_id, test_case, input_metadata
+                )
+
             results.append(test_result)
 
             if fail_fast and not test_result.pass_status:
