@@ -203,7 +203,7 @@ class ContextualResponseRephraser(TemplatedNaturalLanguageGenerator):
         telemetry.track_response_rephrase(
             rephrase_all=self.rephrase_all,
             custom_prompt_template=self.custom_prompt_template(prompt_template_text),
-            llm_type=self.llm_property("_type"),
+            llm_type=self.llm_property("api_type"),
             llm_model=self.llm_property("model") or self.llm_property("model_name"),
         )
         if not (updated_text := await self._generate_llm_response(prompt)):

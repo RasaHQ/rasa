@@ -1,9 +1,9 @@
-import os
 import uuid
 from typing import List, Text, Any, Dict
 from unittest.mock import Mock, patch
 
 import pytest
+from pytest import MonkeyPatch
 from _pytest.tmpdir import TempPathFactory
 from langchain.docstore.document import Document
 from langchain_community.vectorstores.faiss import FAISS
@@ -139,10 +139,6 @@ class TestFlowRetrieval:
     def resource(self) -> Resource:
         return Resource(uuid.uuid4().hex)
 
-    @pytest.fixture(scope="session", autouse=True)
-    def set_open_ai_env_variable(self) -> None:
-        os.environ["OPENAI_API_KEY"] = "test"
-
     @pytest.fixture(scope="function")
     def flow_search(
         self, model_storage: ModelStorage, resource: Resource
@@ -208,7 +204,7 @@ class TestFlowRetrieval:
         flows: FlowsList,
         domain: Mock,
         startable_flows_documents,
-        monkeypatch: pytest.MonkeyPatch,
+        monkeypatch: MonkeyPatch,
     ) -> None:
         # Given
         monkeypatch.setenv("OPENAI_API_KEY", "test")
@@ -449,8 +445,10 @@ class TestFlowRetrieval:
         flow_search: FlowRetrieval,
         model_storage: ModelStorage,
         resource: Resource,
+        monkeypatch: pytest.MonkeyPatch,
     ):
         # Given
+        monkeypatch.setenv("OPENAI_API_KEY", "test")
         expected_vector_store = FAISS(Mock(), Mock(), Mock(), Mock())
         mock_load_local.return_value = expected_vector_store
         config = FlowRetrieval.get_default_config()
@@ -467,9 +465,11 @@ class TestFlowRetrieval:
         flow_search: FlowRetrieval,
         model_storage: ModelStorage,
         resource: Resource,
+        monkeypatch: MonkeyPatch,
     ):
         # Given
         config = FlowRetrieval.get_default_config()
+        monkeypatch.setenv("OPENAI_API_KEY", "test")
         # there is no vector_store initialized
         flow_search.persist()
         # When

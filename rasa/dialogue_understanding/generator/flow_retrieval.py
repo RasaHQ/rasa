@@ -53,7 +53,7 @@ DEFAULT_FLOW_DOCUMENT_TEMPLATE = importlib.resources.read_text(
 
 EMBEDDINGS_CONFIG_KEY = "embeddings"
 DEFAULT_EMBEDDINGS_CONFIG = {
-    "_type": "openai",
+    "api_type": "openai",
     "model": DEFAULT_OPENAI_EMBEDDING_MODEL_NAME,
 }
 

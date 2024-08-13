@@ -76,7 +76,7 @@ async def test_tracing_intentless_policy_generate_answer(
 
     assert captured_span.name == "IntentlessPolicy.generate_answer"
 
-    assert captured_span.attributes == {"llm_response": '"Hello there"'}
+    assert captured_span.attributes == {"llm_response": '"Hello there!"'}
 
 
 def test_tracing_intentless_policy_extract_ai_responses(
@@ -325,7 +325,7 @@ async def test_tracing_intentless_policy_generate_llm_answer_len_prompt_tokens(
         "class_name": "IntentlessPolicy",
         "llm_model": "gpt-3.5-turbo",
         "llm_type": "openai",
-        "embeddings": '{"_type": "openai", "model": "text-embedding-ada-002"}',
+        "embeddings": '{"api_type": "openai", "model": "text-embedding-ada-002"}',
         "llm_temperature": "0.0",
         "request_timeout": "5",
         "len_prompt_tokens": "6",

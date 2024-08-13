@@ -183,6 +183,15 @@ def get_provider_from_config(config: dict) -> Optional[str]:
             return None
 
 
+def get_llm_type_after_combining_custom_and_default_config(
+    custom_config: Optional[Dict[Text, Any]], default_config: Dict[Text, Any]
+) -> Optional[str]:
+    """Get the LLM type from the combined config."""
+    custom_config_provider = get_provider_from_config(custom_config)
+    default_config_provider = get_provider_from_config(default_config)
+    return custom_config_provider or default_config_provider
+
+
 def ensure_cache() -> None:
     """Ensures that the cache is initialized."""
     import langchain

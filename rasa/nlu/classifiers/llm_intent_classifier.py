@@ -61,7 +61,7 @@ DEFAULT_LLM_CONFIG = {
     "max_tokens": DEFAULT_OPENAI_MAX_GENERATED_TOKENS,
 }
 
-DEFAULT_EMBEDDINGS_CONFIG = {"_type": "openai"}
+DEFAULT_EMBEDDINGS_CONFIG = {"api_type": "openai"}
 
 EMBEDDINGS_CONFIG_KEY = "embeddings"
 LLM_CONFIG_KEY = "llm"
@@ -193,10 +193,10 @@ class LLMIntentClassifier(GraphComponent, IntentClassifier):
 
         self.persist()
         telemetry.track_llm_intent_train_completed(
-            embeddings_type=self.embeddings_property("_type"),
+            embeddings_type=self.embeddings_property("api_type"),
             embeddings_model=self.embeddings_property("model_name")
             or self.embeddings_property("model"),
-            llm_type=self.llm_property("_type"),
+            llm_type=self.llm_property("api_type"),
             llm_model=self.llm_property("model_name") or self.llm_property("model"),
             fallback_intent=self.fallback_intent,
             custom_prompt_template=self.custom_prompt_template(),

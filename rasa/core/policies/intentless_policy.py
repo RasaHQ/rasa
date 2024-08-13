@@ -103,7 +103,7 @@ DEFAULT_LLM_CONFIG = {
 }
 
 DEFAULT_EMBEDDINGS_CONFIG = {
-    "_type": "openai",
+    "api_type": "openai",
     "model": DEFAULT_OPENAI_EMBEDDING_MODEL_NAME,
 }
 
@@ -506,10 +506,10 @@ class IntentlessPolicy(Policy):
 
         structlogger.info("intentless_policy.training.completed")
         telemetry.track_intentless_policy_train_completed(
-            embeddings_type=self.embeddings_property("_type"),
+            embeddings_type=self.embeddings_property("api_type"),
             embeddings_model=self.embeddings_property("model")
             or self.embeddings_property("model_name"),
-            llm_type=self.llm_property("_type"),
+            llm_type=self.llm_property("api_type"),
             llm_model=self.llm_property("model") or self.llm_property("model_name"),
         )
 
@@ -599,10 +599,10 @@ class IntentlessPolicy(Policy):
         )
 
         telemetry.track_intentless_policy_predict(
-            embeddings_type=self.embeddings_property("_type"),
+            embeddings_type=self.embeddings_property("api_type"),
             embeddings_model=self.embeddings_property("model")
             or self.embeddings_property("model_name"),
-            llm_type=self.llm_property("_type"),
+            llm_type=self.llm_property("api_type"),
             llm_model=self.llm_property("model") or self.llm_property("model_name"),
             score=score,
         )

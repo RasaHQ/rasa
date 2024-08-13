@@ -124,7 +124,7 @@ class AzureOpenAILLMClient(_BaseLiteLLMClient):
         }
 
         deprecation_warning_message = (
-            "Usage of {deprecated_env_var} environment"
+            "Usage of {deprecated_env_var} environment "
             "variable for setting the {setting} for Azure "
             "OpenAI client is deprecated and will be removed "
             "in 4.0.0. "

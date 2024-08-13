@@ -16,3 +16,4 @@ USER_INPUT_CONFIG_KEY = "user_input"
 
 FLOW_RETRIEVAL_KEY = "flow_retrieval"
 FLOW_RETRIEVAL_ACTIVE_KEY = "active"
+FLOW_RETRIEVAL_EMBEDDINGS_KEY = "embeddings"

@@ -359,10 +359,13 @@ def test_llm_factory_returns_openai_llm_client(
     assert client.api_version == expected_api_version
 
 
-def test_llm_factory_raises_exception_when_openai_client_setup_is_invalid():
+def test_llm_factory_raises_exception_when_openai_client_setup_is_invalid(
+    monkeypatch: MonkeyPatch,
+):
     """OpenAI client requires the OPENAI_API_KEY environment variable
     to be set.
     """
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     with pytest.raises(ProviderClientValidationError):
         llm_factory({"model": "openai/gpt-4", "api_type": "openai"}, {})
 
@@ -682,10 +685,13 @@ def test_embedder_factory_returns_openai_embedding_client(
     assert client.api_version == expected_api_version
 
 
-def test_embedder_factory_raises_exception_when_openai_client_setup_is_invalid():
+def test_embedder_factory_raises_exception_when_openai_client_setup_is_invalid(
+    monkeypatch: MonkeyPatch,
+):
     """OpenAI client requires the OPENAI_API_KEY environment variable
     to be set.
     """
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     with pytest.raises(ProviderClientValidationError):
         embedder_factory({"model": "openai/gpt-4", "api_type": "openai"}, {})
 

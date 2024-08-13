@@ -110,7 +110,7 @@ DEFAULT_LLM_CONFIG = {
 }
 
 DEFAULT_EMBEDDINGS_CONFIG = {
-    "_type": "openai",
+    "api_type": "openai",
     "model": DEFAULT_OPENAI_EMBEDDING_MODEL_NAME,
 }
 
@@ -284,10 +284,10 @@ class EnterpriseSearchPolicy(Policy):
         # telemetry call to track training completion
         track_enterprise_search_policy_train_completed(
             vector_store_type=store_type,
-            embeddings_type=self.embeddings_config.get("_type"),
+            embeddings_type=self.embeddings_config.get("api_type"),
             embeddings_model=self.embeddings_config.get("model")
             or self.embeddings_config.get("model_name"),
-            llm_type=self.llm_config.get("_type"),
+            llm_type=self.llm_config.get("api_type"),
             llm_model=self.llm_config.get("model") or self.llm_config.get("model_name"),
             citation_enabled=self.citation_enabled,
         )
@@ -466,10 +466,10 @@ class EnterpriseSearchPolicy(Policy):
         # telemetry call to track policy prediction
         track_enterprise_search_policy_predict(
             vector_store_type=self.vector_store_config.get(VECTOR_STORE_TYPE_PROPERTY),
-            embeddings_type=self.embeddings_config.get("_type"),
+            embeddings_type=self.embeddings_config.get("api_type"),
             embeddings_model=self.embeddings_config.get("model")
             or self.embeddings_config.get("model_name"),
-            llm_type=self.llm_config.get("_type"),
+            llm_type=self.llm_config.get("api_type"),
             llm_model=self.llm_config.get("model") or self.llm_config.get("model_name"),
             citation_enabled=self.citation_enabled,
         )

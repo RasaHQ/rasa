@@ -28,7 +28,10 @@ from rasa.shared.core.flows import Flow, FlowStep, FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.constants import INTENT_NAME_KEY, SET_SLOT_COMMAND
-from rasa.shared.utils.llm import combine_custom_and_default_config
+from rasa.shared.utils.llm import (
+    combine_custom_and_default_config,
+    get_llm_type_after_combining_custom_and_default_config,
+)
 from rasa.tracing.constants import (
     PROMPT_TOKEN_LENGTH_ATTRIBUTE_NAME,
     REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME,
@@ -303,15 +306,16 @@ def extract_llm_config(self: Any, default_llm_config: Dict[str, Any]) -> Dict[st
 
     attributes = {
         "class_name": self.__class__.__name__,
-        "llm_model": str(config.get("model", llm_property.get("model_name"))),
-        "llm_type": str(llm_property.get("_type")),
+        "llm_model": str(llm_property.get("model") or llm_property.get("model_name")),
+        "llm_type": str(
+            get_llm_type_after_combining_custom_and_default_config(
+                config.get("llm"), default_llm_config
+            )
+        ),
         "embeddings": json.dumps(config.get("embeddings", {})),
         "llm_temperature": str(llm_property.get("temperature")),
         "request_timeout": str(llm_property.get("request_timeout")),
     }
-
-    if "model" in llm_property:
-        attributes["llm_model"] = str(llm_property.get("model"))
 
     if "engine" in llm_property:
         attributes["llm_engine"] = str(llm_property.get("engine"))
