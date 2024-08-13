@@ -13,6 +13,7 @@ def get_tags_from_branches(branches):
         # Try to fetch all git tags for the given branch.
         # `output` will be sorted in the descending order.
         try:
+            # file deepcode ignore HandleUnicode: This file is only used in CI/CD pipelines.
             output = subprocess.check_output(
                 f'git tag | sort -r -V | grep -E "^{branch_name}.[0-9]+$"',
                 shell=True,
