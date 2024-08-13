@@ -884,3 +884,81 @@ def test_yaml_file_is_cached():
     check_cache_after_read(second_yaml_file, 1, 2, 2)
     check_cache_after_read(first_yaml_file, 2, 2, 2)
     check_cache_after_read(second_yaml_file, 3, 2, 2)
+
+
+@pytest.mark.parametrize(
+    "faulty_yaml, expected_error_line",
+    [
+        (
+            """flows:
+  say_goodbye:
+    description: Start this flow when a person says bye/goodbye
+    name:
+    steps:
+      - action: cancel_flow
+      - action: utter_flow_canceled_rasa
+      - action: utter_goodbye""",
+            4,
+        ),
+        (
+            """flows:
+  say_goodbye:
+    description: Start this flow when a person says bye/goodbye
+    steps:
+      - action: utter_goodbye
+      - action: utter_goodbye
+    name: asd
+  say_error:""",
+            8,
+        ),
+        (
+            """flows:
+  say_goodbye:
+    steps:
+      - action: utter_goodbye
+      - action: utter_goodbye
+    description: Start this flow when a person says bye/goodbye
+    name: asd
+  say_error:""",
+            8,
+        ),
+        (
+            """flows:
+  say_goodbye:
+    description: Start this flow when a person says bye/goodbye
+    name: asd
+    steps:
+      - action: utter_goodbye
+      - action: utter_goodbye
+  say_error:""",
+            8,
+        ),
+        (
+            """flows:
+  say_goodbye:
+    description: Start this flow when a person says bye/goodbye
+    name: asd
+    steps:
+      - action: utter_goodbye
+      - action: utter_goodbye
+  say_error:
+    name: asd
+    steps:
+      - action: utter_goodbye
+    description:
+    """,
+            12,
+        ),
+    ],
+)
+def test_yaml_validation_exception_line_number(
+    faulty_yaml: str, expected_error_line: int
+):
+    with pytest.raises(YamlValidationException) as e:
+        validate_yaml_with_jsonschema(
+            faulty_yaml,
+            FLOWS_SCHEMA_FILE,
+            humanize_error=YAMLFlowsReader.humanize_flow_error,
+        )
+
+    assert f"in Line {expected_error_line}" in str(e.value)
