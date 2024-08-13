@@ -17,6 +17,8 @@ from rasa.shared.providers.openai.clients import (
 
 structlogger = structlog.get_logger()
 
+# file deepcode ignore HardcodedNonCryptoSecret/test: Test Credentials
+
 
 @pytest.fixture
 def mock_request(monkeypatch: MonkeyPatch) -> AsyncMock:
