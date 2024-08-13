@@ -26,8 +26,8 @@ from rasa.llm_fine_tuning.storage import (
 )
 from rasa.llm_fine_tuning.train_test_split_module import (
     split_llm_fine_tuning_data,
-    ALPACA_DATA_FORMAT,
-    SHAREGPT_DATA_FORMAT,
+    INSTRUCTION_DATA_FORMAT,
+    CONVERSATIONAL_DATA_FORMAT,
 )
 from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH, DEFAULT_MODELS_PATH
 
@@ -142,10 +142,10 @@ def add_data_preparation_arguments(parser: argparse.ArgumentParser) -> None:
     )
     train_test_split_arguments.add_argument(
         "--output-format",
-        choices=[ALPACA_DATA_FORMAT, SHAREGPT_DATA_FORMAT],
+        choices=[INSTRUCTION_DATA_FORMAT, CONVERSATIONAL_DATA_FORMAT],
         type=str,
         nargs="?",
-        default=ALPACA_DATA_FORMAT,
+        default=INSTRUCTION_DATA_FORMAT,
         help="Format of the output file.",
     )
 
