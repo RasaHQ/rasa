@@ -186,6 +186,7 @@ psutil = "^5.9.5"
 tenacity = "~8.4.1"  # pinned down because of langchain
 types-protobuf = "4.25.0.20240417"
 litellm = "^1.43.6"
+openpyxl = "^3.1.5"
 
 [[tool.poetry.dependencies.tensorflow-io-gcs-filesystem]]
 version = "==0.31"

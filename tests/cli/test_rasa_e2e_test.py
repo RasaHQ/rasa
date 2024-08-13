@@ -5,7 +5,7 @@ import sys
 import textwrap
 from pathlib import Path
 from typing import Any, Callable, List, Text
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, Mock, call, patch
 
 import pytest
 from pytest import LogCaptureFixture, MonkeyPatch, RunResult
@@ -25,6 +25,7 @@ from rasa.cli.e2e_test import (
     execute_e2e_tests,
     is_test_case_file,
     print_failed_case,
+    print_test_result,
     read_test_cases,
     split_into_passed_failed,
     transform_results_output_to_yaml,
@@ -654,7 +655,7 @@ def test_read_single_test_case(
                 steps=[TestStep(actor="some actor")],
                 file="test.yaml",
             ),
-            pass_status=True,
+            pass_status=False,
             difference=[],
             assertion_failure=AssertionFailure(
                 assertion=FlowStartedAssertion(flow_id="test_flow_id"),
@@ -679,3 +680,57 @@ def test_print_failed_case(
     )
     mock_print_error.assert_any_call("Actual events transcript:\n")
     mock_print_error.assert_called_with("test_event")
+
+
+@patch("rasa.cli.e2e_test.print_aggregate_stats")
+def test_print_test_result_with_aggregate_stats(
+    mock_print_aggregate_stats: MagicMock,
+) -> None:
+    accuracy_calculations = [Mock()]
+
+    with pytest.raises(SystemExit):
+        print_test_result(
+            [
+                TestResult(
+                    test_case=TestCase(
+                        name="some test case",
+                        steps=[TestStep(actor="some actor")],
+                        file="test.yaml",
+                    ),
+                    pass_status=True,
+                    difference=[],
+                )
+            ],
+            [],
+            fail_fast=False,
+            accuracy_calculations=accuracy_calculations,
+        )
+
+    mock_print_aggregate_stats.assert_called_with(accuracy_calculations)
+
+
+@patch("rasa.cli.e2e_test.print_aggregate_stats")
+def test_print_test_result_without_aggregate_stats(
+    mock_print_aggregate_stats: MagicMock,
+) -> None:
+    accuracy_calculations = []
+
+    with pytest.raises(SystemExit):
+        print_test_result(
+            [
+                TestResult(
+                    test_case=TestCase(
+                        name="some test case",
+                        steps=[TestStep(actor="some actor")],
+                        file="test.yaml",
+                    ),
+                    pass_status=True,
+                    difference=[],
+                )
+            ],
+            [],
+            fail_fast=False,
+            accuracy_calculations=accuracy_calculations,
+        )
+
+    mock_print_aggregate_stats.assert_not_called()
