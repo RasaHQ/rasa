@@ -14,6 +14,7 @@ KEY_TEST_CASES = "test_cases"
 KEY_METADATA = "metadata"
 KEY_ASSERTIONS = "assertions"
 KEY_ASSERTION_ORDER_ENABLED = "assertion_order_enabled"
+KEY_MOCK_CUSTOM_ACTIONS = "mock_custom_actions"
 
 KEY_MODEL = "model"
 KEY_LLM_AS_JUDGE = "llm_as_judge"

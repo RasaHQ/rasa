@@ -21,6 +21,9 @@ from rasa.core.actions.custom_action_executor import (
     NoEndpointCustomActionExecutor,
 )
 from rasa.core.actions.direct_custom_actions_executor import DirectCustomActionExecutor
+from rasa.core.actions.e2e_stub_custom_action_executor import (
+    E2EStubCustomActionExecutor,
+)
 from rasa.core.actions.grpc_custom_action_executor import GRPCCustomActionExecutor
 from rasa.core.actions.http_custom_action_executor import HTTPCustomActionExecutor
 from rasa.core.constants import (
@@ -28,6 +31,7 @@ from rasa.core.constants import (
 )
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.utils import add_bot_utterance_metadata
+from rasa.e2e_test.constants import KEY_MOCK_CUSTOM_ACTIONS
 from rasa.nlu.constants import (
     RESPONSE_SELECTOR_DEFAULT_INTENT,
     RESPONSE_SELECTOR_PROPERTY_NAME,
@@ -735,6 +739,9 @@ class RemoteAction(Action):
         """
         if not self.action_endpoint:
             return NoEndpointCustomActionExecutor(self.name())
+
+        if self.action_endpoint.kwargs.get(KEY_MOCK_CUSTOM_ACTIONS, {}):
+            return E2EStubCustomActionExecutor(self.name(), self.action_endpoint)
 
         if self.action_endpoint.url and self.action_endpoint.actions_module:
             raise_warning(

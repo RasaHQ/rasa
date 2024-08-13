@@ -25,6 +25,29 @@ mapping:
               regex;(^[a-zA-Z_]+[a-zA-Z0-9_]*$):
                 type: any
 
+  mock_custom_actions:
+    type: map
+    mapping:
+      regex;(^[a-zA-Z_]+[a-zA-Z0-9_]*$):
+        type: map
+        mapping:
+          events:
+            type: seq
+            sequence:
+              - type: map
+                matching: any
+                mapping:
+                  regex;(^[a-zA-Z_]+[a-zA-Z0-9_]*$):
+                    type: any
+          responses:
+            type: seq
+            sequence:
+              - type: map
+                matching: any
+                mapping:
+                  regex;(^[a-zA-Z_]+[a-zA-Z0-9_]*$):
+                    type: any
+
   test_cases:
     type: "seq"
     sequence:

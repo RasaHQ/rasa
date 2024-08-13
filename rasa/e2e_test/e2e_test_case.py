@@ -13,6 +13,7 @@ from rasa.e2e_test.constants import (
     KEY_BOT_UTTERED,
     KEY_FIXTURES,
     KEY_METADATA,
+    KEY_MOCK_CUSTOM_ACTIONS,
     KEY_SLOT_NOT_SET,
     KEY_SLOT_SET,
     KEY_STEPS,
@@ -464,6 +465,37 @@ class Metadata:
         return {self.name: self.metadata}
 
 
+@dataclass
+class MockCustomAction:
+    """Class for storing the mock response of the custom action."""
+
+    action_name: str
+    events: List[Dict[Text, Any]]
+    responses: List[Dict[Text, Any]]
+
+    @staticmethod
+    def from_dict(action_name: str, mock_data: Dict[Text, Any]) -> "MockCustomAction":
+        """Creates a mock custom action from a dictionary.
+
+        Example:
+            >>> MockCustomAction.from_dict({"action_name": {"events": [], "responses": []}})
+            MockCustomAction(name="action_name", events=[], responses=[])
+
+        Args:
+            action_name (str): Name of the custom action.
+            mock_data (Dict[Text, Any]): Mock custom action response.
+        """
+        return MockCustomAction(
+            action_name=action_name,
+            events=[dict(event) for event in mock_data.get("events", [])],
+            responses=[dict(response) for response in mock_data.get("responses", [])],
+        )
+
+    def as_dict(self) -> Dict[Text, Any]:
+        """Returns the metadata as a dictionary."""
+        return {"events": self.events, "responses": self.responses}
+
+
 @dataclass(frozen=True)
 class TestSuite:
     """Class for representing all top level test suite keys."""
@@ -471,11 +503,16 @@ class TestSuite:
     test_cases: List[TestCase]
     fixtures: List[Fixture]
     metadata: List[Metadata]
+    mock_custom_actions: Dict[Text, MockCustomAction]
 
     def as_dict(self) -> Dict[Text, Any]:
         """Returns the test suite as a dictionary."""
         return {
             KEY_FIXTURES: [fixture.as_dict() for fixture in self.fixtures],
             KEY_METADATA: [metadata.as_dict() for metadata in self.metadata],
+            KEY_MOCK_CUSTOM_ACTIONS: [
+                mock_custom_action.as_dict()
+                for mock_custom_action in self.mock_custom_actions
+            ],
             KEY_TEST_CASES: [test_case.as_dict() for test_case in self.test_cases],
         }
