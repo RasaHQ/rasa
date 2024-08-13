@@ -187,7 +187,6 @@ def test_all_components_are_in_at_least_one_test_pipeline():
         pipelines_for_tests()
         + coexistence_pipelines_for_tests()
         + pipelines_for_non_windows_tests()
-        + [("en", as_pipeline("LLMIntentClassifier"))]
     )
     all_components = [c["name"] for _, p in all_pipelines for c in p]
 
