@@ -9,6 +9,8 @@ from pathlib import Path
 from textwrap import dedent
 from typing import Any, Dict, Generator, List, Optional, Text, Tuple, Union
 
+from rich.table import Table
+
 import rasa.cli.arguments.run
 import rasa.cli.utils
 import rasa.shared.data
@@ -19,6 +21,10 @@ from rasa.cli import SubParsersAction
 from rasa.cli.arguments.default_arguments import add_endpoint_param, add_model_param
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.utils import AvailableEndpoints
+from rasa.e2e_test.aggregate_test_stats_calculator import (
+    AccuracyCalculation,
+    AggregateTestStatsCalculator,
+)
 from rasa.exceptions import RasaException
 from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH, DEFAULT_MODELS_PATH
 
@@ -326,7 +332,14 @@ def execute_e2e_tests(args: argparse.Namespace) -> None:
         write_test_results_to_file(results, args.e2e_results)
 
     passed, failed = split_into_passed_failed(results)
-    print_test_result(passed, failed, args.fail_fast)
+    aggregate_stats_calculator = AggregateTestStatsCalculator(
+        passed_results=passed, failed_results=failed, test_cases=test_suite.test_cases
+    )
+    accuracy_calculations = aggregate_stats_calculator.calculate()
+
+    print_test_result(
+        passed, failed, args.fail_fast, accuracy_calculations=accuracy_calculations
+    )
 
 
 def write_test_results_to_file(results: List[TestResult], output_file: Text) -> None:
@@ -483,10 +496,28 @@ def print_final_line(
     )
 
 
+def print_aggregate_stats(accuracy_calculations: List[AccuracyCalculation]) -> None:
+    """Print the aggregate statistics of the test run."""
+    rasa.shared.utils.cli.print_info(
+        rasa.shared.utils.cli.pad("Accuracy By Assertion Type")
+    )
+    table = Table()
+    table.add_column("Assertion Type", justify="center", style="cyan")
+    table.add_column("Accuracy", justify="center", style="cyan")
+
+    for accuracy_calculation in accuracy_calculations:
+        table.add_row(
+            accuracy_calculation.assertion_type, f"{accuracy_calculation.accuracy:.2%}"
+        )
+
+    rich.print(table)
+
+
 def print_test_result(
     passed: List[TestResult],
     failed: List[TestResult],
     fail_fast: bool = False,
+    **kwargs: Any,
 ) -> None:
     """Print the result of the test run.
 
@@ -503,6 +534,10 @@ def print_test_result(
     # print failed test_Case
     for fail in failed:
         print_failed_case(fail)
+
+    accuracy_calculations = kwargs.get("accuracy_calculations", [])
+    if accuracy_calculations:
+        print_aggregate_stats(accuracy_calculations)
 
     print_test_summary(failed)
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
+import json
 import re
 from dataclasses import dataclass
 from enum import Enum
@@ -181,6 +182,9 @@ class FlowStartedAssertion(Assertion):
 
         return None, matching_event
 
+    def __hash__(self) -> int:
+        return hash(json.dumps(self.as_dict()))
+
 
 @dataclass
 class FlowCompletedAssertion(Assertion):
@@ -247,6 +251,9 @@ class FlowCompletedAssertion(Assertion):
             ), None
 
         return None, matching_event
+
+    def __hash__(self) -> int:
+        return hash(json.dumps(self.as_dict()))
 
 
 @dataclass
@@ -315,6 +322,9 @@ class FlowCancelledAssertion(Assertion):
 
         return None, matching_event
 
+    def __hash__(self) -> int:
+        return hash(json.dumps(self.as_dict()))
+
 
 @dataclass
 class PatternClarificationContainsAssertion(Assertion):
@@ -382,6 +392,9 @@ class PatternClarificationContainsAssertion(Assertion):
 
         return None, matching_event
 
+    def __hash__(self) -> int:
+        return hash(json.dumps(self.as_dict()))
+
 
 @dataclass
 class ActionExecutedAssertion(Assertion):
@@ -429,6 +442,9 @@ class ActionExecutedAssertion(Assertion):
             ), None
 
         return None, matching_event
+
+    def __hash__(self) -> int:
+        return hash(json.dumps(self.as_dict()))
 
 
 @dataclass
@@ -522,6 +538,9 @@ class SlotWasSetAssertion(Assertion):
 
         return None, matching_event
 
+    def __hash__(self) -> int:
+        return hash(json.dumps(self.as_dict()))
+
 
 @dataclass
 class SlotWasNotSetAssertion(Assertion):
@@ -600,6 +619,9 @@ class SlotWasNotSetAssertion(Assertion):
                 ), None
 
         return None, matching_event
+
+    def __hash__(self) -> int:
+        return hash(json.dumps(self.as_dict()))
 
 
 @dataclass
@@ -776,6 +798,9 @@ class BotUtteredAssertion(Assertion):
             and actual_button.get("payload") == expected_button.payload
         )
 
+    def __hash__(self) -> int:
+        return hash(json.dumps(self.as_dict()))
+
 
 @dataclass
 class GenerativeResponseIsRelevantAssertion(Assertion):
@@ -804,6 +829,9 @@ class GenerativeResponseIsRelevantAssertion(Assertion):
             line=assertion_dict.lc.line + 1 if hasattr(assertion_dict, "lc") else None,
         )
 
+    def __hash__(self) -> int:
+        return hash(json.dumps(self.as_dict()))
+
 
 @dataclass
 class GenerativeResponseIsGroundedAssertion(Assertion):
@@ -831,6 +859,9 @@ class GenerativeResponseIsGroundedAssertion(Assertion):
             ground_truth=assertion_dict.get("ground_truth"),
             line=assertion_dict.lc.line + 1 if hasattr(assertion_dict, "lc") else None,
         )
+
+    def __hash__(self) -> int:
+        return hash(json.dumps(self.as_dict()))
 
 
 @dataclass
