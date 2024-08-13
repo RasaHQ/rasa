@@ -56,7 +56,7 @@ def test_rasa_finetune_llm_prepare_data(run: Callable[..., RunResult]) -> None:
     25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49}]
     [--rephrase-config REPHRASE_CONFIG]
     [--train-frac TRAIN_FRAC]
-    [--output-format [{alpaca,sharegpt}]]
+    [--output-format [{instruction,conversational}]]
     [-m MODEL]
     [--endpoints ENDPOINTS]
     [path-to-e2e-test-cases]

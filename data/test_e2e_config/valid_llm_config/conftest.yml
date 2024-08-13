@@ -1,0 +1,3 @@
+llm_as_judge:
+  type: openai
+  model: gpt-4

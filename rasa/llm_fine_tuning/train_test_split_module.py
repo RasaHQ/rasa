@@ -1,13 +1,13 @@
+import random
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any, Dict, List, Protocol, Set, Tuple
-import random
+
 import structlog
 
 from rasa.e2e_test.e2e_test_case import TestSuite
 from rasa.llm_fine_tuning.llm_data_preparation_module import LLMDataExample
 from rasa.llm_fine_tuning.storage import StorageContext
-
 
 TRAIN_TEST_MODULE_STORAGE_LOCATION = "4_train_test_split"
 
@@ -22,13 +22,12 @@ SUPPORTED_COMMANDS = [
     "Clarify",
 ]
 
-ALPACA_DATA_FORMAT = "alpaca"
-SHAREGPT_DATA_FORMAT = "sharegpt"
+INSTRUCTION_DATA_FORMAT = "instruction"
+CONVERSATIONAL_DATA_FORMAT = "conversational"
 
 KEY_COMMANDS = "commands"
 KEY_DATA_EXAMPLES = "data_examples"
 KEY_TEST_CASE_NAME = "test_case_name"
-
 
 structlogger = structlog.get_logger()
 
@@ -40,10 +39,13 @@ class DataExampleFormat(Protocol):
 
 
 @dataclass
-class AlpacaDataExample(DataExampleFormat):
+class InstructionDataFormat(DataExampleFormat):
     # The prompt and completion fields are used to store the input and output of the
     # LLM model. The instruction data format is taken from the TRL library.
     # Refer: https://huggingface.co/docs/trl/en/sft_trainer#dataset-format-support
+    # The data format can also be used to train on Azure. Refer:
+    # https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/fine-tuning
+
     prompt: str
     completion: str
 
@@ -52,17 +54,19 @@ class AlpacaDataExample(DataExampleFormat):
 
 
 @dataclass
-class ShareGPTMessageFormat:
+class ConversationalMessageDataFormat:
     role: str
     content: str
 
 
 @dataclass
-class ShareGPTDataExample(DataExampleFormat):
+class ConversationalDataFormat(DataExampleFormat):
     # The conversation data format is taken from the TRL library.
     # Refer: https://huggingface.co/docs/trl/en/sft_trainer#dataset-format-support
+    # The data format can also be used to train on Azure. Refer:
+    # https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/fine-tuning
 
-    messages: List[ShareGPTMessageFormat]
+    messages: List[ConversationalMessageDataFormat]
 
     def as_dict(self) -> Dict[str, List[Dict[str, str]]]:
         return {
@@ -188,7 +192,7 @@ def _get_minimum_test_case_groups_to_cover_all_commands(
     return selected_test_cases
 
 
-def _get_finetuning_data_in_alpaca_format(
+def _get_finetuning_data_in_instruction_data_format(
     train_data: List[Dict[str, Any]], validation_data: List[Dict[str, Any]]
 ) -> Tuple[List[DataExampleFormat], List[DataExampleFormat]]:
     """Convert the fine-tuning data to the required Alpaca format.
@@ -197,21 +201,21 @@ def _get_finetuning_data_in_alpaca_format(
     train and validation data.
     """
 
-    def _convert_into_alpaca_data_format(
+    def _convert_into_instruction_data_format(
         data: List[Dict[str, Any]],
     ) -> List[DataExampleFormat]:
         return [
-            AlpacaDataExample(llm_data_example.prompt, llm_data_example.output)
+            InstructionDataFormat(llm_data_example.prompt, llm_data_example.output)
             for test_group in data
             for llm_data_example in test_group[KEY_DATA_EXAMPLES]
         ]
 
-    formatted_train_data = _convert_into_alpaca_data_format(train_data)
-    formatted_validation_data = _convert_into_alpaca_data_format(validation_data)
+    formatted_train_data = _convert_into_instruction_data_format(train_data)
+    formatted_validation_data = _convert_into_instruction_data_format(validation_data)
     return formatted_train_data, formatted_validation_data
 
 
-def _get_finetuning_data_in_sharegpt_format(
+def _get_finetuning_data_in_conversational_data_format(
     train_data: List[Dict[str, Any]], validation_data: List[Dict[str, Any]]
 ) -> Tuple[List[DataExampleFormat], List[DataExampleFormat]]:
     """Convert the fine-tuning data to the required ShareGPT format.
@@ -220,22 +224,26 @@ def _get_finetuning_data_in_sharegpt_format(
     train and validation data.
     """
 
-    def _convert_into_sharegpt_data_format(
+    def _convert_into_conversational_data_format(
         data: List[Dict[str, Any]],
     ) -> List[DataExampleFormat]:
         return [
-            ShareGPTDataExample(
+            ConversationalDataFormat(
                 [
-                    ShareGPTMessageFormat("user", llm_data_example.prompt),
-                    ShareGPTMessageFormat("assistant", llm_data_example.output),
+                    ConversationalMessageDataFormat("user", llm_data_example.prompt),
+                    ConversationalMessageDataFormat(
+                        "assistant", llm_data_example.output
+                    ),
                 ]
             )
             for test_group in data
             for llm_data_example in test_group[KEY_DATA_EXAMPLES]
         ]
 
-    formatted_train_data = _convert_into_sharegpt_data_format(train_data)
-    formatted_validation_data = _convert_into_sharegpt_data_format(validation_data)
+    formatted_train_data = _convert_into_conversational_data_format(train_data)
+    formatted_validation_data = _convert_into_conversational_data_format(
+        validation_data
+    )
     return formatted_train_data, formatted_validation_data
 
 
@@ -385,18 +393,20 @@ def split_llm_fine_tuning_data(
         )
 
     # Convert the fine-tuning data to the required format.
-    if output_format == ALPACA_DATA_FORMAT:
+    if output_format == INSTRUCTION_DATA_FORMAT:
         formatted_train_data, formatted_validation_data = (
-            _get_finetuning_data_in_alpaca_format(train_data, validation_data)
+            _get_finetuning_data_in_instruction_data_format(train_data, validation_data)
         )
-    elif output_format == SHAREGPT_DATA_FORMAT:
+    elif output_format == CONVERSATIONAL_DATA_FORMAT:
         formatted_train_data, formatted_validation_data = (
-            _get_finetuning_data_in_sharegpt_format(train_data, validation_data)
+            _get_finetuning_data_in_conversational_data_format(
+                train_data, validation_data
+            )
         )
     else:
         raise ValueError(
             f"Output format '{output_format}' is not supported. Supported formats are "
-            f"'{ALPACA_DATA_FORMAT}' and '{SHAREGPT_DATA_FORMAT}'."
+            f"'{INSTRUCTION_DATA_FORMAT}' and '{CONVERSATIONAL_DATA_FORMAT}'."
         )
 
     # Write the train and validation data to the storage location.

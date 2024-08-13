@@ -4,6 +4,7 @@ import logging
 import math
 import shutil
 import sys
+from functools import lru_cache
 from pathlib import Path
 from textwrap import dedent
 from typing import Any, Dict, Generator, List, Optional, Text, Tuple, Union
@@ -172,6 +173,7 @@ def validate_path_to_test_cases(path: Text) -> None:
         sys.exit(1)
 
 
+@lru_cache(maxsize=1)
 def extract_test_case_from_path(path: Text) -> Tuple[Text, Text]:
     """Extract test case from path if specified.
 
@@ -297,12 +299,15 @@ def execute_e2e_tests(args: argparse.Namespace) -> None:
 
     test_suite = read_test_cases(path_to_test_cases)
 
+    test_case_path, _ = extract_test_case_from_path(path_to_test_cases)
+
     try:
         test_runner = E2ETestRunner(
             remote_storage=args.remote_storage,
             model_path=args.model,
             model_server=endpoints.model,
             endpoints=endpoints,
+            test_case_path=Path(test_case_path),
         )
     except AgentNotReady as error:
         logger.error(msg=error.message)
