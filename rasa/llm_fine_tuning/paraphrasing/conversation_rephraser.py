@@ -20,6 +20,7 @@ from rasa.shared.utils.llm import (
 )
 
 SEPARATOR = "\n\n"
+BACKUP_SEPARATOR = "\nUSER:"
 
 PROMPT_TEMPLATE_KEY = "prompt_template"
 
@@ -175,8 +176,7 @@ class ConversationRephraser:
             RephrasedUserMessage(message, []) for message in user_messages
         ]
 
-        # Each user message block is seperator by new line
-        message_blocks = output.split(SEPARATOR)
+        message_blocks = self._get_message_blocks(output, len(rephrased_messages))
         for block in message_blocks:
             original_user_message, rephrasings = self._extract_rephrasings(block)
 
@@ -189,6 +189,30 @@ class ConversationRephraser:
                     rephrased_message.rephrasings = rephrasings
 
         return rephrased_messages
+
+    @staticmethod
+    def _get_message_blocks(output: str, expected_number_of_blocks: int) -> List[str]:
+        # Each user message block is (ideally) separated by new line ("\n\n")
+        # USER: <user message>
+        # 1. <rephrasing>
+        #
+        # USER: <user message>
+        # 1. <rephrasing>
+        message_blocks = output.split(SEPARATOR)
+        if len(message_blocks) == expected_number_of_blocks:
+            return message_blocks
+
+        # In case the message blocks are not separated by new line, try to split it
+        # by "\nUSER:", e.g.
+        # USER: <user message>
+        # 1. <rephrasing>
+        # USER: <user message>
+        # 1. <rephrasing>
+        message_blocks = output.split(BACKUP_SEPARATOR)
+        if len(message_blocks) == expected_number_of_blocks:
+            return message_blocks
+
+        return []
 
     @staticmethod
     def _check_rephrasings(

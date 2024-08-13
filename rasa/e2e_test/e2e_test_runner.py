@@ -6,9 +6,11 @@ from asyncio import CancelledError
 from typing import Any, Dict, List, Optional, Text, Tuple, Union
 from urllib.parse import urlparse
 
-import rasa.shared.utils.io
 import requests
 import structlog
+from tqdm import tqdm
+
+import rasa.shared.utils.io
 from rasa.core.channels import CollectingOutputChannel, UserMessage
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.utils import AvailableEndpoints
@@ -32,8 +34,6 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
 from rasa.telemetry import track_e2e_test_run
 from rasa.utils.endpoints import EndpointConfig
-from tqdm import tqdm
-
 
 structlogger = structlog.get_logger()
 
@@ -971,8 +971,13 @@ class E2ETestRunner:
 
             # check if the e2e test is passing, only convert passing e2e tests into
             # conversations
-            test_failures = self.find_test_failures(test_turns, test_case)
-            if len(test_failures) > 0:
+            if not test_case.uses_assertions():
+                test_result = self.generate_test_result(test_turns, test_case)
+            else:
+                test_result = await self.run_assertions(
+                    sender_id, test_case, input_metadata
+                )
+            if not test_result.pass_status:
                 structlogger.warning(
                     "annotation_module.skip_test_case.failing_e2e_test",
                     test_case=test_case.name,
@@ -982,7 +987,7 @@ class E2ETestRunner:
 
             tracker = await self.agent.tracker_store.retrieve(sender_id)
             conversation = rasa.llm_fine_tuning.annotation_module.generate_conversation(
-                test_turns, test_case, tracker
+                test_turns, test_case, tracker, test_case.uses_assertions()
             )
 
             if conversation:

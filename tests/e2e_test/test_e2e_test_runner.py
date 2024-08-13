@@ -1130,14 +1130,24 @@ async def test_run_tests_with_fail_fast(
     )
 
 
-async def test_run_tests_for_fine_tuning(
-    monkeypatch: MonkeyPatch,
-):
-    mock_test_cases = [MagicMock(spec=TestCase), MagicMock(spec=TestCase)]
-    mock_test_cases[0].name = "test_case_1"
-    mock_test_cases[0].steps = []
-    mock_test_cases[1].name = "test_case_2"
-    mock_test_cases[1].steps = []
+async def test_run_tests_for_fine_tuning(monkeypatch: MonkeyPatch):
+    test_cases = [
+        TestCase(
+            steps=[
+                TestStep.from_dict({"user": "Hi!"}),
+                TestStep.from_dict({"bot": "Hey! How can I help?"}),
+                TestStep.from_dict({"user": "Hello!", "metadata": "user_info"}),
+            ],
+            name="test_case_1",
+        ),
+        TestCase(
+            steps=[
+                TestStep.from_dict({"user": "Who are you?"}),
+                TestStep.from_dict({"bot": "I am a bot powered by Rasa."}),
+            ],
+            name="test_case_2",
+        ),
+    ]
 
     def mock_init(self: Any, *args: Any, **kwargs: Any) -> None:
         domain = Domain.empty()
@@ -1159,10 +1169,12 @@ async def test_run_tests_for_fine_tuning(
         AsyncMock(),
     )
 
-    mock_find_test_failures = MagicMock(side_effect=[[], ["failure"]])
+    mock_test_results = MagicMock(
+        side_effect=[TestResult(Mock(), True, []), TestResult(Mock(), False, [])]
+    )
     monkeypatch.setattr(
-        "rasa.e2e_test.e2e_test_runner.E2ETestRunner.find_test_failures",
-        mock_find_test_failures,
+        "rasa.e2e_test.e2e_test_runner.E2ETestRunner.generate_test_result",
+        mock_test_results,
     )
 
     # Mock generate_conversation to return a conversation object
@@ -1179,7 +1191,7 @@ async def test_run_tests_for_fine_tuning(
 
     with capture_logs() as logs:
         result = await runner.run_tests_for_fine_tuning(
-            mock_test_cases,
+            test_cases,
             [],
             None,
         )
