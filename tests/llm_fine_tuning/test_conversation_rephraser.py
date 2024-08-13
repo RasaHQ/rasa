@@ -188,7 +188,7 @@ def test_extract_rephrasings(
         USER: I'd like to book a car
         1. I need to reserve a car.
         2. Could I arrange for a car rental?
-        3. I'm interested in hiring a car.'
+        3. I'm interested in hiring a car.
         """,
         """
         \"\"\"
@@ -200,9 +200,17 @@ def test_extract_rephrasings(
         USER: I'd like to book a car
         - I need to reserve a car.
         - Could I arrange for a car rental?
-        - I'm interested in hiring a car.'
+        - I'm interested in hiring a car.
         \"\"\"
         """,
+        """USER: Show invoices
+1. I want to see my bills.
+2. I mean bills
+3. Yes, I want to see the invoices.
+USER: I'd like to book a car
+1. I need to reserve a car.
+2. Could I arrange for a car rental?
+3. I'm interested in hiring a car.""",
     ),
 )
 def test_parse_output(output: str, rephraser: ConversationRephraser):
@@ -229,7 +237,7 @@ def test_parse_output_insufficient_rephrasings(rephraser: ConversationRephraser)
 
     USER: I'd like to book a car
     1. I need to reserve a car.
-    3. I'm interested in hiring a car.'
+    3. I'm interested in hiring a car.
     """
     user_messages = ["Show invoices", "I'd like to book a car"]
 
@@ -329,3 +337,77 @@ def test_check_rephrasings_all_good(rephraser: ConversationRephraser):
         )
 
         assert len(logs) == 0
+
+
+@pytest.mark.parametrize(
+    "output",
+    (
+        """
+        USER: Show invoices
+        1. I want to see my bills.
+        2. I mean bills
+        3. Yes, I want to see the invoices.
+
+        USER: I'd like to book a car
+        1. I need to reserve a car.
+        2. Could I arrange for a car rental?
+        3. I'm interested in hiring a car.
+        """,
+        """
+        USER: Show invoices
+        1. I want to see my bills.
+        2. I mean bills
+        3. Yes, I want to see the invoices.
+
+
+        USER: I'd like to book a car
+        1. I need to reserve a car.
+        2. Could I arrange for a car rental?
+        3. I'm interested in hiring a car.
+        """,
+        """
+        \"\"\"
+        Show invoices
+        1. I want to see my bills.
+        2. I mean bills
+        3. Yes, I want to see the invoices.
+
+        USER: I'd like to book a car
+        - I need to reserve a car.
+        - Could I arrange for a car rental?
+        - I'm interested in hiring a car.
+        \"\"\"
+        """,
+        """USER: Show invoices
+1. I want to see my bills.
+2. I mean bills
+3. Yes, I want to see the invoices.
+USER: I'd like to book a car
+1. I need to reserve a car.
+2. Could I arrange for a car rental?
+3. I'm interested in hiring a car.""",
+    ),
+)
+def test_get_message_blocks(output: str, rephraser: ConversationRephraser):
+    message_blocks = rephraser._get_message_blocks(output, 2)
+
+    # Assertions
+    assert len(message_blocks) == 2
+
+
+def test_get_message_blocks_returns_empty_list(rephraser: ConversationRephraser):
+    output = """USER: Show invoices
+            1. I want to see my bills.
+            2. I mean bills
+            3. Yes, I want to see the invoices.
+            &&&
+            USER: I'd like to book a car
+            1. I need to reserve a car.
+            2. Could I arrange for a car rental?
+            3. I'm interested in hiring a car.
+            """
+
+    message_blocks = rephraser._get_message_blocks(output, 2)
+
+    # Assertions
+    assert not message_blocks
