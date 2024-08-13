@@ -566,6 +566,7 @@ Sa0EqvZQP+Hnayab7QIDAQAB
 
 @pytest.fixture
 def test_private_key() -> Text:
+    # deepcode ignore HardcodedNonCryptoSecret/test: Test credential
     test_private_key = """-----BEGIN RSA PRIVATE KEY-----
 MIICXQIBAAKBgQC34ht9inqGq79HecpyOAnu2CgvjvgcpFifpFLPmCNdiomAgE48
 tfUAXJRoOGlVtrqc8KgQWjTFLjqDjUh1sBFF69FlwQGt7pgH10ZbERWpMTAbpjI9

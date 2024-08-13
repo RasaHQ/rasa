@@ -1,17 +1,19 @@
-from typing import List, Dict
-
 import argparse
+from typing import Dict, List
+
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 
 from rasa.cli.arguments.run import add_jwt_arguments, add_server_settings_arguments
 from rasa.env import (
-    JWT_SECRET_ENV,
+    AUTH_TOKEN_ENV,
+    DEFAULT_JWT_METHOD,
     JWT_METHOD_ENV,
     JWT_PRIVATE_KEY_ENV,
-    DEFAULT_JWT_METHOD,
-    AUTH_TOKEN_ENV,
+    JWT_SECRET_ENV,
 )
+
+# file deepcode ignore HardcodedNonCryptoSecret/test: Test credentials
 
 
 @pytest.mark.parametrize(
