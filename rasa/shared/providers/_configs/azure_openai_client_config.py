@@ -9,7 +9,7 @@ from rasa.shared.constants import (
     OPENAI_API_BASE_CONFIG_KEY,
     OPENAI_API_BASE_NO_PREFIX_CONFIG_KEY,
     OPENAI_API_TYPE_CONFIG_KEY,
-    OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY,
+    API_TYPE_CONFIG_KEY,
     OPENAI_API_VERSION_CONFIG_KEY,
     OPENAI_API_VERSION_NO_PREFIX_CONFIG_KEY,
     OPENAI_DEPLOYMENT_CONFIG_KEY,
@@ -91,7 +91,7 @@ class AzureOpenAIClientConfig:
         this = AzureOpenAIClientConfig(
             # Required parameters
             deployment=config.pop(OPENAI_DEPLOYMENT_CONFIG_KEY),
-            api_type=config.pop(OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY),
+            api_type=config.pop(API_TYPE_CONFIG_KEY),
             # Optional
             model=config.pop(MODEL_KEY, None),
             # Optional, can also be set through environment variables
@@ -118,7 +118,7 @@ class AzureOpenAIClientConfig:
         """
         required_keys = [
             OPENAI_DEPLOYMENT_CONFIG_KEY,
-            OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY,
+            API_TYPE_CONFIG_KEY,
         ]
         missing_keys = [key for key in required_keys if key not in config]
         if missing_keys:
@@ -169,13 +169,13 @@ def _resolve_aliases(config: dict) -> dict:
     # In reality, LiteLLM is not using this at all
     # It's here for backward compatibility
     api_type = (
-        config.get(OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY)
+        config.get(API_TYPE_CONFIG_KEY)
         or config.get(OPENAI_API_TYPE_CONFIG_KEY)
         or config.get(RASA_TYPE_CONFIG_KEY)
         or config.get(LANGCHAIN_TYPE_CONFIG_KEY)
     )
     if api_type is not None:
-        config[OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY] = api_type
+        config[API_TYPE_CONFIG_KEY] = api_type
 
     # Use `model` and if there are any aliases replace them
     # In reality, LiteLLM is not using this at all
@@ -221,9 +221,9 @@ def _raise_deprecation_warnings(config: dict) -> None:
         OPENAI_DEPLOYMENT_NAME_CONFIG_KEY: OPENAI_DEPLOYMENT_CONFIG_KEY,
         OPENAI_ENGINE_CONFIG_KEY: OPENAI_DEPLOYMENT_CONFIG_KEY,
         OPENAI_API_BASE_CONFIG_KEY: OPENAI_API_BASE_NO_PREFIX_CONFIG_KEY,
-        OPENAI_API_TYPE_CONFIG_KEY: OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY,
-        RASA_TYPE_CONFIG_KEY: OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY,
-        LANGCHAIN_TYPE_CONFIG_KEY: OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY,
+        OPENAI_API_TYPE_CONFIG_KEY: API_TYPE_CONFIG_KEY,
+        RASA_TYPE_CONFIG_KEY: API_TYPE_CONFIG_KEY,
+        LANGCHAIN_TYPE_CONFIG_KEY: API_TYPE_CONFIG_KEY,
         OPENAI_API_VERSION_CONFIG_KEY: OPENAI_API_VERSION_NO_PREFIX_CONFIG_KEY,
     }
     for deprecated_key, new_key in _mapper_deprecated_keys_to_new_keys.items():
@@ -244,7 +244,7 @@ def is_azure_openai_config(config: dict) -> bool:
     config = _resolve_aliases(config)
 
     # Case: Configuration contains `api_type: azure`.
-    if config.get(OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY) == AZURE_API_TYPE:
+    if config.get(API_TYPE_CONFIG_KEY) == AZURE_API_TYPE:
         return True
 
     # Case: Configuration contains `deployment` key

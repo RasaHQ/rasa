@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import List, Text
 
+from rasa.shared.engine.caching import get_local_cache_location
+
 DOCS_BASE_URL = "https://rasa.com/docs/rasa-pro"
 DOCS_URL_CONCEPTS = DOCS_BASE_URL + "/concepts"
 DOCS_URL_NLU_BASED = DOCS_BASE_URL + "/nlu-based-assistants"
@@ -154,7 +156,6 @@ OPENAI_API_VERSION_ENV_VAR = "OPENAI_API_VERSION"
 OPENAI_API_BASE_ENV_VAR = "OPENAI_API_BASE"
 
 OPENAI_API_TYPE_CONFIG_KEY = "openai_api_type"
-OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY = "api_type"
 
 OPENAI_API_VERSION_CONFIG_KEY = "openai_api_version"
 OPENAI_API_VERSION_NO_PREFIX_CONFIG_KEY = "api_version"
@@ -172,9 +173,20 @@ AZURE_API_BASE_ENV_VAR = "AZURE_API_BASE"
 AZURE_API_VERSION_ENV_VAR = "AZURE_API_VERSION"
 AZURE_API_TYPE_ENV_VAR = "AZURE_API_TYPE"
 
+HUGGINGFACE_LOCAL_API_TYPE = "huggingface_local"
+HUGGINGFACE_API_TYPE = "huggingface"
+HUGGINGFACE_MULTIPROCESS_CONFIG_KEY = "multi_process"
+HUGGINGFACE_CACHE_FOLDER_CONFIG_KEY = "cache_folder"
+HUGGINGFACE_SHOW_PROGRESS_CONFIG_KEY = "show_progress"
+HUGGINGFACE_MODEL_KWARGS_CONFIG_KEY = "model_kwargs"
+HUGGINGFACE_ENCODE_KWARGS_CONFIG_KEY = "encode_kwargs"
+HUGGINGFACE_LOCAL_EMBEDDING_CACHING_FOLDER = (
+    get_local_cache_location() / "huggingface_local_embeddings"
+)
+
 MODEL_NAME_KEY = "model_name"
 MODEL_KEY = "model"
-
+API_TYPE_CONFIG_KEY = "api_type"
 RASA_TYPE_CONFIG_KEY = "type"
 LANGCHAIN_TYPE_CONFIG_KEY = "_type"
 

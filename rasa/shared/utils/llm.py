@@ -17,6 +17,9 @@ from rasa.shared.exceptions import (
 from rasa.shared.providers._configs.azure_openai_client_config import (
     is_azure_openai_config,
 )
+from rasa.shared.providers._configs.huggingface_local_embedding_client_config import (
+    is_huggingface_local_config,
+)
 from rasa.shared.providers._configs.openai_client_config import is_openai_config
 from rasa.shared.providers.embedding.embedding_client import EmbeddingClient
 from rasa.shared.providers.llm.llm_client import LLMClient
@@ -25,6 +28,7 @@ from rasa.shared.providers.mappings import (
     AZURE_OPENAI_PROVIDER,
     OPENAI_PROVIDER,
     get_embedding_client_from_provider,
+    HUGGINGFACE_LOCAL_EMBEDDING_PROVIDER,
 )
 
 if TYPE_CHECKING:
@@ -170,6 +174,8 @@ def get_provider_from_config(config: dict) -> Optional[str]:
         return AZURE_OPENAI_PROVIDER
     elif is_openai_config(config):
         return OPENAI_PROVIDER
+    elif is_huggingface_local_config(config):
+        return HUGGINGFACE_LOCAL_EMBEDDING_PROVIDER
     else:
         # `get_llm_provider` works for both embedding models and LLMs
         from litellm.utils import get_llm_provider

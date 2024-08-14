@@ -7,6 +7,9 @@ from rasa.shared.providers.embedding.default_litellm_embedding_client import (
     DefaultLiteLLMEmbeddingClient,
 )
 from rasa.shared.providers.embedding.embedding_client import EmbeddingClient
+from rasa.shared.providers.embedding.huggingface_local_embedding_client import (
+    HuggingFaceLocalEmbeddingClient,
+)
 from rasa.shared.providers.embedding.openai_embedding_client import (
     OpenAIEmbeddingClient,
 )
@@ -17,6 +20,7 @@ from rasa.shared.providers.llm.openai_llm_client import OpenAILLMClient
 
 OPENAI_PROVIDER = "openai"
 AZURE_OPENAI_PROVIDER = "azure"
+HUGGINGFACE_LOCAL_EMBEDDING_PROVIDER = "huggingface_local"
 
 _provider_to_llm_client_mapping: Dict[str, Type[LLMClient]] = {
     OPENAI_PROVIDER: OpenAILLMClient,
@@ -26,6 +30,7 @@ _provider_to_llm_client_mapping: Dict[str, Type[LLMClient]] = {
 _provider_to_embedding_client_mapping: Dict[str, Type[EmbeddingClient]] = {
     OPENAI_PROVIDER: OpenAIEmbeddingClient,
     AZURE_OPENAI_PROVIDER: AzureOpenAIEmbeddingClient,
+    HUGGINGFACE_LOCAL_EMBEDDING_PROVIDER: HuggingFaceLocalEmbeddingClient,
 }
 
 

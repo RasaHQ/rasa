@@ -45,7 +45,7 @@ class DefaultLiteLLMClientConfig:
             ValueError: Config is missing required keys.
 
         Returns:
-            AzureOpenAIClientConfig
+            DefaultLiteLLMClientConfig
         """
         # Validate that the required keys are present
         cls._validate_required_keys(config)
