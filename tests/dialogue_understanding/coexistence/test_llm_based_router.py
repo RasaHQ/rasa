@@ -4,6 +4,7 @@ from unittest.mock import Mock, patch, AsyncMock
 
 import pytest
 from _pytest.tmpdir import TempPathFactory
+from rasa.shared.providers.llm.llm_response import LLMResponse
 from structlog.testing import capture_logs
 
 from rasa.dialogue_understanding.coexistence.constants import (
@@ -133,79 +134,81 @@ class TestLLMBasedRouter:
         "initial_value, commands",
         [(False, [NoopCommand()]), (True, [])],
     )
+    @patch("rasa.dialogue_understanding.coexistence.llm_based_router.llm_factory")
     async def test_llm_based_router_predict_commands_with_routing_slot_already_set(
         self,
+        mock_llm_factory: Mock,
         initial_value: Optional[bool],
         commands: List[Command],
-        llm_based_router: (LLMBasedRouter),
+        llm_based_router: LLMBasedRouter,
     ) -> None:
+        # Given
         message = Message.build(text="some message")
         tracker = DialogueStateTracker(
             "sender_id",
             [BooleanSlot(ROUTE_TO_CALM_SLOT, mappings=[], initial_value=initial_value)],
         )
 
-        # When
-        with patch(
-            "rasa.dialogue_understanding.coexistence.llm_based_router.llm_factory",
-            Mock(),
-        ) as mock_llm_factory:
-            llm_mock = Mock()
-            apredict_mock = AsyncMock(return_value="StartFlow(test_flow)")
-            llm_mock.apredict = apredict_mock
-            mock_llm_factory.return_value = llm_mock
-            actual_commands = await llm_based_router.predict_commands(message, tracker)
+        llm_mock = Mock()
+        llm_mock.acompletion.return_value = AsyncMock(
+            spec=LLMResponse, choices=["StartFlow(test_flow)"]
+        )
+        mock_llm_factory.return_value = llm_mock
 
-        apredict_mock.assert_not_called()
+        # When
+        actual_commands = await llm_based_router.predict_commands(message, tracker)
+
+        # Then
+        llm_mock.acompletion.assert_not_called()
         assert actual_commands == commands
 
+    @patch("rasa.dialogue_understanding.coexistence.llm_based_router.llm_factory")
     async def test_llm_based_router_predict_commands_with_routing_slot_set_to_none(
         self,
-        llm_based_router: (LLMBasedRouter),
+        mock_llm_factory: Mock,
+        llm_based_router: LLMBasedRouter,
     ) -> None:
+        # Given
         message = Message.build(text="some message")
         tracker = DialogueStateTracker(
             "sender_id",
             [BooleanSlot(ROUTE_TO_CALM_SLOT, mappings=[], initial_value=None)],
         )
 
-        # When
-        with patch(
-            "rasa.dialogue_understanding.coexistence.llm_based_router.llm_factory",
-            Mock(),
-        ) as mock_llm_factory:
-            llm_mock = Mock()
-            apredict_mock = AsyncMock(return_value="StartFlow(test_flow)")
-            llm_mock.apredict = apredict_mock
-            mock_llm_factory.return_value = llm_mock
+        llm_mock = Mock()
+        llm_mock.acompletion.return_value = AsyncMock(
+            spec=LLMResponse, choices=["StartFlow(test_flow)"]
+        )
+        mock_llm_factory.return_value = llm_mock
+        await llm_based_router.predict_commands(message, tracker)
+
+        mock_llm_factory.assert_called_once_with(None, DEFAULT_LLM_CONFIG)
+        llm_mock.acompletion.assert_called_once()
+
+    @patch("rasa.dialogue_understanding.coexistence.llm_based_router.llm_factory")
+    async def test_predict_commands_llm_error(
+        self, mock_llm_factory: Mock, llm_based_router: LLMBasedRouter
+    ):
+        # Given
+        message = Message.build(text="some message")
+        tracker = DialogueStateTracker(
+            "sender_id",
+            [BooleanSlot(ROUTE_TO_CALM_SLOT, mappings=[], initial_value=None)],
+        )
+
+        mock_llm = AsyncMock()
+        mock_llm.acompletion = AsyncMock(side_effect=Exception("some exception"))
+        mock_llm_factory.return_value = mock_llm
+
+        with capture_logs() as logs:
             await llm_based_router.predict_commands(message, tracker)
-
-            mock_llm_factory.assert_called_once_with(None, DEFAULT_LLM_CONFIG)
-            apredict_mock.assert_called_once()
-
-    async def test_predict_commands_llm_error(self, llm_based_router: (LLMBasedRouter)):
-        message = Message.build(text="some message")
-        tracker = DialogueStateTracker(
-            "sender_id",
-            [BooleanSlot(ROUTE_TO_CALM_SLOT, mappings=[], initial_value=None)],
-        )
-
-        mock_llm = Mock(side_effect=Exception("some exception"))
-        with patch(
-            "rasa.dialogue_understanding.coexistence.llm_based_router.llm_factory",
-            Mock(return_value=mock_llm),
-        ):
-            with capture_logs() as logs:
-                await llm_based_router.predict_commands(message, tracker)
-                # Then
-                assert len(logs) == 5
-                assert logs[0]["event"] == "llm_based_router.prompt_rendered"
-                assert logs[1]["event"] == "llm_based_router.llm.error"
-                assert logs[2]["event"] == "llm_based_router.llm_answer"
-                assert (
-                    logs[3]["event"] == "llm_based_router.parse_answer.invalid_answer"
-                )
-                assert logs[4]["event"] == "llm_based_router.final_commands"
+            # Then
+            assert len(logs) == 5
+            assert logs[0]["event"] == "llm_based_router.prompt_rendered"
+            assert logs[1]["event"] == "llm_based_router.llm.error"
+            assert logs[2]["event"] == "llm_based_router.llm_answer"
+            assert logs[3]["event"] == "llm_based_router.parse_answer.invalid_answer"
+            assert logs[4]["event"] == "llm_based_router.final_commands"
 
     def test_render_template(
         self,

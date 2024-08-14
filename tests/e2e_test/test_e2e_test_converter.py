@@ -269,13 +269,20 @@ async def test_convert_e2e_conversations_into_tests(sample_converter):
         Mock(),
     ) as mock_llm_factory:
         llm_mock = Mock()
-        apredict_mock = AsyncMock(
+
+        # Creating mock response objects with the 'choices' attribute
+        mock_response_1 = Mock()
+        mock_response_1.choices = [f"```yaml\n{DUMMY_YAML_TEST}\n```"]
+
+        mock_response_2 = Mock()
+        mock_response_2.choices = [f"```yaml\n{DUMMY_YAML_TEST}\n```"]
+        acompletion_mock = AsyncMock(
             side_effect=[
-                f"```yaml\n{DUMMY_YAML_TEST}\n```",
-                f"```yaml\n{DUMMY_YAML_TEST}\n```",
+                mock_response_1,
+                mock_response_2,
             ]
         )
-        llm_mock.apredict = apredict_mock
+        llm_mock.acompletion = acompletion_mock
         mock_llm_factory.return_value = llm_mock
         yaml_tests_string = await sample_converter.convert_conversations_into_tests(
             conversations
@@ -297,10 +304,10 @@ async def test_convert_e2e_single_conversation_into_test(sample_converter):
         Mock(),
     ) as mock_llm_factory:
         llm_mock = Mock()
-        apredict_mock = AsyncMock(
-            return_value="""```yaml\ntest_case: valid_yaml\n```"""
-        )
-        llm_mock.apredict = apredict_mock
+        mock_response = Mock()
+        mock_response.choices = ["""```yaml\ntest_case: valid_yaml\n```"""]
+        acompletion_mock = AsyncMock(return_value=mock_response)
+        llm_mock.acompletion = acompletion_mock
         mock_llm_factory.return_value = llm_mock
         yaml_test = await sample_converter.convert_single_conversation_into_test(
             conversation

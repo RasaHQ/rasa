@@ -15,7 +15,7 @@ from rasa.llm_fine_tuning.annotation_module import (
 )
 from rasa.llm_fine_tuning.conversations import Conversation, ConversationStep
 from rasa.llm_fine_tuning.storage import StorageContext
-from rasa.shared.core.events import UserUttered
+from rasa.shared.core.events import UserUttered, BotUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import LLM_PROMPT, LLM_COMMANDS
 
@@ -36,7 +36,13 @@ def test_turn(test_step: TestStep) -> ActualStepOutput:
                     LLM_COMMANDS: [{"flow": "transfer_money", "command": "start flow"}],
                     LLM_PROMPT: "prompt",
                 },
-            )
+            ),
+            BotUttered(
+                "How much money do you want to transfer?",
+                metadata={
+                    "utter_action": "utter_ask_transfer_money_amount",
+                },
+            ),
         ],
     )
 
@@ -83,6 +89,28 @@ def test_generate_conversation(test_step: TestStep, test_turn: ActualStepOutput)
     assert len(result.steps) == 2
     assert result.steps[0] == test_step
     assert isinstance(result.steps[1], ConversationStep)
+
+
+def test_generate_conversation_using_assertions(
+    test_step: TestStep, test_turn: ActualStepOutput
+):
+    test_turns = {0: test_turn, 1: test_turn}
+    test_case = TestCase("test_case_name", steps=[test_step, test_step])
+
+    mock_tracker = MagicMock(spec=DialogueStateTracker)
+
+    result = generate_conversation(
+        test_turns, test_case, mock_tracker, assertions_used=True
+    )
+
+    assert result is not None
+    assert isinstance(result, Conversation)
+    assert result.original_e2e_test_case == test_case
+    assert len(result.steps) == 4
+    assert isinstance(result.steps[0], ConversationStep)
+    assert isinstance(result.steps[1], TestStep)
+    assert isinstance(result.steps[2], ConversationStep)
+    assert isinstance(result.steps[3], TestStep)
 
 
 def test_convert_to_conversation_step_returns_conversation_step(

@@ -56,6 +56,7 @@ def generate_conversation(
     test_turns: TEST_TURNS_TYPE,
     test_case: TestCase,
     tracker: DialogueStateTracker,
+    assertions_used: bool = False,
 ) -> Optional[Conversation]:
     """Generates a conversation object in case of e2e test passing.
 
@@ -63,20 +64,33 @@ def generate_conversation(
         test_turns: the turns that happened when running the test case or test step.
         test_case: the `TestCase` instance.
         tracker: the dialogue state tracker.
+        assertions_used: if True the e2e test format with assertions was used.
 
     Returns:
         Conversation.
     """
     steps = []
-    for i, original_step in enumerate(test_case.steps):
-        if original_step.actor == USER:
+
+    if assertions_used:
+        # we only have user steps, extract the bot response from the bot uttered
+        # events of the test turn
+        for i, original_step in enumerate(test_case.steps):
             steps.append(
                 _convert_to_conversation_step(
                     original_step, test_turns[i], test_case.name
                 )
             )
-        else:
-            steps.append(original_step)
+            steps.extend(_create_bot_test_steps(test_turns[i]))
+    else:
+        for i, original_step in enumerate(test_case.steps):
+            if original_step.actor == USER:
+                steps.append(
+                    _convert_to_conversation_step(
+                        original_step, test_turns[i], test_case.name
+                    )
+                )
+            else:
+                steps.append(original_step)
 
     # Some messages in an e2e test case could be mapped to commands via
     # 'NLUCommandAdapter', e.g. the message will not be annotated with a prompt and
@@ -95,6 +109,18 @@ def generate_conversation(
     transcript = tracker_as_readable_transcript(tracker, max_turns=None)
 
     return Conversation(test_case.name, test_case, steps, transcript)
+
+
+def _create_bot_test_steps(current_turn: ActualStepOutput) -> List[TestStep]:
+    test_steps = []
+    for bot_event in current_turn.bot_uttered_events:
+        template = None
+        if "utter_action" in bot_event.metadata:
+            template = bot_event.metadata["utter_action"]
+
+        test_steps.append(TestStep(actor="bot", text=bot_event.text, template=template))
+
+    return test_steps
 
 
 def _convert_to_conversation_step(

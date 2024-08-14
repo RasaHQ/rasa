@@ -46,10 +46,10 @@ A_TO_C_TOKEN_IDS_CHATGPT = [
 ]
 
 DEFAULT_LLM_CONFIG = {
-    "_type": "openai",
+    "api_type": "openai",
+    "model": DEFAULT_OPENAI_CHAT_MODEL_NAME,
     "request_timeout": 7,
     "temperature": 0.0,
-    "model_name": DEFAULT_OPENAI_CHAT_MODEL_NAME,
     "max_tokens": 1,
     "logit_bias": {str(token_id): 100 for token_id in A_TO_C_TOKEN_IDS_CHATGPT},
 }
@@ -268,7 +268,8 @@ class LLMBasedRouter(GraphComponent):
         llm = llm_factory(self.config.get(LLM_CONFIG_KEY), DEFAULT_LLM_CONFIG)
 
         try:
-            return await llm.apredict(prompt)
+            llm_response = await llm.acompletion(prompt)
+            return llm_response.choices[0]
         except Exception as e:
             # unfortunately, langchain does not wrap LLM exceptions which means
             # we have to catch all exceptions here
