@@ -17,6 +17,7 @@ from rasa.shared.core.slots import (
     Slot,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.engine.caching import CACHE_LOCATION_ENV
 from rasa.shared.exceptions import ProviderClientValidationError
 from rasa.shared.providers.embedding.azure_openai_embedding_client import (
     AzureOpenAIEmbeddingClient,
@@ -39,6 +40,7 @@ from rasa.shared.utils.llm import (
     ERROR_PLACEHOLDER,
     allowed_values_for_slot,
     get_provider_from_config,
+    ensure_cache,
 )
 
 
@@ -906,3 +908,17 @@ def test_get_prompt_template_returns_default_on_error() -> None:
     default_prompt_template = "default prompt template"
     response = get_prompt_template("non_existent_file.jinja2", default_prompt_template)
     assert response == default_prompt_template
+
+
+def test_ensure_cache_creates_creates_diskcache_sqlite_db(
+    tmpdir, monkeypatch: MonkeyPatch
+):
+    cache_dir = tmpdir / "test_ensure_cache"
+    monkeypatch.setenv(CACHE_LOCATION_ENV, str(cache_dir))
+    ensure_cache()
+
+    assert cache_dir.exists()
+    assert cache_dir.isdir()
+    # cache.db is the database name that is
+    # created in the given directory
+    assert (cache_dir / "rasa-llm-cache" / "cache.db").exists()

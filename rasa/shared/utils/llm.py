@@ -9,7 +9,9 @@ from rasa.shared.constants import (
 )
 from rasa.shared.core.events import BotUttered, UserUttered
 from rasa.shared.core.slots import Slot, BooleanSlot, CategoricalSlot
-from rasa.shared.engine.caching import get_local_cache_location
+from rasa.shared.engine.caching import (
+    get_local_cache_location,
+)
 from rasa.shared.exceptions import (
     FileIOException,
     FileNotFoundException,
@@ -200,15 +202,14 @@ def get_llm_type_after_combining_custom_and_default_config(
 
 def ensure_cache() -> None:
     """Ensures that the cache is initialized."""
-    import langchain
-    from langchain.cache import SQLiteCache
+    import litellm
 
-    # ensure the cache directory exists
-    cache_location = get_local_cache_location()
+    # Ensure the cache directory exists
+    cache_location = get_local_cache_location() / "rasa-llm-cache"
     cache_location.mkdir(parents=True, exist_ok=True)
 
-    db_location = cache_location / "rasa-llm-cache.db"
-    langchain.llm_cache = SQLiteCache(database_path=str(db_location))
+    # Set diskcache as a caching option
+    litellm.cache = litellm.Cache(type="disk", disk_cache_dir=cache_location)
 
 
 def llm_factory(
@@ -225,7 +226,7 @@ def llm_factory(
     """
     config = combine_custom_and_default_config(custom_config, default_config)
     provider = get_provider_from_config(config)
-    # TODO: ensure_cache()
+    ensure_cache()
     client_clazz: Type[LLMClient] = get_llm_client_from_provider(provider)
     client = client_clazz.from_config(config)
     return client
@@ -246,7 +247,7 @@ def embedder_factory(
     """
     config = combine_custom_and_default_config(custom_config, default_config)
     provider = get_provider_from_config(config)
-    # TODO: ensure_cache()
+    ensure_cache()
     client_clazz: Type[EmbeddingClient] = get_embedding_client_from_provider(provider)
     client = client_clazz.from_config(config)
     return client
