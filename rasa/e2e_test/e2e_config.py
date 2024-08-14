@@ -13,6 +13,7 @@ from rasa.e2e_test.constants import (
     CONFTEST_FILE_NAME,
     E2E_CONFIG_SCHEMA_FILE_PATH,
     KEY_LLM_AS_JUDGE,
+    KEY_LLM_E2E_TEST_CONVERTER,
 )
 from rasa.shared.exceptions import RasaException
 from rasa.shared.utils.yaml import (
@@ -112,6 +113,39 @@ class LLMJudgeConfig:
         return self.clean_up_config(data)
 
 
+@dataclass
+class LLME2ETestConverterConfig:
+    """Class for storing the LLM configuration of the E2ETestConverter.
+
+    This configuration is used to initialize the LiteLLM client.
+    """
+
+    api_type: Optional[str]
+    model: Optional[str]
+    deployment: Optional[str]
+    api_base: Optional[str]
+    extra_parameters: Optional[Dict[str, Any]]
+
+    @classmethod
+    def from_dict(cls, config_data: Dict[str, Any]) -> LLME2ETestConverterConfig:
+        """Loads the configuration from a dictionary."""
+        expected_fields = ["api_type", "model", "deployment", "api_base"]
+        kwargs = {
+            expected_field: config_data.pop(expected_field, None)
+            for expected_field in expected_fields
+        }
+        return LLME2ETestConverterConfig(extra_parameters=config_data, **kwargs)
+
+    @staticmethod
+    def clean_up_config(config_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Remove None values from the configuration."""
+        return {key: value for key, value in config_data.items() if value}
+
+    def as_dict(self) -> Dict[str, Any]:
+        data = dataclasses.asdict(self)
+        return self.clean_up_config(data)
+
+
 def load_external_api_keys(llm_type: str) -> Dict[str, Optional[str]]:
     """Load the environment variables for the external API keys."""
     environment_variable_name = LLM_PROVIDER_TO_API_KEY.get(llm_type)
@@ -194,6 +228,31 @@ def create_llm_judge_config(test_case_path: Optional[Path]) -> LLMJudgeConfig:
     )
 
     return LLMJudgeConfig.from_dict(llm_judge_config_data)
+
+
+def create_llm_e2e_test_converter_config(
+    config_path: Path,
+) -> LLME2ETestConverterConfig:
+    """Create the LLME2ETestConverterConfig configuration from the dictionary."""
+    config_data = read_conftest_file(config_path)
+    if not config_data:
+        structlogger.debug(
+            "e2e_config.create_llm_e2e_test_converter_config.no_conftest_detected"
+        )
+        return LLME2ETestConverterConfig.from_dict(config_data)
+
+    llm_e2e_test_converter_config_data = config_data.get(KEY_LLM_E2E_TEST_CONVERTER, {})
+    if not llm_e2e_test_converter_config_data:
+        structlogger.debug(
+            "e2e_config.create_llm_e2e_test_converter_config.no_llm_e2e_test_converter_config_key"
+        )
+
+    structlogger.info(
+        "e2e_config.create_llm_e2e_test_converter_config.success",
+        llm_e2e_test_converter_config_data=llm_e2e_test_converter_config_data,
+    )
+
+    return LLME2ETestConverterConfig.from_dict(llm_e2e_test_converter_config_data)
 
 
 def read_conftest_file(test_case_path: Optional[Path]) -> Dict[str, Any]:

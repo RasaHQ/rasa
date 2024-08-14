@@ -47,7 +47,6 @@ def set_convert_e2e_arguments(parser: argparse.ArgumentParser) -> None:
         "-o",
         "--output",
         type=str,
-        default="e2e_tests",
         help="Output directory to store the tests.",
     )
     parser.add_argument(

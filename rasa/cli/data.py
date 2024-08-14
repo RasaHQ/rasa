@@ -15,7 +15,9 @@ from rasa import telemetry
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import data as arguments
 from rasa.cli.arguments import default_arguments
+from rasa.e2e_test.e2e_config import create_llm_e2e_test_converter_config
 from rasa.e2e_test.e2e_test_converter import E2ETestConverter
+from rasa.e2e_test.e2e_yaml_utils import DEFAULT_E2E_OUTPUT_TESTS_DIRECTORY
 from rasa.e2e_test.e2e_yaml_utils import E2ETestYAMLWriter
 from rasa.shared.constants import (
     DEFAULT_DATA_PATH,
@@ -321,11 +323,15 @@ def convert_data_to_e2e_tests(args: argparse.Namespace) -> None:
             RASA_PRO_BETA_E2E_CONVERSION_ENV_VAR_NAME,
         )
 
+        config_path = pathlib.Path(args.output or args.path)
+        llm_config = create_llm_e2e_test_converter_config(config_path)
+
         kwargs = minimal_kwargs(vars(args), E2ETestConverter)
-        converter = E2ETestConverter(**kwargs)
+        converter = E2ETestConverter(llm_config=llm_config, **kwargs)
         yaml_tests_string = converter.run()
 
-        writer = E2ETestYAMLWriter(output_path=args.output)
+        output_path = args.output or DEFAULT_E2E_OUTPUT_TESTS_DIRECTORY
+        writer = E2ETestYAMLWriter(output_path=output_path)
         writer.write_to_file(yaml_tests_string)
     except RasaException as exc:
         rasa.shared.utils.cli.print_error_and_exit(
