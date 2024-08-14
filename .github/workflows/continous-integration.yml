@@ -856,7 +856,7 @@ jobs:
         run: pip install pytest-github-actions-annotate-failures
 
       - name: Install ddtrace on Linux
-        run: poetry run pip install -U 'ddtrace<2.0.0'
+        run: poetry run pip install -U 'ddtrace==2.10.5'
 
       - name: Test Code 🔍 (multi-process)
         env:
@@ -912,7 +912,7 @@ jobs:
 
       - name: Install spaCy language model
         run: |
-          poetry run python -m pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.5.0/en_core_web_lg-3.5.0-py3-none-any.whl
+          poetry run python -m pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.7.1/en_core_web_lg-3.7.1-py3-none-any.whl
 
       - name: Add github workflow problem matchers
         if: matrix.python-version == 3.7
@@ -923,7 +923,7 @@ jobs:
         run: pip install pytest-github-actions-annotate-failures
 
       - name: Install ddtrace on Linux
-        run: poetry run pip install -U 'ddtrace<2.0.0'
+        run: poetry run pip install -U 'ddtrace==2.10.5'
 
       - name: Test Code 🔍 (multi-process)
         env:

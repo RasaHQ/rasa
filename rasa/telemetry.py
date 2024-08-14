@@ -1105,14 +1105,21 @@ def _get_llm_command_generator_config(config: Dict[str, Any]) -> Optional[Dict]:
     def extract_settings(component: Dict) -> Dict:
         """Extracts the settings from the command generator component."""
         custom_prompt_used = "prompt" in component
-        llm_model_name = component.get(LLM_CONFIG_KEY, {}).get(
-            "model_name", DEFAULT_LLM_CONFIG["model_name"]
+        llm_config = component.get(LLM_CONFIG_KEY, {})
+        llm_model_name = (
+            llm_config.get("model")
+            or llm_config.get("model_name")
+            or DEFAULT_LLM_CONFIG["model"]
         )
         flow_retrieval_config = component.get(FLOW_RETRIEVAL_KEY, {})
         flow_retrieval_enabled = flow_retrieval_config.get("active", True)
+        flow_retrieval_embeddings_config = flow_retrieval_config.get(
+            "embeddings", DEFAULT_EMBEDDINGS_CONFIG
+        )
         flow_retrieval_embedding_model_name = (
-            flow_retrieval_config.get("embeddings", DEFAULT_EMBEDDINGS_CONFIG).get(
-                "model"
+            (
+                flow_retrieval_embeddings_config.get("model_name")
+                or flow_retrieval_embeddings_config.get("model")
             )
             if flow_retrieval_enabled
             else None

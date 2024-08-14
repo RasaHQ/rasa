@@ -22,6 +22,7 @@ from rasa.dialogue_understanding.generator.constants import (
     LLM_CONFIG_KEY,
     USER_INPUT_CONFIG_KEY,
     FLOW_RETRIEVAL_KEY,
+    FLOW_RETRIEVAL_EMBEDDINGS_KEY,
 )
 from rasa.dialogue_understanding.generator.flow_retrieval import (
     FlowRetrieval,
@@ -35,7 +36,11 @@ from rasa.engine.graph import ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.constants import ROUTE_TO_CALM_SLOT
+from rasa.shared.constants import (
+    ROUTE_TO_CALM_SLOT,
+    MODEL_NAME_KEY,
+    MODEL_KEY,
+)
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import ProviderClientAPIException
@@ -107,23 +112,26 @@ class SingleStepLLMCommandGenerator(LLMBasedCommandGenerator):
         self._track(config)
 
     def _track(self, config: Dict[str, Any]) -> None:
-        model_name = (config.get(LLM_CONFIG_KEY) or DEFAULT_LLM_CONFIG).get(
-            "model_name"
-        )
+        llm_config = config.get(LLM_CONFIG_KEY) or DEFAULT_LLM_CONFIG
+        llm_model_name = llm_config.get(MODEL_KEY) or llm_config.get(MODEL_NAME_KEY)
         custom_prompt_used = (
             config.get("prompt") or config.get("prompt_template")
         ) is not None
         flow_retrieval_config = config.get(FLOW_RETRIEVAL_KEY, {})
         flow_retrieval_enabled = flow_retrieval_config.get("active", True)
+        flow_retrieval_embedding_config = flow_retrieval_config.get(
+            FLOW_RETRIEVAL_EMBEDDINGS_KEY, DEFAULT_EMBEDDINGS_CONFIG
+        )
         flow_retrieval_embedding_model_name = (
-            flow_retrieval_config.get("embeddings", DEFAULT_EMBEDDINGS_CONFIG).get(
-                "model"
+            (
+                flow_retrieval_embedding_config.get(MODEL_KEY)
+                or flow_retrieval_embedding_config.get(MODEL_NAME_KEY)
             )
             if flow_retrieval_enabled
             else None
         )
         track_single_step_llm_command_generator_init(
-            llm_model_name=model_name,
+            llm_model_name=llm_model_name,
             custom_prompt_used=custom_prompt_used,
             flow_retrieval_enabled=flow_retrieval_enabled,
             flow_retrieval_embedding_model_name=flow_retrieval_embedding_model_name,

@@ -4,8 +4,8 @@ from typing import List
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
-from langchain.embeddings import FakeEmbeddings
-from langchain.llms.fake import FakeListLLM
+from langchain_community.embeddings import FakeEmbeddings
+from langchain_community.llms.fake import FakeListLLM
 from pytest import MonkeyPatch
 
 from rasa.core.constants import UTTER_SOURCE_METADATA_KEY
@@ -20,6 +20,7 @@ from rasa.core.policies.policy import PolicyPrediction
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.shared.constants import OPENAI_API_KEY_ENV_VAR
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, UserUttered, BotUttered
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
@@ -1041,12 +1042,14 @@ async def test_enterprise_search_policy_response_with_use_llm_false(
     vector_store: InformationRetrieval,
     enterprise_search_tracker: DialogueStateTracker,
     search_results: SearchResultList,
+    monkeypatch: MonkeyPatch,
 ) -> None:
     """
     Given the `USE_LLM_PROPERTY` is set to False, the policy should return
     a response without using the LLM. Response text should be from the first
     search result.
     """
+    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "my key")
     policy = EnterpriseSearchPolicy(
         config={USE_LLM_PROPERTY: False},
         model_storage=default_model_storage,
@@ -1083,11 +1086,13 @@ async def test_enterprise_search_policy_response_with_use_llm_true(
     vector_store: InformationRetrieval,
     enterprise_search_tracker: DialogueStateTracker,
     search_results: SearchResultList,
+    monkeypatch: MonkeyPatch,
 ) -> None:
     """
     Given the `USE_LLM_PROPERTY` is set to True, the policy should return
     a response using the LLM. Response text should be from the LLM.
     """
+    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "my key")
     policy = EnterpriseSearchPolicy(
         config={USE_LLM_PROPERTY: True},
         model_storage=default_model_storage,

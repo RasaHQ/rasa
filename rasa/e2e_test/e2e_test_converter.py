@@ -143,7 +143,8 @@ class E2ETestConverter:
         llm = llm_factory(DEFAULT_LLM_CONFIG, DEFAULT_LLM_CONFIG)
 
         try:
-            return await llm.apredict(prompt)
+            llm_response = await llm.acompletion(prompt)
+            return llm_response.choices[0]
         except Exception as exc:
             structlogger.debug("e2e_test_generator.llm_response_error", exc=exc)
             return None

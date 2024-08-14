@@ -8,6 +8,11 @@ import rasa.shared.utils.io
 import structlog
 from jinja2 import Template
 from pydantic import ValidationError
+
+from rasa.shared.providers.embedding._langchain_embedding_client_adapter import (
+    _LangchainEmbeddingClientAdapter,
+)
+from rasa.shared.providers.llm.llm_client import LLMClient
 from rasa.telemetry import (
     track_enterprise_search_policy_predict,
     track_enterprise_search_policy_train_completed,
@@ -71,7 +76,6 @@ from rasa.core.information_retrieval import (
 
 if TYPE_CHECKING:
     from langchain.schema.embeddings import Embeddings
-    from langchain.llms.base import BaseLLM
     from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 
 from rasa.utils.log_utils import log_llm
@@ -97,16 +101,16 @@ DEFAULT_VECTOR_STORE = {
 }
 
 DEFAULT_LLM_CONFIG = {
-    "_type": "openai",
+    "api_type": "openai",
+    "model": DEFAULT_OPENAI_CHAT_MODEL_NAME,
     "request_timeout": 10,
     "temperature": 0.0,
     "max_tokens": 256,
-    "model_name": DEFAULT_OPENAI_CHAT_MODEL_NAME,
     "max_retries": 1,
 }
 
 DEFAULT_EMBEDDINGS_CONFIG = {
-    "_type": "openai",
+    "api_type": "openai",
     "model": DEFAULT_OPENAI_EMBEDDING_MODEL_NAME,
 }
 
@@ -213,9 +217,10 @@ class EnterpriseSearchPolicy(Policy):
         Returns:
         The embedder.
         """
-        return embedder_factory(
+        client = embedder_factory(
             config.get(EMBEDDINGS_CONFIG_KEY), DEFAULT_EMBEDDINGS_CONFIG
         )
+        return _LangchainEmbeddingClientAdapter(client)
 
     def train(  # type: ignore[override]
         self,
@@ -279,10 +284,10 @@ class EnterpriseSearchPolicy(Policy):
         # telemetry call to track training completion
         track_enterprise_search_policy_train_completed(
             vector_store_type=store_type,
-            embeddings_type=self.embeddings_config.get("_type"),
+            embeddings_type=self.embeddings_config.get("api_type"),
             embeddings_model=self.embeddings_config.get("model")
             or self.embeddings_config.get("model_name"),
-            llm_type=self.llm_config.get("_type"),
+            llm_type=self.llm_config.get("api_type"),
             llm_model=self.llm_config.get("model") or self.llm_config.get("model_name"),
             citation_enabled=self.citation_enabled,
         )
@@ -461,10 +466,10 @@ class EnterpriseSearchPolicy(Policy):
         # telemetry call to track policy prediction
         track_enterprise_search_policy_predict(
             vector_store_type=self.vector_store_config.get(VECTOR_STORE_TYPE_PROPERTY),
-            embeddings_type=self.embeddings_config.get("_type"),
+            embeddings_type=self.embeddings_config.get("api_type"),
             embeddings_model=self.embeddings_config.get("model")
             or self.embeddings_config.get("model_name"),
-            llm_type=self.llm_config.get("_type"),
+            llm_type=self.llm_config.get("api_type"),
             llm_model=self.llm_config.get("model") or self.llm_config.get("model_name"),
             citation_enabled=self.citation_enabled,
         )
@@ -502,10 +507,11 @@ class EnterpriseSearchPolicy(Policy):
         return prompt
 
     async def _generate_llm_answer(
-        self, llm: "BaseLLM", prompt: Text
+        self, llm: LLMClient, prompt: Text
     ) -> Optional[Text]:
         try:
-            llm_answer = await llm.apredict(prompt)
+            llm_response = await llm.acompletion(prompt)
+            llm_answer = llm_response.choices[0]
         except Exception as e:
             # unfortunately, langchain does not wrap LLM exceptions which means
             # we have to catch all exceptions here

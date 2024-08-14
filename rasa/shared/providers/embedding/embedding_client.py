@@ -1,7 +1,21 @@
-from typing import Protocol, Dict, List
+from typing import Protocol, Dict, List, TYPE_CHECKING, runtime_checkable
+
+if TYPE_CHECKING:
+    from rasa.shared.providers.embedding.embedding_response import EmbeddingResponse
 
 
+@runtime_checkable
 class EmbeddingClient(Protocol):
+    @classmethod
+    def from_config(cls, config: dict) -> "EmbeddingClient":
+        """
+        Initializes the embedding client with the given configuration.
+
+        This class method should be implemented to parse the given
+        configuration and create an instance of llm client.
+        """
+        ...
+
     @property
     def config(self) -> Dict:
         """
@@ -12,27 +26,7 @@ class EmbeddingClient(Protocol):
         """
         ...
 
-    @property
-    def embedding_size(self) -> int:
-        """
-        Returns the size of the embedding vector.
-
-        This property should be implemented to return an integer representing
-        the size of the embedding vector.
-        """
-        ...
-
-    @classmethod
-    def get_default_config(cls) -> Dict:
-        """
-        Returns the default configuration for the embedding client.
-
-        This class method should be implemented to return a dictionary containing
-        the default configuration settings for the embedding client.
-        """
-        ...
-
-    def embed(self, documents: List[str]) -> List[List[float]]:
+    def embed(self, documents: List[str]) -> "EmbeddingResponse":
         """
         Embeds a list of documents synchronously.
 
@@ -44,10 +38,13 @@ class EmbeddingClient(Protocol):
 
         Returns:
             List of embedding vectors.
+
+        Raises:
+            ProviderClientAPIException: If API calls raised an error.
         """
         ...
 
-    async def aembed(self, documents: List[str]) -> List[List[float]]:
+    async def aembed(self, documents: List[str]) -> "EmbeddingResponse":
         """
         Embeds a list of documents asynchronously.
 
@@ -59,6 +56,9 @@ class EmbeddingClient(Protocol):
 
         Returns:
             List of embedding vectors.
+
+        Raises:
+            ProviderClientAPIException: If API calls raised an error.
         """
         ...
 
@@ -74,5 +74,17 @@ class EmbeddingClient(Protocol):
 
         Raises:
             ValueError: If any document is invalid.
+        """
+        ...
+
+    def validate_client_setup(self, *args, **kwargs) -> None:  # type: ignore
+        """
+        Perform client setup validation.
+
+        This method should be implemented to validate whether the client can be used
+        with the parameters provided through configuration or environment variables.
+
+        If there are any issues, the client should raise a ValidationError.
+        If no validation is needed, this check can simply pass.
         """
         ...

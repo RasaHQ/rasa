@@ -12,7 +12,6 @@ from typing import Dict, List, Optional, Any, Callable, Tuple, Union
 import jsonschema
 from importlib_resources import files
 from packaging import version
-from packaging.version import LegacyVersion
 from pykwalify.core import Core
 from pykwalify.errors import SchemaError
 from ruamel import yaml as yaml
@@ -686,9 +685,6 @@ def validate_training_data_format_version(
         parsed_version = version.parse(version_value)
         latest_version = version.parse(LATEST_TRAINING_DATA_FORMAT_VERSION)
 
-        if isinstance(parsed_version, LegacyVersion):
-            raise TypeError
-
         if parsed_version < latest_version:
             raise_warning(
                 f"Training data file {filename} has a lower "
@@ -704,7 +700,7 @@ def validate_training_data_format_version(
         if latest_version >= parsed_version:
             return True
 
-    except TypeError:
+    except (TypeError, version.InvalidVersion):
         raise_warning(
             f"Training data file {filename} must specify "
             f"'{KEY_TRAINING_DATA_FORMAT_VERSION}' as string, for example:\n"
