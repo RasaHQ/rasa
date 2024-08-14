@@ -8,6 +8,7 @@ from rasa.cli.arguments.default_arguments import (
     add_out_param,
     add_domain_param,
     add_endpoint_param,
+    add_remote_storage_param
 )
 from rasa.graph_components.providers.training_tracker_provider import (
     TrainingTrackerProvider,
@@ -38,7 +39,7 @@ def set_train_arguments(parser: argparse.ArgumentParser) -> None:
     add_endpoint_param(
         parser, help_text="Configuration file for the connectors as a yml file."
     )
-
+    add_remote_storage_param(parser)
 
 def set_train_core_arguments(parser: argparse.ArgumentParser) -> None:
     """Specifies CLI arguments for `rasa train core`."""

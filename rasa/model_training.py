@@ -20,6 +20,7 @@ from rasa.shared.data import TrainingType
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa import telemetry
 from rasa.shared.core.domain import Domain
+from rasa.shared.exceptions import RasaException
 import rasa.utils.common
 import rasa.shared.utils.common
 import rasa.shared.utils.cli
@@ -153,6 +154,7 @@ async def train(
     nlu_additional_arguments: Optional[Dict] = None,
     model_to_finetune: Optional[Text] = None,
     finetuning_epoch_fraction: float = 1.0,
+    remote_storage: Text = None
 ) -> TrainingResult:
     """Trains a Rasa model (Core and NLU).
 
@@ -253,8 +255,10 @@ async def train(
             persist_nlu_training_data=persist_nlu_training_data,
             finetuning_epoch_fraction=finetuning_epoch_fraction,
             dry_run=dry_run,
+            remote_storage=remote_storage
             **(core_additional_arguments or {}),
             **(nlu_additional_arguments or {}),
+            remote_storage=remote_storage
         )
 
 
@@ -266,6 +270,7 @@ async def _train_graph(
     model_to_finetune: Optional[Union[Text, Path]] = None,
     force_full_training: bool = False,
     dry_run: bool = False,
+    remote_storage: Text = None,
     **kwargs: Any,
 ) -> TrainingResult:
     if model_to_finetune:
@@ -534,3 +539,21 @@ async def train_nlu(
             **(additional_arguments or {}),
         )
     ).model
+
+def push_model_to_remote_storage(
+        model_path: Path,
+        model_name: Text,
+        remote_storage: Text
+        ) -> None:
+        """push model to remote storage"""
+        from rasa.nlu.persistor import get_persistor
+
+        persistor = get_persistor(remote_storage)
+
+        if persistor is not None:
+           persistor.persist(model_path,model_name)
+
+        else:
+            raise RasaException(
+                f"Persistor not found for remote storage: '{remote_storage}'."
+            )
