@@ -113,7 +113,7 @@ jobs:
       - name: Install ddtrace on Windows
         run: |
           .\.venv\Scripts\activate
-          py -m pip install -U 'ddtrace<2.0.0'
+          py -m pip install -U 'ddtrace==2.10.5'
 
       - name: Test Code 🔍 (multi-process)
         env:
@@ -204,7 +204,7 @@ jobs:
 
       - name: Install spaCy language model
         run: |
-          poetry run python -m pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.5.0/en_core_web_lg-3.5.0-py3-none-any.whl
+          poetry run python -m pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.7.1/en_core_web_lg-3.7.1-py3-none-any.whl
 
       - name: Disable "LongPathsEnabled" option on Windows
         # On Windows laptops, a default preset prevents path names from being longer than
@@ -219,7 +219,7 @@ jobs:
       - name: Install ddtrace on Windows
         run: |
           .\.venv\Scripts\activate
-          py -m pip install -U 'ddtrace<2.0.0'
+          py -m pip install -U 'ddtrace==2.10.5'
 
       - name: Test Code 🔍 (multi-process)
         env:
@@ -317,7 +317,7 @@ jobs:
       - name: Install ddtrace on Windows
         run: |
           .\.venv\Scripts\activate
-          py -m pip install -U 'ddtrace<2.0.0'
+          py -m pip install -U 'ddtrace==2.10.5'
 
       - name: Test Code 🔍 (multi-process)
         env:

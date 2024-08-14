@@ -16,6 +16,7 @@ from unittest.mock import MagicMock, Mock, patch, AsyncMock
 import freezegun
 import pytest
 
+from rasa.core.constants import UTTER_SOURCE_METADATA_KEY
 from rasa.dialogue_understanding.commands.set_slot_command import SetSlotExtractor
 import rasa.shared.utils.io
 import tests.utilities
@@ -47,7 +48,9 @@ from rasa.core.utils import AvailableEndpoints
 from rasa.dialogue_understanding.commands import (
     SetSlotCommand,
     StartFlowCommand,
-    CannotHandleCommand,
+    ErrorCommand,
+    ChitChatAnswerCommand,
+    Command,
 )
 from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
@@ -63,7 +66,7 @@ from rasa.shared.constants import (
     ASSISTANT_ID_KEY,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
     ROUTE_TO_CALM_SLOT,
-    RASA_PATTERN_CANNOT_HANDLE_INVALID_INTENT,
+    RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
 )
 from rasa.shared.core.constants import (
     ACTION_CORRECT_FLOW_SLOT,
@@ -96,6 +99,7 @@ from rasa.shared.core.events import (
     ActionExecutionRejected,
     LoopInterrupted,
 )
+from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.slots import BooleanSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import (
@@ -106,6 +110,7 @@ from rasa.shared.nlu.constants import (
     COMMANDS,
 )
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.providers.llm.llm_response import LLMResponse
 from rasa.utils.endpoints import EndpointConfig
 from tests.conftest import (
     with_assistant_id,
@@ -915,7 +920,12 @@ async def test_handle_message_with_session_start(
                 "utter_greet", policy="AugmentedMemoizationPolicy", confidence=1.0
             ),
             BotUttered(
-                "hey there Core!", data={}, metadata={"utter_action": "utter_greet"}
+                "hey there Core!",
+                data={},
+                metadata={
+                    "utter_action": "utter_greet",
+                    UTTER_SOURCE_METADATA_KEY: "TemplatedNaturalLanguageGenerator",
+                },
             ),
             ActionExecuted(ACTION_LISTEN_NAME, confidence=1.0),
             ActionExecuted(ACTION_SESSION_START_NAME),
@@ -943,7 +953,10 @@ async def test_handle_message_with_session_start(
             BotUttered(
                 "hey there post-session start hello!",
                 data={},
-                metadata={"utter_action": "utter_greet"},
+                metadata={
+                    "utter_action": "utter_greet",
+                    UTTER_SOURCE_METADATA_KEY: "TemplatedNaturalLanguageGenerator",
+                },
             ),
             ActionExecuted(ACTION_LISTEN_NAME),
         ],
@@ -1642,16 +1655,9 @@ async def test_loads_correct_model_from_path(
 async def test_custom_action_triggers_action_extract_slots(
     trained_async: Callable,
     caplog: LogCaptureFixture,
+    custom_actions_agent: Agent,
 ):
-    parent_folder = "data/test_custom_action_triggers_action_extract_slots"
-    domain_path = f"{parent_folder}/domain.yml"
-    config_path = f"{parent_folder}/config.yml"
-    stories_path = f"{parent_folder}/stories.yml"
-    nlu_path = f"{parent_folder}/nlu.yml"
-
-    model_path = await trained_async(domain_path, config_path, [stories_path, nlu_path])
-    agent = Agent.load(model_path)
-    processor = agent.processor
+    processor = custom_actions_agent.processor
 
     action_server_url = "http://some-url"
     endpoint = EndpointConfig(action_server_url)
@@ -2136,33 +2142,71 @@ async def test_handle_message_with_intent_trigger_and_nlu_trigger(
 
 
 @pytest.mark.parametrize(
-    "message",
+    "message, predicted_commands",
     [
-        UserMessage("/invalid_intent"),
-        UserMessage("/"),
-        UserMessage("/ some random message without any intents"),
+        (
+            UserMessage("/"),
+            [ErrorCommand(RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY)],
+        ),
+        (
+            UserMessage(" / / / "),
+            [ErrorCommand(RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY)],
+        ),
+        (
+            UserMessage("/ hey there!"),
+            [ChitChatAnswerCommand(), SetSlotCommand(ROUTE_TO_CALM_SLOT, True)],
+        ),
+        (
+            UserMessage("/ / / hey there!"),
+            [ChitChatAnswerCommand(), SetSlotCommand(ROUTE_TO_CALM_SLOT, True)],
+        ),
+        (
+            UserMessage("/ / / hey there! / /"),
+            [ChitChatAnswerCommand(), SetSlotCommand(ROUTE_TO_CALM_SLOT, True)],
+        ),
+        (
+            UserMessage("/invalid_intent"),
+            [ChitChatAnswerCommand(), SetSlotCommand(ROUTE_TO_CALM_SLOT, True)],
+        ),
     ],
 )
-async def test_run_command_processor_parsing_a_message_with_invalid_intent(
+@patch(
+    "rasa.dialogue_understanding.generator"
+    ".single_step.single_step_llm_command_generator"
+    ".SingleStepLLMCommandGenerator.filter_flows"
+)
+@patch(
+    "rasa.dialogue_understanding.generator"
+    ".single_step.single_step_llm_command_generator"
+    ".SingleStepLLMCommandGenerator.invoke_llm"
+)
+async def test_run_command_processor_parsing_a_message_with_invalid_use_of_slash_syntax(
+    mock_invoke_llm: AsyncMock,
+    mock_filter_flows: AsyncMock,
     message: UserMessage,
+    predicted_commands: List[Command],
     flow_policy_bot_agent: Agent,
+    domain: Domain,
 ):
     # Given
     processor = flow_policy_bot_agent.processor
     sender_id = uuid.uuid4().hex
     tracker = await processor.tracker_store.get_or_create_tracker(sender_id)
     tracker.slots[ROUTE_TO_CALM_SLOT] = BooleanSlot(ROUTE_TO_CALM_SLOT, [{}])
+    # the return value here does not matter, it only matters
+    # that filter_flows is not raising an exception
+    mock_filter_flows.return_value = FlowsList(underlying_flows=[])
+    # the return value does not matter here, it only matters
+    # that we got the response from the LLM
+    mock_invoke_llm.return_value = "ChitChat()"
 
     # When
     parse_data = await processor.parse_message(message, tracker)
 
     # Then
-    assert len(parse_data[COMMANDS]) == 2
-    assert (
-        CannotHandleCommand(RASA_PATTERN_CANNOT_HANDLE_INVALID_INTENT).as_dict()
-        in parse_data[COMMANDS]
-    )
-    assert SetSlotCommand(ROUTE_TO_CALM_SLOT, True).as_dict() in parse_data[COMMANDS]
+    assert len(parse_data[COMMANDS]) == len(predicted_commands)
+    for predicted_command in predicted_commands:
+        assert predicted_command.as_dict() in parse_data[COMMANDS]
 
 
 async def test_update_full_retrieval_intent(
@@ -2272,7 +2316,12 @@ async def test_predict_does_not_block_on_command_generator_llm_calls(
     async def sleepy_prediction(*args, **kwargs):
         # a prediction mock that takes a bit to return
         await asyncio.sleep(1)
-        return "StartFlow(greet_user)"
+        return LLMResponse(
+            id="123",
+            choices=["StartFlow(greet_user)"],
+            created=123456789,
+            model="test_model",
+        )
 
     # we should have a trained model now and can start an agent with it
     # let's patch the LLM though, as we don't want to make external calls
@@ -2281,8 +2330,8 @@ async def test_predict_does_not_block_on_command_generator_llm_calls(
         Mock(),
     ) as mock_llm_factory:
         llm_mock = Mock()
-        apredict_mock = AsyncMock(side_effect=sleepy_prediction)
-        llm_mock.apredict = apredict_mock
+        acompletion_mock = AsyncMock(side_effect=sleepy_prediction)
+        llm_mock.acompletion = acompletion_mock
         mock_llm_factory.return_value = llm_mock
 
         agent = await load_agent(model_path=model_path)

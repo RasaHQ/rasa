@@ -183,7 +183,7 @@ class GCSPersistor(Persistor):
         """Initialise class with client and bucket."""
         # there are no type hints in this repo for now
         # https://github.com/googleapis/python-storage/issues/393
-        from google.cloud import storage  # type: ignore[attr-defined]
+        from google.cloud import storage
 
         super().__init__()
 

@@ -31,11 +31,11 @@ RESPONSE_REPHRASING_TEMPLATE_KEY = "rephrase_prompt"
 DEFAULT_REPHRASE_ALL = False
 
 DEFAULT_LLM_CONFIG = {
-    "_type": "openai",
-    "request_timeout": 5,
+    "api_type": "openai",
+    "model": DEFAULT_OPENAI_GENERATE_MODEL_NAME,
     "temperature": 0.3,
-    "model_name": DEFAULT_OPENAI_GENERATE_MODEL_NAME,
     "max_tokens": DEFAULT_OPENAI_MAX_GENERATED_TOKENS,
+    "request_timeout": 5,
 }
 
 DEFAULT_RESPONSE_VARIATION_PROMPT_TEMPLATE = """The following is a conversation with
@@ -118,7 +118,8 @@ class ContextualResponseRephraser(TemplatedNaturalLanguageGenerator):
         llm = llm_factory(self.nlg_endpoint.kwargs.get("llm"), DEFAULT_LLM_CONFIG)
 
         try:
-            return await llm.apredict(prompt)
+            llm_response = await llm.acompletion(prompt)
+            return llm_response.choices[0]
         except Exception as e:
             # unfortunately, langchain does not wrap LLM exceptions which means
             # we have to catch all exceptions here
@@ -202,7 +203,7 @@ class ContextualResponseRephraser(TemplatedNaturalLanguageGenerator):
         telemetry.track_response_rephrase(
             rephrase_all=self.rephrase_all,
             custom_prompt_template=self.custom_prompt_template(prompt_template_text),
-            llm_type=self.llm_property("_type"),
+            llm_type=self.llm_property("api_type"),
             llm_model=self.llm_property("model") or self.llm_property("model_name"),
         )
         if not (updated_text := await self._generate_llm_response(prompt)):

@@ -65,6 +65,13 @@ from rasa.model_training import train, train_nlu
 from rasa.shared.exceptions import RasaException
 import rasa.utils.common
 import rasa.utils.io
+from rasa.shared.providers.embedding._base_litellm_embedding_client import (
+    _BaseLiteLLMEmbeddingClient,
+)
+from rasa.shared.providers.embedding.embedding_client import EmbeddingClient
+from rasa.shared.providers.embedding.embedding_response import EmbeddingResponse
+from rasa.shared.providers.llm._base_litellm_client import _BaseLiteLLMClient
+from rasa.shared.providers.llm.llm_client import LLMClient
 from rasa.shared.utils.yaml import read_yaml_file, write_yaml
 
 # we reuse a bit of pytest's own testing machinery, this should eventually come
@@ -559,6 +566,7 @@ Sa0EqvZQP+Hnayab7QIDAQAB
 
 @pytest.fixture
 def test_private_key() -> Text:
+    # deepcode ignore HardcodedNonCryptoSecret/test: Test credential
     test_private_key = """-----BEGIN RSA PRIVATE KEY-----
 MIICXQIBAAKBgQC34ht9inqGq79HecpyOAnu2CgvjvgcpFifpFLPmCNdiomAgE48
 tfUAXJRoOGlVtrqc8KgQWjTFLjqDjUh1sBFF69FlwQGt7pgH10ZbERWpMTAbpjI9
@@ -1043,11 +1051,94 @@ def run_in_simple_project(pytester: Pytester) -> Callable[..., RunResult]:
     return do_run
 
 
-@pytest.fixture(scope="session", autouse=True)
-def set_open_ai_env_variable():
-    os.environ["OPENAI_API_KEY"] = "test"
-
-
 @pytest.fixture(autouse=True)
 def clear_read_yaml_file_cache() -> None:
     read_yaml_file.cache_clear()
+
+
+@pytest.fixture
+def fake_llm_client() -> LLMClient:
+    class FakeLLMClient(_BaseLiteLLMClient):
+        @classmethod
+        def from_config(cls, config: Dict[str, Any]) -> "_BaseLiteLLMClient":
+            pass
+
+        @property
+        def config(self) -> dict:
+            return {
+                "model": self._litellm_model_name,
+            }
+
+        @property
+        def _litellm_model_name(self) -> str:
+            return "openai/test-gpt-model"
+
+        @property
+        def _completion_fn_args(self) -> dict:
+            return {"model": "openai/test-gpt-model", "mock_response": "Hello there!"}
+
+    client = FakeLLMClient()
+
+    return client
+
+
+@pytest.fixture
+def fake_embedding_client() -> EmbeddingClient:
+    class FakeEmbeddingClient(_BaseLiteLLMEmbeddingClient):
+        @property
+        def _litellm_extra_parameters(self) -> Dict[str, Any]:
+            return {}
+
+        @property
+        def _embedding_fn_args(self) -> Dict[str, Any]:
+            return {
+                "model": "openai/test-gpt-model",
+            }
+
+        @classmethod
+        def from_config(cls, config: Dict[str, Any]) -> "_BaseLiteLLMClient":
+            pass
+
+        @property
+        def config(self) -> dict:
+            return {
+                "model": self._litellm_model_name,
+            }
+
+        @property
+        def _litellm_model_name(self) -> str:
+            return "openai/test-embedding-model"
+
+        def embed(self, documents: List[str]) -> EmbeddingResponse:
+            return self._get_test_response(documents)
+
+        async def aembed(self, documents: List[str]) -> EmbeddingResponse:
+            return self._get_test_response(documents)
+
+        def _get_test_response(self, documents: List[str]):
+            responses = []
+            for _ in documents:
+                random_embeddings = [random.uniform(0, 1) for _ in range(100)]
+                responses.append(random_embeddings)
+            return EmbeddingResponse(data=responses, model=self._litellm_model_name)
+
+    client = FakeEmbeddingClient()
+
+    return client
+
+
+@pytest.fixture(scope="session")
+async def trained_custom_actions_model(
+    trained_async: Callable,
+) -> Text:
+    parent_folder = "data/test_custom_action_triggers_action_extract_slots"
+    domain_path = f"{parent_folder}/domain.yml"
+    config_path = f"{parent_folder}/config.yml"
+    stories_path = f"{parent_folder}/stories.yml"
+    nlu_path = f"{parent_folder}/nlu.yml"
+    return await trained_async(domain_path, config_path, [stories_path, nlu_path])
+
+
+@pytest.fixture
+def custom_actions_agent(trained_custom_actions_model: Text) -> Agent:
+    return Agent.load(trained_custom_actions_model)

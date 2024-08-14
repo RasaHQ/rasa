@@ -4,9 +4,12 @@ import logging
 import math
 import shutil
 import sys
+from functools import lru_cache
 from pathlib import Path
 from textwrap import dedent
 from typing import Any, Dict, Generator, List, Optional, Text, Tuple, Union
+
+from rich.table import Table
 
 import rasa.cli.arguments.run
 import rasa.cli.utils
@@ -18,10 +21,14 @@ from rasa.cli import SubParsersAction
 from rasa.cli.arguments.default_arguments import add_endpoint_param, add_model_param
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.utils import AvailableEndpoints
+from rasa.e2e_test.aggregate_test_stats_calculator import (
+    AccuracyCalculation,
+    AggregateTestStatsCalculator,
+)
 from rasa.exceptions import RasaException
 from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH, DEFAULT_MODELS_PATH
 
-from rasa.e2e_test.constants import SCHEMA_FILE_PATH, KEY_TEST_CASE
+from rasa.e2e_test.constants import SCHEMA_FILE_PATH, KEY_TEST_CASE, KEY_TEST_CASES
 from rasa.e2e_test.e2e_test_case import (
     KEY_FIXTURES,
     KEY_METADATA,
@@ -36,13 +43,15 @@ import rasa.utils.io
 from rasa.shared.utils.yaml import (
     parse_raw_yaml,
     read_schema_file,
-    validate_yaml_content_using_schema,
+    validate_yaml_data_using_schema_with_assertions,
     is_key_in_yaml,
 )
+from rasa.utils.beta import BetaNotEnabledException, ensure_beta_feature_is_enabled
 
 DEFAULT_E2E_INPUT_TESTS_PATH = "tests/e2e_test_cases.yml"
 DEFAULT_E2E_OUTPUT_TESTS_PATH = "tests/e2e_results.yml"
-KEY_TEST_CASES = "test_cases"
+
+RASA_PRO_BETA_E2E_ASSERTIONS_ENV_VAR_NAME = "RASA_PRO_BETA_E2E_ASSERTIONS"
 
 logger = logging.getLogger(__name__)
 
@@ -170,6 +179,7 @@ def validate_path_to_test_cases(path: Text) -> None:
         sys.exit(1)
 
 
+@lru_cache(maxsize=1)
 def extract_test_case_from_path(path: Text) -> Tuple[Text, Text]:
     """Extract test case from path if specified.
 
@@ -220,9 +230,14 @@ def read_test_cases(path: Text) -> TestSuite:
     fixtures: Dict[Text, Fixture] = {}
     metadata: Dict[Text, Metadata] = {}
 
+    beta_flag_verified = False
+
     for test_file in test_files:
         test_file_content = parse_raw_yaml(Path(test_file).read_text())
-        validate_yaml_content_using_schema(test_file_content, e2e_test_schema)
+
+        validate_yaml_data_using_schema_with_assertions(
+            yaml_data=test_file_content, schema_content=e2e_test_schema
+        )
 
         test_cases_content = test_file_content.get(KEY_TEST_CASES) or []
 
@@ -237,6 +252,10 @@ def read_test_cases(path: Text) -> TestSuite:
                 TestCase.from_dict(test_case_dict, file=test_file)
                 for test_case_dict in test_cases_content
             ]
+
+        beta_flag_verified = verify_beta_feature_flag_for_assertions(
+            test_cases, beta_flag_verified
+        )
 
         input_test_cases.extend(test_cases)
         fixtures_content = test_file_content.get(KEY_FIXTURES) or []
@@ -286,12 +305,15 @@ def execute_e2e_tests(args: argparse.Namespace) -> None:
 
     test_suite = read_test_cases(path_to_test_cases)
 
+    test_case_path, _ = extract_test_case_from_path(path_to_test_cases)
+
     try:
         test_runner = E2ETestRunner(
             remote_storage=args.remote_storage,
             model_path=args.model,
             model_server=endpoints.model,
             endpoints=endpoints,
+            test_case_path=Path(test_case_path),
         )
     except AgentNotReady as error:
         logger.error(msg=error.message)
@@ -310,7 +332,14 @@ def execute_e2e_tests(args: argparse.Namespace) -> None:
         write_test_results_to_file(results, args.e2e_results)
 
     passed, failed = split_into_passed_failed(results)
-    print_test_result(passed, failed, args.fail_fast)
+    aggregate_stats_calculator = AggregateTestStatsCalculator(
+        passed_results=passed, failed_results=failed, test_cases=test_suite.test_cases
+    )
+    accuracy_calculations = aggregate_stats_calculator.calculate()
+
+    print_test_result(
+        passed, failed, args.fail_fast, accuracy_calculations=accuracy_calculations
+    )
 
 
 def write_test_results_to_file(results: List[TestResult], output_file: Text) -> None:
@@ -354,34 +383,6 @@ def transform_results_output_to_yaml(yaml_string: Text) -> Text:
     return "".join(result)
 
 
-def pad(text: Text, char: Text = "=", min: int = 3) -> Text:
-    """Pad text to a certain length.
-
-    Uses `char` to pad the text to the specified length. If the text is longer
-    than the specified length, at least `min` are used.
-
-    The padding is applied to the left and right of the text (almost) equally.
-
-    Example:
-        >>> pad("Hello")
-        "========= Hello ========"
-        >>> pad("Hello", char="-")
-        "--------- Hello --------"
-
-    Args:
-        text: Text to pad.
-        min: Minimum length of the padding.
-        char: Character to pad with.
-
-    Returns:
-        Padded text.
-    """
-    width = shutil.get_terminal_size((80, 20)).columns
-    padding = max(width - len(text) - 2, min * 2)
-
-    return char * (padding // 2) + " " + text + " " + char * math.ceil(padding / 2)
-
-
 def color_difference(diff: List[Text]) -> Generator[Text, None, None]:
     """Colorize the difference between two strings.
 
@@ -422,9 +423,24 @@ def print_failed_case(fail: TestResult) -> None:
     fail_headline = (
         f"'{fail.test_case.name}' in {fail.test_case.file_with_line()} failed"
     )
-    rasa.shared.utils.cli.print_error(f"{pad(fail_headline, char='-')}\n")
-    print(f"Mismatch starting at {fail.test_case.file}:{fail.error_line}: \n")
-    rich.print(("\n".join(color_difference(fail.difference))))
+    rasa.shared.utils.cli.print_error(
+        f"{rasa.shared.utils.cli.pad(fail_headline, char='-')}\n"
+    )
+    rasa.shared.utils.cli.print_error(
+        f"Mismatch starting at {fail.test_case.file}:{fail.error_line}: \n"
+    )
+    if fail.difference:
+        rich.print(("\n".join(color_difference(fail.difference))))
+
+    if fail.assertion_failure:
+        rasa.shared.utils.cli.print_error(
+            f"Assertion type '{fail.assertion_failure.assertion.type()}' failed "
+            f"with this error message: {fail.assertion_failure.error_message}\n"
+        )
+        rasa.shared.utils.cli.print_error("Actual events transcript:\n")
+        rasa.shared.utils.cli.print_error(
+            "\n".join(fail.assertion_failure.actual_events_transcript)
+        )
 
 
 def print_test_summary(failed: List[TestResult]) -> None:
@@ -436,7 +452,9 @@ def print_test_summary(failed: List[TestResult]) -> None:
         =================== short test summary info ===================
         FAILED test.md::test
     """
-    rasa.shared.utils.cli.print_info(pad("short test summary info"))
+    rasa.shared.utils.cli.print_info(
+        rasa.shared.utils.cli.pad("short test summary info")
+    )
 
     for f in failed:
         rasa.shared.utils.cli.print_error(
@@ -478,10 +496,28 @@ def print_final_line(
     )
 
 
+def print_aggregate_stats(accuracy_calculations: List[AccuracyCalculation]) -> None:
+    """Print the aggregate statistics of the test run."""
+    rasa.shared.utils.cli.print_info(
+        rasa.shared.utils.cli.pad("Accuracy By Assertion Type")
+    )
+    table = Table()
+    table.add_column("Assertion Type", justify="center", style="cyan")
+    table.add_column("Accuracy", justify="center", style="cyan")
+
+    for accuracy_calculation in accuracy_calculations:
+        table.add_row(
+            accuracy_calculation.assertion_type, f"{accuracy_calculation.accuracy:.2%}"
+        )
+
+    rich.print(table)
+
+
 def print_test_result(
     passed: List[TestResult],
     failed: List[TestResult],
     fail_fast: bool = False,
+    **kwargs: Any,
 ) -> None:
     """Print the result of the test run.
 
@@ -493,20 +529,28 @@ def print_test_result(
     if failed:
         # print failure headline
         print("\n")
-        rich.print(f"[bold]{pad('FAILURES', char='=')}[/bold]")
+        rich.print(f"[bold]{rasa.shared.utils.cli.pad('FAILURES', char='=')}[/bold]")
 
     # print failed test_Case
     for fail in failed:
         print_failed_case(fail)
 
+    accuracy_calculations = kwargs.get("accuracy_calculations", [])
+    if accuracy_calculations:
+        print_aggregate_stats(accuracy_calculations)
+
     print_test_summary(failed)
 
     if fail_fast:
-        rasa.shared.utils.cli.print_error(pad("stopping after 1 failure", char="!"))
+        rasa.shared.utils.cli.print_error(
+            rasa.shared.utils.cli.pad("stopping after 1 failure", char="!")
+        )
         has_failed = True
     elif len(failed) + len(passed) == 0:
         # no tests were run, print error
-        rasa.shared.utils.cli.print_error(pad("no test cases found", char="!"))
+        rasa.shared.utils.cli.print_error(
+            rasa.shared.utils.cli.pad("no test cases found", char="!")
+        )
         print_e2e_help()
         has_failed = True
     elif failed:
@@ -584,3 +628,34 @@ def read_e2e_test_schema() -> Union[List[Any], Dict[Text, Any]]:
         The content of the schema.
     """
     return read_schema_file(SCHEMA_FILE_PATH)
+
+
+def has_test_case_with_assertions(test_cases: List[TestCase]) -> bool:
+    """Check if the test cases contain assertions."""
+    try:
+        next(test_case for test_case in test_cases if test_case.uses_assertions())
+    except StopIteration:
+        return False
+
+    return True
+
+
+def verify_beta_feature_flag_for_assertions(
+    test_cases: List[TestCase], beta_flag_verified: bool
+) -> bool:
+    """Verify the beta feature flag for assertions."""
+    if beta_flag_verified:
+        return True
+
+    if not has_test_case_with_assertions(test_cases):
+        return beta_flag_verified
+
+    try:
+        ensure_beta_feature_is_enabled(
+            "end-to-end testing with assertions",
+            RASA_PRO_BETA_E2E_ASSERTIONS_ENV_VAR_NAME,
+        )
+    except BetaNotEnabledException as exc:
+        rasa.shared.utils.cli.print_error_and_exit(str(exc))
+
+    return True

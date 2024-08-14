@@ -1,4 +1,3 @@
-import os
 import asyncio
 import uuid
 from datetime import datetime
@@ -188,11 +187,6 @@ def moodbot_features(
 @pytest.fixture
 def moodbot_tracker(moodbot_domain: Domain) -> DialogueStateTracker:
     return tracker_from_dialogue(TEST_MOODBOT_DIALOGUE, moodbot_domain)
-
-
-@pytest.fixture(scope="session", autouse=True)
-def set_open_ai_env_variable():
-    os.environ["OPENAI_API_KEY"] = "test"
 
 
 @pytest.fixture(scope="session")

@@ -1,21 +1,29 @@
 import uuid
-from typing import List
+from typing import List, Optional, Type
 from unittest.mock import Mock
 
 import pytest
 
 from rasa.dialogue_understanding.commands import (
+    CancelFlowCommand,
+    CannotHandleCommand,
+    ChitChatAnswerCommand,
     Command,
+    HumanHandoffCommand,
+    KnowledgeAnswerCommand,
+    SessionStartCommand,
+    SkipQuestionCommand,
     StartFlowCommand,
     SetSlotCommand,
 )
 from rasa.dialogue_understanding.commands.set_slot_command import SetSlotExtractor
 from rasa.dialogue_understanding.generator.nlu_command_adapter import NLUCommandAdapter
 from rasa.shared.constants import ROUTE_TO_CALM_SLOT
-from rasa.shared.core.domain import Domain
+from rasa.shared.core.domain import Domain, KEY_INTENTS
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.slots import BooleanSlot
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.importers.importer import FlowSyncImporter
 
 from rasa.shared.nlu.constants import (
     ENTITIES,
@@ -46,7 +54,8 @@ class TestNLUCommandAdapter:
     @pytest.fixture
     def domain(self):
         """Create a Domain."""
-        return Domain.from_yaml("""
+        return Domain.from_yaml(
+            """
         intents:
             - foo
             - foo2
@@ -70,7 +79,8 @@ class TestNLUCommandAdapter:
               mappings:
                 - type: from_text
                   intent: foo2
-        """)
+        """
+        )
 
     @pytest.fixture
     def tracker_with_routing_slot(self):
@@ -398,3 +408,98 @@ class TestNLUCommandAdapter:
             not in predicted_commands
         )
         assert len(predicted_commands) == 0
+
+    async def test_predict_start_session_command(
+        self, command_generator: NLUCommandAdapter
+    ):
+        """Test whether start session is triggerable by default."""
+        sender_id = uuid.uuid4().hex
+        domain = FlowSyncImporter.load_default_pattern_flows_domain()
+        flows = FlowSyncImporter.load_default_pattern_flows()
+        tracker = DialogueStateTracker.from_events(sender_id, [], slots=domain.slots)
+        predicted_commands = await command_generator.predict_commands(
+            Message(
+                data={
+                    TEXT: "/session_start",
+                    INTENT: {
+                        INTENT_NAME_KEY: "session_start",
+                        PREDICTED_CONFIDENCE_KEY: 1.0,
+                    },
+                }
+            ),
+            flows=flows,
+            tracker=tracker,
+            domain=domain,
+        )
+
+        assert len(predicted_commands) == 1
+        assert isinstance(predicted_commands[0], SessionStartCommand)
+
+    @pytest.mark.parametrize(
+        "pattern,expected_command_class",
+        [
+            ("pattern_cancel_flow", CancelFlowCommand),
+            ("pattern_chitchat", ChitChatAnswerCommand),
+            ("pattern_search", KnowledgeAnswerCommand),
+            ("pattern_human_handoff", HumanHandoffCommand),
+            ("pattern_skip_question", SkipQuestionCommand),
+            ("pattern_cannot_handle", CannotHandleCommand),
+            ("pattern_collect_information", None),
+            ("pattern_continue_interrupted", None),
+            ("pattern_completed", None),
+            ("pattern_internal_error", None),
+            ("pattern_clarification", None),
+            ("pattern_correction", None),
+            ("pattern_code_change", None),
+            ("pattern_nonexistent_XYZABC", None),
+        ],
+    )
+    async def test_predict_other_pattern_commands(
+        self,
+        command_generator: NLUCommandAdapter,
+        pattern: str,
+        expected_command_class: Optional[Type[Command]],
+    ):
+        """Test whether other patterns can be made triggerable via intents."""
+        sender_id = uuid.uuid4().hex
+        test_trigger_intent = "test_trigger_intent"
+        domain = FlowSyncImporter.load_default_pattern_flows_domain()
+        domain_addon = Domain.from_dict({KEY_INTENTS: [test_trigger_intent]})
+        domain = domain.merge(domain_addon)
+
+        flows = FlowSyncImporter.load_default_pattern_flows()
+        flows_pattern_overwritten = flows_from_str(
+            f"""
+            flows:
+              {pattern}:
+                description: overwritten pattern
+                nlu_trigger:
+                  - intent: {test_trigger_intent}
+                steps:
+                - id: first_step
+                  action: action_listen
+            """
+        )
+        flows = flows_pattern_overwritten.merge(flows)
+
+        tracker = DialogueStateTracker.from_events(sender_id, [], slots=domain.slots)
+        predicted_commands = await command_generator.predict_commands(
+            Message(
+                data={
+                    TEXT: f"/{test_trigger_intent}",
+                    INTENT: {
+                        INTENT_NAME_KEY: test_trigger_intent,
+                        PREDICTED_CONFIDENCE_KEY: 1.0,
+                    },
+                }
+            ),
+            flows=flows,
+            tracker=tracker,
+            domain=domain,
+        )
+
+        if expected_command_class:
+            assert len(predicted_commands) == 1
+            assert isinstance(predicted_commands[0], expected_command_class)
+        else:
+            assert len(predicted_commands) == 0

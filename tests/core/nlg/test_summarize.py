@@ -1,14 +1,15 @@
 from typing import Any
-from unittest.mock import patch
+from unittest.mock import patch, AsyncMock
 
 from langchain import OpenAI
-from langchain.llms.fake import FakeListLLM
 from openai import OpenAIError
 from pytest import MonkeyPatch
 from rasa.shared.core.events import UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 
 from rasa.core.nlg.summarize import summarize_conversation
+from rasa.shared.providers.llm.llm_response import LLMResponse
+from rasa.shared.providers.llm.openai_llm_client import OpenAILLMClient
 
 
 def mocked_openai_complete_response(text: str) -> Any:
@@ -55,7 +56,10 @@ async def test_summarize_conversation_handles_openai_response() -> None:
             UserUttered("Hello", {"name": "greet"}),
         ],
     )
-    llm = FakeListLLM(responses=["User says hello."])
+    llm = AsyncMock(spec=OpenAILLMClient)
+    llm.acompletion.return_value = AsyncMock(
+        spec=LLMResponse, choices=["User says hello."]
+    )
     # should use response from openai
     assert await summarize_conversation(tracker, llm) == "User says hello."
 
@@ -67,7 +71,10 @@ async def test_summarize_conversation_strips_whitespace() -> None:
             UserUttered("Hello", {"name": "greet"}),
         ],
     )
-    llm = FakeListLLM(responses=["     User says hello. "])
+    llm = AsyncMock(spec=OpenAILLMClient)
+    llm.acompletion.return_value = AsyncMock(
+        spec=LLMResponse, choices=["     User says hello. "]
+    )
 
     # should strip whitespace from response
     assert await summarize_conversation(tracker, llm) == "User says hello."

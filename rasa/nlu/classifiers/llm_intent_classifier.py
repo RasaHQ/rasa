@@ -4,11 +4,11 @@ from typing import Any, Dict, List, Optional, Text
 
 import rasa.shared.utils.io
 import structlog
-from langchain.chains import LLMChain
+from langchain.chains.llm import LLMChain
 from langchain.docstore.document import Document
 from langchain.prompts import PromptTemplate
-from langchain.vectorstores import FAISS
-
+from langchain_community.vectorstores.faiss import FAISS
+from langchain_core.embeddings.embeddings import Embeddings
 from rasa import telemetry
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
@@ -27,6 +27,9 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.providers.embedding._langchain_embedding_client_adapter import (
+    _LangchainEmbeddingClientAdapter,
+)
 from rasa.shared.utils.io import deep_container_fingerprint
 from rasa.shared.utils.llm import (
     DEFAULT_OPENAI_GENERATE_MODEL_NAME,
@@ -51,14 +54,14 @@ RASA_PRO_BETA_LLM_INTENT = "RASA_PRO_BETA_LLM_INTENT"
 DEFAULT_NUMBER_OF_INTENT_EXAMPLES = 10
 
 DEFAULT_LLM_CONFIG = {
-    "_type": "openai",
+    "api_type": "openai",
+    "model": DEFAULT_OPENAI_GENERATE_MODEL_NAME,
     "request_timeout": 5,
     "temperature": DEFAULT_OPENAI_TEMPERATURE,
-    "model_name": DEFAULT_OPENAI_GENERATE_MODEL_NAME,
     "max_tokens": DEFAULT_OPENAI_MAX_GENERATED_TOKENS,
 }
 
-DEFAULT_EMBEDDINGS_CONFIG = {"_type": "openai"}
+DEFAULT_EMBEDDINGS_CONFIG = {"api_type": "openai"}
 
 EMBEDDINGS_CONFIG_KEY = "embeddings"
 LLM_CONFIG_KEY = "llm"
@@ -171,9 +174,7 @@ class LLMIntentClassifier(GraphComponent, IntentClassifier):
             for ex in training_data.intent_examples
         ]
 
-        embedder = embedder_factory(
-            self.component_config.get(EMBEDDINGS_CONFIG_KEY), DEFAULT_EMBEDDINGS_CONFIG
-        )
+        embedder = self._create_embedder(self.component_config)
 
         self.example_docsearch = (
             FAISS.from_texts(texts, embedder, metadatas) if texts else None
@@ -192,10 +193,10 @@ class LLMIntentClassifier(GraphComponent, IntentClassifier):
 
         self.persist()
         telemetry.track_llm_intent_train_completed(
-            embeddings_type=self.embeddings_property("_type"),
+            embeddings_type=self.embeddings_property("api_type"),
             embeddings_model=self.embeddings_property("model_name")
             or self.embeddings_property("model"),
-            llm_type=self.llm_property("_type"),
+            llm_type=self.llm_property("api_type"),
             llm_model=self.llm_property("model_name") or self.llm_property("model"),
             fallback_intent=self.fallback_intent,
             custom_prompt_template=self.custom_prompt_template(),
@@ -475,9 +476,8 @@ class LLMIntentClassifier(GraphComponent, IntentClassifier):
         available_intents = None
         prompt_template = None
 
-        embedder = embedder_factory(
-            config.get(EMBEDDINGS_CONFIG_KEY), DEFAULT_EMBEDDINGS_CONFIG
-        )
+        embedder = cls._create_embedder(config)
+
         try:
             with model_storage.read_from(resource) as path:
                 example_docsearch = load_faiss_vector_store(
@@ -517,3 +517,10 @@ class LLMIntentClassifier(GraphComponent, IntentClassifier):
             DEFAULT_INTENT_CLASSIFICATION_PROMPT_TEMPLATE,
         )
         return deep_container_fingerprint(prompt_template)
+
+    @classmethod
+    def _create_embedder(cls, config: Dict[Text, Any]) -> Embeddings:
+        client = embedder_factory(
+            config.get(EMBEDDINGS_CONFIG_KEY), DEFAULT_EMBEDDINGS_CONFIG
+        )
+        return _LangchainEmbeddingClientAdapter(client)

@@ -3,11 +3,11 @@ from typing import List, Text, Any, Dict
 from unittest.mock import Mock, patch
 
 import pytest
+from pytest import MonkeyPatch
 from _pytest.tmpdir import TempPathFactory
 from langchain.docstore.document import Document
-from langchain.embeddings import OpenAIEmbeddings
-from langchain.vectorstores.faiss import FAISS
-from langchain.vectorstores.utils import DistanceStrategy
+from langchain_community.vectorstores.faiss import FAISS
+from langchain_community.vectorstores.utils import DistanceStrategy
 from rasa.dialogue_understanding.generator.flow_retrieval import (
     FlowRetrieval,
     SHOULD_EMBED_SLOTS_KEY,
@@ -32,6 +32,12 @@ from rasa.shared.core.slots import TextSlot, BooleanSlot, CategoricalSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.providers.embedding._langchain_embedding_client_adapter import (
+    _LangchainEmbeddingClientAdapter,
+)
+from rasa.shared.providers.embedding.openai_embedding_client import (
+    OpenAIEmbeddingClient,
+)
 from rasa.shared.utils.llm import USER, AI
 
 
@@ -179,7 +185,12 @@ class TestFlowRetrieval:
     @pytest.mark.parametrize(
         "config",
         [
-            {EMBEDDINGS_CONFIG_KEY: {"type": "openai", "model": "some_custom_option"}},
+            {
+                EMBEDDINGS_CONFIG_KEY: {
+                    "api_type": "openai",
+                    "model": "some_custom_option",
+                }
+            },
             FlowRetrieval.get_default_config(),
         ],
     )
@@ -193,25 +204,33 @@ class TestFlowRetrieval:
         flows: FlowsList,
         domain: Mock,
         startable_flows_documents,
-        monkeypatch: pytest.MonkeyPatch,
+        monkeypatch: MonkeyPatch,
     ) -> None:
         # Given
         monkeypatch.setenv("OPENAI_API_KEY", "test")
         mock_faiss_from_documents.return_value = Mock()
         flow_search = FlowRetrieval(config, model_storage, resource)
-        expected_embeddings = OpenAIEmbeddings(
-            model=config[EMBEDDINGS_CONFIG_KEY]["model"]
-        )
+
         # When
         flow_search.populate(flows, domain)
         # Then
         # even if we passed all flows, we are expecting that the
         # FlowSearch._generate_documents is only going to return
         # the documents from flows that are not link-accessed only
-        mock_faiss_from_documents.assert_called_once_with(
-            documents=startable_flows_documents,
-            embedding=expected_embeddings,
-            distance_strategy=DistanceStrategy.MAX_INNER_PRODUCT,
+        assert len(mock_faiss_from_documents.call_args.kwargs) == 3
+
+        embedder = mock_faiss_from_documents.call_args.kwargs["embedding"]
+        assert isinstance(embedder, _LangchainEmbeddingClientAdapter)
+        assert isinstance(embedder._client, OpenAIEmbeddingClient)
+        assert embedder._client.model == config[EMBEDDINGS_CONFIG_KEY]["model"]
+
+        assert (
+            mock_faiss_from_documents.call_args.kwargs["documents"]
+            == startable_flows_documents
+        )
+        assert (
+            mock_faiss_from_documents.call_args.kwargs["distance_strategy"]
+            == DistanceStrategy.MAX_INNER_PRODUCT
         )
 
     @pytest.mark.parametrize(
@@ -426,8 +445,10 @@ class TestFlowRetrieval:
         flow_search: FlowRetrieval,
         model_storage: ModelStorage,
         resource: Resource,
+        monkeypatch: pytest.MonkeyPatch,
     ):
         # Given
+        monkeypatch.setenv("OPENAI_API_KEY", "test")
         expected_vector_store = FAISS(Mock(), Mock(), Mock(), Mock())
         mock_load_local.return_value = expected_vector_store
         config = FlowRetrieval.get_default_config()
@@ -444,9 +465,11 @@ class TestFlowRetrieval:
         flow_search: FlowRetrieval,
         model_storage: ModelStorage,
         resource: Resource,
+        monkeypatch: MonkeyPatch,
     ):
         # Given
         config = FlowRetrieval.get_default_config()
+        monkeypatch.setenv("OPENAI_API_KEY", "test")
         # there is no vector_store initialized
         flow_search.persist()
         # When

@@ -5,8 +5,8 @@ from unittest.mock import Mock, patch
 import pytest
 from langchain.callbacks.manager import CallbackManagerForLLMRun
 from langchain.docstore.document import Document
-from langchain.embeddings import FakeEmbeddings
-from langchain.llms.fake import FakeListLLM
+from langchain_community.embeddings import FakeEmbeddings
+from langchain_community.llms.fake import FakeListLLM
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
@@ -44,6 +44,12 @@ def default_patched_llm_intent_classifier(
             )
 
 
+@pytest.mark.skip(
+    reason=(
+        "LLMIntentClassifier is marked for removal in the following ticket:"
+        "https://rasahq.atlassian.net/browse/ENG-1199"
+    )
+)
 def test_persist_and_load(
     default_patched_llm_intent_classifier: LLMIntentClassifier,
     default_model_storage: ModelStorage,
@@ -91,6 +97,12 @@ def test_loading_from_storage_fail(
         assert loaded.example_docsearch is None
 
 
+@pytest.mark.skip(
+    reason=(
+        "LLMIntentClassifier is marked for removal in the following ticket:"
+        "https://rasahq.atlassian.net/browse/ENG-1199"
+    )
+)
 def test_find_closest_examples(
     default_patched_llm_intent_classifier: LLMIntentClassifier,
 ) -> None:
@@ -128,6 +140,12 @@ def test_find_closest_examples_with_no_examples(
     assert len(examples) == 0
 
 
+@pytest.mark.skip(
+    reason=(
+        "LLMIntentClassifier is marked for removal in the following ticket:"
+        "https://rasahq.atlassian.net/browse/ENG-1199"
+    )
+)
 async def test_process_sets_intent(
     default_patched_llm_intent_classifier: LLMIntentClassifier,
 ) -> None:
@@ -160,6 +178,12 @@ def test_process_sets_no_intent_with_no_examples(
     assert message.get(INTENT) is None
 
 
+@pytest.mark.skip(
+    reason=(
+        "LLMIntentClassifier is marked for removal in the following ticket:"
+        "https://rasahq.atlassian.net/browse/ENG-1199"
+    )
+)
 async def test_process_sends_default_prompt(
     default_patched_llm_intent_classifier: LLMIntentClassifier,
     monkeypatch: pytest.MonkeyPatch,
@@ -205,6 +229,12 @@ async def test_process_sends_default_prompt(
     mock.assert_called_once()
 
 
+@pytest.mark.skip(
+    reason=(
+        "LLMIntentClassifier is marked for removal in the following ticket:"
+        "https://rasahq.atlassian.net/browse/ENG-1199"
+    )
+)
 async def test_llm_intent_classification_prompt_init_custom(
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
@@ -244,6 +274,12 @@ async def test_llm_intent_classification_prompt_init_custom(
     assert loaded.prompt_template.startswith("Identify the user's message")
 
 
+@pytest.mark.skip(
+    reason=(
+        "LLMIntentClassifier is marked for removal in the following ticket:"
+        "https://rasahq.atlassian.net/browse/ENG-1199"
+    )
+)
 async def test_llm_intent_classification_prompt_init_default(
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,

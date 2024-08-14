@@ -136,6 +136,17 @@ def read_json_file(filename: Union[Text, Path]) -> Any:
         )
 
 
+def read_jsonl_file(file_path: Union[Text, Path]) -> List[Any]:
+    """Read JSONL from a file."""
+    content = read_file(file_path)
+    try:
+        return [json.loads(line) for line in content.splitlines()]
+    except ValueError as e:
+        raise FileIOException(
+            f"Failed to read JSONL from '{os.path.abspath(file_path)}'. Error: {e}"
+        )
+
+
 def list_directory(path: Text) -> List[Text]:
     """Returns all files and folders excluding hidden files.
 

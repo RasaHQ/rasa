@@ -1,7 +1,7 @@
 import os.path
 import uuid
 from pathlib import Path
-from typing import Optional, Dict, Text, Any, Set
+from typing import Optional, Dict, Text, Any, Set, List
 from unittest.mock import Mock, patch, AsyncMock, MagicMock
 
 import pytest
@@ -35,6 +35,7 @@ from rasa.dialogue_understanding.generator.single_step.single_step_llm_command_g
     DEFAULT_COMMAND_PROMPT_TEMPLATE,
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
+from rasa.llm_fine_tuning.annotation_module import set_preparing_fine_tuning_data
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
@@ -47,9 +48,10 @@ from rasa.shared.core.slots import (
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import ProviderClientAPIException
-from rasa.shared.nlu.constants import TEXT
+from rasa.shared.nlu.constants import TEXT, LLM_PROMPT, LLM_COMMANDS
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.providers.llm.llm_response import LLMResponse
 from rasa.shared.utils.llm import (
     DEFAULT_MAX_USER_INPUT_CHARACTERS,
 )
@@ -256,31 +258,101 @@ class TestSingleStepLLMCommandGenerator:
         # Then
         assert not predicted_commands
 
+    @patch(
+        "rasa.dialogue_understanding.generator.llm_based_command_generator.llm_factory"
+    )
     async def test_predict_commands_sets_routing_slot(
         self,
+        mock_llm_factory: Mock,
         command_generator: SingleStepLLMCommandGenerator,
         flows: FlowsList,
         tracker_with_routing_slot: DialogueStateTracker,
     ):
         """Test that predict_commands sets the routing slot to True."""
+        # Given
+        llm_mock = AsyncMock()
+        llm_mock.acompletion.return_value = AsyncMock(
+            spec=LLMResponse, choices=["StartFlow(test_flow)"]
+        )
+        mock_llm_factory.return_value = llm_mock
+
         # When
-        with patch(
-            "rasa.dialogue_understanding.generator.llm_based_command_generator.llm_factory",
-            Mock(),
-        ) as mock_llm_factory:
-            llm_mock = Mock()
-            apredict_mock = AsyncMock(return_value="StartFlow(test_flow)")
-            llm_mock.apredict = apredict_mock
-            mock_llm_factory.return_value = llm_mock
-            predicted_commands = await command_generator.predict_commands(
-                Message.build(text="start test_flow"),
-                flows=flows,
-                tracker=tracker_with_routing_slot,
-            )
+        predicted_commands = await command_generator.predict_commands(
+            Message.build(text="start test_flow"),
+            flows=flows,
+            tracker=tracker_with_routing_slot,
+        )
 
         # Then
         assert StartFlowCommand("test_flow") in predicted_commands
         assert SetSlotCommand(ROUTE_TO_CALM_SLOT, True) in predicted_commands
+
+    @patch(
+        "rasa.dialogue_understanding.generator.llm_based_command_generator.llm_factory"
+    )
+    async def test_predict_commands_does_not_set_llm_commands_and_prompt(
+        self,
+        mock_llm_factory: Mock,
+        command_generator: SingleStepLLMCommandGenerator,
+        flows: FlowsList,
+        tracker: DialogueStateTracker,
+    ):
+        """Test that predict_commands sets the routing slot to True."""
+        # Given
+        message = Message.build(text="start test_flow")
+        llm_mock = Mock()
+        acompletion_mock = AsyncMock(spec=LLMResponse)
+        acompletion_mock.choices = ["StartFlow(test_flow)"]
+        llm_mock.acompletion = acompletion_mock
+        mock_llm_factory.return_value = llm_mock
+
+        # When
+        await command_generator.predict_commands(
+            message,
+            flows=flows,
+            tracker=tracker,
+        )
+
+        # Then
+        assert message.get(LLM_PROMPT) is None
+        assert message.get(LLM_COMMANDS) is None
+
+    @patch(
+        "rasa.dialogue_understanding.generator.llm_based_command_generator.llm_factory"
+    )
+    async def test_predict_commands_sets_llm_commands_and_prompt(
+        self,
+        mock_llm_factory: Mock,
+        command_generator: SingleStepLLMCommandGenerator,
+        flows: FlowsList,
+        tracker: DialogueStateTracker,
+    ):
+        """Test that predict_commands sets the routing slot to True."""
+        message = Message.build(text="start test_flow")
+
+        # Given
+        with set_preparing_fine_tuning_data():
+            llm_mock = AsyncMock()
+            llm_mock.acompletion.return_value = AsyncMock(
+                spec=LLMResponse, choices=["StartFlow(test_flow)"]
+            )
+            mock_llm_factory.return_value = llm_mock
+
+            # When
+            await command_generator.predict_commands(
+                message,
+                flows=flows,
+                tracker=tracker,
+            )
+
+        # Then
+        assert message.get(LLM_PROMPT) is not None
+        assert message.get(LLM_PROMPT).startswith(
+            "Your task is to analyze the current conversation context"
+        )
+        assert message.get(LLM_COMMANDS) == [
+            {"command": "start flow", "flow": "test_flow"}
+        ]
 
     @pytest.mark.parametrize(
         "flow_guard_value, expected_flow_ids",
@@ -389,7 +461,6 @@ class TestSingleStepLLMCommandGenerator:
                 "SetSlot(flow_name, some_flow)",
                 [
                     StartFlowCommand(flow="some_flow"),
-                    SetSlotCommand(ROUTE_TO_CALM_SLOT, True),
                 ],
             ),
         ],
@@ -411,7 +482,7 @@ class TestSingleStepLLMCommandGenerator:
         mock_render_template: Mock,
         mock_generate_action_list_using_llm: Mock,
         llm_response: Text,
-        expected_commands: Command,
+        expected_commands: List[Command],
         command_generator: SingleStepLLMCommandGenerator,
         tracker_with_routing_slot: DialogueStateTracker,
     ):
@@ -437,7 +508,13 @@ class TestSingleStepLLMCommandGenerator:
         )
         # Then
         mock_flow_retrieval_filter_flows.assert_called_once()
-        assert predicted_commands == expected_commands
+        assert len(predicted_commands) == len(expected_commands) + 1
+        for expected_command in expected_commands:
+            assert expected_command in predicted_commands
+
+        # route session must be present when there is a
+        # tracker with routing slot
+        assert SetSlotCommand(ROUTE_TO_CALM_SLOT, True) in predicted_commands
 
     @patch(
         "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.filter_flows"
@@ -474,7 +551,9 @@ class TestSingleStepLLMCommandGenerator:
         # Then
         mock_flow_retrieval_filter_flows.assert_called_once()
 
-        assert predicted_commands == [ErrorCommand()]
+        assert len(predicted_commands) == 2
+        assert ErrorCommand() in predicted_commands
+        assert SetSlotCommand(ROUTE_TO_CALM_SLOT, True) in predicted_commands
 
     def test_render_template(
         self,
@@ -910,7 +989,9 @@ class TestSingleStepLLMCommandGenerator:
         self,
         model_storage: ModelStorage,
         tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
+        monkeypatch.setenv("OPENAI_API_KEY", "some key")
         # Create and write prompt file.
         prompt_dir = Path(tmp_path) / "prompt"
         prompt_dir.mkdir(parents=True, exist_ok=True)
@@ -947,7 +1028,7 @@ class TestSingleStepLLMCommandGenerator:
             # Test default configurations
             (
                 {
-                    LLM_CONFIG_KEY: {"model_name": "default_model"},
+                    LLM_CONFIG_KEY: {"model": "default_model"},
                     "prompt_template": None,
                 },
                 {
@@ -963,7 +1044,7 @@ class TestSingleStepLLMCommandGenerator:
             (
                 {"prompt": "custom prompt", FLOW_RETRIEVAL_KEY: {"active": False}},
                 {
-                    "llm_model_name": DEFAULT_LLM_CONFIG["model_name"],
+                    "llm_model_name": DEFAULT_LLM_CONFIG["model"],
                     "custom_prompt_used": True,
                     "flow_retrieval_enabled": False,
                     "flow_retrieval_embedding_model_name": None,
@@ -972,7 +1053,7 @@ class TestSingleStepLLMCommandGenerator:
             # Test custom model and embedding model
             (
                 {
-                    LLM_CONFIG_KEY: {"model_name": "custom_model"},
+                    LLM_CONFIG_KEY: {"model": "custom_model"},
                     FLOW_RETRIEVAL_KEY: {"embeddings": {"model": "custom_embedding"}},
                 },
                 {

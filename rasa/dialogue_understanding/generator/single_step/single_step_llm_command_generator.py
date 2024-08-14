@@ -1,7 +1,8 @@
 import importlib.resources
 import re
-import structlog
 from typing import Dict, Any, List, Optional, Text
+
+import structlog
 
 import rasa.shared.utils.io
 from rasa.dialogue_understanding.commands import (
@@ -16,42 +17,45 @@ from rasa.dialogue_understanding.commands import (
     ClarifyCommand,
     CannotHandleCommand,
 )
-from rasa.dialogue_understanding.generator.llm_based_command_generator import (
-    LLMBasedCommandGenerator,
-)
 from rasa.dialogue_understanding.generator.constants import (
     DEFAULT_LLM_CONFIG,
     LLM_CONFIG_KEY,
     USER_INPUT_CONFIG_KEY,
     FLOW_RETRIEVAL_KEY,
+    FLOW_RETRIEVAL_EMBEDDINGS_KEY,
 )
 from rasa.dialogue_understanding.generator.flow_retrieval import (
     FlowRetrieval,
     DEFAULT_EMBEDDINGS_CONFIG,
+)
+from rasa.dialogue_understanding.generator.llm_based_command_generator import (
+    LLMBasedCommandGenerator,
 )
 from rasa.dialogue_understanding.stack.utils import top_flow_frame
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.constants import ROUTE_TO_CALM_SLOT
+from rasa.shared.constants import (
+    ROUTE_TO_CALM_SLOT,
+    MODEL_NAME_KEY,
+    MODEL_KEY,
+)
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.nlu.constants import TEXT
-from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.exceptions import ProviderClientAPIException
+from rasa.shared.nlu.constants import TEXT, LLM_COMMANDS, LLM_PROMPT
+from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.utils.io import deep_container_fingerprint
 from rasa.shared.utils.llm import (
     get_prompt_template,
     tracker_as_readable_transcript,
     sanitize_message_for_prompt,
 )
-from rasa.utils.log_utils import log_llm
-
 from rasa.telemetry import (
     track_single_step_llm_command_generator_init,
 )
-
+from rasa.utils.log_utils import log_llm
 
 COMMAND_PROMPT_FILE_NAME = "command_prompt.jinja2"
 
@@ -108,23 +112,26 @@ class SingleStepLLMCommandGenerator(LLMBasedCommandGenerator):
         self._track(config)
 
     def _track(self, config: Dict[str, Any]) -> None:
-        model_name = (config.get(LLM_CONFIG_KEY) or DEFAULT_LLM_CONFIG).get(
-            "model_name"
-        )
+        llm_config = config.get(LLM_CONFIG_KEY) or DEFAULT_LLM_CONFIG
+        llm_model_name = llm_config.get(MODEL_KEY) or llm_config.get(MODEL_NAME_KEY)
         custom_prompt_used = (
             config.get("prompt") or config.get("prompt_template")
         ) is not None
         flow_retrieval_config = config.get(FLOW_RETRIEVAL_KEY, {})
         flow_retrieval_enabled = flow_retrieval_config.get("active", True)
+        flow_retrieval_embedding_config = flow_retrieval_config.get(
+            FLOW_RETRIEVAL_EMBEDDINGS_KEY, DEFAULT_EMBEDDINGS_CONFIG
+        )
         flow_retrieval_embedding_model_name = (
-            flow_retrieval_config.get("embeddings", DEFAULT_EMBEDDINGS_CONFIG).get(
-                "model"
+            (
+                flow_retrieval_embedding_config.get(MODEL_KEY)
+                or flow_retrieval_embedding_config.get(MODEL_NAME_KEY)
             )
             if flow_retrieval_enabled
             else None
         )
         track_single_step_llm_command_generator_init(
-            llm_model_name=model_name,
+            llm_model_name=llm_model_name,
             custom_prompt_used=custom_prompt_used,
             flow_retrieval_enabled=flow_retrieval_enabled,
             flow_retrieval_embedding_model_name=flow_retrieval_embedding_model_name,
@@ -198,11 +205,51 @@ class SingleStepLLMCommandGenerator(LLMBasedCommandGenerator):
             # cannot do anything if there are no flows or no tracker
             return []
 
-        # retrieve flows
         try:
-            filtered_flows = await self.filter_flows(message, flows, tracker)
+            commands = await self._predict_commands(message, flows, tracker)
         except ProviderClientAPIException:
-            return [ErrorCommand()]
+            # if command predictions resulted in API exception
+            # "predict" the ErrorCommand
+            commands = [ErrorCommand()]
+
+        if not commands:
+            # no commands are parsed or there's an invalid command
+            commands = [CannotHandleCommand()]
+
+        if tracker.has_coexistence_routing_slot:
+            # if coexistence feature is used, set the routing slot
+            commands += [SetSlotCommand(ROUTE_TO_CALM_SLOT, True)]
+
+        log_llm(
+            logger=structlogger,
+            log_module="SingleStepLLMCommandGenerator",
+            log_event="llm_command_generator.predict_commands.finished",
+            commands=commands,
+        )
+
+        return commands
+
+    async def _predict_commands(
+        self,
+        message: Message,
+        flows: FlowsList,
+        tracker: Optional[DialogueStateTracker] = None,
+    ) -> List[Command]:
+        """Predict commands using the LLM.
+
+        Args:
+            message: The message from the user.
+            flows: The flows available to the user.
+            tracker: The tracker containing the current state of the conversation.
+
+        Returns:
+            The commands generated by the llm.
+
+        Raises:
+            ProviderClientAPIException: If API calls raised an error.
+        """
+        # retrieve flows
+        filtered_flows = await self.filter_flows(message, flows, tracker)
 
         flow_prompt = self.render_template(message, tracker, filtered_flows, flows)
         log_llm(
@@ -212,14 +259,11 @@ class SingleStepLLMCommandGenerator(LLMBasedCommandGenerator):
             prompt=flow_prompt,
         )
 
-        try:
-            action_list = await self.invoke_llm(flow_prompt)
-            # The check for 'None' maintains compatibility with older versions
-            # of LLMCommandGenerator. In previous implementations, 'invoke_llm'
-            # might return 'None' to indicate a failure to generate actions.
-            if action_list is None:
-                return [ErrorCommand()]
-        except ProviderClientAPIException:
+        action_list = await self.invoke_llm(flow_prompt)
+        # The check for 'None' maintains compatibility with older versions
+        # of LLMCommandGenerator. In previous implementations, 'invoke_llm'
+        # might return 'None' to indicate a failure to generate actions.
+        if action_list is None:
             return [ErrorCommand()]
 
         log_llm(
@@ -231,22 +275,25 @@ class SingleStepLLMCommandGenerator(LLMBasedCommandGenerator):
 
         commands = self.parse_commands(action_list, tracker, flows)
 
-        if not commands:
-            # no commands are parsed or there's an invalid command
-            commands = [CannotHandleCommand()]
-        else:
-            # if the LLM command generator predicted valid commands and the
-            # coexistence feature is used, set the routing slot
-            if tracker.has_coexistence_routing_slot:
-                commands += [SetSlotCommand(ROUTE_TO_CALM_SLOT, True)]
+        self._update_message_parse_data_for_fine_tuning(message, commands, flow_prompt)
 
-        log_llm(
-            logger=structlogger,
-            log_module="SingleStepLLMCommandGenerator",
-            log_event="llm_command_generator.predict_commands.finished",
-            commands=commands,
-        )
         return commands
+
+    @staticmethod
+    def _update_message_parse_data_for_fine_tuning(
+        message: Message, commands: List[Command], prompt: str
+    ) -> None:
+        from rasa.llm_fine_tuning.annotation_module import preparing_fine_tuning_data
+
+        if preparing_fine_tuning_data:
+            # Add commands and prompt to the message object in order to create
+            # prompt -> commands pairs for fine-tuning
+            message.set(
+                LLM_COMMANDS,
+                [command.as_dict() for command in commands],
+                add_to_output=True,
+            )
+            message.set(LLM_PROMPT, prompt, add_to_output=True)
 
     @classmethod
     def parse_commands(

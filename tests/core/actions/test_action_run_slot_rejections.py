@@ -1,18 +1,20 @@
 import uuid
-from typing import Any, Optional, Text
+from typing import Any, Dict, Optional, Text
 
 import pytest
-from pytest import CaptureFixture
+from pytest import CaptureFixture, MonkeyPatch
 
+from rasa.core import ContextualResponseRephraser
 from rasa.core.actions.action_run_slot_rejections import (
     ActionRunSlotRejections,
     coerce_slot_value,
     utterance_for_slot_type,
 )
 from rasa.core.channels import OutputChannel
+from rasa.core.constants import UTTER_SOURCE_METADATA_KEY
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
-from rasa.shared.core.domain import Domain
+from rasa.shared.core.domain import Domain, KEY_RESPONSES_TEXT
 from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
 from rasa.shared.core.slots import (
     BooleanSlot,
@@ -22,6 +24,7 @@ from rasa.shared.core.slots import (
     TextSlot,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.utils.endpoints import EndpointConfig
 
 
 @pytest.fixture
@@ -93,6 +96,8 @@ def rejection_test_domain() -> Domain:
              - text: "What type of recurrent payment do you want to setup?"
             utter_invalid_recurrent_payment_type:
              - text: "Sorry, you requested an invalid recurrent payment type."
+               metadata:
+                 rephrase: True
             utter_internal_error_rasa:
              - text: "Sorry, something went wrong."
             utter_ask_payment_amount:
@@ -106,6 +111,36 @@ def rejection_test_domain() -> Domain:
             utter_ask_payment_confirmation:
              - text: "Do you want to confirm the payment?"
         """
+    )
+
+
+@pytest.fixture
+def rejection_test_dialogue_stack() -> DialogueStack:
+    return DialogueStack.from_dict(
+        [
+            {
+                "frame_id": "4YL3KDBR",
+                "flow_id": "setup_recurrent_payment",
+                "step_id": "ask_payment_type",
+                "frame_type": "regular",
+                "type": "flow",
+            },
+            {
+                "frame_id": "6Z7PSTRM",
+                "flow_id": "pattern_collect_information",
+                "step_id": "start",
+                "collect": "recurrent_payment_type",
+                "utter": "utter_ask_recurrent_payment_type",
+                "collect_action": "action_ask_recurrent_payment_type",
+                "rejections": [
+                    {
+                        "if": 'not ({"direct debit" "standing order"} contains slots.recurrent_payment_type)',  # noqa: E501
+                        "utter": "utter_invalid_recurrent_payment_type",
+                    }
+                ],
+                "type": "pattern_collect_information",
+            },
+        ]
     )
 
 
@@ -201,35 +236,9 @@ async def test_action_run_slot_rejections_top_frame_slot_not_been_set(
     default_channel: OutputChannel,
     rejection_test_nlg: TemplatedNaturalLanguageGenerator,
     rejection_test_domain: Domain,
+    rejection_test_dialogue_stack: DialogueStack,
     capsys: CaptureFixture,
 ) -> None:
-    dialogue_stack = DialogueStack.from_dict(
-        [
-            {
-                "frame_id": "4YL3KDBR",
-                "flow_id": "setup_recurrent_payment",
-                "step_id": "ask_payment_type",
-                "frame_type": "regular",
-                "type": "flow",
-            },
-            {
-                "frame_id": "6Z7PSTRM",
-                "flow_id": "pattern_collect_information",
-                "step_id": "start",
-                "collect": "recurrent_payment_type",
-                "utter": "utter_ask_recurrent_payment_type",
-                "collect_action": "action_ask_recurrent_payment_type",
-                "rejections": [
-                    {
-                        "if": 'not ({"direct debit" "standing order"} contains slots.recurrent_payment_type)',  # noqa: E501
-                        "utter": "utter_invalid_recurrent_payment_type",
-                    }
-                ],
-                "type": "pattern_collect_information",
-            },
-        ]
-    )
-
     tracker = DialogueStateTracker.from_events(
         sender_id=uuid.uuid4().hex,
         evts=[UserUttered("i want to setup a new recurrent payment.")],
@@ -237,7 +246,7 @@ async def test_action_run_slot_rejections_top_frame_slot_not_been_set(
             TextSlot("recurrent_payment_type", mappings=[]),
         ],
     )
-    tracker.update_stack(dialogue_stack)
+    tracker.update_stack(rejection_test_dialogue_stack)
 
     action_run_slot_rejections = ActionRunSlotRejections()
     events = await action_run_slot_rejections.run(
@@ -256,33 +265,8 @@ async def test_action_run_slot_rejections_run_success(
     default_channel: OutputChannel,
     rejection_test_nlg: TemplatedNaturalLanguageGenerator,
     rejection_test_domain: Domain,
+    rejection_test_dialogue_stack: DialogueStack,
 ) -> None:
-    dialogue_stack = DialogueStack.from_dict(
-        [
-            {
-                "frame_id": "4YL3KDBR",
-                "flow_id": "setup_recurrent_payment",
-                "step_id": "ask_payment_type",
-                "frame_type": "regular",
-                "type": "flow",
-            },
-            {
-                "frame_id": "6Z7PSTRM",
-                "flow_id": "pattern_collect_information",
-                "step_id": "start",
-                "collect": "recurrent_payment_type",
-                "utter": "utter_ask_recurrent_payment_type",
-                "collect_action": "action_ask_recurrent_payment_type",
-                "rejections": [
-                    {
-                        "if": 'not ({"direct debit" "standing order"} contains slots.recurrent_payment_type)',  # noqa: E501
-                        "utter": "utter_invalid_recurrent_payment_type",
-                    }
-                ],
-                "type": "pattern_collect_information",
-            },
-        ]
-    )
     tracker = DialogueStateTracker.from_events(
         sender_id=uuid.uuid4().hex,
         evts=[
@@ -293,7 +277,7 @@ async def test_action_run_slot_rejections_run_success(
             TextSlot("recurrent_payment_type", mappings=[]),
         ],
     )
-    tracker.update_stack(dialogue_stack)
+    tracker.update_stack(rejection_test_dialogue_stack)
     action_run_slot_rejections = ActionRunSlotRejections()
     events = await action_run_slot_rejections.run(
         output_channel=default_channel,
@@ -306,7 +290,10 @@ async def test_action_run_slot_rejections_run_success(
         SlotSet("recurrent_payment_type", None),
         BotUttered(
             "Sorry, you requested an invalid recurrent payment type.",
-            metadata={"utter_action": "utter_invalid_recurrent_payment_type"},
+            metadata={
+                "utter_action": "utter_invalid_recurrent_payment_type",
+                UTTER_SOURCE_METADATA_KEY: "TemplatedNaturalLanguageGenerator",
+            },
         ),
     ]
 
@@ -373,7 +360,10 @@ async def test_action_run_slot_rejections_internal_error(
     assert events[0] == SlotSet("recurrent_payment_type", None)
     assert isinstance(events[1], BotUttered)
     assert events[1].text == "Sorry, something went wrong."
-    assert events[1].metadata == {"utter_action": "utter_internal_error_rasa"}
+    assert events[1].metadata == {
+        "utter_action": "utter_internal_error_rasa",
+        UTTER_SOURCE_METADATA_KEY: "TemplatedNaturalLanguageGenerator",
+    }
 
     out = capsys.readouterr().out
     assert "[error    ] run.predicate.error" in out
@@ -622,7 +612,10 @@ async def test_action_run_slot_rejections_fails_multiple_rejection_checks(
         SlotSet("payment_amount", None),
         BotUttered(
             "Sorry, the amount cannot be negative.",
-            metadata={"utter_action": "utter_payment_negative"},
+            metadata={
+                "utter_action": "utter_payment_negative",
+                UTTER_SOURCE_METADATA_KEY: "TemplatedNaturalLanguageGenerator",
+            },
         ),
     ]
 
@@ -667,7 +660,10 @@ async def test_invalid_categorical_slot_using_coercion(
         SlotSet("payment_execution_mode", None),
         BotUttered(
             "Sorry, you requested an option that is not valid.",
-            metadata={"utter_action": "utter_categorical_slot_rejection"},
+            metadata={
+                "utter_action": "utter_categorical_slot_rejection",
+                UTTER_SOURCE_METADATA_KEY: "TemplatedNaturalLanguageGenerator",
+            },
         ),
     ]
 
@@ -1088,3 +1084,67 @@ async def test_coerce_slot_value(
 )
 async def test_utterance_for_slot_type(slot: Slot, expected_output: str) -> None:
     assert utterance_for_slot_type(slot) == expected_output
+
+
+async def test_rephrased_bot_utterance_contains_metadata_keys(
+    default_channel: OutputChannel,
+    rejection_test_domain: Domain,
+    rejection_test_dialogue_stack: DialogueStack,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    tracker = DialogueStateTracker.from_events(
+        sender_id=uuid.uuid4().hex,
+        evts=[
+            UserUttered("i want to setup an international transfer."),
+            SlotSet("recurrent_payment_type", "international transfer"),
+        ],
+        slots=[
+            TextSlot("recurrent_payment_type", mappings=[]),
+        ],
+    )
+    tracker.update_stack(rejection_test_dialogue_stack)
+
+    message = (
+        "The payment type you requested in invalid, I cannot proceed with this request."
+    )
+
+    async def mock_rephrase(*args, **kwargs) -> Dict[str, Any]:
+        return {KEY_RESPONSES_TEXT: message}
+
+    mock_contextual_rephraser = ContextualResponseRephraser(
+        EndpointConfig(), rejection_test_domain
+    )
+    monkeypatch.setattr(mock_contextual_rephraser, "rephrase", mock_rephrase)
+
+    action_run_slot_rejections = ActionRunSlotRejections()
+    events = await action_run_slot_rejections.run(
+        output_channel=default_channel,
+        nlg=mock_contextual_rephraser,
+        tracker=tracker,
+        domain=rejection_test_domain,
+    )
+
+    assert events == [
+        SlotSet("recurrent_payment_type", None),
+        BotUttered(
+            message,
+            data={
+                "elements": None,
+                "quick_replies": None,
+                "buttons": None,
+                "attachment": None,
+                "image": None,
+                "custom": None,
+            },
+            metadata={
+                "utter_action": "utter_invalid_recurrent_payment_type",
+                UTTER_SOURCE_METADATA_KEY: "ContextualResponseRephraser",
+                "domain_ground_truth": [
+                    response["text"]
+                    for response in rejection_test_domain.responses.get(
+                        "utter_invalid_recurrent_payment_type"
+                    )
+                ],
+            },
+        ),
+    ]

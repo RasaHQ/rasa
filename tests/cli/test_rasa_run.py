@@ -1,6 +1,7 @@
 import os
 import sys
 from typing import Callable
+
 from _pytest.pytester import RunResult
 
 from tests.cli.conftest import RASA_EXE

@@ -1,0 +1,127 @@
+x-environment: &environment
+  RASA_PRO_LICENSE: ${RASA_PRO_LICENSE}
+  OPENAI_API_KEY: ${OPENAI_API_KEY}
+
+
+configs:
+  endpoints-metrics.yml:
+    content: |
+      action_endpoint:
+        url: "http://action-server:5055/webhook"
+      
+      nlg:
+        type: rephrase
+      
+      tracing:
+        type: otlp
+        endpoint: otlp-collector:4317
+        insecure: false
+        service_name: rasa
+        root_certificates: ./certs/ca.pem
+      
+      metrics:
+        type: otlp
+        endpoint: otlp-collector:4317
+        insecure: false
+        service_name: rasa
+        root_certificates: ./certs/ca.pem
+  prometheus.yml:
+    content: |
+      scrape_configs:
+        - job_name: 'test-app'
+          scrape_interval: 5s
+          scrape_timeout: 3s
+          static_configs:
+            - targets: ['otlp-collector:8888']
+            - targets: ['otlp-collector:8889']
+  otlp-collector-config.yml:
+    content: |
+      receivers:
+        otlp:
+          protocols:
+            grpc:
+              endpoint: 0.0.0.0:4317
+              tls:
+                ca_file: /etc/otelcol-tls/ca.pem
+                cert_file: /etc/otelcol-tls/cert.pem
+                key_file: /etc/otelcol-tls/cert-key.pem
+      
+      exporters:
+        prometheus:
+          endpoint: 0.0.0.0:8889
+      
+        debug:
+      
+      service:
+        pipelines:
+          traces:
+            receivers: [otlp]
+            exporters: [debug]
+          metrics:
+            receivers: [otlp]
+            exporters: [prometheus]
+
+
+services:
+ prometheus:
+    image: prom/prometheus:v2.50.1
+    configs:
+      - source: prometheus.yml
+        target: /etc/prometheus/prometheus.yml
+    networks: [ 'rasa-pro-network' ]
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--enable-feature=otlp-write-receiver'
+    ports:
+      - "9090:9090"
+
+ rasa-pro-assistant:
+    image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
+    volumes:
+      - "./calm_bot:/app"
+      - "./certs/ca.pem:/app/certs/ca.pem"
+    configs:
+      - source: endpoints-metrics.yml
+        target: /endpoints-metrics.yml
+    networks: [ 'rasa-pro-network' ]
+    entrypoint: ""
+    command: rasa run -p 5005 --enable-api --endpoints /endpoints-metrics.yml
+    ports:
+      - "5005:5005"
+    environment:
+      <<: *environment
+    depends_on:
+      otlp-collector:
+        condition: service_started
+      action-server:
+        condition: service_started
+    user: ${USER_ID}
+    healthcheck:
+      test: curl localhost:5005 || exit 1
+      interval: 10s
+      retries: 10
+      start_period: 15s
+      timeout: 10s
+
+ otlp-collector:
+   image: otel/opentelemetry-collector:0.96.0
+   volumes:
+     - ./certs:/etc/otelcol-tls
+   configs:
+      - source: otlp-collector-config.yml
+        target: /etc/otelcol/config.yaml
+   networks: [ 'rasa-pro-network' ]
+   ports:
+     - "4317:4317" # otlp grpc receiver
+     - "8888:8888" # Prometheus' metrics exposed by the collector
+     - "8889:8889" # Prometheus exporter configured metrics
+
+ action-server:
+  image: ${RASA_SDK_REPOSITORY}:${RASA_SDK_IMAGE_TAG}
+  volumes:
+    - ./calm_bot/actions:/app/actions
+  networks: [ 'rasa-pro-network' ]
+  ports:
+    - "5055:5055"
+
+networks: { rasa-pro-network: { } }

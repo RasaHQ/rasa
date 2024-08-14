@@ -1,14 +1,15 @@
+import os
 import ssl
+from types import ModuleType
+from typing import Any, Optional, Text, Dict, Union
 
 import aiohttp
-import os
+import structlog
 from aiohttp.client_exceptions import ContentTypeError
 from sanic.request import Request
-from typing import Any, Optional, Text, Dict
 
-from rasa.shared.exceptions import FileNotFoundException
-import structlog
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
+from rasa.shared.exceptions import FileNotFoundException
 from rasa.shared.utils.yaml import read_config_file
 
 structlogger = structlog.get_logger()
@@ -87,6 +88,7 @@ class EndpointConfig:
         token: Optional[Text] = None,
         token_name: Text = "token",
         cafile: Optional[Text] = None,
+        actions_module: Optional[Union[Text, ModuleType]] = None,
         **kwargs: Any,
     ) -> None:
         """Creates an `EndpointConfig` instance."""
@@ -98,6 +100,7 @@ class EndpointConfig:
         self.token_name = token_name
         self.type = kwargs.pop("store_type", kwargs.pop("type", None))
         self.cafile = cafile
+        self.actions_module = actions_module
         self.kwargs = kwargs
 
     def session(self) -> aiohttp.ClientSession:

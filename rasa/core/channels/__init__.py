@@ -22,6 +22,7 @@ from rasa.core.channels.slack import SlackInput
 from rasa.core.channels.telegram import TelegramInput
 from rasa.core.channels.twilio import TwilioInput
 from rasa.core.channels.twilio_voice import TwilioVoiceInput
+from rasa.core.channels.voice_aware.jambonz import JambonzVoiceAwareInput
 from rasa.core.channels.webexteams import WebexTeamsInput
 from rasa.core.channels.hangouts import HangoutsInput
 from rasa.core.channels.audiocodes import AudiocodesInput
@@ -47,6 +48,7 @@ input_channel_classes: List[Type[InputChannel]] = [
     AudiocodesInput,
     DevelopmentInspectInput,
     CVGInput,
+    JambonzVoiceAwareInput,
 ]
 
 # Mapping from an input channel name to its class to allow name based lookup.
