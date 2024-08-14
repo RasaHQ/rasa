@@ -36,7 +36,6 @@ from rasa.tracing.constants import (
     PROMPT_TOKEN_LENGTH_ATTRIBUTE_NAME,
     REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME,
 )
-from rasa.utils.endpoints import concat_url
 
 if TYPE_CHECKING:
     from langchain.llms.base import BaseLLM
@@ -47,7 +46,6 @@ if TYPE_CHECKING:
         CommandGenerator,
         LLMBasedCommandGenerator,
     )
-    from rasa.utils.endpoints import EndpointConfig
 
 # This file contains all attribute extractors for tracing instrumentation.
 # These are functions that are applied to the arguments of the wrapped function to be
@@ -643,31 +641,6 @@ def extend_attributes_with_prompt_tokens_length(
     attributes[PROMPT_TOKEN_LENGTH_ATTRIBUTE_NAME] = str(len_prompt_tokens)
 
     return attributes
-
-
-def extract_attrs_for_endpoint_config(
-    self: "EndpointConfig",
-    method: Text = "post",
-    subpath: Optional[Text] = None,
-    content_type: Optional[Text] = "application/json",
-    compress: bool = False,
-    **kwargs: Any,
-) -> Dict[str, Any]:
-    request_body = kwargs.get("json")
-    attrs: Dict[str, Any] = {"url": concat_url(self.url, subpath)}
-
-    if not request_body:
-        attrs.update({REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME: 0})
-    else:
-        attrs.update(
-            {
-                REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME: len(
-                    json.dumps(request_body).encode("utf-8")
-                )
-            }
-        )
-
-    return attrs
 
 
 def extract_attrs_for_custom_action_executor_run(
