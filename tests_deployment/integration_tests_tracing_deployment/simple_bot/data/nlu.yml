@@ -10,3 +10,8 @@ nlu:
   examples: |
     - cu
     - good by
+
+- intent: request_name
+  examples: |
+    - give name
+    - do you know my name?
