@@ -9,7 +9,9 @@ from rasa.e2e_test.e2e_config import (
     ComputeMethodType,
     InvalidLLMConfiguration,
     LLMJudgeConfig,
+    LLME2ETestConverterConfig,
     create_llm_judge_config,
+    create_llm_e2e_test_converter_config,
     get_conftest_path,
     read_conftest_file,
 )
@@ -195,4 +197,91 @@ def test_llm_judge_config_as_dict(monkeypatch: MonkeyPatch) -> None:
         "seed": 42,
         "anthropic_api_key": "test",
         "embedding_compute_method": "local",
+    }
+
+
+def test_create_llm_e2e_test_converter_config_no_conftest(tmp_path: Path):
+    config_path = tmp_path / "assistant" / "config.yml"
+    assert create_llm_e2e_test_converter_config(
+        config_path
+    ) == LLME2ETestConverterConfig(
+        api_type=None, model=None, deployment=None, api_base=None, extra_parameters={}
+    )
+
+
+def test_create_llm_e2e_test_converter_config_with_conftest(tmp_path: Path):
+    conftest_path = tmp_path / "conftest.yml"
+    model = "gpt-4"
+    api_type = "openai"
+    config_yaml_string = (
+        f"llm_e2e_test_converter:\n  model: {model}\n  api_type: {api_type}"
+    )
+    conftest_path.write_text(config_yaml_string)
+    assert create_llm_e2e_test_converter_config(
+        conftest_path
+    ) == LLME2ETestConverterConfig(
+        api_type=api_type,
+        model=model,
+        deployment=None,
+        api_base=None,
+        extra_parameters={},
+    )
+
+
+def test_create_llm_e2e_test_converter_config_empty_conftest(tmp_path: Path):
+    config_path = tmp_path / "conftest.yml"
+    assert create_llm_e2e_test_converter_config(
+        config_path
+    ) == LLME2ETestConverterConfig(
+        api_type=None, model=None, deployment=None, api_base=None, extra_parameters={}
+    )
+
+
+def test_llm_e2e_test_converter_config_from_dict_valid_with_defaults(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    converter_config = LLME2ETestConverterConfig.from_dict({})
+
+    assert converter_config.api_type is None
+    assert converter_config.model is None
+    assert converter_config.deployment is None
+    assert converter_config.api_base is None
+    assert converter_config.extra_parameters == {}
+
+
+def test_llm_e2e_test_converter_config_from_dict_valid():
+    converter_config = LLME2ETestConverterConfig.from_dict(
+        {
+            "api_type": "openai",
+            "model": "gpt-3.5-turbo",
+            "deployment": "v1",
+            "api_base": "https://api.openai.com/v1",
+            "custom_key": "custom_value",
+        }
+    )
+
+    assert converter_config.api_type == "openai"
+    assert converter_config.model == "gpt-3.5-turbo"
+    assert converter_config.deployment == "v1"
+    assert converter_config.api_base == "https://api.openai.com/v1"
+    assert converter_config.extra_parameters == {"custom_key": "custom_value"}
+
+
+def test_llm_e2e_test_converter_config_as_dict():
+    converter_config = LLME2ETestConverterConfig.from_dict(
+        {
+            "api_type": "openai",
+            "model": "gpt-3.5-turbo",
+            "deployment": "v1",
+            "api_base": "https://api.openai.com/v1",
+            "custom_key": "custom_value",
+        }
+    )
+
+    assert converter_config.as_dict() == {
+        "api_type": "openai",
+        "model": "gpt-3.5-turbo",
+        "deployment": "v1",
+        "api_base": "https://api.openai.com/v1",
+        "extra_parameters": {"custom_key": "custom_value"},
     }
