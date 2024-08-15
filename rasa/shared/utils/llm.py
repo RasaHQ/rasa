@@ -5,7 +5,7 @@ import structlog
 from rasa.shared.constants import (
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
-    MODEL_KEY,
+    MODEL_CONFIG_KEY,
 )
 from rasa.shared.core.events import BotUttered, UserUttered
 from rasa.shared.core.slots import Slot, BooleanSlot, CategoricalSlot
@@ -184,7 +184,7 @@ def get_provider_from_config(config: dict) -> Optional[str]:
 
         try:
             # Try to get the provider from `model` key.
-            _, provider, _, _ = get_llm_provider(model=config.get(MODEL_KEY, ""))
+            _, provider, _, _ = get_llm_provider(model=config.get(MODEL_CONFIG_KEY, ""))
             return provider
         except Exception:
             # If provider is not found, return None

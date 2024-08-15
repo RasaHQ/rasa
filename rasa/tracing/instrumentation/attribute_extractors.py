@@ -21,6 +21,12 @@ from rasa.dialogue_understanding.commands import Command
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.engine.graph import GraphModelConfiguration, GraphNode, ExecutionContext
 from rasa.engine.training.graph_trainer import GraphTrainer
+from rasa.shared.constants import (
+    EMBEDDINGS_CONFIG_KEY,
+    LLM_CONFIG_KEY,
+    MODEL_CONFIG_KEY,
+    MODEL_NAME_CONFIG_KEY,
+)
 from rasa.shared.core.constants import REQUESTED_SLOT
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import DialogueStackUpdated, Event
@@ -304,13 +310,16 @@ def extract_llm_config(self: Any, default_llm_config: Dict[str, Any]) -> Dict[st
 
     attributes = {
         "class_name": self.__class__.__name__,
-        "llm_model": str(llm_property.get("model") or llm_property.get("model_name")),
+        "llm_model": str(
+            llm_property.get(MODEL_CONFIG_KEY)
+            or llm_property.get(MODEL_NAME_CONFIG_KEY)
+        ),
         "llm_type": str(
             get_llm_type_after_combining_custom_and_default_config(
-                config.get("llm"), default_llm_config
+                config.get(LLM_CONFIG_KEY), default_llm_config
             )
         ),
-        "embeddings": json.dumps(config.get("embeddings", {})),
+        "embeddings": json.dumps(config.get(EMBEDDINGS_CONFIG_KEY, {})),
         "llm_temperature": str(llm_property.get("temperature")),
         "request_timeout": str(llm_property.get("request_timeout")),
     }

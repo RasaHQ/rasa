@@ -1,6 +1,6 @@
 from typing import Dict, Any
 
-from rasa.shared.constants import MODEL_KEY
+from rasa.shared.constants import MODEL_CONFIG_KEY
 from rasa.shared.providers._configs.default_litellm_client_config import (
     DefaultLiteLLMClientConfig,
 )
@@ -54,7 +54,7 @@ class DefaultLiteLLMClient(_BaseLiteLLMClient):
         """
         return {
             **self._litellm_extra_parameters,
-            MODEL_KEY: self.model,
+            MODEL_CONFIG_KEY: self.model,
         }
 
     @property

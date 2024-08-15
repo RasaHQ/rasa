@@ -15,11 +15,11 @@ from rasa.dialogue_understanding.generator.flow_retrieval import (
     TURNS_TO_EMBED_KEY,
     DEFAULT_TURNS_TO_EMBED,
     DEFAULT_MAX_FLOWS_FROM_SEMANTIC_SEARCH,
-    EMBEDDINGS_CONFIG_KEY,
 )
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.shared.constants import EMBEDDINGS_CONFIG_KEY
 from rasa.shared.core.events import (
     UserUttered,
     BotUttered,

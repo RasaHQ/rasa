@@ -20,7 +20,7 @@ from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.constants import ROUTE_TO_CALM_SLOT
+from rasa.shared.constants import ROUTE_TO_CALM_SLOT, PROMPT_CONFIG_KEY
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import InvalidConfigException, FileIOException
 from rasa.shared.nlu.constants import COMMANDS, TEXT
@@ -68,7 +68,7 @@ class LLMBasedRouter(GraphComponent):
     def get_default_config() -> Dict[str, Any]:
         """The component's default config (see parent class for full docstring)."""
         return {
-            "prompt": None,
+            PROMPT_CONFIG_KEY: None,
             CALM_ENTRY: {STICKY: None},
             NLU_ENTRY: {
                 NON_STICKY: "handles chitchat",
@@ -89,7 +89,7 @@ class LLMBasedRouter(GraphComponent):
         self.prompt_template = (
             prompt_template
             or get_prompt_template(
-                config.get("prompt"),
+                config.get(PROMPT_CONFIG_KEY),
                 DEFAULT_COMMAND_PROMPT_TEMPLATE,
             ).strip()
         )

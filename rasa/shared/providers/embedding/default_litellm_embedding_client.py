@@ -1,6 +1,6 @@
 from typing import Any, Dict
 
-from rasa.shared.constants import MODEL_KEY
+from rasa.shared.constants import MODEL_CONFIG_KEY
 from rasa.shared.providers._configs.default_litellm_client_config import (
     DefaultLiteLLMClientConfig,
 )
@@ -46,7 +46,7 @@ class DefaultLiteLLMEmbeddingClient(_BaseLiteLLMEmbeddingClient):
         Returns:
             Dictionary containing the configuration.
         """
-        return {MODEL_KEY: self.model, **self._litellm_extra_parameters}
+        return {MODEL_CONFIG_KEY: self.model, **self._litellm_extra_parameters}
 
     @property
     def model(self) -> str:

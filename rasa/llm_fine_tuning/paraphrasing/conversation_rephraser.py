@@ -22,7 +22,7 @@ from rasa.shared.utils.llm import (
 SEPARATOR = "\n\n"
 BACKUP_SEPARATOR = "\nUSER:"
 
-PROMPT_TEMPLATE_KEY = "prompt_template"
+PROMPT_TEMPLATE_CONFIG_KEY = "prompt_template"
 
 REPHRASING_PROMPT_FILE_NAME = "default_rephrase_prompt_template.jina2"
 DEFAULT_REPHRASING_PROMPT_TEMPLATE = importlib.resources.read_text(
@@ -48,7 +48,7 @@ class ConversationRephraser:
     ) -> None:
         self.config = {**self.get_default_config(), **config}
         self.prompt_template = get_prompt_template(
-            self.config.get(PROMPT_TEMPLATE_KEY),
+            self.config.get(PROMPT_TEMPLATE_CONFIG_KEY),
             DEFAULT_REPHRASING_PROMPT_TEMPLATE,
         )
 
@@ -56,7 +56,7 @@ class ConversationRephraser:
     def get_default_config() -> Dict[str, Any]:
         """The component's default config (see parent class for full docstring)."""
         return {
-            PROMPT_TEMPLATE_KEY: None,
+            PROMPT_TEMPLATE_CONFIG_KEY: None,
             LLM_CONFIG_KEY: DEFAULT_LLM_CONFIG,
         }
 

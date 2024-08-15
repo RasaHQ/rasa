@@ -20,7 +20,7 @@ from rasa.core.policies.policy import PolicyPrediction
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.constants import OPENAI_API_KEY_ENV_VAR
+from rasa.shared.constants import OPENAI_API_KEY_ENV_VAR, LLM_CONFIG_KEY
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, UserUttered, BotUttered
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
@@ -32,7 +32,6 @@ from rasa.core.information_retrieval import (
     InformationRetrievalException,
 )
 from rasa.core.policies.enterprise_search_policy import (
-    LLM_CONFIG_KEY,
     SEARCH_QUERY_METADATA_KEY,
     SEARCH_RESULTS_METADATA_KEY,
     USE_LLM_PROPERTY,

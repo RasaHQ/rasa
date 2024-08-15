@@ -4,14 +4,14 @@ from typing import Optional
 import structlog
 
 from rasa.shared.constants import (
-    MODEL_KEY,
-    MODEL_NAME_KEY,
+    MODEL_CONFIG_KEY,
+    MODEL_NAME_CONFIG_KEY,
     OPENAI_API_BASE_CONFIG_KEY,
-    OPENAI_API_BASE_NO_PREFIX_CONFIG_KEY,
+    API_BASE_CONFIG_KEY,
     OPENAI_API_TYPE_CONFIG_KEY,
     API_TYPE_CONFIG_KEY,
     OPENAI_API_VERSION_CONFIG_KEY,
-    OPENAI_API_VERSION_NO_PREFIX_CONFIG_KEY,
+    API_VERSION_CONFIG_KEY,
     RASA_TYPE_CONFIG_KEY,
     LANGCHAIN_TYPE_CONFIG_KEY,
 )
@@ -84,11 +84,11 @@ class OpenAIClientConfig:
         cls._validate_required_keys(config)
         this = OpenAIClientConfig(
             # Required parameters
-            model=config.pop(MODEL_KEY),
+            model=config.pop(MODEL_CONFIG_KEY),
             api_type=config.pop(API_TYPE_CONFIG_KEY),
             # Optional parameters
-            api_base=config.pop(OPENAI_API_BASE_NO_PREFIX_CONFIG_KEY, None),
-            api_version=config.pop(OPENAI_API_VERSION_NO_PREFIX_CONFIG_KEY, None),
+            api_base=config.pop(API_BASE_CONFIG_KEY, None),
+            api_version=config.pop(API_VERSION_CONFIG_KEY, None),
             # The rest of parameters (e.g. model parameters) are considered
             # as extra parameters
             extra_parameters=config,
@@ -107,7 +107,7 @@ class OpenAIClientConfig:
         Raises:
             ValueError: The config does not contain required key.
         """
-        required_keys = [MODEL_KEY, API_TYPE_CONFIG_KEY]
+        required_keys = [MODEL_CONFIG_KEY, API_TYPE_CONFIG_KEY]
         missing_keys = [key for key in required_keys if key not in config]
         if missing_keys:
             message = (
@@ -137,9 +137,9 @@ def _resolve_aliases(config: dict) -> dict:
     config = config.copy()
 
     # Use `model` and if there are any aliases replace them
-    model = config.get(MODEL_NAME_KEY) or config.get(MODEL_KEY)
+    model = config.get(MODEL_NAME_CONFIG_KEY) or config.get(MODEL_CONFIG_KEY)
     if model is not None:
-        config[MODEL_KEY] = model
+        config[MODEL_CONFIG_KEY] = model
 
     # Use `api_type` and if there are any aliases replace them
     # In reality, LiteLLM is not using this at all
@@ -154,22 +154,20 @@ def _resolve_aliases(config: dict) -> dict:
         config[API_TYPE_CONFIG_KEY] = api_type
 
     # Use `api_base` and if there are any aliases replace them
-    api_base = config.get(OPENAI_API_BASE_NO_PREFIX_CONFIG_KEY) or config.get(
-        OPENAI_API_BASE_CONFIG_KEY
-    )
+    api_base = config.get(API_BASE_CONFIG_KEY) or config.get(OPENAI_API_BASE_CONFIG_KEY)
     if api_base is not None:
-        config[OPENAI_API_BASE_NO_PREFIX_CONFIG_KEY] = api_base
+        config[API_BASE_CONFIG_KEY] = api_base
 
     # Use `api_version` and if there are any aliases replace them
-    api_version = config.get(OPENAI_API_VERSION_NO_PREFIX_CONFIG_KEY) or config.get(
+    api_version = config.get(API_VERSION_CONFIG_KEY) or config.get(
         OPENAI_API_VERSION_CONFIG_KEY
     )
     if api_version is not None:
-        config[OPENAI_API_VERSION_NO_PREFIX_CONFIG_KEY] = api_version
+        config[API_VERSION_CONFIG_KEY] = api_version
 
     # Pop the alias keys so there are no duplicates
     for key in [
-        MODEL_NAME_KEY,
+        MODEL_NAME_CONFIG_KEY,
         OPENAI_API_BASE_CONFIG_KEY,
         OPENAI_API_TYPE_CONFIG_KEY,
         OPENAI_API_VERSION_CONFIG_KEY,
@@ -185,12 +183,12 @@ def _raise_deprecation_warnings(config: dict) -> None:
     # Check for `model`, `api_base`, `api_type`, `api_version` aliases and
     # raise deprecation warnings.
     _mapper_deprecated_keys_to_new_keys = {
-        MODEL_NAME_KEY: MODEL_KEY,
-        OPENAI_API_BASE_CONFIG_KEY: OPENAI_API_BASE_NO_PREFIX_CONFIG_KEY,
+        MODEL_NAME_CONFIG_KEY: MODEL_CONFIG_KEY,
+        OPENAI_API_BASE_CONFIG_KEY: API_BASE_CONFIG_KEY,
         OPENAI_API_TYPE_CONFIG_KEY: API_TYPE_CONFIG_KEY,
         RASA_TYPE_CONFIG_KEY: API_TYPE_CONFIG_KEY,
         LANGCHAIN_TYPE_CONFIG_KEY: API_TYPE_CONFIG_KEY,
-        OPENAI_API_VERSION_CONFIG_KEY: OPENAI_API_VERSION_NO_PREFIX_CONFIG_KEY,
+        OPENAI_API_VERSION_CONFIG_KEY: API_VERSION_CONFIG_KEY,
     }
     for deprecated_key, new_key in _mapper_deprecated_keys_to_new_keys.items():
         if deprecated_key in config:
@@ -225,7 +223,7 @@ def is_openai_config(config: dict) -> bool:
     # valid config to be used within Rasa. We want to avoid having
     # multiple ways to do the same thing. This configuration will
     # result in an error.
-    if (model := config.get(MODEL_KEY)) is not None:
+    if (model := config.get(MODEL_CONFIG_KEY)) is not None:
         if model.startswith(f"{OPENAI_API_TYPE}/"):
             return True
 
@@ -233,7 +231,7 @@ def is_openai_config(config: dict) -> bool:
     #
     # Similar to the case above.
     try:
-        _, provider, _, _ = get_llm_provider(config.get(MODEL_KEY))
+        _, provider, _, _ = get_llm_provider(config.get(MODEL_CONFIG_KEY))
         if provider == OPENAI_API_TYPE:
             return True
     except Exception:

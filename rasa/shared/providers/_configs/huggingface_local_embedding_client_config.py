@@ -4,8 +4,8 @@ from typing import Optional
 import structlog
 
 from rasa.shared.constants import (
-    MODEL_KEY,
-    MODEL_NAME_KEY,
+    MODEL_CONFIG_KEY,
+    MODEL_NAME_CONFIG_KEY,
     OPENAI_API_TYPE_CONFIG_KEY,
     API_TYPE_CONFIG_KEY,
     RASA_TYPE_CONFIG_KEY,
@@ -89,7 +89,7 @@ class HuggingFaceLocalEmbeddingClientConfig:
         cls._validate_required_keys(config)
         this = HuggingFaceLocalEmbeddingClientConfig(
             # Required parameters
-            model=config.pop(MODEL_KEY),
+            model=config.pop(MODEL_CONFIG_KEY),
             api_type=config.pop(API_TYPE_CONFIG_KEY),
             # Optional
             multi_process=config.pop(HUGGINGFACE_MULTIPROCESS_CONFIG_KEY, False),
@@ -117,7 +117,7 @@ class HuggingFaceLocalEmbeddingClientConfig:
         """
         required_keys = [
             API_TYPE_CONFIG_KEY,
-            MODEL_KEY,
+            MODEL_CONFIG_KEY,
         ]
         missing_keys = [key for key in required_keys if key not in config]
         if missing_keys:
@@ -156,9 +156,9 @@ def _resolve_aliases(config: dict) -> dict:
     config = config.copy()
 
     # Use `model` and if there are any aliases replace them
-    model = config.get(MODEL_NAME_KEY) or config.get(MODEL_KEY)
+    model = config.get(MODEL_NAME_CONFIG_KEY) or config.get(MODEL_CONFIG_KEY)
     if model is not None:
-        config[MODEL_KEY] = model
+        config[MODEL_CONFIG_KEY] = model
 
     # Use `api_type` and if there are any aliases replace them
     # In reality, sentence-transformers is not using this at all
@@ -176,7 +176,7 @@ def _resolve_aliases(config: dict) -> dict:
     # Pop all aliases from the config
     for key in [
         OPENAI_API_TYPE_CONFIG_KEY,
-        MODEL_NAME_KEY,
+        MODEL_NAME_CONFIG_KEY,
         RASA_TYPE_CONFIG_KEY,
         LANGCHAIN_TYPE_CONFIG_KEY,
     ]:
@@ -189,7 +189,7 @@ def _raise_deprecation_warnings(config: dict) -> None:
     # Check for `model` and `api_type` aliases and
     # raise deprecation warnings.
     _mapper_deprecated_keys_to_new_keys = {
-        MODEL_NAME_KEY: MODEL_KEY,
+        MODEL_NAME_CONFIG_KEY: MODEL_CONFIG_KEY,
         OPENAI_API_TYPE_CONFIG_KEY: API_TYPE_CONFIG_KEY,
         RASA_TYPE_CONFIG_KEY: API_TYPE_CONFIG_KEY,
         LANGCHAIN_TYPE_CONFIG_KEY: API_TYPE_CONFIG_KEY,
