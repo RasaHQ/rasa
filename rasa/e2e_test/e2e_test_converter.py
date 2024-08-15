@@ -176,7 +176,6 @@ class E2ETestConverter:
         Returns:
             Optional[str]: Generated response.
         """
-        import pdb; pdb.set_trace()
         llm = llm_factory(self.llm_config.as_dict(), DEFAULT_LLM_CONFIG)
 
         try:

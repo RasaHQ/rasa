@@ -15,6 +15,12 @@ from rasa.e2e_test.constants import (
     KEY_LLM_AS_JUDGE,
     KEY_LLM_E2E_TEST_CONVERTER,
 )
+from rasa.shared.constants import (
+    API_TYPE_CONFIG_KEY,
+    API_BASE_CONFIG_KEY,
+    DEPLOYMENT_CONFIG_KEY,
+    MODEL_CONFIG_KEY,
+)
 from rasa.shared.exceptions import RasaException
 from rasa.shared.utils.yaml import (
     parse_raw_yaml,
@@ -129,7 +135,12 @@ class LLME2ETestConverterConfig:
     @classmethod
     def from_dict(cls, config_data: Dict[str, Any]) -> LLME2ETestConverterConfig:
         """Loads the configuration from a dictionary."""
-        expected_fields = ["api_type", "model", "deployment", "api_base"]
+        expected_fields = [
+            API_TYPE_CONFIG_KEY,
+            API_BASE_CONFIG_KEY,
+            DEPLOYMENT_CONFIG_KEY,
+            MODEL_CONFIG_KEY,
+        ]
         kwargs = {
             expected_field: config_data.pop(expected_field, None)
             for expected_field in expected_fields
@@ -203,6 +214,11 @@ def get_conftest_path(test_case_path: Optional[Path]) -> Optional[Path]:
             if plausible_config_path.exists():
                 # we reached the root of the assistant project
                 return None
+
+        # In case of an invalid path outside the assistant project,
+        # break the loop if we reach the root
+        if test_case_path == Path("."):
+            return None
 
 
 def find_conftest_path(path: Path) -> Generator[Path, None, None]:
