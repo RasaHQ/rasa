@@ -121,8 +121,6 @@ TELEMETRY_INTENTLESS_POLICY_TRAINING_COMPLETED_EVENT = (
     "Intentless Policy Training Completed"
 )
 TELEMETRY_INTENTLESS_POLICY_PREDICT_EVENT = "Intentless Policy Predicted"
-TELEMETRY_LLM_INTENT_PREDICT_EVENT = "LLM Intent Predicted"
-TELEMETRY_LLM_INTENT_TRAIN_COMPLETED_EVENT = "LLM Intent Training Completed"
 TELEMETRY_E2E_TEST_RUN_STARTED_EVENT = "E2E Test Run Started"
 TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_STARTED_EVENT = (
     "Enterprise Search Policy Training Started"
@@ -1510,50 +1508,6 @@ def track_intentless_policy_predict(
             "llm_type": llm_type,
             "llm_model": llm_model,
             "score": score,
-        },
-    )
-
-
-def track_llm_intent_predict(
-    embeddings_type: Optional[str],
-    embeddings_model: Optional[str],
-    llm_type: Optional[str],
-    llm_model: Optional[str],
-) -> None:
-    """Track when a user predicts an intent using the llm intent classifier."""
-    _track(
-        TELEMETRY_LLM_INTENT_PREDICT_EVENT,
-        {
-            "embeddings_type": embeddings_type,
-            "embeddings_model": embeddings_model,
-            "llm_type": llm_type,
-            "llm_model": llm_model,
-        },
-    )
-
-
-def track_llm_intent_train_completed(
-    embeddings_type: Optional[str],
-    embeddings_model: Optional[str],
-    llm_type: Optional[str],
-    llm_model: Optional[str],
-    fallback_intent: Optional[str],
-    custom_prompt_template: Optional[str],
-    number_of_examples: int,
-    number_of_available_intents: int,
-) -> None:
-    """Track when a user trains the llm intent classifier."""
-    _track(
-        TELEMETRY_LLM_INTENT_TRAIN_COMPLETED_EVENT,
-        {
-            "embeddings_type": embeddings_type,
-            "embeddings_model": embeddings_model,
-            "llm_type": llm_type,
-            "llm_model": llm_model,
-            "fallback_intent": fallback_intent,
-            "custom_prompt_template": custom_prompt_template,
-            "number_of_examples": number_of_examples,
-            "number_of_available_intents": number_of_available_intents,
         },
     )
 
