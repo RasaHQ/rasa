@@ -176,7 +176,8 @@ class E2ETestConverter:
         Returns:
             Optional[str]: Generated response.
         """
-        llm = llm_factory(self.llm_config.as_dict(), DEFAULT_LLM_CONFIG)
+        custom_config = self.llm_config.as_dict() if self.llm_config else {}
+        llm = llm_factory(custom_config, DEFAULT_LLM_CONFIG)
 
         try:
             llm_response = await llm.acompletion(prompt)
