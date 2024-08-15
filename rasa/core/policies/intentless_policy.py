@@ -27,7 +27,16 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.graph_components.providers.forms_provider import Forms
 from rasa.graph_components.providers.responses_provider import Responses
-from rasa.shared.constants import REQUIRED_SLOTS_KEY, ROUTE_TO_CALM_SLOT
+from rasa.shared.constants import (
+    REQUIRED_SLOTS_KEY,
+    ROUTE_TO_CALM_SLOT,
+    API_TYPE_CONFIG_KEY,
+    EMBEDDINGS_CONFIG_KEY,
+    LLM_CONFIG_KEY,
+    MODEL_CONFIG_KEY,
+    MODEL_NAME_CONFIG_KEY,
+    PROMPT_CONFIG_KEY,
+)
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.shared.core.domain import KEY_RESPONSES_TEXT, Domain
 from rasa.shared.core.events import (
@@ -92,8 +101,6 @@ MAX_NUMBER_OF_TOKENS_FOR_SAMPLES = 900
 # the config property name for the confidence of the nlu prediction
 NLU_ABSTENTION_THRESHOLD = "nlu_abstention_threshold"
 
-PROMPT = "prompt"
-
 DEFAULT_LLM_CONFIG = {
     "api_type": "openai",
     "model": DEFAULT_OPENAI_CHAT_MODEL_NAME,
@@ -111,8 +118,6 @@ DEFAULT_INTENTLESS_PROMPT_TEMPLATE = importlib.resources.open_text(
     "rasa.core.policies", "intentless_prompt_template.jinja2"
 ).name
 
-EMBEDDINGS_CONFIG_KEY = "embeddings"
-LLM_CONFIG_KEY = "llm"
 INTENTLESS_PROMPT_TEMPLATE_FILE_NAME = "intentless_policy_prompt.jinja2"
 
 
@@ -371,7 +376,7 @@ class IntentlessPolicy(Policy):
             NLU_ABSTENTION_THRESHOLD: 0.9,
             LLM_CONFIG_KEY: DEFAULT_LLM_CONFIG,
             EMBEDDINGS_CONFIG_KEY: DEFAULT_EMBEDDINGS_CONFIG,
-            PROMPT: DEFAULT_INTENTLESS_PROMPT_TEMPLATE,
+            PROMPT_CONFIG_KEY: DEFAULT_INTENTLESS_PROMPT_TEMPLATE,
         }
 
     @staticmethod
@@ -410,7 +415,7 @@ class IntentlessPolicy(Policy):
         self.conversation_samples_index = samples_docsearch
         self.embedder = self._create_plain_embedder(config)
         self.prompt_template = prompt_template or rasa.shared.utils.io.read_file(
-            self.config[PROMPT]
+            self.config[PROMPT_CONFIG_KEY]
         )
         self.trace_prompt_tokens = self.config.get("trace_prompt_tokens", False)
 
@@ -506,11 +511,12 @@ class IntentlessPolicy(Policy):
 
         structlogger.info("intentless_policy.training.completed")
         telemetry.track_intentless_policy_train_completed(
-            embeddings_type=self.embeddings_property("api_type"),
-            embeddings_model=self.embeddings_property("model")
-            or self.embeddings_property("model_name"),
-            llm_type=self.llm_property("api_type"),
-            llm_model=self.llm_property("model") or self.llm_property("model_name"),
+            embeddings_type=self.embeddings_property(API_TYPE_CONFIG_KEY),
+            embeddings_model=self.embeddings_property(MODEL_CONFIG_KEY)
+            or self.embeddings_property(MODEL_NAME_CONFIG_KEY),
+            llm_type=self.llm_property(API_TYPE_CONFIG_KEY),
+            llm_model=self.llm_property(MODEL_CONFIG_KEY)
+            or self.llm_property(MODEL_NAME_CONFIG_KEY),
         )
 
         self.persist()
@@ -599,11 +605,12 @@ class IntentlessPolicy(Policy):
         )
 
         telemetry.track_intentless_policy_predict(
-            embeddings_type=self.embeddings_property("api_type"),
-            embeddings_model=self.embeddings_property("model")
-            or self.embeddings_property("model_name"),
-            llm_type=self.llm_property("api_type"),
-            llm_model=self.llm_property("model") or self.llm_property("model_name"),
+            embeddings_type=self.embeddings_property(API_TYPE_CONFIG_KEY),
+            embeddings_model=self.embeddings_property(MODEL_CONFIG_KEY)
+            or self.embeddings_property(MODEL_NAME_CONFIG_KEY),
+            llm_type=self.llm_property(API_TYPE_CONFIG_KEY),
+            llm_model=self.llm_property(MODEL_CONFIG_KEY)
+            or self.llm_property(MODEL_NAME_CONFIG_KEY),
             score=score,
         )
 
@@ -938,7 +945,7 @@ class IntentlessPolicy(Policy):
     def fingerprint_addon(cls, config: Dict[str, Any]) -> Optional[str]:
         """Add a fingerprint of the knowledge base for the graph."""
         prompt_template = get_prompt_template(
-            config.get("prompt"),
+            config.get(PROMPT_CONFIG_KEY),
             DEFAULT_INTENTLESS_PROMPT_TEMPLATE,
         )
         return deep_container_fingerprint(prompt_template)

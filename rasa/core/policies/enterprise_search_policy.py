@@ -44,6 +44,14 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.graph_components.providers.forms_provider import Forms
 from rasa.graph_components.providers.responses_provider import Responses
+from rasa.shared.constants import (
+    API_TYPE_CONFIG_KEY,
+    EMBEDDINGS_CONFIG_KEY,
+    LLM_CONFIG_KEY,
+    MODEL_CONFIG_KEY,
+    MODEL_NAME_CONFIG_KEY,
+    PROMPT_CONFIG_KEY,
+)
 from rasa.shared.core.constants import (
     ACTION_CANCEL_FLOW,
     ACTION_SEND_TEXT_NAME,
@@ -114,8 +122,6 @@ DEFAULT_EMBEDDINGS_CONFIG = {
     "model": DEFAULT_OPENAI_EMBEDDING_MODEL_NAME,
 }
 
-EMBEDDINGS_CONFIG_KEY = "embeddings"
-LLM_CONFIG_KEY = "llm"
 ENTERPRISE_SEARCH_PROMPT_FILE_NAME = "enterprise_search_policy_prompt.jinja2"
 
 SEARCH_RESULTS_METADATA_KEY = "search_results"
@@ -197,14 +203,14 @@ class EnterpriseSearchPolicy(Policy):
         )
         self.max_history = self.config.get(POLICY_MAX_HISTORY)
         self.prompt_template = prompt_template or get_prompt_template(
-            self.config.get("prompt"),
+            self.config.get(PROMPT_CONFIG_KEY),
             DEFAULT_ENTERPRISE_SEARCH_PROMPT_TEMPLATE,
         )
         self.trace_prompt_tokens = self.config.get(TRACE_TOKENS_PROPERTY, False)
         self.use_llm = self.config.get(USE_LLM_PROPERTY, True)
         self.citation_enabled = self.config.get(CITATION_ENABLED_PROPERTY, False)
         self.citation_prompt_template = get_prompt_template(
-            self.config.get("prompt"),
+            self.config.get(PROMPT_CONFIG_KEY),
             DEFAULT_ENTERPRISE_SEARCH_PROMPT_WITH_CITATION_TEMPLATE,
         )
         if self.citation_enabled:
@@ -284,11 +290,12 @@ class EnterpriseSearchPolicy(Policy):
         # telemetry call to track training completion
         track_enterprise_search_policy_train_completed(
             vector_store_type=store_type,
-            embeddings_type=self.embeddings_config.get("api_type"),
-            embeddings_model=self.embeddings_config.get("model")
-            or self.embeddings_config.get("model_name"),
-            llm_type=self.llm_config.get("api_type"),
-            llm_model=self.llm_config.get("model") or self.llm_config.get("model_name"),
+            embeddings_type=self.embeddings_config.get(API_TYPE_CONFIG_KEY),
+            embeddings_model=self.embeddings_config.get(MODEL_CONFIG_KEY)
+            or self.embeddings_config.get(MODEL_NAME_CONFIG_KEY),
+            llm_type=self.llm_config.get(API_TYPE_CONFIG_KEY),
+            llm_model=self.llm_config.get(MODEL_CONFIG_KEY)
+            or self.llm_config.get(MODEL_NAME_CONFIG_KEY),
             citation_enabled=self.citation_enabled,
         )
         self.persist()
@@ -466,11 +473,12 @@ class EnterpriseSearchPolicy(Policy):
         # telemetry call to track policy prediction
         track_enterprise_search_policy_predict(
             vector_store_type=self.vector_store_config.get(VECTOR_STORE_TYPE_PROPERTY),
-            embeddings_type=self.embeddings_config.get("api_type"),
-            embeddings_model=self.embeddings_config.get("model")
-            or self.embeddings_config.get("model_name"),
-            llm_type=self.llm_config.get("api_type"),
-            llm_model=self.llm_config.get("model") or self.llm_config.get("model_name"),
+            embeddings_type=self.embeddings_config.get(API_TYPE_CONFIG_KEY),
+            embeddings_model=self.embeddings_config.get(MODEL_CONFIG_KEY)
+            or self.embeddings_config.get(MODEL_NAME_CONFIG_KEY),
+            llm_type=self.llm_config.get(API_TYPE_CONFIG_KEY),
+            llm_model=self.llm_config.get(MODEL_CONFIG_KEY)
+            or self.llm_config.get(MODEL_NAME_CONFIG_KEY),
             citation_enabled=self.citation_enabled,
         )
         return self._create_prediction(
@@ -697,7 +705,7 @@ class EnterpriseSearchPolicy(Policy):
         local_knowledge_data = cls._get_local_knowledge_data(config)
 
         prompt_template = get_prompt_template(
-            config.get("prompt"),
+            config.get(PROMPT_CONFIG_KEY),
             DEFAULT_ENTERPRISE_SEARCH_PROMPT_TEMPLATE,
         )
         return deep_container_fingerprint([prompt_template, local_knowledge_data])

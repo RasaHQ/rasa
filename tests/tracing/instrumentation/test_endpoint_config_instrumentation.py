@@ -3,6 +3,7 @@ from typing import Sequence
 
 from opentelemetry.sdk.trace import TracerProvider, ReadableSpan
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
+from opentelemetry.trace import SpanContext
 
 from rasa.tracing.constants import REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME
 from rasa.tracing.instrumentation import instrumentation
@@ -43,3 +44,9 @@ async def test_tracing_endpoint_config_request(
         ),
     }
     assert captured_span.attributes == expected_attributes
+
+    assert "traceparent" in mock_endpoint_config.headers
+    id_list = mock_endpoint_config.headers["traceparent"].split("-")
+    span_context: SpanContext = captured_span.get_span_context()  # type: ignore
+
+    assert span_context.trace_id == int(id_list[1], 16)

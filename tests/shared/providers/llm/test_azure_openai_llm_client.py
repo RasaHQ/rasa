@@ -6,8 +6,8 @@ from rasa.shared.constants import (
     AZURE_API_BASE_ENV_VAR,
     AZURE_API_VERSION_ENV_VAR,
     AZURE_API_KEY_ENV_VAR,
-    OPENAI_API_BASE_NO_PREFIX_CONFIG_KEY,
-    OPENAI_API_VERSION_NO_PREFIX_CONFIG_KEY,
+    API_BASE_CONFIG_KEY,
+    API_VERSION_CONFIG_KEY,
     OPENAI_API_KEY_ENV_VAR,
     AZURE_API_TYPE_ENV_VAR,
     OPENAI_API_BASE_ENV_VAR,
@@ -82,10 +82,10 @@ class TestAzureOpenAILLMClient:
         expected_log_message_parts = [
             "Set API Base",
             AZURE_API_BASE_ENV_VAR,
-            OPENAI_API_BASE_NO_PREFIX_CONFIG_KEY,
+            API_BASE_CONFIG_KEY,
             "Set API Version",
             AZURE_API_VERSION_ENV_VAR,
-            OPENAI_API_VERSION_NO_PREFIX_CONFIG_KEY,
+            API_VERSION_CONFIG_KEY,
             "Set API Key",
             AZURE_API_KEY_ENV_VAR,
         ]

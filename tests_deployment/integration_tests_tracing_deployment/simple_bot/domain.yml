@@ -3,13 +3,35 @@ version: "3.1"
 intents:
   - greet
   - goodbye
+  - request_name
 
 responses:
   utter_greet:
   - text: "Hi"
+  utter_ask_name:
+  - text: What is your name?
+  utter_submit:
+  - text: Ok. Thanks! I will remember that your name is {name}
 
 actions:
   - action_goodbye
+  - utter_submit
+  - validate_name_form
+
+forms:
+  name_form:
+    required_slots:
+      - name
+
+slots:
+  name:
+    type: text
+    influence_conversation: true
+    mappings:
+      - type: from_text
+        conditions:
+         - active_loop: name_form
+           requested_slot: name
 
 session_config:
   session_expiration_time: 60

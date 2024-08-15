@@ -22,7 +22,7 @@ from rasa.dialogue_understanding.generator.constants import (
     LLM_CONFIG_KEY,
     USER_INPUT_CONFIG_KEY,
     FLOW_RETRIEVAL_KEY,
-    FLOW_RETRIEVAL_EMBEDDINGS_KEY,
+    FLOW_RETRIEVAL_EMBEDDINGS_CONFIG_KEY,
 )
 from rasa.dialogue_understanding.generator.flow_retrieval import (
     FlowRetrieval,
@@ -38,8 +38,10 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import (
     ROUTE_TO_CALM_SLOT,
-    MODEL_NAME_KEY,
-    MODEL_KEY,
+    MODEL_NAME_CONFIG_KEY,
+    MODEL_CONFIG_KEY,
+    PROMPT_CONFIG_KEY,
+    PROMPT_TEMPLATE_CONFIG_KEY,
 )
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -93,7 +95,7 @@ class SingleStepLLMCommandGenerator(LLMBasedCommandGenerator):
         )
 
         # Set the prompt template
-        if config.get("prompt"):
+        if config.get(PROMPT_CONFIG_KEY):
             structlogger.warning(
                 "single_step_llm_command_generator.init",
                 event_info=(
@@ -102,7 +104,11 @@ class SingleStepLLMCommandGenerator(LLMBasedCommandGenerator):
                     "Please use the config parameter 'prompt_template' instead. "
                 ),
             )
-        config_prompt = config.get("prompt") or config.get("prompt_template") or None
+        config_prompt = (
+            config.get(PROMPT_CONFIG_KEY)
+            or config.get(PROMPT_TEMPLATE_CONFIG_KEY)
+            or None
+        )
         self.prompt_template = prompt_template or get_prompt_template(
             config_prompt,
             DEFAULT_COMMAND_PROMPT_TEMPLATE,
@@ -113,19 +119,21 @@ class SingleStepLLMCommandGenerator(LLMBasedCommandGenerator):
 
     def _track(self, config: Dict[str, Any]) -> None:
         llm_config = config.get(LLM_CONFIG_KEY) or DEFAULT_LLM_CONFIG
-        llm_model_name = llm_config.get(MODEL_KEY) or llm_config.get(MODEL_NAME_KEY)
+        llm_model_name = llm_config.get(MODEL_CONFIG_KEY) or llm_config.get(
+            MODEL_NAME_CONFIG_KEY
+        )
         custom_prompt_used = (
-            config.get("prompt") or config.get("prompt_template")
+            config.get(PROMPT_CONFIG_KEY) or config.get(PROMPT_TEMPLATE_CONFIG_KEY)
         ) is not None
         flow_retrieval_config = config.get(FLOW_RETRIEVAL_KEY, {})
         flow_retrieval_enabled = flow_retrieval_config.get("active", True)
         flow_retrieval_embedding_config = flow_retrieval_config.get(
-            FLOW_RETRIEVAL_EMBEDDINGS_KEY, DEFAULT_EMBEDDINGS_CONFIG
+            FLOW_RETRIEVAL_EMBEDDINGS_CONFIG_KEY, DEFAULT_EMBEDDINGS_CONFIG
         )
         flow_retrieval_embedding_model_name = (
             (
-                flow_retrieval_embedding_config.get(MODEL_KEY)
-                or flow_retrieval_embedding_config.get(MODEL_NAME_KEY)
+                flow_retrieval_embedding_config.get(MODEL_CONFIG_KEY)
+                or flow_retrieval_embedding_config.get(MODEL_NAME_CONFIG_KEY)
             )
             if flow_retrieval_enabled
             else None
@@ -142,8 +150,8 @@ class SingleStepLLMCommandGenerator(LLMBasedCommandGenerator):
     def get_default_config() -> Dict[str, Any]:
         """The component's default config (see parent class for full docstring)."""
         return {
-            "prompt": None,  # Legacy
-            "prompt_template": None,
+            PROMPT_CONFIG_KEY: None,  # Legacy
+            PROMPT_TEMPLATE_CONFIG_KEY: None,
             USER_INPUT_CONFIG_KEY: None,
             LLM_CONFIG_KEY: None,
             FLOW_RETRIEVAL_KEY: FlowRetrieval.get_default_config(),
@@ -363,7 +371,11 @@ class SingleStepLLMCommandGenerator(LLMBasedCommandGenerator):
     @classmethod
     def fingerprint_addon(cls: Any, config: Dict[str, Any]) -> Optional[str]:
         """Add a fingerprint of the knowledge base for the graph."""
-        config_prompt = config.get("prompt") or config.get("prompt_template") or None
+        config_prompt = (
+            config.get(PROMPT_CONFIG_KEY)
+            or config.get(PROMPT_TEMPLATE_CONFIG_KEY)
+            or None
+        )
         prompt_template = get_prompt_template(
             config_prompt,
             DEFAULT_COMMAND_PROMPT_TEMPLATE,

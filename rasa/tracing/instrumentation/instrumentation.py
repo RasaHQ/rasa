@@ -21,7 +21,6 @@ from typing import (
 from multidict import MultiDict
 from opentelemetry.context import Context
 
-import rasa.shared.utils.io
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.trace import SpanKind, Tracer
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
@@ -49,11 +48,11 @@ from rasa.dialogue_understanding.generator import (
 from rasa.dialogue_understanding.generator.nlu_command_adapter import NLUCommandAdapter
 from rasa.engine.graph import GraphNode
 from rasa.engine.training.graph_trainer import GraphTrainer
-from rasa.shared.constants import DOCS_BASE_URL
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import SET_SLOT_COMMAND
 from rasa.shared.nlu.training_data.message import Message
+from rasa.tracing.constants import REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME
 from rasa.tracing.instrumentation.intentless_policy_instrumentation import (
     _instrument_extract_ai_responses,
     _instrument_generate_answer,
@@ -67,7 +66,7 @@ from rasa.tracing.instrumentation.metrics import (
     record_callable_duration_metrics,
     record_request_size_in_bytes,
 )
-from rasa.utils.endpoints import EndpointConfig
+from rasa.utils.endpoints import concat_url, EndpointConfig
 
 from rasa.tracing.instrumentation import attribute_extractors
 
@@ -577,12 +576,9 @@ def instrument(
     if endpoint_config_class is not None and not class_is_instrumented(
         endpoint_config_class
     ):
-        _instrument_method(
+        _instrument_endpoint_config(
             tracer_provider.get_tracer(endpoint_config_class.__module__),
             endpoint_config_class,
-            "request",
-            attribute_extractors.extract_attrs_for_endpoint_config,
-            metrics_recorder=record_request_size_in_bytes,
         )
 
     if custom_action_executor_subclasses:
@@ -1030,19 +1026,6 @@ def _instrument_run_action(
                 kind=SpanKind.CLIENT,
                 attributes=attrs,
             ):
-                if isinstance(action, RemoteAction):
-                    if not isinstance(action.action_endpoint, EndpointConfig):
-                        rasa.shared.utils.io.raise_warning(
-                            f"No endpoint is configured to propagate the trace of this "
-                            f"custom action {action.name()}. Please take a look at "
-                            f"the docs and set an endpoint configuration in the "
-                            f"endpoints.yml file",
-                            docs=f"{DOCS_BASE_URL}/custom-actions",
-                        )
-                    else:
-                        propagator = TraceContextTextMapPropagator()
-                        propagator.inject(action.action_endpoint.headers)
-
                 return await fn(self, action, tracker, output_channel, nlg, prediction)
 
         return wrapper
@@ -1052,6 +1035,65 @@ def _instrument_run_action(
     )
 
     logger.debug(f"Instrumented '{processor_class.__name__}._run_action'.")
+
+
+def _instrument_endpoint_config(
+    tracer: Tracer, endpoint_config_class: Type[EndpointConfigType]
+) -> None:
+    """Instrument the `request` method of the `EndpointConfig` class.
+
+    Args:
+        tracer: The `Tracer` that shall be used for tracing.
+        endpoint_config_class: The `EndpointConfig` to be instrumented.
+    """
+
+    def tracing_endpoint_config_wrapper(fn: Callable) -> Callable:
+        @functools.wraps(fn)
+        async def wrapper(
+            self: Type[EndpointConfigType],
+            method: Text = "post",
+            subpath: Optional[Text] = None,
+            content_type: Optional[Text] = "application/json",
+            compress: bool = False,
+            **kwargs: Any,
+        ) -> bool:
+            request_body = kwargs.get("json")
+            attrs: Dict[str, Any] = {"url": concat_url(self.url, subpath)}
+
+            if not request_body:
+                attrs.update({REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME: 0})
+            else:
+                attrs.update(
+                    {
+                        REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME: len(
+                            json.dumps(request_body).encode("utf-8")
+                        )
+                    }
+                )
+            with tracer.start_as_current_span(
+                f"{self.__class__.__name__}.{fn.__name__}",
+                attributes=attrs,
+            ):
+                TraceContextTextMapPropagator().inject(self.headers)
+
+                start_time = time.perf_counter_ns()
+                result = await fn(
+                    self, method, subpath, content_type, compress, **kwargs
+                )
+                end_time = time.perf_counter_ns()
+
+                record_callable_duration_metrics(self, start_time, end_time)
+                record_request_size_in_bytes(attrs)
+
+                return result
+
+        return wrapper
+
+    endpoint_config_class.request = tracing_endpoint_config_wrapper(  # type: ignore[assignment]
+        endpoint_config_class.request
+    )
+
+    logger.debug(f"Instrumented '{endpoint_config_class.__name__}.request'.")
 
 
 def _mangled_instrumented_boolean_attribute_name(instrumented_class: Type) -> Text:

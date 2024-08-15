@@ -9,9 +9,9 @@ from rasa.shared.constants import (
     OPENAI_API_VERSION_ENV_VAR,
     AZURE_API_BASE_ENV_VAR,
     AZURE_API_VERSION_ENV_VAR,
-    OPENAI_API_BASE_NO_PREFIX_CONFIG_KEY,
-    OPENAI_API_VERSION_NO_PREFIX_CONFIG_KEY,
-    OPENAI_DEPLOYMENT_CONFIG_KEY,
+    API_BASE_CONFIG_KEY,
+    API_VERSION_CONFIG_KEY,
+    DEPLOYMENT_CONFIG_KEY,
     AZURE_API_KEY_ENV_VAR,
     OPENAI_API_TYPE_ENV_VAR,
     OPENAI_API_KEY_ENV_VAR,
@@ -292,17 +292,17 @@ class AzureOpenAILLMClient(_BaseLiteLLMClient):
             "API Base": {
                 "current_value": self.api_base,
                 "env_var": AZURE_API_BASE_ENV_VAR,
-                "config_key": OPENAI_API_BASE_NO_PREFIX_CONFIG_KEY,
+                "config_key": API_BASE_CONFIG_KEY,
             },
             "API Version": {
                 "current_value": self.api_version,
                 "env_var": AZURE_API_VERSION_ENV_VAR,
-                "config_key": OPENAI_API_VERSION_NO_PREFIX_CONFIG_KEY,
+                "config_key": API_VERSION_CONFIG_KEY,
             },
             "Deployment Name": {
                 "current_value": self.deployment,
                 "env_var": None,
-                "config_key": OPENAI_DEPLOYMENT_CONFIG_KEY,
+                "config_key": DEPLOYMENT_CONFIG_KEY,
             },
             "API Key": {
                 "current_value": self._api_key,
