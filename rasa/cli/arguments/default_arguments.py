@@ -166,7 +166,6 @@ def add_logging_options(parser: argparse.ArgumentParser) -> None:
 
 def add_remote_storage_param(
     parser: Union[argparse.ArgumentParser, argparse._ActionsContainer],
-    help_text: Text,
     required: bool = False,
 ) -> None:
     parser.add_argument(

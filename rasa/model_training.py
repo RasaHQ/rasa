@@ -255,10 +255,9 @@ async def train(
             persist_nlu_training_data=persist_nlu_training_data,
             finetuning_epoch_fraction=finetuning_epoch_fraction,
             dry_run=dry_run,
-            remote_storage=remote_storage
+            remote_storage=remote_storage,
             **(core_additional_arguments or {}),
-            **(nlu_additional_arguments or {}),
-            remote_storage=remote_storage
+            **(nlu_additional_arguments or {})
         )
 
 
@@ -346,12 +345,24 @@ async def _train_graph(
                 force_retraining=force_full_training,
                 is_finetuning=is_finetuning,
             )
-            structlogger.info(
-                "model_training.train.finished_training",
-                event_info=(
-                    f"Your Rasa model is trained " f"and saved at '{full_model_path}'."
-                ),
-            )
+            if remote_storage:
+                push_model_to_remote_storage(full_model_path, remote_storage)
+                full_model_path.unlink()
+                structlogger.info(
+                    "model_training.train.finished_training",
+                    event_info=(
+                        f"Your Rasa model {model_name} is trained " 
+                        f"and saved at remote storage provider '{remote_storage}'."
+                    ),
+                )
+            else:
+                structlogger.info(
+                    "model_training.train.finished_training",
+                    event_info=(
+                        f"Your Rasa model is trained " f"and saved at '{full_model_path}'."
+                    ),
+                )
+        
 
         return TrainingResult(str(full_model_path), 0)
 
@@ -542,7 +553,6 @@ async def train_nlu(
 
 def push_model_to_remote_storage(
         model_path: Path,
-        model_name: Text,
         remote_storage: Text
         ) -> None:
         """push model to remote storage"""
@@ -551,7 +561,7 @@ def push_model_to_remote_storage(
         persistor = get_persistor(remote_storage)
 
         if persistor is not None:
-           persistor.persist(model_path,model_name)
+           persistor.persist(model_path)
 
         else:
             raise RasaException(

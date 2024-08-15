@@ -87,7 +87,6 @@ class LocalModelStorage(ModelStorage):
                 model_archive_path, temporary_directory_path
             )
             logger.debug(f"Extracted model to '{temporary_directory_path}'.")
-
             cls._initialize_model_storage_from_model_archive(
                 temporary_directory_path, storage_path
             )

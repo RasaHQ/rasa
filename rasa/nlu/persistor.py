@@ -51,18 +51,14 @@ def get_persistor(name: Text) -> Optional["Persistor"]:
 class Persistor(abc.ABC):
     """Store models in cloud and fetch them when needed."""
 
-    def persist(self, model_directory: Text, model_name: Text) -> None:
-        """Uploads a model persisted in the `target_dir` to cloud storage."""
-        if not os.path.isdir(model_directory):
-            raise ValueError(f"Target directory '{model_directory}' not found.")
-
-        file_key, tar_path = self._compress(model_directory, model_name)
-        self._persist_tar(file_key, tar_path)
+    def persist(self, trained_model: Text) -> None:
+        """Uploads a trained model persisted in the `target_dir` to cloud storage."""
+        file_key = os.path.basename(trained_model)
+        self._persist_tar(file_key, trained_model)
 
     def retrieve(self, model_name: Text, target_path: Text) -> None:
         """Downloads a model that has been persisted to cloud storage."""
         tar_name = model_name
-
         if not model_name.endswith("tar.gz"):
             # ensure backward compatibility
             tar_name = self._tar_name(model_name)
