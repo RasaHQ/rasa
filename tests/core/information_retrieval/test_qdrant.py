@@ -5,7 +5,7 @@ import pytest
 from pydantic import ValidationError
 from pytest import MonkeyPatch
 from langchain.schema.embeddings import Embeddings
-from langchain.vectorstores.qdrant import Qdrant
+from langchain_community.vectorstores.qdrant import Qdrant
 
 from rasa.core.information_retrieval import InformationRetrievalException
 from rasa.utils.endpoints import EndpointConfig

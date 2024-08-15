@@ -190,7 +190,7 @@ def moodbot_tracker(moodbot_domain: Domain) -> DialogueStateTracker:
 
 
 @pytest.fixture(scope="session")
-@patch("langchain.vectorstores.faiss.FAISS.from_documents")
+@patch("langchain_community.vectorstores.faiss.FAISS.from_documents")
 @patch(
     "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval._create_embedder"
 )
@@ -211,7 +211,7 @@ async def trained_flow_policy_bot(
 
 
 @pytest.fixture(scope="session")
-@patch("langchain.vectorstores.faiss.FAISS.from_documents")
+@patch("langchain_community.vectorstores.faiss.FAISS.from_documents")
 @patch(
     "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval._create_embedder"
 )
@@ -232,7 +232,7 @@ async def trained_nlu_trigger_flow_policy_bot(
 
 
 @pytest.fixture
-@patch("langchain.vectorstores.faiss.FAISS.load_local")
+@patch("langchain_community.vectorstores.faiss.FAISS.load_local")
 @patch(
     "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval._create_embedder"
 )
@@ -248,7 +248,7 @@ async def flow_policy_bot_agent(
 
 
 @pytest.fixture
-@patch("langchain.vectorstores.faiss.FAISS.load_local")
+@patch("langchain_community.vectorstores.faiss.FAISS.load_local")
 @patch(
     "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval._create_embedder"
 )
