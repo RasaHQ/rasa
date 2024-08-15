@@ -30,11 +30,14 @@ from rasa.llm_fine_tuning.train_test_split_module import (
     CONVERSATIONAL_DATA_FORMAT,
 )
 from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH, DEFAULT_MODELS_PATH
+from rasa.utils.beta import ensure_beta_feature_is_enabled
 
 DEFAULT_INPUT_E2E_TEST_PATH = "e2e_tests"
 DEFAULT_OUTPUT_FOLDER = "output"
 RESULT_SUMMARY_FILE = "result_summary.yaml"
 PARAMETERS_FILE = "params.yaml"
+
+RASA_PRO_BETA_FINE_TUNING_RECIPE_ENV_VAR_NAME = "RASA_PRO_BETA_FINE_TUNING_RECIPE"
 
 structlogger = structlog.get_logger()
 
@@ -156,6 +159,11 @@ def prepare_llm_fine_tuning_data(args: argparse.Namespace) -> None:
     Args:
         args: Commandline arguments.
     """
+    ensure_beta_feature_is_enabled(
+        "LLM fine-tuning recipe",
+        env_flag=RASA_PRO_BETA_FINE_TUNING_RECIPE_ENV_VAR_NAME,
+    )
+
     # make sure the output directory exists
     output_dir = args.out
     rasa.shared.utils.io.create_directory(output_dir)

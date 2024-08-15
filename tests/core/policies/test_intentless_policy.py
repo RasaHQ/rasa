@@ -15,7 +15,7 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.graph_components.providers.forms_provider import Forms
 from rasa.graph_components.providers.responses_provider import Responses
-from rasa.shared.constants import ROUTE_TO_CALM_SLOT
+from rasa.shared.constants import ROUTE_TO_CALM_SLOT, PROMPT_CONFIG_KEY
 from rasa.shared.core.domain import ActionNotFoundException, Domain
 from rasa.shared.core.events import ActiveLoop, BotUttered, UserUttered
 from rasa.shared.core.flows import FlowsList
@@ -30,7 +30,6 @@ from rasa.shared.providers.llm.llm_client import LLMClient
 from rasa.shared.utils.llm import tracker_as_readable_transcript
 
 from rasa.core.policies.intentless_policy import (
-    PROMPT,
     Conversation,
     IntentlessPolicy,
     Interaction,
@@ -647,7 +646,7 @@ async def test_intentless_policy_prompt_init_custom(
         ):
             config = {
                 **IntentlessPolicy.get_default_config(),
-                PROMPT: "data/prompt_templates/test_prompt.jinja2",
+                PROMPT_CONFIG_KEY: "data/prompt_templates/test_prompt.jinja2",
             }
             intentless_policy = IntentlessPolicy.create(
                 config,
@@ -732,12 +731,15 @@ async def test_intentless_policy_fingerprint_addon_diff_in_prompt_template(
     default_execution_context: ExecutionContext,
     tmp_path: Path,
 ) -> None:
-    prompt_dir = Path(tmp_path) / PROMPT
+    prompt_dir = Path(tmp_path) / PROMPT_CONFIG_KEY
     prompt_dir.mkdir(parents=True, exist_ok=True)
     prompt_file = prompt_dir / "intentless_policy_prompt.jinja2"
     prompt_file.write_text("This is a test prompt")
 
-    config = {**IntentlessPolicy.get_default_config(), PROMPT: str(prompt_file)}
+    config = {
+        **IntentlessPolicy.get_default_config(),
+        PROMPT_CONFIG_KEY: str(prompt_file),
+    }
     print(config)
     with patch(
         "rasa.core.policies.intentless_policy.llm_factory",
@@ -769,12 +771,15 @@ async def test_intentless_policy_fingerprint_addon_no_diff_in_prompt_template(
     default_execution_context: ExecutionContext,
     tmp_path: Path,
 ) -> None:
-    prompt_dir = Path(tmp_path) / PROMPT
+    prompt_dir = Path(tmp_path) / PROMPT_CONFIG_KEY
     prompt_dir.mkdir(parents=True, exist_ok=True)
     prompt_file = prompt_dir / "intentless_policy_prompt.jinja2"
     prompt_file.write_text("This is a test prompt")
 
-    config = {**IntentlessPolicy.get_default_config(), PROMPT: str(prompt_file)}
+    config = {
+        **IntentlessPolicy.get_default_config(),
+        PROMPT_CONFIG_KEY: str(prompt_file),
+    }
     with patch(
         "rasa.core.policies.intentless_policy.llm_factory",
         Mock(return_value=fake_llm_client),

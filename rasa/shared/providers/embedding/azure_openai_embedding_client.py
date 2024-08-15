@@ -11,9 +11,9 @@ from rasa.shared.constants import (
     OPENAI_API_KEY_ENV_VAR,
     OPENAI_API_TYPE_ENV_VAR,
     OPENAI_API_VERSION_ENV_VAR,
-    OPENAI_API_BASE_NO_PREFIX_CONFIG_KEY,
+    API_BASE_CONFIG_KEY,
     API_KEY,
-    OPENAI_API_VERSION_NO_PREFIX_CONFIG_KEY,
+    API_VERSION_CONFIG_KEY,
 )
 from rasa.shared.exceptions import ProviderClientValidationError
 from rasa.shared.providers._configs.azure_openai_client_config import (
@@ -209,7 +209,7 @@ class AzureOpenAIEmbeddingClient(_BaseLiteLLMEmbeddingClient):
         _substitute_env_key_mapper = [
             {
                 "param_name": "API base",
-                "config_key": OPENAI_API_BASE_NO_PREFIX_CONFIG_KEY,
+                "config_key": API_BASE_CONFIG_KEY,
                 "deprecated_env_key": OPENAI_API_BASE_ENV_VAR,
                 "value_from_config": self.api_base,
                 "new_env_key": AZURE_API_BASE_ENV_VAR,
@@ -223,7 +223,7 @@ class AzureOpenAIEmbeddingClient(_BaseLiteLLMEmbeddingClient):
             },
             {
                 "param_name": "API version",
-                "config_key": OPENAI_API_VERSION_NO_PREFIX_CONFIG_KEY,
+                "config_key": API_VERSION_CONFIG_KEY,
                 "deprecated_env_key": OPENAI_API_VERSION_ENV_VAR,
                 "value_from_config": self.api_version,
                 "new_env_key": AZURE_API_VERSION_ENV_VAR,

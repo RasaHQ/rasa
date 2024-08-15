@@ -1083,6 +1083,11 @@ def _get_llm_command_generator_config(config: Dict[str, Any]) -> Optional[Dict]:
     Includes the model name, whether a custom prompt is used, whether flow
     retrieval is enabled, and flow retrieval embedding model.
     """
+    from rasa.shared.constants import (
+        EMBEDDINGS_CONFIG_KEY,
+        MODEL_CONFIG_KEY,
+        MODEL_NAME_CONFIG_KEY,
+    )
     from rasa.dialogue_understanding.generator import LLMCommandGenerator
     from rasa.dialogue_understanding.generator.constants import (
         LLM_CONFIG_KEY,
@@ -1105,19 +1110,19 @@ def _get_llm_command_generator_config(config: Dict[str, Any]) -> Optional[Dict]:
         custom_prompt_used = "prompt" in component
         llm_config = component.get(LLM_CONFIG_KEY, {})
         llm_model_name = (
-            llm_config.get("model")
-            or llm_config.get("model_name")
-            or DEFAULT_LLM_CONFIG["model"]
+            llm_config.get(MODEL_CONFIG_KEY)
+            or llm_config.get(MODEL_NAME_CONFIG_KEY)
+            or DEFAULT_LLM_CONFIG[MODEL_CONFIG_KEY]
         )
         flow_retrieval_config = component.get(FLOW_RETRIEVAL_KEY, {})
         flow_retrieval_enabled = flow_retrieval_config.get("active", True)
         flow_retrieval_embeddings_config = flow_retrieval_config.get(
-            "embeddings", DEFAULT_EMBEDDINGS_CONFIG
+            EMBEDDINGS_CONFIG_KEY, DEFAULT_EMBEDDINGS_CONFIG
         )
         flow_retrieval_embedding_model_name = (
             (
-                flow_retrieval_embeddings_config.get("model_name")
-                or flow_retrieval_embeddings_config.get("model")
+                flow_retrieval_embeddings_config.get(MODEL_NAME_CONFIG_KEY)
+                or flow_retrieval_embeddings_config.get(MODEL_CONFIG_KEY)
             )
             if flow_retrieval_enabled
             else None
