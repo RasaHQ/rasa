@@ -266,7 +266,7 @@ timeout_func_only = true
 asyncio_mode = "auto"
 
 [tool.poetry.dependencies.rasa-sdk]
-version = "3.9.0"
+version = "3.9.1"
 allow-prereleases = true
 
 [tool.poetry.dependencies.tensorflow]
