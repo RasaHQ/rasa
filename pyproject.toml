@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "rasa-pro"
-version = "3.9.6"
+version = "3.9.7"
 description = "State-of-the-art open-core Conversational AI framework for Enterprises that natively leverages generative AI for effortless assistant development."
 authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
 maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
@@ -182,7 +182,7 @@ pycountry = "^22.3.5"
 pymilvus = "^2.3.6"
 qdrant-client = "^1.9.0"
 psutil = "^5.9.5"
-tenacity = "~8.4.1"  # pinned down because of langchain
+tenacity = "~8.4.1" # pinned down because of langchain
 types-protobuf = "4.25.0.20240417"
 [[tool.poetry.dependencies.tensorflow-io-gcs-filesystem]]
 version = "==0.31"
@@ -266,7 +266,7 @@ timeout_func_only = true
 asyncio_mode = "auto"
 
 [tool.poetry.dependencies.rasa-sdk]
-version = "3.9.0"
+version = "3.9.1"
 allow-prereleases = true
 
 [tool.poetry.dependencies.tensorflow]
