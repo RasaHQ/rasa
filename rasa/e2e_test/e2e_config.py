@@ -5,9 +5,10 @@ import os
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, Generator, Optional
+from typing import Generator, Optional, Dict, Any
 
 import structlog
+from pydantic import BaseModel, Field
 
 from rasa.e2e_test.constants import (
     CONFTEST_FILE_NAME,
@@ -119,8 +120,7 @@ class LLMJudgeConfig:
         return self.clean_up_config(data)
 
 
-@dataclass
-class LLME2ETestConverterConfig:
+class LLME2ETestConverterConfig(BaseModel):
     """Class for storing the LLM configuration of the E2ETestConverter.
 
     This configuration is used to initialize the LiteLLM client.
@@ -145,16 +145,15 @@ class LLME2ETestConverterConfig:
             expected_field: config_data.pop(expected_field, None)
             for expected_field in expected_fields
         }
-        return LLME2ETestConverterConfig(extra_parameters=config_data, **kwargs)
+        return cls(extra_parameters=config_data, **kwargs)
 
     @staticmethod
-    def clean_up_config(config_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _clean_up_config(config_data: Dict[str, Any]) -> Dict[str, Any]:
         """Remove None values from the configuration."""
         return {key: value for key, value in config_data.items() if value}
 
     def as_dict(self) -> Dict[str, Any]:
-        data = dataclasses.asdict(self)
-        return self.clean_up_config(data)
+        return self._clean_up_config(dict(self))
 
 
 def load_external_api_keys(llm_type: str) -> Dict[str, Optional[str]]:
