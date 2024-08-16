@@ -1,10 +1,13 @@
 import argparse
 import platform
 import sys
+import os
 import textwrap
 from pathlib import Path
-from typing import Any, Callable, List, Text
+from typing import Any, Callable, List, Text, Dict
+import matplotlib.pyplot as plt
 from unittest.mock import MagicMock, Mock, call, patch
+from _pytest.tmpdir import TempPathFactory
 
 import pytest
 from pytest import MonkeyPatch, RunResult
@@ -31,6 +34,7 @@ from rasa.cli.e2e_test import (
     _save_coverage_report,
     STATUS_PASSED,
     save_test_cases_to_yaml,
+    _save_tested_commands_histogram,
 )
 from rasa.core.agent import Agent
 from rasa.core.tracker_store import InMemoryTrackerStore
@@ -842,3 +846,55 @@ def test_print_test_result_without_aggregate_stats(
         )
 
     mock_print_aggregate_stats.assert_not_called()
+
+    @patch("rasa.cli.e2e_test.plt.savefig")
+    @patch("rasa.cli.e2e_test.structlogger.info")
+    @patch(
+        "rasa.cli.e2e_test.os.path.join", side_effect=lambda *args: os.path.join(*args)
+    )
+    def test_save_tested_commands_histogram(
+        mock_join: MagicMock,
+        mock_info: MagicMock,
+        mock_savefig: MagicMock,
+        tmpdir: TempPathFactory,
+    ) -> None:
+        # Define test data
+        count_dict: Dict[str, int] = {"command1": 10, "command2": 5, "command3": 15}
+        test_status: str = "passing"
+        output_dir: str = str(tmpdir)
+        output_filename: str = f"commands_histogram_for_{test_status}_tests.png"
+
+        # Call the function
+        _save_tested_commands_histogram(count_dict, test_status, output_dir)
+
+        # Check that savefig was called with the correct path
+        expected_save_path: str = os.path.join(output_dir, output_filename)
+        mock_savefig.assert_called_once_with(expected_save_path)
+        plt.close()  # Close the plot to clean up the state for other tests
+
+        # Check that structlogger.info was called with the correct parameters
+        mock_info.assert_called_once_with(
+            "rasa.e2e_test._save_tested_commands_histogram",
+            message=f"Commands histogram for {test_status} e2e tests"
+            f"is written to '{output_filename}'.",
+        )
+
+        # Ensure that the file path was joined correctly
+        mock_join.assert_called_once_with(output_dir, output_filename)
+
+    @patch("rasa.cli.e2e_test.structlogger.info")
+    @patch("rasa.cli.e2e_test.plt.savefig")
+    def test_save_tested_commands_histogram_empty_dict(
+        mock_savefig: MagicMock, mock_info: MagicMock
+    ) -> None:
+        # Define test data
+        count_dict: Dict[str, int] = {}
+        test_status: str = "failing"
+        output_dir: str = "/some/fake/dir"
+
+        # Call the function
+        _save_tested_commands_histogram(count_dict, test_status, output_dir)
+
+        # Check that savefig and info were never called because the dict is empty
+        mock_savefig.assert_not_called()
+        mock_info.assert_not_called()

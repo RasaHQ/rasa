@@ -10,6 +10,7 @@ from textwrap import dedent
 from typing import Any, Dict, Generator, List, Optional, Text, Tuple, Union
 
 import pandas as pd
+import matplotlib.pyplot as plt
 import rich
 import structlog
 from rich.table import Table
@@ -37,7 +38,10 @@ from rasa.e2e_test.e2e_test_case import (
     TestCase,
     TestSuite,
 )
-from rasa.e2e_test.e2e_test_coverage_report import create_coverage_report
+from rasa.e2e_test.e2e_test_coverage_report import (
+    create_coverage_report,
+    extract_tested_commands,
+)
 from rasa.e2e_test.e2e_test_result import TestResult
 from rasa.e2e_test.e2e_test_runner import E2ETestRunner
 from rasa.exceptions import RasaException
@@ -368,6 +372,10 @@ def execute_e2e_tests(args: argparse.Namespace) -> None:
         for results, status in [(passed, STATUS_PASSED), (failed, STATUS_FAILED)]:
             report = create_coverage_report(flows, results)
             _save_coverage_report(report, status, coverage_output_path)
+            tested_commands = extract_tested_commands(results)
+            _save_tested_commands_histogram(
+                tested_commands, status, coverage_output_path
+            )
             save_test_cases_to_yaml(results, coverage_output_path, status, test_suite)
 
         rasa.shared.utils.cli.print_info(
@@ -758,3 +766,39 @@ def verify_beta_feature_flag_for_assertions(
         rasa.shared.utils.cli.print_error_and_exit(str(exc))
 
     return True
+
+
+def _save_tested_commands_histogram(
+    count_dict: Dict[str, int], test_status: str, output_dir: str
+) -> None:
+    """Creates a histogram from a count dictionary and
+    saves it to the specified directory.
+
+    Args:
+        count_dict (Dict[str, int]): A dictionary where keys are categories
+        and values are counts.
+        test_status (str): passing or failing
+        output_dir (str): The directory path where the histogram
+        image will be saved.
+    """
+    if not count_dict:
+        return
+
+    plt.figure(figsize=(10, 6))
+    plt.bar(count_dict.keys(), count_dict.values(), color="blue")
+    plt.xlabel("Commands")
+    plt.ylabel("Counts")
+    plt.title("Tested commands histogram")
+    plt.xticks(rotation=45, ha="right")
+    plt.tight_layout()
+
+    output_filename = f"commands_histogram_for_{test_status}_tests.png"
+    save_path = os.path.join(output_dir, output_filename)
+    plt.savefig(save_path)
+    plt.close()
+
+    structlogger.info(
+        "rasa.e2e_test._save_tested_commands_histogram",
+        message=f"Commands histogram for {test_status} e2e tests"
+        f"is written to '{output_filename}'.",
+    )

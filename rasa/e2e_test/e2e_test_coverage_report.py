@@ -1,6 +1,7 @@
-from typing import List, Dict, Any, Optional, Set
+from typing import List, Dict, Any, Optional, Set, DefaultDict
 
 import pandas as pd
+from collections import defaultdict
 import structlog
 
 from rasa.e2e_test.e2e_test_result import TestResult
@@ -313,3 +314,23 @@ def _extract_tested_flow_paths(test_results: List[TestResult]) -> List[FlowPath]
                 flatten_paths.append(path)
 
     return flatten_paths
+
+
+def extract_tested_commands(test_results: List[TestResult]) -> Dict[str, int]:
+    """Extract tested commands from the test results.
+
+    Args:
+        test_results: List of test results.
+
+    Returns:
+        Dict[str, int]: A dictionary of commands and their counts.
+    """
+    flatten_commands_count: DefaultDict[str, int] = defaultdict(int)
+
+    for test_result in test_results:
+        if test_result.tested_commands:
+            for flow, commands_dict in test_result.tested_commands.items():
+                for command, count in commands_dict.items():
+                    flatten_commands_count[command] += count
+
+    return dict(flatten_commands_count)

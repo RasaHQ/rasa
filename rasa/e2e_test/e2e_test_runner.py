@@ -3,8 +3,9 @@ import copy
 import datetime
 import difflib
 import json
+from collections import defaultdict
 from asyncio import CancelledError
-from typing import Any, Dict, List, Optional, Text, Tuple, Union
+from typing import Any, Dict, List, Optional, Text, Tuple, Union, DefaultDict
 from urllib.parse import urlparse
 
 import requests
@@ -46,6 +47,7 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
 from rasa.telemetry import track_e2e_test_run
 from rasa.utils.endpoints import EndpointConfig
+from rasa.shared.nlu.constants import COMMANDS
 
 structlogger = structlog.get_logger()
 
@@ -920,8 +922,10 @@ class E2ETestRunner:
             if coverage:
                 tracker = await self.agent.tracker_store.retrieve(sender_id)
                 if tracker:
-                    test_result.tested_paths = self._get_tested_flow_paths(
-                        tracker.events, test_result
+                    test_result.tested_paths, test_result.tested_commands = (
+                        self._get_tested_flow_paths_and_commands(
+                            tracker.events, test_result
+                        )
                     )
 
             if fail_fast and not test_result.pass_status:
@@ -1069,10 +1073,10 @@ class E2ETestRunner:
             f"Response status code: {response.status_code}.",
         )
 
-    def _get_tested_flow_paths(
+    def _get_tested_flow_paths_and_commands(
         self, events: List[Event], test_result: TestResult
-    ) -> Optional[List[FlowPath]]:
-        """Extract tested paths from dialog events.
+    ) -> Tuple[Optional[List[FlowPath]], Dict[str, Dict[str, int]]]:
+        """Extract tested paths and commands from dialog events.
 
         A flow path consists of bot utterances and custom actions.
 
@@ -1081,12 +1085,18 @@ class E2ETestRunner:
             test_result: The result of the test incl. the pass status.
 
         Returns:
-            The list of flow paths.
+            Tuple[flow_paths: Optional[List[FlowPath]], tested_commands:
+            Dict[str, Dict[str, int]]], where tested_commands is a
+            dictionary like
+            {"flow1": {"set slot": 5, "clarify": 1}, "flow2": {"set slot": 3}}
         """
         tested_paths = []
         # we want to create a flow path per flow the e2e test covers
         # as an e2e test can cover multiple flows, we might end up creating
         # multiple flow paths
+        _tested_commands: DefaultDict[str, DefaultDict[str, int]] = defaultdict(
+            lambda: defaultdict(int)
+        )
         flow_paths_stack = []
 
         for event in events:
@@ -1133,12 +1143,27 @@ class E2ETestRunner:
                 ):
                     flow_paths_stack[-1].nodes.append(self._create_path_node(event))
 
+            # Time to gather tested commands
+            elif isinstance(event, UserUttered):
+                if event.parse_data and COMMANDS in event.parse_data:
+                    commands = [
+                        command["command"] for command in event.parse_data[COMMANDS]
+                    ]
+                    current_flow = (
+                        flow_paths_stack[-1].flow if flow_paths_stack else "no_flow"
+                    )
+                    for command in commands:
+                        _tested_commands[current_flow][command] += 1
+
         # It might be that an e2e test stops before a flow was completed.
         # Add the remaining flow paths to the tested paths list.
         while len(flow_paths_stack) > 0:
             tested_paths.append(flow_paths_stack.pop())
 
-        return tested_paths
+        # Convert _tested_commands to normal dicts
+        tested_commands = {key: dict(value) for key, value in _tested_commands.items()}  # type: Dict[str, Dict[str, int]]
+
+        return tested_paths, tested_commands
 
     @staticmethod
     def _create_path_node(event: Event) -> PathNode:

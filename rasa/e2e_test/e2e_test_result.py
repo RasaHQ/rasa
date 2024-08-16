@@ -20,6 +20,7 @@ class TestResult:
     error_line: Optional[int] = None
     assertion_failure: Optional["AssertionFailure"] = None
     tested_paths: Optional[List["FlowPath"]] = None
+    tested_commands: Optional[Dict[str, Dict[str, int]]] = None
 
     def as_dict(self) -> Dict[Text, Any]:
         """Returns the test result as a dictionary."""

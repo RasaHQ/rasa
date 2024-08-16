@@ -2220,7 +2220,7 @@ def test_slice_turn_events(
 
 
 @pytest.mark.parametrize(
-    "events, flow_paths",
+    "events, expected_flow_paths, expected_tested_commands",
     [
         (
             # No flows started, e.g. a nlu-based assistant was used
@@ -2234,11 +2234,16 @@ def test_slice_turn_events(
                 ActionExecuted("action_two"),
                 BotUttered("Your trip to Madrid has been booked."),
             ],
-            [],
+            [],  # No flow paths
+            {},  # No commands were tested
         ),
         (
             # one flow with a bot utterance and a custom action
             [
+                UserUttered(
+                    "What is the weather like?",
+                    parse_data={"commands": [{"command": "ask_weather"}]},
+                ),
                 DialogueStackUpdated(
                     '[{"op": "add", "path": "/0", "value": {"flow_id": "flow_a", '
                     '"step_id": "START", "frame_type": "regular", "type": "flow"}}]'
@@ -2267,10 +2272,21 @@ def test_slice_turn_events(
                     ],
                 )
             ],
+            {"no_flow": {"ask_weather": 1}},  # Commands were tested within flow_a
         ),
         (
             # nested flows with different utterances; flow a not completed
             [
+                FlowStarted("flow_a"),
+                UserUttered(
+                    "Start flow", parse_data={"commands": [{"command": "start_flow"}]}
+                ),
+                BotUttered(metadata={"utter_action": "utter_1"}),
+                FlowStarted("flow_b"),
+                UserUttered(
+                    "Continue flow",
+                    parse_data={"commands": [{"command": "continue_flow"}]},
+                ),
                 DialogueStackUpdated(
                     '[{"op": "add", "path": "/0", "value": {"flow_id": "flow_a", '
                     '"step_id": "START", "frame_type": "regular", "type": "flow"}}]'
@@ -2312,6 +2328,9 @@ def test_slice_turn_events(
                     ],
                 ),
             ],
+            {
+                "no_flow": {"start_flow": 1, "continue_flow": 1}
+            },  # Commands were tested within flow_a and flow_b
         ),
         (
             # flow with patterns
@@ -2356,6 +2375,7 @@ def test_slice_turn_events(
                     ],
                 )
             ],
+            {},  # No commands were tested
         ),
         (
             # flow with direct call step
@@ -2404,14 +2424,21 @@ def test_slice_turn_events(
                     ],
                 ),
             ],
+            {},
         ),
     ],
 )
-def test_get_tested_flow_paths(
-    events: List[Event], flow_paths: List[FlowPath], mock_e2e_test_runner: E2ETestRunner
+def test_get_tested_flow_paths_and_commands(
+    events: List[Event],
+    expected_flow_paths: List[FlowPath],
+    expected_tested_commands: Dict[str, Dict[str, int]],
+    mock_e2e_test_runner: E2ETestRunner,
 ):
     test_result = TestResult(TestCase("test_case", []), pass_status=True, difference=[])
 
-    actual_flow_paths = mock_e2e_test_runner._get_tested_flow_paths(events, test_result)
+    actual_flow_paths, actual_tested_commands = (
+        mock_e2e_test_runner._get_tested_flow_paths_and_commands(events, test_result)
+    )
 
-    assert actual_flow_paths == flow_paths
+    assert actual_flow_paths == expected_flow_paths
+    assert actual_tested_commands == expected_tested_commands

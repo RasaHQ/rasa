@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict
 from unittest.mock import MagicMock
 
 import pandas as pd
@@ -24,6 +24,7 @@ from rasa.e2e_test.e2e_test_coverage_report import (
     _create_coverage_report_data,
     _get_unvisited_nodes_per_flow,
     _group_flow_paths_by_flow,
+    extract_tested_commands,
 )
 from rasa.e2e_test.e2e_test_result import TestResult
 from rasa.shared.core.flows import FlowsList
@@ -364,3 +365,100 @@ def test_create_coverage_report(
     assert df[LINE_NUMBERS_COL_NAME][0] == "[7-8]"
     assert df[LINE_NUMBERS_COL_NAME][1] == "[]"
     assert df[LINE_NUMBERS_COL_NAME][2] == ""
+
+    @pytest.mark.parametrize(
+        "test_results, expected_output",
+        [
+            # Normal Case: Different commands and counts
+            (
+                [
+                    TestResult(
+                        test_case=MagicMock(),
+                        pass_status=True,
+                        difference=[],
+                        tested_commands={
+                            "flow1": {"command1": 2, "command2": 3},
+                            "flow2": {"command3": 1},
+                        },
+                    ),
+                    TestResult(
+                        test_case=MagicMock(),
+                        pass_status=True,
+                        difference=[],
+                        tested_commands={
+                            "flow3": {"command1": 1, "command4": 4},
+                        },
+                    ),
+                ],
+                {"command1": 3, "command2": 3, "command3": 1, "command4": 4},
+            ),
+            # Empty Case: Empty list of test results
+            (
+                [],
+                {},
+            ),
+            # Multiple Test Results: Overlapping commands
+            (
+                [
+                    TestResult(
+                        test_case=MagicMock(),
+                        pass_status=True,
+                        difference=[],
+                        tested_commands={
+                            "flow1": {"command1": 2, "command2": 3},
+                        },
+                    ),
+                    TestResult(
+                        test_case=MagicMock(),
+                        pass_status=True,
+                        difference=[],
+                        tested_commands={
+                            "flow2": {"command2": 1, "command3": 2},
+                        },
+                    ),
+                    TestResult(
+                        test_case=MagicMock(),
+                        pass_status=True,
+                        difference=[],
+                        tested_commands={
+                            "flow3": {"command1": 1, "command4": 5},
+                        },
+                    ),
+                ],
+                {"command1": 3, "command2": 4, "command3": 2, "command4": 5},
+            ),
+            # Edge Case: Commands with zero counts and no commands in some flows
+            (
+                [
+                    TestResult(
+                        test_case=MagicMock(),
+                        pass_status=True,
+                        difference=[],
+                        tested_commands={
+                            "flow1": {"command1": 0, "command2": 3},
+                        },
+                    ),
+                    TestResult(
+                        test_case=MagicMock(),
+                        pass_status=True,
+                        difference=[],
+                        tested_commands={},
+                    ),
+                    TestResult(
+                        test_case=MagicMock(),
+                        pass_status=True,
+                        difference=[],
+                        tested_commands={
+                            "flow3": {"command3": 2},
+                        },
+                    ),
+                ],
+                {"command1": 0, "command2": 3, "command3": 2},
+            ),
+        ],
+    )
+    def test_extract_tested_commands(
+        test_results: List[TestResult], expected_output: Dict[str, int]
+    ) -> None:
+        result = extract_tested_commands(test_results)
+        assert result == expected_output
