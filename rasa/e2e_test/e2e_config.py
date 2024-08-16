@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Generator, Optional, Dict, Any
 
 import structlog
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from rasa.e2e_test.constants import (
     CONFTEST_FILE_NAME,
