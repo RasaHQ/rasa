@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text
 if TYPE_CHECKING:
     from rasa.e2e_test.assertions import AssertionFailure
     from rasa.e2e_test.e2e_test_case import TestCase
+    from rasa.shared.core.flows.flow_path import FlowPath
 
 NO_RESPONSE = "* No Bot Response *"
 NO_SLOT = "* No Slot Set *"
@@ -18,6 +19,7 @@ class TestResult:
     difference: List[Text]
     error_line: Optional[int] = None
     assertion_failure: Optional["AssertionFailure"] = None
+    tested_paths: Optional[List["FlowPath"]] = None
 
     def as_dict(self) -> Dict[Text, Any]:
         """Returns the test result as a dictionary."""

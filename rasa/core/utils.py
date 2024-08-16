@@ -3,23 +3,25 @@ import logging
 import os
 from decimal import Decimal
 from pathlib import Path
+from socket import SOCK_DGRAM, SOCK_STREAM
 from typing import Any, Dict, Optional, Set, TYPE_CHECKING, Text, Tuple, Union
 
 import numpy as np
+from sanic import Sanic
 
+import rasa.cli.utils as cli_utils
 import rasa.shared.utils.io
 from rasa.constants import DEFAULT_SANIC_WORKERS, ENV_SANIC_WORKERS
 from rasa.core.constants import (
     DOMAIN_GROUND_TRUTH_METADATA_KEY,
     UTTER_SOURCE_METADATA_KEY,
+    ACTIVE_FLOW_METADATA_KEY,
+    STEP_ID_METADATA_KEY,
 )
-from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH, TCP_PROTOCOL
-
 from rasa.core.lock_store import LockStore, RedisLockStore, InMemoryLockStore
+from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH, TCP_PROTOCOL
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
-from sanic import Sanic
-from socket import SOCK_DGRAM, SOCK_STREAM
-import rasa.cli.utils as cli_utils
 from rasa.utils.io import write_yaml
 
 if TYPE_CHECKING:
@@ -352,12 +354,17 @@ def add_bot_utterance_metadata(
     domain_response_name: str,
     nlg: "NaturalLanguageGenerator",
     domain: "Domain",
+    tracker: Optional[DialogueStateTracker],
 ) -> Dict[str, Any]:
     """Add metadata to the bot message."""
     from rasa.core import ContextualResponseRephraser
 
     message["utter_action"] = domain_response_name
     message[UTTER_SOURCE_METADATA_KEY] = nlg.__class__.__name__
+
+    if tracker:
+        message[ACTIVE_FLOW_METADATA_KEY] = tracker.active_flow
+        message[STEP_ID_METADATA_KEY] = tracker.current_step_id
 
     if isinstance(nlg, ContextualResponseRephraser):
         message[DOMAIN_GROUND_TRUTH_METADATA_KEY] = [

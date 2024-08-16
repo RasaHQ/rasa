@@ -5,7 +5,12 @@ import pytest
 
 from rasa.core.actions.action import ActionBotResponse
 from rasa.core.channels import CollectingOutputChannel
-from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT, UTTER_SOURCE_METADATA_KEY
+from rasa.core.constants import (
+    DEFAULT_REQUEST_TIMEOUT,
+    UTTER_SOURCE_METADATA_KEY,
+    ACTIVE_FLOW_METADATA_KEY,
+    STEP_ID_METADATA_KEY,
+)
 from rasa.core.nlg import CallbackNaturalLanguageGenerator
 from rasa.core.nlg.callback import nlg_request_format
 from rasa.shared.core.domain import Domain
@@ -53,6 +58,8 @@ async def test_action_bot_response_callback_nlg(
     assert events[0].metadata == {
         "utter_action": "utter_one_id",
         UTTER_SOURCE_METADATA_KEY: "CallbackNaturalLanguageGenerator",
+        ACTIVE_FLOW_METADATA_KEY: None,
+        STEP_ID_METADATA_KEY: None,
     }
 
 
@@ -84,6 +91,8 @@ async def test_action_bot_response_callback_with_multiple_response_id(
     assert events[0].metadata == {
         "utter_action": "utter_multiple_ids",
         UTTER_SOURCE_METADATA_KEY: "CallbackNaturalLanguageGenerator",
+        ACTIVE_FLOW_METADATA_KEY: None,
+        STEP_ID_METADATA_KEY: None,
     }
 
 
@@ -115,6 +124,8 @@ async def test_action_bot_response_with_empty_response_id_set(
     assert events[0].metadata == {
         "utter_action": "utter_no_id",
         UTTER_SOURCE_METADATA_KEY: "CallbackNaturalLanguageGenerator",
+        ACTIVE_FLOW_METADATA_KEY: None,
+        STEP_ID_METADATA_KEY: None,
     }
 
 
@@ -146,4 +157,6 @@ async def test_action_bot_response_with_non_existing_id_mapping(
     assert events[0].metadata == {
         "utter_action": "utter_non_existing",
         UTTER_SOURCE_METADATA_KEY: "CallbackNaturalLanguageGenerator",
+        ACTIVE_FLOW_METADATA_KEY: None,
+        STEP_ID_METADATA_KEY: None,
     }

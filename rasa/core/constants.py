@@ -61,7 +61,6 @@ SEARCH_POLICY_PRIORITY = CHAT_POLICY_PRIORITY + 1
 # flow policy priority
 FLOW_POLICY_PRIORITY = SEARCH_POLICY_PRIORITY + 1
 
-
 DIALOGUE = "dialogue"
 
 # RabbitMQ message property header added to events published using `rasa export`
@@ -109,3 +108,5 @@ TEMPLATE_ENGINE_CONFIG_KEY = "template"
 # metadata keys for bot utterance events
 UTTER_SOURCE_METADATA_KEY = "utter_source"
 DOMAIN_GROUND_TRUTH_METADATA_KEY = "domain_ground_truth"
+ACTIVE_FLOW_METADATA_KEY = "active_flow"
+STEP_ID_METADATA_KEY = "step_id"

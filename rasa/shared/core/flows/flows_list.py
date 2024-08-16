@@ -1,9 +1,11 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
 from typing import List, Generator, Any, Optional, Dict, Text, Set
 
 import rasa.shared.utils.io
 from rasa.shared.core.flows import Flow
+from rasa.shared.core.flows.flow_path import FlowPathsList
 from rasa.shared.core.flows.validation import (
     validate_flow,
     validate_link_in_call_restriction,
@@ -139,7 +141,8 @@ class FlowsList:
         """Get all ids of flows that can be started by a user.
 
         Returns:
-            The ids of all flows that can be started by a user."""
+        The ids of all flows that can be started by a user.
+        """
         return {f.id for f in self.user_flows}
 
     @property
@@ -147,7 +150,8 @@ class FlowsList:
         """Get all ids of flows.
 
         Returns:
-            The ids of all flows."""
+        The ids of all flows.
+        """
         return {f.id for f in self.underlying_flows}
 
     @property
@@ -155,7 +159,8 @@ class FlowsList:
         """Get all flows that can be started by a user.
 
         Returns:
-            All flows that can be started by a user."""
+        All flows that can be started by a user.
+        """
         return FlowsList(
             [f for f in self.underlying_flows if not f.is_rasa_default_flow]
         )
@@ -179,14 +184,14 @@ class FlowsList:
             slots: The slots to evaluate the starting conditions against.
 
         Returns:
-            All flows for which the starting conditions are met."""
+        All flows for which the starting conditions are met.
+        """
         return FlowsList(
             [f for f in self.underlying_flows if f.is_startable(context, slots)]
         )
 
     def get_flows_always_included_in_prompt(self) -> FlowsList:
-        """
-        Gets all flows based on their inclusion status in prompts.
+        """Gets all flows based on their inclusion status in prompts.
 
         Args:
             always_included: Inclusion status.
@@ -221,3 +226,10 @@ class FlowsList:
     def available_custom_actions(self) -> Set[str]:
         """Get all custom actions collected by flows."""
         return set().union(*[flow.custom_actions for flow in self.underlying_flows])
+
+    def extract_flow_paths(self) -> Dict[str, FlowPathsList]:
+        paths = {}
+        for flow in self.user_flows.underlying_flows:
+            paths[flow.id] = flow.extract_all_paths()
+
+        return paths

@@ -1,7 +1,7 @@
 import argparse
 import asyncio
-import logging
 import math
+import os
 import shutil
 import sys
 from functools import lru_cache
@@ -9,6 +9,9 @@ from pathlib import Path
 from textwrap import dedent
 from typing import Any, Dict, Generator, List, Optional, Text, Tuple, Union
 
+import pandas as pd
+import rich
+import structlog
 from rich.table import Table
 
 import rasa.cli.arguments.run
@@ -16,7 +19,7 @@ import rasa.cli.utils
 import rasa.shared.data
 import rasa.shared.utils.cli
 import rasa.shared.utils.io
-import rich
+import rasa.utils.io
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments.default_arguments import add_endpoint_param, add_model_param
 from rasa.core.exceptions import AgentNotReady
@@ -25,9 +28,6 @@ from rasa.e2e_test.aggregate_test_stats_calculator import (
     AccuracyCalculation,
     AggregateTestStatsCalculator,
 )
-from rasa.exceptions import RasaException
-from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH, DEFAULT_MODELS_PATH
-
 from rasa.e2e_test.constants import SCHEMA_FILE_PATH, KEY_TEST_CASE, KEY_TEST_CASES
 from rasa.e2e_test.e2e_test_case import (
     KEY_FIXTURES,
@@ -37,9 +37,11 @@ from rasa.e2e_test.e2e_test_case import (
     TestCase,
     TestSuite,
 )
+from rasa.e2e_test.e2e_test_coverage_report import create_coverage_report
 from rasa.e2e_test.e2e_test_result import TestResult
 from rasa.e2e_test.e2e_test_runner import E2ETestRunner
-import rasa.utils.io
+from rasa.exceptions import RasaException
+from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH, DEFAULT_MODELS_PATH
 from rasa.shared.utils.yaml import (
     parse_raw_yaml,
     read_schema_file,
@@ -50,10 +52,15 @@ from rasa.utils.beta import BetaNotEnabledException, ensure_beta_feature_is_enab
 
 DEFAULT_E2E_INPUT_TESTS_PATH = "tests/e2e_test_cases.yml"
 DEFAULT_E2E_OUTPUT_TESTS_PATH = "tests/e2e_results.yml"
+DEFAULT_COVERAGE_OUTPUT_PATH = "e2e_coverage_results"
+
+# Test status
+STATUS_PASSED = "passed"
+STATUS_FAILED = "failed"
 
 RASA_PRO_BETA_E2E_ASSERTIONS_ENV_VAR_NAME = "RASA_PRO_BETA_E2E_ASSERTIONS"
 
-logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger()
 
 
 def add_subparser(
@@ -133,6 +140,19 @@ def add_e2e_test_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--remote-storage",
         help="Set the remote location where your Rasa model is stored, e.g. on AWS.",
+    )
+
+    parser.add_argument(
+        "--coverage-report",
+        action="store_true",
+        help="Generate a coverage report on flow paths and commands covered in e2e "
+        "tests.",
+    )
+
+    parser.add_argument(
+        "--coverage-output-path",
+        default=DEFAULT_COVERAGE_OUTPUT_PATH,
+        help="Directory where to save coverage report to.",
     )
 
 
@@ -316,7 +336,9 @@ def execute_e2e_tests(args: argparse.Namespace) -> None:
             test_case_path=Path(test_case_path),
         )
     except AgentNotReady as error:
-        logger.error(msg=error.message)
+        structlogger.error(
+            "rasa.e2e_test.execute_e2e_tests.agent_not_ready", message=error.message
+        )
         sys.exit(1)
 
     results = asyncio.run(
@@ -325,6 +347,7 @@ def execute_e2e_tests(args: argparse.Namespace) -> None:
             test_suite.fixtures,
             args.fail_fast,
             input_metadata=test_suite.metadata,
+            coverage=args.coverage_report,
         )
     )
 
@@ -337,8 +360,46 @@ def execute_e2e_tests(args: argparse.Namespace) -> None:
     )
     accuracy_calculations = aggregate_stats_calculator.calculate()
 
+    if args.coverage_report and test_runner.agent.processor:
+        coverage_output_path = args.coverage_output_path
+        rasa.shared.utils.io.create_directory(coverage_output_path)
+        flows = asyncio.run(test_runner.agent.processor.get_flows())
+
+        for results, status in [(passed, STATUS_PASSED), (failed, STATUS_FAILED)]:
+            report = create_coverage_report(flows, results)
+            _save_coverage_report(report, status, coverage_output_path)
+            save_test_cases_to_yaml(results, coverage_output_path, status, test_suite)
+
+        rasa.shared.utils.cli.print_info(
+            f"Coverage data and result is written to {coverage_output_path}."
+        )
+
     print_test_result(
         passed, failed, args.fail_fast, accuracy_calculations=accuracy_calculations
+    )
+
+
+def _save_coverage_report(
+    report: Optional[pd.DataFrame], test_status: str, output_dir: str
+) -> None:
+    if report is None:
+        return
+
+    if report is not None and not report.empty:
+        if test_status == STATUS_PASSED:
+            rasa.shared.utils.cli.print_success(report.to_string(index=False))
+        else:
+            rasa.shared.utils.cli.print_error(report.to_string(index=False))
+
+    output_filename = f"coverage_report_for_{test_status}_tests.csv"
+    report.to_csv(
+        os.path.join(output_dir, output_filename),
+        index=False,
+    )
+    structlogger.info(
+        "rasa.e2e_test.save_coverage_report",
+        message=f"Coverage result for {test_status} e2e tests"
+        f"is written to '{output_filename}'.",
     )
 
 
@@ -525,6 +586,7 @@ def print_test_result(
         passed: List of passed test cases.
         failed: List of failed test cases.
         fail_fast: If true, stop after the first failure.
+        **kwargs: additional arguments
     """
     if failed:
         # print failure headline
@@ -612,9 +674,10 @@ def validate_model_path(
         )
 
     elif model_path is None:
-        logger.info(
-            f"Parameter '{parameter}' is not set. "
-            f"Using default location '{default}' instead."
+        structlogger.info(
+            "rasa.e2e_test.validate_model_path",
+            message=f"Parameter '{parameter}' is not set. "
+            f"Using default location '{default}' instead.",
         )
 
     Path(default).mkdir(exist_ok=True)
@@ -628,6 +691,42 @@ def read_e2e_test_schema() -> Union[List[Any], Dict[Text, Any]]:
         The content of the schema.
     """
     return read_schema_file(SCHEMA_FILE_PATH)
+
+
+def save_test_cases_to_yaml(
+    test_results: List[TestResult],
+    output_dir: str,
+    status: str,
+    test_suite: TestSuite,
+) -> None:
+    """Extracts TestCases from a list of TestResults and saves them to a YAML file."""
+    if not test_results:
+        return
+
+    test_cases = [result.test_case for result in test_results]
+    new_test_suite = TestSuite(
+        test_cases=test_cases,
+        fixtures=test_suite.fixtures,
+        metadata=test_suite.metadata,
+    )
+
+    output_filename = f"{status}.yml"
+    rasa.utils.io.write_yaml(
+        new_test_suite.as_dict(), target=os.path.join(output_dir, output_filename)
+    )
+
+    structlogger.info(
+        "rasa.e2e_test.save_e2e_test_cases",
+        message=f"E2e tests with '{status}' status are written to file "
+        f"'{output_filename}'.",
+    )
+    if status == STATUS_PASSED:
+        structlogger.info(
+            "rasa.e2e_test.save_e2e_test_cases",
+            message=f"You can use the file '{output_filename}' in case you want "
+            f"to create training data for fine-tuning an LLM via "
+            f"'rasa llm finetune prepare-data'.",
+        )
 
 
 def has_test_case_with_assertions(test_cases: List[TestCase]) -> bool:
