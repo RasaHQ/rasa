@@ -22,6 +22,7 @@ def test_data_convert_e2e_required_argument(parser: argparse.ArgumentParser):
     )
 
     assert args.path == "input_path.csv"
+    assert args.output == "e2e_tests"
     assert args.sheet_name is None
 
 

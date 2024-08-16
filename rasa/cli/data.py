@@ -331,7 +331,7 @@ def convert_data_to_e2e_tests(args: argparse.Namespace) -> None:
         )
         validate_e2e_test_conversion_output_path(args.output)
 
-        config_path = pathlib.Path(args.output or args.path)
+        config_path = pathlib.Path(args.output)
         llm_config = create_llm_e2e_test_converter_config(config_path)
 
         kwargs = minimal_kwargs(vars(args), E2ETestConverter)
