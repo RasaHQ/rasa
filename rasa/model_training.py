@@ -154,7 +154,7 @@ async def train(
     nlu_additional_arguments: Optional[Dict] = None,
     model_to_finetune: Optional[Text] = None,
     finetuning_epoch_fraction: float = 1.0,
-    remote_storage: Text = None
+    remote_storage: Optional[Text] = None
 ) -> TrainingResult:
     """Trains a Rasa model (Core and NLU).
 
@@ -269,7 +269,7 @@ async def _train_graph(
     model_to_finetune: Optional[Union[Text, Path]] = None,
     force_full_training: bool = False,
     dry_run: bool = False,
-    remote_storage: Text = None,
+    remote_storage: Optional[Text] = None,
     **kwargs: Any,
 ) -> TrainingResult:
     if model_to_finetune:
@@ -351,7 +351,7 @@ async def _train_graph(
                 structlogger.info(
                     "model_training.train.finished_training",
                     event_info=(
-                        f"Your Rasa model {model_name} is trained " 
+                        f"Your Rasa model {model_name} is trained "
                         f"and saved at remote storage provider '{remote_storage}'."
                     ),
                 )
@@ -359,10 +359,9 @@ async def _train_graph(
                 structlogger.info(
                     "model_training.train.finished_training",
                     event_info=(
-                        f"Your Rasa model is trained " f"and saved at '{full_model_path}'."
+                        f"Your Rasa model is trained and saved at '{full_model_path}'."
                     ),
                 )
-        
 
         return TrainingResult(str(full_model_path), 0)
 

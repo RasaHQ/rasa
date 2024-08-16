@@ -75,7 +75,7 @@ def train(
     nlu_additional_arguments: "Optional[Dict]" = None,
     model_to_finetune: "Optional[Text]" = None,
     finetuning_epoch_fraction: float = 1.0,
-    remote_storage: "Text" = None
+    remote_storage: "Optional[Text]" = None
 ) -> "TrainingResult":
     """Runs Rasa Core and NLU training in `async` loop.
 

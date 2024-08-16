@@ -92,7 +92,7 @@ def test_train_model_and_push_to_aws_remote_storage(
     nlu_data_path: Text,
 ) -> None:
     """Test to load model from AWS remote storage."""
-    
+
     model_name = "dummy-model"
 
     conn = boto3.resource("s3", region_name=region_name)
@@ -121,7 +121,7 @@ def test_train_model_and_push_to_aws_remote_storage(
 
         monkeypatch.setattr(tempfile, "tempdir", tmp_path / "training")
         output = str(tmp_path / "models")
-        
+
         rasa.train(
             domain_path,
             stack_config_path,

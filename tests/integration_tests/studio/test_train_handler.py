@@ -32,6 +32,7 @@ from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
             finetune=None,
             entities=[],
             intents=[],
+            remote_storage=None
         )
     ],
 )
@@ -108,6 +109,7 @@ entities:
             finetune=None,
             entities=[],
             intents=[],
+            remote_storage=None
         )
     ],
 )
