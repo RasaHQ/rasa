@@ -13,6 +13,7 @@ from rasa.core.agent import Agent
 from rasa.nlu.persistor import AWSPersistor
 from rasa.shared.exceptions import RasaException
 
+
 @pytest.fixture
 def bucket_name() -> Text:
     """Name of the bucket to use for testing."""
@@ -57,6 +58,7 @@ def create_user_with_access_key_and_attached_policy(region_name: Text) -> Any:
 
     return client.create_access_key(UserName="test_user")["AccessKey"]
 
+
 @pytest.fixture
 def aws_environment_variables(
     bucket_name: Text,
@@ -76,6 +78,7 @@ def aws_environment_variables(
     os.environ["AWS_SESSION_TOKEN"] = "testing"
 
     os.environ["TEST_SERVER_MODE"] = "true"
+
 
 @mock_s3
 def test_train_model_and_push_to_aws_remote_storage(
@@ -102,6 +105,7 @@ def test_train_model_and_push_to_aws_remote_storage(
         Bucket=bucket_name,
         CreateBucketConfiguration={"LocationConstraint": region_name},
     )
+
     def mock_aws_persistor(name: Text) -> AWSPersistor:
         aws_persistor = AWSPersistor(
             os.environ.get("BUCKET_NAME"),

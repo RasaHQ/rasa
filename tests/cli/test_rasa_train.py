@@ -650,7 +650,7 @@ def test_train_validate_nlg_config_valid() -> None:
         epoch_fraction=1.0,
         dry_run=False,
         finetune=None,
-        remote_storage=None
+        remote_storage=None,
     )
 
     with patch("rasa.train", return_value=TrainingResult(0)):
@@ -663,7 +663,7 @@ def test_train_validate_nlg_config_invalid() -> None:
         config="data/test_config/config_defaults.yml",
         data=["data/test_moodbot/data"],
         endpoints="data/test_nlg/endpoint_with_invalid_nlg.yml",
-        remote_storage=None
+        remote_storage=None,
     )
 
     with pytest.raises(SystemExit):

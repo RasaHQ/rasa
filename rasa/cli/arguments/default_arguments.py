@@ -164,6 +164,7 @@ def add_logging_options(parser: argparse.ArgumentParser) -> None:
         "to the given name.",
     )
 
+
 def add_remote_storage_param(
     parser: Union[argparse.ArgumentParser, argparse._ActionsContainer],
     required: bool = False,
@@ -171,5 +172,5 @@ def add_remote_storage_param(
     parser.add_argument(
         "--remote-storage",
         help="Set the remote location where your Rasa model is stored, e.g. on AWS.",
-        required=required
+        required=required,
     )

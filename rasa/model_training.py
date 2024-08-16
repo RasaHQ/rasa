@@ -154,7 +154,7 @@ async def train(
     nlu_additional_arguments: Optional[Dict] = None,
     model_to_finetune: Optional[Text] = None,
     finetuning_epoch_fraction: float = 1.0,
-    remote_storage: Optional[Text] = None
+    remote_storage: Optional[Text] = None,
 ) -> TrainingResult:
     """Trains a Rasa model (Core and NLU).
 
@@ -257,7 +257,7 @@ async def train(
             dry_run=dry_run,
             remote_storage=remote_storage,
             **(core_additional_arguments or {}),
-            **(nlu_additional_arguments or {})
+            **(nlu_additional_arguments or {}),
         )
 
 
@@ -550,19 +550,17 @@ async def train_nlu(
         )
     ).model
 
-def push_model_to_remote_storage(
-        model_path: Path,
-        remote_storage: Text
-        ) -> None:
-        """push model to remote storage"""
-        from rasa.nlu.persistor import get_persistor
 
-        persistor = get_persistor(remote_storage)
+def push_model_to_remote_storage(model_path: Path, remote_storage: Text) -> None:
+    """push model to remote storage"""
+    from rasa.nlu.persistor import get_persistor
 
-        if persistor is not None:
-           persistor.persist(model_path)
+    persistor = get_persistor(remote_storage)
 
-        else:
-            raise RasaException(
-                f"Persistor not found for remote storage: '{remote_storage}'."
-            )
+    if persistor is not None:
+        persistor.persist(model_path)
+
+    else:
+        raise RasaException(
+            f"Persistor not found for remote storage: '{remote_storage}'."
+        )
