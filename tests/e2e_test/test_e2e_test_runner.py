@@ -185,6 +185,7 @@ def assertions_e2e_test_runner(
 ) -> E2ETestRunner:
     def mock_init(self, *args, **kwargs) -> None:
         self.agent = default_agent
+        self.llm_judge_config = MagicMock()
 
     monkeypatch.setattr(
         "rasa.e2e_test.e2e_test_runner.E2ETestRunner.__init__", mock_init
@@ -1924,6 +1925,7 @@ async def test_run_assertions_with_duplicate_user_messages(
 ) -> None:
     def mock_init(self, *args, **kwargs) -> None:
         self.agent = default_agent
+        self.llm_judge_config = MagicMock()
 
     monkeypatch.setattr(
         "rasa.e2e_test.e2e_test_runner.E2ETestRunner.__init__", mock_init

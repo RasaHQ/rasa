@@ -36,10 +36,14 @@ class AggregateTestStatsCalculator:
 
         self.failed_assertion_set: Set["Assertion"] = set()
         self.passed_count_mapping = {
-            subclass_type: 0 for subclass_type in _get_all_assertion_subclasses().keys()
+            subclass_type: 0
+            for subclass_type in _get_all_assertion_subclasses().keys()
+            if subclass_type != ""
         }
         self.failed_count_mapping = {
-            subclass_type: 0 for subclass_type in _get_all_assertion_subclasses().keys()
+            subclass_type: 0
+            for subclass_type in _get_all_assertion_subclasses().keys()
+            if subclass_type != ""
         }
 
     def calculate(self) -> List[AccuracyCalculation]:

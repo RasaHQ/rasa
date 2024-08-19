@@ -2,32 +2,14 @@ mapping:
   llm_as_judge:
     type: map
     mapping:
-      type:
+      api_type:
         type: str
+        required: true
+        nullable: false
       model:
         type: str
         required: true
         nullable: false
-      embedding_compute_method:
-        type: str
-      embedding_model_url:
-        type: str
-      logs_folder:
-        type: str
-      seed:
-        type: int
-      rpm_limit:
-        type: int
-      tpm_limit:
-        type: int
-      custom_llm_provider:
-        type: str
-      api_base:
-        type: str
-      azure_api_base:
-        type: str
-      azure_api_version:
-        type: str
   llm_e2e_test_conversion:
     type: map
     mapping:
@@ -41,3 +23,4 @@ mapping:
         type: str
       "=":
         type: any
+

@@ -6,11 +6,31 @@ import re
 from dataclasses import dataclass
 from enum import Enum
 from functools import lru_cache
-from typing import Any, Dict, List, Optional, Set, Text, Tuple, Type
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Set,
+    TYPE_CHECKING,
+    Text,
+    Tuple,
+    Type,
+)
 
+import pandas as pd
 import structlog
 
 import rasa.shared.utils.common
+from rasa.core.constants import (
+    DOMAIN_GROUND_TRUTH_METADATA_KEY,
+    UTTER_SOURCE_METADATA_KEY,
+)
+from rasa.core.policies.enterprise_search_policy import (
+    SEARCH_QUERY_METADATA_KEY,
+    SEARCH_RESULTS_METADATA_KEY,
+)
 from rasa.dialogue_understanding.patterns.clarify import FLOW_PATTERN_CLARIFICATION
 from rasa.shared.core.constants import DEFAULT_SLOT_NAMES
 from rasa.shared.core.events import (
@@ -26,10 +46,17 @@ from rasa.shared.core.events import (
 )
 from rasa.shared.exceptions import RasaException
 
+if TYPE_CHECKING:
+    from rasa.e2e_test.e2e_config import LLMJudgeConfig
+
 
 structlogger = structlog.get_logger()
 
 DEFAULT_THRESHOLD = 0.5
+ELIGIBLE_UTTER_SOURCE_METADATA = [
+    "EnterpriseSearchPolicy",
+    "ContextualResponseRephraser",
+]
 
 
 class AssertionType(Enum):
@@ -120,6 +147,7 @@ class Assertion:
         turn_events: List[Event],
         prior_events: List[Event],
         assertion_order_error_message: str = "",
+        **kwargs: Any,
     ) -> Tuple[Optional[AssertionFailure], Optional[Event]]:
         """Run the assertion on the given events for that user turn.
 
@@ -128,12 +156,29 @@ class Assertion:
             prior_events: All events prior to the current turn.
             assertion_order_error_message: The error message to append if the assertion
                 order is enabled.
+            kwargs: Additional keyword arguments.
 
         Returns:
             A tuple of the assertion failure and the matching event if the assertion
             passes, otherwise `None`.
         """
         raise NotImplementedError
+
+    def _generate_assertion_failure(
+        self,
+        error_message: str,
+        prior_events: List[Event],
+        turn_events: List[Event],
+        line: Optional[int] = None,
+    ) -> Tuple[AssertionFailure, None]:
+        return AssertionFailure(
+            assertion=self,
+            error_message=error_message,
+            actual_events_transcript=create_actual_events_transcript(
+                prior_events, turn_events
+            ),
+            error_line=line,
+        ), None
 
 
 @dataclass
@@ -159,6 +204,7 @@ class FlowStartedAssertion(Assertion):
         turn_events: List[Event],
         prior_events: List[Event],
         assertion_order_error_message: str = "",
+        **kwargs: Any,
     ) -> Tuple[Optional[AssertionFailure], Optional[Event]]:
         """Run the flow started assertion on the given events for that user turn."""
         try:
@@ -171,14 +217,9 @@ class FlowStartedAssertion(Assertion):
             error_message = f"Flow with id '{self.flow_id}' did not start."
             error_message += assertion_order_error_message
 
-            return AssertionFailure(
-                assertion=self,
-                error_message=error_message,
-                actual_events_transcript=create_actual_events_transcript(
-                    prior_events, turn_events
-                ),
-                error_line=self.line,
-            ), None
+            return self._generate_assertion_failure(
+                error_message, prior_events, turn_events, self.line
+            )
 
         return None, matching_event
 
@@ -214,6 +255,7 @@ class FlowCompletedAssertion(Assertion):
         turn_events: List[Event],
         prior_events: List[Event],
         assertion_order_error_message: str = "",
+        **kwargs: Any,
     ) -> Tuple[Optional[AssertionFailure], Optional[Event]]:
         """Run the flow completed assertion on the given events for that user turn."""
         try:
@@ -226,29 +268,23 @@ class FlowCompletedAssertion(Assertion):
             error_message = f"Flow with id '{self.flow_id}' did not complete."
             error_message += assertion_order_error_message
 
-            return AssertionFailure(
-                assertion=self,
-                error_message=error_message,
-                actual_events_transcript=create_actual_events_transcript(
-                    prior_events, turn_events
-                ),
-                error_line=self.line,
-            ), None
+            return self._generate_assertion_failure(
+                error_message, prior_events, turn_events, self.line
+            )
 
         if (
             self.flow_step_id is not None
             and matching_event.step_id != self.flow_step_id
         ):
-            return AssertionFailure(
-                assertion=self,
-                error_message=f"Flow with id '{self.flow_id}' did not complete "
+            error_message = (
+                f"Flow with id '{self.flow_id}' did not complete "
                 f"at expected step id '{self.flow_step_id}'. The actual "
-                f"step id was '{matching_event.step_id}'.",
-                actual_events_transcript=create_actual_events_transcript(
-                    prior_events, turn_events
-                ),
-                error_line=self.line,
-            ), None
+                f"step id was '{matching_event.step_id}'."
+            )
+            error_message += assertion_order_error_message
+            return self._generate_assertion_failure(
+                error_message, prior_events, turn_events, self.line
+            )
 
         return None, matching_event
 
@@ -284,6 +320,7 @@ class FlowCancelledAssertion(Assertion):
         turn_events: List[Event],
         prior_events: List[Event],
         assertion_order_error_message: str = "",
+        **kwargs: Any,
     ) -> Tuple[Optional[AssertionFailure], Optional[Event]]:
         """Run the flow cancelled assertion on the given events for that user turn."""
         try:
@@ -296,29 +333,24 @@ class FlowCancelledAssertion(Assertion):
             error_message = f"Flow with id '{self.flow_id}' was not cancelled."
             error_message += assertion_order_error_message
 
-            return AssertionFailure(
-                assertion=self,
-                error_message=error_message,
-                actual_events_transcript=create_actual_events_transcript(
-                    prior_events, turn_events
-                ),
-                error_line=self.line,
-            ), None
+            return self._generate_assertion_failure(
+                error_message, prior_events, turn_events, self.line
+            )
 
         if (
             self.flow_step_id is not None
             and matching_event.step_id != self.flow_step_id
         ):
-            return AssertionFailure(
-                assertion=self,
-                error_message=f"Flow with id '{self.flow_id}' was not cancelled "
+            error_message = (
+                f"Flow with id '{self.flow_id}' was not cancelled "
                 f"at expected step id '{self.flow_step_id}'. The actual "
-                f"step id was '{matching_event.step_id}'.",
-                actual_events_transcript=create_actual_events_transcript(
-                    prior_events, turn_events
-                ),
-                error_line=self.line,
-            ), None
+                f"step id was '{matching_event.step_id}'."
+            )
+            error_message += assertion_order_error_message
+
+            return self._generate_assertion_failure(
+                error_message, prior_events, turn_events, self.line
+            )
 
         return None, matching_event
 
@@ -355,6 +387,7 @@ class PatternClarificationContainsAssertion(Assertion):
         turn_events: List[Event],
         prior_events: List[Event],
         assertion_order_error_message: str = "",
+        **kwargs: Any,
     ) -> Tuple[Optional[AssertionFailure], Optional[Event]]:
         """Run the flow completed assertion on the given events for that user turn."""
         try:
@@ -368,27 +401,21 @@ class PatternClarificationContainsAssertion(Assertion):
             error_message = f"'{FLOW_PATTERN_CLARIFICATION}' pattern did not trigger."
             error_message += assertion_order_error_message
 
-            return AssertionFailure(
-                assertion=self,
-                error_message=error_message,
-                actual_events_transcript=create_actual_events_transcript(
-                    prior_events, turn_events
-                ),
-                error_line=self.line,
-            ), None
+            return self._generate_assertion_failure(
+                error_message, prior_events, turn_events, self.line
+            )
 
         actual_flow_ids = set(matching_event.metadata.get("names", set()))
         if actual_flow_ids != self.flow_ids:
-            return AssertionFailure(
-                assertion=self,
-                error_message=f"'{FLOW_PATTERN_CLARIFICATION}' pattern did not contain "
+            error_message = (
+                f"'{FLOW_PATTERN_CLARIFICATION}' pattern did not contain "
                 f"the expected options. Expected options: {self.flow_ids}. "
-                f"Actual options: {actual_flow_ids}.",
-                actual_events_transcript=create_actual_events_transcript(
-                    prior_events, turn_events
-                ),
-                error_line=self.line,
-            ), None
+            )
+            error_message += assertion_order_error_message
+
+            return self._generate_assertion_failure(
+                error_message, prior_events, turn_events, self.line
+            )
 
         return None, matching_event
 
@@ -419,6 +446,7 @@ class ActionExecutedAssertion(Assertion):
         turn_events: List[Event],
         prior_events: List[Event],
         assertion_order_error_message: str = "",
+        **kwargs: Any,
     ) -> Tuple[Optional[AssertionFailure], Optional[Event]]:
         """Run the action executed assertion on the given events for that user turn."""
         try:
@@ -432,14 +460,9 @@ class ActionExecutedAssertion(Assertion):
             error_message = f"Action '{self.action_name}' did not execute."
             error_message += assertion_order_error_message
 
-            return AssertionFailure(
-                assertion=self,
-                error_message=error_message,
-                actual_events_transcript=create_actual_events_transcript(
-                    prior_events, turn_events
-                ),
-                error_line=self.line,
-            ), None
+            return self._generate_assertion_failure(
+                error_message, prior_events, turn_events, self.line
+            )
 
         return None, matching_event
 
@@ -488,6 +511,7 @@ class SlotWasSetAssertion(Assertion):
         turn_events: List[Event],
         prior_events: List[Event],
         assertion_order_error_message: str = "",
+        **kwargs: Any,
     ) -> Tuple[Optional[AssertionFailure], Optional[Event]]:
         """Run the slot_was_set assertion on the given events for that user turn."""
         matching_event = None
@@ -502,14 +526,9 @@ class SlotWasSetAssertion(Assertion):
                 error_message = f"Slot '{slot.name}' was not set."
                 error_message += assertion_order_error_message
 
-                return AssertionFailure(
-                    assertion=self,
-                    error_message=error_message,
-                    actual_events_transcript=create_actual_events_transcript(
-                        prior_events, turn_events
-                    ),
-                    error_line=slot.line,
-                ), None
+                return self._generate_assertion_failure(
+                    error_message, prior_events, turn_events, slot.line
+                )
 
             if slot.value == "value key is undefined":
                 matching_event = matching_events[-1]
@@ -527,14 +546,9 @@ class SlotWasSetAssertion(Assertion):
                 )
                 error_message += assertion_order_error_message
 
-                return AssertionFailure(
-                    assertion=self,
-                    error_message=error_message,
-                    actual_events_transcript=create_actual_events_transcript(
-                        prior_events, turn_events
-                    ),
-                    error_line=slot.line,
-                ), None
+                return self._generate_assertion_failure(
+                    error_message, prior_events, turn_events, slot.line
+                )
 
         return None, matching_event
 
@@ -566,6 +580,7 @@ class SlotWasNotSetAssertion(Assertion):
         turn_events: List[Event],
         prior_events: List[Event],
         assertion_order_error_message: str = "",
+        **kwargs: Any,
     ) -> Tuple[Optional[AssertionFailure], Optional[Event]]:
         """Run the slot_was_not_set assertion on the given events for that user turn."""
         matching_event = None
@@ -593,14 +608,9 @@ class SlotWasNotSetAssertion(Assertion):
                 )
                 error_message += assertion_order_error_message
 
-                return AssertionFailure(
-                    assertion=self,
-                    error_message=error_message,
-                    actual_events_transcript=create_actual_events_transcript(
-                        prior_events, turn_events
-                    ),
-                    error_line=slot.line,
-                ), None
+                return self._generate_assertion_failure(
+                    error_message, prior_events, turn_events, slot.line
+                )
 
             if matching_event.value == slot.value:
                 error_message = (
@@ -609,14 +619,9 @@ class SlotWasNotSetAssertion(Assertion):
                 )
                 error_message += assertion_order_error_message
 
-                return AssertionFailure(
-                    assertion=self,
-                    error_message=error_message,
-                    actual_events_transcript=create_actual_events_transcript(
-                        prior_events, turn_events
-                    ),
-                    error_line=slot.line,
-                ), None
+                return self._generate_assertion_failure(
+                    error_message, prior_events, turn_events, slot.line
+                )
 
         return None, matching_event
 
@@ -703,6 +708,7 @@ class BotUtteredAssertion(Assertion):
         turn_events: List[Event],
         prior_events: List[Event],
         assertion_order_error_message: str = "",
+        **kwargs: Any,
     ) -> Tuple[Optional[AssertionFailure], Optional[Event]]:
         """Run the bot_uttered assertion on the given events for that user turn."""
         matching_event = None
@@ -719,14 +725,9 @@ class BotUtteredAssertion(Assertion):
                 error_message = f"Bot did not utter '{self.utter_name}' response."
                 error_message += assertion_order_error_message
 
-                return AssertionFailure(
-                    assertion=self,
-                    error_message=error_message,
-                    actual_events_transcript=create_actual_events_transcript(
-                        prior_events, turn_events
-                    ),
-                    error_line=self.line,
-                ), None
+                return self._generate_assertion_failure(
+                    error_message, prior_events, turn_events, self.line
+                )
 
         if self.text_matches is not None:
             pattern = re.compile(self.text_matches)
@@ -744,14 +745,9 @@ class BotUtteredAssertion(Assertion):
                 )
                 error_message += assertion_order_error_message
 
-                return AssertionFailure(
-                    assertion=self,
-                    error_message=error_message,
-                    actual_events_transcript=create_actual_events_transcript(
-                        prior_events, turn_events
-                    ),
-                    error_line=self.line,
-                ), None
+                return self._generate_assertion_failure(
+                    error_message, prior_events, turn_events, self.line
+                )
 
         if self.buttons:
             try:
@@ -765,14 +761,9 @@ class BotUtteredAssertion(Assertion):
                     "Bot did not utter any response with the expected buttons."
                 )
                 error_message += assertion_order_error_message
-                return AssertionFailure(
-                    assertion=self,
-                    error_message=error_message,
-                    actual_events_transcript=create_actual_events_transcript(
-                        prior_events, turn_events
-                    ),
-                    error_line=self.line,
-                ), None
+                return self._generate_assertion_failure(
+                    error_message, prior_events, turn_events, self.line
+                )
 
         return None, matching_event
 
@@ -803,13 +794,252 @@ class BotUtteredAssertion(Assertion):
 
 
 @dataclass
-class GenerativeResponseIsRelevantAssertion(Assertion):
-    """Class for storing the generative response is relevant assertion."""
+class GenerativeResponseMixin(Assertion):
+    """Mixin class for storing generative response assertions."""
 
     threshold: float = DEFAULT_THRESHOLD
     utter_name: Optional[str] = None
     ground_truth: Optional[str] = None
     line: Optional[int] = None
+    metric_adjective: Optional[str] = None
+    metric_name: Optional[str] = None
+    mlflow_metric: Callable = print
+
+    @classmethod
+    def type(cls) -> str:
+        return ""
+
+    def _get_ground_truth(self, matching_event: BotUttered) -> str:
+        raise NotImplementedError
+
+    def as_dict(self) -> Dict[str, Any]:
+        data = super().as_dict()
+        data.pop("metric_name")
+        data.pop("metric_adjective")
+        data.pop("mlflow_metric")
+
+        return data
+
+    def _run_llm_evaluation(
+        self,
+        matching_event: BotUttered,
+        step_text: str,
+        llm_judge_config: "LLMJudgeConfig",
+        assertion_order_error_message: str,
+        prior_events: List[Event],
+        turn_events: List[Event],
+    ) -> Tuple[Optional[AssertionFailure], Optional[Event]]:
+        """Run the LLM evaluation on the given event."""
+        import mlflow
+
+        # extract user question from event if available
+        user_question_from_event = matching_event.metadata.get(
+            SEARCH_QUERY_METADATA_KEY
+        )
+        user_question = (
+            user_question_from_event if user_question_from_event else step_text
+        )
+
+        ground_truth = self._get_ground_truth(matching_event)
+
+        eval_data = pd.DataFrame(
+            {
+                "inputs": [user_question],
+                "ground_truth": [ground_truth],
+                "predictions": [matching_event.text],
+            }
+        )
+
+        model_uri = llm_judge_config.get_model_uri()
+
+        structlogger.debug(
+            f"generative_response_is_{self.metric_adjective}_assertion.run_llm_evaluation",
+            model_uri=model_uri,
+        )
+
+        with mlflow.start_run():
+            results = mlflow.evaluate(
+                data=eval_data,
+                targets="ground_truth",
+                predictions="predictions",
+                model_type="question-answering",
+                evaluators="default",
+                extra_metrics=[
+                    self.mlflow_metric(model_uri),
+                ],
+            )
+
+        # Evaluation result for each data record is available in `results.tables`.
+        eval_table = results.tables["eval_results_table"]
+        score = eval_table.iloc[0][f"{self.metric_name}/v1/score"]
+        justification = eval_table.iloc[0][f"{self.metric_name}/v1/justification"]
+
+        # convert 1-5 score to 0-1 float
+        score = score * 20 / 100 if score is not None else 0
+
+        structlogger.debug(
+            f"generative_response_is_{self.metric_adjective}_assertion.run_results",
+            matching_event=repr(matching_event),
+            score=score,
+            justification=justification,
+        )
+
+        if score < self.threshold:
+            error_message = (
+                f"Generative response '{matching_event.text}' "
+                f"given to the user input '{user_question}' "
+                f"was not {self.metric_adjective}. "
+                f"Expected score to be above '{self.threshold}' threshold, "
+                f"but was '{score}'. The explanation for this score is: "
+                f"{justification}."
+            )
+            error_message += assertion_order_error_message
+
+            return self._generate_assertion_failure(
+                error_message, prior_events, turn_events, self.line
+            )
+
+        return None, matching_event
+
+    def _run_assertion_with_utter_name(
+        self,
+        matching_events: List[BotUttered],
+        step_text: str,
+        llm_judge_config: "LLMJudgeConfig",
+        assertion_order_error_message: str,
+        prior_events: List[Event],
+        turn_events: List[Event],
+    ) -> Tuple[Optional[AssertionFailure], Optional[Event]]:
+        """Assert metric for the given utter name."""
+        try:
+            matching_event = next(
+                event
+                for event in matching_events
+                if event.metadata.get("utter_action") == self.utter_name
+            )
+        except StopIteration:
+            error_message = f"Bot did not utter '{self.utter_name}' response."
+            error_message += assertion_order_error_message
+
+            return self._generate_assertion_failure(
+                error_message, prior_events, turn_events, self.line
+            )
+
+        return self._run_llm_evaluation(
+            matching_event,
+            step_text,
+            llm_judge_config,
+            assertion_order_error_message,
+            prior_events,
+            turn_events,
+        )
+
+    def _run_assertion_for_multiple_generative_responses(
+        self,
+        matching_events: List[BotUttered],
+        step_text: str,
+        llm_judge_config: "LLMJudgeConfig",
+        assertion_order_error_message: str,
+        prior_events: List[Event],
+        turn_events: List[Event],
+    ) -> Tuple[Optional[AssertionFailure], Optional[Event]]:
+        """Run LLM evaluation for multiple bot utterances."""
+        structlogger.debug(
+            f"generative_response_is_{self.metric_adjective}_assertion.run",
+            event_info="Multiple generative responses found, "
+            "we will evaluate each of the responses.",
+        )
+
+        passing_events = set()
+        for event in matching_events:
+            failure, event_result = self._run_llm_evaluation(
+                event,
+                step_text,
+                llm_judge_config,
+                assertion_order_error_message,
+                prior_events,
+                turn_events,
+            )
+            if event_result is not None:
+                passing_events.add(event_result)
+        else:
+            if not passing_events:
+                error_message = (
+                    f"None of the generative responses issued by "
+                    f"Enterprise Search Policy "
+                    f"or Contextual Response Rephraser were {self.metric_adjective}."
+                )
+                error_message += assertion_order_error_message
+
+                return self._generate_assertion_failure(
+                    error_message, prior_events, turn_events, self.line
+                )
+
+        return None, list(passing_events)[-1]
+
+    def run(
+        self,
+        turn_events: List[Event],
+        prior_events: List[Event],
+        assertion_order_error_message: str = "",
+        llm_judge_config: Optional["LLMJudgeConfig"] = None,
+        step_text: Optional[str] = None,
+        **kwargs: Any,
+    ) -> Tuple[Optional[AssertionFailure], Optional[Event]]:
+        """Run the LLM evaluation on the given events for that user turn."""
+        matching_events: List[BotUttered] = _find_matching_generative_events(
+            turn_events
+        )
+
+        if not matching_events:
+            error_message = (
+                "No generative response issued by Enterprise Search Policy "
+                "or Contextual Response Rephraser was found, but one was expected."
+            )
+            error_message += assertion_order_error_message
+
+            return self._generate_assertion_failure(
+                error_message, prior_events, turn_events, self.line
+            )
+
+        if self.utter_name is not None:
+            return self._run_assertion_with_utter_name(
+                matching_events,
+                step_text,
+                llm_judge_config,
+                assertion_order_error_message,
+                prior_events,
+                turn_events,
+            )
+
+        if len(matching_events) > 1:
+            return self._run_assertion_for_multiple_generative_responses(
+                matching_events,
+                step_text,
+                llm_judge_config,
+                assertion_order_error_message,
+                prior_events,
+                turn_events,
+            )
+
+        matching_event = matching_events[0]
+
+        return self._run_llm_evaluation(
+            matching_event,
+            step_text,
+            llm_judge_config,
+            assertion_order_error_message,
+            prior_events,
+            turn_events,
+        )
+
+
+@dataclass
+class GenerativeResponseIsRelevantAssertion(GenerativeResponseMixin):
+    """Class for storing the generative response is relevant assertion."""
+
+    def _get_ground_truth(self, matching_event: BotUttered) -> str:
+        return ""
 
     @classmethod
     def type(cls) -> str:
@@ -819,6 +1049,8 @@ class GenerativeResponseIsRelevantAssertion(Assertion):
     def from_dict(
         assertion_dict: Dict[Text, Any],
     ) -> GenerativeResponseIsRelevantAssertion:
+        import mlflow
+
         assertion_dict = assertion_dict.get(
             AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT.value, {}
         )
@@ -827,6 +1059,9 @@ class GenerativeResponseIsRelevantAssertion(Assertion):
             utter_name=assertion_dict.get("utter_name"),
             ground_truth=assertion_dict.get("ground_truth"),
             line=assertion_dict.lc.line + 1 if hasattr(assertion_dict, "lc") else None,
+            metric_name="answer_relevance",
+            metric_adjective="relevant",
+            mlflow_metric=mlflow.metrics.genai.answer_relevance,
         )
 
     def __hash__(self) -> int:
@@ -834,13 +1069,8 @@ class GenerativeResponseIsRelevantAssertion(Assertion):
 
 
 @dataclass
-class GenerativeResponseIsGroundedAssertion(Assertion):
+class GenerativeResponseIsGroundedAssertion(GenerativeResponseMixin):
     """Class for storing the generative response is grounded assertion."""
-
-    threshold: float = DEFAULT_THRESHOLD
-    utter_name: Optional[str] = None
-    ground_truth: Optional[str] = None
-    line: Optional[int] = None
 
     @classmethod
     def type(cls) -> str:
@@ -850,6 +1080,8 @@ class GenerativeResponseIsGroundedAssertion(Assertion):
     def from_dict(
         assertion_dict: Dict[Text, Any],
     ) -> GenerativeResponseIsGroundedAssertion:
+        import mlflow
+
         assertion_dict = assertion_dict.get(
             AssertionType.GENERATIVE_RESPONSE_IS_GROUNDED.value, {}
         )
@@ -858,10 +1090,30 @@ class GenerativeResponseIsGroundedAssertion(Assertion):
             utter_name=assertion_dict.get("utter_name"),
             ground_truth=assertion_dict.get("ground_truth"),
             line=assertion_dict.lc.line + 1 if hasattr(assertion_dict, "lc") else None,
+            metric_name="answer_correctness",
+            metric_adjective="grounded",
+            mlflow_metric=mlflow.metrics.genai.answer_correctness,
         )
 
     def __hash__(self) -> int:
         return hash(json.dumps(self.as_dict()))
+
+    def _get_ground_truth(self, matching_event: BotUttered) -> str:
+        # extract ground truth from event if available or use the provided ground truth
+        ground_truth_event_metadata = matching_event.metadata.get(
+            SEARCH_RESULTS_METADATA_KEY, ""
+        ) or matching_event.metadata.get(DOMAIN_GROUND_TRUTH_METADATA_KEY, "")
+
+        if isinstance(ground_truth_event_metadata, list):
+            ground_truth_event_metadata = "\n".join(ground_truth_event_metadata)
+
+        ground_truth = (
+            self.ground_truth
+            if self.ground_truth is not None
+            else ground_truth_event_metadata
+        )
+
+        return ground_truth
 
 
 @dataclass
@@ -901,3 +1153,14 @@ def create_actual_events_transcript(
         event_transcript.append(repr(event))
 
     return event_transcript
+
+
+def _find_matching_generative_events(turn_events: List[Event]) -> List[BotUttered]:
+    """Find the matching events for the generative response assertions."""
+    return [
+        event
+        for event in turn_events
+        if isinstance(event, BotUttered)
+        and event.metadata.get(UTTER_SOURCE_METADATA_KEY)
+        in ELIGIBLE_UTTER_SOURCE_METADATA
+    ]

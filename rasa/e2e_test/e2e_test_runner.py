@@ -480,7 +480,10 @@ class E2ETestRunner:
                     turn_events,
                     prior_events=prior_events,
                     assertion_order_error_message=assertion_order_error_msg,
+                    llm_judge_config=self.llm_judge_config,
+                    step_text=step.text,
                 )
+
                 if assertion_failure:
                     assertion_failure_found = True
                     structlogger.debug(

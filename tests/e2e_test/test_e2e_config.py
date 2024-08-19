@@ -6,7 +6,6 @@ from pytest import MonkeyPatch
 
 from rasa.e2e_test.constants import KEY_LLM_AS_JUDGE
 from rasa.e2e_test.e2e_config import (
-    ComputeMethodType,
     InvalidLLMConfiguration,
     LLMJudgeConfig,
     LLME2ETestConverterConfig,
@@ -30,39 +29,34 @@ def test_case_path(tmp_path: Path) -> Path:
     return test_case_path
 
 
-def test_create_llm_judge_config(monkeypatch: MonkeyPatch) -> None:
-    monkeypatch.setenv("OPENAI_API_KEY", "test")
+def test_create_llm_judge_config() -> None:
     test_case_path = Path(
         "data/test_e2e_config/valid_llm_config/dummy_test_case_file.yml"
     )
     assert create_llm_judge_config(test_case_path) == LLMJudgeConfig(
+        api_type="openai",
         model="gpt-4",
-        openai_api_key="test",
     )
 
 
-def test_create_llm_judge_config_no_conftest_detected(
-    tmp_path: Path, monkeypatch: MonkeyPatch
-) -> None:
-    monkeypatch.setenv("OPENAI_API_KEY", "test")
+def test_create_llm_judge_config_no_conftest_detected(tmp_path: Path) -> None:
     config_path = tmp_path / "config.yml"
     config_path.write_text("config")
 
     test_case_path = tmp_path / "no_conftest_detected"
     test_case_path.mkdir()
     assert create_llm_judge_config(test_case_path) == LLMJudgeConfig(
-        model="gpt-4o-mini", openai_api_key="test", embedding_compute_method="local"
+        api_type="openai",
+        model="gpt-4o-mini",
     )
 
 
-def test_create_llm_judge_config_conftest_without_llm_judge_key(
-    tmp_path: Path, monkeypatch: MonkeyPatch
-) -> None:
-    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+def test_create_llm_judge_config_conftest_without_llm_judge_key(tmp_path: Path) -> None:
     test_case_path = tmp_path / "conftest.yml"
     test_case_path.write_text("")
     assert create_llm_judge_config(test_case_path) == LLMJudgeConfig(
-        model="gpt-4o-mini", openai_api_key=None, embedding_compute_method="local"
+        api_type="openai",
+        model="gpt-4o-mini",
     )
 
 
@@ -92,112 +86,59 @@ def test_get_conftest_path_not_found(tmp_path: Path, test_case_path: Path) -> No
     assert get_conftest_path(test_case_path) is None
 
 
-def test_llm_judge_config_from_dict_raises_invalid_llm_exception_no_embedding_token(
-    monkeypatch: MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("OPENAI_API_KEY", "test")
-    config_data = {"embedding_compute_method": "api"}
-    error_msg = "No API token for the embedding model was set."
-    with pytest.raises(InvalidLLMConfiguration, match=error_msg):
-        LLMJudgeConfig.from_dict(config_data)
-
-
-def test_llm_judge_config_from_dict_raises_invalid_llm_exception_no_embedding_url(
-    monkeypatch: MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("OPENAI_API_KEY", "test")
-    monkeypatch.setenv("EMBEDDING_MODEL_API_TOKEN", "test")
-
-    config_data = {"embedding_compute_method": "api"}
-    error_msg = "No embedding model URL was set."
-    with pytest.raises(InvalidLLMConfiguration, match=error_msg):
-        LLMJudgeConfig.from_dict(config_data)
-
-
-def test_llm_judge_config_from_dict_valid_with_defaults(
-    monkeypatch: MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("OPENAI_API_KEY", "test")
+def test_llm_judge_config_from_dict_valid_with_defaults() -> None:
     judge_config = LLMJudgeConfig.from_dict({})
-
+    assert judge_config.api_type == "openai"
     assert judge_config.model == "gpt-4o-mini"
-    assert judge_config.openai_api_key == "test"
-    assert judge_config.embedding_compute_method == ComputeMethodType.LOCAL.value
-
-    assert judge_config.logs_folder is None
-    assert judge_config.seed is None
-    assert judge_config.rpm_limit is None
-    assert judge_config.tpm_limit is None
-
-    assert judge_config.anthropic_api_key is None
-    assert judge_config.azure_api_key is None
-    assert judge_config.cohere_api_key is None
-    assert judge_config.huggingface_api_key is None
-    assert judge_config.replicate_api_token is None
-    assert judge_config.anyscale_api_key is None
-    assert judge_config.together_api_key is None
-    assert judge_config.mistral_api_key is None
-    assert judge_config.embedding_model_api_token is None
-
-    assert judge_config.azure_api_version is None
-    assert judge_config.azure_api_base is None
 
 
-def test_llm_judge_config_from_dict_valid(monkeypatch: MonkeyPatch) -> None:
-    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "test")
+def test_llm_judge_config_from_dict_valid() -> None:
     judge_config = LLMJudgeConfig.from_dict(
         {
-            "type": "anthropic",
-            "model": "claude-2.1",
-            "logs_folder": "logs",
-            "seed": 42,
+            "api_type": "openai",
+            "model": "gpt-4",
         }
     )
 
-    assert judge_config.model == "claude-2.1"
-    assert judge_config.anthropic_api_key == "test"
-    assert judge_config.logs_folder == "logs"
-    assert judge_config.seed == 42
-    assert judge_config.embedding_compute_method == ComputeMethodType.LOCAL.value
-
-    for key in [
-        "rpm_limit",
-        "tpm_limit",
-        "cohere_api_key",
-        "huggingface_api_key",
-        "replicate_api_token",
-        "anyscale_api_key",
-        "together_api_key",
-        "mistral_api_key",
-        "embedding_model_api_token",
-        "openai_api_key",
-        "embedding_model_url",
-        "embedding_model_api_token",
-    ]:
-        assert hasattr(judge_config, key)
-        assert getattr(judge_config, key) is None
+    assert judge_config.model == "gpt-4"
 
 
-def test_llm_judge_config_as_dict(monkeypatch: MonkeyPatch) -> None:
-    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "test")
+def test_llm_judge_config_from_dict_invalid() -> None:
+    with pytest.raises(
+        InvalidLLMConfiguration,
+        match="Invalid LLM type 'anthropic'. Only 'openai' is supported.",
+    ):
+        LLMJudgeConfig.from_dict(
+            {
+                "api_type": "anthropic",
+                "model": "claude-2.1",
+            }
+        )
+
+
+def test_llm_judge_config_as_dict() -> None:
     judge_config = LLMJudgeConfig.from_dict(
         {
-            "type": "anthropic",
-            "model": "claude-2.1",
-            "logs_folder": "logs",
-            "seed": 42,
+            "api_type": "openai",
+            "model": "gpt-4",
         }
     )
 
     assert judge_config.as_dict() == {
-        "model": "claude-2.1",
-        "logs_folder": "logs",
-        "seed": 42,
-        "anthropic_api_key": "test",
-        "embedding_compute_method": "local",
+        "api_type": "openai",
+        "model": "gpt-4",
     }
+
+
+def test_llm_judge_config_get_model_uri() -> None:
+    judge_config = LLMJudgeConfig.from_dict(
+        {
+            "api_type": "openai",
+            "model": "gpt-3.5-turbo",
+        }
+    )
+
+    assert judge_config.get_model_uri() == "openai:/gpt-3.5-turbo"
 
 
 def test_create_llm_e2e_test_converter_config_no_conftest(tmp_path: Path):
