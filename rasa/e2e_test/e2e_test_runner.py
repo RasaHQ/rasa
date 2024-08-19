@@ -3,8 +3,9 @@ import copy
 import datetime
 import difflib
 import json
-from collections import defaultdict
 from asyncio import CancelledError
+from collections import defaultdict
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Text, Tuple, Union, DefaultDict
 from urllib.parse import urlparse
 
@@ -46,9 +47,9 @@ from rasa.shared.core.events import (
 from rasa.shared.core.flows.flow_path import FlowPath, PathNode
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
+from rasa.shared.nlu.constants import COMMANDS
 from rasa.telemetry import track_e2e_test_run
 from rasa.utils.endpoints import EndpointConfig
-from rasa.shared.nlu.constants import COMMANDS
 
 structlogger = structlog.get_logger()
 
@@ -909,6 +910,13 @@ class E2ETestRunner:
         track_e2e_test_run(input_test_cases, input_fixtures, input_metadata)
 
         for test_case in input_test_cases:
+            # Add the name of the file of the current test being executed
+            # in order to properly retrieve stub custom action
+            if self.agent.endpoints and self.agent.endpoints.action:
+                self.agent.endpoints.action.kwargs["test_file_name"] = Path(
+                    test_case.file
+                ).stem
+
             # add timestamp suffix to ensure sender_id is unique
             sender_id = f"{test_case.name}_{datetime.datetime.now()}"
             test_turns = await self._run_test_case(

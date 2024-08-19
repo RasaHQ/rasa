@@ -9,8 +9,8 @@ from pathlib import Path
 from textwrap import dedent
 from typing import Any, Dict, Generator, List, Optional, Text, Tuple, Union
 
-import pandas as pd
 import matplotlib.pyplot as plt
+import pandas as pd
 import rich
 import structlog
 from rich.table import Table
@@ -306,7 +306,11 @@ def read_test_cases(path: Text) -> TestSuite:
             test_file_content.get(KEY_STUB_CUSTOM_ACTIONS) or {}
         )
         for action_name, mock_data in stub_custom_actions_contents.items():
-            stub_custom_actions[action_name] = StubCustomAction.from_dict(
+            test_file_name = Path(test_file).stem
+            stub_custom_action_key = _get_stub_custom_action_key(
+                test_file_name, action_name
+            )
+            stub_custom_actions[stub_custom_action_key] = StubCustomAction.from_dict(
                 action_name=action_name,
                 mock_data=mock_data,
             )
@@ -743,7 +747,7 @@ def save_test_cases_to_yaml(
         test_cases=test_cases,
         fixtures=test_suite.fixtures,
         metadata=test_suite.metadata,
-        stub_custom_actions={}
+        stub_custom_actions=test_suite.stub_custom_actions,
     )
 
     output_filename = f"{status}.yml"
@@ -830,3 +834,8 @@ def _save_tested_commands_histogram(
         message=f"Commands histogram for {test_status} e2e tests"
         f"is written to '{output_filename}'.",
     )
+
+
+def _get_stub_custom_action_key(test_file_name: str, action_name: str) -> str:
+    """Returns the key used to store the StubCustomAction object"""
+    return f"{test_file_name}__{action_name}"

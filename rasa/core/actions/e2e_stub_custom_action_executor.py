@@ -8,6 +8,7 @@ from typing import (
 
 import structlog
 
+from rasa.cli.e2e_test import _get_stub_custom_action_key
 from rasa.core.actions.custom_action_executor import (
     CustomActionExecutor,
 )
@@ -40,14 +41,20 @@ class E2EStubCustomActionExecutor(CustomActionExecutor):
         self.stub_custom_action = self.get_stub_custom_action()
 
     def get_stub_custom_action(self) -> "StubCustomAction":
+        # Fetch the key that should store the relevant StubCustomAction
+        test_file_name = self.action_endpoint.kwargs.get("test_file_name")
+        stub_custom_action_key = _get_stub_custom_action_key(
+            test_file_name, self.action_name
+        )
+
         stub_custom_actions = self.action_endpoint.kwargs.get(
             KEY_STUB_CUSTOM_ACTIONS, {}
         )
-        if stub_custom_action := stub_custom_actions.get(self.action_name):
+        if stub_custom_action := stub_custom_actions.get(stub_custom_action_key):
             return stub_custom_action
 
         # TODO Update message below with reference to the docs
-        raise RasaException(f"Action `{self.action_name}` has not been mocked.")
+        raise RasaException(f"Action `{self.action_name}` has not been stubbed.")
 
     async def run(
         self,
