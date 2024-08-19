@@ -37,7 +37,9 @@ class E2EStubCustomActionExecutor(CustomActionExecutor):
         self.stub_custom_action = self.get_stub_custom_action()
 
     def get_stub_custom_action(self) -> StubCustomAction:
-        stub_custom_actions = self.action_endpoint.kwargs.get(KEY_STUB_CUSTOM_ACTIONS, {})
+        stub_custom_actions = self.action_endpoint.kwargs.get(
+            KEY_STUB_CUSTOM_ACTIONS, {}
+        )
         if stub_custom_action := stub_custom_actions.get(self.action_name):
             return stub_custom_action
 
