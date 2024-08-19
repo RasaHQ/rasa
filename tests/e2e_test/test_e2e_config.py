@@ -214,7 +214,7 @@ def test_create_llm_e2e_test_converter_config_with_conftest(tmp_path: Path):
     model = "gpt-4"
     api_type = "openai"
     config_yaml_string = (
-        f"llm_e2e_test_converter:\n  model: {model}\n  api_type: {api_type}"
+        f"llm_e2e_test_conversion:\n  model: {model}\n  api_type: {api_type}"
     )
     conftest_path.write_text(config_yaml_string)
     assert create_llm_e2e_test_converter_config(

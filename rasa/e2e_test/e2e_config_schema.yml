@@ -28,7 +28,7 @@ mapping:
         type: str
       azure_api_version:
         type: str
-  llm_e2e_test_converter:
+  llm_e2e_test_conversion:
     type: map
     mapping:
       api_type:

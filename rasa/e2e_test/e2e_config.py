@@ -14,7 +14,7 @@ from rasa.e2e_test.constants import (
     CONFTEST_FILE_NAME,
     E2E_CONFIG_SCHEMA_FILE_PATH,
     KEY_LLM_AS_JUDGE,
-    KEY_LLM_E2E_TEST_CONVERTER,
+    KEY_LLM_E2E_TEST_CONVERSION,
 )
 from rasa.shared.constants import (
     API_TYPE_CONFIG_KEY,
@@ -256,7 +256,9 @@ def create_llm_e2e_test_converter_config(
         )
         return LLME2ETestConverterConfig.from_dict(config_data)
 
-    llm_e2e_test_converter_config_data = config_data.get(KEY_LLM_E2E_TEST_CONVERTER, {})
+    llm_e2e_test_converter_config_data = config_data.get(
+        KEY_LLM_E2E_TEST_CONVERSION, {}
+    )
     if not llm_e2e_test_converter_config_data:
         structlogger.debug(
             "e2e_config.create_llm_e2e_test_converter_config.no_llm_e2e_test_converter_config_key"

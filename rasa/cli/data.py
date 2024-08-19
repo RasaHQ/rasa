@@ -311,9 +311,19 @@ def _migrate_domain(args: argparse.Namespace) -> None:
 
 
 def validate_e2e_test_conversion_output_path(output_path: str) -> None:
-    if os.path.isabs(output_path):
+    """
+    Validates that the provided output path is within the project directory.
+
+    Args:
+        output_path (str): The output path to be validated.
+
+    Raises:
+        RasaException: If the provided output path is an absolute path.
+    """
+    if pathlib.Path(output_path).is_absolute():
         raise RasaException(
-            "Please select an output path within the project directory."
+            "Please provide a relative path within the assistant project "
+            "directory in which the command is running."
         )
 
 
