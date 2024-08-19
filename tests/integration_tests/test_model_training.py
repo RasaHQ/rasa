@@ -106,7 +106,7 @@ def test_train_model_and_push_to_aws_remote_storage(
         CreateBucketConfiguration={"LocationConstraint": region_name},
     )
 
-    def mock_aws_persistor(name: Text) -> AWSPersistor:
+    def aws_persistor(name: Text) -> AWSPersistor:
         aws_persistor = AWSPersistor(
             os.environ.get("BUCKET_NAME"),
             region_name=os.environ.get("AWS_DEFAULT_REGION"),
@@ -115,7 +115,7 @@ def test_train_model_and_push_to_aws_remote_storage(
         monkeypatch.setattr(aws_persistor, "bucket", conn.Bucket(bucket_name))
         return aws_persistor
 
-    monkeypatch.setattr("rasa.nlu.persistor.get_persistor", mock_aws_persistor)
+    monkeypatch.setattr("rasa.nlu.persistor.get_persistor", aws_persistor)
 
     empty_agent.remote_storage = "aws"
 
