@@ -467,15 +467,15 @@ class Metadata:
 
 @dataclass
 class StubCustomAction:
-    """Class for storing the mock response of the custom action."""
+    """Class for storing the stub response of the custom action."""
 
     action_name: str
     events: List[Dict[Text, Any]]
     responses: List[Dict[Text, Any]]
 
     @staticmethod
-    def from_dict(action_name: str, mock_data: Dict[Text, Any]) -> "StubCustomAction":
-        """Creates a mock custom action from a dictionary.
+    def from_dict(action_name: str, stub_data: Dict[Text, Any]) -> "StubCustomAction":
+        """Creates a stub custom action from a dictionary.
 
         Example:
             >>> StubCustomAction.from_dict(
@@ -485,12 +485,12 @@ class StubCustomAction:
 
         Args:
             action_name (str): Name of the custom action.
-            mock_data (Dict[Text, Any]): Mock custom action response.
+            stub_data (Dict[Text, Any]): Stub custom action response.
         """
         return StubCustomAction(
             action_name=action_name,
-            events=[event for event in mock_data.get("events", [])],
-            responses=[response for response in mock_data.get("responses", [])],
+            events=[event for event in stub_data.get("events", [])],
+            responses=[response for response in stub_data.get("responses", [])],
         )
 
     def as_dict(self) -> Dict[Text, Any]:

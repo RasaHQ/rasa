@@ -305,14 +305,14 @@ def read_test_cases(path: Text) -> TestSuite:
         stub_custom_actions_contents = (
             test_file_content.get(KEY_STUB_CUSTOM_ACTIONS) or {}
         )
-        for action_name, mock_data in stub_custom_actions_contents.items():
+        for action_name, stub_data in stub_custom_actions_contents.items():
             test_file_name = Path(test_file).stem
             stub_custom_action_key = get_stub_custom_action_key(
                 test_file_name, action_name
             )
             stub_custom_actions[stub_custom_action_key] = StubCustomAction.from_dict(
                 action_name=action_name,
-                mock_data=mock_data,
+                stub_data=stub_data,
             )
 
     validate_test_case(test_case_name, input_test_cases)
