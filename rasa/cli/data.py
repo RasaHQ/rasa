@@ -321,8 +321,8 @@ def validate_e2e_test_conversion_output_path(output_path: str) -> None:
     """
     if pathlib.Path(output_path).is_absolute():
         raise RasaException(
-            "Please provide a relative path within the assistant project "
-            "directory in which the command is running."
+            "Please provide a relative output path within the assistant "
+            "project directory in which the command is running."
         )
 
 
