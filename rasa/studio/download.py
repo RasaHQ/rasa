@@ -24,7 +24,7 @@ from rasa.studio.config import StudioConfig
 from rasa.studio.constants import (
     STUDIO_DOMAIN_FILENAME,
     STUDIO_FLOWS_FILENAME,
-    STUDIO_NLU_FILENAME,
+    STUDIO_NLU_FILENAME, STUDIO_ENDPOINTS_FILENAME, STUDIO_CONFIG_FILENAME,
 )
 from rasa.studio.data_handler import (
     StudioDataHandler,
@@ -55,6 +55,11 @@ def handle_download(args: argparse.Namespace) -> None:
     else:
         config_path = Path(args.config)
 
+        if config_path.is_dir():
+            config_path = config_path / DEFAULT_CONFIG_PATH
+        elif not config_path.parent.exists():
+            raise ValueError(f"Directory '{config_path.parent}' for config file does not exist.")
+
     endpoints_file_exists_in_path = rasa.cli.utils.get_validated_path(
         args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, none_is_valid=True
     )
@@ -63,6 +68,10 @@ def handle_download(args: argparse.Namespace) -> None:
         endpoints_path = Path(endpoints_file_exists_in_path)
     else:
         endpoints_path = Path(args.endpoints)
+        if endpoints_path.is_dir():
+            endpoints_path = endpoints_path / DEFAULT_ENDPOINTS_PATH.name
+        elif not endpoints_path.parent.exists():
+            raise ValueError(f"Directory '{endpoints_path.parent}' for endpoints file does not exist.")
 
     data_paths = [
         Path(

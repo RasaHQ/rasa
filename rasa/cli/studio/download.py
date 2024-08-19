@@ -2,7 +2,7 @@ import argparse
 from typing import List
 
 from rasa.cli import SubParsersAction
-from rasa.cli.arguments.default_arguments import add_config_param, add_endpoints_param
+from rasa.cli.arguments.default_arguments import add_config_param, add_endpoint_param
 from rasa.cli.arguments.train import add_data_param, add_domain_param
 
 from rasa.studio.download import handle_download
@@ -37,7 +37,7 @@ def set_studio_download_arguments(parser: argparse.ArgumentParser) -> None:
     add_domain_param(parser)
     add_data_param(parser)
     add_config_param(parser)
-    add_endpoints_param(parser)
+    add_endpoint_param(parser, "Configuration file for the model endpoints.")
 
     parser.add_argument(
         "assistant_name",

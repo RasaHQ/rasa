@@ -104,19 +104,6 @@ def add_endpoint_param(
     parser.add_argument("--endpoints", type=str, default=default, help=help_text)
 
 
-def add_endpoints_param(
-    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer],
-    default: Optional[Text] = DEFAULT_ENDPOINTS_PATH,
-) -> None:
-    """Specifies path to the model configuration file."""
-    parser.add_argument(
-        "--endpoints",
-        nargs="+",
-        default=default,
-        help="Configuration file for the model endpoints.",
-    )
-
-
 def add_data_param(
     parser: Union[argparse.ArgumentParser, argparse._ActionsContainer],
     default: Optional[Text] = DEFAULT_DATA_PATH,
