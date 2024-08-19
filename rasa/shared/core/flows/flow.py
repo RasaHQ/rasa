@@ -376,20 +376,23 @@ class Flow:
         and a set of visited step IDs to prevent revisiting steps.
         It calls `go_over_steps` to recursively explore and fill the paths list.
         """
-        paths_list = FlowPathsList(self.id, paths=[])
+        flow_paths_list = FlowPathsList(self.id, paths=[])
         steps: List[FlowStep] = self.steps
-        path: FlowPath = FlowPath(flow=self.id, nodes=[])
+        current_path: FlowPath = FlowPath(flow=self.id, nodes=[])
         step_ids_visited: Set[str] = set()
 
-        self._go_over_steps(steps, path, paths_list, step_ids_visited)
+        self._go_over_steps(steps, current_path, flow_paths_list, step_ids_visited)
+
+        if not flow_paths_list.is_path_part_of_list(current_path):
+            flow_paths_list.paths.append(copy.deepcopy(current_path))
 
         structlogger.debug(
             "shared.core.flows.flow.extract_all_paths",
             comment="Extraction complete",
-            number_of_paths=len(paths_list.paths),
+            number_of_paths=len(flow_paths_list.paths),
             flow_name=self.name,
         )
-        return paths_list
+        return flow_paths_list
 
     def _go_over_steps(
         self,
