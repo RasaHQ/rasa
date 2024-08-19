@@ -2,8 +2,10 @@ import asyncio
 import copy
 import datetime
 import difflib
+import json
+from collections import defaultdict
 from asyncio import CancelledError
-from typing import Any, Dict, List, Optional, Text, Tuple, Union
+from typing import Any, Dict, List, Optional, Text, Tuple, Union, DefaultDict
 from urllib.parse import urlparse
 
 import requests
@@ -12,6 +14,7 @@ from tqdm import tqdm
 
 import rasa.shared.utils.io
 from rasa.core.channels import CollectingOutputChannel, UserMessage
+from rasa.core.constants import STEP_ID_METADATA_KEY, ACTIVE_FLOW_METADATA_KEY
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.utils import AvailableEndpoints
 from rasa.e2e_test.e2e_config import create_llm_judge_config
@@ -29,11 +32,22 @@ from rasa.e2e_test.e2e_test_result import (
     TestResult,
 )
 from rasa.llm_fine_tuning.conversations import Conversation
-from rasa.shared.core.events import BotUttered, Event, SlotSet, UserUttered
+from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
+from rasa.shared.core.events import (
+    BotUttered,
+    SlotSet,
+    UserUttered,
+    FlowCompleted,
+    Event,
+    ActionExecuted,
+    DialogueStackUpdated,
+)
+from rasa.shared.core.flows.flow_path import FlowPath, PathNode
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
 from rasa.telemetry import track_e2e_test_run
 from rasa.utils.endpoints import EndpointConfig
+from rasa.shared.nlu.constants import COMMANDS
 
 structlogger = structlog.get_logger()
 
@@ -904,6 +918,16 @@ class E2ETestRunner:
 
             results.append(test_result)
 
+            coverage = kwargs.get("coverage", False)
+            if coverage:
+                tracker = await self.agent.tracker_store.retrieve(sender_id)
+                if tracker:
+                    test_result.tested_paths, test_result.tested_commands = (
+                        self._get_tested_flow_paths_and_commands(
+                            tracker.events, test_result
+                        )
+                    )
+
             if fail_fast and not test_result.pass_status:
                 break
 
@@ -1048,3 +1072,101 @@ class E2ETestRunner:
             f"Response message: {response.text}\n"
             f"Response status code: {response.status_code}.",
         )
+
+    def _get_tested_flow_paths_and_commands(
+        self, events: List[Event], test_result: TestResult
+    ) -> Tuple[Optional[List[FlowPath]], Dict[str, Dict[str, int]]]:
+        """Extract tested paths and commands from dialog events.
+
+        A flow path consists of bot utterances and custom actions.
+
+        Args:
+            events: The list of dialog events.
+            test_result: The result of the test incl. the pass status.
+
+        Returns:
+            Tuple[flow_paths: Optional[List[FlowPath]], tested_commands:
+            Dict[str, Dict[str, int]]], where tested_commands is a
+            dictionary like
+            {"flow1": {"set slot": 5, "clarify": 1}, "flow2": {"set slot": 3}}
+        """
+        tested_paths = []
+        # we want to create a flow path per flow the e2e test covers
+        # as an e2e test can cover multiple flows, we might end up creating
+        # multiple flow paths
+        _tested_commands: DefaultDict[str, DefaultDict[str, int]] = defaultdict(
+            lambda: defaultdict(int)
+        )
+        flow_paths_stack = []
+
+        for event in events:
+            if isinstance(event, DialogueStackUpdated):
+                # Apparently we don't create a FlowStarted event in case a flow starts
+                # with a call step. In that case only a FlowStarted event for the
+                # called step is created. Thus, we need to use the DialogueStackUpdated
+                # event to check if a flow started.
+                # Use FlowStarted once https://rasahq.atlassian.net/browse/ENG-1240
+                # is fixed
+                if '"step_id": "START"' in event.update and "flow_id" in event.update:
+                    try:
+                        data = json.loads(event.update)
+                        flow_id = data[0]["value"]["flow_id"]
+                        # create a new flow path for the started flow
+                        if not flow_id.startswith(RASA_DEFAULT_FLOW_PATTERN_PREFIX):
+                            flow_paths_stack.append(FlowPath(flow_id))
+                    except (KeyError, IndexError, TypeError, json.JSONDecodeError) as e:
+                        structlogger.error(
+                            "e2e_test_runner._get_tested_flow_paths",
+                            message=f"Could not append the flow to the stack: {e}",
+                        )
+                        continue
+            elif (
+                isinstance(event, FlowCompleted)
+                and len(flow_paths_stack) > 0
+                and event.flow_id == flow_paths_stack[-1].flow
+            ):
+                # flow path is completed as the flow ended
+                tested_paths.append(flow_paths_stack.pop())
+            elif isinstance(event, BotUttered):
+                if (
+                    flow_paths_stack
+                    and STEP_ID_METADATA_KEY in event.metadata
+                    and ACTIVE_FLOW_METADATA_KEY in event.metadata
+                ):
+                    flow_paths_stack[-1].nodes.append(self._create_path_node(event))
+            elif isinstance(event, ActionExecuted):
+                # we are only interested in custom actions
+                if (
+                    flow_paths_stack
+                    and self.agent.domain
+                    and self.agent.domain.is_custom_action(event.action_name)
+                ):
+                    flow_paths_stack[-1].nodes.append(self._create_path_node(event))
+
+            # Time to gather tested commands
+            elif isinstance(event, UserUttered):
+                if event.parse_data and COMMANDS in event.parse_data:
+                    commands = [
+                        command["command"] for command in event.parse_data[COMMANDS]
+                    ]
+                    current_flow = (
+                        flow_paths_stack[-1].flow if flow_paths_stack else "no_flow"
+                    )
+                    for command in commands:
+                        _tested_commands[current_flow][command] += 1
+
+        # It might be that an e2e test stops before a flow was completed.
+        # Add the remaining flow paths to the tested paths list.
+        while len(flow_paths_stack) > 0:
+            tested_paths.append(flow_paths_stack.pop())
+
+        # Convert _tested_commands to normal dicts
+        tested_commands = {key: dict(value) for key, value in _tested_commands.items()}  # type: Dict[str, Dict[str, int]]
+
+        return tested_paths, tested_commands
+
+    @staticmethod
+    def _create_path_node(event: Event) -> PathNode:
+        flow_id = event.metadata[ACTIVE_FLOW_METADATA_KEY]
+        step_id = event.metadata[STEP_ID_METADATA_KEY]
+        return PathNode(step_id=step_id, flow=flow_id)

@@ -414,12 +414,17 @@ def validate_raw_yaml_using_schema_file_with_responses(
     )
 
 
-def read_yaml(content: str, reader_type: Union[str, List[str]] = "safe") -> Any:
+def read_yaml(
+    content: str,
+    reader_type: Union[str, List[str]] = "safe",
+    **kwargs: Any,
+) -> Any:
     """Parses yaml from a text.
 
     Args:
         content: A text containing yaml content.
         reader_type: Reader type to use. By default, "safe" will be used.
+        **kwargs: Any
 
     Raises:
         ruamel.yaml.parser.ParserError: If there was an error when parsing the YAML.
@@ -433,11 +438,69 @@ def read_yaml(content: str, reader_type: Union[str, List[str]] = "safe") -> Any:
             .decode("utf-16")
         )
 
+    custom_constructor = kwargs.get("custom_constructor", None)
+
+    # Create YAML parser with custom constructor
+    yaml_parser, reset_constructors = create_yaml_parser(
+        reader_type, custom_constructor
+    )
+    yaml_content = yaml_parser.load(content) or {}
+
+    # Reset to default constructors
+    reset_constructors()
+
+    return yaml_content
+
+
+def create_yaml_parser(
+    reader_type: str,
+    custom_constructor: Optional[Callable] = None,
+) -> Tuple[yaml.YAML, Callable[[], None]]:
+    """Create a YAML parser with an optional custom constructor.
+
+    Args:
+        reader_type (str): The type of the reader
+        (e.g., 'safe', 'rt', 'unsafe').
+        custom_constructor (Optional[Callable]):
+        A custom constructor function for YAML parsing.
+
+    Returns:
+        Tuple[yaml.YAML, Callable[[], None]]: A tuple containing
+        the YAML parser and a function to reset constructors to
+        their original state.
+    """
     yaml_parser = yaml.YAML(typ=reader_type)
     yaml_parser.version = YAML_VERSION  # type: ignore[assignment]
     yaml_parser.preserve_quotes = True  # type: ignore[assignment]
 
-    return yaml_parser.load(content) or {}
+    # Save the original constructors
+    original_mapping_constructor = yaml_parser.constructor.yaml_constructors.get(
+        yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG
+    )
+    original_sequence_constructor = yaml_parser.constructor.yaml_constructors.get(
+        yaml.resolver.BaseResolver.DEFAULT_SEQUENCE_TAG
+    )
+
+    if custom_constructor is not None:
+        # Attach the custom constructor to the loader
+        yaml_parser.constructor.add_constructor(
+            yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, custom_constructor
+        )
+        yaml_parser.constructor.add_constructor(
+            yaml.resolver.BaseResolver.DEFAULT_SEQUENCE_TAG, custom_constructor
+        )
+
+    def reset_constructors() -> None:
+        """Reset the constructors back to their original state."""
+        yaml_parser.constructor.add_constructor(
+            yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, original_mapping_constructor
+        )
+        yaml_parser.constructor.add_constructor(
+            yaml.resolver.BaseResolver.DEFAULT_SEQUENCE_TAG,
+            original_sequence_constructor,
+        )
+
+    return yaml_parser, reset_constructors
 
 
 def _is_ascii(text: str) -> bool:

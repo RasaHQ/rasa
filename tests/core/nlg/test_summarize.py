@@ -1,13 +1,13 @@
 from typing import Any
 from unittest.mock import patch, AsyncMock
 
-from langchain import OpenAI
+from langchain_community.llms import OpenAI
 from openai import OpenAIError
 from pytest import MonkeyPatch
-from rasa.shared.core.events import UserUttered
-from rasa.shared.core.trackers import DialogueStateTracker
 
 from rasa.core.nlg.summarize import summarize_conversation
+from rasa.shared.core.events import UserUttered
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.providers.llm.llm_response import LLMResponse
 from rasa.shared.providers.llm.openai_llm_client import OpenAILLMClient
 

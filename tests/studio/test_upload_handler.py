@@ -201,6 +201,8 @@ CALM_FLOWS_YAML = dedent(
         steps:
         - id: 0_utter_cant_advice_on_health
           next: END
+          metadata:
+            line_numbers: 11-11
           action: utter_cant_advice_on_health
         name: health advice
         description: user asks for health advice
@@ -213,6 +215,8 @@ CALM_FLOWS_YAML = dedent(
         - id: 0_collect_add_contact_handle
           next: 1_collect_add_contact_name
           description: a user handle starting with @
+          metadata:
+            line_numbers: 16-17
           collect: add_contact_handle
           utter: utter_ask_add_contact_handle
           ask_before_filling: false
@@ -221,6 +225,8 @@ CALM_FLOWS_YAML = dedent(
         - id: 1_collect_add_contact_name
           next: 2_collect_add_contact_confirmation
           description: a name of a person
+          metadata:
+            line_numbers: 18-19
           collect: add_contact_name
           utter: utter_ask_add_contact_name
           ask_before_filling: false
@@ -232,9 +238,13 @@ CALM_FLOWS_YAML = dedent(
             then:
             - id: 3_utter_add_contact_cancelled
               next: END
+              metadata:
+                line_numbers: 25-26
               action: utter_add_contact_cancelled
           - else: action_add_contact
           description: a confirmation to add contact
+          metadata:
+            line_numbers: 20-27
           collect: add_contact_confirmation
           utter: utter_ask_add_contact_confirmation
           ask_before_filling: false
@@ -246,16 +256,24 @@ CALM_FLOWS_YAML = dedent(
             then:
             - id: 5_utter_contact_already_exists
               next: END
+              metadata:
+                line_numbers: 33-34
               action: utter_contact_already_exists
           - if: slots.return_value is 'success'
             then:
             - id: 6_utter_contact_added
               next: END
+              metadata:
+                line_numbers: 37-38
               action: utter_contact_added
           - else:
             - id: 7_utter_add_contact_error
               next: END
+              metadata:
+                line_numbers: 40-41
               action: utter_add_contact_error
+          metadata:
+            line_numbers: 28-41
           action: action_add_contact
         name: add_contact
         description: add a contact to your contact list
@@ -263,9 +281,13 @@ CALM_FLOWS_YAML = dedent(
         steps:
         - id: 0_action_check_balance
           next: 1_utter_current_balance
+          metadata:
+            line_numbers: 46-46
           action: action_check_balance
         - id: 1_utter_current_balance
           next: END
+          metadata:
+            line_numbers: 47-47
           action: utter_current_balance
         name: check_balance
         description: check the user's account balance.
@@ -273,9 +295,13 @@ CALM_FLOWS_YAML = dedent(
         steps:
         - id: 0_action_search_hotel
           next: 1_utter_hotel_inform_rating
+          metadata:
+            line_numbers: 52-52
           action: action_search_hotel
         - id: 1_utter_hotel_inform_rating
           next: END
+          metadata:
+            line_numbers: 53-53
           action: utter_hotel_inform_rating
         name: hotel_search
         description: search for hotels
@@ -284,6 +310,8 @@ CALM_FLOWS_YAML = dedent(
         - id: 0_collect_remove_contact_handle
           next: 1_collect_remove_contact_confirmation
           description: a contact handle starting with @
+          metadata:
+            line_numbers: 58-59
           collect: remove_contact_handle
           utter: utter_ask_remove_contact_handle
           ask_before_filling: false
@@ -295,8 +323,12 @@ CALM_FLOWS_YAML = dedent(
             then:
             - id: 2_utter_remove_contact_cancelled
               next: END
+              metadata:
+                line_numbers: 65-66
               action: utter_remove_contact_cancelled
           - else: action_remove_contact
+          metadata:
+            line_numbers: 60-67
           collect: remove_contact_confirmation
           utter: utter_ask_remove_contact_confirmation
           ask_before_filling: true
@@ -308,16 +340,24 @@ CALM_FLOWS_YAML = dedent(
             then:
             - id: 4_utter_contact_not_in_list
               next: END
+              metadata:
+                line_numbers: 73-74
               action: utter_contact_not_in_list
           - if: slots.return_value is 'success'
             then:
             - id: 5_utter_remove_contact_success
               next: END
+              metadata:
+                line_numbers: 77-78
               action: utter_remove_contact_success
           - else:
             - id: 6_utter_remove_contact_error
               next: END
+              metadata:
+                line_numbers: 80-81
               action: utter_remove_contact_error
+          metadata:
+            line_numbers: 68-81
           action: action_remove_contact
         name: remove_contact
         description: remove a contact from your contact list
@@ -325,9 +365,13 @@ CALM_FLOWS_YAML = dedent(
         steps:
         - id: 0_action_transaction_search
           next: 1_utter_transactions
+          metadata:
+            line_numbers: 86-86
           action: action_transaction_search
         - id: 1_utter_transactions
           next: END
+          metadata:
+            line_numbers: 87-87
           action: utter_transactions
         name: transaction_search
         description: lists the last transactions of the user account
@@ -336,6 +380,8 @@ CALM_FLOWS_YAML = dedent(
         - id: 0_collect_transfer_money_recipient
           next: 1_collect_transfer_money_amount_of_money
           description: Asks user for the recipient's name.
+          metadata:
+            line_numbers: 92-93
           collect: transfer_money_recipient
           utter: utter_ask_transfer_money_recipient
           ask_before_filling: false
@@ -344,6 +390,8 @@ CALM_FLOWS_YAML = dedent(
         - id: 1_collect_transfer_money_amount_of_money
           next: 2_action_check_transfer_funds
           description: Asks user for the amount to transfer.
+          metadata:
+            line_numbers: 94-95
           collect: transfer_money_amount_of_money
           utter: utter_ask_transfer_money_amount_of_money
           ask_before_filling: false
@@ -355,15 +403,21 @@ CALM_FLOWS_YAML = dedent(
             then:
             - id: 3_utter_transfer_money_insufficient_funds
               next: 4_set_slots
+              metadata:
+                line_numbers: 100-100
               action: utter_transfer_money_insufficient_funds
             - id: 4_set_slots
               next: END
+              metadata:
+                line_numbers: 101-106
               set_slots:
               - transfer_money_amount_of_money: null
               - transfer_money_has_sufficient_funds: null
               - set_slots_test_text: This is a test!
               - set_slots_test_categorical: value_1
           - else: collect_transfer_money_final_confirmation
+          metadata:
+            line_numbers: 96-107
           action: action_check_transfer_funds
         - id: collect_transfer_money_final_confirmation
           next:
@@ -371,9 +425,13 @@ CALM_FLOWS_YAML = dedent(
             then:
             - id: 6_utter_transfer_cancelled
               next: END
+              metadata:
+                line_numbers: 115-116
               action: utter_transfer_cancelled
           - else: action_execute_transfer
           description: Asks user for final confirmation to transfer money.
+          metadata:
+            line_numbers: 108-117
           collect: transfer_money_final_confirmation
           utter: utter_ask_transfer_money_final_confirmation
           ask_before_filling: true
@@ -385,11 +443,17 @@ CALM_FLOWS_YAML = dedent(
             then:
             - id: 8_utter_transfer_complete
               next: END
+              metadata:
+                line_numbers: 123-124
               action: utter_transfer_complete
           - else:
             - id: 9_utter_transfer_failed
               next: END
+              metadata:
+                line_numbers: 126-127
               action: utter_transfer_failed
+          metadata:
+            line_numbers: 118-127
           action: action_execute_transfer
         name: transfer_money
         description: This flow let's users send money to friends and family.
@@ -398,6 +462,8 @@ CALM_FLOWS_YAML = dedent(
         - id: 0_collect_verify_account_email
           next: 1_collect_based_in_california
           description: Asks user for their email address.
+          metadata:
+            line_numbers: 132-134
           collect: verify_account_email
           utter: utter_ask_verify_account_email
           ask_before_filling: true
@@ -413,9 +479,13 @@ CALM_FLOWS_YAML = dedent(
                 then:
                 - id: 3_utter_ca_income_insufficient
                   next: END
+                  metadata:
+                    line_numbers: 147-148
                   action: utter_ca_income_insufficient
               - else: collect_verify_account_confirmation_california
               description: Asks user if they have sufficient income in California.
+              metadata:
+                line_numbers: 141-149
               collect: verify_account_sufficient_california_income
               utter: utter_ask_verify_account_sufficient_california_income
               ask_before_filling: true
@@ -427,12 +497,18 @@ CALM_FLOWS_YAML = dedent(
                 then:
                 - id: 5_utter_verify_account_success
                   next: END
+                  metadata:
+                    line_numbers: 157-158
                   action: utter_verify_account_success
               - else:
                 - id: 6_utter_verify_account_cancelled
                   next: END
+                  metadata:
+                    line_numbers: 160-161
                   action: utter_verify_account_cancelled
               description: Asks user for final confirmation to verify their account in California.
+              metadata:
+                line_numbers: 150-161
               collect: verify_account_confirmation_california
               utter: utter_ask_verify_account_confirmation_california
               ask_before_filling: true
@@ -440,6 +516,8 @@ CALM_FLOWS_YAML = dedent(
               rejections: []
           - else: collect_verify_account_confirmation
           description: Asks user if they are based in California.
+          metadata:
+            line_numbers: 135-162
           collect: based_in_california
           utter: utter_ask_based_in_california
           ask_before_filling: true
@@ -451,12 +529,18 @@ CALM_FLOWS_YAML = dedent(
             then:
             - id: 8_utter_verify_account_success
               next: END
+              metadata:
+                line_numbers: 170-171
               action: utter_verify_account_success
           - else:
             - id: 9_utter_verify_account_cancelled
               next: END
+              metadata:
+                line_numbers: 173-174
               action: utter_verify_account_cancelled
           description: Asks user for final confirmation to verify their account.
+          metadata:
+            line_numbers: 163-174
           collect: verify_account_confirmation
           utter: utter_ask_verify_account_confirmation
           ask_before_filling: true

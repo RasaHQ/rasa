@@ -97,6 +97,7 @@ if TYPE_CHECKING:
     from rasa.core.channels.channel import OutputChannel
     from rasa.shared.core.events import IntentPrediction
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -361,7 +362,9 @@ class ActionBotResponse(Action):
                 )
             return []
 
-        message = add_bot_utterance_metadata(message, self.utter_action, nlg, domain)
+        message = add_bot_utterance_metadata(
+            message, self.utter_action, nlg, domain, tracker
+        )
         return [create_bot_utterance(message)]
 
     def name(self) -> Text:
@@ -821,7 +824,7 @@ class RemoteAction(Action):
                 if not draft:
                     continue
                 draft = add_bot_utterance_metadata(
-                    draft, generated_response, nlg, domain
+                    draft, generated_response, nlg, domain, tracker
                 )
             else:
                 draft = {UTTER_SOURCE_METADATA_KEY: action_name}

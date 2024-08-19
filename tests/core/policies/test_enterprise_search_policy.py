@@ -657,14 +657,14 @@ async def test_enterprise_search_policy_no_retrieval(
     "events,search_query",
     [
         ([UserUttered("search")], "search"),
-        ([BotUttered("Hi, I am a bot")], ""),
+        ([BotUttered("Hi, I am a bot")], "Hi, I am a bot"),
         ([UserUttered("\nsearch\n\nthis query")], " search  this query"),
         (
             [
                 UserUttered("why is the sky blue?"),
                 BotUttered("let me find out the answer for you..."),
             ],
-            "why is the sky blue?",
+            "let me find out the answer for you... why is the sky blue?",
         ),
         (
             [
@@ -672,11 +672,11 @@ async def test_enterprise_search_policy_no_retrieval(
                 BotUttered("first message after query..."),
                 BotUttered("second message after query..."),
             ],
-            "search",
+            "second message after query... first message after query...",
         ),
     ],
 )
-def test_get_last_user_message(
+def test_prepare_search_query(
     default_enterprise_search_policy: EnterpriseSearchPolicy,
     events: List,
     search_query: str,
@@ -688,7 +688,8 @@ def test_get_last_user_message(
     )
 
     assert (
-        default_enterprise_search_policy._get_last_user_message(tracker) == search_query
+        default_enterprise_search_policy._prepare_search_query(tracker, 2)
+        == search_query
     )
 
 

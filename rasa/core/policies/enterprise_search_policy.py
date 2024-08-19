@@ -58,7 +58,7 @@ from rasa.shared.core.constants import (
     DEFAULT_SLOT_NAMES,
 )
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import Event
+from rasa.shared.core.events import Event, UserUttered, BotUttered
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -99,6 +99,7 @@ VECTOR_STORE_THRESHOLD_PROPERTY = "threshold"
 TRACE_TOKENS_PROPERTY = "trace_prompt_tokens"
 CITATION_ENABLED_PROPERTY = "citation_enabled"
 USE_LLM_PROPERTY = "use_generative_llm"
+MAX_MESSAGES_IN_QUERY_KEY = "max_messages_in_query"
 
 DEFAULT_VECTOR_STORE_TYPE = "faiss"
 DEFAULT_VECTOR_STORE_THRESHOLD = 0.0
@@ -193,26 +194,42 @@ class EnterpriseSearchPolicy(Policy):
         """Constructs a new Policy object."""
         super().__init__(config, model_storage, resource, execution_context, featurizer)
 
+        # Vector store object and configuration
         self.vector_store = vector_store
         self.vector_store_config = config.get(
             VECTOR_STORE_PROPERTY, DEFAULT_VECTOR_STORE
         )
-        self.llm_config = self.config.get(LLM_CONFIG_KEY, DEFAULT_LLM_CONFIG)
+        # Embeddings configuration for encoding the search query
         self.embeddings_config = self.config.get(
             EMBEDDINGS_CONFIG_KEY, DEFAULT_EMBEDDINGS_CONFIG
         )
+        # Maximum number of turns to include in the prompt
         self.max_history = self.config.get(POLICY_MAX_HISTORY)
+
+        # Maximum number of messages to include in the search query
+        self.max_messages_in_query = self.config.get(MAX_MESSAGES_IN_QUERY_KEY, 2)
+
+        # LLM Configuration for response generation
+        self.llm_config = self.config.get(LLM_CONFIG_KEY, DEFAULT_LLM_CONFIG)
+
+        # boolean to enable/disable tracing of prompt tokens
+        self.trace_prompt_tokens = self.config.get(TRACE_TOKENS_PROPERTY, False)
+
+        # boolean to enable/disable the use of LLM for response generation
+        self.use_llm = self.config.get(USE_LLM_PROPERTY, True)
+
+        # boolean to enable/disable citation generation
+        self.citation_enabled = self.config.get(CITATION_ENABLED_PROPERTY, False)
+
         self.prompt_template = prompt_template or get_prompt_template(
             self.config.get(PROMPT_CONFIG_KEY),
             DEFAULT_ENTERPRISE_SEARCH_PROMPT_TEMPLATE,
         )
-        self.trace_prompt_tokens = self.config.get(TRACE_TOKENS_PROPERTY, False)
-        self.use_llm = self.config.get(USE_LLM_PROPERTY, True)
-        self.citation_enabled = self.config.get(CITATION_ENABLED_PROPERTY, False)
         self.citation_prompt_template = get_prompt_template(
             self.config.get(PROMPT_CONFIG_KEY),
             DEFAULT_ENTERPRISE_SEARCH_PROMPT_WITH_CITATION_TEMPLATE,
         )
+        # If citation is enabled, use the citation prompt template
         if self.citation_enabled:
             self.prompt_template = self.citation_prompt_template
 
@@ -364,19 +381,25 @@ class EnterpriseSearchPolicy(Policy):
                 f"Unable to connect to the vector store. Error: {e}"
             )
 
-    def _get_last_user_message(self, tracker: DialogueStateTracker) -> str:
-        """Get the last user message from the tracker.
+    def _prepare_search_query(self, tracker: DialogueStateTracker, history: int) -> str:
+        """Prepares the search query.
+        The search query is the last N messages in the conversation history.
 
         Args:
             tracker: The tracker containing the conversation history up to now.
+            history: The number of messages to include in the search query.
 
         Returns:
-            The last user message.
+            The search query.
         """
-        for event in reversed(tracker.events):
-            if isinstance(event, rasa.shared.core.events.UserUttered):
-                return sanitize_message_for_prompt(event.text)
-        return ""
+        transcript = []
+        for event in tracker.applied_events():
+            if isinstance(event, UserUttered) or isinstance(event, BotUttered):
+                transcript.append(sanitize_message_for_prompt(event.text))
+
+        search_query = " ".join(transcript[-history:][::-1])
+        logger.debug("search_query", search_query=search_query)
+        return search_query
 
     async def predict_action_probabilities(  # type: ignore[override]
         self,
@@ -418,7 +441,9 @@ class EnterpriseSearchPolicy(Policy):
             logger.error(f"{logger_key}.connection_error", error=e)
             return self._create_prediction_internal_error(domain, tracker)
 
-        search_query = self._get_last_user_message(tracker)
+        search_query = self._prepare_search_query(
+            tracker, int(self.max_messages_in_query)
+        )
         tracker_state = tracker.current_state(EventVerbosity.AFTER_RESTART)
 
         try:

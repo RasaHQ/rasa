@@ -11,7 +11,11 @@ from rasa.core.actions.action_run_slot_rejections import (
     utterance_for_slot_type,
 )
 from rasa.core.channels import OutputChannel
-from rasa.core.constants import UTTER_SOURCE_METADATA_KEY
+from rasa.core.constants import (
+    UTTER_SOURCE_METADATA_KEY,
+    ACTIVE_FLOW_METADATA_KEY,
+    STEP_ID_METADATA_KEY,
+)
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.shared.core.domain import Domain, KEY_RESPONSES_TEXT
@@ -134,7 +138,8 @@ def rejection_test_dialogue_stack() -> DialogueStack:
                 "collect_action": "action_ask_recurrent_payment_type",
                 "rejections": [
                     {
-                        "if": 'not ({"direct debit" "standing order"} contains slots.recurrent_payment_type)',  # noqa: E501
+                        "if": 'not ({"direct debit" "standing order"} '
+                        "contains slots.recurrent_payment_type)",
                         "utter": "utter_invalid_recurrent_payment_type",
                     }
                 ],
@@ -293,6 +298,8 @@ async def test_action_run_slot_rejections_run_success(
             metadata={
                 "utter_action": "utter_invalid_recurrent_payment_type",
                 UTTER_SOURCE_METADATA_KEY: "TemplatedNaturalLanguageGenerator",
+                ACTIVE_FLOW_METADATA_KEY: "setup_recurrent_payment",
+                STEP_ID_METADATA_KEY: "ask_payment_type",
             },
         ),
     ]
@@ -363,6 +370,8 @@ async def test_action_run_slot_rejections_internal_error(
     assert events[1].metadata == {
         "utter_action": "utter_internal_error_rasa",
         UTTER_SOURCE_METADATA_KEY: "TemplatedNaturalLanguageGenerator",
+        ACTIVE_FLOW_METADATA_KEY: "setup_recurrent_payment",
+        STEP_ID_METADATA_KEY: "ask_payment_type",
     }
 
     out = capsys.readouterr().out
@@ -394,7 +403,8 @@ async def test_action_run_slot_rejections_collect_missing_utter(
                 "collect_action": "action_ask_recurrent_payment_type",
                 "rejections": [
                     {
-                        "if": 'not ({"direct debit" "standing order"} contains slots.recurrent_payment_type)',  # noqa: E501
+                        "if": 'not ({"direct debit" "standing order"} '
+                        "contains slots.recurrent_payment_type)",
                         "utter": None,
                     }
                 ],
@@ -454,7 +464,8 @@ async def test_action_run_slot_rejections_not_found_utter(
                 "collect_action": "action_ask_recurrent_payment_type",
                 "rejections": [
                     {
-                        "if": 'not ({"direct debit" "standing order"} contains slots.recurrent_payment_type)',  # noqa: E501
+                        "if": 'not ({"direct debit" "standing order"} '
+                        "contains slots.recurrent_payment_type)",
                         "utter": "utter_not_found",
                     }
                 ],
@@ -615,6 +626,8 @@ async def test_action_run_slot_rejections_fails_multiple_rejection_checks(
             metadata={
                 "utter_action": "utter_payment_negative",
                 UTTER_SOURCE_METADATA_KEY: "TemplatedNaturalLanguageGenerator",
+                ACTIVE_FLOW_METADATA_KEY: "setup_recurrent_payment",
+                STEP_ID_METADATA_KEY: "ask_payment_amount",
             },
         ),
     ]
@@ -663,6 +676,8 @@ async def test_invalid_categorical_slot_using_coercion(
             metadata={
                 "utter_action": "utter_categorical_slot_rejection",
                 UTTER_SOURCE_METADATA_KEY: "TemplatedNaturalLanguageGenerator",
+                ACTIVE_FLOW_METADATA_KEY: "pattern_collect_information",
+                STEP_ID_METADATA_KEY: "start",
             },
         ),
     ]
@@ -1139,6 +1154,8 @@ async def test_rephrased_bot_utterance_contains_metadata_keys(
             metadata={
                 "utter_action": "utter_invalid_recurrent_payment_type",
                 UTTER_SOURCE_METADATA_KEY: "ContextualResponseRephraser",
+                ACTIVE_FLOW_METADATA_KEY: "setup_recurrent_payment",
+                STEP_ID_METADATA_KEY: "ask_payment_type",
                 "domain_ground_truth": [
                     response["text"]
                     for response in rejection_test_domain.responses.get(

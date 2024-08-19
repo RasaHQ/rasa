@@ -194,7 +194,7 @@ class TestFlowRetrieval:
             FlowRetrieval.get_default_config(),
         ],
     )
-    @patch("langchain.vectorstores.faiss.FAISS.from_documents")
+    @patch("langchain_community.vectorstores.faiss.FAISS.from_documents")
     def test_populate(
         self,
         mock_faiss_from_documents: Mock,
@@ -328,7 +328,7 @@ class TestFlowRetrieval:
         # Then
         assert query == expected_query
 
-    @patch("langchain.vectorstores.faiss.FAISS.asimilarity_search_with_score")
+    @patch("langchain_community.vectorstores.faiss.FAISS.asimilarity_search_with_score")
     async def test_query_vector_store(
         self,
         mock_asimilarity_search_with_score: Mock,
@@ -343,7 +343,7 @@ class TestFlowRetrieval:
         # Then
         mock_asimilarity_search_with_score.assert_called_once_with(query, k=k)
 
-    @patch("langchain.vectorstores.faiss.FAISS.asimilarity_search_with_score")
+    @patch("langchain_community.vectorstores.faiss.FAISS.asimilarity_search_with_score")
     async def test_query_vector_store_throws_exception(
         self,
         mock_asimilarity_search_with_score: Mock,
@@ -406,7 +406,7 @@ class TestFlowRetrieval:
             "test_flow_with_collect_steps",
         }
 
-    @patch("langchain.vectorstores.faiss.FAISS.save_local")
+    @patch("langchain_community.vectorstores.faiss.FAISS.save_local")
     def persist_vector_store(
         self,
         mock_faiss_save_local: Mock,
@@ -421,7 +421,7 @@ class TestFlowRetrieval:
         # Then
         mock_faiss_save_local.assert_called_once()
 
-    @patch("langchain.vectorstores.faiss.FAISS.save_local")
+    @patch("langchain_community.vectorstores.faiss.FAISS.save_local")
     def persist_vector_store_not_initialized(
         self,
         mock_faiss_save_local: Mock,
@@ -436,8 +436,8 @@ class TestFlowRetrieval:
         # Then
         mock_faiss_save_local.assert_not_called()
 
-    @patch("langchain.vectorstores.faiss.FAISS.save_local")
-    @patch("langchain.vectorstores.faiss.FAISS.load_local")
+    @patch("langchain_community.vectorstores.faiss.FAISS.save_local")
+    @patch("langchain_community.vectorstores.faiss.FAISS.load_local")
     def test_load_vector_store(
         self,
         mock_load_local: Mock,

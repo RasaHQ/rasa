@@ -9,6 +9,7 @@ from structlog.contextvars import (
     bound_contextvars,
 )
 
+from rasa.core.constants import STEP_ID_METADATA_KEY, ACTIVE_FLOW_METADATA_KEY
 from rasa.core.policies.flows.flow_exceptions import (
     FlowCircuitBreakerTrippedException,
     FlowException,
@@ -469,6 +470,10 @@ def advance_flows_until_next_action(
         # make sure we really return all events that got created during the
         # step execution of all steps (not only the last one)
         prediction.events = gathered_events
+        prediction.metadata = {
+            ACTIVE_FLOW_METADATA_KEY: tracker.active_flow,
+            STEP_ID_METADATA_KEY: tracker.current_step_id,
+        }
         return prediction
     else:
         structlogger.warning("flow.step.execution.no_action")

@@ -1,11 +1,13 @@
+import os
 from typing import Tuple, List, Optional, Text, Union, Dict
 
 import pytest
+
 from rasa.dialogue_understanding.stack.utils import (
     previous_collect_steps_for_active_flow,
 )
-
 from rasa.shared.core.flows import Flow, FlowsList
+from rasa.shared.core.flows.flow_path import PathNode, FlowPath, FlowPathsList
 from rasa.shared.core.flows.flow_step_links import StaticFlowStepLink
 from rasa.shared.core.flows.steps import (
     ActionFlowStep,
@@ -17,6 +19,9 @@ from rasa.shared.core.flows.steps.constants import (
     CONTINUE_STEP_PREFIX,
     END_STEP,
     START_STEP,
+)
+from rasa.shared.core.flows.yaml_flows_io import (
+    YAMLFlowsReader,
 )
 from rasa.shared.core.slots import TextSlot, BooleanSlot
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -113,6 +118,11 @@ add_contact_flow_collects = (
 @pytest.fixture
 def empty_flows_list() -> FlowsList:
     return FlowsList(underlying_flows=[])
+
+
+@pytest.fixture(scope="module")
+def pizza_flows_file(tests_data_folder: str) -> str:
+    return os.path.join(tests_data_folder, "test_flows", "pizza_flows.yml")
 
 
 def test_user_flow_ids(user_flows_and_patterns: FlowsList):
@@ -703,3 +713,168 @@ def test_get_trigger_intents(nlu_trigger_config, actual_intents):
     intents = flows.underlying_flows[0].get_trigger_intents()
 
     assert intents == set(actual_intents)
+
+
+def test_extract_all_paths(pizza_flows_file: str):
+    flows_list = YAMLFlowsReader.read_from_file(pizza_flows_file)
+    flow = flows_list.flow_by_id("order_pizza")
+    paths = flow.extract_all_paths()
+
+    expected_paths = FlowPathsList(
+        "order_pizza",
+        [
+            FlowPath(
+                flow="order_pizza",
+                nodes=[
+                    PathNode(
+                        step_id="payment_options",
+                        flow="order_pizza",
+                        lines="15-22",
+                    ),
+                    PathNode(
+                        step_id="use_card_details",
+                        flow="order_pizza",
+                        lines="23-28",
+                    ),
+                    PathNode(step_id="take_payment", flow="order_pizza", lines="29-31"),
+                ],
+            ),
+            FlowPath(
+                flow="order_pizza",
+                nodes=[
+                    PathNode(
+                        step_id="payment_options",
+                        flow="order_pizza",
+                        lines="15-22",
+                    ),
+                    PathNode(
+                        step_id="use_card_details",
+                        flow="order_pizza",
+                        lines="23-28",
+                    ),
+                    PathNode(step_id="cancel_order", flow="order_pizza", lines="38-41"),
+                ],
+            ),
+            FlowPath(
+                flow="order_pizza",
+                nodes=[
+                    PathNode(
+                        step_id="payment_options",
+                        flow="order_pizza",
+                        lines="15-22",
+                    ),
+                    PathNode(step_id="take_payment", flow="order_pizza", lines="29-31"),
+                ],
+            ),
+            FlowPath(
+                flow="order_pizza",
+                nodes=[
+                    PathNode(
+                        step_id="payment_options",
+                        flow="order_pizza",
+                        lines="15-22",
+                    ),
+                    PathNode(step_id="cancel_order", flow="order_pizza", lines="38-41"),
+                ],
+            ),
+            FlowPath(
+                flow="order_pizza",
+                nodes=[
+                    PathNode(step_id="cancel_order", flow="order_pizza", lines="38-41"),
+                ],
+            ),
+        ],
+    )
+
+    assert len(paths.paths) == len(
+        expected_paths.paths
+    ), f"Expected {len(expected_paths.paths)} paths, but got {len(paths.paths)}"
+
+    for path in expected_paths.paths:
+        assert path in paths.paths, f"Expected path {path} not found in extracted paths"
+
+
+def test_go_over_steps(pizza_flows_file: str):
+    flows_list = YAMLFlowsReader.read_from_file(pizza_flows_file)
+    order_pizza_flow = flows_list.flow_by_id("order_pizza")
+    path = FlowPath(
+        flow="order_pizza", nodes=[PathNode(step_id="order_pizza", flow="order_pizza")]
+    )
+    collected_paths = FlowPathsList("order_pizza", [])
+    step_ids_visited = set()
+
+    order_pizza_flow._go_over_steps(
+        order_pizza_flow.steps, path, collected_paths, step_ids_visited
+    )
+
+    expected_path = FlowPath(
+        flow="order_pizza",
+        nodes=[
+            PathNode(step_id="order_pizza", flow="order_pizza", lines=None),
+            PathNode(
+                step_id="payment_options",
+                flow="order_pizza",
+                lines="15-22",
+            ),
+            PathNode(
+                step_id="use_card_details",
+                flow="order_pizza",
+                lines="23-28",
+            ),
+            PathNode(step_id="take_payment", flow="order_pizza", lines="29-31"),
+        ],
+    )
+
+    assert len(collected_paths.paths) == 5
+    assert path == expected_path
+
+
+def test_handle_next(pizza_flows_file: str):
+    flows_list = YAMLFlowsReader.read_from_file(pizza_flows_file)
+    order_pizza_flow = flows_list.flow_by_id("order_pizza")
+    path = FlowPath(flow="order_pizza", nodes=[])
+    collected_paths = FlowPathsList("order_pizza", [])
+    step_ids_visited = set()
+
+    links = order_pizza_flow.steps[1].next.links
+    order_pizza_flow._handle_links(links, path, collected_paths, step_ids_visited)
+
+    expected_collected_paths = [
+        FlowPath(
+            flow="order_pizza",
+            nodes=[
+                PathNode(
+                    step_id="use_card_details",
+                    flow="order_pizza",
+                    lines="23-28",
+                ),
+                PathNode(step_id="take_payment", flow="order_pizza", lines="29-31"),
+            ],
+        ),
+        FlowPath(
+            flow="order_pizza",
+            nodes=[
+                PathNode(
+                    step_id="use_card_details",
+                    flow="order_pizza",
+                    lines="23-28",
+                ),
+                PathNode(step_id="cancel_order", flow="order_pizza", lines="38-41"),
+            ],
+        ),
+        FlowPath(
+            flow="order_pizza",
+            nodes=[
+                PathNode(step_id="take_payment", flow="order_pizza", lines="29-31"),
+            ],
+        ),
+        FlowPath(
+            flow="order_pizza",
+            nodes=[
+                PathNode(step_id="cancel_order", flow="order_pizza", lines="38-41"),
+            ],
+        ),
+    ]
+
+    assert len(collected_paths.paths) == 4
+    assert collected_paths.paths == expected_collected_paths

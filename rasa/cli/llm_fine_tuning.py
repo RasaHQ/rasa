@@ -31,13 +31,12 @@ from rasa.llm_fine_tuning.train_test_split_module import (
 )
 from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH, DEFAULT_MODELS_PATH
 from rasa.utils.beta import ensure_beta_feature_is_enabled
+from rasa.cli.e2e_test import RASA_PRO_BETA_FINE_TUNING_RECIPE_ENV_VAR_NAME
 
 DEFAULT_INPUT_E2E_TEST_PATH = "e2e_tests"
 DEFAULT_OUTPUT_FOLDER = "output"
 RESULT_SUMMARY_FILE = "result_summary.yaml"
 PARAMETERS_FILE = "params.yaml"
-
-RASA_PRO_BETA_FINE_TUNING_RECIPE_ENV_VAR_NAME = "RASA_PRO_BETA_FINE_TUNING_RECIPE"
 
 structlogger = structlog.get_logger()
 
