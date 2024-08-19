@@ -59,8 +59,7 @@ def handle_download(args: argparse.Namespace) -> None:
             config_path = config_path / DEFAULT_CONFIG_PATH
         elif not config_path.parent.exists():
             raise ValueError(
-                f"Directory '{config_path.parent}' for "
-                f"config file does not exist."
+                f"Directory '{config_path.parent}' for " f"config file does not exist."
             )
 
     endpoints_file_exists_in_path = rasa.cli.utils.get_validated_path(
