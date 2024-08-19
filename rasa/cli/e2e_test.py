@@ -63,6 +63,7 @@ STATUS_PASSED = "passed"
 STATUS_FAILED = "failed"
 
 RASA_PRO_BETA_E2E_ASSERTIONS_ENV_VAR_NAME = "RASA_PRO_BETA_E2E_ASSERTIONS"
+RASA_PRO_BETA_FINE_TUNING_RECIPE_ENV_VAR_NAME = "RASA_PRO_BETA_FINE_TUNING_RECIPE"
 
 structlogger = structlog.get_logger()
 
@@ -365,6 +366,10 @@ def execute_e2e_tests(args: argparse.Namespace) -> None:
     accuracy_calculations = aggregate_stats_calculator.calculate()
 
     if args.coverage_report and test_runner.agent.processor:
+        ensure_beta_feature_is_enabled(
+            "LLM fine-tuning recipe",
+            env_flag=RASA_PRO_BETA_FINE_TUNING_RECIPE_ENV_VAR_NAME,
+        )
         coverage_output_path = args.coverage_output_path
         rasa.shared.utils.io.create_directory(coverage_output_path)
         flows = asyncio.run(test_runner.agent.processor.get_flows())
