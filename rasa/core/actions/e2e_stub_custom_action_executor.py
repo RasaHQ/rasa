@@ -8,7 +8,6 @@ from typing import (
 
 import structlog
 
-from rasa.cli.e2e_test import _get_stub_custom_action_key
 from rasa.core.actions.custom_action_executor import (
     CustomActionExecutor,
 )
@@ -41,9 +40,11 @@ class E2EStubCustomActionExecutor(CustomActionExecutor):
         self.stub_custom_action = self.get_stub_custom_action()
 
     def get_stub_custom_action(self) -> "StubCustomAction":
+        from rasa.cli.e2e_test import get_stub_custom_action_key
+
         # Fetch the key that should store the relevant StubCustomAction
         test_file_name = self.action_endpoint.kwargs.get("test_file_name")
-        stub_custom_action_key = _get_stub_custom_action_key(
+        stub_custom_action_key = get_stub_custom_action_key(
             test_file_name, self.action_name
         )
 

@@ -307,7 +307,7 @@ def read_test_cases(path: Text) -> TestSuite:
         )
         for action_name, mock_data in stub_custom_actions_contents.items():
             test_file_name = Path(test_file).stem
-            stub_custom_action_key = _get_stub_custom_action_key(
+            stub_custom_action_key = get_stub_custom_action_key(
                 test_file_name, action_name
             )
             stub_custom_actions[stub_custom_action_key] = StubCustomAction.from_dict(
@@ -836,6 +836,6 @@ def _save_tested_commands_histogram(
     )
 
 
-def _get_stub_custom_action_key(test_file_name: str, action_name: str) -> str:
+def get_stub_custom_action_key(test_file_name: str, action_name: str) -> str:
     """Returns the key used to store the StubCustomAction object"""
     return f"{test_file_name}__{action_name}"
