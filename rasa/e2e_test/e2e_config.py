@@ -149,7 +149,7 @@ class LLME2ETestConverterConfig(BaseModel):
 
     @classmethod
     def get_default_config(cls) -> Dict[str, Any]:
-        return {"api_type": "openai", "model": "gpt-4o-mini"}
+        return {API_TYPE_CONFIG_KEY: "openai", MODEL_CONFIG_KEY: "gpt-4o-mini"}
 
     @staticmethod
     def _clean_up_config(config_data: Dict[str, Any]) -> Dict[str, Any]:
