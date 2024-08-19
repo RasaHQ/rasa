@@ -753,9 +753,10 @@ def test_save_test_cases_to_yaml(tmp_path: Path):
     )
     test_results = [TestResult(test_case, pass_status=True, difference=[])]
     test_suite = TestSuite(
-        [test_case],
+        test_cases=[test_case],
         fixtures=[Fixture("fixture", {"key": "value"})],
         metadata=[Metadata("metadata", {"key": "value"})],
+        stub_custom_actions={},
     )
 
     with capture_logs() as logs:

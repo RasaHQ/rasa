@@ -743,6 +743,7 @@ def save_test_cases_to_yaml(
         test_cases=test_cases,
         fixtures=test_suite.fixtures,
         metadata=test_suite.metadata,
+        stub_custom_actions={}
     )
 
     output_filename = f"{status}.yml"
