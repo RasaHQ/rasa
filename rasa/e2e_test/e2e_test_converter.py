@@ -87,8 +87,8 @@ class E2ETestConverter:
     def __init__(
         self,
         path: str,
+        llm_config: LLME2ETestConverterConfig,
         sheet_name: Optional[str] = None,
-        llm_config: Optional[LLME2ETestConverterConfig] = None,
         **kwargs: Any,
     ) -> None:
         """Initializes the E2ETestConverter with necessary parameters.
@@ -96,7 +96,7 @@ class E2ETestConverter:
         Args:
             path (str): Path to the input file.
             sheet_name (str): Name of the sheet in XLSX file.
-            llm_config (Optional[LLME2ETestConverterConfig]): LLM configuration .
+            llm_config (LLME2ETestConverterConfig): LLM configuration .
         """
         self.input_path: str = path
         self.sheet_name: Optional[str] = sheet_name
@@ -105,7 +105,7 @@ class E2ETestConverter:
             E2E_TEST_MODULE, DEFAULT_E2E_TEST_CONVERTER_PROMPT_PATH
         )
         self.llm_config = llm_config
-        self.default_llm_config = LLME2ETestConverterConfig.get_default_config()
+        self.default_llm_config_dict = LLME2ETestConverterConfig.get_default_config()
 
     @staticmethod
     def remove_markdown_code_syntax(markdown_string: str) -> str:
@@ -173,8 +173,7 @@ class E2ETestConverter:
         Returns:
             Optional[str]: Generated response.
         """
-        custom_config = self.llm_config.as_dict() if self.llm_config else {}
-        llm = llm_factory(custom_config, self.default_llm_config.as_dict())
+        llm = llm_factory(self.llm_config.as_dict(), self.default_llm_config_dict)
 
         try:
             llm_response = await llm.acompletion(prompt)
