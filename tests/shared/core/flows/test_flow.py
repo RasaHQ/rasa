@@ -794,6 +794,60 @@ def test_extract_all_paths(pizza_flows_file: str):
         assert path in paths.paths, f"Expected path {path} not found in extracted paths"
 
 
+def test_extract_all_paths_correct_order():
+    flow_config = """
+        flows:
+            correct_order:
+                name: correct_order
+                description: user wants to correct order details
+                nlu_trigger:
+                - intent:
+                    name: correct_order
+                    confidence_threshold: 0.5
+                steps:
+                  - collect: correct_order
+                  - call: fill_pizza_order
+
+            fill_pizza_order:
+                name: fill pizza order
+                description: user is asked to fill out pizza order details
+                steps:
+                    - collect: pizza
+                    - collect: num_pizza
+                    - collect: address
+                    - collect: confirmation_order
+                      reset_after_flow_ends: False
+                      ask_before_filling: True
+    """
+
+    flows_list = YAMLFlowsReader.read_from_string(flow_config, add_line_numbers=True)
+    flow = flows_list.flow_by_id("correct_order")
+    paths = flow.extract_all_paths()
+
+    expected_paths = FlowPathsList(
+        "correct_order",
+        [
+            FlowPath(
+                flow="correct_order",
+                nodes=[
+                    PathNode(
+                        step_id="0_collect_correct_order",
+                        flow="correct_order",
+                        lines="11-11",
+                    ),
+                ],
+            ),
+        ],
+    )
+
+    assert len(paths.paths) == len(
+        expected_paths.paths
+    ), f"Expected {len(expected_paths.paths)} paths, but got {len(paths.paths)}"
+
+    for path in expected_paths.paths:
+        assert path in paths.paths, f"Expected path {path} not found in extracted paths"
+
+
 def test_go_over_steps(pizza_flows_file: str):
     flows_list = YAMLFlowsReader.read_from_file(pizza_flows_file)
     order_pizza_flow = flows_list.flow_by_id("order_pizza")
