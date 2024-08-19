@@ -11,6 +11,7 @@ from rasa.core.actions.custom_action_executor import (
     CustomActionExecutor,
 )
 from rasa.e2e_test.constants import KEY_STUB_CUSTOM_ACTIONS
+from rasa.e2e_test.e2e_test_case import StubCustomAction
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
@@ -35,8 +36,8 @@ class E2EStubCustomActionExecutor(CustomActionExecutor):
         self.action_endpoint = action_endpoint
         self.stub_custom_action = self.get_stub_custom_action()
 
-    def get_stub_custom_action(self):
-        stub_custom_actions = self.action_endpoint.kwargs.get(KEY_STUB_CUSTOM_ACTIONS)
+    def get_stub_custom_action(self) -> StubCustomAction:
+        stub_custom_actions = self.action_endpoint.kwargs.get(KEY_STUB_CUSTOM_ACTIONS, {})
         if stub_custom_action := stub_custom_actions.get(self.action_name):
             return stub_custom_action
 
