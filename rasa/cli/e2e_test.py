@@ -36,7 +36,6 @@ from rasa.e2e_test.e2e_test_case import (
     KEY_STUB_CUSTOM_ACTIONS,
     Fixture,
     Metadata,
-    StubCustomAction,
     TestCase,
     TestSuite,
 )
