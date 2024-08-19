@@ -43,6 +43,7 @@ class OpenAIEmbeddingClient(_BaseLiteLLMEmbeddingClient):
         api_version: Optional[str] = None,
         **kwargs: Any,
     ):
+        super().__init__()  # type: ignore
         self._model = model
         self._api_base = api_base or os.environ.get(OPENAI_API_BASE_ENV_VAR)
         self._api_type = api_type or os.environ.get(OPENAI_API_TYPE_ENV_VAR)

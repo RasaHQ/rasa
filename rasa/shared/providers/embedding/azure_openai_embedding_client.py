@@ -58,6 +58,7 @@ class AzureOpenAIEmbeddingClient(_BaseLiteLLMEmbeddingClient):
         api_version: Optional[str] = None,
         **kwargs: Any,
     ):
+        super().__init__()  # type: ignore
         self._deployment = deployment
         self._model = model
 

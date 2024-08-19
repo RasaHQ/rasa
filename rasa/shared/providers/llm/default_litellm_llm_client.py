@@ -24,6 +24,7 @@ class DefaultLiteLLMClient(_BaseLiteLLMClient):
     """
 
     def __init__(self, model: str, **kwargs: Any):
+        super().__init__()  # type: ignore
         self._model = model
         self._extra_parameters = kwargs
         self.validate_client_setup()

@@ -32,6 +32,9 @@ class _BaseLiteLLMClient:
     more controlled API surface.
     """
 
+    def __init__(self):  # type: ignore
+        self._ensure_certificates()
+
     @classmethod
     @abstractmethod
     def from_config(cls, config: Dict[str, Any]) -> "_BaseLiteLLMClient":
@@ -195,3 +198,11 @@ class _BaseLiteLLMClient:
             formatted_response=formatted_response.to_dict(),
         )
         return formatted_response
+
+    @staticmethod
+    def _ensure_certificates() -> None:
+        from rasa.shared.providers._ssl_verification_utils import (
+            ensure_ssl_certificates_for_litellm,
+        )
+
+        ensure_ssl_certificates_for_litellm()

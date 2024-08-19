@@ -4,7 +4,6 @@ from typing import Any, Dict, List
 import litellm
 import structlog
 from litellm import aembedding, embedding, validate_environment
-
 from rasa.shared.exceptions import (
     ProviderClientAPIException,
     ProviderClientValidationError,
@@ -35,6 +34,9 @@ class _BaseLiteLLMEmbeddingClient:
     implementations are exposed to users, maintaining a cleaner and
     more controlled API surface.
     """
+
+    def __init__(self):  # type: ignore
+        self._ensure_certificates()
 
     @property
     @abstractmethod
@@ -227,3 +229,11 @@ class _BaseLiteLLMEmbeddingClient:
             formatted_response=log_response,
         )
         return formatted_response
+
+    @staticmethod
+    def _ensure_certificates() -> None:
+        from rasa.shared.providers._ssl_verification_utils import (
+            ensure_ssl_certificates_for_litellm,
+        )
+
+        ensure_ssl_certificates_for_litellm()

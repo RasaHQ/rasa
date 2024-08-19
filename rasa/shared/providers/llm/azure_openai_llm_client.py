@@ -59,6 +59,7 @@ class AzureOpenAILLMClient(_BaseLiteLLMClient):
         api_version: Optional[str] = None,
         **kwargs: Any,
     ):
+        super().__init__()  # type: ignore
         self._deployment = deployment
         self._model = model
         self._extra_parameters = kwargs or {}

@@ -43,6 +43,7 @@ class OpenAILLMClient(_BaseLiteLLMClient):
         api_type: Optional[str] = None,
         **kwargs: Any,
     ):
+        super().__init__()  # type: ignore
         self._model = model
         self._api_base = api_base or os.environ.get(OPENAI_API_BASE_ENV_VAR, None)
         self._api_version = api_version or os.environ.get(
