@@ -71,7 +71,7 @@ def handle_download(args: argparse.Namespace) -> None:
     else:
         endpoints_path = Path(args.endpoints)
         if endpoints_path.is_dir():
-            endpoints_path = endpoints_path / DEFAULT_ENDPOINTS_PATH.name
+            endpoints_path = endpoints_path / DEFAULT_ENDPOINTS_PATH
         elif not endpoints_path.parent.exists():
             raise ValueError(
                 f"Directory '{endpoints_path.parent}' for "
