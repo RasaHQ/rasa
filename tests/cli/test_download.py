@@ -7,8 +7,7 @@ def test_rasa_download_help(run: Callable[..., RunResult]) -> None:
     help_text = """usage: rasa studio download [-h] [-v] [-vv] [--quiet]
                 [--logging-config-file LOGGING_CONFIG_FILE]
                 [-d DOMAIN] [--data DATA [DATA ...]] [-c CONFIG]
-                [--endpoints ENDPOINTS [ENDPOINTS ...]]
-                [--overwrite]
+                [--endpoints ENDPOINTS] [--overwrite]
                 assistant_name"""
     lines = help_text.split("\n")
 
