@@ -518,7 +518,7 @@ class TestSuite:
             KEY_FIXTURES: [fixture.as_dict() for fixture in self.fixtures],
             KEY_METADATA: [metadata.as_dict() for metadata in self.metadata],
             KEY_STUB_CUSTOM_ACTIONS: {
-                key: value.as_dict() for key, value in self.stub_custom_actions
+                key: value.as_dict() for key, value in self.stub_custom_actions.items()
             },
             KEY_TEST_CASES: [test_case.as_dict() for test_case in self.test_cases],
         }
