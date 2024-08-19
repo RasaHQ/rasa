@@ -1,33 +1,34 @@
 import logging
 import textwrap
 from datetime import datetime
-from typing import List, Text, Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Text
 from unittest.mock import AsyncMock, Mock
 
 import pytest
-from pytest import MonkeyPatch
 from _pytest.logging import LogCaptureFixture
 from aioresponses import aioresponses
 from jsonschema import ValidationError
+from pytest import MonkeyPatch
 
 import rasa.core
+import rasa.shared.utils.common
 from rasa.core import ContextualResponseRephraser
 from rasa.core.actions import action
 from rasa.core.actions.action import (
     ActionBack,
+    ActionBotResponse,
     ActionDefaultAskAffirmation,
     ActionDefaultAskRephrase,
     ActionDefaultFallback,
-    ActionRestart,
-    ActionBotResponse,
-    ActionRetrieveResponse,
-    ActionSendText,
-    RemoteAction,
-    ActionSessionStart,
     ActionEndToEndResponse,
     ActionExtractSlots,
-    default_actions,
     ActionResetRouting,
+    ActionRestart,
+    ActionRetrieveResponse,
+    ActionSendText,
+    ActionSessionStart,
+    RemoteAction,
+    default_actions,
 )
 from rasa.core.actions.action_exceptions import ActionExecutionRejection
 from rasa.core.actions.forms import FormAction
@@ -38,62 +39,61 @@ from rasa.core.constants import (
     UTTER_SOURCE_METADATA_KEY,
 )
 from rasa.core.nlg import NaturalLanguageGenerator
+from rasa.core.nlg.response import TemplatedNaturalLanguageGenerator
 from rasa.core.policies.enterprise_search_policy import (
     SEARCH_QUERY_METADATA_KEY,
     SEARCH_RESULTS_METADATA_KEY,
 )
 from rasa.shared.constants import (
     LATEST_TRAINING_DATA_FORMAT_VERSION,
-    UTTER_PREFIX,
     REQUIRED_SLOTS_KEY,
     ROUTE_TO_CALM_SLOT,
+    UTTER_PREFIX,
 )
-from rasa.shared.core.domain import (
-    ActionNotFoundException,
-    KEY_RESPONSES_TEXT,
-    SessionConfig,
-    Domain,
-    KEY_E2E_ACTIONS,
-)
-from rasa.shared.core.events import (
-    Restarted,
-    SlotSet,
-    UserUtteranceReverted,
-    BotUttered,
-    ActiveLoop,
-    SessionStarted,
-    ActionExecuted,
-    Event,
-    UserUttered,
-    EntitiesAdded,
-    DefinePrevUserUtteredFeaturization,
-    AllSlotsReset,
-    ReminderScheduled,
-    ReminderCancelled,
-    ActionReverted,
-    StoryExported,
-    FollowupAction,
-    ConversationPaused,
-    ConversationResumed,
-    AgentUttered,
-    LoopInterrupted,
-    ActionExecutionRejected,
-    LegacyFormValidation,
-    LegacyForm,
-    RoutingSessionEnded,
-)
-import rasa.shared.utils.common
-from rasa.core.nlg.response import TemplatedNaturalLanguageGenerator
 from rasa.shared.core.constants import (
-    USER_INTENT_SESSION_START,
     ACTION_LISTEN_NAME,
     ACTIVE_LOOP,
+    DEFAULT_ACTION_NAMES,
+    FLOW_HASHES_SLOT,
     FOLLOWUP_ACTION,
     REQUESTED_SLOT,
-    SESSION_START_METADATA_SLOT,
-    FLOW_HASHES_SLOT,
-    DEFAULT_ACTION_NAMES,
     RULE_SNIPPET_ACTION_NAME,
+    SESSION_START_METADATA_SLOT,
+    USER_INTENT_SESSION_START,
+)
+from rasa.shared.core.domain import (
+    KEY_E2E_ACTIONS,
+    KEY_RESPONSES_TEXT,
+    ActionNotFoundException,
+    Domain,
+    SessionConfig,
+)
+from rasa.shared.core.events import (
+    ActionExecuted,
+    ActionExecutionRejected,
+    ActionReverted,
+    ActiveLoop,
+    AgentUttered,
+    AllSlotsReset,
+    BotUttered,
+    ConversationPaused,
+    ConversationResumed,
+    DefinePrevUserUtteredFeaturization,
+    EntitiesAdded,
+    Event,
+    FollowupAction,
+    LegacyForm,
+    LegacyFormValidation,
+    LoopInterrupted,
+    ReminderCancelled,
+    ReminderScheduled,
+    Restarted,
+    RoutingSessionEnded,
+    SessionStarted,
+    SlotSet,
+    StoryExported,
+    UserUtteranceReverted,
+    UserUttered,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
@@ -195,11 +195,6 @@ async def test_remote_action_runs(
     domain: Domain,
     monkeypatch: MonkeyPatch,
 ):
-    monkeypatch.setattr(
-        "rasa.core.actions.custom_action_executor.CustomActionRequestWriter._get_domain_digest",
-        Mock(return_value=None),
-    )
-
     endpoint = EndpointConfig("https://example.com/webhooks/actions")
     remote_action = action.RemoteAction("my_action", endpoint)
 
@@ -221,6 +216,7 @@ async def test_remote_action_runs(
 
         assert json_of_latest_request(r) == {
             "domain": domain.as_dict(),
+            "domain_digest": domain.fingerprint(),
             "next_action": "my_action",
             "sender_id": "my-sender",
             "version": rasa.__version__,
@@ -259,11 +255,6 @@ async def test_remote_action_logs_events(
     domain: Domain,
     monkeypatch: MonkeyPatch,
 ):
-    monkeypatch.setattr(
-        "rasa.core.actions.custom_action_executor.CustomActionRequestWriter._get_domain_digest",
-        Mock(return_value=None),
-    )
-
     endpoint = EndpointConfig("https://example.com/webhooks/actions")
     remote_action = action.RemoteAction("my_action", endpoint)
 
@@ -292,6 +283,7 @@ async def test_remote_action_logs_events(
 
         assert json_of_latest_request(r) == {
             "domain": domain.as_dict(),
+            "domain_digest": domain.fingerprint(),
             "next_action": "my_action",
             "sender_id": "my-sender",
             "version": rasa.__version__,
@@ -3152,11 +3144,6 @@ async def test_action_extract_slots_with_flows_metadata(
     The action should not extract slots that are collected by flows or actions that are
     run within flows.
     """
-    monkeypatch.setattr(
-        "rasa.core.actions.custom_action_executor.CustomActionRequestWriter._get_domain_digest",
-        AsyncMock(return_value=None),
-    )
-
     slot_name = "store_location"
     action_name = "action_find_closest_store"
     domain_yaml = textwrap.dedent(
