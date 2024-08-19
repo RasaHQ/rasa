@@ -5,18 +5,21 @@ from unittest.mock import Mock
 import pytest
 from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
-from opentelemetry.trace import SpanContext
 from rasa.core.actions.action import ActionBotResponse, RemoteAction
+from rasa.core.actions.forms import FormAction
 from rasa.core.channels import UserMessage
 from rasa.utils.endpoints import EndpointConfig
 
 from rasa.tracing.instrumentation import instrumentation
+from rasa_sdk import Action
+
 from tests.tracing.instrumentation.conftest import (
     MockMessageProcessor,
     TrackerMock,
 )
 
 EVENTS_IN_TRACKER = ["foo", "bar", "baz"]
+ACTION_SERVER_URL = "http://localhost:5055/webhook"
 
 
 @pytest.mark.asyncio
@@ -96,9 +99,29 @@ async def test_tracing(
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "action, expected_attributes",
+    [
+        (
+            RemoteAction("custom_action", EndpointConfig(ACTION_SERVER_URL)),
+            {
+                "action_name": "custom_action",
+                "executor_class_name": "HTTPCustomActionExecutor",
+            },
+        ),
+        (
+            FormAction("validate_my_form", EndpointConfig(ACTION_SERVER_URL)),
+            {
+                "action_name": "validate_my_form",
+            },
+        ),
+    ],
+)
 async def test_propagation_to_action_server(
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
+    action: Action,
+    expected_attributes: Dict,
 ) -> None:
     instrumentation.instrument(
         tracer_provider,
@@ -106,27 +129,14 @@ async def test_propagation_to_action_server(
     )
 
     processor = MockMessageProcessor(EVENTS_IN_TRACKER)
-    action_server_url = "http://localhost:5055/webhook"
-    remote_action = RemoteAction("custom_action", EndpointConfig(action_server_url))
 
-    assert remote_action.action_endpoint.headers == {}
+    assert action.action_endpoint.headers == {}
 
-    await processor._run_action(remote_action, Mock(), Mock(), Mock(), Mock())
-
-    assert "traceparent" in remote_action.action_endpoint.headers
-    id_list = remote_action.action_endpoint.headers["traceparent"].split("-")
+    await processor._run_action(action, Mock(), Mock(), Mock(), Mock())
 
     captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     captured_span = captured_spans[-1]
 
     assert captured_span.name == "MockMessageProcessor._run_action"
-    assert captured_span.attributes == {
-        "action_name": "custom_action",
-        "executor_class_name": "HTTPCustomActionExecutor",
-    }
-
-    span_context: SpanContext = captured_span.get_span_context()  # type: ignore
-
-    assert span_context.trace_id == int(id_list[1], 16)
-    assert span_context.span_id == int(id_list[2], 16)
+    assert captured_span.attributes == expected_attributes

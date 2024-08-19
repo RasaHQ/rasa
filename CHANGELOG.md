@@ -10,6 +10,19 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.9.7] - 2024-08-15
+                       
+Rasa Pro 3.9.7 (2024-08-15)                            
+### Bugfixes
+- [#916](https://github.com/rasahq/rasa-private/issues/916): Fix extraction of tracing context from the request headers and injection into the Rasa server tracing context.
+- [#957](https://github.com/rasahq/rasa-private/issues/957): `YamlValidationException` will correctly return line number of the element where the error ocurred when line number of that element is not returned by `ruamel.yaml` (for elements of primitive types, e.g. `str`, `int`, etc.), instead of returning the line number of the parent element.
+- [#963](https://github.com/rasahq/rasa-private/issues/963): Updated `setuptools` to fix security vulnarability.
+- [#986](https://github.com/rasahq/rasa-private/issues/986): Fix tracing context propagation to work for all external service calls.
+
+### Miscellaneous internal changes
+- [#926](https://github.com/rasahq/rasa-private/issues/926)
+
+
 ## [3.9.6] - 2024-08-07
                        
 Rasa Pro 3.9.6 (2024-08-07)                            

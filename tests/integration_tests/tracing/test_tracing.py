@@ -11,9 +11,13 @@ from tests.conftest import wait
 from tests.integration_tests.conftest import send_message_to_rasa_server
 from tests.integration_tests.tracing.conftest import (
     ACTION_SERVER_ACTION_TRIGGERED,
+    ACTION_SERVER_FORM_FILL_MESSAGE,
+    ACTION_SERVER_FORM_VALIDATION_ACTION_TRIGGERED,
+    ACTION_SERVER_FORM_TRIGGER_MESSAGE,
     ACTION_SERVER_JAEGER_TRACING_SERVICE_NAME,
     ACTION_SERVER_OTLP_ACTION_SERVER_NAME,
     ACTION_SERVER_PARENT_SPAN_NAME,
+    ACTION_SERVER_PARENT_SUB_SPAN_NAME,
     ACTION_SERVER_SPAN_NAME,
     ACTION_SERVER_TRIGGER_MESSAGE,
     RASA_JAEGER_TRACING_SERVICE_NAME,
@@ -126,6 +130,72 @@ def test_trace_context_propagated_to_action_server(
     )
     parent_spans = _filter_spans_by_name(
         spans_for_user_turn, ACTION_SERVER_PARENT_SPAN_NAME
+    )
+    action_server_span = action_server_spans[0]
+    parent_span = parent_spans[0]
+
+    assert action_server_span.trace_id == parent_span.trace_id
+
+
+@pytest.mark.parametrize(
+    "tracing_service_name, rasa_server_endpoint",
+    [
+        (
+            ACTION_SERVER_JAEGER_TRACING_SERVICE_NAME,
+            RASA_SERVER_JAEGER,
+        ),
+        (
+            ACTION_SERVER_OTLP_ACTION_SERVER_NAME,
+            RASA_SERVER_OTLP,
+        ),
+    ],
+)
+def test_trace_context_propagated_to_action_server_with_form_validation_action(
+    jaeger_query_service: "QueryServiceStub",
+    tracing_service_name: Text,
+    rasa_server_endpoint: Text,
+    trace_query_timestamps: TraceQueryTimestamps,
+) -> None:
+    if rasa_server_endpoint == RASA_SERVER_OTLP:
+        pytest.skip("Temporary disabled due to TLS timeout error")
+
+    from api_v3.query_service_pb2 import TraceQueryParameters
+    from model_pb2 import Span
+
+    # trigger form
+    sender_id, _ = send_message_to_rasa_server(
+        rasa_server_endpoint, ACTION_SERVER_FORM_TRIGGER_MESSAGE
+    )
+    params = TraceQueryParameters(
+        service_name=tracing_service_name,
+        operation_name=ACTION_SERVER_SPAN_NAME,
+        start_time_min=trace_query_timestamps.min_time,
+        start_time_max=trace_query_timestamps.max_time,
+    )
+
+    # fill form
+    sender_id, _ = send_message_to_rasa_server(
+        rasa_server_endpoint, ACTION_SERVER_FORM_FILL_MESSAGE, sender_id
+    )
+
+    @wait_for_spans
+    def _spans_for_user_turn() -> List[Span]:
+        spans = _fetch_spans(jaeger_query_service, params)
+        return _filter_spans_by_attributes(
+            spans,
+            {
+                "action_name": ACTION_SERVER_FORM_VALIDATION_ACTION_TRIGGERED,
+                "sender_id": sender_id,
+            },
+        )
+
+    spans_for_user_turn = _spans_for_user_turn()
+
+    action_server_spans = _filter_spans_by_name(
+        spans_for_user_turn, ACTION_SERVER_SPAN_NAME
+    )
+    parent_spans = _filter_spans_by_name(
+        spans_for_user_turn, ACTION_SERVER_PARENT_SUB_SPAN_NAME
     )
     action_server_span = action_server_spans[0]
     parent_span = parent_spans[0]
