@@ -19,7 +19,7 @@ from rasa.e2e_test.e2e_test_case import (
     Metadata,
     TestCase,
     TestStep,
-    KEY_MOCK_CUSTOM_ACTIONS,
+    KEY_STUB_CUSTOM_ACTIONS,
 )
 from rasa.e2e_test.e2e_test_result import (
     NO_RESPONSE,
@@ -66,12 +66,12 @@ class E2ETestRunner:
             event_info="Started running end-to-end testing.",
         )
 
-        is_custom_actions_mocked = (
+        are_custom_actions_stubbed = (
             endpoints
             and endpoints.action
-            and endpoints.action.kwargs.get(KEY_MOCK_CUSTOM_ACTIONS)
+            and endpoints.action.kwargs.get(KEY_STUB_CUSTOM_ACTIONS)
         )
-        if endpoints and not is_custom_actions_mocked:
+        if endpoints and not are_custom_actions_stubbed:
             self._action_server_is_reachable(endpoints)
 
         self.agent = asyncio.run(

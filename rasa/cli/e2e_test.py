@@ -32,10 +32,10 @@ from rasa.e2e_test.constants import SCHEMA_FILE_PATH, KEY_TEST_CASE, KEY_TEST_CA
 from rasa.e2e_test.e2e_test_case import (
     KEY_FIXTURES,
     KEY_METADATA,
-    KEY_MOCK_CUSTOM_ACTIONS,
+    KEY_STUB_CUSTOM_ACTIONS,
     Fixture,
     Metadata,
-    MockCustomAction,
+    StubCustomAction,
     TestCase,
     TestSuite,
 )
@@ -231,7 +231,7 @@ def read_test_cases(path: Text) -> TestSuite:
     input_test_cases = []
     fixtures: Dict[Text, Fixture] = {}
     metadata: Dict[Text, Metadata] = {}
-    mock_custom_actions: Dict[Text, MockCustomAction] = {}
+    stub_custom_actions: Dict[Text, StubCustomAction] = {}
 
     beta_flag_verified = False
 
@@ -277,11 +277,11 @@ def read_test_cases(path: Text) -> TestSuite:
             if metadata.get(metadata_obj.name) is None:
                 metadata[metadata_obj.name] = metadata_obj
 
-        mock_custom_actions_contents = (
-            test_file_content.get(KEY_MOCK_CUSTOM_ACTIONS) or {}
+        stub_custom_actions_contents = (
+            test_file_content.get(KEY_STUB_CUSTOM_ACTIONS) or {}
         )
-        for action_name, mock_data in mock_custom_actions_contents.items():
-            mock_custom_actions[action_name] = MockCustomAction.from_dict(
+        for action_name, mock_data in stub_custom_actions_contents.items():
+            stub_custom_actions[action_name] = StubCustomAction.from_dict(
                 action_name=action_name,
                 mock_data=mock_data,
             )
@@ -291,7 +291,7 @@ def read_test_cases(path: Text) -> TestSuite:
         input_test_cases,
         list(fixtures.values()),
         list(metadata.values()),
-        mock_custom_actions,
+        stub_custom_actions,
     )
 
 
@@ -321,7 +321,11 @@ def execute_e2e_tests(args: argparse.Namespace) -> None:
     )
 
     test_suite = read_test_cases(path_to_test_cases)
-    endpoints.action.kwargs[KEY_MOCK_CUSTOM_ACTIONS] = test_suite.mock_custom_actions
+
+    if endpoints.action and test_suite.stub_custom_actions:
+        endpoints.action.kwargs[KEY_STUB_CUSTOM_ACTIONS] = (
+            test_suite.stub_custom_actions
+        )
 
     test_case_path, _ = extract_test_case_from_path(path_to_test_cases)
 

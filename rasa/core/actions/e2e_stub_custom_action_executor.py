@@ -10,7 +10,7 @@ import structlog
 from rasa.core.actions.custom_action_executor import (
     CustomActionExecutor,
 )
-from rasa.e2e_test.constants import KEY_MOCK_CUSTOM_ACTIONS
+from rasa.e2e_test.constants import KEY_STUB_CUSTOM_ACTIONS
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
@@ -33,15 +33,15 @@ class E2EStubCustomActionExecutor(CustomActionExecutor):
         """
         self.action_name = action_name
         self.action_endpoint = action_endpoint
-        self.mock_custom_action = self.get_and_validate_mocked_custom_action()
+        self.stub_custom_action = self.get_stub_custom_action()
 
-    def get_and_validate_mocked_custom_action(self):
-        mock_custom_actions = self.action_endpoint.kwargs.get(KEY_MOCK_CUSTOM_ACTIONS)
-        if mock_custom_action := mock_custom_actions.get(self.action_name):
-            return mock_custom_action
-        else:
-            # TODO Update message below with reference to the docs
-            raise RasaException(f"Action `{self.action_name}` has not been mocked.")
+    def get_stub_custom_action(self):
+        stub_custom_actions = self.action_endpoint.kwargs.get(KEY_STUB_CUSTOM_ACTIONS)
+        if stub_custom_action := stub_custom_actions.get(self.action_name):
+            return stub_custom_action
+
+        # TODO Update message below with reference to the docs
+        raise RasaException(f"Action `{self.action_name}` has not been mocked.")
 
     async def run(
         self,
@@ -52,4 +52,4 @@ class E2EStubCustomActionExecutor(CustomActionExecutor):
             "action.e2e_stub_custom_action_executor.run",
             action_name=self.action_name,
         )
-        return self.mock_custom_action.as_dict()
+        return self.stub_custom_action.as_dict()
