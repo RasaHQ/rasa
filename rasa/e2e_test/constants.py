@@ -1,6 +1,7 @@
 SCHEMA_FILE_PATH = "e2e_test/e2e_test_schema.yml"
 E2E_CONFIG_SCHEMA_FILE_PATH = "e2e_test/e2e_config_schema.yml"
 CONFTEST_FILE_NAME = "conftest.yml"
+TEST_FILE_NAME = "test_file_name"
 
 KEY_FIXTURES = "fixtures"
 KEY_USER_INPUT = "user"

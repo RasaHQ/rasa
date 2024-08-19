@@ -493,6 +493,11 @@ class StubCustomAction:
             responses=[response for response in stub_data.get("responses", [])],
         )
 
+    @staticmethod
+    def get_stub_custom_action_key(test_file_name: str, action_name: str) -> str:
+        """Returns the key used to store the StubCustomAction object"""
+        return f"{test_file_name}__{action_name}"
+
     def as_dict(self) -> Dict[Text, Any]:
         """Returns the metadata as a dictionary."""
         return {"events": self.events, "responses": self.responses}
@@ -512,6 +517,8 @@ class TestSuite:
         return {
             KEY_FIXTURES: [fixture.as_dict() for fixture in self.fixtures],
             KEY_METADATA: [metadata.as_dict() for metadata in self.metadata],
-            KEY_STUB_CUSTOM_ACTIONS: self.stub_custom_actions,
+            KEY_STUB_CUSTOM_ACTIONS: {
+                key: value.as_dict() for key, value in self.stub_custom_actions
+            },
             KEY_TEST_CASES: [test_case.as_dict() for test_case in self.test_cases],
         }

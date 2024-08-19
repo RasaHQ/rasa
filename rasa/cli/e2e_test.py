@@ -55,6 +55,7 @@ from rasa.shared.utils.yaml import (
     is_key_in_yaml,
 )
 from rasa.utils.beta import BetaNotEnabledException, ensure_beta_feature_is_enabled
+from rasa.utils.endpoints import EndpointConfig
 
 DEFAULT_E2E_INPUT_TESTS_PATH = "tests/e2e_test_cases.yml"
 DEFAULT_E2E_OUTPUT_TESTS_PATH = "tests/e2e_results.yml"
@@ -247,6 +248,8 @@ def read_test_cases(path: Text) -> TestSuite:
     Returns:
         TestSuite.
     """
+    from rasa.e2e_test.e2e_test_case import StubCustomAction
+
     path, test_case_name = extract_test_case_from_path(path)
     validate_path_to_test_cases(path)
 
@@ -307,7 +310,7 @@ def read_test_cases(path: Text) -> TestSuite:
         )
         for action_name, stub_data in stub_custom_actions_contents.items():
             test_file_name = Path(test_file).stem
-            stub_custom_action_key = get_stub_custom_action_key(
+            stub_custom_action_key = StubCustomAction.get_stub_custom_action_key(
                 test_file_name, action_name
             )
             stub_custom_actions[stub_custom_action_key] = StubCustomAction.from_dict(
@@ -351,7 +354,10 @@ def execute_e2e_tests(args: argparse.Namespace) -> None:
 
     test_suite = read_test_cases(path_to_test_cases)
 
-    if endpoints.action and test_suite.stub_custom_actions:
+    if test_suite.stub_custom_actions:
+        if not endpoints.action:
+            endpoints.action = EndpointConfig()
+
         endpoints.action.kwargs[KEY_STUB_CUSTOM_ACTIONS] = (
             test_suite.stub_custom_actions
         )
@@ -834,8 +840,3 @@ def _save_tested_commands_histogram(
         message=f"Commands histogram for {test_status} e2e tests"
         f"is written to '{output_filename}'.",
     )
-
-
-def get_stub_custom_action_key(test_file_name: str, action_name: str) -> str:
-    """Returns the key used to store the StubCustomAction object"""
-    return f"{test_file_name}__{action_name}"
