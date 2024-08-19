@@ -16,6 +16,7 @@ from ruamel.yaml.scanner import ScannerError
 
 from rasa.cli.e2e_test import read_e2e_test_schema
 from rasa.e2e_test.constants import KEY_TEST_CASES
+from rasa.e2e_test.e2e_config import LLME2ETestConverterConfig
 from rasa.exceptions import RasaException
 from rasa.shared.utils.llm import llm_factory
 from rasa.shared.utils.yaml import (
@@ -36,12 +37,6 @@ EXCEL_EXTENSIONS = [XLS, XLSX]
 ALLOWED_EXTENSIONS = [CSV, *EXCEL_EXTENSIONS]
 
 NUMBER_OF_LLM_ATTEMPTS = 3
-DEFAULT_LLM_CONFIG = {
-    "_type": "openai",
-    "request_timeout": 60,
-    "max_tokens": 2048,
-    "model_name": "gpt-4o-mini",
-}
 
 
 @dataclass
@@ -92,6 +87,7 @@ class E2ETestConverter:
     def __init__(
         self,
         path: str,
+        llm_config: LLME2ETestConverterConfig,
         sheet_name: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
@@ -100,6 +96,7 @@ class E2ETestConverter:
         Args:
             path (str): Path to the input file.
             sheet_name (str): Name of the sheet in XLSX file.
+            llm_config (LLME2ETestConverterConfig): LLM configuration .
         """
         self.input_path: str = path
         self.sheet_name: Optional[str] = sheet_name
@@ -107,6 +104,8 @@ class E2ETestConverter:
         self.prompt_template: str = read_text(
             E2E_TEST_MODULE, DEFAULT_E2E_TEST_CONVERTER_PROMPT_PATH
         )
+        self.llm_config = llm_config
+        self.default_llm_config_dict = LLME2ETestConverterConfig.get_default_config()
 
     @staticmethod
     def remove_markdown_code_syntax(markdown_string: str) -> str:
@@ -129,25 +128,6 @@ class E2ETestConverter:
         dedented_string = dedent(markdown_string)
         regex = r"^```.*\n|```$"
         return re.sub(regex, "", dedented_string, flags=re.MULTILINE).strip()
-
-    @staticmethod
-    async def generate_llm_response(prompt: str) -> Optional[str]:
-        """Use LLM to generate a response.
-
-        Args:
-            prompt (str): the prompt to send to the LLM.
-
-        Returns:
-            Optional[str]: Generated response.
-        """
-        llm = llm_factory(DEFAULT_LLM_CONFIG, DEFAULT_LLM_CONFIG)
-
-        try:
-            llm_response = await llm.acompletion(prompt)
-            return llm_response.choices[0]
-        except Exception as exc:
-            structlogger.debug("e2e_test_generator.llm_response_error", exc=exc)
-            return None
 
     @staticmethod
     def split_data_into_conversations(
@@ -183,6 +163,24 @@ class E2ETestConverter:
             conversations.add_conversation(conversation)
 
         return conversations
+
+    async def generate_llm_response(self, prompt: str) -> Optional[str]:
+        """Use LLM to generate a response.
+
+        Args:
+            prompt (str): the prompt to send to the LLM.
+
+        Returns:
+            Optional[str]: Generated response.
+        """
+        llm = llm_factory(self.llm_config.as_dict(), self.default_llm_config_dict)
+
+        try:
+            llm_response = await llm.acompletion(prompt)
+            return llm_response.choices[0]
+        except Exception as exc:
+            structlogger.debug("e2e_test_generator.llm_response_error", exc=exc)
+            return None
 
     def is_yaml_valid(self, yaml_string: str) -> bool:
         """Validate the string against the YAML format.

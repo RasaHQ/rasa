@@ -17,3 +17,4 @@ KEY_ASSERTION_ORDER_ENABLED = "assertion_order_enabled"
 
 KEY_MODEL = "model"
 KEY_LLM_AS_JUDGE = "llm_as_judge"
+KEY_LLM_E2E_TEST_CONVERSION = "llm_e2e_test_conversion"

@@ -32,6 +32,10 @@ class E2ETestYAMLWriter:
         Args:
             tests (str): string containing the generated test cases.
         """
+        if not tests.strip():
+            structlogger.info("e2e_test_generator.no_tests_provided")
+            return
+
         output_dir = Path(self.output_path)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         output_file = output_dir / f"e2e_tests_{timestamp}.yml"
