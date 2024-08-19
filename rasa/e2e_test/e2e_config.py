@@ -147,6 +147,11 @@ class LLME2ETestConverterConfig(BaseModel):
         }
         return cls(extra_parameters=config_data, **kwargs)
 
+    @classmethod
+    def get_default_config(cls) -> LLME2ETestConverterConfig:
+        default_llm_config = {"api_type": "openai", "model": "gpt-4o-mini"}
+        return cls.from_dict(default_llm_config)
+
     @staticmethod
     def _clean_up_config(config_data: Dict[str, Any]) -> Dict[str, Any]:
         """Remove None values from the configuration."""

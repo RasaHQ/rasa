@@ -37,10 +37,6 @@ EXCEL_EXTENSIONS = [XLS, XLSX]
 ALLOWED_EXTENSIONS = [CSV, *EXCEL_EXTENSIONS]
 
 NUMBER_OF_LLM_ATTEMPTS = 3
-DEFAULT_LLM_CONFIG = {
-    "api_type": "openai",
-    "model": "gpt-4o-mini",
-}
 
 
 @dataclass
@@ -109,9 +105,7 @@ class E2ETestConverter:
             E2E_TEST_MODULE, DEFAULT_E2E_TEST_CONVERTER_PROMPT_PATH
         )
         self.llm_config = llm_config
-        self.default_llm_config = LLME2ETestConverterConfig.from_dict(
-            DEFAULT_LLM_CONFIG
-        )
+        self.default_llm_config = LLME2ETestConverterConfig.get_default_config()
 
     @staticmethod
     def remove_markdown_code_syntax(markdown_string: str) -> str:
