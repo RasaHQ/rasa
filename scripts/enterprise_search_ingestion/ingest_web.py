@@ -1,13 +1,13 @@
 import logging
 
 from bs4 import BeautifulSoup
-from langchain.document_loaders import RecursiveUrlLoader
-from langchain.embeddings import HuggingFaceEmbeddings, OpenAIEmbeddings
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.vectorstores.milvus import Milvus
-from langchain.vectorstores.qdrant import Qdrant
 from langchain.schema import Document
 from langchain.schema.embeddings import Embeddings
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_community.document_loaders import RecursiveUrlLoader
+from langchain_community.embeddings import HuggingFaceEmbeddings, OpenAIEmbeddings
+from langchain_community.vectorstores.milvus import Milvus
+from langchain_community.vectorstores.qdrant import Qdrant
 from typing import List
 import yaml
 from argparse import ArgumentParser

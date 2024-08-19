@@ -110,6 +110,7 @@ from rasa.shared.nlu.constants import (
     COMMANDS,
 )
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.providers.llm.llm_response import LLMResponse
 from rasa.utils.endpoints import EndpointConfig
 from tests.conftest import (
     with_assistant_id,
@@ -2315,7 +2316,12 @@ async def test_predict_does_not_block_on_command_generator_llm_calls(
     async def sleepy_prediction(*args, **kwargs):
         # a prediction mock that takes a bit to return
         await asyncio.sleep(1)
-        return "StartFlow(greet_user)"
+        return LLMResponse(
+            id="123",
+            choices=["StartFlow(greet_user)"],
+            created=123456789,
+            model="test_model",
+        )
 
     # we should have a trained model now and can start an agent with it
     # let's patch the LLM though, as we don't want to make external calls
@@ -2324,8 +2330,8 @@ async def test_predict_does_not_block_on_command_generator_llm_calls(
         Mock(),
     ) as mock_llm_factory:
         llm_mock = Mock()
-        apredict_mock = AsyncMock(side_effect=sleepy_prediction)
-        llm_mock.apredict = apredict_mock
+        acompletion_mock = AsyncMock(side_effect=sleepy_prediction)
+        llm_mock.acompletion = acompletion_mock
         mock_llm_factory.return_value = llm_mock
 
         agent = await load_agent(model_path=model_path)

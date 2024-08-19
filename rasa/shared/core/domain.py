@@ -1,8 +1,8 @@
-import copy
 import collections
+import copy
 import json
-import structlog
 import os
+from dataclasses import dataclass
 from pathlib import Path
 from typing import (
     Any,
@@ -21,10 +21,13 @@ from typing import (
     Callable,
     cast,
 )
-from dataclasses import dataclass
 
+import structlog
 from ruamel.yaml.scalarstring import DoubleQuotedScalarString
 
+import rasa.shared.core.slot_mappings
+import rasa.shared.utils.common
+import rasa.shared.utils.io
 from rasa.shared.constants import (
     DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
     DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION,
@@ -46,15 +49,6 @@ from rasa.shared.core.constants import (
     KNOWLEDGE_BASE_SLOT_NAMES,
     ACTIVE_LOOP,
 )
-from rasa.shared.exceptions import (
-    RasaException,
-    YamlException,
-    YamlSyntaxException,
-)
-from rasa.shared.utils.cli import print_error_and_exit
-import rasa.shared.utils.io
-import rasa.shared.utils.common
-import rasa.shared.core.slot_mappings
 from rasa.shared.core.events import SlotSet, UserUttered
 from rasa.shared.core.slots import (
     Slot,
@@ -63,13 +57,10 @@ from rasa.shared.core.slots import (
     AnySlot,
     ListSlot,
 )
-from rasa.shared.utils.yaml import (
-    KEY_TRAINING_DATA_FORMAT_VERSION,
-    read_yaml,
-    validate_training_data_format_version,
-    read_yaml_file,
-    dump_obj_as_yaml_to_string,
-    validate_raw_yaml_using_schema_file_with_responses,
+from rasa.shared.exceptions import (
+    RasaException,
+    YamlException,
+    YamlSyntaxException,
 )
 from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
@@ -79,7 +70,15 @@ from rasa.shared.nlu.constants import (
     INTENT_NAME_KEY,
     ENTITIES,
 )
-
+from rasa.shared.utils.cli import print_error_and_exit
+from rasa.shared.utils.yaml import (
+    KEY_TRAINING_DATA_FORMAT_VERSION,
+    read_yaml,
+    validate_training_data_format_version,
+    read_yaml_file,
+    dump_obj_as_yaml_to_string,
+    validate_raw_yaml_using_schema_file_with_responses,
+)
 
 if TYPE_CHECKING:
     from rasa.shared.core.trackers import DialogueStateTracker
@@ -272,8 +271,8 @@ class Domain:
 
         additional_arguments = {
             **data.get("config", {}),
-            "actions_which_explicitly_need_domain": cls._collect_actions_which_explicitly_need_domain(  # noqa: E501
-                domain_actions
+            "actions_which_explicitly_need_domain": (
+                cls._collect_actions_which_explicitly_need_domain(domain_actions)
             ),
         }
         session_config = cls._get_session_config(data.get(SESSION_CONFIG_KEY, {}))
@@ -2046,6 +2045,9 @@ class Domain:
                 action_names += [action]
 
         return action_names
+
+    def is_custom_action(self, action_name: str) -> bool:
+        return action_name in self._custom_actions
 
 
 def warn_about_duplicates_found_during_domain_merging(

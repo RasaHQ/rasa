@@ -1,46 +1,40 @@
-import os
-import warnings
 from typing import Any, Dict, Optional, Text, Type, TYPE_CHECKING, Union
 
-import structlog
-
 import rasa.shared.utils.io
+import structlog
 from rasa.shared.constants import (
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
-    OPENAI_API_TYPE_ENV_VAR,
-    OPENAI_API_VERSION_ENV_VAR,
-    OPENAI_API_BASE_ENV_VAR,
-    REQUESTS_CA_BUNDLE_ENV_VAR,
-    OPENAI_API_BASE_NO_PREFIX_CONFIG_KEY,
-    OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY,
-    OPENAI_API_VERSION_CONFIG_KEY,
-    OPENAI_API_VERSION_NO_PREFIX_CONFIG_KEY,
-    OPENAI_API_TYPE_CONFIG_KEY,
-    OPENAI_API_BASE_CONFIG_KEY,
-    OPENAI_DEPLOYMENT_NAME_CONFIG_KEY,
-    OPENAI_DEPLOYMENT_CONFIG_KEY,
-    OPENAI_ENGINE_CONFIG_KEY,
-    LANGCHAIN_TYPE_CONFIG_KEY,
-    RASA_TYPE_CONFIG_KEY,
+    MODEL_CONFIG_KEY,
 )
 from rasa.shared.core.events import BotUttered, UserUttered
 from rasa.shared.core.slots import Slot, BooleanSlot, CategoricalSlot
-from rasa.shared.engine.caching import get_local_cache_location
+from rasa.shared.engine.caching import (
+    get_local_cache_location,
+)
 from rasa.shared.exceptions import (
     FileIOException,
     FileNotFoundException,
 )
+from rasa.shared.providers._configs.azure_openai_client_config import (
+    is_azure_openai_config,
+)
+from rasa.shared.providers._configs.huggingface_local_embedding_client_config import (
+    is_huggingface_local_config,
+)
+from rasa.shared.providers._configs.openai_client_config import is_openai_config
+from rasa.shared.providers.embedding.embedding_client import EmbeddingClient
+from rasa.shared.providers.llm.llm_client import LLMClient
+from rasa.shared.providers.mappings import (
+    get_llm_client_from_provider,
+    AZURE_OPENAI_PROVIDER,
+    OPENAI_PROVIDER,
+    get_embedding_client_from_provider,
+    HUGGINGFACE_LOCAL_EMBEDDING_PROVIDER,
+)
 
 if TYPE_CHECKING:
-    from langchain.chat_models import AzureChatOpenAI
-    from langchain.schema.embeddings import Embeddings
-    from langchain.llms.base import BaseLLM
     from rasa.shared.core.trackers import DialogueStateTracker
-    from rasa.shared.providers.openai.clients import (
-        AioHTTPSessionAzureChatOpenAI,
-        AioHTTPSessionOpenAIChat,
-    )
 
 structlogger = structlog.get_logger()
 
@@ -155,155 +149,92 @@ def combine_custom_and_default_config(
         The merged config.
     """
     if custom_config is None:
-        return default_config
+        return default_config.copy()
 
-    if RASA_TYPE_CONFIG_KEY in custom_config:
-        # rename type to _type as "type" is the convention we use
-        # across the different components in config files.
-        # langchain expects "_type" as the key though
-        custom_config[LANGCHAIN_TYPE_CONFIG_KEY] = custom_config.pop(
-            RASA_TYPE_CONFIG_KEY
-        )
+    # If provider of the custom config is not the same as the provider used in
+    # the default config, don't merge
+    custom_config_provider = get_provider_from_config(custom_config)
+    default_config_provider = get_provider_from_config(default_config)
 
-    if LANGCHAIN_TYPE_CONFIG_KEY in custom_config and custom_config[
-        LANGCHAIN_TYPE_CONFIG_KEY
-    ] != default_config.get(LANGCHAIN_TYPE_CONFIG_KEY):
-        return custom_config
-    return {**default_config, **custom_config}
+    if (
+        custom_config_provider is not None
+        and custom_config_provider != default_config_provider
+    ):
+        return custom_config.copy()
+
+    # Otherwise, override default settings with custom settings
+    return {**default_config.copy(), **custom_config.copy()}
+
+
+def get_provider_from_config(config: dict) -> Optional[str]:
+    """Try to get the provider from the passed llm/embeddings configuration.
+    If no provider can be found, return None.
+    """
+    if not config:
+        return None
+    if is_azure_openai_config(config):
+        return AZURE_OPENAI_PROVIDER
+    elif is_openai_config(config):
+        return OPENAI_PROVIDER
+    elif is_huggingface_local_config(config):
+        return HUGGINGFACE_LOCAL_EMBEDDING_PROVIDER
+    else:
+        # `get_llm_provider` works for both embedding models and LLMs
+        from litellm.utils import get_llm_provider
+
+        try:
+            # Try to get the provider from `model` key.
+            _, provider, _, _ = get_llm_provider(model=config.get(MODEL_CONFIG_KEY, ""))
+            return provider
+        except Exception:
+            # If provider is not found, return None
+            return None
+
+
+def get_llm_type_after_combining_custom_and_default_config(
+    custom_config: Optional[Dict[Text, Any]], default_config: Dict[Text, Any]
+) -> Optional[str]:
+    """Get the LLM type from the combined config."""
+    custom_config_provider = get_provider_from_config(custom_config)
+    default_config_provider = get_provider_from_config(default_config)
+    return custom_config_provider or default_config_provider
 
 
 def ensure_cache() -> None:
     """Ensures that the cache is initialized."""
-    import langchain
-    from langchain.cache import SQLiteCache
+    import litellm
 
-    # ensure the cache directory exists
-    cache_location = get_local_cache_location()
+    # Ensure the cache directory exists
+    cache_location = get_local_cache_location() / "rasa-llm-cache"
     cache_location.mkdir(parents=True, exist_ok=True)
 
-    db_location = cache_location / "rasa-llm-cache.db"
-    langchain.llm_cache = SQLiteCache(database_path=str(db_location))
-
-
-def preprocess_config_for_azure(config: Dict[str, Any]) -> Dict[str, Any]:
-    """Preprocesses the config for Azure deployments.
-
-    This function is used to preprocess the config for Azure deployments.
-    AzureChatOpenAI does not expect the _type key, as it is not a defined parameter
-    in the class. So we need to remove it before passing the config to the class.
-    AzureChatOpenAI expects the openai_api_type key to be set instead.
-
-    Args:
-        config: The config to preprocess.
-
-    Returns:
-        The preprocessed config.
-    """
-    config["deployment_name"] = (
-        config.get(OPENAI_DEPLOYMENT_NAME_CONFIG_KEY)
-        or config.get(OPENAI_DEPLOYMENT_CONFIG_KEY)
-        or config.get(OPENAI_ENGINE_CONFIG_KEY)
-    )
-    config["openai_api_base"] = (
-        config.get(OPENAI_API_BASE_CONFIG_KEY)
-        or config.get(OPENAI_API_BASE_NO_PREFIX_CONFIG_KEY)
-        or os.environ.get(OPENAI_API_BASE_ENV_VAR)
-    )
-    config["openai_api_type"] = (
-        config.get(OPENAI_API_TYPE_CONFIG_KEY)
-        or config.get(OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY)
-        or os.environ.get(OPENAI_API_TYPE_ENV_VAR)
-    )
-    config["openai_api_version"] = (
-        config.get(OPENAI_API_VERSION_CONFIG_KEY)
-        or config.get(OPENAI_API_VERSION_NO_PREFIX_CONFIG_KEY)
-        or os.environ.get(OPENAI_API_VERSION_ENV_VAR)
-    )
-    for keys in [
-        OPENAI_API_BASE_NO_PREFIX_CONFIG_KEY,
-        OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY,
-        OPENAI_API_VERSION_NO_PREFIX_CONFIG_KEY,
-        OPENAI_DEPLOYMENT_CONFIG_KEY,
-        OPENAI_ENGINE_CONFIG_KEY,
-        LANGCHAIN_TYPE_CONFIG_KEY,
-    ]:
-        config.pop(keys, None)
-
-    return config
-
-
-def process_config_for_aiohttp_chat_openai(config: Dict[str, Any]) -> Dict[str, Any]:
-    config = config.copy()
-    config.pop(LANGCHAIN_TYPE_CONFIG_KEY)
-    return config
+    # Set diskcache as a caching option
+    litellm.cache = litellm.Cache(type="disk", disk_cache_dir=cache_location)
 
 
 def llm_factory(
     custom_config: Optional[Dict[str, Any]], default_config: Dict[str, Any]
-) -> Union[
-    "BaseLLM",
-    "AzureChatOpenAI",
-    "AioHTTPSessionAzureChatOpenAI",
-    "AioHTTPSessionOpenAIChat",
-]:
+) -> LLMClient:
     """Creates an LLM from the given config.
 
     Args:
         custom_config: The custom config  containing values to overwrite defaults
         default_config: The default config.
 
-
     Returns:
-    Instantiated LLM based on the configuration.
+        Instantiated LLM based on the configuration.
     """
-    from langchain.llms.loading import load_llm_from_config
-
-    ensure_cache()
-
     config = combine_custom_and_default_config(custom_config, default_config)
-
-    # need to create a copy as the langchain function modifies the
-    # config in place...
-    structlogger.debug("llmfactory.create.llm", config=config)
-    # langchain issues a user warning when using chat models. at the same time
-    # it doesn't provide a way to instantiate a chat model directly using the
-    # config. so for now, we need to suppress the warning here. Original
-    # warning:
-    #   packages/langchain/llms/openai.py:189: UserWarning: You are trying to
-    #   use a chat model. This way of initializing it is no longer supported.
-    #   Instead, please use: `from langchain.chat_models import ChatOpenAI
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", category=UserWarning)
-        if is_azure_config(config):
-            # Azure deployments are treated differently. This is done as the
-            # GPT-3.5 Turbo newer versions 0613 and 1106 only support the
-            # Chat Completions API.
-            from langchain.chat_models import AzureChatOpenAI
-            from rasa.shared.providers.openai.clients import (
-                AioHTTPSessionAzureChatOpenAI,
-            )
-
-            transformed_config = preprocess_config_for_azure(config.copy())
-            if os.environ.get(REQUESTS_CA_BUNDLE_ENV_VAR) is None:
-                return AzureChatOpenAI(**transformed_config)
-            else:
-                return AioHTTPSessionAzureChatOpenAI(**transformed_config)
-
-        if (
-            os.environ.get(REQUESTS_CA_BUNDLE_ENV_VAR) is not None
-            and config.get(LANGCHAIN_TYPE_CONFIG_KEY) == "openai"
-        ):
-            from rasa.shared.providers.openai.clients import AioHTTPSessionOpenAIChat
-
-            config = process_config_for_aiohttp_chat_openai(config)
-            return AioHTTPSessionOpenAIChat(**config.copy())
-
-        return load_llm_from_config(config.copy())
+    provider = get_provider_from_config(config)
+    ensure_cache()
+    client_clazz: Type[LLMClient] = get_llm_client_from_provider(provider)
+    client = client_clazz.from_config(config)
+    return client
 
 
 def embedder_factory(
     custom_config: Optional[Dict[str, Any]], default_config: Dict[str, Any]
-) -> "Embeddings":
+) -> EmbeddingClient:
     """Creates an Embedder from the given config.
 
     Args:
@@ -312,55 +243,14 @@ def embedder_factory(
 
 
     Returns:
-    Instantiated Embedder based on the configuration.
+        Instantiated Embedder based on the configuration.
     """
-    from langchain.schema.embeddings import Embeddings
-    from langchain.embeddings import (
-        CohereEmbeddings,
-        HuggingFaceHubEmbeddings,
-        HuggingFaceInstructEmbeddings,
-        HuggingFaceEmbeddings,
-        HuggingFaceBgeEmbeddings,
-        LlamaCppEmbeddings,
-        OpenAIEmbeddings,
-        SpacyEmbeddings,
-        VertexAIEmbeddings,
-    )
-    from rasa.shared.providers.openai.clients import AioHTTPSessionOpenAIEmbeddings
-
-    type_to_embedding_cls_dict: Dict[str, Type[Embeddings]] = {
-        "azure": OpenAIEmbeddings,
-        "openai": OpenAIEmbeddings,
-        "openai-aiohttp-session": AioHTTPSessionOpenAIEmbeddings,
-        "cohere": CohereEmbeddings,
-        "spacy": SpacyEmbeddings,
-        "vertexai": VertexAIEmbeddings,
-        "huggingface_instruct": HuggingFaceInstructEmbeddings,
-        "huggingface_hub": HuggingFaceHubEmbeddings,
-        "huggingface_bge": HuggingFaceBgeEmbeddings,
-        "huggingface": HuggingFaceEmbeddings,
-        "llamacpp": LlamaCppEmbeddings,
-    }
-
     config = combine_custom_and_default_config(custom_config, default_config)
-    embedding_type = config.get(LANGCHAIN_TYPE_CONFIG_KEY)
-
-    if (
-        os.environ.get(REQUESTS_CA_BUNDLE_ENV_VAR) is not None
-        and embedding_type is not None
-    ):
-        embedding_type = f"{embedding_type}-aiohttp-session"
-
-    structlogger.debug("llmfactory.create.embedder", config=config)
-
-    if not embedding_type:
-        return OpenAIEmbeddings()
-    elif embeddings_cls := type_to_embedding_cls_dict.get(embedding_type):
-        parameters = config.copy()
-        parameters.pop(LANGCHAIN_TYPE_CONFIG_KEY)
-        return embeddings_cls(**parameters)
-    else:
-        raise ValueError(f"Unsupported embeddings type '{embedding_type}'")
+    provider = get_provider_from_config(config)
+    ensure_cache()
+    client_clazz: Type[EmbeddingClient] = get_embedding_client_from_provider(provider)
+    client = client_clazz.from_config(config)
+    return client
 
 
 def get_prompt_template(
@@ -394,11 +284,3 @@ def allowed_values_for_slot(slot: Slot) -> Union[str, None]:
         return str([v for v in slot.values if v != "__other__"])
     else:
         return None
-
-
-def is_azure_config(config: Dict) -> bool:
-    return (
-        config.get(OPENAI_API_TYPE_CONFIG_KEY) == "azure"
-        or config.get(OPENAI_API_TYPE_NO_PREFIX_CONFIG_KEY) == "azure"
-        or os.environ.get(OPENAI_API_TYPE_ENV_VAR) == "azure"
-    )

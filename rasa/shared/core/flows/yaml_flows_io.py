@@ -3,15 +3,16 @@ from pathlib import Path
 from typing import Any, Dict, List, Text, Union
 
 import jsonschema
+import ruamel.yaml.nodes as yaml_nodes
+from ruamel import yaml as yaml
 
 import rasa.shared
 import rasa.shared.data
-from rasa.shared.importers.importer import FlowSyncImporter
 import rasa.shared.utils.io
-from rasa.shared.exceptions import RasaException, YamlException
-
 from rasa.shared.core.flows.flow import Flow
 from rasa.shared.core.flows.flows_list import FlowsList
+from rasa.shared.exceptions import RasaException, YamlException
+from rasa.shared.importers.importer import FlowSyncImporter
 from rasa.shared.utils.yaml import (
     validate_yaml_with_jsonschema,
     read_yaml,
@@ -27,11 +28,14 @@ class YAMLFlowsReader:
     """Class that reads flows information in YAML format."""
 
     @classmethod
-    def read_from_file(cls, filename: Union[Text, Path]) -> FlowsList:
+    def read_from_file(
+        cls, filename: Union[Text, Path], add_line_numbers: bool = True
+    ) -> FlowsList:
         """Read flows from file.
 
         Args:
             filename: Path to the flows file.
+            add_line_numbers: Flag whether to add line numbers to yaml
 
         Returns:
             `Flow`s read from `filename`.
@@ -41,6 +45,7 @@ class YAMLFlowsReader:
                 rasa.shared.utils.io.read_file(
                     filename, rasa.shared.utils.io.DEFAULT_ENCODING
                 ),
+                add_line_numbers=add_line_numbers,
             )
         except YamlException as e:
             e.filename = str(filename)
@@ -195,11 +200,13 @@ class YAMLFlowsReader:
         )
 
     @classmethod
-    def read_from_string(cls, string: Text) -> FlowsList:
+    def read_from_string(cls, string: Text, add_line_numbers: bool = True) -> FlowsList:
         """Read flows from a string.
 
         Args:
             string: Unprocessed YAML file content.
+            add_line_numbers: If true, a custom constructor is added to add line
+                numbers to each node.
 
         Returns:
             `Flow`s read from `string`.
@@ -207,8 +214,12 @@ class YAMLFlowsReader:
         validate_yaml_with_jsonschema(
             string, FLOWS_SCHEMA_FILE, humanize_error=cls.humanize_flow_error
         )
+        if add_line_numbers:
+            yaml_content = read_yaml(string, custom_constructor=line_number_constructor)
+            yaml_content = process_yaml_content(yaml_content)
 
-        yaml_content = read_yaml(string)
+        else:
+            yaml_content = read_yaml(string)
 
         return FlowsList.from_json(yaml_content.get(KEY_FLOWS, {}))
 
@@ -246,14 +257,18 @@ class YamlFlowsWriter:
 
 def flows_from_str(yaml_str: str) -> FlowsList:
     """Reads flows from a YAML string."""
-    flows = YAMLFlowsReader.read_from_string(textwrap.dedent(yaml_str))
+    flows = YAMLFlowsReader.read_from_string(
+        textwrap.dedent(yaml_str), add_line_numbers=False
+    )
     flows.validate()
     return flows
 
 
 def flows_from_str_including_defaults(yaml_str: str) -> FlowsList:
     """Reads flows from a YAML string and combine them with default flows."""
-    flows = YAMLFlowsReader.read_from_string(textwrap.dedent(yaml_str))
+    flows = YAMLFlowsReader.read_from_string(
+        textwrap.dedent(yaml_str), add_line_numbers=False
+    )
     all_flows = FlowSyncImporter.merge_with_default_flows(flows)
     all_flows.validate()
     return all_flows
@@ -276,3 +291,120 @@ def is_flows_file(file_path: Union[Text, Path]) -> bool:
     return rasa.shared.data.is_likely_yaml_file(file_path) and is_key_in_yaml(
         file_path, KEY_FLOWS
     )
+
+
+def line_number_constructor(loader: yaml.Loader, node: yaml_nodes.Node) -> Any:
+    """A custom YAML constructor adding line numbers to nodes.
+
+    Args:
+        loader (yaml.Loader): The YAML loader.
+        node (yaml.nodes.Node): The YAML node.
+
+    Returns:
+        Any: The constructed Python object with added line numbers in metadata.
+    """
+    if isinstance(node, yaml_nodes.MappingNode):
+        mapping = loader.construct_mapping(node, deep=True)
+        if "metadata" not in mapping:
+            # We add the line information to the metadata of a flow step
+            # Lines are 0-based index; adding 1 to start from
+            # line 1 for human readability
+            mapping["metadata"] = {
+                "line_numbers": f"{node.start_mark.line + 1}-{node.end_mark.line}"
+            }
+        return mapping
+    elif isinstance(node, yaml_nodes.SequenceNode):
+        sequence = loader.construct_sequence(node, deep=True)
+        for item in node.value:
+            if isinstance(item, yaml_nodes.MappingNode):
+                start_line = item.start_mark.line + 1
+                end_line = item.end_mark.line
+                # Only add line numbers to dictionary items within the sequence
+                index = node.value.index(item)
+                if isinstance(sequence[index], dict):
+                    if "metadata" not in sequence[index]:
+                        sequence[index]["metadata"] = {}
+                    if "line_numbers" not in sequence[index]["metadata"]:
+                        sequence[index]["metadata"]["line_numbers"] = (
+                            f"{start_line}-{end_line}"
+                        )
+
+        return sequence
+    return loader.construct_object(node, deep=True)
+
+
+def _remove_keys_recursively(
+    data: Union[Dict, List], keys_to_delete: List[str]
+) -> None:
+    """Recursively removes all specified keys in the given data.
+
+    Special handling for 'metadata'.
+
+    Args:
+        data: The data structure (dictionary or list) to clean.
+        keys_to_delete: A list of keys to remove from the dictionaries.
+    """
+    if isinstance(data, dict):
+        keys = list(data.keys())
+        for key in keys:
+            if key in keys_to_delete:
+                # Special case for 'metadata': only delete if it
+                # only contains 'line_numbers'
+                if key == "metadata" and isinstance(data[key], dict):
+                    if len(data[key]) == 1 and "line_numbers" in data[key]:
+                        del data[key]
+                else:
+                    del data[key]
+            else:
+                _remove_keys_recursively(data[key], keys_to_delete)
+    elif isinstance(data, list):
+        for item in data:
+            _remove_keys_recursively(item, keys_to_delete)
+
+
+def _process_keys_recursively(
+    data: Union[Dict, List], keys_to_check: List[str]
+) -> None:
+    """Recursively iterates over YAML content and applies remove_keys_recursively."""
+    if isinstance(data, dict):
+        keys = list(
+            data.keys()
+        )  # Make a list of keys to avoid changing the dictionary size during iteration
+        for key in keys:
+            if key in keys_to_check:
+                _remove_keys_recursively(data[key], ["metadata"])
+            else:
+                _process_keys_recursively(data[key], keys_to_check)
+    elif isinstance(data, list):
+        for item in data:
+            _process_keys_recursively(item, keys_to_check)
+
+
+def process_yaml_content(yaml_content: Dict[str, Any]) -> Dict[str, Any]:
+    """Processes parsed YAML content to remove "metadata"."""
+    # Remove metadata on the top level
+    if "metadata" in yaml_content and (
+        len(yaml_content["metadata"]) == 1
+        and "line_numbers" in yaml_content["metadata"]
+    ):
+        del yaml_content["metadata"]
+
+    # We expect metadata only under "flows" key...
+    keys_to_delete_metadata = [key for key in yaml_content if key != "flows"]
+    for key in keys_to_delete_metadata:
+        _remove_keys_recursively(yaml_content[key], ["metadata"])
+
+    # ...but "metadata" is also not a key of "flows"
+    if "flows" in yaml_content and "metadata" in yaml_content["flows"]:
+        if (
+            len(yaml_content["flows"]["metadata"]) == 1
+            and "line_numbers" in yaml_content["flows"]["metadata"]
+        ):
+            del yaml_content["flows"]["metadata"]
+
+    # Under the "flows" key certain keys cannot have metadata
+    _process_keys_recursively(
+        yaml_content["flows"], ["nlu_trigger", "set_slots", "metadata"]
+    )
+
+    return yaml_content

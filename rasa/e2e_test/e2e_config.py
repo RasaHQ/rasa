@@ -5,14 +5,22 @@ import os
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, Generator, Optional
+from typing import Generator, Optional, Dict, Any
 
 import structlog
+from pydantic import BaseModel
 
 from rasa.e2e_test.constants import (
     CONFTEST_FILE_NAME,
     E2E_CONFIG_SCHEMA_FILE_PATH,
     KEY_LLM_AS_JUDGE,
+    KEY_LLM_E2E_TEST_CONVERSION,
+)
+from rasa.shared.constants import (
+    API_TYPE_CONFIG_KEY,
+    API_BASE_CONFIG_KEY,
+    DEPLOYMENT_CONFIG_KEY,
+    MODEL_CONFIG_KEY,
 )
 from rasa.shared.exceptions import RasaException
 from rasa.shared.utils.yaml import (
@@ -112,6 +120,46 @@ class LLMJudgeConfig:
         return self.clean_up_config(data)
 
 
+class LLME2ETestConverterConfig(BaseModel):
+    """Class for storing the LLM configuration of the E2ETestConverter.
+
+    This configuration is used to initialize the LiteLLM client.
+    """
+
+    api_type: Optional[str]
+    model: Optional[str]
+    deployment: Optional[str]
+    api_base: Optional[str]
+    extra_parameters: Optional[Dict[str, Any]]
+
+    @classmethod
+    def from_dict(cls, config_data: Dict[str, Any]) -> LLME2ETestConverterConfig:
+        """Loads the configuration from a dictionary."""
+        expected_fields = [
+            API_TYPE_CONFIG_KEY,
+            API_BASE_CONFIG_KEY,
+            DEPLOYMENT_CONFIG_KEY,
+            MODEL_CONFIG_KEY,
+        ]
+        kwargs = {
+            expected_field: config_data.pop(expected_field, None)
+            for expected_field in expected_fields
+        }
+        return cls(extra_parameters=config_data, **kwargs)
+
+    @classmethod
+    def get_default_config(cls) -> Dict[str, Any]:
+        return {API_TYPE_CONFIG_KEY: "openai", MODEL_CONFIG_KEY: "gpt-4o-mini"}
+
+    @staticmethod
+    def _clean_up_config(config_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Remove None values from the configuration."""
+        return {key: value for key, value in config_data.items() if value}
+
+    def as_dict(self) -> Dict[str, Any]:
+        return self._clean_up_config(dict(self))
+
+
 def load_external_api_keys(llm_type: str) -> Dict[str, Optional[str]]:
     """Load the environment variables for the external API keys."""
     environment_variable_name = LLM_PROVIDER_TO_API_KEY.get(llm_type)
@@ -170,6 +218,11 @@ def get_conftest_path(test_case_path: Optional[Path]) -> Optional[Path]:
                 # we reached the root of the assistant project
                 return None
 
+        # In case of an invalid path outside the assistant project,
+        # break the loop if we reach the root
+        if test_case_path == Path("."):
+            return None
+
 
 def find_conftest_path(path: Path) -> Generator[Path, None, None]:
     """Find the path to the conftest.yml file."""
@@ -194,6 +247,33 @@ def create_llm_judge_config(test_case_path: Optional[Path]) -> LLMJudgeConfig:
     )
 
     return LLMJudgeConfig.from_dict(llm_judge_config_data)
+
+
+def create_llm_e2e_test_converter_config(
+    config_path: Path,
+) -> LLME2ETestConverterConfig:
+    """Create the LLME2ETestConverterConfig configuration from the dictionary."""
+    config_data = read_conftest_file(config_path)
+    if not config_data:
+        structlogger.debug(
+            "e2e_config.create_llm_e2e_test_converter_config.no_conftest_detected"
+        )
+        return LLME2ETestConverterConfig.from_dict(config_data)
+
+    llm_e2e_test_converter_config_data = config_data.get(
+        KEY_LLM_E2E_TEST_CONVERSION, {}
+    )
+    if not llm_e2e_test_converter_config_data:
+        structlogger.debug(
+            "e2e_config.create_llm_e2e_test_converter_config.no_llm_e2e_test_converter_config_key"
+        )
+
+    structlogger.info(
+        "e2e_config.create_llm_e2e_test_converter_config.success",
+        llm_e2e_test_converter_config_data=llm_e2e_test_converter_config_data,
+    )
+
+    return LLME2ETestConverterConfig.from_dict(llm_e2e_test_converter_config_data)
 
 
 def read_conftest_file(test_case_path: Optional[Path]) -> Dict[str, Any]:

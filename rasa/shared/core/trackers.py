@@ -450,6 +450,12 @@ class DialogueStateTracker:
         return current_context.get("flow_id")
 
     @property
+    def current_step_id(self) -> Optional[str]:
+        """Returns the id of the current step id."""
+        current_context = self.stack.current_context()
+        return current_context.get("step_id")
+
+    @property
     def has_coexistence_routing_slot(self) -> bool:
         """Returns whether the coexistence routing slot is present."""
         if self.slots:
@@ -1064,8 +1070,7 @@ class DialogueStateTracker:
         return bool(top_relevant_frame and top_relevant_frame.flow_id)
 
     def get_active_flows(self, flows: FlowsList) -> FlowsList:
-        """
-        Retrieve a list of all currently active flows.
+        """Retrieve a list of all currently active flows.
 
         Args:
             flows: list of flows to check against for active flows.

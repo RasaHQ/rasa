@@ -251,7 +251,7 @@ build-docker-rasa-deps:  ## Build Docker image which contains Rasa dependencies.
 
 build-docker-rasa-image:  ## Build Rasa Pro Docker image. Make sure to run build-docker-base, build-docker-builder and build-docker-rasa-deps before running this target.
 	docker build . \
-		-t ${RASA_REPOSITORY}\:${RASA_IMAGE_TAG} \
+		-t $(RASA_REPOSITORY)\:$(RASA_IMAGE_TAG) \
 		-f Dockerfile \
 		--build-arg IMAGE_BASE_NAME=rasa-private \
 		--build-arg BASE_IMAGE_HASH=$(BASE_IMAGE_HASH) \
@@ -283,10 +283,10 @@ train-nlu:  ## Train the simple NLU bot for tracing integration tests.
 	docker run \
 		--rm \
 		-u $(USER_ID) \
-		--name rasa-pro-training-${RASA_IMAGE_TAG} \
-		-e RASA_PRO_LICENSE=${RASA_PRO_LICENSE} \
+		--name rasa-pro-training-$(RASA_IMAGE_TAG) \
+		-e RASA_PRO_LICENSE=$(RASA_PRO_LICENSE) \
 		-v $(TRACING_INTEGRATION_TEST_DEPLOYMENT_PATH)/simple_bot\:/app \
-		${RASA_REPOSITORY}\:${RASA_IMAGE_TAG} \
+		$(RASA_REPOSITORY)\:$(RASA_IMAGE_TAG) \
 		train --fixed-model-name model
 
 run-tracing-integration-containers: train-nlu ## Run the tracing integration test containers.
@@ -318,11 +318,11 @@ train-metrics-calm-bot:  ## Train the calm bot for tracing integration tests.
 	docker run \
 		--rm \
 		-u $(USER_ID) \
-		--name rasa-pro-training-${RASA_IMAGE_TAG} \
-		-e RASA_PRO_LICENSE=${RASA_PRO_LICENSE} \
-		-e OPENAI_API_KEY=${OPENAI_API_KEY} \
+		--name rasa-pro-training-$(RASA_IMAGE_TAG) \
+		-e RASA_PRO_LICENSE=$(RASA_PRO_LICENSE) \
+		-e OPENAI_API_KEY=$(OPENAI_API_KEY) \
 		-v $(METRICS_SETUP_PATH)/calm_bot\:/app \
-		${RASA_REPOSITORY}\:${RASA_IMAGE_TAG} \
+		$(RASA_REPOSITORY)\:$(RASA_IMAGE_TAG) \
 		train --fixed-model-name model
 
 run-metrics-integration-containers: train-metrics-calm-bot ## Run the metrics integration test containers.
@@ -360,19 +360,19 @@ TRAIN_BOT_COMMAND = docker run --rm \
 		--name $(CONTAINER_NAME) \
 		$(DOCKER_ENV_VARS) \
 		-v $(BOT_PATH)\:/app \
-		${RASA_REPOSITORY}:${RASA_IMAGE_TAG} \
+		$(RASA_REPOSITORY):$(RASA_IMAGE_TAG) \
 		train --fixed-model-name $(MODEL_NAME)
 
-train-action-server-nlu-bot: DOCKER_ENV_VARS = -e RASA_PRO_LICENSE=${RASA_PRO_LICENSE}
-train-action-server-nlu-bot: CONTAINER_NAME = rasa-pro-training-nlu-bot-${RASA_IMAGE_TAG}
+train-action-server-nlu-bot: DOCKER_ENV_VARS = -e RASA_PRO_LICENSE=$(RASA_PRO_LICENSE)
+train-action-server-nlu-bot: CONTAINER_NAME = rasa-pro-training-nlu-bot-$(RASA_IMAGE_TAG)
 train-action-server-nlu-bot: BOT_PATH = $(ACTION_SERVER_INTEGRATION_TESTS_DEPLOYMENT_PATH)/$(NLU_BOT_DIRECTORY)
 train-action-server-nlu-bot: ## Train the NLU bot for action server integration tests.
 	$(TRAIN_BOT_COMMAND)
 
 
 
-train-action-server-calm-bot: DOCKER_ENV_VARS = -e RASA_PRO_LICENSE=${RASA_PRO_LICENSE} -e OPENAI_API_KEY=${OPENAI_API_KEY}
-train-action-server-calm-bot: CONTAINER_NAME = rasa-pro-training-calm-bot-${RASA_IMAGE_TAG}
+train-action-server-calm-bot: DOCKER_ENV_VARS = -e RASA_PRO_LICENSE=$(RASA_PRO_LICENSE) -e OPENAI_API_KEY=$(OPENAI_API_KEY)
+train-action-server-calm-bot: CONTAINER_NAME = rasa-pro-training-calm-bot-$(RASA_IMAGE_TAG)
 train-action-server-calm-bot: BOT_PATH = $(ACTION_SERVER_INTEGRATION_TESTS_DEPLOYMENT_PATH)/$(CALM_BOT_DIRECTORY)
 train-action-server-calm-bot: ## Train the CALM bot for action server integration tests.
 	$(TRAIN_BOT_COMMAND)
@@ -394,13 +394,13 @@ RUN_ACTION_SERVER_CONTAINERS_COMMAND = USER_ID=$(USER_ID) \
 		up --wait
 
 # This target is mutually exclusive with run-action-server-calm-containers
-run-action-server-nlu-containers: BOT_PATH = "./${NLU_BOT_DIRECTORY}" ## Run the action server integration test containers.
+run-action-server-nlu-containers: BOT_PATH = "./$(NLU_BOT_DIRECTORY)" ## Run the action server integration test containers.
 run-action-server-nlu-containers: train-action-server-nlu-bot
 	$(RUN_ACTION_SERVER_CONTAINERS_COMMAND)
 
 
 # This target is mutually exclusive with run-action-server-nlu-containers
-run-action-server-calm-containers: BOT_PATH = "./${CALM_BOT_DIRECTORY}" ## Run the action server integration test containers.
+run-action-server-calm-containers: BOT_PATH = "./$(CALM_BOT_DIRECTORY)" ## Run the action server integration test containers.
 run-action-server-calm-containers: train-action-server-calm-bot
 	$(RUN_ACTION_SERVER_CONTAINERS_COMMAND)
 
@@ -417,11 +417,11 @@ STOP_ACTION_SERVER_CONTAINERS_COMMAND = USER_ID=$(USER_ID) \
 		--env-file $(ACTION_SERVER_INTEGRATION_TESTS_ENV_FILE) \
 		down
 
-stop-action-server-nlu-containers: BOT_PATH = "./${NLU_BOT_DIRECTORY}"
+stop-action-server-nlu-containers: BOT_PATH = "./$(NLU_BOT_DIRECTORY)"
 stop-action-server-nlu-containers: ## Stop the action server integration test containers for NLU bot.
 	$(STOP_ACTION_SERVER_CONTAINERS_COMMAND)
 
-stop-action-server-calm-containers: BOT_PATH = "./${CALM_BOT_DIRECTORY}"
+stop-action-server-calm-containers: BOT_PATH = "./$(CALM_BOT_DIRECTORY)"
 stop-action-server-calm-containers: ## Stop the action server integration test containers for CALM bot.
 	$(STOP_ACTION_SERVER_CONTAINERS_COMMAND)
 

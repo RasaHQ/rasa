@@ -20,9 +20,14 @@ RASA_SERVER_OTLP_NO_ACTION_SERVER = "http://localhost:5009"
 
 
 ACTION_SERVER_PARENT_SPAN_NAME = "MessageProcessor._run_action"
+ACTION_SERVER_PARENT_SUB_SPAN_NAME = "HTTPCustomActionExecutor.run"
 ACTION_SERVER_SPAN_NAME = "ActionExecutor.run"
 ACTION_SERVER_TRIGGER_MESSAGE = "/goodbye"
 ACTION_SERVER_ACTION_TRIGGERED = "action_goodbye"
+ACTION_SERVER_FORM_TRIGGER_MESSAGE = "/request_name"
+ACTION_SERVER_FORM_FILL_MESSAGE = "Tom"
+ACTION_SERVER_FORM_VALIDATION_ACTION_TRIGGERED = "validate_name_form"
+
 
 TraceQueryTimestamps = collections.namedtuple(
     "TraceQueryTimestamps", "min_time max_time"

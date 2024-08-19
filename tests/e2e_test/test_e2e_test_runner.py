@@ -14,6 +14,7 @@ from structlog.testing import capture_logs
 import rasa.cli.e2e_test
 from rasa.core.agent import Agent
 from rasa.core.channels import CollectingOutputChannel
+from rasa.core.constants import ACTIVE_FLOW_METADATA_KEY, STEP_ID_METADATA_KEY
 from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.utils import AvailableEndpoints
 from rasa.e2e_test.e2e_test_case import (
@@ -44,7 +45,9 @@ from rasa.shared.core.events import (
     SessionStarted,
     SlotSet,
     UserUttered,
+    DialogueStackUpdated,
 )
+from rasa.shared.core.flows.flow_path import FlowPath, PathNode
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
 from rasa.utils.endpoints import EndpointConfig
@@ -78,6 +81,11 @@ def mock_e2e_test_runner(monkeypatch: MonkeyPatch) -> E2ETestRunner:
                         "mappings": [{"type": "from_entity", "entity": "city"}],
                     }
                 },
+                "actions": [
+                    "custom_action_1",
+                    "custom_action_2",
+                    "custom_action_3",
+                ],
             }
         )
         self.agent = Agent(
@@ -1130,14 +1138,24 @@ async def test_run_tests_with_fail_fast(
     )
 
 
-async def test_run_tests_for_fine_tuning(
-    monkeypatch: MonkeyPatch,
-):
-    mock_test_cases = [MagicMock(spec=TestCase), MagicMock(spec=TestCase)]
-    mock_test_cases[0].name = "test_case_1"
-    mock_test_cases[0].steps = []
-    mock_test_cases[1].name = "test_case_2"
-    mock_test_cases[1].steps = []
+async def test_run_tests_for_fine_tuning(monkeypatch: MonkeyPatch):
+    test_cases = [
+        TestCase(
+            steps=[
+                TestStep.from_dict({"user": "Hi!"}),
+                TestStep.from_dict({"bot": "Hey! How can I help?"}),
+                TestStep.from_dict({"user": "Hello!", "metadata": "user_info"}),
+            ],
+            name="test_case_1",
+        ),
+        TestCase(
+            steps=[
+                TestStep.from_dict({"user": "Who are you?"}),
+                TestStep.from_dict({"bot": "I am a bot powered by Rasa."}),
+            ],
+            name="test_case_2",
+        ),
+    ]
 
     def mock_init(self: Any, *args: Any, **kwargs: Any) -> None:
         domain = Domain.empty()
@@ -1159,10 +1177,12 @@ async def test_run_tests_for_fine_tuning(
         AsyncMock(),
     )
 
-    mock_find_test_failures = MagicMock(side_effect=[[], ["failure"]])
+    mock_test_results = MagicMock(
+        side_effect=[TestResult(Mock(), True, []), TestResult(Mock(), False, [])]
+    )
     monkeypatch.setattr(
-        "rasa.e2e_test.e2e_test_runner.E2ETestRunner.find_test_failures",
-        mock_find_test_failures,
+        "rasa.e2e_test.e2e_test_runner.E2ETestRunner.generate_test_result",
+        mock_test_results,
     )
 
     # Mock generate_conversation to return a conversation object
@@ -1179,7 +1199,7 @@ async def test_run_tests_for_fine_tuning(
 
     with capture_logs() as logs:
         result = await runner.run_tests_for_fine_tuning(
-            mock_test_cases,
+            test_cases,
             [],
             None,
         )
@@ -2197,3 +2217,228 @@ def test_slice_turn_events(
 
     # the skipped events should be added to the prior events
     assert new_prior_events == prior_events + current_user_turn[:2]
+
+
+@pytest.mark.parametrize(
+    "events, expected_flow_paths, expected_tested_commands",
+    [
+        (
+            # No flows started, e.g. a nlu-based assistant was used
+            [
+                UserUttered("Hi!"),
+                BotUttered("Hey! How are you?"),
+                UserUttered("I would like to book a trip."),
+                BotUttered("Where would you like to travel?"),
+                UserUttered("I want to go to Lisbon."),
+                ActionExecuted("action_one"),
+                ActionExecuted("action_two"),
+                BotUttered("Your trip to Madrid has been booked."),
+            ],
+            [],  # No flow paths
+            {},  # No commands were tested
+        ),
+        (
+            # one flow with a bot utterance and a custom action
+            [
+                UserUttered(
+                    "What is the weather like?",
+                    parse_data={"commands": [{"command": "ask_weather"}]},
+                ),
+                DialogueStackUpdated(
+                    '[{"op": "add", "path": "/0", "value": {"flow_id": "flow_a", '
+                    '"step_id": "START", "frame_type": "regular", "type": "flow"}}]'
+                ),
+                BotUttered(
+                    metadata={
+                        ACTIVE_FLOW_METADATA_KEY: "flow_a",
+                        STEP_ID_METADATA_KEY: "utter_1",
+                    }
+                ),
+                ActionExecuted(
+                    "custom_action_1",
+                    metadata={
+                        ACTIVE_FLOW_METADATA_KEY: "flow_a",
+                        STEP_ID_METADATA_KEY: "custom_action_1",
+                    },
+                ),
+                FlowCompleted("flow_a", "END"),
+            ],
+            [
+                FlowPath(
+                    "flow_a",
+                    nodes=[
+                        PathNode(step_id="utter_1", flow="flow_a"),
+                        PathNode(step_id="custom_action_1", flow="flow_a"),
+                    ],
+                )
+            ],
+            {"no_flow": {"ask_weather": 1}},  # Commands were tested within flow_a
+        ),
+        (
+            # nested flows with different utterances; flow a not completed
+            [
+                FlowStarted("flow_a"),
+                UserUttered(
+                    "Start flow", parse_data={"commands": [{"command": "start_flow"}]}
+                ),
+                BotUttered(metadata={"utter_action": "utter_1"}),
+                FlowStarted("flow_b"),
+                UserUttered(
+                    "Continue flow",
+                    parse_data={"commands": [{"command": "continue_flow"}]},
+                ),
+                DialogueStackUpdated(
+                    '[{"op": "add", "path": "/0", "value": {"flow_id": "flow_a", '
+                    '"step_id": "START", "frame_type": "regular", "type": "flow"}}]'
+                ),
+                BotUttered(
+                    metadata={
+                        ACTIVE_FLOW_METADATA_KEY: "flow_a",
+                        STEP_ID_METADATA_KEY: "utter_1",
+                    }
+                ),
+                DialogueStackUpdated(
+                    '[{"op": "add", "path": "/0", "value": {"flow_id": "flow_b", '
+                    '"step_id": "START", "frame_type": "regular", "type": "flow"}}]'
+                ),
+                BotUttered(
+                    metadata={
+                        ACTIVE_FLOW_METADATA_KEY: "flow_b",
+                        STEP_ID_METADATA_KEY: "utter_2",
+                    }
+                ),
+                FlowCompleted("flow_b", "END"),
+                BotUttered(
+                    metadata={
+                        ACTIVE_FLOW_METADATA_KEY: "flow_a",
+                        STEP_ID_METADATA_KEY: "utter_3",
+                    }
+                ),
+            ],
+            [
+                FlowPath(
+                    "flow_b",
+                    nodes=[PathNode(step_id="utter_2", flow="flow_b")],
+                ),
+                FlowPath(
+                    "flow_a",
+                    nodes=[
+                        PathNode(step_id="utter_1", flow="flow_a"),
+                        PathNode(step_id="utter_3", flow="flow_a"),
+                    ],
+                ),
+            ],
+            {
+                "no_flow": {"start_flow": 1, "continue_flow": 1}
+            },  # Commands were tested within flow_a and flow_b
+        ),
+        (
+            # flow with patterns
+            [
+                DialogueStackUpdated(
+                    '[{"op": "add", "path": "/0", "value": {"flow_id": "flow_a", '
+                    '"step_id": "START", "frame_type": "regular", "type": "flow"}}]'
+                ),
+                BotUttered(
+                    metadata={
+                        ACTIVE_FLOW_METADATA_KEY: "flow_a",
+                        STEP_ID_METADATA_KEY: "utter_1",
+                    }
+                ),
+                DialogueStackUpdated(
+                    '[{"op": "add", "path": "/0", "value": {"flow_id": '
+                    '"pattern_collect_information", '
+                    '"step_id": "START", "frame_type": "regular", "type": "flow"}}]'
+                ),
+                BotUttered(
+                    metadata={
+                        ACTIVE_FLOW_METADATA_KEY: "flow_a",
+                        STEP_ID_METADATA_KEY: "utter_2",
+                    }
+                ),
+                FlowCompleted("pattern_collect_information", "END"),
+                BotUttered(
+                    metadata={
+                        ACTIVE_FLOW_METADATA_KEY: "flow_a",
+                        STEP_ID_METADATA_KEY: "utter_3",
+                    }
+                ),
+                FlowCompleted("flow_a", "END"),
+            ],
+            [
+                FlowPath(
+                    "flow_a",
+                    nodes=[
+                        PathNode(step_id="utter_1", flow="flow_a"),
+                        PathNode(step_id="utter_2", flow="flow_a"),
+                        PathNode(step_id="utter_3", flow="flow_a"),
+                    ],
+                )
+            ],
+            {},  # No commands were tested
+        ),
+        (
+            # flow with direct call step
+            [
+                DialogueStackUpdated(
+                    '[{"op": "add", "path": "/0", "value": {"flow_id": "flow_a", '
+                    '"step_id": "START", "frame_type": "regular", "type": "flow"}}]'
+                ),
+                BotUttered(
+                    metadata={
+                        ACTIVE_FLOW_METADATA_KEY: "flow_a",
+                        STEP_ID_METADATA_KEY: "utter_1",
+                    }
+                ),
+                DialogueStackUpdated(
+                    '[{"op": "add", "path": "/0", "value": {"flow_id": "flow_b", '
+                    '"step_id": "START", "frame_type": "call", "type": "flow"}}]'
+                ),
+                BotUttered(
+                    metadata={
+                        ACTIVE_FLOW_METADATA_KEY: "flow_b",
+                        STEP_ID_METADATA_KEY: "utter_2",
+                    }
+                ),
+                FlowCompleted("flow_b", "END"),
+                BotUttered(
+                    metadata={
+                        ACTIVE_FLOW_METADATA_KEY: "flow_a",
+                        STEP_ID_METADATA_KEY: "utter_3",
+                    }
+                ),
+                FlowCompleted("flow_a", "END"),
+            ],
+            [
+                FlowPath(
+                    "flow_b",
+                    nodes=[
+                        PathNode(step_id="utter_2", flow="flow_b"),
+                    ],
+                ),
+                FlowPath(
+                    "flow_a",
+                    nodes=[
+                        PathNode(step_id="utter_1", flow="flow_a"),
+                        PathNode(step_id="utter_3", flow="flow_a"),
+                    ],
+                ),
+            ],
+            {},
+        ),
+    ],
+)
+def test_get_tested_flow_paths_and_commands(
+    events: List[Event],
+    expected_flow_paths: List[FlowPath],
+    expected_tested_commands: Dict[str, Dict[str, int]],
+    mock_e2e_test_runner: E2ETestRunner,
+):
+    test_result = TestResult(TestCase("test_case", []), pass_status=True, difference=[])
+
+    actual_flow_paths, actual_tested_commands = (
+        mock_e2e_test_runner._get_tested_flow_paths_and_commands(events, test_result)
+    )
+
+    assert actual_flow_paths == expected_flow_paths
+    assert actual_tested_commands == expected_tested_commands

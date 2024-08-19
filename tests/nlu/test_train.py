@@ -187,7 +187,6 @@ def test_all_components_are_in_at_least_one_test_pipeline():
         pipelines_for_tests()
         + coexistence_pipelines_for_tests()
         + pipelines_for_non_windows_tests()
-        + [("en", as_pipeline("LLMIntentClassifier"))]
     )
     all_components = [c["name"] for _, p in all_pipelines for c in p]
 
@@ -213,8 +212,8 @@ def test_all_components_are_in_at_least_one_test_pipeline():
 @pytest.mark.timeout(600, func_only=True)
 @pytest.mark.parametrize("language, pipeline", pipelines_for_tests())
 @pytest.mark.skip_on_windows
-@patch("langchain.vectorstores.faiss.FAISS.from_documents")
-@patch("langchain.vectorstores.faiss.FAISS.load_local")
+@patch("langchain_community.vectorstores.faiss.FAISS.from_documents")
+@patch("langchain_community.vectorstores.faiss.FAISS.load_local")
 @patch(
     "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval._create_embedder"
 )
@@ -260,8 +259,8 @@ async def test_train_persist_load_parse(
 @pytest.mark.timeout(600, func_only=True)
 @pytest.mark.parametrize("language, pipeline", coexistence_pipelines_for_tests())
 @pytest.mark.skip_on_windows
-@patch("langchain.vectorstores.faiss.FAISS.from_documents")
-@patch("langchain.vectorstores.faiss.FAISS.load_local")
+@patch("langchain_community.vectorstores.faiss.FAISS.from_documents")
+@patch("langchain_community.vectorstores.faiss.FAISS.load_local")
 @patch(
     "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval._create_embedder"
 )

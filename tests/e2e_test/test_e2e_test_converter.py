@@ -1,9 +1,10 @@
 from pathlib import Path
+from typing import Dict, Any
 from unittest.mock import patch, Mock, AsyncMock
 
 import pandas as pd
 import pytest
-
+from rasa.e2e_test.e2e_config import LLME2ETestConverterConfig
 from rasa.e2e_test.e2e_test_converter import (
     E2ETestConverter,
     ConversationEntry,
@@ -50,6 +51,12 @@ DUMMY_YAML_TEST = """
 """.strip()
 
 
+@pytest.fixture
+def llm_config() -> Dict[str, Any]:
+    default_llm_config = LLME2ETestConverterConfig.get_default_config()
+    return {"llm_config": LLME2ETestConverterConfig.from_dict(default_llm_config)}
+
+
 @pytest.fixture(autouse=True)
 def data_frame() -> pd.DataFrame:
     return pd.DataFrame(DATA_FRAME_INPUT_DATA)
@@ -61,8 +68,8 @@ def data_frame_empty_values() -> pd.DataFrame:
 
 
 @pytest.fixture
-def sample_converter() -> E2ETestConverter:
-    return E2ETestConverter(path=SAMPLE_CONVERSATIONS_CSV_PATH)
+def sample_converter(llm_config: Dict[str, Any]) -> E2ETestConverter:
+    return E2ETestConverter(path=SAMPLE_CONVERSATIONS_CSV_PATH, **llm_config)
 
 
 def test_conversation_entry():
@@ -99,96 +106,107 @@ def test_conversations():
     assert conversations.as_list() == expected_list
 
 
-def test_convert_e2e_read_data_from_csv():
-    converter = E2ETestConverter(path=SAMPLE_CONVERSATIONS_CSV_PATH)
+def test_convert_e2e_read_data_from_csv(llm_config: Dict[str, Any]):
+    converter = E2ETestConverter(path=SAMPLE_CONVERSATIONS_CSV_PATH, **llm_config)
     assert converter.read_file() is not None
 
 
-def test_convert_e2e_data_integrity_from_csv(tmp_path: Path, data_frame: pd.DataFrame):
+def test_convert_e2e_data_integrity_from_csv(
+    tmp_path: Path, data_frame: pd.DataFrame, llm_config: Dict[str, Any]
+):
     file_path = tmp_path / "data_integrity.csv"
     data_frame.to_csv(file_path, index=False)
 
-    converter = E2ETestConverter(path=str(file_path))
+    converter = E2ETestConverter(path=str(file_path), **llm_config)
     assert converter.read_file() == DATA_FRAME_OUTPUT_DATA
 
 
 def test_convert_e2e_read_empty_values_from_csv(
-    tmp_path: Path, data_frame_empty_values: pd.DataFrame
+    tmp_path: Path, data_frame_empty_values: pd.DataFrame, llm_config: Dict[str, Any]
 ):
     file_path = tmp_path / "data_integrity.csv"
     data_frame_empty_values.to_csv(file_path, index=False)
 
-    converter = E2ETestConverter(path=str(file_path))
+    converter = E2ETestConverter(path=str(file_path), **llm_config)
     assert converter.read_file() == DATA_FRAME_OUTPUT_DATA_EMPTY_VALUES
 
 
-def test_convert_e2e_read_data_from_xlsx():
+def test_convert_e2e_read_data_from_xlsx(llm_config: Dict[str, Any]):
     converter = E2ETestConverter(
         path=SAMPLE_CONVERSATIONS_XLSX_PATH,
         sheet_name=SAMPLE_CONVERSATION_XLSX_SHEET_NAME,
+        **llm_config,
     )
     assert converter.read_file() is not None
 
 
-def test_convert_e2e_from_xlsx_without_sheet_name():
-    converter = E2ETestConverter(path=SAMPLE_CONVERSATIONS_XLSX_PATH)
+def test_convert_e2e_from_xlsx_without_sheet_name(llm_config: Dict[str, Any]):
+    converter = E2ETestConverter(path=SAMPLE_CONVERSATIONS_XLSX_PATH, **llm_config)
     with pytest.raises(RasaException, match="Please provide a sheet name"):
         converter.read_file()
 
 
-def test_convert_e2e_data_integrity_from_xlsx(tmp_path: Path, data_frame: pd.DataFrame):
+def test_convert_e2e_data_integrity_from_xlsx(
+    tmp_path: Path, data_frame: pd.DataFrame, llm_config: Dict[str, Any]
+):
     file_path = tmp_path / "data_integrity.xlsx"
     data_frame.to_excel(file_path, index=False)
 
     converter = E2ETestConverter(
-        path=str(file_path), sheet_name=SAMPLE_CONVERSATION_XLSX_SHEET_NAME
+        path=str(file_path),
+        sheet_name=SAMPLE_CONVERSATION_XLSX_SHEET_NAME,
+        **llm_config,
     )
     assert converter.read_file() == DATA_FRAME_OUTPUT_DATA
 
 
 def test_convert_e2e_read_empty_values_from_xlsx(
-    tmp_path: Path, data_frame_empty_values: pd.DataFrame
+    tmp_path: Path, data_frame_empty_values: pd.DataFrame, llm_config: Dict[str, Any]
 ):
     file_path = tmp_path / "data_integrity.xlsx"
     data_frame_empty_values.to_excel(file_path, index=False)
 
     converter = E2ETestConverter(
-        path=str(file_path), sheet_name=SAMPLE_CONVERSATION_XLSX_SHEET_NAME
+        path=str(file_path),
+        sheet_name=SAMPLE_CONVERSATION_XLSX_SHEET_NAME,
+        **llm_config,
     )
     assert converter.read_file() == DATA_FRAME_OUTPUT_DATA_EMPTY_VALUES
 
 
-def test_convert_e2e_with_unsupported_extension():
-    converter = E2ETestConverter(path=UNSUPPORTED_EXTENSION_PATH)
+def test_convert_e2e_with_unsupported_extension(llm_config: Dict[str, Any]):
+    converter = E2ETestConverter(path=UNSUPPORTED_EXTENSION_PATH, **llm_config)
     with pytest.raises(RasaException, match="Unsupported file type"):
         converter.read_file()
 
 
-def test_convert_e2e_with_directory_input_path():
-    converter = E2ETestConverter(path=UNSUPPORTED_DIRECTORY_PATH)
+def test_convert_e2e_with_directory_input_path(llm_config: Dict[str, Any]):
+    converter = E2ETestConverter(path=UNSUPPORTED_DIRECTORY_PATH, **llm_config)
     with pytest.raises(
         RasaException, match="The path must point to a specific file, not a directory."
     ):
         converter.read_file()
 
 
-def test_convert_e2e_read_empty_csv(tmp_path: Path):
+def test_convert_e2e_read_empty_csv(tmp_path: Path, llm_config: Dict[str, Any]):
     file_path = tmp_path / "empty.csv"
     file_path.touch()
 
-    converter = E2ETestConverter(path=str(file_path))
+    converter = E2ETestConverter(path=str(file_path), **llm_config)
     with pytest.raises(
         RasaException, match="There was an error with reading the CSV file."
     ):
         converter.read_file()
 
 
-def test_convert_e2e_read_empty_xlsx(tmp_path: Path):
+def test_convert_e2e_read_empty_xlsx(tmp_path: Path, llm_config: Dict[str, Any]):
     file_path = tmp_path / "empty.xlsx"
     file_path.touch()
 
     converter = E2ETestConverter(
-        path=str(file_path), sheet_name=SAMPLE_CONVERSATION_XLSX_SHEET_NAME
+        path=str(file_path),
+        sheet_name=SAMPLE_CONVERSATION_XLSX_SHEET_NAME,
+        **llm_config,
     )
     with pytest.raises(
         RasaException, match="There was a value error while reading the file."
@@ -269,13 +287,20 @@ async def test_convert_e2e_conversations_into_tests(sample_converter):
         Mock(),
     ) as mock_llm_factory:
         llm_mock = Mock()
-        apredict_mock = AsyncMock(
+
+        # Creating mock response objects with the 'choices' attribute
+        mock_response_1 = Mock()
+        mock_response_1.choices = [f"```yaml\n{DUMMY_YAML_TEST}\n```"]
+
+        mock_response_2 = Mock()
+        mock_response_2.choices = [f"```yaml\n{DUMMY_YAML_TEST}\n```"]
+        acompletion_mock = AsyncMock(
             side_effect=[
-                f"```yaml\n{DUMMY_YAML_TEST}\n```",
-                f"```yaml\n{DUMMY_YAML_TEST}\n```",
+                mock_response_1,
+                mock_response_2,
             ]
         )
-        llm_mock.apredict = apredict_mock
+        llm_mock.acompletion = acompletion_mock
         mock_llm_factory.return_value = llm_mock
         yaml_tests_string = await sample_converter.convert_conversations_into_tests(
             conversations
@@ -297,10 +322,10 @@ async def test_convert_e2e_single_conversation_into_test(sample_converter):
         Mock(),
     ) as mock_llm_factory:
         llm_mock = Mock()
-        apredict_mock = AsyncMock(
-            return_value="""```yaml\ntest_case: valid_yaml\n```"""
-        )
-        llm_mock.apredict = apredict_mock
+        mock_response = Mock()
+        mock_response.choices = ["""```yaml\ntest_case: valid_yaml\n```"""]
+        acompletion_mock = AsyncMock(return_value=mock_response)
+        llm_mock.acompletion = acompletion_mock
         mock_llm_factory.return_value = llm_mock
         yaml_test = await sample_converter.convert_single_conversation_into_test(
             conversation

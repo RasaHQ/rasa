@@ -7,17 +7,17 @@ from dataclasses import field
 from functools import lru_cache
 from io import StringIO
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Callable, Union
+from typing import Dict, List, Optional, Any, Callable, Tuple, Union
 
 import jsonschema
 from importlib_resources import files
 from packaging import version
-from packaging.version import LegacyVersion
 from pykwalify.core import Core
 from pykwalify.errors import SchemaError
 from ruamel import yaml as yaml
 from ruamel.yaml import RoundTripRepresenter, YAMLError
 from ruamel.yaml.constructor import DuplicateKeyError, BaseConstructor, ScalarNode
+from ruamel.yaml.comments import CommentedSeq, CommentedMap
 
 from rasa.shared.constants import (
     ASSERTIONS_SCHEMA_EXTENSIONS_FILE,
@@ -151,15 +151,78 @@ class YamlValidationException(YamlException, ValueError):
             msg += f":\n{error_msg}"
         return msg
 
+    def _calculate_number_of_lines(
+        self,
+        current: Union[CommentedSeq, CommentedMap],
+        target: Optional[str] = None,
+    ) -> Tuple[int, bool]:
+        """Counts the lines that are missing due to the ruamel yaml parser logic.
+
+        Since not all nodes returned from the ruamel yaml parser
+        have line numbers attached (arrays have them, dicts have
+        them, but strings don't), this method calculates the number
+        of lines that are missing instead of just returning line of the parent element
+
+        Args:
+        current: current content
+        target: target key to find the line number of
+
+        Returns:
+            A tuple containing a number of missing lines
+            and a flag indicating if an element with a line number was found
+        """
+        if isinstance(current, list):
+            # return the line number of the last list element
+            line_number = current[-1].lc.line + 1
+            logger.debug(f"Returning from list: last element at {line_number}")
+            return line_number, True
+
+        keys_to_check = list(current.keys())
+        if target:
+            # If target is specified, only check keys before it
+            keys_to_check = keys_to_check[: keys_to_check.index(target)]
+        try:
+            # find the last key that has a line number attached
+            last_key_with_lc = next(
+                iter(
+                    [
+                        key
+                        for key in reversed(keys_to_check)
+                        if hasattr(current[key], "lc")
+                    ]
+                )
+            )
+            logger.debug(f"Last key with line number: {last_key_with_lc}")
+        except StopIteration:
+            # otherwise return the number of elements on that level up to the target
+            logger.debug(f"No line number found in {current}")
+            if target:
+                return list(current.keys()).index(target), False
+            return len(list(current.keys())), False
+
+        offset = current[last_key_with_lc].lc.line if not target else 0
+        # Recursively calculate the number of lines
+        # for the element associated with the last key with a line number
+        child_offset, found_lc = self._calculate_number_of_lines(
+            current[last_key_with_lc]
+        )
+        if not found_lc:
+            child_offset += offset
+        if target:
+            child_offset += 1
+        # add the number of trailing keys without line numbers to the offset
+        last_idx_with_lc = keys_to_check.index(last_key_with_lc)
+        child_offset += len(keys_to_check[last_idx_with_lc + 1 :])
+
+        logger.debug(f"Analysed {current}, found {child_offset} lines")
+        # Return the calculated child offset and True indicating a line number was found
+        return child_offset, True
+
     def _line_number_for_path(self, current: Any, path: List[str]) -> Optional[int]:
         """Get line number for a yaml path in the current content.
 
         Implemented using recursion: algorithm goes down the path navigating to the
-        leaf in the YAML tree. Unfortunately, not all nodes returned from the
-        ruamel yaml parser have line numbers attached (arrays have them, dicts have
-        them), e.g. strings don't have attached line numbers.
-        If we arrive at a node that has no line number attached, we'll return the
-        line number of the parent - that is as close as it gets.
+        leaf in the YAML tree.
 
         Args:
             current: current content
@@ -178,9 +241,20 @@ class YamlValidationException(YamlException, ValueError):
 
         head, tail = path[0], path[1:]
 
+        if head == "":
+            return current.lc.line
+
         if head:
             if isinstance(current, dict) and head in current:
-                return self._line_number_for_path(current[head], tail) or this_line
+                line = self._line_number_for_path(current[head], tail)
+                if line is None:
+                    line_offset, found_lc = self._calculate_number_of_lines(
+                        current, head
+                    )
+                    if found_lc:
+                        return line_offset
+                    return this_line + line_offset
+                return line
             elif isinstance(current, list) and head.isdigit():
                 return self._line_number_for_path(current[int(head)], tail) or this_line
             else:
@@ -340,12 +414,17 @@ def validate_raw_yaml_using_schema_file_with_responses(
     )
 
 
-def read_yaml(content: str, reader_type: Union[str, List[str]] = "safe") -> Any:
+def read_yaml(
+    content: str,
+    reader_type: Union[str, List[str]] = "safe",
+    **kwargs: Any,
+) -> Any:
     """Parses yaml from a text.
 
     Args:
         content: A text containing yaml content.
         reader_type: Reader type to use. By default, "safe" will be used.
+        **kwargs: Any
 
     Raises:
         ruamel.yaml.parser.ParserError: If there was an error when parsing the YAML.
@@ -359,11 +438,69 @@ def read_yaml(content: str, reader_type: Union[str, List[str]] = "safe") -> Any:
             .decode("utf-16")
         )
 
+    custom_constructor = kwargs.get("custom_constructor", None)
+
+    # Create YAML parser with custom constructor
+    yaml_parser, reset_constructors = create_yaml_parser(
+        reader_type, custom_constructor
+    )
+    yaml_content = yaml_parser.load(content) or {}
+
+    # Reset to default constructors
+    reset_constructors()
+
+    return yaml_content
+
+
+def create_yaml_parser(
+    reader_type: str,
+    custom_constructor: Optional[Callable] = None,
+) -> Tuple[yaml.YAML, Callable[[], None]]:
+    """Create a YAML parser with an optional custom constructor.
+
+    Args:
+        reader_type (str): The type of the reader
+        (e.g., 'safe', 'rt', 'unsafe').
+        custom_constructor (Optional[Callable]):
+        A custom constructor function for YAML parsing.
+
+    Returns:
+        Tuple[yaml.YAML, Callable[[], None]]: A tuple containing
+        the YAML parser and a function to reset constructors to
+        their original state.
+    """
     yaml_parser = yaml.YAML(typ=reader_type)
     yaml_parser.version = YAML_VERSION  # type: ignore[assignment]
     yaml_parser.preserve_quotes = True  # type: ignore[assignment]
 
-    return yaml_parser.load(content) or {}
+    # Save the original constructors
+    original_mapping_constructor = yaml_parser.constructor.yaml_constructors.get(
+        yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG
+    )
+    original_sequence_constructor = yaml_parser.constructor.yaml_constructors.get(
+        yaml.resolver.BaseResolver.DEFAULT_SEQUENCE_TAG
+    )
+
+    if custom_constructor is not None:
+        # Attach the custom constructor to the loader
+        yaml_parser.constructor.add_constructor(
+            yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, custom_constructor
+        )
+        yaml_parser.constructor.add_constructor(
+            yaml.resolver.BaseResolver.DEFAULT_SEQUENCE_TAG, custom_constructor
+        )
+
+    def reset_constructors() -> None:
+        """Reset the constructors back to their original state."""
+        yaml_parser.constructor.add_constructor(
+            yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, original_mapping_constructor
+        )
+        yaml_parser.constructor.add_constructor(
+            yaml.resolver.BaseResolver.DEFAULT_SEQUENCE_TAG,
+            original_sequence_constructor,
+        )
+
+    return yaml_parser, reset_constructors
 
 
 def _is_ascii(text: str) -> bool:
@@ -372,7 +509,7 @@ def _is_ascii(text: str) -> bool:
 
 @lru_cache(maxsize=READ_YAML_FILE_CACHE_MAXSIZE)
 def read_yaml_file(
-    filename: Union[str, Path], reader_type: str = "safe"
+    filename: Union[str, Path], reader_type: Union[str, Tuple[str]] = "safe"
 ) -> Union[List[Any], Dict[str, Any]]:
     """Parses a yaml file.
 
@@ -386,7 +523,10 @@ def read_yaml_file(
         Parsed content of the file.
     """
     try:
-        return read_yaml(read_file(filename, DEFAULT_ENCODING), reader_type)
+        fixed_reader_type = (
+            list(reader_type) if isinstance(reader_type, tuple) else reader_type
+        )
+        return read_yaml(read_file(filename, DEFAULT_ENCODING), fixed_reader_type)
     except (YAMLError, DuplicateKeyError) as e:
         raise YamlSyntaxException(filename, e)
 
@@ -608,9 +748,6 @@ def validate_training_data_format_version(
         parsed_version = version.parse(version_value)
         latest_version = version.parse(LATEST_TRAINING_DATA_FORMAT_VERSION)
 
-        if isinstance(parsed_version, LegacyVersion):
-            raise TypeError
-
         if parsed_version < latest_version:
             raise_warning(
                 f"Training data file {filename} has a lower "
@@ -626,7 +763,7 @@ def validate_training_data_format_version(
         if latest_version >= parsed_version:
             return True
 
-    except TypeError:
+    except (TypeError, version.InvalidVersion):
         raise_warning(
             f"Training data file {filename} must specify "
             f"'{KEY_TRAINING_DATA_FORMAT_VERSION}' as string, for example:\n"

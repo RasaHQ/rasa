@@ -20,8 +20,9 @@ from rasa.shared.utils.llm import (
 )
 
 SEPARATOR = "\n\n"
+BACKUP_SEPARATOR = "\nUSER:"
 
-PROMPT_TEMPLATE_KEY = "prompt_template"
+PROMPT_TEMPLATE_CONFIG_KEY = "prompt_template"
 
 REPHRASING_PROMPT_FILE_NAME = "default_rephrase_prompt_template.jina2"
 DEFAULT_REPHRASING_PROMPT_TEMPLATE = importlib.resources.read_text(
@@ -30,8 +31,8 @@ DEFAULT_REPHRASING_PROMPT_TEMPLATE = importlib.resources.read_text(
 )
 
 DEFAULT_LLM_CONFIG = {
-    "type": "openai",
-    "model_name": "gpt-3.5-turbo",
+    "api_type": "openai",
+    "model": "gpt-3.5-turbo",
     "request_timeout": 7,
     "temperature": 0.0,
     "max_tokens": 4096,
@@ -47,7 +48,7 @@ class ConversationRephraser:
     ) -> None:
         self.config = {**self.get_default_config(), **config}
         self.prompt_template = get_prompt_template(
-            self.config.get(PROMPT_TEMPLATE_KEY),
+            self.config.get(PROMPT_TEMPLATE_CONFIG_KEY),
             DEFAULT_REPHRASING_PROMPT_TEMPLATE,
         )
 
@@ -55,7 +56,7 @@ class ConversationRephraser:
     def get_default_config() -> Dict[str, Any]:
         """The component's default config (see parent class for full docstring)."""
         return {
-            PROMPT_TEMPLATE_KEY: None,
+            PROMPT_TEMPLATE_CONFIG_KEY: None,
             LLM_CONFIG_KEY: DEFAULT_LLM_CONFIG,
         }
 
@@ -93,7 +94,8 @@ class ConversationRephraser:
     async def _invoke_llm(self, prompt: str) -> str:
         llm = llm_factory(self.config.get(LLM_CONFIG_KEY), DEFAULT_LLM_CONFIG)
         try:
-            return await llm.apredict(prompt)
+            llm_response = await llm.acompletion(prompt)
+            return llm_response.choices[0]
         except Exception as e:
             # unfortunately, langchain does not wrap LLM exceptions which means
             # we have to catch all exceptions here
@@ -175,8 +177,7 @@ class ConversationRephraser:
             RephrasedUserMessage(message, []) for message in user_messages
         ]
 
-        # Each user message block is seperator by new line
-        message_blocks = output.split(SEPARATOR)
+        message_blocks = self._get_message_blocks(output, len(rephrased_messages))
         for block in message_blocks:
             original_user_message, rephrasings = self._extract_rephrasings(block)
 
@@ -189,6 +190,30 @@ class ConversationRephraser:
                     rephrased_message.rephrasings = rephrasings
 
         return rephrased_messages
+
+    @staticmethod
+    def _get_message_blocks(output: str, expected_number_of_blocks: int) -> List[str]:
+        # Each user message block is (ideally) separated by new line ("\n\n")
+        # USER: <user message>
+        # 1. <rephrasing>
+        #
+        # USER: <user message>
+        # 1. <rephrasing>
+        message_blocks = output.split(SEPARATOR)
+        if len(message_blocks) == expected_number_of_blocks:
+            return message_blocks
+
+        # In case the message blocks are not separated by new line, try to split it
+        # by "\nUSER:", e.g.
+        # USER: <user message>
+        # 1. <rephrasing>
+        # USER: <user message>
+        # 1. <rephrasing>
+        message_blocks = output.split(BACKUP_SEPARATOR)
+        if len(message_blocks) == expected_number_of_blocks:
+            return message_blocks
+
+        return []
 
     @staticmethod
     def _check_rephrasings(
