@@ -35,7 +35,12 @@ from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels import channel, RestInput
 from rasa.core.exporter import Exporter
 from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
-from rasa.e2e_test.constants import STUB_CUSTOM_ACTION_NAME_SEPARATOR
+from rasa.e2e_test.constants import (
+    TEST_FILE_NAME,
+    TEST_CASE_NAME,
+    KEY_STUB_CUSTOM_ACTIONS,
+    STUB_CUSTOM_ACTION_NAME_SEPARATOR,
+)
 from rasa.e2e_test.stub_custom_action import StubCustomAction
 from rasa.engine.caching import LocalTrainingCache
 from rasa.engine.graph import ExecutionContext, GraphSchema
@@ -69,6 +74,7 @@ from rasa.shared.providers.embedding.embedding_response import EmbeddingResponse
 from rasa.shared.providers.llm._base_litellm_client import _BaseLiteLLMClient
 from rasa.shared.providers.llm.llm_client import LLMClient
 from rasa.shared.utils.yaml import read_yaml_file, write_yaml
+from rasa.utils.endpoints import EndpointConfig
 
 # we reuse a bit of pytest's own testing machinery, this should eventually come
 # from a separately installable pytest-cli plugin.
@@ -1202,3 +1208,25 @@ def action_test_case_stub(
     stub_data: Dict[str, Any], action_name_test_case: str
 ) -> StubCustomAction:
     return StubCustomAction.from_dict(action_name_test_case, stub_data)
+
+
+@pytest.fixture
+def endpoint_stub_config(
+    test_file_name: str,
+    test_case_name: str,
+    action_test_file_stub: StubCustomAction,
+    action_test_case_stub: StubCustomAction,
+    action_name_test_file_with_separator: str,
+    action_name_test_case_with_separator: str,
+) -> EndpointConfig:
+    return EndpointConfig(
+        url="http://localhost:5055/webhook",
+        **{
+            TEST_FILE_NAME: test_file_name,
+            TEST_CASE_NAME: test_case_name,
+            KEY_STUB_CUSTOM_ACTIONS: {
+                action_name_test_file_with_separator: action_test_file_stub,
+                action_name_test_case_with_separator: action_test_case_stub,
+            },
+        },
+    )

@@ -5,7 +5,6 @@ from rasa.e2e_test.constants import (
     KEY_STUB_CUSTOM_ACTIONS,
     STUB_CUSTOM_ACTION_NAME_SEPARATOR,
     TEST_FILE_NAME,
-    TEST_CASE_NAME,
 )
 from rasa.utils.endpoints import EndpointConfig
 

@@ -2,8 +2,6 @@ import asyncio
 import copy
 import datetime
 import difflib
-import json
-from collections import defaultdict
 from asyncio import CancelledError
 from collections import defaultdict
 from pathlib import Path
