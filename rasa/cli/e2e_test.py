@@ -823,11 +823,10 @@ def verify_beta_feature_flag_for_assertions(
 def _save_tested_commands_histogram(
     count_dict: Dict[str, int], test_status: str, output_dir: str
 ) -> None:
-    """Creates a histogram from a count dictionary and
-    saves it to the specified directory.
+    """Creates a command histogram and saves it to the specified directory.
 
     Args:
-        count_dict (Dict[str, int]): A dictionary where keys are categories
+        count_dict (Dict[str, int]): A dictionary where keys are commands
         and values are counts.
         test_status (str): passing or failing
         output_dir (str): The directory path where the histogram
@@ -836,13 +835,27 @@ def _save_tested_commands_histogram(
     if not count_dict:
         return
 
+    # Sort the dictionary by keys
+    sorted_count_dict = dict(sorted(count_dict.items()))
+
     plt.figure(figsize=(10, 6))
-    plt.bar(count_dict.keys(), count_dict.values(), color="blue")
+    bars = plt.bar(sorted_count_dict.keys(), sorted_count_dict.values(), color="blue")
     plt.xlabel("Commands")
     plt.ylabel("Counts")
-    plt.title("Tested commands histogram")
+    plt.title(f"Command histogram for {test_status} tests")
     plt.xticks(rotation=45, ha="right")
     plt.tight_layout()
+
+    # Add total number to each bar
+    for bar in bars:
+        yval = bar.get_height()
+        plt.text(
+            bar.get_x() + bar.get_width() / 2,
+            yval + 0.5,
+            int(yval),
+            ha="center",
+            va="bottom",
+        )
 
     output_filename = f"commands_histogram_for_{test_status}_tests.png"
     save_path = os.path.join(output_dir, output_filename)

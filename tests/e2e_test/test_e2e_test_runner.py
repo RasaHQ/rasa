@@ -45,7 +45,6 @@ from rasa.shared.core.events import (
     SessionStarted,
     SlotSet,
     UserUttered,
-    DialogueStackUpdated,
 )
 from rasa.shared.core.flows.flow_path import FlowPath, PathNode
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -185,6 +184,7 @@ def assertions_e2e_test_runner(
 ) -> E2ETestRunner:
     def mock_init(self, *args, **kwargs) -> None:
         self.agent = default_agent
+        self.llm_judge_config = MagicMock()
 
     monkeypatch.setattr(
         "rasa.e2e_test.e2e_test_runner.E2ETestRunner.__init__", mock_init
@@ -1924,6 +1924,7 @@ async def test_run_assertions_with_duplicate_user_messages(
 ) -> None:
     def mock_init(self, *args, **kwargs) -> None:
         self.agent = default_agent
+        self.llm_judge_config = MagicMock()
 
     monkeypatch.setattr(
         "rasa.e2e_test.e2e_test_runner.E2ETestRunner.__init__", mock_init
@@ -2244,10 +2245,7 @@ def test_slice_turn_events(
                     "What is the weather like?",
                     parse_data={"commands": [{"command": "ask_weather"}]},
                 ),
-                DialogueStackUpdated(
-                    '[{"op": "add", "path": "/0", "value": {"flow_id": "flow_a", '
-                    '"step_id": "START", "frame_type": "regular", "type": "flow"}}]'
-                ),
+                FlowStarted("flow_a"),
                 BotUttered(
                     metadata={
                         ACTIVE_FLOW_METADATA_KEY: "flow_a",
@@ -2278,28 +2276,19 @@ def test_slice_turn_events(
             # nested flows with different utterances; flow a not completed
             [
                 FlowStarted("flow_a"),
-                UserUttered(
-                    "Start flow", parse_data={"commands": [{"command": "start_flow"}]}
-                ),
-                BotUttered(metadata={"utter_action": "utter_1"}),
-                FlowStarted("flow_b"),
-                UserUttered(
-                    "Continue flow",
-                    parse_data={"commands": [{"command": "continue_flow"}]},
-                ),
-                DialogueStackUpdated(
-                    '[{"op": "add", "path": "/0", "value": {"flow_id": "flow_a", '
-                    '"step_id": "START", "frame_type": "regular", "type": "flow"}}]'
-                ),
                 BotUttered(
                     metadata={
                         ACTIVE_FLOW_METADATA_KEY: "flow_a",
                         STEP_ID_METADATA_KEY: "utter_1",
                     }
                 ),
-                DialogueStackUpdated(
-                    '[{"op": "add", "path": "/0", "value": {"flow_id": "flow_b", '
-                    '"step_id": "START", "frame_type": "regular", "type": "flow"}}]'
+                UserUttered(
+                    "Start flow", parse_data={"commands": [{"command": "start_flow"}]}
+                ),
+                FlowStarted("flow_b"),
+                UserUttered(
+                    "Continue flow",
+                    parse_data={"commands": [{"command": "continue_flow"}]},
                 ),
                 BotUttered(
                     metadata={
@@ -2329,27 +2318,21 @@ def test_slice_turn_events(
                 ),
             ],
             {
-                "no_flow": {"start_flow": 1, "continue_flow": 1}
+                "flow_a": {"start_flow": 1},
+                "flow_b": {"continue_flow": 1},
             },  # Commands were tested within flow_a and flow_b
         ),
         (
             # flow with patterns
             [
-                DialogueStackUpdated(
-                    '[{"op": "add", "path": "/0", "value": {"flow_id": "flow_a", '
-                    '"step_id": "START", "frame_type": "regular", "type": "flow"}}]'
-                ),
+                FlowStarted("flow_a"),
                 BotUttered(
                     metadata={
                         ACTIVE_FLOW_METADATA_KEY: "flow_a",
                         STEP_ID_METADATA_KEY: "utter_1",
                     }
                 ),
-                DialogueStackUpdated(
-                    '[{"op": "add", "path": "/0", "value": {"flow_id": '
-                    '"pattern_collect_information", '
-                    '"step_id": "START", "frame_type": "regular", "type": "flow"}}]'
-                ),
+                FlowStarted("pattern_collect_information"),
                 BotUttered(
                     metadata={
                         ACTIVE_FLOW_METADATA_KEY: "flow_a",
@@ -2380,20 +2363,14 @@ def test_slice_turn_events(
         (
             # flow with direct call step
             [
-                DialogueStackUpdated(
-                    '[{"op": "add", "path": "/0", "value": {"flow_id": "flow_a", '
-                    '"step_id": "START", "frame_type": "regular", "type": "flow"}}]'
-                ),
+                FlowStarted("flow_a"),
                 BotUttered(
                     metadata={
                         ACTIVE_FLOW_METADATA_KEY: "flow_a",
                         STEP_ID_METADATA_KEY: "utter_1",
                     }
                 ),
-                DialogueStackUpdated(
-                    '[{"op": "add", "path": "/0", "value": {"flow_id": "flow_b", '
-                    '"step_id": "START", "frame_type": "call", "type": "flow"}}]'
-                ),
+                FlowStarted("flow_b"),
                 BotUttered(
                     metadata={
                         ACTIVE_FLOW_METADATA_KEY: "flow_b",

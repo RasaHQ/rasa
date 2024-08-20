@@ -608,7 +608,7 @@ def run_step(
         return _run_link_step(initial_events, stack, step)
 
     elif isinstance(step, CallFlowStep):
-        return _run_call_step(stack, step)
+        return _run_call_step(initial_events, stack, step)
 
     elif isinstance(step, SetSlotsFlowStep):
         return _run_set_slot_step(initial_events, step)
@@ -650,7 +650,9 @@ def _run_set_slot_step(
     return ContinueFlowWithNextStep(events=initial_events + slot_events)
 
 
-def _run_call_step(stack: DialogueStack, step: CallFlowStep) -> FlowStepResult:
+def _run_call_step(
+    initial_events: List[Event], stack: DialogueStack, step: CallFlowStep
+) -> FlowStepResult:
     structlogger.debug("flow.step.run.call")
     stack.push(
         UserFlowStackFrame(
@@ -658,7 +660,7 @@ def _run_call_step(stack: DialogueStack, step: CallFlowStep) -> FlowStepResult:
             frame_type=FlowStackFrameType.CALL,
         ),
     )
-    return ContinueFlowWithNextStep()
+    return ContinueFlowWithNextStep(events=initial_events)
 
 
 def _run_link_step(

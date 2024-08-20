@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
-import os
 from dataclasses import dataclass
-from enum import Enum
 from pathlib import Path
 from typing import Generator, Optional, Dict, Any
 
@@ -31,24 +29,6 @@ from rasa.shared.utils.yaml import (
 
 structlogger = structlog.get_logger()
 
-LLM_PROVIDER_TO_API_KEY = {
-    "openai": "OPENAI_API_KEY",
-    "cohere": "COHERE_API_KEY",
-    "huggingface": "HUGGINGFACE_API_KEY",
-    "anthropic": "ANTHROPIC_API_KEY",
-    "replicate": "REPLICATE_API_TOKEN",
-    "anyscale": "ANYSCALE_API_KEY",
-    "together": "TOGETHER_API_KEY",
-    "mistral": "MISTRAL_API_KEY",
-    "azure": "AZURE_API_KEY",
-}
-
-
-class ComputeMethodType(Enum):
-    LOCAL = "local"
-    REPLICATE = "replicate"
-    API = "api"
-
 
 class InvalidLLMConfiguration(RasaException):
     """Exception raised when the LLM configuration is invalid."""
@@ -67,57 +47,25 @@ class LLMJudgeConfig:
      or relevance of the generated response during E2E testing.
     """
 
+    api_type: str = "openai"
     model: str = "gpt-4o-mini"
-
-    # Embedding model
-    embedding_compute_method: str = ComputeMethodType.LOCAL.value
-    embedding_model_url: Optional[str] = None
-    embedding_model_api_token: Optional[str] = None
-
-    logs_folder: Optional[str] = None
-    seed: Optional[int] = None
-
-    # Rate limits
-    rpm_limit: Optional[int] = None
-    tpm_limit: Optional[int] = None
-
-    # Custom LLM provider
-    custom_llm_provider: Optional[str] = None
-    api_base: Optional[str] = None
-
-    # External API keys
-    openai_api_key: Optional[str] = None
-    cohere_api_key: Optional[str] = None
-    huggingface_api_key: Optional[str] = None
-    anthropic_api_key: Optional[str] = None
-    replicate_api_token: Optional[str] = None
-    anyscale_api_key: Optional[str] = None
-    together_api_key: Optional[str] = None
-    mistral_api_key: Optional[str] = None
-
-    azure_api_key: Optional[str] = None
-    azure_api_base: Optional[str] = None
-    azure_api_version: Optional[str] = None
 
     @staticmethod
     def from_dict(config_data: Dict[str, Any]) -> LLMJudgeConfig:
         """Loads the configuration from a dictionary."""
-        llm_type = config_data.pop("type", "openai")
-        external_api_keys = load_external_api_keys(llm_type)
-        config_data.update(external_api_keys)
-
-        validate_config(config_data)
+        llm_type = config_data.pop("api_type", "openai")
+        if llm_type != "openai":
+            raise InvalidLLMConfiguration(
+                f"Invalid LLM type '{llm_type}'. Only 'openai' is supported."
+            )
 
         return LLMJudgeConfig(**config_data)
 
-    @staticmethod
-    def clean_up_config(config_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Remove None values from the configuration."""
-        return {key: value for key, value in config_data.items() if value is not None}
-
     def as_dict(self) -> Dict[str, Any]:
-        data = dataclasses.asdict(self)
-        return self.clean_up_config(data)
+        return dataclasses.asdict(self)
+
+    def get_model_uri(self) -> str:
+        return f"{self.api_type}:/{self.model}"
 
 
 class LLME2ETestConverterConfig(BaseModel):
@@ -158,33 +106,6 @@ class LLME2ETestConverterConfig(BaseModel):
 
     def as_dict(self) -> Dict[str, Any]:
         return self._clean_up_config(dict(self))
-
-
-def load_external_api_keys(llm_type: str) -> Dict[str, Optional[str]]:
-    """Load the environment variables for the external API keys."""
-    environment_variable_name = LLM_PROVIDER_TO_API_KEY.get(llm_type)
-
-    if environment_variable_name is None:
-        raise InvalidLLMConfiguration(f"Unsupported LLM provider '{llm_type}'.")
-
-    api_keys = {
-        environment_variable_name.lower(): os.environ.get(environment_variable_name),
-        "embedding_model_api_token": os.environ.get("EMBEDDING_MODEL_API_TOKEN"),
-    }
-
-    return api_keys
-
-
-def validate_config(config_data: Dict[str, Any]) -> None:
-    """Validate the configuration."""
-    if config_data.get("embedding_compute_method") == ComputeMethodType.API.value:
-        if config_data.get("embedding_model_api_token") is None:
-            raise InvalidLLMConfiguration(
-                "No API token for the embedding model was set."
-            )
-
-        if config_data.get("embedding_model_url") is None:
-            raise InvalidLLMConfiguration("No embedding model URL was set.")
 
 
 def get_conftest_path(test_case_path: Optional[Path]) -> Optional[Path]:

@@ -1,7 +1,12 @@
+import sys
 from typing import Any, Dict, List
+from unittest.mock import MagicMock
 
+import pandas as pd
 import pytest
+from pytest import MonkeyPatch
 
+from rasa.core.policies.enterprise_search_policy import SEARCH_RESULTS_METADATA_KEY
 from rasa.dialogue_understanding.patterns.clarify import FLOW_PATTERN_CLARIFICATION
 from rasa.e2e_test.assertions import (
     ActionExecutedAssertion,
@@ -9,6 +14,7 @@ from rasa.e2e_test.assertions import (
     AssertedSlot,
     Assertion,
     AssertionFailure,
+    AssertionType,
     BotUtteredAssertion,
     FlowCancelledAssertion,
     FlowCompletedAssertion,
@@ -20,6 +26,7 @@ from rasa.e2e_test.assertions import (
     SlotWasNotSetAssertion,
     SlotWasSetAssertion,
 )
+from rasa.e2e_test.e2e_config import LLMJudgeConfig
 from rasa.shared.core.events import (
     ActionExecuted,
     BotUttered,
@@ -27,7 +34,9 @@ from rasa.shared.core.events import (
     FlowCancelled,
     FlowCompleted,
     FlowStarted,
+    SessionStarted,
     SlotSet,
+    UserUttered,
 )
 from rasa.shared.exceptions import RasaException
 
@@ -105,6 +114,17 @@ from rasa.shared.exceptions import RasaException
                 text_matches="You can transfer money or check your balance.",
             ),
         ),
+    ],
+)
+def test_create_typed_assertion_valid_subclasses(
+    data: Dict[str, Any], expected_assertion: Assertion
+):
+    assert Assertion.create_typed_assertion(data) == expected_assertion
+
+
+@pytest.mark.parametrize(
+    "data, assertion_type, metric_name",
+    [
         (
             {
                 "generative_response_is_relevant": {
@@ -113,11 +133,8 @@ from rasa.shared.exceptions import RasaException
                     "ground_truth": "You can transfer money or check your balance.",
                 }
             },
-            GenerativeResponseIsRelevantAssertion(
-                threshold=0.9,
-                utter_name="utter_options",
-                ground_truth="You can transfer money or check your balance.",
-            ),
+            AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT.value,
+            "answer_relevance",
         ),
         (
             {
@@ -127,18 +144,47 @@ from rasa.shared.exceptions import RasaException
                     "ground_truth": "The fee for transferring money is $5.",
                 }
             },
-            GenerativeResponseIsGroundedAssertion(
-                threshold=0.88,
-                utter_name="utter_fee",
-                ground_truth="The fee for transferring money is $5.",
-            ),
+            AssertionType.GENERATIVE_RESPONSE_IS_GROUNDED.value,
+            "answer_correctness",
         ),
     ],
 )
-def test_create_typed_assertion_valid_subclasses(
-    data: Dict[str, Any], expected_assertion: Assertion
+def test_create_typed_assertion_valid_generative_assertions(
+    monkeypatch: MonkeyPatch,
+    data: Dict[str, Any],
+    assertion_type: str,
+    metric_name: str,
 ):
-    assert Assertion.create_typed_assertion(data) == expected_assertion
+    mlflow_mock = MagicMock()
+    sys.modules["mlflow"] = mlflow_mock
+    mock_metric = MagicMock()
+    monkeypatch.setattr(mlflow_mock, f"metrics.genai.{metric_name}", mock_metric)
+
+    def get_expected_assertion(assertion_type: str) -> Assertion:
+        import mlflow
+
+        if assertion_type == AssertionType.GENERATIVE_RESPONSE_IS_GROUNDED.value:
+            return GenerativeResponseIsGroundedAssertion(
+                threshold=0.88,
+                utter_name="utter_fee",
+                ground_truth="The fee for transferring money is $5.",
+                metric_name="answer_correctness",
+                metric_adjective="grounded",
+                mlflow_metric=mlflow.metrics.genai.answer_correctness,
+            )
+        elif assertion_type == AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT.value:
+            return GenerativeResponseIsRelevantAssertion(
+                threshold=0.9,
+                utter_name="utter_options",
+                ground_truth="You can transfer money or check your balance.",
+                metric_name="answer_relevance",
+                metric_adjective="relevant",
+                mlflow_metric=mlflow.metrics.genai.answer_relevance,
+            )
+
+    assert Assertion.create_typed_assertion(data) == get_expected_assertion(
+        assertion_type
+    )
 
 
 def test_create_typed_assertion_with_unknown_type():
@@ -565,3 +611,496 @@ def test_assertion_failure_as_dict(
         "error_message": "Test error message",
         "actual_events_transcript": ["test_event"],
     }
+
+
+def set_up_tests_for_generative_response_assertions(
+    monkeypatch: MonkeyPatch, table: Dict[str, Any], metric_name: str
+) -> None:
+    # we need to mock mlflow because it's an optional dependency of rasa-pro,
+    # and it won't get installed in the CI
+    mlflow_mock = MagicMock()
+    sys.modules["mlflow"] = mlflow_mock
+    mlflow_evaluate_mock = MagicMock()
+    monkeypatch.setattr(mlflow_mock, "evaluate", mlflow_evaluate_mock)
+
+    mock_result = MagicMock()
+    monkeypatch.setattr(mock_result, "tables", table)
+    mlflow_evaluate_mock.return_value = mock_result
+
+    mock_metric = MagicMock()
+    monkeypatch.setattr(mlflow_mock, f"metrics.genai.{metric_name}", mock_metric)
+
+
+def get_assertion(assertion_type: str):
+    if assertion_type == AssertionType.GENERATIVE_RESPONSE_IS_GROUNDED.value:
+        return GenerativeResponseIsGroundedAssertion.from_dict(
+            {assertion_type: {"threshold": 0.85, "utter_name": "utter_free_transfers"}}
+        )
+    elif assertion_type == AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT.value:
+        return GenerativeResponseIsRelevantAssertion.from_dict(
+            {assertion_type: {"threshold": 0.85, "utter_name": "utter_free_transfers"}}
+        )
+
+
+@pytest.mark.parametrize(
+    "assertion_type, data, metric_name",
+    [
+        (
+            AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT.value,
+            [
+                {
+                    "answer_relevance/v1/score": 5,
+                    "answer_relevance/v1/justification": "test justification",
+                }
+            ],
+            "answer_relevance",
+        ),
+        (
+            AssertionType.GENERATIVE_RESPONSE_IS_GROUNDED.value,
+            [
+                {
+                    "answer_correctness/v1/score": 5,
+                    "answer_correctness/v1/justification": "test justification",
+                }
+            ],
+            "answer_correctness",
+        ),
+    ],
+)
+def test_generative_response_assertions_run_llm_evaluation_success(
+    monkeypatch: MonkeyPatch,
+    assertion_type: str,
+    data: List[Dict[str, Any]],
+    metric_name: str,
+) -> None:
+    table = {"eval_results_table": pd.DataFrame(data=data)}
+    set_up_tests_for_generative_response_assertions(monkeypatch, table, metric_name)
+    assertion = get_assertion(assertion_type)
+
+    matching_event = BotUttered("Transfers are free for domestic service.")
+
+    failure, event = assertion._run_llm_evaluation(
+        matching_event,
+        "Are transfers on free with this service?",
+        LLMJudgeConfig(),
+        "",
+        [SessionStarted()],
+        [UserUttered("Are transfers on free with this service?"), matching_event],
+    )
+
+    assert failure is None
+    assert event == matching_event
+
+
+def test_generative_response_is_relevant_run_llm_evaluation_failure(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    table = {
+        "eval_results_table": pd.DataFrame(
+            data=[
+                {
+                    "answer_relevance/v1/score": 1,
+                    "answer_relevance/v1/justification": "test justification",
+                }
+            ],
+        )
+    }
+    set_up_tests_for_generative_response_assertions(
+        monkeypatch, table, "answer_relevance"
+    )
+    assertion = get_assertion(AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT.value)
+
+    matching_event = BotUttered("Transfers are free for domestic service.")
+    prior_events = [SessionStarted()]
+    turn_events = [
+        UserUttered("Are transfers on free with this service?"),
+        matching_event,
+    ]
+    failure, event = assertion._run_llm_evaluation(
+        matching_event,
+        "Are transfers on free with this service?",
+        LLMJudgeConfig(),
+        "",
+        prior_events,
+        turn_events,
+    )
+
+    assert failure is not None
+    assert failure.assertion == assertion
+    assert failure.error_message == (
+        "Generative response 'Transfers are free for domestic service.' "
+        "given to the user input 'Are transfers on free with this service?' "
+        "was not relevant. "
+        "Expected score to be above '0.85' threshold, but was '0.2'. "
+        "The explanation for this score is: test justification."
+    )
+    assert event is None
+
+
+def test_generative_response_is_grounded_run_llm_evaluation_failure(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    table = {
+        "eval_results_table": pd.DataFrame(
+            data=[
+                {
+                    "answer_correctness/v1/score": 1,
+                    "answer_correctness/v1/justification": "test justification",
+                }
+            ],
+        )
+    }
+    set_up_tests_for_generative_response_assertions(
+        monkeypatch, table, "answer_correctness"
+    )
+    assertion = get_assertion(AssertionType.GENERATIVE_RESPONSE_IS_GROUNDED.value)
+
+    matching_event = BotUttered(
+        "Transfers are free for domestic service.",
+        metadata={
+            SEARCH_RESULTS_METADATA_KEY: "Domestic transfers are free of charge."
+        },
+    )
+    prior_events = [SessionStarted()]
+    turn_events = [
+        UserUttered("Are transfers on free with this service?"),
+        matching_event,
+    ]
+    failure, event = assertion._run_llm_evaluation(
+        matching_event,
+        "Are transfers on free with this service?",
+        LLMJudgeConfig(),
+        "",
+        prior_events,
+        turn_events,
+    )
+
+    assert failure is not None
+    assert failure.assertion == assertion
+    assert failure.error_message == (
+        "Generative response 'Transfers are free for domestic service.' "
+        "given to the user input 'Are transfers on free with this service?' "
+        "was not grounded. Expected score to be above '0.85' threshold, "
+        "but was '0.2'. The explanation for this score is: "
+        "test justification."
+    )
+    assert event is None
+
+
+@pytest.mark.parametrize(
+    "assertion_type, data, metric_name",
+    [
+        (
+            AssertionType.GENERATIVE_RESPONSE_IS_GROUNDED.value,
+            [
+                {
+                    "answer_correctness/v1/score": 5,
+                    "answer_correctness/v1/justification": "test justification",
+                }
+            ],
+            "answer_correctness",
+        ),
+        (
+            AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT.value,
+            [
+                {
+                    "answer_relevance/v1/score": 5,
+                    "answer_relevance/v1/justification": "test justification",
+                }
+            ],
+            "answer_relevance",
+        ),
+    ],
+)
+def test_generative_response_assertions_run_assertion_with_utter_name_success(
+    monkeypatch: MonkeyPatch,
+    assertion_type: str,
+    data: List[Dict[str, Any]],
+    metric_name: str,
+) -> None:
+    table = {"eval_results_table": pd.DataFrame(data=data)}
+
+    set_up_tests_for_generative_response_assertions(monkeypatch, table, metric_name)
+    assertion = get_assertion(assertion_type)
+
+    matching_events = [
+        BotUttered(
+            "Transfers are free for domestic service.",
+            metadata={
+                "utter_action": "utter_free_transfers",
+            },
+        ),
+        BotUttered(
+            "Is there anything else I can help you with?",
+            metadata={"utter_action": "utter_help"},
+        ),
+    ]
+
+    failure, event = assertion._run_assertion_with_utter_name(
+        matching_events,
+        "Are transfers on free with this service?",
+        LLMJudgeConfig(),
+        "",
+        [SessionStarted()],
+        [UserUttered("Are transfers on free with this service?"), *matching_events],
+    )
+
+    assert failure is None
+    assert event == matching_events[0]
+
+
+@pytest.mark.parametrize(
+    "assertion_type, data, metric_name",
+    [
+        (
+            AssertionType.GENERATIVE_RESPONSE_IS_GROUNDED.value,
+            [
+                {
+                    "answer_correctness/v1/score": 5,
+                    "answer_correctness/v1/justification": "test justification",
+                }
+            ],
+            "answer_correctness",
+        ),
+        (
+            AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT.value,
+            [
+                {
+                    "answer_relevance/v1/score": 5,
+                    "answer_relevance/v1/justification": "test justification",
+                }
+            ],
+            "answer_relevance",
+        ),
+    ],
+)
+def test_generative_response_run_assertion_with_utter_name_failure(
+    monkeypatch: MonkeyPatch,
+    assertion_type: str,
+    data: List[Dict[str, Any]],
+    metric_name: str,
+) -> None:
+    table = {"eval_results_table": pd.DataFrame(data=data)}
+    set_up_tests_for_generative_response_assertions(monkeypatch, table, metric_name)
+    assertion = get_assertion(assertion_type)
+    matching_events = [
+        BotUttered(
+            "International transfers are not free for domestic service.",
+            metadata={
+                "utter_action": "utter_international_transfers",
+            },
+        ),
+        BotUttered(
+            "Is there anything else I can help you with?",
+            metadata={"utter_action": "utter_help"},
+        ),
+    ]
+
+    failure, event = assertion._run_assertion_with_utter_name(
+        matching_events,
+        "Are international transfers free with this service?",
+        LLMJudgeConfig(),
+        "",
+        [SessionStarted()],
+        [
+            UserUttered("Are international transfers free with this service?"),
+            *matching_events,
+        ],
+    )
+
+    assert event is None
+    assert failure is not None
+    assert failure.assertion == assertion
+    assert failure.error_message == (
+        "Bot did not utter 'utter_free_transfers' response."
+    )
+
+
+@pytest.mark.parametrize(
+    "assertion_type, data, metric_name, expected_error_message",
+    [
+        (
+            AssertionType.GENERATIVE_RESPONSE_IS_GROUNDED.value,
+            [
+                {
+                    "answer_correctness/v1/score": 1,
+                    "answer_correctness/v1/justification": "test justification",
+                }
+            ],
+            "answer_correctness",
+            "None of the generative responses issued by Enterprise Search Policy "
+            "or Contextual Response Rephraser were grounded.",
+        ),
+        (
+            AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT.value,
+            [
+                {
+                    "answer_relevance/v1/score": 1,
+                    "answer_relevance/v1/justification": "test justification",
+                }
+            ],
+            "answer_relevance",
+            "None of the generative responses issued by Enterprise Search Policy "
+            "or Contextual Response Rephraser were relevant.",
+        ),
+    ],
+)
+def test_generative_response_assertions_run_multiple_responses_failure(
+    monkeypatch: MonkeyPatch,
+    assertion_type: str,
+    data: List[Dict[str, Any]],
+    metric_name: str,
+    expected_error_message: str,
+) -> None:
+    table = {"eval_results_table": pd.DataFrame(data=data)}
+    set_up_tests_for_generative_response_assertions(monkeypatch, table, metric_name)
+    assertion = get_assertion(assertion_type)
+    matching_events = [
+        BotUttered(
+            "I'm afraid I don't have any knowledge of this.",
+            metadata={
+                "utter_action": "utter_no_knowledge",
+            },
+        ),
+        BotUttered(
+            "Is there anything else I can help you with?",
+            metadata={"utter_action": "utter_help"},
+        ),
+    ]
+
+    failure, event = assertion._run_assertion_for_multiple_generative_responses(
+        matching_events,
+        "Are international transfers free with this service?",
+        LLMJudgeConfig(),
+        "",
+        [SessionStarted()],
+        [
+            UserUttered("Are international transfers free with this service?"),
+            *matching_events,
+        ],
+    )
+
+    assert event is None
+    assert failure is not None
+    assert failure.assertion == assertion
+    assert failure.error_message == expected_error_message
+
+
+@pytest.mark.parametrize(
+    "assertion_type, data, metric_name,",
+    [
+        (
+            AssertionType.GENERATIVE_RESPONSE_IS_GROUNDED.value,
+            [
+                {
+                    "answer_correctness/v1/score": 5,
+                    "answer_correctness/v1/justification": "test justification",
+                }
+            ],
+            "answer_correctness",
+        ),
+        (
+            AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT.value,
+            [
+                {
+                    "answer_relevance/v1/score": 5,
+                    "answer_relevance/v1/justification": "test justification",
+                }
+            ],
+            "answer_relevance",
+        ),
+    ],
+)
+def test_generative_response_assertions_run_multiple_responses_success(
+    monkeypatch: MonkeyPatch,
+    assertion_type: str,
+    data: List[Dict[str, Any]],
+    metric_name: str,
+) -> None:
+    table = {"eval_results_table": pd.DataFrame(data=data)}
+    set_up_tests_for_generative_response_assertions(monkeypatch, table, metric_name)
+    assertion = get_assertion(assertion_type)
+    matching_events = [
+        BotUttered(
+            "International transfers are not free for the domestic service.",
+            metadata={
+                "utter_action": "utter_international_transfers",
+            },
+        ),
+        BotUttered(
+            "Is there anything else I can help you with?",
+            metadata={"utter_action": "utter_help"},
+        ),
+    ]
+
+    failure, event = assertion._run_assertion_for_multiple_generative_responses(
+        matching_events,
+        "Are international transfers free with this service?",
+        LLMJudgeConfig(),
+        "",
+        [SessionStarted()],
+        [
+            UserUttered("Are international transfers free with this service?"),
+            *matching_events,
+        ],
+    )
+
+    assert event is not None
+    assert failure is None
+
+
+@pytest.mark.parametrize(
+    "assertion_type, data, metric_name,",
+    [
+        (
+            AssertionType.GENERATIVE_RESPONSE_IS_GROUNDED.value,
+            [
+                {
+                    "answer_correctness/v1/score": 5,
+                    "answer_correctness/v1/justification": "test justification",
+                }
+            ],
+            "answer_correctness",
+        ),
+        (
+            AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT.value,
+            [
+                {
+                    "answer_relevance/v1/score": 5,
+                    "answer_relevance/v1/justification": "test justification",
+                }
+            ],
+            "answer_relevance",
+        ),
+    ],
+)
+def test_generative_response_run_no_matching_events(
+    monkeypatch: MonkeyPatch,
+    assertion_type: str,
+    data: List[Dict[str, Any]],
+    metric_name: str,
+) -> None:
+    table = {"eval_results_table": pd.DataFrame(data=data)}
+    set_up_tests_for_generative_response_assertions(monkeypatch, table, metric_name)
+    assertion = get_assertion(assertion_type)
+    matching_events = [
+        SlotSet("service_name", "domestic"),
+        ActionExecuted("action_listen"),
+    ]
+
+    failure, event = assertion.run(
+        [
+            UserUttered("Are international transfers free with this service?"),
+            *matching_events,
+        ],
+        [SessionStarted()],
+        "",
+    )
+
+    assert event is None
+    assert failure is not None
+    assert failure.assertion == assertion
+    assert failure.error_message == (
+        "No generative response issued by Enterprise Search Policy "
+        "or Contextual Response Rephraser was found, but one was expected."
+    )

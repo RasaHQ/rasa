@@ -34,10 +34,14 @@ def test_aggregate_stats_calculator_init(
     assert aggregate_test_stats_calculator.test_cases
     assert aggregate_test_stats_calculator.failed_assertion_set == set()
     assert aggregate_test_stats_calculator.passed_count_mapping == {
-        subclass_type: 0 for subclass_type in _get_all_assertion_subclasses().keys()
+        subclass_type: 0
+        for subclass_type in _get_all_assertion_subclasses().keys()
+        if subclass_type != ""
     }
     assert aggregate_test_stats_calculator.failed_count_mapping == {
-        subclass_type: 0 for subclass_type in _get_all_assertion_subclasses().keys()
+        subclass_type: 0
+        for subclass_type in _get_all_assertion_subclasses().keys()
+        if subclass_type != ""
     }
 
 

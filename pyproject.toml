@@ -207,13 +207,7 @@ python = ">=3.8,<3.11"
 
 [[tool.poetry.dependencies.numpy]]
 version = ">=1.23.5,<1.25.0"
-markers = "sys_platform != 'win32' or platform_python_implementation == 'PyPy'"
 python = ">=3.8,<3.11"
-
-[[tool.poetry.dependencies.numpy]]
-version = "1.22.3"
-markers = "sys_platform =='win32' and platform_python_implementation != 'PyPy'"
-python = "3.10"
 
 [[tool.poetry.dependencies.scipy]]
 version = ">=1.10.1,<1.11.0"
@@ -231,6 +225,10 @@ optional = true
 version = "^2.0"
 optional = true
 
+[[tool.poetry.dependencies.mlflow]]
+version = "^2.15.1"
+optional = true
+
 [tool.poetry.extras]
 spacy = [ "spacy",]
 jieba = [ "jieba",]
@@ -238,6 +236,7 @@ transformers = [ "transformers", "sentencepiece",]
 full = [ "spacy", "transformers", "sentencepiece", "jieba",]
 gh-release-notes = [ "github3.py",]
 metal = [ "tensorflow-metal",]
+mlflow = [ "mlflow",]
 
 [tool.poetry.scripts]
 rasa = "rasa.__main__:main"
@@ -271,7 +270,7 @@ timeout_func_only = true
 asyncio_mode = "auto"
 
 [tool.poetry.dependencies.rasa-sdk]
-version = "3.9.0"
+version = "3.10.0dev1"
 allow-prereleases = true
 
 [tool.poetry.dependencies.tensorflow]
@@ -363,11 +362,10 @@ types-requests = "^2.31.0"
 types-setuptools = "^68.2.0"
 memory-profiler = "^0.61.0"
 mypy-extensions = ">=0.4.3,<1.1.0"
-sanic-testing = "^22.12.0"
+sanic-testing = "~23.6.0"
 analytics-python = "^1.4.0"
 datadog-api-client = "^2.25.0"
 datadog = "^0.49.1"
 types-redis = "^4.3.20"
-httpx = "0.23.3"
 types-protobuf = "^4.24.0"
 types-toml = "^0.10.8.7"
