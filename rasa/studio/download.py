@@ -76,6 +76,8 @@ def handle_download(args: argparse.Namespace) -> None:
     )
     write_domain = args.overwrite
 
+    # handle case if domain file or folder is not
+    # present, but we're expecting it later
     if domain_path is None:
         domain_path = Path(DEFAULT_DOMAIN_PATHS[0])
         domain_path.touch()
@@ -90,26 +92,25 @@ def handle_download(args: argparse.Namespace) -> None:
         else:
             domain_path = Path(domain_path)
 
-    config_path, write_config = _handle_file_overwrite(
-        args.config, DEFAULT_CONFIG_PATH, "config"
-    )
-    endpoints_path, write_endpoints = _handle_file_overwrite(
-        args.endpoints, DEFAULT_ENDPOINTS_PATH, "endpoints"
-    )
-
     data_paths = []
 
     for f in args.data:
         data_path = rasa.cli.utils.get_validated_path(
             f, "data", DEFAULT_DATA_PATH, none_is_valid=True
         )
-        # this is the case when data path doesn't exist
-        # Since we want download to continue, we will
-        # create a directory with the given name
+        # create a directory with the default name
         if data_path is None:
             data_path = DEFAULT_DATA_PATH
             Path(data_path).mkdir(parents=True, exist_ok=True)
         data_paths.append(Path(data_path))
+
+    # handle config and endpoints
+    config_path, write_config = _handle_file_overwrite(
+        args.config, DEFAULT_CONFIG_PATH, "config"
+    )
+    endpoints_path, write_endpoints = _handle_file_overwrite(
+        args.endpoints, DEFAULT_ENDPOINTS_PATH, "endpoints"
+    )
 
     config_path = config_path if write_config else None
     endpoints_path = endpoints_path if write_endpoints else None
