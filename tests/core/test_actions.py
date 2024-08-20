@@ -2,7 +2,7 @@ import logging
 import textwrap
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Text
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import Mock
 
 import pytest
 from _pytest.logging import LogCaptureFixture
