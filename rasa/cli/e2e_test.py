@@ -795,7 +795,7 @@ def _save_tested_commands_histogram(
     bars = plt.bar(sorted_count_dict.keys(), sorted_count_dict.values(), color="blue")
     plt.xlabel("Commands")
     plt.ylabel("Counts")
-    plt.title("Command histogram")
+    plt.title(f"Command histogram for {test_status} tests")
     plt.xticks(rotation=45, ha="right")
     plt.tight_layout()
 
