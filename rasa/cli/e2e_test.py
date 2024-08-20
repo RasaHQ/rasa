@@ -56,6 +56,8 @@ from rasa.shared.utils.yaml import (
 from rasa.utils.beta import BetaNotEnabledException, ensure_beta_feature_is_enabled
 from rasa.utils.endpoints import EndpointConfig
 
+RASA_PRO_BETA_STUB_CUSTOM_ACTION_ENV_VAR_NAME = "RASA_PRO_BETA_STUB_CUSTOM_ACTION"
+
 DEFAULT_E2E_INPUT_TESTS_PATH = "tests/e2e_test_cases.yml"
 DEFAULT_E2E_OUTPUT_TESTS_PATH = "tests/e2e_results.yml"
 DEFAULT_COVERAGE_OUTPUT_PATH = "e2e_coverage_results"
@@ -247,7 +249,10 @@ def read_test_cases(path: Text) -> TestSuite:
     Returns:
         TestSuite.
     """
-    from rasa.e2e_test.e2e_test_case import StubCustomAction
+    from rasa.e2e_test.stub_custom_action import (
+        StubCustomAction,
+        get_stub_custom_action_key,
+    )
 
     path, test_case_name = extract_test_case_from_path(path)
     validate_path_to_test_cases(path)
@@ -307,9 +312,15 @@ def read_test_cases(path: Text) -> TestSuite:
         stub_custom_actions_contents = (
             test_file_content.get(KEY_STUB_CUSTOM_ACTIONS) or {}
         )
+        if stub_custom_actions_contents:
+            ensure_beta_feature_is_enabled(
+                "enabling stubs for custom actions",
+                RASA_PRO_BETA_STUB_CUSTOM_ACTION_ENV_VAR_NAME,
+            )
+
         for action_name, stub_data in stub_custom_actions_contents.items():
             test_file_name = Path(test_file).name
-            stub_custom_action_key = StubCustomAction.get_stub_custom_action_key(
+            stub_custom_action_key = get_stub_custom_action_key(
                 test_file_name, action_name
             )
             stub_custom_actions[stub_custom_action_key] = StubCustomAction.from_dict(

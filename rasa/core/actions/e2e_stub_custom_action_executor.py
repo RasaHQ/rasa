@@ -17,7 +17,7 @@ from rasa.shared.exceptions import RasaException
 from rasa.utils.endpoints import EndpointConfig
 
 if typing.TYPE_CHECKING:
-    from rasa.e2e_test.e2e_test_case import StubCustomAction
+    from rasa.e2e_test.stub_custom_action import StubCustomAction
 
 structlogger = structlog.get_logger(__name__)
 
@@ -39,8 +39,9 @@ class E2EStubCustomActionExecutor(CustomActionExecutor):
         self.stub_custom_action = self.get_stub_custom_action()
 
     def get_stub_custom_action(self) -> "StubCustomAction":
-        from rasa.e2e_test.e2e_test_case import StubCustomAction
-        stub_custom_action = StubCustomAction.get_stub_custom_action(
+        from rasa.e2e_test.stub_custom_action import get_stub_custom_action
+
+        stub_custom_action = get_stub_custom_action(
             self.action_endpoint, self.action_name
         )
 
