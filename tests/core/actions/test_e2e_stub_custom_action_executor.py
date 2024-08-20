@@ -1,11 +1,10 @@
 import pytest
-
+from typing import Dict, Any
 from rasa.core.actions.action import RemoteAction
 from rasa.core.actions.e2e_stub_custom_action_executor import (
     E2EStubCustomActionExecutor,
 )
 from rasa.e2e_test.constants import (
-    STUB_CUSTOM_ACTION_NAME_SEPARATOR,
     TEST_FILE_NAME,
     TEST_CASE_NAME,
     KEY_STUB_CUSTOM_ACTIONS,
@@ -16,54 +15,39 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
 from rasa.utils.endpoints import EndpointConfig
 
-DUMMY_STUB_DATA = {
-    "events": [{"event": "sample_event"}],
-    "responses": [{"response": "sample_response"}],
-}
-DUMMY_TEST_FILE_NAME = "test_file_name.yml"
-DUMMY_TEST_CASE_NAME = "test_case_name"
 
-DUMMY_ACTION_NAME_TEST_FILE = "action_test_file"
-DUMMY_ACTION_NAME_TEST_CASE = "action_test_case"
-DUMMY_INVALID_ACTION_NAME = "invalid_action_name"
-
-DUMMY_ACTION_NAME_TEST_FILE_WITH_SEPARATOR = (
-    f"{DUMMY_TEST_FILE_NAME}"
-    f"{STUB_CUSTOM_ACTION_NAME_SEPARATOR}"
-    f"{DUMMY_ACTION_NAME_TEST_FILE}"
-)
-DUMMY_ACTION_NAME_TEST_CASE_WITH_SEPARATOR = (
-    f"{DUMMY_TEST_CASE_NAME}"
-    f"{STUB_CUSTOM_ACTION_NAME_SEPARATOR}"
-    f"{DUMMY_ACTION_NAME_TEST_CASE}"
-)
-
-DUMMY_ACTION_TEST_FILE_STUB = StubCustomAction.from_dict(
-    DUMMY_ACTION_NAME_TEST_FILE, DUMMY_STUB_DATA
-)
-DUMMY_ACTION_TEST_CASE_STUB = StubCustomAction.from_dict(
-    DUMMY_ACTION_NAME_TEST_CASE, DUMMY_STUB_DATA
-)
+@pytest.fixture
+def invalid_action_name() -> str:
+    return "invalid_action_name"
 
 
 @pytest.fixture
-def endpoint_config() -> EndpointConfig:
+def endpoint_config(
+    test_file_name: str,
+    test_case_name: str,
+    action_name_test_file_with_separator: str,
+    action_name_test_case_with_separator: str,
+    action_test_file_stub: StubCustomAction,
+    action_test_case_stub: StubCustomAction,
+) -> EndpointConfig:
     return EndpointConfig(
         url="http://localhost:5055/webhook",
         **{
-            TEST_FILE_NAME: DUMMY_TEST_FILE_NAME,
-            TEST_CASE_NAME: DUMMY_TEST_CASE_NAME,
+            TEST_FILE_NAME: test_file_name,
+            TEST_CASE_NAME: test_case_name,
             KEY_STUB_CUSTOM_ACTIONS: {
-                DUMMY_ACTION_NAME_TEST_FILE_WITH_SEPARATOR: DUMMY_ACTION_TEST_FILE_STUB,
-                DUMMY_ACTION_NAME_TEST_CASE_WITH_SEPARATOR: DUMMY_ACTION_TEST_CASE_STUB,
+                action_name_test_file_with_separator: action_test_file_stub,
+                action_name_test_case_with_separator: action_test_case_stub,
             },
         },
     )
 
 
 @pytest.fixture
-def remote_action(endpoint_config: EndpointConfig) -> RemoteAction:
-    return RemoteAction(DUMMY_ACTION_NAME_TEST_FILE, endpoint_config)
+def remote_action(
+    endpoint_config: EndpointConfig, action_name_test_file: str
+) -> RemoteAction:
+    return RemoteAction(action_name_test_file, endpoint_config)
 
 
 @pytest.fixture
@@ -76,28 +60,36 @@ def domain() -> Domain:
     return Domain.empty()
 
 
-def test_e2e_stub_custom_action_executor_init(endpoint_config: EndpointConfig):
-    executor = E2EStubCustomActionExecutor(DUMMY_ACTION_NAME_TEST_CASE, endpoint_config)
-    assert executor.action_name == DUMMY_ACTION_NAME_TEST_CASE
+def test_e2e_stub_custom_action_executor_init(
+    endpoint_config: EndpointConfig,
+    action_test_case_stub: StubCustomAction,
+    action_name_test_case: str,
+):
+    executor = E2EStubCustomActionExecutor(action_name_test_case, endpoint_config)
+    assert executor.action_name == action_name_test_case
     assert executor.action_endpoint == endpoint_config
-    assert executor.stub_custom_action == DUMMY_ACTION_TEST_CASE_STUB
+    assert executor.stub_custom_action == action_test_case_stub
 
 
-def test_init_executor_with_invalid_action_name(endpoint_config: EndpointConfig):
+def test_init_executor_with_invalid_action_name(
+    endpoint_config: EndpointConfig, invalid_action_name: str
+):
     with pytest.raises(RasaException) as excinfo:
-        E2EStubCustomActionExecutor(DUMMY_INVALID_ACTION_NAME, endpoint_config)
-    assert f"Action `{DUMMY_INVALID_ACTION_NAME}` has not been stubbed." in str(
-        excinfo.value
-    )
+        E2EStubCustomActionExecutor(invalid_action_name, endpoint_config)
+    assert f"Action `{invalid_action_name}` has not been stubbed." in str(excinfo.value)
 
 
 @pytest.mark.asyncio
 async def test_run_with_valid_stub_action(
-    endpoint_config: EndpointConfig, tracker: DialogueStateTracker, domain: Domain
+    endpoint_config: EndpointConfig,
+    tracker: DialogueStateTracker,
+    domain: Domain,
+    stub_data: Dict[str, Any],
+    action_name_test_file: str,
 ):
-    executor = E2EStubCustomActionExecutor(DUMMY_ACTION_NAME_TEST_FILE, endpoint_config)
+    executor = E2EStubCustomActionExecutor(action_name_test_file, endpoint_config)
     result = await executor.run(tracker, domain)
-    assert result == DUMMY_STUB_DATA
+    assert result == stub_data
 
 
 def test_remote_action_initializes_e2e_stub_custom_action_executor(

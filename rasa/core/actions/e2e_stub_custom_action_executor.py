@@ -49,7 +49,12 @@ class E2EStubCustomActionExecutor(CustomActionExecutor):
             return stub_custom_action
 
         # TODO Update message below with reference to the docs
-        raise RasaException(f"Action `{self.action_name}` has not been stubbed.")
+        raise RasaException(
+            f"You are using custom action stubs, however action `{self.action_name}` "
+            f"has not been stubbed. Note that you cannot stub some custom actions "
+            f"while running an action server instance, you must stub all custom "
+            f"actions called by the tests in the provided test path."
+        )
 
     async def run(
         self,
