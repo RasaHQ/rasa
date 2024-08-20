@@ -2,8 +2,8 @@ from importlib.util import find_spec
 from typing import (
     Any,
     Dict,
-    Text,
     Optional,
+    Text,
 )
 
 import structlog
@@ -14,8 +14,7 @@ from rasa.core.actions.custom_action_executor import (
     CustomActionExecutor,
 )
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.core.trackers import EventVerbosity
+from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.shared.exceptions import RasaException
 from rasa.utils.endpoints import EndpointConfig
 
@@ -67,4 +66,5 @@ class DirectCustomActionExecutor(CustomActionExecutor):
         if domain:
             action_call["domain"] = domain.as_dict()
 
-        return await self.action_executor.run(action_call)
+        result = await self.action_executor.run(action_call)
+        return result.model_dump() if result else {}
