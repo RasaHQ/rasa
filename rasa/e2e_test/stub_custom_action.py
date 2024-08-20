@@ -45,8 +45,6 @@ class StubCustomAction:
 
 def get_stub_custom_action_key(prefix: str, action_name: str) -> str:
     """Returns the key used to store the StubCustomAction object"""
-    if STUB_CUSTOM_ACTION_NAME_SEPARATOR in action_name:
-        return action_name
     return f"{prefix}{STUB_CUSTOM_ACTION_NAME_SEPARATOR}{action_name}"
 
 
@@ -54,19 +52,12 @@ def get_stub_custom_action(
     action_endpoint: EndpointConfig, action_name: str
 ) -> Optional["StubCustomAction"]:
     """Returns the StubCustomAction object"""
-    # Fetch the name of the test file and of the test case
-    test_file_name = action_endpoint.kwargs.get(TEST_FILE_NAME)
-    test_case_name = action_endpoint.kwargs.get(TEST_CASE_NAME)
+    # Determine the key under which the StubCustomAction is stored
+    if STUB_CUSTOM_ACTION_NAME_SEPARATOR in action_name:
+        stub_custom_action_key = action_name
+    else:
+        test_file_name = action_endpoint.kwargs.get(TEST_FILE_NAME)
+        stub_custom_action_key = get_stub_custom_action_key(test_file_name, action_name)
 
-    # Generate keys for custom action stub
-    stub_test_file_key = get_stub_custom_action_key(test_file_name, action_name)
-    stub_test_case_key = get_stub_custom_action_key(test_case_name, action_name)
-
-    # Fetch the custom action stub, prioritizing the test case naming
     stub_custom_actions = action_endpoint.kwargs.get(KEY_STUB_CUSTOM_ACTIONS, {})
-    return stub_custom_actions.get(
-        stub_test_case_key,
-        stub_custom_actions.get(
-            stub_test_file_key
-        ),
-    )
+    return stub_custom_actions.get(stub_custom_action_key)

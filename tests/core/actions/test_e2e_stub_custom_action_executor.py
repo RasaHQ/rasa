@@ -62,13 +62,13 @@ def domain() -> Domain:
 
 def test_e2e_stub_custom_action_executor_init(
     endpoint_config: EndpointConfig,
-    action_test_case_stub: StubCustomAction,
-    action_name_test_case: str,
+    action_test_file_stub: StubCustomAction,
+    action_name_test_file: str,
 ):
-    executor = E2EStubCustomActionExecutor(action_name_test_case, endpoint_config)
-    assert executor.action_name == action_name_test_case
+    executor = E2EStubCustomActionExecutor(action_name_test_file, endpoint_config)
+    assert executor.action_name == action_name_test_file
     assert executor.action_endpoint == endpoint_config
-    assert executor.stub_custom_action == action_test_case_stub
+    assert executor.stub_custom_action == action_test_file_stub
 
 
 def test_init_executor_with_invalid_action_name(
@@ -76,7 +76,7 @@ def test_init_executor_with_invalid_action_name(
 ):
     with pytest.raises(RasaException) as excinfo:
         E2EStubCustomActionExecutor(invalid_action_name, endpoint_config)
-    assert f"Action `{invalid_action_name}` has not been stubbed." in str(excinfo.value)
+    assert "You are using custom action stubs" in str(excinfo.value)
 
 
 @pytest.mark.asyncio
