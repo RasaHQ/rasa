@@ -45,6 +45,7 @@ from rasa.shared.core.events import (
     SlotSet,
 )
 from rasa.shared.exceptions import RasaException
+from rasa.utils.common import update_mlflow_log_level
 
 if TYPE_CHECKING:
     from rasa.e2e_test.e2e_config import LLMJudgeConfig
@@ -831,6 +832,10 @@ class GenerativeResponseMixin(Assertion):
     ) -> Tuple[Optional[AssertionFailure], Optional[Event]]:
         """Run the LLM evaluation on the given event."""
         import mlflow
+
+        # we need to configure the log level for mlflow
+        # after a local import to avoid unnecessary logs
+        update_mlflow_log_level()
 
         # extract user question from event if available
         user_question_from_event = matching_event.metadata.get(
