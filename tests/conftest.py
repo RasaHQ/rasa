@@ -6,49 +6,55 @@ import pathlib
 import random
 import re
 import shutil
+import sys
 import textwrap
 import threading
 import time
+import uuid
+from pathlib import Path
+from typing import Generator, Iterator, Callable
+from typing import Text, List, Optional, Dict, Any
+from unittest.mock import Mock
 
 import jwt
 import pytest
-import sys
-import uuid
-
 from pytest import TempdirFactory, MonkeyPatch, Function, TempPathFactory
-from spacy import Language
 from pytest import WarningsRecorder, Pytester, RunResult
+from sanic import Sanic
+from sanic.request import Request
+from spacy import Language
 
+import rasa.core.run
+import rasa.shared.utils.io
+import rasa.utils.common
+import rasa.utils.io
+from rasa import server
 from rasa.cli import scaffold
+from rasa.core.agent import Agent, load_agent
+from rasa.core.brokers.broker import EventBroker
+from rasa.core.channels import channel, RestInput
+from rasa.core.exporter import Exporter
+from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
+from rasa.e2e_test.constants import (
+    TEST_FILE_NAME,
+    TEST_CASE_NAME,
+    KEY_STUB_CUSTOM_ACTIONS,
+    STUB_CUSTOM_ACTION_NAME_SEPARATOR,
+)
+from rasa.e2e_test.stub_custom_action import StubCustomAction
 from rasa.engine.caching import LocalTrainingCache
 from rasa.engine.graph import ExecutionContext, GraphSchema
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.storage import ModelStorage
-from sanic.request import Request
-
-from typing import Generator, Iterator, Callable
-
-from pathlib import Path
-from sanic import Sanic
-from typing import Text, List, Optional, Dict, Any
-from unittest.mock import Mock
-
+from rasa.model_training import train, train_nlu
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.nlu.utils.spacy_utils import SpacyNLP, SpacyModel
+from rasa.shared.constants import ASSISTANT_ID_KEY, LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     ACTION_RESTART_NAME,
     ACTION_SESSION_START_NAME,
 )
-from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.nlu.constants import METADATA_MODEL_ID
-import rasa.shared.utils.io
-from rasa import server
-from rasa.core.agent import Agent, load_agent
-from rasa.core.brokers.broker import EventBroker
-from rasa.core.channels import channel, RestInput
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-
-from rasa.nlu.utils.spacy_utils import SpacyNLP, SpacyModel
-from rasa.shared.constants import ASSISTANT_ID_KEY, LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.domain import SessionConfig, Domain
 from rasa.shared.core.events import (
     ActionExecuted,
@@ -57,14 +63,9 @@ from rasa.shared.core.events import (
     SessionStarted,
     UserUttered,
 )
-from rasa.core.exporter import Exporter
-
-import rasa.core.run
-from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
-from rasa.model_training import train, train_nlu
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
-import rasa.utils.common
-import rasa.utils.io
+from rasa.shared.nlu.constants import METADATA_MODEL_ID
 from rasa.shared.providers.embedding._base_litellm_embedding_client import (
     _BaseLiteLLMEmbeddingClient,
 )
@@ -73,6 +74,7 @@ from rasa.shared.providers.embedding.embedding_response import EmbeddingResponse
 from rasa.shared.providers.llm._base_litellm_client import _BaseLiteLLMClient
 from rasa.shared.providers.llm.llm_client import LLMClient
 from rasa.shared.utils.yaml import read_yaml_file, write_yaml
+from rasa.utils.endpoints import EndpointConfig
 
 # we reuse a bit of pytest's own testing machinery, this should eventually come
 # from a separately installable pytest-cli plugin.
@@ -1142,3 +1144,89 @@ async def trained_custom_actions_model(
 @pytest.fixture
 def custom_actions_agent(trained_custom_actions_model: Text) -> Agent:
     return Agent.load(trained_custom_actions_model)
+
+
+@pytest.fixture
+def test_file_name() -> str:
+    return "test_file_name.yml"
+
+
+@pytest.fixture
+def test_case_name() -> str:
+    return "test_case_name"
+
+
+@pytest.fixture
+def action_name_test_file() -> str:
+    return "action_test_file"
+
+
+@pytest.fixture
+def action_name_test_case() -> str:
+    return "action_test_case"
+
+
+@pytest.fixture
+def stub_data() -> Dict[str, Any]:
+    return {
+        "events": [{"event": "sample_event"}],
+        "responses": [{"response": "sample_response"}],
+    }
+
+
+@pytest.fixture
+def action_name_test_file_with_separator(
+    test_file_name: str, action_name_test_file: str
+) -> str:
+    return (
+        f"{test_file_name}"
+        f"{STUB_CUSTOM_ACTION_NAME_SEPARATOR}"
+        f"{action_name_test_file}"
+    )
+
+
+@pytest.fixture
+def action_name_test_case_with_separator(
+    test_case_name: str, action_name_test_case: str
+) -> str:
+    return (
+        f"{test_case_name}"
+        f"{STUB_CUSTOM_ACTION_NAME_SEPARATOR}"
+        f"{action_name_test_case}"
+    )
+
+
+@pytest.fixture
+def action_test_file_stub(
+    stub_data: Dict[str, Any], action_name_test_file: str
+) -> StubCustomAction:
+    return StubCustomAction.from_dict(action_name_test_file, stub_data)
+
+
+@pytest.fixture
+def action_test_case_stub(
+    stub_data: Dict[str, Any], action_name_test_case: str
+) -> StubCustomAction:
+    return StubCustomAction.from_dict(action_name_test_case, stub_data)
+
+
+@pytest.fixture
+def endpoint_stub_config(
+    test_file_name: str,
+    test_case_name: str,
+    action_test_file_stub: StubCustomAction,
+    action_test_case_stub: StubCustomAction,
+    action_name_test_file_with_separator: str,
+    action_name_test_case_with_separator: str,
+) -> EndpointConfig:
+    return EndpointConfig(
+        url="http://localhost:5055/webhook",
+        **{
+            TEST_FILE_NAME: test_file_name,
+            TEST_CASE_NAME: test_case_name,
+            KEY_STUB_CUSTOM_ACTIONS: {
+                action_name_test_file_with_separator: action_test_file_stub,
+                action_name_test_case_with_separator: action_test_case_stub,
+            },
+        },
+    )

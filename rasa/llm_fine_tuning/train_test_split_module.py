@@ -360,11 +360,13 @@ def split_e2e_test_suite(
         test_cases=train_test_cases,
         fixtures=e2e_test_suite.fixtures,
         metadata=e2e_test_suite.metadata,
+        stub_custom_actions=e2e_test_suite.stub_custom_actions,
     )
     validation_suite = TestSuite(
         test_cases=validation_test_cases,
         fixtures=e2e_test_suite.fixtures,
         metadata=e2e_test_suite.metadata,
+        stub_custom_actions=e2e_test_suite.stub_custom_actions,
     )
 
     return train_suite, validation_suite

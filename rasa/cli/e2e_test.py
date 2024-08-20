@@ -9,8 +9,8 @@ from pathlib import Path
 from textwrap import dedent
 from typing import Any, Dict, Generator, List, Optional, Text, Tuple, Union
 
-import pandas as pd
 import matplotlib.pyplot as plt
+import pandas as pd
 import rich
 import structlog
 from rich.table import Table
@@ -33,6 +33,7 @@ from rasa.e2e_test.constants import SCHEMA_FILE_PATH, KEY_TEST_CASE, KEY_TEST_CA
 from rasa.e2e_test.e2e_test_case import (
     KEY_FIXTURES,
     KEY_METADATA,
+    KEY_STUB_CUSTOM_ACTIONS,
     Fixture,
     Metadata,
     TestCase,
@@ -53,6 +54,8 @@ from rasa.shared.utils.yaml import (
     is_key_in_yaml,
 )
 from rasa.utils.beta import BetaNotEnabledException, ensure_beta_feature_is_enabled
+from rasa.utils.endpoints import EndpointConfig
+
 
 DEFAULT_E2E_INPUT_TESTS_PATH = "tests/e2e_test_cases.yml"
 DEFAULT_E2E_OUTPUT_TESTS_PATH = "tests/e2e_results.yml"
@@ -64,6 +67,7 @@ STATUS_FAILED = "failed"
 
 RASA_PRO_BETA_E2E_ASSERTIONS_ENV_VAR_NAME = "RASA_PRO_BETA_E2E_ASSERTIONS"
 RASA_PRO_BETA_FINE_TUNING_RECIPE_ENV_VAR_NAME = "RASA_PRO_BETA_FINE_TUNING_RECIPE"
+RASA_PRO_BETA_STUB_CUSTOM_ACTION_ENV_VAR_NAME = "RASA_PRO_BETA_STUB_CUSTOM_ACTION"
 
 structlogger = structlog.get_logger()
 
@@ -245,6 +249,11 @@ def read_test_cases(path: Text) -> TestSuite:
     Returns:
         TestSuite.
     """
+    from rasa.e2e_test.stub_custom_action import (
+        StubCustomAction,
+        get_stub_custom_action_key,
+    )
+
     path, test_case_name = extract_test_case_from_path(path)
     validate_path_to_test_cases(path)
 
@@ -254,6 +263,7 @@ def read_test_cases(path: Text) -> TestSuite:
     input_test_cases = []
     fixtures: Dict[Text, Fixture] = {}
     metadata: Dict[Text, Metadata] = {}
+    stub_custom_actions: Dict[Text, StubCustomAction] = {}
 
     beta_flag_verified = False
 
@@ -284,7 +294,6 @@ def read_test_cases(path: Text) -> TestSuite:
 
         input_test_cases.extend(test_cases)
         fixtures_content = test_file_content.get(KEY_FIXTURES) or []
-        metadata_contents = test_file_content.get(KEY_METADATA) or []
         for fixture in fixtures_content:
             fixture_obj = Fixture.from_dict(fixture_dict=fixture)
 
@@ -292,6 +301,7 @@ def read_test_cases(path: Text) -> TestSuite:
             if fixtures.get(fixture_obj.name) is None:
                 fixtures[fixture_obj.name] = fixture_obj
 
+        metadata_contents = test_file_content.get(KEY_METADATA) or []
         for metadata_content in metadata_contents:
             metadata_obj = Metadata.from_dict(metadata_dict=metadata_content)
 
@@ -299,8 +309,36 @@ def read_test_cases(path: Text) -> TestSuite:
             if metadata.get(metadata_obj.name) is None:
                 metadata[metadata_obj.name] = metadata_obj
 
+        stub_custom_actions_contents = (
+            test_file_content.get(KEY_STUB_CUSTOM_ACTIONS) or {}
+        )
+
+        for action_name, stub_data in stub_custom_actions_contents.items():
+            test_file_name = Path(test_file).name
+            stub_custom_action_key = get_stub_custom_action_key(
+                test_file_name, action_name
+            )
+            stub_custom_actions[stub_custom_action_key] = StubCustomAction.from_dict(
+                action_name=action_name,
+                stub_data=stub_data,
+            )
+
     validate_test_case(test_case_name, input_test_cases)
-    return TestSuite(input_test_cases, list(fixtures.values()), list(metadata.values()))
+    try:
+        if stub_custom_actions:
+            ensure_beta_feature_is_enabled(
+                "enabling stubs for custom actions",
+                RASA_PRO_BETA_STUB_CUSTOM_ACTION_ENV_VAR_NAME,
+            )
+    except BetaNotEnabledException as exc:
+        rasa.shared.utils.cli.print_error_and_exit(str(exc))
+
+    return TestSuite(
+        input_test_cases,
+        list(fixtures.values()),
+        list(metadata.values()),
+        stub_custom_actions,
+    )
 
 
 def execute_e2e_tests(args: argparse.Namespace) -> None:
@@ -329,6 +367,14 @@ def execute_e2e_tests(args: argparse.Namespace) -> None:
     )
 
     test_suite = read_test_cases(path_to_test_cases)
+
+    if test_suite.stub_custom_actions:
+        if not endpoints.action:
+            endpoints.action = EndpointConfig()
+
+        endpoints.action.kwargs[KEY_STUB_CUSTOM_ACTIONS] = (
+            test_suite.stub_custom_actions
+        )
 
     test_case_path, _ = extract_test_case_from_path(path_to_test_cases)
 
@@ -721,6 +767,7 @@ def save_test_cases_to_yaml(
         test_cases=test_cases,
         fixtures=test_suite.fixtures,
         metadata=test_suite.metadata,
+        stub_custom_actions=test_suite.stub_custom_actions,
     )
 
     output_filename = f"{status}.yml"

@@ -1,6 +1,9 @@
 SCHEMA_FILE_PATH = "e2e_test/e2e_test_schema.yml"
 E2E_CONFIG_SCHEMA_FILE_PATH = "e2e_test/e2e_config_schema.yml"
 CONFTEST_FILE_NAME = "conftest.yml"
+TEST_FILE_NAME = "test_file_name"
+TEST_CASE_NAME = "test_case_name"
+STUB_CUSTOM_ACTION_NAME_SEPARATOR = "::"
 
 KEY_FIXTURES = "fixtures"
 KEY_USER_INPUT = "user"
@@ -14,6 +17,7 @@ KEY_TEST_CASES = "test_cases"
 KEY_METADATA = "metadata"
 KEY_ASSERTIONS = "assertions"
 KEY_ASSERTION_ORDER_ENABLED = "assertion_order_enabled"
+KEY_STUB_CUSTOM_ACTIONS = "stub_custom_actions"
 
 KEY_MODEL = "model"
 KEY_LLM_AS_JUDGE = "llm_as_judge"
