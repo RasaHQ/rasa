@@ -36,61 +36,107 @@ logger = logging.getLogger(__name__)
 structlogger = structlog.getLogger(__name__)
 
 
+def _handle_file_overwrite(
+    file_path: Optional[str], default_path: str, file_type: str
+) -> tuple[Optional[Path], bool]:
+    file_already_exists = rasa.cli.utils.get_validated_path(
+        file_path, file_type, default_path, none_is_valid=True
+    )
+    write_file = False
+    path = None
+
+    if file_already_exists is None:
+        path = Path(file_path or default_path)
+        if path.is_dir():
+            path = path / default_path
+        elif not path.parent.exists():
+            raise ValueError(
+                f"Directory '{path.parent}' for {file_type} file does not exist."
+            )
+        write_file = True
+    else:
+        if questionary.confirm(
+            f"{file_type.capitalize()} file '{file_path or default_path}' "
+            f"already exists. Do you want to overwrite it?"
+        ).ask():
+            write_file = True
+            path = Path(file_path or default_path)
+
+    return path, write_file
+
+
 def handle_download(args: argparse.Namespace) -> None:
     handler = StudioDataHandler(
         studio_config=StudioConfig.read_config(), assistant_name=args.assistant_name[0]
     )
     handler.request_all_data()
+
     domain_path = rasa.cli.utils.get_validated_path(
         args.domain, "domain", DEFAULT_DOMAIN_PATHS, none_is_valid=True
     )
-    domain_path = Path(domain_path)
+    write_domain = args.overwrite
 
-    config_file_exists_in_path = rasa.cli.utils.get_validated_path(
-        args.config, "config", DEFAULT_CONFIG_PATH, none_is_valid=True
+    if domain_path is None:
+        domain_path = Path(DEFAULT_DOMAIN_PATHS[0])
+        domain_path.touch()
+    else:
+        if write_domain:
+            if Path(domain_path).is_dir():
+                if isinstance(domain_path, str):
+                    domain_path = Path(domain_path)
+                domain_path = domain_path / DEFAULT_DOMAIN_PATHS[0]
+            else:
+                domain_path = Path(domain_path)
+        else:
+            domain_path = Path(domain_path)
+
+    config_path, write_config = _handle_file_overwrite(
+        args.config, DEFAULT_CONFIG_PATH, "config"
+    )
+    endpoints_path, write_endpoints = _handle_file_overwrite(
+        args.endpoints, DEFAULT_ENDPOINTS_PATH, "endpoints"
     )
 
-    if config_file_exists_in_path:
-        config_path = Path(config_file_exists_in_path)
-    else:
-        config_path = Path(args.config)
+    data_paths = []
 
-        if config_path.is_dir():
-            config_path = config_path / DEFAULT_CONFIG_PATH
-        elif not config_path.parent.exists():
-            raise ValueError(
-                f"Directory '{config_path.parent}' for " f"config file does not exist."
-            )
-
-    endpoints_file_exists_in_path = rasa.cli.utils.get_validated_path(
-        args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, none_is_valid=True
-    )
-
-    if endpoints_file_exists_in_path:
-        endpoints_path = Path(endpoints_file_exists_in_path)
-    else:
-        endpoints_path = Path(args.endpoints)
-        if endpoints_path.is_dir():
-            endpoints_path = endpoints_path / DEFAULT_ENDPOINTS_PATH
-        elif not endpoints_path.parent.exists():
-            raise ValueError(
-                f"Directory '{endpoints_path.parent}' for "
-                f"endpoints file does not exist."
-            )
-
-    data_paths = [
-        Path(
-            rasa.cli.utils.get_validated_path(
-                f, "data", DEFAULT_DATA_PATH, none_is_valid=False
-            )
+    for f in args.data:
+        data_path = rasa.cli.utils.get_validated_path(
+            f, "data", DEFAULT_DATA_PATH, none_is_valid=True
         )
-        for f in args.data
-    ]
+        # this is the case when data path doesn't exist
+        # Since we want download to continue, we will
+        # create a directory with the given name
+        if data_path is None:
+            data_path = DEFAULT_DATA_PATH
+            Path(data_path).mkdir(parents=True, exist_ok=True)
+        data_paths.append(Path(data_path))
 
-    _handle_download_config_and_endpoints(
-        handler=handler,
-        config_path=config_path,
-        endpoints_path=endpoints_path,
+    config_path = config_path if write_config else None
+    endpoints_path = endpoints_path if write_endpoints else None
+
+    if config_path:
+        config_data = handler.get_config()
+        if not config_data:
+            raise ValueError("No config data found.")
+
+        with open(config_path, "w") as f:
+            f.write(config_data)
+
+    if endpoints_path:
+        endpoints_data = handler.get_endpoints()
+        if not endpoints_data:
+            raise ValueError("No endpoints data found.")
+
+        with open(endpoints_path, "w") as f:
+            f.write(endpoints_data)
+
+    if domain_path and write_domain:
+        # write empty file
+        Path(domain_path).touch()
+
+    structlogger.info(
+        "studio.download.config_endpoints",
+        event_info="Downloaded config and endpoints files from Rasa Studio.",
     )
 
     if not args.overwrite:
@@ -105,58 +151,6 @@ def handle_download(args: argparse.Namespace) -> None:
             domain_path=domain_path,
             data_paths=data_paths,
         )
-
-
-def _handle_download_config_and_endpoints(
-    handler: StudioDataHandler,
-    config_path: Path,
-    endpoints_path: Path,
-) -> None:
-    """This method handles the download of the config and endpoints files from Studio.
-    If the files already exist in the specified paths, the user is prompted to confirm
-    the overwriting of these files. If a user chooses not to overwrite, download skips
-    these files but the other data is still overwritten --overwrite flag doesn't apply
-
-    Args:
-        handler: StudioDataHandler object
-        config_path: Path to the existing or new config file
-        endpoints_path: Path to the existing or new endpoints file
-    """
-    write_config = False
-    write_endpoints = False
-    if config_path.is_file():
-        if questionary.confirm(
-            f"Config file '{config_path}' already exists. "
-            f"Do you want to overwrite it?"
-        ).ask():
-            write_config = True
-
-    if endpoints_path.is_file():
-        if questionary.confirm(
-            f"Endpoints file '{endpoints_path}' already exists. "
-            f"Do you want to overwrite it?"
-        ).ask():
-            write_endpoints = True
-
-    config_data = handler.get_config()
-    if not config_data:
-        raise ValueError("No config data found.")
-
-    endpoints_data = handler.get_endpoints()
-    if not endpoints_data:
-        raise ValueError("No endpoints data found.")
-
-    structlogger.info(
-        "studio.download.config_endpoints",
-        event_info="Downloaded config and endpoints files from Rasa Studio.",
-    )
-
-    if write_config:
-        with open(config_path, "w") as f:
-            f.write(config_data)
-    if write_endpoints:
-        with open(endpoints_path, "w") as f:
-            f.write(endpoints_data)
 
 
 def _handle_download_no_overwrite(
