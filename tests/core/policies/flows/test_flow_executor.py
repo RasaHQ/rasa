@@ -1126,6 +1126,7 @@ def test_run_step_call():
     )
 
     assert isinstance(result, ContinueFlowWithNextStep)
+    assert result.events[0] == FlowStarted("my_flow")
     top = stack.top()
     assert isinstance(top, UserFlowStackFrame)
     assert top.frame_type == FlowStackFrameType.CALL

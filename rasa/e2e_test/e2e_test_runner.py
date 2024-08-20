@@ -2,7 +2,6 @@ import asyncio
 import copy
 import datetime
 import difflib
-import json
 from collections import defaultdict
 from asyncio import CancelledError
 from typing import Any, Dict, List, Optional, Text, Tuple, Union, DefaultDict
@@ -40,7 +39,7 @@ from rasa.shared.core.events import (
     FlowCompleted,
     Event,
     ActionExecuted,
-    DialogueStackUpdated,
+    FlowStarted,
 )
 from rasa.shared.core.flows.flow_path import FlowPath, PathNode
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -1103,26 +1102,11 @@ class E2ETestRunner:
         flow_paths_stack = []
 
         for event in events:
-            if isinstance(event, DialogueStackUpdated):
-                # Apparently we don't create a FlowStarted event in case a flow starts
-                # with a call step. In that case only a FlowStarted event for the
-                # called step is created. Thus, we need to use the DialogueStackUpdated
-                # event to check if a flow started.
-                # Use FlowStarted once https://rasahq.atlassian.net/browse/ENG-1240
-                # is fixed
-                if '"step_id": "START"' in event.update and "flow_id" in event.update:
-                    try:
-                        data = json.loads(event.update)
-                        flow_id = data[0]["value"]["flow_id"]
-                        # create a new flow path for the started flow
-                        if not flow_id.startswith(RASA_DEFAULT_FLOW_PATTERN_PREFIX):
-                            flow_paths_stack.append(FlowPath(flow_id))
-                    except (KeyError, IndexError, TypeError, json.JSONDecodeError) as e:
-                        structlogger.error(
-                            "e2e_test_runner._get_tested_flow_paths",
-                            message=f"Could not append the flow to the stack: {e}",
-                        )
-                        continue
+            if isinstance(event, FlowStarted) and not event.flow_id.startswith(
+                RASA_DEFAULT_FLOW_PATTERN_PREFIX
+            ):
+                flow_paths_stack.append(FlowPath(event.flow_id))
+
             elif (
                 isinstance(event, FlowCompleted)
                 and len(flow_paths_stack) > 0
@@ -1130,6 +1114,7 @@ class E2ETestRunner:
             ):
                 # flow path is completed as the flow ended
                 tested_paths.append(flow_paths_stack.pop())
+
             elif isinstance(event, BotUttered):
                 if (
                     flow_paths_stack
@@ -1137,6 +1122,7 @@ class E2ETestRunner:
                     and ACTIVE_FLOW_METADATA_KEY in event.metadata
                 ):
                     flow_paths_stack[-1].nodes.append(self._create_path_node(event))
+
             elif isinstance(event, ActionExecuted):
                 # we are only interested in custom actions
                 if (
