@@ -9,6 +9,7 @@ on:
 
 env:
     GITHUB_TOKEN: ${{ secrets.RASABOT_GITHUB_TOKEN }}
+    INPUT_VERSION: ${{ github.event.inputs.version }}
 
 jobs:
   prepare-release:
@@ -23,7 +24,7 @@ jobs:
       - name: Minor Release Check
         id: minor_release
         run: |
-          version=${{ github.event.inputs.version }}
+          version="$INPUT_VERSION"
           
           # Check if version is in format number.number.number
           if ! [[ $version =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
@@ -47,7 +48,7 @@ jobs:
       - name: Create and Push New Release Branch
         if: env.is_minor == 'true'
         run: |
-          version=${{ github.event.inputs.version }}
+          version="$INPUT_VERSION"
           IFS='.' read -r -a version_parts <<< "$version"
           release_branch="${version_parts[0]}.${version_parts[1]}.x"
 
@@ -58,7 +59,7 @@ jobs:
 
       - name: Check-out Release Branch
         run: |
-          version=${{ github.event.inputs.version }}
+          version="$INPUT_VERSION"
           IFS='.' read -r -a version_parts <<< "$version"
           release_branch="${version_parts[0]}.${version_parts[1]}.x"
           
@@ -68,7 +69,7 @@ jobs:
       - name: Check Rasa SDK Version
         id: check_rasa_sdk_version
         run: |
-          version=${{ github.event.inputs.version }}
+          version="$INPUT_VERSION"
           IFS='.' read -r -a version_parts <<< "$version"
 
           # Extract the first two digits of the input version
@@ -104,7 +105,7 @@ jobs:
       - name: Update Rasa SDK Version
         if: env.update_required == 'true'
         run: |
-          version=${{ github.event.inputs.version }}
+          version="$INPUT_VERSION"
           IFS='.' read -r -a version_parts <<< "$version"
 
           # Extract the first two digits of the input version
