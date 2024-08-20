@@ -4,8 +4,6 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Text, Union
 
 from rasa.e2e_test.assertions import Assertion
-from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
-
 from rasa.e2e_test.constants import (
     KEY_ASSERTIONS,
     KEY_ASSERTION_ORDER_ENABLED,
@@ -20,8 +18,13 @@ from rasa.e2e_test.constants import (
     KEY_TEST_CASE,
     KEY_TEST_CASES,
     KEY_USER_INPUT,
+    STUB_CUSTOM_ACTION_NAME_SEPARATOR,
+    TEST_FILE_NAME,
+    TEST_CASE_NAME,
 )
+from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
 from rasa.shared.exceptions import RasaException
+from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
 
@@ -494,9 +497,36 @@ class StubCustomAction:
         )
 
     @staticmethod
-    def get_stub_custom_action_key(test_file_name: str, action_name: str) -> str:
+    def get_stub_custom_action_key(prefix: str, action_name: str) -> str:
         """Returns the key used to store the StubCustomAction object"""
-        return f"{test_file_name}__{action_name}"
+        if STUB_CUSTOM_ACTION_NAME_SEPARATOR in action_name:
+            return action_name
+        return f"{prefix}{STUB_CUSTOM_ACTION_NAME_SEPARATOR}{action_name}"
+
+    @staticmethod
+    def get_stub_custom_action(
+        action_endpoint: EndpointConfig, action_name: str
+    ) -> "StubCustomAction":
+        """Returns the StubCustomAction object"""
+        # Fetch the name of the test file and of the test case
+        test_file_name = action_endpoint.kwargs.get(TEST_FILE_NAME)
+        test_case_name = action_endpoint.kwargs.get(TEST_CASE_NAME)
+
+        # Generate keys for custom action stub
+        stub_test_file_key = StubCustomAction.get_stub_custom_action_key(
+            test_file_name, action_name
+        )
+        stub_test_case_key = StubCustomAction.get_stub_custom_action_key(
+            test_case_name, action_name
+        )
+
+        # Fetch the custom action stub, prioritizing the test case naming
+        stub_custom_actions = action_endpoint.kwargs.get(
+            KEY_STUB_CUSTOM_ACTIONS, StubCustomAction.from_dict(action_name, {})
+        )
+        return stub_custom_actions.get(
+            stub_test_case_key, stub_custom_actions.get(stub_test_file_key, {})
+        )
 
     def as_dict(self) -> Dict[Text, Any]:
         """Returns the metadata as a dictionary."""

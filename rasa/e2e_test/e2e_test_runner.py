@@ -18,7 +18,7 @@ from rasa.core.channels import CollectingOutputChannel, UserMessage
 from rasa.core.constants import STEP_ID_METADATA_KEY, ACTIVE_FLOW_METADATA_KEY
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.utils import AvailableEndpoints
-from rasa.e2e_test.constants import TEST_FILE_NAME
+from rasa.e2e_test.constants import TEST_FILE_NAME, TEST_CASE_NAME
 from rasa.e2e_test.e2e_config import create_llm_judge_config
 from rasa.e2e_test.e2e_test_case import (
     ActualStepOutput,
@@ -911,12 +911,15 @@ class E2ETestRunner:
         track_e2e_test_run(input_test_cases, input_fixtures, input_metadata)
 
         for test_case in input_test_cases:
-            # Add the name of the file of the current test being executed
-            # in order to properly retrieve stub custom action
+            # Add the name of the file and the current test case name being
+            # executed in order to properly retrieve stub custom action
             if self.agent.endpoints and self.agent.endpoints.action:
                 self.agent.endpoints.action.kwargs[TEST_FILE_NAME] = Path(
                     test_case.file
-                ).stem
+                ).name
+                self.agent.endpoints.action.kwargs[TEST_CASE_NAME] = (
+                    test_case.name.replace(" ", "_")
+                )
 
             # add timestamp suffix to ensure sender_id is unique
             sender_id = f"{test_case.name}_{datetime.datetime.now()}"

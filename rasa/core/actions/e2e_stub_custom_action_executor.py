@@ -11,7 +11,6 @@ import structlog
 from rasa.core.actions.custom_action_executor import (
     CustomActionExecutor,
 )
-from rasa.e2e_test.constants import KEY_STUB_CUSTOM_ACTIONS, TEST_FILE_NAME
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
@@ -41,17 +40,11 @@ class E2EStubCustomActionExecutor(CustomActionExecutor):
 
     def get_stub_custom_action(self) -> "StubCustomAction":
         from rasa.e2e_test.e2e_test_case import StubCustomAction
-
-        # Fetch the key that should store the relevant StubCustomAction
-        test_file_name = self.action_endpoint.kwargs.get(TEST_FILE_NAME)
-        stub_custom_action_key = StubCustomAction.get_stub_custom_action_key(
-            test_file_name, self.action_name
+        stub_custom_action = StubCustomAction.get_stub_custom_action(
+            self.action_endpoint, self.action_name
         )
 
-        stub_custom_actions = self.action_endpoint.kwargs.get(
-            KEY_STUB_CUSTOM_ACTIONS, {}
-        )
-        if stub_custom_action := stub_custom_actions.get(stub_custom_action_key):
+        if stub_custom_action:
             return stub_custom_action
 
         # TODO Update message below with reference to the docs
