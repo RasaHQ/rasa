@@ -39,17 +39,22 @@ structlogger = structlog.getLogger(__name__)
 def _handle_file_overwrite(
     file_path: Optional[str], default_path: str, file_type: str
 ) -> tuple[Optional[Path], bool]:
-    """
-    Handles the logic for determining whether to overwrite an existing file or create a new one.
+    """Handles the logic for determining whether to
+    overwrite an existing file or create a new one.
     Works for config and endpoints at this moment
 
     Args:
-        file_path (Optional[str]): The path to the file provided by the user. Can be None.
-        default_path (str): The default path to use if `file_path` is None or invalid. Must be a file path.
-        file_type (str): The type of the file (e.g., "config", "endpoints") for logging and messaging purposes.
+        file_path (Optional[str]): The path to the file
+                    provided by the user. Can be None.
+        default_path (str): The default path to use if `file_path`
+                    is None or invalid. Must be a file path.
+        file_type (str): The type of the file (e.g., "config",
+            "endpoints") for logging and messaging purposes.
 
     Returns:
-        tuple[Optional[Path], bool]: A tuple containing the resolved file path and a boolean indicating whether to write the file.
+        tuple[Optional[Path], bool]: A tuple containing the
+                            resolved file path and a boolean
+                        indicating whether to write the file.
     """
     file_already_exists = rasa.cli.utils.get_validated_path(
         file_path, file_type, default_path, none_is_valid=True
@@ -73,7 +78,7 @@ def _handle_file_overwrite(
     return path, write_file
 
 
-def _handle_domain_path(args):
+def _handle_domain_path(args: argparse.Namespace) -> tuple[Path, bool]:
     domain_path = rasa.cli.utils.get_validated_path(
         args.domain, "domain", DEFAULT_DOMAIN_PATHS, none_is_valid=True
     )
