@@ -4,6 +4,17 @@ from unittest.mock import MagicMock
 import pandas as pd
 import pytest
 
+from rasa.dialogue_understanding.commands import (
+    SetSlotCommand,
+    StartFlowCommand,
+    KnowledgeAnswerCommand,
+    ChitChatAnswerCommand,
+    CancelFlowCommand,
+    HumanHandoffCommand,
+    NoopCommand,
+    SkipQuestionCommand,
+    ClarifyCommand,
+)
 from rasa.e2e_test.e2e_test_coverage_report import (
     _empty_dataframe,
     FLOW_NAME_COL_NAME,
@@ -366,99 +377,154 @@ def test_create_coverage_report(
     assert df[LINE_NUMBERS_COL_NAME][1] == "[]"
     assert df[LINE_NUMBERS_COL_NAME][2] == ""
 
-    @pytest.mark.parametrize(
-        "test_results, expected_output",
-        [
-            # Normal Case: Different commands and counts
-            (
-                [
-                    TestResult(
-                        test_case=MagicMock(),
-                        pass_status=True,
-                        difference=[],
-                        tested_commands={
-                            "flow1": {"command1": 2, "command2": 3},
-                            "flow2": {"command3": 1},
+
+@pytest.mark.parametrize(
+    "test_results, expected_output",
+    [
+        # Normal Case: Different commands and counts
+        (
+            [
+                TestResult(
+                    test_case=MagicMock(),
+                    pass_status=True,
+                    difference=[],
+                    tested_commands={
+                        "flow1": {
+                            SetSlotCommand.command(): 2,
+                            StartFlowCommand.command(): 3,
                         },
-                    ),
-                    TestResult(
-                        test_case=MagicMock(),
-                        pass_status=True,
-                        difference=[],
-                        tested_commands={
-                            "flow3": {"command1": 1, "command4": 4},
+                        "flow2": {KnowledgeAnswerCommand.command(): 1},
+                    },
+                ),
+                TestResult(
+                    test_case=MagicMock(),
+                    pass_status=True,
+                    difference=[],
+                    tested_commands={
+                        "flow3": {
+                            SetSlotCommand.command(): 1,
+                            ChitChatAnswerCommand.command(): 4,
                         },
-                    ),
-                ],
-                {"command1": 3, "command2": 3, "command3": 1, "command4": 4},
-            ),
-            # Empty Case: Empty list of test results
-            (
-                [],
-                {},
-            ),
-            # Multiple Test Results: Overlapping commands
-            (
-                [
-                    TestResult(
-                        test_case=MagicMock(),
-                        pass_status=True,
-                        difference=[],
-                        tested_commands={
-                            "flow1": {"command1": 2, "command2": 3},
+                    },
+                ),
+            ],
+            {
+                SetSlotCommand.command(): 3,
+                StartFlowCommand.command(): 3,
+                KnowledgeAnswerCommand.command(): 1,
+                ChitChatAnswerCommand.command(): 4,
+                CancelFlowCommand.command(): 0,
+                HumanHandoffCommand.command(): 0,
+                SkipQuestionCommand.command(): 0,
+                ClarifyCommand.command(): 0,
+            },
+        ),
+        # Empty Case: Empty list of test results
+        (
+            [],
+            {
+                SetSlotCommand.command(): 0,
+                StartFlowCommand.command(): 0,
+                CancelFlowCommand.command(): 0,
+                KnowledgeAnswerCommand.command(): 0,
+                HumanHandoffCommand.command(): 0,
+                ChitChatAnswerCommand.command(): 0,
+                SkipQuestionCommand.command(): 0,
+                ClarifyCommand.command(): 0,
+            },
+        ),
+        # Multiple Test Results: Overlapping commands
+        (
+            [
+                TestResult(
+                    test_case=MagicMock(),
+                    pass_status=True,
+                    difference=[],
+                    tested_commands={
+                        "flow1": {
+                            SetSlotCommand.command(): 2,
+                            StartFlowCommand.command(): 3,
                         },
-                    ),
-                    TestResult(
-                        test_case=MagicMock(),
-                        pass_status=True,
-                        difference=[],
-                        tested_commands={
-                            "flow2": {"command2": 1, "command3": 2},
+                    },
+                ),
+                TestResult(
+                    test_case=MagicMock(),
+                    pass_status=True,
+                    difference=[],
+                    tested_commands={
+                        "flow2": {
+                            StartFlowCommand.command(): 1,
+                            CancelFlowCommand.command(): 2,
                         },
-                    ),
-                    TestResult(
-                        test_case=MagicMock(),
-                        pass_status=True,
-                        difference=[],
-                        tested_commands={
-                            "flow3": {"command1": 1, "command4": 5},
+                    },
+                ),
+                TestResult(
+                    test_case=MagicMock(),
+                    pass_status=True,
+                    difference=[],
+                    tested_commands={
+                        "flow3": {
+                            SetSlotCommand.command(): 1,
+                            HumanHandoffCommand.command(): 5,
                         },
-                    ),
-                ],
-                {"command1": 3, "command2": 4, "command3": 2, "command4": 5},
-            ),
-            # Edge Case: Commands with zero counts and no commands in some flows
-            (
-                [
-                    TestResult(
-                        test_case=MagicMock(),
-                        pass_status=True,
-                        difference=[],
-                        tested_commands={
-                            "flow1": {"command1": 0, "command2": 3},
+                    },
+                ),
+            ],
+            {
+                SetSlotCommand.command(): 3,
+                StartFlowCommand.command(): 4,
+                CancelFlowCommand.command(): 2,
+                HumanHandoffCommand.command(): 5,
+                KnowledgeAnswerCommand.command(): 0,
+                ChitChatAnswerCommand.command(): 0,
+                SkipQuestionCommand.command(): 0,
+                ClarifyCommand.command(): 0,
+            },
+        ),
+        # Edge Case: Commands with zero counts and no commands in some flows
+        (
+            [
+                TestResult(
+                    test_case=MagicMock(),
+                    pass_status=True,
+                    difference=[],
+                    tested_commands={
+                        "flow1": {
+                            SetSlotCommand.command(): 0,
+                            StartFlowCommand.command(): 3,
+                            NoopCommand.command(): 10,
                         },
-                    ),
-                    TestResult(
-                        test_case=MagicMock(),
-                        pass_status=True,
-                        difference=[],
-                        tested_commands={},
-                    ),
-                    TestResult(
-                        test_case=MagicMock(),
-                        pass_status=True,
-                        difference=[],
-                        tested_commands={
-                            "flow3": {"command3": 2},
-                        },
-                    ),
-                ],
-                {"command1": 0, "command2": 3, "command3": 2},
-            ),
-        ],
-    )
-    def test_extract_tested_commands(
-        test_results: List[TestResult], expected_output: Dict[str, int]
-    ) -> None:
-        result = extract_tested_commands(test_results)
-        assert result == expected_output
+                    },
+                ),
+                TestResult(
+                    test_case=MagicMock(),
+                    pass_status=True,
+                    difference=[],
+                    tested_commands={},
+                ),
+                TestResult(
+                    test_case=MagicMock(),
+                    pass_status=True,
+                    difference=[],
+                    tested_commands={
+                        "flow3": {CancelFlowCommand.command(): 2},
+                    },
+                ),
+            ],
+            {
+                SetSlotCommand.command(): 0,
+                StartFlowCommand.command(): 3,
+                CancelFlowCommand.command(): 2,
+                KnowledgeAnswerCommand.command(): 0,
+                HumanHandoffCommand.command(): 0,
+                ChitChatAnswerCommand.command(): 0,
+                SkipQuestionCommand.command(): 0,
+                ClarifyCommand.command(): 0,
+            },
+        ),
+    ],
+)
+def test_extract_tested_commands(
+    test_results: List[TestResult], expected_output: Dict[str, int]
+) -> None:
+    assert expected_output == extract_tested_commands(test_results)

@@ -1,9 +1,18 @@
-from typing import List, Dict, Any, Optional, Set, DefaultDict
+from typing import List, Dict, Any, Optional, Set
 
 import pandas as pd
-from collections import defaultdict
 import structlog
 
+from rasa.dialogue_understanding.commands import (
+    KnowledgeAnswerCommand,
+    StartFlowCommand,
+    SetSlotCommand,
+    ClarifyCommand,
+    HumanHandoffCommand,
+    CancelFlowCommand,
+    ChitChatAnswerCommand,
+    SkipQuestionCommand,
+)
 from rasa.e2e_test.e2e_test_result import TestResult
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.flows.flow_path import FlowPath, FlowPathsList, PathNode
@@ -19,6 +28,17 @@ FLOWS_KEY = "flows"
 NUMBER_OF_STEPS_KEY = "number_of_steps"
 NUMBER_OF_UNTESTED_STEPS_KEY = "number_of_untested_steps"
 UNTESTED_LINES_KEY = "untested_lines"
+
+SUPPORTED_HISTOGRAM_COMMANDS = [
+    KnowledgeAnswerCommand.command(),
+    StartFlowCommand.command(),
+    SetSlotCommand.command(),
+    ClarifyCommand.command(),
+    HumanHandoffCommand.command(),
+    CancelFlowCommand.command(),
+    ChitChatAnswerCommand.command(),
+    SkipQuestionCommand.command(),
+]
 
 structlogger = structlog.get_logger()
 
@@ -325,12 +345,15 @@ def extract_tested_commands(test_results: List[TestResult]) -> Dict[str, int]:
     Returns:
         Dict[str, int]: A dictionary of commands and their counts.
     """
-    flatten_commands_count: DefaultDict[str, int] = defaultdict(int)
+    command_histogram_data = {}
+    for command in SUPPORTED_HISTOGRAM_COMMANDS:
+        command_histogram_data[command] = 0
 
     for test_result in test_results:
         if test_result.tested_commands:
             for flow, commands_dict in test_result.tested_commands.items():
                 for command, count in commands_dict.items():
-                    flatten_commands_count[command] += count
+                    if command in command_histogram_data:
+                        command_histogram_data[command] += count
 
-    return dict(flatten_commands_count)
+    return dict(command_histogram_data)
