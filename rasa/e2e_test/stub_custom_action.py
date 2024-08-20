@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Dict, List, Text
+from typing import Any, Dict, List, Text, Optional
 
 from rasa.e2e_test.constants import (
     KEY_STUB_CUSTOM_ACTIONS,
@@ -52,7 +52,7 @@ def get_stub_custom_action_key(prefix: str, action_name: str) -> str:
 
 def get_stub_custom_action(
     action_endpoint: EndpointConfig, action_name: str
-) -> "StubCustomAction":
+) -> Optional["StubCustomAction"]:
     """Returns the StubCustomAction object"""
     # Fetch the name of the test file and of the test case
     test_file_name = action_endpoint.kwargs.get(TEST_FILE_NAME)
@@ -67,6 +67,6 @@ def get_stub_custom_action(
     return stub_custom_actions.get(
         stub_test_case_key,
         stub_custom_actions.get(
-            stub_test_file_key, StubCustomAction.from_dict(action_name, {})
+            stub_test_file_key
         ),
     )
