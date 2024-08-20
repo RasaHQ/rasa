@@ -39,6 +39,18 @@ structlogger = structlog.getLogger(__name__)
 def _handle_file_overwrite(
     file_path: Optional[str], default_path: str, file_type: str
 ) -> tuple[Optional[Path], bool]:
+    """
+    Handles the logic for determining whether to overwrite an existing file or create a new one.
+    Works for config and endpoints at this moment
+
+    Args:
+        file_path (Optional[str]): The path to the file provided by the user. Can be None.
+        default_path (str): The default path to use if `file_path` is None or invalid. Must be a file path.
+        file_type (str): The type of the file (e.g., "config", "endpoints") for logging and messaging purposes.
+
+    Returns:
+        tuple[Optional[Path], bool]: A tuple containing the resolved file path and a boolean indicating whether to write the file.
+    """
     file_already_exists = rasa.cli.utils.get_validated_path(
         file_path, file_type, default_path, none_is_valid=True
     )
@@ -49,10 +61,6 @@ def _handle_file_overwrite(
         path = Path(file_path or default_path)
         if path.is_dir():
             path = path / default_path
-        elif not path.parent.exists():
-            raise ValueError(
-                f"Directory '{path.parent}' for {file_type} file does not exist."
-            )
         write_file = True
     else:
         if questionary.confirm(
@@ -65,17 +73,11 @@ def _handle_file_overwrite(
     return path, write_file
 
 
-def handle_download(args: argparse.Namespace) -> None:
-    handler = StudioDataHandler(
-        studio_config=StudioConfig.read_config(), assistant_name=args.assistant_name[0]
-    )
-    handler.request_all_data()
-
+def _handle_domain_path(args):
     domain_path = rasa.cli.utils.get_validated_path(
         args.domain, "domain", DEFAULT_DOMAIN_PATHS, none_is_valid=True
     )
     write_domain = args.overwrite
-
     # handle case if domain file or folder is not
     # present, but we're expecting it later
     if domain_path is None:
@@ -91,6 +93,16 @@ def handle_download(args: argparse.Namespace) -> None:
                 domain_path = Path(domain_path)
         else:
             domain_path = Path(domain_path)
+    return domain_path, write_domain
+
+
+def handle_download(args: argparse.Namespace) -> None:
+    handler = StudioDataHandler(
+        studio_config=StudioConfig.read_config(), assistant_name=args.assistant_name[0]
+    )
+    handler.request_all_data()
+
+    domain_path, write_domain = _handle_domain_path(args)
 
     data_paths = []
 
@@ -98,11 +110,27 @@ def handle_download(args: argparse.Namespace) -> None:
         data_path = rasa.cli.utils.get_validated_path(
             f, "data", DEFAULT_DATA_PATH, none_is_valid=True
         )
-        # create a directory with the default name
+
         if data_path is None:
-            data_path = DEFAULT_DATA_PATH
-            Path(data_path).mkdir(parents=True, exist_ok=True)
-        data_paths.append(Path(data_path))
+            # If the path is None, use the default data path
+            data_path = Path(f)
+            data_path.mkdir(parents=True, exist_ok=True)
+        else:
+            data_path = Path(data_path)
+
+        if data_path.is_file():
+            # If it's a file, add it directly
+            data_paths.append(data_path)
+        elif data_path.is_dir():
+            # If it's a directory, add it directly
+            data_paths.append(data_path)
+        else:
+            # If it doesn't exist, create the directory
+            data_path.mkdir(parents=True, exist_ok=True)
+            data_paths.append(data_path)
+
+    # Remove duplicates while preserving order
+    data_paths = list(dict.fromkeys(data_paths))
 
     # handle config and endpoints
     config_path, write_config = _handle_file_overwrite(
@@ -118,8 +146,7 @@ def handle_download(args: argparse.Namespace) -> None:
     if config_path:
         config_data = handler.get_config()
         if not config_data:
-            raise ValueError("No config data found.")
-
+            rasa.shared.utils.cli.print_error_and_exit("No config data found.")
         with open(config_path, "w") as f:
             f.write(config_data)
 
@@ -132,6 +159,8 @@ def handle_download(args: argparse.Namespace) -> None:
             f.write(endpoints_data)
 
     if domain_path and write_domain:
+        # delete existing
+        Path(domain_path).unlink(missing_ok=True)
         # write empty file
         Path(domain_path).touch()
 
