@@ -966,6 +966,7 @@ class Domain:
         """Returns a unique hash for the domain."""
         return int(self.fingerprint(), 16)
 
+    @rasa.shared.utils.common.cached_method
     def fingerprint(self) -> Text:
         """Returns a unique hash for the domain which is stable across python runs.
 

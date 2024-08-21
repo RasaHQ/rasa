@@ -2,7 +2,6 @@ from importlib.util import find_spec
 from typing import (
     Any,
     Dict,
-    Optional,
     Text,
 )
 
@@ -47,8 +46,19 @@ class DirectCustomActionExecutor(CustomActionExecutor):
     async def run(
         self,
         tracker: "DialogueStateTracker",
-        domain: Optional["Domain"] = None,
+        domain: "Domain",
+        include_domain: bool = False,
     ) -> Dict[Text, Any]:
+        """Executes the custom action directly.
+
+        Args:
+            tracker: The current state of the dialogue.
+            domain: The domain object containing domain-specific information.
+            include_domain: If True, the domain is included in the request.
+
+        Returns:
+            The response from the execution of the custom action.
+        """
         structlogger.debug(
             "action.direct_custom_action_executor.run",
             action_name=self.action_name,

@@ -3,7 +3,6 @@ from typing import (
     Any,
     Dict,
     Text,
-    Optional,
 )
 
 import structlog
@@ -59,7 +58,8 @@ class E2EStubCustomActionExecutor(CustomActionExecutor):
     async def run(
         self,
         tracker: "DialogueStateTracker",
-        domain: Optional["Domain"] = None,
+        domain: "Domain",
+        include_domain: bool = False,
     ) -> Dict[Text, Any]:
         structlogger.debug(
             "action.e2e_stub_custom_action_executor.run",
