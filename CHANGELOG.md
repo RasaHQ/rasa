@@ -10,6 +10,13 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.9.8] - 2024-08-21
+                       
+Rasa Pro 3.9.8 (2024-08-21)                            
+### Bugfixes
+- [#1050](https://github.com/rasahq/rasa-private/issues/1050): Fix problem with custom action invocation when model is loaded from remote storage.
+
+
 ## [3.9.7] - 2024-08-15
                        
 Rasa Pro 3.9.7 (2024-08-15)                            
