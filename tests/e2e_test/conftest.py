@@ -36,7 +36,7 @@ def test_cases() -> List[TestCase]:
                     assertions=[
                         FlowStartedAssertion(flow_id="pattern_clarification"),
                         PatternClarificationContainsAssertion(
-                            flow_ids={"add contact", "remove contact", "list contact"}
+                            flow_names={"add contact", "remove contact", "list contact"}
                         ),
                     ],
                 ),
