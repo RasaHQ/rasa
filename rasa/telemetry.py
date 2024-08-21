@@ -1432,6 +1432,76 @@ def track_markers_parsed_count(
     )
 
 
+def extract_assertion_type_counts(
+    input_test_cases: List["TestCase"],
+) -> typing.Tuple[bool, Dict[str, Any]]:
+    """Extracts the total count of different assertion types from the test cases."""
+    from rasa.e2e_test.assertions import AssertionType
+
+    uses_assertions = False
+
+    flow_started_count = 0
+    flow_completed_count = 0
+    flow_cancelled_count = 0
+    pattern_clarification_contains_count = 0
+    action_executed_count = 0
+    slot_was_set_count = 0
+    slot_was_not_set_count = 0
+    bot_uttered_count = 0
+    generative_response_is_relevant_count = 0
+    generative_response_is_grounded_count = 0
+
+    for test_case in input_test_cases:
+        for step in test_case.steps:
+            assertions = step.assertions if step.assertions else []
+            for assertion in assertions:
+                if assertion.type == AssertionType.ACTION_EXECUTED.value:
+                    action_executed_count += 1
+                elif assertion.type == AssertionType.SLOT_WAS_SET.value:
+                    slot_was_set_count += 1
+                elif assertion.type == AssertionType.SLOT_WAS_NOT_SET.value:
+                    slot_was_not_set_count += 1
+                elif assertion.type == AssertionType.BOT_UTTERED.value:
+                    bot_uttered_count += 1
+                elif (
+                    assertion.type
+                    == AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT.value
+                ):
+                    generative_response_is_relevant_count += 1
+                elif (
+                    assertion.type
+                    == AssertionType.GENERATIVE_RESPONSE_IS_GROUNDED.value
+                ):
+                    generative_response_is_grounded_count += 1
+                elif assertion.type == AssertionType.FLOW_STARTED.value:
+                    flow_started_count += 1
+                elif assertion.type == AssertionType.FLOW_COMPLETED.value:
+                    flow_completed_count += 1
+                elif assertion.type == AssertionType.FLOW_CANCELLED.value:
+                    flow_cancelled_count += 1
+                elif (
+                    assertion.type == AssertionType.PATTERN_CLARIFICATION_CONTAINS.value
+                ):
+                    pattern_clarification_contains_count += 1
+
+                uses_assertions = True
+
+    result = {
+        "flow_started_count": flow_started_count,
+        "flow_completed_count": flow_completed_count,
+        "flow_cancelled_count": flow_cancelled_count,
+        "pattern_clarification_contains_count": pattern_clarification_contains_count,
+        "action_executed_count": action_executed_count,
+        "slot_was_set_count": slot_was_set_count,
+        "slot_was_not_set_count": slot_was_not_set_count,
+        "bot_uttered_count": bot_uttered_count,
+        "generative_response_is_relevant_count": generative_response_is_relevant_count,
+        "generative_response_is_grounded_count": generative_response_is_grounded_count,
+    }
+
+    return uses_assertions, result
+
+
 @ensure_telemetry_enabled
 def track_e2e_test_run(
     input_test_cases: List["TestCase"],
@@ -1439,15 +1509,26 @@ def track_e2e_test_run(
     input_metadata: List["Metadata"],
 ) -> None:
     """Track an end-to-end test run."""
+    properties = {
+        "number_of_test_cases": len(input_test_cases),
+        "number_of_fixtures": len(input_fixtures),
+        "uses_fixtures": len(input_fixtures) > 0,
+        "uses_metadata": len(input_metadata) > 0,
+        "number_of_metadata": len(input_metadata),
+    }
+
+    uses_assertions, assertion_type_counts = extract_assertion_type_counts(
+        input_test_cases
+    )
+
+    properties.update({"uses_assertions": uses_assertions})
+
+    if uses_assertions:
+        properties.update(assertion_type_counts)
+
     _track(
         TELEMETRY_E2E_TEST_RUN_STARTED_EVENT,
-        {
-            "number_of_test_cases": len(input_test_cases),
-            "number_of_fixtures": len(input_fixtures),
-            "uses_fixtures": len(input_fixtures) > 0,
-            "uses_metadata": len(input_metadata) > 0,
-            "number_of_metadata": len(input_metadata),
-        },
+        properties,
     )
 
 

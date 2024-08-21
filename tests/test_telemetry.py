@@ -790,6 +790,7 @@ def test_track_e2e_test_run(
             "uses_fixtures": expected_uses_fixtures,
             "uses_metadata": expected_uses_metadata,
             "number_of_metadata": expected_number_of_metadata,
+            "uses_assertions": False,
         },
     )
 
