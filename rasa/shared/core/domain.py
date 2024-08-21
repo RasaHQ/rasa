@@ -1,85 +1,84 @@
-import copy
 import collections
+import copy
 import json
-import structlog
 import os
+from dataclasses import dataclass
 from pathlib import Path
 from typing import (
+    TYPE_CHECKING,
     Any,
+    Callable,
     Dict,
+    Iterable,
     List,
+    MutableMapping,
+    NamedTuple,
     NoReturn,
     Optional,
     Set,
     Text,
     Tuple,
     Union,
-    TYPE_CHECKING,
-    Iterable,
-    MutableMapping,
-    NamedTuple,
-    Callable,
     cast,
 )
-from dataclasses import dataclass
 
+import structlog
 from ruamel.yaml.scalarstring import DoubleQuotedScalarString
 
+import rasa.shared.core.slot_mappings
+import rasa.shared.utils.common
+import rasa.shared.utils.io
 from rasa.shared.constants import (
-    DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
     DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION,
-    DOMAIN_SCHEMA_FILE,
+    DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
     DOCS_URL_DOMAINS,
     DOCS_URL_FORMS,
-    LATEST_TRAINING_DATA_FORMAT_VERSION,
     DOCS_URL_RESPONSES,
-    REQUIRED_SLOTS_KEY,
+    DOMAIN_SCHEMA_FILE,
     IGNORED_INTENTS,
+    LATEST_TRAINING_DATA_FORMAT_VERSION,
+    REQUIRED_SLOTS_KEY,
     RESPONSE_CONDITION,
 )
 from rasa.shared.core.constants import (
     ACTION_SHOULD_SEND_DOMAIN,
+    ACTIVE_LOOP,
+    KNOWLEDGE_BASE_SLOT_NAMES,
+    MAPPING_CONDITIONS,
+    MAPPING_TYPE,
     SLOT_MAPPINGS,
     SlotMappingType,
-    MAPPING_TYPE,
-    MAPPING_CONDITIONS,
-    KNOWLEDGE_BASE_SLOT_NAMES,
-    ACTIVE_LOOP,
+)
+from rasa.shared.core.events import SlotSet, UserUttered
+from rasa.shared.core.slots import (
+    AnySlot,
+    CategoricalSlot,
+    ListSlot,
+    Slot,
+    TextSlot,
 )
 from rasa.shared.exceptions import (
     RasaException,
     YamlException,
     YamlSyntaxException,
 )
-from rasa.shared.utils.cli import print_error_and_exit
-import rasa.shared.utils.io
-import rasa.shared.utils.common
-import rasa.shared.core.slot_mappings
-from rasa.shared.core.events import SlotSet, UserUttered
-from rasa.shared.core.slots import (
-    Slot,
-    CategoricalSlot,
-    TextSlot,
-    AnySlot,
-    ListSlot,
+from rasa.shared.nlu.constants import (
+    ENTITIES,
+    ENTITY_ATTRIBUTE_GROUP,
+    ENTITY_ATTRIBUTE_ROLE,
+    ENTITY_ATTRIBUTE_TYPE,
+    INTENT_NAME_KEY,
+    RESPONSE_IDENTIFIER_DELIMITER,
 )
+from rasa.shared.utils.cli import print_error_and_exit
 from rasa.shared.utils.yaml import (
     KEY_TRAINING_DATA_FORMAT_VERSION,
-    read_yaml,
-    validate_training_data_format_version,
-    read_yaml_file,
     dump_obj_as_yaml_to_string,
+    read_yaml,
+    read_yaml_file,
     validate_raw_yaml_using_schema_file_with_responses,
+    validate_training_data_format_version,
 )
-from rasa.shared.nlu.constants import (
-    ENTITY_ATTRIBUTE_TYPE,
-    ENTITY_ATTRIBUTE_ROLE,
-    ENTITY_ATTRIBUTE_GROUP,
-    RESPONSE_IDENTIFIER_DELIMITER,
-    INTENT_NAME_KEY,
-    ENTITIES,
-)
-
 
 if TYPE_CHECKING:
     from rasa.shared.core.trackers import DialogueStateTracker
@@ -967,6 +966,7 @@ class Domain:
         """Returns a unique hash for the domain."""
         return int(self.fingerprint(), 16)
 
+    @rasa.shared.utils.common.cached_method
     def fingerprint(self) -> Text:
         """Returns a unique hash for the domain which is stable across python runs.
 
