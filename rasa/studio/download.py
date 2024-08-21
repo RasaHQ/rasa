@@ -10,7 +10,7 @@ import rasa.cli.utils
 import rasa.shared.utils.cli
 from rasa.shared.constants import (
     DEFAULT_DATA_PATH,
-    DEFAULT_DOMAIN_PATHS,
+    DEFAULT_DOMAIN_PATH,
     DEFAULT_CONFIG_PATH,
     DEFAULT_ENDPOINTS_PATH,
 )
@@ -61,54 +61,59 @@ def _handle_file_overwrite(
     )
     write_file = False
     path = None
+    file_or_default_path = file_path or default_path
 
     if file_already_exists is None:
-        path = Path(file_path or default_path)
+        path = Path(file_or_default_path)
         if path.is_dir():
             path = path / default_path
-        write_file = True
-    else:
-        if questionary.confirm(
-            f"{file_type.capitalize()} file '{file_path or default_path}' "
-            f"already exists. Do you want to overwrite it?"
-        ).ask():
-            write_file = True
-            path = Path(file_path or default_path)
+        return path, True
 
+    if questionary.confirm(
+        f"{file_type.capitalize()} file '{file_or_default_path}' "
+        f"already exists. Do you want to overwrite it?"
+    ).ask():
+        write_file = True
+        path = Path(file_or_default_path)
     return path, write_file
 
 
-def _handle_domain_path(args: argparse.Namespace) -> tuple[Path, bool]:
+def _prepare_data_and_domain_paths(args: argparse.Namespace) -> tuple[Path, list[Path]]:
+    """Handles the logic for preparing the domain and data paths
+    based on the provided arguments.
+
+    Args:
+        args (argparse.Namespace): The parsed arguments.
+
+    Returns:
+        tuple[Path, list[Path]]: A tuple containing the domain path
+                        and a list of data paths.
+    """
+    # prepare domain
     domain_path = rasa.cli.utils.get_validated_path(
-        args.domain, "domain", DEFAULT_DOMAIN_PATHS, none_is_valid=True
+        args.domain, "domain", DEFAULT_DOMAIN_PATH, none_is_valid=True
     )
-    write_domain = args.overwrite
-    # handle case if domain file or folder is not
-    # present, but we're expecting it later
+    domain_or_default_path = args.domain or DEFAULT_DOMAIN_PATH
+
     if domain_path is None:
-        domain_path = Path(DEFAULT_DOMAIN_PATHS[0])
+        # If the path is None, use the provided domain path
+        domain_path = Path(domain_or_default_path)
         domain_path.touch()
-    else:
-        if write_domain:
-            if Path(domain_path).is_dir():
-                if isinstance(domain_path, str):
-                    domain_path = Path(domain_path)
-                domain_path = domain_path / DEFAULT_DOMAIN_PATHS[0]
-            else:
-                domain_path = Path(domain_path)
-        else:
-            domain_path = Path(domain_path)
-    return domain_path, write_domain
 
+    if isinstance(domain_path, str):
+        domain_path = Path(domain_path)
 
-def handle_download(args: argparse.Namespace) -> None:
-    handler = StudioDataHandler(
-        studio_config=StudioConfig.read_config(), assistant_name=args.assistant_name[0]
-    )
-    handler.request_all_data()
+    if domain_path.is_file():
+        if args.overwrite:
+            domain_path.unlink()
+            domain_path.touch()
 
-    domain_path, write_domain = _handle_domain_path(args)
+    if domain_path.is_dir():
+        if args.overwrite:
+            domain_path = domain_path / STUDIO_DOMAIN_FILENAME
+            domain_path.touch()
 
+    # prepare data
     data_paths = []
 
     for f in args.data:
@@ -123,11 +128,8 @@ def handle_download(args: argparse.Namespace) -> None:
         else:
             data_path = Path(data_path)
 
-        if data_path.is_file():
+        if data_path.is_file() or data_path.is_dir():
             # If it's a file, add it directly
-            data_paths.append(data_path)
-        elif data_path.is_dir():
-            # If it's a directory, add it directly
             data_paths.append(data_path)
         else:
             # If it doesn't exist, create the directory
@@ -136,6 +138,17 @@ def handle_download(args: argparse.Namespace) -> None:
 
     # Remove duplicates while preserving order
     data_paths = list(dict.fromkeys(data_paths))
+
+    return domain_path, data_paths
+
+
+def handle_download(args: argparse.Namespace) -> None:
+    handler = StudioDataHandler(
+        studio_config=StudioConfig.read_config(), assistant_name=args.assistant_name[0]
+    )
+    handler.request_all_data()
+
+    domain_path, data_paths = _prepare_data_and_domain_paths(args)
 
     # handle config and endpoints
     config_path, write_config = _handle_file_overwrite(
@@ -163,16 +176,16 @@ def handle_download(args: argparse.Namespace) -> None:
         with open(endpoints_path, "w") as f:
             f.write(endpoints_data)
 
-    if domain_path and write_domain:
-        # delete existing
-        Path(domain_path).unlink(missing_ok=True)
-        # write empty file
-        Path(domain_path).touch()
+    # generate log message if we write the config or endpoints
+    message_parts = []
+    if write_config:
+        message_parts.append(f"config to '{config_path}'")
+    if write_endpoints:
+        message_parts.append(f"endpoints to '{endpoints_path}'")
 
-    structlogger.info(
-        "studio.download.config_endpoints",
-        event_info="Downloaded config and endpoints files from Rasa Studio.",
-    )
+    if message_parts:
+        message = "Downloaded " + " and ".join(message_parts)
+        structlogger.info("studio.download.config_endpoints", event_info=message)
 
     if not args.overwrite:
         _handle_download_no_overwrite(
