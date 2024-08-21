@@ -1,10 +1,12 @@
 import json
-from typing import Any, Dict, Optional, TYPE_CHECKING, List, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Tuple
 from urllib.parse import urlparse
 
 import grpc
 import structlog
-from google.protobuf.json_format import ParseDict, MessageToDict, Parse
+from google.protobuf.json_format import MessageToDict, Parse, ParseDict
+from rasa_sdk.grpc_errors import ResourceNotFound, ResourceNotFoundType
+from rasa_sdk.grpc_py import action_webhook_pb2, action_webhook_pb2_grpc
 
 from rasa.core.actions.action_exceptions import DomainNotFound
 from rasa.core.actions.constants import SSL_CLIENT_CERT_FIELD, SSL_CLIENT_KEY_FIELD
@@ -15,12 +17,10 @@ from rasa.core.actions.custom_action_executor import (
 from rasa.shared.exceptions import RasaException
 from rasa.shared.utils.io import file_as_bytes
 from rasa.utils.endpoints import EndpointConfig
-from rasa_sdk.grpc_errors import ResourceNotFound, ResourceNotFoundType
-from rasa_sdk.grpc_py import action_webhook_pb2_grpc, action_webhook_pb2
 
 if TYPE_CHECKING:
-    from rasa.shared.core.trackers import DialogueStateTracker
     from rasa.shared.core.domain import Domain
+    from rasa.shared.core.trackers import DialogueStateTracker
 
 structlogger = structlog.get_logger(__name__)
 
@@ -87,19 +87,25 @@ class GRPCCustomActionExecutor(CustomActionExecutor):
             )
 
     async def run(
-        self, tracker: "DialogueStateTracker", domain: Optional["Domain"] = None
+        self,
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+        include_domain: bool = False,
     ) -> Dict[str, Any]:
         """Execute the custom action using a gRPC request.
 
         Args:
             tracker: Tracker for the current conversation.
             domain: Domain of the assistant.
+            include_domain: If True, the domain information is included in the request.
 
         Returns:
             Response from the action server.
         """
 
-        request = self._create_payload(tracker=tracker, domain=domain)
+        request = self._create_payload(
+            tracker=tracker, domain=domain, include_domain=include_domain
+        )
 
         return self._request(request)
 
@@ -170,18 +176,22 @@ class GRPCCustomActionExecutor(CustomActionExecutor):
     def _create_payload(
         self,
         tracker: "DialogueStateTracker",
-        domain: Optional["Domain"] = None,
+        domain: "Domain",
+        include_domain: bool = False,
     ) -> action_webhook_pb2.WebhookRequest:
         """Create the gRPC payload for the action server.
 
         Args:
             tracker: Tracker for the current conversation.
             domain: Domain of the assistant.
+            include_domain: If True, the domain information is included in the request.
 
         Returns:
             gRPC payload for the action server.
         """
-        json_body = self.request_writer.create(tracker=tracker, domain=domain)
+        json_body = self.request_writer.create(
+            tracker=tracker, domain=domain, include_domain=include_domain
+        )
 
         request_proto = action_webhook_pb2.WebhookRequest()
 

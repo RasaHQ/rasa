@@ -6,7 +6,7 @@ from typing import Text
 import certifi
 import openai
 import structlog
-from aiohttp import TCPConnector, ClientSession
+from aiohttp import ClientSession, TCPConnector
 
 structlogger = structlog.get_logger()
 
@@ -58,7 +58,7 @@ class OpenAISessionHandler:
     def _create_session(self) -> ClientSession:
         """
         Create client session with an SSL context
-        created from the certificate path.
+        created from the certificate path
         """
         ssl_context = self._create_ssl_context()
         conn = TCPConnector(ssl=ssl_context)
