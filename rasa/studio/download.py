@@ -104,12 +104,12 @@ def _prepare_data_and_domain_paths(args: argparse.Namespace) -> tuple[Path, list
         domain_path = Path(domain_path)
 
     if domain_path.is_file():
-        if args.overwrite:
+        if not args.overwrite:
             domain_path.unlink()
             domain_path.touch()
 
     if domain_path.is_dir():
-        if args.overwrite:
+        if not args.overwrite:
             domain_path = domain_path / STUDIO_DOMAIN_FILENAME
             domain_path.touch()
 
@@ -158,6 +158,9 @@ def handle_download(args: argparse.Namespace) -> None:
         args.endpoints, DEFAULT_ENDPOINTS_PATH, "endpoints"
     )
 
+    # generate log message if we write the config or endpoints
+    message_parts = []
+
     config_path = config_path if write_config else None
     endpoints_path = endpoints_path if write_endpoints else None
 
@@ -167,6 +170,7 @@ def handle_download(args: argparse.Namespace) -> None:
             rasa.shared.utils.cli.print_error_and_exit("No config data found.")
         with open(config_path, "w") as f:
             f.write(config_data)
+            message_parts.append(f"config to '{config_path}'")
 
     if endpoints_path:
         endpoints_data = handler.get_endpoints()
@@ -175,13 +179,7 @@ def handle_download(args: argparse.Namespace) -> None:
 
         with open(endpoints_path, "w") as f:
             f.write(endpoints_data)
-
-    # generate log message if we write the config or endpoints
-    message_parts = []
-    if write_config:
-        message_parts.append(f"config to '{config_path}'")
-    if write_endpoints:
-        message_parts.append(f"endpoints to '{endpoints_path}'")
+            message_parts.append(f"endpoints to '{endpoints_path}'")
 
     if message_parts:
         message = "Downloaded " + " and ".join(message_parts)
