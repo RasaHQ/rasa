@@ -73,7 +73,7 @@ def add_config_param(
         "--config",
         type=str,
         default=default,
-        help="The policy and NLU pipeline configuration of your bot.",
+        help="The policy and pipeline configuration of your bot.",
     )
 
 
