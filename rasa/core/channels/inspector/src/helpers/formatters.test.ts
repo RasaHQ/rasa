@@ -89,9 +89,6 @@ describe("helpers", () => {
         },
         {
           event: "bot",
-          metadata: {
-            utter_action: "utter_ask_book_restaurant_number_of_people",
-          },
           text: "How many people are we talking?",
         },
         {
@@ -111,11 +108,11 @@ describe("helpers", () => {
       expect(result).toEqual(`test_cases:
   - test_case: ${sessionId}
     steps:
-    - user: book a restaurant
+    - user: "book a restaurant"
     - utter: utter_ask_book_restaurant_name_of_restaurant
-    - user: simsim
-    - utter: utter_ask_book_restaurant_number_of_people
-    - user: 100
+    - user: "simsim"
+    - bot: "How many people are we talking?"
+    - user: "100"
     - utter: utter_ask_book_restaurant_date`);
     });
   });
