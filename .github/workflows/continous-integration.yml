@@ -594,7 +594,7 @@ jobs:
 
   non-sequential-integration-test:
     name: Run Non-Sequential Integration Tests
-    runs-on: ubuntu-22.04-4core
+    runs-on: ubuntu-22.04-8core
     timeout-minutes: 60
     env:
       REDIS_HOST: localhost

@@ -408,9 +408,9 @@ def prepare_release(args: argparse.Namespace) -> None:
         write_version_file(version)
         write_version_to_pyproject(version)
 
-        # if not version.pre and not version.dev:
+        if not version.pre and not version.dev:
             # never update changelog on a pre-release version
-        generate_changelog(version)
+            generate_changelog(version)
 
         # alpha or beta workflow on feature branch when a version bump is required
         if (
