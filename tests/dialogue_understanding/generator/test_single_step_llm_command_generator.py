@@ -996,3 +996,17 @@ class TestSingleStepLLMCommandGenerator:
                 config=config, model_storage=mock_model_storage, resource=mock_resource
             )
             mock_track.assert_called_once_with(**expected_calls)
+
+    @patch("rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval")
+    def test_train_with_no_flows(
+        self,
+        mock_flow_retrieval: Mock,
+        model_storage: ModelStorage,
+    ):
+        # Given
+        resource = Resource("llmcmdgen")
+        generator = SingleStepLLMCommandGenerator({}, model_storage, resource)
+        # When
+        generator.train(Mock(), FlowsList(underlying_flows=[]), Mock())
+        # Then
+        assert mock_flow_retrieval.populate.call_count == 0
