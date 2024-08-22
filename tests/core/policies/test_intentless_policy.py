@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Any, Dict, Generator, List
+from typing import Any, Dict, Generator, List, Optional
 from unittest.mock import Mock, patch, AsyncMock
 
 import pytest
@@ -28,7 +28,6 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.importers.importer import FlowSyncImporter
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.utils.llm import tracker_as_readable_transcript
-
 from rasa.core.policies.intentless_policy import (
     PROMPT,
     Conversation,
@@ -875,3 +874,24 @@ async def test_intentless_policy_abstains_in_coexistence(
 
     # check that the policy didn't predict anything
     assert prediction.max_confidence == 0.0
+
+
+@pytest.mark.parametrize(
+    "routing_slot_value,result",
+    [
+        (None, True),
+        (True, False),
+        (False, True),
+    ],
+)
+def test_should_abstain_in_coexistence(
+    routing_slot_value: Optional[bool],
+    result: bool,
+    intentless_policy: IntentlessPolicy,
+):
+    tracker = DialogueStateTracker(
+        "id1",
+        slots=[BooleanSlot(ROUTE_TO_CALM_SLOT, [], initial_value=routing_slot_value)],
+    )
+
+    assert result == intentless_policy.should_abstain_in_coexistence(tracker, True)

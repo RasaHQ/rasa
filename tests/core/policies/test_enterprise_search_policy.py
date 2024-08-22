@@ -1,12 +1,13 @@
 import textwrap
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from langchain.embeddings import FakeEmbeddings
 from langchain.llms.fake import FakeListLLM
 from pytest import MonkeyPatch
+
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import (
     ChitChatStackFrame,
@@ -18,10 +19,11 @@ from rasa.core.policies.policy import PolicyPrediction
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.shared.constants import ROUTE_TO_CALM_SLOT
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, UserUttered, BotUttered
+from rasa.shared.core.slots import BooleanSlot
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
-
 from rasa.core.information_retrieval import (
     InformationRetrieval,
     SearchResultList,
@@ -1038,8 +1040,7 @@ async def test_enterprise_search_policy_response_with_use_llm_false(
     enterprise_search_tracker: DialogueStateTracker,
     search_results: SearchResultList,
 ) -> None:
-    """
-    Given the `USE_LLM_PROPERTY` is set to False, the policy should return
+    """Given the `USE_LLM_PROPERTY` is set to False, the policy should return
     a response without using the LLM. Response text should be from the first
     search result.
     """
@@ -1080,8 +1081,7 @@ async def test_enterprise_search_policy_response_with_use_llm_true(
     enterprise_search_tracker: DialogueStateTracker,
     search_results: SearchResultList,
 ) -> None:
-    """
-    Given the `USE_LLM_PROPERTY` is set to True, the policy should return
+    """Given the `USE_LLM_PROPERTY` is set to True, the policy should return
     a response using the LLM. Response text should be from the LLM.
     """
     policy = EnterpriseSearchPolicy(
@@ -1120,3 +1120,26 @@ async def test_enterprise_search_policy_response_with_use_llm_true(
                     prediction.action_metadata.get("message").get("text")
                     == "LLM generated response"
                 )
+
+
+@pytest.mark.parametrize(
+    "routing_slot_value,result",
+    [
+        (None, True),
+        (True, False),
+        (False, True),
+    ],
+)
+def test_should_abstain_in_coexistence(
+    routing_slot_value: Optional[bool],
+    result: bool,
+    default_enterprise_search_policy: EnterpriseSearchPolicy,
+):
+    tracker = DialogueStateTracker(
+        "id1",
+        slots=[BooleanSlot(ROUTE_TO_CALM_SLOT, [], initial_value=routing_slot_value)],
+    )
+
+    assert result == default_enterprise_search_policy.should_abstain_in_coexistence(
+        tracker, True
+    )

@@ -3,7 +3,6 @@ import math
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, TYPE_CHECKING, Text, Tuple
 
-import rasa.shared.utils.io
 import structlog
 import tiktoken
 from jinja2 import Template
@@ -11,6 +10,7 @@ from langchain.docstore.document import Document
 from langchain.schema.embeddings import Embeddings
 from langchain.vectorstores import FAISS
 
+import rasa.shared.utils.io
 from rasa import telemetry
 from rasa.core.constants import (
     CHAT_POLICY_PRIORITY,
@@ -27,7 +27,7 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.graph_components.providers.forms_provider import Forms
 from rasa.graph_components.providers.responses_provider import Responses
-from rasa.shared.constants import REQUIRED_SLOTS_KEY, ROUTE_TO_CALM_SLOT
+from rasa.shared.constants import REQUIRED_SLOTS_KEY
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.shared.core.domain import KEY_RESPONSES_TEXT, Domain
 from rasa.shared.core.events import (
@@ -56,7 +56,6 @@ from rasa.shared.utils.llm import (
     sanitize_message_for_prompt,
     tracker_as_readable_transcript,
 )
-
 from rasa.utils.ml_utils import (
     extract_ai_response_examples,
     extract_participant_messages_from_transcript,
@@ -65,7 +64,6 @@ from rasa.utils.ml_utils import (
     persist_faiss_vector_store,
     response_for_template,
 )
-
 from rasa.utils.log_utils import log_llm
 
 if TYPE_CHECKING:
@@ -522,21 +520,6 @@ class IntentlessPolicy(Policy):
             rasa.shared.utils.io.write_text_file(
                 self.prompt_template, path / INTENTLESS_PROMPT_TEMPLATE_FILE_NAME
             )
-
-    def should_abstain_in_coexistence(
-        self, tracker: DialogueStateTracker, is_calm_policy: bool
-    ) -> bool:
-        """Whether a policy should abstain making predictions in coexistence.
-
-        IntentlessPolicy should not make a prediction when the routing slot is set
-        to False. This is because the NLU based policies should handle the
-        prediction in these cases. Only when the routing slot is None or True,
-        IntentlessPolicy should make a prediction.
-        """
-        return (
-            tracker.has_coexistence_routing_slot
-            and tracker.get_slot(ROUTE_TO_CALM_SLOT) is False
-        )
 
     async def predict_action_probabilities(
         self,

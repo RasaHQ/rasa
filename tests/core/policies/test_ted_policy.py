@@ -4,11 +4,10 @@ from typing import Optional, List, Type, Dict, Text, Any
 import numpy as np
 import pytest
 from _pytest.tmpdir import TempPathFactory
-
-import tests.core.test_policies
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.logging import LogCaptureFixture
 
+import tests.core.test_policies
 from rasa.core.constants import POLICY_MAX_HISTORY
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
@@ -606,6 +605,29 @@ class TestTEDPolicy(PolicyTestCollection):
         assert featurizer.max_history == expected_max_history
 
         assert isinstance(featurizer.state_featurizer, state_featurizer)
+
+    @pytest.mark.parametrize(
+        "routing_slot_value,result",
+        [
+            (None, False),
+            (True, True),
+            (False, False),
+        ],
+    )
+    def test_should_abstain_in_coexistence(
+        self,
+        routing_slot_value: Optional[bool],
+        result: bool,
+        trained_policy: TEDPolicy,
+    ):
+        tracker = DialogueStateTracker(
+            "id1",
+            slots=[
+                BooleanSlot(ROUTE_TO_CALM_SLOT, [], initial_value=routing_slot_value)
+            ],
+        )
+
+        assert result == trained_policy.should_abstain_in_coexistence(tracker, False)
 
 
 class TestTEDPolicyConfigurationOptions:

@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Text, Callable, Dict, Any, Optional, cast
-
 import dataclasses
+
 import pytest
 
 from rasa.engine.graph import ExecutionContext
@@ -15,7 +15,6 @@ from rasa.shared.constants import (
     LATEST_TRAINING_DATA_FORMAT_VERSION,
     ROUTE_TO_CALM_SLOT,
 )
-
 from rasa.core import training
 from rasa.core.actions.action import ActionDefaultFallback
 from rasa.core.channels import CollectingOutputChannel
@@ -3202,3 +3201,22 @@ async def test_predict_action_probabilities_abstains_in_coexistence(policy: Rule
 
     # check that the policy didn't predict anything
     assert prediction.max_confidence == 0.0
+
+
+@pytest.mark.parametrize(
+    "routing_slot_value,result",
+    [
+        (None, False),
+        (True, True),
+        (False, False),
+    ],
+)
+def test_should_abstain_in_coexistence(
+    routing_slot_value: Optional[bool], result: bool, policy: RulePolicy
+):
+    tracker = DialogueStateTracker(
+        "id1",
+        slots=[BooleanSlot(ROUTE_TO_CALM_SLOT, [], initial_value=routing_slot_value)],
+    )
+
+    assert result == policy.should_abstain_in_coexistence(tracker, False)

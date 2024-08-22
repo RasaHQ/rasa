@@ -1,8 +1,8 @@
 import uuid
 from pathlib import Path
 from typing import Type, List, Text, Optional, Dict, Any
-
 import dataclasses
+
 import numpy as np
 import pytest
 from _pytest.tmpdir import TempPathFactory
@@ -11,7 +11,7 @@ from rasa.engine.graph import ExecutionContext, GraphSchema
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.constants import DEFAULT_SENDER_ID
+from rasa.shared.constants import DEFAULT_SENDER_ID, ROUTE_TO_CALM_SLOT
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_UNLIKELY_INTENT_NAME
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -36,7 +36,7 @@ from rasa.core.policies.policy import SupportedData, InvalidPolicyConfig, Policy
 from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy, MemoizationPolicy
-
+from rasa.shared.core.slots import BooleanSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from tests.dialogues import TEST_DEFAULT_DIALOGUE
@@ -61,7 +61,8 @@ def train_trackers(
 class PolicyTestCollection:
     """Tests every policy needs to fulfill.
 
-    Each policy can declare further tests on its own."""
+    Each policy can declare further tests on its own.
+    """
 
     @staticmethod
     def _policy_class_to_test() -> Type[Policy]:
@@ -997,6 +998,29 @@ class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
             ]
             == UTTER_ACTION_4
         )
+
+    @pytest.mark.parametrize(
+        "routing_slot_value,result",
+        [
+            (None, False),
+            (True, True),
+            (False, False),
+        ],
+    )
+    def test_should_abstain_in_coexistence(
+        self,
+        routing_slot_value: Optional[bool],
+        result: bool,
+        trained_policy: MemoizationPolicy,
+    ):
+        tracker = DialogueStateTracker(
+            "id1",
+            slots=[
+                BooleanSlot(ROUTE_TO_CALM_SLOT, [], initial_value=routing_slot_value)
+            ],
+        )
+
+        assert result == trained_policy.should_abstain_in_coexistence(tracker, False)
 
 
 @pytest.mark.parametrize(

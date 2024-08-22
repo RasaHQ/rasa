@@ -1,12 +1,13 @@
 import json
 from pathlib import Path
 from typing import Optional, List, Dict, Type
+import logging
+
 import tensorflow as tf
 import numpy as np
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.logging import LogCaptureFixture
-import logging
 
 from rasa.core.featurizers.single_state_featurizer import (
     IntentTokenizerSingleStateFeaturizer,
@@ -1127,6 +1128,29 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
 
         # check that the policy didn't predict anything
         assert prediction.max_confidence == 0.0
+
+    @pytest.mark.parametrize(
+        "routing_slot_value,result",
+        [
+            (None, False),
+            (True, True),
+            (False, False),
+        ],
+    )
+    def test_should_abstain_in_coexistence(
+        self,
+        routing_slot_value: Optional[bool],
+        result: bool,
+        trained_policy: UnexpecTEDIntentPolicy,
+    ):
+        tracker = DialogueStateTracker(
+            "id1",
+            slots=[
+                BooleanSlot(ROUTE_TO_CALM_SLOT, [], initial_value=routing_slot_value)
+            ],
+        )
+
+        assert result == trained_policy.should_abstain_in_coexistence(tracker, False)
 
 
 @pytest.mark.parametrize(
