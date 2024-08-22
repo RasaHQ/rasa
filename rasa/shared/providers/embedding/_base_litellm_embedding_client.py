@@ -2,6 +2,7 @@ from abc import abstractmethod
 from typing import Any, Dict, List
 
 import litellm
+import logging
 import structlog
 from litellm import aembedding, embedding, validate_environment
 from rasa.shared.exceptions import (
@@ -12,6 +13,7 @@ from rasa.shared.providers.embedding.embedding_response import (
     EmbeddingResponse,
     EmbeddingUsage,
 )
+from rasa.shared.utils.io import suppress_logs
 
 structlogger = structlog.get_logger()
 
@@ -123,6 +125,7 @@ class _BaseLiteLLMEmbeddingClient:
             if not doc.strip():
                 raise ValueError("Documents cannot be empty or whitespace.")
 
+    @suppress_logs(log_level=logging.WARNING)
     def embed(self, documents: List[str]) -> EmbeddingResponse:
         """
         Embeds a list of documents synchronously.
@@ -145,6 +148,7 @@ class _BaseLiteLLMEmbeddingClient:
                 message="Failed to embed documents", original_exception=e
             )
 
+    @suppress_logs(log_level=logging.WARNING)
     async def aembed(self, documents: List[str]) -> EmbeddingResponse:
         """
         Embeds a list of documents asynchronously.

@@ -1,12 +1,15 @@
 from collections import OrderedDict
+from functools import wraps
+from hashlib import md5
+import asyncio
 import errno
 import glob
-from hashlib import md5
 import json
+import logging
 import os
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Text, Type, Union
+from typing import Any, cast, Callable, Dict, List, Optional, Text, Type, TypeVar, Union
 import warnings
 import random
 import string
@@ -423,3 +426,52 @@ def file_as_bytes(file_path: Text) -> bytes:
         raise FileNotFoundException(
             f"Failed to read file, " f"'{os.path.abspath(file_path)}' does not exist."
         )
+
+
+F = TypeVar("F", bound=Callable[..., Any])
+
+
+def suppress_logs(log_level: int = logging.WARNING) -> Callable[[F], F]:
+    """Decorator to suppress logs during the execution of a function.
+
+    Args:
+        log_level: The log level to set during the execution of the function.
+
+    Returns:
+        The decorated function.
+    """
+
+    def decorator(func: F) -> F:
+        @wraps(func)
+        async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
+            # Store the original logging level and set the new level.
+            original_logging_level = logging.getLogger().getEffectiveLevel()
+            logging.getLogger().setLevel(log_level)
+            try:
+                # Execute the async function.
+                result = await func(*args, **kwargs)
+            finally:
+                # Reset the logging level to the original level.
+                logging.getLogger().setLevel(original_logging_level)
+            return result
+
+        @wraps(func)
+        def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
+            # Store the original logging level and set the new level.
+            original_logging_level = logging.getLogger().getEffectiveLevel()
+            logging.getLogger().setLevel(log_level)
+            try:
+                # Execute the function.
+                result = func(*args, **kwargs)
+            finally:
+                # Reset the logging level to the original level.
+                logging.getLogger().setLevel(original_logging_level)
+            return result
+
+        # Determine if the function is async or not
+        if asyncio.iscoroutinefunction(func):
+            return cast(F, async_wrapper)
+        else:
+            return cast(F, sync_wrapper)
+
+    return decorator
