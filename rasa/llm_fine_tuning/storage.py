@@ -126,7 +126,7 @@ class FileStorageStrategy(StorageStrategy):
         Args:
             e2e_test_suite: The TestSuite object to write.
             module_storage_location: The location where the file should be stored.
-            file_path: The path to the file where the data should be written.
+            file_name: The path to the file where the data should be written.
         """
         file_path = self._get_file_path(module_storage_location, file_name)
         self._create_output_dir(file_path)

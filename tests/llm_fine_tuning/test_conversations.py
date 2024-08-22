@@ -91,22 +91,26 @@ class TestConversation(unittest.TestCase):
 
     def test_as_dict(self):
         expected = {
-            "original_test_case": "test_file::test_case",
-            "steps": [
+            "conversations": [
                 {
-                    "llm_commands": [],
-                    "user": "some text",
-                    "failing_rephrasings": ["failed_1"],
-                    "passing_rephrasings": ["passing_1", "passing_2"],
-                },
-                {"utter": "some template"},
-                {
-                    "llm_commands": [],
-                    "user": "some text",
-                    "failing_rephrasings": ["failed_1"],
-                    "passing_rephrasings": ["passing_1", "passing_2"],
-                },
-            ],
+                    "original_test_case": "test_file::test_case",
+                    "steps": [
+                        {
+                            "llm_commands": [],
+                            "user": "some text",
+                            "failing_rephrasings": ["failed_1"],
+                            "passing_rephrasings": ["passing_1", "passing_2"],
+                        },
+                        {"utter": "some template"},
+                        {
+                            "llm_commands": [],
+                            "user": "some text",
+                            "failing_rephrasings": ["failed_1"],
+                            "passing_rephrasings": ["passing_1", "passing_2"],
+                        },
+                    ],
+                }
+            ]
         }
 
         result = self.conversation.as_dict()
