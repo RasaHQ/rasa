@@ -985,6 +985,25 @@ class TestMultiStepLLMCommandGenerator:
             all_flows=all_flows,
         )
 
+    @patch("rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval")
+    def test_train_with_no_flows(
+        self,
+        mock_flow_retrieval: Mock,
+        model_storage: ModelStorage,
+    ):
+        # Given
+        resource = Resource("llmcmdgen")
+        command_generator = MultiStepLLMCommandGenerator.create(
+            config={"flow_retrieval": {"active": False}},
+            resource=resource,
+            model_storage=model_storage,
+            execution_context=Mock(),
+        )
+        # When
+        command_generator.train(Mock(), FlowsList(underlying_flows=[]), Mock())
+        # Then
+        assert mock_flow_retrieval.populate.call_count == 0
+
 
 class TestMultiStepLLMCommandGeneratorPredictCommandsErrorHandling:
     @pytest.fixture
