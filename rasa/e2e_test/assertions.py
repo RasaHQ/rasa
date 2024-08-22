@@ -532,7 +532,14 @@ class SlotWasSetAssertion(Assertion):
                 )
 
             if slot.value == "value key is undefined":
-                matching_event = matching_events[-1]
+                matching_event = matching_events[0]
+                structlogger.debug(
+                    "slot_was_set_assertion.run",
+                    last_event_seen=matching_event,
+                    event_info="Slot value is not asserted and we have "
+                    "multiple events for the same slot. "
+                    "We will mark the first event as last event seen.",
+                )
                 continue
 
             try:

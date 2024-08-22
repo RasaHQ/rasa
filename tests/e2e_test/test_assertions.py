@@ -1100,3 +1100,23 @@ def test_generative_response_run_no_matching_events(
         "No generative response issued by Enterprise Search Policy "
         "or Contextual Response Rephraser was found, but one was expected."
     )
+
+
+@pytest.mark.parametrize(
+    "assertion_dict, expected_assertion_type",
+    [
+        ({"slot_was_set": [{"name": "name", "value": None}]}, SlotWasSetAssertion),
+        (
+            {"slot_was_not_set": [{"name": "name", "value": None}]},
+            SlotWasNotSetAssertion,
+        ),
+    ],
+)
+def test_slot_assertions_with_null_value(
+    assertion_dict: Dict[str, Any], expected_assertion_type: Assertion
+) -> None:
+    assertion = Assertion.create_typed_assertion(assertion_dict)
+    assert assertion is not None
+    assert isinstance(assertion, expected_assertion_type)
+    assert hasattr(assertion, "slots")
+    assert assertion.slots[0].value is None
