@@ -6,10 +6,14 @@ on:
       version:
         description: 'Version to release'
         required: true
+      rasa-sdk-version:
+        description: 'Rasa SDK version to use'
+        required: true
 
 env:
     GITHUB_TOKEN: ${{ secrets.RASABOT_GITHUB_TOKEN }}
     INPUT_VERSION: ${{ github.event.inputs.version }}
+    INPUT_RASA_SDK_VERSION: ${{ github.event.inputs['rasa-sdk-version'] }}
 
 jobs:
   prepare-release:
@@ -69,21 +73,17 @@ jobs:
       - name: Check Rasa SDK Version
         id: check_rasa_sdk_version
         run: |
-          version="$INPUT_VERSION"
-          IFS='.' read -r -a version_parts <<< "$version"
+          input_rasa_sdk_version="$INPUT_RASA_SDK_VERSION"
 
-          # Extract the first two digits of the input version
-          input_major_minor="${version_parts[0]}.${version_parts[1]}"
+          # Extract the full rasa-sdk version from pyproject.toml
+          rasa_sdk=$(awk -F'"' '/\[tool.poetry.dependencies.rasa-sdk\]/{flag=1;next}/\[/{flag=0}flag && /version/ {print $2}' pyproject.toml)
 
-          # Extract the first two digits of the rasa-sdk version from pyproject.toml
-          poetry_version=$(awk -F'"' '/\[tool.poetry.dependencies.rasa-sdk\]/{flag=1;next}/\[/{flag=0}flag && /version/ {split($2, ver_parts, "."); print ver_parts[1]"."ver_parts[2]}' pyproject.toml)
-
-          # Compare the first two digits of the input version and the poetry version
-          if [ "$input_major_minor" != "$poetry_version" ]; then
-            echo "Version mismatch: Input version ($input_major_minor) does not match rasa-sdk version ($poetry_version) in pyproject.toml."
+          # Compare the full input version and the poetry version
+          if [ "$input_rasa_sdk_version" != "$rasa_sdk" ]; then
+            echo "Version mismatch: Input version of rasa-sdk ($input_rasa_sdk_version) does not match rasa-sdk version ($rasa_sdk) in pyproject.toml."
             echo "update_required=true" >> $GITHUB_ENV
           else
-            echo "Version match: Input version ($input_major_minor) matches rasa-sdk ($poetry_version) version in pyproject.toml."
+            echo "Version match: Input version of rasa-sdk ($input_rasa_sdk_version) matches rasa-sdk ($rasa_sdk) version in pyproject.toml."
             echo "update_required=false" >> $GITHUB_ENV
           fi
       
@@ -105,25 +105,21 @@ jobs:
       - name: Update Rasa SDK Version
         if: env.update_required == 'true'
         run: |
-          version="$INPUT_VERSION"
-          IFS='.' read -r -a version_parts <<< "$version"
-
-          # Extract the first two digits of the input version
-          input_major_minor="${version_parts[0]}.${version_parts[1]}"
+          input_rasa_sdk_version="$INPUT_RASA_SDK_VERSION"
 
           # Update the rasa-sdk version in pyproject.toml
-          awk -v new_version="$input_major_minor.0" 'BEGIN{flag=0} /\[tool.poetry.dependencies.rasa-sdk\]/{flag=1} flag && /version/{$0="version = \"" new_version "\""} 1' pyproject.toml > pyproject.tmp && mv pyproject.tmp pyproject.toml
+          awk -v new_version="$input_rasa_sdk_version" 'BEGIN{flag=0} /\[tool.poetry.dependencies.rasa-sdk\]/{flag=1} flag && /version/{$0="version = \"" new_version "\""} 1' pyproject.toml > pyproject.tmp && mv pyproject.tmp pyproject.toml
 
           cat pyproject.toml
 
-          # Run poetry update to regenerate poetry.lock
-          poetry update
+          # Update the lock file without upgrading dependencies
+          poetry lock --no-update
 
           # Commit the changes
           git config user.name "rasabot"
           git config user.email "rasabot@rasa.com"
           git add pyproject.toml poetry.lock
           git commit -m "bump rasa-sdk dependency"
-      
+
     #   - name: Prepare the release
     #     run: poetry run python scripts/release.py prepare --next_version ${{ github.event.inputs.version }}
