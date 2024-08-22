@@ -94,9 +94,13 @@ class Conversation:
                     steps_data.append({"bot": step.text})
 
         return {
-            "original_test_case": f"{self.original_e2e_test_case.file}::"
-            f"{self.original_e2e_test_case.name}",
-            "steps": steps_data,
+            "conversations": [
+                {
+                    "original_test_case": f"{self.original_e2e_test_case.file}::"
+                    f"{self.original_e2e_test_case.name}",
+                    "steps": steps_data,
+                }
+            ]
         }
 
     def get_number_of_rephrases(self, passing: bool) -> int:

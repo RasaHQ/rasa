@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "rasa-pro"
-version = "3.9.6"
+version = "3.10.0rc1"
 description = "State-of-the-art open-core Conversational AI framework for Enterprises that natively leverages generative AI for effortless assistant development."
 authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
 maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
@@ -188,7 +188,6 @@ types-protobuf = "4.25.0.20240417"
 litellm = "^1.43.6"
 openpyxl = "^3.1.5"
 diskcache = "~5.6.3"
-
 [[tool.poetry.dependencies.tensorflow-io-gcs-filesystem]]
 version = "==0.31"
 markers = "sys_platform == 'win32'"
