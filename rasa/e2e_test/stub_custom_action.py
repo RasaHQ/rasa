@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Text, Optional
 from rasa.e2e_test.constants import (
     KEY_STUB_CUSTOM_ACTIONS,
     STUB_CUSTOM_ACTION_NAME_SEPARATOR,
+    TEST_CASE_NAME,
     TEST_FILE_NAME,
 )
 from rasa.utils.endpoints import EndpointConfig
@@ -51,12 +52,19 @@ def get_stub_custom_action(
     action_endpoint: EndpointConfig, action_name: str
 ) -> Optional["StubCustomAction"]:
     """Returns the StubCustomAction object"""
-    # Determine the key under which the StubCustomAction is stored
-    if STUB_CUSTOM_ACTION_NAME_SEPARATOR in action_name:
-        stub_custom_action_key = action_name
-    else:
-        test_file_name = action_endpoint.kwargs.get(TEST_FILE_NAME)
-        stub_custom_action_key = get_stub_custom_action_key(test_file_name, action_name)
+    test_case_name = action_endpoint.kwargs.get(TEST_CASE_NAME)
+    stub_custom_action_test_key = get_stub_custom_action_key(
+        test_case_name, action_name
+    )
 
+    test_file_name = action_endpoint.kwargs.get(TEST_FILE_NAME)
+    stub_custom_action_file_key = get_stub_custom_action_key(
+        test_file_name, action_name
+    )
     stub_custom_actions = action_endpoint.kwargs.get(KEY_STUB_CUSTOM_ACTIONS, {})
-    return stub_custom_actions.get(stub_custom_action_key)
+
+    stub = stub_custom_actions.get(
+        stub_custom_action_test_key
+    ) or stub_custom_actions.get(stub_custom_action_file_key)
+
+    return stub

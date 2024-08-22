@@ -913,18 +913,17 @@ class E2ETestRunner:
         track_e2e_test_run(input_test_cases, input_fixtures, input_metadata)
 
         for test_case in input_test_cases:
+            test_case_name = test_case.name.replace(" ", "_")
             # Add the name of the file and the current test case name being
             # executed in order to properly retrieve stub custom action
             if self.agent.endpoints and self.agent.endpoints.action:
                 self.agent.endpoints.action.kwargs[TEST_FILE_NAME] = Path(
                     test_case.file
                 ).name
-                self.agent.endpoints.action.kwargs[TEST_CASE_NAME] = (
-                    test_case.name.replace(" ", "_")
-                )
+                self.agent.endpoints.action.kwargs[TEST_CASE_NAME] = test_case_name
 
             # add timestamp suffix to ensure sender_id is unique
-            sender_id = f"{test_case.name}_{datetime.datetime.now()}"
+            sender_id = f"{test_case_name}_{datetime.datetime.now()}"
             test_turns = await self._run_test_case(
                 sender_id, input_fixtures, input_metadata, test_case
             )

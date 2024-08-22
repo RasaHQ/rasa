@@ -29,7 +29,12 @@ from rasa.e2e_test.aggregate_test_stats_calculator import (
     AccuracyCalculation,
     AggregateTestStatsCalculator,
 )
-from rasa.e2e_test.constants import SCHEMA_FILE_PATH, KEY_TEST_CASE, KEY_TEST_CASES
+from rasa.e2e_test.constants import (
+    SCHEMA_FILE_PATH,
+    KEY_TEST_CASE,
+    KEY_TEST_CASES,
+    STUB_CUSTOM_ACTION_NAME_SEPARATOR,
+)
 from rasa.e2e_test.e2e_test_case import (
     KEY_FIXTURES,
     KEY_METADATA,
@@ -314,10 +319,13 @@ def read_test_cases(path: Text) -> TestSuite:
         )
 
         for action_name, stub_data in stub_custom_actions_contents.items():
-            test_file_name = Path(test_file).name
-            stub_custom_action_key = get_stub_custom_action_key(
-                test_file_name, action_name
-            )
+            if STUB_CUSTOM_ACTION_NAME_SEPARATOR in action_name:
+                stub_custom_action_key = action_name
+            else:
+                test_file_name = Path(test_file).name
+                stub_custom_action_key = get_stub_custom_action_key(
+                    test_file_name, action_name
+                )
             stub_custom_actions[stub_custom_action_key] = StubCustomAction.from_dict(
                 action_name=action_name,
                 stub_data=stub_data,
