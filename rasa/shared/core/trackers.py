@@ -1057,15 +1057,14 @@ class DialogueStateTracker:
         return flows.get_startable_flows(context, slots)
 
     @property
-    def has_active_flow(self) -> bool:
-        from rasa.dialogue_understanding.stack.utils import top_flow_frame
+    def has_active_user_flow(self) -> bool:
+        from rasa.dialogue_understanding.stack.utils import top_user_flow_frame
 
-        top_relevant_frame = top_flow_frame(self.stack)
+        top_relevant_frame = top_user_flow_frame(self.stack)
         return bool(top_relevant_frame and top_relevant_frame.flow_id)
 
     def get_active_flows(self, flows: FlowsList) -> FlowsList:
-        """
-        Retrieve a list of all currently active flows.
+        """Retrieve a list of all currently active flows.
 
         Args:
             flows: list of flows to check against for active flows.

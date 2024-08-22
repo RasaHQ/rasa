@@ -7,11 +7,11 @@ import time
 from pathlib import Path
 import tempfile
 from typing import List, Text, Dict, Any, Type, Optional, Set
+import dataclasses
 
 import fakeredis
 import freezegun
 import pytest
-import dataclasses
 
 from rasa.core.actions.action import ActionExtractSlots
 from rasa.core.channels import CollectingOutputChannel
@@ -20,6 +20,9 @@ from rasa.core.training import load_data
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.core import training
+from rasa.dialogue_understanding.patterns.completed import (
+    CompletedPatternFlowStackFrame,
+)
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     ACTION_SESSION_START_NAME,
@@ -92,7 +95,6 @@ from tests.dialogues import (
     TEST_DOMAINS_FOR_DIALOGUES,
 )
 from tests.core.utilities import tracker_from_dialogue, user_uttered, get_tracker
-
 from rasa.shared.nlu.constants import (
     ACTION_NAME,
     METADATA_MODEL_ID,
@@ -592,7 +594,6 @@ def test_tracker_init_copy(domain: Domain):
 
 def _load_tracker_from_json(tracker_dump: Text, domain: Domain) -> DialogueStateTracker:
     """Read the json dump from the file and instantiate a tracker it."""
-
     tracker_json = json.loads(rasa.shared.utils.io.read_file(tracker_dump))
     sender_id = tracker_json.get("sender_id", DEFAULT_SENDER_ID)
     return DialogueStateTracker.from_dict(
@@ -2037,3 +2038,34 @@ def test_tracker_active_flow_property():
     tracker.update_stack(stack)
 
     assert tracker.active_flow == flow_id
+
+
+def test_has_active_user_flow_returns_true():
+    tracker = get_tracker([])
+
+    user_frame = UserFlowStackFrame(
+        frame_id="9QZVI2CV",
+        flow_id="search_rental_car",
+        step_id="9_collect_car_rental_booking_confirmation",
+    )
+    stack = DialogueStack(frames=[user_frame])
+
+    tracker.update_stack(stack)
+
+    assert tracker.has_active_user_flow
+
+
+def test_has_active_user_flow_returns_false():
+    tracker = get_tracker([])
+
+    user_frame = CompletedPatternFlowStackFrame(
+        frame_id="TPFKKMEO",
+        flow_id="pattern_completed",
+        step_id="0_action_listen",
+        previous_flow_name="search rental car",
+    )
+    stack = DialogueStack(frames=[user_frame])
+
+    tracker.update_stack(stack)
+
+    assert not tracker.has_active_user_flow

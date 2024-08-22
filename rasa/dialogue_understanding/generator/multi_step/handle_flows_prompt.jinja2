@@ -11,7 +11,7 @@ Here is the current conversation:
 {{ current_conversation }}
 
 ===
-{% if current_flow != None %}You are currently in the flow "{{ current_flow }}".{% else %}You are currently not in any flow.{% endif %}
+{% if current_flow != None and not top_flow_is_pattern%}You are currently in the flow "{{ current_flow }}".{% else %}You are currently not in any flow.{% endif %}
 
 ===
 Based on this information generate a list of actions, you want to take. Any logic of what happens afterwards is handled
