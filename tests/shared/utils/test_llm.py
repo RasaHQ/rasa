@@ -3,6 +3,7 @@ from typing import Text, Any, Dict, Optional
 import pytest
 from pathlib import Path
 from pytest import MonkeyPatch
+from unittest import mock
 from rasa.shared.constants import (
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
@@ -505,10 +506,10 @@ def test_llm_factory_raises_exception_when_azure_openai_client_setup_is_invalid(
     """
 
     required_env_vars = ["AZURE_API_KEY", "AZURE_API_BASE", "AZURE_API_VERSION"]
-
     for env_var in required_env_vars:
         monkeypatch.setenv(env_var, "test")
         with pytest.raises(ProviderClientValidationError):
+            llm_factory.clear_cache()
             llm_factory(
                 {
                     "deployment": "azure/my-test-gpt-deployment-on-azure",
@@ -922,3 +923,234 @@ def test_ensure_cache_creates_creates_diskcache_sqlite_db(
     # cache.db is the database name that is
     # created in the given directory
     assert (cache_dir / "rasa-llm-cache" / "cache.db").exists()
+
+
+def test_llm_cache_factory() -> None:
+    with mock.patch(
+        "rasa.shared.utils.llm.get_llm_client_from_provider"
+    ) as mock_get_llm_client_from_provider:
+        # Reset the cache as the cache is shared across tests.
+        llm_factory.clear_cache()
+
+        mock_get_llm_client_from_provider.reset_mock()
+        # Call llm_factory with the first set of configs.
+        llm_factory(
+            {"api_type": "openai", "model": "test-gpt"},
+            {"_type": "foobar", "model": "foo"},
+        )
+        # Cache miss!
+        mock_get_llm_client_from_provider.assert_called_once()
+        # Reset the mock to track the next call
+        mock_get_llm_client_from_provider.reset_mock()
+
+        # Call llm_factory with the second set of configs.
+        llm_factory(
+            {"api_type": "openai", "model": "test-gpt-1000"},
+            {"_type": "foobar", "model": "foo"},
+        )
+        # Cache miss!
+        mock_get_llm_client_from_provider.assert_called_once()
+        # Reset the mock to track the next call
+        mock_get_llm_client_from_provider.reset_mock()
+
+        # Call llm_factory with the third set of configs.
+        llm_factory(
+            {"api_type": "openai", "model": "test-gpt"},
+            {"_type": "buzz", "model": "foo"},
+        )
+        # Cache miss!
+        mock_get_llm_client_from_provider.assert_called_once()
+        # Reset the mock to track the next call
+        mock_get_llm_client_from_provider.reset_mock()
+
+        # Call llm_factory with the first set of configs again
+        llm_factory(
+            {"api_type": "openai", "model": "test-gpt"},
+            {"_type": "foobar", "model": "foo"},
+        )
+        # Cache hit!
+        mock_get_llm_client_from_provider.assert_not_called()
+
+        # Call llm_factory with the second set of configs again
+        llm_factory(
+            {"api_type": "openai", "model": "test-gpt-1000"},
+            {"_type": "foobar", "model": "foo"},
+        )
+        # Cache hit!
+        mock_get_llm_client_from_provider.assert_not_called()
+
+
+def test_cache_factory_ensures_no_mixup_between_llm_and_embedder_factory() -> None:
+    with mock.patch(
+        "rasa.shared.utils.llm.get_llm_client_from_provider"
+    ) as mock_get_llm_client_from_provider, mock.patch(
+        "rasa.shared.utils.llm.get_embedding_client_from_provider"
+    ) as mock_get_embedding_client_from_provider:
+        # Reset the cache as the cache is shared across tests.
+        llm_factory.clear_cache()
+        embedder_factory.clear_cache()
+
+        # Call llm_factory with the first set of configs.
+        llm_factory(
+            {"api_type": "openai", "model": "test-gpt"},
+            {"_type": "foobar", "model": "foo"},
+        )
+        # Cache miss!
+        mock_get_llm_client_from_provider.assert_called_once()
+        # Ensure that the embedder factory is not called.
+        mock_get_embedding_client_from_provider.assert_not_called()
+
+        # Reset the mocks to track the next calls
+        mock_get_llm_client_from_provider.reset_mock()
+
+        # Call embedder_factory with the same configs.
+        embedder_factory(
+            {"api_type": "openai", "model": "test-gpt"},
+            {"_type": "foobar", "model": "foo"},
+        )
+        # Ensure that the llm factory is not called.
+        mock_get_llm_client_from_provider.assert_not_called()
+        # Cache miss!
+        mock_get_embedding_client_from_provider.assert_called_once()
+
+        # Reset the mocks to track the next calls
+        mock_get_embedding_client_from_provider.reset_mock()
+
+        # Call llm_factory with the same configs again.
+        llm_factory(
+            {"api_type": "openai", "model": "test-gpt"},
+            {"_type": "foobar", "model": "foo"},
+        )
+        # Cache hit!
+        mock_get_llm_client_from_provider.assert_not_called()
+
+        # Call embedder_factory with the same configs again.
+        embedder_factory(
+            {"api_type": "openai", "model": "test-gpt"},
+            {"_type": "foobar", "model": "foo"},
+        )
+        # Cache hit!
+        mock_get_embedding_client_from_provider.assert_not_called()
+
+
+def test_llm_cache_factory_for_config_keys_in_different_order() -> None:
+    with mock.patch(
+        "rasa.shared.utils.llm.get_llm_client_from_provider"
+    ) as mock_get_llm_client_from_provider:
+        # Reset the cache as the cache is shared across tests.
+        llm_factory.clear_cache()
+
+        # Call llm_factory with the 1st set of configs
+        llm_factory(
+            {"api_type": "openai", "model": "test-gpt"},
+            {"_type": "foobar", "model": "foo"},
+        )
+        # Cache miss!
+        mock_get_llm_client_from_provider.assert_called_once()
+
+        # Reset the mock to track the second call
+        mock_get_llm_client_from_provider.reset_mock()
+
+        # Call llm_factory with the 2nd set of configs (same keys, different order)
+        llm_factory(
+            {"model": "test-gpt", "api_type": "openai"},
+            {"model": "foo", "_type": "foobar"},
+        )
+        # Cache hit!
+        mock_get_llm_client_from_provider.assert_not_called()
+
+
+def test_embedder_cache_factory() -> None:
+    with mock.patch(
+        "rasa.shared.utils.llm.get_embedding_client_from_provider"
+    ) as mock_get_embedding_client_from_provider:
+        # Reset the cache as the cache is shared across tests.
+        embedder_factory.clear_cache()
+
+        # Call embedder_factory with the 1st set of configs
+        embedder_factory(
+            {"api_type": "openai", "model": "test-embedding"},
+            {"_type": "foobar", "model": "foo"},
+        )
+        # Cache miss!
+        mock_get_embedding_client_from_provider.assert_called_once()
+        # Reset the mock to track the next call
+        mock_get_embedding_client_from_provider.reset_mock()
+
+        # Call embedder_factory with the 2nd set of configs
+        embedder_factory(
+            {"api_type": "openai", "model": "test-embedding-1000"},
+            {"_type": "foobar", "model": "foo"},
+        )
+        # Cache miss!
+        mock_get_embedding_client_from_provider.assert_called_once()
+        # Reset the mock to track the next call
+        mock_get_embedding_client_from_provider.reset_mock()
+
+        # Call embedder_factory with the 3rd set of configs
+        embedder_factory(
+            {"api_type": "openai", "model": "test-embedding"},
+            {"_type": "buzz", "model": "foo"},
+        )
+        # Cache miss!
+        mock_get_embedding_client_from_provider.assert_called_once()
+        # Reset the mock to track the next call
+        mock_get_embedding_client_from_provider.reset_mock()
+
+        # Call embedder_factory with the 1st set of configs again
+        embedder_factory(
+            {"api_type": "openai", "model": "test-embedding"},
+            {"_type": "foobar", "model": "foo"},
+        )
+        # Cache hit!
+        mock_get_embedding_client_from_provider.assert_not_called()
+
+        # Call embedder_factory with the 3rd set of configs again
+        embedder_factory(
+            {"api_type": "openai", "model": "test-embedding"},
+            {"_type": "buzz", "model": "foo"},
+        )
+        # Cache hit!
+        mock_get_embedding_client_from_provider.assert_not_called()
+
+
+def test_embedder_cache_factory_for_config_keys_in_different_order() -> None:
+    with mock.patch(
+        "rasa.shared.utils.llm.get_embedding_client_from_provider"
+    ) as mock_get_embedding_client_from_provider:
+        # Reset the cache as the cache is shared across tests.
+        embedder_factory.clear_cache()
+
+        # Call embedder_factory with the 1st set of configs
+        embedder_factory(
+            {"api_type": "openai", "model": "test-embedding"},
+            {"_type": "foobar", "model": "foo"},
+        )
+        # Cache miss!
+        mock_get_embedding_client_from_provider.assert_called_once()
+
+        # Reset the mock to track the second call
+        mock_get_embedding_client_from_provider.reset_mock()
+
+        # Call embedder_factory with the 2nd set of configs (same keys, different order)
+        embedder_factory(
+            {"model": "test-embedding", "api_type": "openai"},
+            {"model": "foo", "_type": "foobar"},
+        )
+        # Cache hit!
+        mock_get_embedding_client_from_provider.assert_not_called()
+
+
+def test_to_show_that_cache_is_persisted_across_different_calls() -> None:
+    with mock.patch(
+        "rasa.shared.utils.llm.get_embedding_client_from_provider"
+    ) as mock_get_embedding_client_from_provider:
+        # Cache is not reset, hence the cache is shared across tests.
+        # Call embedder_factory with the config used in the previous test -
+        # test_embedder_cache_factory_for_config_keys_in_different_order.
+        embedder_factory(
+            {"api_type": "openai", "model": "test-embedding"},
+            {"_type": "foobar", "model": "foo"},
+        )
+        # Cache hit!
+        mock_get_embedding_client_from_provider.assert_not_called()
