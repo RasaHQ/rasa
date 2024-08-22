@@ -811,7 +811,7 @@ jobs:
 
   unit-test:
     name: Run Unit Tests
-    runs-on: ubuntu-22.04-8core
+    runs-on: ubuntu-22.04-4core
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -884,7 +884,7 @@ jobs:
 
   test-anonymization:
     name: Run Anonymization Unit Tests
-    runs-on: ubuntu-22.04-8core
+    runs-on: ubuntu-22.04-4core
     timeout-minutes: 60
     strategy:
       fail-fast: false
