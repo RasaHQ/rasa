@@ -189,73 +189,6 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
             return []
 
         try:
-            # retrieve relevant flows
-            filtered_flows = await self.filter_flows(message, flows, tracker)
-
-            # 1st step: Handle active flow
-            if tracker.has_active_user_flow:
-                commands_from_active_flow = (
-                    await self._predict_commands_for_active_flow(
-                        message,
-                        tracker,
-                        available_flows=filtered_flows,
-                        all_flows=flows,
-                    )
-                )
-            else:
-                commands_from_active_flow = []
-
-            # 2nd step: Check if we need to switch to another flow
-            contains_change_flow_command = any(
-                isinstance(command, ChangeFlowCommand)
-                for command in commands_from_active_flow
-            )
-            should_change_flows = (
-                not commands_from_active_flow or contains_change_flow_command
-            )
-
-            if should_change_flows:
-                commands_for_handling_flows = (
-                    await self._predict_commands_for_handling_flows(
-                        message,
-                        tracker,
-                        available_flows=filtered_flows,
-                        all_flows=flows,
-                    )
-                )
-            else:
-                commands_for_handling_flows = []
-
-            if contains_change_flow_command:
-                commands_from_active_flow.pop(
-                    commands_from_active_flow.index(ChangeFlowCommand())
-                )
-
-            # 3rd step: Fill slots for started flows
-            newly_started_flows = FlowsList(
-                [
-                    flow
-                    for command in commands_for_handling_flows
-                    if (
-                        isinstance(command, StartFlowCommand)
-                        and (flow := filtered_flows.flow_by_id(command.flow))
-                        is not None
-                    )
-                ]
-            )
-
-            commands_for_newly_started_flows = (
-                await self._predict_commands_for_newly_started_flows(
-                    message,
-                    tracker,
-                    newly_started_flows=newly_started_flows,
-                    all_flows=flows,
-                )
-            )
-
-            # if any step resulted in API exception,
-            # the command prediction cannot be completed,
-            # raise ErrorCommand
             commands = await self._predict_commands_with_multi_step(
                 message, flows, tracker
             )
@@ -361,7 +294,7 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
                     flow
                     for flow in options
                     if flow in flows.user_flow_ids
-                    and flow not in user_flows_on_the_stack(tracker.stack)
+                       and flow not in user_flows_on_the_stack(tracker.stack)
                 ]
                 if len(valid_options) == 1:
                     commands.extend(cls.start_flow_by_name(valid_options[0], flows))
@@ -510,9 +443,9 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
                 flow
                 for command in commands_for_handling_flows
                 if (
-                    isinstance(command, StartFlowCommand)
-                    and (flow := filtered_flows.flow_by_id(command.flow)) is not None
-                )
+                isinstance(command, StartFlowCommand)
+                and (flow := filtered_flows.flow_by_id(command.flow)) is not None
+            )
             ]
         )
 
