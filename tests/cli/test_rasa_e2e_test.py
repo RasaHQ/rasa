@@ -761,15 +761,16 @@ def test_save_test_cases_to_yaml(tmp_path: Path):
 
     with capture_logs() as logs:
         save_test_cases_to_yaml(test_results, str(tmp_path), STATUS_PASSED, test_suite)
+        output_file_path = str(tmp_path / f"{STATUS_PASSED}.yml")
         assert len(logs) == 2
         assert logs[0]["log_level"] == "info"
         assert logs[0]["message"] == (
-            "E2e tests with 'passed' status are written to file 'passed.yml'."
+            f"E2e tests with 'passed' status are written to file: '{output_file_path}'."
         )
         assert logs[1]["log_level"] == "info"
         assert logs[1]["message"] == (
-            "You can use the file 'passed.yml' in case you want to create training "
-            "data for fine-tuning an LLM via 'rasa llm finetune prepare-data'."
+            f"You can use the file: '{output_file_path}' in case you want to create "
+            "training data for fine-tuning an LLM via 'rasa llm finetune prepare-data'."
         )
 
     actual_test_suite = read_test_cases(str(tmp_path / "passed.yml"))
@@ -869,15 +870,15 @@ def test_print_test_result_without_aggregate_stats(
         _save_tested_commands_histogram(count_dict, test_status, output_dir)
 
         # Check that savefig was called with the correct path
-        expected_save_path: str = os.path.join(output_dir, output_filename)
-        mock_savefig.assert_called_once_with(expected_save_path)
+        expected_output_file_path: str = os.path.join(output_dir, output_filename)
+        mock_savefig.assert_called_once_with(expected_output_file_path)
         plt.close()  # Close the plot to clean up the state for other tests
 
         # Check that structlogger.info was called with the correct parameters
         mock_info.assert_called_once_with(
             "rasa.e2e_test._save_tested_commands_histogram",
-            message=f"Commands histogram for {test_status} e2e tests"
-            f"is written to '{output_filename}'.",
+            message=f"Commands histogram for {test_status} e2e tests "
+            f"are written to '{expected_output_file_path}'.",
         )
 
         # Ensure that the file path was joined correctly

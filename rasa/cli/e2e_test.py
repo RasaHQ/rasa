@@ -461,14 +461,12 @@ def _save_coverage_report(
             rasa.shared.utils.cli.print_error(report.to_string(index=False))
 
     output_filename = f"coverage_report_for_{test_status}_tests.csv"
-    report.to_csv(
-        os.path.join(output_dir, output_filename),
-        index=False,
-    )
+    output_file_path = os.path.join(output_dir, output_filename)
+    report.to_csv(output_file_path, index=False)
     structlogger.info(
         "rasa.e2e_test.save_coverage_report",
         message=f"Coverage result for {test_status} e2e tests"
-        f"is written to '{output_filename}'.",
+        f" is written to '{output_file_path}'.",
     )
 
 
@@ -781,20 +779,19 @@ def save_test_cases_to_yaml(
     )
 
     output_filename = f"{status}.yml"
-    rasa.utils.io.write_yaml(
-        new_test_suite.as_dict(), target=os.path.join(output_dir, output_filename)
-    )
+    output_file_path = os.path.join(output_dir, output_filename)
+    rasa.utils.io.write_yaml(new_test_suite.as_dict(), target=output_file_path)
 
     structlogger.info(
         "rasa.e2e_test.save_e2e_test_cases",
-        message=f"E2e tests with '{status}' status are written to file "
-        f"'{output_filename}'.",
+        message=f"E2e tests with '{status}' status are written to file: "
+        f"'{output_file_path}'.",
     )
     if status == STATUS_PASSED:
         structlogger.info(
             "rasa.e2e_test.save_e2e_test_cases",
-            message=f"You can use the file '{output_filename}' in case you want "
-            f"to create training data for fine-tuning an LLM via "
+            message=f"You can use the file: '{output_file_path}' in case you want to "
+            f"create training data for fine-tuning an LLM via "
             f"'rasa llm finetune prepare-data'.",
         )
 
@@ -868,12 +865,12 @@ def _save_tested_commands_histogram(
         )
 
     output_filename = f"commands_histogram_for_{test_status}_tests.png"
-    save_path = os.path.join(output_dir, output_filename)
-    plt.savefig(save_path)
+    output_file_path = os.path.join(output_dir, output_filename)
+    plt.savefig(output_file_path)
     plt.close()
 
     structlogger.info(
         "rasa.e2e_test._save_tested_commands_histogram",
-        message=f"Commands histogram for {test_status} e2e tests"
-        f"is written to '{output_filename}'.",
+        message=f"Commands histogram for {test_status} e2e tests "
+        f"are written to '{output_file_path}'.",
     )
