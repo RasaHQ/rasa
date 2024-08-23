@@ -230,6 +230,40 @@ class TestAzureOpenAIEmbeddingClient:
         assert client.api_version == "deprecated_v1"
         assert os.environ.get(OPENAI_API_KEY_ENV_VAR) == "key"
 
+    def test_azure_openai_embedding_client_with_combined_deprecated_and_new_env_vars(
+        self,
+        monkeypatch: MonkeyPatch,
+    ):
+        # Given
+        monkeypatch.setenv(OPENAI_API_BASE_ENV_VAR, "https://test")
+        monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "key")
+        monkeypatch.setenv(OPENAI_API_VERSION_ENV_VAR, "deprecated_v1")
+
+        monkeypatch.setenv(AZURE_API_BASE_ENV_VAR, "https://test")
+        monkeypatch.setenv(AZURE_API_KEY_ENV_VAR, "key")
+        monkeypatch.setenv(AZURE_API_VERSION_ENV_VAR, "deprecated_v1")
+
+        config = {
+            "deployment": "some_azure_deployment",
+            "api_type": "azure",
+            "model": "gpt-2024",
+        }
+
+        # When
+        with pytest.warns(None) as record:
+            client = AzureOpenAIEmbeddingClient.from_config(config)
+
+        future_warnings = [
+            warning for warning in record if warning.category == FutureWarning
+        ]
+
+        # Then
+        assert len(future_warnings) == 0
+        assert client.api_base == "https://test"
+        assert client.api_type == "azure"
+        assert client.api_version == "deprecated_v1"
+        assert os.environ.get(OPENAI_API_KEY_ENV_VAR) == "key"
+
     def test_azure_openai_embedding_client_validation_error(
         self, monkeypatch: MonkeyPatch
     ) -> None:
