@@ -193,22 +193,25 @@ class TestStep:
 
         result = self._underlying.copy()
 
-        # Handle 'slot_was_set'
-        if KEY_SLOT_SET in self._underlying and isinstance(
-            self._underlying[KEY_SLOT_SET], OrderedDict
-        ):
-            result[KEY_SLOT_SET] = [
-                {key: value} for key, value in self._underlying[KEY_SLOT_SET].items()
-            ]
+        def _handle_slots(key: str) -> None:
+            """Slots should be a list of strings or dicts."""
+            if (
+                self._underlying
+                and key in self._underlying
+                and isinstance(self._underlying[key], OrderedDict)
+            ):
+                result[key] = [
+                    {key: value} for key, value in self._underlying[key].items()
+                ]
+            elif (
+                self._underlying
+                and key in self._underlying
+                and isinstance(self._underlying[key], str)
+            ):
+                result[key] = [self._underlying[key]]
 
-        # Handle 'slot_was_not_set'
-        if KEY_SLOT_NOT_SET in self._underlying and isinstance(
-            self._underlying[KEY_SLOT_NOT_SET], OrderedDict
-        ):
-            result[KEY_SLOT_NOT_SET] = [
-                {key: value}
-                for key, value in self._underlying[KEY_SLOT_NOT_SET].items()
-            ]
+        _handle_slots(KEY_SLOT_SET)
+        _handle_slots(KEY_SLOT_NOT_SET)
 
         return result
 
