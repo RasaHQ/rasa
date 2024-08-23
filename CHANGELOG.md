@@ -10,6 +10,20 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.9.9] - 2024-08-23
+                       
+Rasa Pro 3.9.9 (2024-08-23)                            
+### Bugfixes
+- [#1135](https://github.com/rasahq/rasa-private/issues/1135): Updated behaviour of policies in coexistence:
+
+  * CALM policies run in case the routing slot is set to `True` (routing to CALM).
+  * Policies of the nlu-based system run in case the routing slot is set to `False` (routing to NLU-based system) or
+    `None` (non-sticky routing).
+- [#1154](https://github.com/rasahq/rasa-private/issues/1154): Don't create an instance of `FlowRetrieval` in the command generators in case no flows exists.
+- [#1203](https://github.com/rasahq/rasa-private/issues/1203): Patterns do not count as active flows in `MultiStepLLMCommandGenerator` anymore.
+- [#1255](https://github.com/rasahq/rasa-private/issues/1255): Make sure that all e2e test cases in rasa inspector are valid.
+
+
 ## [3.9.8] - 2024-08-21
                        
 Rasa Pro 3.9.8 (2024-08-21)                            
