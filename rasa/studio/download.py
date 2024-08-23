@@ -77,7 +77,7 @@ def _handle_file_overwrite(
     return path, write_file
 
 
-def _prepare_data_and_domain_paths(args: argparse.Namespace) -> Tuple[Path, list[Path]]:
+def _prepare_data_and_domain_paths(args: argparse.Namespace) -> Tuple[Path, List[Path]]:
     """Handles the logic for preparing the domain and data paths
     based on the provided arguments.
 
