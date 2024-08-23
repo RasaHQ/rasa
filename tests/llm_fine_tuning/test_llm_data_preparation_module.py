@@ -102,7 +102,9 @@ def conversation_mentioning_two_slots_upfront() -> Conversation:
         [
             ConversationStep(
                 test_case.steps[0],
-                [StartFlowCommand("transfer_money"), SetSlotCommand("transfer_money_recipient", "Maria"), SetSlotCommand("transfer_money_amount_of_money", "413")
+                [StartFlowCommand("transfer_money"),
+                 SetSlotCommand("transfer_money_recipient", "Maria"),
+                 SetSlotCommand("transfer_money_amount_of_money", "413")
                  ],
                 """
                 Here is what happened previously in the conversation:
@@ -302,7 +304,8 @@ def test_create_data_point(conversation: Conversation):
     assert data_point.rephrased_user_utterance == rephrased_user_message
 
 
-def test_create_data_point_output_contains_multiple_commands(conversation_mentioning_two_slots_upfront: Conversation):
+def test_create_data_point_output_contains_multiple_commands(
+        conversation_mentioning_two_slots_upfront: Conversation):
     step = conversation_mentioning_two_slots_upfront.steps[0]
     prompt = """
     Here is what happened previously in the conversation:
@@ -312,12 +315,16 @@ def test_create_data_point_output_contains_multiple_commands(conversation_mentio
     """
     rephrased_user_message = "Send 413$ to Maria"
 
-    data_point = _create_data_point(prompt, step, conversation_mentioning_two_slots_upfront, rephrased_user_message)
+    data_point = _create_data_point(prompt,
+                                    step,
+                                    conversation_mentioning_two_slots_upfront,
+                                    rephrased_user_message)
 
     assert isinstance(data_point, LLMDataExample)
     assert data_point.prompt == prompt
-    assert data_point.output == 'StartFlow(transfer_money)\nSetSlot(transfer_money_recipient, Maria)\nSetSlot(transfer_money_amount_of_money, 413)'
-    assert data_point.original_test_name == conversation_mentioning_two_slots_upfront.get_full_name()
+    assert data_point.output == "StartFlow(transfer_money)\nSetSlot(transfer_money_recipient, Maria)\nSetSlot(transfer_money_amount_of_money, 413)" # noqa: E501
+    assert (data_point.original_test_name == conversation_mentioning_two_slots_upfront
+            .get_full_name())
     assert data_point.original_user_utterance == step.original_test_step.text
     assert data_point.rephrased_user_utterance == rephrased_user_message
 
