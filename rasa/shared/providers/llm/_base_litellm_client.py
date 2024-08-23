@@ -9,6 +9,10 @@ from rasa.shared.exceptions import (
     ProviderClientAPIException,
     ProviderClientValidationError,
 )
+from rasa.shared.providers._ssl_verification_utils import (
+    ensure_ssl_certificates_for_litellm_non_openai_based_clients,
+    ensure_ssl_certificates_for_litellm_openai_based_clients,
+)
 from rasa.shared.providers.llm.llm_response import LLMResponse, LLMUsage
 from rasa.shared.utils.io import suppress_logs
 
@@ -208,8 +212,16 @@ class _BaseLiteLLMClient:
 
     @staticmethod
     def _ensure_certificates() -> None:
-        from rasa.shared.providers._ssl_verification_utils import (
-            ensure_ssl_certificates_for_litellm,
-        )
+        """
+        Configures SSL certificates for LiteLLM. This method is invoked during
+        client initialization.
 
-        ensure_ssl_certificates_for_litellm()
+        LiteLLM may utilize `openai` clients or other providers that require
+        SSL verification settings through the `SSL_VERIFY` / `SSL_CERTIFICATE`
+        environment variables or the `litellm.ssl_verify` /
+        `litellm.ssl_certificate` global settings.
+
+        This method ensures proper SSL configuration for both cases.
+        """
+        ensure_ssl_certificates_for_litellm_non_openai_based_clients()
+        ensure_ssl_certificates_for_litellm_openai_based_clients()
