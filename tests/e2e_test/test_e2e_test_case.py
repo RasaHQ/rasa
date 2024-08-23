@@ -1,13 +1,15 @@
 from typing import Any, Dict, List, Union
+from collections import OrderedDict
 
 import pytest
+
+from rasa.e2e_test.constants import KEY_SLOT_NOT_SET, KEY_SLOT_SET
 from rasa.shared.core.events import (
     BotUttered,
     Event,
     SlotSet,
     UserUttered,
 )
-
 from rasa.e2e_test.e2e_test_case import (
     ActualStepOutput,
     Fixture,
@@ -430,3 +432,52 @@ def test_remove_slot_set_event(
     assert actual_step_output.events == after
     for event in remove:
         assert event not in actual_step_output.slot_set_events
+
+
+@pytest.mark.parametrize(
+    "test_step, expected_dict",
+    [
+        (TestStep.from_dict({"bot": "Hi!"}), {"bot": "Hi!"}),
+        (TestStep.from_dict({"user": "Hello"}), {"user": "Hello"}),
+        (
+            TestStep.from_dict({KEY_SLOT_NOT_SET: [{"slot_name": "slot_value"}]}),
+            {KEY_SLOT_NOT_SET: [{"slot_name": "slot_value"}]},
+        ),
+        (
+            TestStep.from_dict(
+                {KEY_SLOT_NOT_SET: OrderedDict([("slot_name", "slot_value")])}
+            ),
+            {KEY_SLOT_NOT_SET: [{"slot_name": "slot_value"}]},
+        ),
+        (
+            TestStep.from_dict({KEY_SLOT_NOT_SET: ["slot_name", "another_slot"]}),
+            {KEY_SLOT_NOT_SET: ["slot_name", "another_slot"]},
+        ),
+        (
+            TestStep.from_dict({KEY_SLOT_NOT_SET: "slot_name"}),
+            {KEY_SLOT_NOT_SET: ["slot_name"]},
+        ),
+        (
+            TestStep.from_dict({KEY_SLOT_SET: [{"slot_name": "slot_value"}]}),
+            {KEY_SLOT_SET: [{"slot_name": "slot_value"}]},
+        ),
+        (
+            TestStep.from_dict(
+                {KEY_SLOT_SET: OrderedDict([("another_slot", "another_value")])}
+            ),
+            {KEY_SLOT_SET: [{"another_slot": "another_value"}]},
+        ),
+        (
+            TestStep.from_dict({KEY_SLOT_SET: ["slot_name", "another_slot"]}),
+            {KEY_SLOT_SET: ["slot_name", "another_slot"]},
+        ),
+        (
+            TestStep.from_dict({KEY_SLOT_SET: "slot_name"}),
+            {KEY_SLOT_SET: ["slot_name"]},
+        ),
+    ],
+)
+def test_test_step_as_dict_in_yaml_format(
+    test_step: TestStep, expected_dict: Dict[str, Any]
+):
+    assert expected_dict == test_step.as_dict_yaml_format()
