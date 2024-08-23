@@ -1,7 +1,7 @@
 from typing import Text, Any, Dict
 
 import structlog
-from langchain.vectorstores.milvus import Milvus
+from langchain_community.vectorstores.milvus import Milvus
 from rasa.utils.endpoints import EndpointConfig
 
 from rasa.core.information_retrieval import (

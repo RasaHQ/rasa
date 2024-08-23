@@ -1,33 +1,35 @@
-import asyncio
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock
 
 import pytest
 
 from rasa.core.actions.action import ActionBotResponse
 from rasa.core.channels import CollectingOutputChannel
-from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
+from rasa.core.constants import (
+    ACTIVE_FLOW_METADATA_KEY,
+    DEFAULT_REQUEST_TIMEOUT,
+    STEP_ID_METADATA_KEY,
+    UTTER_SOURCE_METADATA_KEY,
+)
 from rasa.core.nlg import CallbackNaturalLanguageGenerator
 from rasa.core.nlg.callback import nlg_request_format
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.utils.endpoints import EndpointConfig
 
 
 @pytest.fixture
-def mock_nlg_endpoint() -> MagicMock:
-    _mock_nlg_endpoint = MagicMock()
+def mock_nlg_endpoint() -> AsyncMock:
+    _mock_nlg_endpoint = AsyncMock(spec=EndpointConfig)
 
-    future = asyncio.Future()
-    future.set_result({})
-
-    _mock_nlg_endpoint.request = MagicMock()
-    _mock_nlg_endpoint.request.return_value = future
+    _mock_nlg_endpoint.url = "http://example.com"
+    _mock_nlg_endpoint.request.return_value = {}
     return _mock_nlg_endpoint
 
 
 async def test_action_bot_response_callback_nlg(
     domain_with_response_ids: Domain,
     default_tracker: DialogueStateTracker,
-    mock_nlg_endpoint: MagicMock,
+    mock_nlg_endpoint: AsyncMock,
 ):
     """Test the response returned by the callback NLG endpoint."""
     callback_nlg = CallbackNaturalLanguageGenerator(mock_nlg_endpoint)
@@ -50,13 +52,18 @@ async def test_action_bot_response_callback_nlg(
     )
 
     assert len(events) == 1
-    assert events[0].metadata == {"utter_action": "utter_one_id"}
+    assert events[0].metadata == {
+        "utter_action": "utter_one_id",
+        UTTER_SOURCE_METADATA_KEY: "CallbackNaturalLanguageGenerator",
+        ACTIVE_FLOW_METADATA_KEY: None,
+        STEP_ID_METADATA_KEY: None,
+    }
 
 
 async def test_action_bot_response_callback_with_multiple_response_id(
     domain_with_response_ids: Domain,
     default_tracker: DialogueStateTracker,
-    mock_nlg_endpoint: MagicMock,
+    mock_nlg_endpoint: AsyncMock,
 ) -> None:
     callback_nlg = CallbackNaturalLanguageGenerator(mock_nlg_endpoint)
 
@@ -78,13 +85,18 @@ async def test_action_bot_response_callback_with_multiple_response_id(
     )
 
     assert len(events) == 1
-    assert events[0].metadata == {"utter_action": "utter_multiple_ids"}
+    assert events[0].metadata == {
+        "utter_action": "utter_multiple_ids",
+        UTTER_SOURCE_METADATA_KEY: "CallbackNaturalLanguageGenerator",
+        ACTIVE_FLOW_METADATA_KEY: None,
+        STEP_ID_METADATA_KEY: None,
+    }
 
 
 async def test_action_bot_response_with_empty_response_id_set(
     domain_with_response_ids: Domain,
     default_tracker: DialogueStateTracker,
-    mock_nlg_endpoint: MagicMock,
+    mock_nlg_endpoint: AsyncMock,
 ) -> None:
     callback_nlg = CallbackNaturalLanguageGenerator(mock_nlg_endpoint)
 
@@ -106,13 +118,18 @@ async def test_action_bot_response_with_empty_response_id_set(
     )
 
     assert len(events) == 1
-    assert events[0].metadata == {"utter_action": "utter_no_id"}
+    assert events[0].metadata == {
+        "utter_action": "utter_no_id",
+        UTTER_SOURCE_METADATA_KEY: "CallbackNaturalLanguageGenerator",
+        ACTIVE_FLOW_METADATA_KEY: None,
+        STEP_ID_METADATA_KEY: None,
+    }
 
 
 async def test_action_bot_response_with_non_existing_id_mapping(
     domain_with_response_ids: Domain,
     default_tracker: DialogueStateTracker,
-    mock_nlg_endpoint: MagicMock,
+    mock_nlg_endpoint: AsyncMock,
 ) -> None:
     callback_nlg = CallbackNaturalLanguageGenerator(mock_nlg_endpoint)
 
@@ -134,4 +151,9 @@ async def test_action_bot_response_with_non_existing_id_mapping(
     )
 
     assert len(events) == 1
-    assert events[0].metadata == {"utter_action": "utter_non_existing"}
+    assert events[0].metadata == {
+        "utter_action": "utter_non_existing",
+        UTTER_SOURCE_METADATA_KEY: "CallbackNaturalLanguageGenerator",
+        ACTIVE_FLOW_METADATA_KEY: None,
+        STEP_ID_METADATA_KEY: None,
+    }

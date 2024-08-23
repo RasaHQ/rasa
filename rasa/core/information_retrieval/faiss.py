@@ -2,9 +2,10 @@ from pathlib import Path
 from typing import TYPE_CHECKING, List, Optional, Text, Any, Dict
 
 import structlog
-from langchain.document_loaders import DirectoryLoader, TextLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.vectorstores.faiss import FAISS
+from langchain_community.document_loaders.text import TextLoader
+from langchain_community.document_loaders.directory import DirectoryLoader
+from langchain_community.vectorstores.faiss import FAISS
 from rasa.utils.endpoints import EndpointConfig
 
 from rasa.core.information_retrieval import (
@@ -46,7 +47,9 @@ class FAISS_Store(InformationRetrieval):
             logger.info(
                 "information_retrieval.faiss_store.load_index", path=path.absolute()
             )
-            self.index = FAISS.load_local(str(path), embeddings)
+            self.index = FAISS.load_local(
+                str(path), embeddings, allow_dangerous_deserialization=True
+            )
 
     @staticmethod
     def load_documents(docs_folder: str) -> List["Document"]:

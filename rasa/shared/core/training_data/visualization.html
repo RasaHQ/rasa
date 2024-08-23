@@ -87,13 +87,13 @@
     // trigger a refresh by fetching an updated graph
     setInterval(function () {
       fetch(url).then(r => r.text()).then(dot => {
-        document.getElementById('errormsg').innerHTML = '';
+        document.getElementById('errormsg').innerText = '';
         if (oldInputGraphValue === dot) return;
 
         oldInputGraphValue = dot;
         drawGraph(dot);
       }).catch(err => {
-        document.getElementById('errormsg').innerHTML =
+        document.getElementById('errormsg').innerText=
           'Failed to update plot. (' + err.message + ')';
       });
     }, refreshInterval);

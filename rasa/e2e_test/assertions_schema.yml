@@ -1,0 +1,106 @@
+schema;assertions:
+  extensions:
+    - pykwalify_extensions.py
+  func: require_assertion_keys
+  type: "seq"
+  matching: "any"
+  sequence:
+  - type: map
+    mapping:
+       flow_started:
+         type: str
+         nullable: false
+       flow_completed:
+         type: map
+         mapping:
+           flow_id:
+             type: str
+             required: true
+           flow_step_id:
+             type: str
+       flow_cancelled:
+         type: map
+         mapping:
+           flow_id:
+             type: str
+             required: true
+           flow_step_id:
+             type: str
+       pattern_clarification_contains:
+         type: seq
+         matching: "all"
+         nullable: false
+         sequence:
+         - type: str
+           nullable: false
+       action_executed:
+         type: str
+         nullable: false
+       slot_was_set:
+         type: seq
+         matching: "all"
+         nullable: false
+         sequence:
+         - type: map
+           mapping:
+             name:
+               type: str
+               required: true
+             value:
+               type: any
+       slot_was_not_set:
+         type: seq
+         matching: "all"
+         nullable: false
+         sequence:
+         - type: map
+           mapping:
+             name:
+               type: str
+               required: true
+             value:
+               type: any
+       bot_uttered:
+         type: map
+         nullable: false
+         mapping:
+           utter_name:
+             type: str
+             nullable: false
+           buttons:
+             type: seq
+             nullable: false
+             matching: "all"
+             sequence:
+             - type: map
+               mapping:
+                 title:
+                   type: str
+                   nullable: false
+                 payload:
+                   type: str
+                   nullable: false
+           text_matches:
+             type: str
+             nullable: false
+       generative_response_is_relevant:
+         type: map
+         mapping:
+           threshold:
+             type: float
+             required: true
+           utter_name:
+             type: str
+             nullable: false
+       generative_response_is_grounded:
+         type: map
+         mapping:
+           threshold:
+             type: float
+             required: true
+           utter_name:
+             type: str
+             nullable: false
+           ground_truth:
+             type: str
+             nullable: false

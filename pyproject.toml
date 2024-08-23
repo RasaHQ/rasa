@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "rasa-pro"
-version = "3.9.9"
+version = "3.10.0rc1"
 description = "State-of-the-art open-core Conversational AI framework for Enterprises that natively leverages generative AI for effortless assistant development."
 authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
 maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
@@ -88,7 +88,7 @@ exclude = [ "eggs", ".git", ".pytest_cache", "build", "dist",]
 
 [tool.poetry.dependencies]
 python = ">=3.8.1,<3.11"
-boto3 = "^1.27.1"
+boto3 = "~1.27.1"
 google-cloud-storage = "^2.14.0"
 azure-storage-blob = ">=12.16.0, <12.17.0"
 requests = "~2.31.0"
@@ -110,8 +110,8 @@ webexteamssdk = ">=1.6.1,<1.7.0"
 mattermostwrapper = "~2.2"
 rocketchat_API = ">=1.30.0,<1.31.0"
 colorhash = ">=2.0,<2.1.0"
-jsonschema = ">=4.20,<4.21"
-packaging = "~21.3"
+jsonschema = ">=4.22"
+packaging = "~23.2"
 pytz = ">=2022.7.1,<2023.0"
 colorclass = "~2.2"
 terminaltables = "~3.1.10"
@@ -153,9 +153,10 @@ portalocker = "^2.7.0"
 pypred = "^0.4.0"
 structlog = ">=23.1.0,<23.2.0"
 structlog-sentry = "^2.0.3"
-langchain = "^0.0.329"
+langchain = "~0.2.0"
+langchain-community = "~0.2.0"
 jinja2 = "^3.1.4"
-openai = "^0.28.1"
+openai = "~1.40.0"
 dnspython = "2.6.1"
 wheel = ">=0.40.0"
 certifi = ">=2024.2.2"
@@ -173,17 +174,20 @@ hvac = "^1.2.1"
 rich = "^13.4.2"
 cvg-python-sdk = "^0.5.1"
 presidio-analyzer = "^2.2.33, <2.2.34"
-presidio-anonymizer = "^2.2.33, <2.2.34"
-faker = "^19.13.0"
-python-keycloak = "^3.7.0"
-tiktoken = "^0.4.0"
+presidio-anonymizer = "^2.2.354"
+faker = "^26.0.0"
+python-keycloak = "^3.12.0"
+tiktoken = "~0.7.0"
 faiss-cpu = "^1.7.4"
 pycountry = "^22.3.5"
-pymilvus = "^2.3.6"
+pymilvus = "<2.4.2" # pinned because 2.4.2 introduces milvus-lite dependency that fails on windows
 qdrant-client = "^1.9.0"
 psutil = "^5.9.5"
-tenacity = "~8.4.1"
+tenacity = "~8.4.1"  # pinned down because of langchain
 types-protobuf = "4.25.0.20240417"
+litellm = "^1.43.6"
+openpyxl = "^3.1.5"
+diskcache = "~5.6.3"
 [[tool.poetry.dependencies.tensorflow-io-gcs-filesystem]]
 version = "==0.31"
 markers = "sys_platform == 'win32'"
@@ -202,13 +206,7 @@ python = ">=3.8,<3.11"
 
 [[tool.poetry.dependencies.numpy]]
 version = ">=1.23.5,<1.25.0"
-markers = "sys_platform != 'win32' or platform_python_implementation == 'PyPy'"
 python = ">=3.8,<3.11"
-
-[[tool.poetry.dependencies.numpy]]
-version = "1.22.3"
-markers = "sys_platform =='win32' and platform_python_implementation != 'PyPy'"
-python = "3.10"
 
 [[tool.poetry.dependencies.scipy]]
 version = ">=1.10.1,<1.11.0"
@@ -226,6 +224,10 @@ optional = true
 version = "^2.0"
 optional = true
 
+[[tool.poetry.dependencies.mlflow]]
+version = "^2.15.1"
+optional = true
+
 [tool.poetry.extras]
 spacy = [ "spacy",]
 jieba = [ "jieba",]
@@ -233,11 +235,26 @@ transformers = [ "transformers", "sentencepiece",]
 full = [ "spacy", "transformers", "sentencepiece", "jieba",]
 gh-release-notes = [ "github3.py",]
 metal = [ "tensorflow-metal",]
+mlflow = [ "mlflow",]
 
 [tool.poetry.scripts]
 rasa = "rasa.__main__:main"
 
 [tool.ruff.lint]
+# The following checks are disabled because they are not relevant for Rasa
+# - RUF001: Checks for ambiguous Unicode characters in strings. https://docs.astral.sh/ruff/rules/ambiguous-unicode-character-string/
+# - RUF002: Checks for ambiguous Unicode characters in docstrings. https://docs.astral.sh/ruff/rules/ambiguous-unicode-character-docstring/
+# - RUF003: Checks for ambiguous Unicode characters in comments. https://docs.astral.sh/ruff/rules/ambiguous-unicode-character-comment/
+# - RUF005: Use of + operator for string concatenation https://docs.astral.sh/ruff/rules/collection-literal-concatenation/
+# Following checks are currently disabled but will be enabled in the future
+# as part of the ticket https://rasahq.atlassian.net/browse/ATO-866
+# - D100: Missing docstring in public module
+# - D101: Missing docstring in public class
+# - D102: Missing docstring in public method
+# - D103: Missing docstring in public function
+# - D104: Missing docstring in public package
+# - D105: Missing docstring in magic method
+# - D107: Missing docstring in __init__
 ignore = [ "D100", "D101", "D102", "D103", "D104", "D105", "D107", "RUF001", "RUF002", "RUF003", "RUF005",]
 select = [ "D", "E", "F", "W", "RUF",]
 
@@ -252,7 +269,7 @@ timeout_func_only = true
 asyncio_mode = "auto"
 
 [tool.poetry.dependencies.rasa-sdk]
-version = "3.9.1"
+version = "3.10.0rc1"
 allow-prereleases = true
 
 [tool.poetry.dependencies.tensorflow]
@@ -327,11 +344,11 @@ pytest-cov = "^4.0.0"
 pytest-asyncio = "^0.20.0"
 pytest-xdist = "^3.2.1"
 pytest = "^7.1.3"
-freezegun = "^1.0.0"
+freezegun = "^1.5.1"
 responses = ">=0.22,<0.25"
 aioresponses = "^0.7.2"
 moto = "~=4.1.2"
-fakeredis = "^2.11.2"
+fakeredis = "^2.23.2"
 mongomock = "^4.1.2"
 towncrier = "^22.8.0"
 toml = "^0.10.0"
@@ -340,15 +357,14 @@ mypy = "^1.0.0"
 bandit = "^1.6.3"
 types-pytz = "^2022.1.1"
 types-python-dateutil = "^2.8.19"
-types-requests = "^2.25.0"
+types-requests = "^2.31.0"
 types-setuptools = "^68.2.0"
 memory-profiler = "^0.61.0"
 mypy-extensions = ">=0.4.3,<1.1.0"
-sanic-testing = "^22.12.0"
+sanic-testing = "~23.6.0"
 analytics-python = "^1.4.0"
-datadog-api-client = "^2.0.0"
+datadog-api-client = "^2.25.0"
 datadog = "^0.49.1"
 types-redis = "^4.3.20"
-httpx = "0.23.3"
 types-protobuf = "^4.24.0"
 types-toml = "^0.10.8.7"

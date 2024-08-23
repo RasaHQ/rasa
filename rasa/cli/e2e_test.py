@@ -1,50 +1,80 @@
 import argparse
 import asyncio
-import logging
 import math
+import os
 import shutil
 import sys
+from functools import lru_cache
 from pathlib import Path
 from textwrap import dedent
 from typing import Any, Dict, Generator, List, Optional, Text, Tuple, Union
+
+import matplotlib.pyplot as plt
+import pandas as pd
+import rich
+import structlog
+from rich.table import Table
 
 import rasa.cli.arguments.run
 import rasa.cli.utils
 import rasa.shared.data
 import rasa.shared.utils.cli
 import rasa.shared.utils.io
-import rich
+import rasa.utils.io
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments.default_arguments import add_endpoint_param, add_model_param
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.utils import AvailableEndpoints
-from rasa.exceptions import RasaException
-from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH, DEFAULT_MODELS_PATH
-
-from rasa.e2e_test.constants import SCHEMA_FILE_PATH, KEY_TEST_CASE
+from rasa.e2e_test.aggregate_test_stats_calculator import (
+    AccuracyCalculation,
+    AggregateTestStatsCalculator,
+)
+from rasa.e2e_test.constants import (
+    SCHEMA_FILE_PATH,
+    KEY_TEST_CASE,
+    KEY_TEST_CASES,
+    STUB_CUSTOM_ACTION_NAME_SEPARATOR,
+)
 from rasa.e2e_test.e2e_test_case import (
     KEY_FIXTURES,
     KEY_METADATA,
+    KEY_STUB_CUSTOM_ACTIONS,
     Fixture,
     Metadata,
     TestCase,
     TestSuite,
 )
+from rasa.e2e_test.e2e_test_coverage_report import (
+    create_coverage_report,
+    extract_tested_commands,
+)
 from rasa.e2e_test.e2e_test_result import TestResult
 from rasa.e2e_test.e2e_test_runner import E2ETestRunner
-import rasa.utils.io
+from rasa.exceptions import RasaException
+from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH, DEFAULT_MODELS_PATH
 from rasa.shared.utils.yaml import (
     parse_raw_yaml,
     read_schema_file,
-    validate_yaml_content_using_schema,
+    validate_yaml_data_using_schema_with_assertions,
     is_key_in_yaml,
 )
+from rasa.utils.beta import BetaNotEnabledException, ensure_beta_feature_is_enabled
+from rasa.utils.endpoints import EndpointConfig
+
 
 DEFAULT_E2E_INPUT_TESTS_PATH = "tests/e2e_test_cases.yml"
 DEFAULT_E2E_OUTPUT_TESTS_PATH = "tests/e2e_results.yml"
-KEY_TEST_CASES = "test_cases"
+DEFAULT_COVERAGE_OUTPUT_PATH = "e2e_coverage_results"
 
-logger = logging.getLogger(__name__)
+# Test status
+STATUS_PASSED = "passed"
+STATUS_FAILED = "failed"
+
+RASA_PRO_BETA_E2E_ASSERTIONS_ENV_VAR_NAME = "RASA_PRO_BETA_E2E_ASSERTIONS"
+RASA_PRO_BETA_FINE_TUNING_RECIPE_ENV_VAR_NAME = "RASA_PRO_BETA_FINE_TUNING_RECIPE"
+RASA_PRO_BETA_STUB_CUSTOM_ACTION_ENV_VAR_NAME = "RASA_PRO_BETA_STUB_CUSTOM_ACTION"
+
+structlogger = structlog.get_logger()
 
 
 def add_subparser(
@@ -126,6 +156,19 @@ def add_e2e_test_arguments(parser: argparse.ArgumentParser) -> None:
         help="Set the remote location where your Rasa model is stored, e.g. on AWS.",
     )
 
+    parser.add_argument(
+        "--coverage-report",
+        action="store_true",
+        help="Generate a coverage report on flow paths and commands covered in e2e "
+        "tests.",
+    )
+
+    parser.add_argument(
+        "--coverage-output-path",
+        default=DEFAULT_COVERAGE_OUTPUT_PATH,
+        help="Directory where to save coverage report to.",
+    )
+
 
 def split_into_passed_failed(
     results: List[TestResult],
@@ -170,6 +213,7 @@ def validate_path_to_test_cases(path: Text) -> None:
         sys.exit(1)
 
 
+@lru_cache(maxsize=1)
 def extract_test_case_from_path(path: Text) -> Tuple[Text, Text]:
     """Extract test case from path if specified.
 
@@ -210,6 +254,11 @@ def read_test_cases(path: Text) -> TestSuite:
     Returns:
         TestSuite.
     """
+    from rasa.e2e_test.stub_custom_action import (
+        StubCustomAction,
+        get_stub_custom_action_key,
+    )
+
     path, test_case_name = extract_test_case_from_path(path)
     validate_path_to_test_cases(path)
 
@@ -219,10 +268,16 @@ def read_test_cases(path: Text) -> TestSuite:
     input_test_cases = []
     fixtures: Dict[Text, Fixture] = {}
     metadata: Dict[Text, Metadata] = {}
+    stub_custom_actions: Dict[Text, StubCustomAction] = {}
+
+    beta_flag_verified = False
 
     for test_file in test_files:
         test_file_content = parse_raw_yaml(Path(test_file).read_text())
-        validate_yaml_content_using_schema(test_file_content, e2e_test_schema)
+
+        validate_yaml_data_using_schema_with_assertions(
+            yaml_data=test_file_content, schema_content=e2e_test_schema
+        )
 
         test_cases_content = test_file_content.get(KEY_TEST_CASES) or []
 
@@ -238,9 +293,12 @@ def read_test_cases(path: Text) -> TestSuite:
                 for test_case_dict in test_cases_content
             ]
 
+        beta_flag_verified = verify_beta_feature_flag_for_assertions(
+            test_cases, beta_flag_verified
+        )
+
         input_test_cases.extend(test_cases)
         fixtures_content = test_file_content.get(KEY_FIXTURES) or []
-        metadata_contents = test_file_content.get(KEY_METADATA) or []
         for fixture in fixtures_content:
             fixture_obj = Fixture.from_dict(fixture_dict=fixture)
 
@@ -248,6 +306,7 @@ def read_test_cases(path: Text) -> TestSuite:
             if fixtures.get(fixture_obj.name) is None:
                 fixtures[fixture_obj.name] = fixture_obj
 
+        metadata_contents = test_file_content.get(KEY_METADATA) or []
         for metadata_content in metadata_contents:
             metadata_obj = Metadata.from_dict(metadata_dict=metadata_content)
 
@@ -255,8 +314,39 @@ def read_test_cases(path: Text) -> TestSuite:
             if metadata.get(metadata_obj.name) is None:
                 metadata[metadata_obj.name] = metadata_obj
 
+        stub_custom_actions_contents = (
+            test_file_content.get(KEY_STUB_CUSTOM_ACTIONS) or {}
+        )
+
+        for action_name, stub_data in stub_custom_actions_contents.items():
+            if STUB_CUSTOM_ACTION_NAME_SEPARATOR in action_name:
+                stub_custom_action_key = action_name
+            else:
+                test_file_name = Path(test_file).name
+                stub_custom_action_key = get_stub_custom_action_key(
+                    test_file_name, action_name
+                )
+            stub_custom_actions[stub_custom_action_key] = StubCustomAction.from_dict(
+                action_name=action_name,
+                stub_data=stub_data,
+            )
+
     validate_test_case(test_case_name, input_test_cases)
-    return TestSuite(input_test_cases, list(fixtures.values()), list(metadata.values()))
+    try:
+        if stub_custom_actions:
+            ensure_beta_feature_is_enabled(
+                "enabling stubs for custom actions",
+                RASA_PRO_BETA_STUB_CUSTOM_ACTION_ENV_VAR_NAME,
+            )
+    except BetaNotEnabledException as exc:
+        rasa.shared.utils.cli.print_error_and_exit(str(exc))
+
+    return TestSuite(
+        input_test_cases,
+        list(fixtures.values()),
+        list(metadata.values()),
+        stub_custom_actions,
+    )
 
 
 def execute_e2e_tests(args: argparse.Namespace) -> None:
@@ -265,6 +355,12 @@ def execute_e2e_tests(args: argparse.Namespace) -> None:
     Args:
         args: Commandline arguments.
     """
+    if args.coverage_report:
+        ensure_beta_feature_is_enabled(
+            "LLM fine-tuning recipe",
+            env_flag=RASA_PRO_BETA_FINE_TUNING_RECIPE_ENV_VAR_NAME,
+        )
+
     args.endpoints = rasa.cli.utils.get_validated_path(
         args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
     )
@@ -286,15 +382,28 @@ def execute_e2e_tests(args: argparse.Namespace) -> None:
 
     test_suite = read_test_cases(path_to_test_cases)
 
+    if test_suite.stub_custom_actions:
+        if not endpoints.action:
+            endpoints.action = EndpointConfig()
+
+        endpoints.action.kwargs[KEY_STUB_CUSTOM_ACTIONS] = (
+            test_suite.stub_custom_actions
+        )
+
+    test_case_path, _ = extract_test_case_from_path(path_to_test_cases)
+
     try:
         test_runner = E2ETestRunner(
             remote_storage=args.remote_storage,
             model_path=args.model,
             model_server=endpoints.model,
             endpoints=endpoints,
+            test_case_path=Path(test_case_path),
         )
     except AgentNotReady as error:
-        logger.error(msg=error.message)
+        structlogger.error(
+            "rasa.e2e_test.execute_e2e_tests.agent_not_ready", message=error.message
+        )
         sys.exit(1)
 
     results = asyncio.run(
@@ -303,6 +412,7 @@ def execute_e2e_tests(args: argparse.Namespace) -> None:
             test_suite.fixtures,
             args.fail_fast,
             input_metadata=test_suite.metadata,
+            coverage=args.coverage_report,
         )
     )
 
@@ -310,7 +420,56 @@ def execute_e2e_tests(args: argparse.Namespace) -> None:
         write_test_results_to_file(results, args.e2e_results)
 
     passed, failed = split_into_passed_failed(results)
-    print_test_result(passed, failed, args.fail_fast)
+    aggregate_stats_calculator = AggregateTestStatsCalculator(
+        passed_results=passed, failed_results=failed, test_cases=test_suite.test_cases
+    )
+    accuracy_calculations = aggregate_stats_calculator.calculate()
+
+    if args.coverage_report and test_runner.agent.processor:
+        coverage_output_path = args.coverage_output_path
+        rasa.shared.utils.io.create_directory(coverage_output_path)
+        flows = asyncio.run(test_runner.agent.processor.get_flows())
+
+        for results, status in [(passed, STATUS_PASSED), (failed, STATUS_FAILED)]:
+            report = create_coverage_report(flows, results)
+            _save_coverage_report(report, status, coverage_output_path)
+            tested_commands = extract_tested_commands(results)
+            _save_tested_commands_histogram(
+                tested_commands, status, coverage_output_path
+            )
+            save_test_cases_to_yaml(results, coverage_output_path, status, test_suite)
+
+        rasa.shared.utils.cli.print_info(
+            f"Coverage data and result is written to {coverage_output_path}."
+        )
+
+    print_test_result(
+        passed, failed, args.fail_fast, accuracy_calculations=accuracy_calculations
+    )
+
+
+def _save_coverage_report(
+    report: Optional[pd.DataFrame], test_status: str, output_dir: str
+) -> None:
+    if report is None:
+        return
+
+    if report is not None and not report.empty:
+        if test_status == STATUS_PASSED:
+            rasa.shared.utils.cli.print_success(report.to_string(index=False))
+        else:
+            rasa.shared.utils.cli.print_error(report.to_string(index=False))
+
+    output_filename = f"coverage_report_for_{test_status}_tests.csv"
+    report.to_csv(
+        os.path.join(output_dir, output_filename),
+        index=False,
+    )
+    structlogger.info(
+        "rasa.e2e_test.save_coverage_report",
+        message=f"Coverage result for {test_status} e2e tests"
+        f"is written to '{output_filename}'.",
+    )
 
 
 def write_test_results_to_file(results: List[TestResult], output_file: Text) -> None:
@@ -354,34 +513,6 @@ def transform_results_output_to_yaml(yaml_string: Text) -> Text:
     return "".join(result)
 
 
-def pad(text: Text, char: Text = "=", min: int = 3) -> Text:
-    """Pad text to a certain length.
-
-    Uses `char` to pad the text to the specified length. If the text is longer
-    than the specified length, at least `min` are used.
-
-    The padding is applied to the left and right of the text (almost) equally.
-
-    Example:
-        >>> pad("Hello")
-        "========= Hello ========"
-        >>> pad("Hello", char="-")
-        "--------- Hello --------"
-
-    Args:
-        text: Text to pad.
-        min: Minimum length of the padding.
-        char: Character to pad with.
-
-    Returns:
-        Padded text.
-    """
-    width = shutil.get_terminal_size((80, 20)).columns
-    padding = max(width - len(text) - 2, min * 2)
-
-    return char * (padding // 2) + " " + text + " " + char * math.ceil(padding / 2)
-
-
 def color_difference(diff: List[Text]) -> Generator[Text, None, None]:
     """Colorize the difference between two strings.
 
@@ -422,9 +553,24 @@ def print_failed_case(fail: TestResult) -> None:
     fail_headline = (
         f"'{fail.test_case.name}' in {fail.test_case.file_with_line()} failed"
     )
-    rasa.shared.utils.cli.print_error(f"{pad(fail_headline, char='-')}\n")
-    print(f"Mismatch starting at {fail.test_case.file}:{fail.error_line}: \n")
-    rich.print(("\n".join(color_difference(fail.difference))))
+    rasa.shared.utils.cli.print_error(
+        f"{rasa.shared.utils.cli.pad(fail_headline, char='-')}\n"
+    )
+    rasa.shared.utils.cli.print_error(
+        f"Mismatch starting at {fail.test_case.file}:{fail.error_line}: \n"
+    )
+    if fail.difference:
+        rich.print(("\n".join(color_difference(fail.difference))))
+
+    if fail.assertion_failure:
+        rasa.shared.utils.cli.print_error(
+            f"Assertion type '{fail.assertion_failure.assertion.type()}' failed "
+            f"with this error message: {fail.assertion_failure.error_message}\n"
+        )
+        rasa.shared.utils.cli.print_error("Actual events transcript:\n")
+        rasa.shared.utils.cli.print_error(
+            "\n".join(fail.assertion_failure.actual_events_transcript)
+        )
 
 
 def print_test_summary(failed: List[TestResult]) -> None:
@@ -436,7 +582,9 @@ def print_test_summary(failed: List[TestResult]) -> None:
         =================== short test summary info ===================
         FAILED test.md::test
     """
-    rasa.shared.utils.cli.print_info(pad("short test summary info"))
+    rasa.shared.utils.cli.print_info(
+        rasa.shared.utils.cli.pad("short test summary info")
+    )
 
     for f in failed:
         rasa.shared.utils.cli.print_error(
@@ -478,10 +626,28 @@ def print_final_line(
     )
 
 
+def print_aggregate_stats(accuracy_calculations: List[AccuracyCalculation]) -> None:
+    """Print the aggregate statistics of the test run."""
+    rasa.shared.utils.cli.print_info(
+        rasa.shared.utils.cli.pad("Accuracy By Assertion Type")
+    )
+    table = Table()
+    table.add_column("Assertion Type", justify="center", style="cyan")
+    table.add_column("Accuracy", justify="center", style="cyan")
+
+    for accuracy_calculation in accuracy_calculations:
+        table.add_row(
+            accuracy_calculation.assertion_type, f"{accuracy_calculation.accuracy:.2%}"
+        )
+
+    rich.print(table)
+
+
 def print_test_result(
     passed: List[TestResult],
     failed: List[TestResult],
     fail_fast: bool = False,
+    **kwargs: Any,
 ) -> None:
     """Print the result of the test run.
 
@@ -489,24 +655,33 @@ def print_test_result(
         passed: List of passed test cases.
         failed: List of failed test cases.
         fail_fast: If true, stop after the first failure.
+        **kwargs: additional arguments
     """
     if failed:
         # print failure headline
         print("\n")
-        rich.print(f"[bold]{pad('FAILURES', char='=')}[/bold]")
+        rich.print(f"[bold]{rasa.shared.utils.cli.pad('FAILURES', char='=')}[/bold]")
 
     # print failed test_Case
     for fail in failed:
         print_failed_case(fail)
 
+    accuracy_calculations = kwargs.get("accuracy_calculations", [])
+    if accuracy_calculations:
+        print_aggregate_stats(accuracy_calculations)
+
     print_test_summary(failed)
 
     if fail_fast:
-        rasa.shared.utils.cli.print_error(pad("stopping after 1 failure", char="!"))
+        rasa.shared.utils.cli.print_error(
+            rasa.shared.utils.cli.pad("stopping after 1 failure", char="!")
+        )
         has_failed = True
     elif len(failed) + len(passed) == 0:
         # no tests were run, print error
-        rasa.shared.utils.cli.print_error(pad("no test cases found", char="!"))
+        rasa.shared.utils.cli.print_error(
+            rasa.shared.utils.cli.pad("no test cases found", char="!")
+        )
         print_e2e_help()
         has_failed = True
     elif failed:
@@ -568,9 +743,10 @@ def validate_model_path(
         )
 
     elif model_path is None:
-        logger.info(
-            f"Parameter '{parameter}' is not set. "
-            f"Using default location '{default}' instead."
+        structlogger.info(
+            "rasa.e2e_test.validate_model_path",
+            message=f"Parameter '{parameter}' is not set. "
+            f"Using default location '{default}' instead.",
         )
 
     Path(default).mkdir(exist_ok=True)
@@ -584,3 +760,120 @@ def read_e2e_test_schema() -> Union[List[Any], Dict[Text, Any]]:
         The content of the schema.
     """
     return read_schema_file(SCHEMA_FILE_PATH)
+
+
+def save_test_cases_to_yaml(
+    test_results: List[TestResult],
+    output_dir: str,
+    status: str,
+    test_suite: TestSuite,
+) -> None:
+    """Extracts TestCases from a list of TestResults and saves them to a YAML file."""
+    if not test_results:
+        return
+
+    test_cases = [result.test_case for result in test_results]
+    new_test_suite = TestSuite(
+        test_cases=test_cases,
+        fixtures=test_suite.fixtures,
+        metadata=test_suite.metadata,
+        stub_custom_actions=test_suite.stub_custom_actions,
+    )
+
+    output_filename = f"{status}.yml"
+    rasa.utils.io.write_yaml(
+        new_test_suite.as_dict(), target=os.path.join(output_dir, output_filename)
+    )
+
+    structlogger.info(
+        "rasa.e2e_test.save_e2e_test_cases",
+        message=f"E2e tests with '{status}' status are written to file "
+        f"'{output_filename}'.",
+    )
+    if status == STATUS_PASSED:
+        structlogger.info(
+            "rasa.e2e_test.save_e2e_test_cases",
+            message=f"You can use the file '{output_filename}' in case you want "
+            f"to create training data for fine-tuning an LLM via "
+            f"'rasa llm finetune prepare-data'.",
+        )
+
+
+def has_test_case_with_assertions(test_cases: List[TestCase]) -> bool:
+    """Check if the test cases contain assertions."""
+    try:
+        next(test_case for test_case in test_cases if test_case.uses_assertions())
+    except StopIteration:
+        return False
+
+    return True
+
+
+def verify_beta_feature_flag_for_assertions(
+    test_cases: List[TestCase], beta_flag_verified: bool
+) -> bool:
+    """Verify the beta feature flag for assertions."""
+    if beta_flag_verified:
+        return True
+
+    if not has_test_case_with_assertions(test_cases):
+        return beta_flag_verified
+
+    try:
+        ensure_beta_feature_is_enabled(
+            "end-to-end testing with assertions",
+            RASA_PRO_BETA_E2E_ASSERTIONS_ENV_VAR_NAME,
+        )
+    except BetaNotEnabledException as exc:
+        rasa.shared.utils.cli.print_error_and_exit(str(exc))
+
+    return True
+
+
+def _save_tested_commands_histogram(
+    count_dict: Dict[str, int], test_status: str, output_dir: str
+) -> None:
+    """Creates a command histogram and saves it to the specified directory.
+
+    Args:
+        count_dict (Dict[str, int]): A dictionary where keys are commands
+        and values are counts.
+        test_status (str): passing or failing
+        output_dir (str): The directory path where the histogram
+        image will be saved.
+    """
+    if not count_dict:
+        return
+
+    # Sort the dictionary by keys
+    sorted_count_dict = dict(sorted(count_dict.items()))
+
+    plt.figure(figsize=(10, 6))
+    bars = plt.bar(sorted_count_dict.keys(), sorted_count_dict.values(), color="blue")
+    plt.xlabel("Commands")
+    plt.ylabel("Counts")
+    plt.title(f"Command histogram for {test_status} tests")
+    plt.xticks(rotation=45, ha="right")
+    plt.tight_layout()
+
+    # Add total number to each bar
+    for bar in bars:
+        yval = bar.get_height()
+        plt.text(
+            bar.get_x() + bar.get_width() / 2,
+            yval + 0.5,
+            int(yval),
+            ha="center",
+            va="bottom",
+        )
+
+    output_filename = f"commands_histogram_for_{test_status}_tests.png"
+    save_path = os.path.join(output_dir, output_filename)
+    plt.savefig(save_path)
+    plt.close()
+
+    structlogger.info(
+        "rasa.e2e_test._save_tested_commands_histogram",
+        message=f"Commands histogram for {test_status} e2e tests"
+        f"is written to '{output_filename}'.",
+    )

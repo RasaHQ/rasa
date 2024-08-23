@@ -1,19 +1,17 @@
 import argparse
-import logging
 import platform
 import sys
+import os
 import textwrap
 from pathlib import Path
-from typing import Any, Callable, List, Text
-from unittest.mock import MagicMock, call, patch
+from typing import Any, Callable, List, Text, Dict
+import matplotlib.pyplot as plt
+from unittest.mock import MagicMock, Mock, call, patch
+from _pytest.tmpdir import TempPathFactory
 
 import pytest
-from pytest import LogCaptureFixture, MonkeyPatch, RunResult
-from rasa.core.agent import Agent
-from rasa.core.tracker_store import InMemoryTrackerStore
-from rasa.exceptions import RasaException
-from rasa.shared.constants import DEFAULT_MODELS_PATH
-from rasa.shared.core.domain import Domain
+from pytest import MonkeyPatch, RunResult
+from structlog.testing import capture_logs
 
 from rasa.cli.e2e_test import (
     DEFAULT_E2E_INPUT_TESTS_PATH,
@@ -23,7 +21,8 @@ from rasa.cli.e2e_test import (
     color_difference,
     execute_e2e_tests,
     is_test_case_file,
-    pad,
+    print_failed_case,
+    print_test_result,
     read_test_cases,
     split_into_passed_failed,
     transform_results_output_to_yaml,
@@ -32,9 +31,26 @@ from rasa.cli.e2e_test import (
     write_test_results_to_file,
     extract_test_case_from_path,
     validate_test_case,
+    _save_coverage_report,
+    STATUS_PASSED,
+    save_test_cases_to_yaml,
+    _save_tested_commands_histogram,
 )
-from rasa.e2e_test.e2e_test_case import Fixture, Metadata, TestCase, TestStep
+from rasa.core.agent import Agent
+from rasa.core.tracker_store import InMemoryTrackerStore
+from rasa.e2e_test.assertions import AssertionFailure, FlowStartedAssertion
+from rasa.e2e_test.e2e_test_case import Fixture, Metadata, TestCase, TestStep, TestSuite
+from rasa.e2e_test.e2e_test_coverage_report import (
+    FLOW_NAME_COL_NAME,
+    NUM_STEPS_COL_NAME,
+    MISSING_STEPS_COL_NAME,
+    LINE_NUMBERS_COL_NAME,
+    COVERAGE_COL_NAME,
+)
 from rasa.e2e_test.e2e_test_result import TestResult
+from rasa.exceptions import RasaException
+from rasa.shared.constants import DEFAULT_MODELS_PATH
+from rasa.shared.core.domain import Domain
 from tests.e2e_test.test_e2e_test_runner import AsyncMock
 
 SAVED_STDOUT = sys.stdout
@@ -43,7 +59,9 @@ SAVED_STDOUT = sys.stdout
 def test_rasa_test_e2e_help(run: Callable[..., RunResult]) -> None:
     help_text = """usage: rasa test e2e [-h] [-v] [-vv] [--quiet]
                     [--logging-config-file LOGGING_CONFIG_FILE] [--fail-fast]
-                    [-o] [--remote-storage REMOTE_STORAGE] [-m MODEL]
+                    [-o] [--remote-storage REMOTE_STORAGE]
+                    [--coverage-report]
+                    [--coverage-output-path COVERAGE_OUTPUT_PATH] [-m MODEL]
                     [--endpoints ENDPOINTS]
                     [path-to-test-cases]
 
@@ -135,22 +153,6 @@ def test_find_test_sets_file(e2e_input_folder: Path) -> None:
     assert input_test_cases[7].file == str(
         e2e_input_folder / "e2e_test_cases_with_metadata.yml"
     )
-
-
-def test_pad_text() -> None:
-    assert (
-        pad("hello world caption", char="*")
-        == "*" * 29 + " hello world caption " + "*" * 30
-    )
-
-
-def test_pad_uses_min_padding() -> None:
-    expected = "=" * 10 + " " + "foo" * 100 + " " + "=" * 10
-    assert pad("foo" * 100, min=10) == expected
-
-
-def test_pad_empty() -> None:
-    assert pad("") == "=" * 39 + " " * 2 + "=" * 39
 
 
 def test_color_difference_empty() -> None:
@@ -323,19 +325,17 @@ def test_validate_model_path_path_not_exists(tmp_path: Path) -> None:
         assert validate_model_path(str(model_path), "model", default) == default
 
 
-def test_validate_model_path_with_none(
-    caplog: LogCaptureFixture, tmp_path: Path
-) -> None:
+def test_validate_model_path_with_none(tmp_path: Path) -> None:
     parameter = "model"
     default = tmp_path / DEFAULT_MODELS_PATH
-    with caplog.at_level(logging.INFO):
+    with capture_logs() as logs:
         assert validate_model_path(None, parameter, default) == default
 
     log_msg = (
         f"Parameter '{parameter}' is not set. "
         f"Using default location '{default}' instead."
     )
-    assert log_msg in caplog.text
+    assert log_msg in logs[0]["message"]
 
 
 def test_execute_e2e_tests_fail_fast_true(
@@ -355,6 +355,7 @@ def test_execute_e2e_tests_fail_fast_true(
     cli_args.fail_fast = True
     cli_args.e2e_results = str(tmp_path / "e2e_results.yml")
     cli_args.remote_storage = None
+    cli_args.coverage_report = False
 
     def mock_init(self: Any, *args: Any, **kwargs: Any) -> None:
         domain = Domain.empty()
@@ -387,6 +388,7 @@ def test_execute_e2e_tests_fail_fast_true(
         test_suite.fixtures,
         cli_args.fail_fast,
         input_metadata=test_suite.metadata,
+        coverage=cli_args.coverage_report,
     )
 
     captured = capsys.readouterr()
@@ -417,6 +419,7 @@ def test_execute_e2e_tests_fail_fast_false(
     cli_args.fail_fast = False
     cli_args.e2e_results = str(tmp_path / "e2e_results.yml")
     cli_args.remote_storage = None
+    cli_args.coverage_report = False
 
     def mock_init(self: Any, *args: Any, **kwargs: Any) -> None:
         domain = Domain.empty()
@@ -448,6 +451,7 @@ def test_execute_e2e_tests_fail_fast_false(
         test_suite.fixtures,
         cli_args.fail_fast,
         input_metadata=test_suite.metadata,
+        coverage=cli_args.coverage_report,
     )
     captured = capsys.readouterr()
 
@@ -504,7 +508,8 @@ def test_e2e_cli_add_e2e_test_arguments(monkeypatch: MonkeyPatch) -> None:
             ),
             call(
                 "--remote-storage",
-                help="Set the remote location where your Rasa model is stored, e.g. on AWS.",  # noqa: E501
+                help="Set the remote location where your Rasa model is stored, "
+                "e.g. on AWS.",
             ),
         ],
     )
@@ -556,7 +561,6 @@ def test_write_test_results_to_file(
 
 def test_execute_e2e_tests_with_agent_not_ready(
     tmp_path: Path,
-    caplog: LogCaptureFixture,
     e2e_input_folder: Path,
 ) -> None:
     cli_args = argparse.Namespace()
@@ -570,6 +574,7 @@ def test_execute_e2e_tests_with_agent_not_ready(
     cli_args.fail_fast = False
     cli_args.e2e_results = str(tmp_path / "e2e_results.yml")
     cli_args.remote_storage = None
+    cli_args.coverage_report = False
 
     logging_msg = (
         "Agent needs to be prepared before usage. "
@@ -577,11 +582,13 @@ def test_execute_e2e_tests_with_agent_not_ready(
         "load the trained model."
     )
 
-    with caplog.at_level(logging.ERROR):
+    with capture_logs() as logs:
         with pytest.raises(SystemExit):
             execute_e2e_tests(cli_args)
 
-        assert logging_msg in [record.message for record in caplog.records]
+        assert logging_msg in [
+            record["message"] for record in logs if "message" in record
+        ]
 
 
 def test_validate_path_to_test_cases(tmp_path: Path) -> None:
@@ -658,3 +665,237 @@ def test_read_single_test_case(
     assert len(input_test_cases) == 1
     assert input_test_cases[0].name == test_case
     assert len(input_test_cases[0].steps) == number_of_steps
+
+
+@pytest.mark.parametrize(
+    "test_result",
+    [
+        TestResult(
+            test_case=TestCase(
+                name="some test case",
+                steps=[TestStep(actor="some actor")],
+                file="test.yaml",
+            ),
+            pass_status=False,
+            difference=[],
+            assertion_failure=AssertionFailure(
+                assertion=FlowStartedAssertion(flow_id="test_flow_id"),
+                error_message="Test error message",
+                actual_events_transcript=["test_event"],
+            ),
+            error_line=1,
+        ),
+    ],
+)
+@patch("rasa.shared.utils.cli.print_error")
+def test_print_failed_case(
+    mock_print_error: MagicMock,
+    test_result: TestResult,
+) -> None:
+    print_failed_case(test_result)
+
+    mock_print_error.assert_any_call("Mismatch starting at test.yaml:1: \n")
+    mock_print_error.assert_any_call(
+        "Assertion type 'flow_started' failed with this error message: "
+        "Test error message\n"
+    )
+    mock_print_error.assert_any_call("Actual events transcript:\n")
+    mock_print_error.assert_called_with("test_event")
+
+
+def test_save_coverage_report(tmp_path: Path):
+    df_mock = MagicMock()
+    df_mock.to_string.return_value = "Coverage Report"
+    df_mock.to_csv.return_value = None
+    df_mock.columns = [
+        FLOW_NAME_COL_NAME,
+        NUM_STEPS_COL_NAME,
+        MISSING_STEPS_COL_NAME,
+        LINE_NUMBERS_COL_NAME,
+        COVERAGE_COL_NAME,
+    ]
+    df_mock.__getitem__.side_effect = lambda key: {
+        FLOW_NAME_COL_NAME: ["flow1", "flow2", "Total"],
+        NUM_STEPS_COL_NAME: [2, 3, 5],
+        MISSING_STEPS_COL_NAME: [1, 2, 3],
+        LINE_NUMBERS_COL_NAME: ["[[1-2], [3-4]]", "[[5-6], [7-8]]", ""],
+        COVERAGE_COL_NAME: ["50.00%", "33.33%", "40.00%"],
+    }[key]
+
+    # Check the report is saved correctly
+    output_filename = tmp_path / f"coverage_report_for_{STATUS_PASSED}_tests.csv"
+
+    _save_coverage_report(df_mock, STATUS_PASSED, str(tmp_path))
+
+    df_mock.to_csv.assert_called_with(str(output_filename), index=False)
+
+    # Check the content of the DataFrame
+    assert df_mock[FLOW_NAME_COL_NAME] == ["flow1", "flow2", "Total"]
+    assert df_mock[NUM_STEPS_COL_NAME] == [2, 3, 5]
+    assert df_mock[MISSING_STEPS_COL_NAME] == [1, 2, 3]
+    assert df_mock[LINE_NUMBERS_COL_NAME] == [
+        "[[1-2], [3-4]]",
+        "[[5-6], [7-8]]",
+        "",
+    ]
+    assert df_mock[COVERAGE_COL_NAME] == ["50.00%", "33.33%", "40.00%"]
+
+
+def test_save_test_cases_to_yaml(tmp_path: Path):
+    test_case = TestCase(
+        "test_case",
+        fixture_names=["fixture"],
+        metadata_name="metadata",
+        steps=[
+            TestStep.from_dict({"user": "I need to check my balance!"}),
+            TestStep.from_dict({"bot": "You have $40 in your account."}),
+        ],
+    )
+    test_results = [TestResult(test_case, pass_status=True, difference=[])]
+    test_suite = TestSuite(
+        test_cases=[test_case],
+        fixtures=[Fixture("fixture", {"key": "value"})],
+        metadata=[Metadata("metadata", {"key": "value"})],
+        stub_custom_actions={},
+    )
+
+    with capture_logs() as logs:
+        save_test_cases_to_yaml(test_results, str(tmp_path), STATUS_PASSED, test_suite)
+        assert len(logs) == 2
+        assert logs[0]["log_level"] == "info"
+        assert logs[0]["message"] == (
+            "E2e tests with 'passed' status are written to file 'passed.yml'."
+        )
+        assert logs[1]["log_level"] == "info"
+        assert logs[1]["message"] == (
+            "You can use the file 'passed.yml' in case you want to create training "
+            "data for fine-tuning an LLM via 'rasa llm finetune prepare-data'."
+        )
+
+    actual_test_suite = read_test_cases(str(tmp_path / "passed.yml"))
+
+    assert actual_test_suite.fixtures == test_suite.fixtures
+    assert actual_test_suite.metadata == test_suite.metadata
+    assert actual_test_suite.test_cases[0].name == test_suite.test_cases[0].name
+    assert (
+        actual_test_suite.test_cases[0].steps[0].actor
+        == test_suite.test_cases[0].steps[0].actor
+    )
+    assert (
+        actual_test_suite.test_cases[0].steps[0].text
+        == test_suite.test_cases[0].steps[0].text
+    )
+    assert (
+        actual_test_suite.test_cases[0].steps[1].actor
+        == test_suite.test_cases[0].steps[1].actor
+    )
+    assert (
+        actual_test_suite.test_cases[0].steps[1].text
+        == test_suite.test_cases[0].steps[1].text
+    )
+
+
+@patch("rasa.cli.e2e_test.print_aggregate_stats")
+def test_print_test_result_with_aggregate_stats(
+    mock_print_aggregate_stats: MagicMock,
+) -> None:
+    accuracy_calculations = [Mock()]
+
+    with pytest.raises(SystemExit):
+        print_test_result(
+            [
+                TestResult(
+                    test_case=TestCase(
+                        name="some test case",
+                        steps=[TestStep(actor="some actor")],
+                        file="test.yaml",
+                    ),
+                    pass_status=True,
+                    difference=[],
+                )
+            ],
+            [],
+            fail_fast=False,
+            accuracy_calculations=accuracy_calculations,
+        )
+
+    mock_print_aggregate_stats.assert_called_with(accuracy_calculations)
+
+
+@patch("rasa.cli.e2e_test.print_aggregate_stats")
+def test_print_test_result_without_aggregate_stats(
+    mock_print_aggregate_stats: MagicMock,
+) -> None:
+    accuracy_calculations = []
+
+    with pytest.raises(SystemExit):
+        print_test_result(
+            [
+                TestResult(
+                    test_case=TestCase(
+                        name="some test case",
+                        steps=[TestStep(actor="some actor")],
+                        file="test.yaml",
+                    ),
+                    pass_status=True,
+                    difference=[],
+                )
+            ],
+            [],
+            fail_fast=False,
+            accuracy_calculations=accuracy_calculations,
+        )
+
+    mock_print_aggregate_stats.assert_not_called()
+
+    @patch("rasa.cli.e2e_test.plt.savefig")
+    @patch("rasa.cli.e2e_test.structlogger.info")
+    @patch(
+        "rasa.cli.e2e_test.os.path.join", side_effect=lambda *args: os.path.join(*args)
+    )
+    def test_save_tested_commands_histogram(
+        mock_join: MagicMock,
+        mock_info: MagicMock,
+        mock_savefig: MagicMock,
+        tmpdir: TempPathFactory,
+    ) -> None:
+        # Define test data
+        count_dict: Dict[str, int] = {"command1": 10, "command2": 5, "command3": 15}
+        test_status: str = "passing"
+        output_dir: str = str(tmpdir)
+        output_filename: str = f"commands_histogram_for_{test_status}_tests.png"
+
+        # Call the function
+        _save_tested_commands_histogram(count_dict, test_status, output_dir)
+
+        # Check that savefig was called with the correct path
+        expected_save_path: str = os.path.join(output_dir, output_filename)
+        mock_savefig.assert_called_once_with(expected_save_path)
+        plt.close()  # Close the plot to clean up the state for other tests
+
+        # Check that structlogger.info was called with the correct parameters
+        mock_info.assert_called_once_with(
+            "rasa.e2e_test._save_tested_commands_histogram",
+            message=f"Commands histogram for {test_status} e2e tests"
+            f"is written to '{output_filename}'.",
+        )
+
+        # Ensure that the file path was joined correctly
+        mock_join.assert_called_once_with(output_dir, output_filename)
+
+    @patch("rasa.cli.e2e_test.structlogger.info")
+    @patch("rasa.cli.e2e_test.plt.savefig")
+    def test_save_tested_commands_histogram_empty_dict(
+        mock_savefig: MagicMock, mock_info: MagicMock
+    ) -> None:
+        # Define test data
+        count_dict: Dict[str, int] = {}
+        test_status: str = "failing"
+        output_dir: str = "/some/fake/dir"
+
+        # Call the function
+        _save_tested_commands_histogram(count_dict, test_status, output_dir)
+
+        # Check that savefig and info were never called because the dict is empty
+        mock_savefig.assert_not_called()
+        mock_info.assert_not_called()

@@ -137,6 +137,7 @@ def run_training(args: argparse.Namespace, can_exit: bool = False) -> Optional[T
         nlu_additional_arguments=extract_nlu_additional_arguments(args),
         model_to_finetune=_model_for_finetuning(args),
         finetuning_epoch_fraction=args.epoch_fraction,
+        remote_storage=args.remote_storage,
     )
     if training_result.code != 0 and can_exit:
         sys.exit(training_result.code)

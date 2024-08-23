@@ -44,6 +44,7 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import (
     RASA_PATTERN_CANNOT_HANDLE_NOT_SUPPORTED,
     ROUTE_TO_CALM_SLOT,
+    OPENAI_API_KEY_ENV_VAR,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import BotUttered, UserUttered
@@ -161,11 +162,11 @@ class TestMultiStepLLMCommandGenerator:
     ):
         """Test predict_commands_for_handling_flows calls llm correctly."""
         # Given
-        llm_config = {
-            "_type": "openai",
+        expected_llm_config = {
+            "model": "gpt-4",
+            "api_type": "openai",
             "request_timeout": 7,
             "temperature": 0.0,
-            "model_name": "gpt-4",
             "max_tokens": 256,
         }
         mock_llm = AsyncMock()
@@ -184,36 +185,37 @@ class TestMultiStepLLMCommandGenerator:
         )
 
         # Then
-        mock_llm_factory.assert_called_once_with(None, llm_config)
+        mock_llm_factory.assert_called_once_with(None, expected_llm_config)
 
+    @patch(
+        "rasa.dialogue_understanding.generator.llm_based_command_generator.llm_factory"
+    )
     async def test_predict_commands_for_handling_flows_calls_llm_correctly(
         self,
+        mock_llm_factory: Mock,
         command_generator: MultiStepLLMCommandGenerator,
     ):
         """Test predict_commands_for_handling_flows calls llm correctly."""
-        with patch(
-            "rasa.dialogue_understanding.generator.llm_based_command_generator.llm_factory",
-            Mock(),
-        ) as mock_llm_factory:
-            llm_mock = Mock()
-            predict_mock = AsyncMock()
-            llm_mock.apredict = predict_mock
-            mock_llm_factory.return_value = llm_mock
-            llm_mock.apredict.return_value = "some value"
-            # When
-            await command_generator._predict_commands_for_handling_flows(
-                Message(),
-                DialogueStateTracker.from_events(
-                    "test",
-                    evts=[UserUttered("Hello", {"name": "greet", "confidence": 1.0})],
-                ),
-                FlowsList(underlying_flows=[]),
-                FlowsList(underlying_flows=[]),
-            )
-            # Then
-            predict_mock.assert_called_once()
-            args, _ = predict_mock.call_args
-            assert args[0].startswith("Your task is to analyze the current")
+
+        llm_mock = Mock()
+        predict_mock = AsyncMock()
+        llm_mock.acompletion = predict_mock
+        mock_llm_factory.return_value = llm_mock
+        llm_mock.apredict.return_value = "some value"
+        # When
+        await command_generator._predict_commands_for_handling_flows(
+            Message(),
+            DialogueStateTracker.from_events(
+                "test",
+                evts=[UserUttered("Hello", {"name": "greet", "confidence": 1.0})],
+            ),
+            FlowsList(underlying_flows=[]),
+            FlowsList(underlying_flows=[]),
+        )
+        # Then
+        predict_mock.assert_called_once()
+        args, _ = predict_mock.call_args
+        assert args[0].startswith("Your task is to analyze the current")
 
     ### Test fingerprint
     async def test_llm_command_generator_fingerprint_addon_diff_in_prompt_template(
@@ -296,8 +298,12 @@ class TestMultiStepLLMCommandGenerator:
         model_storage: ModelStorage,
         flows: FlowsList,
         resource: Resource,
+        monkeypatch: MonkeyPatch,
     ):
         # Given
+        # Set an environment variable
+        monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "my key")
+
         generator = MultiStepLLMCommandGenerator(
             {FLOW_RETRIEVAL_KEY: {FLOW_RETRIEVAL_ACTIVE_KEY: False}},
             model_storage,
@@ -313,10 +319,10 @@ class TestMultiStepLLMCommandGenerator:
         assert loaded.fill_slots_prompt.startswith("{% if flow_active %}\nYour")
 
     async def test_llm_command_generator_load_prompt_from_model_storage(
-        self,
-        model_storage: ModelStorage,
-        tmp_path: Path,
+        self, model_storage: ModelStorage, tmp_path: Path, monkeypatch: MonkeyPatch
     ) -> None:
+        # Set an environment variable
+        monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "my key")
         # Create and write prompt file.
         prompt_dir = Path(tmp_path) / "prompt"
         prompt_dir.mkdir(parents=True, exist_ok=True)
@@ -1143,7 +1149,9 @@ class TestMultiStepLLMCommandGeneratorPredictCommandsErrorHandling:
         )
 
         # Then
-        assert predicted_commands == [ErrorCommand()]
+        assert len(predicted_commands) == 2
+        assert ErrorCommand() in predicted_commands
+        assert SetSlotCommand(ROUTE_TO_CALM_SLOT, True) in predicted_commands
 
     async def test_predict_commands_for_active_flow_raises_an_exception(
         self,
@@ -1171,7 +1179,9 @@ class TestMultiStepLLMCommandGeneratorPredictCommandsErrorHandling:
         )
 
         # Then
-        assert predicted_commands == [ErrorCommand()]
+        assert len(predicted_commands) == 2
+        assert ErrorCommand() in predicted_commands
+        assert SetSlotCommand(ROUTE_TO_CALM_SLOT, True) in predicted_commands
 
     async def test_predict_commands_for_handling_flows_raises_an_exception(
         self,
@@ -1201,7 +1211,9 @@ class TestMultiStepLLMCommandGeneratorPredictCommandsErrorHandling:
         )
 
         # Then
-        assert predicted_commands == [ErrorCommand()]
+        assert len(predicted_commands) == 2
+        assert ErrorCommand() in predicted_commands
+        assert SetSlotCommand(ROUTE_TO_CALM_SLOT, True) in predicted_commands
 
     async def test_predict_commands_for_newly_started_flows_raises_an_exception(
         self,
@@ -1231,4 +1243,6 @@ class TestMultiStepLLMCommandGeneratorPredictCommandsErrorHandling:
         )
 
         # Then
-        assert predicted_commands == [ErrorCommand()]
+        assert len(predicted_commands) == 2
+        assert ErrorCommand() in predicted_commands
+        assert SetSlotCommand(ROUTE_TO_CALM_SLOT, True) in predicted_commands

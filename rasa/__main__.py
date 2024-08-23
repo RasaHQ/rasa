@@ -25,6 +25,7 @@ from rasa.cli import (
     visualize,
     x,
     evaluate,
+    llm_fine_tuning,
 )
 from rasa.cli.arguments.default_arguments import add_logging_options
 from rasa.cli.utils import (
@@ -75,6 +76,7 @@ def create_argument_parser() -> argparse.ArgumentParser:
     export.add_subparser(subparsers, parents=parent_parsers)
     x.add_subparser(subparsers, parents=parent_parsers)
     evaluate.add_subparser(subparsers, parents=parent_parsers)
+    llm_fine_tuning.add_subparser(subparsers, parent_parsers)
     plugin_manager().hook.refine_cli(
         subparsers=subparsers, parent_parsers=parent_parsers
     )
@@ -84,12 +86,15 @@ def create_argument_parser() -> argparse.ArgumentParser:
 
 def print_version() -> None:
     """Prints version information of rasa tooling and python."""
+    from rasa.utils.licensing import get_license_expiration_date
+
     print(f"Rasa Version      :         {version.__version__}")
     print(f"Minimum Compatible Version: {MINIMUM_COMPATIBLE_VERSION}")
     print(f"Rasa SDK Version  :         {rasa_sdk_version}")
     print(f"Python Version    :         {platform.python_version()}")
     print(f"Operating System  :         {platform.platform()}")
     print(f"Python Path       :         {sys.executable}")
+    print(f"License Expires   :         {get_license_expiration_date()}")
 
 
 def main() -> None:

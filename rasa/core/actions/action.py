@@ -1,14 +1,15 @@
 import copy
 import logging
+from functools import lru_cache
 from typing import (
-    List,
-    Text,
-    Optional,
-    Dict,
-    Any,
     TYPE_CHECKING,
-    Tuple,
+    Any,
+    Dict,
+    List,
+    Optional,
     Set,
+    Text,
+    Tuple,
     cast,
 )
 
@@ -16,59 +17,68 @@ import rasa.core
 import rasa.shared.utils.io
 from rasa.core.actions.custom_action_executor import (
     CustomActionExecutor,
-    RetryCustomActionExecutor,
     NoEndpointCustomActionExecutor,
+    RetryCustomActionExecutor,
+)
+from rasa.core.actions.direct_custom_actions_executor import DirectCustomActionExecutor
+from rasa.core.actions.e2e_stub_custom_action_executor import (
+    E2EStubCustomActionExecutor,
 )
 from rasa.core.actions.grpc_custom_action_executor import GRPCCustomActionExecutor
 from rasa.core.actions.http_custom_action_executor import HTTPCustomActionExecutor
+from rasa.core.constants import (
+    UTTER_SOURCE_METADATA_KEY,
+)
 from rasa.core.policies.policy import PolicyPrediction
+from rasa.core.utils import add_bot_utterance_metadata
+from rasa.e2e_test.constants import KEY_STUB_CUSTOM_ACTIONS
 from rasa.nlu.constants import (
     RESPONSE_SELECTOR_DEFAULT_INTENT,
-    RESPONSE_SELECTOR_PROPERTY_NAME,
     RESPONSE_SELECTOR_PREDICTION_KEY,
+    RESPONSE_SELECTOR_PROPERTY_NAME,
     RESPONSE_SELECTOR_UTTER_ACTION_KEY,
 )
 from rasa.shared.constants import (
-    DOCS_BASE_URL,
     DEFAULT_NLU_FALLBACK_INTENT_NAME,
+    DOCS_BASE_URL,
+    FLOW_PREFIX,
     ROUTE_TO_CALM_SLOT,
     UTTER_PREFIX,
-    FLOW_PREFIX,
 )
 from rasa.shared.core.constants import (
-    ACTION_RESET_ROUTING,
-    USER_INTENT_OUT_OF_SCOPE,
-    ACTION_LISTEN_NAME,
-    ACTION_RESTART_NAME,
-    ACTION_SEND_TEXT_NAME,
-    ACTION_SESSION_START_NAME,
-    ACTION_DEFAULT_FALLBACK_NAME,
+    ACTION_BACK_NAME,
     ACTION_DEACTIVATE_LOOP_NAME,
-    ACTION_REVERT_FALLBACK_EVENTS_NAME,
     ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
     ACTION_DEFAULT_ASK_REPHRASE_NAME,
-    ACTION_UNLIKELY_INTENT_NAME,
-    ACTION_BACK_NAME,
-    REQUESTED_SLOT,
+    ACTION_DEFAULT_FALLBACK_NAME,
     ACTION_EXTRACT_SLOTS,
-    DEFAULT_SLOT_NAMES,
+    ACTION_LISTEN_NAME,
+    ACTION_RESET_ROUTING,
+    ACTION_RESTART_NAME,
+    ACTION_REVERT_FALLBACK_EVENTS_NAME,
+    ACTION_SEND_TEXT_NAME,
+    ACTION_SESSION_START_NAME,
+    ACTION_UNLIKELY_INTENT_NAME,
     ACTION_VALIDATE_SLOT_MAPPINGS,
-    MAPPING_TYPE,
-    SlotMappingType,
+    DEFAULT_SLOT_NAMES,
     KNOWLEDGE_BASE_SLOT_NAMES,
+    MAPPING_TYPE,
+    REQUESTED_SLOT,
+    USER_INTENT_OUT_OF_SCOPE,
+    SlotMappingType,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
+    ActionExecuted,
+    ActiveLoop,
+    BotUttered,
+    Event,
+    Restarted,
     RoutingSessionEnded,
+    SessionStarted,
+    SlotSet,
     UserUtteranceReverted,
     UserUttered,
-    ActionExecuted,
-    Event,
-    BotUttered,
-    SlotSet,
-    ActiveLoop,
-    Restarted,
-    SessionStarted,
 )
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.slot_mappings import (
@@ -81,28 +91,30 @@ from rasa.shared.nlu.constants import (
     INTENT_NAME_KEY,
     INTENT_RANKING_KEY,
 )
+from rasa.shared.utils.io import raise_warning
 from rasa.shared.utils.schemas.events import EVENTS_SCHEMA
-from rasa.utils.endpoints import EndpointConfig, ClientResponseError
-from rasa.utils.url_tools import get_url_schema, UrlSchema
+from rasa.utils.endpoints import ClientResponseError, EndpointConfig
+from rasa.utils.url_tools import UrlSchema, get_url_schema
 
 if TYPE_CHECKING:
-    from rasa.core.nlg import NaturalLanguageGenerator
     from rasa.core.channels.channel import OutputChannel
+    from rasa.core.nlg import NaturalLanguageGenerator
     from rasa.shared.core.events import IntentPrediction
+
 
 logger = logging.getLogger(__name__)
 
 
 def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["Action"]:
     """List default actions."""
-    from rasa.core.actions.two_stage_fallback import TwoStageFallbackAction
-    from rasa.dialogue_understanding.patterns.correction import ActionCorrectFlowSlot
-    from rasa.dialogue_understanding.patterns.cancel import ActionCancelFlow
-    from rasa.dialogue_understanding.patterns.clarify import ActionClarifyFlows
+    from rasa.core.actions.action_clean_stack import ActionCleanStack
     from rasa.core.actions.action_run_slot_rejections import ActionRunSlotRejections
     from rasa.core.actions.action_trigger_chitchat import ActionTriggerChitchat
     from rasa.core.actions.action_trigger_search import ActionTriggerSearch
-    from rasa.core.actions.action_clean_stack import ActionCleanStack
+    from rasa.core.actions.two_stage_fallback import TwoStageFallbackAction
+    from rasa.dialogue_understanding.patterns.cancel import ActionCancelFlow
+    from rasa.dialogue_understanding.patterns.clarify import ActionClarifyFlows
+    from rasa.dialogue_understanding.patterns.correction import ActionCorrectFlowSlot
 
     return [
         ActionListen(),
@@ -130,7 +142,9 @@ def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["A
 
 
 def action_for_index(
-    index: int, domain: Domain, action_endpoint: Optional[EndpointConfig]
+    index: int,
+    domain: Domain,
+    action_endpoint: Optional[EndpointConfig],
 ) -> "Action":
     """Get an action based on its index in the list of available actions.
 
@@ -153,7 +167,9 @@ def action_for_index(
         )
 
     return action_for_name_or_text(
-        domain.action_names_or_texts[index], domain, action_endpoint
+        domain.action_names_or_texts[index],
+        domain,
+        action_endpoint,
     )
 
 
@@ -177,7 +193,9 @@ def is_retrieval_action(action_name: Text, retrieval_intents: List[Text]) -> boo
 
 
 def action_for_name_or_text(
-    action_name_or_text: Text, domain: Domain, action_endpoint: Optional[EndpointConfig]
+    action_name_or_text: Text,
+    domain: Domain,
+    action_endpoint: Optional[EndpointConfig],
 ) -> "Action":
     """Retrieves an action by its name or by its text in case it's an end-to-end action.
 
@@ -347,8 +365,10 @@ class ActionBotResponse(Action):
                     )
                 )
             return []
-        message["utter_action"] = self.utter_action
 
+        message = add_bot_utterance_metadata(
+            message, self.utter_action, nlg, domain, tracker
+        )
         return [create_bot_utterance(message)]
 
     def name(self) -> Text:
@@ -702,12 +722,15 @@ class ActionDeactivateLoop(Action):
 
 class RemoteAction(Action):
     def __init__(
-        self, name: Text, action_endpoint: Optional[EndpointConfig] = None
+        self,
+        name: Text,
+        action_endpoint: Optional[EndpointConfig] = None,
     ) -> None:
         self._name = name
         self.action_endpoint = action_endpoint
         self.executor = self._create_executor()
 
+    @lru_cache(maxsize=1)
     def _create_executor(self) -> CustomActionExecutor:
         """Creates an executor based on the action endpoint configuration.
 
@@ -717,9 +740,21 @@ class RemoteAction(Action):
         Raises:
             RasaException: If no valid action endpoint is configured.
         """
-
         if not self.action_endpoint:
             return NoEndpointCustomActionExecutor(self.name())
+
+        if self.action_endpoint.kwargs.get(KEY_STUB_CUSTOM_ACTIONS):
+            return E2EStubCustomActionExecutor(self.name(), self.action_endpoint)
+
+        if self.action_endpoint.url and self.action_endpoint.actions_module:
+            raise_warning(
+                "Both 'actions_module' and 'url' are defined. "
+                "As they are mutually exclusive and 'actions_module' "
+                "is prioritized, actions will be executed by the assistant."
+            )
+
+        if self.action_endpoint and self.action_endpoint.actions_module:
+            return DirectCustomActionExecutor(self.name(), self.action_endpoint)
 
         url_schema = get_url_schema(self.action_endpoint.url)
 
@@ -760,8 +795,7 @@ class RemoteAction(Action):
         return schema
 
     def _validate_action_result(self, result: Dict[Text, Any]) -> bool:
-        from jsonschema import validate
-        from jsonschema import ValidationError
+        from jsonschema import ValidationError, validate
 
         try:
             validate(result, self.action_response_format_spec())
@@ -781,20 +815,25 @@ class RemoteAction(Action):
         output_channel: "OutputChannel",
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
+        **kwargs: Any,
     ) -> List[BotUttered]:
         """Use the responses generated by the action endpoint and utter them."""
         bot_messages = []
+        domain: Domain = kwargs.get("domain", None)
+        action_name: str = kwargs.get("action_name", None)
         for response in responses:
             generated_response = response.pop("response", None)
-            if generated_response:
+            if generated_response is not None:
                 draft = await nlg.generate(
                     generated_response, tracker, output_channel.name(), **response
                 )
                 if not draft:
                     continue
-                draft["utter_action"] = generated_response
+                draft = add_bot_utterance_metadata(
+                    draft, generated_response, nlg, domain, tracker
+                )
             else:
-                draft = {}
+                draft = {UTTER_SOURCE_METADATA_KEY: action_name}
 
             buttons = response.pop("buttons", []) or []
             if buttons:
@@ -817,13 +856,21 @@ class RemoteAction(Action):
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> List[Event]:
         """Runs action. Please see parent class for the full docstring."""
-        response = await self.executor.run(tracker=tracker, domain=domain)
+        response = await self.executor.run(
+            domain=domain,
+            tracker=tracker,
+        )
         self._validate_action_result(response)
 
         events_json = response.get("events", [])
         responses = response.get("responses", [])
         bot_messages = await self._utter_responses(
-            responses, output_channel, nlg, tracker
+            responses,
+            output_channel,
+            nlg,
+            tracker,
+            domain=domain,
+            action_name=self.name(),
         )
 
         events = rasa.shared.core.events.deserialise_events(events_json)
@@ -1029,7 +1076,8 @@ class ActionSendText(Action):
     ) -> List[Event]:
         """Runs action. Please see parent class for the full docstring."""
         fallback = {"text": ""}
-        message = metadata.get("message", fallback) if metadata else fallback
+        metadata_copy = copy.deepcopy(metadata) if metadata else {}
+        message = metadata_copy.get("message", fallback)
         return [create_bot_utterance(message)]
 
 

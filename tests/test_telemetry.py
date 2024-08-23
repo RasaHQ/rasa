@@ -56,10 +56,10 @@ TELEMETRY_TEST_USER = "083642a3e448423ca652134f00e7fc76"  # just some random sta
 TELEMETRY_TEST_KEY = "5640e893c1324090bff26f655456caf3"  # just some random static id
 ENTERPRISE_SEARCH_TELEMETRY_EVENT_DATA = {
     "vector_store_type": "qdrant",
-    "embeddings_type": DEFAULT_EMBEDDINGS_CONFIG["_type"],
+    "embeddings_type": DEFAULT_EMBEDDINGS_CONFIG["api_type"],
     "embeddings_model": DEFAULT_EMBEDDINGS_CONFIG["model"],
-    "llm_type": LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["_type"],
-    "llm_model": LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model_name"],
+    "llm_type": LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["api_type"],
+    "llm_model": LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model"],
     "citation_enabled": True,
 }
 
@@ -700,7 +700,7 @@ def test_get_telemetry_id_invalid(
     """,
     [
         (
-            TestSuite(get_test_cases(), get_test_fixtures(), get_test_metadata()),
+            TestSuite(get_test_cases(), get_test_fixtures(), get_test_metadata(), {}),
             3,
             2,
             True,
@@ -708,7 +708,7 @@ def test_get_telemetry_id_invalid(
             1,
         ),
         (
-            TestSuite([], get_test_fixtures(), get_test_metadata()),
+            TestSuite([], get_test_fixtures(), get_test_metadata(), {}),
             0,
             2,
             True,
@@ -716,7 +716,7 @@ def test_get_telemetry_id_invalid(
             1,
         ),
         (
-            TestSuite(get_test_cases(), [], get_test_metadata()),
+            TestSuite(get_test_cases(), [], get_test_metadata(), {}),
             3,
             0,
             False,
@@ -724,7 +724,7 @@ def test_get_telemetry_id_invalid(
             1,
         ),
         (
-            TestSuite(get_test_cases(), get_test_fixtures(), []),
+            TestSuite(get_test_cases(), get_test_fixtures(), [], {}),
             3,
             2,
             True,
@@ -732,7 +732,7 @@ def test_get_telemetry_id_invalid(
             0,
         ),
         (
-            TestSuite(get_test_cases(), [], []),
+            TestSuite(get_test_cases(), [], [], {}),
             3,
             0,
             False,
@@ -740,7 +740,7 @@ def test_get_telemetry_id_invalid(
             0,
         ),
         (
-            TestSuite([], get_test_fixtures(), []),
+            TestSuite([], get_test_fixtures(), [], {}),
             0,
             2,
             True,
@@ -748,7 +748,7 @@ def test_get_telemetry_id_invalid(
             0,
         ),
         (
-            TestSuite([], [], get_test_metadata()),
+            TestSuite([], [], get_test_metadata(), {}),
             0,
             0,
             False,
@@ -756,7 +756,7 @@ def test_get_telemetry_id_invalid(
             1,
         ),
         (
-            TestSuite([], [], []),
+            TestSuite([], [], [], {}),
             0,
             0,
             False,
@@ -790,6 +790,7 @@ def test_track_e2e_test_run(
             "uses_fixtures": expected_uses_fixtures,
             "uses_metadata": expected_uses_metadata,
             "number_of_metadata": expected_number_of_metadata,
+            "uses_assertions": False,
         },
     )
 
@@ -1147,7 +1148,7 @@ def test_send_request_succeeds_without_success_field_in_response(
             None,
             None,
             False,
-            LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model_name"],
+            LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model"],
             True,
             DEFAULT_EMBEDDINGS_CONFIG["model"],
         ),
@@ -1156,7 +1157,7 @@ def test_send_request_succeeds_without_success_field_in_response(
             {"prompt": "This is custom prompt"},
             None,
             False,
-            LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model_name"],
+            LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model"],
             True,
             DEFAULT_EMBEDDINGS_CONFIG["model"],
         ),
@@ -1165,13 +1166,13 @@ def test_send_request_succeeds_without_success_field_in_response(
             None,
             {"active": False},
             False,
-            LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model_name"],
+            LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model"],
             False,
             None,
         ),
         # custom llm, custom flow retrieval
         (
-            {"model_name": "test_llm"},
+            {"model": "test_llm"},
             {"embeddings": {"model": "test_embedding"}},
             False,
             "test_llm",
@@ -1265,10 +1266,10 @@ def test_track_enterprise_search_policy_train_completed(
 
     telemetry.track_enterprise_search_policy_train_completed(
         "qdrant",
-        DEFAULT_EMBEDDINGS_CONFIG["_type"],
+        DEFAULT_EMBEDDINGS_CONFIG["api_type"],
         DEFAULT_EMBEDDINGS_CONFIG["model"],
-        LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["_type"],
-        LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model_name"],
+        LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["api_type"],
+        LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model"],
         True,
     )
 
@@ -1287,10 +1288,10 @@ def test_track_enterprise_search_policy_predict(
 
     telemetry.track_enterprise_search_policy_predict(
         "qdrant",
-        DEFAULT_EMBEDDINGS_CONFIG["_type"],
+        DEFAULT_EMBEDDINGS_CONFIG["api_type"],
         DEFAULT_EMBEDDINGS_CONFIG["model"],
-        LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["_type"],
-        LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model_name"],
+        LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["api_type"],
+        LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model"],
         True,
     )
 

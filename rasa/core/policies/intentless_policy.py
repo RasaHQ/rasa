@@ -8,7 +8,7 @@ import tiktoken
 from jinja2 import Template
 from langchain.docstore.document import Document
 from langchain.schema.embeddings import Embeddings
-from langchain.vectorstores import FAISS
+from langchain_community.vectorstores.faiss import FAISS
 
 import rasa.shared.utils.io
 from rasa import telemetry
@@ -28,6 +28,16 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.graph_components.providers.forms_provider import Forms
 from rasa.graph_components.providers.responses_provider import Responses
 from rasa.shared.constants import REQUIRED_SLOTS_KEY
+from rasa.shared.constants import (
+    REQUIRED_SLOTS_KEY,
+    ROUTE_TO_CALM_SLOT,
+    API_TYPE_CONFIG_KEY,
+    EMBEDDINGS_CONFIG_KEY,
+    LLM_CONFIG_KEY,
+    MODEL_CONFIG_KEY,
+    MODEL_NAME_CONFIG_KEY,
+    PROMPT_CONFIG_KEY,
+)
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.shared.core.domain import KEY_RESPONSES_TEXT, Domain
 from rasa.shared.core.events import (
@@ -42,6 +52,10 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import FileIOException, RasaCoreException
 from rasa.shared.nlu.constants import PREDICTED_CONFIDENCE_KEY
 from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.providers.embedding._langchain_embedding_client_adapter import (
+    _LangchainEmbeddingClientAdapter,
+)
+from rasa.shared.providers.llm.llm_client import LLMClient
 from rasa.shared.utils.io import deep_container_fingerprint
 from rasa.shared.utils.llm import (
     AI,
@@ -68,7 +82,6 @@ from rasa.utils.log_utils import log_llm
 
 if TYPE_CHECKING:
     from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
-    from langchain.llms.base import BaseLLM
 
 structlogger = structlog.get_logger()
 
@@ -87,18 +100,16 @@ MAX_NUMBER_OF_TOKENS_FOR_SAMPLES = 900
 # the config property name for the confidence of the nlu prediction
 NLU_ABSTENTION_THRESHOLD = "nlu_abstention_threshold"
 
-PROMPT = "prompt"
-
 DEFAULT_LLM_CONFIG = {
-    "_type": "openai",
-    "request_timeout": 5,
+    "api_type": "openai",
+    "model": DEFAULT_OPENAI_CHAT_MODEL_NAME,
     "temperature": 0.0,
-    "model_name": DEFAULT_OPENAI_CHAT_MODEL_NAME,
     "max_tokens": DEFAULT_OPENAI_MAX_GENERATED_TOKENS,
+    "request_timeout": 5,
 }
 
 DEFAULT_EMBEDDINGS_CONFIG = {
-    "_type": "openai",
+    "api_type": "openai",
     "model": DEFAULT_OPENAI_EMBEDDING_MODEL_NAME,
 }
 
@@ -106,8 +117,6 @@ DEFAULT_INTENTLESS_PROMPT_TEMPLATE = importlib.resources.open_text(
     "rasa.core.policies", "intentless_prompt_template.jinja2"
 ).name
 
-EMBEDDINGS_CONFIG_KEY = "embeddings"
-LLM_CONFIG_KEY = "llm"
 INTENTLESS_PROMPT_TEMPLATE_FILE_NAME = "intentless_policy_prompt.jinja2"
 
 
@@ -366,7 +375,7 @@ class IntentlessPolicy(Policy):
             NLU_ABSTENTION_THRESHOLD: 0.9,
             LLM_CONFIG_KEY: DEFAULT_LLM_CONFIG,
             EMBEDDINGS_CONFIG_KEY: DEFAULT_EMBEDDINGS_CONFIG,
-            PROMPT: DEFAULT_INTENTLESS_PROMPT_TEMPLATE,
+            PROMPT_CONFIG_KEY: DEFAULT_INTENTLESS_PROMPT_TEMPLATE,
         }
 
     @staticmethod
@@ -405,7 +414,7 @@ class IntentlessPolicy(Policy):
         self.conversation_samples_index = samples_docsearch
         self.embedder = self._create_plain_embedder(config)
         self.prompt_template = prompt_template or rasa.shared.utils.io.read_file(
-            self.config[PROMPT]
+            self.config[PROMPT_CONFIG_KEY]
         )
         self.trace_prompt_tokens = self.config.get("trace_prompt_tokens", False)
 
@@ -416,9 +425,10 @@ class IntentlessPolicy(Policy):
         Returns:
         The embedder.
         """
-        return embedder_factory(
+        client = embedder_factory(
             config.get(EMBEDDINGS_CONFIG_KEY), DEFAULT_EMBEDDINGS_CONFIG
         )
+        return _LangchainEmbeddingClientAdapter(client)
 
     def embeddings_property(self, prop: str) -> Optional[str]:
         """Returns the property of the embeddings config."""
@@ -500,11 +510,12 @@ class IntentlessPolicy(Policy):
 
         structlogger.info("intentless_policy.training.completed")
         telemetry.track_intentless_policy_train_completed(
-            embeddings_type=self.embeddings_property("_type"),
-            embeddings_model=self.embeddings_property("model")
-            or self.embeddings_property("model_name"),
-            llm_type=self.llm_property("_type"),
-            llm_model=self.llm_property("model") or self.llm_property("model_name"),
+            embeddings_type=self.embeddings_property(API_TYPE_CONFIG_KEY),
+            embeddings_model=self.embeddings_property(MODEL_CONFIG_KEY)
+            or self.embeddings_property(MODEL_NAME_CONFIG_KEY),
+            llm_type=self.llm_property(API_TYPE_CONFIG_KEY),
+            llm_model=self.llm_property(MODEL_CONFIG_KEY)
+            or self.llm_property(MODEL_NAME_CONFIG_KEY),
         )
 
         self.persist()
@@ -578,11 +589,12 @@ class IntentlessPolicy(Policy):
         )
 
         telemetry.track_intentless_policy_predict(
-            embeddings_type=self.embeddings_property("_type"),
-            embeddings_model=self.embeddings_property("model")
-            or self.embeddings_property("model_name"),
-            llm_type=self.llm_property("_type"),
-            llm_model=self.llm_property("model") or self.llm_property("model_name"),
+            embeddings_type=self.embeddings_property(API_TYPE_CONFIG_KEY),
+            embeddings_model=self.embeddings_property(MODEL_CONFIG_KEY)
+            or self.embeddings_property(MODEL_NAME_CONFIG_KEY),
+            llm_type=self.llm_property(API_TYPE_CONFIG_KEY),
+            llm_model=self.llm_property(MODEL_CONFIG_KEY)
+            or self.llm_property(MODEL_NAME_CONFIG_KEY),
             score=score,
         )
 
@@ -619,9 +631,10 @@ class IntentlessPolicy(Policy):
         )
         return await self._generate_llm_answer(llm, prompt)
 
-    async def _generate_llm_answer(self, llm: "BaseLLM", prompt: str) -> Optional[str]:
+    async def _generate_llm_answer(self, llm: LLMClient, prompt: str) -> Optional[str]:
         try:
-            return await llm.apredict(prompt)
+            llm_response = await llm.acompletion(prompt)
+            return llm_response.choices[0]
         except Exception as e:
             # unfortunately, langchain does not wrap LLM exceptions which means
             # we have to catch all exceptions here
@@ -916,7 +929,7 @@ class IntentlessPolicy(Policy):
     def fingerprint_addon(cls, config: Dict[str, Any]) -> Optional[str]:
         """Add a fingerprint of the knowledge base for the graph."""
         prompt_template = get_prompt_template(
-            config.get("prompt"),
+            config.get(PROMPT_CONFIG_KEY),
             DEFAULT_INTENTLESS_PROMPT_TEMPLATE,
         )
         return deep_container_fingerprint(prompt_template)

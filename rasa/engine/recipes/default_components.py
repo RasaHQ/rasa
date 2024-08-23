@@ -12,7 +12,6 @@ from rasa.nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifi
 from rasa.dialogue_understanding.generator import (
     LLMCommandGenerator,
 )
-from rasa.nlu.classifiers.llm_intent_classifier import LLMIntentClassifier
 from rasa.nlu.classifiers.logistic_regression_classifier import (
     LogisticRegressionClassifier,
 )
@@ -60,7 +59,6 @@ DEFAULT_COMPONENTS = [
     NLUCommandAdapter,
     LLMCommandGenerator,
     LLMBasedRouter,
-    LLMIntentClassifier,
     IntentBasedRouter,
     # Response Selectors
     ResponseSelector,

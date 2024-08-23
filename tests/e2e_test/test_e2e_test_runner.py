@@ -1,5 +1,5 @@
+import copy
 import datetime
-import logging
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Text, Union
@@ -7,11 +7,26 @@ from unittest.mock import MagicMock, Mock
 
 import pytest
 import requests
-from pytest import LogCaptureFixture, MonkeyPatch
+from pytest import LogCaptureFixture, MonkeyPatch, CaptureFixture
+from ruamel.yaml.scalarstring import DoubleQuotedScalarString
+from structlog.testing import capture_logs
+
+import rasa.cli.e2e_test
 from rasa.core.agent import Agent
 from rasa.core.channels import CollectingOutputChannel
+from rasa.core.constants import ACTIVE_FLOW_METADATA_KEY, STEP_ID_METADATA_KEY
 from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.utils import AvailableEndpoints
+from rasa.e2e_test.e2e_test_case import (
+    ActualStepOutput,
+    Fixture,
+    Metadata,
+    TestCase,
+    TestStep,
+)
+from rasa.e2e_test.e2e_test_result import TestResult
+from rasa.e2e_test.e2e_test_runner import TEST_TURNS_TYPE, E2ETestRunner
+from rasa.llm_fine_tuning.conversations import Conversation
 from rasa.shared.core.constants import (
     REQUESTED_SLOT,
     SESSION_START_METADATA_SLOT,
@@ -24,32 +39,21 @@ from rasa.shared.core.events import (
     ActionExecuted,
     BotUttered,
     Event,
+    FlowCancelled,
+    FlowCompleted,
+    FlowStarted,
+    SessionStarted,
     SlotSet,
     UserUttered,
 )
+from rasa.shared.core.flows.flow_path import FlowPath, PathNode
+from rasa.shared.core.slots import TextSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
 from rasa.utils.endpoints import EndpointConfig
-from ruamel.yaml.scalarstring import DoubleQuotedScalarString
-
-import rasa.cli.e2e_test
-from rasa.e2e_test.e2e_test_case import (
-    ActualStepOutput,
-    Fixture,
-    Metadata,
-    TestCase,
-    TestStep,
-)
-from rasa.e2e_test.e2e_test_result import TestResult
-from rasa.e2e_test.e2e_test_runner import TEST_TURNS_TYPE, E2ETestRunner
 
 if sys.version_info[:2] >= (3, 8):
     from unittest.mock import AsyncMock
-else:
-
-    class AsyncMock(MagicMock):
-        async def __call__(self, *args: Any, **kwargs: Any) -> Any:
-            return super().__call__(*args, **kwargs)
 
 
 @pytest.fixture
@@ -63,6 +67,140 @@ def test_suite_metadata() -> List[Metadata]:
 @pytest.fixture
 def test_case_metadata() -> Metadata:
     return Metadata(name="device_info", metadata={"os": "linux"})
+
+
+@pytest.fixture
+def mock_e2e_test_runner(monkeypatch: MonkeyPatch) -> E2ETestRunner:
+    def mock_init(self: Any, *args: Any, **kwargs: Any) -> None:
+        domain = Domain.from_dict(
+            {
+                "entities": ["city"],
+                "slots": {
+                    "city": {
+                        "type": "text",
+                        "mappings": [{"type": "from_entity", "entity": "city"}],
+                    }
+                },
+                "actions": [
+                    "custom_action_1",
+                    "custom_action_2",
+                    "custom_action_3",
+                ],
+            }
+        )
+        self.agent = Agent(
+            domain=domain, tracker_store=InMemoryTrackerStore(domain=domain)
+        )
+        processor = AsyncMock()
+        # using the actual tracker store instead of a mocked one
+        processor.fetch_tracker_with_initial_session = (
+            self.agent.tracker_store.get_or_create_tracker
+        )
+        self.agent.processor = processor
+
+    monkeypatch.setattr(
+        "rasa.e2e_test.e2e_test_runner.E2ETestRunner.__init__", mock_init
+    )
+
+    async def mock_handle_message(self: Any, message: Any) -> None:
+        tracker = await self.tracker_store.get_or_create_tracker(message.sender_id)
+        tracker.update(UserUttered(message.text))
+        await self.tracker_store.save(tracker)
+
+    monkeypatch.setattr("rasa.core.agent.Agent.handle_message", mock_handle_message)
+
+    return E2ETestRunner()
+
+
+@pytest.fixture
+def assertions_tracker(default_agent: Agent) -> DialogueStateTracker:
+    tracker = DialogueStateTracker.from_events(
+        "test_assertions_tracker",
+        [
+            SessionStarted(),
+            UserUttered("send money"),
+            FlowStarted("transfer_money"),
+            FlowStarted("check_balance"),
+            FlowCancelled("check_balance", step_id="action_check_balance"),
+            SlotSet("amount", 100),
+            BotUttered(
+                "How would you like to transfer?",
+                data={
+                    "buttons": [
+                        {"title": "Bank transfer", "payload": "/transfer_bank"},
+                        {"title": "Card payment", "payload": "/card_payment"},
+                    ]
+                },
+                metadata={"utter_action": "utter_ask_transfer_method"},
+            ),
+            ActionExecuted(action_name="action_transfer_money"),
+            FlowCompleted("transfer_money", step_id="action_transfer_money"),
+        ],
+    )
+
+    return tracker
+
+
+@pytest.fixture
+def assertions_tracker_with_duplicate_user_msg(
+    default_agent: Agent,
+) -> DialogueStateTracker:
+    tracker = DialogueStateTracker(
+        "test_assertions_tracker_duplicate_user_msg",
+        [],
+    )
+    tracker.model_id = "test_model"
+    tracker.assistant_id = "test_assistant"
+
+    tracker.update_with_events(
+        [
+            SessionStarted(),
+            UserUttered("send money"),
+            BotUttered("How much would you like to transfer?"),
+            UserUttered("100 dollars"),
+            SlotSet("amount", 100),
+            BotUttered("Who is the recipient"),
+            UserUttered("Jane Doe"),
+            SlotSet("recipient", "Jane Doe"),
+            BotUttered("Please confirm if you'd like to proceed with the transfer?"),
+            UserUttered("Yes", metadata={"turn_idx": 1}),
+            BotUttered("Transfer completed, anything else I can help you with?"),
+            UserUttered("Please make the same transfer to John Doe"),
+            SlotSet("recipient", "John Doe"),
+            SlotSet("amount", 100),
+            BotUttered("Please confirm if you'd like to proceed with the transfer?"),
+            UserUttered("Yes", metadata={"turn_idx": 2}),
+            FlowCompleted("transfer_money", step_id="action_transfer_money"),
+        ],
+    )
+
+    return tracker
+
+
+@pytest.fixture
+def assertions_e2e_test_runner(
+    default_agent: Agent,
+    assertions_tracker: DialogueStateTracker,
+    monkeypatch: MonkeyPatch,
+) -> E2ETestRunner:
+    def mock_init(self, *args, **kwargs) -> None:
+        self.agent = default_agent
+        self.llm_judge_config = MagicMock()
+
+    monkeypatch.setattr(
+        "rasa.e2e_test.e2e_test_runner.E2ETestRunner.__init__", mock_init
+    )
+
+    test_runner = E2ETestRunner()
+
+    async def mock_get_tracker(self, *args, **kwargs) -> DialogueStateTracker:
+        return assertions_tracker
+
+    monkeypatch.setattr(test_runner.agent.processor, "get_tracker", mock_get_tracker)
+
+    monkeypatch.setattr(test_runner.agent.tracker_store, "retrieve", mock_get_tracker)
+
+    return test_runner
 
 
 def test_generate_test_result_successful() -> None:
@@ -879,46 +1017,12 @@ def test_find_test_failure_with_slot_was_set_step_fail(
 
 
 async def test_run_prediction_loop(
-    monkeypatch: MonkeyPatch,
     test_suite_metadata: List[Metadata],
     test_case_metadata: Metadata,
+    mock_e2e_test_runner: E2ETestRunner,
 ) -> None:
-    def mock_init(self: Any, *args: Any, **kwargs: Any) -> None:
-        domain = Domain.from_dict(
-            {
-                "entities": ["city"],
-                "slots": {
-                    "city": {
-                        "type": "text",
-                        "mappings": [{"type": "from_entity", "entity": "city"}],
-                    }
-                },
-            }
-        )
-        self.agent = Agent(
-            domain=domain, tracker_store=InMemoryTrackerStore(domain=domain)
-        )
-        processor = AsyncMock()
-        # using the actual tracker store instead of a mocked one
-        processor.fetch_tracker_with_initial_session = (
-            self.agent.tracker_store.get_or_create_tracker
-        )
-        self.agent.processor = processor
-
-    monkeypatch.setattr(
-        "rasa.e2e_test.e2e_test_runner.E2ETestRunner.__init__", mock_init
-    )
-
-    async def mock_handle_message(self: Any, message: Any) -> None:
-        tracker = await self.tracker_store.get_or_create_tracker(message.sender_id)
-        tracker.update(UserUttered(message.text))
-        await self.tracker_store.save(tracker)
-
-    monkeypatch.setattr("rasa.core.agent.Agent.handle_message", mock_handle_message)
-
-    runner = E2ETestRunner()
-    assert runner.agent is not None
-    assert runner.agent.tracker_store is not None
+    assert mock_e2e_test_runner.agent is not None
+    assert mock_e2e_test_runner.agent.tracker_store is not None
 
     collector = CollectingOutputChannel()
     steps = [
@@ -932,7 +1036,7 @@ async def test_run_prediction_loop(
         TestStep.from_dict({"bot": "Paris is a great city! Let me check the flights."}),
     ]
     sender_id = "test_run_prediction_loop"
-    test_turns = await runner.run_prediction_loop(
+    test_turns = await mock_e2e_test_runner.run_prediction_loop(
         collector, steps, sender_id, test_case_metadata, test_suite_metadata
     )
     # there should be one more turn than steps because we capture events before
@@ -943,36 +1047,8 @@ async def test_run_prediction_loop(
 
 
 async def test_run_prediction_loop_warning_for_no_user_text(
-    monkeypatch: MonkeyPatch,
+    mock_e2e_test_runner: E2ETestRunner,
 ) -> None:
-    def mock_init(self: Any, *args: Any, **kwargs: Any) -> None:
-        domain = Domain.from_dict(
-            {
-                "entities": ["city"],
-                "slots": {
-                    "city": {
-                        "type": "text",
-                        "mappings": [{"type": "from_entity", "entity": "city"}],
-                    }
-                },
-            }
-        )
-        self.agent = Agent(
-            domain=domain, tracker_store=InMemoryTrackerStore(domain=domain)
-        )
-        processor = AsyncMock()
-        # using the actual tracker store instead of a mocked one
-        processor.fetch_tracker_with_initial_session = (
-            self.agent.tracker_store.get_or_create_tracker
-        )
-        self.agent.processor = processor
-
-    monkeypatch.setattr(
-        "rasa.e2e_test.e2e_test_runner.E2ETestRunner.__init__", mock_init
-    )
-
-    runner = E2ETestRunner()
-
     collector = CollectingOutputChannel()
     steps = [
         TestStep.from_dict({"user": ""}),
@@ -987,7 +1063,7 @@ async def test_run_prediction_loop_warning_for_no_user_text(
     )
 
     with pytest.warns(UserWarning, match=match_msg):
-        await runner.run_prediction_loop(collector, steps, sender_id)
+        await mock_e2e_test_runner.run_prediction_loop(collector, steps, sender_id)
 
 
 @pytest.mark.parametrize("fail_fast, expected_len", [(True, 1), (False, 2)])
@@ -1061,6 +1137,80 @@ async def test_run_tests_with_fail_fast(
     assert results[0] == TestResult(
         test_case=test_cases[0], pass_status=False, difference=[]
     )
+
+
+async def test_run_tests_for_fine_tuning(monkeypatch: MonkeyPatch):
+    test_cases = [
+        TestCase(
+            steps=[
+                TestStep.from_dict({"user": "Hi!"}),
+                TestStep.from_dict({"bot": "Hey! How can I help?"}),
+                TestStep.from_dict({"user": "Hello!", "metadata": "user_info"}),
+            ],
+            name="test_case_1",
+        ),
+        TestCase(
+            steps=[
+                TestStep.from_dict({"user": "Who are you?"}),
+                TestStep.from_dict({"bot": "I am a bot powered by Rasa."}),
+            ],
+            name="test_case_2",
+        ),
+    ]
+
+    def mock_init(self: Any, *args: Any, **kwargs: Any) -> None:
+        domain = Domain.empty()
+        self.agent = Agent(
+            domain=domain, tracker_store=InMemoryTrackerStore(domain=domain)
+        )
+        processor = AsyncMock()
+        # using the actual tracker store instead of a mocked one
+        processor.fetch_tracker_with_initial_session = (
+            self.agent.tracker_store.get_or_create_tracker
+        )
+        self.agent.processor = processor
+
+    monkeypatch.setattr(
+        "rasa.e2e_test.e2e_test_runner.E2ETestRunner.__init__", mock_init
+    )
+    monkeypatch.setattr(
+        "rasa.e2e_test.e2e_test_runner.E2ETestRunner.run_prediction_loop",
+        AsyncMock(),
+    )
+
+    mock_test_results = MagicMock(
+        side_effect=[TestResult(Mock(), True, []), TestResult(Mock(), False, [])]
+    )
+    monkeypatch.setattr(
+        "rasa.e2e_test.e2e_test_runner.E2ETestRunner.generate_test_result",
+        mock_test_results,
+    )
+
+    # Mock generate_conversation to return a conversation object
+    mock_generate_conversation = Mock()
+    mock_conversation_1 = MagicMock(spec=Conversation)
+    mock_conversation_2 = None
+    mock_generate_conversation.side_effect = [mock_conversation_1, mock_conversation_2]
+    monkeypatch.setattr(
+        "rasa.llm_fine_tuning.annotation_module.generate_conversation",
+        mock_generate_conversation,
+    )
+
+    runner = E2ETestRunner()
+
+    with capture_logs() as logs:
+        result = await runner.run_tests_for_fine_tuning(
+            test_cases,
+            [],
+            None,
+        )
+
+        assert len(logs) == 1
+        assert logs[0]["log_level"] == "warning"
+        assert logs[0]["test_case"] == "test_case_2"
+
+    # Verify the result contains only the passing test case conversation
+    assert result == [mock_conversation_1]
 
 
 @pytest.mark.parametrize(
@@ -1524,12 +1674,15 @@ def test_action_server_is_reachable(
     mock = MagicMock()
     mock.return_value.status_code = 200
     monkeypatch.setattr(rasa.e2e_test.e2e_test_runner.requests, "get", mock)
-    with caplog.at_level(logging.DEBUG):
+
+    with capture_logs() as logs:
         E2ETestRunner._action_server_is_reachable(endpoint)
 
-    assert mock.called
-    assert mock.call_args[0][0] == "http://localhost:5055/health"
-    assert "Action endpoint has responded successfully." in caplog.text
+        assert mock.called
+        assert mock.call_args[0][0] == "http://localhost:5055/health"
+        assert len(logs) == 2
+        assert logs[1]["log_level"] == "debug"
+        assert "Action endpoint has responded successfully." in logs[1]["message"]
 
 
 def test_action_server_is_reachable_bad_response(monkeypatch: MonkeyPatch) -> None:
@@ -1573,26 +1726,30 @@ def test_action_server_is_not_reachable_url_not_defined(
     caplog: LogCaptureFixture,
 ) -> None:
     endpoint = AvailableEndpoints(action=EndpointConfig())
-    with caplog.at_level(logging.DEBUG):
+    with capture_logs() as logs:
         E2ETestRunner._action_server_is_reachable(endpoint)
 
-    assert (
-        "Action endpoint URL is not defined in the endpoint configuration."
-        in caplog.text
-    )
+        assert len(logs) == 1
+        assert logs[0]["log_level"] == "debug"
+        assert (
+            logs[0]["message"] == "Action endpoint URL is not defined in the endpoint "
+            "configuration."
+        )
 
 
 def test_action_server_is_not_reachable_action_not_defined(
     caplog: LogCaptureFixture,
 ) -> None:
     endpoint = AvailableEndpoints()
-    with caplog.at_level(logging.DEBUG):
+    with capture_logs() as logs:
         E2ETestRunner._action_server_is_reachable(endpoint)
 
-    assert (
-        "No action endpoint configured. Skipping the health check of the "
-        "action server." in caplog.text
-    )
+        assert len(logs) == 1
+        assert logs[0]["log_level"] == "debug"
+        assert (
+            logs[0]["message"] == "No action endpoint configured. Skipping the health "
+            "check of the action server."
+        )
 
 
 def test_bot_event_text_message_formatting() -> None:
@@ -1651,16 +1808,17 @@ def test_filter_metadata_for_input_undefined_metadata_name(
     caplog: LogCaptureFixture,
 ) -> None:
     metadata_name = "incorrect_metadata_name"
-    with caplog.at_level(logging.WARNING):
+    with capture_logs() as logs:
         E2ETestRunner.filter_metadata_for_input(
             metadata_name,
             [Metadata(name="device_info", metadata={"os": "linux"})],
         )
 
-    assert (
-        f"Metadata '{metadata_name}' is not defined in the input metadata."
-        in caplog.text
-    )
+        assert len(logs) == 1
+        assert (
+            f"Metadata '{metadata_name}' is not defined in the input metadata."
+            in logs[0]["message"]
+        )
 
 
 @pytest.mark.parametrize(
@@ -1695,12 +1853,640 @@ def test_merge_metadata(
 def test_merge_metadata_warning(
     caplog: LogCaptureFixture,
 ) -> None:
-    with caplog.at_level(logging.WARNING):
+    with capture_logs() as logs:
         E2ETestRunner.merge_metadata(
             "Test_case_name_123",
             "Hi!",
             {"os": "linux"},
             {"name": "Tom", "os": "windows"},
         )
-    assert f"Metadata {['os']} exist in both the test case " in caplog.text
-    assert "'Test_case_name' and the user step 'Hi!'. " in caplog.text
+
+        assert len(logs) == 1
+        assert f"Metadata {['os']} exist in both the test case " in logs[0]["message"]
+        assert "'Test_case_name' and the user step 'Hi!'. " in logs[0]["message"]
+
+
+@pytest.mark.parametrize(
+    "assertion",
+    [
+        {"flow_started": "transfer_money"},
+        {
+            "flow_cancelled": {
+                "flow_id": "check_balance",
+                "flow_step_id": "action_check_balance",
+            }
+        },
+        {"slot_was_set": [{"name": "amount", "value": 100}]},
+        {"slot_was_not_set": [{"name": "card_type"}]},
+        {"slot_was_not_set": [{"name": "amount", "value": 200}]},
+        {
+            "bot_uttered": {
+                "text_matches": "How would you like to transfer?",
+                "utter_name": "utter_ask_transfer_method",
+                "buttons": [
+                    {"title": "Bank transfer", "payload": "/transfer_bank"},
+                    {"title": "Card payment", "payload": "/card_payment"},
+                ],
+            }
+        },
+        {"action_executed": "action_transfer_money"},
+        {
+            "flow_completed": {
+                "flow_id": "transfer_money",
+                "flow_step_id": "action_transfer_money",
+            }
+        },
+    ],
+)
+async def test_run_assertions_all_valid(
+    assertion: Dict[str, Any], assertions_e2e_test_runner: E2ETestRunner
+) -> None:
+    test_case = TestCase(
+        name="test_case_transfer_money",
+        steps=[
+            TestStep.from_dict({"user": "send money", "assertions": [assertion]}),
+        ],
+    )
+
+    results = await assertions_e2e_test_runner.run_tests(
+        [test_case], [], input_metadata=[]
+    )
+    assert len(results) == 1
+    assert isinstance(results[0], TestResult)
+    assert results[0].pass_status is True
+    assert results[0].difference == []
+    assert results[0].assertion_failure is None
+
+
+async def test_assertion_run_multiple_slot_was_set_assertion_order_enabled(
+    default_agent: Agent, monkeypatch: MonkeyPatch
+) -> None:
+    def mock_init(self, *args, **kwargs) -> None:
+        self.agent = default_agent
+        self.llm_judge_config = MagicMock()
+
+    monkeypatch.setattr(
+        "rasa.e2e_test.e2e_test_runner.E2ETestRunner.__init__", mock_init
+    )
+
+    test_runner = E2ETestRunner()
+
+    async def mock_get_tracker(self, *args, **kwargs) -> DialogueStateTracker:
+        return DialogueStateTracker.from_events(
+            "test_run_assertions_multiple_slot_was_set",
+            evts=[
+                SessionStarted(),
+                UserUttered("I need to replace my card"),
+                BotUttered("What's the reason for the replacement?"),
+                UserUttered("some other reason"),
+                SlotSet("reason", "other"),
+                ActionExecuted("action_run_slot_rejections"),
+                SlotSet("reason", None),
+                BotUttered(
+                    "Other is an invalid reason. Please provide a valid reason."
+                ),
+            ],
+            slots=[TextSlot("reason", mappings=[])],
+        )
+
+    monkeypatch.setattr(test_runner.agent.processor, "get_tracker", mock_get_tracker)
+
+    monkeypatch.setattr(test_runner.agent.tracker_store, "retrieve", mock_get_tracker)
+    test_case = TestCase(
+        name="test_case_replace_card",
+        steps=[
+            TestStep.from_dict(
+                {
+                    "user": "I need to replace my card",
+                    "assertions": [
+                        {
+                            "bot_uttered": {
+                                "text_matches": "What's the reason for the replacement?"
+                            }
+                        }
+                    ],
+                }
+            ),
+            TestStep.from_dict(
+                {
+                    "user": "some other reason",
+                    "assertion_order_enabled": True,
+                    "assertions": [
+                        {"slot_was_set": [{"name": "reason"}]},
+                        {"slot_was_set": [{"name": "reason", "value": None}]},
+                    ],
+                }
+            ),
+        ],
+    )
+
+    results = await test_runner.run_tests([test_case], [], input_metadata=[])
+    assert len(results) == 1
+    assert isinstance(results[0], TestResult)
+    assert results[0].pass_status is True
+    assert results[0].difference == []
+    assert results[0].assertion_failure is None
+
+
+async def test_run_assertions_with_duplicate_user_messages(
+    default_agent: Agent,
+    monkeypatch: MonkeyPatch,
+    assertions_tracker_with_duplicate_user_msg: DialogueStateTracker,
+) -> None:
+    def mock_init(self, *args, **kwargs) -> None:
+        self.agent = default_agent
+        self.llm_judge_config = MagicMock()
+
+    monkeypatch.setattr(
+        "rasa.e2e_test.e2e_test_runner.E2ETestRunner.__init__", mock_init
+    )
+
+    test_runner = E2ETestRunner()
+
+    async def mock_get_tracker(self, *args, **kwargs) -> DialogueStateTracker:
+        return assertions_tracker_with_duplicate_user_msg
+
+    monkeypatch.setattr(test_runner.agent.processor, "get_tracker", mock_get_tracker)
+
+    test_case = TestCase(
+        name="test_case_transfer_money",
+        steps=[
+            TestStep.from_dict(
+                {
+                    "user": "send money",
+                    "assertions": [
+                        {
+                            "bot_uttered": {
+                                "text_matches": "How much would you like to transfer?"
+                            }
+                        }
+                    ],
+                }
+            ),
+            TestStep.from_dict(
+                {
+                    "user": "100 dollars",
+                    "assertions": [
+                        {"slot_was_set": [{"name": "amount", "value": 100}]}
+                    ],
+                }
+            ),
+            TestStep.from_dict(
+                {
+                    "user": "Jane Doe",
+                    "assertions": [
+                        {
+                            "slot_was_set": [
+                                {"name": "recipient", "value": "Jane Doe"}
+                            ],
+                            "bot_uttered": {
+                                "text_matches": "Please confirm if you'd like to "
+                                "proceed with the transfer?"
+                            },
+                        }
+                    ],
+                }
+            ),
+            TestStep.from_dict(
+                {
+                    "user": "Yes",
+                    "assertions": [
+                        {
+                            "bot_uttered": {
+                                "text_matches": "Transfer completed, "
+                                "anything else I can help you with?"
+                            }
+                        }
+                    ],
+                    "metadata": "turn_1",
+                }
+            ),
+            TestStep.from_dict(
+                {
+                    "user": "Please make the same transfer to John Doe",
+                    "assertions": [
+                        {
+                            "slot_was_set": [
+                                {"name": "recipient", "value": "John Doe"},
+                                {"name": "amount", "value": 100},
+                            ],
+                            "bot_uttered": {
+                                "text_matches": "Please confirm if you'd like to "
+                                "proceed with the transfer?"
+                            },
+                        }
+                    ],
+                }
+            ),
+            TestStep.from_dict(
+                {
+                    "user": "Yes",
+                    "assertions": [
+                        {
+                            "flow_completed": {
+                                "flow_id": "transfer_money",
+                                "flow_step_id": "action_transfer_money",
+                            }
+                        }
+                    ],
+                    "metadata": "turn_2",
+                }
+            ),
+        ],
+    )
+
+    input_metadata = [
+        Metadata(name="turn_1", metadata={"turn_idx": 1}),
+        Metadata(name="turn_2", metadata={"turn_idx": 2}),
+    ]
+
+    result = await test_runner.run_assertions(
+        "test_assertions_tracker_duplicate_user_msg", test_case, input_metadata
+    )
+    assert isinstance(result, TestResult)
+    assert result.pass_status is True
+    assert result.assertion_failure is None
+
+
+async def test_run_assertions_with_user_message_not_found(
+    default_agent: Agent,
+    monkeypatch: MonkeyPatch,
+    capsys: CaptureFixture,
+) -> None:
+    def mock_init(self, *args, **kwargs) -> None:
+        self.agent = default_agent
+
+    monkeypatch.setattr(
+        "rasa.e2e_test.e2e_test_runner.E2ETestRunner.__init__", mock_init
+    )
+
+    test_runner = E2ETestRunner()
+
+    async def mock_get_tracker(self, *args, **kwargs) -> DialogueStateTracker:
+        return DialogueStateTracker("no_user_event", slots=[])
+
+    monkeypatch.setattr(test_runner.agent.processor, "get_tracker", mock_get_tracker)
+
+    test_case = TestCase(
+        name="test_case_transfer_money",
+        steps=[
+            TestStep.from_dict(
+                {
+                    "user": "send money",
+                    "assertions": [
+                        {
+                            "bot_uttered": {
+                                "text_matches": "How much would you like to transfer?"
+                            }
+                        }
+                    ],
+                    "metadata": "test_info",
+                }
+            ),
+        ],
+    )
+
+    input_metadata = [
+        Metadata(name="test_info", metadata={"foo": "bar"}),
+    ]
+
+    result = await test_runner.run_assertions(
+        "no_user_event", test_case, input_metadata
+    )
+    assert isinstance(result, TestResult)
+    assert result.pass_status is False
+    assert result.assertion_failure is None
+
+    captured = capsys.readouterr()
+    error_message = (
+        "User message 'send money' was not found in the actual events. "
+        "The user message properties which were searched: "
+        "{'text': 'send money', 'metadata': {'foo': 'bar', "
+        "'model_id': None, 'assistant_id': None}}\n"
+    )
+    assert error_message in captured.out
+
+
+def test_get_additional_splitting_conditions(
+    assertions_tracker_with_duplicate_user_msg: DialogueStateTracker,
+    default_agent: Agent,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    def mock_init(self, *args, **kwargs) -> None:
+        self.agent = default_agent
+
+    monkeypatch.setattr(
+        "rasa.e2e_test.e2e_test_runner.E2ETestRunner.__init__", mock_init
+    )
+
+    test_runner = E2ETestRunner()
+
+    async def mock_get_tracker(self, *args, **kwargs) -> DialogueStateTracker:
+        return assertions_tracker_with_duplicate_user_msg
+
+    monkeypatch.setattr(test_runner.agent.processor, "get_tracker", mock_get_tracker)
+
+    test_step = TestStep.from_dict(
+        {
+            "user": "send money",
+            "assertions": [
+                {
+                    "bot_uttered": {
+                        "text_matches": "How much would you like to transfer?"
+                    }
+                }
+            ],
+            "metadata": "step_info",
+        }
+    )
+    test_case = TestCase(
+        name="test_case_transfer_money",
+        steps=[test_step],
+        metadata_name="test_case_info",
+    )
+
+    input_metadata = [
+        Metadata(name="step_info", metadata={"foo": "bar"}),
+        Metadata(name="test_case_info", metadata={"baz": "qux"}),
+    ]
+
+    additional_splitting_conditions = test_runner._get_additional_splitting_conditions(
+        test_step, input_metadata, assertions_tracker_with_duplicate_user_msg, test_case
+    )
+
+    assert additional_splitting_conditions == {
+        "text": test_step.text,
+        "metadata": {
+            "foo": "bar",
+            "baz": "qux",
+            "model_id": assertions_tracker_with_duplicate_user_msg.model_id,
+            "assistant_id": assertions_tracker_with_duplicate_user_msg.assistant_id,
+        },
+    }
+
+
+def test_get_current_user_turn_and_prior_events(
+    assertions_e2e_test_runner: E2ETestRunner,
+    assertions_tracker: DialogueStateTracker,
+) -> None:
+    test_step = TestStep.from_dict(
+        {
+            "user": "send money",
+            "assertions": [
+                {
+                    "bot_uttered": {
+                        "text_matches": "How much would you like to transfer?"
+                    }
+                }
+            ],
+        }
+    )
+
+    additional_splitting_conditions = {"text": test_step.text}
+
+    current_user_turn, prior_events = (
+        assertions_e2e_test_runner._get_current_user_turn_and_prior_events(
+            assertions_tracker, additional_splitting_conditions, test_step
+        )
+    )
+
+    assert prior_events == [assertions_tracker.events[0]]
+    assert current_user_turn == list(assertions_tracker.events)[1:]
+
+
+def test_slice_turn_events(
+    assertions_e2e_test_runner: E2ETestRunner,
+    assertions_tracker: DialogueStateTracker,
+) -> None:
+    test_step = TestStep.from_dict(
+        {
+            "user": "send money",
+            "assertions": [{"flow_started": "transfer_money"}],
+            "assertion_order_enabled": True,
+        }
+    )
+
+    additional_splitting_conditions = {"text": test_step.text}
+
+    current_user_turn, prior_events = (
+        assertions_e2e_test_runner._get_current_user_turn_and_prior_events(
+            assertions_tracker, additional_splitting_conditions, test_step
+        )
+    )
+
+    matching_event = FlowStarted("transfer_money")
+    sliced_turn_events, new_prior_events = (
+        assertions_e2e_test_runner._slice_turn_events(
+            test_step, matching_event, current_user_turn, copy.deepcopy(prior_events)
+        )
+    )
+
+    # we skip the first event in the current user turn, as it is the user
+    # message that we are splitting on
+    # we also skip the second event in the user turn, because it was already
+    # verified by the assertion
+    assert sliced_turn_events == current_user_turn[2:]
+
+    # the skipped events should be added to the prior events
+    assert new_prior_events == prior_events + current_user_turn[:2]
+
+
+@pytest.mark.parametrize(
+    "events, expected_flow_paths, expected_tested_commands",
+    [
+        (
+            # No flows started, e.g. a nlu-based assistant was used
+            [
+                UserUttered("Hi!"),
+                BotUttered("Hey! How are you?"),
+                UserUttered("I would like to book a trip."),
+                BotUttered("Where would you like to travel?"),
+                UserUttered("I want to go to Lisbon."),
+                ActionExecuted("action_one"),
+                ActionExecuted("action_two"),
+                BotUttered("Your trip to Madrid has been booked."),
+            ],
+            [],  # No flow paths
+            {},  # No commands were tested
+        ),
+        (
+            # one flow with a bot utterance and a custom action
+            [
+                UserUttered(
+                    "What is the weather like?",
+                    parse_data={"commands": [{"command": "ask_weather"}]},
+                ),
+                FlowStarted("flow_a"),
+                BotUttered(
+                    metadata={
+                        ACTIVE_FLOW_METADATA_KEY: "flow_a",
+                        STEP_ID_METADATA_KEY: "utter_1",
+                    }
+                ),
+                ActionExecuted(
+                    "custom_action_1",
+                    metadata={
+                        ACTIVE_FLOW_METADATA_KEY: "flow_a",
+                        STEP_ID_METADATA_KEY: "custom_action_1",
+                    },
+                ),
+                FlowCompleted("flow_a", "END"),
+            ],
+            [
+                FlowPath(
+                    "flow_a",
+                    nodes=[
+                        PathNode(step_id="utter_1", flow="flow_a"),
+                        PathNode(step_id="custom_action_1", flow="flow_a"),
+                    ],
+                )
+            ],
+            {"no_flow": {"ask_weather": 1}},  # Commands were tested within flow_a
+        ),
+        (
+            # nested flows with different utterances; flow a not completed
+            [
+                FlowStarted("flow_a"),
+                BotUttered(
+                    metadata={
+                        ACTIVE_FLOW_METADATA_KEY: "flow_a",
+                        STEP_ID_METADATA_KEY: "utter_1",
+                    }
+                ),
+                UserUttered(
+                    "Start flow", parse_data={"commands": [{"command": "start_flow"}]}
+                ),
+                FlowStarted("flow_b"),
+                UserUttered(
+                    "Continue flow",
+                    parse_data={"commands": [{"command": "continue_flow"}]},
+                ),
+                BotUttered(
+                    metadata={
+                        ACTIVE_FLOW_METADATA_KEY: "flow_b",
+                        STEP_ID_METADATA_KEY: "utter_2",
+                    }
+                ),
+                FlowCompleted("flow_b", "END"),
+                BotUttered(
+                    metadata={
+                        ACTIVE_FLOW_METADATA_KEY: "flow_a",
+                        STEP_ID_METADATA_KEY: "utter_3",
+                    }
+                ),
+            ],
+            [
+                FlowPath(
+                    "flow_b",
+                    nodes=[PathNode(step_id="utter_2", flow="flow_b")],
+                ),
+                FlowPath(
+                    "flow_a",
+                    nodes=[
+                        PathNode(step_id="utter_1", flow="flow_a"),
+                        PathNode(step_id="utter_3", flow="flow_a"),
+                    ],
+                ),
+            ],
+            {
+                "flow_a": {"start_flow": 1},
+                "flow_b": {"continue_flow": 1},
+            },  # Commands were tested within flow_a and flow_b
+        ),
+        (
+            # flow with patterns
+            [
+                FlowStarted("flow_a"),
+                BotUttered(
+                    metadata={
+                        ACTIVE_FLOW_METADATA_KEY: "flow_a",
+                        STEP_ID_METADATA_KEY: "utter_1",
+                    }
+                ),
+                FlowStarted("pattern_collect_information"),
+                BotUttered(
+                    metadata={
+                        ACTIVE_FLOW_METADATA_KEY: "flow_a",
+                        STEP_ID_METADATA_KEY: "utter_2",
+                    }
+                ),
+                FlowCompleted("pattern_collect_information", "END"),
+                BotUttered(
+                    metadata={
+                        ACTIVE_FLOW_METADATA_KEY: "flow_a",
+                        STEP_ID_METADATA_KEY: "utter_3",
+                    }
+                ),
+                FlowCompleted("flow_a", "END"),
+            ],
+            [
+                FlowPath(
+                    "flow_a",
+                    nodes=[
+                        PathNode(step_id="utter_1", flow="flow_a"),
+                        PathNode(step_id="utter_2", flow="flow_a"),
+                        PathNode(step_id="utter_3", flow="flow_a"),
+                    ],
+                )
+            ],
+            {},  # No commands were tested
+        ),
+        (
+            # flow with direct call step
+            [
+                FlowStarted("flow_a"),
+                BotUttered(
+                    metadata={
+                        ACTIVE_FLOW_METADATA_KEY: "flow_a",
+                        STEP_ID_METADATA_KEY: "utter_1",
+                    }
+                ),
+                FlowStarted("flow_b"),
+                BotUttered(
+                    metadata={
+                        ACTIVE_FLOW_METADATA_KEY: "flow_b",
+                        STEP_ID_METADATA_KEY: "utter_2",
+                    }
+                ),
+                FlowCompleted("flow_b", "END"),
+                BotUttered(
+                    metadata={
+                        ACTIVE_FLOW_METADATA_KEY: "flow_a",
+                        STEP_ID_METADATA_KEY: "utter_3",
+                    }
+                ),
+                FlowCompleted("flow_a", "END"),
+            ],
+            [
+                FlowPath(
+                    "flow_b",
+                    nodes=[
+                        PathNode(step_id="utter_2", flow="flow_b"),
+                    ],
+                ),
+                FlowPath(
+                    "flow_a",
+                    nodes=[
+                        PathNode(step_id="utter_1", flow="flow_a"),
+                        PathNode(step_id="utter_3", flow="flow_a"),
+                    ],
+                ),
+            ],
+            {},
+        ),
+    ],
+)
+def test_get_tested_flow_paths_and_commands(
+    events: List[Event],
+    expected_flow_paths: List[FlowPath],
+    expected_tested_commands: Dict[str, Dict[str, int]],
+    mock_e2e_test_runner: E2ETestRunner,
+):
+    test_result = TestResult(TestCase("test_case", []), pass_status=True, difference=[])
+
+    actual_flow_paths, actual_tested_commands = (
+        mock_e2e_test_runner._get_tested_flow_paths_and_commands(events, test_result)
+    )
+
+    assert actual_flow_paths == expected_flow_paths
+    assert actual_tested_commands == expected_tested_commands

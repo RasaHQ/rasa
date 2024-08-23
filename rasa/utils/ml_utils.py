@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional, Text
 import numpy as np
 import structlog
 from langchain.schema.embeddings import Embeddings
-from langchain.vectorstores import FAISS
+from langchain_community.vectorstores import FAISS
 from rasa.shared.constants import REQUIRED_SLOTS_KEY
 from rasa.shared.core.domain import KEY_RESPONSES_TEXT, Domain
 from rasa.shared.utils.llm import AI
@@ -34,7 +34,9 @@ def load_faiss_vector_store(path: Path, embedder: Embeddings) -> Optional[FAISS]
         The loaded vector store or None if the path does not exist.
     """
     if path.exists():
-        return FAISS.load_local(str(path), embedder)
+        return FAISS.load_local(
+            str(path), embedder, allow_dangerous_deserialization=True
+        )
     else:
         return None
 

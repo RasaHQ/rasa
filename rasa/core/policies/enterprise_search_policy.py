@@ -8,6 +8,11 @@ import structlog
 from jinja2 import Template
 from pydantic import ValidationError
 
+from rasa.shared.providers.embedding._langchain_embedding_client_adapter import (
+    _LangchainEmbeddingClientAdapter,
+)
+from rasa.shared.providers.llm.llm_client import LLMClient
+
 import rasa.shared.utils.io
 from rasa.telemetry import (
     track_enterprise_search_policy_predict,
@@ -19,6 +24,7 @@ from rasa.core.constants import (
     POLICY_MAX_HISTORY,
     POLICY_PRIORITY,
     SEARCH_POLICY_PRIORITY,
+    UTTER_SOURCE_METADATA_KEY,
 )
 from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.core.utils import AvailableEndpoints
@@ -39,13 +45,21 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.graph_components.providers.forms_provider import Forms
 from rasa.graph_components.providers.responses_provider import Responses
+from rasa.shared.constants import (
+    API_TYPE_CONFIG_KEY,
+    EMBEDDINGS_CONFIG_KEY,
+    LLM_CONFIG_KEY,
+    MODEL_CONFIG_KEY,
+    MODEL_NAME_CONFIG_KEY,
+    PROMPT_CONFIG_KEY,
+)
 from rasa.shared.core.constants import (
     ACTION_CANCEL_FLOW,
     ACTION_SEND_TEXT_NAME,
     DEFAULT_SLOT_NAMES,
 )
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import Event
+from rasa.shared.core.events import Event, UserUttered, BotUttered
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -70,7 +84,6 @@ from rasa.core.information_retrieval import (
 
 if TYPE_CHECKING:
     from langchain.schema.embeddings import Embeddings
-    from langchain.llms.base import BaseLLM
     from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 
 from rasa.utils.log_utils import log_llm
@@ -86,6 +99,7 @@ VECTOR_STORE_THRESHOLD_PROPERTY = "threshold"
 TRACE_TOKENS_PROPERTY = "trace_prompt_tokens"
 CITATION_ENABLED_PROPERTY = "citation_enabled"
 USE_LLM_PROPERTY = "use_generative_llm"
+MAX_MESSAGES_IN_QUERY_KEY = "max_messages_in_query"
 
 DEFAULT_VECTOR_STORE_TYPE = "faiss"
 DEFAULT_VECTOR_STORE_THRESHOLD = 0.0
@@ -96,22 +110,23 @@ DEFAULT_VECTOR_STORE = {
 }
 
 DEFAULT_LLM_CONFIG = {
-    "_type": "openai",
+    "api_type": "openai",
+    "model": DEFAULT_OPENAI_CHAT_MODEL_NAME,
     "request_timeout": 10,
     "temperature": 0.0,
     "max_tokens": 256,
-    "model_name": DEFAULT_OPENAI_CHAT_MODEL_NAME,
     "max_retries": 1,
 }
 
 DEFAULT_EMBEDDINGS_CONFIG = {
-    "_type": "openai",
+    "api_type": "openai",
     "model": DEFAULT_OPENAI_EMBEDDING_MODEL_NAME,
 }
 
-EMBEDDINGS_CONFIG_KEY = "embeddings"
-LLM_CONFIG_KEY = "llm"
 ENTERPRISE_SEARCH_PROMPT_FILE_NAME = "enterprise_search_policy_prompt.jinja2"
+
+SEARCH_RESULTS_METADATA_KEY = "search_results"
+SEARCH_QUERY_METADATA_KEY = "search_query"
 
 DEFAULT_ENTERPRISE_SEARCH_PROMPT_TEMPLATE = importlib.resources.read_text(
     "rasa.core.policies", "enterprise_search_prompt_template.jinja2"
@@ -179,26 +194,42 @@ class EnterpriseSearchPolicy(Policy):
         """Constructs a new Policy object."""
         super().__init__(config, model_storage, resource, execution_context, featurizer)
 
+        # Vector store object and configuration
         self.vector_store = vector_store
         self.vector_store_config = config.get(
             VECTOR_STORE_PROPERTY, DEFAULT_VECTOR_STORE
         )
-        self.llm_config = self.config.get(LLM_CONFIG_KEY, DEFAULT_LLM_CONFIG)
+        # Embeddings configuration for encoding the search query
         self.embeddings_config = self.config.get(
             EMBEDDINGS_CONFIG_KEY, DEFAULT_EMBEDDINGS_CONFIG
         )
+        # Maximum number of turns to include in the prompt
         self.max_history = self.config.get(POLICY_MAX_HISTORY)
+
+        # Maximum number of messages to include in the search query
+        self.max_messages_in_query = self.config.get(MAX_MESSAGES_IN_QUERY_KEY, 2)
+
+        # LLM Configuration for response generation
+        self.llm_config = self.config.get(LLM_CONFIG_KEY, DEFAULT_LLM_CONFIG)
+
+        # boolean to enable/disable tracing of prompt tokens
+        self.trace_prompt_tokens = self.config.get(TRACE_TOKENS_PROPERTY, False)
+
+        # boolean to enable/disable the use of LLM for response generation
+        self.use_llm = self.config.get(USE_LLM_PROPERTY, True)
+
+        # boolean to enable/disable citation generation
+        self.citation_enabled = self.config.get(CITATION_ENABLED_PROPERTY, False)
+
         self.prompt_template = prompt_template or get_prompt_template(
-            self.config.get("prompt"),
+            self.config.get(PROMPT_CONFIG_KEY),
             DEFAULT_ENTERPRISE_SEARCH_PROMPT_TEMPLATE,
         )
-        self.trace_prompt_tokens = self.config.get(TRACE_TOKENS_PROPERTY, False)
-        self.use_llm = self.config.get(USE_LLM_PROPERTY, True)
-        self.citation_enabled = self.config.get(CITATION_ENABLED_PROPERTY, False)
         self.citation_prompt_template = get_prompt_template(
-            self.config.get("prompt"),
+            self.config.get(PROMPT_CONFIG_KEY),
             DEFAULT_ENTERPRISE_SEARCH_PROMPT_WITH_CITATION_TEMPLATE,
         )
+        # If citation is enabled, use the citation prompt template
         if self.citation_enabled:
             self.prompt_template = self.citation_prompt_template
 
@@ -209,9 +240,10 @@ class EnterpriseSearchPolicy(Policy):
         Returns:
         The embedder.
         """
-        return embedder_factory(
+        client = embedder_factory(
             config.get(EMBEDDINGS_CONFIG_KEY), DEFAULT_EMBEDDINGS_CONFIG
         )
+        return _LangchainEmbeddingClientAdapter(client)
 
     def train(  # type: ignore[override]
         self,
@@ -275,11 +307,12 @@ class EnterpriseSearchPolicy(Policy):
         # telemetry call to track training completion
         track_enterprise_search_policy_train_completed(
             vector_store_type=store_type,
-            embeddings_type=self.embeddings_config.get("_type"),
-            embeddings_model=self.embeddings_config.get("model")
-            or self.embeddings_config.get("model_name"),
-            llm_type=self.llm_config.get("_type"),
-            llm_model=self.llm_config.get("model") or self.llm_config.get("model_name"),
+            embeddings_type=self.embeddings_config.get(API_TYPE_CONFIG_KEY),
+            embeddings_model=self.embeddings_config.get(MODEL_CONFIG_KEY)
+            or self.embeddings_config.get(MODEL_NAME_CONFIG_KEY),
+            llm_type=self.llm_config.get(API_TYPE_CONFIG_KEY),
+            llm_model=self.llm_config.get(MODEL_CONFIG_KEY)
+            or self.llm_config.get(MODEL_NAME_CONFIG_KEY),
             citation_enabled=self.citation_enabled,
         )
         self.persist()
@@ -348,19 +381,25 @@ class EnterpriseSearchPolicy(Policy):
                 f"Unable to connect to the vector store. Error: {e}"
             )
 
-    def _get_last_user_message(self, tracker: DialogueStateTracker) -> str:
-        """Get the last user message from the tracker.
+    def _prepare_search_query(self, tracker: DialogueStateTracker, history: int) -> str:
+        """Prepares the search query.
+        The search query is the last N messages in the conversation history.
 
         Args:
             tracker: The tracker containing the conversation history up to now.
+            history: The number of messages to include in the search query.
 
         Returns:
-            The last user message.
+            The search query.
         """
-        for event in reversed(tracker.events):
-            if isinstance(event, rasa.shared.core.events.UserUttered):
-                return sanitize_message_for_prompt(event.text)
-        return ""
+        transcript = []
+        for event in tracker.applied_events():
+            if isinstance(event, UserUttered) or isinstance(event, BotUttered):
+                transcript.append(sanitize_message_for_prompt(event.text))
+
+        search_query = " ".join(transcript[-history:][::-1])
+        logger.debug("search_query", search_query=search_query)
+        return search_query
 
     async def predict_action_probabilities(  # type: ignore[override]
         self,
@@ -404,7 +443,9 @@ class EnterpriseSearchPolicy(Policy):
             logger.error(f"{logger_key}.connection_error", error=e)
             return self._create_prediction_internal_error(domain, tracker)
 
-        search_query = self._get_last_user_message(tracker)
+        search_query = self._prepare_search_query(
+            tracker, int(self.max_messages_in_query)
+        )
         tracker_state = tracker.current_state(EventVerbosity.AFTER_RESTART)
 
         try:
@@ -448,17 +489,23 @@ class EnterpriseSearchPolicy(Policy):
         action_metadata = {
             "message": {
                 "text": response,
+                SEARCH_RESULTS_METADATA_KEY: [
+                    result.text for result in documents.results
+                ],
+                UTTER_SOURCE_METADATA_KEY: self.__class__.__name__,
+                SEARCH_QUERY_METADATA_KEY: search_query,
             }
         }
 
         # telemetry call to track policy prediction
         track_enterprise_search_policy_predict(
             vector_store_type=self.vector_store_config.get(VECTOR_STORE_TYPE_PROPERTY),
-            embeddings_type=self.embeddings_config.get("_type"),
-            embeddings_model=self.embeddings_config.get("model")
-            or self.embeddings_config.get("model_name"),
-            llm_type=self.llm_config.get("_type"),
-            llm_model=self.llm_config.get("model") or self.llm_config.get("model_name"),
+            embeddings_type=self.embeddings_config.get(API_TYPE_CONFIG_KEY),
+            embeddings_model=self.embeddings_config.get(MODEL_CONFIG_KEY)
+            or self.embeddings_config.get(MODEL_NAME_CONFIG_KEY),
+            llm_type=self.llm_config.get(API_TYPE_CONFIG_KEY),
+            llm_model=self.llm_config.get(MODEL_CONFIG_KEY)
+            or self.llm_config.get(MODEL_NAME_CONFIG_KEY),
             citation_enabled=self.citation_enabled,
         )
         return self._create_prediction(
@@ -495,10 +542,11 @@ class EnterpriseSearchPolicy(Policy):
         return prompt
 
     async def _generate_llm_answer(
-        self, llm: "BaseLLM", prompt: Text
+        self, llm: LLMClient, prompt: Text
     ) -> Optional[Text]:
         try:
-            llm_answer = await llm.apredict(prompt)
+            llm_response = await llm.acompletion(prompt)
+            llm_answer = llm_response.choices[0]
         except Exception as e:
             # unfortunately, langchain does not wrap LLM exceptions which means
             # we have to catch all exceptions here
@@ -684,7 +732,7 @@ class EnterpriseSearchPolicy(Policy):
         local_knowledge_data = cls._get_local_knowledge_data(config)
 
         prompt_template = get_prompt_template(
-            config.get("prompt"),
+            config.get(PROMPT_CONFIG_KEY),
             DEFAULT_ENTERPRISE_SEARCH_PROMPT_TEMPLATE,
         )
         return deep_container_fingerprint([prompt_template, local_knowledge_data])

@@ -4,9 +4,11 @@ from typing import List, Optional
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
-from langchain.embeddings import FakeEmbeddings
-from langchain.llms.fake import FakeListLLM
+from langchain_community.embeddings import FakeEmbeddings
+from langchain_community.llms.fake import FakeListLLM
 from pytest import MonkeyPatch
+
+from rasa.core.constants import UTTER_SOURCE_METADATA_KEY
 
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import (
@@ -19,6 +21,7 @@ from rasa.core.policies.policy import PolicyPrediction
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.shared.constants import OPENAI_API_KEY_ENV_VAR, LLM_CONFIG_KEY
 from rasa.shared.constants import ROUTE_TO_CALM_SLOT
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, UserUttered, BotUttered
@@ -31,7 +34,8 @@ from rasa.core.information_retrieval import (
     InformationRetrievalException,
 )
 from rasa.core.policies.enterprise_search_policy import (
-    LLM_CONFIG_KEY,
+    SEARCH_QUERY_METADATA_KEY,
+    SEARCH_RESULTS_METADATA_KEY,
     USE_LLM_PROPERTY,
     EnterpriseSearchPolicy,
     VectorStoreConfigurationError,
@@ -655,14 +659,14 @@ async def test_enterprise_search_policy_no_retrieval(
     "events,search_query",
     [
         ([UserUttered("search")], "search"),
-        ([BotUttered("Hi, I am a bot")], ""),
+        ([BotUttered("Hi, I am a bot")], "Hi, I am a bot"),
         ([UserUttered("\nsearch\n\nthis query")], " search  this query"),
         (
             [
                 UserUttered("why is the sky blue?"),
                 BotUttered("let me find out the answer for you..."),
             ],
-            "why is the sky blue?",
+            "let me find out the answer for you... why is the sky blue?",
         ),
         (
             [
@@ -670,11 +674,11 @@ async def test_enterprise_search_policy_no_retrieval(
                 BotUttered("first message after query..."),
                 BotUttered("second message after query..."),
             ],
-            "search",
+            "second message after query... first message after query...",
         ),
     ],
 )
-def test_get_last_user_message(
+def test_prepare_search_query(
     default_enterprise_search_policy: EnterpriseSearchPolicy,
     events: List,
     search_query: str,
@@ -686,7 +690,8 @@ def test_get_last_user_message(
     )
 
     assert (
-        default_enterprise_search_policy._get_last_user_message(tracker) == search_query
+        default_enterprise_search_policy._prepare_search_query(tracker, 2)
+        == search_query
     )
 
 
@@ -1039,11 +1044,13 @@ async def test_enterprise_search_policy_response_with_use_llm_false(
     vector_store: InformationRetrieval,
     enterprise_search_tracker: DialogueStateTracker,
     search_results: SearchResultList,
+    monkeypatch: MonkeyPatch,
 ) -> None:
     """Given the `USE_LLM_PROPERTY` is set to False, the policy should return
     a response without using the LLM. Response text should be from the first
     search result.
     """
+    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "my key")
     policy = EnterpriseSearchPolicy(
         config={USE_LLM_PROPERTY: False},
         model_storage=default_model_storage,
@@ -1080,10 +1087,12 @@ async def test_enterprise_search_policy_response_with_use_llm_true(
     vector_store: InformationRetrieval,
     enterprise_search_tracker: DialogueStateTracker,
     search_results: SearchResultList,
+    monkeypatch: MonkeyPatch,
 ) -> None:
     """Given the `USE_LLM_PROPERTY` is set to True, the policy should return
     a response using the LLM. Response text should be from the LLM.
     """
+    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "my key")
     policy = EnterpriseSearchPolicy(
         config={USE_LLM_PROPERTY: True},
         model_storage=default_model_storage,
@@ -1116,10 +1125,17 @@ async def test_enterprise_search_policy_response_with_use_llm_true(
                 )
 
                 assert isinstance(prediction, PolicyPrediction)
+
+                message_metadata = prediction.action_metadata.get("message")
+                assert message_metadata.get("text") == "LLM generated response"
                 assert (
-                    prediction.action_metadata.get("message").get("text")
-                    == "LLM generated response"
+                    message_metadata.get(UTTER_SOURCE_METADATA_KEY)
+                    == "EnterpriseSearchPolicy"
                 )
+                assert SEARCH_QUERY_METADATA_KEY in message_metadata
+                assert message_metadata.get(SEARCH_RESULTS_METADATA_KEY) == [
+                    result.text for result in search_results.results
+                ]
 
 
 @pytest.mark.parametrize(

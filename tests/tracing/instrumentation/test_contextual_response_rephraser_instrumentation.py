@@ -83,19 +83,18 @@ def greet_tracker() -> DialogueStateTracker:
         ),
         (
             {
-                "type": "cohere",
-                "model": "gptd-instruct-tft",
+                "model": "cohere/gptd-instruct-tft",
                 "temperature": 0.7,
                 "request_timeout": 10,
             },
             {
                 "llm_type": "cohere",
-                "llm_model": "gptd-instruct-tft",
+                "llm_model": "cohere/gptd-instruct-tft",
                 "llm_temperature": "0.7",
                 "request_timeout": "10",
             },
         ),
-        (
+        (  # Invalid type, should default to the type from the default config.
             {
                 "type": "test",
                 "model_name": None,
@@ -103,8 +102,8 @@ def greet_tracker() -> DialogueStateTracker:
                 "request_timeout": 10,
             },
             {
-                "llm_type": "test",
-                "llm_model": "None",
+                "llm_type": "openai",
+                "llm_model": "gpt-3.5-turbo",
                 "llm_temperature": "0.7",
                 "request_timeout": "10",
             },
@@ -310,18 +309,18 @@ async def test_tracing_contextual_response_rephraser_len_prompt_tokens_non_opena
         (
             {
                 "type": "cohere",
-                "model": "gptd-instruct-tft",
+                "model": "cohere/gptd-instruct-tft",
                 "temperature": 0.7,
                 "request_timeout": 10,
             },
             {
                 "llm_type": "cohere",
-                "llm_model": "gptd-instruct-tft",
+                "llm_model": "cohere/gptd-instruct-tft",
                 "llm_temperature": "0.7",
                 "request_timeout": "10",
             },
         ),
-        (
+        (  # Invalid type, should default to the type from the default config.
             {
                 "type": "test",
                 "model_name": None,
@@ -329,8 +328,8 @@ async def test_tracing_contextual_response_rephraser_len_prompt_tokens_non_opena
                 "request_timeout": 10,
             },
             {
-                "llm_type": "test",
-                "llm_model": "None",
+                "llm_type": "openai",
+                "llm_model": "gpt-3.5-turbo",
                 "llm_temperature": "0.7",
                 "request_timeout": "10",
             },

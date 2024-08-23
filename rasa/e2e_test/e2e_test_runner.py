@@ -2,27 +2,30 @@ import asyncio
 import copy
 import datetime
 import difflib
-import logging
 from asyncio import CancelledError
-from typing import Any, Dict, List, Optional, Text, Tuple, Union
+from collections import defaultdict
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Text, Tuple, Union, DefaultDict
 from urllib.parse import urlparse
 
-import rasa.shared.utils.io
 import requests
+import structlog
+from tqdm import tqdm
+
+import rasa.shared.utils.io
 from rasa.core.channels import CollectingOutputChannel, UserMessage
+from rasa.core.constants import STEP_ID_METADATA_KEY, ACTIVE_FLOW_METADATA_KEY
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.utils import AvailableEndpoints
-from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
-from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.exceptions import RasaException
-from rasa.utils.endpoints import EndpointConfig
-
+from rasa.e2e_test.constants import TEST_FILE_NAME, TEST_CASE_NAME
+from rasa.e2e_test.e2e_config import create_llm_judge_config
 from rasa.e2e_test.e2e_test_case import (
     ActualStepOutput,
     Fixture,
     Metadata,
     TestCase,
     TestStep,
+    KEY_STUB_CUSTOM_ACTIONS,
 )
 from rasa.e2e_test.e2e_test_result import (
     NO_RESPONSE,
@@ -30,10 +33,26 @@ from rasa.e2e_test.e2e_test_result import (
     TestFailure,
     TestResult,
 )
-
+from rasa.llm_fine_tuning.conversations import Conversation
+from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
+from rasa.shared.core.events import (
+    BotUttered,
+    SlotSet,
+    UserUttered,
+    FlowCompleted,
+    Event,
+    ActionExecuted,
+    FlowStarted,
+)
+from rasa.shared.core.flows.flow_path import FlowPath, PathNode
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.exceptions import RasaException
+from rasa.shared.nlu.constants import COMMANDS
 from rasa.telemetry import track_e2e_test_run
+from rasa.utils.endpoints import EndpointConfig
 
-logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger()
+
 TEST_TURNS_TYPE = Dict[int, Union[TestStep, ActualStepOutput]]
 
 
@@ -44,6 +63,7 @@ class E2ETestRunner:
         model_server: Optional[EndpointConfig] = None,
         remote_storage: Optional[Text] = None,
         endpoints: Optional[AvailableEndpoints] = None,
+        **kwargs: Any,
     ) -> None:
         """Initializes the E2E test suite runner.
 
@@ -52,18 +72,21 @@ class E2ETestRunner:
             model_server: Model server configuration.
             remote_storage: Remote storage configuration.
             endpoints: Endpoints configuration.
+            **kwargs: Additional arguments
         """
         import rasa.core.agent
 
-        logger.warning(
-            "Started running end-to-end testing. "
-            "Note that this feature is not intended for use in a "
-            "production environment. Don't use it to process sensitive data. "
-            "If you do, it's at your own risk. "
-            "We're looking forward to your feedback."
+        structlogger.info(
+            "e2e_test_runner.init",
+            event_info="Started running end-to-end testing.",
         )
 
-        if endpoints:
+        are_custom_actions_stubbed = (
+            endpoints
+            and endpoints.action
+            and endpoints.action.kwargs.get(KEY_STUB_CUSTOM_ACTIONS)
+        )
+        if endpoints and not are_custom_actions_stubbed:
             self._action_server_is_reachable(endpoints)
 
         self.agent = asyncio.run(
@@ -82,6 +105,9 @@ class E2ETestRunner:
                 "load the trained model."
             )
 
+        test_case_path = kwargs.get("test_case_path")
+        self.llm_judge_config = create_llm_judge_config(test_case_path)
+
     async def run_prediction_loop(
         self,
         collector: CollectingOutputChannel,
@@ -96,6 +122,8 @@ class E2ETestRunner:
             collector: Output channel.
             steps: List of steps to run.
             sender_id: The test case name with added timestamp suffix.
+            test_case_metadata: Metadata of test case.
+            input_metadata: List of metadata.
 
         Returns:
             Test turns: {turn_sequence (int) : TestStep or ActualStepOutput}.
@@ -103,7 +131,10 @@ class E2ETestRunner:
         turns: TEST_TURNS_TYPE = {}
         event_cursor = 0
 
-        tracker = await self.agent.processor.fetch_tracker_with_initial_session(  # type: ignore[union-attr]
+        if not self.agent.processor:
+            return turns
+
+        tracker = await self.agent.processor.fetch_tracker_with_initial_session(
             sender_id
         )
         # turn -1 i used to contain events that happen during
@@ -111,7 +142,12 @@ class E2ETestRunner:
         # TestStep is a placeholder just for the sake of having a turn
         # to specify the actor
         turns[-1], event_cursor = self.get_actual_step_output(
-            tracker, TestStep(actor="bot", text=None), event_cursor
+            tracker,
+            TestStep(
+                actor="bot",
+                text=None,
+            ),
+            event_cursor,
         )
 
         for position, step in enumerate(steps):
@@ -148,16 +184,18 @@ class E2ETestRunner:
                     )
                 )
             except CancelledError:
-                logger.error(
-                    f"Message handling timed out for user message '{step.text}'.",
+                structlogger.error(
+                    "e2e_test_runner.run_prediction_loop",
+                    error=f"Message handling timed out for user message '{step.text}'.",
                     exc_info=True,
                 )
             except Exception:
-                logger.exception(
-                    f"An exception occurred while handling "
-                    f"user message '{step.text}'."
+                structlogger.error(
+                    "e2e_test_runner.run_prediction_loop",
+                    error=f"An exception occurred while handling "
+                    f"user message '{step.text}'.",
                 )
-            tracker = await self.agent.tracker_store.retrieve(sender_id)
+            tracker = await self.agent.tracker_store.retrieve(sender_id)  # type: ignore[assignment]
             turns[position], event_cursor = self.get_actual_step_output(
                 tracker, step, event_cursor
             )
@@ -194,11 +232,12 @@ class E2ETestRunner:
 
         if keys_to_overwrite:
             test_case_name = sender_id.rsplit("_", 1)[0]
-            logger.warning(
-                f"Metadata {keys_to_overwrite} exist in both the test case "
+            structlogger.warning(
+                "e2e_test_runner.merge_metadata",
+                message=f"Metadata {keys_to_overwrite} exist in both the test case "
                 f"'{test_case_name}' and the user step '{step_text}'. "
                 "The user step metadata takes precedence and will "
-                "override the test case metadata."
+                "override the test case metadata.",
             )
 
         merged_metadata = copy.deepcopy(test_case_metadata)
@@ -238,9 +277,10 @@ class E2ETestRunner:
                 event_cursor,
             )
         else:
-            logger.warning(
-                f"No events found for '{tracker.sender_id}' after processing test "
-                f"step '{test_step.text}'."
+            structlogger.warning(
+                "e2e_test_runner.get_actual_step_output",
+                message=f"No events found for '{tracker.sender_id}' after processing "
+                f"test step '{test_step.text}'.",
             )
             # if there are no events, we still want to return an
             # ActualStepOutput object with the test step as the
@@ -271,20 +311,209 @@ class E2ETestRunner:
         Returns:
         Test result.
         """
-        test_failures = cls.find_test_failures(test_turns, test_case)
         difference = []
-        first_failure = None
+        error_line = None
+        test_failures = cls.find_test_failures(test_turns, test_case)
         if test_failures:
             first_failure = test_failures[0][0]
             difference = cls.human_readable_diff(test_turns, test_failures)
-        else:
-            difference = []
+            error_line = first_failure.error_line if first_failure else None
 
         return TestResult(
             pass_status=len(test_failures) == 0,
             test_case=test_case,
             difference=difference,
-            error_line=first_failure.error_line if first_failure else None,
+            error_line=error_line,
+        )
+
+    def _get_additional_splitting_conditions(
+        self,
+        step: TestStep,
+        input_metadata: List[Metadata],
+        tracker: DialogueStateTracker,
+        test_case: TestCase,
+    ) -> Dict[str, Any]:
+        """Returns additional splitting conditions for the user message."""
+        additional_splitting_conditions: Dict[str, Any] = {"text": step.text}
+
+        if not step.metadata_name:
+            return additional_splitting_conditions
+
+        step_metadata = self.filter_metadata_for_input(
+            step.metadata_name, input_metadata
+        )
+        step_metadata_dict = step_metadata.metadata if step_metadata else {}
+
+        test_case_metadata = self.filter_metadata_for_input(
+            test_case.metadata_name, input_metadata
+        )
+        test_case_metadata_as_dict = (
+            test_case_metadata.metadata if test_case_metadata else {}
+        )
+
+        metadata: Dict[str, Any] = self.merge_metadata(
+            tracker.sender_id,
+            step.text,
+            test_case_metadata_as_dict,
+            step_metadata_dict,
+        )
+        metadata["model_id"] = tracker.model_id
+        metadata["assistant_id"] = tracker.assistant_id
+
+        additional_splitting_conditions["metadata"] = metadata
+
+        return additional_splitting_conditions
+
+    @staticmethod
+    def _get_current_user_turn_and_prior_events(
+        tracker: DialogueStateTracker,
+        additional_splitting_conditions: Dict[str, Any],
+        step: TestStep,
+    ) -> Tuple[List[Event], List[Event]]:
+        """Returns the current user turn and prior events."""
+        actual_events = tracker.events
+
+        # this returns 2 lists, the first list contains the events until the user
+        # message and the second list contains the events after the
+        # user message, including the user message
+        step_events = rasa.shared.core.events.split_events(
+            actual_events,
+            UserUttered,
+            additional_splitting_conditions=additional_splitting_conditions,
+            include_splitting_event=True,
+        )
+
+        if len(step_events) < 2:
+            structlogger.error(
+                "e2e_test_runner.run_assertions.user_message_not_found",
+                message=f"User message '{step.text}' was not found in "
+                f"the actual events. The user message "
+                f"properties which were searched: "
+                f"{additional_splitting_conditions}",
+            )
+            return [], []
+
+        post_step_events = step_events[1]
+        prior_events = step_events[0]
+
+        # subset of events until the next user message
+        turn_events = []
+        for event in post_step_events:
+            # we reached the next user message
+            if isinstance(event, UserUttered) and step.text != event.text:
+                break
+
+            turn_events.append(event)
+
+        return turn_events, prior_events
+
+    @staticmethod
+    def _slice_turn_events(
+        step: TestStep,
+        matching_event: Event,
+        turn_events: List[Event],
+        prior_events: List[Event],
+    ) -> Tuple[List[Event], List[Event]]:
+        """Slices the turn events when assertion order is enabled."""
+        if not step.assertion_order_enabled:
+            return turn_events, prior_events
+
+        if not matching_event:
+            return turn_events, prior_events
+
+        matching_event_index = turn_events.index(matching_event)
+        if matching_event_index + 1 < len(turn_events):
+            prior_events += turn_events[: matching_event_index + 1]
+            turn_events = turn_events[matching_event_index + 1 :]
+
+        return turn_events, prior_events
+
+    async def run_assertions(
+        self,
+        sender_id: str,
+        test_case: TestCase,
+        input_metadata: Optional[List[Metadata]],
+    ) -> TestResult:
+        """Runs the assertions defined in the test case."""
+        tracker = await self.agent.processor.get_tracker(sender_id)  # type: ignore[union-attr]
+
+        assertion_failure = None
+        assertion_failure_found = False
+        input_metadata = input_metadata if input_metadata else []
+
+        for step in test_case.steps:
+            if not step.assertions:
+                structlogger.debug(
+                    "e2e_test_runner.run_assertions.no_assertions.skipping_step",
+                    step=step,
+                )
+                continue
+
+            additional_splitting_conditions = self._get_additional_splitting_conditions(
+                step, input_metadata, tracker, test_case
+            )
+
+            turn_events, prior_events = self._get_current_user_turn_and_prior_events(
+                tracker, additional_splitting_conditions, step
+            )
+
+            if not turn_events:
+                return TestResult(
+                    pass_status=False,
+                    test_case=test_case,
+                    difference=[],
+                    error_line=step.line,
+                    assertion_failure=None,
+                )
+
+            for assertion in step.assertions:
+                structlogger.debug(
+                    "e2e_test_runner.run_assertions.running_assertion",
+                    test_case_name=test_case.name,
+                    step_text=step.text,
+                    assertion_type=assertion.type(),
+                )
+
+                assertion_order_error_msg = ""
+
+                if step.assertion_order_enabled:
+                    assertion_order_error_msg = (
+                        " You have enabled assertion order, "
+                        "you should check the order in which the "
+                        "assertions are listed for this user step."
+                    )
+
+                assertion_failure, matching_event = assertion.run(
+                    turn_events,
+                    prior_events=prior_events,
+                    assertion_order_error_message=assertion_order_error_msg,
+                    llm_judge_config=self.llm_judge_config,
+                    step_text=step.text,
+                )
+
+                if assertion_failure:
+                    assertion_failure_found = True
+                    structlogger.debug(
+                        "e2e_test_runner.run_assertions.assertion_failure_found",
+                        test_case_name=test_case.name,
+                        error_line=assertion_failure.error_line,
+                    )
+                    break
+
+                turn_events, prior_events = self._slice_turn_events(
+                    step, matching_event, turn_events, copy.deepcopy(prior_events)
+                )
+
+            if assertion_failure_found:
+                # don't continue with the next steps if an assertion failed
+                break
+
+        return TestResult(
+            pass_status=not assertion_failure,
+            test_case=test_case,
+            difference=[],
+            error_line=assertion_failure.error_line if assertion_failure else None,
+            assertion_failure=assertion_failure,
         )
 
     @classmethod
@@ -592,7 +821,10 @@ class E2ETestRunner:
         """
         if not fixtures:
             return
-        tracker = await self.agent.processor.fetch_tracker_with_initial_session(  # type: ignore[union-attr]
+        if not self.agent.processor:
+            return
+
+        tracker = await self.agent.processor.fetch_tracker_with_initial_session(
             sender_id
         )
 
@@ -647,8 +879,10 @@ class E2ETestRunner:
         )
 
         if not filtered_metadata:
-            logger.warning(
-                f"Metadata '{metadata_name}' is not defined in the input metadata."
+            structlogger.warning(
+                "e2e_test_runner.filter_metadata_for_input",
+                message=f"Metadata '{metadata_name}' is not defined in the input "
+                f"metadata.",
             )
             return None
 
@@ -679,59 +913,155 @@ class E2ETestRunner:
         track_e2e_test_run(input_test_cases, input_fixtures, input_metadata)
 
         for test_case in input_test_cases:
-            collector = CollectingOutputChannel()
+            test_case_name = test_case.name.replace(" ", "_")
+            # Add the name of the file and the current test case name being
+            # executed in order to properly retrieve stub custom action
+            if self.agent.endpoints and self.agent.endpoints.action:
+                self.agent.endpoints.action.kwargs[TEST_FILE_NAME] = Path(
+                    test_case.file
+                ).name
+                self.agent.endpoints.action.kwargs[TEST_CASE_NAME] = test_case_name
 
             # add timestamp suffix to ensure sender_id is unique
-            sender_id = f"{test_case.name}_{datetime.datetime.now()}"
-
-            if input_fixtures:
-                test_fixtures = self.filter_fixtures_for_test_case(
-                    test_case, input_fixtures
-                )
-                await self.set_up_fixtures(test_fixtures, sender_id)
-
-            test_case_metadata = None
-            if input_metadata:
-                test_case_metadata = self.filter_metadata_for_input(
-                    test_case.metadata_name, input_metadata
-                )
-
-            tracker = await self.run_prediction_loop(
-                collector,
-                test_case.steps,
-                sender_id,
-                test_case_metadata,
-                input_metadata,
+            sender_id = f"{test_case_name}_{datetime.datetime.now()}"
+            test_turns = await self._run_test_case(
+                sender_id, input_fixtures, input_metadata, test_case
             )
 
-            test_result = self.generate_test_result(tracker, test_case)
+            if not test_case.uses_assertions():
+                test_result = self.generate_test_result(test_turns, test_case)
+            else:
+                test_result = await self.run_assertions(
+                    sender_id, test_case, input_metadata
+                )
+
             results.append(test_result)
+
+            coverage = kwargs.get("coverage", False)
+            if coverage:
+                tracker = await self.agent.tracker_store.retrieve(sender_id)
+                if tracker:
+                    test_result.tested_paths, test_result.tested_commands = (
+                        self._get_tested_flow_paths_and_commands(
+                            tracker.events, test_result
+                        )
+                    )
 
             if fail_fast and not test_result.pass_status:
                 break
 
         return results
 
+    async def _run_test_case(
+        self,
+        sender_id: str,
+        input_fixtures: List[Fixture],
+        input_metadata: Optional[List[Metadata]],
+        test_case: TestCase,
+    ) -> TEST_TURNS_TYPE:
+        collector = CollectingOutputChannel()
+
+        if input_fixtures:
+            test_fixtures = self.filter_fixtures_for_test_case(
+                test_case, input_fixtures
+            )
+            await self.set_up_fixtures(test_fixtures, sender_id)
+
+        test_case_metadata = None
+        if input_metadata:
+            test_case_metadata = self.filter_metadata_for_input(
+                test_case.metadata_name, input_metadata
+            )
+
+        return await self.run_prediction_loop(
+            collector,
+            test_case.steps,
+            sender_id,
+            test_case_metadata,
+            input_metadata,
+        )
+
+    async def run_tests_for_fine_tuning(
+        self,
+        input_test_cases: List[TestCase],
+        input_fixtures: List[Fixture],
+        input_metadata: Optional[List[Metadata]],
+    ) -> List[Conversation]:
+        """Runs the test cases for fine-tuning.
+
+        Converts passing test cases into conversation objects containing the
+        prompts and llm commands per user message.
+
+        Args:
+            input_test_cases: Input test cases.
+            input_fixtures: Input fixtures.
+            input_metadata: Input metadata.
+
+        Returns:
+            List of conversations.
+        """
+        import rasa.llm_fine_tuning.annotation_module
+
+        conversations = []
+
+        for i in tqdm(range(len(input_test_cases))):
+            test_case = input_test_cases[i]
+            # add timestamp suffix to ensure sender_id is unique
+            sender_id = f"{test_case.name}_{datetime.datetime.now()}"
+            test_turns = await self._run_test_case(
+                sender_id, input_fixtures, input_metadata, test_case
+            )
+
+            # check if the e2e test is passing, only convert passing e2e tests into
+            # conversations
+            if not test_case.uses_assertions():
+                test_result = self.generate_test_result(test_turns, test_case)
+            else:
+                test_result = await self.run_assertions(
+                    sender_id, test_case, input_metadata
+                )
+            if not test_result.pass_status:
+                structlogger.warning(
+                    "annotation_module.skip_test_case.failing_e2e_test",
+                    test_case=test_case.name,
+                    file=test_case.file,
+                )
+                continue
+
+            tracker = await self.agent.tracker_store.retrieve(sender_id)
+            conversation = rasa.llm_fine_tuning.annotation_module.generate_conversation(
+                test_turns, test_case, tracker, test_case.uses_assertions()
+            )
+
+            if conversation:
+                conversations.append(conversation)
+
+        return conversations
+
     @staticmethod
     def _action_server_is_reachable(endpoints: AvailableEndpoints) -> None:
         """Calls the action server health endpoint."""
         if not endpoints.action:
-            logger.debug(
-                "No action endpoint configured. Skipping the health check of the "
-                "action server."
+            structlogger.debug(
+                "e2e_test_runner._action_server_is_reachable",
+                message="No action endpoint configured. Skipping the health check "
+                "of the action server.",
             )
             return
 
         if not endpoints.action.url:
-            logger.debug(
-                "Action endpoint URL is not defined in the endpoint configuration."
+            structlogger.debug(
+                "e2e_test_runner._action_server_is_reachable",
+                message="Action endpoint URL is not defined in the endpoint "
+                "configuration.",
             )
             return
 
-        logger.debug(
-            "Detected action URL in the endpoint configuration.\n"
+        structlogger.debug(
+            "e2e_test_runner._action_server_is_reachable",
+            message="Detected action URL in the endpoint configuration.\n"
             f"Action Server URL: {endpoints.action.url}\n"
-            "Sending a health request to the action endpoint."
+            "Sending a health request to the action endpoint.",
         )
         url = urlparse(endpoints.action.url)
         # replace /<path> with just /health
@@ -755,8 +1085,94 @@ class E2ETestRunner:
                 " is properly configured and that the '/health' endpoint is available."
             )
 
-        logger.debug(
-            "Action endpoint has responded successfully.\n"
+        structlogger.debug(
+            "e2e_test_runner._action_server_is_reachable",
+            message="Action endpoint has responded successfully.\n"
             f"Response message: {response.text}\n"
-            f"Response status code: {response.status_code}."
+            f"Response status code: {response.status_code}.",
         )
+
+    def _get_tested_flow_paths_and_commands(
+        self, events: List[Event], test_result: TestResult
+    ) -> Tuple[Optional[List[FlowPath]], Dict[str, Dict[str, int]]]:
+        """Extract tested paths and commands from dialog events.
+
+        A flow path consists of bot utterances and custom actions.
+
+        Args:
+            events: The list of dialog events.
+            test_result: The result of the test incl. the pass status.
+
+        Returns:
+            Tuple[flow_paths: Optional[List[FlowPath]], tested_commands:
+            Dict[str, Dict[str, int]]], where tested_commands is a
+            dictionary like
+            {"flow1": {"set slot": 5, "clarify": 1}, "flow2": {"set slot": 3}}
+        """
+        tested_paths = []
+        # we want to create a flow path per flow the e2e test covers
+        # as an e2e test can cover multiple flows, we might end up creating
+        # multiple flow paths
+        _tested_commands: DefaultDict[str, DefaultDict[str, int]] = defaultdict(
+            lambda: defaultdict(int)
+        )
+        flow_paths_stack = []
+
+        for event in events:
+            if isinstance(event, FlowStarted) and not event.flow_id.startswith(
+                RASA_DEFAULT_FLOW_PATTERN_PREFIX
+            ):
+                flow_paths_stack.append(FlowPath(event.flow_id))
+
+            elif (
+                isinstance(event, FlowCompleted)
+                and len(flow_paths_stack) > 0
+                and event.flow_id == flow_paths_stack[-1].flow
+            ):
+                # flow path is completed as the flow ended
+                tested_paths.append(flow_paths_stack.pop())
+
+            elif isinstance(event, BotUttered):
+                if (
+                    flow_paths_stack
+                    and STEP_ID_METADATA_KEY in event.metadata
+                    and ACTIVE_FLOW_METADATA_KEY in event.metadata
+                ):
+                    flow_paths_stack[-1].nodes.append(self._create_path_node(event))
+
+            elif isinstance(event, ActionExecuted):
+                # we are only interested in custom actions
+                if (
+                    flow_paths_stack
+                    and self.agent.domain
+                    and self.agent.domain.is_custom_action(event.action_name)
+                ):
+                    flow_paths_stack[-1].nodes.append(self._create_path_node(event))
+
+            # Time to gather tested commands
+            elif isinstance(event, UserUttered):
+                if event.parse_data and COMMANDS in event.parse_data:
+                    commands = [
+                        command["command"] for command in event.parse_data[COMMANDS]
+                    ]
+                    current_flow = (
+                        flow_paths_stack[-1].flow if flow_paths_stack else "no_flow"
+                    )
+                    for command in commands:
+                        _tested_commands[current_flow][command] += 1
+
+        # It might be that an e2e test stops before a flow was completed.
+        # Add the remaining flow paths to the tested paths list.
+        while len(flow_paths_stack) > 0:
+            tested_paths.append(flow_paths_stack.pop())
+
+        # Convert _tested_commands to normal dicts
+        tested_commands = {key: dict(value) for key, value in _tested_commands.items()}  # type: Dict[str, Dict[str, int]]
+
+        return tested_paths, tested_commands
+
+    @staticmethod
+    def _create_path_node(event: Event) -> PathNode:
+        flow_id = event.metadata[ACTIVE_FLOW_METADATA_KEY]
+        step_id = event.metadata[STEP_ID_METADATA_KEY]
+        return PathNode(step_id=step_id, flow=flow_id)

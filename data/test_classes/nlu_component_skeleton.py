@@ -7,6 +7,7 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 
+
 # TODO: Correctly register your component with its type
 @DefaultV1Recipe.register(
     [DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER], is_trainable=True

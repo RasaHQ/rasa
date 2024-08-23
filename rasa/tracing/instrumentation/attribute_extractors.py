@@ -7,6 +7,7 @@ import tiktoken
 from numpy import ndarray
 from rasa_sdk.grpc_py import action_webhook_pb2
 
+from rasa.core.actions.action import DirectCustomActionExecutor
 from rasa.core.actions.grpc_custom_action_executor import GRPCCustomActionExecutor
 from rasa.core.actions.http_custom_action_executor import HTTPCustomActionExecutor
 from rasa.core.agent import Agent
@@ -20,6 +21,12 @@ from rasa.dialogue_understanding.commands import Command
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.engine.graph import ExecutionContext, GraphModelConfiguration, GraphNode
 from rasa.engine.training.graph_trainer import GraphTrainer
+from rasa.shared.constants import (
+    EMBEDDINGS_CONFIG_KEY,
+    LLM_CONFIG_KEY,
+    MODEL_CONFIG_KEY,
+    MODEL_NAME_CONFIG_KEY,
+)
 from rasa.shared.core.constants import REQUESTED_SLOT
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import DialogueStackUpdated, Event
@@ -27,7 +34,10 @@ from rasa.shared.core.flows import Flow, FlowsList, FlowStep
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.constants import INTENT_NAME_KEY, SET_SLOT_COMMAND
-from rasa.shared.utils.llm import combine_custom_and_default_config
+from rasa.shared.utils.llm import (
+    combine_custom_and_default_config,
+    get_llm_type_after_combining_custom_and_default_config,
+)
 from rasa.tracing.constants import (
     PROMPT_TOKEN_LENGTH_ATTRIBUTE_NAME,
     REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME,
@@ -249,10 +259,7 @@ def extract_attrs_for_graph_trainer(
     }
 
 
-def extract_headers(
-    message: UserMessage,
-    **kwargs: Any,
-) -> Any:
+def extract_headers(message: UserMessage, **kwargs: Any) -> Any:
     """Extract the headers from the `UserMessage`."""
     if message.headers:
         return message.headers
@@ -304,15 +311,19 @@ def extract_llm_config(self: Any, default_llm_config: Dict[str, Any]) -> Dict[st
 
     attributes = {
         "class_name": self.__class__.__name__,
-        "llm_model": str(config.get("model", llm_property.get("model_name"))),
-        "llm_type": str(llm_property.get("_type")),
-        "embeddings": json.dumps(config.get("embeddings", {})),
+        "llm_model": str(
+            llm_property.get(MODEL_CONFIG_KEY)
+            or llm_property.get(MODEL_NAME_CONFIG_KEY)
+        ),
+        "llm_type": str(
+            get_llm_type_after_combining_custom_and_default_config(
+                config.get(LLM_CONFIG_KEY), default_llm_config
+            )
+        ),
+        "embeddings": json.dumps(config.get(EMBEDDINGS_CONFIG_KEY, {})),
         "llm_temperature": str(llm_property.get("temperature")),
         "request_timeout": str(llm_property.get("request_timeout")),
     }
-
-    if "model" in llm_property:
-        attributes["llm_model"] = str(llm_property.get("model"))
 
     if "engine" in llm_property:
         attributes["llm_engine"] = str(llm_property.get("engine"))
@@ -643,16 +654,24 @@ def extend_attributes_with_prompt_tokens_length(
 
 
 def extract_attrs_for_custom_action_executor_run(
-    self: Union[HTTPCustomActionExecutor, GRPCCustomActionExecutor],
+    self: Union[
+        HTTPCustomActionExecutor, GRPCCustomActionExecutor, DirectCustomActionExecutor
+    ],
     tracker: DialogueStateTracker,
     domain: Domain,
     include_domain: bool = False,
 ) -> Dict[str, Any]:
+    actions_module, url = None, None
+    if hasattr(self, "action_endpoint"):
+        url = self.action_endpoint.url
+        actions_module = self.action_endpoint.actions_module
+
     attrs: Dict[str, Any] = {
         "class_name": self.__class__.__name__,
         "action_name": self.action_name,
         "sender_id": tracker.sender_id,
-        "url": self.action_endpoint.url,
+        "url": str(url),
+        "actions_module": str(actions_module),
     }
     return attrs
 

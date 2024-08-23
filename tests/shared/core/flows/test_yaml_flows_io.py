@@ -1,7 +1,9 @@
 import os
-import textwrap
-import pytest
 import tempfile
+import textwrap
+
+import pytest
+
 from rasa.shared.core.flows.yaml_flows_io import (
     is_flows_file,
     YAMLFlowsReader,
@@ -13,6 +15,11 @@ from rasa.shared.utils.yaml import YamlValidationException
 @pytest.fixture(scope="module")
 def basic_flows_file(tests_data_folder: str) -> str:
     return os.path.join(tests_data_folder, "test_flows", "basic_flows.yml")
+
+
+@pytest.fixture(scope="module")
+def flows_with_metadata_file(tests_data_folder: str) -> str:
+    return os.path.join(tests_data_folder, "test_flows", "flows_with_metadata.yml")
 
 
 @pytest.mark.parametrize(
@@ -36,6 +43,17 @@ def test_flow_reading(basic_flows_file: str):
 
 def test_flow_writing(basic_flows_file: str):
     flows_list = YAMLFlowsReader.read_from_file(basic_flows_file)
+    _, tmp_file_name = tempfile.mkstemp()
+    YamlFlowsWriter.dump(flows_list.underlying_flows, tmp_file_name)
+
+    re_read_flows_list = YAMLFlowsReader.read_from_file(
+        tmp_file_name, add_line_numbers=False
+    )
+    assert re_read_flows_list.as_json_list() == flows_list.as_json_list()
+
+
+def test_flow_writing_double_metadata(flows_with_metadata_file: str):
+    flows_list = YAMLFlowsReader.read_from_file(flows_with_metadata_file)
     _, tmp_file_name = tempfile.mkstemp()
     YamlFlowsWriter.dump(flows_list.underlying_flows, tmp_file_name)
 
@@ -259,3 +277,22 @@ def test_flow_validates_missing_flow_description() -> None:
     with pytest.raises(YamlValidationException) as e:
         YAMLFlowsReader.read_from_string(data)
     assert "'description' is a required property" in str(e.value)
+
+
+def test_read_flow_with_metadata_with_line_numbers() -> None:
+    flows = YAMLFlowsReader.read_from_file("data/test_flows/flows_with_metadata.yml")
+
+    assert len(flows.user_flows) == 2
+    assert "line_numbers" in flows.user_flows.underlying_flows[0].steps[0].metadata
+    assert (
+        flows.user_flows.underlying_flows[0].steps[0].metadata["line_numbers"] == "5-5"
+    )
+
+
+def test_read_flow_without_metadata_with_line_numbers() -> None:
+    flows = YAMLFlowsReader.read_from_file("data/test_flows/basic_flows.yml")
+    flows_with_metadata = YAMLFlowsReader.read_from_file(
+        "data/test_flows/flows_with_metadata.yml"
+    )
+
+    assert flows == flows_with_metadata

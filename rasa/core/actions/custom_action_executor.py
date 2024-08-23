@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import abc
 import logging
 from typing import TYPE_CHECKING, Any, Dict, Text
@@ -36,7 +38,7 @@ class CustomActionExecutor(abc.ABC):
         Args:
             tracker: The current state of the dialogue.
             domain: The domain object containing domain-specific information.
-            include_domain: If True, the domain information is included in the request.
+            include_domain: If True, the domain is included in the request.
 
         Returns:
             The response from the execution of the custom action.
@@ -52,13 +54,13 @@ class NoEndpointCustomActionExecutor(CustomActionExecutor):
     Raises RasaException when executed.
     """
 
-    def __init__(self, name: str) -> None:
+    def __init__(self, action_name: str) -> None:
         """Initializes the custom action executor.
 
         Args:
-            name: The name of the custom action.
+            action_name: The name of the custom action.
         """
-        self.name = name
+        self.action_name = action_name
 
     async def run(
         self,
@@ -71,14 +73,13 @@ class NoEndpointCustomActionExecutor(CustomActionExecutor):
         Args:
             tracker: The current state of the dialogue.
             domain: The domain object containing domain-specific information.
-            include_domain: If True, the domain information
-                            is included in the request.
+            include_domain: If True, the domain is included in the request.
 
         Returns:
             The response from the execution of the custom action.
         """
         raise RasaException(
-            f"Failed to execute custom action '{self.name}' "
+            f"Failed to execute custom action '{self.action_name}' "
             f"because no endpoint is configured to run this "
             f"custom action. Please take a look at "
             f"the docs and set an endpoint configuration via the "
@@ -123,7 +124,7 @@ class CustomActionRequestWriter:
         Args:
             tracker: The current state of the dialogue.
             domain: The domain object containing domain-specific information.
-            include_domain: If True, the domain information is included in the request.
+            include_domain: If True, the domain is included in the request.
 
         Returns:
             A JSON payload to be sent to the action server.
@@ -173,14 +174,16 @@ class RetryCustomActionExecutor(CustomActionExecutor):
         Args:
             tracker: The current state of the dialogue.
             domain: The domain object containing domain-specific information.
-            include_domain: If True, the domain information is included in the request
+            include_domain: If True, the domain is included in the request.
 
         Returns:
             The response from the execution of the custom action.
         """
         try:
             return await self._custom_action_executor.run(
-                tracker, domain, include_domain=include_domain
+                tracker,
+                domain,
+                include_domain=include_domain,
             )
         except DomainNotFound:
             return await self._custom_action_executor.run(

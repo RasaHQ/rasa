@@ -3,27 +3,35 @@ import logging
 import pathlib
 from typing import List
 
+import rasa.cli.utils
 import rasa.shared.core.domain
+import rasa.shared.data
+import rasa.shared.nlu.training_data.loading
+import rasa.shared.nlu.training_data.util
+import rasa.shared.utils.cli
+import rasa.shared.utils.io
+import rasa.utils.common
 from rasa import telemetry
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import data as arguments
 from rasa.cli.arguments import default_arguments
-import rasa.cli.utils
+from rasa.e2e_test.e2e_config import create_llm_e2e_test_converter_config
+from rasa.e2e_test.e2e_test_converter import E2ETestConverter
+from rasa.e2e_test.e2e_yaml_utils import E2ETestYAMLWriter
 from rasa.shared.constants import (
     DEFAULT_DATA_PATH,
     DEFAULT_CONFIG_PATH,
     DEFAULT_DOMAIN_PATHS,
 )
-import rasa.shared.data
+from rasa.shared.exceptions import RasaException
 from rasa.shared.importers.importer import TrainingDataImporter
-import rasa.shared.nlu.training_data.loading
-import rasa.shared.nlu.training_data.util
-import rasa.shared.utils.cli
-import rasa.utils.common
-import rasa.shared.utils.io
+from rasa.shared.utils.common import minimal_kwargs
 from rasa.shared.utils.yaml import read_yaml_file, write_yaml
+from rasa.utils.beta import ensure_beta_feature_is_enabled
 
 logger = logging.getLogger(__name__)
+
+RASA_PRO_BETA_E2E_CONVERSION_ENV_VAR_NAME = "RASA_PRO_BETA_E2E_CONVERSION"
 
 
 def add_subparser(
@@ -71,7 +79,16 @@ def _add_data_convert_parsers(
         help="Converts NLU data between formats.",
     )
     convert_nlu_parser.set_defaults(func=_convert_nlu_data)
-    arguments.set_convert_arguments(convert_nlu_parser, data_type="Rasa NLU")
+    arguments.set_convert_nlu_arguments(convert_nlu_parser, data_type="Rasa NLU")
+
+    convert_e2e_parser = convert_subparsers.add_parser(
+        "e2e",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        parents=parents,
+        help="Convert input sample conversations into E2E test cases.",
+    )
+    convert_e2e_parser.set_defaults(func=convert_data_to_e2e_tests)
+    arguments.set_convert_e2e_arguments(convert_e2e_parser)
 
 
 def _add_data_split_parsers(
@@ -290,3 +307,48 @@ def _migrate_domain(args: argparse.Namespace) -> None:
     import rasa.core.migrate
 
     rasa.core.migrate.migrate_domain_format(args.domain, args.out)
+
+
+def validate_e2e_test_conversion_output_path(output_path: str) -> None:
+    """Validates that the provided output path is within the project directory.
+
+    Args:
+        output_path (str): The output path to be validated.
+
+    Raises:
+        RasaException: If the provided output path is an absolute path.
+    """
+    if pathlib.Path(output_path).is_absolute():
+        raise RasaException(
+            "Please provide a relative output path within the assistant "
+            "project directory in which the command is running."
+        )
+
+
+def convert_data_to_e2e_tests(args: argparse.Namespace) -> None:
+    """Converts sample conversation data into E2E test cases
+    and stores them in the output YAML file.
+
+    Args:
+        args: The arguments passed in from the CLI.
+    """
+    try:
+        ensure_beta_feature_is_enabled(
+            "conversion of sample conversations into end-to-end tests",
+            RASA_PRO_BETA_E2E_CONVERSION_ENV_VAR_NAME,
+        )
+        validate_e2e_test_conversion_output_path(args.output)
+
+        config_path = pathlib.Path(args.output)
+        llm_config = create_llm_e2e_test_converter_config(config_path)
+
+        kwargs = minimal_kwargs(vars(args), E2ETestConverter)
+        converter = E2ETestConverter(llm_config=llm_config, **kwargs)
+        yaml_tests_string = converter.run()
+
+        writer = E2ETestYAMLWriter(output_path=args.output)
+        writer.write_to_file(yaml_tests_string)
+    except RasaException as exc:
+        rasa.shared.utils.cli.print_error_and_exit(
+            f"Failed to convert the data into E2E tests. Error: {exc}"
+        )

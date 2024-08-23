@@ -5,6 +5,7 @@ from jinja2 import Template
 from pypred import Predicate
 
 from rasa.core.actions.action import Action, create_bot_utterance
+from rasa.core.utils import add_bot_utterance_metadata
 from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
 )
@@ -201,7 +202,9 @@ class ActionRunSlotRejections(Action):
                 utterance=utterance,
             )
         else:
-            message["utter_action"] = utterance
+            message = add_bot_utterance_metadata(
+                message, utterance, nlg, domain, tracker
+            )
             events.append(create_bot_utterance(message))
 
         return events

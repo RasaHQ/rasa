@@ -22,8 +22,8 @@ from rasa.utils.endpoints import EndpointConfig
 
 
 @pytest.fixture(scope="session")
-@patch("langchain.vectorstores.faiss.FAISS.save_local")
-@patch("langchain.vectorstores.faiss.FAISS.from_documents")
+@patch("langchain_community.vectorstores.faiss.FAISS.save_local")
+@patch("langchain_community.vectorstores.faiss.FAISS.from_documents")
 @patch(
     "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval._create_embedder"
 )
@@ -47,7 +47,7 @@ async def trained_calm_slot_mappings_bot(
 
 
 @pytest.fixture
-@patch("langchain.vectorstores.faiss.FAISS.load_local")
+@patch("langchain_community.vectorstores.faiss.FAISS.load_local")
 @patch(
     "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval._create_embedder"
 )

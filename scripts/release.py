@@ -12,6 +12,7 @@ When run with `tag`:
 When run with `fetch`:
 - retrieves the current rasa-oss dependency version stored in pyproject.toml
 """
+
 import argparse
 import os
 import re

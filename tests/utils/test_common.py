@@ -1,21 +1,21 @@
 import json
-import os
 import logging
 import logging.config
+import os
 import sys
 from pathlib import Path
-from pytest import MonkeyPatch
 from typing import Any, Text, Type
 from unittest import mock
 
 import pytest
 from pytest import LogCaptureFixture
+from pytest import MonkeyPatch
 
+import rasa.utils.common
+import tests.conftest
 from rasa.core.agent import Agent
-
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.shared.exceptions import RasaException
-import rasa.utils.common
 from rasa.utils.common import (
     RepeatedLogFilter,
     find_unavailable_packages,
@@ -24,7 +24,6 @@ from rasa.utils.common import (
     get_bool_env_variable,
     configure_library_logging,
 )
-import tests.conftest
 
 FAKER_LOGGER = logging.getLogger("faker")
 PRESIDIO_ANALYZER_LOGGER = logging.getLogger("presidio_analyzer")
@@ -49,16 +48,16 @@ def reset_logging() -> None:
 def test_repeated_log_filter():
     log_filter = RepeatedLogFilter()
     record1 = logging.LogRecord(
-        "rasa", logging.INFO, "/some/path.py", 42, "Super msg: %s", ("yes",), None
+        "rasa", logging.INFO, "/some/flow.py", 42, "Super msg: %s", ("yes",), None
     )
     record1_same = logging.LogRecord(
-        "rasa", logging.INFO, "/some/path.py", 42, "Super msg: %s", ("yes",), None
+        "rasa", logging.INFO, "/some/flow.py", 42, "Super msg: %s", ("yes",), None
     )
     record2_other_args = logging.LogRecord(
-        "rasa", logging.INFO, "/some/path.py", 42, "Super msg: %s", ("no",), None
+        "rasa", logging.INFO, "/some/flow.py", 42, "Super msg: %s", ("no",), None
     )
     record3_other = logging.LogRecord(
-        "rasa", logging.INFO, "/some/path.py", 42, "Other msg", (), None
+        "rasa", logging.INFO, "/some/flow.py", 42, "Other msg", (), None
     )
     assert log_filter.filter(record1) is True
     assert log_filter.filter(record1_same) is False  # same log

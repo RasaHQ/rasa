@@ -135,7 +135,8 @@
             "properties": {
               "id": {},
               "next": {},
-              "action": {}
+              "action": {},
+              "metadata": {}
             }
           },
           "noop": {
@@ -147,6 +148,7 @@
               "collect": {},
               "id": {},
               "next": {},
+              "metadata": {},
               "description": {
                 "type": "string"
               },

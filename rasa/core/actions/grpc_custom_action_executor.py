@@ -97,7 +97,7 @@ class GRPCCustomActionExecutor(CustomActionExecutor):
         Args:
             tracker: Tracker for the current conversation.
             domain: Domain of the assistant.
-            include_domain: If True, the domain information is included in the request.
+            include_domain: If True, the domain is included in the request.
 
         Returns:
             Response from the action server.
@@ -184,7 +184,7 @@ class GRPCCustomActionExecutor(CustomActionExecutor):
         Args:
             tracker: Tracker for the current conversation.
             domain: Domain of the assistant.
-            include_domain: If True, the domain information is included in the request.
+            include_domain: If True, the domain is included in the request.
 
         Returns:
             gRPC payload for the action server.

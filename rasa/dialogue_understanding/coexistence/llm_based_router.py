@@ -1,10 +1,12 @@
 from __future__ import annotations
+
 import importlib
 from typing import Any, Dict, List, Optional
 
 import structlog
 from jinja2 import Template
 
+import rasa.shared.utils.io
 from rasa.dialogue_understanding.coexistence.constants import (
     CALM_ENTRY,
     NLU_ENTRY,
@@ -18,24 +20,23 @@ from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.constants import ROUTE_TO_CALM_SLOT
+from rasa.shared.constants import ROUTE_TO_CALM_SLOT, PROMPT_CONFIG_KEY
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import InvalidConfigException, FileIOException
 from rasa.shared.nlu.constants import COMMANDS, TEXT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
-import rasa.shared.utils.io
 from rasa.shared.utils.llm import (
     DEFAULT_OPENAI_CHAT_MODEL_NAME,
     get_prompt_template,
     llm_factory,
 )
+from rasa.utils.log_utils import log_llm
 
 LLM_BASED_ROUTER_PROMPT_FILE_NAME = "llm_based_router_prompt.jinja2"
 DEFAULT_COMMAND_PROMPT_TEMPLATE = importlib.resources.read_text(
     "rasa.dialogue_understanding.coexistence", "router_template.jinja2"
 )
-
 
 # Token ids for gpt 3.5 and gpt 4 corresponding to space + capitalized Letter
 A_TO_C_TOKEN_IDS_CHATGPT = [
@@ -45,10 +46,10 @@ A_TO_C_TOKEN_IDS_CHATGPT = [
 ]
 
 DEFAULT_LLM_CONFIG = {
-    "_type": "openai",
+    "api_type": "openai",
+    "model": DEFAULT_OPENAI_CHAT_MODEL_NAME,
     "request_timeout": 7,
     "temperature": 0.0,
-    "model_name": DEFAULT_OPENAI_CHAT_MODEL_NAME,
     "max_tokens": 1,
     "logit_bias": {str(token_id): 100 for token_id in A_TO_C_TOKEN_IDS_CHATGPT},
 }
@@ -67,7 +68,7 @@ class LLMBasedRouter(GraphComponent):
     def get_default_config() -> Dict[str, Any]:
         """The component's default config (see parent class for full docstring)."""
         return {
-            "prompt": None,
+            PROMPT_CONFIG_KEY: None,
             CALM_ENTRY: {STICKY: None},
             NLU_ENTRY: {
                 NON_STICKY: "handles chitchat",
@@ -88,7 +89,7 @@ class LLMBasedRouter(GraphComponent):
         self.prompt_template = (
             prompt_template
             or get_prompt_template(
-                config.get("prompt"),
+                config.get(PROMPT_CONFIG_KEY),
                 DEFAULT_COMMAND_PROMPT_TEMPLATE,
             ).strip()
         )
@@ -188,12 +189,27 @@ class LLMBasedRouter(GraphComponent):
         route_session_to_calm = tracker.get_slot(ROUTE_TO_CALM_SLOT)
         if route_session_to_calm is None:
             prompt = self.render_template(message)
-            structlogger.info("llm_based_router.prompt_rendered", prompt=prompt)
+            log_llm(
+                logger=structlogger,
+                log_module="LLMBasedRouter",
+                log_event="llm_based_router.prompt_rendered",
+                prompt=prompt,
+            )
             # generating answer
             answer = await self._generate_answer_using_llm(prompt)
-            structlogger.info("llm_based_router.llm_answer", answer=answer)
+            log_llm(
+                logger=structlogger,
+                log_module="LLMBasedRouter",
+                log_event="llm_based_router.llm_answer",
+                answer=answer,
+            )
             commands = self.parse_answer(answer)
-            structlogger.info("llm_based_router.predicated_commands", commands=commands)
+            log_llm(
+                logger=structlogger,
+                log_module="LLMBasedRouter",
+                log_event="llm_based_router.final_commands",
+                commands=commands,
+            )
             return commands
         elif route_session_to_calm is True:
             # don't set any commands so that a `LLMBasedCommandGenerator` is triggered
@@ -252,7 +268,8 @@ class LLMBasedRouter(GraphComponent):
         llm = llm_factory(self.config.get(LLM_CONFIG_KEY), DEFAULT_LLM_CONFIG)
 
         try:
-            return await llm.apredict(prompt)
+            llm_response = await llm.acompletion(prompt)
+            return llm_response.choices[0]
         except Exception as e:
             # unfortunately, langchain does not wrap LLM exceptions which means
             # we have to catch all exceptions here

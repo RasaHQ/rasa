@@ -1,13 +1,13 @@
 import logging
 
 from bs4 import BeautifulSoup
-from langchain.document_loaders import RecursiveUrlLoader
-from langchain.embeddings import HuggingFaceEmbeddings, OpenAIEmbeddings
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.vectorstores.milvus import Milvus
-from langchain.vectorstores.qdrant import Qdrant
 from langchain.schema import Document
 from langchain.schema.embeddings import Embeddings
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_community.document_loaders import RecursiveUrlLoader
+from langchain_community.embeddings import HuggingFaceEmbeddings, OpenAIEmbeddings
+from langchain_community.vectorstores.milvus import Milvus
+from langchain_community.vectorstores.qdrant import Qdrant
 from typing import List
 import yaml
 from argparse import ArgumentParser
@@ -25,9 +25,11 @@ def extract_all_webpages(url: str) -> List[Document]:
         raise SystemExit("URL not found in config file.")
 
     logger.info(f"Extracting URLs from: {url}")
-    
+
     # send a request like a browser
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36'}
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36"
+    }
 
     # nothing to exclude
     exclude_list = []
@@ -38,15 +40,17 @@ def extract_all_webpages(url: str) -> List[Document]:
     loader = RecursiveUrlLoader(
         url=url,
         headers=headers,
-        exclude_dirs=exclude_list, 
-        max_depth=max_depth, 
-        extractor=lambda x: BeautifulSoup(x, "html.parser").text
+        exclude_dirs=exclude_list,
+        max_depth=max_depth,
+        extractor=lambda x: BeautifulSoup(x, "html.parser").text,
     )
 
     return loader.load()
 
 
-def create_chunks(documents: List[Document], chunk_size: int, chunk_overlap: int) -> List[Document]:
+def create_chunks(
+    documents: List[Document], chunk_size: int, chunk_overlap: int
+) -> List[Document]:
     """Splits the documents into chunks with RecursiveCharacterTextSplitter.
 
     Args:
@@ -58,7 +62,7 @@ def create_chunks(documents: List[Document], chunk_size: int, chunk_overlap: int
         The list of chunks.
     """
     text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=chunk_size, 
+        chunk_size=chunk_size,
         chunk_overlap=chunk_overlap,
         length_function=len,
     )
@@ -73,10 +77,10 @@ def embeddings_factory(type: str, config: dict = None):
 
 
 def create_milvus_collection(
-        embeddings: Embeddings,
-        docs: List[Document], 
-        connection_args: dict,
-    ) -> Milvus:
+    embeddings: Embeddings,
+    docs: List[Document],
+    connection_args: dict,
+) -> Milvus:
     """Creates a Milvus collection from the documents.
 
     Args:
@@ -94,7 +98,7 @@ def create_milvus_collection(
     collection_name = connection_args.get("collection", DEFAULT_COLLECTION_NAME)
 
     connection_args = {
-        "host": host, 
+        "host": host,
         "port": port,
     }
 
@@ -102,7 +106,7 @@ def create_milvus_collection(
         connection_args["user"] = user
     if password:
         connection_args["password"] = password
-    
+
     return Milvus.from_documents(
         docs,
         embeddings,
@@ -112,10 +116,10 @@ def create_milvus_collection(
 
 
 def create_qdrant_collection(
-        embeddings: Embeddings,
-        docs: List[Document], 
-        connection_args: dict,
-    ) -> Qdrant:
+    embeddings: Embeddings,
+    docs: List[Document],
+    connection_args: dict,
+) -> Qdrant:
     """Creates a Qdrant collection from the documents.
 
     Args:
@@ -161,7 +165,7 @@ def main():
         description="Extract web pages recursively and load them into a vector store.",
         epilog="Example: python ingest_web.py --config config.yaml",
     )
-    parser.add_argument('-c', '--config', required=True, help='config file path')
+    parser.add_argument("-c", "--config", required=True, help="config file path")
     args = parser.parse_args()
     opt = yaml.load(open(args.config), Loader=yaml.FullLoader)
     opt.update(vars(args))
@@ -181,38 +185,40 @@ def main():
 
     validate_destination(destination)
     validate_embeddings_type(embeddings_type)
-    
+
     # extract all webpages
     docs = extract_all_webpages(docs_folder)
     logger.info(f"{len(docs)} webpages extracted.")
-    
+
     # create chunks
     chunks = create_chunks(docs, chunk_size, chunk_overlap)
     logger.info(f"{len(chunks)} chunks created.")
     for i, chunk in enumerate(chunks[:3]):
         logger.info(f"chunk {i}")
         logger.info(chunk)
-    
+
     # create embeddings
     embeddings = embeddings_factory(embeddings_type, {})
-        
+
     # create milvus collection
     if destination.lower() == "milvus":
         create_milvus_collection(
             embeddings=embeddings,
-            docs=chunks, 
+            docs=chunks,
             connection_args=connection_args,
         )
         logger.info(f"Milvus collection created with arguments {connection_args}")
     elif destination.lower() == "qdrant":
         create_qdrant_collection(
             embeddings=embeddings,
-            docs=chunks, 
+            docs=chunks,
             connection_args=connection_args,
         )
         logger.info(f"Qdrant collection created with arguments {connection_args}")
     else:
-        raise SystemExit(f"Destination '{destination}' not supported. Only (milvus, qdrant) are supported.")
+        raise SystemExit(
+            f"Destination '{destination}' not supported. Only (milvus, qdrant) are supported."
+        )
 
 
 if __name__ == "__main__":

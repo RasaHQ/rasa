@@ -28,7 +28,6 @@ class LimitSlot(Slot):
         value_reset_delay: Optional[int] = None,
         influence_conversation: bool = True,
     ) -> None:
-
         super().__init__(
             name=name,
             initial_value=initial_value,

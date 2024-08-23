@@ -121,8 +121,6 @@ TELEMETRY_INTENTLESS_POLICY_TRAINING_COMPLETED_EVENT = (
     "Intentless Policy Training Completed"
 )
 TELEMETRY_INTENTLESS_POLICY_PREDICT_EVENT = "Intentless Policy Predicted"
-TELEMETRY_LLM_INTENT_PREDICT_EVENT = "LLM Intent Predicted"
-TELEMETRY_LLM_INTENT_TRAIN_COMPLETED_EVENT = "LLM Intent Training Completed"
 TELEMETRY_E2E_TEST_RUN_STARTED_EVENT = "E2E Test Run Started"
 TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_STARTED_EVENT = (
     "Enterprise Search Policy Training Started"
@@ -1085,6 +1083,11 @@ def _get_llm_command_generator_config(config: Dict[str, Any]) -> Optional[Dict]:
     Includes the model name, whether a custom prompt is used, whether flow
     retrieval is enabled, and flow retrieval embedding model.
     """
+    from rasa.shared.constants import (
+        EMBEDDINGS_CONFIG_KEY,
+        MODEL_CONFIG_KEY,
+        MODEL_NAME_CONFIG_KEY,
+    )
     from rasa.dialogue_understanding.generator import LLMCommandGenerator
     from rasa.dialogue_understanding.generator.constants import (
         LLM_CONFIG_KEY,
@@ -1105,14 +1108,21 @@ def _get_llm_command_generator_config(config: Dict[str, Any]) -> Optional[Dict]:
     def extract_settings(component: Dict) -> Dict:
         """Extracts the settings from the command generator component."""
         custom_prompt_used = "prompt" in component
-        llm_model_name = component.get(LLM_CONFIG_KEY, {}).get(
-            "model_name", DEFAULT_LLM_CONFIG["model_name"]
+        llm_config = component.get(LLM_CONFIG_KEY, {})
+        llm_model_name = (
+            llm_config.get(MODEL_CONFIG_KEY)
+            or llm_config.get(MODEL_NAME_CONFIG_KEY)
+            or DEFAULT_LLM_CONFIG[MODEL_CONFIG_KEY]
         )
         flow_retrieval_config = component.get(FLOW_RETRIEVAL_KEY, {})
         flow_retrieval_enabled = flow_retrieval_config.get("active", True)
+        flow_retrieval_embeddings_config = flow_retrieval_config.get(
+            EMBEDDINGS_CONFIG_KEY, DEFAULT_EMBEDDINGS_CONFIG
+        )
         flow_retrieval_embedding_model_name = (
-            flow_retrieval_config.get("embeddings", DEFAULT_EMBEDDINGS_CONFIG).get(
-                "model"
+            (
+                flow_retrieval_embeddings_config.get(MODEL_NAME_CONFIG_KEY)
+                or flow_retrieval_embeddings_config.get(MODEL_CONFIG_KEY)
             )
             if flow_retrieval_enabled
             else None
@@ -1422,6 +1432,76 @@ def track_markers_parsed_count(
     )
 
 
+def extract_assertion_type_counts(
+    input_test_cases: List["TestCase"],
+) -> typing.Tuple[bool, Dict[str, Any]]:
+    """Extracts the total count of different assertion types from the test cases."""
+    from rasa.e2e_test.assertions import AssertionType
+
+    uses_assertions = False
+
+    flow_started_count = 0
+    flow_completed_count = 0
+    flow_cancelled_count = 0
+    pattern_clarification_contains_count = 0
+    action_executed_count = 0
+    slot_was_set_count = 0
+    slot_was_not_set_count = 0
+    bot_uttered_count = 0
+    generative_response_is_relevant_count = 0
+    generative_response_is_grounded_count = 0
+
+    for test_case in input_test_cases:
+        for step in test_case.steps:
+            assertions = step.assertions if step.assertions else []
+            for assertion in assertions:
+                if assertion.type == AssertionType.ACTION_EXECUTED.value:
+                    action_executed_count += 1
+                elif assertion.type == AssertionType.SLOT_WAS_SET.value:
+                    slot_was_set_count += 1
+                elif assertion.type == AssertionType.SLOT_WAS_NOT_SET.value:
+                    slot_was_not_set_count += 1
+                elif assertion.type == AssertionType.BOT_UTTERED.value:
+                    bot_uttered_count += 1
+                elif (
+                    assertion.type
+                    == AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT.value
+                ):
+                    generative_response_is_relevant_count += 1
+                elif (
+                    assertion.type
+                    == AssertionType.GENERATIVE_RESPONSE_IS_GROUNDED.value
+                ):
+                    generative_response_is_grounded_count += 1
+                elif assertion.type == AssertionType.FLOW_STARTED.value:
+                    flow_started_count += 1
+                elif assertion.type == AssertionType.FLOW_COMPLETED.value:
+                    flow_completed_count += 1
+                elif assertion.type == AssertionType.FLOW_CANCELLED.value:
+                    flow_cancelled_count += 1
+                elif (
+                    assertion.type == AssertionType.PATTERN_CLARIFICATION_CONTAINS.value
+                ):
+                    pattern_clarification_contains_count += 1
+
+                uses_assertions = True
+
+    result = {
+        "flow_started_count": flow_started_count,
+        "flow_completed_count": flow_completed_count,
+        "flow_cancelled_count": flow_cancelled_count,
+        "pattern_clarification_contains_count": pattern_clarification_contains_count,
+        "action_executed_count": action_executed_count,
+        "slot_was_set_count": slot_was_set_count,
+        "slot_was_not_set_count": slot_was_not_set_count,
+        "bot_uttered_count": bot_uttered_count,
+        "generative_response_is_relevant_count": generative_response_is_relevant_count,
+        "generative_response_is_grounded_count": generative_response_is_grounded_count,
+    }
+
+    return uses_assertions, result
+
+
 @ensure_telemetry_enabled
 def track_e2e_test_run(
     input_test_cases: List["TestCase"],
@@ -1429,15 +1509,26 @@ def track_e2e_test_run(
     input_metadata: List["Metadata"],
 ) -> None:
     """Track an end-to-end test run."""
+    properties = {
+        "number_of_test_cases": len(input_test_cases),
+        "number_of_fixtures": len(input_fixtures),
+        "uses_fixtures": len(input_fixtures) > 0,
+        "uses_metadata": len(input_metadata) > 0,
+        "number_of_metadata": len(input_metadata),
+    }
+
+    uses_assertions, assertion_type_counts = extract_assertion_type_counts(
+        input_test_cases
+    )
+
+    properties.update({"uses_assertions": uses_assertions})
+
+    if uses_assertions:
+        properties.update(assertion_type_counts)
+
     _track(
         TELEMETRY_E2E_TEST_RUN_STARTED_EVENT,
-        {
-            "number_of_test_cases": len(input_test_cases),
-            "number_of_fixtures": len(input_fixtures),
-            "uses_fixtures": len(input_fixtures) > 0,
-            "uses_metadata": len(input_metadata) > 0,
-            "number_of_metadata": len(input_metadata),
-        },
+        properties,
     )
 
 
@@ -1498,50 +1589,6 @@ def track_intentless_policy_predict(
             "llm_type": llm_type,
             "llm_model": llm_model,
             "score": score,
-        },
-    )
-
-
-def track_llm_intent_predict(
-    embeddings_type: Optional[str],
-    embeddings_model: Optional[str],
-    llm_type: Optional[str],
-    llm_model: Optional[str],
-) -> None:
-    """Track when a user predicts an intent using the llm intent classifier."""
-    _track(
-        TELEMETRY_LLM_INTENT_PREDICT_EVENT,
-        {
-            "embeddings_type": embeddings_type,
-            "embeddings_model": embeddings_model,
-            "llm_type": llm_type,
-            "llm_model": llm_model,
-        },
-    )
-
-
-def track_llm_intent_train_completed(
-    embeddings_type: Optional[str],
-    embeddings_model: Optional[str],
-    llm_type: Optional[str],
-    llm_model: Optional[str],
-    fallback_intent: Optional[str],
-    custom_prompt_template: Optional[str],
-    number_of_examples: int,
-    number_of_available_intents: int,
-) -> None:
-    """Track when a user trains the llm intent classifier."""
-    _track(
-        TELEMETRY_LLM_INTENT_TRAIN_COMPLETED_EVENT,
-        {
-            "embeddings_type": embeddings_type,
-            "embeddings_model": embeddings_model,
-            "llm_type": llm_type,
-            "llm_model": llm_model,
-            "fallback_intent": fallback_intent,
-            "custom_prompt_template": custom_prompt_template,
-            "number_of_examples": number_of_examples,
-            "number_of_available_intents": number_of_available_intents,
         },
     )
 

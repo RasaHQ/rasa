@@ -6,9 +6,7 @@ from unittest.mock import Mock, patch, AsyncMock
 import pytest
 from pytest import MonkeyPatch
 from langchain.docstore.document import Document
-from langchain.embeddings import FakeEmbeddings
-from langchain.llms.fake import FakeListLLM
-from langchain.vectorstores import FAISS
+from langchain_community.vectorstores import FAISS
 
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import ChitChatStackFrame
@@ -17,7 +15,7 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.graph_components.providers.forms_provider import Forms
 from rasa.graph_components.providers.responses_provider import Responses
-from rasa.shared.constants import ROUTE_TO_CALM_SLOT
+from rasa.shared.constants import ROUTE_TO_CALM_SLOT, PROMPT_CONFIG_KEY
 from rasa.shared.core.domain import ActionNotFoundException, Domain
 from rasa.shared.core.events import ActiveLoop, BotUttered, UserUttered
 from rasa.shared.core.flows import FlowsList
@@ -27,9 +25,10 @@ from rasa.shared.core.slots import BooleanSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.importers.importer import FlowSyncImporter
 from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.providers.embedding.embedding_client import EmbeddingClient
+from rasa.shared.providers.llm.llm_client import LLMClient
 from rasa.shared.utils.llm import tracker_as_readable_transcript
 from rasa.core.policies.intentless_policy import (
-    PROMPT,
     Conversation,
     IntentlessPolicy,
     Interaction,
@@ -98,17 +97,19 @@ def trackers_for_training() -> List[TrackerWithCachedStates]:
 
 @pytest.fixture
 def intentless_policy(
+    fake_llm_client: LLMClient,
+    fake_embedding_client: EmbeddingClient,
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
     monkeypatch: pytest.MonkeyPatch,
 ) -> Generator[IntentlessPolicy, None, None]:
     with patch(
         "rasa.core.policies.intentless_policy.llm_factory",
-        Mock(return_value=FakeListLLM(responses=["Hello there", "Goodbye"])),
+        Mock(return_value=fake_llm_client),
     ):
         with patch(
             "rasa.core.policies.intentless_policy.embedder_factory",
-            Mock(return_value=FakeEmbeddings(size=100)),
+            Mock(return_value=fake_embedding_client),
         ):
             yield IntentlessPolicy.create(
                 IntentlessPolicy.get_default_config(),
@@ -629,20 +630,22 @@ def test_response_filtering_default_flows() -> None:
 
 # indirect parametrization of the fixture
 async def test_intentless_policy_prompt_init_custom(
+    fake_llm_client: LLMClient,
+    fake_embedding_client: EmbeddingClient,
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
 ) -> None:
     with patch(
         "rasa.core.policies.intentless_policy.llm_factory",
-        Mock(return_value=FakeListLLM(responses=["Hello there", "Goodbye"])),
+        Mock(return_value=fake_llm_client),
     ):
         with patch(
             "rasa.core.policies.intentless_policy.embedder_factory",
-            Mock(return_value=FakeEmbeddings(size=100)),
+            Mock(return_value=fake_embedding_client),
         ):
             config = {
                 **IntentlessPolicy.get_default_config(),
-                PROMPT: "data/prompt_templates/test_prompt.jinja2",
+                PROMPT_CONFIG_KEY: "data/prompt_templates/test_prompt.jinja2",
             }
             intentless_policy = IntentlessPolicy.create(
                 config,
@@ -675,16 +678,18 @@ async def test_intentless_policy_prompt_init_custom(
 
 
 async def test_intentless_policy_prompt_init_default(
+    fake_llm_client: LLMClient,
+    fake_embedding_client: EmbeddingClient,
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
 ) -> None:
     with patch(
         "rasa.core.policies.intentless_policy.llm_factory",
-        Mock(return_value=FakeListLLM(responses=["Hello there", "Goodbye"])),
+        Mock(return_value=fake_llm_client),
     ):
         with patch(
             "rasa.core.policies.intentless_policy.embedder_factory",
-            Mock(return_value=FakeEmbeddings(size=100)),
+            Mock(return_value=fake_embedding_client),
         ):
             intentless_policy = IntentlessPolicy(
                 IntentlessPolicy.get_default_config(),
@@ -719,24 +724,29 @@ async def test_intentless_policy_prompt_init_default(
 
 
 async def test_intentless_policy_fingerprint_addon_diff_in_prompt_template(
+    fake_llm_client: LLMClient,
+    fake_embedding_client: EmbeddingClient,
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
     tmp_path: Path,
 ) -> None:
-    prompt_dir = Path(tmp_path) / PROMPT
+    prompt_dir = Path(tmp_path) / PROMPT_CONFIG_KEY
     prompt_dir.mkdir(parents=True, exist_ok=True)
     prompt_file = prompt_dir / "intentless_policy_prompt.jinja2"
     prompt_file.write_text("This is a test prompt")
 
-    config = {**IntentlessPolicy.get_default_config(), PROMPT: str(prompt_file)}
+    config = {
+        **IntentlessPolicy.get_default_config(),
+        PROMPT_CONFIG_KEY: str(prompt_file),
+    }
     print(config)
     with patch(
         "rasa.core.policies.intentless_policy.llm_factory",
-        Mock(return_value=FakeListLLM(responses=["Hello there"])),
+        Mock(return_value=fake_llm_client),
     ):
         with patch(
             "rasa.core.policies.intentless_policy.embedder_factory",
-            Mock(return_value=FakeEmbeddings(size=100)),
+            Mock(return_value=fake_embedding_client),
         ):
             intentless_policy = IntentlessPolicy(
                 config,
@@ -754,23 +764,28 @@ async def test_intentless_policy_fingerprint_addon_diff_in_prompt_template(
 
 
 async def test_intentless_policy_fingerprint_addon_no_diff_in_prompt_template(
+    fake_llm_client: LLMClient,
+    fake_embedding_client: EmbeddingClient,
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
     tmp_path: Path,
 ) -> None:
-    prompt_dir = Path(tmp_path) / PROMPT
+    prompt_dir = Path(tmp_path) / PROMPT_CONFIG_KEY
     prompt_dir.mkdir(parents=True, exist_ok=True)
     prompt_file = prompt_dir / "intentless_policy_prompt.jinja2"
     prompt_file.write_text("This is a test prompt")
 
-    config = {**IntentlessPolicy.get_default_config(), PROMPT: str(prompt_file)}
+    config = {
+        **IntentlessPolicy.get_default_config(),
+        PROMPT_CONFIG_KEY: str(prompt_file),
+    }
     with patch(
         "rasa.core.policies.intentless_policy.llm_factory",
-        Mock(return_value=FakeListLLM(responses=["Hello there"])),
+        Mock(return_value=fake_llm_client),
     ):
         with patch(
             "rasa.core.policies.intentless_policy.embedder_factory",
-            Mock(return_value=FakeEmbeddings(size=100)),
+            Mock(return_value=fake_embedding_client),
         ):
             intentless_policy = IntentlessPolicy(
                 config,
@@ -786,16 +801,18 @@ async def test_intentless_policy_fingerprint_addon_no_diff_in_prompt_template(
 
 
 async def test_intentless_policy_fingerprint_addon_default_prompt_template(
+    fake_llm_client: LLMClient,
+    fake_embedding_client: EmbeddingClient,
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
 ) -> None:
     with patch(
         "rasa.core.policies.intentless_policy.llm_factory",
-        Mock(return_value=FakeListLLM(responses=["Hello there"])),
+        Mock(return_value=fake_llm_client),
     ):
         with patch(
             "rasa.core.policies.intentless_policy.embedder_factory",
-            Mock(return_value=FakeEmbeddings(size=100)),
+            Mock(return_value=fake_embedding_client),
         ):
             intentless_policy = IntentlessPolicy(
                 IntentlessPolicy.get_default_config(),
@@ -810,6 +827,8 @@ async def test_intentless_policy_fingerprint_addon_default_prompt_template(
 
 
 async def test_intentless_policy_abstains_in_coexistence(
+    fake_llm_client: LLMClient,
+    fake_embedding_client: EmbeddingClient,
     monkeypatch: MonkeyPatch,
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
@@ -842,12 +861,12 @@ async def test_intentless_policy_abstains_in_coexistence(
 
     monkeypatch.setattr(
         "rasa.core.policies.intentless_policy.llm_factory",
-        Mock(return_value=FakeListLLM(responses=["Hello there", "Goodbye"])),
+        Mock(return_value=fake_llm_client),
     )
 
     monkeypatch.setattr(
         "rasa.core.policies.intentless_policy.embedder_factory",
-        Mock(return_value=FakeEmbeddings(size=100)),
+        Mock(return_value=fake_embedding_client),
     )
 
     test_policy = IntentlessPolicy.create(
