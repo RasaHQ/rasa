@@ -22,6 +22,10 @@ Rasa Pro 3.9.9 (2024-08-23)
 - [#1154](https://github.com/rasahq/rasa-private/issues/1154): Don't create an instance of `FlowRetrieval` in the command generators in case no flows exists.
 - [#1203](https://github.com/rasahq/rasa-private/issues/1203): Patterns do not count as active flows in `MultiStepLLMCommandGenerator` anymore.
 - [#1255](https://github.com/rasahq/rasa-private/issues/1255): Make sure that all e2e test cases in rasa inspector are valid.
+- [#979](https://github.com/RasaHQ/rasa-private/pull/979): Downloading of CALM Assistants from Studio improved:
+
+  * Downloading CALM assistants from Studio now incliude `config` and `endpoints` files
+  * Downloading CALM assistants from Studio now doesn't require `config.yml` and `data` folder to exist 
 
 
 ## [3.9.8] - 2024-08-21
