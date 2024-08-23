@@ -83,6 +83,55 @@ def conversation() -> Conversation:
         "transcript",
     )
 
+@pytest.fixture
+def conversation_mentioning_two_slots_upfront() -> Conversation:
+    test_case = TestCase.from_dict(
+        {
+            "test_case": "transfer_money",
+            "steps": [
+                {"user": "I want to send 413$ to Maria"},
+                {"bot": "Do you want to send 413$ to Maria?"},
+                {"user": "yes"},
+            ],
+        }
+    )
+
+    return Conversation(
+        test_case.name,
+        test_case,
+        [
+            ConversationStep(
+                test_case.steps[0],
+                [StartFlowCommand("transfer_money"), SetSlotCommand("transfer_money_recipient", "Maria"), SetSlotCommand("transfer_money_amount_of_money", "413")
+                 ],
+                """
+                Here is what happened previously in the conversation:
+                USER: I want to send 413$ to Maria
+                ===
+                The user just said '''I want to send 413$ to Maria'''.
+                """,
+                [],
+                ["Send 413$ to Maria"],
+            ),
+            test_case.steps[1],
+            ConversationStep(
+                test_case.steps[2],
+                [SetSlotCommand("confirmation", True)],
+                """
+                Here is what happened previously in the conversation:
+                USER: I want to send 413$ to Maria
+                AI: Do you want to send 413$ to Maria?
+                USER: yes
+                ===
+                The user just said '''yes'''.
+                """,
+                [],
+                ["Yes, that is correct"],
+            ),
+        ],
+        "transcript",
+    )
+
 
 def test_construct_new_conversations(conversation: Conversation):
     new_conversations = _construct_new_conversations(conversation)
@@ -251,6 +300,27 @@ def test_create_data_point(conversation: Conversation):
     assert data_point.original_test_name == conversation.get_full_name()
     assert data_point.original_user_utterance == step.original_test_step.text
     assert data_point.rephrased_user_utterance == rephrased_user_message
+
+
+def test_create_data_point_output_contains_multiple_commands(conversation_mentioning_two_slots_upfront: Conversation):
+    step = conversation_mentioning_two_slots_upfront.steps[0]
+    prompt = """
+    Here is what happened previously in the conversation:
+    USER: I want to send 413$ to Maria
+    ===
+    The user just said '''I want to send 413$ to Maria'''.
+    """
+    rephrased_user_message = "Send 413$ to Maria"
+
+    data_point = _create_data_point(prompt, step, conversation_mentioning_two_slots_upfront, rephrased_user_message)
+
+    assert isinstance(data_point, LLMDataExample)
+    assert data_point.prompt == prompt
+    assert data_point.output == 'StartFlow(transfer_money)\nSetSlot(transfer_money_recipient, Maria)\nSetSlot(transfer_money_amount_of_money, 413)'
+    assert data_point.original_test_name == conversation_mentioning_two_slots_upfront.get_full_name()
+    assert data_point.original_user_utterance == step.original_test_step.text
+    assert data_point.rephrased_user_utterance == rephrased_user_message
+
 
 
 def test_convert_conversation_into_llm_data(conversation: Conversation):
