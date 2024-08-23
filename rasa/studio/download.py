@@ -1,7 +1,7 @@
 import argparse
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import questionary
 import structlog
@@ -19,7 +19,6 @@ from rasa.shared.core.flows.yaml_flows_io import YamlFlowsWriter
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.utils.yaml import read_yaml
 from rasa.studio import data_handler
-
 from rasa.studio.config import StudioConfig
 from rasa.studio.constants import (
     STUDIO_DOMAIN_FILENAME,
@@ -38,7 +37,7 @@ structlogger = structlog.getLogger(__name__)
 
 def _handle_file_overwrite(
     file_path: Optional[str], default_path: str, file_type: str
-) -> tuple[Optional[Path], bool]:
+) -> Tuple[Optional[Path], bool]:
     """Handles the logic for determining whether to
     overwrite an existing file or create a new one.
     Works for config and endpoints at this moment
@@ -78,7 +77,7 @@ def _handle_file_overwrite(
     return path, write_file
 
 
-def _prepare_data_and_domain_paths(args: argparse.Namespace) -> tuple[Path, list[Path]]:
+def _prepare_data_and_domain_paths(args: argparse.Namespace) -> Tuple[Path, list[Path]]:
     """Handles the logic for preparing the domain and data paths
     based on the provided arguments.
 

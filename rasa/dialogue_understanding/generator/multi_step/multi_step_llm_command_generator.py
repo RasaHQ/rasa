@@ -294,7 +294,7 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
                     flow
                     for flow in options
                     if flow in flows.user_flow_ids
-                       and flow not in user_flows_on_the_stack(tracker.stack)
+                    and flow not in user_flows_on_the_stack(tracker.stack)
                 ]
                 if len(valid_options) == 1:
                     commands.extend(cls.start_flow_by_name(valid_options[0], flows))
@@ -443,9 +443,9 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
                 flow
                 for command in commands_for_handling_flows
                 if (
-                isinstance(command, StartFlowCommand)
-                and (flow := filtered_flows.flow_by_id(command.flow)) is not None
-            )
+                    isinstance(command, StartFlowCommand)
+                    and (flow := filtered_flows.flow_by_id(command.flow)) is not None
+                )
             ]
         )
 
