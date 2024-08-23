@@ -23,13 +23,14 @@ export const formatTestCases = (events: Event[], sessionId: string) => {
 
   const steps = events
     .map((event) => {
+      const escapedText = JSON.stringify(event.text);
       if (event.event === "user") {
-        return `    - user: ${event.text}`;
+        return `    - user: ${escapedText}`;
       } else if (event.event === "bot") {
         return `${
           event.metadata?.utter_action
             ? `    - utter: ${event.metadata.utter_action}`
-            : `    - utter: ${event.text}`
+            : `    - bot: ${escapedText}`
         }`;
       }
     })

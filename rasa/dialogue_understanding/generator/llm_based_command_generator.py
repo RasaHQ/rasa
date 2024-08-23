@@ -48,7 +48,8 @@ structlogger = structlog.get_logger()
 )
 class LLMBasedCommandGenerator(GraphComponent, CommandGenerator, ABC):
     """An abstract class defining interface and common functionality
-    of an LLM-based command generators."""
+    of an LLM-based command generators.
+    """
 
     def __init__(
         self,
@@ -164,10 +165,11 @@ class LLMBasedCommandGenerator(GraphComponent, CommandGenerator, ABC):
         self, training_data: TrainingData, flows: FlowsList, domain: Domain
     ) -> Resource:
         """Train the llm based command generator. Stores all flows into a vector
-        store."""
+        store.
+        """
         # flow retrieval is populated with only user-defined flows
         try:
-            if self.flow_retrieval is not None:
+            if self.flow_retrieval is not None and not flows.is_empty():
                 self.flow_retrieval.populate(flows.user_flows, domain)
         except Exception as e:
             structlogger.error(
@@ -189,7 +191,8 @@ class LLMBasedCommandGenerator(GraphComponent, CommandGenerator, ABC):
         """Compile the prompt template.
 
         Compiling the template is an expensive operation,
-        so we cache the result."""
+        so we cache the result.
+        """
         return Template(template)
 
     @classmethod

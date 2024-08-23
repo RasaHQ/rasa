@@ -62,8 +62,8 @@ from rasa.shared.core.constants import (
     USER_INTENT_SESSION_START,
 )
 from rasa.shared.core.domain import (
-    KEY_E2E_ACTIONS,
     KEY_RESPONSES_TEXT,
+    KEY_E2E_ACTIONS,
     ActionNotFoundException,
     Domain,
     SessionConfig,

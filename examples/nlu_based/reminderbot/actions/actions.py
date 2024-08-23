@@ -28,7 +28,6 @@ class ActionSetReminder(Action):
         tracker: Tracker,
         domain: Dict[Text, Any],
     ) -> List[Dict[Text, Any]]:
-
         dispatcher.utter_message("I will remind you in 5 seconds.")
 
         date = datetime.datetime.now() + datetime.timedelta(seconds=5)
@@ -57,7 +56,6 @@ class ActionReactToReminder(Action):
         tracker: Tracker,
         domain: Dict[Text, Any],
     ) -> List[Dict[Text, Any]]:
-
         name = next(tracker.get_slot("PERSON"), "someone")
         dispatcher.utter_message(f"Remember to call {name}!")
 
@@ -73,7 +71,6 @@ class ActionTellID(Action):
     async def run(
         self, dispatcher, tracker: Tracker, domain: Dict[Text, Any]
     ) -> List[Dict[Text, Any]]:
-
         conversation_id = tracker.sender_id
 
         dispatcher.utter_message(f"The ID of this conversation is '{conversation_id}'.")
@@ -101,7 +98,6 @@ class ActionWarnDry(Action):
         tracker: Tracker,
         domain: Dict[Text, Any],
     ) -> List[Dict[Text, Any]]:
-
         plant = next(tracker.get_latest_entity_values("plant"), "someone")
         dispatcher.utter_message(f"Your {plant} needs some water!")
 
@@ -117,7 +113,6 @@ class ForgetReminders(Action):
     async def run(
         self, dispatcher, tracker: Tracker, domain: Dict[Text, Any]
     ) -> List[Dict[Text, Any]]:
-
         dispatcher.utter_message("Okay, I'll cancel all your reminders.")
 
         # Cancel all reminders

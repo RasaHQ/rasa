@@ -7,5 +7,4 @@ from rasa.engine.recipes.default_recipe import DefaultV1Recipe
     is_trainable=True,
     model_from="SpacyNLP",
 )
-class MyComponent(GraphComponent):
-    ...
+class MyComponent(GraphComponent): ...

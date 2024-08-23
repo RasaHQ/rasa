@@ -7,7 +7,6 @@ from sanic.worker.loader import AppLoader
 
 
 def create_app() -> Sanic:
-
     bot_app = Sanic("callback_server", configure_logging=False)
 
     @bot_app.post("/bot")

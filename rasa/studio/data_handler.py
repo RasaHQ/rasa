@@ -50,7 +50,7 @@ class StudioDataHandler:
                 "query ExportAsEncodedYaml($input: ExportAsEncodedYamlInput!) "
                 "{ exportAsEncodedYaml(input: $input) "
                 "{ ... on ExportModernAsEncodedYamlOutput "
-                "{ nlu flows domain } "
+                "{ nlu flows domain endpoints config } "
                 "... on ExportClassicAsEncodedYamlOutput "
                 "{ nlu domain }}}"
             ),
@@ -148,6 +148,12 @@ class StudioDataHandler:
         response = self._make_request(GQL_req)
         self._extract_data(response)
 
+    def get_config(self) -> Optional[str]:
+        return self.config
+
+    def get_endpoints(self) -> Optional[str]:
+        return self.endpoints
+
     def _validate_response(self, response: dict) -> bool:
         """Validates the response from Rasa Studio.
 
@@ -184,6 +190,8 @@ class StudioDataHandler:
         self.nlu = self._decode_response(return_data.get("nlu"))
         self.domain = self._decode_response(return_data.get("domain"))
         self.flows = self._decode_response(return_data.get("flows"))
+        self.config = self._decode_response(return_data.get("config"))
+        self.endpoints = self._decode_response(return_data.get("endpoints"))
 
         if not self.has_nlu() and not self.has_flows():
             raise RasaException("No nlu or flows data in Studio response.")

@@ -1,3 +1,5 @@
+from typing import Optional
+
 import pytest
 
 from rasa.core.policies.flow_policy import (
@@ -318,3 +320,22 @@ async def test_policy_cancels_user_flow_and_trigger_error_pattern_invalid_custom
     assert second_frame.canceled_frames == ["some-id"]
     # the error pattern should be the other frame
     assert isinstance(updated_stack.frames[2], InternalErrorPatternFlowStackFrame)
+
+
+@pytest.mark.parametrize(
+    "routing_slot_value,result",
+    [
+        (None, True),
+        (True, False),
+        (False, True),
+    ],
+)
+def test_should_abstain_in_coexistence(
+    routing_slot_value: Optional[bool], result: bool, default_flow_policy: FlowPolicy
+):
+    tracker = DialogueStateTracker(
+        "id1",
+        slots=[BooleanSlot(ROUTE_TO_CALM_SLOT, [], initial_value=routing_slot_value)],
+    )
+
+    assert result == default_flow_policy.should_abstain_in_coexistence(tracker, True)
