@@ -1,7 +1,6 @@
 import json
 import logging
-from typing import Any, Dict, Optional
-from typing import TYPE_CHECKING, Any, Dict
+from typing import Any, Dict, Optional, TYPE_CHECKING
 
 import aiohttp
 
@@ -19,7 +18,6 @@ from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
 from rasa.utils.common import get_bool_env_variable
-from rasa.utils.endpoints import ClientResponseError, EndpointConfig
 
 if TYPE_CHECKING:
     from rasa.shared.core.domain import Domain

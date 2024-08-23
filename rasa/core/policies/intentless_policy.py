@@ -27,10 +27,8 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.graph_components.providers.forms_provider import Forms
 from rasa.graph_components.providers.responses_provider import Responses
-from rasa.shared.constants import REQUIRED_SLOTS_KEY
 from rasa.shared.constants import (
     REQUIRED_SLOTS_KEY,
-    ROUTE_TO_CALM_SLOT,
     API_TYPE_CONFIG_KEY,
     EMBEDDINGS_CONFIG_KEY,
     LLM_CONFIG_KEY,
