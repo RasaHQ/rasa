@@ -295,6 +295,7 @@ class SetEncoder(json.JSONEncoder):
             return list(obj)
         return super().default(obj)
 
+
 def _lock_store_is_multi_worker_compatible(
     lock_store: Union[EndpointConfig, LockStore, None],
 ) -> bool:

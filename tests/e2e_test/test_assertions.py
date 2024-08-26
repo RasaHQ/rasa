@@ -199,7 +199,7 @@ def test_empty_bot_uttered_raises_exception():
 
 def test_pattern_clarification_contains_assertion_test():
     assertion = PatternClarificationContainsAssertion(
-        flow_names={'add a card', 'add a contact'}, line=12
+        flow_names={"add a card", "add a contact"}, line=12
     )
     assertion.__hash__()
 
