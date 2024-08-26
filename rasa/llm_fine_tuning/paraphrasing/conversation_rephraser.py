@@ -5,12 +5,15 @@ from typing import Dict, Any, List, Tuple, Optional
 import structlog
 from jinja2 import Template
 
-from rasa.dialogue_understanding.generator.constants import (
-    LLM_CONFIG_KEY,
-)
 from rasa.llm_fine_tuning.conversations import Conversation
 from rasa.llm_fine_tuning.paraphrasing.rephrased_user_message import (
     RephrasedUserMessage,
+)
+from rasa.shared.constants import (
+    MODEL_NAME_CONFIG_KEY,
+    MODEL_CONFIG_KEY,
+    LLM_CONFIG_KEY,
+    PROMPT_TEMPLATE_CONFIG_KEY,
 )
 from rasa.shared.exceptions import ProviderClientAPIException
 from rasa.shared.utils.llm import (
@@ -21,8 +24,6 @@ from rasa.shared.utils.llm import (
 
 SEPARATOR = "\n\n"
 BACKUP_SEPARATOR = "\nUSER:"
-
-PROMPT_TEMPLATE_CONFIG_KEY = "prompt_template"
 
 REPHRASING_PROMPT_FILE_NAME = "default_rephrase_prompt_template.jina2"
 DEFAULT_REPHRASING_PROMPT_TEMPLATE = importlib.resources.read_text(
@@ -51,6 +52,38 @@ class ConversationRephraser:
             self.config.get(PROMPT_TEMPLATE_CONFIG_KEY),
             DEFAULT_REPHRASING_PROMPT_TEMPLATE,
         )
+
+    @staticmethod
+    def validate_config(config: Dict[str, Any]) -> None:
+        """Validate the rephrase_config."""
+        if LLM_CONFIG_KEY in config:
+            llm_config = config.get(LLM_CONFIG_KEY)
+
+            # Check if LLM configuration is set to None, {}.
+            if llm_config is None:
+                error = "LLM config is empty. Please provide a valid LLM config."
+                structlogger.error("rephrase_config.empty_llm_config", error=error)
+                raise ValueError(error)
+
+            # Validate LLM model name and model in config.
+            if not llm_config.get(MODEL_CONFIG_KEY) and not llm_config.get(
+                MODEL_NAME_CONFIG_KEY
+            ):
+                error = (
+                    "LLM model name is empty. Please provide a valid LLM model name."
+                )
+                structlogger.error("rephrase_config.llm_model_is_not_set", error=error)
+                raise ValueError(error)
+
+        # Check if the config contains only the allowed keys.
+        allowed_keys = {PROMPT_TEMPLATE_CONFIG_KEY, LLM_CONFIG_KEY}
+        if len(set(config.keys()) - allowed_keys) > 0:
+            error = (
+                f"Invalid rephrase config. Only the following keys are allowed: "
+                f"{', '.join(allowed_keys)}."
+            )
+            structlogger.error("rephrase_config.invalid_keys", error=error)
+            raise ValueError(error)
 
     @staticmethod
     def get_default_config() -> Dict[str, Any]:
