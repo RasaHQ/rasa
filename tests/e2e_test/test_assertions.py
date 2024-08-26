@@ -197,6 +197,13 @@ def test_empty_bot_uttered_raises_exception():
         Assertion.create_typed_assertion({"bot_uttered": {}})
 
 
+def test_pattern_clarification_contains_assertion_test():
+    assertion = PatternClarificationContainsAssertion(
+        flow_names={'add a card', 'add a contact'}, line=12
+    )
+    assertion.__hash__()
+
+
 @pytest.mark.parametrize(
     "assertion, turn_events",
     [
