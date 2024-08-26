@@ -24,6 +24,7 @@ from rasa.shared.providers._configs.utils import (
     raise_deprecation_warnings,
     validate_required_keys,
 )
+from rasa.shared.utils.io import raise_deprecation_warning
 
 structlogger = structlog.get_logger()
 
@@ -76,6 +77,15 @@ class HuggingFaceLocalEmbeddingClientConfig:
                 api_type=self.api_type,
             )
             raise ValueError(message)
+        if self.api_type == HUGGINGFACE_API_TYPE:
+            raise_deprecation_warning(
+                message=(
+                    f"'{HUGGINGFACE_API_TYPE}' is deprecated for HuggingFace"
+                    f"local embeddings and will be removed in "
+                    f"4.0.0. Use '{HUGGINGFACE_LOCAL_API_TYPE}' "
+                    f"instead."
+                )
+            )
         if self.model is None:
             message = "Model cannot be set to None."
             structlogger.error(
