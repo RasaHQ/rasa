@@ -31,6 +31,7 @@ from rasa.core.policies.enterprise_search_policy import (
     SEARCH_QUERY_METADATA_KEY,
     SEARCH_RESULTS_METADATA_KEY,
 )
+from rasa.core.utils import SetEncoder
 from rasa.dialogue_understanding.patterns.clarify import FLOW_PATTERN_CLARIFICATION
 from rasa.shared.core.constants import DEFAULT_SLOT_NAMES
 from rasa.shared.core.events import (
@@ -421,7 +422,7 @@ class PatternClarificationContainsAssertion(Assertion):
         return None, matching_event
 
     def __hash__(self) -> int:
-        return hash(json.dumps(self.as_dict()))
+        return hash(json.dumps(self.as_dict(), cls=SetEncoder))
 
 
 @dataclass

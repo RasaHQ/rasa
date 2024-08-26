@@ -287,6 +287,14 @@ def replace_decimals_with_floats(obj: Any) -> Any:
     return json.loads(json.dumps(obj, cls=DecimalEncoder))
 
 
+class SetEncoder(json.JSONEncoder):
+    """`json.JSONEncoder` that dumps `set`s as `list`s."""
+
+    def default(self, obj):
+        if isinstance(obj, set):
+            return list(obj)
+        return super().default(obj)
+
 def _lock_store_is_multi_worker_compatible(
     lock_store: Union[EndpointConfig, LockStore, None],
 ) -> bool:
