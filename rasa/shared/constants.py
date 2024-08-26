@@ -165,6 +165,9 @@ API_VERSION_CONFIG_KEY = "api_version"
 LANGCHAIN_TYPE_CONFIG_KEY = "_type"
 RASA_TYPE_CONFIG_KEY = "type"
 
+REQUEST_TIMEOUT_CONFIG_KEY = "request_timeout"  # deprecated
+TIMEOUT_CONFIG_KEY = "timeout"
+
 DEPLOYMENT_NAME_CONFIG_KEY = "deployment_name"
 DEPLOYMENT_CONFIG_KEY = "deployment"
 EMBEDDINGS_CONFIG_KEY = "embeddings"

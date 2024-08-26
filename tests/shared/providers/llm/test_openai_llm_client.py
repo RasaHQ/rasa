@@ -208,3 +208,50 @@ class TestOpenAILLMClient:
                 break
 
         assert found_validation_log
+
+    @pytest.mark.parametrize(
+        "config, expected_to_raise_deprecation_warning",
+        [
+            (
+                {
+                    "model": "test-gpt",
+                    "api_type": "openai",
+                    "timeout": 7,
+                },
+                False,
+            ),
+            (
+                {
+                    "model": "test-gpt",
+                    "api_type": "openai",
+                    # Use deprecated key for timeout
+                    "request_timeout": 7,
+                },
+                True,
+            ),
+        ],
+    )
+    def test_from_config_correctly_initializes_timeout(
+        self,
+        config,
+        expected_to_raise_deprecation_warning: bool,
+        monkeypatch: MonkeyPatch,
+    ):
+        # Given
+        monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "some_key")
+
+        # When
+        with pytest.warns(None) as record:
+            client = OpenAILLMClient.from_config(config)
+
+        # Then
+        future_warnings = [
+            warning for warning in record if warning.category == FutureWarning
+        ]
+        if expected_to_raise_deprecation_warning:
+            assert len(future_warnings) == 1
+            assert "timeout" in str(future_warnings[0].message)
+            assert "request_timeout" in str(future_warnings[0].message)
+
+        assert "timeout" in client._extra_parameters
+        assert client._extra_parameters["timeout"] == 7
