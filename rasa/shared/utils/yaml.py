@@ -1,3 +1,4 @@
+import datetime
 import logging
 import os
 import re
@@ -18,6 +19,7 @@ from ruamel import yaml as yaml
 from ruamel.yaml import RoundTripRepresenter, YAMLError
 from ruamel.yaml.constructor import DuplicateKeyError, BaseConstructor, ScalarNode
 from ruamel.yaml.comments import CommentedSeq, CommentedMap
+from ruamel.yaml.loader import SafeLoader
 
 from rasa.shared.constants import (
     ASSERTIONS_SCHEMA_EXTENSIONS_FILE,
@@ -499,6 +501,30 @@ def create_yaml_parser(
             yaml.resolver.BaseResolver.DEFAULT_SEQUENCE_TAG,
             original_sequence_constructor,
         )
+
+    def custom_date_constructor(loader: SafeLoader, node: ScalarNode) -> str:
+        """Custom constructor for parsing dates in the format '%Y-%m-%d'.
+
+        This constructor parses dates in the '%Y-%m-%d' format and returns them as
+        strings instead of datetime objects. This change was introduced because the
+        default timestamp constructor in ruamel.yaml returns datetime objects, which
+        caused issues in our use case where the `api_version` in the LLM config must
+        be a string, but was being interpreted as a datetime object.
+        """
+        value = loader.construct_scalar(node)
+        try:
+            # Attempt to parse the date
+            date_obj = datetime.datetime.strptime(value, "%Y-%m-%d").date()
+            # Return the date as a string instead of a datetime object
+            return date_obj.strftime("%Y-%m-%d")
+        except ValueError:
+            # If the date is not in the correct format, return the original value
+            return value
+
+    # Add the custom date constructor
+    yaml_parser.constructor.add_constructor(
+        "tag:yaml.org,2002:timestamp", custom_date_constructor
+    )
 
     return yaml_parser, reset_constructors
 
