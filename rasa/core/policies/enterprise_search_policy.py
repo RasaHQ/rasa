@@ -376,6 +376,7 @@ class EnterpriseSearchPolicy(Policy):
             logger.error(
                 "enterprise_search_policy._connect_vector_store_or_raise.connect_error",
                 error=e,
+                config=config,
             )
             raise VectorStoreConnectionError(
                 f"Unable to connect to the vector store. Error: {e}"
