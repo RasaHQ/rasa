@@ -219,7 +219,10 @@ class ConversationRephraser:
 
             # Add the rephrasings to the correct user message
             for rephrased_message in rephrased_messages:
-                if rephrased_message.original_user_message == original_user_message:
+                if (
+                    rephrased_message.original_user_message.lower()
+                    == original_user_message.lower()
+                ):
                     rephrased_message.rephrasings = rephrasings
 
         return rephrased_messages

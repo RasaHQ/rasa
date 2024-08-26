@@ -205,7 +205,7 @@ def test_extract_rephrasings(
         - I'm interested in hiring a car.
         \"\"\"
         """,
-        """USER: Show invoices
+        """USER: Show Invoices
 1. I want to see my bills.
 2. I mean bills
 3. Yes, I want to see the invoices.
@@ -217,7 +217,7 @@ USER: I'd like to book a car
 )
 def test_parse_output(output: str, rephraser: ConversationRephraser):
     number_of_rephrasings = 3
-    user_messages = ["Show invoices", "I'd like to book a car"]
+    user_messages = ["Show invoices", "I'd like to book a CAR"]
 
     rephrased_messages = rephraser._parse_output(output, user_messages)
 
