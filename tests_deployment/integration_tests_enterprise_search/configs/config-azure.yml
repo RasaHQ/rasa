@@ -3,7 +3,7 @@ language: en
 pipeline:
 - name: LLMBasedRouter
   llm:
-    model_name: "gpt-4"
+    model: "gpt-4"
     engine: "test-gpt-4"
     api_type: "azure"
     api_version: "2024-02-01"
@@ -45,7 +45,7 @@ policies:
     openai_api_type: azure
     openai_api_version: "2024-02-01"
   llm:
-    model_name: "gpt-4"
+    model: "gpt-4"
     engine: "test-gpt-4"
     api_type: "azure"
     api_version: "2024-02-01"
@@ -59,7 +59,7 @@ policies:
     openai_api_type: azure
     openai_api_version: "2024-02-01"
   llm:
-    model_name: "gpt-4"
+    model: "gpt-4"
     engine: "test-gpt-4"
     api_type: "azure"
     api_version: "2024-02-01"
