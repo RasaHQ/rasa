@@ -532,6 +532,32 @@ def add_root_route(app: Sanic) -> None:
         """
         return response.html(html_content)
 
+    @app.get("/license")
+    async def license(request: Request) -> HTTPResponse:
+        """Respond with the license expiration date."""
+        from rasa.utils.licensing import (
+            get_license_expiration_date,
+            property_of_active_license,
+        )
+
+        body = {
+            "id": property_of_active_license(lambda active_license: active_license.jti),
+            "company": property_of_active_license(
+                lambda active_license: active_license.company
+            ),
+            "scope": property_of_active_license(
+                lambda active_license: active_license.scope
+            ),
+            "email": property_of_active_license(
+                lambda active_license: active_license.email
+            ),
+            "expires": get_license_expiration_date(),
+        }
+        return response.json(
+            body=body,
+            headers={"Content-Type": "application/json"},
+        )
+
 
 def async_if_callback_url(f: Callable[..., Coroutine]) -> Callable:
     """Decorator to enable async request handling.

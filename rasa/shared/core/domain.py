@@ -5,21 +5,21 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import (
+    TYPE_CHECKING,
     Any,
+    Callable,
     Dict,
+    Iterable,
     List,
+    NamedTuple,
     NoReturn,
     Optional,
     Set,
     Text,
     Tuple,
     Union,
-    TYPE_CHECKING,
-    Iterable,
-    MutableMapping,
-    NamedTuple,
-    Callable,
     cast,
+    MutableMapping,
 )
 
 import structlog
@@ -29,25 +29,25 @@ import rasa.shared.core.slot_mappings
 import rasa.shared.utils.common
 import rasa.shared.utils.io
 from rasa.shared.constants import (
-    DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
     DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION,
-    DOMAIN_SCHEMA_FILE,
+    DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
     DOCS_URL_DOMAINS,
     DOCS_URL_FORMS,
-    LATEST_TRAINING_DATA_FORMAT_VERSION,
     DOCS_URL_RESPONSES,
-    REQUIRED_SLOTS_KEY,
+    DOMAIN_SCHEMA_FILE,
     IGNORED_INTENTS,
+    LATEST_TRAINING_DATA_FORMAT_VERSION,
+    REQUIRED_SLOTS_KEY,
     RESPONSE_CONDITION,
 )
 from rasa.shared.core.constants import (
     ACTION_SHOULD_SEND_DOMAIN,
+    ACTIVE_LOOP,
+    KNOWLEDGE_BASE_SLOT_NAMES,
+    MAPPING_CONDITIONS,
+    MAPPING_TYPE,
     SLOT_MAPPINGS,
     SlotMappingType,
-    MAPPING_TYPE,
-    MAPPING_CONDITIONS,
-    KNOWLEDGE_BASE_SLOT_NAMES,
-    ACTIVE_LOOP,
 )
 from rasa.shared.core.events import SlotSet, UserUttered
 from rasa.shared.core.slots import (
@@ -966,6 +966,7 @@ class Domain:
         """Returns a unique hash for the domain."""
         return int(self.fingerprint(), 16)
 
+    @rasa.shared.utils.common.cached_method
     def fingerprint(self) -> Text:
         """Returns a unique hash for the domain which is stable across python runs.
 

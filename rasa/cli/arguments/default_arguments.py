@@ -73,7 +73,7 @@ def add_config_param(
         "--config",
         type=str,
         default=default,
-        help="The policy and NLU pipeline configuration of your bot.",
+        help="The policy and pipeline configuration of your bot.",
     )
 
 
@@ -162,4 +162,15 @@ def add_logging_options(parser: argparse.ArgumentParser) -> None:
         type=str,
         help="If set, the name of the logging configuration file will be set "
         "to the given name.",
+    )
+
+
+def add_remote_storage_param(
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer],
+    required: bool = False,
+) -> None:
+    parser.add_argument(
+        "--remote-storage",
+        help="Set the remote location where your Rasa model is stored, e.g. on AWS.",
+        required=required,
     )

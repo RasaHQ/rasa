@@ -1,4 +1,4 @@
-from typing import List, Dict, Any, Tuple, Optional
+from typing import List, Dict, Any, Tuple
 
 import structlog
 from tqdm import tqdm
@@ -11,7 +11,6 @@ from rasa.llm_fine_tuning.paraphrasing.rephrase_validator import RephraseValidat
 from rasa.llm_fine_tuning.storage import StorageContext
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.exceptions import ProviderClientAPIException
-from rasa.shared.utils.yaml import read_config_file
 
 PARAPHRASING_MODULE_STORAGE_LOCATION = "2_rephrasings"
 
@@ -20,7 +19,7 @@ structlogger = structlog.get_logger()
 
 async def create_paraphrased_conversations(
     conversations: List[Conversation],
-    rephrase_config_path: Optional[str],
+    rephrase_config: Dict[str, Any],
     num_rephrases: int,
     flows: FlowsList,
     llm_command_generator_config: Dict[str, Any],
@@ -43,9 +42,7 @@ async def create_paraphrased_conversations(
         The conversations including rephrasings and the configuration used for
         rephrasing.
     """
-    config = read_config_file(rephrase_config_path) if rephrase_config_path else {}
-
-    rephraser = ConversationRephraser(config)
+    rephraser = ConversationRephraser(rephrase_config)
     validator = RephraseValidator(llm_command_generator_config, flows)
 
     rephrased_conversations: List[Conversation] = []

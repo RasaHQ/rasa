@@ -15,6 +15,7 @@ METRICS_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/tracing/test_metrics.
 CUSTOM_ACTIONS_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/actions/custom_actions
 NLU_CUSTOM_ACTIONS_INTEGRATION_TEST_PATH = $(CUSTOM_ACTIONS_INTEGRATION_TEST_PATH)/test_custom_actions_with_nlu.py
 CALM_CUSTOM_ACTIONS_INTEGRATION_TEST_PATH = $(CUSTOM_ACTIONS_INTEGRATION_TEST_PATH)/test_custom_actions_with_calm.py
+ENTERPRISE_SEARCH_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/enterprise_search
 INTEGRATION_TEST_DEPLOYMENT_PATH = $(PWD)/tests_deployment
 BASE_IMAGE_HASH ?= localdev
 BASE_BUILDER_IMAGE_HASH ?= localdev
@@ -138,6 +139,7 @@ ifeq (,$(wildcard $(INTEGRATION_TEST_DEPLOYMENT_PATH)/.env))
 			--dist loadgroup  \
 			--ignore $(TRACING_INTEGRATION_TEST_FOLDER) \
 			--ignore $(CUSTOM_ACTIONS_INTEGRATION_TEST_PATH) \
+			--ignore $(ENTERPRISE_SEARCH_INTEGRATION_TEST_PATH) \
 			--junitxml=report_integration.xml
 else
 	set -o allexport; \
@@ -151,6 +153,7 @@ else
 			--dist loadgroup \
 			--ignore $(TRACING_INTEGRATION_TEST_FOLDER) \
 			--ignore $(CUSTOM_ACTIONS_INTEGRATION_TEST_PATH) \
+			--ignore $(ENTERPRISE_SEARCH_INTEGRATION_TEST_PATH) \
 			--junitxml=report_integration.xml && \
 	set +o allexport
 endif
@@ -450,3 +453,52 @@ test-custom-action-integration-with-calm-bot: RESULTS_FILE = integration-results
 test-custom-action-integration-with-calm-bot:  ## Run the action server integration tests with CALM bot.
 	$(TEST_CUSTOM_ACTION_INTEGRATION_COMMAND)
 
+RASA_CALM_DEMO_BOT_SETUP_PATH = $(INTEGRATION_TEST_DEPLOYMENT_PATH)/integration_tests_enterprise_search
+
+RUN_RASA_CALM_DEMO_CONTAINERS_COMMAND = USER_ID=$(USER_ID) \
+	BOT_PATH=$(BOT_PATH) \
+	docker compose \
+		-f $(RASA_CALM_DEMO_BOT_SETUP_PATH)/$(DOCKER_COMPOSE_FILE) \
+		up --wait
+
+TRAIN_ENTERPRISE_SEARCH_BOT_COMMAND = docker run --rm \
+		-u $(USER_ID) \
+		--name $(CONTAINER_NAME) \
+		$(DOCKER_ENV_VARS) \
+		-v $(BOT_PATH)\:/app \
+		-v $(RASA_CALM_DEMO_BOT_SETUP_PATH)/configs/${CONFIG_NAME}:/app/config.yml \
+		-v $(RASA_CALM_DEMO_BOT_SETUP_PATH)/configs/${ENDPOINTS_NAME}:/app/endpoints.yml \
+		${RASA_REPOSITORY}:${RASA_IMAGE_TAG} \
+		train --fixed-model-name $(MODEL_NAME)
+
+STOP_RASA_CALM_DEMO_CONTAINERS = docker compose \
+		-f $(RASA_CALM_DEMO_BOT_SETUP_PATH)/${DOCKER_COMPOSE_FILE} \
+		down
+
+train-rasa-calm-bot: DOCKER_ENV_VARS = -e RASA_PRO_LICENSE=${RASA_PRO_LICENSE} -e OPENAI_API_KEY=${OPENAI_API_KEY}
+train-rasa-calm-bot: CONTAINER_NAME = rasa-calm-demo-bot-${RASA_IMAGE_TAG}
+train-rasa-calm-bot: BOT_PATH = $(RASA_CALM_DEMO_BOT_SETUP_PATH)/rasa-calm-demo-bot
+train-rasa-calm-bot: CONFIG_NAME = ${CONFIG}
+train-rasa-calm-bot: ENDPOINTS_NAME = ${ENDPOINTS}
+train-rasa-calm-bot: ## Train the CALM bot for action server integration tests.
+	$(TRAIN_ENTERPRISE_SEARCH_BOT_COMMAND)
+
+run-rasa-calm-demo-test-containers: DOCKER_COMPOSE_FILE = ${DOCKER_COMPOSE}
+run-rasa-calm-demo-test-containers: BOT_PATH = $(RASA_CALM_DEMO_BOT_SETUP_PATH)/rasa-calm-demo-bot
+run-rasa-calm-demo-test-containers: ## Run the containers.
+	$(RUN_RASA_CALM_DEMO_CONTAINERS_COMMAND)
+
+TEST_ENTERPRISE_SEARCH_INTEGRATION_COMMAND = poetry run \
+		pytest $(ENTERPRISE_SEARCH_TEST_PATH) \
+		-n $(JOBS) \
+		--junitxml=$(RESULTS_FILE)
+
+# Run the enterprise search integration tests with CALM bot
+test-enterprise-search-integration-with-calm-bot: ENTERPRISE_SEARCH_TEST_PATH = $(ENTERPRISE_SEARCH_INTEGRATION_TEST_PATH)/${TEST_NAME}
+test-enterprise-search-integration-with-calm-bot: RESULTS_FILE = integration-results-enterprise-search.xml
+test-enterprise-search-integration-with-calm-bot:  ## Run the enterprise search integration tests with CALM bot.
+	$(TEST_ENTERPRISE_SEARCH_INTEGRATION_COMMAND)
+
+stop-rasa-calm-demo-bot-test-containers: DOCKER_COMPOSE_FILE = ${DOCKER_COMPOSE}
+stop-rasa-calm-demo-bot-test-containers: ## Stop the metrics integration test containers.
+	$(STOP_RASA_CALM_DEMO_CONTAINERS)

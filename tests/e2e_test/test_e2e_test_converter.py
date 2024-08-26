@@ -4,6 +4,7 @@ from unittest.mock import patch, Mock, AsyncMock
 
 import pandas as pd
 import pytest
+
 from rasa.e2e_test.e2e_config import LLME2ETestConverterConfig
 from rasa.e2e_test.e2e_test_converter import (
     E2ETestConverter,

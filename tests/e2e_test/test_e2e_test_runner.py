@@ -47,6 +47,7 @@ from rasa.shared.core.events import (
     UserUttered,
 )
 from rasa.shared.core.flows.flow_path import FlowPath, PathNode
+from rasa.shared.core.slots import TextSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
 from rasa.utils.endpoints import EndpointConfig
@@ -1910,6 +1911,76 @@ async def test_run_assertions_all_valid(
     results = await assertions_e2e_test_runner.run_tests(
         [test_case], [], input_metadata=[]
     )
+    assert len(results) == 1
+    assert isinstance(results[0], TestResult)
+    assert results[0].pass_status is True
+    assert results[0].difference == []
+    assert results[0].assertion_failure is None
+
+
+async def test_assertion_run_multiple_slot_was_set_assertion_order_enabled(
+    default_agent: Agent, monkeypatch: MonkeyPatch
+) -> None:
+    def mock_init(self, *args, **kwargs) -> None:
+        self.agent = default_agent
+        self.llm_judge_config = MagicMock()
+
+    monkeypatch.setattr(
+        "rasa.e2e_test.e2e_test_runner.E2ETestRunner.__init__", mock_init
+    )
+
+    test_runner = E2ETestRunner()
+
+    async def mock_get_tracker(self, *args, **kwargs) -> DialogueStateTracker:
+        return DialogueStateTracker.from_events(
+            "test_run_assertions_multiple_slot_was_set",
+            evts=[
+                SessionStarted(),
+                UserUttered("I need to replace my card"),
+                BotUttered("What's the reason for the replacement?"),
+                UserUttered("some other reason"),
+                SlotSet("reason", "other"),
+                ActionExecuted("action_run_slot_rejections"),
+                SlotSet("reason", None),
+                BotUttered(
+                    "Other is an invalid reason. Please provide a valid reason."
+                ),
+            ],
+            slots=[TextSlot("reason", mappings=[])],
+        )
+
+    monkeypatch.setattr(test_runner.agent.processor, "get_tracker", mock_get_tracker)
+
+    monkeypatch.setattr(test_runner.agent.tracker_store, "retrieve", mock_get_tracker)
+    test_case = TestCase(
+        name="test_case_replace_card",
+        steps=[
+            TestStep.from_dict(
+                {
+                    "user": "I need to replace my card",
+                    "assertions": [
+                        {
+                            "bot_uttered": {
+                                "text_matches": "What's the reason for the replacement?"
+                            }
+                        }
+                    ],
+                }
+            ),
+            TestStep.from_dict(
+                {
+                    "user": "some other reason",
+                    "assertion_order_enabled": True,
+                    "assertions": [
+                        {"slot_was_set": [{"name": "reason"}]},
+                        {"slot_was_set": [{"name": "reason", "value": None}]},
+                    ],
+                }
+            ),
+        ],
+    )
+
+    results = await test_runner.run_tests([test_case], [], input_metadata=[])
     assert len(results) == 1
     assert isinstance(results[0], TestResult)
     assert results[0].pass_status is True

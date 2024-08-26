@@ -5,10 +5,10 @@ import os
 import textwrap
 from pathlib import Path
 from typing import Any, Callable, List, Text, Dict
-import matplotlib.pyplot as plt
 from unittest.mock import MagicMock, Mock, call, patch
-from _pytest.tmpdir import TempPathFactory
 
+import matplotlib.pyplot as plt
+from _pytest.tmpdir import TempPathFactory
 import pytest
 from pytest import MonkeyPatch, RunResult
 from structlog.testing import capture_logs
@@ -39,6 +39,7 @@ from rasa.cli.e2e_test import (
 from rasa.core.agent import Agent
 from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.e2e_test.assertions import AssertionFailure, FlowStartedAssertion
+from rasa.e2e_test.constants import KEY_TEST_CASES
 from rasa.e2e_test.e2e_test_case import Fixture, Metadata, TestCase, TestStep, TestSuite
 from rasa.e2e_test.e2e_test_coverage_report import (
     FLOW_NAME_COL_NAME,
@@ -134,23 +135,26 @@ def test_find_test_sets_file(e2e_input_folder: Path) -> None:
     test_suite = read_test_cases(str(e2e_input_folder))
     input_test_cases = test_suite.test_cases
 
-    assert len(input_test_cases) == 8
+    assert len(input_test_cases) == 9
     assert input_test_cases[0].file == str(e2e_input_folder / "e2e_one_test.yml")
     assert input_test_cases[1].file == str(
         e2e_input_folder / "e2e_one_test_with_fixtures.yml"
     )
-    assert input_test_cases[2].file == str(e2e_input_folder / "e2e_test_cases.yml")
-    assert input_test_cases[3].file == str(e2e_input_folder / "e2e_test_cases.yml")
-    assert input_test_cases[4].file == str(
-        e2e_input_folder / "e2e_test_cases_with_fixtures.yml"
+    assert input_test_cases[2].file == str(
+        e2e_input_folder / "e2e_test_case_with_slot_was_set.yml"
     )
+    assert input_test_cases[3].file == str(e2e_input_folder / "e2e_test_cases.yml")
+    assert input_test_cases[4].file == str(e2e_input_folder / "e2e_test_cases.yml")
     assert input_test_cases[5].file == str(
         e2e_input_folder / "e2e_test_cases_with_fixtures.yml"
     )
     assert input_test_cases[6].file == str(
-        e2e_input_folder / "e2e_test_cases_with_metadata.yml"
+        e2e_input_folder / "e2e_test_cases_with_fixtures.yml"
     )
     assert input_test_cases[7].file == str(
+        e2e_input_folder / "e2e_test_cases_with_metadata.yml"
+    )
+    assert input_test_cases[8].file == str(
         e2e_input_folder / "e2e_test_cases_with_metadata.yml"
     )
 
@@ -753,22 +757,24 @@ def test_save_test_cases_to_yaml(tmp_path: Path):
     )
     test_results = [TestResult(test_case, pass_status=True, difference=[])]
     test_suite = TestSuite(
-        [test_case],
+        test_cases=[test_case],
         fixtures=[Fixture("fixture", {"key": "value"})],
         metadata=[Metadata("metadata", {"key": "value"})],
+        stub_custom_actions={},
     )
 
     with capture_logs() as logs:
         save_test_cases_to_yaml(test_results, str(tmp_path), STATUS_PASSED, test_suite)
+        output_file_path = str(tmp_path / f"{STATUS_PASSED}.yml")
         assert len(logs) == 2
         assert logs[0]["log_level"] == "info"
         assert logs[0]["message"] == (
-            "E2e tests with 'passed' status are written to file 'passed.yml'."
+            f"E2e tests with 'passed' status are written to file: '{output_file_path}'."
         )
         assert logs[1]["log_level"] == "info"
         assert logs[1]["message"] == (
-            "You can use the file 'passed.yml' in case you want to create training "
-            "data for fine-tuning an LLM via 'rasa llm finetune prepare-data'."
+            f"You can use the file: '{output_file_path}' in case you want to create "
+            "training data for fine-tuning an LLM via 'rasa llm finetune prepare-data'."
         )
 
     actual_test_suite = read_test_cases(str(tmp_path / "passed.yml"))
@@ -868,15 +874,15 @@ def test_print_test_result_without_aggregate_stats(
         _save_tested_commands_histogram(count_dict, test_status, output_dir)
 
         # Check that savefig was called with the correct path
-        expected_save_path: str = os.path.join(output_dir, output_filename)
-        mock_savefig.assert_called_once_with(expected_save_path)
+        expected_output_file_path: str = os.path.join(output_dir, output_filename)
+        mock_savefig.assert_called_once_with(expected_output_file_path)
         plt.close()  # Close the plot to clean up the state for other tests
 
         # Check that structlogger.info was called with the correct parameters
         mock_info.assert_called_once_with(
             "rasa.e2e_test._save_tested_commands_histogram",
-            message=f"Commands histogram for {test_status} e2e tests"
-            f"is written to '{output_filename}'.",
+            message=f"Commands histogram for {test_status} e2e tests "
+            f"are written to '{expected_output_file_path}'.",
         )
 
         # Ensure that the file path was joined correctly
@@ -898,3 +904,14 @@ def test_print_test_result_without_aggregate_stats(
         # Check that savefig and info were never called because the dict is empty
         mock_savefig.assert_not_called()
         mock_info.assert_not_called()
+
+
+def test_writing_test_suite():
+    test_suite = read_test_cases(
+        "data/end_to_end_testing_input_files/e2e_test_case_with_slot_was_set.yml"
+    )
+    test_suite_dict = test_suite.as_dict()
+
+    test_case = TestCase.from_dict(test_suite_dict[KEY_TEST_CASES][0])
+
+    assert test_case.steps == test_suite.test_cases[0].steps

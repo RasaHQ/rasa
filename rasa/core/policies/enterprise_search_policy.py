@@ -4,7 +4,6 @@ import re
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text
 
 import dotenv
-import rasa.shared.utils.io
 import structlog
 from jinja2 import Template
 from pydantic import ValidationError
@@ -13,6 +12,8 @@ from rasa.shared.providers.embedding._langchain_embedding_client_adapter import 
     _LangchainEmbeddingClientAdapter,
 )
 from rasa.shared.providers.llm.llm_client import LLMClient
+
+import rasa.shared.utils.io
 from rasa.telemetry import (
     track_enterprise_search_policy_predict,
     track_enterprise_search_policy_train_completed,
@@ -73,7 +74,6 @@ from rasa.shared.utils.llm import (
     sanitize_message_for_prompt,
     tracker_as_readable_transcript,
 )
-
 from rasa.core.information_retrieval.faiss import FAISS_Store
 from rasa.core.information_retrieval import (
     InformationRetrieval,
@@ -376,6 +376,7 @@ class EnterpriseSearchPolicy(Policy):
             logger.error(
                 "enterprise_search_policy._connect_vector_store_or_raise.connect_error",
                 error=e,
+                config=config,
             )
             raise VectorStoreConnectionError(
                 f"Unable to connect to the vector store. Error: {e}"
@@ -428,7 +429,9 @@ class EnterpriseSearchPolicy(Policy):
             VECTOR_STORE_THRESHOLD_PROPERTY, DEFAULT_VECTOR_STORE_THRESHOLD
         )
         llm = llm_factory(self.config.get(LLM_CONFIG_KEY), DEFAULT_LLM_CONFIG)
-        if not self.supports_current_stack_frame(tracker, False, False):
+        if not self.supports_current_stack_frame(
+            tracker, False, False
+        ) or self.should_abstain_in_coexistence(tracker, True):
             return self._prediction(self._default_predictions(domain))
 
         if not self.vector_store:

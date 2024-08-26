@@ -1,5 +1,5 @@
 import asyncio
-from typing import Optional, List
+from typing import Any, Dict, Optional, List
 from unittest.mock import patch, MagicMock, Mock
 
 import pytest
@@ -22,11 +22,13 @@ EXPECTED_PROMPT_PATH = "./tests/llm_fine_tuning/rendered_prompt.txt"
 @pytest.fixture
 def rephraser() -> ConversationRephraser:
     config = {
-        "type": "openai",
-        "model_name": "gpt-3.5-turbo",
-        "request_timeout": 7,
-        "temperature": 0.0,
-        "max_tokens": 4096,
+        "llm": {
+            "type": "openai",
+            "model_name": "gpt-3.5-turbo",
+            "request_timeout": 7,
+            "temperature": 0.0,
+            "max_tokens": 4096,
+        }
     }
     return ConversationRephraser(config)
 
@@ -203,7 +205,7 @@ def test_extract_rephrasings(
         - I'm interested in hiring a car.
         \"\"\"
         """,
-        """USER: Show invoices
+        """USER: Show Invoices
 1. I want to see my bills.
 2. I mean bills
 3. Yes, I want to see the invoices.
@@ -215,7 +217,7 @@ USER: I'd like to book a car
 )
 def test_parse_output(output: str, rephraser: ConversationRephraser):
     number_of_rephrasings = 3
-    user_messages = ["Show invoices", "I'd like to book a car"]
+    user_messages = ["Show invoices", "I'd like to book a CAR"]
 
     rephrased_messages = rephraser._parse_output(output, user_messages)
 
@@ -411,3 +413,32 @@ def test_get_message_blocks_returns_empty_list(rephraser: ConversationRephraser)
 
     # Assertions
     assert not message_blocks
+
+
+@pytest.mark.parametrize(
+    "config",
+    [
+        {},
+        {"llm": {"type": "some_type", "model_name": "gpt-xyz"}},
+        {"llm": {"type": "some_type", "model": "gpt-xyz"}},
+        {"llm": {"model": "gpt-xyz"}, "prompt_template": "test"},
+        {"prompt_template": "test"},
+    ],
+)
+def test_validate_config_passes_validation(config: Dict[str, Any]) -> None:
+    ConversationRephraser.validate_config(config)
+
+
+@pytest.mark.parametrize(
+    "config",
+    [
+        {"llm": {}},
+        {"llm": {"type": "some_type"}},
+        {"llm": {"model_name": "gpt-xyz"}, "some_key": ""},
+        {"llm": {"model_name": "gpt-xyz"}, "some_key": "", "prompt_template": "test"},
+        {"some_key": "", "prompt_template": "test"},
+    ],
+)
+def test_validate_config_fails_validation(config: Dict[str, Any]) -> None:
+    with pytest.raises(ValueError):
+        ConversationRephraser.validate_config(config)

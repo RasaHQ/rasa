@@ -1,7 +1,20 @@
-from typing import Any, Dict, Optional, Text, Type, TYPE_CHECKING, Union
+from functools import wraps
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Optional,
+    Text,
+    Type,
+    TypeVar,
+    TYPE_CHECKING,
+    Union,
+    cast,
+)
+import json
+import structlog
 
 import rasa.shared.utils.io
-import structlog
 from rasa.shared.constants import (
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
@@ -63,6 +76,42 @@ ERROR_PLACEHOLDER = {
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY: "",
     "default": "[User input triggered an error]",
 }
+
+F = TypeVar(
+    "F",
+    bound=Callable[[Dict[str, Any], Dict[str, Any]], Union[EmbeddingClient, LLMClient]],
+)
+
+
+def _cache_factory(function: F) -> F:
+    """Memoize the factory methods based on the arguments."""
+    cache: Dict[int, Union[EmbeddingClient, LLMClient]] = {}
+
+    @wraps(function)
+    def factory_method_wrapper(
+        config_x: Dict[str, Any], config_y: Dict[str, Any]
+    ) -> Union[EmbeddingClient, LLMClient]:
+        # Get a unique hash of the default and custom configs.
+        unique_hash = hash(
+            json.dumps(config_x, sort_keys=True) + json.dumps(config_y, sort_keys=True)
+        )
+
+        if unique_hash in cache:
+            return cache[unique_hash]
+        else:
+            return_value = function(config_x, config_y)
+            cache[unique_hash] = return_value
+            return return_value
+
+    def clear_cache() -> None:
+        cache.clear()
+        structlogger.debug(
+            "Cleared cache for factory method",
+            function_name=function.__name__,
+        )
+
+    setattr(factory_method_wrapper, "clear_cache", clear_cache)
+    return cast(F, factory_method_wrapper)
 
 
 def tracker_as_readable_transcript(
@@ -212,6 +261,7 @@ def ensure_cache() -> None:
     litellm.cache = litellm.Cache(type="disk", disk_cache_dir=cache_location)
 
 
+@_cache_factory
 def llm_factory(
     custom_config: Optional[Dict[str, Any]], default_config: Dict[str, Any]
 ) -> LLMClient:
@@ -232,6 +282,7 @@ def llm_factory(
     return client
 
 
+@_cache_factory
 def embedder_factory(
     custom_config: Optional[Dict[str, Any]], default_config: Dict[str, Any]
 ) -> EmbeddingClient:

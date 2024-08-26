@@ -4,8 +4,6 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Text, Union
 
 from rasa.e2e_test.assertions import Assertion
-from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
-
 from rasa.e2e_test.constants import (
     KEY_ASSERTIONS,
     KEY_ASSERTION_ORDER_ENABLED,
@@ -13,6 +11,7 @@ from rasa.e2e_test.constants import (
     KEY_BOT_UTTERED,
     KEY_FIXTURES,
     KEY_METADATA,
+    KEY_STUB_CUSTOM_ACTIONS,
     KEY_SLOT_NOT_SET,
     KEY_SLOT_SET,
     KEY_STEPS,
@@ -20,6 +19,8 @@ from rasa.e2e_test.constants import (
     KEY_TEST_CASES,
     KEY_USER_INPUT,
 )
+from rasa.e2e_test.stub_custom_action import StubCustomAction
+from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
 from rasa.shared.exceptions import RasaException
 
 logger = logging.getLogger(__name__)
@@ -192,22 +193,25 @@ class TestStep:
 
         result = self._underlying.copy()
 
-        # Handle 'slot_was_set'
-        if KEY_SLOT_SET in self._underlying and isinstance(
-            self._underlying[KEY_SLOT_SET], OrderedDict
-        ):
-            result[KEY_SLOT_SET] = [
-                {key: value} for key, value in self._underlying[KEY_SLOT_SET].items()
-            ]
+        def _handle_slots(key: str) -> None:
+            """Slots should be a list of strings or dicts."""
+            if (
+                self._underlying
+                and key in self._underlying
+                and isinstance(self._underlying[key], OrderedDict)
+            ):
+                result[key] = [
+                    {key: value} for key, value in self._underlying[key].items()
+                ]
+            elif (
+                self._underlying
+                and key in self._underlying
+                and isinstance(self._underlying[key], str)
+            ):
+                result[key] = [self._underlying[key]]
 
-        # Handle 'slot_was_not_set'
-        if KEY_SLOT_NOT_SET in self._underlying and isinstance(
-            self._underlying[KEY_SLOT_NOT_SET], OrderedDict
-        ):
-            result[KEY_SLOT_NOT_SET] = [
-                {key: value}
-                for key, value in self._underlying[KEY_SLOT_NOT_SET].items()
-            ]
+        _handle_slots(KEY_SLOT_SET)
+        _handle_slots(KEY_SLOT_NOT_SET)
 
         return result
 
@@ -471,11 +475,15 @@ class TestSuite:
     test_cases: List[TestCase]
     fixtures: List[Fixture]
     metadata: List[Metadata]
+    stub_custom_actions: Dict[Text, StubCustomAction]
 
     def as_dict(self) -> Dict[Text, Any]:
         """Returns the test suite as a dictionary."""
         return {
             KEY_FIXTURES: [fixture.as_dict() for fixture in self.fixtures],
             KEY_METADATA: [metadata.as_dict() for metadata in self.metadata],
+            KEY_STUB_CUSTOM_ACTIONS: {
+                key: value.as_dict() for key, value in self.stub_custom_actions.items()
+            },
             KEY_TEST_CASES: [test_case.as_dict() for test_case in self.test_cases],
         }

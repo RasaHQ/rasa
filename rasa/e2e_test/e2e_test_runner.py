@@ -2,8 +2,9 @@ import asyncio
 import copy
 import datetime
 import difflib
-from collections import defaultdict
 from asyncio import CancelledError
+from collections import defaultdict
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Text, Tuple, Union, DefaultDict
 from urllib.parse import urlparse
 
@@ -16,6 +17,7 @@ from rasa.core.channels import CollectingOutputChannel, UserMessage
 from rasa.core.constants import STEP_ID_METADATA_KEY, ACTIVE_FLOW_METADATA_KEY
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.utils import AvailableEndpoints
+from rasa.e2e_test.constants import TEST_FILE_NAME, TEST_CASE_NAME
 from rasa.e2e_test.e2e_config import create_llm_judge_config
 from rasa.e2e_test.e2e_test_case import (
     ActualStepOutput,
@@ -23,6 +25,7 @@ from rasa.e2e_test.e2e_test_case import (
     Metadata,
     TestCase,
     TestStep,
+    KEY_STUB_CUSTOM_ACTIONS,
 )
 from rasa.e2e_test.e2e_test_result import (
     NO_RESPONSE,
@@ -44,9 +47,9 @@ from rasa.shared.core.events import (
 from rasa.shared.core.flows.flow_path import FlowPath, PathNode
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
+from rasa.shared.nlu.constants import COMMANDS
 from rasa.telemetry import track_e2e_test_run
 from rasa.utils.endpoints import EndpointConfig
-from rasa.shared.nlu.constants import COMMANDS
 
 structlogger = structlog.get_logger()
 
@@ -78,7 +81,12 @@ class E2ETestRunner:
             event_info="Started running end-to-end testing.",
         )
 
-        if endpoints:
+        are_custom_actions_stubbed = (
+            endpoints
+            and endpoints.action
+            and endpoints.action.kwargs.get(KEY_STUB_CUSTOM_ACTIONS)
+        )
+        if endpoints and not are_custom_actions_stubbed:
             self._action_server_is_reachable(endpoints)
 
         self.agent = asyncio.run(
@@ -905,8 +913,17 @@ class E2ETestRunner:
         track_e2e_test_run(input_test_cases, input_fixtures, input_metadata)
 
         for test_case in input_test_cases:
+            test_case_name = test_case.name.replace(" ", "_")
+            # Add the name of the file and the current test case name being
+            # executed in order to properly retrieve stub custom action
+            if self.agent.endpoints and self.agent.endpoints.action:
+                self.agent.endpoints.action.kwargs[TEST_FILE_NAME] = Path(
+                    test_case.file
+                ).name
+                self.agent.endpoints.action.kwargs[TEST_CASE_NAME] = test_case_name
+
             # add timestamp suffix to ensure sender_id is unique
-            sender_id = f"{test_case.name}_{datetime.datetime.now()}"
+            sender_id = f"{test_case_name}_{datetime.datetime.now()}"
             test_turns = await self._run_test_case(
                 sender_id, input_fixtures, input_metadata, test_case
             )

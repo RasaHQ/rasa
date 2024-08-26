@@ -11,13 +11,19 @@ import rasa.shared.utils.io
 import rasa.shared.utils.yaml
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments.default_arguments import add_endpoint_param, add_model_param
-from rasa.cli.e2e_test import read_test_cases, validate_model_path
+from rasa.cli.e2e_test import (
+    read_test_cases,
+    validate_model_path,
+    RASA_PRO_BETA_FINE_TUNING_RECIPE_ENV_VAR_NAME,
+)
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.utils import AvailableEndpoints
-from rasa.dialogue_understanding.generator.constants import LLM_CONFIG_KEY
 from rasa.e2e_test.e2e_test_runner import E2ETestRunner
 from rasa.llm_fine_tuning.annotation_module import annotate_e2e_tests
 from rasa.llm_fine_tuning.llm_data_preparation_module import convert_to_fine_tuning_data
+from rasa.llm_fine_tuning.paraphrasing.conversation_rephraser import (
+    ConversationRephraser,
+)
 from rasa.llm_fine_tuning.paraphrasing_module import create_paraphrased_conversations
 from rasa.llm_fine_tuning.storage import (
     StorageContext,
@@ -29,9 +35,13 @@ from rasa.llm_fine_tuning.train_test_split_module import (
     INSTRUCTION_DATA_FORMAT,
     CONVERSATIONAL_DATA_FORMAT,
 )
-from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH, DEFAULT_MODELS_PATH
+from rasa.shared.constants import (
+    DEFAULT_ENDPOINTS_PATH,
+    DEFAULT_MODELS_PATH,
+    LLM_CONFIG_KEY,
+)
+from rasa.shared.utils.yaml import read_config_file
 from rasa.utils.beta import ensure_beta_feature_is_enabled
-from rasa.cli.e2e_test import RASA_PRO_BETA_FINE_TUNING_RECIPE_ENV_VAR_NAME
 
 DEFAULT_INPUT_E2E_TEST_PATH = "e2e_tests"
 DEFAULT_OUTPUT_FOLDER = "output"
@@ -163,6 +173,11 @@ def prepare_llm_fine_tuning_data(args: argparse.Namespace) -> None:
         env_flag=RASA_PRO_BETA_FINE_TUNING_RECIPE_ENV_VAR_NAME,
     )
 
+    rephrase_config = (
+        read_config_file(args.rephrase_config) if args.rephrase_config else {}
+    )
+    ConversationRephraser.validate_config(rephrase_config)
+
     # make sure the output directory exists
     output_dir = args.out
     rasa.shared.utils.io.create_directory(output_dir)
@@ -204,7 +219,7 @@ def prepare_llm_fine_tuning_data(args: argparse.Namespace) -> None:
     conversations, rephrase_config = asyncio.run(
         create_paraphrased_conversations(
             conversations,
-            args.rephrase_config,
+            rephrase_config,
             args.num_rephrases,
             flows,
             llm_command_generator_config,

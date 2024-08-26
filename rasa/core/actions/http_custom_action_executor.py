@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Any, Dict, TYPE_CHECKING, Optional
+from typing import Any, Dict, Optional, TYPE_CHECKING
 
 import aiohttp
 
@@ -10,18 +10,20 @@ from rasa.core.actions.custom_action_executor import (
     CustomActionRequestWriter,
 )
 from rasa.core.constants import (
-    DEFAULT_REQUEST_TIMEOUT,
     COMPRESS_ACTION_SERVER_REQUEST_ENV_NAME,
     DEFAULT_COMPRESS_ACTION_SERVER_REQUEST,
+    DEFAULT_REQUEST_TIMEOUT,
 )
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
 from rasa.utils.common import get_bool_env_variable
-from rasa.utils.endpoints import EndpointConfig, ClientResponseError
 
 if TYPE_CHECKING:
-    from rasa.shared.core.trackers import DialogueStateTracker
     from rasa.shared.core.domain import Domain
+    from rasa.shared.core.trackers import DialogueStateTracker
 
+from rasa.utils.endpoints import ClientResponseError, EndpointConfig
 
 logger = logging.getLogger(__name__)
 
@@ -49,12 +51,14 @@ class HTTPCustomActionExecutor(CustomActionExecutor):
         self,
         tracker: "DialogueStateTracker",
         domain: Optional["Domain"] = None,
+        include_domain: bool = False,
     ) -> Dict[str, Any]:
         """Execute the custom action using an HTTP POST request.
 
         Args:
             tracker: The current state of the dialogue.
             domain: The domain object containing domain-specific information.
+            include_domain: If True, the domain is included in the request.
 
         Returns:
             A dictionary containing the response from the custom action endpoint.
@@ -67,7 +71,9 @@ class HTTPCustomActionExecutor(CustomActionExecutor):
                 "Calling action endpoint to run action '{}'.".format(self.action_name)
             )
 
-            json_body = self.request_writer.create(tracker=tracker, domain=domain)
+            json_body = self.request_writer.create(
+                tracker=tracker, domain=domain, include_domain=include_domain
+            )
 
             response = await self._perform_request_with_retries(json_body)
 

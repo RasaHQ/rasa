@@ -9,8 +9,8 @@ from pathlib import Path
 from textwrap import dedent
 from typing import Any, Dict, Generator, List, Optional, Text, Tuple, Union
 
-import pandas as pd
 import matplotlib.pyplot as plt
+import pandas as pd
 import rich
 import structlog
 from rich.table import Table
@@ -29,10 +29,16 @@ from rasa.e2e_test.aggregate_test_stats_calculator import (
     AccuracyCalculation,
     AggregateTestStatsCalculator,
 )
-from rasa.e2e_test.constants import SCHEMA_FILE_PATH, KEY_TEST_CASE, KEY_TEST_CASES
+from rasa.e2e_test.constants import (
+    SCHEMA_FILE_PATH,
+    KEY_TEST_CASE,
+    KEY_TEST_CASES,
+    STUB_CUSTOM_ACTION_NAME_SEPARATOR,
+)
 from rasa.e2e_test.e2e_test_case import (
     KEY_FIXTURES,
     KEY_METADATA,
+    KEY_STUB_CUSTOM_ACTIONS,
     Fixture,
     Metadata,
     TestCase,
@@ -53,6 +59,8 @@ from rasa.shared.utils.yaml import (
     is_key_in_yaml,
 )
 from rasa.utils.beta import BetaNotEnabledException, ensure_beta_feature_is_enabled
+from rasa.utils.endpoints import EndpointConfig
+
 
 DEFAULT_E2E_INPUT_TESTS_PATH = "tests/e2e_test_cases.yml"
 DEFAULT_E2E_OUTPUT_TESTS_PATH = "tests/e2e_results.yml"
@@ -64,6 +72,7 @@ STATUS_FAILED = "failed"
 
 RASA_PRO_BETA_E2E_ASSERTIONS_ENV_VAR_NAME = "RASA_PRO_BETA_E2E_ASSERTIONS"
 RASA_PRO_BETA_FINE_TUNING_RECIPE_ENV_VAR_NAME = "RASA_PRO_BETA_FINE_TUNING_RECIPE"
+RASA_PRO_BETA_STUB_CUSTOM_ACTION_ENV_VAR_NAME = "RASA_PRO_BETA_STUB_CUSTOM_ACTION"
 
 structlogger = structlog.get_logger()
 
@@ -245,6 +254,11 @@ def read_test_cases(path: Text) -> TestSuite:
     Returns:
         TestSuite.
     """
+    from rasa.e2e_test.stub_custom_action import (
+        StubCustomAction,
+        get_stub_custom_action_key,
+    )
+
     path, test_case_name = extract_test_case_from_path(path)
     validate_path_to_test_cases(path)
 
@@ -254,6 +268,7 @@ def read_test_cases(path: Text) -> TestSuite:
     input_test_cases = []
     fixtures: Dict[Text, Fixture] = {}
     metadata: Dict[Text, Metadata] = {}
+    stub_custom_actions: Dict[Text, StubCustomAction] = {}
 
     beta_flag_verified = False
 
@@ -284,7 +299,6 @@ def read_test_cases(path: Text) -> TestSuite:
 
         input_test_cases.extend(test_cases)
         fixtures_content = test_file_content.get(KEY_FIXTURES) or []
-        metadata_contents = test_file_content.get(KEY_METADATA) or []
         for fixture in fixtures_content:
             fixture_obj = Fixture.from_dict(fixture_dict=fixture)
 
@@ -292,6 +306,7 @@ def read_test_cases(path: Text) -> TestSuite:
             if fixtures.get(fixture_obj.name) is None:
                 fixtures[fixture_obj.name] = fixture_obj
 
+        metadata_contents = test_file_content.get(KEY_METADATA) or []
         for metadata_content in metadata_contents:
             metadata_obj = Metadata.from_dict(metadata_dict=metadata_content)
 
@@ -299,8 +314,39 @@ def read_test_cases(path: Text) -> TestSuite:
             if metadata.get(metadata_obj.name) is None:
                 metadata[metadata_obj.name] = metadata_obj
 
+        stub_custom_actions_contents = (
+            test_file_content.get(KEY_STUB_CUSTOM_ACTIONS) or {}
+        )
+
+        for action_name, stub_data in stub_custom_actions_contents.items():
+            if STUB_CUSTOM_ACTION_NAME_SEPARATOR in action_name:
+                stub_custom_action_key = action_name
+            else:
+                test_file_name = Path(test_file).name
+                stub_custom_action_key = get_stub_custom_action_key(
+                    test_file_name, action_name
+                )
+            stub_custom_actions[stub_custom_action_key] = StubCustomAction.from_dict(
+                action_name=action_name,
+                stub_data=stub_data,
+            )
+
     validate_test_case(test_case_name, input_test_cases)
-    return TestSuite(input_test_cases, list(fixtures.values()), list(metadata.values()))
+    try:
+        if stub_custom_actions:
+            ensure_beta_feature_is_enabled(
+                "enabling stubs for custom actions",
+                RASA_PRO_BETA_STUB_CUSTOM_ACTION_ENV_VAR_NAME,
+            )
+    except BetaNotEnabledException as exc:
+        rasa.shared.utils.cli.print_error_and_exit(str(exc))
+
+    return TestSuite(
+        input_test_cases,
+        list(fixtures.values()),
+        list(metadata.values()),
+        stub_custom_actions,
+    )
 
 
 def execute_e2e_tests(args: argparse.Namespace) -> None:
@@ -309,6 +355,12 @@ def execute_e2e_tests(args: argparse.Namespace) -> None:
     Args:
         args: Commandline arguments.
     """
+    if args.coverage_report:
+        ensure_beta_feature_is_enabled(
+            "LLM fine-tuning recipe",
+            env_flag=RASA_PRO_BETA_FINE_TUNING_RECIPE_ENV_VAR_NAME,
+        )
+
     args.endpoints = rasa.cli.utils.get_validated_path(
         args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
     )
@@ -329,6 +381,14 @@ def execute_e2e_tests(args: argparse.Namespace) -> None:
     )
 
     test_suite = read_test_cases(path_to_test_cases)
+
+    if test_suite.stub_custom_actions:
+        if not endpoints.action:
+            endpoints.action = EndpointConfig()
+
+        endpoints.action.kwargs[KEY_STUB_CUSTOM_ACTIONS] = (
+            test_suite.stub_custom_actions
+        )
 
     test_case_path, _ = extract_test_case_from_path(path_to_test_cases)
 
@@ -366,10 +426,6 @@ def execute_e2e_tests(args: argparse.Namespace) -> None:
     accuracy_calculations = aggregate_stats_calculator.calculate()
 
     if args.coverage_report and test_runner.agent.processor:
-        ensure_beta_feature_is_enabled(
-            "LLM fine-tuning recipe",
-            env_flag=RASA_PRO_BETA_FINE_TUNING_RECIPE_ENV_VAR_NAME,
-        )
         coverage_output_path = args.coverage_output_path
         rasa.shared.utils.io.create_directory(coverage_output_path)
         flows = asyncio.run(test_runner.agent.processor.get_flows())
@@ -405,14 +461,12 @@ def _save_coverage_report(
             rasa.shared.utils.cli.print_error(report.to_string(index=False))
 
     output_filename = f"coverage_report_for_{test_status}_tests.csv"
-    report.to_csv(
-        os.path.join(output_dir, output_filename),
-        index=False,
-    )
+    output_file_path = os.path.join(output_dir, output_filename)
+    report.to_csv(output_file_path, index=False)
     structlogger.info(
         "rasa.e2e_test.save_coverage_report",
         message=f"Coverage result for {test_status} e2e tests"
-        f"is written to '{output_filename}'.",
+        f" is written to '{output_file_path}'.",
     )
 
 
@@ -721,23 +775,23 @@ def save_test_cases_to_yaml(
         test_cases=test_cases,
         fixtures=test_suite.fixtures,
         metadata=test_suite.metadata,
+        stub_custom_actions=test_suite.stub_custom_actions,
     )
 
     output_filename = f"{status}.yml"
-    rasa.utils.io.write_yaml(
-        new_test_suite.as_dict(), target=os.path.join(output_dir, output_filename)
-    )
+    output_file_path = os.path.join(output_dir, output_filename)
+    rasa.utils.io.write_yaml(new_test_suite.as_dict(), target=output_file_path)
 
     structlogger.info(
         "rasa.e2e_test.save_e2e_test_cases",
-        message=f"E2e tests with '{status}' status are written to file "
-        f"'{output_filename}'.",
+        message=f"E2e tests with '{status}' status are written to file: "
+        f"'{output_file_path}'.",
     )
     if status == STATUS_PASSED:
         structlogger.info(
             "rasa.e2e_test.save_e2e_test_cases",
-            message=f"You can use the file '{output_filename}' in case you want "
-            f"to create training data for fine-tuning an LLM via "
+            message=f"You can use the file: '{output_file_path}' in case you want to "
+            f"create training data for fine-tuning an LLM via "
             f"'rasa llm finetune prepare-data'.",
         )
 
@@ -795,7 +849,7 @@ def _save_tested_commands_histogram(
     bars = plt.bar(sorted_count_dict.keys(), sorted_count_dict.values(), color="blue")
     plt.xlabel("Commands")
     plt.ylabel("Counts")
-    plt.title("Command histogram")
+    plt.title(f"Command histogram for {test_status} tests")
     plt.xticks(rotation=45, ha="right")
     plt.tight_layout()
 
@@ -811,12 +865,12 @@ def _save_tested_commands_histogram(
         )
 
     output_filename = f"commands_histogram_for_{test_status}_tests.png"
-    save_path = os.path.join(output_dir, output_filename)
-    plt.savefig(save_path)
+    output_file_path = os.path.join(output_dir, output_filename)
+    plt.savefig(output_file_path)
     plt.close()
 
     structlogger.info(
         "rasa.e2e_test._save_tested_commands_histogram",
-        message=f"Commands histogram for {test_status} e2e tests"
-        f"is written to '{output_filename}'.",
+        message=f"Commands histogram for {test_status} e2e tests "
+        f"are written to '{output_file_path}'.",
     )

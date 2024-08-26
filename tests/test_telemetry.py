@@ -700,7 +700,7 @@ def test_get_telemetry_id_invalid(
     """,
     [
         (
-            TestSuite(get_test_cases(), get_test_fixtures(), get_test_metadata()),
+            TestSuite(get_test_cases(), get_test_fixtures(), get_test_metadata(), {}),
             3,
             2,
             True,
@@ -708,7 +708,7 @@ def test_get_telemetry_id_invalid(
             1,
         ),
         (
-            TestSuite([], get_test_fixtures(), get_test_metadata()),
+            TestSuite([], get_test_fixtures(), get_test_metadata(), {}),
             0,
             2,
             True,
@@ -716,7 +716,7 @@ def test_get_telemetry_id_invalid(
             1,
         ),
         (
-            TestSuite(get_test_cases(), [], get_test_metadata()),
+            TestSuite(get_test_cases(), [], get_test_metadata(), {}),
             3,
             0,
             False,
@@ -724,7 +724,7 @@ def test_get_telemetry_id_invalid(
             1,
         ),
         (
-            TestSuite(get_test_cases(), get_test_fixtures(), []),
+            TestSuite(get_test_cases(), get_test_fixtures(), [], {}),
             3,
             2,
             True,
@@ -732,7 +732,7 @@ def test_get_telemetry_id_invalid(
             0,
         ),
         (
-            TestSuite(get_test_cases(), [], []),
+            TestSuite(get_test_cases(), [], [], {}),
             3,
             0,
             False,
@@ -740,7 +740,7 @@ def test_get_telemetry_id_invalid(
             0,
         ),
         (
-            TestSuite([], get_test_fixtures(), []),
+            TestSuite([], get_test_fixtures(), [], {}),
             0,
             2,
             True,
@@ -748,7 +748,7 @@ def test_get_telemetry_id_invalid(
             0,
         ),
         (
-            TestSuite([], [], get_test_metadata()),
+            TestSuite([], [], get_test_metadata(), {}),
             0,
             0,
             False,
@@ -756,7 +756,7 @@ def test_get_telemetry_id_invalid(
             1,
         ),
         (
-            TestSuite([], [], []),
+            TestSuite([], [], [], {}),
             0,
             0,
             False,
@@ -790,6 +790,7 @@ def test_track_e2e_test_run(
             "uses_fixtures": expected_uses_fixtures,
             "uses_metadata": expected_uses_metadata,
             "number_of_metadata": expected_number_of_metadata,
+            "uses_assertions": False,
         },
     )
 

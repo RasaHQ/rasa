@@ -79,7 +79,7 @@ from rasa.shared.exceptions import RasaException
                 ]
             },
             PatternClarificationContainsAssertion(
-                flow_ids={"list_contacts", "add_contacts", "remove_contacts"}
+                flow_names={"list_contacts", "add_contacts", "remove_contacts"}
             ),
         ),
         (
@@ -130,7 +130,6 @@ def test_create_typed_assertion_valid_subclasses(
                 "generative_response_is_relevant": {
                     "threshold": 0.9,
                     "utter_name": "utter_options",
-                    "ground_truth": "You can transfer money or check your balance.",
                 }
             },
             AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT.value,
@@ -176,7 +175,6 @@ def test_create_typed_assertion_valid_generative_assertions(
             return GenerativeResponseIsRelevantAssertion(
                 threshold=0.9,
                 utter_name="utter_options",
-                ground_truth="You can transfer money or check your balance.",
                 metric_name="answer_relevance",
                 metric_adjective="relevant",
                 mlflow_metric=mlflow.metrics.genai.answer_relevance,
@@ -220,7 +218,7 @@ def test_empty_bot_uttered_raises_exception():
         ),
         (
             PatternClarificationContainsAssertion(
-                flow_ids={"list_contacts", "add_contacts", "remove_contacts"}
+                flow_names={"list_contacts", "add_contacts", "remove_contacts"}
             ),
             [
                 FlowStarted(
@@ -337,11 +335,11 @@ def test_slot_was_not_set_assertion_returns_no_assertion_failure() -> None:
         ),
         (
             PatternClarificationContainsAssertion(
-                flow_ids={"list_contacts", "add_contacts", "remove_contacts"}
+                flow_names={"list_contacts", "add_contacts", "remove_contacts"}
             ),
             AssertionFailure(
                 assertion=PatternClarificationContainsAssertion(
-                    flow_ids={"list_contacts", "add_contacts", "remove_contacts"},
+                    flow_names={"list_contacts", "add_contacts", "remove_contacts"},
                     line=None,
                 ),
                 error_message="'pattern_clarification' pattern did not " "trigger.",
@@ -517,10 +515,10 @@ def test_slot_was_not_set_assertions_returns_assertion_failure(
         ),
         (
             PatternClarificationContainsAssertion(
-                flow_ids={"list_contacts", "add_contacts", "remove_contacts"}
+                flow_names={"list_contacts", "add_contacts", "remove_contacts"}
             ),
             {
-                "flow_ids": {"list_contacts", "add_contacts", "remove_contacts"},
+                "flow_names": {"list_contacts", "add_contacts", "remove_contacts"},
                 "type": "pattern_clarification_contains",
                 "line": None,
             },
@@ -571,12 +569,10 @@ def test_slot_was_not_set_assertions_returns_assertion_failure(
             GenerativeResponseIsRelevantAssertion(
                 threshold=0.9,
                 utter_name="utter_options",
-                ground_truth="You can transfer money or check your balance.",
             ),
             {
                 "threshold": 0.9,
                 "utter_name": "utter_options",
-                "ground_truth": "You can transfer money or check your balance.",
                 "type": "generative_response_is_relevant",
                 "line": None,
             },
@@ -1104,3 +1100,23 @@ def test_generative_response_run_no_matching_events(
         "No generative response issued by Enterprise Search Policy "
         "or Contextual Response Rephraser was found, but one was expected."
     )
+
+
+@pytest.mark.parametrize(
+    "assertion_dict, expected_assertion_type",
+    [
+        ({"slot_was_set": [{"name": "name", "value": None}]}, SlotWasSetAssertion),
+        (
+            {"slot_was_not_set": [{"name": "name", "value": None}]},
+            SlotWasNotSetAssertion,
+        ),
+    ],
+)
+def test_slot_assertions_with_null_value(
+    assertion_dict: Dict[str, Any], expected_assertion_type: Assertion
+) -> None:
+    assertion = Assertion.create_typed_assertion(assertion_dict)
+    assert assertion is not None
+    assert isinstance(assertion, expected_assertion_type)
+    assert hasattr(assertion, "slots")
+    assert assertion.slots[0].value is None

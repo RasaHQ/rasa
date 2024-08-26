@@ -10,6 +10,44 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.9.9] - 2024-08-23
+                       
+Rasa Pro 3.9.9 (2024-08-23)                            
+### Bugfixes
+- [#1135](https://github.com/rasahq/rasa-private/issues/1135): Updated behaviour of policies in coexistence:
+
+  * CALM policies run in case the routing slot is set to `True` (routing to CALM).
+  * Policies of the nlu-based system run in case the routing slot is set to `False` (routing to NLU-based system) or
+    `None` (non-sticky routing).
+- [#1154](https://github.com/rasahq/rasa-private/issues/1154): Don't create an instance of `FlowRetrieval` in the command generators in case no flows exists.
+- [#1203](https://github.com/rasahq/rasa-private/issues/1203): Patterns do not count as active flows in `MultiStepLLMCommandGenerator` anymore.
+- [#1255](https://github.com/rasahq/rasa-private/issues/1255): Make sure that all e2e test cases in rasa inspector are valid.
+- [#979](https://github.com/RasaHQ/rasa-private/pull/979): Downloading of CALM Assistants from Studio improved:
+
+  * Downloading CALM assistants from Studio now incliude `config` and `endpoints` files
+  * Downloading CALM assistants from Studio now doesn't require `config.yml` and `data` folder to exist 
+
+
+## [3.9.8] - 2024-08-21
+                       
+Rasa Pro 3.9.8 (2024-08-21)                            
+### Bugfixes
+- [#1050](https://github.com/rasahq/rasa-private/issues/1050): Fix problem with custom action invocation when model is loaded from remote storage.
+
+
+## [3.9.7] - 2024-08-15
+                       
+Rasa Pro 3.9.7 (2024-08-15)                            
+### Bugfixes
+- [#916](https://github.com/rasahq/rasa-private/issues/916): Fix extraction of tracing context from the request headers and injection into the Rasa server tracing context.
+- [#957](https://github.com/rasahq/rasa-private/issues/957): `YamlValidationException` will correctly return line number of the element where the error ocurred when line number of that element is not returned by `ruamel.yaml` (for elements of primitive types, e.g. `str`, `int`, etc.), instead of returning the line number of the parent element.
+- [#963](https://github.com/rasahq/rasa-private/issues/963): Updated `setuptools` to fix security vulnarability.
+- [#986](https://github.com/rasahq/rasa-private/issues/986): Fix tracing context propagation to work for all external service calls.
+
+### Miscellaneous internal changes
+- [#926](https://github.com/rasahq/rasa-private/issues/926)
+
+
 ## [3.9.6] - 2024-08-07
                        
 Rasa Pro 3.9.6 (2024-08-07)                            

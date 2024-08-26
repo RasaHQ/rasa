@@ -1,4 +1,6 @@
-from typing import List, Text, Optional, Dict
+import dataclasses
+import io
+from typing import Dict, List, Optional, Text
 
 from yarl import URL
 
@@ -73,3 +75,35 @@ def filter_logs(
             filtered_logs.append(log)
 
     return filtered_logs
+
+
+@dataclasses.dataclass
+class TarFileEntry:
+    """This class is used to represent a file entry in a tar file."""
+
+    name: str
+    data: bytes
+
+
+def create_tar_archive_in_bytes(input_file_entries: List[TarFileEntry]) -> bytes:
+    """Creates a tar archive in bytes format.
+
+    Args:
+        input_file_entries: List of TarFileEntry objects representing the files to be
+        included in the tar archive.
+
+    Returns:
+        Bytes format of the tar archive
+    """
+    byte_array = bytes()
+    file_like_object = io.BytesIO(byte_array)
+
+    import tarfile
+
+    with tarfile.open(fileobj=file_like_object, mode="w:gz") as tar:
+        for item in input_file_entries:
+            info = tarfile.TarInfo(name=item.name)
+            info.size = len(item.data)
+            tar.addfile(info, io.BytesIO(item.data))
+
+    return file_like_object.getvalue()

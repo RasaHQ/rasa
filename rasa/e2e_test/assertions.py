@@ -45,6 +45,7 @@ from rasa.shared.core.events import (
     SlotSet,
 )
 from rasa.shared.exceptions import RasaException
+from rasa.utils.common import update_mlflow_log_level
 
 if TYPE_CHECKING:
     from rasa.e2e_test.e2e_config import LLMJudgeConfig
@@ -362,7 +363,7 @@ class FlowCancelledAssertion(Assertion):
 class PatternClarificationContainsAssertion(Assertion):
     """Class for storing the pattern clarification contains assertion."""
 
-    flow_ids: Set[str]
+    flow_names: Set[str]
     line: Optional[int] = None
 
     @classmethod
@@ -374,7 +375,7 @@ class PatternClarificationContainsAssertion(Assertion):
         assertion_dict: Dict[Text, Any],
     ) -> PatternClarificationContainsAssertion:
         return PatternClarificationContainsAssertion(
-            flow_ids=set(
+            flow_names=set(
                 assertion_dict.get(
                     AssertionType.PATTERN_CLARIFICATION_CONTAINS.value, []
                 )
@@ -405,11 +406,11 @@ class PatternClarificationContainsAssertion(Assertion):
                 error_message, prior_events, turn_events, self.line
             )
 
-        actual_flow_ids = set(matching_event.metadata.get("names", set()))
-        if actual_flow_ids != self.flow_ids:
+        actual_flow_names = set(matching_event.metadata.get("names", set()))
+        if actual_flow_names != self.flow_names:
             error_message = (
                 f"'{FLOW_PATTERN_CLARIFICATION}' pattern did not contain "
-                f"the expected options. Expected options: {self.flow_ids}. "
+                f"the expected options. Expected options: {self.flow_names}. "
             )
             error_message += assertion_order_error_message
 
@@ -531,7 +532,14 @@ class SlotWasSetAssertion(Assertion):
                 )
 
             if slot.value == "value key is undefined":
-                matching_event = matching_events[-1]
+                matching_event = matching_events[0]
+                structlogger.debug(
+                    "slot_was_set_assertion.run",
+                    last_event_seen=matching_event,
+                    event_info="Slot value is not asserted and we have "
+                    "multiple events for the same slot. "
+                    "We will mark the first event as last event seen.",
+                )
                 continue
 
             try:
@@ -799,7 +807,6 @@ class GenerativeResponseMixin(Assertion):
 
     threshold: float = DEFAULT_THRESHOLD
     utter_name: Optional[str] = None
-    ground_truth: Optional[str] = None
     line: Optional[int] = None
     metric_adjective: Optional[str] = None
     metric_name: Optional[str] = None
@@ -831,6 +838,10 @@ class GenerativeResponseMixin(Assertion):
     ) -> Tuple[Optional[AssertionFailure], Optional[Event]]:
         """Run the LLM evaluation on the given event."""
         import mlflow
+
+        # we need to configure the log level for mlflow
+        # after a local import to avoid unnecessary logs
+        update_mlflow_log_level()
 
         # extract user question from event if available
         user_question_from_event = matching_event.metadata.get(
@@ -1057,7 +1068,6 @@ class GenerativeResponseIsRelevantAssertion(GenerativeResponseMixin):
         return GenerativeResponseIsRelevantAssertion(
             threshold=assertion_dict.get("threshold", DEFAULT_THRESHOLD),
             utter_name=assertion_dict.get("utter_name"),
-            ground_truth=assertion_dict.get("ground_truth"),
             line=assertion_dict.lc.line + 1 if hasattr(assertion_dict, "lc") else None,
             metric_name="answer_relevance",
             metric_adjective="relevant",
@@ -1071,6 +1081,8 @@ class GenerativeResponseIsRelevantAssertion(GenerativeResponseMixin):
 @dataclass
 class GenerativeResponseIsGroundedAssertion(GenerativeResponseMixin):
     """Class for storing the generative response is grounded assertion."""
+
+    ground_truth: Optional[str] = None
 
     @classmethod
     def type(cls) -> str:

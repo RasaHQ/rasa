@@ -7,6 +7,7 @@ from rasa.core.actions.action import RemoteAction
 from rasa.core.actions.direct_custom_actions_executor import DirectCustomActionExecutor
 from rasa.core.agent import Agent
 from rasa.core.channels.channel import UserMessage
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
@@ -38,6 +39,16 @@ def remote_action(mock_endpoint: EndpointConfig) -> RemoteAction:
     return RemoteAction(DUMMY_ACTION_NAME, mock_endpoint)
 
 
+@pytest.fixture
+def tracker() -> DialogueStateTracker:
+    return DialogueStateTracker(sender_id="test", slots={})
+
+
+@pytest.fixture
+def domain() -> Domain:
+    return Domain.from_file(path=DUMMY_DOMAIN_PATH)
+
+
 def test_executor_initialized_with_valid_actions_module(mock_endpoint: EndpointConfig):
     try:
         DirectCustomActionExecutor(
@@ -49,12 +60,14 @@ def test_executor_initialized_with_valid_actions_module(mock_endpoint: EndpointC
         ), f"Instantiating 'DirectCustomActionExecutor' raised an exception {exc}"
 
 
-async def test_executor_initialized_with_invalid_actions_module():
+async def test_executor_initialized_with_invalid_actions_module(
+    tracker: DialogueStateTracker,
+    domain: Domain,
+):
     endpoint = EndpointConfig(actions_module=DUMMY_INVALID_ACTIONS_MODULE_PATH)
     executor = DirectCustomActionExecutor(
         action_name="some_action", action_endpoint=endpoint
     )
-    tracker = DialogueStateTracker(sender_id="test", slots={})
 
     message = (
         f"You've provided the custom actions module "
@@ -63,7 +76,7 @@ async def test_executor_initialized_with_invalid_actions_module():
         f"Please check for typos in your `endpoints.yml` file."
     )
     with pytest.raises(RasaException, match=message):
-        await executor.run(tracker)
+        await executor.run(tracker, domain)
 
 
 def test_warning_raised_for_url_and_actions_module_defined():
@@ -119,11 +132,9 @@ def test_direct_custom_action_executor_valid_initialization(
 @pytest.mark.asyncio
 async def test_executor_runs_action(
     direct_custom_action_executor: DirectCustomActionExecutor,
+    tracker: DialogueStateTracker,
+    domain: Domain,
 ):
-    tracker = DialogueStateTracker(sender_id="test", slots={})
-    from rasa.shared.core.domain import Domain
-
-    domain = Domain.from_file(path=DUMMY_DOMAIN_PATH)
     result = await direct_custom_action_executor.run(tracker, domain=domain)
     assert isinstance(result, dict)
     assert "events" in result

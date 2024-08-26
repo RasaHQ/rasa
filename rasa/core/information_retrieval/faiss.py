@@ -117,7 +117,7 @@ class FAISS_Store(InformationRetrieval):
     ) -> SearchResultList:
         logger.debug("information_retrieval.faiss_store.search", query=query)
         try:
-            documents = await self.index.as_retriever().aget_relevant_documents(query)
+            documents = await self.index.as_retriever().ainvoke(query)
         except Exception as exc:
             raise InformationRetrievalException from exc
 

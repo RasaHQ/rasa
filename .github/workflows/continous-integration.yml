@@ -530,6 +530,150 @@ jobs:
           name: Custom Action Integration Test Results For CALM Bot
           path: integration-results-custom-actions-with-calm-bot-results.xml
 
+  enterprise-search-integration-tests:
+    name: Run Enterprise Search Integration Tests
+    needs: rasa-private-dev-docker-image
+    runs-on: ubuntu-22.04-4core
+    env:
+      RASA_SDK_IMAGE_TAG: latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      #   # Tag in format: pr_number-shortSHA or branch_name-shortSHA
+      - name: Configure image tag
+        run: |
+          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+            echo "RASA_IMAGE_TAG=pr${{ github.event.number }}-$(git rev-parse --short $(cat $GITHUB_EVENT_PATH | jq -r .pull_request.head.sha))" >> $GITHUB_ENV
+          else
+            echo "RASA_IMAGE_TAG=$(echo "${GITHUB_REF##*/}" | tr '[:upper:]' '[:lower:]')-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+          fi
+
+      - name: Set up Python ${{ inputs.PYTHON_VERSION }} 🐍
+        id: setup-python
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
+        with:
+          python-version: ${{ inputs.PYTHON_VERSION }}
+
+      - name: Read Poetry Version 🔢
+        run: |
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+        shell: bash
+
+      # Install & configure poetry
+      - name: Install Poetry ${{ env.POETRY_VERSION }}
+        uses: snok/install-poetry@93ada01c735cc8a383ce0ce2ae205a21c415379b # v1.3.4
+        with:
+          version: ${{ env.POETRY_VERSION }}
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          installer-parallel: true
+
+      - name: Install Dependencies (Linux) 📦
+        run: |
+          make install
+        shell: bash
+
+      - name: Pull rasa-private dev image
+        uses: ./.github/actions/pull-from-ecr
+        with:
+          IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
+          AWS_REGION: ${{ env.AWS_REGION }}
+          AWS_ARN_ROLE_TO_ASSUME: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
+          REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
+
+      - name: Enterprise Search Integration Testing - Train bot Faiss
+        run: |
+          make train-rasa-calm-bot
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
+          RASA_IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
+          CONFIG: "config-faiss.yml"
+          ENDPOINTS: "endpoints-faiss.yml"
+          MODEL_NAME: "model-faiss"
+
+      - name: Enterprise Search Integration Testing - Train bot Milvus
+        run: |
+          make train-rasa-calm-bot
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
+          RASA_IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
+          CONFIG: "config-milvus.yml"
+          ENDPOINTS: "endpoints-milvus.yml"
+          MODEL_NAME: "model-milvus"
+
+      - name: Enterprise Search Integration Testing - Train bot for Qdrant
+        run: |
+          make train-rasa-calm-bot
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
+          RASA_IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
+          CONFIG: "config-qdrant.yml"
+          ENDPOINTS: "endpoints-qdrant.yml"
+          MODEL_NAME: "model-qdrant"
+
+      - name: Enterprise Search Integration Testing - Run docker containers
+        run: |
+          make run-rasa-calm-demo-test-containers
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
+          RASA_IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
+          CONFIG: "config-qdrant.yml"
+          ENDPOINTS: "endpoints-qdrant.yml"
+          DOCKER_COMPOSE: "docker-compose.yml"
+
+      - name: Install additional dependencies for Docs ingestion
+        run: |
+          pip install unstructured==0.12.2 langchain==0.0.329 qdrant-client==1.9.1 pymilvus==2.3.5 openai==0.28.1 tiktoken==0.4.0
+
+      - name: Run vector store setup for Qdrant
+        run: |
+          python tests_deployment/integration_tests_enterprise_search/ingest.py -c tests_deployment/integration_tests_enterprise_search/qdrant_config.yaml
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+      - name: Run vector store setup for Milvus
+        run: |
+          python tests_deployment/integration_tests_enterprise_search/ingest.py -c tests_deployment/integration_tests_enterprise_search/milvus_config.yaml
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+      - name: Enterprise Search Integration Testing -  Test Code with Services 🩺
+        run: |
+          make test-enterprise-search-integration-with-calm-bot
+        env:
+          PYTHONIOENCODING: "utf-8"
+          RASA_TELEMETRY_WRITE_KEY: ${{ secrets.SEGMENT_WRITE_DEV_KEY }}
+          TEST_NAME: "test_search_with_vector_stores.py"
+
+      - name: Show container logs
+        if: always()
+        uses: ./.github/actions/debug-enterprise-search-tests
+        with:
+          COMPOSE_FILE_PATH: tests_deployment/integration_tests_enterprise_search/docker-compose.yml
+
+      - name: Enterprise Search Integration Testing - Stop docker containers
+        if: always()
+        run: |
+          make stop-rasa-calm-demo-bot-test-containers
+        env:
+          DOCKER_COMPOSE: "docker-compose.yml"
+
+      - name: Save Test Results
+        if: always()
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
+        with:
+          name: Enterprise Search Integration Test Results
+          path: integration-results-enterprise-search.xml
+
   sequential-integration-test:
       name: Run Sequential Integration Tests
       runs-on: ubuntu-20.04
@@ -811,7 +955,7 @@ jobs:
 
   unit-test:
     name: Run Unit Tests
-    runs-on: ubuntu-22.04-8core
+    runs-on: ubuntu-22.04-4core
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -884,7 +1028,7 @@ jobs:
 
   test-anonymization:
     name: Run Anonymization Unit Tests
-    runs-on: ubuntu-22.04-8core
+    runs-on: ubuntu-22.04-4core
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -946,11 +1090,12 @@ jobs:
             name: unit-tests-results-test-anonymization-python-${{ matrix.python-version }}
             path: |
               ${{ github.workspace }}/unit-tests-results-test-anonymization-python-${{ matrix.python-version }}.xml
-        
+
   publish-test-results:
     runs-on: ubuntu-20.04
     needs: [ tracing-integration-test,
              metric-integration-test,
+             enterprise-search-integration-tests,
              custom-action-integration-test-with-nlu-bot,
              custom-action-integration-test-with-calm-bot,
              sequential-integration-test,

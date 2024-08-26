@@ -1,0 +1,69 @@
+recipe: default.v1
+language: en
+pipeline:
+- name: LLMBasedRouter
+  llm:
+    model_name: "gpt-4"
+    engine: "test-gpt-4"
+    api_type: "azure"
+    api_version: "2024-02-01"
+    openai_api_base: "https://devtribe-testing.openai.azure.com/"
+    request_timeout: 14
+  calm_entry:
+    sticky: "handles everything else, including finance and pizza orders"
+  nlu_entry:
+    sticky: "handles everything around health advice and hotel or restaurant bookings"
+    non_sticky: "handles chitchat"
+- name: DucklingEntityExtractor
+  url: "http://duckling:8000"
+  dimensions: [ "time", "number" ]
+  timezone: "Europe/Berlin"
+  timeout: 3
+- name: SingleStepLLMCommandGenerator
+  flow_retrieval:
+    embeddings:
+      model: text-embedding-3-large
+      deployment: test-text-embedding-3-large
+      openai_api_base: "https://devtribe-testing.openai.azure.com/"
+      openai_api_type: azure
+      openai_api_version: "2024-02-01"
+  llm:
+    model_name: "gpt-4"
+    engine: "test-gpt-4"
+    api_type: "azure"
+    api_version: "2024-02-01"
+    openai_api_base: "https://devtribe-testing.openai.azure.com/"
+    request_timeout: 7
+
+policies:
+- name: FlowPolicy
+- name: EnterpriseSearchPolicy
+  embeddings:
+    model: text-embedding-3-large
+    deployment: test-text-embedding-3-large
+    openai_api_base: "https://devtribe-testing.openai.azure.com/"
+    openai_api_type: azure
+    openai_api_version: "2024-02-01"
+  llm:
+    model_name: "gpt-4"
+    engine: "test-gpt-4"
+    api_type: "azure"
+    api_version: "2024-02-01"
+    openai_api_base: "https://devtribe-testing.openai.azure.com/"
+    request_timeout: 14
+- name: IntentlessPolicy
+  embeddings:
+    model: text-embedding-3-large
+    deployment: test-text-embedding-3-large
+    openai_api_base: "https://devtribe-testing.openai.azure.com/"
+    openai_api_type: azure
+    openai_api_version: "2024-02-01"
+  llm:
+    model_name: "gpt-4"
+    engine: "test-gpt-4"
+    api_type: "azure"
+    api_version: "2024-02-01"
+    openai_api_base: "https://devtribe-testing.openai.azure.com/"
+    request_timeout: 14
+
+assistant_id: 20240219-110701-dichotomic-inference

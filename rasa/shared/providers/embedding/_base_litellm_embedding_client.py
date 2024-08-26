@@ -2,16 +2,22 @@ from abc import abstractmethod
 from typing import Any, Dict, List
 
 import litellm
+import logging
 import structlog
 from litellm import aembedding, embedding, validate_environment
 from rasa.shared.exceptions import (
     ProviderClientAPIException,
     ProviderClientValidationError,
 )
+from rasa.shared.providers._ssl_verification_utils import (
+    ensure_ssl_certificates_for_litellm_non_openai_based_clients,
+    ensure_ssl_certificates_for_litellm_openai_based_clients,
+)
 from rasa.shared.providers.embedding.embedding_response import (
     EmbeddingResponse,
     EmbeddingUsage,
 )
+from rasa.shared.utils.io import suppress_logs
 
 structlogger = structlog.get_logger()
 
@@ -123,6 +129,7 @@ class _BaseLiteLLMEmbeddingClient:
             if not doc.strip():
                 raise ValueError("Documents cannot be empty or whitespace.")
 
+    @suppress_logs(log_level=logging.WARNING)
     def embed(self, documents: List[str]) -> EmbeddingResponse:
         """
         Embeds a list of documents synchronously.
@@ -145,6 +152,7 @@ class _BaseLiteLLMEmbeddingClient:
                 message="Failed to embed documents", original_exception=e
             )
 
+    @suppress_logs(log_level=logging.WARNING)
     async def aembed(self, documents: List[str]) -> EmbeddingResponse:
         """
         Embeds a list of documents asynchronously.
@@ -232,8 +240,16 @@ class _BaseLiteLLMEmbeddingClient:
 
     @staticmethod
     def _ensure_certificates() -> None:
-        from rasa.shared.providers._ssl_verification_utils import (
-            ensure_ssl_certificates_for_litellm,
-        )
+        """
+        Configures SSL certificates for LiteLLM. This method is invoked during
+        client initialization.
 
-        ensure_ssl_certificates_for_litellm()
+        LiteLLM may utilize `openai` clients or other providers that require
+        SSL verification settings through the `SSL_VERIFY` / `SSL_CERTIFICATE`
+        environment variables or the `litellm.ssl_verify` /
+        `litellm.ssl_certificate` global settings.
+
+        This method ensures proper SSL configuration for both cases.
+        """
+        ensure_ssl_certificates_for_litellm_non_openai_based_clients()
+        ensure_ssl_certificates_for_litellm_openai_based_clients()

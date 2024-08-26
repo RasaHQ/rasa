@@ -1,6 +1,7 @@
 from abc import abstractmethod
 from typing import Dict, List, Any, Union
 
+import logging
 import structlog
 from litellm import completion, acompletion, validate_environment
 
@@ -8,11 +9,19 @@ from rasa.shared.exceptions import (
     ProviderClientAPIException,
     ProviderClientValidationError,
 )
+from rasa.shared.providers._ssl_verification_utils import (
+    ensure_ssl_certificates_for_litellm_non_openai_based_clients,
+    ensure_ssl_certificates_for_litellm_openai_based_clients,
+)
 from rasa.shared.providers.llm.llm_response import LLMResponse, LLMUsage
+from rasa.shared.utils.io import suppress_logs
 
 structlogger = structlog.get_logger()
 
 _VALIDATE_ENVIRONMENT_MISSING_KEYS_KEY = "missing_keys"
+
+# Suppress LiteLLM info and debug logs - Global level.
+logging.getLogger("LiteLLM").setLevel(logging.WARNING)
 
 
 class _BaseLiteLLMClient:
@@ -117,6 +126,7 @@ class _BaseLiteLLMClient:
             )
             raise ProviderClientValidationError(event_info)
 
+    @suppress_logs(log_level=logging.WARNING)
     def completion(self, messages: Union[List[str], str]) -> LLMResponse:
         """
         Synchronously generate completions for given list of messages.
@@ -138,6 +148,7 @@ class _BaseLiteLLMClient:
         except Exception as e:
             raise ProviderClientAPIException(e)
 
+    @suppress_logs(log_level=logging.WARNING)
     async def acompletion(self, messages: Union[List[str], str]) -> LLMResponse:
         """
         Asynchronously generate completions for given list of messages.
@@ -201,8 +212,16 @@ class _BaseLiteLLMClient:
 
     @staticmethod
     def _ensure_certificates() -> None:
-        from rasa.shared.providers._ssl_verification_utils import (
-            ensure_ssl_certificates_for_litellm,
-        )
+        """
+        Configures SSL certificates for LiteLLM. This method is invoked during
+        client initialization.
 
-        ensure_ssl_certificates_for_litellm()
+        LiteLLM may utilize `openai` clients or other providers that require
+        SSL verification settings through the `SSL_VERIFY` / `SSL_CERTIFICATE`
+        environment variables or the `litellm.ssl_verify` /
+        `litellm.ssl_certificate` global settings.
+
+        This method ensures proper SSL configuration for both cases.
+        """
+        ensure_ssl_certificates_for_litellm_non_openai_based_clients()
+        ensure_ssl_certificates_for_litellm_openai_based_clients()

@@ -1,7 +1,7 @@
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text, Tuple, Union
 
 import tiktoken
 from numpy import ndarray
@@ -19,7 +19,7 @@ from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import TrackerStore
 from rasa.dialogue_understanding.commands import Command
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
-from rasa.engine.graph import GraphModelConfiguration, GraphNode, ExecutionContext
+from rasa.engine.graph import ExecutionContext, GraphModelConfiguration, GraphNode
 from rasa.engine.training.graph_trainer import GraphTrainer
 from rasa.shared.constants import (
     EMBEDDINGS_CONFIG_KEY,
@@ -30,7 +30,7 @@ from rasa.shared.constants import (
 from rasa.shared.core.constants import REQUESTED_SLOT
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import DialogueStackUpdated, Event
-from rasa.shared.core.flows import Flow, FlowStep, FlowsList
+from rasa.shared.core.flows import Flow, FlowsList, FlowStep
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.constants import INTENT_NAME_KEY, SET_SLOT_COMMAND
@@ -45,6 +45,7 @@ from rasa.tracing.constants import (
 
 if TYPE_CHECKING:
     from langchain.llms.base import BaseLLM
+
     from rasa.core.policies.enterprise_search_policy import EnterpriseSearchPolicy
     from rasa.core.policies.intentless_policy import IntentlessPolicy
     from rasa.core.policies.policy import PolicyPrediction
@@ -657,7 +658,8 @@ def extract_attrs_for_custom_action_executor_run(
         HTTPCustomActionExecutor, GRPCCustomActionExecutor, DirectCustomActionExecutor
     ],
     tracker: DialogueStateTracker,
-    domain: Optional[Domain] = None,
+    domain: Domain,
+    include_domain: bool = False,
 ) -> Dict[str, Any]:
     actions_module, url = None, None
     if hasattr(self, "action_endpoint"):

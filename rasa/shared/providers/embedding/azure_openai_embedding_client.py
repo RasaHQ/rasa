@@ -212,21 +212,21 @@ class AzureOpenAIEmbeddingClient(_BaseLiteLLMEmbeddingClient):
                 "param_name": "API base",
                 "config_key": API_BASE_CONFIG_KEY,
                 "deprecated_env_key": OPENAI_API_BASE_ENV_VAR,
-                "value_from_config": self.api_base,
+                "current_value": self.api_base,
                 "new_env_key": AZURE_API_BASE_ENV_VAR,
             },
             {
                 "param_name": "API key",
                 "config_key": API_KEY,
                 "deprecated_env_key": OPENAI_API_KEY_ENV_VAR,
-                "value_from_config": None,
+                "current_value": self._api_key,
                 "new_env_key": AZURE_API_KEY_ENV_VAR,
             },
             {
                 "param_name": "API version",
                 "config_key": API_VERSION_CONFIG_KEY,
                 "deprecated_env_key": OPENAI_API_VERSION_ENV_VAR,
-                "value_from_config": self.api_version,
+                "current_value": self.api_version,
                 "new_env_key": AZURE_API_VERSION_ENV_VAR,
             },
         ]
@@ -237,7 +237,16 @@ class AzureOpenAIEmbeddingClient(_BaseLiteLLMEmbeddingClient):
     def _throw_deprecation_warnings(self, mappings: List[Dict[str, Any]]) -> None:
         """Throw deprecation warnings for deprecated environment variables."""
         for mapping in mappings:
-            if os.environ.get(mapping["deprecated_env_key"]):
+            # Value was set through the new environment variable
+            if os.environ.get(mapping["new_env_key"]) is not None and mapping[
+                "current_value"
+            ] == os.environ.get(mapping["new_env_key"]):
+                continue
+
+            # Value was set through the deprecated environment variable
+            if mapping["current_value"] == os.environ.get(
+                mapping["deprecated_env_key"]
+            ):
                 raise_deprecation_warning(
                     message=(
                         f"Usage of {mapping['deprecated_env_key']} environment "
@@ -251,11 +260,7 @@ class AzureOpenAIEmbeddingClient(_BaseLiteLLMEmbeddingClient):
         """Validate environment variables for the client."""
         missing_environment_variable = False
         for mapping in mappings:
-            if (
-                not mapping["value_from_config"]
-                and not os.environ.get(mapping["new_env_key"])
-                and not os.environ.get(mapping["deprecated_env_key"])
-            ):
+            if not mapping["current_value"]:
                 event_info = (
                     f"Environment variable: {mapping['new_env_key']} or config key: "
                     f"{mapping['config_key']} is not set. Required for API calls. "

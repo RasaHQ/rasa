@@ -1,0 +1,31 @@
+Introducing Finley: Your Intelligent Assistant for Seamless Financial Interactions
+
+Meet Finley, your personal intelligent assistant designed to enhance your
+financial interactions like never before. With Finley, you can now access the full
+functionality of FinX directly through your favorite messengers.
+Empowering you with convenience and efficiency, Finley is built using the latest
+technologies, blending the power of large language models and secure logic.
+
+What can Finley do? Everything that the FinX app can do, Finley can do too.
+From sending money to friends and family, tracking recent transactions,
+managing contacts, to booking restaurants, hotels, and flights – Finley is your
+one-stop solution for seamless financial management.
+
+By integrating Finley with your preferred messenger, you can effortlessly engage
+ with Finley through a familiar and conversational interface.
+ Whether it's Facebook Messenger, WhatsApp, Slack, or any other compatible platform,
+ Finley will be there, ready to assist you with all your financial needs.
+
+Built in collaboration with the talented team at Rasa, a leader in conversational AI,
+Finley harnesses the power of cutting-edge technologies to provide you with a
+secure and intelligent assistant. Combining the capabilities of large language
+models and robust security protocols, Finley ensures that your financial transactions
+are not only effortless but also safeguarded.
+
+Experience the future of financial assistance with Finley by your side.
+Seamlessly integrated with your favorite messengers, Finley simplifies your
+financial interactions, helping you save time and make informed decisions.
+
+Download FinX today and connect with Finley to unlock the full potential
+of your financial experience. Discover the convenience and intelligence of Finley,
+your trusted assistant.

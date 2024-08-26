@@ -344,7 +344,6 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
         Returns:
             Prompt template.
         """
-
         if (
             prompt_templates is not None
             and key in prompt_templates
@@ -402,7 +401,7 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
         filtered_flows = await self.filter_flows(message, flows, tracker)
 
         # 1st step: Handle active flow
-        if tracker.has_active_flow:
+        if tracker.has_active_user_flow:
             commands_from_active_flow = await self._predict_commands_for_active_flow(
                 message,
                 tracker,
@@ -486,10 +485,10 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
             all_flows: All flows.
 
         inputs = self._prepare_inputs(message, tracker, startable_flows, all_flows)
+
         Returns:
             Predicted commands for the active flow.
         """
-
         inputs = self._prepare_inputs(message, tracker, available_flows, all_flows)
 
         if inputs["current_flow"] is None:
@@ -530,10 +529,10 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
             all_flows: All flows.
 
         inputs = self._prepare_inputs(message, tracker, startable_flows, all_flows, 2)
+
         Returns:
             Predicted commands for the starting/canceling flows.
         """
-
         inputs = self._prepare_inputs(message, tracker, available_flows, all_flows, 2)
         prompt = Template(self.handle_flows_prompt).render(**inputs).strip()
         structlogger.debug(
@@ -654,8 +653,7 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
         all_flows: FlowsList,
         max_turns: int = 1,
     ) -> Dict[str, Any]:
-        """
-        Prepare input information to be used by prompt template.
+        """Prepare input information to be used by prompt template.
 
         Args:
             message: The message from the user.
@@ -835,8 +833,7 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
 
     @staticmethod
     def _clean_up_commands(commands: List[Command]) -> List[Command]:
-        """
-        Cleans the list of commands by removing CannotHandleCommand,
+        """Cleans the list of commands by removing CannotHandleCommand,
         if it exists and there are other commands in the list.
         """
         other_commands_count = sum(
