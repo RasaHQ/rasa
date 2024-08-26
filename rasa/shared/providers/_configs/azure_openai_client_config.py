@@ -19,6 +19,8 @@ from rasa.shared.constants import (
     LANGCHAIN_TYPE_CONFIG_KEY,
     STREAM_CONFIG_KEY,
     N_REPHRASES_CONFIG_KEY,
+    REQUEST_TIMEOUT_CONFIG_KEY,
+    TIMEOUT_CONFIG_KEY,
 )
 from rasa.shared.providers._configs.utils import (
     resolve_aliases,
@@ -45,6 +47,8 @@ DEPRECATED_ALIASES_TO_STANDARD_KEY_MAPPING = {
     OPENAI_API_VERSION_CONFIG_KEY: API_VERSION_CONFIG_KEY,
     # Model name aliases
     MODEL_NAME_CONFIG_KEY: MODEL_CONFIG_KEY,
+    # Timeout aliases
+    REQUEST_TIMEOUT_CONFIG_KEY: TIMEOUT_CONFIG_KEY,
 }
 
 REQUIRED_KEYS = [
@@ -136,7 +140,7 @@ class AzureOpenAIClientConfig:
             api_base=config.pop(API_BASE_CONFIG_KEY, None),
             api_version=config.pop(API_VERSION_CONFIG_KEY, None),
             # The rest of parameters (e.g. model parameters) are considered
-            # as extra parameters.
+            # as extra parameters (this also includes timeout).
             extra_parameters=config,
         )
         return this
