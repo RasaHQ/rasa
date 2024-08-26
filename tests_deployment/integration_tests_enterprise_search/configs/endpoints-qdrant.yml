@@ -1,0 +1,9 @@
+action_endpoint:
+  url: "http://action-server:5055/webhook"
+
+vector_store:
+  type: qdrant
+  collection: rasa
+  host: qdrant
+  port: 6333
+  content_payload_key: "page_content"

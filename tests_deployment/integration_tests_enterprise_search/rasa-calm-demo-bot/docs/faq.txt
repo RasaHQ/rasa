@@ -1,0 +1,69 @@
+Q: Who is Finley?
+A: Finley is your smart assistant for the FinX App. You can add him to your favorite
+messenger and tell him what you need help with.
+
+Q: How does Finley work?
+A: Finley is powered by the latest chatbot technology leveraging a unique interplay of
+large language models and secure logic.
+
+Q: What functionality does Finley support?
+A: Finley can help you with everything you can do in the app, such as money transfers
+or booking a restaurant. Just even more convenient. Try it out!
+
+Q: How do I send money to friends and family using FinX?
+A: Sending money is easy! just ask Finley or navigate to the "Send Money"
+section in the FinX app, enter the recipient's details, and specify the amount
+you wish to send. Confirm the transaction, and you're done!
+
+Q: Can I view my transaction history?
+A: Absolutely! FinX provides a transaction history feature where you can easily
+access and review all your recent transactions. Just head to the "Transaction History".
+
+Q: How do I add or remove contacts in FinX?
+A: Managing your contacts is a breeze with FinX. To add a contact,
+go to the "Contacts" section and select the option to add a new contact.
+To remove a contact, simply locate the contact within the app and choose
+the option to delete.
+
+Q: What is a contact handle in FinX?
+A: A contact handle is a unique identifier of the user on this platform. It starts with an @.
+
+Q: Can I book restaurants, hotels, and flights through FinX?
+A: Yes, indeed! FinX offers a seamless booking experience for
+restaurants, hotels, and flights. Just navigate to the respective sections
+within the app, browse the available options, and make your reservations with ease.
+
+Q: Are there any charges for sending money to friends and family?
+A: No, FinX allows you to send money to friends and family free of charge.
+Enjoy fee-free transactions and the convenience of instant transfers.
+
+Q: How can I increase my transaction limits?
+A: To increase your transaction limits, you can verify your account.
+Simply follow the account verification process within the app, and upon completion,
+you'll gain access to higher transaction limits.
+
+Q: Is my personal and financial information secure with FinX?
+A: Absolutely! FinX prioritizes the security and privacy of your data.
+We employ advanced encryption technology and stringent security measures
+to ensure that your personal and financial information is fully protected.
+
+Q: Can I use FinX for international transfers?
+A: Currently, FinX supports domestic transfers only.
+International transfers may be available in the future as we expand our services.
+
+Q: What currencies do you support?
+A: We currently only support transfers in US dollars.
+
+
+Q: What happens if I accidentally send money to the wrong person?
+A: If you accidentally send money to the wrong person, contact our
+support team immediately. While we cannot guarantee retrieval, we will
+do our best to assist you in resolving the situation.
+
+Q: Where is FinX available?
+A: FinX is available in the entire USA.
+
+Q: How can I contact FinX customer support?
+A: Our dedicated customer support team is available to assist you.
+You can reach out to us through the chatbot within the FinX app,
+and we'll be happy to help you with any questions or concerns.

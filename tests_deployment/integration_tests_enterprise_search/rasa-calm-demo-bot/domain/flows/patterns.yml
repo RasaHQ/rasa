@@ -1,0 +1,23 @@
+version: "3.1"
+
+slots:
+  confirm_slot_correction:
+    type: bool
+    mappings:
+      - type: from_llm
+
+responses:
+  utter_ask_confirm_slot_correction:
+    - text: "Do you want to update the {{ context.corrected_slots.keys()|join(', ') }}?"
+      buttons:
+        - payload: /SetSlots(confirm_slot_correction=true)
+          title: "Yes"
+        - payload: /SetSlots(confirm_slot_correction=false)
+          title: "No, please keep the previous information"
+      metadata:
+        rephrase: True
+        template: jinja
+  utter_not_corrected_previous_input:
+    - text: Ok, I did not correct the previous input.
+      metadata:
+        rephrase: True

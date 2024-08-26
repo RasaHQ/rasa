@@ -1,0 +1,54 @@
+flows:
+  pattern_correction:
+    description: Confirm a previous correction of a slot value.
+    steps:
+      - noop: true
+        next:
+          - if: context.is_reset_only
+            then:
+              - action: action_correct_flow_slot
+                next: END
+          - else:
+            - collect: confirm_slot_correction
+              description: boolean value set when the user affirms or denies the correction
+              next:
+                - if: not slots.confirm_slot_correction
+                  then:
+                    - action: utter_not_corrected_previous_input
+                      next: END
+                - else:
+                    - action: action_correct_flow_slot
+                    - action: utter_corrected_previous_input
+                      next: END
+
+  pattern_chitchat:
+    description: Handle chitchat using intentless policy
+    steps:
+      - action: action_trigger_chitchat
+
+  pattern_search:
+    description: handle knowledge-based requests using enterprise search
+    steps:
+      - action: action_trigger_search
+
+  pattern_cancel_flow:
+    description: A meta flow that's started when a flow is cancelled.
+    steps:
+      - id: decide_cancel_step
+        noop: true
+        next:
+          - if: context.canceled_name = "transfer money"
+            then: inform_user
+          - else: cancel_flow # skips the inform step
+      - id: inform_user
+        action: utter_flow_cancelled_rasa
+        next: cancel_flow
+      - id: cancel_flow
+        action: action_cancel_flow
+
+  pattern_completed:
+    description: all flows have been completed and there is nothing else to be done
+    name: pattern completed
+    steps:
+      - action: utter_can_do_something_else
+      - action: action_reset_routing

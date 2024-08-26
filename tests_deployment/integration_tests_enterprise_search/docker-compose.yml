@@ -1,0 +1,164 @@
+x-environment: &environment
+  RASA_PRO_LICENSE: ${RASA_PRO_LICENSE}
+  OPENAI_API_KEY: ${OPENAI_API_KEY}
+
+services:
+  rasa-pro-assistant-faiss:
+    image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
+    volumes:
+      - "./rasa-calm-demo-bot:/app"
+      - "./configs/config-faiss.yml:/app/config.yml"
+      - "./configs/endpoints-faiss.yml:/app/endpoints.yml"
+    networks: [ 'rasa-pro-network' ]
+    entrypoint: ""
+    command: rasa run -m models/model-faiss.tar.gz -p 5005 --enable-api
+    ports:
+      - "5005:5005"
+    environment:
+      <<: *environment
+    depends_on:
+      action-server:
+        condition: service_started
+    user: ${USER_ID}
+    healthcheck:
+      test: curl localhost:5005 || exit 1
+      interval: 10s
+      retries: 10
+      start_period: 15s
+      timeout: 10s
+
+  action-server:
+    image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
+    volumes:
+      - "./rasa-calm-demo-bot:/app"
+    networks: [ 'rasa-pro-network' ]
+    entrypoint: ""
+    command: rasa run actions -p 5055
+    ports:
+      - "5055:5055"
+    environment:
+      <<: *environment
+    user: ${USER_ID}
+
+  duckling:
+    image: rasa/duckling:latest
+    networks: [ 'rasa-pro-network' ]
+    ports:
+      - "8000:8000"
+
+  rasa-pro-assistant-qdrant:
+    image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
+    volumes:
+      - "./rasa-calm-demo-bot:/app"
+      - "./configs/config-qdrant.yml:/app/config.yml"
+      - "./configs/endpoints-qdrant.yml:/app/endpoints.yml"
+    networks: [ 'rasa-pro-network' ]
+    entrypoint: ""
+    command: rasa run -m models/model-qdrant.tar.gz -p 5007 --enable-api
+    ports:
+      - "5007:5007"
+    environment:
+      <<: *environment
+    user: ${USER_ID}
+    healthcheck:
+      test: curl localhost:5007 || exit 1
+      interval: 10s
+      retries: 10
+      start_period: 15s
+      timeout: 10s
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    restart: always
+    container_name: qdrant
+    ports:
+      - 6333:6333
+      - 6334:6334
+    expose:
+      - 6333
+      - 6334
+      - 6335
+    networks: [ 'rasa-pro-network' ]
+
+  rasa-pro-assistant-milvus:
+    image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
+    volumes:
+      - "./rasa-calm-demo-bot:/app"
+      - "./configs/config-milvus.yml:/app/config.yml"
+      - "./configs/endpoints-milvus.yml:/app/endpoints.yml"
+    networks: [ 'rasa-pro-network' ]
+    entrypoint: ""
+    command: rasa run -m models/model-milvus.tar.gz -p 5006 --enable-api
+    ports:
+      - "5006:5006"
+    environment:
+      <<: *environment
+    user: ${USER_ID}
+    healthcheck:
+      test: curl localhost:5006 || exit 1
+      interval: 10s
+      retries: 10
+      start_period: 15s
+      timeout: 10s
+
+  etcd:
+    container_name: milvus-etcd
+    image: quay.io/coreos/etcd:v3.5.5
+    environment:
+      - ETCD_AUTO_COMPACTION_MODE=revision
+      - ETCD_AUTO_COMPACTION_RETENTION=1000
+      - ETCD_QUOTA_BACKEND_BYTES=4294967296
+      - ETCD_SNAPSHOT_COUNT=50000
+    volumes:
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/etcd:/etcd
+    command: etcd -advertise-client-urls=http://127.0.0.1:2379 -listen-client-urls http://0.0.0.0:2379 --data-dir /etcd
+    healthcheck:
+      test: [ "CMD", "etcdctl", "endpoint", "health" ]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks: [ 'rasa-pro-network' ]
+
+  minio:
+    container_name: milvus-minio
+    image: minio/minio:RELEASE.2023-03-20T20-16-18Z
+    environment:
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+    ports:
+      - "9001:9001"
+      - "9000:9000"
+    volumes:
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/minio:/minio_data
+    command: minio server /minio_data --console-address ":9001"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks: [ 'rasa-pro-network' ]
+
+  standalone:
+    container_name: milvus-standalone
+    image: milvusdb/milvus:v2.3.1
+    command: [ "milvus", "run", "standalone" ]
+    environment:
+      ETCD_ENDPOINTS: etcd:2379
+      MINIO_ADDRESS: minio:9000
+    volumes:
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/milvus:/var/lib/milvus
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9091/healthz" ]
+      interval: 30s
+      start_period: 90s
+      timeout: 20s
+      retries: 3
+    ports:
+      - "19530:19530"
+      - "9091:9091"
+    depends_on:
+      - "etcd"
+      - "minio"
+    networks: [ 'rasa-pro-network' ]
+
+networks: { rasa-pro-network: { } }

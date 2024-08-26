@@ -4,10 +4,23 @@ import structlog
 
 from rasa.shared.constants import (
     MODEL_CONFIG_KEY,
+    STREAM_CONFIG_KEY,
+    N_REPHRASES_CONFIG_KEY,
+)
+from rasa.shared.providers._configs.utils import (
+    validate_required_keys,
+    validate_forbidden_keys,
 )
 
 structlogger = structlog.get_logger()
-OPENAI_API_TYPE = "openai"
+
+
+REQUIRED_KEYS = [MODEL_CONFIG_KEY]
+
+FORBIDDEN_KEYS = [
+    STREAM_CONFIG_KEY,
+    N_REPHRASES_CONFIG_KEY,
+]
 
 
 @dataclass
@@ -48,7 +61,9 @@ class DefaultLiteLLMClientConfig:
             DefaultLiteLLMClientConfig
         """
         # Validate that the required keys are present
-        cls._validate_required_keys(config)
+        validate_required_keys(config, REQUIRED_KEYS)
+        # Validate that the forbidden keys are not present
+        validate_forbidden_keys(config, FORBIDDEN_KEYS)
         this = DefaultLiteLLMClientConfig(
             # Required parameters
             model=config.pop(MODEL_CONFIG_KEY),
@@ -61,22 +76,3 @@ class DefaultLiteLLMClientConfig:
     def to_dict(self) -> dict:
         """Converts the config instance into a dictionary."""
         return asdict(self)
-
-    @staticmethod
-    def _validate_required_keys(config: dict) -> None:
-        """Validates that the passed config is containing
-        all the required keys.
-
-        Raises:
-            ValueError: The config does not contain required key.
-        """
-        if MODEL_CONFIG_KEY not in config:
-            message = (
-                f"Missing required key '{MODEL_CONFIG_KEY}' for "
-                f"client configuration."
-            )
-            structlogger.error(
-                "default_litellm_client_config.validate_required_keys",
-                message=message,
-            )
-            raise ValueError(message)

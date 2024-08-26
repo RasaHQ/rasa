@@ -17,11 +17,49 @@ from rasa.shared.constants import (
     ENGINE_CONFIG_KEY,
     RASA_TYPE_CONFIG_KEY,
     LANGCHAIN_TYPE_CONFIG_KEY,
+    STREAM_CONFIG_KEY,
+    N_REPHRASES_CONFIG_KEY,
+    REQUEST_TIMEOUT_CONFIG_KEY,
+    TIMEOUT_CONFIG_KEY,
 )
-from rasa.shared.utils.io import raise_deprecation_warning
+from rasa.shared.providers._configs.utils import (
+    resolve_aliases,
+    raise_deprecation_warnings,
+    validate_required_keys,
+    validate_forbidden_keys,
+)
 
 structlogger = structlog.get_logger()
 AZURE_API_TYPE = "azure"
+
+
+DEPRECATED_ALIASES_TO_STANDARD_KEY_MAPPING = {
+    # Deployment name aliases
+    DEPLOYMENT_NAME_CONFIG_KEY: DEPLOYMENT_CONFIG_KEY,
+    ENGINE_CONFIG_KEY: DEPLOYMENT_CONFIG_KEY,
+    # API type aliases
+    OPENAI_API_TYPE_CONFIG_KEY: API_TYPE_CONFIG_KEY,
+    RASA_TYPE_CONFIG_KEY: API_TYPE_CONFIG_KEY,
+    LANGCHAIN_TYPE_CONFIG_KEY: API_TYPE_CONFIG_KEY,
+    # API base aliases
+    OPENAI_API_BASE_CONFIG_KEY: API_BASE_CONFIG_KEY,
+    # API version aliases
+    OPENAI_API_VERSION_CONFIG_KEY: API_VERSION_CONFIG_KEY,
+    # Model name aliases
+    MODEL_NAME_CONFIG_KEY: MODEL_CONFIG_KEY,
+    # Timeout aliases
+    REQUEST_TIMEOUT_CONFIG_KEY: TIMEOUT_CONFIG_KEY,
+}
+
+REQUIRED_KEYS = [
+    DEPLOYMENT_CONFIG_KEY,
+    API_TYPE_CONFIG_KEY,
+]
+
+FORBIDDEN_KEYS = [
+    STREAM_CONFIG_KEY,
+    N_REPHRASES_CONFIG_KEY,
+]
 
 
 @dataclass
@@ -83,11 +121,14 @@ class AzureOpenAIClientConfig:
             AzureOpenAIClientConfig
         """
         # Check for deprecated keys
-        _raise_deprecation_warnings(config)
+        raise_deprecation_warnings(config, DEPRECATED_ALIASES_TO_STANDARD_KEY_MAPPING)
         # Resolve any potential aliases
-        config = _resolve_aliases(config)
+        config = resolve_aliases(config, DEPRECATED_ALIASES_TO_STANDARD_KEY_MAPPING)
         # Validate that required keys are set
-        cls._validate_required_keys(config)
+        validate_required_keys(config, REQUIRED_KEYS)
+        # Validate that the forbidden keys are not present
+        validate_forbidden_keys(config, FORBIDDEN_KEYS)
+        # Init client config
         this = AzureOpenAIClientConfig(
             # Required parameters
             deployment=config.pop(DEPLOYMENT_CONFIG_KEY),
@@ -99,7 +140,7 @@ class AzureOpenAIClientConfig:
             api_base=config.pop(API_BASE_CONFIG_KEY, None),
             api_version=config.pop(API_VERSION_CONFIG_KEY, None),
             # The rest of parameters (e.g. model parameters) are considered
-            # as extra parameters.
+            # as extra parameters (this also includes timeout).
             extra_parameters=config,
         )
         return this
@@ -108,138 +149,13 @@ class AzureOpenAIClientConfig:
         """Converts the config instance into a dictionary."""
         return asdict(self)
 
-    @staticmethod
-    def _validate_required_keys(config: dict) -> None:
-        """Validates that the passed config is containing
-        all the required keys.
-
-        Raises:
-            ValueError: The config does not contain required key.
-        """
-        required_keys = [
-            DEPLOYMENT_CONFIG_KEY,
-            API_TYPE_CONFIG_KEY,
-        ]
-        missing_keys = [key for key in required_keys if key not in config]
-        if missing_keys:
-            message = (
-                f"Missing required keys '{missing_keys}' for Azure OpenAI "
-                f"client configuration."
-            )
-            structlogger.error(
-                "azure_openai_client_config.validate_required_keys",
-                message=message,
-                missing_keys=missing_keys,
-            )
-            raise ValueError(message)
-
-
-def _resolve_aliases(config: dict) -> dict:
-    """
-    Resolve aliases in the Azure OpenAI configuration to standard keys for
-    LLM/embedding client.
-
-    This function ensures that all configuration keys are standardized by
-    replacing any aliases with their corresponding primary keys. It helps in
-    maintaining backward compatibility and avoids modifying the original
-    dictionary to ensure consistency across multiple usages.
-
-    It does not add new keys if the keys were not previously defined.
-
-    Args:
-        config: Dictionary containing the configuration.
-    Returns:
-        New dictionary containing the processed configuration.
-
-    """
-    # Create a new or copied dictionary to avoid modifying the original
-    # config, as it's used in multiple places (e.g. command generators).
-    config = config.copy()
-
-    # Use `deployment` and if there are any aliases replace them
-    deployment = (
-        config.get(DEPLOYMENT_NAME_CONFIG_KEY)
-        or config.get(DEPLOYMENT_CONFIG_KEY)
-        or config.get(ENGINE_CONFIG_KEY)
-    )
-    if deployment is not None:
-        config[DEPLOYMENT_CONFIG_KEY] = deployment
-
-    # Use `api_type` and if there are any aliases replace them
-    # In reality, LiteLLM is not using this at all
-    # It's here for backward compatibility
-    api_type = (
-        config.get(API_TYPE_CONFIG_KEY)
-        or config.get(OPENAI_API_TYPE_CONFIG_KEY)
-        or config.get(RASA_TYPE_CONFIG_KEY)
-        or config.get(LANGCHAIN_TYPE_CONFIG_KEY)
-    )
-    if api_type is not None:
-        config[API_TYPE_CONFIG_KEY] = api_type
-
-    # Use `model` and if there are any aliases replace them
-    # In reality, LiteLLM is not using this at all
-    # It's here for backward compatibility
-    model = config.get(MODEL_NAME_CONFIG_KEY) or config.get(MODEL_CONFIG_KEY)
-    if model is not None:
-        config[MODEL_CONFIG_KEY] = model
-
-    # Use `api_base` and if there are any aliases replace them
-    api_base = config.get(API_BASE_CONFIG_KEY) or config.get(OPENAI_API_BASE_CONFIG_KEY)
-    if api_base is not None:
-        config[API_BASE_CONFIG_KEY] = api_base
-
-    # Use `api_version` and if there are any aliases replace them
-    api_version = config.get(API_VERSION_CONFIG_KEY) or config.get(
-        OPENAI_API_VERSION_CONFIG_KEY
-    )
-    if api_version is not None:
-        config[API_VERSION_CONFIG_KEY] = api_version
-
-    # Pop all aliases from the config
-    for key in [
-        OPENAI_API_BASE_CONFIG_KEY,
-        OPENAI_API_TYPE_CONFIG_KEY,
-        OPENAI_API_VERSION_CONFIG_KEY,
-        DEPLOYMENT_NAME_CONFIG_KEY,
-        ENGINE_CONFIG_KEY,
-        MODEL_NAME_CONFIG_KEY,
-        RASA_TYPE_CONFIG_KEY,
-        LANGCHAIN_TYPE_CONFIG_KEY,
-    ]:
-        config.pop(key, None)
-
-    return config
-
-
-def _raise_deprecation_warnings(config: dict) -> None:
-    # Check for `deployment`, `api_base`, `api_type`, `api_version` aliases and
-    # raise deprecation warnings.
-    _mapper_deprecated_keys_to_new_keys = {
-        DEPLOYMENT_NAME_CONFIG_KEY: DEPLOYMENT_CONFIG_KEY,
-        ENGINE_CONFIG_KEY: DEPLOYMENT_CONFIG_KEY,
-        OPENAI_API_BASE_CONFIG_KEY: API_BASE_CONFIG_KEY,
-        OPENAI_API_TYPE_CONFIG_KEY: API_TYPE_CONFIG_KEY,
-        RASA_TYPE_CONFIG_KEY: API_TYPE_CONFIG_KEY,
-        LANGCHAIN_TYPE_CONFIG_KEY: API_TYPE_CONFIG_KEY,
-        OPENAI_API_VERSION_CONFIG_KEY: API_VERSION_CONFIG_KEY,
-    }
-    for deprecated_key, new_key in _mapper_deprecated_keys_to_new_keys.items():
-        if deprecated_key in config:
-            raise_deprecation_warning(
-                message=(
-                    f"'{deprecated_key}' is deprecated and will be removed in "
-                    f"version 4.0.0. Use '{new_key}' instead."
-                )
-            )
-
 
 def is_azure_openai_config(config: dict) -> bool:
     """Check whether the configuration is meant to configure
     an Azure OpenAI client.
     """
     # Resolve any aliases that are specific to Azure OpenAI configuration
-    config = _resolve_aliases(config)
+    config = resolve_aliases(config, DEPRECATED_ALIASES_TO_STANDARD_KEY_MAPPING)
 
     # Case: Configuration contains `api_type: azure`.
     if config.get(API_TYPE_CONFIG_KEY) == AZURE_API_TYPE:

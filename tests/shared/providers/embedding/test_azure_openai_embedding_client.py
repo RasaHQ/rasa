@@ -5,7 +5,6 @@ import litellm
 import pytest
 import structlog
 from pytest import MonkeyPatch
-
 from rasa.shared.constants import (
     AZURE_API_BASE_ENV_VAR,
     AZURE_API_KEY_ENV_VAR,
@@ -336,3 +335,93 @@ class TestAzureOpenAIEmbeddingClient:
         assert client.model == "gpt-2024"
         assert client._litellm_extra_parameters == {}
         assert os.environ.get(AZURE_API_KEY_ENV_VAR) == "some_key"
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            {
+                "api_type": "azure",
+                "deployment": "some_azure_deployment",
+                "api_base": "https://test",
+                "api_version": "v1",
+                # Stream is forbidden
+                "stream": True,
+            },
+            {
+                "api_type": "azure",
+                "deployment": "some_azure_deployment",
+                "api_base": "https://test",
+                "api_version": "v1",
+                # n is forbidden
+                "n": 10,
+            },
+        ],
+    )
+    def test_azure_openai_embedding_cannot_be_instantiated_with_forbidden_keys(
+        self,
+        config: dict,
+        monkeypatch: MonkeyPatch,
+    ):
+        with pytest.raises(ValueError), structlog.testing.capture_logs() as caplog:
+            AzureOpenAIEmbeddingClient.from_config(config)
+
+        found_validation_log = False
+        for record in caplog:
+            if record["event"] == "validate_forbidden_keys":
+                found_validation_log = True
+                break
+
+        assert found_validation_log
+
+    @pytest.mark.parametrize(
+        "config, expected_to_raise_deprecation_warning",
+        [
+            (
+                {
+                    "deployment": "some_azure_deployment",
+                    "model": "test-embedding",
+                    "api_base": "https://test",
+                    "api_type": "azure",
+                    "api_version": "2023-05-15",
+                    "timeout": 7,
+                },
+                False,
+            ),
+            (
+                {
+                    "deployment": "some_azure_deployment",
+                    "model": "test-embedding",
+                    "api_base": "https://test",
+                    "api_type": "azure",
+                    "api_version": "2023-05-15",
+                    # Use deprecated key for timeout
+                    "request_timeout": 7,
+                },
+                True,
+            ),
+        ],
+    )
+    def test_from_config_correctly_initializes_timeout(
+        self,
+        config,
+        expected_to_raise_deprecation_warning: bool,
+        monkeypatch: MonkeyPatch,
+    ):
+        # Given
+        monkeypatch.setenv(AZURE_API_KEY_ENV_VAR, "some_key")
+
+        # When
+        with pytest.warns(None) as record:
+            client = AzureOpenAIEmbeddingClient.from_config(config)
+
+        # Then
+        future_warnings = [
+            warning for warning in record if warning.category == FutureWarning
+        ]
+        if expected_to_raise_deprecation_warning:
+            assert len(future_warnings) == 1
+            assert "timeout" in str(future_warnings[0].message)
+            assert "request_timeout" in str(future_warnings[0].message)
+
+        assert "timeout" in client._extra_parameters
+        assert client._extra_parameters["timeout"] == 7
