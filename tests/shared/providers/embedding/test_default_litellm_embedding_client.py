@@ -2,7 +2,8 @@ from unittest.mock import patch
 
 import litellm
 import pytest
-
+import structlog
+from pytest import MonkeyPatch
 from rasa.shared.providers.embedding.default_litellm_embedding_client import (
     DefaultLiteLLMEmbeddingClient,
 )
@@ -134,3 +135,34 @@ class TestDefaultLiteLLMEmbeddingClient:
         assert response.usage.prompt_tokens == 10
         assert response.usage.completion_tokens == 20
         assert response.usage.total_tokens == 30
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            {
+                "model": "cohere/test-cohere",
+                # Stream is forbidden
+                "stream": True,
+            },
+            {
+                "model": "cohere/test-cohere",
+                # n is forbidden
+                "n": 10,
+            },
+        ],
+    )
+    def test_default_embedding_cannot_be_instantiated_with_forbidden_keys(
+        self,
+        config: dict,
+        monkeypatch: MonkeyPatch,
+    ):
+        with pytest.raises(ValueError), structlog.testing.capture_logs() as caplog:
+            DefaultLiteLLMEmbeddingClient.from_config(config)
+
+        found_validation_log = False
+        for record in caplog:
+            if record["event"] == "validate_forbidden_keys":
+                found_validation_log = True
+                break
+
+        assert found_validation_log
