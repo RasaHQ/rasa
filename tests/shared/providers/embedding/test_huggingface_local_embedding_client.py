@@ -91,9 +91,7 @@ class TestHuggingFaceLocalEmbeddingClient:
         with pytest.raises(ValueError), structlog.testing.capture_logs() as caplog:
             HuggingFaceLocalEmbeddingClient.from_config(config)
 
-        expected_event = (
-            "huggingface_local_embeddings_client_config.validate_required_keys"
-        )
+        expected_event = "validate_required_keys"
         expected_log_level = "error"
         logs = filter_logs(caplog, expected_event, expected_log_level, [])
 

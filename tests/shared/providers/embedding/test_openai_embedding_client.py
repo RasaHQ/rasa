@@ -3,8 +3,8 @@ from unittest.mock import patch
 
 import litellm
 import pytest
+import structlog
 from pytest import MonkeyPatch
-
 from rasa.shared.constants import (
     OPENAI_API_BASE_ENV_VAR,
     OPENAI_API_KEY_ENV_VAR,
@@ -201,3 +201,36 @@ class TestOpenAIEmbeddingClient:
         assert client.model == "gpt-1000"
         assert client._litellm_extra_parameters == {}
         assert os.environ.get(OPENAI_API_KEY_ENV_VAR) == "some_key"
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            {
+                "api_type": "openai",
+                "model": "test-embedding",
+                # Stream is forbidden
+                "stream": True,
+            },
+            {
+                "api_type": "openai",
+                "model": "test-embedding",
+                # n is forbidden
+                "n": 10,
+            },
+        ],
+    )
+    def test_openai_embedding_cannot_be_instantiated_with_forbidden_keys(
+        self,
+        config: dict,
+        monkeypatch: MonkeyPatch,
+    ):
+        with pytest.raises(ValueError), structlog.testing.capture_logs() as caplog:
+            OpenAIEmbeddingClient.from_config(config)
+
+        found_validation_log = False
+        for record in caplog:
+            if record["event"] == "validate_forbidden_keys":
+                found_validation_log = True
+                break
+
+        assert found_validation_log
