@@ -60,7 +60,7 @@ def test_one_hot_out_of_range():
     ],
 )
 def test_replace_floats_with_decimals(_input: Any, expected: Any):
-    assert rasa.utils.json.replace_floats_with_decimals(_input) == expected
+    assert rasa.utils.json_utils.replace_floats_with_decimals(_input) == expected
 
 
 @pytest.mark.parametrize(
@@ -84,7 +84,7 @@ def test_replace_floats_with_decimals(_input: Any, expected: Any):
     ],
 )
 def test_replace_decimals_with_floats(_input: Any, expected: Any):
-    assert rasa.utils.json.replace_decimals_with_floats(_input) == expected
+    assert rasa.utils.json_utils.replace_decimals_with_floats(_input) == expected
 
 
 @pytest.mark.parametrize(
