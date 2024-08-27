@@ -1350,7 +1350,7 @@ def test_track_multi_step_llm_command_generator_init(
 
 
 @patch("rasa.telemetry._track")
-def test_track_e2e_test_conversion_file_type(
+def test_track_e2e_test_conversion_completed(
     mock_track: MagicMock,
     monkeypatch: MonkeyPatch,
 ) -> None:
@@ -1359,7 +1359,7 @@ def test_track_e2e_test_conversion_file_type(
     file_type = ".csv"
     test_case_count = 20
 
-    telemetry.track_e2e_test_conversion_file_type(
+    telemetry.track_e2e_test_conversion_completed(
         file_type=file_type,
         test_case_count=test_case_count,
     )
