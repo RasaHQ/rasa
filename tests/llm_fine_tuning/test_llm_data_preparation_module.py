@@ -326,8 +326,8 @@ def test_create_data_point_output_contains_multiple_commands(
     assert data_point.prompt == prompt
     assert (
         data_point.output
-        == "StartFlow(transfer_money)\nSetSlot(transfer_money_recipient, Maria)\nSetSlot(transfer_money_amount_of_money, 413)"
-    )  # noqa: E501
+        == "StartFlow(transfer_money)\nSetSlot(transfer_money_recipient, Maria)\nSetSlot(transfer_money_amount_of_money, 413)"  # noqa: E501
+    )
     assert (
         data_point.original_test_name
         == conversation_mentioning_two_slots_upfront.get_full_name()
