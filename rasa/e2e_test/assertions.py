@@ -46,6 +46,7 @@ from rasa.shared.core.events import (
 )
 from rasa.shared.exceptions import RasaException
 from rasa.utils.common import update_mlflow_log_level
+from rasa.utils.json_utils import SetEncoder
 
 if TYPE_CHECKING:
     from rasa.e2e_test.e2e_config import LLMJudgeConfig
@@ -421,7 +422,7 @@ class PatternClarificationContainsAssertion(Assertion):
         return None, matching_event
 
     def __hash__(self) -> int:
-        return hash(json.dumps(self.as_dict()))
+        return hash(json.dumps(self.as_dict(), cls=SetEncoder))
 
 
 @dataclass

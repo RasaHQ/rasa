@@ -8,6 +8,7 @@ import pytest
 
 import rasa.core.lock_store
 import rasa.utils.io
+import rasa.utils.json_utils
 from rasa.constants import ENV_SANIC_WORKERS
 from rasa.core import utils
 from rasa.core.lock_store import LockStore, RedisLockStore, InMemoryLockStore
@@ -59,7 +60,7 @@ def test_one_hot_out_of_range():
     ],
 )
 def test_replace_floats_with_decimals(_input: Any, expected: Any):
-    assert utils.replace_floats_with_decimals(_input) == expected
+    assert rasa.utils.json_utils.replace_floats_with_decimals(_input) == expected
 
 
 @pytest.mark.parametrize(
@@ -83,7 +84,7 @@ def test_replace_floats_with_decimals(_input: Any, expected: Any):
     ],
 )
 def test_replace_decimals_with_floats(_input: Any, expected: Any):
-    assert utils.replace_decimals_with_floats(_input) == expected
+    assert rasa.utils.json_utils.replace_decimals_with_floats(_input) == expected
 
 
 @pytest.mark.parametrize(
