@@ -99,9 +99,9 @@ class E2ETestConverter:
             sheet_name (str): Name of the sheet in XLSX file.
             llm_config (LLME2ETestConverterConfig): LLM configuration .
         """
-        self.input_file_extension: Optional[str] = None
         self.input_path: str = path
         self.sheet_name: Optional[str] = sheet_name
+        self.input_file_extension: str = self.get_and_validate_input_file_extension()
         self.e2e_schema = read_e2e_test_schema()
         self.prompt_template: str = read_text(
             E2E_TEST_MODULE, DEFAULT_E2E_TEST_CONVERTER_PROMPT_PATH
@@ -211,24 +211,24 @@ class E2ETestConverter:
             RasaException: If the directory path is provided, file extension
             is not supported or sheet name is missing.
         """
-        self.input_file_extension = Path(self.input_path).suffix.lower()
-        if not self.input_file_extension:
+        input_file_extension = Path(self.input_path).suffix.lower()
+        if not input_file_extension:
             raise RasaException(
                 "The path must point to a specific file, not a directory."
             )
 
-        if self.input_file_extension not in ALLOWED_EXTENSIONS:
+        if input_file_extension not in ALLOWED_EXTENSIONS:
             raise RasaException(
-                f"Unsupported file type: {self.input_file_extension}. "
+                f"Unsupported file type: {input_file_extension}. "
                 "Please use .csv or .xls/.xlsx"
             )
 
-        if self.input_file_extension in EXCEL_EXTENSIONS and self.sheet_name is None:
+        if input_file_extension in EXCEL_EXTENSIONS and self.sheet_name is None:
             raise RasaException(
-                f"Please provide a sheet name for the {self.input_file_extension} file."
+                f"Please provide a sheet name for the {input_file_extension} file."
             )
 
-        return self.input_file_extension
+        return input_file_extension
 
     def read_csv(self) -> List[Dict]:
         """Reads a CSV file and converts it into a list of dictionaries.
@@ -265,14 +265,12 @@ class E2ETestConverter:
             XLSX: self.read_xlsx,
         }
 
-        input_file_extension = self.get_and_validate_input_file_extension()
-
         try:
             structlogger.debug(
                 "e2e_test_generator.read_file",
-                input_file_extension=input_file_extension,
+                input_file_extension=self.input_file_extension,
             )
-            return extension_to_method[input_file_extension]()
+            return extension_to_method[self.input_file_extension]()
         except pd.errors.ParserError:
             raise RasaException("The file could not be read due to a parsing error.")
         except pd.errors.EmptyDataError:
@@ -349,9 +347,8 @@ class E2ETestConverter:
         results = await asyncio.gather(*tasks)
         filtered_results = [result for result in results if result]
 
-        telemetry.track_e2e_test_conversion_file_type(
-            file_type=self.input_file_extension,
-            test_case_count=len(filtered_results)
+        telemetry.track_e2e_test_conversion_completed(
+            file_type=self.input_file_extension, test_case_count=len(filtered_results)
         )
 
         structlogger.debug("e2e_test_generator.test_generation_finished")
