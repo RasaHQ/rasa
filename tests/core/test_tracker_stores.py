@@ -14,7 +14,7 @@ import uuid
 from _pytest.capture import CaptureFixture
 from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
-from moto import mock_dynamodb
+from moto import mock_aws
 from pymongo.errors import OperationFailure
 
 from rasa.core.agent import Agent
@@ -86,12 +86,12 @@ def test_get_or_create():
 
 
 # noinspection PyPep8Naming
-@mock_dynamodb
+@mock_aws
 def test_dynamo_get_or_create():
     get_or_create_tracker_store(DynamoTrackerStore(test_domain))
 
 
-@mock_dynamodb
+@mock_aws
 async def test_dynamo_tracker_floats():
     conversation_id = uuid.uuid4().hex
 
