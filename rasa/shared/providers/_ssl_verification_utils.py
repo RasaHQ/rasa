@@ -32,7 +32,7 @@ def ensure_ssl_certificates_for_litellm_non_openai_based_clients() -> None:
     )
 
     if ssl_verify is not None:
-        litellm.ssl_verify = ssl_verify  # type: ignore
+        litellm.ssl_verify = ssl_verify
     if ssl_certificate is not None:
         litellm.ssl_certificate = ssl_certificate
 

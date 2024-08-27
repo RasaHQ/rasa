@@ -58,7 +58,7 @@ class ConversationStep:
         return output
 
     def commands_as_string(self) -> str:
-        return ", ".join(self._commands_to_str())
+        return "\n".join(self._commands_to_str())
 
 
 @dataclass

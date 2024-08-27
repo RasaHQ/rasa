@@ -14,6 +14,7 @@ import structlog
 from jinja2 import Template
 from ruamel.yaml.scanner import ScannerError
 
+from rasa import telemetry
 from rasa.cli.e2e_test import read_e2e_test_schema
 from rasa.e2e_test.constants import KEY_TEST_CASES
 from rasa.e2e_test.e2e_config import LLME2ETestConverterConfig
@@ -100,6 +101,7 @@ class E2ETestConverter:
         """
         self.input_path: str = path
         self.sheet_name: Optional[str] = sheet_name
+        self.input_file_extension: str = self.get_and_validate_input_file_extension()
         self.e2e_schema = read_e2e_test_schema()
         self.prompt_template: str = read_text(
             E2E_TEST_MODULE, DEFAULT_E2E_TEST_CONVERTER_PROMPT_PATH
@@ -263,14 +265,12 @@ class E2ETestConverter:
             XLSX: self.read_xlsx,
         }
 
-        input_file_extension = self.get_and_validate_input_file_extension()
-
         try:
             structlogger.debug(
                 "e2e_test_generator.read_file",
-                input_file_extension=input_file_extension,
+                input_file_extension=self.input_file_extension,
             )
-            return extension_to_method[input_file_extension]()
+            return extension_to_method[self.input_file_extension]()
         except pd.errors.ParserError:
             raise RasaException("The file could not be read due to a parsing error.")
         except pd.errors.EmptyDataError:
@@ -345,9 +345,14 @@ class E2ETestConverter:
             for conversation in conversations.conversations
         ]
         results = await asyncio.gather(*tasks)
+        filtered_results = [result for result in results if result]
+
+        telemetry.track_e2e_test_conversion_completed(
+            file_type=self.input_file_extension, test_case_count=len(filtered_results)
+        )
 
         structlogger.debug("e2e_test_generator.test_generation_finished")
-        return "\n".join(results)
+        return "\n".join(filtered_results)
 
     def run(self) -> str:
         """Executes the E2E test conversion process: reads the file,

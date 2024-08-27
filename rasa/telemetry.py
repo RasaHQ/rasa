@@ -184,6 +184,11 @@ TRACING_BACKEND = "tracing_backend"
 METRICS_BACKEND = "metrics_backend"
 VERSION = "version"
 
+# E2E test conversion
+TELEMETRY_E2E_TEST_CONVERSION_EVENT = "E2E Test Conversion Completed"
+E2E_TEST_CONVERSION_FILE_TYPE = "file_type"
+E2E_TEST_CONVERSION_TEST_CASE_COUNT = "test_case_count"
+
 
 def print_telemetry_reporting_info() -> None:
     """Print telemetry information to std out."""
@@ -1787,5 +1792,16 @@ def track_conversation_count(conversation_count: int, tracked_month: datetime) -
             "conversation_count": conversation_count,
             "year": tracked_month.year,
             "month": tracked_month.month,
+        },
+    )
+
+
+def track_e2e_test_conversion_completed(file_type: str, test_case_count: int) -> None:
+    """Track the used input file type for E2E test conversion."""
+    _track(
+        TELEMETRY_E2E_TEST_CONVERSION_EVENT,
+        {
+            E2E_TEST_CONVERSION_FILE_TYPE: file_type,
+            E2E_TEST_CONVERSION_TEST_CASE_COUNT: test_case_count,
         },
     )

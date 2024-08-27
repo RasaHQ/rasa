@@ -49,6 +49,9 @@ from rasa.telemetry import (
     MULTI_STEP_LLM_COMMAND_GENERATOR_MODEL_NAME,
     MULTI_STEP_LLM_COMMAND_GENERATOR_FILL_SLOTS_PROMPT,
     MULTI_STEP_LLM_COMMAND_GENERATOR_HANDLE_FLOWS_PROMPT,
+    TELEMETRY_E2E_TEST_CONVERSION_EVENT,
+    E2E_TEST_CONVERSION_FILE_TYPE,
+    E2E_TEST_CONVERSION_TEST_CASE_COUNT,
 )
 from rasa.utils.licensing import LICENSE_ENV_VAR
 
@@ -1342,5 +1345,29 @@ def test_track_multi_step_llm_command_generator_init(
             MULTI_STEP_LLM_COMMAND_GENERATOR_MODEL_NAME: "test_model",
             MULTI_STEP_LLM_COMMAND_GENERATOR_HANDLE_FLOWS_PROMPT: "test_prompt_text1",
             MULTI_STEP_LLM_COMMAND_GENERATOR_FILL_SLOTS_PROMPT: "test_prompt_text2",
+        },
+    )
+
+
+@patch("rasa.telemetry._track")
+def test_track_e2e_test_conversion_completed(
+    mock_track: MagicMock,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE, "true")
+
+    file_type = ".csv"
+    test_case_count = 20
+
+    telemetry.track_e2e_test_conversion_completed(
+        file_type=file_type,
+        test_case_count=test_case_count,
+    )
+
+    mock_track.assert_called_once_with(
+        TELEMETRY_E2E_TEST_CONVERSION_EVENT,
+        {
+            E2E_TEST_CONVERSION_FILE_TYPE: file_type,
+            E2E_TEST_CONVERSION_TEST_CASE_COUNT: test_case_count,
         },
     )
