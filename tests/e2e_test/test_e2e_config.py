@@ -51,9 +51,45 @@ def test_create_llm_judge_config_no_conftest_detected(tmp_path: Path) -> None:
     )
 
 
-def test_create_llm_judge_config_conftest_without_llm_judge_key(tmp_path: Path) -> None:
-    test_case_path = tmp_path / "conftest.yml"
+@pytest.mark.parametrize("conftest_file_name", ["conftest.yaml", "conftest.yml"])
+def test_create_llm_judge_config_conftest_without_llm_judge_key(
+    tmp_path: Path, conftest_file_name: str
+) -> None:
+    test_case_path = tmp_path / conftest_file_name
     test_case_path.write_text("")
+    assert create_llm_judge_config(test_case_path) == LLMJudgeConfig(
+        api_type="openai",
+        model="gpt-4o-mini",
+    )
+
+
+@pytest.mark.parametrize("conftest_file_name", ["conftest.yaml", "conftest.yml"])
+def test_create_llm_judge_config_conftest_with_custom_config(
+    tmp_path: Path, conftest_file_name: str
+) -> None:
+    test_case_path = tmp_path / conftest_file_name
+    test_case_path.write_text("""
+    llm_as_judge:
+        api_type: openai
+        model: gpt-4
+    """)
+    assert create_llm_judge_config(test_case_path) == LLMJudgeConfig(
+        api_type="openai",
+        model="gpt-4",
+    )
+
+
+@pytest.mark.parametrize("conftest_file_name", ["conftest.yaml", "conftest.yml"])
+def test_create_llm_judge_config_conftest_with_invalid_llm_config(
+    tmp_path: Path, conftest_file_name: str
+) -> None:
+    test_case_path = tmp_path / conftest_file_name
+    test_case_path.write_text("""
+    llm_as_judge:
+        api_type: anthropic
+        model: claude-2.1
+    """)
+    # fallback to default configuration
     assert create_llm_judge_config(test_case_path) == LLMJudgeConfig(
         api_type="openai",
         model="gpt-4o-mini",
@@ -73,8 +109,11 @@ def test_read_conftest_file_raises_yaml_validation_error(
         read_conftest_file(test_case_path)
 
 
-def test_get_conftest_path_found(tmp_path: Path, test_case_path: Path) -> None:
-    conftest_path = tmp_path / "e2e_tests" / "conftest.yml"
+@pytest.mark.parametrize("conftest_file_name", ["conftest.yaml", "conftest.yml"])
+def test_get_conftest_path_found(
+    tmp_path: Path, test_case_path: Path, conftest_file_name: str
+) -> None:
+    conftest_path = tmp_path / "e2e_tests" / conftest_file_name
     conftest_path.write_text("")
     assert get_conftest_path(test_case_path) == conftest_path
 

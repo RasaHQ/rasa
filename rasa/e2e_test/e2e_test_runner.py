@@ -81,6 +81,9 @@ class E2ETestRunner:
             event_info="Started running end-to-end testing.",
         )
 
+        test_case_path = kwargs.get("test_case_path")
+        self.llm_judge_config = create_llm_judge_config(test_case_path)
+
         are_custom_actions_stubbed = (
             endpoints
             and endpoints.action
@@ -104,9 +107,6 @@ class E2ETestRunner:
                 "Please check that the agent was able to "
                 "load the trained model."
             )
-
-        test_case_path = kwargs.get("test_case_path")
-        self.llm_judge_config = create_llm_judge_config(test_case_path)
 
     async def run_prediction_loop(
         self,

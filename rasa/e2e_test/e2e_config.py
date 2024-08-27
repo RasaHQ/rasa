@@ -9,7 +9,6 @@ import structlog
 from pydantic import BaseModel
 
 from rasa.e2e_test.constants import (
-    CONFTEST_FILE_NAME,
     E2E_CONFIG_SCHEMA_FILE_PATH,
     KEY_LLM_AS_JUDGE,
     KEY_LLM_E2E_TEST_CONVERSION,
@@ -28,6 +27,8 @@ from rasa.shared.utils.yaml import (
 )
 
 structlogger = structlog.get_logger()
+
+CONFTEST_PATTERNS = ["conftest.yml", "conftest.yaml"]
 
 
 class InvalidLLMConfiguration(RasaException):
@@ -128,8 +129,6 @@ def get_conftest_path(test_case_path: Optional[Path]) -> Optional[Path]:
         except StopIteration:
             pass
 
-        test_case_path = test_case_path.parent
-
         plausible_config_paths = [
             test_case_path / "config.yml",
             test_case_path / "config",
@@ -138,17 +137,19 @@ def get_conftest_path(test_case_path: Optional[Path]) -> Optional[Path]:
             if plausible_config_path.exists():
                 # we reached the root of the assistant project
                 return None
-
         # In case of an invalid path outside the assistant project,
         # break the loop if we reach the root
         if test_case_path == Path("."):
             return None
 
+        test_case_path = test_case_path.parent
+
 
 def find_conftest_path(path: Path) -> Generator[Path, None, None]:
     """Find the path to the conftest.yml file."""
-    for file_path in path.rglob(CONFTEST_FILE_NAME):
-        yield file_path
+    for pattern in CONFTEST_PATTERNS:
+        for file_path in path.rglob(pattern):
+            yield file_path
 
 
 def create_llm_judge_config(test_case_path: Optional[Path]) -> LLMJudgeConfig:
@@ -167,7 +168,15 @@ def create_llm_judge_config(test_case_path: Optional[Path]) -> LLMJudgeConfig:
         llm_judge_config_data=llm_judge_config_data,
     )
 
-    return LLMJudgeConfig.from_dict(llm_judge_config_data)
+    try:
+        return LLMJudgeConfig.from_dict(llm_judge_config_data)
+    except InvalidLLMConfiguration as e:
+        structlogger.error(
+            "e2e_config.create_llm_judge_config.invalid_llm_configuration",
+            error_message=str(e),
+            event_info="Falling back to default configuration.",
+        )
+        return LLMJudgeConfig()
 
 
 def create_llm_e2e_test_converter_config(
