@@ -1,4 +1,3 @@
-import os
 import tempfile
 from pathlib import Path
 from typing import Any, Text
@@ -6,7 +5,7 @@ from unittest.mock import MagicMock
 
 import boto3
 import pytest
-from moto import mock_s3
+from moto import mock_aws
 from pytest import MonkeyPatch
 
 import rasa
@@ -24,27 +23,20 @@ def bucket_name() -> Text:
 @pytest.fixture
 def region_name() -> Text:
     """Name of the region to use for testing."""
-    return "us-west-2"
-
-
-@pytest.fixture
-def aws_endpoint_url() -> Text:
-    """URL of the moto testing server."""
-    return "http://localhost:5000"
+    return "us-east-1"
 
 
 @pytest.fixture
 def aws_environment_variables(
     bucket_name: Text,
     region_name: Text,
-    aws_endpoint_url: Text,
     monkeypatch: MonkeyPatch,
 ) -> None:
     """Set AWS environment variables for testing."""
     monkeypatch.setenv("BUCKET_NAME", bucket_name)
-    monkeypatch.setenv("AWS_ENDPOINT_URL", aws_endpoint_url)
     monkeypatch.setenv("AWS_DEFAULT_REGION", region_name)
 
+    # Moto uses these specific testing credentials
     monkeypatch.setenv("AWS_ACCESS_KEY_ID", "testing")
     monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "testing")
     monkeypatch.setenv("AWS_SECURITY_TOKEN", "testing")
@@ -55,41 +47,13 @@ def aws_environment_variables(
 
 
 @pytest.fixture
-def s3_connection(region_name: Text, aws_environment_variables: None) -> Any:
-    """Create a connection to the moto server."""
-    with mock_s3():
-        yield boto3.resource("s3", region_name=region_name)
+@mock_aws
+def s3_connection(region_name: str, aws_environment_variables: None) -> Any:
+    """Create a s3 connection to the Moto server."""
+    return boto3.resource("s3", region_name=region_name)
 
 
-@pytest.fixture
-def setup_aws_persistor(
-    s3_connection: Any,
-    bucket_name: Text,
-    region_name: Text,
-    monkeypatch: MonkeyPatch,
-) -> None:
-    """Create an instance of the AWS persistor."""
-    # We need to create the bucket in Moto's 'virtual' AWS account
-    # prior to AWSPersistor instantiation
-    s3_connection.create_bucket(
-        Bucket=bucket_name,
-        CreateBucketConfiguration={"LocationConstraint": region_name},
-    )
-
-    aws_persistor = AWSPersistor(
-        os.environ.get("BUCKET_NAME"),
-        region_name=os.environ.get("AWS_DEFAULT_REGION"),
-    )
-    monkeypatch.setattr(aws_persistor, "s3", s3_connection)
-    monkeypatch.setattr(aws_persistor, "bucket", s3_connection.Bucket(bucket_name))
-
-    _get_persistor = MagicMock()
-    _get_persistor.return_value = aws_persistor
-
-    monkeypatch.setattr("rasa.nlu.persistor.get_persistor", _get_persistor)
-
-
-@pytest.mark.usefixtures("setup_aws_persistor")
+@mock_aws
 def test_train_model_and_push_to_aws_remote_storage(
     monkeypatch: MonkeyPatch,
     tmp_path: Path,
@@ -98,11 +62,23 @@ def test_train_model_and_push_to_aws_remote_storage(
     stories_path: Text,
     stack_config_path: Text,
     nlu_data_path: Text,
+    s3_connection: Any,
+    bucket_name: Text,
+    region_name: Text,
 ) -> None:
     """Test to load model from AWS remote storage."""
+    # Create the bucket in Moto's 'virtual' AWS account
+    s3_connection.create_bucket(Bucket=bucket_name)
+
+    aws_persistor = AWSPersistor(bucket_name, region_name=region_name)
+    monkeypatch.setattr(aws_persistor, "s3", s3_connection)
+    monkeypatch.setattr(aws_persistor, "bucket", s3_connection.Bucket(bucket_name))
+
+    _get_persistor = MagicMock()
+    _get_persistor.return_value = aws_persistor
+    monkeypatch.setattr("rasa.nlu.persistor.get_persistor", _get_persistor)
 
     model_name = "dummy-model"
-
     empty_agent.remote_storage = "aws"
 
     try:

@@ -4,7 +4,7 @@ import pytest
 import boto3
 from unittest.mock import patch, Mock
 
-from moto import mock_s3
+from moto import mock_aws
 
 from rasa.nlu import persistor
 from rasa.nlu.persistor import Persistor
@@ -37,7 +37,7 @@ def destination() -> Text:
 def test_retrieve_tar_archive_with_s3_namespace(
     bucket_name: Text, model: Text, destination: Text
 ):
-    with mock_s3():
+    with mock_aws():
         conn = boto3.resource("s3")
         conn.create_bucket(Bucket=bucket_name)
 
@@ -54,7 +54,7 @@ def test_retrieve_tar_archive_with_s3_namespace(
 def test_retrieve_tar_archive_with_s3_bucket_not_found(
     bucket_name: Text, model: Text, destination: Text
 ):
-    with mock_s3():
+    with mock_aws():
         with patch.object(persistor.AWSPersistor, "_copy"):
             log = (
                 f"The specified bucket '{bucket_name}' does not exist. "
@@ -94,7 +94,7 @@ def test_retrieve_tar_archive_with_s3_bucket_forbidden(
 
 # noinspection PyPep8Naming
 def test_s3_private_retrieve_tar(bucket_name: Text, model: Text):
-    with mock_s3():
+    with mock_aws():
         conn = boto3.resource("s3")
         conn.create_bucket(Bucket=bucket_name)
         # Ensure the S3 persistor writes to a filename `model.tar.gz`, whilst
