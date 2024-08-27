@@ -19,7 +19,11 @@ def resolve_aliases(config: dict, deprecated_alias_mapping: dict) -> dict:
     config = config.copy()
 
     for alias, standard_key in deprecated_alias_mapping.items():
-        if alias in config and standard_key not in config:
+        # We check for the alias instead of the standard key because our goal is to
+        # update the standard key when the alias is found. Since the standard key is
+        # always included in the default component configurations, we overwrite it
+        # with the alias value if the alias exists.
+        if alias in config:
             config[standard_key] = config.pop(alias)
 
     return config
