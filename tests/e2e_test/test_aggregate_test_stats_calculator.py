@@ -1,4 +1,4 @@
-from typing import List, TYPE_CHECKING
+from typing import List
 
 import pytest
 
@@ -6,11 +6,12 @@ from rasa.e2e_test.aggregate_test_stats_calculator import (
     AccuracyCalculation,
     AggregateTestStatsCalculator,
 )
-from rasa.e2e_test.assertions import _get_all_assertion_subclasses
-
-if TYPE_CHECKING:
-    from rasa.e2e_test.e2e_test_case import TestCase
-    from rasa.e2e_test.e2e_test_result import TestResult
+from rasa.e2e_test.assertions import (
+    _get_all_assertion_subclasses,
+    PatternClarificationContainsAssertion,
+)
+from rasa.e2e_test.e2e_test_case import TestStep, TestCase
+from rasa.e2e_test.e2e_test_result import TestResult
 
 
 @pytest.fixture
@@ -23,6 +24,29 @@ def aggregate_test_stats_calculator(
         passed_results=passed_assertion_results,
         failed_results=failed_assertion_results,
         test_cases=test_cases,
+    )
+
+
+@pytest.fixture
+def calculator_with_pattern_clarification_assertion() -> AggregateTestStatsCalculator:
+    return AggregateTestStatsCalculator(
+        passed_results=[],
+        failed_results=[],
+        test_cases=[
+            TestCase(
+                "case_1",
+                [
+                    TestStep(
+                        "actor",
+                        assertions=[
+                            PatternClarificationContainsAssertion(
+                                flow_names={"add a card", "add a contact"}, line=12
+                            ),
+                        ],
+                    )
+                ],
+            )
+        ],
     )
 
 
@@ -118,3 +142,12 @@ def test_aggregate_stats_calculator_calculate(
 
     for expected_accuracy_calculation in expected_accuracy_calculations:
         assert expected_accuracy_calculation in actual_accuracy_calculations
+
+
+def test_aggregate_stats_pattern_clarification_contains_assertion(
+    calculator_with_pattern_clarification_assertion: AggregateTestStatsCalculator,
+) -> None:
+    try:
+        calculator_with_pattern_clarification_assertion.calculate()
+    except TypeError:
+        pytest.fail("Unexpected TypeError")

@@ -26,10 +26,10 @@ from typing import (
 from boto3.dynamodb.conditions import Key
 from pymongo.collection import Collection
 
-import rasa.core.utils as core_utils
 import rasa.shared.utils.cli
 import rasa.shared.utils.common
 import rasa.shared.utils.io
+import rasa.utils.json
 from rasa.plugin import plugin_manager
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.core.brokers.broker import EventBroker
@@ -705,7 +705,7 @@ class DynamoTrackerStore(TrackerStore, SerializedTrackerAsDict):
 
         DynamoDB cannot store `float`s, so we'll convert them to `Decimal`s.
         """
-        return core_utils.replace_floats_with_decimals(
+        return rasa.utils.json.replace_floats_with_decimals(
             SerializedTrackerAsDict.serialise_tracker(tracker)
         )
 
@@ -747,12 +747,14 @@ class DynamoTrackerStore(TrackerStore, SerializedTrackerAsDict):
             events_with_floats = []
             for dialogue in dialogues:
                 if dialogue.get("events"):
-                    events = core_utils.replace_decimals_with_floats(dialogue["events"])
+                    events = rasa.utils.json.replace_decimals_with_floats(
+                        dialogue["events"]
+                    )
                     events_with_floats += events
         else:
             events = dialogues[0].get("events", [])
             # `float`s are stored as `Decimal` objects - we need to convert them back
-            events_with_floats = core_utils.replace_decimals_with_floats(events)
+            events_with_floats = rasa.utils.json.replace_decimals_with_floats(events)
 
         if self.domain is None:
             slots = []

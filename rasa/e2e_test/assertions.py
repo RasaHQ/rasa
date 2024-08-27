@@ -31,7 +31,6 @@ from rasa.core.policies.enterprise_search_policy import (
     SEARCH_QUERY_METADATA_KEY,
     SEARCH_RESULTS_METADATA_KEY,
 )
-from rasa.core.utils import SetEncoder
 from rasa.dialogue_understanding.patterns.clarify import FLOW_PATTERN_CLARIFICATION
 from rasa.shared.core.constants import DEFAULT_SLOT_NAMES
 from rasa.shared.core.events import (
@@ -47,6 +46,7 @@ from rasa.shared.core.events import (
 )
 from rasa.shared.exceptions import RasaException
 from rasa.utils.common import update_mlflow_log_level
+from rasa.utils.json import SetEncoder
 
 if TYPE_CHECKING:
     from rasa.e2e_test.e2e_config import LLMJudgeConfig

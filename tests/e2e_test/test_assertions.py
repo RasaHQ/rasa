@@ -201,7 +201,10 @@ def test_pattern_clarification_contains_assertion_test():
     assertion = PatternClarificationContainsAssertion(
         flow_names={"add a card", "add a contact"}, line=12
     )
-    assertion.__hash__()
+    try:
+        assertion.__hash__()
+    except TypeError:
+        pytest.fail("Unexpected TypeError")
 
 
 @pytest.mark.parametrize(
