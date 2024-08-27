@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 
 import boto3
 import pytest
-from moto import mock_iam, mock_s3
+from moto import mock_aws
 from pytest import MonkeyPatch
 
 from rasa.nlu.persistor import AWSPersistor
@@ -35,16 +35,9 @@ def bucket_name() -> str:
 @pytest.fixture
 def region_name() -> str:
     """Name of the region to use for testing."""
-    return "us-west-2"
+    return "us-east-1"
 
 
-@pytest.fixture
-def aws_endpoint_url() -> str:
-    """URL of the moto testing server."""
-    return "http://localhost:5000"
-
-
-@mock_iam
 def create_user_with_access_key_and_attached_policy(region_name: str) -> Any:
     """Create a user and an access key for them."""
     client = boto3.client("iam", region_name=region_name)
@@ -75,12 +68,10 @@ def create_user_with_access_key_and_attached_policy(region_name: str) -> Any:
 def aws_environment_variables(
     bucket_name: str,
     region_name: str,
-    aws_endpoint_url: str,
     monkeypatch: MonkeyPatch,
 ) -> None:
     """Set AWS environment variables for testing."""
     monkeypatch.setenv("BUCKET_NAME", bucket_name)
-    monkeypatch.setenv("AWS_ENDPOINT_URL", aws_endpoint_url)
     monkeypatch.setenv("AWS_DEFAULT_REGION", region_name)
 
     # access_key = create_user_with_access_key_and_attached_policy(region_name)
@@ -95,34 +86,10 @@ def aws_environment_variables(
 
 
 @pytest.fixture
-def s3_connection(aws_environment_variables: None, region_name: str) -> Any:
-    """Create an S3 connection."""
-    with mock_s3():
-        yield boto3.resource("s3", region_name=region_name)
-
-
-@pytest.fixture
-def aws_persistor(
-    bucket_name: str,
-    region_name: str,
-    s3_connection: Any,
-    monkeypatch: MonkeyPatch,
-) -> None:
-    s3_connection.create_bucket(
-        Bucket=bucket_name,
-        CreateBucketConfiguration={"LocationConstraint": region_name},
-    )
-
-    aws_persistor = AWSPersistor(
-        os.environ.get("BUCKET_NAME"),
-        region_name=os.environ.get("AWS_DEFAULT_REGION"),
-    )
-    monkeypatch.setattr(aws_persistor, "s3", s3_connection)
-    monkeypatch.setattr(aws_persistor, "bucket", s3_connection.Bucket(bucket_name))
-
-    _get_persistor_mock = MagicMock()
-    _get_persistor_mock.return_value = aws_persistor
-    monkeypatch.setattr("rasa.nlu.persistor.get_persistor", _get_persistor_mock)
+@mock_aws
+def s3_connection(region_name: str, aws_environment_variables: None) -> Any:
+    """Create a s3 connection to the Moto server."""
+    return boto3.resource("s3", region_name=region_name)
 
 
 def create_in_memory_tar_archive_from_paths(paths: List[Path]) -> bytes:
@@ -183,7 +150,7 @@ def in_memory_bot_config_tar_archive(
     return tar_archive_in_bytes
 
 
-@pytest.mark.usefixtures("aws_persistor")
+@mock_aws
 def test_remote_file_importer(
     monkeypatch: MonkeyPatch,
     bucket_name: str,
@@ -204,6 +171,15 @@ def test_remote_file_importer(
     load domain, stories, nlu data and conversation tests
     from the extracted files.
     """
+    s3_connection.create_bucket(Bucket=bucket_name)
+
+    aws_persistor = AWSPersistor(bucket_name, region_name=region_name)
+    monkeypatch.setattr(aws_persistor, "s3", s3_connection)
+    monkeypatch.setattr(aws_persistor, "bucket", s3_connection.Bucket(bucket_name))
+
+    _get_persistor_mock = MagicMock()
+    _get_persistor_mock.return_value = aws_persistor
+    monkeypatch.setattr("rasa.nlu.persistor.get_persistor", _get_persistor_mock)
 
     # Given the tar archive with bot config files
     # is uploaded to the S3 bucket

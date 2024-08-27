@@ -88,7 +88,7 @@ exclude = [ "eggs", ".git", ".pytest_cache", "build", "dist",]
 
 [tool.poetry.dependencies]
 python = ">=3.8.1,<3.11"
-boto3 = "~1.27.1"
+boto3 = "~1.35.5"
 google-cloud-storage = "^2.14.0"
 azure-storage-blob = ">=12.16.0, <12.17.0"
 requests = "~2.31.0"
@@ -185,7 +185,7 @@ qdrant-client = "^1.9.0"
 psutil = "^5.9.5"
 tenacity = "~8.4.1"  # pinned down because of langchain
 types-protobuf = "4.25.0.20240417"
-litellm = "^1.43.6"
+litellm = "~1.44.7"
 openpyxl = "^3.1.5"
 diskcache = "~5.6.3"
 [[tool.poetry.dependencies.tensorflow-io-gcs-filesystem]]
@@ -347,7 +347,7 @@ pytest = "^7.1.3"
 freezegun = "^1.5.1"
 responses = ">=0.22,<0.25"
 aioresponses = "^0.7.2"
-moto = "~=4.1.2"
+moto = "~5.0.3"
 fakeredis = "^2.23.2"
 mongomock = "^4.1.2"
 towncrier = "^22.8.0"

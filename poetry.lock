@@ -631,41 +631,44 @@ numpy = ">=1.15.0"
 
 [[package]]
 name = "boto3"
-version = "1.27.1"
+version = "1.35.5"
 description = "The AWS SDK for Python"
 optional = false
-python-versions = ">= 3.7"
+python-versions = ">=3.8"
 files = [
-    {file = "boto3-1.27.1-py3-none-any.whl", hash = "sha256:0085c1066953e61915b34f24fbdee7117fd2d8b5c9188b9519d47ba84510c067"},
-    {file = "boto3-1.27.1.tar.gz", hash = "sha256:cf43deb4556295219d9de44d1c95921209c90ee25246673b5768aef9d46519cc"},
+    {file = "boto3-1.35.5-py3-none-any.whl", hash = "sha256:2cef3aa476181395c260f4b6e6c5565e5a3022a874fb6b579d8e6b169f94e0b3"},
+    {file = "boto3-1.35.5.tar.gz", hash = "sha256:5724ddeda8e18c7614c20a09c20159ed87ff7439755cf5e250a1a3feaf9afb7e"},
 ]
 
 [package.dependencies]
-botocore = ">=1.30.1,<1.31.0"
+botocore = ">=1.35.5,<1.36.0"
 jmespath = ">=0.7.1,<2.0.0"
-s3transfer = ">=0.6.0,<0.7.0"
+s3transfer = ">=0.10.0,<0.11.0"
 
 [package.extras]
 crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "botocore"
-version = "1.30.1"
+version = "1.35.5"
 description = "Low-level, data-driven core of boto 3."
 optional = false
-python-versions = ">= 3.7"
+python-versions = ">=3.8"
 files = [
-    {file = "botocore-1.30.1-py3-none-any.whl", hash = "sha256:18a32a21bfa9b418b9a38ea5ef4464eba003cbb26fca2cd56e4f51098c5d1a0f"},
-    {file = "botocore-1.30.1.tar.gz", hash = "sha256:4d1ac5a796c5c5c87946f25f3d98764288a0ed848e772a7a47cd134847e885e7"},
+    {file = "botocore-1.35.5-py3-none-any.whl", hash = "sha256:8116b72c7ae845c195146e437e2afd9d17538a37b3f3548dcf67c12c86ba0742"},
+    {file = "botocore-1.35.5.tar.gz", hash = "sha256:3a0086c7124cb3b0d9f98563d00ffd14a942c3f9e731d8d1ccf0d3a1ac7ed884"},
 ]
 
 [package.dependencies]
 jmespath = ">=0.7.1,<2.0.0"
 python-dateutil = ">=2.1,<3.0.0"
-urllib3 = ">=1.25.4,<1.27"
+urllib3 = [
+    {version = ">=1.25.4,<1.27", markers = "python_version < \"3.10\""},
+    {version = ">=1.25.4,<2.2.0 || >2.2.0,<3", markers = "python_version >= \"3.10\""},
+]
 
 [package.extras]
-crt = ["awscrt (==0.16.9)"]
+crt = ["awscrt (==0.21.2)"]
 
 [[package]]
 name = "cachecontrol"
@@ -3299,13 +3302,13 @@ files = [
 
 [[package]]
 name = "litellm"
-version = "1.44.4"
+version = "1.44.7"
 description = "Library to easily interface with LLM API providers"
 optional = false
 python-versions = "!=2.7.*,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,!=3.6.*,!=3.7.*,>=3.8"
 files = [
-    {file = "litellm-1.44.4-py3-none-any.whl", hash = "sha256:0e2d56cc767003b30275005072ad6f7e2e37b0468719e50817cc581a055b8f1a"},
-    {file = "litellm-1.44.4.tar.gz", hash = "sha256:3216424a27e6405b9a099aff166c6d2442b1013c9f9909084ab722eb9d3b8861"},
+    {file = "litellm-1.44.7-py3-none-any.whl", hash = "sha256:7671b2e5287a4876a8b05f8025d6a976e22ae9c61e30355bf28c1d25e74c17df"},
+    {file = "litellm-1.44.7.tar.gz", hash = "sha256:c8f8f9d80065be81580258177f3a006de86d2c4af1f9a732ac37bd317a13f042"},
 ]
 
 [package.dependencies]
@@ -3322,8 +3325,8 @@ tiktoken = ">=0.7.0"
 tokenizers = "*"
 
 [package.extras]
-extra-proxy = ["azure-identity (>=1.15.0,<2.0.0)", "azure-keyvault-secrets (>=4.8.0,<5.0.0)", "google-cloud-kms (>=2.21.3,<3.0.0)", "prisma (==0.11.0)", "pynacl (>=1.5.0,<2.0.0)", "resend (>=0.8.0,<0.9.0)"]
-proxy = ["PyJWT (>=2.8.0,<3.0.0)", "apscheduler (>=3.10.4,<4.0.0)", "backoff", "cryptography (>=42.0.5,<43.0.0)", "fastapi (>=0.111.0,<0.112.0)", "fastapi-sso (>=0.10.0,<0.11.0)", "gunicorn (>=22.0.0,<23.0.0)", "orjson (>=3.9.7,<4.0.0)", "python-multipart (>=0.0.9,<0.0.10)", "pyyaml (>=6.0.1,<7.0.0)", "rq", "uvicorn (>=0.22.0,<0.23.0)"]
+extra-proxy = ["azure-identity (>=1.15.0,<2.0.0)", "azure-keyvault-secrets (>=4.8.0,<5.0.0)", "google-cloud-kms (>=2.21.3,<3.0.0)", "prisma (==0.11.0)", "resend (>=0.8.0,<0.9.0)"]
+proxy = ["PyJWT (>=2.8.0,<3.0.0)", "apscheduler (>=3.10.4,<4.0.0)", "backoff", "cryptography (>=42.0.5,<43.0.0)", "fastapi (>=0.111.0,<0.112.0)", "fastapi-sso (>=0.10.0,<0.11.0)", "gunicorn (>=22.0.0,<23.0.0)", "orjson (>=3.9.7,<4.0.0)", "pynacl (>=1.5.0,<2.0.0)", "python-multipart (>=0.0.9,<0.0.10)", "pyyaml (>=6.0.1,<7.0.0)", "rq", "uvicorn (>=0.22.0,<0.23.0)"]
 
 [[package]]
 name = "locket"
@@ -3749,48 +3752,47 @@ files = [
 
 [[package]]
 name = "moto"
-version = "4.1.12"
+version = "5.0.13"
 description = ""
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.8"
 files = [
-    {file = "moto-4.1.12-py2.py3-none-any.whl", hash = "sha256:6f40141ff2f3a309c19faa169433afdf48d28733d328b08a843021ae36f005d9"},
-    {file = "moto-4.1.12.tar.gz", hash = "sha256:25577e4cf55f05235f4efe78bcfeb5a7704fb75c16b426a5de2fc1e6b7b8545b"},
+    {file = "moto-5.0.13-py2.py3-none-any.whl", hash = "sha256:984377a9c4536543fc09f49a1d5210c61c4a4f55c79719f7d9f8dcdd9bf55ea5"},
+    {file = "moto-5.0.13.tar.gz", hash = "sha256:ddf8864f0d61af88fd07a4e5eac428c6bebf4fcd10023f8e756e65e9e7b7e4a5"},
 ]
 
 [package.dependencies]
 boto3 = ">=1.9.201"
-botocore = ">=1.12.201"
+botocore = ">=1.14.0"
 cryptography = ">=3.3.1"
 Jinja2 = ">=2.10.1"
 python-dateutil = ">=2.1,<3.0.0"
 requests = ">=2.5"
-responses = ">=0.13.0"
+responses = ">=0.15.0"
 werkzeug = ">=0.5,<2.2.0 || >2.2.0,<2.2.1 || >2.2.1"
 xmltodict = "*"
 
 [package.extras]
-all = ["PyYAML (>=5.1)", "aws-xray-sdk (>=0.93,!=0.96)", "cfn-lint (>=0.40.0)", "docker (>=3.0.0)", "ecdsa (!=0.15)", "graphql-core", "jsondiff (>=1.1.2)", "openapi-spec-validator (>=0.2.8)", "py-partiql-parser (==0.3.3)", "pyparsing (>=3.0.7)", "python-jose[cryptography] (>=3.1.0,<4.0.0)", "setuptools", "sshpubkeys (>=3.1.0)"]
-apigateway = ["PyYAML (>=5.1)", "ecdsa (!=0.15)", "openapi-spec-validator (>=0.2.8)", "python-jose[cryptography] (>=3.1.0,<4.0.0)"]
-apigatewayv2 = ["PyYAML (>=5.1)"]
+all = ["PyYAML (>=5.1)", "antlr4-python3-runtime", "aws-xray-sdk (>=0.93,!=0.96)", "cfn-lint (>=0.40.0)", "docker (>=3.0.0)", "graphql-core", "joserfc (>=0.9.0)", "jsondiff (>=1.1.2)", "jsonpath-ng", "multipart", "openapi-spec-validator (>=0.5.0)", "py-partiql-parser (==0.5.5)", "pyparsing (>=3.0.7)", "setuptools"]
+apigateway = ["PyYAML (>=5.1)", "joserfc (>=0.9.0)", "openapi-spec-validator (>=0.5.0)"]
+apigatewayv2 = ["PyYAML (>=5.1)", "openapi-spec-validator (>=0.5.0)"]
 appsync = ["graphql-core"]
 awslambda = ["docker (>=3.0.0)"]
 batch = ["docker (>=3.0.0)"]
-cloudformation = ["PyYAML (>=5.1)", "aws-xray-sdk (>=0.93,!=0.96)", "cfn-lint (>=0.40.0)", "docker (>=3.0.0)", "ecdsa (!=0.15)", "graphql-core", "jsondiff (>=1.1.2)", "openapi-spec-validator (>=0.2.8)", "py-partiql-parser (==0.3.3)", "pyparsing (>=3.0.7)", "python-jose[cryptography] (>=3.1.0,<4.0.0)", "setuptools", "sshpubkeys (>=3.1.0)"]
-cognitoidp = ["ecdsa (!=0.15)", "python-jose[cryptography] (>=3.1.0,<4.0.0)"]
-ds = ["sshpubkeys (>=3.1.0)"]
-dynamodb = ["docker (>=3.0.0)", "py-partiql-parser (==0.3.3)"]
-dynamodbstreams = ["docker (>=3.0.0)", "py-partiql-parser (==0.3.3)"]
-ebs = ["sshpubkeys (>=3.1.0)"]
-ec2 = ["sshpubkeys (>=3.1.0)"]
-efs = ["sshpubkeys (>=3.1.0)"]
-eks = ["sshpubkeys (>=3.1.0)"]
+cloudformation = ["PyYAML (>=5.1)", "aws-xray-sdk (>=0.93,!=0.96)", "cfn-lint (>=0.40.0)", "docker (>=3.0.0)", "graphql-core", "joserfc (>=0.9.0)", "jsondiff (>=1.1.2)", "openapi-spec-validator (>=0.5.0)", "py-partiql-parser (==0.5.5)", "pyparsing (>=3.0.7)", "setuptools"]
+cognitoidp = ["joserfc (>=0.9.0)"]
+dynamodb = ["docker (>=3.0.0)", "py-partiql-parser (==0.5.5)"]
+dynamodbstreams = ["docker (>=3.0.0)", "py-partiql-parser (==0.5.5)"]
+events = ["jsonpath-ng"]
 glue = ["pyparsing (>=3.0.7)"]
 iotdata = ["jsondiff (>=1.1.2)"]
-route53resolver = ["sshpubkeys (>=3.1.0)"]
-s3 = ["PyYAML (>=5.1)", "py-partiql-parser (==0.3.3)"]
-server = ["PyYAML (>=5.1)", "aws-xray-sdk (>=0.93,!=0.96)", "cfn-lint (>=0.40.0)", "docker (>=3.0.0)", "ecdsa (!=0.15)", "flask (!=2.2.0,!=2.2.1)", "flask-cors", "graphql-core", "jsondiff (>=1.1.2)", "openapi-spec-validator (>=0.2.8)", "py-partiql-parser (==0.3.3)", "pyparsing (>=3.0.7)", "python-jose[cryptography] (>=3.1.0,<4.0.0)", "setuptools", "sshpubkeys (>=3.1.0)"]
+proxy = ["PyYAML (>=5.1)", "antlr4-python3-runtime", "aws-xray-sdk (>=0.93,!=0.96)", "cfn-lint (>=0.40.0)", "docker (>=2.5.1)", "graphql-core", "joserfc (>=0.9.0)", "jsondiff (>=1.1.2)", "jsonpath-ng", "multipart", "openapi-spec-validator (>=0.5.0)", "py-partiql-parser (==0.5.5)", "pyparsing (>=3.0.7)", "setuptools"]
+resourcegroupstaggingapi = ["PyYAML (>=5.1)", "cfn-lint (>=0.40.0)", "docker (>=3.0.0)", "graphql-core", "joserfc (>=0.9.0)", "jsondiff (>=1.1.2)", "openapi-spec-validator (>=0.5.0)", "py-partiql-parser (==0.5.5)", "pyparsing (>=3.0.7)"]
+s3 = ["PyYAML (>=5.1)", "py-partiql-parser (==0.5.5)"]
+s3crc32c = ["PyYAML (>=5.1)", "crc32c", "py-partiql-parser (==0.5.5)"]
+server = ["PyYAML (>=5.1)", "antlr4-python3-runtime", "aws-xray-sdk (>=0.93,!=0.96)", "cfn-lint (>=0.40.0)", "docker (>=3.0.0)", "flask (!=2.2.0,!=2.2.1)", "flask-cors", "graphql-core", "joserfc (>=0.9.0)", "jsondiff (>=1.1.2)", "jsonpath-ng", "openapi-spec-validator (>=0.5.0)", "py-partiql-parser (==0.5.5)", "pyparsing (>=3.0.7)", "setuptools"]
 ssm = ["PyYAML (>=5.1)"]
+stepfunctions = ["antlr4-python3-runtime", "jsonpath-ng"]
 xray = ["aws-xray-sdk (>=0.93,!=0.96)", "setuptools"]
 
 [[package]]
@@ -5524,6 +5526,15 @@ files = [
     {file = "python_crfsuite-0.9.9-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:5ab333b7cda21b1b5ab76f8e16e5f00654360df057e2092b273681d64850f714"},
     {file = "python_crfsuite-0.9.9-cp311-cp311-musllinux_1_1_i686.whl", hash = "sha256:ee6153ed8a26adaea645445b997c55d67505476976dfc40f4bbd46200b66de15"},
     {file = "python_crfsuite-0.9.9-cp311-cp311-musllinux_1_1_x86_64.whl", hash = "sha256:c32292f722e293cee87aac0d793abd8b53dc05126e4b6f0202c41e0e7d027005"},
+    {file = "python_crfsuite-0.9.9-cp311-cp311-win32.whl", hash = "sha256:3e8bbacff1d86cbc18e1d52f617c85521029127a09c86ed428cd8238384a9db3"},
+    {file = "python_crfsuite-0.9.9-cp311-cp311-win_amd64.whl", hash = "sha256:83f87b652108110263aa83c220baccc36c911f04cf422cf6632a5f42121bce6a"},
+    {file = "python_crfsuite-0.9.9-cp312-cp312-macosx_10_9_x86_64.whl", hash = "sha256:92f72eb554dac53218805958747b4cd417bd76039f083f66cc9881987d88e167"},
+    {file = "python_crfsuite-0.9.9-cp312-cp312-manylinux_2_12_i686.manylinux2010_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:5cdd1e823fa9dfe611a573a0c1371941e887ad8b8ffbc25e2d87e4cd6d4f22af"},
+    {file = "python_crfsuite-0.9.9-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:54f94d6fabb14ad8106dc65b5d38665bb0abb16527d4a6aa2ba233670c3480db"},
+    {file = "python_crfsuite-0.9.9-cp312-cp312-musllinux_1_1_i686.whl", hash = "sha256:65ebfab892c49c49b5e1030318d144c559e449bdf86b12983fa7ba0e88f7abdf"},
+    {file = "python_crfsuite-0.9.9-cp312-cp312-musllinux_1_1_x86_64.whl", hash = "sha256:5c1bb3d2802bb777affbe2855fc723aa32345ead2fe26ad18c7e1417bc104c53"},
+    {file = "python_crfsuite-0.9.9-cp312-cp312-win32.whl", hash = "sha256:abef974a2b520c0204cb15b0b799fdbc1c1a0af4be2b9ad7548800de95975345"},
+    {file = "python_crfsuite-0.9.9-cp312-cp312-win_amd64.whl", hash = "sha256:ccc4c4f1cd47c74553d03d915c7dd7c06fc23b41310f30f35f2e5c09cdeb9297"},
     {file = "python_crfsuite-0.9.9-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:01d279f1c8225aaf66290563312708c1905dce84f70ee5e374ecfb2dec1c2343"},
     {file = "python_crfsuite-0.9.9-cp36-cp36m-manylinux_2_12_i686.manylinux2010_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:5f29e94fcb9e2f8f52c7323668752b34dcffef91751b0d1e0789ecbbc0069842"},
     {file = "python_crfsuite-0.9.9-cp36-cp36m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:497a8b9c0df152ada10732c07853942a8725cb66fe5b6fe1a64f768ecf583291"},
@@ -5696,6 +5707,7 @@ files = [
     {file = "PyYAML-6.0.1-cp311-cp311-win_amd64.whl", hash = "sha256:bf07ee2fef7014951eeb99f56f39c9bb4af143d8aa3c21b1677805985307da34"},
     {file = "PyYAML-6.0.1-cp312-cp312-macosx_10_9_x86_64.whl", hash = "sha256:855fb52b0dc35af121542a76b9a84f8d1cd886ea97c84703eaa6d88e37a2ad28"},
     {file = "PyYAML-6.0.1-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:40df9b996c2b73138957fe23a16a4f0ba614f4c0efce1e9406a184b6d07fa3a9"},
+    {file = "PyYAML-6.0.1-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:a08c6f0fe150303c1c6b71ebcd7213c2858041a7e01975da3a99aed1e7a378ef"},
     {file = "PyYAML-6.0.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:6c22bec3fbe2524cde73d7ada88f6566758a8f7227bfbf93a408a9d86bcc12a0"},
     {file = "PyYAML-6.0.1-cp312-cp312-musllinux_1_1_x86_64.whl", hash = "sha256:8d4e9c88387b0f5c7d5f281e55304de64cf7f9c0021a3525bd3b1c542da3b0e4"},
     {file = "PyYAML-6.0.1-cp312-cp312-win32.whl", hash = "sha256:d483d2cdf104e7c9fa60c544d92981f12ad66a457afae824d146093b8c294c54"},
@@ -6305,20 +6317,20 @@ files = [
 
 [[package]]
 name = "s3transfer"
-version = "0.6.1"
+version = "0.10.2"
 description = "An Amazon S3 Transfer Manager"
 optional = false
-python-versions = ">= 3.7"
+python-versions = ">=3.8"
 files = [
-    {file = "s3transfer-0.6.1-py3-none-any.whl", hash = "sha256:3c0da2d074bf35d6870ef157158641178a4204a6e689e82546083e31e0311346"},
-    {file = "s3transfer-0.6.1.tar.gz", hash = "sha256:640bb492711f4c0c0905e1f62b6aaeb771881935ad27884852411f8e9cacbca9"},
+    {file = "s3transfer-0.10.2-py3-none-any.whl", hash = "sha256:eca1c20de70a39daee580aef4986996620f365c4e0fda6a86100231d62f1bf69"},
+    {file = "s3transfer-0.10.2.tar.gz", hash = "sha256:0711534e9356d3cc692fdde846b4a1e4b0cb6519971860796e6bc4c7aea00ef6"},
 ]
 
 [package.dependencies]
-botocore = ">=1.12.36,<2.0a.0"
+botocore = ">=1.33.2,<2.0a.0"
 
 [package.extras]
-crt = ["botocore[crt] (>=1.20.29,<2.0a.0)"]
+crt = ["botocore[crt] (>=1.33.2,<2.0a.0)"]
 
 [[package]]
 name = "safetensors"
@@ -8761,4 +8773,4 @@ transformers = ["sentencepiece", "transformers"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8.1,<3.11"
-content-hash = "9c5b603a48b3961f008117a56b358bfd29206b9bfeb55c3b22ae091c9f3c720c"
+content-hash = "16f9e0f825624c434fa380d051065bcf3a861456a0db1bc183093e96bd733a15"
