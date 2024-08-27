@@ -143,7 +143,7 @@ def test_convert_e2e_read_data_from_xlsx(llm_config: Dict[str, Any]):
 
 def test_convert_e2e_from_xlsx_without_sheet_name(llm_config: Dict[str, Any]):
     with pytest.raises(RasaException, match="Please provide a sheet name"):
-        converter = E2ETestConverter(path=SAMPLE_CONVERSATIONS_XLSX_PATH, **llm_config)
+        E2ETestConverter(path=SAMPLE_CONVERSATIONS_XLSX_PATH, **llm_config)
 
 
 def test_convert_e2e_data_integrity_from_xlsx(
@@ -176,7 +176,7 @@ def test_convert_e2e_read_empty_values_from_xlsx(
 
 def test_convert_e2e_with_unsupported_extension(llm_config: Dict[str, Any]):
     with pytest.raises(RasaException, match="Unsupported file type"):
-        converter = E2ETestConverter(path=UNSUPPORTED_EXTENSION_PATH, **llm_config)
+        E2ETestConverter(path=UNSUPPORTED_EXTENSION_PATH, **llm_config)
 
 
 def test_convert_e2e_with_directory_input_path(llm_config: Dict[str, Any]):
