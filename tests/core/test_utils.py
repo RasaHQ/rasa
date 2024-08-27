@@ -8,7 +8,7 @@ import pytest
 
 import rasa.core.lock_store
 import rasa.utils.io
-import rasa.utils.json
+import rasa.utils.json_utils
 from rasa.constants import ENV_SANIC_WORKERS
 from rasa.core import utils
 from rasa.core.lock_store import LockStore, RedisLockStore, InMemoryLockStore

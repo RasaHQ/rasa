@@ -46,7 +46,7 @@ from rasa.shared.core.events import (
 )
 from rasa.shared.exceptions import RasaException
 from rasa.utils.common import update_mlflow_log_level
-from rasa.utils.json import SetEncoder
+from rasa.utils.json_utils import SetEncoder
 
 if TYPE_CHECKING:
     from rasa.e2e_test.e2e_config import LLMJudgeConfig
