@@ -14,6 +14,7 @@ import structlog
 from jinja2 import Template
 from ruamel.yaml.scanner import ScannerError
 
+from rasa import telemetry
 from rasa.cli.e2e_test import read_e2e_test_schema
 from rasa.e2e_test.constants import KEY_TEST_CASES
 from rasa.e2e_test.e2e_config import LLME2ETestConverterConfig
@@ -98,6 +99,7 @@ class E2ETestConverter:
             sheet_name (str): Name of the sheet in XLSX file.
             llm_config (LLME2ETestConverterConfig): LLM configuration .
         """
+        self.input_file_extension: Optional[str] = None
         self.input_path: str = path
         self.sheet_name: Optional[str] = sheet_name
         self.e2e_schema = read_e2e_test_schema()
@@ -209,24 +211,24 @@ class E2ETestConverter:
             RasaException: If the directory path is provided, file extension
             is not supported or sheet name is missing.
         """
-        input_file_extension = Path(self.input_path).suffix.lower()
-        if not input_file_extension:
+        self.input_file_extension = Path(self.input_path).suffix.lower()
+        if not self.input_file_extension:
             raise RasaException(
                 "The path must point to a specific file, not a directory."
             )
 
-        if input_file_extension not in ALLOWED_EXTENSIONS:
+        if self.input_file_extension not in ALLOWED_EXTENSIONS:
             raise RasaException(
-                f"Unsupported file type: {input_file_extension}. "
+                f"Unsupported file type: {self.input_file_extension}. "
                 "Please use .csv or .xls/.xlsx"
             )
 
-        if input_file_extension in EXCEL_EXTENSIONS and self.sheet_name is None:
+        if self.input_file_extension in EXCEL_EXTENSIONS and self.sheet_name is None:
             raise RasaException(
-                f"Please provide a sheet name for the {input_file_extension} file."
+                f"Please provide a sheet name for the {self.input_file_extension} file."
             )
 
-        return input_file_extension
+        return self.input_file_extension
 
     def read_csv(self) -> List[Dict]:
         """Reads a CSV file and converts it into a list of dictionaries.
@@ -345,9 +347,15 @@ class E2ETestConverter:
             for conversation in conversations.conversations
         ]
         results = await asyncio.gather(*tasks)
+        filtered_results = [result for result in results if result]
+
+        telemetry.track_e2e_test_conversion_file_type(
+            file_type=self.input_file_extension,
+            test_case_count=len(filtered_results)
+        )
 
         structlogger.debug("e2e_test_generator.test_generation_finished")
-        return "\n".join(results)
+        return "\n".join(filtered_results)
 
     def run(self) -> str:
         """Executes the E2E test conversion process: reads the file,
