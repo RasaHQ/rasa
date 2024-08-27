@@ -14,8 +14,10 @@ from rasa.shared.constants import (
     MODEL_CONFIG_KEY,
     LLM_CONFIG_KEY,
     PROMPT_TEMPLATE_CONFIG_KEY,
+    API_TYPE_CONFIG_KEY,
 )
 from rasa.shared.exceptions import ProviderClientAPIException
+from rasa.shared.providers.mappings import OPENAI_PROVIDER
 from rasa.shared.utils.llm import (
     get_prompt_template,
     llm_factory,
@@ -32,8 +34,8 @@ DEFAULT_REPHRASING_PROMPT_TEMPLATE = importlib.resources.read_text(
 )
 
 DEFAULT_LLM_CONFIG = {
-    "api_type": "openai",
-    "model": "gpt-3.5-turbo",
+    API_TYPE_CONFIG_KEY: OPENAI_PROVIDER,
+    MODEL_CONFIG_KEY: "gpt-4o-mini",
     "request_timeout": 7,
     "temperature": 0.0,
     "max_tokens": 4096,
@@ -65,7 +67,7 @@ class ConversationRephraser:
                 structlogger.error("rephrase_config.empty_llm_config", error=error)
                 raise ValueError(error)
 
-            # Validate LLM model name and model in config.
+            # Validate LLM model name or model in config.
             if not llm_config.get(MODEL_CONFIG_KEY) and not llm_config.get(
                 MODEL_NAME_CONFIG_KEY
             ):
