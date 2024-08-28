@@ -416,10 +416,23 @@ def execute_e2e_tests(args: argparse.Namespace) -> None:
         )
     )
 
-    if args.e2e_results is not None:
-        write_test_results_to_file(results, args.e2e_results)
-
     passed, failed = split_into_passed_failed(results)
+
+    if args.e2e_results is not None:
+        results_path = Path(args.e2e_results)
+
+        if passed:
+            passed_file = rasa.cli.utils.get_e2e_results_file_name(
+                results_path, STATUS_PASSED
+            )
+            write_test_results_to_file(passed, passed_file)
+
+        if failed:
+            failed_file = rasa.cli.utils.get_e2e_results_file_name(
+                results_path, STATUS_FAILED
+            )
+            write_test_results_to_file(failed, failed_file)
+
     aggregate_stats_calculator = AggregateTestStatsCalculator(
         passed_results=passed, failed_results=failed, test_cases=test_suite.test_cases
     )
@@ -485,9 +498,14 @@ def write_test_results_to_file(results: List[TestResult], output_file: Text) -> 
         data, target=output_file, transform=transform_results_output_to_yaml
     )
 
-    rasa.shared.utils.cli.print_info(
-        f"Overall results have been saved at path: {output_file}."
-    )
+    if STATUS_PASSED in output_file:
+        rasa.shared.utils.cli.print_info(
+            f"Passing test results have been saved at path: {output_file}."
+        )
+    elif STATUS_FAILED in output_file:
+        rasa.shared.utils.cli.print_info(
+            f"Failing test results have been saved at path: {output_file}."
+        )
 
 
 def transform_results_output_to_yaml(yaml_string: Text) -> Text:

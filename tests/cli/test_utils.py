@@ -705,3 +705,25 @@ def test_rasa_version_raises_no_warnings(
 
     # Check if there are any warnings in the output
     assert "warning" not in stderr.lower()
+
+
+@pytest.mark.parametrize("results_type", ["passed", "failed"])
+def test_get_e2e_results_file_name_path_is_dir(
+    tmp_path: Path, results_type: str
+) -> None:
+    results_path = tmp_path / "results"
+    results_path.mkdir(exist_ok=True)
+
+    results_file = rasa.cli.utils.get_e2e_results_file_name(results_path, results_type)
+    assert results_file == str(results_path / f"e2e_results_{results_type}.yml")
+
+
+@pytest.mark.parametrize("results_type", ["passed", "failed"])
+def test_get_e2e_results_file_name_path_is_file(
+    tmp_path: Path, results_type: str
+) -> None:
+    results_path = tmp_path / "results" / "e2e_test_results.yml"
+    results_file = rasa.cli.utils.get_e2e_results_file_name(results_path, results_type)
+    assert results_file == str(
+        results_path.parent / f"e2e_test_results_{results_type}.yml"
+    )

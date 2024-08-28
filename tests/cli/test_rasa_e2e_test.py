@@ -13,9 +13,11 @@ import pytest
 from pytest import MonkeyPatch, RunResult
 from structlog.testing import capture_logs
 
+import rasa.cli.utils
 from rasa.cli.e2e_test import (
     DEFAULT_E2E_INPUT_TESTS_PATH,
     DEFAULT_E2E_OUTPUT_TESTS_PATH,
+    STATUS_FAILED,
     add_e2e_test_arguments,
     add_subparser,
     color_difference,
@@ -397,8 +399,19 @@ def test_execute_e2e_tests_fail_fast_true(
 
     captured = capsys.readouterr()
 
+    passed_results_path = rasa.cli.utils.get_e2e_results_file_name(
+        Path(cli_args.e2e_results), STATUS_PASSED
+    )
+    failed_results_path = rasa.cli.utils.get_e2e_results_file_name(
+        Path(cli_args.e2e_results), STATUS_FAILED
+    )
+
     assert (
-        f"Overall results have been saved at path: {cli_args.e2e_results}."
+        f"Passing test results have been saved at path: {passed_results_path}."
+        in captured.out
+    )
+    assert (
+        f"Failing test results have been saved at path: {failed_results_path}."
         in captured.out
     )
     assert f"'test_failure' in {path_to_test_cases}:1 failed" in captured.out
@@ -459,8 +472,19 @@ def test_execute_e2e_tests_fail_fast_false(
     )
     captured = capsys.readouterr()
 
+    passed_results_path = rasa.cli.utils.get_e2e_results_file_name(
+        Path(cli_args.e2e_results), STATUS_PASSED
+    )
+    failed_results_path = rasa.cli.utils.get_e2e_results_file_name(
+        Path(cli_args.e2e_results), STATUS_FAILED
+    )
+
     assert (
-        f"Overall results have been saved at path: {cli_args.e2e_results}."
+        f"Passing test results have been saved at path: {passed_results_path}."
+        in captured.out
+    )
+    assert (
+        f"Failing test results have been saved at path: {failed_results_path}."
         in captured.out
     )
     assert f"'test_failure' in {path_to_test_cases}:1 failed" in captured.out
@@ -520,19 +544,33 @@ def test_e2e_cli_add_e2e_test_arguments(monkeypatch: MonkeyPatch) -> None:
 
 
 @pytest.mark.parametrize(
-    "results, output_file",
+    "results, output_file, result_type",
     [
         (
             [
                 TestResult(
                     test_case=TestCase(
-                        name="some test case", steps=[TestStep(actor="some actor")]
+                        name="test case 1", steps=[TestStep(actor="user")]
                     ),
                     pass_status=True,
                     difference=["something", "different"],
                 ),
             ],
-            "some/file/path/e2e_one_test.yml",
+            "some/file/path/e2e_results_passed.yml",
+            "Passing",
+        ),
+        (
+            [
+                TestResult(
+                    test_case=TestCase(
+                        name="test case 2", steps=[TestStep(actor="bot")]
+                    ),
+                    pass_status=False,
+                    difference=["something", "different"],
+                ),
+            ],
+            "some/file/path/e2e_results_failed.yml",
+            "Failing",
         ),
     ],
 )
@@ -544,7 +582,8 @@ def test_write_test_results_to_file(
     mock_write_yaml: MagicMock,
     mock_print_info: MagicMock,
     results: List[TestResult],
-    output_file: Text,
+    output_file: str,
+    result_type: str,
 ) -> None:
     path_instance = mock_path.return_value
     path_instance.touch = MagicMock()
@@ -558,8 +597,9 @@ def test_write_test_results_to_file(
     mock_write_yaml.assert_called_with(
         expected_result, target=output_file, transform=transform_results_output_to_yaml
     )
+
     mock_print_info.assert_called_with(
-        f"Overall results have been saved at path: {output_file}."
+        f"{result_type} test results have been saved at path: {output_file}."
     )
 
 
