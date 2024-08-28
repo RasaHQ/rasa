@@ -12,6 +12,7 @@ from rasa.core.actions.action_run_slot_rejections import (
 )
 from rasa.core.channels import OutputChannel
 from rasa.core.constants import (
+    DOMAIN_GROUND_TRUTH_METADATA_KEY,
     UTTER_SOURCE_METADATA_KEY,
     ACTIVE_FLOW_METADATA_KEY,
     STEP_ID_METADATA_KEY,
@@ -1156,7 +1157,7 @@ async def test_rephrased_bot_utterance_contains_metadata_keys(
                 UTTER_SOURCE_METADATA_KEY: "ContextualResponseRephraser",
                 ACTIVE_FLOW_METADATA_KEY: "setup_recurrent_payment",
                 STEP_ID_METADATA_KEY: "ask_payment_type",
-                "domain_ground_truth": [
+                DOMAIN_GROUND_TRUTH_METADATA_KEY: [
                     response["text"]
                     for response in rejection_test_domain.responses.get(
                         "utter_invalid_recurrent_payment_type"

@@ -307,16 +307,18 @@ def add_bot_utterance_metadata(
     tracker: Optional[DialogueStateTracker],
 ) -> Dict[str, Any]:
     """Add metadata to the bot message."""
-    from rasa.core import ContextualResponseRephraser
-
     message["utter_action"] = domain_response_name
-    message[UTTER_SOURCE_METADATA_KEY] = nlg.__class__.__name__
+
+    utter_source = message.get(UTTER_SOURCE_METADATA_KEY)
+    if utter_source is None:
+        utter_source = nlg.__class__.__name__
+        message[UTTER_SOURCE_METADATA_KEY] = utter_source
 
     if tracker:
         message[ACTIVE_FLOW_METADATA_KEY] = tracker.active_flow
         message[STEP_ID_METADATA_KEY] = tracker.current_step_id
 
-    if isinstance(nlg, ContextualResponseRephraser):
+    if utter_source in ["IntentlessPolicy", "ContextualResponseRephraser"]:
         message[DOMAIN_GROUND_TRUTH_METADATA_KEY] = [
             response.get("text")
             for response in domain.responses.get(domain_response_name, [])

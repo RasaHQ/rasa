@@ -15,6 +15,7 @@ from rasa import telemetry
 from rasa.core.constants import (
     CHAT_POLICY_PRIORITY,
     POLICY_PRIORITY,
+    UTTER_SOURCE_METADATA_KEY,
 )
 from rasa.core.policies.policy import Policy, PolicyPrediction, SupportedData
 from rasa.dialogue_understanding.stack.frames import (
@@ -605,7 +606,9 @@ class IntentlessPolicy(Policy):
         else:
             events = []
 
-        return self._prediction(result, events=events)
+        action_metadata = {UTTER_SOURCE_METADATA_KEY: self.__class__.__name__}
+
+        return self._prediction(result, events=events, action_metadata=action_metadata)
 
     async def generate_answer(
         self,

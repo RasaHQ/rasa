@@ -8,6 +8,7 @@ from pytest import MonkeyPatch
 from langchain.docstore.document import Document
 from langchain_community.vectorstores import FAISS
 
+from rasa.core.constants import UTTER_SOURCE_METADATA_KEY
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import ChitChatStackFrame
 from rasa.engine.graph import ExecutionContext
@@ -368,6 +369,9 @@ async def test_intentless_policy_predicts(
     assert any(p != 0.0 for p in policy_prediction.probabilities)
     # doesn't hold true since the fake llms embeddings are not normalized
     # assert all(p >= 0.0 and p <=1.0 for p in policy_prediction.probabilities)
+    assert policy_prediction.action_metadata == {
+        UTTER_SOURCE_METADATA_KEY: intentless_policy.__class__.__name__
+    }
 
 
 async def test_intentless_policy_predicts_loop(

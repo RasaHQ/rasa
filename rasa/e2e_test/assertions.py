@@ -58,6 +58,7 @@ DEFAULT_THRESHOLD = 0.5
 ELIGIBLE_UTTER_SOURCE_METADATA = [
     "EnterpriseSearchPolicy",
     "ContextualResponseRephraser",
+    "IntentlessPolicy",
 ]
 
 
@@ -977,9 +978,9 @@ class GenerativeResponseMixin(Assertion):
         else:
             if not passing_events:
                 error_message = (
-                    f"None of the generative responses issued by "
-                    f"Enterprise Search Policy "
-                    f"or Contextual Response Rephraser were {self.metric_adjective}."
+                    f"None of the generative responses issued by either the "
+                    f"Enterprise Search Policy, IntentlessPolicy or the "
+                    f"Contextual Response Rephraser were {self.metric_adjective}."
                 )
                 error_message += assertion_order_error_message
 
@@ -1005,8 +1006,9 @@ class GenerativeResponseMixin(Assertion):
 
         if not matching_events:
             error_message = (
-                "No generative response issued by Enterprise Search Policy "
-                "or Contextual Response Rephraser was found, but one was expected."
+                "No generative response issued by either the Enterprise Search Policy, "
+                "IntentlessPolicy or the Contextual Response Rephraser was found, "
+                "but one was expected."
             )
             error_message += assertion_order_error_message
 
