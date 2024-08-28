@@ -19,6 +19,7 @@ from rasa.core.constants import (
 )
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
+from rasa.shared.constants import OPENAI_API_KEY_ENV_VAR
 from rasa.shared.core.domain import Domain, KEY_RESPONSES_TEXT
 from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
 from rasa.shared.core.slots import (
@@ -1108,6 +1109,7 @@ async def test_rephrased_bot_utterance_contains_metadata_keys(
     rejection_test_dialogue_stack: DialogueStack,
     monkeypatch: MonkeyPatch,
 ) -> None:
+    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key in action_run_slot_rejections")
     tracker = DialogueStateTracker.from_events(
         sender_id=uuid.uuid4().hex,
         evts=[

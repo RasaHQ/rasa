@@ -30,6 +30,7 @@ from rasa.shared.utils.llm import (
     DEFAULT_OPENAI_CHAT_MODEL_NAME,
     get_prompt_template,
     llm_factory,
+    try_instantiate_llm_client,
 )
 from rasa.utils.log_utils import log_llm
 
@@ -121,6 +122,13 @@ class LLMBasedRouter(GraphComponent):
 
     def train(self, training_data: TrainingData) -> Resource:
         """Train the intent classifier on a data set."""
+        # Validate llm configuration
+        try_instantiate_llm_client(
+            self.config.get(LLM_CONFIG_KEY),
+            DEFAULT_LLM_CONFIG,
+            "llm_based_router.train",
+        )
+
         self.persist()
         return self._resource
 

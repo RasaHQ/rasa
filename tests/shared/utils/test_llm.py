@@ -249,12 +249,28 @@ def test_sanitize_message_for_prompt_handles_string_with_newlines():
         # Unkown provider
         ({"model": "unknown-model"}, None),
         ({"model": "unknown-provider/unknown-model"}, None),
+        # Supporting deprecated model_name
+        ({"model_name": "openai/test-gpt"}, "openai"),
+        ({"model_name": "azure/my-test-gpt-deployment"}, "azure"),
     ),
 )
 def test_get_provider_from_config(config: dict, expected_provider: Optional[str]):
     # When
     provider = get_provider_from_config(config)
     assert provider == expected_provider
+
+
+@pytest.mark.parametrize(
+    "config",
+    (
+        {"model_name": "cohere/command"},
+        {"model_name": "bedrock/test-model-on-bedrock"},
+        {"model_name": "mistral/mistral-medium-latest"},
+    ),
+)
+def test_get_provider_from_config_throws_validation_error(config: dict):
+    with pytest.raises(KeyError):
+        get_provider_from_config(config)
 
 
 def test_llm_factory(monkeypatch: MonkeyPatch):

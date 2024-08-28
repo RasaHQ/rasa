@@ -46,6 +46,7 @@ from rasa.core.policies.enterprise_search_policy import (
 )
 from rasa.shared.constants import (
     LATEST_TRAINING_DATA_FORMAT_VERSION,
+    OPENAI_API_KEY_ENV_VAR,
     REQUIRED_SLOTS_KEY,
     ROUTE_TO_CALM_SLOT,
     UTTER_PREFIX,
@@ -3208,6 +3209,7 @@ async def test_action_bot_response_with_rephrased_utterance(
     default_tracker: DialogueStateTracker,
     monkeypatch: MonkeyPatch,
 ) -> None:
+    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key in test_actions")
     test_domain = Domain.from_yaml("""
     responses:
       utter_rephrased:
@@ -3256,6 +3258,7 @@ async def test_remote_action_valid_with_rephrased_utterance(
     default_tracker: DialogueStateTracker,
     monkeypatch: MonkeyPatch,
 ):
+    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key in test_actions")
     utter_action = "utter_rephrased"
     test_domain = Domain.from_yaml(f"""
     responses:

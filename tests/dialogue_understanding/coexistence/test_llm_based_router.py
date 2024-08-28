@@ -4,6 +4,7 @@ from unittest.mock import Mock, patch, AsyncMock
 
 import pytest
 from _pytest.tmpdir import TempPathFactory
+from pytest import MonkeyPatch
 from rasa.shared.providers.llm.llm_response import LLMResponse
 from structlog.testing import capture_logs
 
@@ -20,7 +21,7 @@ from rasa.dialogue_understanding.commands.noop_command import NoopCommand
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.constants import ROUTE_TO_CALM_SLOT
+from rasa.shared.constants import OPENAI_API_KEY_ENV_VAR, ROUTE_TO_CALM_SLOT
 from rasa.shared.core.slots import BooleanSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import InvalidConfigException
@@ -50,8 +51,9 @@ class TestLLMBasedRouter:
         return LocalModelStorage(tmp_path_factory.mktemp(uuid.uuid4().hex))
 
     def test_llm_based_router_prompt_init_custom(
-        self, model_storage: ModelStorage, resource: Resource
+        self, model_storage: ModelStorage, resource: Resource, monkeypatch: MonkeyPatch
     ) -> None:
+        monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key in test llm_based_router")
         llm_based_router = LLMBasedRouter(
             {
                 "prompt": "data/test_prompt_templates/test_prompt.jinja2",

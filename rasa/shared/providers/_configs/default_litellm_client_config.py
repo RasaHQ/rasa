@@ -1,9 +1,11 @@
 from dataclasses import asdict, dataclass, field
+from typing import Any, Dict
 
 import structlog
 
 from rasa.shared.constants import (
     MODEL_CONFIG_KEY,
+    MODEL_NAME_CONFIG_KEY,
     STREAM_CONFIG_KEY,
     N_REPHRASES_CONFIG_KEY,
 )
@@ -76,3 +78,17 @@ class DefaultLiteLLMClientConfig:
     def to_dict(self) -> dict:
         """Converts the config instance into a dictionary."""
         return asdict(self)
+
+
+def check_and_error_for_model_name_in_config(config: Dict[str, Any]) -> None:
+    """Check for usage of deprecated model_name and raise an error if found."""
+    if config.get(MODEL_NAME_CONFIG_KEY) and not config.get(MODEL_CONFIG_KEY):
+        event_info = (
+            f"Unsupported parameter - {MODEL_NAME_CONFIG_KEY} is set. Please use "
+            f"{MODEL_CONFIG_KEY} instead."
+        )
+        structlogger.error(
+            "default_litellm_client_config.unsupported_parameter_in_config",
+            event_info=event_info,
+        )
+        raise KeyError(event_info)

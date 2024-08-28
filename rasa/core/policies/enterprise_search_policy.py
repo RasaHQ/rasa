@@ -73,6 +73,7 @@ from rasa.shared.utils.llm import (
     llm_factory,
     sanitize_message_for_prompt,
     tracker_as_readable_transcript,
+    try_instantiate_llm_client,
 )
 from rasa.core.information_retrieval.faiss import FAISS_Store
 from rasa.core.information_retrieval import (
@@ -277,20 +278,23 @@ class EnterpriseSearchPolicy(Policy):
         # validate embedding configuration
         try:
             embeddings = self._create_plain_embedder(self.config)
-        except ValidationError as e:
+        except (ValidationError, Exception) as e:
+            logger.error(
+                "enterprise_search_policy.train.embedder_instantiation_failed",
+                message="Unable to instantiate the embedding client.",
+                error=e,
+            )
             print_error_and_exit(
                 "Unable to create embedder. Please make sure you specified the "
                 f"required environment variables. Error: {e}"
             )
 
         # validate llm configuration
-        try:
-            llm_factory(self.config.get(LLM_CONFIG_KEY), DEFAULT_LLM_CONFIG)
-        except (ImportError, ValueError, ValidationError) as e:
-            # ImportError: llm library is likely not installed
-            # ValueError: llm config is likely invalid
-            # ValidationError: environment variables are likely not set
-            print_error_and_exit(f"Unable to create LLM. Error: {e}")
+        try_instantiate_llm_client(
+            self.config.get(LLM_CONFIG_KEY),
+            DEFAULT_LLM_CONFIG,
+            "enterprise_search_policy.train",
+        )
 
         if store_type == DEFAULT_VECTOR_STORE_TYPE:
             logger.info("enterprise_search_policy.train.faiss")

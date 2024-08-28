@@ -217,7 +217,11 @@ def test_all_components_are_in_at_least_one_test_pipeline():
 @patch(
     "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval._create_embedder"
 )
+@patch(
+    "rasa.dialogue_understanding.generator.llm_based_command_generator.try_instantiate_llm_client"
+)
 async def test_train_persist_load_parse(
+    mock_try_instantiate_llm_client: Mock,
     mock_flow_search_create_embedder: Mock,
     mock_load_local: Mock,
     mock_from_documents: Mock,
@@ -226,6 +230,7 @@ async def test_train_persist_load_parse(
     tmp_path: Path,
     nlu_as_json_path: Text,
 ):
+    mock_try_instantiate_llm_client.return_value = Mock()
     mock_from_documents.return_value = Mock()
     mock_flow_search_create_embedder.return_value = Mock()
     mock_load_local.return_value = Mock()
