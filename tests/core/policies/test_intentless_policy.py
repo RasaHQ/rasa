@@ -16,7 +16,11 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.graph_components.providers.forms_provider import Forms
 from rasa.graph_components.providers.responses_provider import Responses
-from rasa.shared.constants import ROUTE_TO_CALM_SLOT, PROMPT_CONFIG_KEY
+from rasa.shared.constants import (
+    OPENAI_API_KEY_ENV_VAR,
+    ROUTE_TO_CALM_SLOT,
+    PROMPT_CONFIG_KEY,
+)
 from rasa.shared.core.domain import ActionNotFoundException, Domain
 from rasa.shared.core.events import ActiveLoop, BotUttered, UserUttered
 from rasa.shared.core.flows import FlowsList
@@ -94,6 +98,11 @@ def trackers_for_training() -> List[TrackerWithCachedStates]:
             [UserUttered("goodybe"), BotUttered("Bye!")],
         ),
     ]
+
+
+@pytest.fixture(autouse=True)
+def set_mock_openai_api_key(monkeypatch: MonkeyPatch):
+    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key in test_intentless_policy")
 
 
 @pytest.fixture

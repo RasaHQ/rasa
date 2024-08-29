@@ -28,6 +28,7 @@ from rasa.shared.engine.caching import (
 from rasa.shared.exceptions import (
     FileIOException,
     FileNotFoundException,
+    ProviderClientValidationError,
 )
 from rasa.shared.providers._configs.azure_openai_client_config import (
     is_azure_openai_config,
@@ -45,6 +46,7 @@ from rasa.shared.providers.mappings import (
     get_embedding_client_from_provider,
     HUGGINGFACE_LOCAL_EMBEDDING_PROVIDER,
 )
+from rasa.shared.utils.cli import print_error_and_exit
 
 if TYPE_CHECKING:
     from rasa.shared.core.trackers import DialogueStateTracker
@@ -230,7 +232,16 @@ def get_provider_from_config(config: dict) -> Optional[str]:
     else:
         # `get_llm_provider` works for both embedding models and LLMs
         from litellm.utils import get_llm_provider
+        from rasa.shared.providers._configs.default_litellm_client_config import (
+            check_and_error_for_model_name_in_config,
+        )
 
+        # This is done so that the usage of model_name is discouraged for providers
+        # other than OpenAI, Azure and Huggingface clients.
+        # Also, this is done to avoid the default config getting merged with the
+        # custom config in case of model_name being used for clients other than
+        # OpenAI, Azure and Huggingface.
+        check_and_error_for_model_name_in_config(config)
         try:
             # Try to get the provider from `model` key.
             _, provider, _, _ = get_llm_provider(model=config.get(MODEL_CONFIG_KEY, ""))
@@ -335,3 +346,23 @@ def allowed_values_for_slot(slot: Slot) -> Union[str, None]:
         return str([v for v in slot.values if v != "__other__"])
     else:
         return None
+
+
+def try_instantiate_llm_client(
+    custom_llm_config: Optional[Dict],
+    default_llm_config: Optional[Dict],
+    log_source: str,
+) -> None:
+    """Validate llm configuration."""
+    try:
+        llm_factory(custom_llm_config, default_llm_config)
+    except ProviderClientValidationError as e:
+        structlogger.error(
+            f"{log_source}.llm_instantiation_failed",
+            message="Unable to instantiate LLM client.",
+            error=e,
+        )
+        print_error_and_exit(
+            "Unable to create the LLM client. Please make sure you specified the "
+            f"required environment variables. Error: {e}"
+        )

@@ -22,6 +22,7 @@ from rasa.shared.utils.llm import (
     combine_custom_and_default_config,
     get_prompt_template,
     llm_factory,
+    try_instantiate_llm_client,
 )
 from rasa.utils.endpoints import EndpointConfig
 
@@ -93,6 +94,11 @@ class ContextualResponseRephraser(TemplatedNaturalLanguageGenerator):
         )
         self.trace_prompt_tokens = self.nlg_endpoint.kwargs.get(
             "trace_prompt_tokens", False
+        )
+        try_instantiate_llm_client(
+            self.nlg_endpoint.kwargs.get(LLM_CONFIG_KEY),
+            DEFAULT_LLM_CONFIG,
+            "contextual_response_rephraser.init",
         )
 
     def _last_message_if_human(self, tracker: DialogueStateTracker) -> Optional[str]:

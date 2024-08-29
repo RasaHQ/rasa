@@ -6,6 +6,7 @@ from unittest.mock import Mock, patch, AsyncMock, MagicMock
 
 import pytest
 from _pytest.tmpdir import TempPathFactory
+from pytest import MonkeyPatch
 
 from rasa.dialogue_understanding.commands import (
     Command,
@@ -39,7 +40,7 @@ from rasa.llm_fine_tuning.annotation_module import set_preparing_fine_tuning_dat
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.constants import ROUTE_TO_CALM_SLOT
+from rasa.shared.constants import OPENAI_API_KEY_ENV_VAR, ROUTE_TO_CALM_SLOT
 from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.slots import (
@@ -61,6 +62,13 @@ EXPECTED_PROMPT_PATH = "./tests/dialogue_understanding/generator/rendered_prompt
 EXPECTED_RENDERED_FLOW_DESCRIPTION_PATH = (
     "./tests/dialogue_understanding/generator/rendered_flow.txt"
 )
+
+
+@pytest.fixture(autouse=True)
+def set_mock_openai_api_key(monkeypatch: MonkeyPatch):
+    monkeypatch.setenv(
+        OPENAI_API_KEY_ENV_VAR, "mock key in test_single_step_llm_command_generator"
+    )
 
 
 class TestSingleStepLLMCommandGenerator:

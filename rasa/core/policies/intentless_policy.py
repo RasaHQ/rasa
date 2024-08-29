@@ -68,6 +68,7 @@ from rasa.shared.utils.llm import (
     llm_factory,
     sanitize_message_for_prompt,
     tracker_as_readable_transcript,
+    try_instantiate_llm_client,
 )
 from rasa.utils.ml_utils import (
     extract_ai_response_examples,
@@ -467,6 +468,12 @@ class IntentlessPolicy(Policy):
             A policy must return its resource locator so that potential children nodes
             can load the policy from the resource.
         """
+        try_instantiate_llm_client(
+            self.config.get(LLM_CONFIG_KEY),
+            DEFAULT_LLM_CONFIG,
+            "intentless_policy.train",
+        )
+
         responses = filter_responses(responses, forms, flows or FlowsList([]))
         telemetry.track_intentless_policy_train()
         response_texts = [r for r in extract_ai_response_examples(responses.data)]
