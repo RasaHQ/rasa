@@ -1737,6 +1737,22 @@ def test_action_server_is_not_reachable_url_not_defined(
         )
 
 
+def test_action_server_is_not_reachable_actions_module_defined(
+    caplog: LogCaptureFixture,
+) -> None:
+    endpoint = AvailableEndpoints(action=EndpointConfig(actions_module="actions"))
+    with capture_logs() as logs:
+        E2ETestRunner._action_server_is_reachable(endpoint)
+
+        assert len(logs) == 1
+        assert logs[0]["log_level"] == "debug"
+        assert (
+            logs[0]["message"]
+            == "Rasa server is configured to run custom actions directly. "
+            "Skipping the health check of the action server."
+        )
+
+
 def test_action_server_is_not_reachable_action_not_defined(
     caplog: LogCaptureFixture,
 ) -> None:

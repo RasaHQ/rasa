@@ -1049,6 +1049,14 @@ class E2ETestRunner:
             )
             return
 
+        if endpoints.action.actions_module:
+            structlogger.debug(
+                "e2e_test_runner._action_server_is_reachable",
+                message="Rasa server is configured to run custom actions directly. "
+                "Skipping the health check of the action server.",
+            )
+            return
+
         if not endpoints.action.url:
             structlogger.debug(
                 "e2e_test_runner._action_server_is_reachable",
