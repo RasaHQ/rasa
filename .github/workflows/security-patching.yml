@@ -40,7 +40,7 @@ jobs:
         with:
           dato-cms-api-key: ${{ secrets.DATO_CMS_API_KEY }}
           product-name: Rasa Pro
-          status: active
+          status: supported
 
       - name: Run Python script
         id: tags
