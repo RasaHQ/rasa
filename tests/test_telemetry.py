@@ -829,9 +829,11 @@ def test_track(
     context: Dict[Text, Any],
     telemetry_id: Optional[Text],
     expected_properties: Dict[Text, Any],
+    monkeypatch: MonkeyPatch,
 ) -> None:
     mock_get_telemetry_id.return_value = telemetry_id
     mock_with_default_context_fields.return_value = context
+    monkeypatch.setenv("RASA_TELEMETRY_ENABLED", "true")
     telemetry._track(event_name=event_name, properties=properties, context=context)
 
     mock_get_telemetry_id.assert_called_once()
@@ -1371,3 +1373,27 @@ def test_track_e2e_test_conversion_completed(
             E2E_TEST_CONVERSION_TEST_CASE_COUNT: test_case_count,
         },
     )
+
+
+@patch("rasa.telemetry._track")
+def test_track_rasa_train_telemetry_disabled(
+    mock_track: MagicMock,
+    domain_path: Path,
+    stack_config_path: Path,
+    stories_path: Text,
+    nlu_data_path: Text,
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE, "false")
+
+    # when rasa train is called
+    rasa.train(
+        domain_path,
+        stack_config_path,
+        [stories_path, nlu_data_path],
+        output=str(tmp_path),
+    )
+
+    # telemetry should not be tracked
+    mock_track.assert_not_called()
