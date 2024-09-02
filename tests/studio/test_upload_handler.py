@@ -8,6 +8,12 @@ from unittest.mock import MagicMock
 import pytest
 import questionary
 from pytest import MonkeyPatch
+
+from rasa.shared.core.flows.yaml_flows_io import (
+    YAMLFlowsReader,
+    YamlFlowsWriter,
+    flows_from_str,
+)
 from rasa.shared.exceptions import RasaException
 
 import rasa.studio.upload
@@ -703,6 +709,20 @@ def mock_questionary_text(question, default=""):
     return MagicMock(ask=lambda: "test")
 
 
+def merge_all_flows() -> str:
+    default_flows_pattern = (
+        Path(__file__).parent.parent.parent
+        / "rasa"
+        / "dialogue_understanding"
+        / "patterns"
+        / "default_flows_for_patterns.yml"
+    )
+    default_flows = YAMLFlowsReader.read_from_file(default_flows_pattern)
+    user_flows = flows_from_str(CALM_FLOWS_YAML)
+    all_flows = user_flows.merge(default_flows)
+    return YamlFlowsWriter.dumps(all_flows.underlying_flows)
+
+
 @pytest.mark.parametrize(
     "args, endpoint, expected",
     [
@@ -769,7 +789,7 @@ def mock_questionary_text(question, default=""):
                     "input": {
                         "assistantName": "test",
                         "domain": encode_yaml(CALM_DOMAIN_YAML),
-                        "flows": encode_yaml(CALM_FLOWS_YAML),
+                        "flows": encode_yaml(merge_all_flows()),
                         "nlu": encode_yaml(CALM_NLU_YAML),
                         "config": (
                             "cmVjaXBlOiBkZWZhdWx0LnYxCmxhbmd1YWdlOiBlbgp"

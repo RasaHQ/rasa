@@ -188,8 +188,7 @@ def upload_calm_assistant(args: argparse.Namespace, endpoint: str) -> StudioResu
         training_data_paths=training_data_paths
     )
 
-    user_flows = flow_importer.get_flows().user_flows
-    flows = list(user_flows)
+    flows = list(flow_importer.get_flows())
 
     # We instantiate the TrainingDataImporter again on purpose to avoid
     # adding patterns to domain's actions. More info https://t.ly/W8uuc
