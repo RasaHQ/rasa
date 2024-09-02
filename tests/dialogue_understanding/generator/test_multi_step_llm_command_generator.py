@@ -164,8 +164,8 @@ class TestMultiStepLLMCommandGenerator:
         # Given
         expected_llm_config = {
             "model": "gpt-4",
-            "api_type": "openai",
-            "request_timeout": 7,
+            "provider": "openai",
+            "timeout": 7,
             "temperature": 0.0,
             "max_tokens": 256,
         }

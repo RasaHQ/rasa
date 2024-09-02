@@ -1,5 +1,5 @@
 from dataclasses import asdict, dataclass, field
-from typing import Optional
+from typing import Any, Dict, Optional
 
 import structlog
 
@@ -18,6 +18,9 @@ from rasa.shared.constants import (
     N_REPHRASES_CONFIG_KEY,
     REQUEST_TIMEOUT_CONFIG_KEY,
     TIMEOUT_CONFIG_KEY,
+    PROVIDER_CONFIG_KEY,
+    OPENAI_PROVIDER,
+    OPENAI_API_TYPE,
 )
 from rasa.shared.providers._configs.utils import (
     resolve_aliases,
@@ -28,15 +31,15 @@ from rasa.shared.providers._configs.utils import (
 
 structlogger = structlog.get_logger()
 
-OPENAI_API_TYPE = "openai"
 
 DEPRECATED_ALIASES_TO_STANDARD_KEY_MAPPING = {
     # Model name aliases
     MODEL_NAME_CONFIG_KEY: MODEL_CONFIG_KEY,
+    # Provider aliases
+    RASA_TYPE_CONFIG_KEY: PROVIDER_CONFIG_KEY,
+    LANGCHAIN_TYPE_CONFIG_KEY: PROVIDER_CONFIG_KEY,
     # API type aliases
     OPENAI_API_TYPE_CONFIG_KEY: API_TYPE_CONFIG_KEY,
-    RASA_TYPE_CONFIG_KEY: API_TYPE_CONFIG_KEY,
-    LANGCHAIN_TYPE_CONFIG_KEY: API_TYPE_CONFIG_KEY,
     # API base aliases
     OPENAI_API_BASE_CONFIG_KEY: API_BASE_CONFIG_KEY,
     # API version aliases
@@ -45,7 +48,7 @@ DEPRECATED_ALIASES_TO_STANDARD_KEY_MAPPING = {
     REQUEST_TIMEOUT_CONFIG_KEY: TIMEOUT_CONFIG_KEY,
 }
 
-REQUIRED_KEYS = [MODEL_CONFIG_KEY, API_TYPE_CONFIG_KEY]
+REQUIRED_KEYS = [MODEL_CONFIG_KEY]
 
 FORBIDDEN_KEYS = [
     STREAM_CONFIG_KEY,
@@ -65,24 +68,37 @@ class OpenAIClientConfig:
     """
 
     model: str
-
-    # API Type is not actually used by LiteLLM backend, but we define
-    # it here for:
-    # 1. Backward compatibility.
-    # 2. Because it's used as a switch denominator for Azure OpenAI clients.
-    api_type: str
-
     api_base: Optional[str]
     api_version: Optional[str]
+
+    # API Type is not actually used by LiteLLM backend, but we define
+    # it here for backward compatibility.
+    api_type: str = OPENAI_API_TYPE
+
+    # Provider is not used by LiteLLM backend, but we define
+    # it here since it's used as switch between different
+    # clients
+    provider: str = OPENAI_PROVIDER
+
     extra_parameters: dict = field(default_factory=dict)
 
     def __post_init__(self) -> None:
+        # In case of OpenAI hosting, it doesn't make sense
+        # for API type to be anything else that 'openai'
         if self.api_type != OPENAI_API_TYPE:
             message = f"API type must be set to '{OPENAI_API_TYPE}'."
             structlogger.error(
                 "openai_client_config.validation_error",
                 message=message,
                 api_type=self.api_type,
+            )
+            raise ValueError(message)
+        if self.provider != OPENAI_PROVIDER:
+            message = f"Provider must be set to '{OPENAI_PROVIDER}'."
+            structlogger.error(
+                "openai_client_config.validation_error",
+                message=message,
+                provider=self.provider,
             )
             raise ValueError(message)
         if self.model is None:
@@ -111,7 +127,7 @@ class OpenAIClientConfig:
         # Check for deprecated keys
         raise_deprecation_warnings(config, DEPRECATED_ALIASES_TO_STANDARD_KEY_MAPPING)
         # Resolve any potential aliases
-        config = resolve_aliases(config, DEPRECATED_ALIASES_TO_STANDARD_KEY_MAPPING)
+        config = OpenAIClientConfig.resolve_config_aliases(config)
         # Validate that the required keys are present
         validate_required_keys(config, REQUIRED_KEYS)
         # Validate that the forbidden keys are not present
@@ -119,10 +135,13 @@ class OpenAIClientConfig:
         this = OpenAIClientConfig(
             # Required parameters
             model=config.pop(MODEL_CONFIG_KEY),
-            api_type=config.pop(API_TYPE_CONFIG_KEY),
+            # Pop the 'provider' key. Currently, it's *optional* because of
+            # backward compatibility with older versions.
+            provider=config.pop(PROVIDER_CONFIG_KEY, OPENAI_PROVIDER),
             # Optional parameters
             api_base=config.pop(API_BASE_CONFIG_KEY, None),
             api_version=config.pop(API_VERSION_CONFIG_KEY, None),
+            api_type=config.pop(API_TYPE_CONFIG_KEY, OPENAI_API_TYPE),
             # The rest of parameters (e.g. model parameters) are considered
             # as extra parameters (this also includes timeout).
             extra_parameters=config,
@@ -131,7 +150,15 @@ class OpenAIClientConfig:
 
     def to_dict(self) -> dict:
         """Converts the config instance into a dictionary."""
-        return asdict(self)
+        d = asdict(self)
+        # Extra parameters should also be on the top level
+        d.pop("extra_parameters", None)
+        d.update(self.extra_parameters)
+        return d
+
+    @staticmethod
+    def resolve_config_aliases(config: Dict[str, Any]) -> Dict[str, Any]:
+        return resolve_aliases(config, DEPRECATED_ALIASES_TO_STANDARD_KEY_MAPPING)
 
 
 def is_openai_config(config: dict) -> bool:
@@ -142,10 +169,17 @@ def is_openai_config(config: dict) -> bool:
     from litellm.utils import get_llm_provider
 
     # Process the config to handle all the aliases
-    config = resolve_aliases(config, DEPRECATED_ALIASES_TO_STANDARD_KEY_MAPPING)
+    config = OpenAIClientConfig.resolve_config_aliases(config)
 
-    # Case: Configuration contains `api_type: openai`
-    if config.get(API_TYPE_CONFIG_KEY) == OPENAI_API_TYPE:
+    # Case: Configuration contains `provider: openai`
+    if config.get(PROVIDER_CONFIG_KEY) == OPENAI_PROVIDER:
+        return True
+
+    # Case: Configuration contains only `api_type: openai`
+    if (
+        config.get(API_TYPE_CONFIG_KEY) == OPENAI_PROVIDER
+        and PROVIDER_CONFIG_KEY not in config
+    ):
         return True
 
     # Case: Configuration contains `model: openai/gpt-4` (litellm approach)

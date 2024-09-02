@@ -6,11 +6,13 @@ from jinja2 import Template
 from rasa import telemetry
 from rasa.core.nlg.response import TemplatedNaturalLanguageGenerator
 from rasa.shared.constants import (
-    API_TYPE_CONFIG_KEY,
     LLM_CONFIG_KEY,
     MODEL_CONFIG_KEY,
     MODEL_NAME_CONFIG_KEY,
     PROMPT_CONFIG_KEY,
+    PROVIDER_CONFIG_KEY,
+    OPENAI_PROVIDER,
+    TIMEOUT_CONFIG_KEY,
 )
 from rasa.shared.core.domain import KEY_RESPONSES_TEXT, Domain
 from rasa.shared.core.events import BotUttered, UserUttered
@@ -39,11 +41,11 @@ RESPONSE_REPHRASING_TEMPLATE_KEY = "rephrase_prompt"
 DEFAULT_REPHRASE_ALL = False
 
 DEFAULT_LLM_CONFIG = {
-    "api_type": "openai",
-    "model": DEFAULT_OPENAI_GENERATE_MODEL_NAME,
+    PROVIDER_CONFIG_KEY: OPENAI_PROVIDER,
+    MODEL_CONFIG_KEY: DEFAULT_OPENAI_GENERATE_MODEL_NAME,
     "temperature": 0.3,
     "max_tokens": DEFAULT_OPENAI_MAX_GENERATED_TOKENS,
-    "request_timeout": 5,
+    TIMEOUT_CONFIG_KEY: 5,
 }
 
 DEFAULT_RESPONSE_VARIATION_PROMPT_TEMPLATE = """The following is a conversation with
@@ -220,7 +222,7 @@ class ContextualResponseRephraser(TemplatedNaturalLanguageGenerator):
         telemetry.track_response_rephrase(
             rephrase_all=self.rephrase_all,
             custom_prompt_template=self.custom_prompt_template(prompt_template_text),
-            llm_type=self.llm_property(API_TYPE_CONFIG_KEY),
+            llm_type=self.llm_property(PROVIDER_CONFIG_KEY),
             llm_model=self.llm_property(MODEL_CONFIG_KEY)
             or self.llm_property(MODEL_NAME_CONFIG_KEY),
         )

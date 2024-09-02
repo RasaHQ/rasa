@@ -110,6 +110,7 @@ class TestAzureOpenAILLMClient:
         [
             (
                 {
+                    "provider": "azure",
                     "deployment": "test_deployment_name",
                     "api_type": "azure",
                     "api_base": "https://my.api.base.com/my_model",
@@ -125,6 +126,7 @@ class TestAzureOpenAILLMClient:
             # Use deprecated aliases for keys
             (
                 {
+                    "_type": "azure",
                     "deployment_name": "test_deployment_name",
                     "openai_api_type": "azure",
                     "openai_api_base": "https://my.api.base.com/my_model",
@@ -137,10 +139,23 @@ class TestAzureOpenAILLMClient:
             ),
             (
                 {
+                    "provider": "azure",
                     "engine": "test_deployment_name",
-                    "type": "azure",
+                    "openai_api_type": "azure",
                     "openai_api_base": "https://my.api.base.com/my_model",
                     "openai_api_version": "2023-01-01",
+                },
+                "test_deployment_name",
+                "https://my.api.base.com/my_model",
+                "2023-01-01",
+                {},
+            ),
+            (
+                {
+                    # Missing `provider`
+                    "deployment": "test_deployment_name",
+                    "api_base": "https://my.api.base.com/my_model",
+                    "api_version": "2023-01-01",
                 },
                 "test_deployment_name",
                 "https://my.api.base.com/my_model",
@@ -177,21 +192,15 @@ class TestAzureOpenAILLMClient:
         "invalid_config",
         [
             {
-                # Missing `api_type`
-                "deployment": "test_deployment_name",
-                "api_base": "https://my.api.base.com/my_model",
-                "api_version": "2023-01-01",
-            },
-            {
                 # Bypassing with LiteLLM only approach
                 "model": "azure/test_deployment_name",
                 "api_base": "https://my.api.base.com/my_model",
                 "api_version": "2023-01-01",
             },
             {
-                # Invalid value for `api_type`
+                # Invalid value for `provider`
+                "provider": "invalid",
                 "deployment": "test_deployment_name",
-                "api_type": "invalid_value",
                 "api_base": "https://my.api.base.com/my_model",
                 "api_version": "2023-01-01",
             },
@@ -254,7 +263,7 @@ class TestAzureOpenAILLMClient:
         "config",
         [
             {
-                "api_type": "azure",
+                "provider": "azure",
                 "deployment": "some_azure_deployment",
                 "api_base": "https://test",
                 "api_version": "v1",
@@ -262,7 +271,7 @@ class TestAzureOpenAILLMClient:
                 "stream": True,
             },
             {
-                "api_type": "azure",
+                "provider": "azure",
                 "deployment": "some_azure_deployment",
                 "api_base": "https://test",
                 "api_version": "v1",
@@ -292,10 +301,10 @@ class TestAzureOpenAILLMClient:
         [
             (
                 {
+                    "provider": "azure",
                     "deployment": "some_azure_deployment",
                     "model": "test-gpt",
                     "api_base": "https://test",
-                    "api_type": "azure",
                     "api_version": "2023-05-15",
                     "timeout": 7,
                 },
@@ -303,10 +312,10 @@ class TestAzureOpenAILLMClient:
             ),
             (
                 {
+                    "provider": "azure",
                     "deployment": "some_azure_deployment",
                     "model": "test-gpt",
                     "api_base": "https://test",
-                    "api_type": "azure",
                     "api_version": "2023-05-15",
                     # Use deprecated key for timeout
                     "request_timeout": 7,

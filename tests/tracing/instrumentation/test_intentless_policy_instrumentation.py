@@ -325,7 +325,7 @@ async def test_tracing_intentless_policy_generate_llm_answer_len_prompt_tokens(
         "class_name": "IntentlessPolicy",
         "llm_model": "gpt-3.5-turbo",
         "llm_type": "openai",
-        "embeddings": '{"api_type": "openai", "model": "text-embedding-ada-002"}',
+        "embeddings": '{"provider": "openai", "model": "text-embedding-ada-002"}',
         "llm_temperature": "0.0",
         "request_timeout": "5",
         "len_prompt_tokens": "6",

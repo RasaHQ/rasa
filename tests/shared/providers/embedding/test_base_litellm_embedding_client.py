@@ -17,7 +17,7 @@ from rasa.shared.providers.llm.llm_client import LLMClient
 
 class TestLiteLLMEmbeddingClient(_BaseLiteLLMEmbeddingClient):
     def __init__(self):
-        pass
+        super().__init__()
 
     @classmethod
     def from_config(cls, config: Dict[str, Any]) -> "_BaseLiteLLMEmbeddingClient":
@@ -34,9 +34,6 @@ class TestLiteLLMEmbeddingClient(_BaseLiteLLMEmbeddingClient):
     @property
     def _litellm_extra_parameters(self) -> Dict[str, Any]:
         return {"test_parameter": "test_value"}
-
-    def validate_client_setup(self) -> None:
-        pass
 
 
 class TestBaseLiteLLMEmbeddingClient:

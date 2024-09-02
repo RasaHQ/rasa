@@ -46,12 +46,14 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.graph_components.providers.forms_provider import Forms
 from rasa.graph_components.providers.responses_provider import Responses
 from rasa.shared.constants import (
-    API_TYPE_CONFIG_KEY,
     EMBEDDINGS_CONFIG_KEY,
     LLM_CONFIG_KEY,
     MODEL_CONFIG_KEY,
     MODEL_NAME_CONFIG_KEY,
     PROMPT_CONFIG_KEY,
+    PROVIDER_CONFIG_KEY,
+    OPENAI_PROVIDER,
+    TIMEOUT_CONFIG_KEY,
 )
 from rasa.shared.core.constants import (
     ACTION_CANCEL_FLOW,
@@ -111,16 +113,16 @@ DEFAULT_VECTOR_STORE = {
 }
 
 DEFAULT_LLM_CONFIG = {
-    "api_type": "openai",
-    "model": DEFAULT_OPENAI_CHAT_MODEL_NAME,
-    "request_timeout": 10,
+    PROVIDER_CONFIG_KEY: OPENAI_PROVIDER,
+    MODEL_CONFIG_KEY: DEFAULT_OPENAI_CHAT_MODEL_NAME,
+    TIMEOUT_CONFIG_KEY: 10,
     "temperature": 0.0,
     "max_tokens": 256,
     "max_retries": 1,
 }
 
 DEFAULT_EMBEDDINGS_CONFIG = {
-    "api_type": "openai",
+    PROVIDER_CONFIG_KEY: OPENAI_PROVIDER,
     "model": DEFAULT_OPENAI_EMBEDDING_MODEL_NAME,
 }
 
@@ -311,10 +313,10 @@ class EnterpriseSearchPolicy(Policy):
         # telemetry call to track training completion
         track_enterprise_search_policy_train_completed(
             vector_store_type=store_type,
-            embeddings_type=self.embeddings_config.get(API_TYPE_CONFIG_KEY),
+            embeddings_type=self.embeddings_config.get(PROVIDER_CONFIG_KEY),
             embeddings_model=self.embeddings_config.get(MODEL_CONFIG_KEY)
             or self.embeddings_config.get(MODEL_NAME_CONFIG_KEY),
-            llm_type=self.llm_config.get(API_TYPE_CONFIG_KEY),
+            llm_type=self.llm_config.get(PROVIDER_CONFIG_KEY),
             llm_model=self.llm_config.get(MODEL_CONFIG_KEY)
             or self.llm_config.get(MODEL_NAME_CONFIG_KEY),
             citation_enabled=self.citation_enabled,
@@ -505,10 +507,10 @@ class EnterpriseSearchPolicy(Policy):
         # telemetry call to track policy prediction
         track_enterprise_search_policy_predict(
             vector_store_type=self.vector_store_config.get(VECTOR_STORE_TYPE_PROPERTY),
-            embeddings_type=self.embeddings_config.get(API_TYPE_CONFIG_KEY),
+            embeddings_type=self.embeddings_config.get(PROVIDER_CONFIG_KEY),
             embeddings_model=self.embeddings_config.get(MODEL_CONFIG_KEY)
             or self.embeddings_config.get(MODEL_NAME_CONFIG_KEY),
-            llm_type=self.llm_config.get(API_TYPE_CONFIG_KEY),
+            llm_type=self.llm_config.get(PROVIDER_CONFIG_KEY),
             llm_model=self.llm_config.get(MODEL_CONFIG_KEY)
             or self.llm_config.get(MODEL_NAME_CONFIG_KEY),
             citation_enabled=self.citation_enabled,

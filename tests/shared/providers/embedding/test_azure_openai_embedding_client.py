@@ -27,11 +27,12 @@ class TestAzureOpenAIEmbeddingClient:
     def client(self, monkeypatch: MonkeyPatch) -> AzureOpenAIEmbeddingClient:
         monkeypatch.setenv(AZURE_API_KEY_ENV_VAR, "my key")
         config = {
+            "provider": "azure",
             "deployment": "some_azure_deployment",
             "model": "gpt-2024",
             "api_base": "https://test",
-            "api_type": "azure",
             "api_version": "v1",
+            "api_type": "azure",
         }
         return AzureOpenAIEmbeddingClient.from_config(config)
 
@@ -50,12 +51,12 @@ class TestAzureOpenAIEmbeddingClient:
 
     def test_config(self, client: AzureOpenAIEmbeddingClient) -> None:
         assert client.config == {
+            "provider": "azure",
             "deployment": "some_azure_deployment",
             "model": "gpt-2024",
             "api_base": "https://test",
             "api_type": "azure",
             "api_version": "v1",
-            "extra_parameters": {},
         }
 
     def test_model(self, client: AzureOpenAIEmbeddingClient) -> None:
@@ -112,7 +113,7 @@ class TestAzureOpenAIEmbeddingClient:
     def test_conforms_to_protocol(self, client: AzureOpenAIEmbeddingClient) -> None:
         assert isinstance(client, EmbeddingClient)
 
-    def test_azure_openai_embedding_client_embed(
+    def test_embed(
         self,
         client: AzureOpenAIEmbeddingClient,
         embedding_response: litellm.EmbeddingResponse,
@@ -136,7 +137,7 @@ class TestAzureOpenAIEmbeddingClient:
         assert response.usage.completion_tokens == 20
         assert response.usage.total_tokens == 30
 
-    async def test_azure_openai_embedding_client_aembed(
+    async def test_aembed(
         self,
         client: AzureOpenAIEmbeddingClient,
         embedding_response: litellm.EmbeddingResponse,
@@ -160,7 +161,7 @@ class TestAzureOpenAIEmbeddingClient:
         assert response.usage.completion_tokens == 20
         assert response.usage.total_tokens == 30
 
-    def test_azure_openai_embedding_client_validation_success(
+    def test_from_config_successful(
         self,
         monkeypatch: MonkeyPatch,
     ) -> None:
@@ -169,8 +170,8 @@ class TestAzureOpenAIEmbeddingClient:
         monkeypatch.setenv(AZURE_API_KEY_ENV_VAR, "key")
         monkeypatch.setenv(AZURE_API_VERSION_ENV_VAR, "some_version")
         config = {
+            "provider": "azure",
             "deployment": "some_azure_deployment",
-            "api_type": "azure",
             "model": "gpt-2024",
         }
 
@@ -189,7 +190,7 @@ class TestAzureOpenAIEmbeddingClient:
         assert client.api_type == "azure"
         assert client.api_version == "some_version"
 
-    def test_azure_openai_embedding_client_validation_with_deprecated_env_vars(
+    def test_from_config_with_deprecated_env_vars(
         self,
         monkeypatch: MonkeyPatch,
     ) -> None:
@@ -198,8 +199,8 @@ class TestAzureOpenAIEmbeddingClient:
         monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "key")
         monkeypatch.setenv(OPENAI_API_VERSION_ENV_VAR, "deprecated_v1")
         config = {
+            "provider": "azure",
             "deployment": "some_azure_deployment",
-            "api_type": "azure",
             "model": "gpt-2024",
         }
 
@@ -229,7 +230,7 @@ class TestAzureOpenAIEmbeddingClient:
         assert client.api_version == "deprecated_v1"
         assert os.environ.get(OPENAI_API_KEY_ENV_VAR) == "key"
 
-    def test_azure_openai_embedding_client_with_combined_deprecated_and_new_env_vars(
+    def test_from_config_with_combined_deprecated_and_new_env_vars(
         self,
         monkeypatch: MonkeyPatch,
     ):
@@ -243,8 +244,8 @@ class TestAzureOpenAIEmbeddingClient:
         monkeypatch.setenv(AZURE_API_VERSION_ENV_VAR, "deprecated_v1")
 
         config = {
+            "provider": "azure",
             "deployment": "some_azure_deployment",
-            "api_type": "azure",
             "model": "gpt-2024",
         }
 
@@ -263,15 +264,15 @@ class TestAzureOpenAIEmbeddingClient:
         assert client.api_version == "deprecated_v1"
         assert os.environ.get(OPENAI_API_KEY_ENV_VAR) == "key"
 
-    def test_azure_openai_embedding_client_validation_error(
+    def test_from_config_throws_validation_error(
         self, monkeypatch: MonkeyPatch
     ) -> None:
         # Given
         # Did not set the required environment variables
         # api_base, api_key, api_version
         config = {
+            "provider": "azure",
             "deployment": "some_azure_deployment",
-            "api_type": "azure",
             "model": "gpt-2024",
         }
 
@@ -295,9 +296,41 @@ class TestAzureOpenAIEmbeddingClient:
             "Missing required environment variables/config keys for API calls."
         )
 
-    def test_openai_embedding_client_init_with_params(
-        self, monkeypatch: MonkeyPatch
-    ) -> None:
+    @pytest.mark.parametrize("deprecated_provider_alias", ["type", "_type"])
+    def test_from_config_raises_deprecation_warning_for_deprecated_provider_aliases(
+        self, deprecated_provider_alias: str, monkeypatch: MonkeyPatch
+    ):
+        # Given
+        monkeypatch.setenv(
+            AZURE_API_KEY_ENV_VAR,
+            "test key for "
+            "test_azure_openai_embedding_client_from_config_validation_error_2",
+        )
+        config = {
+            deprecated_provider_alias: "azure",
+            "deployment": "some_azure_deployment",
+            "api_base": "https://test",
+            "api_version": "v1",
+        }
+
+        # When
+        with pytest.warns(None) as record:
+            client = AzureOpenAIEmbeddingClient.from_config(config)
+
+        # Then
+        future_warnings = [
+            warning for warning in record if warning.category == FutureWarning
+        ]
+        assert len(future_warnings) == 1
+        assert f"'{deprecated_provider_alias}' is deprecated" in str(
+            future_warnings[0].message
+        )
+        assert "'provider' instead" in str(future_warnings[0].message)
+
+        assert client.config["provider"] == "azure"
+        assert deprecated_provider_alias not in client.config
+
+    def test_init_with_params(self, monkeypatch: MonkeyPatch) -> None:
         # Given
         monkeypatch.setenv(AZURE_API_KEY_ENV_VAR, "some_key")
         client = AzureOpenAIEmbeddingClient(
@@ -316,9 +349,7 @@ class TestAzureOpenAIEmbeddingClient:
         assert client.api_version == "v1"
         assert client._litellm_extra_parameters == {}
 
-    def test_openai_embedding_client_init_with_env_vars(
-        self, monkeypatch: MonkeyPatch
-    ) -> None:
+    def test_init_with_env_vars(self, monkeypatch: MonkeyPatch) -> None:
         # Given
         monkeypatch.setenv(AZURE_API_BASE_ENV_VAR, "https://test/env")
         monkeypatch.setenv(AZURE_API_KEY_ENV_VAR, "some_key")
@@ -340,7 +371,7 @@ class TestAzureOpenAIEmbeddingClient:
         "config",
         [
             {
-                "api_type": "azure",
+                "provider": "azure",
                 "deployment": "some_azure_deployment",
                 "api_base": "https://test",
                 "api_version": "v1",
@@ -348,7 +379,7 @@ class TestAzureOpenAIEmbeddingClient:
                 "stream": True,
             },
             {
-                "api_type": "azure",
+                "provider": "azure",
                 "deployment": "some_azure_deployment",
                 "api_base": "https://test",
                 "api_version": "v1",
@@ -378,10 +409,10 @@ class TestAzureOpenAIEmbeddingClient:
         [
             (
                 {
+                    "provider": "azure",
                     "deployment": "some_azure_deployment",
                     "model": "test-embedding",
                     "api_base": "https://test",
-                    "api_type": "azure",
                     "api_version": "2023-05-15",
                     "timeout": 7,
                 },
@@ -389,10 +420,10 @@ class TestAzureOpenAIEmbeddingClient:
             ),
             (
                 {
+                    "provider": "azure",
                     "deployment": "some_azure_deployment",
                     "model": "test-embedding",
                     "api_base": "https://test",
-                    "api_type": "azure",
                     "api_version": "2023-05-15",
                     # Use deprecated key for timeout
                     "request_timeout": 7,

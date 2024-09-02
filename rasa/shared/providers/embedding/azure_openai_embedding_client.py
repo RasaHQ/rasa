@@ -14,6 +14,7 @@ from rasa.shared.constants import (
     API_BASE_CONFIG_KEY,
     API_KEY,
     API_VERSION_CONFIG_KEY,
+    AZURE_OPENAI_PROVIDER,
 )
 from rasa.shared.exceptions import ProviderClientValidationError
 from rasa.shared.providers._configs.azure_openai_client_config import (
@@ -25,8 +26,6 @@ from rasa.shared.providers.embedding._base_litellm_embedding_client import (
 from rasa.shared.utils.io import raise_deprecation_warning
 
 structlogger = structlog.get_logger()
-
-AZURE_PROVIDER = "azure"
 
 
 class AzureOpenAIEmbeddingClient(_BaseLiteLLMEmbeddingClient):
@@ -193,8 +192,8 @@ class AzureOpenAIEmbeddingClient(_BaseLiteLLMEmbeddingClient):
     @property
     def _litellm_model_name(self) -> str:
         """Get the model name formatted for azure openai embedding client."""
-        if self.deployment and f"{AZURE_PROVIDER}/" not in self.deployment:
-            return f"{AZURE_PROVIDER}/{self.deployment}"
+        if self.deployment and f"{AZURE_OPENAI_PROVIDER}/" not in self.deployment:
+            return f"{AZURE_OPENAI_PROVIDER}/{self.deployment}"
         return self.deployment
 
     def validate_client_setup(self) -> None:

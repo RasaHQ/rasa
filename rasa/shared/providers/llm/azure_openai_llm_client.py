@@ -16,6 +16,7 @@ from rasa.shared.constants import (
     OPENAI_API_TYPE_ENV_VAR,
     OPENAI_API_KEY_ENV_VAR,
     AZURE_API_TYPE_ENV_VAR,
+    AZURE_OPENAI_PROVIDER,
 )
 from rasa.shared.exceptions import ProviderClientValidationError
 from rasa.shared.providers._configs.azure_openai_client_config import (
@@ -25,7 +26,6 @@ from rasa.shared.providers.llm._base_litellm_client import _BaseLiteLLMClient
 from rasa.shared.utils.io import raise_deprecation_warning
 
 structlogger = structlog.get_logger()
-_AZURE_PROVIDER = "azure"
 
 
 class AzureOpenAILLMClient(_BaseLiteLLMClient):
@@ -242,9 +242,9 @@ class AzureOpenAILLMClient(_BaseLiteLLMClient):
 
         <provider>/<model or deployment name>
         """
-        regex_pattern = rf"^{_AZURE_PROVIDER}/"
+        regex_pattern = rf"^{AZURE_OPENAI_PROVIDER}/"
         if not re.match(regex_pattern, self._deployment):
-            return f"{_AZURE_PROVIDER}/{self._deployment}"
+            return f"{AZURE_OPENAI_PROVIDER}/{self._deployment}"
         return self._deployment
 
     @property

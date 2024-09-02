@@ -23,9 +23,10 @@ from rasa.engine.graph import ExecutionContext, GraphModelConfiguration, GraphNo
 from rasa.engine.training.graph_trainer import GraphTrainer
 from rasa.shared.constants import (
     EMBEDDINGS_CONFIG_KEY,
-    LLM_CONFIG_KEY,
     MODEL_CONFIG_KEY,
-    MODEL_NAME_CONFIG_KEY,
+    PROVIDER_CONFIG_KEY,
+    TIMEOUT_CONFIG_KEY,
+    DEPLOYMENT_CONFIG_KEY,
 )
 from rasa.shared.core.constants import REQUESTED_SLOT
 from rasa.shared.core.domain import Domain
@@ -36,7 +37,6 @@ from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.constants import INTENT_NAME_KEY, SET_SLOT_COMMAND
 from rasa.shared.utils.llm import (
     combine_custom_and_default_config,
-    get_llm_type_after_combining_custom_and_default_config,
 )
 from rasa.tracing.constants import (
     PROMPT_TOKEN_LENGTH_ATTRIBUTE_NAME,
@@ -311,22 +311,15 @@ def extract_llm_config(self: Any, default_llm_config: Dict[str, Any]) -> Dict[st
 
     attributes = {
         "class_name": self.__class__.__name__,
-        "llm_model": str(
-            llm_property.get(MODEL_CONFIG_KEY)
-            or llm_property.get(MODEL_NAME_CONFIG_KEY)
-        ),
-        "llm_type": str(
-            get_llm_type_after_combining_custom_and_default_config(
-                config.get(LLM_CONFIG_KEY), default_llm_config
-            )
-        ),
+        "llm_model": str(llm_property.get(MODEL_CONFIG_KEY)),
+        "llm_type": str(llm_property.get(PROVIDER_CONFIG_KEY)),
         "embeddings": json.dumps(config.get(EMBEDDINGS_CONFIG_KEY, {})),
         "llm_temperature": str(llm_property.get("temperature")),
-        "request_timeout": str(llm_property.get("request_timeout")),
+        "request_timeout": str(llm_property.get(TIMEOUT_CONFIG_KEY)),
     }
 
-    if "engine" in llm_property:
-        attributes["llm_engine"] = str(llm_property.get("engine"))
+    if DEPLOYMENT_CONFIG_KEY in llm_property:
+        attributes["llm_engine"] = str(llm_property.get(DEPLOYMENT_CONFIG_KEY))
 
     return attributes
 

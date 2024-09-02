@@ -19,6 +19,7 @@ from rasa.shared.constants import (
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
     MODEL_CONFIG_KEY,
+    PROVIDER_CONFIG_KEY,
 )
 from rasa.shared.core.events import BotUttered, UserUttered
 from rasa.shared.core.slots import Slot, BooleanSlot, CategoricalSlot
@@ -33,6 +34,9 @@ from rasa.shared.exceptions import (
 from rasa.shared.providers._configs.azure_openai_client_config import (
     is_azure_openai_config,
 )
+from rasa.shared.providers._configs.default_litellm_client_config import (
+    DefaultLiteLLMClientConfig,
+)
 from rasa.shared.providers._configs.huggingface_local_embedding_client_config import (
     is_huggingface_local_config,
 )
@@ -45,6 +49,7 @@ from rasa.shared.providers.mappings import (
     OPENAI_PROVIDER,
     get_embedding_client_from_provider,
     HUGGINGFACE_LOCAL_EMBEDDING_PROVIDER,
+    get_resolve_aliases_fn_from_provider,
 )
 from rasa.shared.utils.cli import print_error_and_exit
 
@@ -184,9 +189,12 @@ def sanitize_message_for_prompt(text: Optional[str]) -> str:
 
 
 def combine_custom_and_default_config(
-    custom_config: Optional[Dict[Text, Any]], default_config: Dict[Text, Any]
+    custom_config: Optional[Dict[str, Any]], default_config: Dict[str, Any]
 ) -> Dict[Text, Any]:
     """Merges the given llm config with the default config.
+
+    This method guarantees that the provider is set and all the deprecated keys are
+    resolved. Hence, produces only a valid client config.
 
     Only uses the default configuration arguments, if the type set in the
     custom config matches the type in the default config. Otherwise, only
@@ -202,18 +210,33 @@ def combine_custom_and_default_config(
     if custom_config is None:
         return default_config.copy()
 
-    # If provider of the custom config is not the same as the provider used in
-    # the default config, don't merge
+    # Get the provider from the custom config.
     custom_config_provider = get_provider_from_config(custom_config)
-    default_config_provider = get_provider_from_config(default_config)
 
-    if (
-        custom_config_provider is not None
-        and custom_config_provider != default_config_provider
-    ):
-        return custom_config.copy()
+    # We expect the provider to be set in the default configs of all Rasa components.
+    default_config_provider = default_config[PROVIDER_CONFIG_KEY]
 
-    # Otherwise, override default settings with custom settings
+    if custom_config_provider:
+        # Get the provider-specific alias resolution function.
+        resolve_config_aliase_fn = get_resolve_aliases_fn_from_provider(
+            custom_config_provider
+        )
+
+        # If the client config has a `resolve_config_aliases` method, use it to resolve
+        # the aliases. Otherwise, just return the custom config as is.
+        if resolve_config_aliase_fn is not None:
+            custom_config = resolve_config_aliase_fn(custom_config)
+
+        # If provider not in config, then set it. This case happens when litellm infers
+        # the provider from the model, instead of the client config classes.
+        if PROVIDER_CONFIG_KEY not in custom_config:
+            custom_config[PROVIDER_CONFIG_KEY] = custom_config_provider
+
+        if custom_config_provider != default_config_provider:
+            return custom_config.copy()
+
+    # If the provider is the same in both configs, merge them.
+    # Currently the only provider we define in default configs is OpenAI.
     return {**default_config.copy(), **custom_config.copy()}
 
 
@@ -232,32 +255,21 @@ def get_provider_from_config(config: dict) -> Optional[str]:
     else:
         # `get_llm_provider` works for both embedding models and LLMs
         from litellm.utils import get_llm_provider
-        from rasa.shared.providers._configs.default_litellm_client_config import (
-            check_and_error_for_model_name_in_config,
-        )
 
-        # This is done so that the usage of model_name is discouraged for providers
-        # other than OpenAI, Azure and Huggingface clients.
-        # Also, this is done to avoid the default config getting merged with the
-        # custom config in case of model_name being used for clients other than
-        # OpenAI, Azure and Huggingface.
-        check_and_error_for_model_name_in_config(config)
+        # Try to get the provider from `model` key.
+        model = config.get(MODEL_CONFIG_KEY)
+        provider = config.get(PROVIDER_CONFIG_KEY)
+
+        # This is done to avoid the default config getting merged with the custom
+        # config in case of model_name being used for default clients configs.
+        DefaultLiteLLMClientConfig.check_and_error_for_model_name_in_config(config)
+
         try:
-            # Try to get the provider from `model` key.
-            _, provider, _, _ = get_llm_provider(model=config.get(MODEL_CONFIG_KEY, ""))
-            return provider
+            if model:
+                _, provider, _, _ = get_llm_provider(model=model)
         except Exception:
-            # If provider is not found, return None
-            return None
-
-
-def get_llm_type_after_combining_custom_and_default_config(
-    custom_config: Optional[Dict[Text, Any]], default_config: Dict[Text, Any]
-) -> Optional[str]:
-    """Get the LLM type from the combined config."""
-    custom_config_provider = get_provider_from_config(custom_config)
-    default_config_provider = get_provider_from_config(default_config)
-    return custom_config_provider or default_config_provider
+            pass
+        return provider
 
 
 def ensure_cache() -> None:
@@ -286,9 +298,12 @@ def llm_factory(
         Instantiated LLM based on the configuration.
     """
     config = combine_custom_and_default_config(custom_config, default_config)
-    provider = get_provider_from_config(config)
+
     ensure_cache()
-    client_clazz: Type[LLMClient] = get_llm_client_from_provider(provider)
+
+    client_clazz: Type[LLMClient] = get_llm_client_from_provider(
+        config[PROVIDER_CONFIG_KEY]
+    )
     client = client_clazz.from_config(config)
     return client
 
@@ -308,9 +323,12 @@ def embedder_factory(
         Instantiated Embedder based on the configuration.
     """
     config = combine_custom_and_default_config(custom_config, default_config)
-    provider = get_provider_from_config(config)
+
     ensure_cache()
-    client_clazz: Type[EmbeddingClient] = get_embedding_client_from_provider(provider)
+
+    client_clazz: Type[EmbeddingClient] = get_embedding_client_from_provider(
+        config[PROVIDER_CONFIG_KEY]
+    )
     client = client_clazz.from_config(config)
     return client
 
@@ -356,7 +374,7 @@ def try_instantiate_llm_client(
     """Validate llm configuration."""
     try:
         llm_factory(custom_llm_config, default_llm_config)
-    except ProviderClientValidationError as e:
+    except (ProviderClientValidationError, ValueError) as e:
         structlogger.error(
             f"{log_source}.llm_instantiation_failed",
             message="Unable to instantiate LLM client.",

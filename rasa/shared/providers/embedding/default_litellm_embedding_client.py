@@ -1,6 +1,5 @@
 from typing import Any, Dict
 
-from rasa.shared.constants import MODEL_CONFIG_KEY
 from rasa.shared.providers._configs.default_litellm_client_config import (
     DefaultLiteLLMClientConfig,
 )
@@ -24,8 +23,9 @@ class DefaultLiteLLMEmbeddingClient(_BaseLiteLLMEmbeddingClient):
         ProviderClientAPIException: If the API request fails.
     """
 
-    def __init__(self, model: str, **kwargs: Any):
+    def __init__(self, provider: str, model: str, **kwargs: Any):
         super().__init__()  # type: ignore
+        self._provider = provider
         self._model = model
         self._extra_parameters = kwargs
         self.validate_client_setup()
@@ -35,6 +35,7 @@ class DefaultLiteLLMEmbeddingClient(_BaseLiteLLMEmbeddingClient):
         default_config = DefaultLiteLLMClientConfig.from_dict(config)
         return cls(
             model=default_config.model,
+            provider=default_config.provider,
             # Pass the rest of the configuration as extra parameters
             **default_config.extra_parameters,
         )
@@ -47,7 +48,16 @@ class DefaultLiteLLMEmbeddingClient(_BaseLiteLLMEmbeddingClient):
         Returns:
             Dictionary containing the configuration.
         """
-        return {MODEL_CONFIG_KEY: self.model, **self._litellm_extra_parameters}
+        config = DefaultLiteLLMClientConfig(
+            model=self.model,
+            provider=self.provider,
+            extra_parameters=self._extra_parameters,
+        )
+        return config.to_dict()
+
+    @property
+    def provider(self) -> str:
+        return self._provider
 
     @property
     def model(self) -> str:
@@ -80,7 +90,9 @@ class DefaultLiteLLMEmbeddingClient(_BaseLiteLLMEmbeddingClient):
         Returns:
             String representing the model name in LiteLLM format.
         """
-        return self._model
+        if self.model and f"{self.provider}/" not in self.model:
+            return f"{self.provider}/{self.model}"
+        return self.model
 
     @property
     def _embedding_fn_args(self) -> Dict[str, Any]:

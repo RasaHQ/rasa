@@ -14,7 +14,8 @@ class TestDefaultLiteLLMEmbeddingClient:
     @pytest.fixture
     def client(self) -> DefaultLiteLLMEmbeddingClient:
         config = {
-            "model": "buzz-ai/mock-gpt",
+            "provider": "buzz-ai",
+            "model": "mock-gpt",
             "extra_param": "abc",
             "extra_param2": "def",
         }
@@ -35,13 +36,14 @@ class TestDefaultLiteLLMEmbeddingClient:
 
     def test_config(self, client: DefaultLiteLLMEmbeddingClient) -> None:
         assert client.config == {
-            "model": "buzz-ai/mock-gpt",
+            "model": "mock-gpt",
+            "provider": "buzz-ai",
             "extra_param": "abc",
             "extra_param2": "def",
         }
 
     def test_model(self, client: DefaultLiteLLMEmbeddingClient) -> None:
-        assert client.model == "buzz-ai/mock-gpt"
+        assert client.model == "mock-gpt"
 
     def test_litellm_extra_parameters(
         self, client: DefaultLiteLLMEmbeddingClient
@@ -56,7 +58,9 @@ class TestDefaultLiteLLMEmbeddingClient:
 
     def test_embedding_fn_args(self, client: DefaultLiteLLMEmbeddingClient) -> None:
         assert client._embedding_fn_args == {
+            # this is the litellm_model_name
             "model": "buzz-ai/mock-gpt",
+            # extra parameters
             "extra_param": "abc",
             "extra_param2": "def",
         }
@@ -86,13 +90,13 @@ class TestDefaultLiteLLMEmbeddingClient:
     def test_conforms_to_protocol(self, client: DefaultLiteLLMEmbeddingClient) -> None:
         assert isinstance(client, EmbeddingClient)
 
-    def test_default_litellm_embedding_client_validate_client_setup_success(
+    def test_validate_client_setup_success(
         self,
         client: DefaultLiteLLMEmbeddingClient,
     ) -> None:
         client.validate_client_setup()
 
-    def test_default_litellm_embedding_client_embed(
+    def test_embed(
         self,
         client: DefaultLiteLLMEmbeddingClient,
         embedding_response: litellm.EmbeddingResponse,
@@ -114,7 +118,7 @@ class TestDefaultLiteLLMEmbeddingClient:
         assert response.usage.completion_tokens == 20
         assert response.usage.total_tokens == 30
 
-    async def test_default_litellm_embedding_client_aembed(
+    async def test_aembed(
         self,
         client: DefaultLiteLLMEmbeddingClient,
         embedding_response: litellm.EmbeddingResponse,
@@ -140,12 +144,14 @@ class TestDefaultLiteLLMEmbeddingClient:
         "config",
         [
             {
-                "model": "cohere/test-cohere",
+                "provider": "cohere",
+                "model": "test-cohere",
                 # Stream is forbidden
                 "stream": True,
             },
             {
-                "model": "cohere/test-cohere",
+                "provider": "cohere",
+                "model": "test-cohere",
                 # n is forbidden
                 "n": 10,
             },
@@ -166,3 +172,37 @@ class TestDefaultLiteLLMEmbeddingClient:
                 break
 
         assert found_validation_log
+
+    @pytest.mark.parametrize(
+        "config, expected_model, expected_litellm_model_name",
+        [
+            (
+                {"provider": "cohere", "model": "test-cohere"},
+                "test-cohere",
+                "cohere/test-cohere",
+            ),
+            (
+                {"provider": "cohere", "model": "cohere/test-cohere"},
+                "cohere/test-cohere",
+                "cohere/test-cohere",
+            ),
+        ],
+    )
+    def test_that_litellm_model_name_is_correctly_initialized(
+        self,
+        config: dict,
+        expected_model: str,
+        expected_litellm_model_name: str,
+        monkeypatch: MonkeyPatch,
+    ):
+        # Given
+        monkeypatch.setenv(
+            "COHERE_API_KEY",
+            "mock key in test_that_litellm_model_name_is_correctly_initialized",
+        )
+        # When
+        client = DefaultLiteLLMEmbeddingClient.from_config(config)
+        # Then
+        assert client.model == expected_model
+        assert client._litellm_model_name == expected_litellm_model_name
+        assert client.provider == "cohere"

@@ -29,7 +29,11 @@ from langchain_community.vectorstores.faiss import FAISS
 from langchain_community.vectorstores.utils import DistanceStrategy
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.constants import EMBEDDINGS_CONFIG_KEY
+from rasa.shared.constants import (
+    EMBEDDINGS_CONFIG_KEY,
+    PROVIDER_CONFIG_KEY,
+    OPENAI_PROVIDER,
+)
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -53,7 +57,7 @@ DEFAULT_FLOW_DOCUMENT_TEMPLATE = importlib.resources.read_text(
 )
 
 DEFAULT_EMBEDDINGS_CONFIG = {
-    "api_type": "openai",
+    PROVIDER_CONFIG_KEY: OPENAI_PROVIDER,
     "model": DEFAULT_OPENAI_EMBEDDING_MODEL_NAME,
 }
 

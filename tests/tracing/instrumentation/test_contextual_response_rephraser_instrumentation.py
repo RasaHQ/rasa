@@ -81,7 +81,6 @@ def greet_tracker() -> DialogueStateTracker:
     [
         (
             {
-                "type": "openai",
                 "model_name": DEFAULT_OPENAI_GENERATE_MODEL_NAME,
             },
             OPENAI_API_KEY_ENV_VAR,
@@ -92,6 +91,7 @@ def greet_tracker() -> DialogueStateTracker:
         ),
         (
             {
+                "provider": "cohere",
                 "model": "cohere/gptd-instruct-tft",
                 "temperature": 0.7,
                 "request_timeout": 10,
@@ -276,7 +276,7 @@ async def test_tracing_contextual_response_rephraser_len_prompt_tokens_non_opena
     )
 
     endpoint_config = EndpointConfig.from_dict(
-        {"trace_prompt_tokens": True, "llm": {"type": "cohere", "model": "command"}}
+        {"trace_prompt_tokens": True, "llm": {"provider": "cohere", "model": "command"}}
     )
     mock_rephraser = component_class(
         endpoint_config=endpoint_config, domain=domain_with_responses
@@ -308,7 +308,7 @@ async def test_tracing_contextual_response_rephraser_len_prompt_tokens_non_opena
     [
         (
             {
-                "type": "openai",
+                "provider": "openai",
                 "model_name": DEFAULT_OPENAI_GENERATE_MODEL_NAME,
             },
             OPENAI_API_KEY_ENV_VAR,
@@ -319,7 +319,7 @@ async def test_tracing_contextual_response_rephraser_len_prompt_tokens_non_opena
         ),
         (
             {
-                "type": "cohere",
+                "provider": "cohere",
                 "model": "cohere/gptd-instruct-tft",
                 "temperature": 0.7,
                 "request_timeout": 10,

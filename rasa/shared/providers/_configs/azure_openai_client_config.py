@@ -1,5 +1,5 @@
 from dataclasses import asdict, dataclass, field
-from typing import Optional
+from typing import Any, Dict, Optional
 
 import structlog
 
@@ -21,6 +21,9 @@ from rasa.shared.constants import (
     N_REPHRASES_CONFIG_KEY,
     REQUEST_TIMEOUT_CONFIG_KEY,
     TIMEOUT_CONFIG_KEY,
+    PROVIDER_CONFIG_KEY,
+    AZURE_OPENAI_PROVIDER,
+    AZURE_API_TYPE,
 )
 from rasa.shared.providers._configs.utils import (
     resolve_aliases,
@@ -30,17 +33,16 @@ from rasa.shared.providers._configs.utils import (
 )
 
 structlogger = structlog.get_logger()
-AZURE_API_TYPE = "azure"
-
 
 DEPRECATED_ALIASES_TO_STANDARD_KEY_MAPPING = {
     # Deployment name aliases
     DEPLOYMENT_NAME_CONFIG_KEY: DEPLOYMENT_CONFIG_KEY,
     ENGINE_CONFIG_KEY: DEPLOYMENT_CONFIG_KEY,
+    # Provider aliases
+    RASA_TYPE_CONFIG_KEY: PROVIDER_CONFIG_KEY,
+    LANGCHAIN_TYPE_CONFIG_KEY: PROVIDER_CONFIG_KEY,
     # API type aliases
     OPENAI_API_TYPE_CONFIG_KEY: API_TYPE_CONFIG_KEY,
-    RASA_TYPE_CONFIG_KEY: API_TYPE_CONFIG_KEY,
-    LANGCHAIN_TYPE_CONFIG_KEY: API_TYPE_CONFIG_KEY,
     # API base aliases
     OPENAI_API_BASE_CONFIG_KEY: API_BASE_CONFIG_KEY,
     # API version aliases
@@ -51,10 +53,7 @@ DEPRECATED_ALIASES_TO_STANDARD_KEY_MAPPING = {
     REQUEST_TIMEOUT_CONFIG_KEY: TIMEOUT_CONFIG_KEY,
 }
 
-REQUIRED_KEYS = [
-    DEPLOYMENT_CONFIG_KEY,
-    API_TYPE_CONFIG_KEY,
-]
+REQUIRED_KEYS = [DEPLOYMENT_CONFIG_KEY]
 
 FORBIDDEN_KEYS = [
     STREAM_CONFIG_KEY,
@@ -75,24 +74,26 @@ class AzureOpenAIClientConfig:
 
     deployment: str
 
-    # API Type is not actually used by LiteLLM backend, but we define
-    # it here for:
-    # 1. Backward compatibility.
-    # 2. Because it's used as a switch denominator for Azure OpenAI clients.
-    api_type: str
-
     model: Optional[str]
     api_base: Optional[str]
     api_version: Optional[str]
+    # API Type is not used by LiteLLM backend, but we define
+    # it here for backward compatibility.
+    api_type: Optional[str] = AZURE_API_TYPE
+
+    # Provider is not used by LiteLLM backend, but we define it here since it's
+    # used as switch between different clients.
+    provider: str = AZURE_OPENAI_PROVIDER
+
     extra_parameters: dict = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        if self.api_type != AZURE_API_TYPE:
-            message = f"API type must be set to '{AZURE_API_TYPE}'."
+        if self.provider != AZURE_OPENAI_PROVIDER:
+            message = f"Provider must be set to '{AZURE_OPENAI_PROVIDER}'."
             structlogger.error(
                 "azure_openai_client_config.validation_error",
                 message=message,
-                api_type=self.api_type,
+                provider=self.provider,
             )
             raise ValueError(message)
         if self.deployment is None:
@@ -123,7 +124,7 @@ class AzureOpenAIClientConfig:
         # Check for deprecated keys
         raise_deprecation_warnings(config, DEPRECATED_ALIASES_TO_STANDARD_KEY_MAPPING)
         # Resolve any potential aliases
-        config = resolve_aliases(config, DEPRECATED_ALIASES_TO_STANDARD_KEY_MAPPING)
+        config = AzureOpenAIClientConfig.resolve_config_aliases(config)
         # Validate that required keys are set
         validate_required_keys(config, REQUIRED_KEYS)
         # Validate that the forbidden keys are not present
@@ -132,8 +133,11 @@ class AzureOpenAIClientConfig:
         this = AzureOpenAIClientConfig(
             # Required parameters
             deployment=config.pop(DEPLOYMENT_CONFIG_KEY),
-            api_type=config.pop(API_TYPE_CONFIG_KEY),
+            # Pop the 'provider' key. Currently, it's *optional* because of
+            # backward compatibility with older versions.
+            provider=config.pop(PROVIDER_CONFIG_KEY, AZURE_OPENAI_PROVIDER),
             # Optional
+            api_type=config.pop(API_TYPE_CONFIG_KEY, AZURE_API_TYPE),
             model=config.pop(MODEL_CONFIG_KEY, None),
             # Optional, can also be set through environment variables
             # in clients.
@@ -147,7 +151,15 @@ class AzureOpenAIClientConfig:
 
     def to_dict(self) -> dict:
         """Converts the config instance into a dictionary."""
-        return asdict(self)
+        d = asdict(self)
+        # Extra parameters should also be on the top level
+        d.pop("extra_parameters", None)
+        d.update(self.extra_parameters)
+        return d
+
+    @staticmethod
+    def resolve_config_aliases(config: Dict[str, Any]) -> Dict[str, Any]:
+        return resolve_aliases(config, DEPRECATED_ALIASES_TO_STANDARD_KEY_MAPPING)
 
 
 def is_azure_openai_config(config: dict) -> bool:
@@ -155,10 +167,10 @@ def is_azure_openai_config(config: dict) -> bool:
     an Azure OpenAI client.
     """
     # Resolve any aliases that are specific to Azure OpenAI configuration
-    config = resolve_aliases(config, DEPRECATED_ALIASES_TO_STANDARD_KEY_MAPPING)
+    config = AzureOpenAIClientConfig.resolve_config_aliases(config)
 
-    # Case: Configuration contains `api_type: azure`.
-    if config.get(API_TYPE_CONFIG_KEY) == AZURE_API_TYPE:
+    # Case: Configuration contains `provider: azure`.
+    if config.get(PROVIDER_CONFIG_KEY) == AZURE_OPENAI_PROVIDER:
         return True
 
     # Case: Configuration contains `deployment` key

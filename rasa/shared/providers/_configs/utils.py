@@ -66,7 +66,10 @@ def validate_required_keys(config: dict, required_keys: list) -> None:
     if missing_keys:
         message = f"Missing required keys '{missing_keys}' for configuration."
         structlogger.error(
-            "validate_required_keys", message=message, missing_keys=missing_keys
+            "validate_required_keys",
+            message=message,
+            missing_keys=missing_keys,
+            config=config,
         )
         raise ValueError(message)
 
@@ -93,5 +96,6 @@ def validate_forbidden_keys(config: dict, forbidden_keys: list) -> None:
             "validate_forbidden_keys",
             message=message,
             forbidden_keys=forbidden_keys_in_config,
+            config=config,
         )
         raise ValueError(message)

@@ -20,7 +20,14 @@ from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.constants import ROUTE_TO_CALM_SLOT, PROMPT_CONFIG_KEY
+from rasa.shared.constants import (
+    ROUTE_TO_CALM_SLOT,
+    PROMPT_CONFIG_KEY,
+    PROVIDER_CONFIG_KEY,
+    MODEL_CONFIG_KEY,
+    OPENAI_PROVIDER,
+    TIMEOUT_CONFIG_KEY,
+)
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import InvalidConfigException, FileIOException
 from rasa.shared.nlu.constants import COMMANDS, TEXT
@@ -47,9 +54,9 @@ A_TO_C_TOKEN_IDS_CHATGPT = [
 ]
 
 DEFAULT_LLM_CONFIG = {
-    "api_type": "openai",
-    "model": DEFAULT_OPENAI_CHAT_MODEL_NAME,
-    "request_timeout": 7,
+    PROVIDER_CONFIG_KEY: OPENAI_PROVIDER,
+    MODEL_CONFIG_KEY: DEFAULT_OPENAI_CHAT_MODEL_NAME,
+    TIMEOUT_CONFIG_KEY: 7,
     "temperature": 0.0,
     "max_tokens": 1,
     "logit_bias": {str(token_id): 100 for token_id in A_TO_C_TOKEN_IDS_CHATGPT},

@@ -8,12 +8,12 @@ from rasa.shared.constants import (
     OPENAI_API_BASE_ENV_VAR,
     OPENAI_API_VERSION_ENV_VAR,
     OPENAI_API_TYPE_ENV_VAR,
+    OPENAI_PROVIDER,
 )
 from rasa.shared.providers._configs.openai_client_config import OpenAIClientConfig
 from rasa.shared.providers.llm._base_litellm_client import _BaseLiteLLMClient
 
 structlogger = structlog.get_logger()
-_OPENAI_PROVIDER = "openai"
 
 
 class OpenAILLMClient(_BaseLiteLLMClient):
@@ -131,9 +131,9 @@ class OpenAILLMClient(_BaseLiteLLMClient):
 
         <provider>/<model or deployment name>
         """
-        regex_patter = rf"^{_OPENAI_PROVIDER}/"
+        regex_patter = rf"^{OPENAI_PROVIDER}/"
         if not re.match(regex_patter, self._model):
-            return f"{_OPENAI_PROVIDER}/{self._model}"
+            return f"{OPENAI_PROVIDER}/{self._model}"
         return self._model
 
     @property

@@ -14,7 +14,8 @@ from rasa.shared.constants import (
     MODEL_CONFIG_KEY,
     LLM_CONFIG_KEY,
     PROMPT_TEMPLATE_CONFIG_KEY,
-    API_TYPE_CONFIG_KEY,
+    PROVIDER_CONFIG_KEY,
+    TIMEOUT_CONFIG_KEY,
 )
 from rasa.shared.exceptions import ProviderClientAPIException
 from rasa.shared.providers.mappings import OPENAI_PROVIDER
@@ -34,9 +35,9 @@ DEFAULT_REPHRASING_PROMPT_TEMPLATE = importlib.resources.read_text(
 )
 
 DEFAULT_LLM_CONFIG = {
-    API_TYPE_CONFIG_KEY: OPENAI_PROVIDER,
+    PROVIDER_CONFIG_KEY: OPENAI_PROVIDER,
     MODEL_CONFIG_KEY: "gpt-4o-mini",
-    "request_timeout": 7,
+    TIMEOUT_CONFIG_KEY: 7,
     "temperature": 0.0,
     "max_tokens": 4096,
 }

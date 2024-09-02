@@ -163,7 +163,7 @@ async def test_tracing_single_step_llm_command_generator_non_default_llm_attrs(
         llm_command_generator_class=component_class,
     )
 
-    model = "command"
+    model = "command-r"
     config = {
         "prompt": TEST_PROMPT_DIRECTORY,
         "llm": {
@@ -193,7 +193,7 @@ async def test_tracing_single_step_llm_command_generator_non_default_llm_attrs(
     expected_attributes = {
         "class_name": component_class.__name__,
         "llm_model": model,
-        "llm_type": "cohere",
+        "llm_type": "cohere_chat",
         "llm_temperature": "0.7",
         "request_timeout": "10",
         "embeddings": '{"model": "text-embedding-ada-002"}',
