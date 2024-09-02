@@ -1,5 +1,6 @@
 from typing import Text
 
+import os
 import pytest
 import boto3
 from unittest.mock import patch, Mock
@@ -47,7 +48,7 @@ def test_retrieve_tar_archive_with_s3_namespace(
                     model, destination
                 )
             copy.assert_called_once_with("model.tar.gz", destination)
-            retrieve.assert_called_once_with(model)
+            retrieve.assert_called_once_with("model.tar.gz")
 
 
 # noinspection PyPep8Naming
@@ -138,6 +139,22 @@ def test_retrieve_tar_archive(model: Text, archive: Text):
         f.assert_called_once_with(archive)
 
 
+@pytest.mark.parametrize(
+    "model_name, expected_file_key, remote_storage_path",
+    [
+        ("model1.pkl", "model1.pkl", ""),
+        ("model1.pkl", "test_model/model1.pkl", "test_model/"),
+    ],
+)
+def test_create_file_key_with_remote_path(
+    model_name: Text, expected_file_key: Text, remote_storage_path: Text
+):
+    # Simulate the environment where BUCKET_OBJECT_PATH is set
+    with patch.dict(os.environ, {"REMOTE_STORAGE_PATH": remote_storage_path}):
+        result = TestPersistor()._create_file_key(model_name)
+        assert result == expected_file_key
+
+
 @patch("google.cloud.storage.Client")
 def test_retrieve_tar_archive_with_gcs_namespace(
     mock_client: Mock, bucket_name: Text, model: Text, destination: Text
@@ -146,7 +163,7 @@ def test_retrieve_tar_archive_with_gcs_namespace(
         with patch.object(persistor.GCSPersistor, "_retrieve_tar") as retrieve:
             persistor.GCSPersistor(bucket_name).retrieve(model, destination)
         copy.assert_called_once_with("model.tar.gz", destination)
-        retrieve.assert_called_once_with(model)
+        retrieve.assert_called_once_with("model.tar.gz")
     mock_client.assert_called_once()
 
 
@@ -201,7 +218,7 @@ def test_retrieve_tar_archive_with_azure_namespace(
         with patch.object(azure_persistor, "_retrieve_tar") as retrieve:
             azure_persistor.retrieve(model, destination)
         copy.assert_called_once_with("model.tar.gz", destination)
-        retrieve.assert_called_once_with(model)
+        retrieve.assert_called_once_with("model.tar.gz")
     mock_client.assert_called_once()
 
 

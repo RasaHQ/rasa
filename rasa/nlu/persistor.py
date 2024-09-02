@@ -53,7 +53,7 @@ class Persistor(abc.ABC):
 
     def persist(self, trained_model: Text) -> None:
         """Uploads a trained model persisted in the `target_dir` to cloud storage."""
-        file_key = os.path.basename(trained_model)
+        file_key = self._create_file_key(trained_model)
         self._persist_tar(file_key, trained_model)
 
     def retrieve(self, model_name: Text, target_path: Text) -> Text:
@@ -71,7 +71,7 @@ class Persistor(abc.ABC):
         if not model_name.endswith("tar.gz"):
             # ensure backward compatibility
             tar_name = self._tar_name(model_name)
-
+        tar_name = self._create_file_key(tar_name)
         self._retrieve_tar(tar_name)
         self._copy(os.path.basename(tar_name), target_path)
 
@@ -113,6 +113,15 @@ class Persistor(abc.ABC):
     @staticmethod
     def _copy(compressed_path: Text, target_path: Text) -> None:
         shutil.copy2(compressed_path, target_path)
+
+    @staticmethod
+    def _create_file_key(model_name: Text) -> Text:
+        """Appends remote storage folders when provided to upload or retrieve file"""
+        bucket_object_path = os.environ.get("REMOTE_STORAGE_PATH", "")
+        file_key = os.path.basename(model_name)
+        if bucket_object_path:
+            file_key = os.path.join(bucket_object_path, file_key)
+        return file_key
 
 
 class AWSPersistor(Persistor):
