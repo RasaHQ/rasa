@@ -37,16 +37,84 @@ mapping:
               - type: map
                 matching: any
                 mapping:
-                  regex;(^[a-zA-Z_]+[a-zA-Z0-9_]*$):
+                  event:
+                    type: "str"
+                    enum: ["user", "bot", "slot", "session_started", "action", "reset_slots", "restart", "reminder", "cancel_reminder", "pause", "resume", "followup", "export", "undo", "rewind", "entities", "active_loop", "agent", "loop_interrupted", "action_execution_rejected"]
+                  timestamp:
+                    type: float
+                  metadata:
+                    type: map
+                    mapping:
+                      regex;(^[a-zA-Z_]+[a-zA-Z0-9_]*$):
+                        type: any
+                  text:
+                    type: "str"
+                  parse_data:
+                    type: map
+                    mapping:
+                        regex;(^[a-zA-Z_]+[a-zA-Z0-9_]*$):
+                            type: any
+                  input_channel:
+                    type: "str"
+                  data:
+                    type: map
+                    mapping:
+                      regex;(^[a-zA-Z_]+[a-zA-Z0-9_]*$):
+                        type: any
+                  name:
+                    type: "str"
+                  value:
                     type: any
+                  entities:
+                    type: any
+                  intent:
+                    type: "str"
+                  kill_on_user_message:
+                    type: bool
+                  date_time:
+                    type: "str"
+                  policy:
+                    type: "str"
+                  confidence:
+                    type: float
+                  is_interrupted:
+                    type: bool
+
           responses:
             type: seq
             sequence:
               - type: map
                 matching: any
                 mapping:
-                  regex;(^[a-zA-Z_]+[a-zA-Z0-9_]*$):
-                    type: any
+                  text:
+                    type: "str"
+                  buttons:
+                    type: "seq"
+                    sequence:
+                      - type: map
+                        mapping:
+                          payload:
+                            type: "str"
+                          title:
+                            type: "str"
+                  response:
+                    type: "str"
+                  image:
+                    type: "str"
+                  attachment:
+                    type: "str"
+                  elements:
+                    type: "seq"
+                    sequence:
+                      - type: map
+                        mapping:
+                          regex;(^[a-zA-Z_]+[a-zA-Z0-9_]*$):
+                            type: any
+                  custom:
+                    type: map
+                    mapping:
+                      regex;(^[a-zA-Z_]+[a-zA-Z0-9_]*$):
+                        type: any
 
   test_cases:
     type: "seq"
