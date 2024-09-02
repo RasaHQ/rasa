@@ -2,7 +2,6 @@ from typing import Any, Dict, List, Text, Union
 
 import pytest
 
-from rasa.cli.e2e_test import read_e2e_test_schema
 from rasa.e2e_test.assertions import (
     ActionExecutedAssertion,
     AssertedSlot,
@@ -17,6 +16,7 @@ from rasa.e2e_test.assertions import (
 )
 from rasa.e2e_test.e2e_test_case import TestCase, TestStep
 from rasa.e2e_test.e2e_test_result import TestResult
+from rasa.e2e_test.utils.validation import read_e2e_test_schema
 
 
 @pytest.fixture(scope="module")

@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import ruamel
 
-from rasa.e2e_test.e2e_yaml_utils import E2ETestYAMLWriter
+from rasa.e2e_test.utils.e2e_yaml_utils import E2ETestYAMLWriter
 
 
 def test_e2e_write_tests_to_yaml_creates_file(tmp_path: Path):
@@ -66,7 +66,7 @@ def test_e2e_write_tests_to_yaml_correct_timestamp(tmp_path: Path):
     fixed_timestamp = datetime(2024, 1, 1, 12, 0, 0)
     expected_timestamp_str = fixed_timestamp.strftime("%Y%m%d_%H%M%S")
 
-    with patch("rasa.e2e_test.e2e_yaml_utils.datetime") as mock_datetime:
+    with patch("rasa.e2e_test.utils.e2e_yaml_utils.datetime") as mock_datetime:
         mock_datetime.now.return_value = fixed_timestamp
         mock_datetime.now.strftime = datetime.strftime
         writer.write_to_file("test")

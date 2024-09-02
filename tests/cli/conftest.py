@@ -1,4 +1,3 @@
-import pathlib
 from pathlib import Path
 
 from subprocess import check_call
@@ -121,12 +120,3 @@ def run_in_simple_project_with_model(
         return result
 
     return do_run
-
-
-@pytest.fixture
-def e2e_input_folder() -> pathlib.Path:
-    return (
-        pathlib.Path(__file__).parent.parent.parent
-        / "data"
-        / "end_to_end_testing_input_files"
-    )
