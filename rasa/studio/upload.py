@@ -151,7 +151,7 @@ def upload_calm_assistant(args: argparse.Namespace, endpoint: str) -> StudioResu
 
     # Prepare config and domain
     config = importer.get_config()
-    domain_from_files = importer.get_domain().as_dict()
+    domain_from_files = importer.get_user_domain().as_dict()
     endpoints_from_files = read_yaml_file(args.endpoints)
     config_from_files = read_yaml_file(args.config)
 
@@ -188,7 +188,7 @@ def upload_calm_assistant(args: argparse.Namespace, endpoint: str) -> StudioResu
         training_data_paths=training_data_paths
     )
 
-    flows = list(flow_importer.get_flows())
+    flows = list(flow_importer.get_user_flows())
 
     # We instantiate the TrainingDataImporter again on purpose to avoid
     # adding patterns to domain's actions. More info https://t.ly/W8uuc
