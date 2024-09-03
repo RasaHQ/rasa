@@ -256,6 +256,8 @@ def test_sanitize_message_for_prompt_handles_string_with_newlines():
         ({"model_name": "openai/test-gpt"}, "openai"),
         ({"model_name": "azure/my-test-gpt-deployment"}, "azure"),
         ({"model_name": "gpt-4"}, "openai"),
+        # Support self-hosted LLM client
+        ({"provider": "self-hosted"}, "self-hosted"),
     ),
 )
 def test_get_provider_from_config(config: dict, expected_provider: Optional[str]):
@@ -1671,6 +1673,90 @@ def test_to_show_that_cache_is_persisted_across_different_calls() -> None:
             {
                 "provider": "mistral",
                 "model": "mistral/some-model",
+            },
+        ),
+        # ------------------------------------------------------------------------------
+        # Test cases for the client - self hosted.
+        (
+            {
+                "provider": "self-hosted",
+                "model": "some_model",
+                "api_base": "http://localhost:8000",
+            },
+            {
+                "provider": "self-hosted",
+                "model": "some_model",
+                "api_base": "http://localhost:8000",
+            },
+        ),
+        # With provider deprecated aliases
+        (
+            {
+                "model": "some_model",
+                "api_base": "http://localhost:8000",
+                "_type": "self-hosted",
+            },
+            {
+                "provider": "self-hosted",
+                "model": "some_model",
+                "api_base": "http://localhost:8000",
+            },
+        ),
+        (
+            {
+                "model": "some_model",
+                "api_base": "http://localhost:8000",
+                "type": "self-hosted",
+            },
+            {
+                "provider": "self-hosted",
+                "model": "some_model",
+                "api_base": "http://localhost:8000",
+            },
+        ),
+        # with api_base, api_type and api_version deprecated aliases
+        (
+            {
+                "provider": "self-hosted",
+                "model": "some_model",
+                "openai_api_base": "http://localhost:8000",
+                "openai_api_type": "openai",
+                "openai_api_version": "v1",
+            },
+            {
+                "provider": "self-hosted",
+                "model": "some_model",
+                "api_base": "http://localhost:8000",
+                "api_type": "openai",
+                "api_version": "v1",
+            },
+        ),
+        # with model deprecated aliases
+        (
+            {
+                "provider": "self-hosted",
+                "model_name": "some_model",
+                "api_base": "http://localhost:8000",
+            },
+            {
+                "provider": "self-hosted",
+                "model": "some_model",
+                "api_base": "http://localhost:8000",
+            },
+        ),
+        # with request_timeout deprecated aliases
+        (
+            {
+                "provider": "self-hosted",
+                "model": "some_model",
+                "api_base": "http://localhost:8000",
+                "request_timeout": 10,
+            },
+            {
+                "provider": "self-hosted",
+                "model": "some_model",
+                "api_base": "http://localhost:8000",
+                "timeout": 10,
             },
         ),
     ),

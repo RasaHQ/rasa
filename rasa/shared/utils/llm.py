@@ -31,22 +31,26 @@ from rasa.shared.exceptions import (
     FileNotFoundException,
     ProviderClientValidationError,
 )
-from rasa.shared.providers._configs.azure_openai_client_config import (
-    is_azure_openai_config,
-)
 from rasa.shared.providers._configs.default_litellm_client_config import (
     DefaultLiteLLMClientConfig,
+)
+from rasa.shared.providers._configs.azure_openai_client_config import (
+    is_azure_openai_config,
 )
 from rasa.shared.providers._configs.huggingface_local_embedding_client_config import (
     is_huggingface_local_config,
 )
 from rasa.shared.providers._configs.openai_client_config import is_openai_config
+from rasa.shared.providers._configs.self_hosted_llm_client_config import (
+    is_self_hosted_config,
+)
 from rasa.shared.providers.embedding.embedding_client import EmbeddingClient
 from rasa.shared.providers.llm.llm_client import LLMClient
 from rasa.shared.providers.mappings import (
     get_llm_client_from_provider,
     AZURE_OPENAI_PROVIDER,
     OPENAI_PROVIDER,
+    SELF_HOSTED_PROVIDER,
     get_embedding_client_from_provider,
     HUGGINGFACE_LOCAL_EMBEDDING_PROVIDER,
     get_resolve_aliases_fn_from_provider,
@@ -246,7 +250,9 @@ def get_provider_from_config(config: dict) -> Optional[str]:
     """
     if not config:
         return None
-    if is_azure_openai_config(config):
+    if is_self_hosted_config(config):
+        return SELF_HOSTED_PROVIDER
+    elif is_azure_openai_config(config):
         return AZURE_OPENAI_PROVIDER
     elif is_openai_config(config):
         return OPENAI_PROVIDER
