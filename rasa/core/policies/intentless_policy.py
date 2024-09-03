@@ -474,6 +474,7 @@ class IntentlessPolicy(Policy):
             self.config.get(LLM_CONFIG_KEY),
             DEFAULT_LLM_CONFIG,
             "intentless_policy.train",
+            "IntentlessPolicy",
         )
 
         responses = filter_responses(responses, forms, flows or FlowsList([]))

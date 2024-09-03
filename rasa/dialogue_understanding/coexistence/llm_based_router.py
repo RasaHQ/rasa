@@ -134,6 +134,7 @@ class LLMBasedRouter(GraphComponent):
             self.config.get(LLM_CONFIG_KEY),
             DEFAULT_LLM_CONFIG,
             "llm_based_router.train",
+            "LLMBasedRouter",
         )
 
         self.persist()

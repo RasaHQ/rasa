@@ -101,6 +101,7 @@ class ContextualResponseRephraser(TemplatedNaturalLanguageGenerator):
             self.nlg_endpoint.kwargs.get(LLM_CONFIG_KEY),
             DEFAULT_LLM_CONFIG,
             "contextual_response_rephraser.init",
+            "ContextualResponseRephraser",
         )
 
     def _last_message_if_human(self, tracker: DialogueStateTracker) -> Optional[str]:

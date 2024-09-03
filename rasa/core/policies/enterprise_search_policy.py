@@ -296,6 +296,7 @@ class EnterpriseSearchPolicy(Policy):
             self.config.get(LLM_CONFIG_KEY),
             DEFAULT_LLM_CONFIG,
             "enterprise_search_policy.train",
+            "EnterpriseSearchPolicy",
         )
 
         if store_type == DEFAULT_VECTOR_STORE_TYPE:

@@ -173,6 +173,7 @@ class LLMBasedCommandGenerator(GraphComponent, CommandGenerator, ABC):
             self.config.get(LLM_CONFIG_KEY),
             DEFAULT_LLM_CONFIG,
             "llm_based_command_generator.train",
+            "LLMBasedCommandGenerator",
         )
 
         # flow retrieval is populated with only user-defined flows

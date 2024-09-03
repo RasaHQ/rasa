@@ -369,18 +369,20 @@ def allowed_values_for_slot(slot: Slot) -> Union[str, None]:
 def try_instantiate_llm_client(
     custom_llm_config: Optional[Dict],
     default_llm_config: Optional[Dict],
-    log_source: str,
+    log_source_function: str,
+    log_source_component: str,
 ) -> None:
     """Validate llm configuration."""
     try:
         llm_factory(custom_llm_config, default_llm_config)
     except (ProviderClientValidationError, ValueError) as e:
         structlogger.error(
-            f"{log_source}.llm_instantiation_failed",
+            f"{log_source_function}.llm_instantiation_failed",
             message="Unable to instantiate LLM client.",
             error=e,
         )
         print_error_and_exit(
-            "Unable to create the LLM client. Please make sure you specified the "
-            f"required environment variables. Error: {e}"
+            f"Unable to create the LLM client for component - {log_source_component}. "
+            f"Please make sure you specified the required environment variables. "
+            f"Error: {e}"
         )

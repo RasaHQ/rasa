@@ -76,7 +76,7 @@ class OpenAILLMClient(_BaseLiteLLMClient):
         except (KeyError, ValueError) as e:
             message = "Cannot instantiate a client from the passed configuration."
             structlogger.error(
-                "azure_openai_llm_client.from_config.error",
+                "openai_llm_client.from_config.error",
                 message=message,
                 config=config,
                 original_error=e,
