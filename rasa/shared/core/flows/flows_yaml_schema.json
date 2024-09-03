@@ -1,219 +1,293 @@
 {
-  "type": "object",
-  "required": ["flows"],
-  "properties": {
-    "version": {
-      "type": "string"
-    },
-    "flows": {
-      "type": "object",
-      "schema_name": "dictionary of flows",
-      "patternProperties": {
-        "^[A-Za-z_][A-Za-z0-9_]*$": {
-          "$ref": "#/$defs/flow"
-        }
-      }
-    }
-  },
-  "$defs": {
-    "nlu_trigger": {
-      "type": "array",
-      "schema_name": "list of nlu triggers",
-      "minItems": 1,
-      "items": {
-        "type": "object",
-        "oneOf": [
-          {
-            "schema_name": "intent trigger",
+    "type": "object",
+    "required": [
+        "flows"
+    ],
+    "properties": {
+        "version": {
+            "type": "string"
+        },
+        "flows": {
             "type": "object",
-            "required": ["intent"],
-            "additionalProperties": false,
-            "properties": {
-              "intent": {
-                "type": "object",
-                "properties": {
-                  "confidence_threshold": {
-                    "type": "number"
-                  },
-                  "name": {
-                    "type": "string"
-                  }
-                },
-                "required": ["name"]
-              }
-            }
-          },
-          {
-            "schema_name": "simple intent trigger",
-            "properties": {
-              "intent": {
-                "type": "string"
-              }
-            }
-          }
-        ]
-      }
-    },
-    "steps": {
-      "type": "array",
-      "schema_name": "list of steps",
-      "items": {
-        "type": "object",
-        "properties": {
-          "id": { "type": "string" },
-          "next": {
-            "anyOf": [
-              {
-                "schema_name": "list of conditions",
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "oneOf": [
-                    {
-                      "schema_name": "if-then block",
-                      "required": ["if", "then"]
-                    },
-                    {
-                      "schema_name": "else block",
-                      "required": ["else"]
-                    }
-                  ],
-                  "properties": {
-                    "else": {
-                      "oneOf": [
-                        {
-                          "type": "string",
-                          "schema_name": "step id"
-                        },
-                        {
-                          "$ref": "#/$defs/steps",
-                          "schema_name": "list of steps"
-                        }
-                      ]
-                    },
-                    "if": {
-                      "type": ["boolean", "string"]
-                    },
-                    "then": {
-                      "oneOf": [
-                        {
-                          "$ref": "#/$defs/steps",
-                          "schema_name": "list of steps"
-                        },
-                        {
-                          "type": "string",
-                          "schema_name": "step id"
-                        }
-                      ]
-                    }
-                  }
+            "schema_name": "dictionary of flows",
+            "patternProperties": {
+                "^[A-Za-z_][A-Za-z0-9_]*$": {
+                    "$ref": "#/$defs/flow"
                 }
-              },
-              {
-                "type": "string",
-                "schema_name": "step id"
-              }
-            ]
-          },
-          "action": { "type": "string" },
-          "collect": { "type": "string" },
-          "link": { "type": "string" },
-          "call": { "type": "string" },
-          "set_slots": { "$ref": "#/$defs/set_slots", "schema_name": "slot set" }
-        },
-        "oneOf": [
-          { "required": ["action"], "schema_name": "action step" },
-          { "required": ["collect"], "schema_name": "collect step" },
-          { "required": ["link"], "schema_name": "link step" },
-          { "required": ["call"], "schema_name": "call step" },
-          { "required": ["set_slots"], "schema_name": "slot set step" },
-          { "required": ["noop"], "schema_name": "" }
-        ],
-        "dependentSchemas": {
-          "action": {
-            "additionalProperties": false,
-            "properties": {
-              "id": {},
-              "next": {},
-              "action": {},
-              "metadata": {}
             }
-          },
-          "noop": {
-            "required": ["next"]
-          },
-          "collect": {
-            "additionalProperties": false,
-            "properties": {
-              "collect": {},
-              "id": {},
-              "next": {},
-              "metadata": {},
-              "description": {
-                "type": "string"
-              },
-              "ask_before_filling": {
-                "type": "boolean"
-              },
-              "reset_after_flow_ends": {
-                "type": "boolean"
-              },
-              "utter": {
-                "type": "string"
-              },
-              "rejections": {
-                "type": "array",
-                "schema_name": "list of rejections",
-                "items": {
-                  "type": "object",
-                  "required": ["if", "utter"],
-                  "properties": {
-                    "if": {
-                      "type": ["boolean", "string"]
-                    },
-                    "utter": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          }
         }
-      }
     },
-    "flow": {
-      "required": ["steps", "description"],
-      "type": "object",
-      "additionalProperties": false,
-      "schema_name": "dictionary with flow properties",
-      "properties": {
-        "description": {
-          "type": "string"
-        },
-        "if": {
-          "type": ["string", "boolean"]
-        },
-        "always_include_in_prompt": {
-          "type": "boolean"
-        },
-        "name": {
-          "type": "string"
-        },
+    "$defs": {
         "nlu_trigger": {
-          "$ref": "#/$defs/nlu_trigger"
+            "type": "array",
+            "schema_name": "list of nlu triggers",
+            "minItems": 1,
+            "items": {
+                "type": "object",
+                "oneOf": [
+                    {
+                        "schema_name": "intent trigger",
+                        "type": "object",
+                        "required": [
+                            "intent"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                            "intent": {
+                                "type": "object",
+                                "properties": {
+                                    "confidence_threshold": {
+                                        "type": "number"
+                                    },
+                                    "name": {
+                                        "type": "string"
+                                    }
+                                },
+                                "required": [
+                                    "name"
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        "schema_name": "simple intent trigger",
+                        "properties": {
+                            "intent": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                ]
+            }
         },
         "steps": {
-          "$ref": "#/$defs/steps"
+            "type": "array",
+            "schema_name": "list of steps",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "next": {
+                        "anyOf": [
+                            {
+                                "schema_name": "list of conditions",
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "oneOf": [
+                                        {
+                                            "schema_name": "if-then block",
+                                            "required": [
+                                                "if",
+                                                "then"
+                                            ]
+                                        },
+                                        {
+                                            "schema_name": "else block",
+                                            "required": [
+                                                "else"
+                                            ]
+                                        }
+                                    ],
+                                    "properties": {
+                                        "else": {
+                                            "oneOf": [
+                                                {
+                                                    "type": "string",
+                                                    "schema_name": "step id"
+                                                },
+                                                {
+                                                    "$ref": "#/$defs/steps",
+                                                    "schema_name": "list of steps"
+                                                }
+                                            ]
+                                        },
+                                        "if": {
+                                            "type": [
+                                                "boolean",
+                                                "string"
+                                            ]
+                                        },
+                                        "then": {
+                                            "oneOf": [
+                                                {
+                                                    "$ref": "#/$defs/steps",
+                                                    "schema_name": "list of steps"
+                                                },
+                                                {
+                                                    "type": "string",
+                                                    "schema_name": "step id"
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            },
+                            {
+                                "type": "string",
+                                "schema_name": "step id"
+                            }
+                        ]
+                    },
+                    "action": {
+                        "type": "string"
+                    },
+                    "collect": {
+                        "type": "string"
+                    },
+                    "link": {
+                        "type": "string"
+                    },
+                    "call": {
+                        "type": "string"
+                    },
+                    "set_slots": {
+                        "$ref": "#/$defs/set_slots",
+                        "schema_name": "slot set"
+                    }
+                },
+                "oneOf": [
+                    {
+                        "required": [
+                            "action"
+                        ],
+                        "schema_name": "action step"
+                    },
+                    {
+                        "required": [
+                            "collect"
+                        ],
+                        "schema_name": "collect step"
+                    },
+                    {
+                        "required": [
+                            "link"
+                        ],
+                        "schema_name": "link step"
+                    },
+                    {
+                        "required": [
+                            "call"
+                        ],
+                        "schema_name": "call step"
+                    },
+                    {
+                        "required": [
+                            "set_slots"
+                        ],
+                        "schema_name": "slot set step"
+                    },
+                    {
+                        "required": [
+                            "noop"
+                        ],
+                        "schema_name": ""
+                    }
+                ],
+                "dependentSchemas": {
+                    "action": {
+                        "additionalProperties": false,
+                        "properties": {
+                            "id": {},
+                            "next": {},
+                            "action": {},
+                            "metadata": {}
+                        }
+                    },
+                    "noop": {
+                        "required": [
+                            "next"
+                        ]
+                    },
+                    "collect": {
+                        "additionalProperties": false,
+                        "properties": {
+                            "collect": {},
+                            "id": {},
+                            "next": {},
+                            "metadata": {},
+                            "description": {
+                                "type": "string"
+                            },
+                            "ask_before_filling": {
+                                "type": "boolean"
+                            },
+                            "reset_after_flow_ends": {
+                                "type": "boolean"
+                            },
+                            "utter": {
+                                "type": "string"
+                            },
+                            "rejections": {
+                                "type": "array",
+                                "schema_name": "list of rejections",
+                                "items": {
+                                    "type": "object",
+                                    "required": [
+                                        "if",
+                                        "utter"
+                                    ],
+                                    "properties": {
+                                        "if": {
+                                            "type": [
+                                                "boolean",
+                                                "string"
+                                            ]
+                                        },
+                                        "utter": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "flow": {
+            "required": [
+                "steps",
+                "description"
+            ],
+            "type": "object",
+            "additionalProperties": false,
+            "schema_name": "dictionary with flow properties",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "if": {
+                    "type": [
+                        "string",
+                        "boolean"
+                    ]
+                },
+                "always_include_in_prompt": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "nlu_trigger": {
+                    "$ref": "#/$defs/nlu_trigger"
+                },
+                "file_path": {
+                    "type": "string"
+                },
+                "steps": {
+                    "$ref": "#/$defs/steps"
+                }
+            }
+        },
+        "set_slots": {
+            "type": "array",
+            "schema_name": "list of slot sets",
+            "items": {
+                "type": "object"
+            }
         }
-      }
-    },
-    "set_slots": {
-      "type": "array",
-      "schema_name": "list of slot sets",
-      "items": {
-        "type": "object"
-      }
     }
-  }
 }

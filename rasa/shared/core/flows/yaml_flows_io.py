@@ -1,6 +1,6 @@
 import textwrap
 from pathlib import Path
-from typing import Any, Dict, List, Text, Union
+from typing import Any, Dict, List, Text, Union, Optional
 
 import jsonschema
 import ruamel.yaml.nodes as yaml_nodes
@@ -46,6 +46,7 @@ class YAMLFlowsReader:
                     filename, rasa.shared.utils.io.DEFAULT_ENCODING
                 ),
                 add_line_numbers=add_line_numbers,
+                file_path=filename,
             )
         except YamlException as e:
             e.filename = str(filename)
@@ -200,13 +201,19 @@ class YAMLFlowsReader:
         )
 
     @classmethod
-    def read_from_string(cls, string: Text, add_line_numbers: bool = True) -> FlowsList:
+    def read_from_string(
+        cls,
+        string: Text,
+        add_line_numbers: bool = True,
+        file_path: Optional[Union[str, Path]] = None,
+    ) -> FlowsList:
         """Read flows from a string.
 
         Args:
             string: Unprocessed YAML file content.
             add_line_numbers: If true, a custom constructor is added to add line
                 numbers to each node.
+            file_path: File path of the flow.
 
         Returns:
             `Flow`s read from `string`.
@@ -221,7 +228,7 @@ class YAMLFlowsReader:
         else:
             yaml_content = read_yaml(string)
 
-        return FlowsList.from_json(yaml_content.get(KEY_FLOWS, {}))
+        return FlowsList.from_json(yaml_content.get(KEY_FLOWS, {}), file_path=file_path)
 
 
 class YamlFlowsWriter:

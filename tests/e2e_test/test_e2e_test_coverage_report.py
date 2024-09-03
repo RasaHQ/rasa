@@ -38,7 +38,7 @@ from rasa.e2e_test.e2e_test_coverage_report import (
     extract_tested_commands,
 )
 from rasa.e2e_test.e2e_test_result import TestResult
-from rasa.shared.core.flows import FlowsList
+from rasa.shared.core.flows import FlowsList, Flow
 from rasa.shared.core.flows.flow_path import FlowPath, PathNode, FlowPathsList
 from rasa.shared.core.flows.yaml_flows_io import YAMLFlowsReader
 
@@ -72,7 +72,7 @@ def sample_flows() -> FlowsList:
           - collect: step2
           - collect: step3
     """
-    return YAMLFlowsReader.read_from_string(definition)
+    return YAMLFlowsReader.read_from_string(definition, file_path="path/flow.py")
 
 
 @pytest.fixture
@@ -210,7 +210,12 @@ def test_reorder_columns() -> None:
 def test_create_coverage_report_data() -> None:
     """Tests generating the coverage report data."""
     data = _create_coverage_report_data(
-        flow_names=["flow_a", "flow_b"],
+        FlowsList(
+            [
+                Flow("flow_a", custom_name="flow a", file_path="path/to/flow.py"),
+                Flow("flow_b", file_path="path/to/flow-b.py"),
+            ]
+        ),
         number_of_nodes_per_flow={"flow_a": 5, "flow_b": 2},
         unvisited_nodes_per_flow={
             "flow_a": {PathNode(step_id="step_1", flow="flow_a", lines="2-3")},
@@ -218,7 +223,7 @@ def test_create_coverage_report_data() -> None:
         },
     )
 
-    assert data[FLOWS_KEY] == ["flow_a", "flow_b"]
+    assert data[FLOWS_KEY] == ["path/to/flow.py::flow a", "path/to/flow-b.py::flow b"]
     assert data[NUMBER_OF_STEPS_KEY] == [5, 2]
     assert data[NUMBER_OF_UNTESTED_STEPS_KEY] == [1, 0]
     assert data[UNTESTED_LINES_KEY] == ["[2-3]", "[]"]
@@ -361,8 +366,8 @@ def test_create_coverage_report(
 
     assert not df.empty
     assert len(df) == 3
-    assert df[FLOW_NAME_COL_NAME][0] == "flow1"
-    assert df[FLOW_NAME_COL_NAME][1] == "flow2"
+    assert df[FLOW_NAME_COL_NAME][0] == "path/flow.py::flow1"
+    assert df[FLOW_NAME_COL_NAME][1] == "path/flow.py::flow2"
     assert df[FLOW_NAME_COL_NAME][2] == "Total"
     assert df[NUM_STEPS_COL_NAME][0] == 2
     assert df[NUM_STEPS_COL_NAME][1] == 3

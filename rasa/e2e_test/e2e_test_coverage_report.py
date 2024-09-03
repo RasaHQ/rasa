@@ -87,7 +87,7 @@ def create_coverage_report(
 
     # Step 5: Produce the report
     coverage_report_data = _create_coverage_report_data(
-        list(flow_to_testable_paths.keys()),
+        flows,
         number_of_nodes_per_flow,
         unvisited_nodes_per_flow,
     )
@@ -174,35 +174,40 @@ def _empty_dataframe() -> pd.DataFrame:
 
 
 def _create_coverage_report_data(
-    flow_names: List[str],
+    flows: FlowsList,
     number_of_nodes_per_flow: Dict[str, int],
     unvisited_nodes_per_flow: Dict[str, Set[PathNode]],
 ) -> Dict[str, Any]:
     """Creates the data for the coverage report.
 
     Args:
-        flow_names: All available flow names
+        flows: All available flow names
         number_of_nodes_per_flow: Number of nodes per flow
         unvisited_nodes_per_flow: Unvisited nodes per flow
 
     Returns:
         A dictionary with processed data needed to construct the DataFrame.
     """
-    number_of_steps = [0] * len(flow_names)
-    number_of_untested_steps = [0] * len(flow_names)
-    untested_lines: List[List[str]] = [[]] * len(flow_names)
+    flow_ids = [flow.id for flow in flows.user_flows.underlying_flows]
 
-    for flow in flow_names:
+    flow_full_names = ["unknown"] * len(flow_ids)
+    number_of_steps = [0] * len(flow_ids)
+    number_of_untested_steps = [0] * len(flow_ids)
+    untested_lines: List[List[str]] = [[]] * len(flow_ids)
+
+    for flow in flow_ids:
         nodes = unvisited_nodes_per_flow[flow]
         lines: List[str] = [node.lines for node in nodes if node.lines]
 
-        index = flow_names.index(flow)
+        index = flow_ids.index(flow)
+        if flow_object := flows.flow_by_id(flow):
+            flow_full_names[index] = flow_object.get_full_name()
         number_of_steps[index] = number_of_nodes_per_flow[flow]
         number_of_untested_steps[index] = len(nodes)
         untested_lines[index] = lines
 
     return {
-        FLOWS_KEY: flow_names,
+        FLOWS_KEY: flow_full_names,
         NUMBER_OF_STEPS_KEY: number_of_steps,
         NUMBER_OF_UNTESTED_STEPS_KEY: number_of_untested_steps,
         UNTESTED_LINES_KEY: _reformat_untested_lines(untested_lines),

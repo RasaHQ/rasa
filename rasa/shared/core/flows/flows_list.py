@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Generator, Any, Optional, Dict, Text, Set
+from pathlib import Path
+from typing import List, Generator, Any, Optional, Dict, Text, Set, Union
 
 import rasa.shared.utils.io
 from rasa.shared.core.flows import Flow
@@ -66,11 +67,16 @@ class FlowsList:
         return FlowsList(list(merged_flows.values()))
 
     @classmethod
-    def from_json(cls, data: Optional[Dict[Text, Dict[Text, Any]]]) -> FlowsList:
-        """Create a FlowsList object from serialized data
+    def from_json(
+        cls,
+        data: Optional[Dict[Text, Dict[Text, Any]]],
+        file_path: Optional[Union[str, Path]] = None,
+    ) -> FlowsList:
+        """Create a FlowsList object from serialized data.
 
         Args:
             data: data for a FlowsList in a serialized format
+            file_path: the file path of the flows
 
         Returns:
             A FlowsList object.
@@ -80,7 +86,7 @@ class FlowsList:
 
         return cls(
             underlying_flows=[
-                Flow.from_json(flow_id, flow_config)
+                Flow.from_json(flow_id, flow_config, file_path)
                 for flow_id, flow_config in data.items()
             ]
         )

@@ -932,3 +932,16 @@ def test_handle_next(pizza_flows_file: str):
 
     assert len(collected_paths.paths) == 4
     assert collected_paths.paths == expected_collected_paths
+
+
+@pytest.mark.parametrize(
+    "file_path, expected_name",
+    [
+        (None, "test flow"),
+        ("data/flows/test_flow.py", "data/flows/test_flow.py::test flow"),
+    ],
+)
+def test_get_full_name(file_path: str, expected_name: str):
+    flow = Flow("flow_1", "test flow", file_path=file_path)
+
+    assert flow.get_full_name() == expected_name

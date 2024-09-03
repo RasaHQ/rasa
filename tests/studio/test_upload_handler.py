@@ -9,13 +9,13 @@ import pytest
 import questionary
 from pytest import MonkeyPatch
 
+
 from rasa.shared.core.flows.yaml_flows_io import (
     YAMLFlowsReader,
     YamlFlowsWriter,
     flows_from_str,
 )
 from rasa.shared.exceptions import RasaException
-
 import rasa.studio.upload
 from rasa.studio.config import StudioConfig
 from rasa.studio.results_logger import with_studio_error_handler, StudioResult
@@ -199,7 +199,6 @@ CALM_DOMAIN_YAML = dedent(
     """  # noqa: E501
 )
 
-
 CALM_FLOWS_YAML = dedent(
     """\
     flows:
@@ -216,6 +215,7 @@ CALM_FLOWS_YAML = dedent(
         - intent:
             name: health_advice
             confidence_threshold: 0.8
+        file_path: data/upload/calm/data/flows.yml
       add_contact:
         steps:
         - id: 0_collect_add_contact_handle
@@ -283,6 +283,7 @@ CALM_FLOWS_YAML = dedent(
           action: action_add_contact
         name: add_contact
         description: add a contact to your contact list
+        file_path: data/upload/calm/data/flows.yml
       check_balance:
         steps:
         - id: 0_action_check_balance
@@ -297,6 +298,7 @@ CALM_FLOWS_YAML = dedent(
           action: utter_current_balance
         name: check_balance
         description: check the user's account balance.
+        file_path: data/upload/calm/data/flows.yml
       hotel_search:
         steps:
         - id: 0_action_search_hotel
@@ -311,6 +313,7 @@ CALM_FLOWS_YAML = dedent(
           action: utter_hotel_inform_rating
         name: hotel_search
         description: search for hotels
+        file_path: data/upload/calm/data/flows.yml
       remove_contact:
         steps:
         - id: 0_collect_remove_contact_handle
@@ -367,6 +370,7 @@ CALM_FLOWS_YAML = dedent(
           action: action_remove_contact
         name: remove_contact
         description: remove a contact from your contact list
+        file_path: data/upload/calm/data/flows.yml
       transaction_search:
         steps:
         - id: 0_action_transaction_search
@@ -381,6 +385,7 @@ CALM_FLOWS_YAML = dedent(
           action: utter_transactions
         name: transaction_search
         description: lists the last transactions of the user account
+        file_path: data/upload/calm/data/flows.yml
       transfer_money:
         steps:
         - id: 0_collect_transfer_money_recipient
@@ -463,6 +468,7 @@ CALM_FLOWS_YAML = dedent(
           action: action_execute_transfer
         name: transfer_money
         description: This flow let's users send money to friends and family.
+        file_path: data/upload/calm/data/flows.yml
       verify_account:
         steps:
         - id: 0_collect_verify_account_email
@@ -554,6 +560,7 @@ CALM_FLOWS_YAML = dedent(
           rejections: []
         name: verify_account
         description: Verify an account for higher transfer limits
+        file_path: data/upload/calm/data/flows.yml
     """  # noqa: E501
 )
 
@@ -977,7 +984,6 @@ def test_build_import_request(assistant_name: str) -> None:
     :param assistant_name: The name of the assistant
     :return: None
     """
-
     base64_flows = encode_yaml(CALM_FLOWS_YAML)
     base64_domain = encode_yaml(CALM_DOMAIN_YAML)
     base64_config = encode_yaml(CALM_CONFIG_YAML)
