@@ -32,7 +32,7 @@ async def create_paraphrased_conversations(
 
     Args:
         conversations: The conversations.
-        rephrase_config_path: The path to the rephrase configuration file.
+        rephrase_config: The path to the rephrase configuration file.
         num_rephrases: The number of rephrases to produce per user message.
         flows: All flows.
         llm_command_generator_config: The configuration of the trained model.
@@ -44,6 +44,15 @@ async def create_paraphrased_conversations(
     """
     rephraser = ConversationRephraser(rephrase_config)
     validator = RephraseValidator(llm_command_generator_config, flows)
+
+    if num_rephrases <= 0:
+        structlogger.info(
+            "paraphrasing_module.skip",
+            num_rephrases=num_rephrases,
+            message="Skipping paraphrasing module as user messages should not be "
+            "rephrased.",
+        )
+        return conversations, rephraser.config
 
     rephrased_conversations: List[Conversation] = []
     for i in tqdm(range(len(conversations))):
