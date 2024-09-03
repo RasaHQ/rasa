@@ -349,7 +349,9 @@ async def test_intentless_policy_generate_llm_answer_len_prompt_tokens_non_opena
     )
 
     intentless_policy_generator.trace_prompt_tokens = True
-    intentless_policy_generator.config = {"llm": {"type": "cohere", "model": "command"}}
+    intentless_policy_generator.config = {
+        "llm": {"provider": "cohere", "model": "command"}
+    }
 
     with caplog.at_level(logging.WARNING):
         await intentless_policy_generator._generate_llm_answer(

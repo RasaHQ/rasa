@@ -167,7 +167,7 @@ async def test_tracing_single_step_llm_command_generator_non_default_llm_attrs(
     config = {
         "prompt": TEST_PROMPT_DIRECTORY,
         "llm": {
-            "type": "cohere",
+            "provider": "cohere",
             "model": model,
             "request_timeout": 10,
             "temperature": 0.7,
@@ -193,7 +193,7 @@ async def test_tracing_single_step_llm_command_generator_non_default_llm_attrs(
     expected_attributes = {
         "class_name": component_class.__name__,
         "llm_model": model,
-        "llm_type": "cohere_chat",
+        "llm_type": "cohere",
         "llm_temperature": "0.7",
         "request_timeout": "10",
         "embeddings": '{"model": "text-embedding-ada-002"}',
@@ -305,7 +305,7 @@ async def test_tracing_single_step_llm_command_generator_prompt_tokens_non_opena
     mock_single_step_llm_command_generator = component_class(
         config={
             "trace_prompt_tokens": True,
-            "llm": {"type": "cohere", "model": "command"},
+            "llm": {"provider": "cohere", "model": "command"},
         },
         model_storage=default_model_storage,
         resource=Resource("llm-command-generator"),

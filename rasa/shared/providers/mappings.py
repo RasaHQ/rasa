@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, Type, Optional
+from typing import Dict, Type, Optional
 
 from rasa.shared.constants import (
     AZURE_OPENAI_PROVIDER,
@@ -37,6 +37,7 @@ from rasa.shared.providers._configs.openai_client_config import OpenAIClientConf
 from rasa.shared.providers._configs.self_hosted_llm_client_config import (
     SelfHostedLLMClientConfig,
 )
+from rasa.shared.providers._configs.client_config import ClientConfig
 
 _provider_to_llm_client_mapping: Dict[str, Type[LLMClient]] = {
     OPENAI_PROVIDER: OpenAILLMClient,
@@ -50,14 +51,11 @@ _provider_to_embedding_client_mapping: Dict[str, Type[EmbeddingClient]] = {
     HUGGINGFACE_LOCAL_EMBEDDING_PROVIDER: HuggingFaceLocalEmbeddingClient,
 }
 
-# Define a type alias for the resolve aliases function signature
-ResolveAliasesFn = Callable[[Dict[str, Any]], Dict[str, Any]]
-
-_provider_to_client_config_resolve_aliases_fn_mapping: Dict[str, ResolveAliasesFn] = {
-    OPENAI_PROVIDER: OpenAIClientConfig.resolve_config_aliases,
-    AZURE_OPENAI_PROVIDER: AzureOpenAIClientConfig.resolve_config_aliases,
-    HUGGINGFACE_LOCAL_EMBEDDING_PROVIDER: HuggingFaceLocalEmbeddingClientConfig.resolve_config_aliases,  # noqa
-    SELF_HOSTED_PROVIDER: SelfHostedLLMClientConfig.resolve_config_aliases,
+_provider_to_client_config_class_mapping: Dict[str, Type] = {
+    OPENAI_PROVIDER: OpenAIClientConfig,
+    AZURE_OPENAI_PROVIDER: AzureOpenAIClientConfig,
+    HUGGINGFACE_LOCAL_EMBEDDING_PROVIDER: HuggingFaceLocalEmbeddingClientConfig,
+    SELF_HOSTED_PROVIDER: SelfHostedLLMClientConfig,
 }
 
 
@@ -71,7 +69,7 @@ def get_embedding_client_from_provider(provider: str) -> Type[EmbeddingClient]:
     )
 
 
-def get_resolve_aliases_fn_from_provider(provider: str) -> Optional[ResolveAliasesFn]:
-    return _provider_to_client_config_resolve_aliases_fn_mapping.get(
-        provider, DefaultLiteLLMClientConfig.resolve_config_aliases
+def get_client_config_class_from_provider(provider: str) -> Type[ClientConfig]:
+    return _provider_to_client_config_class_mapping.get(
+        provider, DefaultLiteLLMClientConfig
     )

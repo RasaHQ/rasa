@@ -82,6 +82,8 @@ class DefaultLiteLLMClientConfig:
             DefaultLiteLLMClientConfig
         """
         cls.check_and_error_for_model_name_in_config(config)
+        # Resolve any potential aliases.
+        config = cls.resolve_config_aliases(config)
         # Validate that the required keys are present
         validate_required_keys(config, REQUIRED_KEYS)
         # Validate that the forbidden keys are not present

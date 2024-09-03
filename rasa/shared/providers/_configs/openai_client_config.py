@@ -127,7 +127,7 @@ class OpenAIClientConfig:
         # Check for deprecated keys
         raise_deprecation_warnings(config, DEPRECATED_ALIASES_TO_STANDARD_KEY_MAPPING)
         # Resolve any potential aliases
-        config = OpenAIClientConfig.resolve_config_aliases(config)
+        config = cls.resolve_config_aliases(config)
         # Validate that the required keys are present
         validate_required_keys(config, REQUIRED_KEYS)
         # Validate that the forbidden keys are not present

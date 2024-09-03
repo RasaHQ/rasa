@@ -1321,6 +1321,7 @@ def test_to_show_that_cache_is_persisted_across_different_calls() -> None:
 @pytest.mark.parametrize(
     "custom_config," "expected_combined_config,",
     (  # Test cases for the client - OpenAI.
+        # case: 0
         (
             {
                 "provider": "openai",
@@ -1335,8 +1336,12 @@ def test_to_show_that_cache_is_persisted_across_different_calls() -> None:
                 "temperature": 0.0,
                 "max_tokens": 256,
                 "timeout": 7,
+                "api_type": "openai",
+                "api_base": None,
+                "api_version": None,
             },
         ),
+        # case: 1
         # Deprecated `provider` aliases
         (
             {
@@ -1352,8 +1357,12 @@ def test_to_show_that_cache_is_persisted_across_different_calls() -> None:
                 "temperature": 0.0,
                 "max_tokens": 256,
                 "timeout": 7,
+                "api_type": "openai",
+                "api_base": None,
+                "api_version": None,
             },
         ),
+        # case: 2
         (
             {
                 "type": "openai",
@@ -1368,8 +1377,12 @@ def test_to_show_that_cache_is_persisted_across_different_calls() -> None:
                 "temperature": 0.0,
                 "max_tokens": 256,
                 "timeout": 7,
+                "api_type": "openai",
+                "api_base": None,
+                "api_version": None,
             },
         ),
+        # case: 3
         # Missing provider, supports backward compatibility
         (
             {
@@ -1383,8 +1396,11 @@ def test_to_show_that_cache_is_persisted_across_different_calls() -> None:
                 "temperature": 0.0,
                 "max_tokens": 256,
                 "timeout": 7,
+                "api_base": None,
+                "api_version": None,
             },
         ),
+        # case: 4
         (
             {"model": "gpt-4"},
             {
@@ -1393,8 +1409,12 @@ def test_to_show_that_cache_is_persisted_across_different_calls() -> None:
                 "temperature": 0.0,
                 "max_tokens": 256,
                 "timeout": 7,
+                "api_type": "openai",
+                "api_base": None,
+                "api_version": None,
             },
         ),
+        # case: 5
         # Missing provider and uses deprecated aliases
         (
             {
@@ -1407,8 +1427,12 @@ def test_to_show_that_cache_is_persisted_across_different_calls() -> None:
                 "temperature": 0.0,
                 "max_tokens": 256,
                 "timeout": 7,
+                "api_type": "openai",
+                "api_base": None,
+                "api_version": None,
             },
         ),
+        # case: 6
         (
             {
                 "api_type": "openai",
@@ -1421,8 +1445,11 @@ def test_to_show_that_cache_is_persisted_across_different_calls() -> None:
                 "temperature": 0.0,
                 "max_tokens": 256,
                 "timeout": 7,
+                "api_base": None,
+                "api_version": None,
             },
         ),
+        # case: 7
         (
             {
                 "api_type": "openai",
@@ -1435,8 +1462,11 @@ def test_to_show_that_cache_is_persisted_across_different_calls() -> None:
                 "temperature": 0.0,
                 "max_tokens": 256,
                 "timeout": 7,
+                "api_base": None,
+                "api_version": None,
             },
         ),
+        # case: 8
         # litellm way of defining model.
         (
             {
@@ -1450,8 +1480,11 @@ def test_to_show_that_cache_is_persisted_across_different_calls() -> None:
                 "temperature": 0.0,
                 "max_tokens": 256,
                 "timeout": 7,
+                "api_base": None,
+                "api_version": None,
             },
         ),
+        # case: 9
         (
             {
                 "model_name": "openai/gpt-4",
@@ -1462,10 +1495,14 @@ def test_to_show_that_cache_is_persisted_across_different_calls() -> None:
                 "temperature": 0.0,
                 "max_tokens": 256,
                 "timeout": 7,
+                "api_type": "openai",
+                "api_base": None,
+                "api_version": None,
             },
         ),
         # ------------------------------------------------------------------------------
         # Test cases for the client - Azure.
+        # case: 10
         (
             {
                 "provider": "azure",
@@ -1480,8 +1517,10 @@ def test_to_show_that_cache_is_persisted_across_different_calls() -> None:
                 "api_type": "azure",
                 "api_base": "https://my-test-base",
                 "api_version": "v1",
+                "model": None,
             },
         ),
+        # case: 11
         # Deprecated `provider` aliases
         (
             {
@@ -1497,8 +1536,10 @@ def test_to_show_that_cache_is_persisted_across_different_calls() -> None:
                 "api_type": "azure",
                 "api_base": "https://my-test-base",
                 "api_version": "v1",
+                "model": None,
             },
         ),
+        # case: 12
         (
             {
                 "_type": "azure",
@@ -1513,8 +1554,10 @@ def test_to_show_that_cache_is_persisted_across_different_calls() -> None:
                 "api_type": "azure",
                 "api_base": "https://my-test-base",
                 "api_version": "v1",
+                "model": None,
             },
         ),
+        # case: 13
         # Missing provider, supports backward compatibility
         (
             {
@@ -1529,8 +1572,10 @@ def test_to_show_that_cache_is_persisted_across_different_calls() -> None:
                 "api_type": "azure",
                 "api_base": "https://my-test-base",
                 "api_version": "v1",
+                "model": None,
             },
         ),
+        # case: 14
         # Missing provider and uses deprecated aliases
         (
             {
@@ -1545,8 +1590,10 @@ def test_to_show_that_cache_is_persisted_across_different_calls() -> None:
                 "api_type": "azure",
                 "api_base": "https://my-test-base",
                 "api_version": "v1",
+                "model": None,
             },
         ),
+        # case: 15
         # Missing provider and api_type
         (
             {
@@ -1559,8 +1606,11 @@ def test_to_show_that_cache_is_persisted_across_different_calls() -> None:
                 "deployment": "my-test-embedding-deployment-on-azure",
                 "api_base": "https://my-test-base",
                 "api_version": "v1",
+                "api_type": "azure",
+                "model": None,
             },
         ),
+        # case: 16
         # Deprecated aliases
         (
             {
@@ -1576,8 +1626,10 @@ def test_to_show_that_cache_is_persisted_across_different_calls() -> None:
                 "api_type": "azure",
                 "api_base": "https://my-test-base",
                 "api_version": "v1",
+                "model": None,
             },
         ),
+        # case: 17
         (
             {
                 "provider": "azure",
@@ -1592,8 +1644,10 @@ def test_to_show_that_cache_is_persisted_across_different_calls() -> None:
                 "api_type": "azure",
                 "api_base": "https://my-test-base",
                 "api_version": "v1",
+                "model": None,
             },
         ),
+        # case: 18
         (
             {
                 "provider": "azure",
@@ -1610,28 +1664,40 @@ def test_to_show_that_cache_is_persisted_across_different_calls() -> None:
                 "api_base": "https://my-test-base",
                 "api_version": "v1",
                 "timeout": 10,
+                "model": None,
             },
         ),
+        # case: 19
         # litellm way of defining model.
         (
             {
-                "model": "azure/gpt-4",
+                "deployment": "azure/gpt-4",
             },
             {
                 "provider": "azure",
-                "model": "azure/gpt-4",
+                "deployment": "azure/gpt-4",
+                "model": None,
+                "api_type": "azure",
+                "api_base": None,
+                "api_version": None,
             },
         ),
+        # case: 20
         (
             {
-                "model_name": "azure/gpt-4",
+                "engine": "azure/gpt-4",
             },
             {
                 "provider": "azure",
-                "model": "azure/gpt-4",
+                "deployment": "azure/gpt-4",
+                "model": None,
+                "api_type": "azure",
+                "api_base": None,
+                "api_version": None,
             },
         ),
         # ------------------------------------------------------------------------------
+        # case: 21
         # Test cases for the client - Default.
         (
             {
@@ -1643,6 +1709,7 @@ def test_to_show_that_cache_is_persisted_across_different_calls() -> None:
                 "model": "mistral/mistral-medium",
             },
         ),
+        # case: 22
         # Using deprecated request_timeout
         (
             {
@@ -1656,6 +1723,7 @@ def test_to_show_that_cache_is_persisted_across_different_calls() -> None:
                 "timeout": 10,
             },
         ),
+        # case: 23
         # Missing provider.
         (
             {
@@ -1666,6 +1734,7 @@ def test_to_show_that_cache_is_persisted_across_different_calls() -> None:
                 "model": "mistral/mistral-medium",
             },
         ),
+        # case: 24
         (
             {
                 "model": "mistral/some-model",
@@ -1676,6 +1745,7 @@ def test_to_show_that_cache_is_persisted_across_different_calls() -> None:
             },
         ),
         # ------------------------------------------------------------------------------
+        # case: 25
         # Test cases for the client - self hosted.
         (
             {
@@ -1687,8 +1757,11 @@ def test_to_show_that_cache_is_persisted_across_different_calls() -> None:
                 "provider": "self-hosted",
                 "model": "some_model",
                 "api_base": "http://localhost:8000",
+                "api_type": "openai",
+                "api_version": None,
             },
         ),
+        # case: 26
         # With provider deprecated aliases
         (
             {
@@ -1700,8 +1773,11 @@ def test_to_show_that_cache_is_persisted_across_different_calls() -> None:
                 "provider": "self-hosted",
                 "model": "some_model",
                 "api_base": "http://localhost:8000",
+                "api_type": "openai",
+                "api_version": None,
             },
         ),
+        # case: 27
         (
             {
                 "model": "some_model",
@@ -1712,8 +1788,11 @@ def test_to_show_that_cache_is_persisted_across_different_calls() -> None:
                 "provider": "self-hosted",
                 "model": "some_model",
                 "api_base": "http://localhost:8000",
+                "api_type": "openai",
+                "api_version": None,
             },
         ),
+        # case: 28
         # with api_base, api_type and api_version deprecated aliases
         (
             {
@@ -1731,6 +1810,7 @@ def test_to_show_that_cache_is_persisted_across_different_calls() -> None:
                 "api_version": "v1",
             },
         ),
+        # case: 29
         # with model deprecated aliases
         (
             {
@@ -1742,8 +1822,11 @@ def test_to_show_that_cache_is_persisted_across_different_calls() -> None:
                 "provider": "self-hosted",
                 "model": "some_model",
                 "api_base": "http://localhost:8000",
+                "api_type": "openai",
+                "api_version": None,
             },
         ),
+        # case: 30
         # with request_timeout deprecated aliases
         (
             {
@@ -1757,6 +1840,8 @@ def test_to_show_that_cache_is_persisted_across_different_calls() -> None:
                 "model": "some_model",
                 "api_base": "http://localhost:8000",
                 "timeout": 10,
+                "api_type": "openai",
+                "api_version": None,
             },
         ),
     ),

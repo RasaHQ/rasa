@@ -110,7 +110,7 @@ class HuggingFaceLocalEmbeddingClientConfig:
         # Check for other deprecated keys
         raise_deprecation_warnings(config, DEPRECATED_ALIASES_TO_STANDARD_KEY_MAPPING)
         # Resolve any potential aliases
-        config = HuggingFaceLocalEmbeddingClientConfig.resolve_config_aliases(config)
+        config = cls.resolve_config_aliases(config)
         # Validate that required keys are set
         validate_required_keys(config, REQUIRED_KEYS)
         this = HuggingFaceLocalEmbeddingClientConfig(

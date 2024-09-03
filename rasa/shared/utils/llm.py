@@ -53,7 +53,7 @@ from rasa.shared.providers.mappings import (
     SELF_HOSTED_PROVIDER,
     get_embedding_client_from_provider,
     HUGGINGFACE_LOCAL_EMBEDDING_PROVIDER,
-    get_resolve_aliases_fn_from_provider,
+    get_client_config_class_from_provider,
 )
 from rasa.shared.utils.cli import print_error_and_exit
 
@@ -88,13 +88,38 @@ ERROR_PLACEHOLDER = {
     "default": "[User input triggered an error]",
 }
 
-F = TypeVar(
-    "F",
+_Factory_F = TypeVar(
+    "_Factory_F",
     bound=Callable[[Dict[str, Any], Dict[str, Any]], Union[EmbeddingClient, LLMClient]],
+)
+_CombineConfigs_F = TypeVar(
+    "_CombineConfigs_F",
+    bound=Callable[[Dict[str, Any], Dict[str, Any]], Dict[str, Any]],
 )
 
 
-def _cache_factory(function: F) -> F:
+def _compute_hash_for_cache_from_configs(
+    config_x: Dict[str, Any], config_y: Dict[str, Any]
+) -> int:
+    """Get a unique hash of the default and custom configs."""
+    return hash(
+        json.dumps(config_x, sort_keys=True) + json.dumps(config_y, sort_keys=True)
+    )
+
+
+def _retrieve_from_cache(
+    cache: Dict[int, Any], unique_hash: int, function: Callable, function_kwargs: dict
+) -> Any:
+    """Retrieve the value from the cache if it exists. If it does not exist, cache it"""
+    if unique_hash in cache:
+        return cache[unique_hash]
+    else:
+        return_value = function(**function_kwargs)
+        cache[unique_hash] = return_value
+        return return_value
+
+
+def _cache_factory(function: _Factory_F) -> _Factory_F:
     """Memoize the factory methods based on the arguments."""
     cache: Dict[int, Union[EmbeddingClient, LLMClient]] = {}
 
@@ -103,16 +128,13 @@ def _cache_factory(function: F) -> F:
         config_x: Dict[str, Any], config_y: Dict[str, Any]
     ) -> Union[EmbeddingClient, LLMClient]:
         # Get a unique hash of the default and custom configs.
-        unique_hash = hash(
-            json.dumps(config_x, sort_keys=True) + json.dumps(config_y, sort_keys=True)
+        unique_hash = _compute_hash_for_cache_from_configs(config_x, config_y)
+        return _retrieve_from_cache(
+            cache=cache,
+            unique_hash=unique_hash,
+            function=function,
+            function_kwargs={"custom_config": config_x, "default_config": config_y},
         )
-
-        if unique_hash in cache:
-            return cache[unique_hash]
-        else:
-            return_value = function(config_x, config_y)
-            cache[unique_hash] = return_value
-            return return_value
 
     def clear_cache() -> None:
         cache.clear()
@@ -122,7 +144,37 @@ def _cache_factory(function: F) -> F:
         )
 
     setattr(factory_method_wrapper, "clear_cache", clear_cache)
-    return cast(F, factory_method_wrapper)
+    return cast(_Factory_F, factory_method_wrapper)
+
+
+def _cache_combine_custom_and_default_configs(
+    function: _CombineConfigs_F,
+) -> _CombineConfigs_F:
+    """Memoize the combine_custom_and_default_config method based on the arguments."""
+    cache: Dict[int, dict] = {}
+
+    @wraps(function)
+    def combine_configs_wrapper(
+        config_x: Dict[str, Any], config_y: Dict[str, Any]
+    ) -> dict:
+        # Get a unique hash of the default and custom configs.
+        unique_hash = _compute_hash_for_cache_from_configs(config_x, config_y)
+        return _retrieve_from_cache(
+            cache=cache,
+            unique_hash=unique_hash,
+            function=function,
+            function_kwargs={"custom_config": config_x, "default_config": config_y},
+        )
+
+    def clear_cache() -> None:
+        cache.clear()
+        structlogger.debug(
+            "Cleared cache for combine_custom_and_default_config method",
+            function_name=function.__name__,
+        )
+
+    setattr(combine_configs_wrapper, "clear_cache", clear_cache)
+    return cast(_CombineConfigs_F, combine_configs_wrapper)
 
 
 def tracker_as_readable_transcript(
@@ -192,6 +244,7 @@ def sanitize_message_for_prompt(text: Optional[str]) -> str:
     return text.replace("\n", " ") if text else ""
 
 
+@_cache_combine_custom_and_default_configs
 def combine_custom_and_default_config(
     custom_config: Optional[Dict[str, Any]], default_config: Dict[str, Any]
 ) -> Dict[Text, Any]:
@@ -221,20 +274,23 @@ def combine_custom_and_default_config(
     default_config_provider = default_config[PROVIDER_CONFIG_KEY]
 
     if custom_config_provider:
-        # Get the provider-specific alias resolution function.
-        resolve_config_aliase_fn = get_resolve_aliases_fn_from_provider(
+        # Get the provider-specific config class from the provider.
+        client_config_clazz = get_client_config_class_from_provider(
             custom_config_provider
         )
-
-        # If the client config has a `resolve_config_aliases` method, use it to resolve
-        # the aliases. Otherwise, just return the custom config as is.
-        if resolve_config_aliase_fn is not None:
-            custom_config = resolve_config_aliase_fn(custom_config)
 
         # If provider not in config, then set it. This case happens when litellm infers
         # the provider from the model, instead of the client config classes.
         if PROVIDER_CONFIG_KEY not in custom_config:
+            custom_config = custom_config.copy()
             custom_config[PROVIDER_CONFIG_KEY] = custom_config_provider
+
+        # If the client config class is not None, then call `from_dict` on it.
+        # Checks for deprecated keys, resolves aliases and returns a valid config.
+        # This is done to ensure that the custom config is valid.
+        if client_config_clazz is not None:
+            config_object = client_config_clazz.from_dict(custom_config)
+            custom_config = config_object.to_dict()
 
         if custom_config_provider != default_config_provider:
             return custom_config.copy()
