@@ -272,20 +272,23 @@ asyncio_mode = "auto"
 version = "3.10.0rc2"
 allow-prereleases = true
 
+[tool.poetry.dependencies.keras]
+version = "2.13.1"
+
 [tool.poetry.dependencies.tensorflow]
-version = "2.12.0"
+version = "2.13.0rc0"
 markers = "sys_platform != 'darwin' or platform_machine != 'arm64'"
 
 [tool.poetry.dependencies.tensorflow-intel]
-version = "2.12.0"
+version = "2.13.0rc0"
 markers = "sys_platform == 'win32'"
 
 [tool.poetry.dependencies.tensorflow-cpu-aws]
-version = "2.12.0"
+version = "2.13.0rc0"
 markers = "sys_platform == 'linux' and (platform_machine == 'arm64' or platform_machine == 'aarch64')"
 
 [tool.poetry.dependencies.tensorflow-macos]
-version = "2.12.0"
+version = "2.13.0rc0"
 markers = "sys_platform == 'darwin' and platform_machine == 'arm64'"
 
 [tool.poetry.dependencies.PyJWT]
@@ -302,7 +305,7 @@ markers = "sys_platform == 'darwin' and platform_machine == 'arm64'"
 optional = true
 
 [tool.poetry.dependencies.tensorflow-text]
-version = "2.12.0"
+version = "2.13.0rc0"
 markers = "sys_platform != 'win32' and platform_machine != 'arm64' and platform_machine != 'aarch64'"
 
 [tool.poetry.dependencies."github3.py"]
