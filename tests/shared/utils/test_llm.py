@@ -231,53 +231,40 @@ def test_sanitize_message_for_prompt_handles_string_with_newlines():
 @pytest.mark.parametrize(
     "config, expected_provider",
     (
-        # LiteLLM naming convention
-        ({"model": "openai/test-gpt"}, "openai"),
-        ({"model": "azure/my-test-gpt-deployment"}, "azure"),
-        ({"model": "cohere/command"}, "cohere"),
-        ({"model": "bedrock/test-model-on-bedrock"}, "bedrock"),
+        # LiteLLM naming convention without specifying the provider key
+        # should return None, because inference of provider from 'model'
+        # is not allowed for default clients
+        ({"model": "cohere/command"}, None),
+        ({"model": "bedrock/test-model-on-bedrock"}, None),
+        ({"model": "azure/my-test-gpt-deployment"}, None),
+        ({"model": "openai/test-gpt"}, None),
+        ({"model": "gpt-4"}, None),
+        ({"model": "huggingface/some-huggingface-model"}, None),
         # Relying on provider
         ({"provider": "openai"}, "openai"),
         ({"provider": "azure"}, "azure"),
+        ({"provider": "huggingface_local"}, "huggingface_local"),
+        ({"provider": "self-hosted"}, "self-hosted"),
+        ({"model": "cohere/command", "provider": "cohere"}, "cohere"),
+        ({"model": "bedrock/test-model-on-bedrock", "provider": "bedrock"}, "bedrock"),
         # Using deprecated provider aliases for openai and azure
         ({"_type": "openai"}, "openai"),
         ({"type": "openai"}, "openai"),
         ({"type": "azure"}, "azure"),
         ({"_type": "azure"}, "azure"),
+        # Using deprecated provider alias for hugging face local embeddings
+        ({"type": "huggingface"}, "huggingface_local"),
+        ({"_type": "huggingface"}, "huggingface_local"),
+        # Deprecated provider aliases are not allowed for other providers
+        ({"_type": "cohere"}, None),
         # Relying on azure openai specific config
         ({"deployment": "my-test-deployment-on-azure"}, "azure"),
-        # Relying on LiteLLM's list of known models
-        ({"model": "gpt-4"}, "openai"),
-        ({"model": "text-embedding-3-small"}, "openai"),
-        # Unkown provider
-        ({"model": "unknown-model"}, None),
-        ({"model": "unknown-provider/unknown-model"}, None),
-        # Supporting deprecated model_name
-        ({"model_name": "openai/test-gpt"}, "openai"),
-        ({"model_name": "azure/my-test-gpt-deployment"}, "azure"),
-        ({"model_name": "gpt-4"}, "openai"),
-        # Support self-hosted LLM client
-        ({"provider": "self-hosted"}, "self-hosted"),
     ),
 )
 def test_get_provider_from_config(config: dict, expected_provider: Optional[str]):
     # When
     provider = get_provider_from_config(config)
     assert provider == expected_provider
-
-
-@pytest.mark.parametrize(
-    "config",
-    (  # Using unsupported model_name for default client configs.
-        {"model_name": "cohere/command"},
-        {"model_name": "bedrock/test-model-on-bedrock"},
-        {"model_name": "mistral/mistral-medium-latest"},
-    ),
-)
-def test_get_provider_from_config_throws_error(config: dict):
-    # When
-    with pytest.raises(SystemExit):
-        get_provider_from_config(config)
 
 
 def test_llm_factory(monkeypatch: MonkeyPatch):
@@ -1724,24 +1711,43 @@ def test_to_show_that_cache_is_persisted_across_different_calls() -> None:
             },
         ),
         # case: 23
-        # Missing provider.
+        # Missing provider <=> overriding the default config
+        # TODO: Update the codebase so this test fails. For this we can
+        #       leverage LiteLLM's utils.get_llm_provider.
+        #       This would be the IDEAL behaviour.
         (
             {
                 "model": "mistral/mistral-medium",
             },
             {
-                "provider": "mistral",
+                "provider": "openai",
                 "model": "mistral/mistral-medium",
+                "temperature": 0.0,
+                "max_tokens": 256,
+                "timeout": 7,
+                "api_type": "openai",
+                "api_version": None,
+                "api_base": None,
             },
         ),
         # case: 24
+        # Missing provider <=> overriding the default config
+        # TODO: Update the codebase so this test fails. For this we can
+        #       leverage LiteLLM's utils.get_llm_provider.
+        #       This would be the IDEAL behaviour.
         (
             {
                 "model": "mistral/some-model",
             },
             {
-                "provider": "mistral",
+                "provider": "openai",
                 "model": "mistral/some-model",
+                "temperature": 0.0,
+                "max_tokens": 256,
+                "timeout": 7,
+                "api_type": "openai",
+                "api_version": None,
+                "api_base": None,
             },
         ),
         # ------------------------------------------------------------------------------

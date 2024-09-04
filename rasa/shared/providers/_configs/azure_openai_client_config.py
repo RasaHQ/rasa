@@ -178,18 +178,4 @@ def is_azure_openai_config(config: dict) -> bool:
     if config.get(DEPLOYMENT_CONFIG_KEY) is not None:
         return True
 
-    # Case: Azure OpenAI is defined through the LiteLLM way:
-    # `model: azure/deployment_name`.
-    #
-    # This case would bypass the Rasa's Azure OpenAI client and
-    # instantiate the client through the default litellm clients.
-    # This expression will recognize this attempt and return
-    # `true` if this is the case. However, this config is not
-    # valid config to be used within Rasa. We want to avoid having
-    # multiple ways to do the same thing. This configuration will
-    # result in an error.
-    if (model := config.get(MODEL_CONFIG_KEY)) is not None:
-        if model.startswith(f"{AZURE_API_TYPE}/"):
-            return True
-
     return False

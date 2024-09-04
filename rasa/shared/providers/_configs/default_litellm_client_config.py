@@ -16,6 +16,7 @@ from rasa.shared.providers._configs.utils import (
     validate_required_keys,
     validate_forbidden_keys,
     resolve_aliases,
+    raise_deprecation_warnings,
 )
 import rasa.shared.utils.cli
 
@@ -81,6 +82,9 @@ class DefaultLiteLLMClientConfig:
         Returns:
             DefaultLiteLLMClientConfig
         """
+        # Check for deprecated keys
+        raise_deprecation_warnings(config, DEPRECATED_ALIASES_TO_STANDARD_KEY_MAPPING)
+        # Raise error for using `model_name` instead instead of `model`
         cls.check_and_error_for_model_name_in_config(config)
         # Resolve any potential aliases.
         config = cls.resolve_config_aliases(config)

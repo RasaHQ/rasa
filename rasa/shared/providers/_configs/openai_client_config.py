@@ -165,44 +165,11 @@ def is_openai_config(config: dict) -> bool:
     """Check whether the configuration is meant to configure
     an OpenAI client.
     """
-
-    from litellm.utils import get_llm_provider
-
     # Process the config to handle all the aliases
     config = OpenAIClientConfig.resolve_config_aliases(config)
 
     # Case: Configuration contains `provider: openai`
     if config.get(PROVIDER_CONFIG_KEY) == OPENAI_PROVIDER:
         return True
-
-    # Case: Configuration contains only `api_type: openai`
-    if (
-        config.get(API_TYPE_CONFIG_KEY) == OPENAI_PROVIDER
-        and PROVIDER_CONFIG_KEY not in config
-    ):
-        return True
-
-    # Case: Configuration contains `model: openai/gpt-4` (litellm approach)
-    #
-    # This case would bypass the Rasa's Azure OpenAI client and
-    # instantiate the client through the default litellm clients.
-    # This expression will recognize this attempt and return
-    # `true` if this is the case. However, this config is not
-    # valid config to be used within Rasa. We want to avoid having
-    # multiple ways to do the same thing. This configuration will
-    # result in an error.
-    if (model := config.get(MODEL_CONFIG_KEY)) is not None:
-        if model.startswith(f"{OPENAI_API_TYPE}/"):
-            return True
-
-    # Case: Configuration contains "known" models of openai (litellm approach)
-    #
-    # Similar to the case above.
-    try:
-        _, provider, _, _ = get_llm_provider(config.get(MODEL_CONFIG_KEY))
-        if provider == OPENAI_API_TYPE:
-            return True
-    except Exception:
-        pass
 
     return False

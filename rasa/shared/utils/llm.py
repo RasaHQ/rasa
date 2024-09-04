@@ -18,7 +18,6 @@ import rasa.shared.utils.io
 from rasa.shared.constants import (
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
-    MODEL_CONFIG_KEY,
     PROVIDER_CONFIG_KEY,
 )
 from rasa.shared.core.events import BotUttered, UserUttered
@@ -30,9 +29,6 @@ from rasa.shared.exceptions import (
     FileIOException,
     FileNotFoundException,
     ProviderClientValidationError,
-)
-from rasa.shared.providers._configs.default_litellm_client_config import (
-    DefaultLiteLLMClientConfig,
 )
 from rasa.shared.providers._configs.azure_openai_client_config import (
     is_azure_openai_config,
@@ -269,35 +265,32 @@ def combine_custom_and_default_config(
 
     # Get the provider from the custom config.
     custom_config_provider = get_provider_from_config(custom_config)
-
     # We expect the provider to be set in the default configs of all Rasa components.
     default_config_provider = default_config[PROVIDER_CONFIG_KEY]
 
-    if custom_config_provider:
-        # Get the provider-specific config class from the provider.
+    if (
+        custom_config_provider is not None
+        and custom_config_provider != default_config_provider
+    ):
+        # Get the provider-specific config class
         client_config_clazz = get_client_config_class_from_provider(
             custom_config_provider
         )
-
-        # If provider not in config, then set it. This case happens when litellm infers
-        # the provider from the model, instead of the client config classes.
-        if PROVIDER_CONFIG_KEY not in custom_config:
-            custom_config = custom_config.copy()
-            custom_config[PROVIDER_CONFIG_KEY] = custom_config_provider
-
-        # If the client config class is not None, then call `from_dict` on it.
         # Checks for deprecated keys, resolves aliases and returns a valid config.
         # This is done to ensure that the custom config is valid.
-        if client_config_clazz is not None:
-            config_object = client_config_clazz.from_dict(custom_config)
-            custom_config = config_object.to_dict()
+        return client_config_clazz.from_dict(custom_config).to_dict()
 
-        if custom_config_provider != default_config_provider:
-            return custom_config.copy()
-
-    # If the provider is the same in both configs, merge them.
-    # Currently the only provider we define in default configs is OpenAI.
-    return {**default_config.copy(), **custom_config.copy()}
+    # If the provider is the same in both configs
+    # OR provider is not specified in the custom config
+    # perform MERGE by overriding the default config keys and values
+    # with custom config keys and values.
+    merged_config = {**default_config.copy(), **custom_config.copy()}
+    # Check for deprecated keys, resolve aliases and return a valid config.
+    # This is done to ensure that the merged config is valid.
+    default_config_clazz = get_client_config_class_from_provider(
+        default_config_provider
+    )
+    return default_config_clazz.from_dict(merged_config).to_dict()
 
 
 def get_provider_from_config(config: dict) -> Optional[str]:
@@ -315,23 +308,7 @@ def get_provider_from_config(config: dict) -> Optional[str]:
     elif is_huggingface_local_config(config):
         return HUGGINGFACE_LOCAL_EMBEDDING_PROVIDER
     else:
-        # `get_llm_provider` works for both embedding models and LLMs
-        from litellm.utils import get_llm_provider
-
-        # Try to get the provider from `model` key.
-        model = config.get(MODEL_CONFIG_KEY)
-        provider = config.get(PROVIDER_CONFIG_KEY)
-
-        # This is done to avoid the default config getting merged with the custom
-        # config in case of model_name being used for default clients configs.
-        DefaultLiteLLMClientConfig.check_and_error_for_model_name_in_config(config)
-
-        try:
-            if model:
-                _, provider, _, _ = get_llm_provider(model=model)
-        except Exception:
-            pass
-        return provider
+        return config.get(PROVIDER_CONFIG_KEY)
 
 
 def ensure_cache() -> None:
