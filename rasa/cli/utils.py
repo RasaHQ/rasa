@@ -457,3 +457,8 @@ def warn_if_rasa_plus_package_installed() -> None:
             f"for using Rasa Pro. Please uninstall it.",
             UserWarning,
         )
+
+
+def check_if_studio_command() -> bool:
+    """Checks if the command is a Rasa Studio command."""
+    return len(sys.argv) >= 2 and sys.argv[1] == "studio"

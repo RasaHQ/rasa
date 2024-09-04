@@ -691,3 +691,19 @@ async def test_payload_from_button_question(text_input: str, button: str) -> Non
     question.ask_async.return_value = text_input
     result = await rasa.cli.utils.payload_from_button_question(question)
     assert result == button
+
+
+@pytest.mark.parametrize(
+    "argv, expected",
+    [
+        ([RASA_EXE, "run"], False),
+        ([RASA_EXE, "inspect", "actions"], False),
+        ([RASA_EXE, "studio", "download" "--endpoints"], True),
+        ([RASA_EXE, "interactive", "nlu", "--param", "xy"], False),
+    ],
+)
+def test_check_if_studio_command(argv, expected):
+    sys.argv = argv.copy()
+    result = rasa.cli.utils.check_if_studio_command()
+
+    assert result == expected
