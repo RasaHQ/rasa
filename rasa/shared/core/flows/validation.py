@@ -464,7 +464,13 @@ def validate_linked_flows_exists(flows: "FlowsList") -> None:
             if not isinstance(step, LinkFlowStep):
                 continue
 
-            if flows.flow_by_id(step.link) is None:
+            # It might be that the flows do not contain the default rasa patterns, but
+            # only the user flows. Manually check for `pattern_human_handoff` as this
+            # pattern can be linked to and it is part of the default patterns of rasa.
+            if (
+                flows.flow_by_id(step.link) is None
+                and step.link != RASA_PATTERN_HUMAN_HANDOFF
+            ):
                 raise UnresolvedFlowException(step.link, flow.id, step.id)
 
 
