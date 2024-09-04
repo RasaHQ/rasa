@@ -137,36 +137,75 @@ class NoNextAllowedForLinkException(RasaException):
 class ReferenceToPatternException(RasaException):
     """Raised when a flow step is referencing a pattern, which is not allowed."""
 
-    def __init__(self, referenced_pattern: str, flow_id: str, step_id: str) -> None:
+    def __init__(
+        self, referenced_pattern: str, flow_id: str, step_id: str, call_step: bool
+    ) -> None:
         """Initializes the exception."""
         self.step_id = step_id
         self.flow_id = flow_id
         self.referenced_pattern = referenced_pattern
+        self.call_step = call_step
 
     def __str__(self) -> str:
         """Return a string representation of the exception."""
-        return (
-            f"Step '{self.step_id}' in flow '{self.flow_id}' is referencing a pattern "
-            f"'{self.referenced_pattern}', which is not allowed. "
-            f"Patterns can not be used as a target for a link or call step."
+        message = (
+            f"Step '{self.step_id}' in flow '{self.flow_id}' is referencing a "
+            f"pattern '{self.referenced_pattern}', which is not allowed. "
         )
+        if self.call_step:
+            return message + "Patterns can not be used as a target for a call step."
+        else:
+            return message + (
+                "All patterns, except for 'pattern_human_handoff', can "
+                "not be used as a target for a link step."
+            )
+
+
+class PatternReferencedPatternException(RasaException):
+    """Raised when a pattern is referencing a pattern, which is not allowed."""
+
+    def __init__(self, flow_id: str, step_id: str, call_step: bool) -> None:
+        """Initializes the exception."""
+        self.step_id = step_id
+        self.flow_id = flow_id
+        self.call_step = call_step
+
+    def __str__(self) -> str:
+        """Return a string representation of the exception."""
+        message = (
+            f"Step '{self.step_id}' in pattern '{self.flow_id}' is referencing a "
+            f"pattern which is not allowed. "
+        )
+        if self.call_step:
+            return message + "Patterns can not use call steps to other patterns."
+        else:
+            return message + (
+                "Patterns can not use link steps to other patterns. "
+                "Exception: patterns can link to 'pattern_human_handoff'."
+            )
 
 
 class PatternReferencedFlowException(RasaException):
     """Raised when a pattern is referencing a flow, which is not allowed."""
 
-    def __init__(self, flow_id: str, step_id: str) -> None:
+    def __init__(self, flow_id: str, step_id: str, call_step: bool) -> None:
         """Initializes the exception."""
         self.step_id = step_id
         self.flow_id = flow_id
+        self.call_step = call_step
 
     def __str__(self) -> str:
         """Return a string representation of the exception."""
-        return (
-            f"Step '{self.step_id}' in flow '{self.flow_id}' is referencing a flow "
+        message = (
+            f"Step '{self.step_id}' in pattern '{self.flow_id}' is referencing a flow "
             f"which is not allowed. "
-            f"Patterns can not use link or call steps."
         )
+        if self.call_step:
+            return message + "Patterns can not use call steps."
+        else:
+            return message + (
+                "'pattern_internal_error' can not use link steps to user flows."
+            )
 
 
 class NoLinkAllowedInCalledFlowException(RasaException):
@@ -486,12 +525,16 @@ def validate_patterns_are_not_called_or_linked(flows: "FlowsList") -> None:
                 and step.link.startswith(RASA_DEFAULT_FLOW_PATTERN_PREFIX)
                 and step.link != RASA_PATTERN_HUMAN_HANDOFF
             ):
-                raise ReferenceToPatternException(step.link, flow.id, step.id)
+                raise ReferenceToPatternException(
+                    step.link, flow.id, step.id, call_step=False
+                )
 
             if isinstance(step, CallFlowStep) and step.call.startswith(
                 RASA_DEFAULT_FLOW_PATTERN_PREFIX
             ):
-                raise ReferenceToPatternException(step.call, flow.id, step.id)
+                raise ReferenceToPatternException(
+                    step.call, flow.id, step.id, call_step=True
+                )
 
 
 def validate_patterns_are_not_calling_or_linking_other_flows(
@@ -510,15 +553,26 @@ def validate_patterns_are_not_calling_or_linking_other_flows(
                 if step.link == RASA_PATTERN_HUMAN_HANDOFF:
                     # links to 'pattern_human_handoff' are allowed
                     continue
-                if flow.id == RASA_PATTERN_INTERNAL_ERROR:
-                    # 'pattern_internal_error' is not allowed to link at all
-                    raise PatternReferencedFlowException(flow.id, step.id)
                 if step.link.startswith(RASA_DEFAULT_FLOW_PATTERN_PREFIX):
                     # all other patterns are allowed to link to user flows, but not
                     # to other patterns
-                    raise PatternReferencedFlowException(flow.id, step.id)
+                    raise PatternReferencedPatternException(
+                        flow.id, step.id, call_step=False
+                    )
+                if flow.id == RASA_PATTERN_INTERNAL_ERROR:
+                    # 'pattern_internal_error' is not allowed to link at all
+                    raise PatternReferencedFlowException(
+                        flow.id, step.id, call_step=False
+                    )
             if isinstance(step, CallFlowStep):
-                raise PatternReferencedFlowException(flow.id, step.id)
+                if step.call.startswith(RASA_DEFAULT_FLOW_PATTERN_PREFIX):
+                    raise PatternReferencedPatternException(
+                        flow.id, step.id, call_step=True
+                    )
+                else:
+                    raise PatternReferencedFlowException(
+                        flow.id, step.id, call_step=True
+                    )
 
 
 def validate_step_ids_are_unique(flows: "FlowsList") -> None:

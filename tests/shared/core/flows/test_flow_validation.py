@@ -1,6 +1,7 @@
 import textwrap
 
 import pytest
+
 from rasa.shared.constants import RASA_PATTERN_HUMAN_HANDOFF
 from rasa.shared.core.flows.steps import LinkFlowStep
 from rasa.shared.core.flows.steps.constants import (
@@ -26,6 +27,7 @@ from rasa.shared.core.flows.validation import (
     SlotNamingException,
     FlowIdNamingException,
     validate_patterns_are_not_calling_or_linking_other_flows,
+    PatternReferencedPatternException,
 )
 from rasa.shared.core.flows.yaml_flows_io import (
     flows_from_str,
@@ -451,7 +453,7 @@ def test_validation_fails_for_pattern_with_a_link_step_to_a_pattern():
     flows = YAMLFlowsReader.read_from_string(textwrap.dedent(flow_config))
     flows = FlowSyncImporter.merge_with_default_flows(flows)
 
-    with pytest.raises(PatternReferencedFlowException):
+    with pytest.raises(PatternReferencedPatternException):
         validate_patterns_are_not_calling_or_linking_other_flows(flows)
 
 
