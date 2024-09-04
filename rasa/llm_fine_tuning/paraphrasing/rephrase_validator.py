@@ -40,10 +40,12 @@ class RephraseValidator:
             conversation: The conversation.
 
         Returns:
-            A list of rephrased user messages including the passing nd failing
+            A list of rephrased user messages including the passing and failing
             rephrases.
         """
-        for i, step in enumerate(conversation.iterate_over_annotated_user_steps()):
+        for i, step in enumerate(
+            conversation.iterate_over_annotated_user_steps(rephrase=True)
+        ):
             current_rephrasings = rephrasings[i]
 
             for rephrase in current_rephrasings.rephrasings:

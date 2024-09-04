@@ -3,12 +3,16 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
-from rasa.dialogue_understanding.commands import StartFlowCommand
+from rasa.dialogue_understanding.commands import StartFlowCommand, SetSlotCommand
 from rasa.e2e_test.e2e_test_case import TestCase
 from rasa.llm_fine_tuning.conversations import Conversation, ConversationStep
 from rasa.llm_fine_tuning.paraphrasing.conversation_rephraser import (
     ConversationRephraser,
 )
+from rasa.llm_fine_tuning.paraphrasing.rephrased_user_message import (
+    RephrasedUserMessage,
+)
+from rasa.llm_fine_tuning.paraphrasing_module import _filter_rephrasings
 from rasa.llm_fine_tuning.paraphrasing_module import create_paraphrased_conversations
 from rasa.shared.core.flows import FlowsList
 
@@ -36,42 +40,103 @@ def flows() -> FlowsList:
 
 
 @pytest.fixture
-def conversations() -> List[Conversation]:
+def conversations(conversation: Conversation) -> List[Conversation]:
+    return [conversation]
+
+
+@pytest.fixture
+def conversation() -> Conversation:
     test_case = TestCase.from_dict(
         {
             "test_case": "transfer_money",
             "steps": [
                 {"user": "I want to send money to John"},
                 {"bot": "How much money do you want to send?"},
-                {"user": "$50"},
-                {"bot": "Do you want to send $50 to John?"},
+                {"user": "50"},
+                {"bot": "Are you sure you want to transfer 50 to John?"},
                 {"user": "yes"},
+                {"bot": "Money transferred."},
             ],
         }
     )
 
-    conversation = Conversation(
+    return Conversation(
         test_case.name,
         test_case,
         [
             ConversationStep(
                 test_case.steps[0],
                 [StartFlowCommand("transfer_money")],
-                """
-                Here is what happened previously in the conversation:
-                USER: I want to send money to John
-                ===
-                The user just said '''I want to send money to John'''.
-                """,
-                [],
-                ["Send money to John", "Transfer money to John"],
+                "prompt",
             ),
             test_case.steps[1],
+            ConversationStep(
+                test_case.steps[2],
+                [SetSlotCommand("amount", "50")],
+                "prompt",
+            ),
+            test_case.steps[3],
+            ConversationStep(
+                test_case.steps[4],
+                [SetSlotCommand("confirmation", "yes")],
+                "prompt",
+            ),
+            test_case.steps[5],
         ],
         "transcript",
     )
 
-    return [conversation]
+
+@pytest.mark.parametrize(
+    "index_rephrase_false, expected_rephrasings",
+    (
+        (
+            0,
+            [
+                RephrasedUserMessage("50", rephrasings=["50 USD"]),
+                RephrasedUserMessage("yes", rephrasings=["correct"]),
+            ],
+        ),
+        (
+            2,
+            [
+                RephrasedUserMessage(
+                    "I want to send money to John",
+                    rephrasings=["Transfer money to John"],
+                ),
+                RephrasedUserMessage("yes", rephrasings=["correct"]),
+            ],
+        ),
+        (
+            4,
+            [
+                RephrasedUserMessage(
+                    "I want to send money to John",
+                    rephrasings=["Transfer money to John"],
+                ),
+                RephrasedUserMessage("50", rephrasings=["50 USD"]),
+            ],
+        ),
+    ),
+)
+def test_filter_rephrasings(
+    conversation,
+    index_rephrase_false: int,
+    expected_rephrasings: List[RephrasedUserMessage],
+):
+    rephrasings = [
+        RephrasedUserMessage(
+            "I want to send money to John", rephrasings=["Transfer money to John"]
+        ),
+        RephrasedUserMessage("50", rephrasings=["50 USD"]),
+        RephrasedUserMessage("yes", rephrasings=["correct"]),
+    ]
+
+    conversation.steps[index_rephrase_false].rephrase = False
+
+    filtered_rephrasings = _filter_rephrasings(rephrasings, conversation)
+
+    assert filtered_rephrasings == expected_rephrasings
 
 
 @pytest.mark.asyncio

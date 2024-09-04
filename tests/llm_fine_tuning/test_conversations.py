@@ -67,14 +67,27 @@ class TestConversation(unittest.TestCase):
         self.test_step.text = "some text"
         self.test_step.actor = "bot"
         self.test_step.template = "some template"
-        self.conv_step = ConversationStep(
-            self.test_step, [], "llm_prompt", ["failed_1"], ["passing_1", "passing_2"]
+        self.conv_step_1 = ConversationStep(
+            self.test_step,
+            [],
+            "llm_prompt",
+            ["failed_1"],
+            ["passing_1", "passing_2"],
+            rephrase=True,
+        )
+        self.conv_step_2 = ConversationStep(
+            self.test_step,
+            [],
+            "llm_prompt",
+            ["failed_1"],
+            ["passing_1", "passing_2"],
+            rephrase=False,
         )
 
         self.conversation = Conversation(
             name="test_conversation",
             original_e2e_test_case=self.test_case,
-            steps=[self.conv_step, self.test_step, self.conv_step],
+            steps=[self.conv_step_1, self.test_step, self.conv_step_2],
             transcript="transcript text",
         )
 
@@ -82,12 +95,17 @@ class TestConversation(unittest.TestCase):
         steps = list(self.conversation.iterate_over_annotated_user_steps())
 
         assert len(steps) == 2
-        assert steps[0] == self.conv_step
+        assert steps[0] == self.conv_step_1
 
     def test_get_user_messages(self):
         messages = self.conversation.get_user_messages()
 
         assert messages == ["some text", "some text"]
+
+    def test_get_user_messages_to_rephrase(self):
+        messages = self.conversation.get_user_messages_to_rephrase()
+
+        assert messages == ["some text"]
 
     def test_as_dict(self):
         expected = {

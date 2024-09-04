@@ -8,6 +8,9 @@ from rasa.llm_fine_tuning.paraphrasing.conversation_rephraser import (
     ConversationRephraser,
 )
 from rasa.llm_fine_tuning.paraphrasing.rephrase_validator import RephraseValidator
+from rasa.llm_fine_tuning.paraphrasing.rephrased_user_message import (
+    RephrasedUserMessage,
+)
 from rasa.llm_fine_tuning.storage import StorageContext
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.exceptions import ProviderClientAPIException
@@ -59,9 +62,14 @@ async def create_paraphrased_conversations(
         current_conversation = conversations[i]
 
         try:
+            # rephrase all user messages even if rephrase=False is set
+            # to not confuse the LLM and get valid output
             rephrasings = await rephraser.rephrase_conversation(
                 conversations[i], num_rephrases
             )
+            # filter out the rephrasings for user messages that have rephrase=False set
+            rephrasings = _filter_rephrasings(rephrasings, conversations[i])
+            # check if the rephrasings are still producing the same commands
             rephrasings = await validator.validate_rephrasings(
                 rephrasings, current_conversation
             )
@@ -74,7 +82,7 @@ async def create_paraphrased_conversations(
             continue
 
         for j, step in enumerate(
-            current_conversation.iterate_over_annotated_user_steps()
+            current_conversation.iterate_over_annotated_user_steps(rephrase=True)
         ):
             step.passed_rephrasings = rephrasings[j].passed_rephrasings
             step.failed_rephrasings = rephrasings[j].failed_rephrasings
@@ -86,3 +94,35 @@ async def create_paraphrased_conversations(
         )
 
     return rephrased_conversations, rephraser.config
+
+
+def _filter_rephrasings(
+    rephrasings: List[RephrasedUserMessage], conversation: Conversation
+) -> List[RephrasedUserMessage]:
+    """Filter rephrasings.
+
+    Return only those rephrasings for user messages that have rephrase=True.
+
+    Args:
+        rephrasings: All rephrased user messages of the conversation.
+        conversation: The conversation.
+
+    Returns:
+        Rephrasings for those user messages that have rephrase=True.
+    """
+    filtered_rephrasings = []
+    index = 0
+    user_messages = conversation.get_user_messages_to_rephrase()
+
+    for rephrasing in rephrasings:
+        if index >= len(user_messages):
+            break
+
+        # the user messages and the rephrasings are in the same order
+        # rephrasings might contain more user messages as the user messages that
+        # should be rephrased
+        if rephrasing.original_user_message == user_messages[index]:
+            filtered_rephrasings.append(rephrasing)
+            index += 1
+
+    return filtered_rephrasings
