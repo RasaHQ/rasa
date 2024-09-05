@@ -619,9 +619,15 @@ def _track(
 
         properties[TELEMETRY_ID] = telemetry_id
 
-        _send_event(
-            telemetry_id, event_name, properties, with_default_context_fields(context)
-        )
+        # this is an additional check in case _track() is called
+        # from a function that is not decorated with @ensure_telemetry_enabled
+        if is_telemetry_enabled():
+            _send_event(
+                telemetry_id,
+                event_name,
+                properties,
+                with_default_context_fields(context),
+            )
     except Exception as e:  # skipcq:PYL-W0703
         logger.debug(f"Skipping telemetry reporting: {e}")
 
@@ -1224,19 +1230,19 @@ def track_server_start(
             "number_of_workers": number_of_workers,
             "endpoints_nlg": endpoints.nlg.type if endpoints.nlg else None,
             "endpoints_nlu": endpoints.nlu.type if endpoints.nlu else None,
-            "endpoints_action_server": endpoints.action.type
-            if endpoints.action
-            else None,
+            "endpoints_action_server": (
+                endpoints.action.type if endpoints.action else None
+            ),
             "endpoints_model_server": endpoints.model.type if endpoints.model else None,
-            "endpoints_tracker_store": endpoints.tracker_store.type
-            if endpoints.tracker_store
-            else None,
-            "endpoints_lock_store": endpoints.lock_store.type
-            if endpoints.lock_store
-            else None,
-            "endpoints_event_broker": endpoints.event_broker.type
-            if endpoints.event_broker
-            else None,
+            "endpoints_tracker_store": (
+                endpoints.tracker_store.type if endpoints.tracker_store else None
+            ),
+            "endpoints_lock_store": (
+                endpoints.lock_store.type if endpoints.lock_store else None
+            ),
+            "endpoints_event_broker": (
+                endpoints.event_broker.type if endpoints.event_broker else None
+            ),
             "project": project_fingerprint_from_model(model_directory),
         },
     )
@@ -1393,6 +1399,7 @@ def track_e2e_test_run(
     )
 
 
+@ensure_telemetry_enabled
 def track_response_rephrase(
     rephrase_all: bool,
     custom_prompt_template: Optional[str],
@@ -1411,11 +1418,13 @@ def track_response_rephrase(
     )
 
 
+@ensure_telemetry_enabled
 def track_intentless_policy_train() -> None:
     """Track when a user trains a policy."""
     _track(TELEMETRY_INTENTLESS_POLICY_TRAINING_STARTED_EVENT)
 
 
+@ensure_telemetry_enabled
 def track_intentless_policy_train_completed(
     embeddings_type: Optional[str],
     embeddings_model: Optional[str],
@@ -1434,6 +1443,7 @@ def track_intentless_policy_train_completed(
     )
 
 
+@ensure_telemetry_enabled
 def track_intentless_policy_predict(
     embeddings_type: Optional[str],
     embeddings_model: Optional[str],
@@ -1454,6 +1464,7 @@ def track_intentless_policy_predict(
     )
 
 
+@ensure_telemetry_enabled
 def track_llm_intent_predict(
     embeddings_type: Optional[str],
     embeddings_model: Optional[str],
@@ -1472,6 +1483,7 @@ def track_llm_intent_predict(
     )
 
 
+@ensure_telemetry_enabled
 def track_llm_intent_train_completed(
     embeddings_type: Optional[str],
     embeddings_model: Optional[str],
