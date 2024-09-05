@@ -660,9 +660,15 @@ def _track(
 
         properties[TELEMETRY_ID] = telemetry_id
 
-        _send_event(
-            telemetry_id, event_name, properties, with_default_context_fields(context)
-        )
+        # this is an additional check in case _track() is called
+        # from a function that is not decorated with @ensure_telemetry_enabled
+        if is_telemetry_enabled():
+            _send_event(
+                telemetry_id,
+                event_name,
+                properties,
+                with_default_context_fields(context),
+            )
     except Exception as e:  # skipcq:PYL-W0703
         logger.debug(f"Skipping telemetry reporting: {e}")
 
@@ -1441,6 +1447,7 @@ def track_e2e_test_run(
     )
 
 
+@ensure_telemetry_enabled
 def track_response_rephrase(
     rephrase_all: bool,
     custom_prompt_template: Optional[str],
@@ -1459,11 +1466,13 @@ def track_response_rephrase(
     )
 
 
+@ensure_telemetry_enabled
 def track_intentless_policy_train() -> None:
     """Track when a user trains a policy."""
     _track(TELEMETRY_INTENTLESS_POLICY_TRAINING_STARTED_EVENT)
 
 
+@ensure_telemetry_enabled
 def track_intentless_policy_train_completed(
     embeddings_type: Optional[str],
     embeddings_model: Optional[str],
@@ -1482,6 +1491,7 @@ def track_intentless_policy_train_completed(
     )
 
 
+@ensure_telemetry_enabled
 def track_intentless_policy_predict(
     embeddings_type: Optional[str],
     embeddings_model: Optional[str],
@@ -1502,6 +1512,7 @@ def track_intentless_policy_predict(
     )
 
 
+@ensure_telemetry_enabled
 def track_llm_intent_predict(
     embeddings_type: Optional[str],
     embeddings_model: Optional[str],
@@ -1520,6 +1531,7 @@ def track_llm_intent_predict(
     )
 
 
+@ensure_telemetry_enabled
 def track_llm_intent_train_completed(
     embeddings_type: Optional[str],
     embeddings_model: Optional[str],
@@ -1619,11 +1631,13 @@ def append_anonymization_trait(
     return traits
 
 
+@ensure_telemetry_enabled
 def track_enterprise_search_policy_train_started() -> None:
     """Track when a user starts training Enterprise Search policy."""
     _track(TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_STARTED_EVENT)
 
 
+@ensure_telemetry_enabled
 def track_enterprise_search_policy_train_completed(
     vector_store_type: Optional[str],
     embeddings_type: Optional[str],
@@ -1646,6 +1660,7 @@ def track_enterprise_search_policy_train_completed(
     )
 
 
+@ensure_telemetry_enabled
 def track_enterprise_search_policy_predict(
     vector_store_type: Optional[str],
     embeddings_type: Optional[str],
@@ -1704,6 +1719,7 @@ def track_multi_step_llm_command_generator_init(
     )
 
 
+@ensure_telemetry_enabled
 def track_conversation_count_hard_limit(
     conversation_count: int, tracked_month: datetime
 ) -> None:
@@ -1718,6 +1734,7 @@ def track_conversation_count_hard_limit(
     )
 
 
+@ensure_telemetry_enabled
 def track_conversation_count_soft_limit(
     conversation_count: int, tracked_month: datetime
 ) -> None:
@@ -1732,6 +1749,7 @@ def track_conversation_count_soft_limit(
     )
 
 
+@ensure_telemetry_enabled
 def track_conversation_count(conversation_count: int, tracked_month: datetime) -> None:
     """Track the number of conversations."""
     _track(
