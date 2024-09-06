@@ -36,6 +36,7 @@ excluded_files:
   - "LICENSE.txt"
   - "Makefile"
   - "NOTICE"
+  - "WORKFLOW_README.md"
   - "README.md"
   - "cloudbuild.yaml"
   - "pyproject.toml"

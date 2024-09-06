@@ -13,7 +13,6 @@ from rasa.nlu.classifiers.fallback_classifier import FallbackClassifier
     [DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER], is_trainable=True
 )
 class MetaFallback(FallbackClassifier):
-
     def __init__(
         self,
         config: Dict[Text, Any],

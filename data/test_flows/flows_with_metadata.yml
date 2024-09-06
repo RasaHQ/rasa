@@ -1,0 +1,16 @@
+flows:
+  foo:
+    description: "A test flow"
+    steps:
+      - action: "utter_test"
+        metadata:
+          line_numbers: 5-5
+  bar:
+    description: "Another test flow"
+    steps:
+      - action: "utter_greet"
+        metadata:
+          line_numbers: 9-9
+      - collect: "important_info"
+        metadata:
+          line_numbers: 10-10

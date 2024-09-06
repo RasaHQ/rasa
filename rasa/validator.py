@@ -7,6 +7,7 @@ from typing import Set, Text, Optional, Dict, Any, List, Tuple
 
 from jinja2 import Template
 from pypred import Predicate
+from pypred.ast import Literal, CompareOperator, NegateOperator
 
 import rasa.core.training.story_conflict
 from rasa.core.channels import UserMessage
@@ -44,7 +45,7 @@ from rasa.shared.core.domain import (
 )
 from rasa.shared.core.generator import TrainingDataGenerator
 from rasa.shared.core.constants import SlotMappingType, MAPPING_TYPE
-from rasa.shared.core.slots import ListSlot, Slot
+from rasa.shared.core.slots import BooleanSlot, CategoricalSlot, ListSlot, Slot
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     YAMLStoryReader,
 )
@@ -893,6 +894,190 @@ class Validator:
 
         return pred, all_good
 
+    def _extract_predicate_syntax_tree(self, predicate: Predicate) -> Any:
+        """Extract the predicate syntax tree from the given predicate.
+
+        Args:
+            predicate: The predicate from which to extract the syntax tree.
+
+        Returns:
+            The extracted syntax tree.
+        """
+        if isinstance(predicate.ast, NegateOperator):
+            return predicate.ast.left
+        return predicate.ast
+
+    def _extract_slot_name_and_slot_value(
+        self,
+        predicate_syntax_tree: Any,
+    ) -> tuple:
+        """Extract the slot name and slot value from the predicate syntax tree.
+
+        Args:
+            predicate_syntax_tree: The predicate syntax tree.
+
+        Returns:
+            A tuple containing the slot name and slot value.
+        """
+        try:
+            if isinstance(predicate_syntax_tree.left, Literal):
+                slot_name = predicate_syntax_tree.left.value.split(".")
+                slot_value = predicate_syntax_tree.right.value
+            else:
+                slot_name = predicate_syntax_tree.right.value.split(".")
+                slot_value = predicate_syntax_tree.left.value
+        except AttributeError:
+            # predicate only has negation and doesn't need to be checked further
+            return None, None
+        return slot_name, slot_value
+
+    def _validate_categorical_value_check(
+        self,
+        slot_name: str,
+        slot_value: Any,
+        valid_slot_values: List[str],
+        all_good: bool,
+        step_id: str,
+        link_condition: str,
+        flow_id: str,
+    ) -> bool:
+        """Validates the categorical slot check.
+
+        Validates that the categorical slot is checked against valid values.
+
+        Args:
+            slot_name: name of the slot to be checked
+            slot_value: value of the slot to be checked
+            valid_slot_values: valid values for the given slot
+            all_good: flag whether all the validations have passed so far
+            step_id: id of the step in which the values are being checked
+            link_condition: condition where the values are being checked
+            flow_id: id of the flow where the values are being checked
+
+        Returns:
+            False, if validation failed, previous value of all_good, otherwise
+        """
+        valid_slot_values.append(None)
+        # slot_value can either be None, a string or a list of Literal objects
+        if slot_value is None:
+            slot_value = [None]
+        if isinstance(slot_value, str):
+            slot_value = [Literal(slot_value)]
+
+        slot_values_validity = [
+            sv is None or re.sub(r"\'|\"", "", sv.value) in valid_slot_values
+            for sv in slot_value
+        ]
+        if not all(slot_values_validity):
+            invalid_slot_values = [
+                sv
+                for (sv, slot_value_valid) in zip(slot_value, slot_values_validity)
+                if not slot_value_valid
+            ]
+            structlogger.error(
+                "validator.verify_predicates.link.invalid_condition",
+                step=step_id,
+                link=link_condition,
+                flow=flow_id,
+                event_info=(
+                    f"Detected invalid condition '{link_condition}' "
+                    f"at step '{step_id}' for flow id '{flow_id}'. "
+                    f"Values {invalid_slot_values} are not valid values "
+                    f"for slot {slot_name}. "
+                    f"Please make sure that all conditions are valid."
+                ),
+            )
+            return False
+        return all_good
+
+    def _validate_categorical_and_boolean_values_check(
+        self,
+        predicate: Predicate,
+        all_good: bool,
+        step_id: str,
+        link_condition: str,
+        flow_id: str,
+    ) -> bool:
+        """Validates the categorical and boolean slot checks.
+
+        Validates that the categorical and boolean slots
+        are checked against valid values.
+
+        Args:
+            predicate: condition that is supposed to be validated
+            all_good: flag whether all the validations have passed so far
+            step_id: id of the step in which the values are being checked
+            link_condition: condition where the values are being checked
+            flow_id: id of the flow where the values are being checked
+
+        Returns:
+            False, if validation failed, previous value of all_good, otherwise
+        """
+        predicate_syntax_tree = self._extract_predicate_syntax_tree(predicate)
+        slot_name, slot_value = self._extract_slot_name_and_slot_value(
+            predicate_syntax_tree
+        )
+
+        if slot_name is None:
+            return all_good
+
+        if slot_name[0] == "slots":
+            slot_name = slot_name[1]
+            # slots.{{context.variable}} gets evaluated to `slots.None`,
+            # these predicates can only be validated during runtime
+            if slot_name == "None":
+                return all_good
+        else:
+            return all_good
+
+        try:
+            slot = next(slot for slot in self.domain.slots if slot.name == slot_name)
+        except StopIteration:
+            structlogger.error(
+                "validator.verify_predicates.link.invalid_condition",
+                step=step_id,
+                link=link_condition,
+                flow=flow_id,
+                event_info=(
+                    f"Detected invalid condition '{link_condition}' "
+                    f"at step '{step_id}' for flow id '{flow_id}'. "
+                    f"Slot {slot_name} is not defined in the domain file. "
+                    f"Please make sure that all conditions are valid."
+                ),
+            )
+            return False
+        if isinstance(slot, CategoricalSlot):
+            return self._validate_categorical_value_check(
+                slot_name,
+                slot_value,
+                slot.values,
+                all_good,
+                step_id,
+                link_condition,
+                flow_id,
+            )
+
+        if (
+            isinstance(slot, BooleanSlot)
+            and isinstance(predicate_syntax_tree, CompareOperator)
+            and not isinstance(predicate_syntax_tree.right.value, bool)
+        ):
+            structlogger.error(
+                "validator.verify_predicates.link.invalid_condition",
+                step=step_id,
+                link=link_condition,
+                flow=flow_id,
+                event_info=(
+                    f"Detected invalid condition '{link_condition}' "
+                    f"at step '{step_id}' for flow id '{flow_id}'. "
+                    f"Boolean slots can only be compared to "
+                    f"boolean values (true, false). "
+                    f"Please make sure that all conditions are valid."
+                ),
+            )
+            return False
+        return all_good
+
     def verify_predicates(self) -> bool:
         """Validate predicates used in flow step links and slot rejections."""
         all_good = True
@@ -946,6 +1131,15 @@ class Validator:
                                 ),
                             )
                             all_good = False
+
+                        all_good = self._validate_categorical_and_boolean_values_check(
+                            predicate,
+                            all_good=all_good,
+                            step_id=step.id,
+                            link_condition=link.condition,
+                            flow_id=flow.id,
+                        )
+
                 if isinstance(step, CollectInformationFlowStep):
                     predicates = [predicate.if_ for predicate in step.rejections]
                     for predicate in predicates:

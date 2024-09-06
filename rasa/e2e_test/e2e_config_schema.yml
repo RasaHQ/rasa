@@ -1,0 +1,26 @@
+mapping:
+  llm_as_judge:
+    type: map
+    mapping:
+      api_type:
+        type: str
+        required: true
+        nullable: false
+      model:
+        type: str
+        required: true
+        nullable: false
+  llm_e2e_test_conversion:
+    type: map
+    mapping:
+      api_type:
+        type: str
+      model:
+        type: str
+      deployment:
+        type: str
+      api_base:
+        type: str
+      "=":
+        type: any
+

@@ -8,8 +8,6 @@ from unittest.mock import MagicMock, call
 import pytest
 from apscheduler.triggers.interval import IntervalTrigger
 from pytest import LogCaptureFixture, MonkeyPatch
-from rasa.shared.exceptions import RasaException
-from rasa.utils.endpoints import EndpointConfig
 
 from rasa.core.secrets_manager.endpoints import EndpointTrait
 from rasa.core.secrets_manager.vault import (
@@ -18,6 +16,10 @@ from rasa.core.secrets_manager.vault import (
     VaultSecretsManager,
     VaultTokenManager,
 )
+from rasa.shared.exceptions import RasaException
+from rasa.utils.endpoints import EndpointConfig
+
+# file deepcode ignore NoHardcodedPasswords/test: Test credentials
 
 
 @pytest.fixture

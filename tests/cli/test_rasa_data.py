@@ -1,14 +1,16 @@
+import argparse
 import os
 from pathlib import Path
 from typing import Callable
+from unittest.mock import patch, Mock
 
 from _pytest.fixtures import FixtureRequest
 from _pytest.pytester import RunResult
 
+from rasa.cli.data import convert_data_to_e2e_tests
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.nlu.training_data.formats import RasaYAMLReader
 from rasa.shared.utils.yaml import read_yaml_file
-
 from tests.cli.conftest import RASA_EXE
 
 
@@ -345,3 +347,28 @@ flows:
         "'transfer_money' in step" in str(result.errlines)
     )
     assert result.ret != 0
+
+
+def test_convert_data_to_e2e_tests(run: Callable[..., RunResult]):
+    """Confirms that the E2ETestConverter.run is called once, and that the
+    E2ETestYAMLWriter is using the output of E2EtTestConverter.
+    """
+    mock_converter_instance = Mock()
+    mock_yaml_string = "yaml_tests_string"
+    mock_converter_instance.run.return_value = mock_yaml_string
+    mock_writer_instance = Mock()
+
+    with patch("rasa.cli.data.E2ETestConverter", return_value=mock_converter_instance):
+        with patch(
+            "rasa.cli.data.E2ETestYAMLWriter", return_value=mock_writer_instance
+        ):
+            with patch("rasa.cli.data.ensure_beta_feature_is_enabled"):
+                mock_args = argparse.Namespace(
+                    path="sample_conversations.csv", output="e2e_tests"
+                )
+                convert_data_to_e2e_tests(mock_args)
+
+                mock_converter_instance.run.assert_called_once()
+                mock_writer_instance.write_to_file.assert_called_once_with(
+                    mock_yaml_string
+                )

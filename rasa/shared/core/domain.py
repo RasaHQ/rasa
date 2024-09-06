@@ -11,7 +11,6 @@ from typing import (
     Dict,
     Iterable,
     List,
-    MutableMapping,
     NamedTuple,
     NoReturn,
     Optional,
@@ -20,6 +19,7 @@ from typing import (
     Tuple,
     Union,
     cast,
+    MutableMapping,
 )
 
 import structlog
@@ -51,11 +51,11 @@ from rasa.shared.core.constants import (
 )
 from rasa.shared.core.events import SlotSet, UserUttered
 from rasa.shared.core.slots import (
-    AnySlot,
-    CategoricalSlot,
-    ListSlot,
     Slot,
+    CategoricalSlot,
     TextSlot,
+    AnySlot,
+    ListSlot,
 )
 from rasa.shared.exceptions import (
     RasaException,
@@ -63,21 +63,21 @@ from rasa.shared.exceptions import (
     YamlSyntaxException,
 )
 from rasa.shared.nlu.constants import (
-    ENTITIES,
-    ENTITY_ATTRIBUTE_GROUP,
-    ENTITY_ATTRIBUTE_ROLE,
     ENTITY_ATTRIBUTE_TYPE,
-    INTENT_NAME_KEY,
+    ENTITY_ATTRIBUTE_ROLE,
+    ENTITY_ATTRIBUTE_GROUP,
     RESPONSE_IDENTIFIER_DELIMITER,
+    INTENT_NAME_KEY,
+    ENTITIES,
 )
 from rasa.shared.utils.cli import print_error_and_exit
 from rasa.shared.utils.yaml import (
     KEY_TRAINING_DATA_FORMAT_VERSION,
-    dump_obj_as_yaml_to_string,
     read_yaml,
-    read_yaml_file,
-    validate_raw_yaml_using_schema_file_with_responses,
     validate_training_data_format_version,
+    read_yaml_file,
+    dump_obj_as_yaml_to_string,
+    validate_raw_yaml_using_schema_file_with_responses,
 )
 
 if TYPE_CHECKING:
@@ -271,8 +271,8 @@ class Domain:
 
         additional_arguments = {
             **data.get("config", {}),
-            "actions_which_explicitly_need_domain": cls._collect_actions_which_explicitly_need_domain(  # noqa: E501
-                domain_actions
+            "actions_which_explicitly_need_domain": (
+                cls._collect_actions_which_explicitly_need_domain(domain_actions)
             ),
         }
         session_config = cls._get_session_config(data.get(SESSION_CONFIG_KEY, {}))
@@ -2046,6 +2046,9 @@ class Domain:
                 action_names += [action]
 
         return action_names
+
+    def is_custom_action(self, action_name: str) -> bool:
+        return action_name in self._custom_actions
 
 
 def warn_about_duplicates_found_during_domain_merging(

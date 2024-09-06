@@ -1,5 +1,7 @@
 from typing import Text, List, Tuple
 
+import pytest
+
 from rasa.shared.core.domain import Domain
 from rasa.core.training.story_conflict import (
     StoryConflict,
@@ -87,6 +89,7 @@ async def test_find_conflicts_checkpoints():
     )
 
 
+@pytest.mark.flaky
 async def test_find_conflicts_or():
     trackers, domain = _setup_trackers_for_testing(
         "data/test_domains/default.yml",

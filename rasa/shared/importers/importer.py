@@ -1,28 +1,28 @@
+import logging
 from abc import ABC, abstractmethod
 from functools import reduce
-from typing import Text, Optional, List, Dict, Set, Any, Tuple, Type, Union, cast
-import logging
+from typing import Any, Dict, List, Optional, Set, Text, Tuple, Type, Union, cast
 
 import importlib_resources
 
 import rasa.shared.constants
-from rasa.shared.core.flows import FlowsList
-import rasa.shared.utils.common
 import rasa.shared.core.constants
+import rasa.shared.utils.common
 import rasa.shared.utils.io
 from rasa.shared.core.domain import (
-    Domain,
+    IS_RETRIEVAL_INTENT_KEY,
+    KEY_ACTIONS,
     KEY_E2E_ACTIONS,
     KEY_INTENTS,
     KEY_RESPONSES,
-    KEY_ACTIONS,
+    Domain,
 )
 from rasa.shared.core.events import ActionExecuted, UserUttered
+from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.training_data.structures import StoryGraph
+from rasa.shared.nlu.constants import ACTION_NAME, ENTITIES
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.nlu.constants import ENTITIES, ACTION_NAME
-from rasa.shared.core.domain import IS_RETRIEVAL_INTENT_KEY
 from rasa.shared.utils.yaml import read_config_file
 
 logger = logging.getLogger(__name__)
@@ -165,7 +165,7 @@ class TrainingDataImporter(ABC):
         config_path: Optional[Text] = None,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
-        args: Optional[Dict[Text, Any]] = {},
+        args: Optional[Dict[Text, Any]] = None,
     ) -> "TrainingDataImporter":
         """Loads a `TrainingDataImporter` instance from a dictionary."""
         from rasa.shared.importers.rasa import RasaFileImporter
@@ -194,16 +194,19 @@ class TrainingDataImporter(ABC):
         config_path: Text,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
-        args: Optional[Dict[Text, Any]] = {},
+        args: Optional[Dict[Text, Any]] = None,
     ) -> Optional["TrainingDataImporter"]:
         from rasa.shared.importers.multi_project import MultiProjectImporter
         from rasa.shared.importers.rasa import RasaFileImporter
+        from rasa.shared.importers.remote_importer import RemoteTrainingDataImporter
 
         module_path = importer_config.pop("name", None)
         if module_path == RasaFileImporter.__name__:
             importer_class: Type[TrainingDataImporter] = RasaFileImporter
         elif module_path == MultiProjectImporter.__name__:
             importer_class = MultiProjectImporter
+        elif module_path == RemoteTrainingDataImporter.__name__:
+            importer_class = RemoteTrainingDataImporter
         else:
             try:
                 importer_class = rasa.shared.utils.common.class_from_module_path(
@@ -216,7 +219,6 @@ class TrainingDataImporter(ABC):
         constructor_arguments = rasa.shared.utils.common.minimal_kwargs(
             {**importer_config, **(args or {})}, importer_class
         )
-
         return importer_class(
             config_path,
             domain_path,
@@ -231,6 +233,26 @@ class TrainingDataImporter(ABC):
     def __repr__(self) -> Text:
         """Returns text representation of object."""
         return self.__class__.__name__
+
+    def get_user_flows(self) -> FlowsList:
+        """Retrieves the user-defined flows that should be used for training.
+
+        Implemented by FlowSyncImporter and E2EImporter only.
+
+        Returns:
+            `FlowsList` containing all loaded flows.
+        """
+        raise NotImplementedError
+
+    def get_user_domain(self) -> Domain:
+        """Retrieves the user-defined domain that should be used for training.
+
+        Implemented by FlowSyncImporter and E2EImporter only.
+
+        Returns:
+            `Domain`.
+        """
+        raise NotImplementedError
 
 
 class NluDataImporter(TrainingDataImporter):
@@ -449,6 +471,10 @@ class FlowSyncImporter(PassThroughImporter):
         return self.merge_with_default_flows(flows)
 
     @rasa.shared.utils.common.cached_method
+    def get_user_flows(self) -> FlowsList:
+        return self._importer.get_flows()
+
+    @rasa.shared.utils.common.cached_method
     def get_domain(self) -> Domain:
         """Merge existing domain with properties of flows."""
         # load domain data from user defined domain files
@@ -475,6 +501,11 @@ class FlowSyncImporter(PassThroughImporter):
             default_domain, ignore_warnings_about_duplicates=True
         )
         return domain
+
+    @rasa.shared.utils.common.cached_method
+    def get_user_domain(self) -> Domain:
+        """Retrieves only user defined domain."""
+        return self._importer.get_domain()
 
 
 class ResponsesSyncImporter(PassThroughImporter):
@@ -603,12 +634,30 @@ class E2EImporter(PassThroughImporter):
     """
 
     @rasa.shared.utils.common.cached_method
+    def get_user_flows(self) -> FlowsList:
+        if not isinstance(self._importer, FlowSyncImporter):
+            raise NotImplementedError(
+                "Accessing user flows is only supported with FlowSyncImporter."
+            )
+
+        return self._importer.get_user_flows()
+
+    @rasa.shared.utils.common.cached_method
     def get_domain(self) -> Domain:
         """Retrieves model domain (see parent class for full docstring)."""
         original = self._importer.get_domain()
         e2e_domain = self._get_domain_with_e2e_actions()
 
         return original.merge(e2e_domain)
+
+    @rasa.shared.utils.common.cached_method
+    def get_user_domain(self) -> Domain:
+        """Retrieves only user defined domain."""
+        if not isinstance(self._importer, FlowSyncImporter):
+            raise NotImplementedError(
+                "Accessing user domain is only supported with FlowSyncImporter."
+            )
+        return self._importer.get_user_domain()
 
     def _get_domain_with_e2e_actions(self) -> Domain:
         stories = self.get_stories()

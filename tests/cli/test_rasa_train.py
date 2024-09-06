@@ -6,6 +6,7 @@ from unittest.mock import patch
 
 from _pytest.capture import CaptureFixture
 import pytest
+from pytest import MonkeyPatch
 from typing import Callable, List, Union
 from _pytest.pytester import RunResult
 from _pytest.tmpdir import TempPathFactory
@@ -22,9 +23,9 @@ from rasa.model_training import (
     CODE_FORCED_TRAINING,
     TrainingResult,
 )
-
 from rasa.shared.constants import (
     LATEST_TRAINING_DATA_FORMAT_VERSION,
+    OPENAI_API_KEY_ENV_VAR,
 )
 from rasa.shared.nlu.training_data.training_data import (
     DEFAULT_TRAINING_DATA_OUTPUT_PATH,
@@ -636,7 +637,8 @@ def test_train_validation_max_history_2(
     assert result.ret == 0
 
 
-def test_train_validate_nlg_config_valid() -> None:
+def test_train_validate_nlg_config_valid(monkeypatch: MonkeyPatch) -> None:
+    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "my key")
     args = argparse.Namespace(
         domain="data/test_domains/default.yml",
         config="data/test_config/config_defaults.yml",
@@ -650,6 +652,7 @@ def test_train_validate_nlg_config_valid() -> None:
         epoch_fraction=1.0,
         dry_run=False,
         finetune=None,
+        remote_storage=None,
     )
 
     with patch("rasa.train", return_value=TrainingResult(0)):
@@ -662,6 +665,7 @@ def test_train_validate_nlg_config_invalid() -> None:
         config="data/test_config/config_defaults.yml",
         data=["data/test_moodbot/data"],
         endpoints="data/test_nlg/endpoint_with_invalid_nlg.yml",
+        remote_storage=None,
     )
 
     with pytest.raises(SystemExit):
@@ -676,8 +680,9 @@ def test_train_validate_nlg_config_invalid() -> None:
     ],
 )
 def test_train_check_nlg_endpoint_validity(
-    endpoint_path: Union[Path, str], expected_error: bool
+    endpoint_path: Union[Path, str], expected_error: bool, monkeypatch: MonkeyPatch
 ) -> None:
+    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key in test_rasa_train")
     if expected_error:
         with pytest.raises(SystemExit):
             _check_nlg_endpoint_validity(endpoint=endpoint_path)

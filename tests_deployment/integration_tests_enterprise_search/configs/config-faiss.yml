@@ -1,0 +1,22 @@
+recipe: default.v1
+language: en
+pipeline:
+- name: LLMBasedRouter
+  calm_entry:
+    sticky: "handles everything else, including finance and pizza orders"
+  nlu_entry:
+    sticky: "handles everything around health advice and hotel or restaurant bookings"
+    non_sticky: "handles chitchat"
+- name: DucklingEntityExtractor
+  url: "http://duckling:8000"
+  dimensions: [ "time", "number" ]
+  timezone: "Europe/Berlin"
+  timeout: 3
+- name: SingleStepLLMCommandGenerator
+
+policies:
+- name: FlowPolicy
+- name: EnterpriseSearchPolicy
+- name: IntentlessPolicy
+
+assistant_id: 20240219-110701-dichotomic-inference

@@ -9,7 +9,7 @@ from langchain.schema import Document
 from unittest.mock import AsyncMock, patch
 import pytest
 from unittest.mock import MagicMock
-from langchain.vectorstores.milvus import Milvus
+from langchain_community.vectorstores.milvus import Milvus
 
 
 def test_milvus_store(embeddings: Embeddings):
