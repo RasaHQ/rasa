@@ -61,3 +61,16 @@ def test_non_advanced_only_asks_for_url(mock_cli):
     assert studio_config.client_id == "admin-cli"
     assert studio_config.authentication_server_url == "https://url/auth/"
     assert studio_config.studio_url == "https://url/api/graphql/"
+
+
+def test_studio_download_does_not_throw_endpoints_file_not_found_error(
+    run: Callable[..., RunResult],
+):
+    """Tests that rasa studio commands do not throw endpoints FileNotFound error."""
+    error_message = (
+        "Failed to read endpoint configuration file - the file was not found."
+    )
+    output = run("studio", "download", "assistant_name")
+    printed_output = {line.strip() for line in output.outlines}
+
+    assert all([error_message not in line for line in printed_output])

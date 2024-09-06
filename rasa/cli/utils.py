@@ -459,6 +459,11 @@ def warn_if_rasa_plus_package_installed() -> None:
         )
 
 
+def check_if_studio_command() -> bool:
+    """Checks if the command is a Rasa Studio command."""
+    return len(sys.argv) >= 2 and sys.argv[1] == "studio"
+
+
 def get_e2e_results_file_name(
     results_output_path: Path,
     result_type: str,
