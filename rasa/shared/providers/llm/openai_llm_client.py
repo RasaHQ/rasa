@@ -139,3 +139,17 @@ class OpenAILLMClient(_BaseLiteLLMClient):
     @property
     def _litellm_extra_parameters(self) -> Dict[str, Any]:
         return self._extra_parameters
+
+    @property
+    def _completion_fn_args(self) -> Dict[str, Any]:
+        """Returns the completion arguments for invoking a call through
+        LiteLLM's completion functions.
+        """
+        fn_args = super()._completion_fn_args
+        fn_args.update(
+            {
+                "api_base": self.api_base,
+                "api_version": self.api_version,
+            }
+        )
+        return fn_args
