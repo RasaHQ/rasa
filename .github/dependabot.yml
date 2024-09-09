@@ -10,17 +10,117 @@ updates:
       time: "13:00"
     pull-request-branch-name:
       separator: "-"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 20
     labels:
       - type:dependencies
       - release:main
+    groups:
+      essential-dependencies:
+        dependency-type: production
+        applies-to: version-updates
+        patterns:
+          - "sanic*"
+          - "dask"
+          - "numpy"
+          - "scipy"
+          - "tensorflow*"
+          - "litellm"
+          - "openai"
+          - "langchain"
+          - "matplotlib"
+          - "redis"
+          - "ruamel.yaml"
+          - "pyyaml"
+          - "packaging"
+          - "websockets"
+          - "aiohttp"
+          - "python-socketio"
+          - "python-engineio"
+          - "sklearn*"
+          - "scikit-learn"
+          - "setuptools"
+          - "confluent-kafka"
+          - "pypred"
+          - "structlog"
+          - "jinja2"
+          - "jsonpatch"
+          - "faiss*"
+          - "tiktoken"
+          - "sqlalchemy"
+          - "psycopg2-binary"
+        update-types:
+          - "minor"
+          - "patch"
+          - "major"
+      dev-dependencies:
+        dependency-type: development
+        applies-to: version-updates
+        patterns:
+          - "pytest*"
+          - "ruff"
+          - "mypy*"
+          - "sanic-testing"
+          - "docker"
+          - "moto"
+          - "towncrier"
+          - "fakeredis"
+          - "responses"
+          - "aioresponses"
+          - "datadog"
+        update-types:
+          - "minor"
+          - "patch"
+          - "major"
+      non-essential-dependencies:
+        applies-to: version-updates
+        exclude-patterns:
+          - "sanic*"
+          - "dask"
+          - "numpy"
+          - "scipy"
+          - "tensorflow*"
+          - "litellm"
+          - "openai"
+          - "langchain"
+          - "matplotlib"
+          - "redis"
+          - "ruamel.yaml"
+          - "pyyaml"
+          - "packaging"
+          - "websockets"
+          - "aiohttp"
+          - "python-socketio"
+          - "python-engineio"
+          - "sklearn*"
+          - "scikit-learn"
+          - "setuptools"
+          - "confluent-kafka"
+          - "pypred"
+          - "structlog"
+          - "jinja2"
+          - "jsonpatch"
+          - "faiss*"
+          - "tiktoken"
+          - "sqlalchemy"
+          - "psycopg2-binary"
+          - "pytest*"
+          - "ruff"
+          - "mypy*"
+          - "docker"
+          - "moto"
+          - "towncrier"
+          - "fakeredis"
+          - "responses"
+          - "aioresponses"
+          - "datadog"
+        update-types:
+          - "minor"
+          - "patch"
+          - "major"
     ignore:
       - dependency-name: prompt-toolkit
         versions:
           - "> 2.0.10"
-      - dependency-name: pytest-asyncio
-        versions:
-          - "> 0.10.0"
 
   - package-ecosystem: github-actions
     directory: "/"
