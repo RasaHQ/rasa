@@ -12,7 +12,6 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-
       - id: filter
         name: Check for changes in poetry.lock
         uses: dorny/paths-filter@4512585405083f25c027a35db413c2b3b9006d50  #v2.11.1
@@ -29,5 +28,5 @@ jobs:
         uses: peter-evans/repository-dispatch@bf47d102fdb849e755b0b0023ea3e81a44b6f570  #v2.1.2
         with:
           event-type: trigger-installation-performance
-          client-payload: '{"ref": "${{ github.ref }}", "pr_number": "${{ github.event.pull_request.number }}"}'
+          client-payload: '{"branch": "${{ github.head_ref }}", "pr_number": "${{ github.event.pull_request.number }}"}'
           token: ${{ secrets.GITHUB_TOKEN }}
