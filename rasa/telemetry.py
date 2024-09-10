@@ -32,6 +32,7 @@ from rasa.constants import (
     CONFIG_TELEMETRY_ENABLED,
     CONFIG_TELEMETRY_ID,
 )
+from rasa.shared.constants import PROMPT_CONFIG_KEY, PROMPT_TEMPLATE_CONFIG_KEY
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.shared.constants import DOCS_URL_TELEMETRY, UTTER_ASK_PREFIX
 from rasa.shared.core.flows import Flow
@@ -129,12 +130,6 @@ TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_COMPLETED_EVENT = (
     "Enterprise Search Policy Training Completed"
 )
 TELEMETRY_ENTERPRISE_SEARCH_POLICY_PREDICT_EVENT = "Enterprise Search Policy Predicted"
-TELEMETRY_SINGLE_STEP_LLM_COMMAND_GENERATOR_INITIALISED_EVENT = (
-    "SingleStepLLMCommandGenerator Initialised"
-)
-TELEMETRY_MULTI_STEP_LLM_COMMAND_GENERATOR_INITIALISED_EVENT = (
-    "MultiStepLLMCommandGenerator Initialised"
-)
 
 # licensing events
 TELEMETRY_CONVERSATION_COUNT = "Conversation Count"
@@ -163,20 +158,11 @@ NUM_CALL_STEPS = "num_call_steps"
 NUM_SHARED_SLOTS_BETWEEN_FLOWS = "num_shared_slots_between_flows"
 LLM_COMMAND_GENERATOR_MODEL_NAME = "llm_command_generator_model_name"
 LLM_COMMAND_GENERATOR_CUSTOM_PROMPT_USED = "llm_command_generator_custom_prompt_used"
-SINGLE_STEP_LLM_COMMAND_GENERATOR_MODEL_NAME = (
-    "single_step_llm_command_generator_model_name"
+MULTI_STEP_LLM_COMMAND_GENERATOR_HANDLE_FLOWS_PROMPT_USED = (
+    "multi_step_llm_command_generator_custom_handle_flows_prompt_used"
 )
-SINGLE_STEP_COMMAND_GENERATOR_CUSTOM_PROMPT_USED = (
-    "single_step_llm_command_generator_custom_prompt_used"
-)
-MULTI_STEP_LLM_COMMAND_GENERATOR_MODEL_NAME = (
-    "multi_step_llm_command_generator_model_name"
-)
-MULTI_STEP_LLM_COMMAND_GENERATOR_HANDLE_FLOWS_PROMPT = (
-    "multi_step_llm_command_generator_custom_handle_flows_prompt"
-)
-MULTI_STEP_LLM_COMMAND_GENERATOR_FILL_SLOTS_PROMPT = (
-    "multi_step_llm_command_generator_custom_fill_slots_prompt"
+MULTI_STEP_LLM_COMMAND_GENERATOR_FILL_SLOTS_PROMPT_USED = (
+    "multi_step_llm_command_generator_custom_fill_slots_prompt_used"
 )
 FLOW_RETRIEVAL_ENABLED = "flow_retrieval_enabled"
 FLOW_RETRIEVAL_EMBEDDING_MODEL_NAME = "flow_retrieval_embedding_model_name"
@@ -1099,7 +1085,15 @@ def _get_llm_command_generator_config(config: Dict[str, Any]) -> Optional[Dict]:
         MODEL_CONFIG_KEY,
         MODEL_NAME_CONFIG_KEY,
     )
-    from rasa.dialogue_understanding.generator import LLMCommandGenerator
+    from rasa.dialogue_understanding.generator import (
+        LLMCommandGenerator,
+        SingleStepLLMCommandGenerator,
+        MultiStepLLMCommandGenerator,
+    )
+    from rasa.dialogue_understanding.generator.multi_step.multi_step_llm_command_generator import (  # noqa: E501
+        HANDLE_FLOWS_KEY,
+        FILL_SLOTS_KEY,
+    )
     from rasa.dialogue_understanding.generator.constants import (
         LLM_CONFIG_KEY,
         DEFAULT_LLM_CONFIG,
@@ -1112,13 +1106,16 @@ def _get_llm_command_generator_config(config: Dict[str, Any]) -> Optional[Dict]:
     def find_command_generator_component(pipeline: List) -> Optional[Dict]:
         """Finds the LLMCommandGenerator component in the pipeline."""
         for component in pipeline:
-            if component["name"] == LLMCommandGenerator.__name__:
+            if component["name"] in [
+                LLMCommandGenerator.__name__,
+                SingleStepLLMCommandGenerator.__name__,
+                MultiStepLLMCommandGenerator.__name__,
+            ]:
                 return component
         return None
 
     def extract_settings(component: Dict) -> Dict:
         """Extracts the settings from the command generator component."""
-        custom_prompt_used = "prompt" in component
         llm_config = component.get(LLM_CONFIG_KEY, {})
         llm_model_name = (
             llm_config.get(MODEL_CONFIG_KEY)
@@ -1140,7 +1137,12 @@ def _get_llm_command_generator_config(config: Dict[str, Any]) -> Optional[Dict]:
         )
         return {
             LLM_COMMAND_GENERATOR_MODEL_NAME: llm_model_name,
-            LLM_COMMAND_GENERATOR_CUSTOM_PROMPT_USED: custom_prompt_used,
+            LLM_COMMAND_GENERATOR_CUSTOM_PROMPT_USED: PROMPT_CONFIG_KEY in component
+            or PROMPT_TEMPLATE_CONFIG_KEY in component,
+            MULTI_STEP_LLM_COMMAND_GENERATOR_HANDLE_FLOWS_PROMPT_USED: HANDLE_FLOWS_KEY
+            in component.get("prompt_templates", {}),
+            MULTI_STEP_LLM_COMMAND_GENERATOR_FILL_SLOTS_PROMPT_USED: FILL_SLOTS_KEY
+            in component.get("prompt_templates", {}),
             FLOW_RETRIEVAL_ENABLED: flow_retrieval_enabled,
             FLOW_RETRIEVAL_EMBEDDING_MODEL_NAME: flow_retrieval_embedding_model_name,
         }
@@ -1148,6 +1150,8 @@ def _get_llm_command_generator_config(config: Dict[str, Any]) -> Optional[Dict]:
     command_generator_config = {
         LLM_COMMAND_GENERATOR_MODEL_NAME: None,
         LLM_COMMAND_GENERATOR_CUSTOM_PROMPT_USED: None,
+        MULTI_STEP_LLM_COMMAND_GENERATOR_HANDLE_FLOWS_PROMPT_USED: None,
+        MULTI_STEP_LLM_COMMAND_GENERATOR_FILL_SLOTS_PROMPT_USED: None,
         FLOW_RETRIEVAL_ENABLED: None,
         FLOW_RETRIEVAL_EMBEDDING_MODEL_NAME: None,
     }
@@ -1729,42 +1733,6 @@ def track_enterprise_search_policy_predict(
             "llm_type": llm_type,
             "llm_model": llm_model,
             "citation_enabled": citation_enabled,
-        },
-    )
-
-
-@ensure_telemetry_enabled
-def track_single_step_llm_command_generator_init(
-    llm_model_name: Optional[str],
-    custom_prompt_used: Optional[bool],
-    flow_retrieval_enabled: Optional[bool],
-    flow_retrieval_embedding_model_name: Optional[str],
-) -> None:
-    """Track SingleStepLLMCommandGenerator initialisation event."""
-    _track(
-        TELEMETRY_SINGLE_STEP_LLM_COMMAND_GENERATOR_INITIALISED_EVENT,
-        {
-            SINGLE_STEP_LLM_COMMAND_GENERATOR_MODEL_NAME: llm_model_name,
-            SINGLE_STEP_COMMAND_GENERATOR_CUSTOM_PROMPT_USED: custom_prompt_used,
-            FLOW_RETRIEVAL_ENABLED: flow_retrieval_enabled,
-            FLOW_RETRIEVAL_EMBEDDING_MODEL_NAME: flow_retrieval_embedding_model_name,
-        },
-    )
-
-
-@ensure_telemetry_enabled
-def track_multi_step_llm_command_generator_init(
-    llm_model_name: Optional[str],
-    handle_flows_prompt: Optional[str],
-    fill_slots_prompt: Optional[str],
-) -> None:
-    """Track MultiStepLLMCommandGenerator initialisation event."""
-    _track(
-        TELEMETRY_MULTI_STEP_LLM_COMMAND_GENERATOR_INITIALISED_EVENT,
-        {
-            MULTI_STEP_LLM_COMMAND_GENERATOR_MODEL_NAME: llm_model_name,
-            MULTI_STEP_LLM_COMMAND_GENERATOR_HANDLE_FLOWS_PROMPT: handle_flows_prompt,
-            MULTI_STEP_LLM_COMMAND_GENERATOR_FILL_SLOTS_PROMPT: fill_slots_prompt,
         },
     )
 
