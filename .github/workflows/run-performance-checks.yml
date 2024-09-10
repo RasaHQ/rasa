@@ -5,6 +5,8 @@ on:
     # Runs at the end of every day
     - cron: 0 0 * * *
   workflow_dispatch:
+  repository_dispatch:
+    types: [trigger-installation-performance]
 
 # SECRETS:
 #  - RASA_CI_SEGMENT_WRITE_KEY: Segment write key for https://app.segment.com/rasa-x/sources/rasa_ci/overview
@@ -136,3 +138,30 @@ jobs:
         uses: Ilshidur/action-slack@689ad44a9c9092315abd286d0e3a9a74d31ab78a
         with:
           args: "⛔️ *Rasa Pro performance checks* failed 😱! Please check out GitHub Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+  comment_on_pull_request:
+    name: Comment on pull request with installation time information
+    runs-on: ubuntu-22.04
+    # Only run this job if the workflow was triggered by a repository dispatch event
+    # This event is sent by the capture-installation-time-on-pr-branches workflow
+    if: github.event_name == 'repository_dispatch'
+    needs:
+      - check_installation_performance
+    steps:
+      - name: Convert installation time from milliseconds to minutes
+        if: needs.check_installation_performance.result == 'success'
+        run:
+          echo "minutes=$(bc <<< 'scale=2; ${{ needs.check_installation_performance.outputs.installation_time }} / 60000')" >> $GITHUB_OUTPUT
+
+      - name: Comment on pull request
+        if: success()
+        uses: RasaHQ/create-comment@da7b2ec20116674919493bb5894eea70fdaa6486
+        with:
+          mode: "delete-previous"
+          id: "installation-time"
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          issue: ${{ github.event.client_payload.pr_number }}
+          body: |
+            Installation time: $minutes minutes
+            Rasa Pro version: ${{ needs.check_installation_performance.outputs.rasa_pro_version }}
+            Archive size: ${{ needs.check_installation_performance.outputs.archive_size_kb }} KB
