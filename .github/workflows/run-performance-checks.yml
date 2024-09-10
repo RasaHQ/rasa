@@ -149,9 +149,12 @@ jobs:
       - check_installation_performance
     steps:
       - name: Convert installation time from milliseconds to minutes
+        id: convert_installation_time
         if: needs.check_installation_performance.result == 'success'
         run:
           echo "minutes=$(bc <<< 'scale=2; ${{ needs.check_installation_performance.outputs.installation_time }} / 60000')" >> $GITHUB_OUTPUT
+          echo "rasa_pro_version=${{ needs.check_installation_performance.outputs.rasa_pro_version }}" >> $GITHUB_OUTPUT
+          echo "archive_size_kb=${{ needs.check_installation_performance.outputs.archive_size_kb }}" >> $GITHUB_OUTPUT
 
       - name: Comment on pull request
         if: success()
@@ -162,6 +165,6 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           issue: ${{ github.event.client_payload.pr_number }}
           body: |
-            Installation time: $minutes minutes
-            Rasa Pro version: ${{ needs.check_installation_performance.outputs.rasa_pro_version }}
-            Archive size: ${{ needs.check_installation_performance.outputs.archive_size_kb }} KB
+            Installation time: ${{ steps.convert_installation_time.outputs.minutes }} minutes
+            Rasa Pro version: ${{ steps.convert_installation_time.outputs.rasa_pro_version }}
+            Archive size: ${{ steps.convert_installation_time.outputs.archive_size_kb }} KB
