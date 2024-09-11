@@ -22,7 +22,7 @@ jobs:
     needs: check_poetry_lock
     name: Trigger installation workflow
     runs-on: ubuntu-22.04
-    if: ${{ needs.check_poetry_lock.outputs.lock_file == 'true' && contains(github.event.pull_request.labels.*.name, 'trigger-installation-performance') }}
+    if: ${{ needs.check_poetry_lock.outputs.lock_file == 'true' }}
     steps:
       - name: Trigger installation workflow
         uses: peter-evans/repository-dispatch@bf47d102fdb849e755b0b0023ea3e81a44b6f570  #v2.1.2

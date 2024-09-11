@@ -71,6 +71,15 @@ jobs:
         archive_size_kb: ${{ steps.installation.outputs.archive_size_kb }}
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+        if: github.event_name == 'repository_dispatch'
+        with:
+          fetch-depth: 0
+          # checkout on the PR branch that triggered the workflow
+          ref: ${{ github.event.client_payload.branch }}
+
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+        if: github.event_name != 'repository_dispatch'
+
       - name: Read Poetry Version 🔢
         run: |
           echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
@@ -164,7 +173,7 @@ jobs:
       - name: Convert installation time from milliseconds to minutes
         id: convert_installation_time
         if: needs.check_installation_performance.result == 'success'
-        run:
+        run: |
           echo "minutes=$(bc <<< 'scale=2; ${{ needs.check_installation_performance.outputs.installation_time }} / 60000')" >> $GITHUB_OUTPUT
           echo "rasa_pro_version=${{ needs.check_installation_performance.outputs.rasa_pro_version }}" >> $GITHUB_OUTPUT
           echo "archive_size_kb=${{ needs.check_installation_performance.outputs.archive_size_kb }}" >> $GITHUB_OUTPUT
