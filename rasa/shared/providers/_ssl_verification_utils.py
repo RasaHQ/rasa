@@ -13,6 +13,8 @@ from rasa.shared.constants import (
 
 import structlog
 
+from rasa.shared.utils.io import raise_deprecation_warning
+
 structlogger = structlog.get_logger()
 
 
@@ -78,6 +80,23 @@ def _get_ssl_verify() -> Optional[Union[bool, str]]:
     Returns:
         Path to a self-signed SSL certificate or None if no SSL certificate is found.
     """
+    if os.environ.get(REQUESTS_CA_BUNDLE_ENV_VAR) and os.environ.get(
+        RASA_CA_BUNDLE_ENV_VAR
+    ):
+        raise_deprecation_warning(
+            "Both REQUESTS_CA_BUNDLE and RASA_CA_BUNDLE environment variables are set. "
+            "RASA_CA_BUNDLE will be used as the SSL verification path.\n"
+            "Support of the REQUESTS_CA_BUNDLE environment variable is deprecated and "
+            "will be removed in Rasa Pro 4.0.0. Please set the RASA_CA_BUNDLE "
+            "environment variable instead."
+        )
+    elif os.environ.get(REQUESTS_CA_BUNDLE_ENV_VAR):
+        raise_deprecation_warning(
+            "Support of the REQUESTS_CA_BUNDLE environment variable is deprecated and "
+            "will be removed in Rasa Pro 4.0.0. Please set the RASA_CA_BUNDLE "
+            "environment variable instead."
+        )
+
     return (
         os.environ.get(RASA_CA_BUNDLE_ENV_VAR)
         # Deprecated
