@@ -14,10 +14,11 @@ from rasa.e2e_test.constants import (
     KEY_LLM_E2E_TEST_CONVERSION,
 )
 from rasa.shared.constants import (
-    API_TYPE_CONFIG_KEY,
     API_BASE_CONFIG_KEY,
     DEPLOYMENT_CONFIG_KEY,
     MODEL_CONFIG_KEY,
+    OPENAI_PROVIDER,
+    PROVIDER_CONFIG_KEY,
 )
 from rasa.shared.exceptions import RasaException
 from rasa.shared.utils.yaml import (
@@ -75,7 +76,7 @@ class LLME2ETestConverterConfig(BaseModel):
     This configuration is used to initialize the LiteLLM client.
     """
 
-    api_type: Optional[str]
+    provider: Optional[str]
     model: Optional[str]
     deployment: Optional[str]
     api_base: Optional[str]
@@ -85,7 +86,7 @@ class LLME2ETestConverterConfig(BaseModel):
     def from_dict(cls, config_data: Dict[str, Any]) -> LLME2ETestConverterConfig:
         """Loads the configuration from a dictionary."""
         expected_fields = [
-            API_TYPE_CONFIG_KEY,
+            PROVIDER_CONFIG_KEY,
             API_BASE_CONFIG_KEY,
             DEPLOYMENT_CONFIG_KEY,
             MODEL_CONFIG_KEY,
@@ -98,7 +99,7 @@ class LLME2ETestConverterConfig(BaseModel):
 
     @classmethod
     def get_default_config(cls) -> Dict[str, Any]:
-        return {API_TYPE_CONFIG_KEY: "openai", MODEL_CONFIG_KEY: "gpt-4o-mini"}
+        return {PROVIDER_CONFIG_KEY: OPENAI_PROVIDER, MODEL_CONFIG_KEY: "gpt-4o-mini"}
 
     @staticmethod
     def _clean_up_config(config_data: Dict[str, Any]) -> Dict[str, Any]:
