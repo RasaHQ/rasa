@@ -2,7 +2,7 @@ import os.path
 import uuid
 from pathlib import Path
 from typing import Optional, Dict, Text, Any, Set, List
-from unittest.mock import Mock, patch, AsyncMock, MagicMock
+from unittest.mock import Mock, patch, AsyncMock
 
 import pytest
 from _pytest.tmpdir import TempPathFactory
@@ -22,14 +22,11 @@ from rasa.dialogue_understanding.commands import (
     CannotHandleCommand,
 )
 from rasa.dialogue_understanding.generator.constants import (
-    LLM_CONFIG_KEY,
-    DEFAULT_LLM_CONFIG,
     FLOW_RETRIEVAL_KEY,
     FLOW_RETRIEVAL_ACTIVE_KEY,
 )
 from rasa.dialogue_understanding.generator.flow_retrieval import (
     FlowRetrieval,
-    DEFAULT_EMBEDDINGS_CONFIG,
 )
 from rasa.dialogue_understanding.generator.single_step.single_step_llm_command_generator import (  # noqa: E501
     SingleStepLLMCommandGenerator,
@@ -1029,62 +1026,6 @@ class TestSingleStepLLMCommandGenerator:
         )
         assert loaded.prompt_template == "This is a custom prompt"
         assert loaded.config["prompt"] == "test_prompt.jinja2"
-
-    @pytest.mark.parametrize(
-        "config, expected_calls",
-        [
-            # Test default configurations
-            (
-                {
-                    LLM_CONFIG_KEY: {"model": "default_model"},
-                    "prompt_template": None,
-                },
-                {
-                    "llm_model_name": "default_model",
-                    "custom_prompt_used": False,
-                    "flow_retrieval_enabled": True,
-                    "flow_retrieval_embedding_model_name": DEFAULT_EMBEDDINGS_CONFIG[
-                        "model"
-                    ],
-                },
-            ),
-            # Test custom prompt and disabled flow retrieval
-            (
-                {"prompt": "custom prompt", FLOW_RETRIEVAL_KEY: {"active": False}},
-                {
-                    "llm_model_name": DEFAULT_LLM_CONFIG["model"],
-                    "custom_prompt_used": True,
-                    "flow_retrieval_enabled": False,
-                    "flow_retrieval_embedding_model_name": None,
-                },
-            ),
-            # Test custom model and embedding model
-            (
-                {
-                    LLM_CONFIG_KEY: {"model": "custom_model"},
-                    FLOW_RETRIEVAL_KEY: {"embeddings": {"model": "custom_embedding"}},
-                },
-                {
-                    "llm_model_name": "custom_model",
-                    "custom_prompt_used": False,
-                    "flow_retrieval_enabled": True,
-                    "flow_retrieval_embedding_model_name": "custom_embedding",
-                },
-            ),
-        ],
-    )
-    def test_track_method(self, config, expected_calls):
-        # Mocking the tracking function
-        with patch(
-            "rasa.dialogue_understanding.generator.single_step.single_step_llm_command_generator"
-            ".track_single_step_llm_command_generator_init"
-        ) as mock_track:
-            mock_model_storage = MagicMock()
-            mock_resource = MagicMock()
-            SingleStepLLMCommandGenerator(
-                config=config, model_storage=mock_model_storage, resource=mock_resource
-            )
-            mock_track.assert_called_once_with(**expected_calls)
 
     @patch("rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval")
     def test_train_with_no_flows(

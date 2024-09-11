@@ -10,6 +10,18 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.10.1] - 2024-09-11
+                        
+Rasa Pro 3.10.1 (2024-09-11)                             
+### Bugfixes
+- [#1101](https://github.com/rasahq/rasa-private/issues/1101): Fix OpenAI LLM client ignoring API base and API version arguments if set.
+- [#1150](https://github.com/rasahq/rasa-private/issues/1150): Fix `FileNotFound` error when running `rasa studio` commands and no pre-existing local assistant project exists.
+- [#1154](https://github.com/rasahq/rasa-private/issues/1154): Fixed telemetry collection for the components Rephraser, LLM Intent Classifier, Intentless Policy and Enterprise Search Policy to ensure that the telemetry data is only collected when it is enabled
+- [#1174](https://github.com/rasahq/rasa-private/issues/1174): Update the default config for E2E test conversion to use the `provider` key instead of `api_type`.
+- [#1188](https://github.com/rasahq/rasa-private/issues/1188): Fix inconsistent recording of telemetry events for llm-based command generators.
+- [#1312](https://github.com/rasahq/rasa-private/issues/1312): Throw deprecation warning when REQUESTS_CA_BUNDLE env var is used.
+
+
 ## [3.10.0] - 2024-09-04
                         
 Rasa Pro 3.10.0 (2024-09-04)                             
