@@ -1,0 +1,2 @@
+action_endpoint:
+  actions_module: "data.dummy_actions_module"

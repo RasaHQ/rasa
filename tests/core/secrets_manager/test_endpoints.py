@@ -182,6 +182,7 @@ def test_credentials_location_is_source_valid(
         (
             {
                 "username": "some value",
+                # deepcode ignore NoHardcodedPasswords/test: Test credential
                 "password": "some value",
             },
             False,

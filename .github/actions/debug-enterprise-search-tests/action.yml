@@ -1,0 +1,49 @@
+name: Debug enterprise search test containers
+description: Encapsulates steps for enterprise search test debugging
+
+inputs:
+  COMPOSE_FILE_PATH:
+    description: 'Enterprise search tests docker compose path'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+  - name: List containers
+    run: sudo docker ps -a
+    shell: bash
+
+  - name: Check rasa-pro container logs faiss
+    run: |
+      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs rasa-pro-assistant-faiss
+    shell: bash
+
+  - name: Check rasa-pro container logs milvus
+    run: |
+      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs rasa-pro-assistant-milvus
+    shell: bash
+
+  - name: Check rasa-pro container logs qdrant
+    run: |
+      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs rasa-pro-assistant-qdrant
+    shell: bash
+
+  - name: Check action server container logs
+    run: |
+      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs action-server
+    shell: bash
+
+  - name: Check qdrant container logs
+    run: |
+      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs qdrant
+    shell: bash
+
+  - name: Check milvus container logs
+    run: |
+      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs standalone
+    shell: bash
+
+  - name: Check duckling container logs
+    run: |
+      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs duckling
+    shell: bash

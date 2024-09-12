@@ -415,6 +415,7 @@ async def test_graph_trainer_train_logging(
         }
     )
 
+    caplog.clear()
     with caplog.at_level(logging.INFO, logger="rasa.engine.training.hooks"):
         await train_with_schema(train_schema, temp_cache)
 
@@ -472,6 +473,7 @@ async def test_graph_trainer_train_logging_with_cached_components(
     # Train to cache
     await train_with_schema(train_schema, temp_cache)
 
+    caplog.clear()
     # Train a second time
     with caplog.at_level(logging.INFO, logger="rasa.engine.training.hooks"):
         await train_with_schema(train_schema, temp_cache)

@@ -34,7 +34,6 @@ from rasa.telemetry import (
     TELEMETRY_ID,
     TELEMETRY_WRITE_KEY_ENVIRONMENT_VARIABLE,
     TRACING_BACKEND,
-    LLM_COMMAND_GENERATOR_CUSTOM_PROMPT_USED,
     FLOW_RETRIEVAL_ENABLED,
     FLOW_RETRIEVAL_EMBEDDING_MODEL_NAME,
     LLM_COMMAND_GENERATOR_MODEL_NAME,
@@ -42,13 +41,12 @@ from rasa.telemetry import (
     TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_COMPLETED_EVENT,
     TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_STARTED_EVENT,
     TELEMETRY_ENTERPRISE_SEARCH_POLICY_PREDICT_EVENT,
-    TELEMETRY_SINGLE_STEP_LLM_COMMAND_GENERATOR_INITIALISED_EVENT,
-    TELEMETRY_MULTI_STEP_LLM_COMMAND_GENERATOR_INITIALISED_EVENT,
-    SINGLE_STEP_LLM_COMMAND_GENERATOR_MODEL_NAME,
-    SINGLE_STEP_COMMAND_GENERATOR_CUSTOM_PROMPT_USED,
-    MULTI_STEP_LLM_COMMAND_GENERATOR_MODEL_NAME,
-    MULTI_STEP_LLM_COMMAND_GENERATOR_FILL_SLOTS_PROMPT,
-    MULTI_STEP_LLM_COMMAND_GENERATOR_HANDLE_FLOWS_PROMPT,
+    TELEMETRY_E2E_TEST_CONVERSION_EVENT,
+    E2E_TEST_CONVERSION_FILE_TYPE,
+    E2E_TEST_CONVERSION_TEST_CASE_COUNT,
+    LLM_COMMAND_GENERATOR_CUSTOM_PROMPT_USED,
+    MULTI_STEP_LLM_COMMAND_GENERATOR_HANDLE_FLOWS_PROMPT_USED,
+    MULTI_STEP_LLM_COMMAND_GENERATOR_FILL_SLOTS_PROMPT_USED,
 )
 from rasa.utils.licensing import LICENSE_ENV_VAR
 
@@ -56,10 +54,10 @@ TELEMETRY_TEST_USER = "083642a3e448423ca652134f00e7fc76"  # just some random sta
 TELEMETRY_TEST_KEY = "5640e893c1324090bff26f655456caf3"  # just some random static id
 ENTERPRISE_SEARCH_TELEMETRY_EVENT_DATA = {
     "vector_store_type": "qdrant",
-    "embeddings_type": DEFAULT_EMBEDDINGS_CONFIG["_type"],
+    "embeddings_type": DEFAULT_EMBEDDINGS_CONFIG["provider"],
     "embeddings_model": DEFAULT_EMBEDDINGS_CONFIG["model"],
-    "llm_type": LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["_type"],
-    "llm_model": LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model_name"],
+    "llm_type": LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["provider"],
+    "llm_model": LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model"],
     "citation_enabled": True,
 }
 
@@ -700,7 +698,7 @@ def test_get_telemetry_id_invalid(
     """,
     [
         (
-            TestSuite(get_test_cases(), get_test_fixtures(), get_test_metadata()),
+            TestSuite(get_test_cases(), get_test_fixtures(), get_test_metadata(), {}),
             3,
             2,
             True,
@@ -708,7 +706,7 @@ def test_get_telemetry_id_invalid(
             1,
         ),
         (
-            TestSuite([], get_test_fixtures(), get_test_metadata()),
+            TestSuite([], get_test_fixtures(), get_test_metadata(), {}),
             0,
             2,
             True,
@@ -716,7 +714,7 @@ def test_get_telemetry_id_invalid(
             1,
         ),
         (
-            TestSuite(get_test_cases(), [], get_test_metadata()),
+            TestSuite(get_test_cases(), [], get_test_metadata(), {}),
             3,
             0,
             False,
@@ -724,7 +722,7 @@ def test_get_telemetry_id_invalid(
             1,
         ),
         (
-            TestSuite(get_test_cases(), get_test_fixtures(), []),
+            TestSuite(get_test_cases(), get_test_fixtures(), [], {}),
             3,
             2,
             True,
@@ -732,7 +730,7 @@ def test_get_telemetry_id_invalid(
             0,
         ),
         (
-            TestSuite(get_test_cases(), [], []),
+            TestSuite(get_test_cases(), [], [], {}),
             3,
             0,
             False,
@@ -740,7 +738,7 @@ def test_get_telemetry_id_invalid(
             0,
         ),
         (
-            TestSuite([], get_test_fixtures(), []),
+            TestSuite([], get_test_fixtures(), [], {}),
             0,
             2,
             True,
@@ -748,7 +746,7 @@ def test_get_telemetry_id_invalid(
             0,
         ),
         (
-            TestSuite([], [], get_test_metadata()),
+            TestSuite([], [], get_test_metadata(), {}),
             0,
             0,
             False,
@@ -756,7 +754,7 @@ def test_get_telemetry_id_invalid(
             1,
         ),
         (
-            TestSuite([], [], []),
+            TestSuite([], [], [], {}),
             0,
             0,
             False,
@@ -790,6 +788,7 @@ def test_track_e2e_test_run(
             "uses_fixtures": expected_uses_fixtures,
             "uses_metadata": expected_uses_metadata,
             "number_of_metadata": expected_number_of_metadata,
+            "uses_assertions": False,
         },
     )
 
@@ -1138,6 +1137,7 @@ def test_send_request_succeeds_without_success_field_in_response(
 
 @pytest.mark.parametrize(
     "llm_config,"
+    "prompt_config,"
     "flow_retrieval_config,"
     "expected_llm_custom_prompt_used,"
     "expected_llm_model_name,"
@@ -1148,32 +1148,36 @@ def test_send_request_succeeds_without_success_field_in_response(
         (
             None,
             None,
+            None,
             False,
-            LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model_name"],
+            LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model"],
             True,
             DEFAULT_EMBEDDINGS_CONFIG["model"],
         ),
         # custom prompt
         (
-            {"prompt": "This is custom prompt"},
             None,
-            False,
-            LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model_name"],
+            "This is custom prompt",
+            None,
+            True,
+            LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model"],
             True,
             DEFAULT_EMBEDDINGS_CONFIG["model"],
         ),
         # turned off flow retrieval
         (
             None,
+            None,
             {"active": False},
             False,
-            LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model_name"],
+            LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model"],
             False,
             None,
         ),
         # custom llm, custom flow retrieval
         (
-            {"model_name": "test_llm"},
+            {"model": "test_llm"},
+            None,
             {"embeddings": {"model": "test_embedding"}},
             False,
             "test_llm",
@@ -1184,6 +1188,7 @@ def test_send_request_succeeds_without_success_field_in_response(
 )
 def test_get_llm_command_generator_config(
     llm_config: Dict[Text, Any],
+    prompt_config: Text,
     flow_retrieval_config: Dict[Text, Any],
     expected_llm_custom_prompt_used: bool,
     expected_llm_model_name: Text,
@@ -1206,6 +1211,8 @@ def test_get_llm_command_generator_config(
     config = yaml.load(config, Loader=yaml.FullLoader)
     if llm_config is not None:
         config["pipeline"][2]["llm"] = llm_config
+    if prompt_config is not None:
+        config["pipeline"][2]["prompt"] = prompt_config
     if flow_retrieval_config is not None:
         config["pipeline"][2]["flow_retrieval"] = flow_retrieval_config
 
@@ -1216,6 +1223,113 @@ def test_get_llm_command_generator_config(
     assert (
         result[LLM_COMMAND_GENERATOR_CUSTOM_PROMPT_USED]
         == expected_llm_custom_prompt_used
+    )
+    assert result[LLM_COMMAND_GENERATOR_MODEL_NAME] == expected_llm_model_name
+    assert result[FLOW_RETRIEVAL_ENABLED] == expected_flow_retrieval_enabled
+    assert (
+        result[FLOW_RETRIEVAL_EMBEDDING_MODEL_NAME]
+        == expected_flow_retrieval_embedding_model_name
+    )
+
+
+@pytest.mark.parametrize(
+    "llm_config,"
+    "prompt_config,"
+    "flow_retrieval_config,"
+    "expected_multi_step_llm_custom_handle_flows_prompt_used,"
+    "expected_multi_step_llm_custom_fill_slots_prompt_used,"
+    "expected_llm_model_name,"
+    "expected_flow_retrieval_enabled,"
+    "expected_flow_retrieval_embedding_model_name",
+    [
+        # default config
+        (
+            None,
+            None,
+            None,
+            False,
+            False,
+            LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model"],
+            True,
+            DEFAULT_EMBEDDINGS_CONFIG["model"],
+        ),
+        # custom prompt
+        (
+            None,
+            {"fill_slots": "This is custom prompt"},
+            None,
+            False,
+            True,
+            LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model"],
+            True,
+            DEFAULT_EMBEDDINGS_CONFIG["model"],
+        ),
+        # turned off flow retrieval
+        (
+            None,
+            None,
+            {"active": False},
+            False,
+            False,
+            LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model"],
+            False,
+            None,
+        ),
+        # custom llm, custom flow retrieval
+        (
+            {"model": "test_llm"},
+            None,
+            {"embeddings": {"model": "test_embedding"}},
+            False,
+            False,
+            "test_llm",
+            True,
+            "test_embedding",
+        ),
+    ],
+)
+def test_get_multi_step_llm_command_generator_config(
+    llm_config: Dict[Text, Any],
+    prompt_config: Dict[Text, Any],
+    flow_retrieval_config: Dict[Text, Any],
+    expected_multi_step_llm_custom_handle_flows_prompt_used: bool,
+    expected_multi_step_llm_custom_fill_slots_prompt_used: bool,
+    expected_llm_model_name: Text,
+    expected_flow_retrieval_enabled: bool,
+    expected_flow_retrieval_embedding_model_name: bool,
+):
+    # Given
+    config = """
+        recipe: default.v1
+        language: en
+        pipeline:
+        - name: KeywordIntentClassifier
+        - name: NLUCommandAdapter
+        - name: MultiStepLLMCommandGenerator
+        policies:
+        - name: FlowPolicy
+        - name: EnterpriseSearchPolicy
+        - name: IntentlessPolicy
+    """
+    config = yaml.load(config, Loader=yaml.FullLoader)
+    if llm_config is not None:
+        config["pipeline"][2]["llm"] = llm_config
+    if prompt_config is not None:
+        config["pipeline"][2]["prompt_templates"] = prompt_config
+    if flow_retrieval_config is not None:
+        config["pipeline"][2]["flow_retrieval"] = flow_retrieval_config
+
+    # When
+    result = _get_llm_command_generator_config(config)
+
+    # Then
+    assert (
+        result[MULTI_STEP_LLM_COMMAND_GENERATOR_HANDLE_FLOWS_PROMPT_USED]
+        == expected_multi_step_llm_custom_handle_flows_prompt_used
+    )
+    assert (
+        result[MULTI_STEP_LLM_COMMAND_GENERATOR_FILL_SLOTS_PROMPT_USED]
+        == expected_multi_step_llm_custom_fill_slots_prompt_used
     )
     assert result[LLM_COMMAND_GENERATOR_MODEL_NAME] == expected_llm_model_name
     assert result[FLOW_RETRIEVAL_ENABLED] == expected_flow_retrieval_enabled
@@ -1238,8 +1352,10 @@ def test_get_llm_command_generator_config_no_command_generator_component():
     result = _get_llm_command_generator_config(config)
     # Then
     assert result == {
-        LLM_COMMAND_GENERATOR_CUSTOM_PROMPT_USED: None,
         LLM_COMMAND_GENERATOR_MODEL_NAME: None,
+        LLM_COMMAND_GENERATOR_CUSTOM_PROMPT_USED: None,
+        MULTI_STEP_LLM_COMMAND_GENERATOR_HANDLE_FLOWS_PROMPT_USED: None,
+        MULTI_STEP_LLM_COMMAND_GENERATOR_FILL_SLOTS_PROMPT_USED: None,
         FLOW_RETRIEVAL_ENABLED: None,
         FLOW_RETRIEVAL_EMBEDDING_MODEL_NAME: None,
     }
@@ -1267,10 +1383,10 @@ def test_track_enterprise_search_policy_train_completed(
 
     telemetry.track_enterprise_search_policy_train_completed(
         "qdrant",
-        DEFAULT_EMBEDDINGS_CONFIG["_type"],
+        DEFAULT_EMBEDDINGS_CONFIG["provider"],
         DEFAULT_EMBEDDINGS_CONFIG["model"],
-        LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["_type"],
-        LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model_name"],
+        LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["provider"],
+        LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model"],
         True,
     )
 
@@ -1289,10 +1405,10 @@ def test_track_enterprise_search_policy_predict(
 
     telemetry.track_enterprise_search_policy_predict(
         "qdrant",
-        DEFAULT_EMBEDDINGS_CONFIG["_type"],
+        DEFAULT_EMBEDDINGS_CONFIG["provider"],
         DEFAULT_EMBEDDINGS_CONFIG["model"],
-        LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["_type"],
-        LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model_name"],
+        LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["provider"],
+        LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model"],
         True,
     )
 
@@ -1303,46 +1419,25 @@ def test_track_enterprise_search_policy_predict(
 
 
 @patch("rasa.telemetry._track")
-def test_track_single_step_llm_command_generator_init(
+def test_track_e2e_test_conversion_completed(
     mock_track: MagicMock,
     monkeypatch: MonkeyPatch,
 ) -> None:
     monkeypatch.setenv(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE, "true")
 
-    telemetry.track_single_step_llm_command_generator_init(
-        "test_model", True, True, "flow_retrieval_embedding_model_name"
+    file_type = ".csv"
+    test_case_count = 20
+
+    telemetry.track_e2e_test_conversion_completed(
+        file_type=file_type,
+        test_case_count=test_case_count,
     )
 
     mock_track.assert_called_once_with(
-        TELEMETRY_SINGLE_STEP_LLM_COMMAND_GENERATOR_INITIALISED_EVENT,
+        TELEMETRY_E2E_TEST_CONVERSION_EVENT,
         {
-            SINGLE_STEP_LLM_COMMAND_GENERATOR_MODEL_NAME: "test_model",
-            SINGLE_STEP_COMMAND_GENERATOR_CUSTOM_PROMPT_USED: True,
-            FLOW_RETRIEVAL_ENABLED: True,
-            FLOW_RETRIEVAL_EMBEDDING_MODEL_NAME: "flow_retrieval_embedding_model_name",
-        },
-    )
-
-
-@patch("rasa.telemetry._track")
-def test_track_multi_step_llm_command_generator_init(
-    mock_track: MagicMock,
-    monkeypatch: MonkeyPatch,
-) -> None:
-    monkeypatch.setenv(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE, "true")
-
-    telemetry.track_multi_step_llm_command_generator_init(
-        "test_model",
-        "test_prompt_text1",
-        "test_prompt_text2",
-    )
-
-    mock_track.assert_called_once_with(
-        TELEMETRY_MULTI_STEP_LLM_COMMAND_GENERATOR_INITIALISED_EVENT,
-        {
-            MULTI_STEP_LLM_COMMAND_GENERATOR_MODEL_NAME: "test_model",
-            MULTI_STEP_LLM_COMMAND_GENERATOR_HANDLE_FLOWS_PROMPT: "test_prompt_text1",
-            MULTI_STEP_LLM_COMMAND_GENERATOR_FILL_SLOTS_PROMPT: "test_prompt_text2",
+            E2E_TEST_CONVERSION_FILE_TYPE: file_type,
+            E2E_TEST_CONVERSION_TEST_CASE_COUNT: test_case_count,
         },
     )
 

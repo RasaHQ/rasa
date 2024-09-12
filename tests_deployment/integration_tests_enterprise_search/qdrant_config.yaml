@@ -1,0 +1,12 @@
+# extract
+docs_folder: "/home/runner/work/rasa-private/rasa-private/tests_deployment/integration_tests_enterprise_search/rasa-calm-demo-bot/docs"
+chunk_size: 1000
+chunk_overlap: 20
+
+# uses openai embeddings
+# load
+destination: "qdrant"
+connection_args:
+  host: localhost
+  port: 6333
+  collection: "rasa"

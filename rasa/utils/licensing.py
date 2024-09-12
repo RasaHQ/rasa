@@ -293,7 +293,9 @@ def validate_license_from_env(product_area: Text = PRODUCT_AREA) -> None:
                     "Your license is about to expire. "
                     "Please contact Rasa for a renewal."
                 ),
-                expiration_date=datetime.utcfromtimestamp(license.exp).isoformat(),
+                expiration_date=datetime.fromtimestamp(
+                    license.exp, timezone.utc
+                ).isoformat(),
             )
     except LicenseNotFoundException:
         structlogger.error("license.not_found.error")
@@ -309,6 +311,12 @@ def validate_license_from_env(product_area: Text = PRODUCT_AREA) -> None:
             f"which was read from environmental variable `{LICENSE_ENV_VAR}`. "
             f"Please ensure `{LICENSE_ENV_VAR}` is set to a valid license string. "
         )
+
+
+def get_license_expiration_date() -> Text:
+    """Return the expiration date of the license."""
+    license_exp = property_of_active_license(lambda active_license: active_license.exp)
+    return datetime.fromtimestamp(license_exp, timezone.utc).isoformat()
 
 
 def is_valid_license_scope(product_area: Text, license_scope: Text) -> bool:

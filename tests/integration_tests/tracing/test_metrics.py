@@ -26,6 +26,7 @@ from rasa.dialogue_understanding.generator import (
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.shared.constants import OPENAI_API_KEY_ENV_VAR
 from rasa.shared.core.domain import Domain
 from rasa.tracing.constants import (
     LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME,
@@ -49,6 +50,11 @@ ACTION_SERVER_TEST_URL = "http://localhost:5055/webhook"
 RASA_SERVER_TEST_URL = "http://localhost:5005"
 OTLP_METRICS_TEST_URL = "http://localhost:8889/metrics"
 PROMETHEUS_METRICS_QUERY_TEST_URL = "http://localhost:9090/api/v1/metadata"
+
+
+@pytest.fixture(autouse=True)
+def set_mock_openai_api_key(monkeypatch: MonkeyPatch):
+    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key in test_metrics")
 
 
 @pytest.fixture(scope="module")

@@ -1,22 +1,30 @@
-import json
 import logging
 import os
-from decimal import Decimal
 from pathlib import Path
-from typing import Any, Dict, Optional, Set, Text, Tuple, Union
+from socket import SOCK_DGRAM, SOCK_STREAM
+from typing import Any, Dict, Optional, Set, TYPE_CHECKING, Text, Tuple, Union
 
 import numpy as np
+from sanic import Sanic
 
+import rasa.cli.utils as cli_utils
 import rasa.shared.utils.io
 from rasa.constants import DEFAULT_SANIC_WORKERS, ENV_SANIC_WORKERS
-from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH, TCP_PROTOCOL
-
+from rasa.core.constants import (
+    DOMAIN_GROUND_TRUTH_METADATA_KEY,
+    UTTER_SOURCE_METADATA_KEY,
+    ACTIVE_FLOW_METADATA_KEY,
+    STEP_ID_METADATA_KEY,
+)
 from rasa.core.lock_store import LockStore, RedisLockStore, InMemoryLockStore
+from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH, TCP_PROTOCOL
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
-from sanic import Sanic
-from socket import SOCK_DGRAM, SOCK_STREAM
-import rasa.cli.utils as cli_utils
 from rasa.utils.io import write_yaml
+
+if TYPE_CHECKING:
+    from rasa.core.nlg import NaturalLanguageGenerator
+    from rasa.shared.core.domain import Domain
 
 logger = logging.getLogger(__name__)
 
@@ -229,54 +237,6 @@ def read_endpoints_from_path(
     return AvailableEndpoints.read_endpoints(endpoints_config_path)
 
 
-def replace_floats_with_decimals(obj: Any, round_digits: int = 9) -> Any:
-    """Convert all instances in `obj` of `float` to `Decimal`.
-
-    Args:
-        obj: Input object.
-        round_digits: Rounding precision of `Decimal` values.
-
-    Returns:
-        Input `obj` with all `float` types replaced by `Decimal`s rounded to
-        `round_digits` decimal places.
-    """
-
-    def _float_to_rounded_decimal(s: Text) -> Decimal:
-        return Decimal(s).quantize(Decimal(10) ** -round_digits)
-
-    return json.loads(json.dumps(obj), parse_float=_float_to_rounded_decimal)
-
-
-class DecimalEncoder(json.JSONEncoder):
-    """`json.JSONEncoder` that dumps `Decimal`s as `float`s."""
-
-    def default(self, obj: Any) -> Any:
-        """Get serializable object for `o`.
-
-        Args:
-            obj: Object to serialize.
-
-        Returns:
-            `obj` converted to `float` if `o` is a `Decimals`, else the base class
-            `default()` method.
-        """
-        if isinstance(obj, Decimal):
-            return float(obj)
-        return super().default(obj)
-
-
-def replace_decimals_with_floats(obj: Any) -> Any:
-    """Convert all instances in `obj` of `Decimal` to `float`.
-
-    Args:
-        obj: A `List` or `Dict` object.
-
-    Returns:
-        Input `obj` with all `Decimal` types replaced by `float`s.
-    """
-    return json.loads(json.dumps(obj, cls=DecimalEncoder))
-
-
 def _lock_store_is_multi_worker_compatible(
     lock_store: Union[EndpointConfig, LockStore, None],
 ) -> bool:
@@ -337,3 +297,32 @@ def number_of_sanic_workers(lock_store: Union[EndpointConfig, LockStore, None]) 
         f"configuration has been found."
     )
     return _log_and_get_default_number_of_workers()
+
+
+def add_bot_utterance_metadata(
+    message: Dict[str, Any],
+    domain_response_name: str,
+    nlg: "NaturalLanguageGenerator",
+    domain: "Domain",
+    tracker: Optional[DialogueStateTracker],
+) -> Dict[str, Any]:
+    """Add metadata to the bot message."""
+    message["utter_action"] = domain_response_name
+
+    utter_source = message.get(UTTER_SOURCE_METADATA_KEY)
+    if utter_source is None:
+        utter_source = nlg.__class__.__name__
+        message[UTTER_SOURCE_METADATA_KEY] = utter_source
+
+    if tracker:
+        message[ACTIVE_FLOW_METADATA_KEY] = tracker.active_flow
+        message[STEP_ID_METADATA_KEY] = tracker.current_step_id
+
+    if utter_source in ["IntentlessPolicy", "ContextualResponseRephraser"]:
+        message[DOMAIN_GROUND_TRUTH_METADATA_KEY] = [
+            response.get("text")
+            for response in domain.responses.get(domain_response_name, [])
+            if response.get("text") is not None
+        ]
+
+    return message

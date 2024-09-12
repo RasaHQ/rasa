@@ -1,0 +1,23 @@
+[
+  {
+    "datetime": "2023-06-16T11:59:30.000000",
+    "recipient": "Joe",
+    "sender": "self",
+    "amount": "30$",
+    "description": "restaurant, split bill"
+  },
+  {
+    "datetime": "2023-06-10T10:30:21.000000",
+    "recipient": "Mary",
+    "sender": "self",
+    "amount": "700$",
+    "description": "flatshare, rent"
+  },
+  {
+    "datetime": "2023-05-01T16:10:10.000000",
+    "recipient": "self",
+    "sender": "Joe",
+    "amount": "50$",
+    "description": "rideshare to Ruegen"
+  }
+]

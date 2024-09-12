@@ -32,8 +32,9 @@ from rasa.shared.nlu.constants import FLOWS_IN_PROMPT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.utils.llm import (
-    llm_factory,
     allowed_values_for_slot,
+    llm_factory,
+    try_instantiate_llm_client,
 )
 from rasa.utils.log_utils import log_llm
 
@@ -167,6 +168,14 @@ class LLMBasedCommandGenerator(GraphComponent, CommandGenerator, ABC):
         """Train the llm based command generator. Stores all flows into a vector
         store.
         """
+        # Validate llm configuration
+        try_instantiate_llm_client(
+            self.config.get(LLM_CONFIG_KEY),
+            DEFAULT_LLM_CONFIG,
+            "llm_based_command_generator.train",
+            "LLMBasedCommandGenerator",
+        )
+
         # flow retrieval is populated with only user-defined flows
         try:
             if self.flow_retrieval is not None and not flows.is_empty():
@@ -286,7 +295,8 @@ class LLMBasedCommandGenerator(GraphComponent, CommandGenerator, ABC):
         """
         llm = llm_factory(self.config.get(LLM_CONFIG_KEY), DEFAULT_LLM_CONFIG)
         try:
-            return await llm.apredict(prompt)
+            llm_response = await llm.acompletion(prompt)
+            return llm_response.choices[0]
         except Exception as e:
             # unfortunately, langchain does not wrap LLM exceptions which means
             # we have to catch all exceptions here

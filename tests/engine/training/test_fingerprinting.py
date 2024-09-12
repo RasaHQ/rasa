@@ -86,6 +86,7 @@ def test_fingerprint_changes_due_to_changed_source(monkeypatch: MonkeyPatch):
 
 
 def test_fingerprint_changes_when_external_file_changes():
+    # deepcode ignore InsecureTmpFile/test: Not a vulnerability given the context
     tmp_file = tempfile.mktemp()
 
     class MinimalComponent(GraphComponent):

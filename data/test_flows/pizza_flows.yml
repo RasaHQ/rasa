@@ -1,0 +1,98 @@
+flows:
+  order_pizza:
+    name: order pizza
+    description: user asks for a pizza
+    nlu_trigger:
+    - intent:
+        name: request_pizza
+        confidence_threshold: 0.5
+    steps:
+    - call: fill_pizza_order
+      next:
+        - if: slots.confirmation_order
+          then: payment_options
+        - else: cancel_order
+    - id: payment_options
+      collect: payment_option
+      next:
+        - if: slots.payment_option is 'card'
+          then: use_card_details
+        - if: slots.payment_option is 'membership_points'
+          then: use_membership_points
+        - else: cancel_order
+    - id: use_card_details
+      collect: card_details
+      next:
+          - if: slots.card_details and slots.confirmation_order
+            then: take_payment
+          - else: cancel_order
+    - id: take_payment
+      action: utter_execute_payment
+      next: END
+    - id: use_membership_points
+      call: use_membership_points
+      next:
+        - if: slots.membership_points and slots.confirmation_order
+          then: take_payment
+        - else: cancel_order
+    - id: cancel_order
+      action: utter_cancel_order
+      next: END
+
+  fill_pizza_order:
+    name: fill pizza order
+    description: user is asked to fill out pizza order details
+    steps:
+      - collect: pizza
+      - collect: num_pizza
+      - collect: address
+      - collect: confirmation_order
+        reset_after_flow_ends: False
+        ask_before_filling: True
+
+  use_membership_points:
+    if: False
+    name: use membership points
+    description: user asks to use membership or loyalty points
+    steps:
+      - call: authenticate_user
+        next:
+          - if: slots.is_user_logged_in
+            then:
+              - action: action_check_points
+                next: END
+          - else: END
+
+  correct_order:
+    name: correct_order
+    description: user wants to correct order details
+    nlu_trigger:
+    - intent:
+        name: correct_order
+        confidence_threshold: 0.5
+    steps:
+      - collect: correct_order
+      - call: fill_pizza_order
+
+  correct_address:
+    name: correct_address
+    description: user wants to correct the delivery address
+    nlu_trigger:
+    - intent:
+        name: correct_address
+        confidence_threshold: 0.7
+    steps:
+      - action: action_correct_address
+      - call: fill_pizza_order
+
+  job_vacancies:
+    name: job vacancies
+    description: user asks for job vacancies
+    steps:
+      - collect: department
+        next:
+            - if: slots.department
+              then: show_vacancies
+            - else: END
+      - id: show_vacancies
+        action: action_show_vacancies

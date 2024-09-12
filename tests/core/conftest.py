@@ -1,4 +1,3 @@
-import os
 import asyncio
 import uuid
 from datetime import datetime
@@ -190,21 +189,21 @@ def moodbot_tracker(moodbot_domain: Domain) -> DialogueStateTracker:
     return tracker_from_dialogue(TEST_MOODBOT_DIALOGUE, moodbot_domain)
 
 
-@pytest.fixture(scope="session", autouse=True)
-def set_open_ai_env_variable():
-    os.environ["OPENAI_API_KEY"] = "test"
-
-
 @pytest.fixture(scope="session")
-@patch("langchain.vectorstores.faiss.FAISS.from_documents")
+@patch("langchain_community.vectorstores.faiss.FAISS.from_documents")
 @patch(
     "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval._create_embedder"
 )
+@patch(
+    "rasa.dialogue_understanding.generator.llm_based_command_generator.try_instantiate_llm_client"
+)
 async def trained_flow_policy_bot(
+    mock_try_instantiate_llm_client: Mock,
     mock_flow_search_create_embedder: Mock,
     mock_from_documents: Mock,
     trained_async: Callable,
 ) -> Text:
+    mock_try_instantiate_llm_client.return_value = Mock()
     mock_flow_search_create_embedder.return_value = Mock()
     mock_from_documents.return_value = Mock()
     return await trained_async(
@@ -217,15 +216,20 @@ async def trained_flow_policy_bot(
 
 
 @pytest.fixture(scope="session")
-@patch("langchain.vectorstores.faiss.FAISS.from_documents")
+@patch("langchain_community.vectorstores.faiss.FAISS.from_documents")
 @patch(
     "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval._create_embedder"
 )
+@patch(
+    "rasa.dialogue_understanding.generator.llm_based_command_generator.try_instantiate_llm_client"
+)
 async def trained_nlu_trigger_flow_policy_bot(
+    mock_try_instantiate_llm_client: Mock,
     mock_flow_search_create_embedder: Mock,
     mock_from_documents: Mock,
     trained_async: Callable,
 ) -> Text:
+    mock_try_instantiate_llm_client.return_value = Mock()
     mock_flow_search_create_embedder.return_value = Mock()
     mock_from_documents.return_value = Mock()
     return await trained_async(
@@ -238,7 +242,7 @@ async def trained_nlu_trigger_flow_policy_bot(
 
 
 @pytest.fixture
-@patch("langchain.vectorstores.faiss.FAISS.load_local")
+@patch("langchain_community.vectorstores.faiss.FAISS.load_local")
 @patch(
     "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval._create_embedder"
 )
@@ -254,7 +258,7 @@ async def flow_policy_bot_agent(
 
 
 @pytest.fixture
-@patch("langchain.vectorstores.faiss.FAISS.load_local")
+@patch("langchain_community.vectorstores.faiss.FAISS.load_local")
 @patch(
     "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval._create_embedder"
 )

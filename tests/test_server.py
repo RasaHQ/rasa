@@ -1447,6 +1447,7 @@ def test_list_routes(empty_agent: Agent):
         "evaluate_intents",
         "tracker_predict",
         "parse",
+        "license",
         "load_model",
         "unload_model",
         "get_domain",

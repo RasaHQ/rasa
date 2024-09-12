@@ -2,13 +2,15 @@ from typing import Dict, Text, Any, Optional, List
 
 import structlog
 
-
 from rasa.dialogue_understanding.commands import (
     Command,
     StartFlowCommand,
     SetSlotCommand,
 )
 from rasa.dialogue_understanding.commands.set_slot_command import SetSlotExtractor
+from rasa.dialogue_understanding.commands.utils import (
+    triggerable_pattern_to_command_class,
+)
 from rasa.dialogue_understanding.generator import CommandGenerator
 from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
@@ -25,6 +27,7 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import ENTITIES, INTENT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.utils.log_utils import log_llm
 
 structlogger = structlog.get_logger()
 
@@ -126,13 +129,22 @@ class NLUCommandAdapter(GraphComponent, CommandGenerator):
             clean_up_commands,
         )
 
-        structlogger.info("nlu_command_adapter.cleaning_commands", commands=commands)
+        log_llm(
+            logger=structlogger,
+            log_module="NLUCommandAdapter",
+            log_event="nlu_command_adapter.predict_commands.finished",
+            commands=commands,
+        )
+
         if commands:
             commands = clean_up_commands(
                 commands, tracker, flows, self._execution_context
             )
-            structlogger.info(
-                "nlu_command_adapter.clean_commands", clean_commands=commands
+            log_llm(
+                logger=structlogger,
+                log_module="NLUCommandAdapter",
+                log_event="nlu_command_adapter.clean_commands",
+                commands=commands,
             )
 
         return commands
@@ -162,7 +174,12 @@ class NLUCommandAdapter(GraphComponent, CommandGenerator):
 
         for flow in flows:
             if flow.nlu_triggers and flow.nlu_triggers.is_triggered(message):
-                commands.append(StartFlowCommand(flow.id))
+                if flow.is_rasa_default_flow:
+                    pattern_command = triggerable_pattern_to_command_class.get(flow.id)
+                    if pattern_command:
+                        commands.append(pattern_command())
+                else:
+                    commands.append(StartFlowCommand(flow.id))
 
         # there should be just one flow that can be triggered by the predicted intent
         # this is checked when loading the flows
@@ -180,7 +197,12 @@ class NLUCommandAdapter(GraphComponent, CommandGenerator):
         set_slot_commands = _issue_set_slot_commands(message, tracker, flows, domain)
         commands.extend(set_slot_commands)
 
-        structlogger.info("nlu_command_adapter.predict_commands", commands=commands)
+        log_llm(
+            logger=structlogger,
+            log_module="NLUCommandAdapter",
+            log_event="nlu_command_adapter.predict_commands",
+            commands=commands,
+        )
 
         return commands
 

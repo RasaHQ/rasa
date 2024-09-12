@@ -1,0 +1,8 @@
+action_endpoint:
+  url: "http://action-server:5055/webhook"
+
+vector_store:
+   type: milvus
+   host: milvus-standalone
+   port: 19530
+   collection: rasa

@@ -1,13 +1,13 @@
 import abc
-import structlog
 import os
 import shutil
-from typing import Optional, Text, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional, Text, Tuple
 
-from rasa.shared.exceptions import RasaException
+import structlog
 
 import rasa.shared.utils.common
 import rasa.utils.common
+from rasa.shared.exceptions import RasaException
 
 if TYPE_CHECKING:
     from azure.storage.blob import ContainerClient
@@ -51,24 +51,34 @@ def get_persistor(name: Text) -> Optional["Persistor"]:
 class Persistor(abc.ABC):
     """Store models in cloud and fetch them when needed."""
 
-    def persist(self, model_directory: Text, model_name: Text) -> None:
-        """Uploads a model persisted in the `target_dir` to cloud storage."""
-        if not os.path.isdir(model_directory):
-            raise ValueError(f"Target directory '{model_directory}' not found.")
+    def persist(self, trained_model: Text) -> None:
+        """Uploads a trained model persisted in the `target_dir` to cloud storage."""
+        file_key = self._create_file_key(trained_model)
+        self._persist_tar(file_key, trained_model)
 
-        file_key, tar_path = self._compress(model_directory, model_name)
-        self._persist_tar(file_key, tar_path)
+    def retrieve(self, model_name: Text, target_path: Text) -> Text:
+        """Downloads a model that has been persisted to cloud storage.
 
-    def retrieve(self, model_name: Text, target_path: Text) -> None:
-        """Downloads a model that has been persisted to cloud storage."""
+        Downloaded model will be saved to the `target_path`.
+        If `target_path` is a directory, the model will be saved to that directory.
+        If `target_path` is a file, the model will be saved to that file.
+
+        Args:
+            model_name: The name of the model to retrieve.
+            target_path: The path to which the model should be saved.
+        """
         tar_name = model_name
-
         if not model_name.endswith("tar.gz"):
             # ensure backward compatibility
             tar_name = self._tar_name(model_name)
-
+        tar_name = self._create_file_key(tar_name)
         self._retrieve_tar(tar_name)
         self._copy(os.path.basename(tar_name), target_path)
+
+        if os.path.isdir(target_path):
+            return os.path.join(target_path, model_name)
+
+        return target_path
 
     @abc.abstractmethod
     def _retrieve_tar(self, filename: Text) -> None:
@@ -103,6 +113,15 @@ class Persistor(abc.ABC):
     @staticmethod
     def _copy(compressed_path: Text, target_path: Text) -> None:
         shutil.copy2(compressed_path, target_path)
+
+    @staticmethod
+    def _create_file_key(model_name: Text) -> Text:
+        """Appends remote storage folders when provided to upload or retrieve file"""
+        bucket_object_path = os.environ.get("REMOTE_STORAGE_PATH", "")
+        file_key = os.path.basename(model_name)
+        if bucket_object_path:
+            file_key = os.path.join(bucket_object_path, file_key)
+        return file_key
 
 
 class AWSPersistor(Persistor):
@@ -183,7 +202,7 @@ class GCSPersistor(Persistor):
         """Initialise class with client and bucket."""
         # there are no type hints in this repo for now
         # https://github.com/googleapis/python-storage/issues/393
-        from google.cloud import storage  # type: ignore[attr-defined]
+        from google.cloud import storage
 
         super().__init__()
 

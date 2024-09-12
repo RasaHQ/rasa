@@ -15,24 +15,33 @@ from rasa.dialogue_understanding.commands import (
 )
 from rasa.dialogue_understanding.commands.set_slot_command import SetSlotExtractor
 from rasa.dialogue_understanding.processor.command_processor import CANNOT_HANDLE_REASON
-
 from rasa.shared.core.events import BotUttered, SlotSet
 from rasa.shared.core.flows import FlowsList
 from rasa.utils.endpoints import EndpointConfig
 
 
 @pytest.fixture(scope="session")
-@patch("langchain.vectorstores.faiss.FAISS.save_local")
-@patch("langchain.vectorstores.faiss.FAISS.from_documents")
+@patch("langchain_community.vectorstores.faiss.FAISS.save_local")
+@patch("langchain_community.vectorstores.faiss.FAISS.from_documents")
 @patch(
     "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval._create_embedder"
 )
+@patch(
+    "rasa.dialogue_understanding.coexistence.llm_based_router.try_instantiate_llm_client"
+)
+@patch(
+    "rasa.dialogue_understanding.generator.llm_based_command_generator.try_instantiate_llm_client"
+)
 async def trained_calm_slot_mappings_bot(
+    mock_try_instantiate_llm_command_generator_client: Mock,
+    mock_try_instantiate_llm_based_router_client: Mock,
     mock_save_local: Mock,
     mock_from_documents: Mock,
     mock_flow_search_create_embedder: Mock,
     trained_async: Callable,
 ) -> str:
+    mock_try_instantiate_llm_command_generator_client.return_value = Mock()
+    mock_try_instantiate_llm_based_router_client.return_value = Mock()
     mock_flow_search_create_embedder.return_value = Mock()
     mock_from_documents.return_value = Mock()
     mock_save_local.return_value = Mock()
@@ -47,15 +56,25 @@ async def trained_calm_slot_mappings_bot(
 
 
 @pytest.fixture
-@patch("langchain.vectorstores.faiss.FAISS.load_local")
+@patch("langchain_community.vectorstores.faiss.FAISS.load_local")
 @patch(
     "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval._create_embedder"
 )
+@patch(
+    "rasa.dialogue_understanding.coexistence.llm_based_router.try_instantiate_llm_client"
+)
+@patch(
+    "rasa.dialogue_understanding.generator.llm_based_command_generator.try_instantiate_llm_client"
+)
 async def calm_slot_mappings_agent(
+    mock_try_instantiate_llm_command_generator_client: Mock,
+    mock_try_instantiate_llm_based_router_client: Mock,
     mock_flow_search_create_embedder: Mock,
     mock_load_local: Mock,
     trained_calm_slot_mappings_bot: str,
 ) -> Agent:
+    mock_try_instantiate_llm_command_generator_client.return_value = Mock()
+    mock_try_instantiate_llm_based_router_client.return_value = Mock()
     mock_flow_search_create_embedder.return_value = Mock()
     mock_load_local.return_value = Mock()
     endpoint = EndpointConfig("https://example.com/webhooks/actions")
