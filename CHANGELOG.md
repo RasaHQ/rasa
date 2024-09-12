@@ -10,6 +10,14 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.9.10] - 2024-09-12
+                        
+Rasa Pro 3.9.10 (2024-09-12)                             
+### Bugfixes
+- [#1150](https://github.com/rasahq/rasa-private/issues/1150): Fix `FileNotFound` error when running `rasa studio` commands and no pre-existing local assistant project exists.
+- [#1154](https://github.com/rasahq/rasa-private/issues/1154): Fixed telemetry collection for the components Rephraser, LLM Intent Classifier, Intentless Policy and Enterprise Search Policy to ensure that the telemetry data is only collected when it is enabled
+
+
 ## [3.9.9] - 2024-08-23
                        
 Rasa Pro 3.9.9 (2024-08-23)                            
