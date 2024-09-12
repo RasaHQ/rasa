@@ -254,6 +254,14 @@ Rasa Pro 3.10.0 (2024-09-04)
 - [#1038](https://github.com/rasahq/rasa-private/issues/1038), [#1040](https://github.com/rasahq/rasa-private/issues/1040), [#1053](https://github.com/rasahq/rasa-private/issues/1053), [#1068](https://github.com/rasahq/rasa-private/issues/1068), [#1123](https://github.com/rasahq/rasa-private/issues/1123), [#1318](https://github.com/rasahq/rasa-private/issues/1318), [#713](https://github.com/rasahq/rasa-private/issues/713)
 
 
+## [3.9.10] - 2024-09-12
+                        
+Rasa Pro 3.9.10 (2024-09-12)                             
+### Bugfixes
+- [#1150](https://github.com/rasahq/rasa-private/issues/1150): Fix `FileNotFound` error when running `rasa studio` commands and no pre-existing local assistant project exists.
+- [#1154](https://github.com/rasahq/rasa-private/issues/1154): Fixed telemetry collection for the components Rephraser, LLM Intent Classifier, Intentless Policy and Enterprise Search Policy to ensure that the telemetry data is only collected when it is enabled
+
+
 ## [3.9.9] - 2024-08-23
                        
 Rasa Pro 3.9.9 (2024-08-23)                            
