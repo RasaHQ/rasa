@@ -254,6 +254,13 @@ Rasa Pro 3.10.0 (2024-09-04)
 - [#1038](https://github.com/rasahq/rasa-private/issues/1038), [#1040](https://github.com/rasahq/rasa-private/issues/1040), [#1053](https://github.com/rasahq/rasa-private/issues/1053), [#1068](https://github.com/rasahq/rasa-private/issues/1068), [#1123](https://github.com/rasahq/rasa-private/issues/1123), [#1318](https://github.com/rasahq/rasa-private/issues/1318), [#713](https://github.com/rasahq/rasa-private/issues/713)
 
 
+## [3.9.11] - 2024-09-13
+                        
+Rasa Pro 3.9.11 (2024-09-13)                             
+### Bugfixes
+- [#1323](https://github.com/rasahq/rasa-private/issues/1323): Update Keras to 2.13.1 and Tensorflow to 2.13.0rc0 to fix critical vulnerability (CVE-2024-3660).
+
+
 ## [3.9.10] - 2024-09-12
                         
 Rasa Pro 3.9.10 (2024-09-12)                             
