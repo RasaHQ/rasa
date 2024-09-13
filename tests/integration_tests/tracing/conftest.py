@@ -27,6 +27,8 @@ ACTION_SERVER_ACTION_TRIGGERED = "action_goodbye"
 ACTION_SERVER_FORM_TRIGGER_MESSAGE = "/request_name"
 ACTION_SERVER_FORM_FILL_MESSAGE = "Tom"
 ACTION_SERVER_FORM_VALIDATION_ACTION_TRIGGERED = "validate_name_form"
+ACTION_SERVER_VALIDATION_ACTION_TRIGGERED = "action_validate_slot_mappings"
+ACTION_SERVER_VALIDATION_ACTION_TRIGGER_MESSAGE = "I love to eat bread"
 
 
 TraceQueryTimestamps = collections.namedtuple(
