@@ -10,6 +10,13 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.9.11] - 2024-09-13
+                        
+Rasa Pro 3.9.11 (2024-09-13)                             
+### Bugfixes
+- [#1323](https://github.com/rasahq/rasa-private/issues/1323): Update Keras to 2.13.1 and Tensorflow to 2.13.0rc0 to fix critical vulnerability (CVE-2024-3660).
+
+
 ## [3.9.10] - 2024-09-12
                         
 Rasa Pro 3.9.10 (2024-09-12)                             
