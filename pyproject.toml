@@ -1,345 +1,118 @@
 [build-system]
-requires = [ "poetry-core>=1.0.4",]
+requires = ["poetry-core>=1.0.4"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.black]
 line-length = 88
-target-version = [ "py38", "py39", "py310",]
-exclude = "((.eggs | .git | .pytest_cache | build | dist))"
+target-version = ["py38", "py39", "py310"]
+exclude = "(\\.eggs|\\.git|\\.pytest_cache|build|dist)"
 
 [tool.poetry]
 name = "rasa"
 version = "3.7.0a1"
-description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
-authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
-maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
+description = "Open source machine learning framework for text- and voice-based conversations."
+authors = ["Rasa Technologies GmbH <hi@rasa.com>"]
+maintainers = ["Tom Bocklisch <tom@rasa.com>"]
 homepage = "https://rasa.com"
 repository = "https://github.com/rasahq/rasa"
 documentation = "https://rasa.com/docs"
-classifiers = [ "Development Status :: 5 - Production/Stable", "Intended Audience :: Developers", "License :: OSI Approved :: Apache Software License", "Topic :: Software Development :: Libraries",]
-keywords = [ "nlp", "machine-learning", "machine-learning-library", "bot", "bots", "botkit", "rasa conversational-agents", "conversational-ai", "chatbot", "chatbot-framework", "bot-framework",]
-include = [ "LICENSE.txt", "README.md", "rasa/shared/core/training_data/visualization.html", "rasa/cli/default_config.yml", "rasa/shared/importers/*", "rasa/utils/schemas/*", "rasa/keys",]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Topic :: Software Development :: Libraries"
+]
+keywords = [
+    "nlp", "machine-learning", "bot", "conversational-ai", "chatbot", "rasa"
+]
 readme = "README.md"
 license = "Apache-2.0"
+include = [
+    "LICENSE.txt", "README.md", "rasa/shared/core/training_data/visualization.html", 
+    "rasa/cli/default_config.yml", "rasa/shared/importers/*", "rasa/utils/schemas/*", "rasa/keys"
+]
 [[tool.poetry.source]]
 name = "internal repository mirroring psycopg binary for macos"
-url = "https://europe-west3-python.pkg.dev/rasa-releases/psycopg-binary/simple/"
-
-[tool.towncrier]
-package = "rasa"
-package_dir = "rasa"
-filename = "CHANGELOG.mdx"
-directory = "./changelog"
-underlines = "   "
-title_format = "## [{version}] - {project_date}"
-template = "./changelog/_template.md.jinja2"
-start_string = "<!-- TOWNCRIER -->\n"
-issue_format = "[#{issue}](https://github.com/rasahq/rasa/issues/{issue})"
-[[tool.towncrier.type]]
-directory = "removal"
-name = "Deprecations and Removals"
-showcontent = true
-
-[[tool.towncrier.type]]
-directory = "feature"
-name = "Features"
-showcontent = true
-
-[[tool.towncrier.type]]
-directory = "improvement"
-name = "Improvements"
-showcontent = true
-
-[[tool.towncrier.type]]
-directory = "bugfix"
-name = "Bugfixes"
-showcontent = true
-
-[[tool.towncrier.type]]
-directory = "doc"
-name = "Improved Documentation"
-showcontent = true
-
-[[tool.towncrier.type]]
-directory = "misc"
-name = "Miscellaneous internal changes"
-showcontent = false
-
-[tool.mypy]
-mypy_path = "./stubs"
-ignore_missing_imports = true
-show_error_codes = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-disallow_untyped_calls = true
-disallow_incomplete_defs = true
-disallow_untyped_defs = true
-disallow_untyped_decorators = true
-no_implicit_optional = false
-disable_error_code = [ "arg-type",]
-
-[tool.bandit]
-skips = [ "B104", "B301",]
-
-[tool.ruff]
-ignore = [ "D100", "D104", "D105", "RUF001", "RUF002", "RUF003", "RUF005",]
-line-length = 88
-select = [ "D", "E", "F", "W", "RUF",]
+url = "https://pypi.org/simple/"
 
 [tool.poetry.dependencies]
-python = ">=3.8,<3.11"
+python = ">=3.10,<3.11"
+rasa-sdk = ">=3.6.2"
+aiohttp = ">=3.10.2"
 boto3 = "^1.26.136"
 requests = "^2.23"
-matplotlib = ">=3.1,<3.8"
-attrs = ">=19.3,<23.2"
-jsonpickle = ">=1.3,<3.1"
-redis = ">=4.5.3, <5.0"
-absl-py = ">=0.9,<1.5"
-apscheduler = ">=3.6,<3.11"
+matplotlib = ">=3.1"
+attrs = ">=19.3"
+redis = ">=4.5.3"
 tqdm = "^4.31"
-networkx = ">=2.4,<3.2"
-fbmessenger = "~6.0.0"
-pykwalify = ">=1.7,<1.9"
-coloredlogs = ">=10,<16"
-"ruamel.yaml" = ">=0.16.5,<0.17.22"
+networkx = ">=2.4"
+"ruamel.yaml" = ">=0.16.5"
 pyyaml = ">=6.0"
-twilio = ">=6.26,<8.5"
-webexteamssdk = ">=1.1.1,<1.7.0"
-mattermostwrapper = "~2.2"
-rocketchat_API = ">=0.6.31,<1.31.0"
-colorhash = ">=1.0.2,<1.3.0"
-jsonschema = ">=3.2,<4.18"
-packaging = ">=20.0,<21.0"
-pytz = ">=2019.1,<2023.0"
-rasa-sdk = "~3.7.0a1"
-colorclass = "~2.2"
-terminaltables = "~3.1.0"
-sanic = "~21.12"
-sanic-cors = "~2.0.0"
-sanic-jwt = "^1.6.0"
-sanic-routing = "^0.7.2"
-websockets = ">=10.0,<11.0"
-cloudpickle = ">=1.2,<2.3"
-aiohttp = ">=3.6,!=3.7.4.post0,<3.9"
-questionary = ">=1.5.1,<1.11.0"
-prompt-toolkit = "^3.0,<3.0.29"
-python-socketio = ">=4.4,<6"
-python-engineio = ">=4,<6,!=5.0.0"
-pydot = "~1.4"
-SQLAlchemy = ">=1.4.0,<1.5.0"
-sklearn-crfsuite = "~0.3"
-psycopg2-binary = ">=2.8.2,<2.10.0"
-python-dateutil = "~2.8"
-protobuf = ">=4.23.3,< 4.23.4"
-tensorflow_hub = "^0.13.0"
+SQLAlchemy = ">=1.4.0"
+protobuf = ">=4.23.3"
+cloudpickle = ">=1.2"
+jsonschema = ">=3.2"
+tensorflow_hub = "*"
 setuptools = ">=65.5.1"
-ujson = ">=1.35,<6.0"
-regex = ">=2020.6,<2022.11"
-joblib = ">=0.15.1,<1.3.0"
-sentry-sdk = ">=0.17.0,<1.15.0"
-aio-pika = ">=6.7.1,<8.2.4"
-aiogram = "<2.26"
-typing-extensions = ">=4.1.1,<5.0.0"
-typing-utils = "^0.1.0"
-tarsafe = ">=0.0.3,<0.0.6"
-google-auth = "<3"
-CacheControl = "^0.12.9"
-randomname = ">=0.2.1,<0.3.0"
-pluggy = "^1.0.0"
-slack-sdk = "^3.19.2"
-confluent-kafka = ">=1.9.2,<3.0.0"
-portalocker = "^2.7.0"
+certifi = ">=2023.7.22"
+cryptography = ">=43.0.1"
 structlog = "^23.1.0"
 structlog-sentry = "^2.0.2"
-# pin dnspython to avoid dependency incompatibility
-# in order to fix https://rasahq.atlassian.net/browse/ATO-1419
-dnspython = "2.3.0"
-wheel = ">=0.38.1"
-certifi = ">=2023.7.22"
-cryptography = ">=41.0.2"
-[[tool.poetry.dependencies.tensorflow-io-gcs-filesystem]]
-version = "==0.31"
-markers = "sys_platform == 'win32'"
+pydantic = ">=1.10.18"
+pydantic-settings = "*"
 
-[[tool.poetry.dependencies.tensorflow-io-gcs-filesystem]]
-version = "==0.32"
-markers = "sys_platform == 'linux'"
 
-[[tool.poetry.dependencies.tensorflow-io-gcs-filesystem]]
-version = "==0.32"
-markers = "sys_platform == 'darwin' and platform_machine != 'arm64'"
+# TensorFlow-related dependencies for different platforms
+tensorflow = { version = "2.14.0", markers = "sys_platform != 'darwin' or platform_machine != 'arm64'" }
+tensorflow-intel = { version = "2.14.0", markers = "sys_platform == 'win32'" }
+tensorflow-cpu-aws = { version = "2.14.0", markers = "sys_platform == 'linux' and (platform_machine == 'arm64' or platform_machine == 'aarch64')" }
+tensorflow-macos = { version = "2.14.0", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'" }
+tensorflow-text = { version = "2.14.0", markers = "sys_platform != 'win32' and platform_machine != 'arm64' and platform_machine != 'aarch64'" }
+tensorflow-metal = { version = "*", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'", optional = true }
 
-[[tool.poetry.dependencies.dask]]
-version = "2022.2.0"
-python = "~=3.7.0"
+# TensorFlow IO GCS Filesystem with platform-specific markers
+tensorflow-io-gcs-filesystem = [
+    { version = ">=0.31", markers = "sys_platform == 'win32'" },
+    { version = ">=0.32", markers = "sys_platform == 'linux'" },
+    { version = ">=0.32", markers = "sys_platform == 'darwin' and platform_machine != 'arm64'" }
+]
 
-[[tool.poetry.dependencies.dask]]
-version = "2022.10.2"
-python = ">=3.8,<3.11"
 
-[[tool.poetry.dependencies.numpy]]
-version = ">=1.19.2,<1.22.0"
-python = "~=3.7.0"
-
-[[tool.poetry.dependencies.numpy]]
-version = ">=1.19.2,<1.25.0"
-python = ">=3.8,<3.11"
-
-[[tool.poetry.dependencies.numpy]]
-version = "1.22.3"
-markers = "sys_platform =='Windows' and platform_python_implementation != 'PyPy'"
-python = "3.10"
-
-[[tool.poetry.dependencies.scipy]]
-version = ">=1.4.1,<1.7.3"
-python = "~=3.7.0"
-
-[[tool.poetry.dependencies.scipy]]
-version = ">=1.10.0"
-python = ">=3.8,<3.11"
-
-[[tool.poetry.dependencies.scikit-learn]]
-version = ">=0.22,<1.1"
-python = "~=3.7.0"
-
-[[tool.poetry.dependencies.scikit-learn]]
-version = ">=0.22,<1.2"
-python = ">=3.8,<3.11"
-
-[[tool.poetry.dependencies.spacy]]
-version = "^3.4"
-markers = "sys_platform == 'darwin' and platform_machine == 'arm64'"
-optional = true
-
-[[tool.poetry.dependencies.spacy]]
-version = ">=3.1,<3.5"
-markers = "sys_platform != 'darwin' or platform_machine != 'arm64'"
-optional = true
-
-[[tool.poetry.dependencies.pydantic]]
-version = "<1.10.10"
-optional = true
+# Extra packages
+transformers = { version = ">=4.13.0", optional = true }
+sentencepiece = { version = "~0.1.99", optional = true }
+spacy = { version = "^3.4", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'", optional = true }
 
 [tool.poetry.extras]
-spacy = [ "spacy",]
-jieba = [ "jieba",]
-transformers = [ "transformers", "sentencepiece",]
-full = [ "spacy", "transformers", "sentencepiece", "jieba",]
-gh-release-notes = [ "github3.py",]
+spacy = ["spacy"]
+transformers = ["transformers", "sentencepiece"]
+full = ["spacy", "transformers", "sentencepiece"]
 metal = [ "tensorflow-metal",]
 
-[tool.poetry.scripts]
-rasa = "rasa.__main__:main"
+# Development dependencies
+[tool.poetry.dev-dependencies]
+pytest-sanic = { git = "https://github.com/RasaHQ/pytest-sanic", branch = "fix_signal_issue" }
+
+[tool.mypy]
+ignore_missing_imports = true
+show_error_codes = true
+warn_unused_ignores = true
+disallow_untyped_calls = true
+
+[tool.ruff]
+ignore = ["D100", "D104", "D105", "RUF001", "RUF002"]
+line-length = 88
+select = ["D", "E", "F", "W", "RUF"]
 
 [tool.ruff.pydocstyle]
 convention = "google"
 
 [tool.ruff.per-file-ignores]
-"tests/test_telemetry.py" = [ "E501",]
-"tests/shared/core/test_domain.py" = [ "E501",]
+"tests/test_telemetry.py" = ["E501"]
+"tests/shared/core/test_domain.py" = ["E501"]
 
 [tool.pytest.ini_options]
 python_functions = "test_"
-filterwarnings = [ "ignore::ResourceWarning:ruamel[.*]",]
-log_cli_level = "WARNING"
-log_cli = true
-markers = [ "skip_on_windows", "skip_on_ci", "sequential", "category_cli", "category_core_featurizers", "category_policies", "category_nlu_featurizers", "category_nlu_predictors", "category_full_model_training", "category_other_unit_tests", "category_performance", "flaky",]
+filterwarnings = ["ignore::ResourceWarning:ruamel[.*]"]
 timeout = 60
-timeout_func_only = true
 asyncio_mode = "auto"
-
-[tool.poetry.dependencies.tensorflow]
-version = "2.12.0"
-markers = "sys_platform != 'darwin' or platform_machine != 'arm64'"
-
-[tool.poetry.dependencies.tensorflow-intel]
-version = "2.12.0"
-markers = "sys_platform == 'win32'"
-
-[tool.poetry.dependencies.tensorflow-cpu-aws]
-version = "2.12.0"
-markers = "sys_platform == 'linux' and (platform_machine == 'arm64' or platform_machine == 'aarch64')"
-
-[tool.poetry.dependencies.tensorflow-macos]
-version = "2.12.0"
-markers = "sys_platform == 'darwin' and platform_machine == 'arm64'"
-
-[tool.poetry.dependencies.PyJWT]
-version = "^2.8.0"
-extras = [ "crypto",]
-
-[tool.poetry.dependencies.colorama]
-version = "^0.4.4"
-markers = "sys_platform == 'win32'"
-
-[tool.poetry.dependencies.tensorflow-metal]
-version = "0.8.0"
-markers = "sys_platform == 'darwin' and platform_machine == 'arm64'"
-optional = true
-
-[tool.poetry.dependencies.tensorflow-text]
-version = "2.12.0"
-markers = "sys_platform != 'win32' and platform_machine != 'arm64' and platform_machine != 'aarch64'"
-
-[tool.poetry.dependencies."github3.py"]
-version = "~3.2.0"
-optional = true
-
-[tool.poetry.dependencies.transformers]
-version = ">=4.13.0, <=4.26.0"
-optional = true
-
-[tool.poetry.dependencies.sentencepiece]
-version = "~0.1.99"
-optional = true
-extras = [ "sentencepiece",]
-
-[tool.poetry.dependencies.jieba]
-version = ">=0.39, <0.43"
-optional = true
-
-[tool.poetry.dependencies.pymongo]
-version = ">=3.8,<4.4"
-extras = [ "tls", "srv",]
-
-[tool.poetry.dev-dependencies.pytest-sanic]
-git = "https://github.com/RasaHQ/pytest-sanic"
-branch = "fix_signal_issue"
-
-[tool.poetry.group.dev.dependencies]
-ruff = ">=0.0.255,<0.0.292"
-docker = "^6.0.1"
-pytest-cov = "^4.0.0"
-pytest-asyncio = "^0.20.0"
-pytest-xdist = "^3.2.1"
-pytest = "^7.1.3"
-freezegun = "^1.0.0"
-responses = "^0.22.0"
-aioresponses = "^0.7.2"
-moto = "~=4.1.2"
-fakeredis = "^2.11.2"
-mongomock = "^4.1.2"
-black = "^22.10.0"
-google-cloud-storage = "^2.4.0"
-azure-storage-blob = "<12.17.0"
-coveralls = "^3.0.1"
-towncrier = "^22.8.0"
-toml = "^0.10.0"
-pep440-version-utils = "^0.3.0"
-pydoc-markdown = "^4.7.0"
-pytest-timeout = "^2.1.0"
-mypy = "^1.0.0"
-bandit = "^1.6.3"
-types-pytz = "^2022.1.1"
-types-python-dateutil = "^2.8.19"
-types-requests = "^2.25.0"
-types-setuptools = "^67.2.0"
-memory-profiler = "^0.61.0"
-psutil = "^5.8.0"
-mypy-extensions = "^0.4.3"
-sanic-testing = ">=21.12.0,<22.9.0"
-analytics-python = "^1.4.0"
-datadog-api-client = "^2.0.0"
-datadog = "^0.45.0"
-types-redis = "^4.3.20"
-httpx = "0.23.3"
