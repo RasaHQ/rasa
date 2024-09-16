@@ -60,6 +60,52 @@ structlog = "^23.1.0"
 structlog-sentry = "^2.1.0"
 pydantic = { extras = ["dotenv"], version = "^2" }
 pydantic-settings = "^2"
+terminaltables = ">=3.1.0"
+tarsafe = ">=0.0.3"
+absl-py = ">=0.9"
+apscheduler = ">=3.6"
+fbmessenger = ">=6.0.0"
+pykwalify = ">=1.7"
+coloredlogs = ">=10"
+twilio = ">=6.26"
+webexteamssdk = ">=1.1.1"
+mattermostwrapper = ">=2.2"
+rocketchat_API = ">=0.6.31"
+colorhash = ">=1.0.2"
+jsonpickle = ">=1.3"
+packaging = ">=20.0"
+pytz = ">=2019.1"
+colorclass = ">=2.2"
+sanic = ">=21.12"
+sanic-cors = ">=2.0.0"
+sanic-jwt = "^1.6.0"
+sanic-routing = "^0.7.2"
+websockets = ">=10.0"
+questionary = ">=1.5.1"
+prompt-toolkit = "^3.0"
+python-socketio = ">=4.4,"
+python-engineio = ">=4"
+pydot = ">=1.4"
+sklearn-crfsuite = ">=0.3"
+psycopg2-binary = ">=2.8.2"
+python-dateutil = ">=2.8"
+ujson = ">=1.35"
+regex = ">=2020.6"
+joblib = ">=0.15.1"
+sentry-sdk = ">=0.17.0"
+aio-pika = ">=6.7.1"
+aiogram = "<2.26"
+typing-extensions = ">=4.1.1"
+typing-utils = "^0.1.0"
+google-auth = "<3"
+CacheControl = "^0.12.9"
+randomname = ">=0.2.1"
+pluggy = "^1.0.0"
+slack-sdk = "^3.19.2"
+confluent-kafka = ">=1.9.2"
+portalocker = "^2.7.0"
+dnspython = "2.3.0"
+wheel = ">=0.38.1"
 
 
 # TensorFlow-related dependencies for different platforms
@@ -80,7 +126,7 @@ tensorflow-io-gcs-filesystem = [
 
 # Extra packages
 transformers = { version = ">=4.13.0", optional = true }
-sentencepiece = { version = "~0.1.99", optional = true }
+sentencepiece = { version = ">=0.1.99", optional = true }
 spacy = { version = "^3.7.6", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'", optional = true }
 
 [tool.poetry.extras]
