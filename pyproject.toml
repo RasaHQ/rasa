@@ -52,7 +52,7 @@ SQLAlchemy = ">=1.4.0"
 protobuf = ">=4.23.3"
 cloudpickle = ">=1.2"
 jsonschema = ">=3.2"
-tensorflow_hub = "*"
+tensorflow_hub = ">=0.16.1"
 setuptools = ">=65.5.1"
 certifi = ">=2023.7.22"
 cryptography = ">=43.0.1"
@@ -114,7 +114,7 @@ tensorflow-intel = { version = "2.14.0", markers = "sys_platform == 'win32'" }
 tensorflow-cpu-aws = { version = "2.14.0", markers = "sys_platform == 'linux' and (platform_machine == 'arm64' or platform_machine == 'aarch64')" }
 tensorflow-macos = { version = "2.14.0", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'" }
 tensorflow-text = { version = "2.14.0", markers = "sys_platform != 'win32' and platform_machine != 'arm64' and platform_machine != 'aarch64'" }
-tensorflow-metal = { version = "*", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'", optional = true }
+tensorflow-metal = { version = ">=1.1.0", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'", optional = true }
 
 # TensorFlow IO GCS Filesystem with platform-specific markers
 tensorflow-io-gcs-filesystem = [
