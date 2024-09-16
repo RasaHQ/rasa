@@ -36,7 +36,7 @@ name = "internal repository mirroring psycopg binary for macos"
 url = "https://pypi.org/simple/"
 
 [tool.poetry.dependencies]
-python = ">=3.10,<3.11"
+python = ">=3.10, <3.11"
 rasa-sdk = ">=3.6.2"
 aiohttp = ">=3.10.2"
 boto3 = "^1.26.136"
@@ -57,7 +57,7 @@ setuptools = ">=65.5.1"
 certifi = ">=2023.7.22"
 cryptography = ">=43.0.1"
 structlog = "^23.1.0"
-structlog-sentry = "^2.0.2"
+structlog-sentry = "^2.1.0"
 pydantic = { extras = ["dotenv"], version = "^2" }
 pydantic-settings = "^2"
 
