@@ -118,7 +118,9 @@
             "https://docs-test-001.openai.azure.com",
             "^https://platform\\.openai\\.com.*",
             "^https://westus.dev.cognitive.microsoft.com/docs/services/luis-endpoint-api-v3-0$",
-            "^https://www.tensorflow.org/api_docs/python/tf/config$"
+            "^https://westcentralus.dev.cognitive.microsoft.com/docs/services/luis-endpoint-api-v3-0$",
+            "^https://www.tensorflow.org/api_docs/python/tf/config$",
+            "^https://www.tensorflow.org/api_docs/python/tf/keras/callbacks/TensorBoard$"
 
           ]
         }
