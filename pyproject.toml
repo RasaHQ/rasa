@@ -58,8 +58,8 @@ certifi = ">=2023.7.22"
 cryptography = ">=43.0.1"
 structlog = "^23.1.0"
 structlog-sentry = "^2.0.2"
-pydantic = ">=1.10.18"
-pydantic-settings = "*"
+pydantic = { extras = ["dotenv"], version = "^2" }
+pydantic-settings = "^2"
 
 
 # TensorFlow-related dependencies for different platforms
