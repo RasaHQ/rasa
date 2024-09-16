@@ -23,6 +23,7 @@ class TestOpenAIEmbeddingClient:
     def client(self, monkeypatch: MonkeyPatch) -> OpenAIEmbeddingClient:
         monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "my key")
         config = {
+            "provider": "openai",
             "api_base": "https://test",
             "api_type": "openai",
             "api_version": "v1",
@@ -45,11 +46,11 @@ class TestOpenAIEmbeddingClient:
 
     def test_config(self, client: OpenAIEmbeddingClient) -> None:
         assert client.config == {
+            "provider": "openai",
             "api_base": "https://test",
             "api_version": "v1",
             "api_type": "openai",
             "model": "gpt-1000",
-            "extra_parameters": {},
         }
 
     def test_model(self, client: OpenAIEmbeddingClient) -> None:
@@ -101,21 +102,21 @@ class TestOpenAIEmbeddingClient:
     def test_conforms_to_protocol(self, client: OpenAIEmbeddingClient) -> None:
         assert isinstance(client, EmbeddingClient)
 
-    def test_openai_embedding_client_validate_client_setup_success(
+    def test_validate_client_setup_success(
         self, client: OpenAIEmbeddingClient, monkeypatch: MonkeyPatch
     ) -> None:
         monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "test100")
         client.validate_client_setup()
         assert os.environ.get(OPENAI_API_KEY_ENV_VAR) == "test100"
 
-    def test_openai_embedding_client_validate_client_setup_raises_error(
+    def test_validate_client_setup_raises_error(
         self, client: OpenAIEmbeddingClient, monkeypatch: MonkeyPatch
     ) -> None:
         monkeypatch.delenv(OPENAI_API_KEY_ENV_VAR)
         with pytest.raises(ProviderClientValidationError):
             client.validate_client_setup()
 
-    def test_openai_embedding_client_embed(
+    def test_embed(
         self,
         client: OpenAIEmbeddingClient,
         embedding_response: litellm.EmbeddingResponse,
@@ -139,7 +140,7 @@ class TestOpenAIEmbeddingClient:
         assert response.usage.completion_tokens == 20
         assert response.usage.total_tokens == 30
 
-    async def test_openai_embedding_client_aembed(
+    async def test_aembed(
         self,
         client: OpenAIEmbeddingClient,
         embedding_response: litellm.EmbeddingResponse,
@@ -163,9 +164,7 @@ class TestOpenAIEmbeddingClient:
         assert response.usage.completion_tokens == 20
         assert response.usage.total_tokens == 30
 
-    def test_openai_embedding_client_init_with_params(
-        self, monkeypatch: MonkeyPatch
-    ) -> None:
+    def test_init_with_params(self, monkeypatch: MonkeyPatch) -> None:
         # Given
         monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "some_key")
         client = OpenAIEmbeddingClient(
@@ -182,9 +181,7 @@ class TestOpenAIEmbeddingClient:
         assert client.api_version == "v1"
         assert client._litellm_extra_parameters == {}
 
-    def test_openai_embedding_client_init_with_env_vars(
-        self, monkeypatch: MonkeyPatch
-    ) -> None:
+    def test_init_with_env_vars(self, monkeypatch: MonkeyPatch) -> None:
         # Given
         monkeypatch.setenv(OPENAI_API_BASE_ENV_VAR, "https://test/env")
         monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "some_key")
@@ -206,20 +203,20 @@ class TestOpenAIEmbeddingClient:
         "config",
         [
             {
-                "api_type": "openai",
+                "provider": "openai",
                 "model": "test-embedding",
                 # Stream is forbidden
                 "stream": True,
             },
             {
-                "api_type": "openai",
+                "provider": "openai",
                 "model": "test-embedding",
                 # n is forbidden
                 "n": 10,
             },
         ],
     )
-    def test_openai_embedding_cannot_be_instantiated_with_forbidden_keys(
+    def test_init_with_forbidden_keys(
         self,
         config: dict,
         monkeypatch: MonkeyPatch,
@@ -235,21 +232,53 @@ class TestOpenAIEmbeddingClient:
 
         assert found_validation_log
 
+    @pytest.mark.parametrize("deprecated_provider_alias", ["type", "_type"])
+    def test_from_config_raises_deprecation_warning_for_deprecated_provider_aliases(
+        self, deprecated_provider_alias: str, monkeypatch: MonkeyPatch
+    ):
+        # Given
+        monkeypatch.setenv(
+            OPENAI_API_KEY_ENV_VAR,
+            "test key for "
+            "test_from_config_raises_deprecation_warning_for_deprecated_provider_aliases",
+        )
+        config = {
+            deprecated_provider_alias: "openai",
+            "model": "gpt-test",
+        }
+
+        # When
+        with pytest.warns(None) as record:
+            client = OpenAIEmbeddingClient.from_config(config)
+
+        # Then
+        future_warnings = [
+            warning for warning in record if warning.category == FutureWarning
+        ]
+        assert len(future_warnings) == 1
+        assert f"'{deprecated_provider_alias}' is deprecated" in str(
+            future_warnings[0].message
+        )
+        assert "'provider' instead" in str(future_warnings[0].message)
+
+        assert client.config["provider"] == "openai"
+        assert deprecated_provider_alias not in client.config
+
     @pytest.mark.parametrize(
         "config, expected_to_raise_deprecation_warning",
         [
             (
                 {
+                    "provider": "openai",
                     "model": "test-embedding",
-                    "api_type": "openai",
                     "timeout": 7,
                 },
                 False,
             ),
             (
                 {
+                    "provider": "openai",
                     "model": "test-embedding",
-                    "api_type": "openai",
                     # Use deprecated key for timeout
                     "request_timeout": 7,
                 },

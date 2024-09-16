@@ -212,6 +212,12 @@ def prepare_llm_fine_tuning_data(args: argparse.Namespace) -> None:
     statistics["num_user_messages_across_conversations"] = sum(
         [len(conversation.get_user_messages()) for conversation in conversations]
     )
+    statistics["num_user_messages_to_rephrase_across_conversations"] = sum(
+        [
+            len(conversation.get_user_messages_to_rephrase())
+            for conversation in conversations
+        ]
+    )
     log_end_of_module("Annotation", statistics)
 
     # 2. paraphrase conversations

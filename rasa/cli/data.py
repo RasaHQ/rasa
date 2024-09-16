@@ -17,7 +17,7 @@ from rasa.cli.arguments import data as arguments
 from rasa.cli.arguments import default_arguments
 from rasa.e2e_test.e2e_config import create_llm_e2e_test_converter_config
 from rasa.e2e_test.e2e_test_converter import E2ETestConverter
-from rasa.e2e_test.e2e_yaml_utils import E2ETestYAMLWriter
+from rasa.e2e_test.utils.e2e_yaml_utils import E2ETestYAMLWriter
 from rasa.shared.constants import (
     DEFAULT_DATA_PATH,
     DEFAULT_CONFIG_PATH,

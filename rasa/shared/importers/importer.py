@@ -234,6 +234,26 @@ class TrainingDataImporter(ABC):
         """Returns text representation of object."""
         return self.__class__.__name__
 
+    def get_user_flows(self) -> FlowsList:
+        """Retrieves the user-defined flows that should be used for training.
+
+        Implemented by FlowSyncImporter and E2EImporter only.
+
+        Returns:
+            `FlowsList` containing all loaded flows.
+        """
+        raise NotImplementedError
+
+    def get_user_domain(self) -> Domain:
+        """Retrieves the user-defined domain that should be used for training.
+
+        Implemented by FlowSyncImporter and E2EImporter only.
+
+        Returns:
+            `Domain`.
+        """
+        raise NotImplementedError
+
 
 class NluDataImporter(TrainingDataImporter):
     """Importer that skips any Core-related file reading."""
@@ -451,6 +471,10 @@ class FlowSyncImporter(PassThroughImporter):
         return self.merge_with_default_flows(flows)
 
     @rasa.shared.utils.common.cached_method
+    def get_user_flows(self) -> FlowsList:
+        return self._importer.get_flows()
+
+    @rasa.shared.utils.common.cached_method
     def get_domain(self) -> Domain:
         """Merge existing domain with properties of flows."""
         # load domain data from user defined domain files
@@ -477,6 +501,11 @@ class FlowSyncImporter(PassThroughImporter):
             default_domain, ignore_warnings_about_duplicates=True
         )
         return domain
+
+    @rasa.shared.utils.common.cached_method
+    def get_user_domain(self) -> Domain:
+        """Retrieves only user defined domain."""
+        return self._importer.get_domain()
 
 
 class ResponsesSyncImporter(PassThroughImporter):
@@ -605,12 +634,30 @@ class E2EImporter(PassThroughImporter):
     """
 
     @rasa.shared.utils.common.cached_method
+    def get_user_flows(self) -> FlowsList:
+        if not isinstance(self._importer, FlowSyncImporter):
+            raise NotImplementedError(
+                "Accessing user flows is only supported with FlowSyncImporter."
+            )
+
+        return self._importer.get_user_flows()
+
+    @rasa.shared.utils.common.cached_method
     def get_domain(self) -> Domain:
         """Retrieves model domain (see parent class for full docstring)."""
         original = self._importer.get_domain()
         e2e_domain = self._get_domain_with_e2e_actions()
 
         return original.merge(e2e_domain)
+
+    @rasa.shared.utils.common.cached_method
+    def get_user_domain(self) -> Domain:
+        """Retrieves only user defined domain."""
+        if not isinstance(self._importer, FlowSyncImporter):
+            raise NotImplementedError(
+                "Accessing user domain is only supported with FlowSyncImporter."
+            )
+        return self._importer.get_user_domain()
 
     def _get_domain_with_e2e_actions(self) -> Domain:
         stories = self.get_stories()

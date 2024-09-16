@@ -5,6 +5,8 @@ from unittest.mock import patch, Mock, AsyncMock
 import pandas as pd
 import pytest
 
+from pytest import MonkeyPatch
+
 from rasa.e2e_test.e2e_config import LLME2ETestConverterConfig
 from rasa.e2e_test.e2e_test_converter import (
     E2ETestConverter,
@@ -337,3 +339,44 @@ def test_convert_e2e_yaml_is_valid(sample_converter: E2ETestConverter):
 
 def test_convert_e2e_yaml_is_not_valid(sample_converter: E2ETestConverter):
     assert sample_converter.is_yaml_valid(DUMMY_YAML_TEST[1:]) is False
+
+
+def setup_llm_mock(monkeypatch: MonkeyPatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "api_key")
+
+    async def mock_acompletion(*args):
+        mock_response = AsyncMock()
+        mock_response.choices = ["response"]
+        return mock_response
+
+    monkeypatch.setattr(
+        "rasa.shared.providers.llm.openai_llm_client.OpenAILLMClient.acompletion",
+        mock_acompletion,
+    )
+
+
+async def test_generate_llm_response_with_default_config(
+    monkeypatch: MonkeyPatch, sample_converter: E2ETestConverter
+):
+    setup_llm_mock(monkeypatch)
+
+    assert await sample_converter.generate_llm_response("input") == "response"
+
+
+async def test_generate_llm_response_with_custom_config(
+    monkeypatch: MonkeyPatch, sample_converter: E2ETestConverter
+):
+    setup_llm_mock(monkeypatch)
+
+    llm_config = LLME2ETestConverterConfig.from_dict(
+        config_data={
+            "provider": "openai",
+            "model": "gpt-4",
+        }
+    )
+    converter = E2ETestConverter(
+        path=SAMPLE_CONVERSATIONS_CSV_PATH,
+        llm_config=llm_config,
+    )
+
+    assert await converter.generate_llm_response("input") == "response"

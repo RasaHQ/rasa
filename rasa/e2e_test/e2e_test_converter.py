@@ -15,9 +15,9 @@ from jinja2 import Template
 from ruamel.yaml.scanner import ScannerError
 
 from rasa import telemetry
-from rasa.cli.e2e_test import read_e2e_test_schema
 from rasa.e2e_test.constants import KEY_TEST_CASES
 from rasa.e2e_test.e2e_config import LLME2ETestConverterConfig
+from rasa.e2e_test.utils.validation import read_e2e_test_schema
 from rasa.exceptions import RasaException
 from rasa.shared.utils.llm import llm_factory
 from rasa.shared.utils.yaml import (
@@ -120,8 +120,8 @@ class E2ETestConverter:
             str: Parsed string.
 
         Example:
-            >>> markdown_string = "```yaml\nkey: value\n```"
-            >>> remove_markdown_formatting(markdown_string)
+            >>> markdown_str = '''yaml\nkey: value\n'''
+            >>> E2ETestConverter.remove_markdown_code_syntax(markdown_str)
             'key: value'
         """
         if not markdown_string:

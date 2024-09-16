@@ -36,6 +36,7 @@ class TestOpenAILLMClient:
         [
             (
                 {
+                    "provider": "openai",
                     "model": "test_model",
                     "api_type": "openai",
                     "temperature": 0.2,
@@ -45,9 +46,31 @@ class TestOpenAILLMClient:
                 None,
                 {"temperature": 0.2, "max_tokens": 1000},
             ),
+            # Use deprecated aliases for provider
+            (
+                {
+                    "type": "openai",
+                    "model": "test_model",
+                },
+                "test_model",
+                None,
+                {},
+            ),
+            (
+                {
+                    "_type": "openai",
+                    "model": "test_model",
+                },
+                "test_model",
+                None,
+                {},
+            ),
             # Use deprecated alias for model
             (
-                {"model_name": "test_model", "api_type": "openai"},
+                {
+                    "provider": "openai",
+                    "model_name": "test_model",
+                },
                 "test_model",
                 None,
                 {},
@@ -55,8 +78,8 @@ class TestOpenAILLMClient:
             # Use api base
             (
                 {
+                    "provider": "openai",
                     "model": "test_model",
-                    "api_type": "openai",
                     "api_base": "https://my.api.base.com/my_model",
                 },
                 "test_model",
@@ -66,8 +89,8 @@ class TestOpenAILLMClient:
             # Deprecated alias to api base
             (
                 {
+                    "provider": "openai",
                     "model": "test_model",
-                    "api_type": "openai",
                     "openai_api_base": "https://my.api.base.com/my_model",
                 },
                 "test_model",
@@ -77,6 +100,7 @@ class TestOpenAILLMClient:
             # Deprecated alias to api type
             (
                 {
+                    "provider": "openai",
                     "model": "test_model",
                     "openai_api_type": "openai",
                 },
@@ -111,14 +135,6 @@ class TestOpenAILLMClient:
     @pytest.mark.parametrize(
         "invalid_config",
         [
-            {
-                # Missing `api_type`
-                "model": "test-gpt",
-            },
-            {
-                # Bypassing with LiteLLM only approach
-                "model": "openai/test-gpt",
-            },
             {
                 # Invalid value for `api_type`
                 "model": "test-gpt",
@@ -180,20 +196,20 @@ class TestOpenAILLMClient:
         "config",
         [
             {
-                "api_type": "openai",
+                "provider": "openai",
                 "model": "test-embedding",
                 # Stream is forbidden
                 "stream": True,
             },
             {
-                "api_type": "openai",
+                "provider": "openai",
                 "model": "test-embedding",
                 # n is forbidden
                 "n": 10,
             },
         ],
     )
-    def test_openai_embedding_cannot_be_instantiated_with_forbidden_keys(
+    def test_from_config_raises_error_for_using_forbidden_keys(
         self,
         config: dict,
         monkeypatch: MonkeyPatch,
@@ -214,16 +230,16 @@ class TestOpenAILLMClient:
         [
             (
                 {
+                    "provider": "openai",
                     "model": "test-gpt",
-                    "api_type": "openai",
                     "timeout": 7,
                 },
                 False,
             ),
             (
                 {
+                    "provider": "openai",
                     "model": "test-gpt",
-                    "api_type": "openai",
                     # Use deprecated key for timeout
                     "request_timeout": 7,
                 },

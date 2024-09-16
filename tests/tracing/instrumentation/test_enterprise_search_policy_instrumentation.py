@@ -197,7 +197,7 @@ async def test_tracing_enterprise_search_policy_generate_llm_answer_len_prompt_t
         policy = component_class(
             config={
                 "trace_prompt_tokens": True,
-                "llm": {"type": "cohere", "model": "command"},
+                "llm": {"provider": "cohere", "model": "command"},
             },
             model_storage=default_model_storage,
             resource=Resource("enterprisesearchpolicy"),

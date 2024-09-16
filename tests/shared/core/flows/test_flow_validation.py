@@ -27,6 +27,7 @@ from rasa.shared.core.flows.validation import (
     SlotNamingException,
     FlowIdNamingException,
     validate_patterns_are_not_calling_or_linking_other_flows,
+    PatternReferencedPatternException,
 )
 from rasa.shared.core.flows.yaml_flows_io import (
     flows_from_str,
@@ -396,6 +397,19 @@ def test_validation_fails_for_a_linked_flow_that_does_not_exist():
         flows_from_str(flow_config)
 
 
+def test_validation_pass_for_a_link_to_pattern_human_handoff():
+    flow_config = """
+        flows:
+          foo:
+            description: foo flow
+            steps:
+              - link: pattern_human_handoff
+        """
+
+    flows = flows_from_str(flow_config)
+    assert len(flows.underlying_flows) == 1
+
+
 def test_validation_fails_for_a_linked_pattern():
     flow_config = """
         flows:
@@ -439,7 +453,7 @@ def test_validation_fails_for_pattern_with_a_link_step_to_a_pattern():
     flows = YAMLFlowsReader.read_from_string(textwrap.dedent(flow_config))
     flows = FlowSyncImporter.merge_with_default_flows(flows)
 
-    with pytest.raises(PatternReferencedFlowException):
+    with pytest.raises(PatternReferencedPatternException):
         validate_patterns_are_not_calling_or_linking_other_flows(flows)
 
 

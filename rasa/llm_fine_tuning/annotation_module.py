@@ -52,6 +52,16 @@ def annotate_e2e_tests(
     return converations
 
 
+def _get_previous_actual_step_output(
+    test_turns: TEST_TURNS_TYPE, i: int
+) -> Optional[ActualStepOutput]:
+    while i > 0:
+        i = i - 1
+        if isinstance(test_turns[i], ActualStepOutput):
+            return test_turns[i]  # type:ignore[return-value]
+    return None
+
+
 def generate_conversation(
     test_turns: TEST_TURNS_TYPE,
     test_case: TestCase,
@@ -75,18 +85,20 @@ def generate_conversation(
         # we only have user steps, extract the bot response from the bot uttered
         # events of the test turn
         for i, original_step in enumerate(test_case.steps):
+            previous_turn = _get_previous_actual_step_output(test_turns, i)
             steps.append(
                 _convert_to_conversation_step(
-                    original_step, test_turns[i], test_case.name
+                    original_step, test_turns[i], test_case.name, previous_turn
                 )
             )
             steps.extend(_create_bot_test_steps(test_turns[i]))
     else:
         for i, original_step in enumerate(test_case.steps):
             if original_step.actor == USER:
+                previous_turn = _get_previous_actual_step_output(test_turns, i)
                 steps.append(
                     _convert_to_conversation_step(
-                        original_step, test_turns[i], test_case.name
+                        original_step, test_turns[i], test_case.name, previous_turn
                     )
                 )
             else:
@@ -124,7 +136,10 @@ def _create_bot_test_steps(current_turn: ActualStepOutput) -> List[TestStep]:
 
 
 def _convert_to_conversation_step(
-    current_step: TestStep, current_turn: ActualStepOutput, test_case_name: str
+    current_step: TestStep,
+    current_turn: ActualStepOutput,
+    test_case_name: str,
+    previous_turn: Optional[ActualStepOutput],
 ) -> Union[TestStep, ConversationStep]:
     if not current_step.text == current_turn.text or not isinstance(
         current_turn, ActualStepOutput
@@ -152,12 +167,57 @@ def _convert_to_conversation_step(
         return current_step
 
     commands = [Command.command_from_json(data) for data in llm_commands]
+    rephrase = _should_be_rephrased(current_turn.text, previous_turn, test_case_name)
 
-    return ConversationStep(
-        current_step,
-        commands,
-        llm_prompt,
+    return ConversationStep(current_step, commands, llm_prompt, rephrase=rephrase)
+
+
+def _should_be_rephrased(
+    current_user_message: str,
+    previous_turn: Optional[ActualStepOutput],
+    test_case_name: str,
+) -> bool:
+    """Checks if the current user message should be rephrased or not.
+
+    A user message should not be rephrased in case the user message comes from a button
+    payload, i.e. the user clicked on a button.
+
+    Args:
+        current_user_message: The current user message.
+        previous_turn: The previous turn containing the bot uttered event that came
+            before.
+        test_case_name: The name of the test case.
+
+    Returns:
+        True, in case the user message should be rephrased, False otherwise.
+    """
+    # there is no previous turn, we are at the beginning of the conversation
+    if not previous_turn:
+        return True
+
+    buttons_present = (
+        previous_turn.bot_uttered_events
+        and "buttons" in previous_turn.bot_uttered_events[-1].data
+        and previous_turn.bot_uttered_events[-1].data["buttons"] is not None
     )
+
+    if not buttons_present:
+        return True
+
+    # if the user utterance comes from a button payload we should not rephrase
+    # the user utterance in later steps
+    button_data = previous_turn.bot_uttered_events[-1].data["buttons"]
+    button_payloads = [data["payload"].lower() for data in button_data]
+    if current_user_message.lower() in button_payloads:
+        structlogger.debug(
+            "annotation_module.user_message_should_not_be_rephrased",
+            rephrase=False,
+            user_message=current_user_message,
+            test_case_name=test_case_name,
+        )
+        return False
+
+    return True
 
 
 def _extract_llm_prompt_and_commands(

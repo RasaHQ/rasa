@@ -167,7 +167,7 @@ async def test_tracing_llm_command_generator_non_default_llm_attrs(
     config = {
         "prompt": TEST_PROMPT_DIRECTORY,
         "llm": {
-            "type": "cohere",
+            "provider": "cohere",
             "model": model,
             "request_timeout": 10,
             "temperature": 0.7,
@@ -305,7 +305,7 @@ async def test_tracing_llm_command_generator_prompt_tokens_non_openai(
     mock_llm_command_generator = component_class(
         config={
             "trace_prompt_tokens": True,
-            "llm": {"type": "cohere", "model": "command"},
+            "llm": {"provider": "cohere", "model": "command"},
         },
         model_storage=default_model_storage,
         resource=Resource("llm-command-generator"),

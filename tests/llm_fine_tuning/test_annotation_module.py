@@ -1,4 +1,4 @@
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from unittest.mock import MagicMock, patch, Mock
 
 import pytest
@@ -12,6 +12,7 @@ from rasa.llm_fine_tuning.annotation_module import (
     generate_conversation,
     _convert_to_conversation_step,
     _extract_llm_prompt_and_commands,
+    _should_be_rephrased,
 )
 from rasa.llm_fine_tuning.conversations import Conversation, ConversationStep
 from rasa.llm_fine_tuning.storage import StorageContext
@@ -41,6 +42,24 @@ def test_turn(test_step: TestStep) -> ActualStepOutput:
                 "How much money do you want to transfer?",
                 metadata={
                     "utter_action": "utter_ask_transfer_money_amount",
+                },
+            ),
+        ],
+    )
+
+
+@pytest.fixture
+def test_turn_from_buttons(test_step: TestStep) -> ActualStepOutput:
+    return ActualStepOutput.from_test_step(
+        TestStep.from_dict({"user": "to John"}),
+        [
+            BotUttered(
+                "Do you want to transfer that money?",
+                data={
+                    "buttons": [
+                        {"title": "yes", "payload": "yes"},
+                        {"title": "no", "payload": "no"},
+                    ]
                 },
             ),
         ],
@@ -118,12 +137,44 @@ def test_convert_to_conversation_step_returns_conversation_step(
 ):
     test_case_name = "test_case"
 
-    result = _convert_to_conversation_step(test_step, test_turn, test_case_name)
+    result = _convert_to_conversation_step(test_step, test_turn, test_case_name, None)
 
     assert isinstance(result, ConversationStep) is True
     assert result.llm_prompt == "prompt"
     assert result.llm_commands == [StartFlowCommand("transfer_money")]
     assert result.original_test_step == test_step
+    assert result.rephrase is True
+
+
+@pytest.mark.parametrize(
+    "user_message, rephrase",
+    (
+        ("some other user message", True),
+        ("yes", False),
+        ("Yes", False),
+        ("no", False),
+        ("NO", False),
+    ),
+)
+def test_convert_to_conversation_step_returns_conversation_step_with_rephrase_false(
+    test_turn: ActualStepOutput,
+    test_turn_from_buttons: ActualStepOutput,
+    user_message: str,
+    rephrase: bool,
+):
+    test_case_name = "test_case"
+    test_turn.text = user_message
+    test_step = TestStep.from_dict({"user": user_message})
+
+    result = _convert_to_conversation_step(
+        test_step, test_turn, test_case_name, test_turn_from_buttons
+    )
+
+    assert isinstance(result, ConversationStep) is True
+    assert result.llm_prompt == "prompt"
+    assert result.llm_commands == [StartFlowCommand(flow="transfer_money")]
+    assert result.original_test_step == test_step
+    assert result.rephrase == rephrase
 
 
 def test_convert_to_conversation_step_mismatch_between_test_step_and_test_turn(
@@ -133,7 +184,9 @@ def test_convert_to_conversation_step_mismatch_between_test_step_and_test_turn(
     test_case_name = "test_case"
 
     with capture_logs() as logs:
-        result = _convert_to_conversation_step(test_step, test_turn, test_case_name)
+        result = _convert_to_conversation_step(
+            test_step, test_turn, test_case_name, None
+        )
 
         assert len(logs) == 1
         assert logs[0]["log_level"] == "debug"
@@ -153,7 +206,9 @@ def test_convert_to_conversation_step_no_command_prompt(
     test_case_name = "test_case"
 
     with capture_logs() as logs:
-        result = _convert_to_conversation_step(test_step, test_turn, test_case_name)
+        result = _convert_to_conversation_step(
+            test_step, test_turn, test_case_name, None
+        )
 
         assert len(logs) == 1
         assert logs[0]["log_level"] == "debug"
@@ -200,3 +255,91 @@ def test_extract_llm_prompt_and_commands_no_commands_and_prompt(
 
     assert commands is None
     assert prompt is None
+
+
+@pytest.mark.parametrize(
+    "user_message, previous_turn, expected_result",
+    (
+        (
+            "yes",
+            ActualStepOutput.from_test_step(
+                TestStep.from_dict({"user": "to John"}),
+                [
+                    BotUttered(
+                        "Do you want to transfer that money?",
+                        data={
+                            "buttons": [
+                                {"title": "yes", "payload": "yes"},
+                                {"title": "no", "payload": "no"},
+                            ]
+                        },
+                    ),
+                ],
+            ),
+            False,
+        ),
+        (
+            "YES",
+            ActualStepOutput.from_test_step(
+                TestStep.from_dict({"user": "to John"}),
+                [
+                    BotUttered(
+                        "Do you want to transfer that money?",
+                        data={
+                            "buttons": [
+                                {"title": "yes", "payload": "yes"},
+                                {"title": "no", "payload": "no"},
+                            ]
+                        },
+                    ),
+                ],
+            ),
+            False,
+        ),
+        (
+            "some other text",
+            ActualStepOutput.from_test_step(
+                TestStep.from_dict({"user": "to John"}),
+                [
+                    BotUttered(
+                        "Do you want to transfer that money?",
+                        data={
+                            "buttons": [
+                                {"title": "yes", "payload": "yes"},
+                                {"title": "no", "payload": "no"},
+                            ]
+                        },
+                    ),
+                ],
+            ),
+            True,
+        ),
+        ("yes", None, True),
+        (
+            "yes",
+            ActualStepOutput.from_test_step(
+                TestStep.from_dict({"user": "to John"}),
+                [],
+            ),
+            True,
+        ),
+        (
+            "yes",
+            ActualStepOutput.from_test_step(
+                TestStep.from_dict({"user": "to John"}),
+                [
+                    BotUttered(
+                        "Do you want to transfer that money?",
+                    )
+                ],
+            ),
+            True,
+        ),
+    ),
+)
+def test_should_be_rephrased(
+    user_message: str, previous_turn: Optional[ActualStepOutput], expected_result: bool
+):
+    rephrase = _should_be_rephrased(user_message, previous_turn, "test_case_name")
+
+    assert rephrase == expected_result

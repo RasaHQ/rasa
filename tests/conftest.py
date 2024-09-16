@@ -1230,3 +1230,10 @@ def endpoint_stub_config(
             },
         },
     )
+
+
+@pytest.fixture
+def e2e_input_folder() -> pathlib.Path:
+    return (
+        pathlib.Path(__file__).parent.parent / "data" / "end_to_end_testing_input_files"
+    )

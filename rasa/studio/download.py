@@ -210,8 +210,8 @@ def _handle_download_no_overwrite(
     if domain_path.is_dir():
         studio_domain_path = domain_path / STUDIO_DOMAIN_FILENAME
         new_domain_data = data_handler.combine_domains(
-            data_from_studio.get_domain().as_dict(),
-            data_original.get_domain().as_dict(),
+            data_from_studio.get_user_domain().as_dict(),
+            data_original.get_user_domain().as_dict(),
         )
         studio_domain = Domain.from_dict(new_domain_data)
         if not studio_domain.is_empty():
@@ -219,7 +219,9 @@ def _handle_download_no_overwrite(
         else:
             logger.warning("No additional domain data found.")
     elif domain_path.is_file():
-        domain_merged = data_original.get_domain().merge(data_from_studio.get_domain())
+        domain_merged = data_original.get_user_domain().merge(
+            data_from_studio.get_user_domain()
+        )
         domain_merged.persist(domain_path)
 
     if len(data_paths) == 1 and data_paths[0].is_file():
@@ -230,7 +232,9 @@ def _handle_download_no_overwrite(
             )
             data_nlu.persist_nlu(data_path)
         if handler.has_flows():
-            data_flows = data_original.get_flows().merge(data_from_studio.get_flows())
+            data_flows = data_original.get_user_flows().merge(
+                data_from_studio.get_user_flows()
+            )
             YamlFlowsWriter.dump(data_flows.underlying_flows, data_path)
 
     elif len(data_paths) == 1 and data_paths[0].is_dir():
@@ -276,8 +280,8 @@ def _persist_flows_diff(
 ) -> None:
     """Creates a new flows file from the diff of original and studio data."""
     new_flows_data = data_handler.create_new_flows_from_diff(
-        data_from_studio.get_flows().underlying_flows,
-        data_original.get_flows().underlying_flows,
+        data_from_studio.get_user_flows().underlying_flows,
+        data_original.get_user_flows().underlying_flows,
     )
     if new_flows_data:
         YamlFlowsWriter.dump(new_flows_data, data_path)
@@ -317,11 +321,13 @@ def _handle_download_with_overwrite(
     )
 
     if domain_path.is_file():
-        domain_merged = data_from_studio.get_domain().merge(data_original.get_domain())
+        domain_merged = data_from_studio.get_user_domain().merge(
+            data_original.get_user_domain()
+        )
         domain_merged.persist(domain_path)
     elif domain_path.is_dir():
         default = domain_path / Path(STUDIO_DOMAIN_FILENAME)
-        studio_domain = data_from_studio.get_domain()
+        studio_domain = data_from_studio.get_user_domain()
 
         paths = get_domain_path(domain_path, data_from_studio, mapper)
 
@@ -358,8 +364,8 @@ def _handle_download_with_overwrite(
             )
             nlu_data_merged.persist_nlu(data_paths[0])
         if handler.has_flows():
-            flows_data_merged = data_from_studio.get_flows().merge(
-                data_original.get_flows()
+            flows_data_merged = data_from_studio.get_user_flows().merge(
+                data_original.get_user_flows()
             )
             YamlFlowsWriter.dump(flows_data_merged.underlying_flows, data_paths[0])
     elif len(data_paths) == 1 and data_paths[0].is_dir():
@@ -374,12 +380,12 @@ def _handle_download_with_overwrite(
                 nlu_data = nlu_data.merge(nlu_file.get_nlu_data())
             pretty_write_nlu_yaml(read_yaml(nlu_data.nlu_as_yaml()), paths["nlu_path"])
         if handler.has_flows():
-            flows_data = data_from_studio.get_flows()
+            flows_data = data_from_studio.get_user_flows()
             if paths["flow_path"].exists():
                 flows_file = TrainingDataImporter.load_from_dict(
                     training_data_paths=[str(paths["flow_path"])]
                 )
-                flows_data = flows_data.merge(flows_file.get_flows())
+                flows_data = flows_data.merge(flows_file.get_user_flows())
             YamlFlowsWriter.dump(flows_data.underlying_flows, paths["flow_path"])
     else:
         #  TODO: we are not handling the case of multiple data paths?
@@ -407,7 +413,7 @@ def get_training_path(
     for intent in data_original.get_nlu_data().intents:
         for path in mapper.get_file(intent, "intents").get("training", []):
             nlu_paths.add(path)
-    flows = [flow.id for flow in data_original.get_flows().underlying_flows]
+    flows = [flow.id for flow in data_original.get_user_flows().underlying_flows]
     for flow in flows:
         for path in mapper.get_file(flow, "flows").get("training", []):
             flow_paths.add(path)

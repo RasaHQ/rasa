@@ -66,7 +66,6 @@ class _BaseLiteLLMEmbeddingClient:
         return {}
 
     @property
-    @abstractmethod
     def _embedding_fn_args(self) -> Dict[str, Any]:
         """Returns the arguments to be passed to the embedding function."""
         return {

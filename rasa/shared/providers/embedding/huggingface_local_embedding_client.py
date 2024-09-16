@@ -6,7 +6,6 @@ import structlog
 
 from rasa.shared.constants import (
     HUGGINGFACE_LOCAL_EMBEDDING_CACHING_FOLDER,
-    HUGGINGFACE_LOCAL_API_TYPE,
 )
 from rasa.shared.providers._configs.huggingface_local_embedding_client_config import (
     HuggingFaceLocalEmbeddingClientConfig,
@@ -70,10 +69,13 @@ class HuggingFaceLocalEmbeddingClient:
         )
 
     @property
+    def model(self) -> str:
+        return self._model_name_or_path
+
+    @property
     def config(self) -> Dict:
         config = HuggingFaceLocalEmbeddingClientConfig(
             model=self._model_name_or_path,
-            api_type=HUGGINGFACE_LOCAL_API_TYPE,
             cache_folder=self._cache_folder,
             show_progress=self._show_progress,
             model_kwargs=self._model_kwargs,

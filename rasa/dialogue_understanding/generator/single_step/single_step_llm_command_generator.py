@@ -18,15 +18,12 @@ from rasa.dialogue_understanding.commands import (
     CannotHandleCommand,
 )
 from rasa.dialogue_understanding.generator.constants import (
-    DEFAULT_LLM_CONFIG,
     LLM_CONFIG_KEY,
     USER_INPUT_CONFIG_KEY,
     FLOW_RETRIEVAL_KEY,
-    FLOW_RETRIEVAL_EMBEDDINGS_CONFIG_KEY,
 )
 from rasa.dialogue_understanding.generator.flow_retrieval import (
     FlowRetrieval,
-    DEFAULT_EMBEDDINGS_CONFIG,
 )
 from rasa.dialogue_understanding.generator.llm_based_command_generator import (
     LLMBasedCommandGenerator,
@@ -38,8 +35,6 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import (
     ROUTE_TO_CALM_SLOT,
-    MODEL_NAME_CONFIG_KEY,
-    MODEL_CONFIG_KEY,
     PROMPT_CONFIG_KEY,
     PROMPT_TEMPLATE_CONFIG_KEY,
 )
@@ -53,9 +48,6 @@ from rasa.shared.utils.llm import (
     get_prompt_template,
     tracker_as_readable_transcript,
     sanitize_message_for_prompt,
-)
-from rasa.telemetry import (
-    track_single_step_llm_command_generator_init,
 )
 from rasa.utils.log_utils import log_llm
 
@@ -115,35 +107,6 @@ class SingleStepLLMCommandGenerator(LLMBasedCommandGenerator):
         )
 
         self.trace_prompt_tokens = self.config.get("trace_prompt_tokens", False)
-        self._track(config)
-
-    def _track(self, config: Dict[str, Any]) -> None:
-        llm_config = config.get(LLM_CONFIG_KEY) or DEFAULT_LLM_CONFIG
-        llm_model_name = llm_config.get(MODEL_CONFIG_KEY) or llm_config.get(
-            MODEL_NAME_CONFIG_KEY
-        )
-        custom_prompt_used = (
-            config.get(PROMPT_CONFIG_KEY) or config.get(PROMPT_TEMPLATE_CONFIG_KEY)
-        ) is not None
-        flow_retrieval_config = config.get(FLOW_RETRIEVAL_KEY, {})
-        flow_retrieval_enabled = flow_retrieval_config.get("active", True)
-        flow_retrieval_embedding_config = flow_retrieval_config.get(
-            FLOW_RETRIEVAL_EMBEDDINGS_CONFIG_KEY, DEFAULT_EMBEDDINGS_CONFIG
-        )
-        flow_retrieval_embedding_model_name = (
-            (
-                flow_retrieval_embedding_config.get(MODEL_CONFIG_KEY)
-                or flow_retrieval_embedding_config.get(MODEL_NAME_CONFIG_KEY)
-            )
-            if flow_retrieval_enabled
-            else None
-        )
-        track_single_step_llm_command_generator_init(
-            llm_model_name=llm_model_name,
-            custom_prompt_used=custom_prompt_used,
-            flow_retrieval_enabled=flow_retrieval_enabled,
-            flow_retrieval_embedding_model_name=flow_retrieval_embedding_model_name,
-        )
 
     ### Implementations of LLMBasedCommandGenerator parent
     @staticmethod
