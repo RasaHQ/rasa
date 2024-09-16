@@ -47,12 +47,25 @@ checks changelog folder to list any unexpected files.
 When a pull request is merged into a release branch, a pull request is opened by auto user `Roberto`
 to merge the changes  into the `main` branch. This workflow is active on all current active `release branches`.
 
-### Run Performance Checks On Main
+### Find Newly Added Dependencies
+
+This workflow is run to check whether new direct dependencies were added to `pyproject.toml`.
+If new dependencies were added, the workflow will comment on the PR with the newly added dependencies to inform the developer
+that the dependabot configuration must also be updated for the newly added dependencies.
+
+## Capture Installation Time On PR Branches
+
+This workflow is run to check whether the `poetry.lock` has been updated to detect PRs where dependency updates are being
+made. If the `poetry.lock` file has been updated, the workflow will dispatch an event to run the `Run Performance Checks` workflow.
+The `Run Performance Checks` workflow will publish a comment on the PR with the installation time of the rasa-pro package with the updated dependencies.
+
+### Run Performance Checks
 This workflow is run to check the rasa-pro package installation performance. It gathers metrics such as, `installation time`,
 `commit time`, `rasa pro version` and sends this data to segment. 
 Workflow runs once at the end of each day against the `main` branch.
 Failure information is sent via Slack notification to the channel `#atom-squad-alerts`.
-This workflow can also be run as a [workflow dispatch](#glossary) event.
+This workflow can also be run as a [workflow dispatch](#glossary) event or as a [repository dispatch](#glossary) event.
+When run as a repository dispatch event, it will comment on the event source PR with the installation time of the rasa-pro package.
 
 ### Security Patching
 Runs a security scan for vulnerabilities, uploads report to GCS and alerts slack bot on the findings.
@@ -92,3 +105,5 @@ The current set of actions are as follows :
 ## Glossary
 - workflow dispatch : Only workflow files that use the workflow_dispatch event trigger will have the option to run the workflow manually using the Run workflow button. 
  For more information refer [here](https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#workflow_dispatch)
+- repository dispatch : A repository dispatch event is an event that triggers a GitHub Actions workflow in a repository. For
+more information, refer [here](https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#repository_dispatch)

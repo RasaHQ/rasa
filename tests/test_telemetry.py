@@ -34,7 +34,6 @@ from rasa.telemetry import (
     TELEMETRY_ID,
     TELEMETRY_WRITE_KEY_ENVIRONMENT_VARIABLE,
     TRACING_BACKEND,
-    LLM_COMMAND_GENERATOR_CUSTOM_PROMPT_USED,
     FLOW_RETRIEVAL_ENABLED,
     FLOW_RETRIEVAL_EMBEDDING_MODEL_NAME,
     LLM_COMMAND_GENERATOR_MODEL_NAME,
@@ -42,16 +41,12 @@ from rasa.telemetry import (
     TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_COMPLETED_EVENT,
     TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_STARTED_EVENT,
     TELEMETRY_ENTERPRISE_SEARCH_POLICY_PREDICT_EVENT,
-    TELEMETRY_SINGLE_STEP_LLM_COMMAND_GENERATOR_INITIALISED_EVENT,
-    TELEMETRY_MULTI_STEP_LLM_COMMAND_GENERATOR_INITIALISED_EVENT,
-    SINGLE_STEP_LLM_COMMAND_GENERATOR_MODEL_NAME,
-    SINGLE_STEP_COMMAND_GENERATOR_CUSTOM_PROMPT_USED,
-    MULTI_STEP_LLM_COMMAND_GENERATOR_MODEL_NAME,
-    MULTI_STEP_LLM_COMMAND_GENERATOR_FILL_SLOTS_PROMPT,
-    MULTI_STEP_LLM_COMMAND_GENERATOR_HANDLE_FLOWS_PROMPT,
     TELEMETRY_E2E_TEST_CONVERSION_EVENT,
     E2E_TEST_CONVERSION_FILE_TYPE,
     E2E_TEST_CONVERSION_TEST_CASE_COUNT,
+    LLM_COMMAND_GENERATOR_CUSTOM_PROMPT_USED,
+    MULTI_STEP_LLM_COMMAND_GENERATOR_HANDLE_FLOWS_PROMPT_USED,
+    MULTI_STEP_LLM_COMMAND_GENERATOR_FILL_SLOTS_PROMPT_USED,
 )
 from rasa.utils.licensing import LICENSE_ENV_VAR
 
@@ -59,9 +54,9 @@ TELEMETRY_TEST_USER = "083642a3e448423ca652134f00e7fc76"  # just some random sta
 TELEMETRY_TEST_KEY = "5640e893c1324090bff26f655456caf3"  # just some random static id
 ENTERPRISE_SEARCH_TELEMETRY_EVENT_DATA = {
     "vector_store_type": "qdrant",
-    "embeddings_type": DEFAULT_EMBEDDINGS_CONFIG["api_type"],
+    "embeddings_type": DEFAULT_EMBEDDINGS_CONFIG["provider"],
     "embeddings_model": DEFAULT_EMBEDDINGS_CONFIG["model"],
-    "llm_type": LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["api_type"],
+    "llm_type": LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["provider"],
     "llm_model": LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model"],
     "citation_enabled": True,
 }
@@ -829,9 +824,11 @@ def test_track(
     context: Dict[Text, Any],
     telemetry_id: Optional[Text],
     expected_properties: Dict[Text, Any],
+    monkeypatch: MonkeyPatch,
 ) -> None:
     mock_get_telemetry_id.return_value = telemetry_id
     mock_with_default_context_fields.return_value = context
+    monkeypatch.setenv("RASA_TELEMETRY_ENABLED", "true")
     telemetry._track(event_name=event_name, properties=properties, context=context)
 
     mock_get_telemetry_id.assert_called_once()
@@ -1140,6 +1137,7 @@ def test_send_request_succeeds_without_success_field_in_response(
 
 @pytest.mark.parametrize(
     "llm_config,"
+    "prompt_config,"
     "flow_retrieval_config,"
     "expected_llm_custom_prompt_used,"
     "expected_llm_model_name,"
@@ -1150,6 +1148,7 @@ def test_send_request_succeeds_without_success_field_in_response(
         (
             None,
             None,
+            None,
             False,
             LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model"],
             True,
@@ -1157,15 +1156,17 @@ def test_send_request_succeeds_without_success_field_in_response(
         ),
         # custom prompt
         (
-            {"prompt": "This is custom prompt"},
             None,
-            False,
+            "This is custom prompt",
+            None,
+            True,
             LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model"],
             True,
             DEFAULT_EMBEDDINGS_CONFIG["model"],
         ),
         # turned off flow retrieval
         (
+            None,
             None,
             {"active": False},
             False,
@@ -1176,6 +1177,7 @@ def test_send_request_succeeds_without_success_field_in_response(
         # custom llm, custom flow retrieval
         (
             {"model": "test_llm"},
+            None,
             {"embeddings": {"model": "test_embedding"}},
             False,
             "test_llm",
@@ -1186,6 +1188,7 @@ def test_send_request_succeeds_without_success_field_in_response(
 )
 def test_get_llm_command_generator_config(
     llm_config: Dict[Text, Any],
+    prompt_config: Text,
     flow_retrieval_config: Dict[Text, Any],
     expected_llm_custom_prompt_used: bool,
     expected_llm_model_name: Text,
@@ -1208,6 +1211,8 @@ def test_get_llm_command_generator_config(
     config = yaml.load(config, Loader=yaml.FullLoader)
     if llm_config is not None:
         config["pipeline"][2]["llm"] = llm_config
+    if prompt_config is not None:
+        config["pipeline"][2]["prompt"] = prompt_config
     if flow_retrieval_config is not None:
         config["pipeline"][2]["flow_retrieval"] = flow_retrieval_config
 
@@ -1218,6 +1223,113 @@ def test_get_llm_command_generator_config(
     assert (
         result[LLM_COMMAND_GENERATOR_CUSTOM_PROMPT_USED]
         == expected_llm_custom_prompt_used
+    )
+    assert result[LLM_COMMAND_GENERATOR_MODEL_NAME] == expected_llm_model_name
+    assert result[FLOW_RETRIEVAL_ENABLED] == expected_flow_retrieval_enabled
+    assert (
+        result[FLOW_RETRIEVAL_EMBEDDING_MODEL_NAME]
+        == expected_flow_retrieval_embedding_model_name
+    )
+
+
+@pytest.mark.parametrize(
+    "llm_config,"
+    "prompt_config,"
+    "flow_retrieval_config,"
+    "expected_multi_step_llm_custom_handle_flows_prompt_used,"
+    "expected_multi_step_llm_custom_fill_slots_prompt_used,"
+    "expected_llm_model_name,"
+    "expected_flow_retrieval_enabled,"
+    "expected_flow_retrieval_embedding_model_name",
+    [
+        # default config
+        (
+            None,
+            None,
+            None,
+            False,
+            False,
+            LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model"],
+            True,
+            DEFAULT_EMBEDDINGS_CONFIG["model"],
+        ),
+        # custom prompt
+        (
+            None,
+            {"fill_slots": "This is custom prompt"},
+            None,
+            False,
+            True,
+            LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model"],
+            True,
+            DEFAULT_EMBEDDINGS_CONFIG["model"],
+        ),
+        # turned off flow retrieval
+        (
+            None,
+            None,
+            {"active": False},
+            False,
+            False,
+            LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model"],
+            False,
+            None,
+        ),
+        # custom llm, custom flow retrieval
+        (
+            {"model": "test_llm"},
+            None,
+            {"embeddings": {"model": "test_embedding"}},
+            False,
+            False,
+            "test_llm",
+            True,
+            "test_embedding",
+        ),
+    ],
+)
+def test_get_multi_step_llm_command_generator_config(
+    llm_config: Dict[Text, Any],
+    prompt_config: Dict[Text, Any],
+    flow_retrieval_config: Dict[Text, Any],
+    expected_multi_step_llm_custom_handle_flows_prompt_used: bool,
+    expected_multi_step_llm_custom_fill_slots_prompt_used: bool,
+    expected_llm_model_name: Text,
+    expected_flow_retrieval_enabled: bool,
+    expected_flow_retrieval_embedding_model_name: bool,
+):
+    # Given
+    config = """
+        recipe: default.v1
+        language: en
+        pipeline:
+        - name: KeywordIntentClassifier
+        - name: NLUCommandAdapter
+        - name: MultiStepLLMCommandGenerator
+        policies:
+        - name: FlowPolicy
+        - name: EnterpriseSearchPolicy
+        - name: IntentlessPolicy
+    """
+    config = yaml.load(config, Loader=yaml.FullLoader)
+    if llm_config is not None:
+        config["pipeline"][2]["llm"] = llm_config
+    if prompt_config is not None:
+        config["pipeline"][2]["prompt_templates"] = prompt_config
+    if flow_retrieval_config is not None:
+        config["pipeline"][2]["flow_retrieval"] = flow_retrieval_config
+
+    # When
+    result = _get_llm_command_generator_config(config)
+
+    # Then
+    assert (
+        result[MULTI_STEP_LLM_COMMAND_GENERATOR_HANDLE_FLOWS_PROMPT_USED]
+        == expected_multi_step_llm_custom_handle_flows_prompt_used
+    )
+    assert (
+        result[MULTI_STEP_LLM_COMMAND_GENERATOR_FILL_SLOTS_PROMPT_USED]
+        == expected_multi_step_llm_custom_fill_slots_prompt_used
     )
     assert result[LLM_COMMAND_GENERATOR_MODEL_NAME] == expected_llm_model_name
     assert result[FLOW_RETRIEVAL_ENABLED] == expected_flow_retrieval_enabled
@@ -1240,8 +1352,10 @@ def test_get_llm_command_generator_config_no_command_generator_component():
     result = _get_llm_command_generator_config(config)
     # Then
     assert result == {
-        LLM_COMMAND_GENERATOR_CUSTOM_PROMPT_USED: None,
         LLM_COMMAND_GENERATOR_MODEL_NAME: None,
+        LLM_COMMAND_GENERATOR_CUSTOM_PROMPT_USED: None,
+        MULTI_STEP_LLM_COMMAND_GENERATOR_HANDLE_FLOWS_PROMPT_USED: None,
+        MULTI_STEP_LLM_COMMAND_GENERATOR_FILL_SLOTS_PROMPT_USED: None,
         FLOW_RETRIEVAL_ENABLED: None,
         FLOW_RETRIEVAL_EMBEDDING_MODEL_NAME: None,
     }
@@ -1269,9 +1383,9 @@ def test_track_enterprise_search_policy_train_completed(
 
     telemetry.track_enterprise_search_policy_train_completed(
         "qdrant",
-        DEFAULT_EMBEDDINGS_CONFIG["api_type"],
+        DEFAULT_EMBEDDINGS_CONFIG["provider"],
         DEFAULT_EMBEDDINGS_CONFIG["model"],
-        LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["api_type"],
+        LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["provider"],
         LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model"],
         True,
     )
@@ -1291,9 +1405,9 @@ def test_track_enterprise_search_policy_predict(
 
     telemetry.track_enterprise_search_policy_predict(
         "qdrant",
-        DEFAULT_EMBEDDINGS_CONFIG["api_type"],
+        DEFAULT_EMBEDDINGS_CONFIG["provider"],
         DEFAULT_EMBEDDINGS_CONFIG["model"],
-        LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["api_type"],
+        LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["provider"],
         LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model"],
         True,
     )
@@ -1301,51 +1415,6 @@ def test_track_enterprise_search_policy_predict(
     mock_track.assert_called_once_with(
         TELEMETRY_ENTERPRISE_SEARCH_POLICY_PREDICT_EVENT,
         ENTERPRISE_SEARCH_TELEMETRY_EVENT_DATA,
-    )
-
-
-@patch("rasa.telemetry._track")
-def test_track_single_step_llm_command_generator_init(
-    mock_track: MagicMock,
-    monkeypatch: MonkeyPatch,
-) -> None:
-    monkeypatch.setenv(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE, "true")
-
-    telemetry.track_single_step_llm_command_generator_init(
-        "test_model", True, True, "flow_retrieval_embedding_model_name"
-    )
-
-    mock_track.assert_called_once_with(
-        TELEMETRY_SINGLE_STEP_LLM_COMMAND_GENERATOR_INITIALISED_EVENT,
-        {
-            SINGLE_STEP_LLM_COMMAND_GENERATOR_MODEL_NAME: "test_model",
-            SINGLE_STEP_COMMAND_GENERATOR_CUSTOM_PROMPT_USED: True,
-            FLOW_RETRIEVAL_ENABLED: True,
-            FLOW_RETRIEVAL_EMBEDDING_MODEL_NAME: "flow_retrieval_embedding_model_name",
-        },
-    )
-
-
-@patch("rasa.telemetry._track")
-def test_track_multi_step_llm_command_generator_init(
-    mock_track: MagicMock,
-    monkeypatch: MonkeyPatch,
-) -> None:
-    monkeypatch.setenv(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE, "true")
-
-    telemetry.track_multi_step_llm_command_generator_init(
-        "test_model",
-        "test_prompt_text1",
-        "test_prompt_text2",
-    )
-
-    mock_track.assert_called_once_with(
-        TELEMETRY_MULTI_STEP_LLM_COMMAND_GENERATOR_INITIALISED_EVENT,
-        {
-            MULTI_STEP_LLM_COMMAND_GENERATOR_MODEL_NAME: "test_model",
-            MULTI_STEP_LLM_COMMAND_GENERATOR_HANDLE_FLOWS_PROMPT: "test_prompt_text1",
-            MULTI_STEP_LLM_COMMAND_GENERATOR_FILL_SLOTS_PROMPT: "test_prompt_text2",
-        },
     )
 
 
@@ -1371,3 +1440,27 @@ def test_track_e2e_test_conversion_completed(
             E2E_TEST_CONVERSION_TEST_CASE_COUNT: test_case_count,
         },
     )
+
+
+@patch("rasa.telemetry._track")
+def test_track_rasa_train_telemetry_disabled(
+    mock_track: MagicMock,
+    domain_path: Path,
+    stack_config_path: Path,
+    stories_path: Text,
+    nlu_data_path: Text,
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE, "false")
+
+    # when rasa train is called
+    rasa.train(
+        domain_path,
+        stack_config_path,
+        [stories_path, nlu_data_path],
+        output=str(tmp_path),
+    )
+
+    # telemetry should not be tracked
+    mock_track.assert_not_called()

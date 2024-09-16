@@ -287,6 +287,9 @@ def test_read_flow_with_metadata_with_line_numbers() -> None:
     assert (
         flows.user_flows.underlying_flows[0].steps[0].metadata["line_numbers"] == "5-5"
     )
+    assert (
+        flows.underlying_flows[0].file_path == "data/test_flows/flows_with_metadata.yml"
+    )
 
 
 def test_read_flow_without_metadata_with_line_numbers() -> None:
@@ -294,5 +297,12 @@ def test_read_flow_without_metadata_with_line_numbers() -> None:
     flows_with_metadata = YAMLFlowsReader.read_from_file(
         "data/test_flows/flows_with_metadata.yml"
     )
+
+    for flow in flows.underlying_flows:
+        assert flow.file_path == "data/test_flows/basic_flows.yml"
+        flow.file_path = None
+    for flow in flows_with_metadata.underlying_flows:
+        assert flow.file_path == "data/test_flows/flows_with_metadata.yml"
+        flow.file_path = None
 
     assert flows == flows_with_metadata

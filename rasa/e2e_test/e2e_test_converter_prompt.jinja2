@@ -1,16 +1,9 @@
-Your task is to write a YAML representation of a test case that contains the conversation between the user and a bot based on the sample data provided.
+Your task is to convert the given conversation between a user and a bot into a YAML representation of a test case.
 
-You will receive a sample of conversation data.
-You need to understand which message would relate to the user (human) and which message would relate to the bot (assistant).
+## Test Case YAML Format
 
-## Sample Conversation Data
-
-The following is the sample conversation data:
-{{ conversation }}
-
-## Test Case YAML Schema
-
-This is an example of an E2E test conversation in YAML format:
+The output should adhere to the following YAML format:
+```
 - test_case: snakecase_description_of_the_test_case
   steps:
   - user: "<...>"
@@ -21,16 +14,57 @@ This is an example of an E2E test conversation in YAML format:
     assertions:
       - bot_uttered:
           text_matches: "<...>"
+      - bot_uttered:
+          text_matches: "<...>"
+  - user: "<...>"
+  - user: "<...>"
+    assertions:
+      - bot_uttered:
+          text_matches: "<...>"
   - ...
+```
 
-## Instructions
+## Important Instructions
 
-A test case should start with "- test_case:".
-The test case should contain a unique snake case description and steps of the user-bot turns.
-"text_matches" refers to a message produced by the bot (assistant).
-Text messages should be identical to the ones in the sample conversation data. You must not alter the messages.
-Make sure to output the YAML structure compliant with the schema example above.
+1. **Message Association**: You need to accurately match each user's message with the corresponding bot's response. For each user message, include one or more bot responses as assertions, depending on the conversation.
 
-## YAML Test Case Output
+2. **Order and Completeness**: Ensure that the messages in the YAML file are in the exact order they appear in the conversation data. No messages should be omitted or rearranged.
 
-Your YAML test case:
+3. **Text Matches**: Use the exact text from the sample conversation for both the user and the bot messages. Do not alter, paraphrase, or omit any part of the messages.
+
+4. **Multiple Assertions**: If the bot responds with multiple messages to a single user input, each bot message should be added as a separate `bot_uttered` assertion under the same user message step. Make sure you do not split the messages yourself.
+
+5. **Multiple Consecutive User Messages**: If there are multiple consecutive user messages without a bot response in between, only include assertions for the last user message in that sequence. The earlier messages in the sequence should still be included as steps but without assertions.
+
+6. **Naming the Test Case**: Create a descriptive, snake_case name for the test case that summarizes the conversation flow or the key aspect being tested.
+
+7. **Validation**: After generating the YAML, validate that every user message has a corresponding bot assertion and that no bot message is missing. Each bot response should be correctly aligned with the user's input.
+
+## Example YAML Test Case Output
+
+Your YAML test case should look like this:
+
+```yaml
+- test_case: sample_test_case_name
+  steps:
+  - user: "User's first message"
+    assertions:
+      - bot_uttered:
+          text_matches: "Bot's first response"
+  - user: "User's second message"
+    assertions:
+      - bot_uttered:
+          text_matches: "Bot's second response"
+      - bot_uttered:
+          text_matches: "Bot's third response"
+  - user: "User's third message"
+    assertions:
+      - bot_uttered:
+          text_matches: "Bot's fourth response
+
+## Sample Conversation Data
+
+The following is the sample conversation data:
+{{ conversation }}
+
+- Your YAML test case:

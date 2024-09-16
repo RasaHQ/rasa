@@ -8,6 +8,7 @@ from pytest import MonkeyPatch
 from langchain.docstore.document import Document
 from langchain_community.vectorstores import FAISS
 
+from rasa.core.constants import UTTER_SOURCE_METADATA_KEY
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import ChitChatStackFrame
 from rasa.engine.graph import ExecutionContext
@@ -15,7 +16,11 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.graph_components.providers.forms_provider import Forms
 from rasa.graph_components.providers.responses_provider import Responses
-from rasa.shared.constants import ROUTE_TO_CALM_SLOT, PROMPT_CONFIG_KEY
+from rasa.shared.constants import (
+    OPENAI_API_KEY_ENV_VAR,
+    ROUTE_TO_CALM_SLOT,
+    PROMPT_CONFIG_KEY,
+)
 from rasa.shared.core.domain import ActionNotFoundException, Domain
 from rasa.shared.core.events import ActiveLoop, BotUttered, UserUttered
 from rasa.shared.core.flows import FlowsList
@@ -93,6 +98,11 @@ def trackers_for_training() -> List[TrackerWithCachedStates]:
             [UserUttered("goodybe"), BotUttered("Bye!")],
         ),
     ]
+
+
+@pytest.fixture(autouse=True)
+def set_mock_openai_api_key(monkeypatch: MonkeyPatch):
+    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key in test_intentless_policy")
 
 
 @pytest.fixture
@@ -368,6 +378,9 @@ async def test_intentless_policy_predicts(
     assert any(p != 0.0 for p in policy_prediction.probabilities)
     # doesn't hold true since the fake llms embeddings are not normalized
     # assert all(p >= 0.0 and p <=1.0 for p in policy_prediction.probabilities)
+    assert policy_prediction.action_metadata == {
+        UTTER_SOURCE_METADATA_KEY: intentless_policy.__class__.__name__
+    }
 
 
 async def test_intentless_policy_predicts_loop(

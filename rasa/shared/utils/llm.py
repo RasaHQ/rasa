@@ -18,7 +18,7 @@ import rasa.shared.utils.io
 from rasa.shared.constants import (
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
-    MODEL_CONFIG_KEY,
+    PROVIDER_CONFIG_KEY,
 )
 from rasa.shared.core.events import BotUttered, UserUttered
 from rasa.shared.core.slots import Slot, BooleanSlot, CategoricalSlot
@@ -28,6 +28,7 @@ from rasa.shared.engine.caching import (
 from rasa.shared.exceptions import (
     FileIOException,
     FileNotFoundException,
+    ProviderClientValidationError,
 )
 from rasa.shared.providers._configs.azure_openai_client_config import (
     is_azure_openai_config,
@@ -36,15 +37,21 @@ from rasa.shared.providers._configs.huggingface_local_embedding_client_config im
     is_huggingface_local_config,
 )
 from rasa.shared.providers._configs.openai_client_config import is_openai_config
+from rasa.shared.providers._configs.self_hosted_llm_client_config import (
+    is_self_hosted_config,
+)
 from rasa.shared.providers.embedding.embedding_client import EmbeddingClient
 from rasa.shared.providers.llm.llm_client import LLMClient
 from rasa.shared.providers.mappings import (
     get_llm_client_from_provider,
     AZURE_OPENAI_PROVIDER,
     OPENAI_PROVIDER,
+    SELF_HOSTED_PROVIDER,
     get_embedding_client_from_provider,
     HUGGINGFACE_LOCAL_EMBEDDING_PROVIDER,
+    get_client_config_class_from_provider,
 )
+from rasa.shared.utils.cli import print_error_and_exit
 
 if TYPE_CHECKING:
     from rasa.shared.core.trackers import DialogueStateTracker
@@ -77,13 +84,38 @@ ERROR_PLACEHOLDER = {
     "default": "[User input triggered an error]",
 }
 
-F = TypeVar(
-    "F",
+_Factory_F = TypeVar(
+    "_Factory_F",
     bound=Callable[[Dict[str, Any], Dict[str, Any]], Union[EmbeddingClient, LLMClient]],
+)
+_CombineConfigs_F = TypeVar(
+    "_CombineConfigs_F",
+    bound=Callable[[Dict[str, Any], Dict[str, Any]], Dict[str, Any]],
 )
 
 
-def _cache_factory(function: F) -> F:
+def _compute_hash_for_cache_from_configs(
+    config_x: Dict[str, Any], config_y: Dict[str, Any]
+) -> int:
+    """Get a unique hash of the default and custom configs."""
+    return hash(
+        json.dumps(config_x, sort_keys=True) + json.dumps(config_y, sort_keys=True)
+    )
+
+
+def _retrieve_from_cache(
+    cache: Dict[int, Any], unique_hash: int, function: Callable, function_kwargs: dict
+) -> Any:
+    """Retrieve the value from the cache if it exists. If it does not exist, cache it"""
+    if unique_hash in cache:
+        return cache[unique_hash]
+    else:
+        return_value = function(**function_kwargs)
+        cache[unique_hash] = return_value
+        return return_value
+
+
+def _cache_factory(function: _Factory_F) -> _Factory_F:
     """Memoize the factory methods based on the arguments."""
     cache: Dict[int, Union[EmbeddingClient, LLMClient]] = {}
 
@@ -92,16 +124,13 @@ def _cache_factory(function: F) -> F:
         config_x: Dict[str, Any], config_y: Dict[str, Any]
     ) -> Union[EmbeddingClient, LLMClient]:
         # Get a unique hash of the default and custom configs.
-        unique_hash = hash(
-            json.dumps(config_x, sort_keys=True) + json.dumps(config_y, sort_keys=True)
+        unique_hash = _compute_hash_for_cache_from_configs(config_x, config_y)
+        return _retrieve_from_cache(
+            cache=cache,
+            unique_hash=unique_hash,
+            function=function,
+            function_kwargs={"custom_config": config_x, "default_config": config_y},
         )
-
-        if unique_hash in cache:
-            return cache[unique_hash]
-        else:
-            return_value = function(config_x, config_y)
-            cache[unique_hash] = return_value
-            return return_value
 
     def clear_cache() -> None:
         cache.clear()
@@ -111,7 +140,37 @@ def _cache_factory(function: F) -> F:
         )
 
     setattr(factory_method_wrapper, "clear_cache", clear_cache)
-    return cast(F, factory_method_wrapper)
+    return cast(_Factory_F, factory_method_wrapper)
+
+
+def _cache_combine_custom_and_default_configs(
+    function: _CombineConfigs_F,
+) -> _CombineConfigs_F:
+    """Memoize the combine_custom_and_default_config method based on the arguments."""
+    cache: Dict[int, dict] = {}
+
+    @wraps(function)
+    def combine_configs_wrapper(
+        config_x: Dict[str, Any], config_y: Dict[str, Any]
+    ) -> dict:
+        # Get a unique hash of the default and custom configs.
+        unique_hash = _compute_hash_for_cache_from_configs(config_x, config_y)
+        return _retrieve_from_cache(
+            cache=cache,
+            unique_hash=unique_hash,
+            function=function,
+            function_kwargs={"custom_config": config_x, "default_config": config_y},
+        )
+
+    def clear_cache() -> None:
+        cache.clear()
+        structlogger.debug(
+            "Cleared cache for combine_custom_and_default_config method",
+            function_name=function.__name__,
+        )
+
+    setattr(combine_configs_wrapper, "clear_cache", clear_cache)
+    return cast(_CombineConfigs_F, combine_configs_wrapper)
 
 
 def tracker_as_readable_transcript(
@@ -181,10 +240,14 @@ def sanitize_message_for_prompt(text: Optional[str]) -> str:
     return text.replace("\n", " ") if text else ""
 
 
+@_cache_combine_custom_and_default_configs
 def combine_custom_and_default_config(
-    custom_config: Optional[Dict[Text, Any]], default_config: Dict[Text, Any]
+    custom_config: Optional[Dict[str, Any]], default_config: Dict[str, Any]
 ) -> Dict[Text, Any]:
     """Merges the given llm config with the default config.
+
+    This method guarantees that the provider is set and all the deprecated keys are
+    resolved. Hence, produces only a valid client config.
 
     Only uses the default configuration arguments, if the type set in the
     custom config matches the type in the default config. Otherwise, only
@@ -200,19 +263,34 @@ def combine_custom_and_default_config(
     if custom_config is None:
         return default_config.copy()
 
-    # If provider of the custom config is not the same as the provider used in
-    # the default config, don't merge
+    # Get the provider from the custom config.
     custom_config_provider = get_provider_from_config(custom_config)
-    default_config_provider = get_provider_from_config(default_config)
+    # We expect the provider to be set in the default configs of all Rasa components.
+    default_config_provider = default_config[PROVIDER_CONFIG_KEY]
 
     if (
         custom_config_provider is not None
         and custom_config_provider != default_config_provider
     ):
-        return custom_config.copy()
+        # Get the provider-specific config class
+        client_config_clazz = get_client_config_class_from_provider(
+            custom_config_provider
+        )
+        # Checks for deprecated keys, resolves aliases and returns a valid config.
+        # This is done to ensure that the custom config is valid.
+        return client_config_clazz.from_dict(custom_config).to_dict()
 
-    # Otherwise, override default settings with custom settings
-    return {**default_config.copy(), **custom_config.copy()}
+    # If the provider is the same in both configs
+    # OR provider is not specified in the custom config
+    # perform MERGE by overriding the default config keys and values
+    # with custom config keys and values.
+    merged_config = {**default_config.copy(), **custom_config.copy()}
+    # Check for deprecated keys, resolve aliases and return a valid config.
+    # This is done to ensure that the merged config is valid.
+    default_config_clazz = get_client_config_class_from_provider(
+        default_config_provider
+    )
+    return default_config_clazz.from_dict(merged_config).to_dict()
 
 
 def get_provider_from_config(config: dict) -> Optional[str]:
@@ -221,32 +299,16 @@ def get_provider_from_config(config: dict) -> Optional[str]:
     """
     if not config:
         return None
-    if is_azure_openai_config(config):
+    if is_self_hosted_config(config):
+        return SELF_HOSTED_PROVIDER
+    elif is_azure_openai_config(config):
         return AZURE_OPENAI_PROVIDER
     elif is_openai_config(config):
         return OPENAI_PROVIDER
     elif is_huggingface_local_config(config):
         return HUGGINGFACE_LOCAL_EMBEDDING_PROVIDER
     else:
-        # `get_llm_provider` works for both embedding models and LLMs
-        from litellm.utils import get_llm_provider
-
-        try:
-            # Try to get the provider from `model` key.
-            _, provider, _, _ = get_llm_provider(model=config.get(MODEL_CONFIG_KEY, ""))
-            return provider
-        except Exception:
-            # If provider is not found, return None
-            return None
-
-
-def get_llm_type_after_combining_custom_and_default_config(
-    custom_config: Optional[Dict[Text, Any]], default_config: Dict[Text, Any]
-) -> Optional[str]:
-    """Get the LLM type from the combined config."""
-    custom_config_provider = get_provider_from_config(custom_config)
-    default_config_provider = get_provider_from_config(default_config)
-    return custom_config_provider or default_config_provider
+        return config.get(PROVIDER_CONFIG_KEY)
 
 
 def ensure_cache() -> None:
@@ -275,9 +337,12 @@ def llm_factory(
         Instantiated LLM based on the configuration.
     """
     config = combine_custom_and_default_config(custom_config, default_config)
-    provider = get_provider_from_config(config)
+
     ensure_cache()
-    client_clazz: Type[LLMClient] = get_llm_client_from_provider(provider)
+
+    client_clazz: Type[LLMClient] = get_llm_client_from_provider(
+        config[PROVIDER_CONFIG_KEY]
+    )
     client = client_clazz.from_config(config)
     return client
 
@@ -297,9 +362,12 @@ def embedder_factory(
         Instantiated Embedder based on the configuration.
     """
     config = combine_custom_and_default_config(custom_config, default_config)
-    provider = get_provider_from_config(config)
+
     ensure_cache()
-    client_clazz: Type[EmbeddingClient] = get_embedding_client_from_provider(provider)
+
+    client_clazz: Type[EmbeddingClient] = get_embedding_client_from_provider(
+        config[PROVIDER_CONFIG_KEY]
+    )
     client = client_clazz.from_config(config)
     return client
 
@@ -335,3 +403,25 @@ def allowed_values_for_slot(slot: Slot) -> Union[str, None]:
         return str([v for v in slot.values if v != "__other__"])
     else:
         return None
+
+
+def try_instantiate_llm_client(
+    custom_llm_config: Optional[Dict],
+    default_llm_config: Optional[Dict],
+    log_source_function: str,
+    log_source_component: str,
+) -> None:
+    """Validate llm configuration."""
+    try:
+        llm_factory(custom_llm_config, default_llm_config)
+    except (ProviderClientValidationError, ValueError) as e:
+        structlogger.error(
+            f"{log_source_function}.llm_instantiation_failed",
+            message="Unable to instantiate LLM client.",
+            error=e,
+        )
+        print_error_and_exit(
+            f"Unable to create the LLM client for component - {log_source_component}. "
+            f"Please make sure you specified the required environment variables. "
+            f"Error: {e}"
+        )

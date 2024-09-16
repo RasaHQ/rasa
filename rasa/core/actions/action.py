@@ -366,6 +366,7 @@ class ActionBotResponse(Action):
                 )
             return []
 
+        message.update(metadata or {})
         message = add_bot_utterance_metadata(
             message, self.utter_action, nlg, domain, tracker
         )

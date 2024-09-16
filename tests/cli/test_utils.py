@@ -694,6 +694,22 @@ async def test_payload_from_button_question(text_input: str, button: str) -> Non
     assert result == button
 
 
+@pytest.mark.parametrize(
+    "argv, expected",
+    [
+        ([RASA_EXE, "run"], False),
+        ([RASA_EXE, "inspect", "actions"], False),
+        ([RASA_EXE, "studio", "download" "--endpoints"], True),
+        ([RASA_EXE, "interactive", "nlu", "--param", "xy"], False),
+    ],
+)
+def test_check_if_studio_command(argv, expected):
+    sys.argv = argv.copy()
+    result = rasa.cli.utils.check_if_studio_command()
+
+    assert result == expected
+
+
 def test_rasa_version_raises_no_warnings(
     run_in_simple_project: Callable[..., RunResult],
 ):
@@ -705,3 +721,25 @@ def test_rasa_version_raises_no_warnings(
 
     # Check if there are any warnings in the output
     assert "warning" not in stderr.lower()
+
+
+@pytest.mark.parametrize("results_type", ["passed", "failed"])
+def test_get_e2e_results_file_name_path_is_dir(
+    tmp_path: Path, results_type: str
+) -> None:
+    results_path = tmp_path / "results"
+    results_path.mkdir(exist_ok=True)
+
+    results_file = rasa.cli.utils.get_e2e_results_file_name(results_path, results_type)
+    assert results_file == str(results_path / f"e2e_results_{results_type}.yml")
+
+
+@pytest.mark.parametrize("results_type", ["passed", "failed"])
+def test_get_e2e_results_file_name_path_is_file(
+    tmp_path: Path, results_type: str
+) -> None:
+    results_path = tmp_path / "results" / "e2e_test_results.yml"
+    results_file = rasa.cli.utils.get_e2e_results_file_name(results_path, results_type)
+    assert results_file == str(
+        results_path.parent / f"e2e_test_results_{results_type}.yml"
+    )

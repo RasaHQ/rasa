@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "rasa-pro"
-version = "3.10.0rc1"
+version = "3.10.1"
 description = "State-of-the-art open-core Conversational AI framework for Enterprises that natively leverages generative AI for effortless assistant development."
 authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
 maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
@@ -88,7 +88,7 @@ exclude = [ "eggs", ".git", ".pytest_cache", "build", "dist",]
 
 [tool.poetry.dependencies]
 python = ">=3.8.1,<3.11"
-boto3 = "~1.35.5"
+boto3 = "~1.35.15"
 google-cloud-storage = "^2.14.0"
 azure-storage-blob = ">=12.16.0, <12.17.0"
 requests = "~2.31.0"
@@ -183,7 +183,7 @@ pycountry = "^22.3.5"
 pymilvus = "<2.4.2" # pinned because 2.4.2 introduces milvus-lite dependency that fails on windows
 qdrant-client = "^1.9.0"
 psutil = "^5.9.5"
-tenacity = "~8.4.1"  # pinned down because of langchain
+tenacity = "~8.4.1" # pinned down because of langchain
 types-protobuf = "4.25.0.20240417"
 litellm = "~1.44.7"
 openpyxl = "^3.1.5"
@@ -269,23 +269,26 @@ timeout_func_only = true
 asyncio_mode = "auto"
 
 [tool.poetry.dependencies.rasa-sdk]
-version = "3.10.0rc1"
+version = "3.10.0"
 allow-prereleases = true
 
+[tool.poetry.dependencies.keras]
+version = "2.13.1"
+
 [tool.poetry.dependencies.tensorflow]
-version = "2.12.0"
+version = "2.13.0rc0"
 markers = "sys_platform != 'darwin' or platform_machine != 'arm64'"
 
 [tool.poetry.dependencies.tensorflow-intel]
-version = "2.12.0"
+version = "2.13.0rc0"
 markers = "sys_platform == 'win32'"
 
 [tool.poetry.dependencies.tensorflow-cpu-aws]
-version = "2.12.0"
+version = "2.13.0rc0"
 markers = "sys_platform == 'linux' and (platform_machine == 'arm64' or platform_machine == 'aarch64')"
 
 [tool.poetry.dependencies.tensorflow-macos]
-version = "2.12.0"
+version = "2.13.0rc0"
 markers = "sys_platform == 'darwin' and platform_machine == 'arm64'"
 
 [tool.poetry.dependencies.PyJWT]
@@ -302,7 +305,7 @@ markers = "sys_platform == 'darwin' and platform_machine == 'arm64'"
 optional = true
 
 [tool.poetry.dependencies.tensorflow-text]
-version = "2.12.0"
+version = "2.13.0rc0"
 markers = "sys_platform != 'win32' and platform_machine != 'arm64' and platform_machine != 'aarch64'"
 
 [tool.poetry.dependencies."github3.py"]
@@ -343,7 +346,7 @@ docker = "^6.0.1"
 pytest-cov = "^4.0.0"
 pytest-asyncio = "^0.20.0"
 pytest-xdist = "^3.2.1"
-pytest = "^7.1.3"
+pytest = "^7.4.4"
 freezegun = "^1.5.1"
 responses = ">=0.22,<0.25"
 aioresponses = "^0.7.2"

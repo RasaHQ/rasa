@@ -934,8 +934,9 @@ def test_generative_response_run_assertion_with_utter_name_failure(
                 }
             ],
             "answer_correctness",
-            "None of the generative responses issued by Enterprise Search Policy "
-            "or Contextual Response Rephraser were grounded.",
+            "None of the generative responses issued by either the "
+            "Enterprise Search Policy, IntentlessPolicy or the "
+            "Contextual Response Rephraser were grounded.",
         ),
         (
             AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT.value,
@@ -946,8 +947,9 @@ def test_generative_response_run_assertion_with_utter_name_failure(
                 }
             ],
             "answer_relevance",
-            "None of the generative responses issued by Enterprise Search Policy "
-            "or Contextual Response Rephraser were relevant.",
+            "None of the generative responses issued by either the "
+            "Enterprise Search Policy, IntentlessPolicy or the "
+            "Contextual Response Rephraser were relevant.",
         ),
     ],
 )
@@ -1107,8 +1109,9 @@ def test_generative_response_run_no_matching_events(
     assert failure is not None
     assert failure.assertion == assertion
     assert failure.error_message == (
-        "No generative response issued by Enterprise Search Policy "
-        "or Contextual Response Rephraser was found, but one was expected."
+        "No generative response issued by either the Enterprise Search Policy, "
+        "IntentlessPolicy or the Contextual Response Rephraser was found, "
+        "but one was expected."
     )
 
 

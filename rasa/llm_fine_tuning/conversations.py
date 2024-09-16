@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import List, Union, Iterator, Any, Dict
+from typing import List, Union, Iterator, Any, Dict, Optional
 
 from rasa.dialogue_understanding.commands import (
     Command,
@@ -23,6 +23,7 @@ class ConversationStep:
     llm_prompt: str
     failed_rephrasings: List[str] = field(default_factory=list)
     passed_rephrasings: List[str] = field(default_factory=list)
+    rephrase: bool = True
 
     def as_dict(self) -> Dict[str, Any]:
         data = {
@@ -68,15 +69,45 @@ class Conversation:
     steps: List[Union[TestStep, ConversationStep]]
     transcript: str
 
-    def iterate_over_annotated_user_steps(self) -> Iterator[ConversationStep]:
+    def iterate_over_annotated_user_steps(
+        self, rephrase: Optional[bool] = None
+    ) -> Iterator[ConversationStep]:
+        """Iterate over conversation steps.
+
+        Yield each step based on the rephrase parameter.
+
+        Args:
+            rephrase: Determines whether to yield steps based on their `rephrase`
+                attribute. Can be:
+                - None: Yield all ConversationStep instances regardless of their
+                    rephrase attribute.
+                - True: Yield only those ConversationStep instances where the
+                    rephrase attribute is True.
+                - False: Yield only those ConversationStep instances where the
+                    rephrase attribute is False.
+
+        Yields:
+            ConversationStep: The next conversation step that matches the specified
+            rephrase condition.
+        """
         for step in self.steps:
             if isinstance(step, ConversationStep):
-                yield step
+                if rephrase is None:
+                    yield step
+                elif rephrase is not None and step.rephrase == rephrase:
+                    yield step
 
     def get_user_messages(self) -> List[str]:
         return [
             step.original_test_step.text
             for step in self.iterate_over_annotated_user_steps()
+            if step.original_test_step.text
+        ]
+
+    def get_user_messages_to_rephrase(self) -> List[str]:
+        return [
+            step.original_test_step.text
+            for step in self.iterate_over_annotated_user_steps(rephrase=True)
             if step.original_test_step.text
         ]
 

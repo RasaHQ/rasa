@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 from dataclasses import dataclass, field
 from functools import cached_property
+from pathlib import Path
 from typing import Text, Optional, Dict, Any, List, Set, Union
 
 import structlog
@@ -57,20 +58,30 @@ class Flow:
     """
     A flag that checks whether the flow should always be included in the prompt or not.
     """
+    file_path: Optional[str] = None
+    """The path to the file where the flow is stored."""
 
     @staticmethod
-    def from_json(flow_id: Text, data: Dict[Text, Any]) -> Flow:
+    def from_json(
+        flow_id: Text,
+        data: Dict[Text, Any],
+        file_path: Optional[Union[str, Path]] = None,
+    ) -> Flow:
         """Create a Flow object from serialized data.
 
         Args:
             flow_id: id of the flow
             data: data for a Flow object in a serialized format.
+            file_path: the file path of the flow
 
         Returns:
             A Flow object.
         """
         step_sequence = FlowStepSequence.from_json(data.get("steps"))
         nlu_triggers = NLUTriggers.from_json(data.get("nlu_trigger"))
+
+        if file_path and isinstance(file_path, Path):
+            file_path = str(file_path)
 
         return Flow(
             id=flow_id,
@@ -81,7 +92,15 @@ class Flow:
             guard_condition=str(data["if"]) if "if" in data else None,
             step_sequence=Flow.resolve_default_ids(step_sequence),
             nlu_triggers=nlu_triggers,
+            # If we are reading the flows in after training the file_path is part of
+            # data. When the model is trained, take the provided file_path.
+            file_path=data.get("file_path") if "file_path" in data else file_path,
         )
+
+    def get_full_name(self) -> str:
+        if self.file_path:
+            return f"{self.file_path}::{self.name}"
+        return self.name
 
     @staticmethod
     def create_default_name(flow_id: str) -> str:
@@ -146,6 +165,8 @@ class Flow:
             data["always_include_in_prompt"] = self.always_include_in_prompt
         if self.nlu_triggers:
             data["nlu_trigger"] = self.nlu_triggers.as_json()
+        if self.file_path:
+            data["file_path"] = self.file_path
 
         return data
 

@@ -8,12 +8,12 @@ from rasa.shared.constants import (
     OPENAI_API_BASE_ENV_VAR,
     OPENAI_API_VERSION_ENV_VAR,
     OPENAI_API_TYPE_ENV_VAR,
+    OPENAI_PROVIDER,
 )
 from rasa.shared.providers._configs.openai_client_config import OpenAIClientConfig
 from rasa.shared.providers.llm._base_litellm_client import _BaseLiteLLMClient
 
 structlogger = structlog.get_logger()
-_OPENAI_PROVIDER = "openai"
 
 
 class OpenAILLMClient(_BaseLiteLLMClient):
@@ -76,7 +76,7 @@ class OpenAILLMClient(_BaseLiteLLMClient):
         except (KeyError, ValueError) as e:
             message = "Cannot instantiate a client from the passed configuration."
             structlogger.error(
-                "azure_openai_llm_client.from_config.error",
+                "openai_llm_client.from_config.error",
                 message=message,
                 config=config,
                 original_error=e,
@@ -131,11 +131,25 @@ class OpenAILLMClient(_BaseLiteLLMClient):
 
         <provider>/<model or deployment name>
         """
-        regex_patter = rf"^{_OPENAI_PROVIDER}/"
+        regex_patter = rf"^{OPENAI_PROVIDER}/"
         if not re.match(regex_patter, self._model):
-            return f"{_OPENAI_PROVIDER}/{self._model}"
+            return f"{OPENAI_PROVIDER}/{self._model}"
         return self._model
 
     @property
     def _litellm_extra_parameters(self) -> Dict[str, Any]:
         return self._extra_parameters
+
+    @property
+    def _completion_fn_args(self) -> Dict[str, Any]:
+        """Returns the completion arguments for invoking a call through
+        LiteLLM's completion functions.
+        """
+        fn_args = super()._completion_fn_args
+        fn_args.update(
+            {
+                "api_base": self.api_base,
+                "api_version": self.api_version,
+            }
+        )
+        return fn_args

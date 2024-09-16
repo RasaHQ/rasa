@@ -7,6 +7,7 @@ import boto3
 import pytest
 from moto import mock_aws
 from pytest import MonkeyPatch
+from unittest.mock import patch
 
 from rasa.core.agent import Agent
 from rasa.nlu.persistor import AWSPersistor
@@ -71,25 +72,34 @@ def aws_environment_variables(
     os.environ["TEST_SERVER_MODE"] = "true"
 
 
+@pytest.mark.parametrize(
+    "remote_storage_path, expected_model_name",
+    [
+        ("", "model1.pkl"),  # Case without sub-path
+        ("some/sub/path", "some/sub/path/model1.pkl"),  # Case with sub-path
+    ],
+)
 @mock_aws
-def test_load_model_from_aws_remote_storage(
+def test_load_model_from_aws_remote_storage_sub_path(
     monkeypatch: MonkeyPatch,
     aws_environment_variables: Any,
     bucket_name: Text,
     region_name: Text,
     trained_rasa_model: Text,
     empty_agent: Agent,
+    remote_storage_path: Text,
+    expected_model_name: Text,
 ) -> None:
     """Test to load model from AWS remote storage."""
     model_name = Path(trained_rasa_model).name
-
+    full_model_name = os.path.join(remote_storage_path, model_name)
     conn = boto3.resource("s3", region_name=region_name)
     # We need to create the bucket in Moto's 'virtual' AWS account
     # prior to AWSPersistor instantiation
     conn.create_bucket(Bucket=bucket_name)
     # upload model file to bucket
     with open(trained_rasa_model, "rb") as f:
-        conn.meta.client.upload_fileobj(f, bucket_name, model_name)
+        conn.meta.client.upload_fileobj(f, bucket_name, full_model_name)
 
     def mock_aws_persistor(name: Text) -> AWSPersistor:
         aws_persistor = AWSPersistor(bucket_name, region_name=region_name)
@@ -99,10 +109,10 @@ def test_load_model_from_aws_remote_storage(
 
     monkeypatch.setattr("rasa.nlu.persistor.get_persistor", mock_aws_persistor)
     empty_agent.remote_storage = "aws"
+    with patch.dict(os.environ, {"REMOTE_STORAGE_PATH": remote_storage_path}):
+        try:
+            empty_agent.load_model_from_remote_storage(model_name)
+            assert empty_agent.processor.model_filename == model_name
 
-    try:
-        empty_agent.load_model_from_remote_storage(model_name)
-        assert empty_agent.processor.model_filename == model_name
-
-    except RasaException as exc:
-        assert False, f"Test to load model from remote storage failed: {exc}"
+        except RasaException as exc:
+            assert False, f"Test to load model from remote storage failed: {exc}"

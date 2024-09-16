@@ -15,6 +15,7 @@ from rasa import telemetry
 from rasa.core.constants import (
     CHAT_POLICY_PRIORITY,
     POLICY_PRIORITY,
+    UTTER_SOURCE_METADATA_KEY,
 )
 from rasa.core.policies.policy import Policy, PolicyPrediction, SupportedData
 from rasa.dialogue_understanding.stack.frames import (
@@ -29,12 +30,14 @@ from rasa.graph_components.providers.forms_provider import Forms
 from rasa.graph_components.providers.responses_provider import Responses
 from rasa.shared.constants import (
     REQUIRED_SLOTS_KEY,
-    API_TYPE_CONFIG_KEY,
     EMBEDDINGS_CONFIG_KEY,
     LLM_CONFIG_KEY,
     MODEL_CONFIG_KEY,
     MODEL_NAME_CONFIG_KEY,
     PROMPT_CONFIG_KEY,
+    PROVIDER_CONFIG_KEY,
+    OPENAI_PROVIDER,
+    TIMEOUT_CONFIG_KEY,
 )
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.shared.core.domain import KEY_RESPONSES_TEXT, Domain
@@ -67,6 +70,7 @@ from rasa.shared.utils.llm import (
     llm_factory,
     sanitize_message_for_prompt,
     tracker_as_readable_transcript,
+    try_instantiate_llm_client,
 )
 from rasa.utils.ml_utils import (
     extract_ai_response_examples,
@@ -99,15 +103,15 @@ MAX_NUMBER_OF_TOKENS_FOR_SAMPLES = 900
 NLU_ABSTENTION_THRESHOLD = "nlu_abstention_threshold"
 
 DEFAULT_LLM_CONFIG = {
-    "api_type": "openai",
-    "model": DEFAULT_OPENAI_CHAT_MODEL_NAME,
+    PROVIDER_CONFIG_KEY: OPENAI_PROVIDER,
+    MODEL_CONFIG_KEY: DEFAULT_OPENAI_CHAT_MODEL_NAME,
     "temperature": 0.0,
     "max_tokens": DEFAULT_OPENAI_MAX_GENERATED_TOKENS,
-    "request_timeout": 5,
+    TIMEOUT_CONFIG_KEY: 5,
 }
 
 DEFAULT_EMBEDDINGS_CONFIG = {
-    "api_type": "openai",
+    PROVIDER_CONFIG_KEY: OPENAI_PROVIDER,
     "model": DEFAULT_OPENAI_EMBEDDING_MODEL_NAME,
 }
 
@@ -466,6 +470,13 @@ class IntentlessPolicy(Policy):
             A policy must return its resource locator so that potential children nodes
             can load the policy from the resource.
         """
+        try_instantiate_llm_client(
+            self.config.get(LLM_CONFIG_KEY),
+            DEFAULT_LLM_CONFIG,
+            "intentless_policy.train",
+            "IntentlessPolicy",
+        )
+
         responses = filter_responses(responses, forms, flows or FlowsList([]))
         telemetry.track_intentless_policy_train()
         response_texts = [r for r in extract_ai_response_examples(responses.data)]
@@ -508,10 +519,10 @@ class IntentlessPolicy(Policy):
 
         structlogger.info("intentless_policy.training.completed")
         telemetry.track_intentless_policy_train_completed(
-            embeddings_type=self.embeddings_property(API_TYPE_CONFIG_KEY),
+            embeddings_type=self.embeddings_property(PROVIDER_CONFIG_KEY),
             embeddings_model=self.embeddings_property(MODEL_CONFIG_KEY)
             or self.embeddings_property(MODEL_NAME_CONFIG_KEY),
-            llm_type=self.llm_property(API_TYPE_CONFIG_KEY),
+            llm_type=self.llm_property(PROVIDER_CONFIG_KEY),
             llm_model=self.llm_property(MODEL_CONFIG_KEY)
             or self.llm_property(MODEL_NAME_CONFIG_KEY),
         )
@@ -587,10 +598,10 @@ class IntentlessPolicy(Policy):
         )
 
         telemetry.track_intentless_policy_predict(
-            embeddings_type=self.embeddings_property(API_TYPE_CONFIG_KEY),
+            embeddings_type=self.embeddings_property(PROVIDER_CONFIG_KEY),
             embeddings_model=self.embeddings_property(MODEL_CONFIG_KEY)
             or self.embeddings_property(MODEL_NAME_CONFIG_KEY),
-            llm_type=self.llm_property(API_TYPE_CONFIG_KEY),
+            llm_type=self.llm_property(PROVIDER_CONFIG_KEY),
             llm_model=self.llm_property(MODEL_CONFIG_KEY)
             or self.llm_property(MODEL_NAME_CONFIG_KEY),
             score=score,
@@ -605,7 +616,9 @@ class IntentlessPolicy(Policy):
         else:
             events = []
 
-        return self._prediction(result, events=events)
+        action_metadata = {UTTER_SOURCE_METADATA_KEY: self.__class__.__name__}
+
+        return self._prediction(result, events=events, action_metadata=action_metadata)
 
     async def generate_answer(
         self,

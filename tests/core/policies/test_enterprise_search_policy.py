@@ -21,8 +21,11 @@ from rasa.core.policies.policy import PolicyPrediction
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.constants import OPENAI_API_KEY_ENV_VAR, LLM_CONFIG_KEY
-from rasa.shared.constants import ROUTE_TO_CALM_SLOT
+from rasa.shared.constants import (
+    OPENAI_API_KEY_ENV_VAR,
+    LLM_CONFIG_KEY,
+    ROUTE_TO_CALM_SLOT,
+)
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, UserUttered, BotUttered
 from rasa.shared.core.slots import BooleanSlot
@@ -93,7 +96,9 @@ def mocked_enterprise_search_policy(
     default_execution_context: ExecutionContext,
     vector_store: InformationRetrieval,
 ):
-    monkeypatch.setenv("OPENAI_API_KEY", "test")
+    monkeypatch.setenv(
+        OPENAI_API_KEY_ENV_VAR, "mock key in test_enterprise_search_policy"
+    )
     policy = EnterpriseSearchPolicy(
         config={},
         model_storage=default_model_storage,
@@ -178,8 +183,12 @@ async def test_enterprise_search_policy_prompt(
     config: dict,
     prompt_starts_with: str,
     prompt_contains: str,
+    monkeypatch: MonkeyPatch,
 ) -> None:
     """Test that the prompt is set correctly based on the config."""
+    monkeypatch.setenv(
+        OPENAI_API_KEY_ENV_VAR, "mock key in test_enterprise_search_policy"
+    )
     policy = EnterpriseSearchPolicy(
         config={**config, **{"vector_store": {"type": "milvus"}}},
         model_storage=default_model_storage,

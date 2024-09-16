@@ -7,6 +7,7 @@ from rasa.shared.constants import (
     OPENAI_API_BASE_ENV_VAR,
     OPENAI_API_TYPE_ENV_VAR,
     OPENAI_API_VERSION_ENV_VAR,
+    OPENAI_PROVIDER,
 )
 from rasa.shared.providers._configs.openai_client_config import OpenAIClientConfig
 from rasa.shared.providers.embedding._base_litellm_embedding_client import (
@@ -14,7 +15,6 @@ from rasa.shared.providers.embedding._base_litellm_embedding_client import (
 )
 
 structlogger = structlog.get_logger()
-OPENAI_PROVIDER = "openai"
 
 
 class OpenAIEmbeddingClient(_BaseLiteLLMEmbeddingClient):

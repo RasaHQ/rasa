@@ -46,7 +46,7 @@ class TestHuggingFaceLocalEmbeddingClient:
     ) -> None:
         assert isinstance(client, EmbeddingClient)
 
-    def test_huggingface_local_embedding_client_embed(
+    def test_embed(
         self,
         client: HuggingFaceLocalEmbeddingClient,
     ) -> None:
@@ -63,7 +63,7 @@ class TestHuggingFaceLocalEmbeddingClient:
         assert response.model == "BAAI/bge-small-en-v1.5"
         assert response.usage is None
 
-    async def test_huggingface_local_embedding_client_aembed(
+    async def test_aembed(
         self,
         client: HuggingFaceLocalEmbeddingClient,
     ) -> None:
@@ -80,11 +80,11 @@ class TestHuggingFaceLocalEmbeddingClient:
         assert response.model == "BAAI/bge-small-en-v1.5"
         assert response.usage is None
 
-    def test_huggingface_local_embedding_client_validation_error(self) -> None:
+    def test_from_config_client_validation_error(self) -> None:
         # Given
         # Does not have the required `model` key
         config = {
-            "api_type": "huggingface",
+            "provider": "huggingface",
         }
 
         # When
@@ -97,3 +97,39 @@ class TestHuggingFaceLocalEmbeddingClient:
 
         # Then
         assert len(logs) == 1
+
+    def test_from_config_using_deprecated_type_settings(self):
+        # Given
+        config = {
+            "type": "huggingface",
+            "model": "BAAI/bge-small-en-v1.5",
+        }
+
+        # When
+        with patch(
+            "rasa.shared.providers.embedding.huggingface_local_embedding_client"
+            ".HuggingFaceLocalEmbeddingClient._init_client"
+        ) as mock_init_client, patch(
+            "rasa.shared.providers.embedding.huggingface_local_embedding_client"
+            ".HuggingFaceLocalEmbeddingClient._validate_if_sentence_transformers_installed"
+        ) as mock_validate_if_sentence_transformers_installed:
+            mock_init_client.return_value = None
+            mock_validate_if_sentence_transformers_installed.return_value = None
+
+            with pytest.warns(None) as record:
+                client = HuggingFaceLocalEmbeddingClient.from_config(config)
+
+        # Then
+        future_warnings = [
+            warning for warning in record if warning.category == FutureWarning
+        ]
+        assert len(future_warnings) == 2
+
+        assert "type: huggingface" in str(future_warnings[0].message)
+        assert "provider: huggingface_local" in str(future_warnings[0].message)
+
+        assert "'type' is deprecated" in str(future_warnings[1].message)
+        assert "'provider' instead" in str(future_warnings[1].message)
+
+        assert client.config["model"] == "BAAI/bge-small-en-v1.5"
+        assert client.config["provider"] == "huggingface_local"

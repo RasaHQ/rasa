@@ -65,6 +65,7 @@ from rasa.plugin import plugin_manager
 from rasa.shared.constants import (
     ASSISTANT_ID_KEY,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
+    OPENAI_API_KEY_ENV_VAR,
     ROUTE_TO_CALM_SLOT,
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
 )
@@ -120,6 +121,11 @@ from tests.conftest import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+@pytest.fixture(autouse=True)
+def set_mock_openai_api_key(monkeypatch: MonkeyPatch):
+    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key in test_processor")
 
 
 async def test_message_processor(
@@ -2017,8 +2023,9 @@ async def test_run_anonymization_pipeline_mocked_pipeline(
 
 
 async def test_run_command_processor_starting_a_flow(
-    flow_policy_bot_agent: Agent, monkeypatch: MonkeyPatch
-):
+    flow_policy_bot_agent: Agent,
+    monkeypatch: MonkeyPatch,
+) -> None:
     # Given
     processor = flow_policy_bot_agent.processor
     sender_id = uuid.uuid4().hex
@@ -2056,8 +2063,9 @@ async def test_run_command_processor_starting_a_flow(
 
 
 async def test_run_command_processor_setting_a_slot(
-    flow_policy_bot_agent: Agent, monkeypatch: MonkeyPatch
-):
+    flow_policy_bot_agent: Agent,
+    monkeypatch: MonkeyPatch,
+) -> None:
     # Given
     processor = flow_policy_bot_agent.processor
     sender_id = uuid.uuid4().hex
@@ -2110,7 +2118,7 @@ async def test_run_command_processor_setting_a_slot(
 
 async def test_handle_message_with_intent_trigger_and_no_nlu_trigger(
     flow_policy_bot_agent: Agent,
-):
+) -> None:
     # Given
     processor = flow_policy_bot_agent.processor
     processor.domain.intents.append("welcome")
@@ -2128,7 +2136,7 @@ async def test_handle_message_with_intent_trigger_and_no_nlu_trigger(
 
 async def test_handle_message_with_intent_trigger_and_nlu_trigger(
     nlu_trigger_flow_policy_bot_agent: Agent,
-):
+) -> None:
     processor = nlu_trigger_flow_policy_bot_agent.processor
     sender_id = uuid.uuid4().hex
     tracker = await processor.tracker_store.get_or_create_tracker(sender_id)
@@ -2187,7 +2195,7 @@ async def test_run_command_processor_parsing_a_message_with_invalid_use_of_slash
     predicted_commands: List[Command],
     flow_policy_bot_agent: Agent,
     domain: Domain,
-):
+) -> None:
     # Given
     processor = flow_policy_bot_agent.processor
     sender_id = uuid.uuid4().hex
@@ -2267,8 +2275,9 @@ async def test_update_full_retrieval_intent(
 
 
 async def test_predict_does_not_block_on_command_generator_llm_calls(
-    trained_async: Callable, tmp_path: Path
-):
+    trained_async: Callable,
+    tmp_path: Path,
+) -> None:
     domain_content = textwrap.dedent(
         f"""
         version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
@@ -2361,9 +2370,7 @@ async def test_predict_does_not_block_on_command_generator_llm_calls(
         assert time_needed < 10
 
 
-async def test_parse_message_with_set_slot_button(
-    flow_policy_bot_agent: Agent,
-):
+async def test_parse_message_with_set_slot_button(flow_policy_bot_agent: Agent) -> None:
     processor = flow_policy_bot_agent.processor
     sender_id = uuid.uuid4().hex
     tracker = await processor.tracker_store.get_or_create_tracker(sender_id)
@@ -2385,7 +2392,9 @@ async def test_parse_message_with_set_slot_button(
     "slot_value, expected_value", [("true", True), ("false", False)]
 )
 async def test_parse_message_with_multiple_set_slots_button(
-    flow_policy_bot_agent: Agent, slot_value: str, expected_value: bool
+    flow_policy_bot_agent: Agent,
+    slot_value: str,
+    expected_value: bool,
 ) -> None:
     processor = flow_policy_bot_agent.processor
     sender_id = uuid.uuid4().hex
@@ -2403,7 +2412,8 @@ async def test_parse_message_with_multiple_set_slots_button(
 
 
 def test_handle_message_with_commands_does_not_run_action_extract_slots(
-    flow_policy_bot_agent: Agent, monkeypatch: MonkeyPatch
+    flow_policy_bot_agent: Agent,
+    monkeypatch: MonkeyPatch,
 ) -> None:
     processor = flow_policy_bot_agent.processor
     sender_id = uuid.uuid4().hex
@@ -2421,7 +2431,8 @@ def test_handle_message_with_commands_does_not_run_action_extract_slots(
 
 
 def test_handle_message_with_commands_from_buttons_does_not_run_nlu_command_adapter(
-    flow_policy_bot_agent: Agent, monkeypatch: MonkeyPatch
+    flow_policy_bot_agent: Agent,
+    monkeypatch: MonkeyPatch,
 ) -> None:
     processor = flow_policy_bot_agent.processor
     sender_id = uuid.uuid4().hex

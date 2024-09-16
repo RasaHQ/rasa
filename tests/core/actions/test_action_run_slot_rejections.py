@@ -12,12 +12,14 @@ from rasa.core.actions.action_run_slot_rejections import (
 )
 from rasa.core.channels import OutputChannel
 from rasa.core.constants import (
+    DOMAIN_GROUND_TRUTH_METADATA_KEY,
     UTTER_SOURCE_METADATA_KEY,
     ACTIVE_FLOW_METADATA_KEY,
     STEP_ID_METADATA_KEY,
 )
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
+from rasa.shared.constants import OPENAI_API_KEY_ENV_VAR
 from rasa.shared.core.domain import Domain, KEY_RESPONSES_TEXT
 from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
 from rasa.shared.core.slots import (
@@ -1107,6 +1109,7 @@ async def test_rephrased_bot_utterance_contains_metadata_keys(
     rejection_test_dialogue_stack: DialogueStack,
     monkeypatch: MonkeyPatch,
 ) -> None:
+    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key in action_run_slot_rejections")
     tracker = DialogueStateTracker.from_events(
         sender_id=uuid.uuid4().hex,
         evts=[
@@ -1156,7 +1159,7 @@ async def test_rephrased_bot_utterance_contains_metadata_keys(
                 UTTER_SOURCE_METADATA_KEY: "ContextualResponseRephraser",
                 ACTIVE_FLOW_METADATA_KEY: "setup_recurrent_payment",
                 STEP_ID_METADATA_KEY: "ask_payment_type",
-                "domain_ground_truth": [
+                DOMAIN_GROUND_TRUTH_METADATA_KEY: [
                     response["text"]
                     for response in rejection_test_domain.responses.get(
                         "utter_invalid_recurrent_payment_type"

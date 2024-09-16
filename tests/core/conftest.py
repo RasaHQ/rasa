@@ -194,11 +194,16 @@ def moodbot_tracker(moodbot_domain: Domain) -> DialogueStateTracker:
 @patch(
     "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval._create_embedder"
 )
+@patch(
+    "rasa.dialogue_understanding.generator.llm_based_command_generator.try_instantiate_llm_client"
+)
 async def trained_flow_policy_bot(
+    mock_try_instantiate_llm_client: Mock,
     mock_flow_search_create_embedder: Mock,
     mock_from_documents: Mock,
     trained_async: Callable,
 ) -> Text:
+    mock_try_instantiate_llm_client.return_value = Mock()
     mock_flow_search_create_embedder.return_value = Mock()
     mock_from_documents.return_value = Mock()
     return await trained_async(
@@ -215,11 +220,16 @@ async def trained_flow_policy_bot(
 @patch(
     "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval._create_embedder"
 )
+@patch(
+    "rasa.dialogue_understanding.generator.llm_based_command_generator.try_instantiate_llm_client"
+)
 async def trained_nlu_trigger_flow_policy_bot(
+    mock_try_instantiate_llm_client: Mock,
     mock_flow_search_create_embedder: Mock,
     mock_from_documents: Mock,
     trained_async: Callable,
 ) -> Text:
+    mock_try_instantiate_llm_client.return_value = Mock()
     mock_flow_search_create_embedder.return_value = Mock()
     mock_from_documents.return_value = Mock()
     return await trained_async(

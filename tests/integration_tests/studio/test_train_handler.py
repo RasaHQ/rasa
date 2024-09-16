@@ -6,6 +6,7 @@ import pytest
 import rasa.studio.train
 import rasa.dialogue_understanding.generator.flow_retrieval
 from pytest import MonkeyPatch
+from rasa.shared.constants import OPENAI_API_KEY_ENV_VAR
 from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
 
 
@@ -117,6 +118,7 @@ def test_handle_train_with_flows(
     args: argparse.Namespace,
     monkeypatch: MonkeyPatch,
 ) -> None:
+    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key in test train handler")
     handler_mock = MagicMock()
     return_mock = MagicMock()
     return_mock.return_value = handler_mock

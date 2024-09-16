@@ -21,3 +21,11 @@ KEY_STUB_CUSTOM_ACTIONS = "stub_custom_actions"
 KEY_MODEL = "model"
 KEY_LLM_AS_JUDGE = "llm_as_judge"
 KEY_LLM_E2E_TEST_CONVERSION = "llm_e2e_test_conversion"
+
+DEFAULT_E2E_INPUT_TESTS_PATH = "tests/e2e_test_cases.yml"
+DEFAULT_E2E_OUTPUT_TESTS_PATH = "tests/e2e_results.yml"
+DEFAULT_COVERAGE_OUTPUT_PATH = "e2e_coverage_results"
+
+# Test status
+STATUS_PASSED = "passed"
+STATUS_FAILED = "failed"

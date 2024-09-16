@@ -1,0 +1,68 @@
+name: Compare dependencies
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+env:
+  DEFAULT_PYTHON_VERSION: "3.10"
+  NODE_VERSION_INSPECTOR_BUILD: 16
+
+jobs:
+  check-newly-added-dependencies:
+    name: Check if new dependencies were added in the PR
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Prepare the job
+        uses: ./.github/actions/test-prerequisites
+        with:
+          PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+          POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
+
+      - name: Install Dependencies 📦
+        run: |
+          sudo apt-get -y install libpq-dev
+          make install-full
+
+      - name: Save main branch dependencies
+        id: main_dependencies
+        run: |
+          echo "MAIN_OUTPUT=$(poetry show --top-level | awk '{print $1}' | tr '\n' ',' | sed 's/,$//' | tr '\n' ',')" >> $GITHUB_ENV
+
+      - name: Checkout on PR branch and install dependencies
+        run: |
+          git checkout ${GITHUB_HEAD_REF} --quiet
+          python -m venv create .venv-2
+          source .venv-2/bin/activate
+          make install-full
+
+      - name: Check for new dependencies on the PR branch
+        id: pr_dependencies
+        env:
+          VENV: .venv-2/bin/activate
+        run: |
+          echo "PR_OUTPUT=$(poetry show --top-level | awk '{print $1}' | tr '\n' ',' | sed 's/,$//' | tr '\n' ',')" >> $GITHUB_ENV
+
+      - name: Compare dependencies
+        id: compare_dependencies
+        run: |
+          echo "new_dependencies=$(python3 scripts/find_new_dependencies.py)" >> $GITHUB_OUTPUT
+
+      - name: Publish comment if new dependencies were added
+        if: steps.compare_dependencies.outputs.new_dependencies != ''
+        uses: RasaHQ/create-comment@da7b2ec20116674919493bb5894eea70fdaa6486
+        with:
+          mode: "delete-previous"
+          id: "new-dependencies"
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          body: |
+            You have added new dependencies in your PR: `${{ steps.compare_dependencies.outputs.new_dependencies }}` .
+            Please update the `.github/dependabot.yml` configuration file by adding the new dependencies to the corresponding group.
