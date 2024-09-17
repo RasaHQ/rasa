@@ -39,12 +39,12 @@ url = "https://pypi.org/simple/"
 python = ">=3.10, <3.11"
 rasa-sdk = ">=3.6.2"
 aiohttp = ">=3.10.2"
-boto3 = "^1.26.136"
-requests = "^2.23"
+boto3 = ">=1.26.136"
+requests = ">=2.23"
 matplotlib = ">=3.1"
 attrs = ">=19.3"
 redis = ">=4.5.3"
-tqdm = "^4.31"
+tqdm = ">=4.31"
 networkx = ">=2.4"
 "ruamel.yaml" = ">=0.16.5"
 pyyaml = ">=6.0"
@@ -56,8 +56,8 @@ tensorflow_hub = ">=0.16.1"
 setuptools = ">=65.5.1"
 certifi = ">=2023.7.22"
 cryptography = ">=43.0.1"
-structlog = "^23.1.0"
-structlog-sentry = "^2.1.0"
+structlog = ">=23.1.0"
+structlog-sentry = ">=2.1.0"
 pydantic = { extras = ["dotenv"], version = "^2" }
 pydantic-settings = "^2"
 terminaltables = ">=3.1.0"
@@ -78,11 +78,11 @@ pytz = ">=2019.1"
 colorclass = ">=2.2"
 sanic = ">=21.12"
 sanic-cors = ">=2.0.0"
-sanic-jwt = "^1.6.0"
-sanic-routing = "^0.7.2"
+sanic-jwt = ">=1.6.0"
+sanic-routing = ">=0.7.2"
 websockets = ">=10.0"
 questionary = ">=1.5.1"
-prompt-toolkit = "^3.0"
+prompt-toolkit = ">=3.0"
 python-socketio = ">=4.4,"
 python-engineio = ">=4"
 pydot = ">=1.4"
@@ -96,18 +96,18 @@ sentry-sdk = ">=0.17.0"
 aio-pika = ">=6.7.1"
 aiogram = "<2.26"
 typing-extensions = ">=4.1.1"
-typing-utils = "^0.1.0"
+typing-utils = ">=0.1.0"
 google-auth = "<3"
-CacheControl = "^0.12.9"
+CacheControl = ">=0.12.9"
 randomname = ">=0.2.1"
-pluggy = "^1.0.0"
-slack-sdk = "^3.19.2"
+pluggy = ">=1.0.0"
+slack-sdk = ">=3.19.2"
 confluent-kafka = ">=1.9.2"
-portalocker = "^2.7.0"
+portalocker = ">=2.7.0"
 dnspython = "2.3.0"
 wheel = ">=0.38.1"
+lockfile = ">=0.12.2"
 spacy = { version = ">=3.7.6", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'" }
-lockfile = "*"
 
 
 # TensorFlow-related dependencies for different platforms
@@ -131,9 +131,8 @@ transformers = { version = ">=4.13.0", optional = true }
 sentencepiece = { version = ">=0.1.99", optional = true }
 
 [tool.poetry.extras]
-spacy = ["spacy"]
 transformers = ["transformers", "sentencepiece"]
-full = ["spacy", "transformers", "sentencepiece"]
+full = ["transformers", "sentencepiece"]
 metal = [ "tensorflow-metal",]
 
 # Development dependencies
