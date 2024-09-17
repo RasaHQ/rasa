@@ -167,3 +167,7 @@ asyncio_mode = "auto"
 [tool.poetry.dependencies.pymongo]
 version = ">=3.8"
 extras = [ "tls", "srv",]
+
+[[tool.poetry.dependencies.dask]]
+version = "^2022"
+python = ">=3.10"
