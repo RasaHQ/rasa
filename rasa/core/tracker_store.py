@@ -1087,7 +1087,7 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
             f"here is the create_engine_kwargs: {create_engine_kwargs(engine_url)}"
         )
 
-        self.engine = sa.create_engine(engine_url, **create_engine_kwargs(engine_url))
+        self.engine = sa.create_engine(engine_url)
 
         logger.debug(f"Attempting to connect to database via '{self.engine.url!r}'.")
 
