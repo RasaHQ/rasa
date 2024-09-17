@@ -214,6 +214,11 @@ async def load_agent(
     action_endpoint = None
     http_interpreter = None
 
+    print(f"here is the endpoints: {endpoints}")
+    logger.debug(f"Loading agent with endpoints: {endpoints}")
+    print(f"here is the endpoints tracker store: {endpoints.tracker_store}")
+    logger.debug(f"here is the endpoints tracker store: {endpoints.tracker_store}")
+
     if endpoints:
         broker = await EventBroker.create(endpoints.event_broker, loop=loop)
         tracker_store = TrackerStore.create(
@@ -503,7 +508,6 @@ class Agent:
         return await self.handle_message(msg)
 
     def _set_fingerprint(self, fingerprint: Optional[Text] = None) -> None:
-
         if fingerprint:
             self.fingerprint = fingerprint
         else:
