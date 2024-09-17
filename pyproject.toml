@@ -9,7 +9,7 @@ exclude = "(\\.eggs|\\.git|\\.pytest_cache|build|dist)"
 
 [tool.poetry]
 name = "rasa"
-version = "3.7.0a1"
+version = "3.7.1"
 description = "Open source machine learning framework for text- and voice-based conversations."
 authors = ["Rasa Technologies GmbH <hi@rasa.com>"]
 maintainers = ["Tom Bocklisch <tom@rasa.com>"]
@@ -106,6 +106,8 @@ confluent-kafka = ">=1.9.2"
 portalocker = "^2.7.0"
 dnspython = "2.3.0"
 wheel = ">=0.38.1"
+spacy = { version = ">=3.7.6", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'" }
+lockfile = "*"
 
 
 # TensorFlow-related dependencies for different platforms
@@ -127,7 +129,6 @@ tensorflow-io-gcs-filesystem = [
 # Extra packages
 transformers = { version = ">=4.13.0", optional = true }
 sentencepiece = { version = ">=0.1.99", optional = true }
-spacy = { version = "^3.7.6", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'", optional = true }
 
 [tool.poetry.extras]
 spacy = ["spacy"]
