@@ -9,17 +9,23 @@ on:
       rasa-sdk-version:
         description: 'Rasa SDK version to use'
         required: true
+  pull_request:
+    branches:
+      - main
+      - '[0-9]+.[0-9]+.x'
+    types: [closed]
 
 env:
     GITHUB_TOKEN: ${{ secrets.RASABOT_GITHUB_TOKEN }}
     INPUT_VERSION: ${{ github.event.inputs.version }}
     INPUT_RASA_SDK_VERSION: ${{ github.event.inputs['rasa-sdk-version'] }}
+    COMMIT_EMAIL: sara-tagger@users.noreply.github.com
     DEFAULT_PYTHON_VERSION: "3.10"
 
 jobs:
-  prepare-release:
+  prepare-the-release:
+    if: ${{ github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-22.04
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
@@ -88,20 +94,10 @@ jobs:
             echo "update_required=false" >> $GITHUB_ENV
           fi
       
-      - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
-        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
         with:
-          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
-
-      - name: Read Poetry Version 🔢
-        run: |
-          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
-        shell: bash
-
-      - name: Install poetry 🦄
-        uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844 # v8
-        with:
-          poetry-version: ${{ env.POETRY_VERSION }}
+            PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
       
       - name: Update Rasa SDK Version
         if: env.update_required == 'true'
@@ -124,3 +120,51 @@ jobs:
 
     #   - name: Prepare the release
     #     run: poetry run python scripts/release.py prepare --next_version ${{ github.event.inputs.version }}
+  
+  if_merged_tag_release:
+    if: startsWith(github.head_ref, 'prepare-release-') && github.event.pull_request.merged == true
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+        with:
+          token: ${{ secrets.RELEASE_TAGGER_PAT }}
+
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
+        with:
+            PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+
+      - name: Load Poetry Cached Libraries ⬇
+        id: cache-poetry
+        uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 #v4.0.0
+        with:
+          path: .venv
+          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
+          restore-keys: ${{ runner.os }}-poetry-${{ env.DEFAULT_PYTHON_VERSION }}
+
+      - name: Clear Poetry cache
+        if: steps.cache-poetry.outputs.cache-hit == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')
+        run: rm -r .venv
+
+      - name: Create virtual environment
+        if: steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')
+        run: python -m venv create .venv
+
+      - name: Set up virtual environment
+        run: poetry config virtualenvs.in-project true
+
+      - name: Install Dependencies 📦
+        # Poetry intermittently fails to install dependency if it is not PEP 517 compliant
+        # This is a workaround for that issue
+        run: |
+          sudo apt-get -y install libpq-dev
+          make install-full
+
+      - name: Configure git
+        run: |
+          git config --global user.email ${{ env.COMMIT_EMAIL }}
+          git config --global user.name "Github Actions"
+
+      - name: Tag Release
+        run: make tag-release-auto
