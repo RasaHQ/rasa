@@ -162,3 +162,8 @@ python_functions = "test_"
 filterwarnings = ["ignore::ResourceWarning:ruamel[.*]"]
 timeout = 60
 asyncio_mode = "auto"
+
+
+[tool.poetry.dependencies.pymongo]
+version = ">=3.8"
+extras = [ "tls", "srv",]
