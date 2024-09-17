@@ -1080,14 +1080,7 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
             dialect, host, port, db, username, password, login_db, query
         )
 
-        print(f"here is the engine_url: {engine_url}")
-        logger.debug(f"here is the engine_url: {engine_url}")
-        print(f"here is the create_engine_kwargs: {create_engine_kwargs(engine_url)}")
-        logger.debug(
-            f"here is the create_engine_kwargs: {create_engine_kwargs(engine_url)}"
-        )
-
-        self.engine = sa.create_engine(engine_url)
+        self.engine = sa.create_engine(engine_url, **create_engine_kwargs(engine_url))
 
         logger.debug(f"Attempting to connect to database via '{self.engine.url!r}'.")
 
