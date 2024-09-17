@@ -47,6 +47,7 @@ async def load_from_server(agent: Agent, model_server: EndpointConfig) -> Agent:
     await _update_model_from_server(model_server, agent)
 
     wait_time_between_pulls = model_server.kwargs.get("wait_time_between_pulls", 100)
+    logger.debug(f"Model server wait time between pulls: {wait_time_between_pulls}")
 
     if wait_time_between_pulls:
         # continuously pull the model every `wait_time_between_pulls` seconds
@@ -222,15 +223,22 @@ async def load_agent(
 
     if endpoints:
         broker = await EventBroker.create(endpoints.event_broker, loop=loop)
+        logger.debug(f"Broker created: {broker}")
         tracker_store = TrackerStore.create(
             endpoints.tracker_store, event_broker=broker
         )
+        logger.debug(f"Tracker store created: {tracker_store}")
         lock_store = LockStore.create(endpoints.lock_store)
+        logger.debug(f"Lock store created: {lock_store}")
         generator = endpoints.nlg
+        logger.debug(f"Generator created: {generator}")
         action_endpoint = endpoints.action
+        logger.debug(f"Action endpoint created: {action_endpoint}")
         model_server = endpoints.model if endpoints.model else model_server
+        logger.debug(f"Model server created: {model_server}")
         if endpoints.nlu:
             http_interpreter = RasaNLUHttpInterpreter(endpoints.nlu)
+            logger.debug(f"HTTP interpreter created: {http_interpreter}")
 
     agent = Agent(
         generator=generator,
@@ -241,6 +249,7 @@ async def load_agent(
         remote_storage=remote_storage,
         http_interpreter=http_interpreter,
     )
+    logger.debug(f"Agent created: {agent}")
 
     try:
         if model_server is not None:
