@@ -5,7 +5,6 @@ import threading
 from pathlib import Path
 
 import grpc
-import pytest
 from pytest import LogCaptureFixture
 from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
 from rasa.tracing.constants import ENDPOINTS_METRICS_KEY
@@ -82,7 +81,6 @@ def test_get_tracer_provider_otlp_collector(
     assert spans[0].scope_spans[0].spans[0].name == "otlp_test_span"
 
 
-@pytest.mark.skip(reason="Temporary disabled due to TLS timeout error")
 def test_get_tracer_provider_tls_otlp_collector(
     secured_grpc_server: grpc.Server,
     span_exporter: CapturingTestSpanExporter,
