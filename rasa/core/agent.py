@@ -214,6 +214,12 @@ async def load_agent(
     action_endpoint = None
     http_interpreter = None
 
+    logger.debug(f"Trying to load agent with endpoints: {endpoints}")
+    logger.debug(f"Trying to load agent with model server: {model_server}")
+    logger.debug(f"Trying to load agent with remote storage: {remote_storage}")
+    logger.debug(f"Trying to load agent with model path: {model_path}")
+    logger.debug(f"Trying to load agent with loop: {loop}")
+
     if endpoints:
         broker = await EventBroker.create(endpoints.event_broker, loop=loop)
         tracker_store = TrackerStore.create(
