@@ -42,8 +42,3 @@ runs:
     run: |
       docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs standalone
     shell: bash
-
-  - name: Check duckling container logs
-    run: |
-      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs duckling
-    shell: bash
