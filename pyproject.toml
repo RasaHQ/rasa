@@ -170,3 +170,12 @@ extras = [ "tls", "srv",]
 [[tool.poetry.dependencies.dask]]
 version = "^2022"
 python = ">=3.10"
+
+[[tool.poetry.dependencies.numpy]]
+version = ">=1.23.5,<2"
+python = ">=3.8,<3.11"
+
+[[tool.poetry.dependencies.numpy]]
+version = ">=1.23.5,<2"
+markers = "sys_platform =='Windows' and platform_python_implementation != 'PyPy'"
+python = "3.10"
