@@ -1,10 +1,12 @@
-name: Run Performance Checks On Main
+name: Run Performance Checks
 
 on:
   schedule:
     # Runs at the end of every day
     - cron: 0 0 * * *
   workflow_dispatch:
+  repository_dispatch:
+    types: [trigger-installation-performance]
 
 # SECRETS:
 #  - RASA_CI_SEGMENT_WRITE_KEY: Segment write key for https://app.segment.com/rasa-x/sources/rasa_ci/overview
@@ -17,6 +19,15 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+        if: github.event_name == 'repository_dispatch'
+        with:
+          fetch-depth: 0
+          # checkout on the PR branch that triggered the workflow
+          ref: ${{ github.event.client_payload.branch }}
+
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+        if: github.event_name != 'repository_dispatch'
+
       - name: Read Poetry Version 🔢
         run: |
          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
@@ -54,8 +65,21 @@ jobs:
     name: Check installation performance
     runs-on: ubuntu-22.04
     needs: [build_package]
+    outputs:
+        installation_time: ${{ steps.installation.outputs.installation_time }}
+        rasa_pro_version: ${{ steps.installation.outputs.rasa_pro_version }}
+        archive_size_kb: ${{ steps.installation.outputs.archive_size_kb }}
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+        if: github.event_name == 'repository_dispatch'
+        with:
+          fetch-depth: 0
+          # checkout on the PR branch that triggered the workflow
+          ref: ${{ github.event.client_payload.branch }}
+
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+        if: github.event_name != 'repository_dispatch'
+
       - name: Read Poetry Version 🔢
         run: |
           echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
@@ -136,3 +160,33 @@ jobs:
         uses: Ilshidur/action-slack@689ad44a9c9092315abd286d0e3a9a74d31ab78a
         with:
           args: "⛔️ *Rasa Pro performance checks* failed 😱! Please check out GitHub Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+  comment_on_pull_request:
+    name: Comment on pull request with installation time information
+    runs-on: ubuntu-22.04
+    # Only run this job if the workflow was triggered by a repository dispatch event
+    # This event is sent by the capture-installation-time-on-pr-branches workflow
+    if: github.event_name == 'repository_dispatch'
+    needs:
+      - check_installation_performance
+    steps:
+      - name: Convert installation time from milliseconds to minutes
+        id: convert_installation_time
+        if: needs.check_installation_performance.result == 'success'
+        run: |
+          echo "minutes=$(bc <<< 'scale=2; ${{ needs.check_installation_performance.outputs.installation_time }} / 60000')" >> $GITHUB_OUTPUT
+          echo "rasa_pro_version=${{ needs.check_installation_performance.outputs.rasa_pro_version }}" >> $GITHUB_OUTPUT
+          echo "archive_size_kb=${{ needs.check_installation_performance.outputs.archive_size_kb }}" >> $GITHUB_OUTPUT
+
+      - name: Comment on pull request
+        if: success()
+        uses: RasaHQ/create-comment@da7b2ec20116674919493bb5894eea70fdaa6486
+        with:
+          mode: "delete-previous"
+          id: "installation-time"
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          issue: ${{ github.event.client_payload.pr_number }}
+          body: |
+            Installation time: ${{ steps.convert_installation_time.outputs.minutes }} minutes
+            Rasa Pro version: ${{ steps.convert_installation_time.outputs.rasa_pro_version }}
+            Archive size: ${{ steps.convert_installation_time.outputs.archive_size_kb }} KB
