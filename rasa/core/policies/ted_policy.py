@@ -648,6 +648,8 @@ class TEDPolicy(Policy):
                 These may or may not be used by the function depending
                 on how the policy is trained.
         """
+        from keras.src.optimizers import Adam
+
         if not self.finetune_mode:
             # This means the model wasn't loaded from a
             # previously trained model and hence needs
@@ -659,9 +661,7 @@ class TEDPolicy(Policy):
                 self._label_data,
                 self._entity_tag_specs,
             )
-            self.model.compile(
-                optimizer=tf.keras.optimizers.Adam(self.config[LEARNING_RATE])
-            )
+            self.model.compile(optimizer=Adam(self.config[LEARNING_RATE]))
         (
             data_generator,
             validation_data_generator,

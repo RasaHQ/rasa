@@ -109,6 +109,7 @@ lockfile = ">=0.12.2"
 spacy = { version = ">=3.7.6", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'" }
 jax = "0.4.30"
 jaxlib = "0.4.30"
+keras = "^2.13"
 
 
 # TensorFlow-related dependencies for different platforms
