@@ -982,13 +982,16 @@ def test_embedder_factory_returns_huggingface_local_embedding_client(
     monkeypatch: MonkeyPatch,
 ):
     # When
-    with patch(
-        "rasa.shared.providers.embedding.huggingface_local_embedding_client"
-        ".HuggingFaceLocalEmbeddingClient._init_client"
-    ) as mock_init_client, patch(
-        "rasa.shared.providers.embedding.huggingface_local_embedding_client"
-        ".HuggingFaceLocalEmbeddingClient._validate_if_sentence_transformers_installed"
-    ) as mock_validate_if_sentence_transformers_installed:
+    with (
+        patch(
+            "rasa.shared.providers.embedding.huggingface_local_embedding_client"
+            ".HuggingFaceLocalEmbeddingClient._init_client"
+        ) as mock_init_client,
+        patch(
+            "rasa.shared.providers.embedding.huggingface_local_embedding_client"
+            ".HuggingFaceLocalEmbeddingClient._validate_if_sentence_transformers_installed"
+        ) as mock_validate_if_sentence_transformers_installed,
+    ):
         mock_init_client.return_value = None
         mock_validate_if_sentence_transformers_installed.return_value = None
 
@@ -1130,11 +1133,14 @@ def test_llm_cache_factory() -> None:
 
 
 def test_cache_factory_ensures_no_mixup_between_llm_and_embedder_factory() -> None:
-    with mock.patch(
-        "rasa.shared.utils.llm.get_llm_client_from_provider"
-    ) as mock_get_llm_client_from_provider, mock.patch(
-        "rasa.shared.utils.llm.get_embedding_client_from_provider"
-    ) as mock_get_embedding_client_from_provider:
+    with (
+        mock.patch(
+            "rasa.shared.utils.llm.get_llm_client_from_provider"
+        ) as mock_get_llm_client_from_provider,
+        mock.patch(
+            "rasa.shared.utils.llm.get_embedding_client_from_provider"
+        ) as mock_get_embedding_client_from_provider,
+    ):
         # Reset the cache as the cache is shared across tests.
         llm_factory.clear_cache()
         embedder_factory.clear_cache()

@@ -970,7 +970,7 @@ jobs:
           - test-other-unit-tests
           - test-performance
           - test-flaky
-        python-version: [3.8, 3.9, "3.10"]
+        python-version: [3.9, "3.10"]
 
     steps:
       - name: Check out code
@@ -1033,7 +1033,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [3.8, 3.9, "3.10"]
+        python-version: [3.9, "3.10"]
 
     steps:
       - name: Check out code

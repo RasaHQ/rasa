@@ -729,8 +729,8 @@ class TEDPolicy(Policy):
             )
             return self._resource
 
-        with contextlib.nullcontext() if self.config["use_gpu"] else tf.device(
-            "/cpu:0"
+        with (
+            contextlib.nullcontext() if self.config["use_gpu"] else tf.device("/cpu:0")
         ):
             self.run_training(model_data, label_ids)
 
