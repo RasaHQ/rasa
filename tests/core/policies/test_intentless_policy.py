@@ -24,7 +24,6 @@ from rasa.shared.constants import (
 from rasa.shared.core.domain import ActionNotFoundException, Domain
 from rasa.shared.core.events import ActiveLoop, BotUttered, UserUttered
 from rasa.shared.core.flows import FlowsList
-from rasa.shared.core.flows.yaml_flows_io import flows_from_str
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.core.slots import BooleanSlot
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -43,6 +42,8 @@ from rasa.core.policies.intentless_policy import (
     filter_responses,
     truncate_documents,
 )
+
+from tests.utilities import flows_from_str
 
 UTTER_GREET_ACTION = "utter_greet"
 GREET_INTENT_NAME = "greet"

@@ -1,6 +1,6 @@
 # extract
 docs_folder: "/home/runner/work/rasa-private/rasa-private/tests_deployment/integration_tests_enterprise_search/rasa-calm-demo-bot/docs"
-chunk_size: 1000
+chunk_size: 512
 chunk_overlap: 20
 
 # uses openai embeddings

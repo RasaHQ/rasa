@@ -11,7 +11,7 @@ services:
       - "./configs/endpoints-faiss.yml:/app/endpoints.yml"
     networks: [ 'rasa-pro-network' ]
     entrypoint: ""
-    command: rasa run -m models/model-faiss.tar.gz -p 5005 --enable-api
+    command: rasa run -m models/model-faiss.tar.gz -p 5005 --enable-api --debug
     ports:
       - "5005:5005"
     environment:
@@ -40,12 +40,6 @@ services:
       <<: *environment
     user: ${USER_ID}
 
-  duckling:
-    image: rasa/duckling:latest
-    networks: [ 'rasa-pro-network' ]
-    ports:
-      - "8000:8000"
-
   rasa-pro-assistant-qdrant:
     image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
     volumes:
@@ -54,7 +48,7 @@ services:
       - "./configs/endpoints-qdrant.yml:/app/endpoints.yml"
     networks: [ 'rasa-pro-network' ]
     entrypoint: ""
-    command: rasa run -m models/model-qdrant.tar.gz -p 5007 --enable-api
+    command: rasa run -m models/model-qdrant.tar.gz -p 5007 --enable-api --debug
     ports:
       - "5007:5007"
     environment:
@@ -88,7 +82,7 @@ services:
       - "./configs/endpoints-milvus.yml:/app/endpoints.yml"
     networks: [ 'rasa-pro-network' ]
     entrypoint: ""
-    command: rasa run -m models/model-milvus.tar.gz -p 5006 --enable-api
+    command: rasa run -m models/model-milvus.tar.gz -p 5006 --enable-api --debug
     ports:
       - "5006:5006"
     environment:

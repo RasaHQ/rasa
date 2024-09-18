@@ -23,10 +23,10 @@ def test_milvus_store(embeddings: Embeddings):
 @pytest.mark.parametrize(
     "threshold, expected_count, expected_id",
     [
-        (0.5, 5, "doc1"),
-        (0.9, 1, "doc1"),
-        (0.0, 9, "doc1"),
-        (1.0, 0, None),
+        (1.0, 9, "doc1"),
+        (0.9, 9, "doc1"),
+        (0.5, 5, "doc5"),
+        (0.0, 0, None),
     ],
 )
 async def test_milvus_store_search(

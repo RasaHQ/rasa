@@ -5,14 +5,16 @@ from typing import List, Text
 
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import run as arguments
-from rasa.shared.constants import (
-    DOCS_BASE_URL,
-    DEFAULT_ENDPOINTS_PATH,
-    DEFAULT_CREDENTIALS_PATH,
-    DEFAULT_ACTIONS_PATH,
-    DEFAULT_MODELS_PATH,
-)
+from rasa.cli.arguments.default_arguments import SkipYamlValidation
 from rasa.exceptions import ModelNotFound
+from rasa.shared.constants import (
+    DEFAULT_ACTIONS_PATH,
+    DEFAULT_CREDENTIALS_PATH,
+    DEFAULT_ENDPOINTS_PATH,
+    DEFAULT_MODELS_PATH,
+    DOCS_BASE_URL,
+)
+from rasa.shared.core.domain import Domain
 
 logger = logging.getLogger(__name__)
 
@@ -85,6 +87,11 @@ def run(args: argparse.Namespace) -> None:
     args.credentials = rasa.cli.utils.get_validated_path(
         args.credentials, "credentials", DEFAULT_CREDENTIALS_PATH, True
     )
+
+    if SkipYamlValidation.DOMAIN in args.skip_yaml_validation:
+        Domain.validate_yaml = False
+    else:
+        Domain.validate_yaml = True
 
     if args.enable_api:
         if not args.remote_storage:

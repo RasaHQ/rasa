@@ -233,7 +233,6 @@ class DefaultV1Recipe(Recipe):
             training_type=training_type,
             assistant_id=config.get(ASSISTANT_ID_KEY),
             language=config.get("language"),
-            spaces=config.get("spaces"),
             core_target=core_target,
             nlu_target=f"run_{RegexMessageHandler.__name__}",
         )
