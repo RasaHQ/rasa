@@ -181,3 +181,54 @@ python = ">=3.8,<3.11"
 version = ">=1.23.5,<2"
 markers = "sys_platform =='Windows' and platform_python_implementation != 'PyPy'"
 python = "3.10"
+
+[[tool.poetry.dependencies.scipy]]
+version = "^1.4.0"
+python = ">=3.8,<3.11"
+
+[[tool.poetry.dependencies.scikit-learn]]
+version = ">=0.22"
+python = ">=3.10,<3.11"
+
+[tool.poetry.dependencies.PyJWT]
+version = "^2.8.0"
+extras = [ "crypto",]
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.0.255"
+docker = "^6.0.1"
+pytest-cov = "^4.0.0"
+pytest-asyncio = "^0.20.0"
+pytest-xdist = "^3.2.1"
+pytest = "^7.1.3"
+freezegun = "^1.0.0"
+responses = "^0.22.0"
+aioresponses = "^0.7.2"
+moto = "~=4.1.2"
+fakeredis = "^2.11.2"
+mongomock = "^4.1.2"
+black = "^22.10.0"
+google-cloud-storage = "^2.4.0"
+azure-storage-blob = "<12.17.0"
+coveralls = "^3.0.1"
+towncrier = "^22.8.0"
+toml = "^0.10.0"
+pydoc-markdown = "^4.7.0"
+pytest-timeout = "^2.1.0"
+mypy = "^1.0.0"
+bandit = "^1.6.3"
+types-pytz = "^2022.1.1"
+types-python-dateutil = "^2.8.19"
+types-requests = "^2.25.0"
+types-setuptools = "^67.2.0"
+memory-profiler = "^0.61.0"
+psutil = "^5.8.0"
+mypy-extensions = "^0.4.3"
+analytics-python = "^1.4.0"
+datadog-api-client = "^2.0.0"
+datadog = "^0.45.0"
+types-redis = "^4.3.20"
+httpx = "0.23.3"
+
+[tool.poetry.scripts]
+rasa = "rasa.__main__:main"
