@@ -8584,6 +8584,9 @@ files = [
     {file = "wasabi-1.1.3.tar.gz", hash = "sha256:4bb3008f003809db0c3e28b4daf20906ea871a2bb43f9914197d540f4f2e0878"},
 ]
 
+[package.dependencies]
+colorama = {version = ">=0.4.6", markers = "sys_platform == \"win32\" and python_version >= \"3.7\""}
+
 [package.source]
 type = "legacy"
 url = "https://pypi.org/simple"
@@ -9132,4 +9135,4 @@ transformers = ["sentencepiece", "transformers"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10, <3.11"
-content-hash = "ed14b8ac3b3f097578526b6abc8722b0273c99d27ceb922e2c3407c1d9be5248"
+content-hash = "b8c4942bfab62cbadefe920cbee7911088384d2790fe84013c7190bef9c66e4e"
