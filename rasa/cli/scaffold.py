@@ -1,21 +1,22 @@
 import argparse
-from collections import defaultdict
-from enum import Enum
 import os
 import sys
+from collections import defaultdict
+from enum import Enum
 from typing import List, Text
 
 from rasa import telemetry
+from rasa.api import train
 from rasa.cli import SubParsersAction
 from rasa.cli.inspect import inspect
-from rasa.shared.utils.cli import print_success, print_error_and_exit
 from rasa.shared.constants import (
-    DOCS_BASE_URL,
     DEFAULT_CONFIG_PATH,
-    DEFAULT_DOMAIN_PATH,
     DEFAULT_DATA_PATH,
+    DEFAULT_DOMAIN_PATH,
     DEFAULT_MODELS_PATH,
+    DOCS_BASE_URL,
 )
+from rasa.shared.utils.cli import print_error_and_exit, print_success
 
 
 class ProjectTemplateName(Enum):
@@ -72,7 +73,6 @@ def add_subparser(
 def print_train_or_instructions(args: argparse.Namespace) -> None:
     """Train a model if the user wants to."""
     import questionary
-    import rasa
 
     print_success("Finished creating project structure.")
 
@@ -84,7 +84,7 @@ def print_train_or_instructions(args: argparse.Namespace) -> None:
 
     if should_train:
         print_success("Training an initial model...")
-        training_result = rasa.train(
+        training_result = train(
             template_domain_path[args.template],
             DEFAULT_CONFIG_PATH,
             DEFAULT_DATA_PATH,
@@ -102,8 +102,9 @@ def print_train_or_instructions(args: argparse.Namespace) -> None:
 
 
 def print_run_or_instructions(args: argparse.Namespace) -> None:
-    from rasa.core import constants
     import questionary
+
+    from rasa.core import constants
 
     should_run = (
         questionary.confirm("Do you want to speak to the trained assistant? 🤖")
@@ -164,6 +165,7 @@ def create_initial_project(
 
 def scaffold_path(template: ProjectTemplateName) -> Text:
     import importlib_resources
+
     import rasa.cli.project_templates
 
     template_module = rasa.cli.project_templates.__name__

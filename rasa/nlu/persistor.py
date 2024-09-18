@@ -1,13 +1,30 @@
+from __future__ import annotations
+
 import abc
 import os
 import shutil
-from typing import TYPE_CHECKING, Optional, Text, Tuple
+from enum import Enum
+from typing import TYPE_CHECKING, List, Optional, Text, Tuple, Union
 
 import structlog
 
 import rasa.shared.utils.common
 import rasa.utils.common
+from rasa.constants import (
+    HTTP_STATUS_FORBIDDEN,
+    HTTP_STATUS_NOT_FOUND,
+    MODEL_ARCHIVE_EXTENSION,
+)
+from rasa.env import (
+    AWS_ENDPOINT_URL_ENV,
+    AZURE_ACCOUNT_KEY_ENV,
+    AZURE_ACCOUNT_NAME_ENV,
+    AZURE_CONTAINER_ENV,
+    BUCKET_NAME_ENV,
+    REMOTE_STORAGE_PATH_ENV,
+)
 from rasa.shared.exceptions import RasaException
+from rasa.shared.utils.io import raise_warning
 
 if TYPE_CHECKING:
     from azure.storage.blob import ContainerClient
@@ -15,34 +32,80 @@ if TYPE_CHECKING:
 structlogger = structlog.get_logger()
 
 
-def get_persistor(name: Text) -> Optional["Persistor"]:
+class RemoteStorageType(Enum):
+    """Enum for the different remote storage types."""
+
+    AWS = "aws"
+    GCS = "gcs"
+    AZURE = "azure"
+
+    @classmethod
+    def list(cls) -> List[str]:
+        """Returns a list of all available storage types."""
+        return [item.value for item in cls]
+
+
+"""Storage can be a built-in one or a module path to a custom persistor."""
+StorageType = Union[RemoteStorageType, str]
+
+
+def parse_remote_storage(value: str) -> StorageType:
+    try:
+        return RemoteStorageType(value)
+    except ValueError:
+        # if the value is not a valid storage type,
+        # but it is a string we assume it is a custom class
+        # and return it as is
+
+        supported_storages_help_text = (
+            f"Supported storages are: {RemoteStorageType.list()} "
+            "or path to a python class which implements `Persistor` interface."
+        )
+
+        if isinstance(value, str):
+            if value == "":
+                raise ValueError(
+                    f"The value can't be an empty string."
+                    f" {supported_storages_help_text}"
+                )
+
+            return value
+
+        raise ValueError(
+            f"Invalid storage type '{value}'. {supported_storages_help_text}"
+        )
+
+
+def get_persistor(storage: StorageType) -> Optional[Persistor]:
     """Returns an instance of the requested persistor.
 
     Currently, `aws`, `gcs`, `azure` and providing module paths are supported remote
     storages.
     """
-    if name == "aws":
+    if storage == RemoteStorageType.AWS.value:
         return AWSPersistor(
-            os.environ.get("BUCKET_NAME"), os.environ.get("AWS_ENDPOINT_URL")
+            os.environ.get(BUCKET_NAME_ENV), os.environ.get(AWS_ENDPOINT_URL_ENV)
         )
-    if name == "gcs":
-        return GCSPersistor(os.environ.get("BUCKET_NAME"))
+    if storage == RemoteStorageType.GCS.value:
+        return GCSPersistor(os.environ.get(BUCKET_NAME_ENV))
 
-    if name == "azure":
+    if storage == RemoteStorageType.AZURE.value:
         return AzurePersistor(
-            os.environ.get("AZURE_CONTAINER"),
-            os.environ.get("AZURE_ACCOUNT_NAME"),
-            os.environ.get("AZURE_ACCOUNT_KEY"),
+            os.environ.get(AZURE_CONTAINER_ENV),
+            os.environ.get(AZURE_ACCOUNT_NAME_ENV),
+            os.environ.get(AZURE_ACCOUNT_KEY_ENV),
         )
-    if name:
+    # If the persistor is not a built-in one, it is assumed to be a module path
+    # to a persistor implementation supplied by the user.
+    if storage:
         try:
-            persistor = rasa.shared.utils.common.class_from_module_path(name)
+            persistor = rasa.shared.utils.common.class_from_module_path(storage)
             return persistor()
         except ImportError:
             raise ImportError(
-                f"Unknown model persistor {name}. Please make sure to "
-                "either use an included model persistor (`aws`, `gcs` "
-                "or `azure`) or specify the module path to an external "
+                f"Unknown model persistor {storage}. Please make sure to "
+                f"either use an included model persistor ({RemoteStorageType.list()}) "
+                f"or specify the module path to an external "
                 "model persistor."
             )
     return None
@@ -51,7 +114,7 @@ def get_persistor(name: Text) -> Optional["Persistor"]:
 class Persistor(abc.ABC):
     """Store models in cloud and fetch them when needed."""
 
-    def persist(self, trained_model: Text) -> None:
+    def persist(self, trained_model: str) -> None:
         """Uploads a trained model persisted in the `target_dir` to cloud storage."""
         file_key = self._create_file_key(trained_model)
         self._persist_tar(file_key, trained_model)
@@ -68,7 +131,7 @@ class Persistor(abc.ABC):
             target_path: The path to which the model should be saved.
         """
         tar_name = model_name
-        if not model_name.endswith("tar.gz"):
+        if not model_name.endswith(MODEL_ARCHIVE_EXTENSION):
             # ensure backward compatibility
             tar_name = self._tar_name(model_name)
         tar_name = self._create_file_key(tar_name)
@@ -107,7 +170,7 @@ class Persistor(abc.ABC):
 
     @staticmethod
     def _tar_name(model_name: Text, include_extension: bool = True) -> Text:
-        ext = ".tar.gz" if include_extension else ""
+        ext = f".{MODEL_ARCHIVE_EXTENSION}" if include_extension else ""
         return f"{model_name}{ext}"
 
     @staticmethod
@@ -115,12 +178,27 @@ class Persistor(abc.ABC):
         shutil.copy2(compressed_path, target_path)
 
     @staticmethod
-    def _create_file_key(model_name: Text) -> Text:
+    def _create_file_key(model_path: str) -> Text:
         """Appends remote storage folders when provided to upload or retrieve file"""
-        bucket_object_path = os.environ.get("REMOTE_STORAGE_PATH", "")
-        file_key = os.path.basename(model_name)
-        if bucket_object_path:
-            file_key = os.path.join(bucket_object_path, file_key)
+        bucket_object_path = os.environ.get(REMOTE_STORAGE_PATH_ENV)
+
+        # To keep the backward compatibility, if REMOTE_STORAGE_PATH is not provided,
+        # the model_name (which might be a complete path) will be returned as it is.
+        if bucket_object_path is None:
+            return str(model_path)
+        else:
+            raise_warning(
+                f"{REMOTE_STORAGE_PATH_ENV} is deprecated and will be "
+                "removed in future versions. "
+                "Please use the -m path/to/model.tar.gz option to "
+                "specify the model path when loading a model."
+                "Or use --output and --fixed-model-name to specify the "
+                "output directory and the model name when saving a "
+                "trained model to remote storage.",
+            )
+
+        file_key = os.path.basename(model_path)
+        file_key = os.path.join(bucket_object_path, file_key)
         return file_key
 
 
@@ -156,7 +234,7 @@ class AWSPersistor(Persistor):
             self.s3.meta.client.head_bucket(Bucket=bucket_name)
         except botocore.exceptions.ClientError as e:
             error_code = int(e.response["Error"]["Code"])
-            if error_code == 403:
+            if error_code == HTTP_STATUS_FORBIDDEN:
                 log = (
                     f"Access to the specified bucket '{bucket_name}' is forbidden. "
                     "Please make sure you have the necessary "
@@ -168,7 +246,7 @@ class AWSPersistor(Persistor):
                     event_info=log,
                 )
                 raise RasaException(log)
-            elif error_code == 404:
+            elif error_code == HTTP_STATUS_NOT_FOUND:
                 log = (
                     f"The specified bucket '{bucket_name}' does not exist. "
                     "Please make sure to create the bucket first."

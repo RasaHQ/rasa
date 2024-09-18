@@ -5,9 +5,9 @@ from typing import Text
 
 import pytest
 
-from rasa import train
+from rasa.api import train
 from rasa.core.agent import load_agent
-from rasa.core.channels import UserMessage, CollectingOutputChannel
+from rasa.core.channels import CollectingOutputChannel, UserMessage
 
 SENDER = "sender"
 

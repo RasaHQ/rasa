@@ -8,6 +8,7 @@ import rasa.shared.core.flows.yaml_flows_io
 import rasa.shared.data
 import rasa.shared.utils.common
 import rasa.shared.utils.io
+from rasa.nlu.persistor import StorageType
 from rasa.shared.core.domain import Domain, InvalidDomain
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
@@ -39,7 +40,7 @@ class RemoteTrainingDataImporter(TrainingDataImporter):
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[Union[List[Text], Text]] = None,
         project_directory: Optional[Text] = None,
-        remote_storage: Optional[Text] = None,
+        remote_storage: Optional[StorageType] = None,
         training_data_path: Optional[Text] = None,
     ):
         """Initializes `RemoteTrainingDataImporter`.
@@ -49,7 +50,7 @@ class RemoteTrainingDataImporter(TrainingDataImporter):
             domain_path: Path to the domain file.
             training_data_paths: List of paths to the training data files.
             project_directory: Path to the project directory.
-            remote_storage: Path to the remote storage.
+            remote_storage: Storage to use to load the training data.
             training_data_path: Path to the training data.
         """
         self.remote_storage = remote_storage

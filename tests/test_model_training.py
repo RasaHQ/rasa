@@ -1,13 +1,13 @@
 import inspect
 import logging
+import os
 import secrets
 import shutil
 import tempfile
-import os
 import textwrap
 from pathlib import Path
-from typing import Text, Dict, Union, Any
-from unittest.mock import Mock, AsyncMock, patch
+from typing import Any, Dict, Text, Union
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from _pytest.capture import CaptureFixture
@@ -15,18 +15,18 @@ from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.tmpdir import TempPathFactory
 
-import rasa
-from rasa.core.policies.rule_policy import RulePolicy
-
-from rasa.core.policies.ted_policy import TEDPolicy
-import rasa.model
-import rasa.model_training
+import rasa.api
 import rasa.core
 import rasa.core.train
+import rasa.model
+import rasa.model_training
 import rasa.nlu
-from rasa.engine.storage.local_model_storage import LocalModelStorage
-from rasa.engine.recipes.default_recipe import DefaultV1Recipe
+import rasa.shared.utils.io
+from rasa.core.policies.rule_policy import RulePolicy
+from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.engine.graph import GraphModelConfiguration
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
+from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.training.components import FingerprintStatus
 from rasa.engine.training.graph_trainer import GraphTrainer
 from rasa.model_training import (
@@ -36,16 +36,14 @@ from rasa.model_training import (
     _determine_model_name,
     _dry_run_result,
 )
+from rasa.nlu.classifiers.diet_classifier import DIETClassifier
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, SlotSet
 from rasa.shared.core.training_data.structures import RuleStep, StoryGraph, StoryStep
 from rasa.shared.data import TrainingType
-
-from rasa.nlu.classifiers.diet_classifier import DIETClassifier
-from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
-import rasa.shared.utils.io
-from rasa.shared.core.domain import Domain
 from rasa.shared.exceptions import InvalidConfigException
-from rasa.shared.utils.yaml import read_yaml_file, write_yaml, read_yaml
+from rasa.shared.utils.yaml import read_yaml, read_yaml_file, write_yaml
 from rasa.utils.tensorflow.constants import EPOCHS
 
 
@@ -80,7 +78,7 @@ def test_train_temp_files(
     monkeypatch.setattr(tempfile, "tempdir", tmp_path / "training")
     output = str(tmp_path / "models")
 
-    rasa.train(
+    rasa.api.train(
         domain_path,
         stack_config_path,
         [stories_path, nlu_data_path],
@@ -93,7 +91,7 @@ def test_train_temp_files(
     # After training the model, try to do it again. This shouldn't try to train
     # a new model because nothing has been changed. It also shouldn't create
     # any temp files.
-    rasa.train(
+    rasa.api.train(
         domain_path, stack_config_path, [stories_path, nlu_data_path], output=output
     )
 
@@ -279,7 +277,7 @@ class TestE2e:
         tmp_path: Path,
     ):
         with caplog.at_level(logging.WARNING):
-            rasa.train(
+            rasa.api.train(
                 str(moodbot_domain_path),
                 str(e2e_bot_config_file),
                 [e2e_stories_path, nlu_data_path],
@@ -310,7 +308,7 @@ class TestE2e:
         new_stories_file = tmp_path / "new_stories.yml"
         write_yaml(stories_yaml, new_stories_file)
 
-        result = rasa.train(
+        result = rasa.api.train(
             str(moodbot_domain_path),
             str(e2e_bot_config_file),
             [new_stories_file, nlu_data_path],
@@ -343,7 +341,7 @@ class TestE2e:
         new_stories_file = tmp_path / "new_stories.yml"
         write_yaml(stories_yaml, new_stories_file)
 
-        result = rasa.train(
+        result = rasa.api.train(
             str(moodbot_domain_path),
             str(e2e_bot_config_file),
             [new_stories_file, nlu_data_path],
@@ -372,7 +370,7 @@ class TestE2e:
         train_mock = AsyncMock()
         monkeypatch.setattr(GraphTrainer, GraphTrainer.train.__name__, train_mock)
 
-        rasa.train(
+        rasa.api.train(
             str(moodbot_domain_path),
             str(e2e_bot_config_file),
             [e2e_stories_path],
@@ -408,7 +406,7 @@ class TestE2e:
         new_nlu_file = tmp_path / "new_nlu.yml"
         write_yaml(nlu_yaml, new_nlu_file)
 
-        result = rasa.train(
+        result = rasa.api.train(
             str(moodbot_domain_path),
             str(e2e_bot_config_file),
             [e2e_stories_path, new_nlu_file],
@@ -433,7 +431,7 @@ class TestE2e:
         nlu_data_path: Text,
         tmp_path: Path,
     ):
-        rasa.train(
+        rasa.api.train(
             str(moodbot_domain_path),
             str(e2e_bot_config_file),
             [simple_stories_path, nlu_data_path],
@@ -446,7 +444,7 @@ class TestE2e:
         new_nlu_file = tmp_path / "new_nlu.yml"
         write_yaml(nlu_yaml, new_nlu_file)
 
-        result = rasa.train(
+        result = rasa.api.train(
             str(moodbot_domain_path),
             str(e2e_bot_config_file),
             [simple_stories_path, new_nlu_file],
@@ -502,7 +500,7 @@ def test_model_finetuning(
     if use_latest_model:
         trained_rasa_model = str(Path(trained_rasa_model).parent)
 
-    result = rasa.train(
+    result = rasa.api.train(
         domain_path,
         stack_config_path,
         [stories_path, nlu_data_path],
@@ -627,7 +625,7 @@ def test_model_finetuning_new_domain_label_stops_all_training(
     write_yaml(old_domain, new_domain_path)
 
     with pytest.raises(InvalidConfigException):
-        rasa.train(
+        rasa.api.train(
             domain=str(new_domain_path),
             config="data/test_moodbot/config.yml",
             training_files=[
@@ -818,7 +816,7 @@ def test_model_finetuning_with_invalid_model(
     output = str(tmp_path / "models")
 
     with pytest.raises(SystemExit):
-        rasa.train(
+        rasa.api.train(
             domain_path,
             stack_config_path,
             [stories_path, nlu_data_path],
@@ -904,7 +902,7 @@ def test_models_not_retrained_if_only_new_action(
     new_domain_path = tmp_path / "domain.yml"
     write_yaml(new_domain.as_dict(), new_domain_path)
 
-    result = rasa.train(
+    result = rasa.api.train(
         str(new_domain_path),
         str(e2e_bot_config_file),
         [e2e_stories_path, nlu_data_path],
@@ -934,7 +932,7 @@ def test_invalid_graph_schema(
     write_yaml(read_yaml(config), new_config_path)
 
     with pytest.raises(InvalidConfigException) as captured_exception:
-        rasa.train(
+        rasa.api.train(
             domain_path,
             str(new_config_path),
             [stories_path, nlu_data_path],
@@ -975,10 +973,12 @@ def test_fingerprint_changes_if_module_changes(
     write_yaml(read_yaml(config), new_config_path)
 
     # Train to initialize cache
-    rasa.train(domain_path, str(new_config_path), [stories_path], output=str(tmp_path))
+    rasa.api.train(
+        domain_path, str(new_config_path), [stories_path], output=str(tmp_path)
+    )
 
     # Make sure that the caching works as expected the code didn't change
-    result = rasa.train(
+    result = rasa.api.train(
         domain_path,
         str(new_config_path),
         [stories_path],
@@ -993,7 +993,7 @@ def test_fingerprint_changes_if_module_changes(
     source_code = source_code.replace("Dict[Text, Any]", "Dict")
     custom_module_path.write_text(source_code)
 
-    result = rasa.train(
+    result = rasa.api.train(
         domain_path,
         str(new_config_path),
         [stories_path],

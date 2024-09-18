@@ -13,7 +13,11 @@ import rasa.shared.utils.cli
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.cli import SubParsersAction
-from rasa.cli.arguments.default_arguments import add_endpoint_param, add_model_param
+from rasa.cli.arguments.default_arguments import (
+    add_endpoint_param,
+    add_model_param,
+    add_remote_storage_param,
+)
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.utils import AvailableEndpoints
 from rasa.e2e_test.aggregate_test_stats_calculator import (
@@ -49,7 +53,6 @@ from rasa.exceptions import RasaException
 from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH, DEFAULT_MODELS_PATH
 from rasa.utils.beta import ensure_beta_feature_is_enabled
 from rasa.utils.endpoints import EndpointConfig
-
 
 RASA_PRO_BETA_FINE_TUNING_RECIPE_ENV_VAR_NAME = "RASA_PRO_BETA_FINE_TUNING_RECIPE"
 
@@ -130,10 +133,7 @@ def add_e2e_test_arguments(parser: argparse.ArgumentParser) -> None:
         help="Results file containing end-to-end testing summary.",
     )
 
-    parser.add_argument(
-        "--remote-storage",
-        help="Set the remote location where your Rasa model is stored, e.g. on AWS.",
-    )
+    add_remote_storage_param(parser)
 
     parser.add_argument(
         "--coverage-report",

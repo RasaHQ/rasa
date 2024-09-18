@@ -1,13 +1,14 @@
 import argparse
 import logging
-from typing import Text, Union, Optional
+from typing import Optional, Text, Union
 
+from rasa.nlu.persistor import RemoteStorageType, StorageType, parse_remote_storage
 from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
-    DEFAULT_DOMAIN_PATH,
-    DEFAULT_MODELS_PATH,
     DEFAULT_DATA_PATH,
+    DEFAULT_DOMAIN_PATH,
     DEFAULT_ENDPOINTS_PATH,
+    DEFAULT_MODELS_PATH,
 )
 
 
@@ -171,6 +172,16 @@ def add_remote_storage_param(
 ) -> None:
     parser.add_argument(
         "--remote-storage",
-        help="Set the remote location where your Rasa model is stored, e.g. on AWS.",
+        help="Remote storage which should be used to store/load the model."
+        f"Supported storages are: {RemoteStorageType.list()}. "
+        "You can also provide your own implementation of the `Persistor` interface.",
         required=required,
+        type=parse_remote_storage_arg,
     )
+
+
+def parse_remote_storage_arg(value: str) -> StorageType:
+    try:
+        return parse_remote_storage(value)
+    except ValueError as e:
+        raise argparse.ArgumentTypeError(str(e))

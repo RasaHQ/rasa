@@ -20,19 +20,18 @@ from rasa.shared.core.flows.yaml_flows_io import YamlFlowsWriter
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.utils.yaml import read_yaml, write_yaml
 from rasa.studio import data_handler
-from rasa.utils.common import get_temp_dir_name
-
 from rasa.studio.config import StudioConfig
 from rasa.studio.data_handler import (
     StudioDataHandler,
     import_data_from_studio,
 )
+from rasa.utils.common import get_temp_dir_name
 
 logger = logging.getLogger(__name__)
 
 
 def handle_train(args: argparse.Namespace) -> Optional[str]:
-    from rasa import train as train_all
+    from rasa.api import train as train_all
 
     handler = StudioDataHandler(
         studio_config=StudioConfig.read_config(), assistant_name=args.assistant_name[0]

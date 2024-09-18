@@ -10,7 +10,11 @@ import rasa.shared.utils.cli
 import rasa.shared.utils.io
 import rasa.shared.utils.yaml
 from rasa.cli import SubParsersAction
-from rasa.cli.arguments.default_arguments import add_endpoint_param, add_model_param
+from rasa.cli.arguments.default_arguments import (
+    add_endpoint_param,
+    add_model_param,
+    add_remote_storage_param,
+)
 from rasa.cli.e2e_test import (
     read_test_cases,
     validate_model_path,
@@ -123,10 +127,8 @@ def add_data_preparation_arguments(parser: argparse.ArgumentParser) -> None:
         help="Input file or folder containing end-to-end test cases.",
         default=DEFAULT_INPUT_E2E_TEST_PATH,
     )
-    parser.add_argument(
-        "--remote-storage",
-        help="Set the remote location where your Rasa model is stored, e.g. on AWS.",
-    )
+
+    add_remote_storage_param(parser)
 
     rephrasing_arguments = parser.add_argument_group("Rephrasing Module")
     rephrasing_arguments.add_argument(

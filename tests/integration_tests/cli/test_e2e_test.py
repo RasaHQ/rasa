@@ -2,10 +2,10 @@ import argparse
 from typing import Any, List, Text
 
 import pytest
-from rasa.cli import SubParsersAction, test
 
-from rasa.cli import e2e_test
+from rasa.cli import SubParsersAction, e2e_test, test
 from rasa.cli.e2e_test import DEFAULT_E2E_OUTPUT_TESTS_PATH
+from rasa.nlu.persistor import RemoteStorageType
 
 
 @pytest.fixture
@@ -99,7 +99,7 @@ def e2e_test_parser(
             ],
             argparse.Namespace(
                 fail_fast=False,
-                remote_storage="gcs",
+                remote_storage=RemoteStorageType.GCS,
                 **{"path-to-test-cases": "tests/data/test_e2e_stories/"},
             ),
         ),

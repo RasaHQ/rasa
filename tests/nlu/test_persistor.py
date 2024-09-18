@@ -1,12 +1,13 @@
-from typing import Text
-
 import os
-import pytest
-import boto3
-from unittest.mock import patch, Mock
+from typing import Any, Dict, Text
+from unittest.mock import MagicMock, Mock, patch
 
+import boto3
+import pytest
+from _pytest.monkeypatch import MonkeyPatch
 from moto import mock_aws
 
+from rasa.env import REMOTE_STORAGE_PATH_ENV
 from rasa.nlu import persistor
 from rasa.nlu.persistor import Persistor
 from rasa.shared.exceptions import RasaException
@@ -34,21 +35,26 @@ def destination() -> Text:
     return "dst"
 
 
-# noinspection PyPep8Naming
-def test_retrieve_tar_archive_with_s3_namespace(
-    bucket_name: Text, model: Text, destination: Text
-):
+@pytest.fixture
+def mock_s3_connection() -> Any:
     with mock_aws():
         conn = boto3.resource("s3")
-        conn.create_bucket(Bucket=bucket_name)
+        yield conn
 
-        with patch.object(persistor.AWSPersistor, "_copy") as copy:
-            with patch.object(persistor.AWSPersistor, "_retrieve_tar") as retrieve:
-                persistor.AWSPersistor(bucket_name, region_name="foo").retrieve(
-                    model, destination
-                )
-            copy.assert_called_once_with("model.tar.gz", destination)
-            retrieve.assert_called_once_with("model.tar.gz")
+
+# noinspection PyPep8Naming
+def test_retrieve_tar_archive_with_s3_namespace(
+    bucket_name: Text, model: Text, destination: Text, mock_s3_connection: Any
+):
+    mock_s3_connection.create_bucket(Bucket=bucket_name)
+
+    with patch.object(persistor.AWSPersistor, "_copy") as copy:
+        with patch.object(persistor.AWSPersistor, "_retrieve_tar") as retrieve:
+            persistor.AWSPersistor(bucket_name, region_name="foo").retrieve(
+                model, destination
+            )
+        copy.assert_called_once_with("model.tar.gz", destination)
+        retrieve.assert_called_once_with(model)
 
 
 # noinspection PyPep8Naming
@@ -94,20 +100,20 @@ def test_retrieve_tar_archive_with_s3_bucket_forbidden(
 
 
 # noinspection PyPep8Naming
-def test_s3_private_retrieve_tar(bucket_name: Text, model: Text):
-    with mock_aws():
-        conn = boto3.resource("s3")
-        conn.create_bucket(Bucket=bucket_name)
-        # Ensure the S3 persistor writes to a filename `model.tar.gz`, whilst
-        # passing the fully namespaced path to boto3
-        awsPersistor = persistor.AWSPersistor(bucket_name, region_name="foo")
+def test_s3_private_retrieve_tar(
+    bucket_name: Text, model: Text, mock_s3_connection: Any
+):
+    mock_s3_connection.create_bucket(Bucket=bucket_name)
+    # Ensure the S3 persistor writes to a filename `model.tar.gz`, whilst
+    # passing the fully namespaced path to boto3
+    awsPersistor = persistor.AWSPersistor(bucket_name, region_name="foo")
 
-        with patch.object(awsPersistor.bucket, "download_fileobj") as download_fileobj:
-            # noinspection PyProtectedMember
-            awsPersistor._retrieve_tar(model)
-        retrieveArgs = download_fileobj.call_args[0]
-        assert retrieveArgs[0] == model
-        assert retrieveArgs[1].name == "model.tar.gz"
+    with patch.object(awsPersistor.bucket, "download_fileobj") as download_fileobj:
+        # noinspection PyProtectedMember
+        awsPersistor._retrieve_tar(model)
+    retrieveArgs = download_fileobj.call_args[0]
+    assert retrieveArgs[0] == model
+    assert retrieveArgs[1].name == "model.tar.gz"
 
 
 class TestPersistor(Persistor):
@@ -163,7 +169,7 @@ def test_retrieve_tar_archive_with_gcs_namespace(
         with patch.object(persistor.GCSPersistor, "_retrieve_tar") as retrieve:
             persistor.GCSPersistor(bucket_name).retrieve(model, destination)
         copy.assert_called_once_with("model.tar.gz", destination)
-        retrieve.assert_called_once_with("model.tar.gz")
+        retrieve.assert_called_once_with(model)
     mock_client.assert_called_once()
 
 
@@ -218,7 +224,7 @@ def test_retrieve_tar_archive_with_azure_namespace(
         with patch.object(azure_persistor, "_retrieve_tar") as retrieve:
             azure_persistor.retrieve(model, destination)
         copy.assert_called_once_with("model.tar.gz", destination)
-        retrieve.assert_called_once_with("model.tar.gz")
+        retrieve.assert_called_once_with(model)
     mock_client.assert_called_once()
 
 
@@ -238,3 +244,61 @@ def test_retrieve_tar_archive_with_azure_bucket_not_found(
     with pytest.raises(RasaException, match=log):
         azure_persistor._ensure_container_exists()
     mock_client.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    "model_path, envs, expected_file_key",
+    [
+        ("model1.pkl", {}, "model1.pkl"),
+        ("path/to/file/model1.pkl", {}, "path/to/file/model1.pkl"),
+        (
+            "model1.pkl",
+            {REMOTE_STORAGE_PATH_ENV: "test_model"},
+            "test_model/model1.pkl",
+        ),
+        (
+            "path/to/file/model1.pkl",
+            {
+                REMOTE_STORAGE_PATH_ENV: "test_model",
+            },
+            "test_model/model1.pkl",
+        ),
+    ],
+)
+def test_create_file_key(
+    model_path: Text,
+    envs: Dict[str, str],
+    expected_file_key: Text,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Test file key creation.
+
+    File key is the file path in the storage bucket.
+    """
+
+    monkeypatch.delenv(REMOTE_STORAGE_PATH_ENV, raising=False)
+    for key, value in envs.items():
+        monkeypatch.setenv(key, value)
+
+    file_key = Persistor._create_file_key(model_path)
+    assert file_key == expected_file_key
+
+
+def test_create_file_key_remote_storage_path_deprecation_logging(
+    caplog: Any,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(REMOTE_STORAGE_PATH_ENV, "test_model")
+    mock_raise_warning = MagicMock()
+    monkeypatch.setattr("rasa.nlu.persistor.raise_warning", mock_raise_warning)
+    Persistor._create_file_key("model1.pkl")
+    warning_text = (
+        f"{REMOTE_STORAGE_PATH_ENV} is deprecated and will be "
+        "removed in future versions. "
+        "Please use the -m path/to/model.tar.gz option to "
+        "specify the model path when loading a model."
+        "Or use --output and --fixed-model-name to specify the "
+        "output directory and the model name when saving a "
+        "trained model to remote storage."
+    )
+    mock_raise_warning.assert_called_once_with(warning_text)

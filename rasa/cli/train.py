@@ -1,26 +1,26 @@
 import argparse
-import structlog
-import sys
 import asyncio
+import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Text, Union
 
-from rasa.cli import SubParsersAction
-import rasa.cli.arguments.train as train_arguments
+import structlog
 
+import rasa.cli.arguments.train as train_arguments
 import rasa.cli.utils
 import rasa.core.utils
-from rasa.shared.importers.importer import TrainingDataImporter
 import rasa.utils.common
+from rasa.cli import SubParsersAction
 from rasa.core.nlg.generator import NaturalLanguageGenerator
 from rasa.core.train import do_compare_training
 from rasa.shared.constants import (
+    CONFIG_MANDATORY_KEYS,
     CONFIG_MANDATORY_KEYS_CORE,
     CONFIG_MANDATORY_KEYS_NLU,
-    CONFIG_MANDATORY_KEYS,
     DEFAULT_DATA_PATH,
     DEFAULT_DOMAIN_PATHS,
 )
+from rasa.shared.importers.importer import TrainingDataImporter
 
 structlogger = structlog.getLogger(__name__)
 
@@ -94,7 +94,7 @@ def run_training(args: argparse.Namespace, can_exit: bool = False) -> Optional[T
     Returns:
         Path to a trained model or `None` if training was not successful.
     """
-    from rasa import train as train_all
+    from rasa.api import train as train_all
 
     domain = rasa.cli.utils.get_validated_path(
         args.domain, "domain", DEFAULT_DOMAIN_PATHS, none_is_valid=True

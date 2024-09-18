@@ -1,12 +1,20 @@
 import sys
 import time
 from pathlib import Path
-from typing import Text, NamedTuple, Optional, List, Union, Dict, Any
+from typing import Any, Dict, List, NamedTuple, Optional, Text, Union
 
 import randomname
 import structlog
 
 import rasa.engine.validation
+import rasa.model
+import rasa.shared.constants
+import rasa.shared.exceptions
+import rasa.shared.utils.cli
+import rasa.shared.utils.common
+import rasa.shared.utils.io
+import rasa.utils.common
+from rasa import telemetry
 from rasa.engine.caching import LocalTrainingCache
 from rasa.engine.recipes.recipe import Recipe
 from rasa.engine.runner.dask import DaskGraphRunner
@@ -14,20 +22,13 @@ from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.training.components import FingerprintStatus
 from rasa.engine.training.graph_trainer import GraphTrainer
+from rasa.nlu.persistor import StorageType
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import SlotSet
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.data import TrainingType
-from rasa.shared.importers.importer import TrainingDataImporter
-from rasa import telemetry
-from rasa.shared.core.domain import Domain
 from rasa.shared.exceptions import RasaException
-import rasa.utils.common
-import rasa.shared.utils.common
-import rasa.shared.utils.cli
-import rasa.shared.exceptions
-import rasa.shared.utils.io
-import rasa.shared.constants
-import rasa.model
+from rasa.shared.importers.importer import TrainingDataImporter
 
 CODE_NEEDS_TO_BE_RETRAINED = 0b0001
 CODE_FORCED_TRAINING = 0b1000
@@ -154,7 +155,7 @@ async def train(
     nlu_additional_arguments: Optional[Dict] = None,
     model_to_finetune: Optional[Text] = None,
     finetuning_epoch_fraction: float = 1.0,
-    remote_storage: Optional[Text] = None,
+    remote_storage: Optional[StorageType] = None,
 ) -> TrainingResult:
     """Trains a Rasa model (Core and NLU).
 
@@ -176,6 +177,7 @@ async def train(
             a directory in case the latest trained model should be used.
         finetuning_epoch_fraction: The fraction currently specified training epochs
             in the model configuration which should be used for finetuning.
+        remote_storage: The remote storage which should be used to store the model.
 
     Returns:
         An instance of `TrainingResult`.
@@ -269,7 +271,7 @@ async def _train_graph(
     model_to_finetune: Optional[Union[Text, Path]] = None,
     force_full_training: bool = False,
     dry_run: bool = False,
-    remote_storage: Optional[Text] = None,
+    remote_storage: Optional[StorageType] = None,
     **kwargs: Any,
 ) -> TrainingResult:
     if model_to_finetune:
@@ -551,14 +553,14 @@ async def train_nlu(
     ).model
 
 
-def push_model_to_remote_storage(model_path: Path, remote_storage: Text) -> None:
+def push_model_to_remote_storage(model_path: Path, remote_storage: StorageType) -> None:
     """push model to remote storage"""
     from rasa.nlu.persistor import get_persistor
 
     persistor = get_persistor(remote_storage)
 
     if persistor is not None:
-        persistor.persist(model_path)
+        persistor.persist(str(model_path))
 
     else:
         raise RasaException(
