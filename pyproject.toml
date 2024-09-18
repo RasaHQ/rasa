@@ -94,7 +94,7 @@ joblib = "^1.4"
 sentry-sdk = "^2.14"
 aio-pika = "^9.4"
 aiogram = "^2.15"
-typing-extensions = "^4.12"
+typing-extensions = "^4"
 typing-utils = "^0.1"
 google-auth = "^2"
 CacheControl = "^0.14"
@@ -111,12 +111,12 @@ jax = "^0.4"
 jaxlib = "^0.4"
 
 # TensorFlow-related dependencies for different platforms
-tensorflow = { version = "2.12.0", markers = "sys_platform != 'darwin' or platform_machine != 'arm64'" }
-tensorflow-intel = { version = "2.12.0", markers = "sys_platform == 'win32'" }
-tensorflow-cpu-aws = { version = "2.12.0", markers = "sys_platform == 'linux' and (platform_machine == 'arm64' or platform_machine == 'aarch64')" }
-tensorflow-macos = { version = "2.12.0", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'" }
-tensorflow-text = { version = "2.12.0", markers = "sys_platform != 'win32' and platform_machine != 'arm64' and platform_machine != 'aarch64'" }
-tensorflow-metal = { version = ">=1.1.0", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'", optional = true }
+tensorflow = { version = "2.13", markers = "sys_platform != 'darwin' or platform_machine != 'arm64'" }
+tensorflow-intel = { version = "2.13", markers = "sys_platform == 'win32'" }
+tensorflow-cpu-aws = { version = "2.13", markers = "sys_platform == 'linux' and (platform_machine == 'arm64' or platform_machine == 'aarch64')" }
+tensorflow-macos = { version = "2.13", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'" }
+tensorflow-text = { version = "2.13", markers = "sys_platform != 'win32' and platform_machine != 'arm64' and platform_machine != 'aarch64'" }
+tensorflow-metal = { version = "^1.1", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'", optional = true }
 
 # TensorFlow IO GCS Filesystem with platform-specific markers
 tensorflow-io-gcs-filesystem = [

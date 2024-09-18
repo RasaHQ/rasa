@@ -7,8 +7,9 @@ import os
 from collections import defaultdict
 from typing import List, Text, Dict, Tuple, Union, Optional, Any, TYPE_CHECKING
 
-from keras.utils import tf_utils
+from keras.src.utils import tf_utils
 from keras import Model
+from tensorflow.keras.optimizers import Adam
 
 from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.utils.tensorflow.constants import (
@@ -438,9 +439,7 @@ class RasaModel(Model):
         run_eagerly = kwargs.get("config", {}).get(RUN_EAGERLY)
 
         # need to train on 1 example to build weights of the correct size
-        model.compile(
-            optimizer=tf.keras.optimizers.Adam(learning_rate), run_eagerly=run_eagerly
-        )
+        model.compile(optimizer=Adam(learning_rate), run_eagerly=run_eagerly)
         data_generator = RasaBatchDataGenerator(model_data_example, batch_size=1)
         model.fit(data_generator, verbose=False)
         # load trained weights
@@ -725,7 +724,7 @@ class TransformerRasaModel(RasaModel):
             data_example: a data example that is stored with the ML component.
         """
         self.compile(
-            optimizer=tf.keras.optimizers.Adam(self.config[LEARNING_RATE]),
+            optimizer=Adam(self.config[LEARNING_RATE]),
             run_eagerly=self.config[RUN_EAGERLY],
         )
         label_key = LABEL_KEY if self.config[INTENT_CLASSIFICATION] else None
