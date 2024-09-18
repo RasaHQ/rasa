@@ -1,0 +1,17 @@
+# License environment variables for testing.
+# To run tests for licensing, you need to set the environment variables listed below.
+# For local development, you can use the .env file in the root directory of the project.
+# On CI (GitHub Actions), these environment variables are
+# set through `env` field in the workflow file.
+
+BLOCKED_LICENSE_ENV = "BLOCKED_LICENSE"
+CHAMPION_LICENSE_ENV = "CHAMPION_LICENSE"
+CHAMPION_SERVER_INTERNAL_LICENSE_ENV = "CHAMPION_SERVER_INTERNAL_LICENSE"
+CHAMPION_SERVER_LIMITED_LICENSE_ENV = "CHAMPION_SERVER_LIMITED_LICENSE"
+EXPIRED_LICENSE_ENV = "EXPIRED_LICENSE"
+IMMATURE_LICENSE_ENV = "IMMATURE_LICENSE"
+INVALID_SCHEMA_LICENSE_ENV = "INVALID_SCHEMA_LICENSE"
+INVALID_SIGNATURE_LICENSE_ENV = "INVALID_SIGNATURE_LICENSE"
+NON_JWT_LICENSE_ENV = "NON_JWT_LICENSE"
+UNSCOPED_LICENSE_ENV = "UNSCOPED_LICENSE"
+VALID_LICENSE_ENV = "VALID_LICENSE"
