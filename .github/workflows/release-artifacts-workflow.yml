@@ -132,12 +132,24 @@ jobs:
         run: |
            ./scripts/write_keys_file.sh
 
-      - name: Build and push rasa-pro docker image
+      - name: Build and push rasa-pro docker image to GCP
         run: |
            IMAGE_TAG=${TAG_VERSION} docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl default --push
         env:
            BASE_IMAGE_HASH: ${{ steps.check_image.outputs.base_image_hash }}
            RASA_DEPS_IMAGE_HASH: ${{ steps.check_image.outputs.rasa_deps_image_hash }}
+      
+      - name: Log in to Docker Hub
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Push rasa-pro docker image to Docker Hub
+        run: |
+          docker images
+          docker tag rasa/rasa-pro:${TAG_VERSION} rasadeploy/rasa-pro:${TAG_VERSION}
+          docker push ${{ env.TARGET_IMAGE_REGISTRY }}/rasa-pro:${TAG_VERSION}
       
       - name: Set up Python 3.9 🐍
         uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
