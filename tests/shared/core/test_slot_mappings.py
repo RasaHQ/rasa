@@ -10,9 +10,8 @@ from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.constants import SlotMappingType
-
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import BotUttered, SlotSet, UserUttered, ActiveLoop
+from rasa.shared.core.events import ActiveLoop, BotUttered, SlotSet, UserUttered
 from rasa.shared.core.slot_mappings import (
     SlotFillingManager,
     SlotMapping,
@@ -253,7 +252,9 @@ def test_slot_mappings_ignored_intents_during_active_loop():
     )
 
 
-def test_slot_mappings_invalid_type_raises():
+def test_slot_mappings_invalid_type_raises(
+    monkeypatch: MonkeyPatch,
+):
     with pytest.raises(YamlValidationException):
         Domain.from_yaml(
             f"""

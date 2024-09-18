@@ -11,17 +11,17 @@ from http import HTTPStatus
 from inspect import isawaitable
 from pathlib import Path
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
+    Coroutine,
     DefaultDict,
+    Dict,
     List,
+    NoReturn,
     Optional,
     Text,
     Union,
-    Dict,
-    TYPE_CHECKING,
-    NoReturn,
-    Coroutine,
 )
 
 import aiohttp
@@ -56,13 +56,13 @@ from rasa.nlu.emulators.emulator import Emulator
 from rasa.nlu.emulators.no_emulator import NoEmulator
 from rasa.nlu.test import CVEvaluationResult
 from rasa.shared.constants import (
-    DOCS_URL_TRAINING_DATA,
-    DOCS_BASE_URL,
-    DEFAULT_SENDER_ID,
     DEFAULT_MODELS_PATH,
+    DEFAULT_SENDER_ID,
+    DOCS_BASE_URL,
+    DOCS_URL_TRAINING_DATA,
     TEST_STORIES_FILE_PREFIX,
 )
-from rasa.shared.core.domain import InvalidDomain, Domain
+from rasa.shared.core.domain import Domain, InvalidDomain
 from rasa.shared.core.events import Event
 from rasa.shared.core.trackers import (
     DialogueStateTracker,
@@ -80,8 +80,10 @@ from rasa.utils.endpoints import EndpointConfig
 
 if TYPE_CHECKING:
     from ssl import SSLContext
+
+    from mypy_extensions import Arg, KwArg, VarArg
+
     from rasa.core.processor import MessageProcessor
-    from mypy_extensions import Arg, VarArg, KwArg
 
     SanicResponse = Union[
         response.HTTPResponse, Coroutine[Any, Any, response.HTTPResponse]

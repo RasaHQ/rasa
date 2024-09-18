@@ -21,8 +21,8 @@ from rasa.llm_fine_tuning.paraphrasing.rephrase_validator import RephraseValidat
 from rasa.llm_fine_tuning.paraphrasing.rephrased_user_message import (
     RephrasedUserMessage,
 )
-from rasa.shared.core.flows.yaml_flows_io import flows_from_str
 from rasa.shared.exceptions import ProviderClientAPIException
+from tests.utilities import flows_from_str
 
 
 @pytest.fixture

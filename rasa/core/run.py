@@ -310,6 +310,7 @@ async def load_agent_on_start(
         endpoints=endpoints,
         loop=loop,
     )
+
     logger.info("Rasa server is up and running.")
     return app.ctx.agent
 

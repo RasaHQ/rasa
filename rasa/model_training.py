@@ -1,12 +1,20 @@
 import sys
 import time
 from pathlib import Path
-from typing import Text, NamedTuple, Optional, List, Union, Dict, Any
+from typing import Any, Dict, List, NamedTuple, Optional, Text, Union
 
 import randomname
 import structlog
 
 import rasa.engine.validation
+import rasa.model
+import rasa.shared.constants
+import rasa.shared.exceptions
+import rasa.shared.utils.cli
+import rasa.shared.utils.common
+import rasa.shared.utils.io
+import rasa.utils.common
+from rasa import telemetry
 from rasa.engine.caching import LocalTrainingCache
 from rasa.engine.recipes.recipe import Recipe
 from rasa.engine.runner.dask import DaskGraphRunner
@@ -14,20 +22,12 @@ from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.training.components import FingerprintStatus
 from rasa.engine.training.graph_trainer import GraphTrainer
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import SlotSet
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.data import TrainingType
-from rasa.shared.importers.importer import TrainingDataImporter
-from rasa import telemetry
-from rasa.shared.core.domain import Domain
 from rasa.shared.exceptions import RasaException
-import rasa.utils.common
-import rasa.shared.utils.common
-import rasa.shared.utils.cli
-import rasa.shared.exceptions
-import rasa.shared.utils.io
-import rasa.shared.constants
-import rasa.model
+from rasa.shared.importers.importer import TrainingDataImporter
 
 CODE_NEEDS_TO_BE_RETRAINED = 0b0001
 CODE_FORCED_TRAINING = 0b1000
@@ -155,6 +155,7 @@ async def train(
     model_to_finetune: Optional[Text] = None,
     finetuning_epoch_fraction: float = 1.0,
     remote_storage: Optional[Text] = None,
+    file_importer: Optional[TrainingDataImporter] = None,
 ) -> TrainingResult:
     """Trains a Rasa model (Core and NLU).
 
@@ -176,13 +177,18 @@ async def train(
             a directory in case the latest trained model should be used.
         finetuning_epoch_fraction: The fraction currently specified training epochs
             in the model configuration which should be used for finetuning.
+        remote_storage: Optional name of the remote storage to
+            use for storing the model.
+        file_importer: Instance of `TrainingDataImporter` to use for training.
+            If it is not provided, a new instance will be created.
 
     Returns:
         An instance of `TrainingResult`.
     """
-    file_importer = TrainingDataImporter.load_from_config(
-        config, domain, training_files, core_additional_arguments
-    )
+    if not file_importer:
+        file_importer = TrainingDataImporter.load_from_config(
+            config, domain, training_files, core_additional_arguments
+        )
 
     stories = file_importer.get_stories()
     flows = file_importer.get_flows()

@@ -1,54 +1,57 @@
 import copy
 import json
-import structlog
+import random
 import re
 import textwrap
 from pathlib import Path
-import random
-from typing import Dict, List, Text, Any, Union, Set, Optional
+from typing import Any, Dict, List, Optional, Set, Text, Union
+from unittest.mock import MagicMock
 
 import pytest
+import structlog
+from _pytest.monkeypatch import MonkeyPatch
 from pytest import WarningsRecorder
 
-from rasa.shared.exceptions import YamlSyntaxException, YamlException
 import rasa.shared.utils.io
-from rasa.shared.constants import (
-    DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
-    LATEST_TRAINING_DATA_FORMAT_VERSION,
-    IGNORED_INTENTS,
-)
 from rasa.core import training
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
-from rasa.shared.core.slots import InvalidSlotTypeException, TextSlot
+from rasa.shared.constants import (
+    DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
+    DOMAIN_SCHEMA_FILE,
+    IGNORED_INTENTS,
+    LATEST_TRAINING_DATA_FORMAT_VERSION,
+)
 from rasa.shared.core.constants import (
+    DEFAULT_ACTION_NAMES,
     DEFAULT_INTENTS,
+    DEFAULT_KNOWLEDGE_BASE_ACTION,
+    DEFAULT_SLOT_NAMES,
+    ENTITY_LABEL_SEPARATOR,
     KNOWLEDGE_BASE_SLOT_NAMES,
-    SLOT_LISTED_ITEMS,
     SLOT_LAST_OBJECT,
     SLOT_LAST_OBJECT_TYPE,
-    DEFAULT_KNOWLEDGE_BASE_ACTION,
-    ENTITY_LABEL_SEPARATOR,
-    DEFAULT_ACTION_NAMES,
-    DEFAULT_SLOT_NAMES,
+    SLOT_LISTED_ITEMS,
 )
 from rasa.shared.core.domain import (
+    ENTITY_ROLES_KEY,
+    IGNORE_ENTITIES_KEY,
+    KEY_E2E_ACTIONS,
+    KEY_ENTITIES,
+    KEY_FORMS,
+    KEY_INTENTS,
+    KEY_SLOTS,
+    USE_ENTITIES_KEY,
+    USED_ENTITIES_KEY,
+    Domain,
+    EntityProperties,
     InvalidDomain,
     SessionConfig,
-    EntityProperties,
-    ENTITY_ROLES_KEY,
-    USED_ENTITIES_KEY,
-    USE_ENTITIES_KEY,
-    IGNORE_ENTITIES_KEY,
     State,
-    Domain,
-    KEY_FORMS,
-    KEY_E2E_ACTIONS,
-    KEY_INTENTS,
-    KEY_ENTITIES,
-    KEY_SLOTS,
 )
-from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered
+from rasa.shared.core.slots import InvalidSlotTypeException, TextSlot
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.exceptions import YamlException, YamlSyntaxException
 from rasa.shared.utils.yaml import YamlValidationException, read_yaml
 from rasa.utils.common import EXPECTED_WARNINGS
 from tests.utilities import filter_logs
@@ -218,7 +221,7 @@ def test_custom_slot_type(tmpdir: Path):
 
 
 @pytest.mark.parametrize(
-    "domain_unkown_slot_type",
+    "domain_unknown_slot_type",
     [
         """
     slots:
@@ -242,9 +245,9 @@ def test_custom_slot_type(tmpdir: Path):
          - text: hey there!""",
     ],
 )
-def test_domain_fails_on_unknown_custom_slot_type(tmpdir, domain_unkown_slot_type):
+def test_domain_fails_on_unknown_custom_slot_type(tmpdir, domain_unknown_slot_type):
     domain_path = str(tmpdir / "domain.yml")
-    rasa.shared.utils.io.write_text_file(domain_unkown_slot_type, domain_path)
+    rasa.shared.utils.io.write_text_file(domain_unknown_slot_type, domain_path)
     with pytest.raises(InvalidSlotTypeException):
         Domain.load(domain_path)
 
@@ -2424,3 +2427,51 @@ def test_domain_default_slots_are_marked_as_builtin(domain: Domain) -> None:
     ]
 
     assert all(slot.is_builtin for slot in domain_default_slots)
+
+
+@pytest.fixture
+def mock_validate_raw_yaml_using_schema_file_with_responses(
+    monkeypatch: MonkeyPatch,
+) -> MagicMock:
+    _mock = MagicMock()
+    monkeypatch.setattr(
+        "rasa.shared.core.domain." "validate_raw_yaml_using_schema_file_with_responses",
+        _mock,
+    )
+
+    return _mock
+
+
+@pytest.fixture
+def small_domain() -> str:
+    return """
+        version: "2.0"
+        responses:
+            utter_greet:
+            - text: hey there!
+            - text: hey ho!
+    """
+
+
+def test_dict_from_raw_yaml_content_validation_enabled(
+    mock_validate_raw_yaml_using_schema_file_with_responses: MagicMock,
+    small_domain: str,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(Domain, "validate_yaml", True)
+    Domain.from_yaml(small_domain)
+
+    mock_validate_raw_yaml_using_schema_file_with_responses.assert_called_once_with(
+        small_domain, DOMAIN_SCHEMA_FILE
+    )
+
+
+def test_dict_from_raw_yaml_content_validation_disabled(
+    mock_validate_raw_yaml_using_schema_file_with_responses: MagicMock,
+    small_domain: str,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(Domain, "validate_yaml", False)
+    Domain.from_yaml(small_domain)
+
+    mock_validate_raw_yaml_using_schema_file_with_responses.assert_not_called()
