@@ -1,6 +1,8 @@
 import asyncio
 import json
 import logging
+from functools import cached_property
+
 import structlog
 import os
 import ssl
@@ -333,7 +335,7 @@ class PikaEventBroker(EventBroker):
             delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
         )
 
-    @rasa.shared.utils.common.lazy_property
+    @cached_property
     def rasa_environment(self) -> Optional[Text]:
         """Get value of the `RASA_ENVIRONMENT` environment variable."""
         return os.environ.get("RASA_ENVIRONMENT")

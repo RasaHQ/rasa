@@ -4,7 +4,11 @@ from typing import Dict, List
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 
-from rasa.cli.arguments.run import add_jwt_arguments, add_server_settings_arguments
+from rasa.cli.arguments.run import (
+    add_jwt_arguments,
+    add_server_settings_arguments,
+    set_run_arguments,
+)
 from rasa.env import (
     AUTH_TOKEN_ENV,
     DEFAULT_JWT_METHOD,
@@ -188,3 +192,29 @@ def test_add_server_settings_arguments(
     args = parser.parse_args(input_args)
 
     assert args.auth_token == expected.auth_token
+
+
+@pytest.mark.parametrize(
+    "input_args, expected_skip_yaml_validation",
+    [
+        (
+            [],
+            [],
+        ),
+        (
+            ["--skip-yaml-validation", "domain"],
+            ["domain"],
+        ),
+    ],
+)
+def test_run_cli_skip_yaml_validation_flag(
+    input_args: List[str], expected_skip_yaml_validation: List[str]
+) -> None:
+    """Tests that --skip-yaml-validation is attached to the run CLI."""
+    parser = argparse.ArgumentParser()
+
+    set_run_arguments(parser)
+
+    args = parser.parse_args(input_args)
+
+    assert args.skip_yaml_validation == expected_skip_yaml_validation

@@ -30,11 +30,13 @@ from rasa.shared.core.flows.validation import (
     PatternReferencedPatternException,
 )
 from rasa.shared.core.flows.yaml_flows_io import (
-    flows_from_str,
-    flows_from_str_including_defaults,
     YAMLFlowsReader,
 )
 from rasa.shared.importers.importer import FlowSyncImporter
+from tests.utilities import (
+    flows_from_str,
+    flows_from_str_including_defaults,
+)
 
 
 def test_validation_does_not_always_fail() -> None:

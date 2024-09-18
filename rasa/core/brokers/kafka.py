@@ -2,6 +2,8 @@ import asyncio
 import os
 import json
 import logging
+from functools import cached_property
+
 import structlog
 import threading
 from asyncio import AbstractEventLoop
@@ -270,7 +272,7 @@ class KafkaEventBroker(EventBroker):
         if self.producer:
             self.producer.flush()
 
-    @rasa.shared.utils.common.lazy_property
+    @cached_property
     def rasa_environment(self) -> Optional[Text]:
         """Get value of the `RASA_ENVIRONMENT` environment variable."""
         return os.environ.get("RASA_ENVIRONMENT", "RASA_ENVIRONMENT_NOT_SET")
