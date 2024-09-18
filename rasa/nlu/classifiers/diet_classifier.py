@@ -871,8 +871,6 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
 
     def train(self, training_data: TrainingData) -> Resource:
         """Train the embedding intent classifier on a data set."""
-        from keras.src.optimizers import Adam
-
         model_data = self.preprocess_train_data(training_data)
         if model_data.is_empty():
             logger.debug(
@@ -908,7 +906,9 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
             # No pre-trained model to load from. Create a new instance of the model.
             self.model = self._instantiate_model_class(model_data)
             self.model.compile(
-                optimizer=Adam(self.component_config[LEARNING_RATE]),
+                optimizer=tf.keras.optimizers.Adam(
+                    self.component_config[LEARNING_RATE]
+                ),
                 run_eagerly=self.component_config[RUN_EAGERLY],
             )
         else:
@@ -1076,7 +1076,7 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
                 checkpoint_marker = model_path / f"{file_name}.from_checkpoint.pkl"
                 checkpoint_marker.touch()
 
-            self.model.save(str(tf_model_file), save_format="h5")
+            self.model.save(str(tf_model_file))
 
             io_utils.pickle_dump(
                 model_path / f"{file_name}.data_example.pkl", self._data_example
