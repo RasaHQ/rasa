@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.black]
 line-length = 88
-target-version = [ "py38", "py39", "py310",]
+target-version = [ "py39", "py310",]
 exclude = "((.eggs | .git | .pytest_cache | build | dist))"
 
 [tool.poetry]
@@ -92,7 +92,7 @@ line-length = 88
 select = [ "D", "E", "F", "W", "RUF",]
 
 [tool.poetry.dependencies]
-python = ">=3.8.1,<3.11"
+python = ">=3.9,<3.11"
 boto3 = "^1.27.1"
 google-cloud-storage = "^2.13.0"
 azure-storage-blob = ">=12.16.0, <12.17.0"
@@ -202,12 +202,12 @@ markers = "sys_platform == 'darwin' and platform_machine != 'arm64'"
 
 [[tool.poetry.dependencies.dask]]
 version = "2022.10.2"
-python = ">=3.8,<3.11"
+python = ">=3.9,<3.11"
 
 [[tool.poetry.dependencies.numpy]]
 version = ">=1.23.5,<1.25.0"
 markers = "sys_platform != 'win32' or platform_python_implementation == 'PyPy'"
-python = ">=3.8,<3.11"
+python = ">=3.9,<3.11"
 
 [[tool.poetry.dependencies.numpy]]
 version = "1.22.3"
@@ -216,11 +216,11 @@ python = "3.10"
 
 [[tool.poetry.dependencies.scipy]]
 version = ">=1.10.1,<1.11.0"
-python = ">=3.8,<3.11"
+python = ">=3.9,<3.11"
 
 [[tool.poetry.dependencies.scikit-learn]]
 version = ">=1.1.3,<1.2"
-python = ">=3.8,<3.11"
+python = ">=3.9,<3.11"
 
 [[tool.poetry.dependencies.spacy]]
 version = "^3.5.4"
