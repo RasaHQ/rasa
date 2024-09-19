@@ -1100,7 +1100,8 @@ def test_dry_run_result_force_retraining():
     ],
 )
 def test_model_training_determine_model_name(model_name, expected):
-    with patch("randomname.get_name", return_value="expected_name"), patch(
-        "time.strftime", return_value="20220101-120000"
+    with (
+        patch("randomname.get_name", return_value="expected_name"),
+        patch("time.strftime", return_value="20220101-120000"),
     ):
         assert _determine_model_name(model_name, TrainingType.BOTH) == expected

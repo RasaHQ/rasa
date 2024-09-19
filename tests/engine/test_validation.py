@@ -1696,14 +1696,16 @@ def mock_schema():
 def test_validate_intent_based_router_position(
     mock_schema, router_index, generator_index, should_exit
 ):
-    with patch(
-        "rasa.engine.validation.get_component_index",
-        side_effect=lambda schema, cls: router_index
-        if cls is IntentBasedRouter
-        else generator_index,
-    ), patch("rasa.engine.validation.structlogger.error") as mock_error, patch(
-        "sys.exit"
-    ) as mock_exit:
+    with (
+        patch(
+            "rasa.engine.validation.get_component_index",
+            side_effect=lambda schema, cls: router_index
+            if cls is IntentBasedRouter
+            else generator_index,
+        ),
+        patch("rasa.engine.validation.structlogger.error") as mock_error,
+        patch("sys.exit") as mock_exit,
+    ):
         validate_intent_based_router_position(mock_schema)
 
         if should_exit:
