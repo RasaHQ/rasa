@@ -15,3 +15,8 @@ nlu:
   examples: |
     - give name
     - do you know my name?
+
+- intent: say_favourite_food
+  examples: |
+    - My favourite food is [bread](favourite_food).
+    - I love to eat [bread](favourite_food).
