@@ -506,6 +506,7 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
     def _extract_features(
         self, message: Message, attribute: Text
     ) -> Dict[Text, Union[scipy.sparse.spmatrix, np.ndarray]]:
+
         (
             sparse_sequence_features,
             sparse_sentence_features,
@@ -775,6 +776,7 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]],
         label_attribute: Optional[Text] = None,
     ) -> Dict[Text, Dict[Text, List[int]]]:
+
         if label_attribute in sparse_feature_sizes:
             del sparse_feature_sizes[label_attribute]
         return sparse_feature_sizes
@@ -1260,6 +1262,7 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         config: Dict[Text, Any],
         finetune_mode: bool,
     ) -> "RasaModel":
+
         predict_data_example = RasaModelData(
             label_key=model_data_example.label_key,
             data={
@@ -1446,10 +1449,10 @@ class DIET(TransformerRasaModel):
         # everything using a transformer and optionally also do masked language
         # modeling.
         self.text_name = TEXT
-        self._tf_layers[f"sequence_layer.{self.text_name}"] = (
-            rasa_layers.RasaSequenceLayer(
-                self.text_name, self.data_signature[self.text_name], self.config
-            )
+        self._tf_layers[
+            f"sequence_layer.{self.text_name}"
+        ] = rasa_layers.RasaSequenceLayer(
+            self.text_name, self.data_signature[self.text_name], self.config
         )
         if self.config[MASKED_LM]:
             self._prepare_mask_lm_loss(self.text_name)
@@ -1467,10 +1470,10 @@ class DIET(TransformerRasaModel):
                 {SPARSE_INPUT_DROPOUT: False, DENSE_INPUT_DROPOUT: False}
             )
 
-            self._tf_layers[f"feature_combining_layer.{self.label_name}"] = (
-                rasa_layers.RasaFeatureCombiningLayer(
-                    self.label_name, self.label_signature[self.label_name], label_config
-                )
+            self._tf_layers[
+                f"feature_combining_layer.{self.label_name}"
+            ] = rasa_layers.RasaFeatureCombiningLayer(
+                self.label_name, self.label_signature[self.label_name], label_config
             )
 
             self._prepare_ffnn_layer(
@@ -1502,6 +1505,7 @@ class DIET(TransformerRasaModel):
         sequence_feature_lengths: tf.Tensor,
         name: Text,
     ) -> tf.Tensor:
+
         x, _ = self._tf_layers[f"feature_combining_layer.{name}"](
             (sequence_features, sentence_features, sequence_feature_lengths),
             training=self._training,
@@ -1683,6 +1687,7 @@ class DIET(TransformerRasaModel):
         return loss
 
     def _update_label_metrics(self, loss: tf.Tensor, acc: tf.Tensor) -> None:
+
         self.intent_loss.update_state(loss)
         self.intent_acc.update_state(acc)
 
@@ -1841,6 +1846,7 @@ class DIET(TransformerRasaModel):
         combined_sequence_sentence_feature_lengths: tf.Tensor,
         text_transformed: tf.Tensor,
     ) -> Dict[Text, tf.Tensor]:
+
         if self.all_labels_embed is None:
             raise ValueError(
                 "The model was not prepared for prediction. "

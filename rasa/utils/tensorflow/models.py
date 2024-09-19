@@ -239,7 +239,7 @@ class RasaModel(Model):
 
     @staticmethod
     def _dynamic_signature(
-        batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]],
+        batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]
     ) -> List[List[tf.TensorSpec]]:
         element_spec = []
         for tensor in batch_in:
@@ -324,9 +324,9 @@ class RasaModel(Model):
                 # We only need input, since output is always None and not
                 # consumed by our TF graphs.
                 batch_in = next(data_iterator)[0]
-                batch_out: Dict[Text, Union[np.ndarray, Dict[Text, Any]]] = (
-                    self._rasa_predict(batch_in)
-                )
+                batch_out: Dict[
+                    Text, Union[np.ndarray, Dict[Text, Any]]
+                ] = self._rasa_predict(batch_in)
                 if output_keys_expected:
                     batch_out = {
                         key: output
@@ -377,7 +377,7 @@ class RasaModel(Model):
         """Recursively replaces empty list or np array with None in a dictionary."""
 
         def _recurse(
-            x: Union[Dict[Text, Any], List[Any], np.ndarray],
+            x: Union[Dict[Text, Any], List[Any], np.ndarray]
         ) -> Optional[Union[Dict[Text, Any], List[Any], np.ndarray]]:
             if isinstance(x, dict):
                 return {k: _recurse(v) for k, v in x.items()}
@@ -889,6 +889,7 @@ class TransformerRasaModel(RasaModel):
         tag_name: Text,
         entity_tags: Optional[tf.Tensor] = None,
     ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
+
         tag_ids = tf.cast(tag_ids[:, :, 0], tf.int32)
 
         if entity_tags is not None:

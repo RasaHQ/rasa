@@ -503,6 +503,7 @@ class Agent:
         return await self.handle_message(msg)
 
     def _set_fingerprint(self, fingerprint: Optional[Text] = None) -> None:
+
         if fingerprint:
             self.fingerprint = fingerprint
         else:

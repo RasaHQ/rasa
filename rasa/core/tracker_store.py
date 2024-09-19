@@ -1109,6 +1109,7 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
                 sqlalchemy.exc.OperationalError,
                 sqlalchemy.exc.IntegrityError,
             ) as error:
+
                 logger.warning(error)
                 sleep(5)
 
@@ -1262,6 +1263,7 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
         self, sender_id: Text, fetch_events_from_all_sessions: bool
     ) -> Optional[DialogueStateTracker]:
         with self.session_scope() as session:
+
             serialised_events = self._event_query(
                 session,
                 sender_id,
@@ -1631,7 +1633,9 @@ class AwaitableTrackerStore(TrackerStore):
         """Wrapper to call `retrieve` method of primary tracker store."""
         result = self._tracker_store.retrieve(sender_id)
         return (
-            await result if isawaitable(result) else result  # type: ignore[return-value]
+            await result
+            if isawaitable(result)
+            else result  # type: ignore[return-value]
         )
 
     async def keys(self) -> Iterable[Text]:
@@ -1650,5 +1654,7 @@ class AwaitableTrackerStore(TrackerStore):
         """Wrapper to call `retrieve_full_tracker` method of primary tracker store."""
         result = self._tracker_store.retrieve_full_tracker(conversation_id)
         return (
-            await result if isawaitable(result) else result  # type: ignore[return-value]
+            await result
+            if isawaitable(result)
+            else result  # type: ignore[return-value]
         )

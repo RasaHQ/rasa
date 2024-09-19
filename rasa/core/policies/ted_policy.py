@@ -468,7 +468,7 @@ class TEDPolicy(Policy):
 
     @staticmethod
     def _should_extract_entities(
-        entity_tags: List[List[Dict[Text, List[Features]]]],
+        entity_tags: List[List[Dict[Text, List[Features]]]]
     ) -> bool:
         for turns_tags in entity_tags:
             for turn_tags in turns_tags:
@@ -1092,7 +1092,7 @@ class TEDPolicy(Policy):
 
         model = None
 
-        with contextlib.nullcontext() if config["use_gpu"] else tf.device("/cpu:0"):
+        with (contextlib.nullcontext() if config["use_gpu"] else tf.device("/cpu:0")):
             model = cls._load_tf_model(
                 model_utilities,
                 model_data_example,
@@ -1266,19 +1266,19 @@ class TED(TransformerRasaModel):
             )
             self._prepare_encoding_layers(name)
 
-        self._tf_layers[f"transformer.{DIALOGUE}"] = (
-            rasa_layers.prepare_transformer_layer(
-                attribute_name=DIALOGUE,
-                config=self.config,
-                num_layers=self.config[NUM_TRANSFORMER_LAYERS][DIALOGUE],
-                units=self.config[TRANSFORMER_SIZE][DIALOGUE],
-                drop_rate=self.config[DROP_RATE_DIALOGUE],
-                # use bidirectional transformer, because
-                # we will invert dialogue sequence so that the last turn is located
-                # at the first position and would always have
-                # exactly the same positional encoding
-                unidirectional=not self.max_history_featurizer_is_used,
-            )
+        self._tf_layers[
+            f"transformer.{DIALOGUE}"
+        ] = rasa_layers.prepare_transformer_layer(
+            attribute_name=DIALOGUE,
+            config=self.config,
+            num_layers=self.config[NUM_TRANSFORMER_LAYERS][DIALOGUE],
+            units=self.config[TRANSFORMER_SIZE][DIALOGUE],
+            drop_rate=self.config[DROP_RATE_DIALOGUE],
+            # use bidirectional transformer, because
+            # we will invert dialogue sequence so that the last turn is located
+            # at the first position and would always have
+            # exactly the same positional encoding
+            unidirectional=not self.max_history_featurizer_is_used,
         )
 
         self._prepare_label_classification_layers(DIALOGUE)
@@ -1308,23 +1308,23 @@ class TED(TransformerRasaModel):
         # Attributes with sequence-level features also have sentence-level features,
         # all these need to be combined and further processed.
         if attribute_name in SEQUENCE_FEATURES_TO_ENCODE:
-            self._tf_layers[f"sequence_layer.{attribute_name}"] = (
-                rasa_layers.RasaSequenceLayer(
-                    attribute_name, attribute_signature, config_to_use
-                )
+            self._tf_layers[
+                f"sequence_layer.{attribute_name}"
+            ] = rasa_layers.RasaSequenceLayer(
+                attribute_name, attribute_signature, config_to_use
             )
         # Attributes without sequence-level features require some actual feature
         # processing only if they have sentence-level features. Attributes with no
         # sequence- and sentence-level features (dialogue, entity_tags, label) are
         # skipped here.
         elif SENTENCE in attribute_signature:
-            self._tf_layers[f"sparse_dense_concat_layer.{attribute_name}"] = (
-                rasa_layers.ConcatenateSparseDenseFeatures(
-                    attribute=attribute_name,
-                    feature_type=SENTENCE,
-                    feature_type_signature=attribute_signature[SENTENCE],
-                    config=config_to_use,
-                )
+            self._tf_layers[
+                f"sparse_dense_concat_layer.{attribute_name}"
+            ] = rasa_layers.ConcatenateSparseDenseFeatures(
+                attribute=attribute_name,
+                feature_type=SENTENCE,
+                feature_type_signature=attribute_signature[SENTENCE],
+                config=config_to_use,
             )
 
     def _prepare_encoding_layers(self, name: Text) -> None:
@@ -1360,7 +1360,7 @@ class TED(TransformerRasaModel):
 
     @staticmethod
     def _compute_dialogue_indices(
-        tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]],
+        tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]]
     ) -> None:
         dialogue_lengths = tf.cast(tf_batch_data[DIALOGUE][LENGTH][0], dtype=tf.int32)
         # wrap in a list, because that's the structure of tf_batch_data
@@ -1399,7 +1399,7 @@ class TED(TransformerRasaModel):
 
     @staticmethod
     def _collect_label_attribute_encodings(
-        all_labels_encoded: Dict[Text, tf.Tensor],
+        all_labels_encoded: Dict[Text, tf.Tensor]
     ) -> tf.Tensor:
         # Initialize with at least one attribute first
         # so that the subsequent TF ops are simplified.
@@ -1928,6 +1928,7 @@ class TED(TransformerRasaModel):
         text_output: tf.Tensor,
         text_sequence_lengths: tf.Tensor,
     ) -> tf.Tensor:
+
         text_transformed, text_mask, text_sequence_lengths = self._reshape_for_entities(
             tf_batch_data,
             dialogue_transformer_output,
@@ -2130,6 +2131,7 @@ class TED(TransformerRasaModel):
         text_output: tf.Tensor,
         text_sequence_lengths: tf.Tensor,
     ) -> Tuple[tf.Tensor, tf.Tensor]:
+
         text_transformed, _, text_sequence_lengths = self._reshape_for_entities(
             tf_batch_data,
             dialogue_transformer_output,
