@@ -111,11 +111,11 @@ jax = "^0.4"
 jaxlib = "^0.4"
 
 # TensorFlow-related dependencies for different platforms
-tensorflow = { version = "2.12", markers = "sys_platform != 'darwin' or platform_machine != 'arm64'" }
+tensorflow = { version = "2.12.1", markers = "sys_platform != 'darwin' or platform_machine != 'arm64'" }
 tensorflow-intel = { version = "2.12", markers = "sys_platform == 'win32'" }
-tensorflow-cpu-aws = { version = "2.12", markers = "sys_platform == 'linux' and (platform_machine == 'arm64' or platform_machine == 'aarch64')" }
+tensorflow-cpu-aws = { version = "2.12.1", markers = "sys_platform == 'linux' and (platform_machine == 'arm64' or platform_machine == 'aarch64')" }
 tensorflow-macos = { version = "2.12", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'" }
-tensorflow-text = { version = "2.12", markers = "sys_platform != 'win32' and platform_machine != 'arm64' and platform_machine != 'aarch64'" }
+tensorflow-text = { version = "2.12.1", markers = "sys_platform != 'win32' and platform_machine != 'arm64' and platform_machine != 'aarch64'" }
 tensorflow-metal = { version = "^1.1", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'", optional = true }
 
 # TensorFlow IO GCS Filesystem with platform-specific markers

@@ -315,13 +315,13 @@ reference = "internal repository mirroring psycopg binary for macos"
 
 [[package]]
 name = "anyio"
-version = "4.4.0"
+version = "4.5.0"
 description = "High level compatibility layer for multiple asynchronous event loop implementations"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "anyio-4.4.0-py3-none-any.whl", hash = "sha256:c1b2d8f46a8a812513012e1107cb0e68c17159a7a594208005a57dc776e1bdc7"},
-    {file = "anyio-4.4.0.tar.gz", hash = "sha256:5aadc6a1bbb7cdb0bede386cac5e2940f5e2ff3aa20277e991cf028e0585ce94"},
+    {file = "anyio-4.5.0-py3-none-any.whl", hash = "sha256:fdeb095b7cc5a5563175eedd926ec4ae55413bb4be5770c424af0ba46ccb4a78"},
+    {file = "anyio-4.5.0.tar.gz", hash = "sha256:c5a275fe5ca0afd788001f58fca1e69e29ce706d746e317d660e21f70c530ef9"},
 ]
 
 [package.dependencies]
@@ -331,9 +331,9 @@ sniffio = ">=1.1"
 typing-extensions = {version = ">=4.1", markers = "python_version < \"3.11\""}
 
 [package.extras]
-doc = ["Sphinx (>=7)", "packaging", "sphinx-autodoc-typehints (>=1.2.0)", "sphinx-rtd-theme"]
-test = ["anyio[trio]", "coverage[toml] (>=7)", "exceptiongroup (>=1.2.0)", "hypothesis (>=4.0)", "psutil (>=5.9)", "pytest (>=7.0)", "pytest-mock (>=3.6.1)", "trustme", "uvloop (>=0.17)"]
-trio = ["trio (>=0.23)"]
+doc = ["Sphinx (>=7.4,<8.0)", "packaging", "sphinx-autodoc-typehints (>=1.2.0)", "sphinx-rtd-theme"]
+test = ["anyio[trio]", "coverage[toml] (>=7)", "exceptiongroup (>=1.2.0)", "hypothesis (>=4.0)", "psutil (>=5.9)", "pytest (>=7.0)", "pytest-mock (>=3.6.1)", "trustme", "uvloop (>=0.21.0b1)"]
+trio = ["trio (>=0.26.1)"]
 
 [package.source]
 type = "legacy"
@@ -670,17 +670,17 @@ reference = "internal repository mirroring psycopg binary for macos"
 
 [[package]]
 name = "boto3"
-version = "1.35.22"
+version = "1.35.23"
 description = "The AWS SDK for Python"
 optional = false
 python-versions = ">= 3.8"
 files = [
-    {file = "boto3-1.35.22-py3-none-any.whl", hash = "sha256:2109b632b451c1d4347a93a9abe6dc866c03db4ff1f910597f4543f1965829de"},
-    {file = "boto3-1.35.22.tar.gz", hash = "sha256:8f4f6e0860ca1b18cbb8d13f3a572a4c099577e741b10205b5604058af0e75b7"},
+    {file = "boto3-1.35.23-py3-none-any.whl", hash = "sha256:ecba4362f82e23ef775c72b3e6fdef3ef68443629b79e88886d5088302ffc050"},
+    {file = "boto3-1.35.23.tar.gz", hash = "sha256:3fbf1d5b749c92ed43aa190650979dff9f83790a42522e1e9eefa54c8e44bc4b"},
 ]
 
 [package.dependencies]
-botocore = ">=1.35.22,<1.36.0"
+botocore = ">=1.35.23,<1.36.0"
 jmespath = ">=0.7.1,<2.0.0"
 s3transfer = ">=0.10.0,<0.11.0"
 
@@ -694,13 +694,13 @@ reference = "internal repository mirroring psycopg binary for macos"
 
 [[package]]
 name = "botocore"
-version = "1.35.22"
+version = "1.35.23"
 description = "Low-level, data-driven core of boto 3."
 optional = false
 python-versions = ">= 3.8"
 files = [
-    {file = "botocore-1.35.22-py3-none-any.whl", hash = "sha256:d9bc656e7dde0b3e3f3080fc54bacff6a97fd7806b98acbcc21c7f9d4d0102b9"},
-    {file = "botocore-1.35.22.tar.gz", hash = "sha256:18362b7ec748561d786aebf1dd5c9faf22c4732efbf89344314199f96d3bbb65"},
+    {file = "botocore-1.35.23-py3-none-any.whl", hash = "sha256:cab9ec4e0367b9f33f0bc02c5a29f587b0119ecffd6d125bacee085dcbc8817d"},
+    {file = "botocore-1.35.23.tar.gz", hash = "sha256:25b17a9ccba6ad32bb5bf7ba4f52656aa03c1cb29f6b4e438050ee4ad1967a3b"},
 ]
 
 [package.dependencies]
@@ -2198,13 +2198,13 @@ reference = "internal repository mirroring psycopg binary for macos"
 
 [[package]]
 name = "google-api-core"
-version = "2.19.2"
+version = "2.20.0"
 description = "Google API client core library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "google_api_core-2.19.2-py3-none-any.whl", hash = "sha256:53ec0258f2837dd53bbd3d3df50f5359281b3cc13f800c941dd15a9b5a415af4"},
-    {file = "google_api_core-2.19.2.tar.gz", hash = "sha256:ca07de7e8aa1c98a8bfca9321890ad2340ef7f2eb136e558cee68f24b94b0a8f"},
+    {file = "google_api_core-2.20.0-py3-none-any.whl", hash = "sha256:ef0591ef03c30bb83f79b3d0575c3f31219001fc9c5cf37024d08310aeffed8a"},
+    {file = "google_api_core-2.20.0.tar.gz", hash = "sha256:f74dff1889ba291a4b76c5079df0711810e2d9da81abfdc99957bc961c1eb28f"},
 ]
 
 [package.dependencies]
@@ -2226,13 +2226,13 @@ reference = "internal repository mirroring psycopg binary for macos"
 
 [[package]]
 name = "google-auth"
-version = "2.34.0"
+version = "2.35.0"
 description = "Google Authentication Library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "google_auth-2.34.0-py2.py3-none-any.whl", hash = "sha256:72fd4733b80b6d777dcde515628a9eb4a577339437012874ea286bca7261ee65"},
-    {file = "google_auth-2.34.0.tar.gz", hash = "sha256:8eb87396435c19b20d32abd2f984e31c191a15284af72eb922f10e5bde9c04cc"},
+    {file = "google_auth-2.35.0-py2.py3-none-any.whl", hash = "sha256:25df55f327ef021de8be50bad0dfd4a916ad0de96da86cd05661c9297723ad3f"},
+    {file = "google_auth-2.35.0.tar.gz", hash = "sha256:f4c64ed4e01e8e8b646ef34c018f8bf3338df0c8e37d8b3bba40e7f574a3278a"},
 ]
 
 [package.dependencies]
@@ -5071,13 +5071,13 @@ reference = "internal repository mirroring psycopg binary for macos"
 
 [[package]]
 name = "pyreadline3"
-version = "3.5.3"
+version = "3.5.4"
 description = "A python implementation of GNU readline."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "pyreadline3-3.5.3-py3-none-any.whl", hash = "sha256:ddede153a92e5aad9c1fe63d692efd6a3e478f686adcd4938a051ffb63ec4f52"},
-    {file = "pyreadline3-3.5.3.tar.gz", hash = "sha256:9234684ca75a00a702fda42b17cc26ca665bc9d7c2da06af450468253099ff61"},
+    {file = "pyreadline3-3.5.4-py3-none-any.whl", hash = "sha256:eaf8e6cc3c49bcccf145fc6067ba8643d1df34d604a1ec0eccbf7a18e6d3fae6"},
+    {file = "pyreadline3-3.5.4.tar.gz", hash = "sha256:8d57d53039a1c75adba8e50dd3d992b28143480816187ea5efbd5c78e6c885b7"},
 ]
 
 [package.extras]
@@ -6645,13 +6645,13 @@ reference = "internal repository mirroring psycopg binary for macos"
 
 [[package]]
 name = "slack-sdk"
-version = "3.33.0"
+version = "3.33.1"
 description = "The Slack API Platform SDK for Python"
 optional = false
 python-versions = ">=3.6"
 files = [
-    {file = "slack_sdk-3.33.0-py2.py3-none-any.whl", hash = "sha256:853bb55154115d080cae342c4099f2ccb559a78ae8d0f5109b49842401a920fa"},
-    {file = "slack_sdk-3.33.0.tar.gz", hash = "sha256:070eb1fb355c149a5f80fa0be6eeb5f5588e4ddff4dd76acf060454435cb037e"},
+    {file = "slack_sdk-3.33.1-py2.py3-none-any.whl", hash = "sha256:ef93beec3ce9c8f64da02fd487598a05ec4bc9c92ceed58f122dbe632691cbe2"},
+    {file = "slack_sdk-3.33.1.tar.gz", hash = "sha256:e328bb661d95db5f66b993b1d64288ac7c72201a745b4c7cf8848dafb7b74e40"},
 ]
 
 [package.extras]
@@ -7112,27 +7112,27 @@ reference = "internal repository mirroring psycopg binary for macos"
 
 [[package]]
 name = "tensorflow"
-version = "2.12.0"
+version = "2.12.1"
 description = "TensorFlow is an open source machine learning framework for everyone."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "tensorflow-2.12.0-cp310-cp310-macosx_10_15_x86_64.whl", hash = "sha256:be4ac0dfcc7a16f6df2bc19bd322e312235ab3f7b0c7297f96c92c44bb14d2a1"},
-    {file = "tensorflow-2.12.0-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:c5193ddb3bb5120cb445279beb08ed9e74a85a4eeb2485550d6fb707a89d9a88"},
-    {file = "tensorflow-2.12.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:357d9d2851188a8d27ee195345b4d175cad970150d1344ba9d9fcc4bf2b68336"},
-    {file = "tensorflow-2.12.0-cp310-cp310-win_amd64.whl", hash = "sha256:c8001210df7202ef6267150865b0b79f834c3ca69ee3132277de8eeb994dffde"},
-    {file = "tensorflow-2.12.0-cp311-cp311-macosx_10_15_x86_64.whl", hash = "sha256:91dccda42c03569d8c787190482a11ecae3b9b173aaa9166f0ab20cecc9c31f4"},
-    {file = "tensorflow-2.12.0-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:31f81eb8adaeb558963f5d8b47dbfcc398d898f0857bf3de6b6484350236b7b5"},
-    {file = "tensorflow-2.12.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:6ec4a2934ea19e92f27a9668ece43025ed5efe14b5d19be53b07692bc8a4189d"},
-    {file = "tensorflow-2.12.0-cp311-cp311-win_amd64.whl", hash = "sha256:6e7641e2a6e32f31ff233495478a9cc86b7c038140eab714a61eeddbbbb327c3"},
-    {file = "tensorflow-2.12.0-cp38-cp38-macosx_10_15_x86_64.whl", hash = "sha256:a7194e744c5a7f3e759ecb949527b4a07718a6d1110e6e82fd4ce0c5586a7d4a"},
-    {file = "tensorflow-2.12.0-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:4afc2dd57435f29ebe249eb5f595d89b0e73be94922eeb7110aa6280a332837c"},
-    {file = "tensorflow-2.12.0-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:23850332f1f9f778d697c9dba63ca52be72cb73363e75ad358f07ddafef63c01"},
-    {file = "tensorflow-2.12.0-cp38-cp38-win_amd64.whl", hash = "sha256:e29fcf6cfd069aefb4b44f357cccbb4415a5a3d7b5b516eaf4450062fe40021e"},
-    {file = "tensorflow-2.12.0-cp39-cp39-macosx_10_15_x86_64.whl", hash = "sha256:42fc2635e9420faee781a16bd393126f29cd39aa2b9d02901f24d8497bd6f958"},
-    {file = "tensorflow-2.12.0-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:76414355e420edb9154b4e72113eef5813ccb71701fda959afbbc1eebe3099bd"},
-    {file = "tensorflow-2.12.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:020d6a54cb26020bdc71a7bae8ee35be05096f63e773dc517f6e87c49de62c50"},
-    {file = "tensorflow-2.12.0-cp39-cp39-win_amd64.whl", hash = "sha256:9f70a8f9ab46e5ed436850aa60d1cd40645f5c669e14bcad48915dc1f597dda2"},
+    {file = "tensorflow-2.12.1-cp310-cp310-macosx_10_15_x86_64.whl", hash = "sha256:58914fcea59b92fb535c839e202c26a7e47a55a03547502431bf9aa99b84a867"},
+    {file = "tensorflow-2.12.1-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:2617409297289cbddd45bf12c443a5c9273610b56dba2989f57c6626fef9896e"},
+    {file = "tensorflow-2.12.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:721da3bd6454d696d07b4a5d786db91650a5b662933aca32b9d8c39160eb1727"},
+    {file = "tensorflow-2.12.1-cp310-cp310-win_amd64.whl", hash = "sha256:0608ef582920a096723343f6d480968481d810e59a27924b63be087c278a4b68"},
+    {file = "tensorflow-2.12.1-cp311-cp311-macosx_10_15_x86_64.whl", hash = "sha256:27aa1a93d44c30d84cc287fe10b94a03363e6c9350f9ae9d1d889aa892fc67b8"},
+    {file = "tensorflow-2.12.1-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:4e651b4314c79693b6defd25ba4608e8c003b7f7bbea3e22d08535cd96ad8e4e"},
+    {file = "tensorflow-2.12.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:857a1e331cc34f399236642dbf4ac8f3ca4f36e2df04e45516819db1b3c827c1"},
+    {file = "tensorflow-2.12.1-cp311-cp311-win_amd64.whl", hash = "sha256:4575641b7803dd87adbd0d610da147c08399c1aa7eac3505deedbad71671cc28"},
+    {file = "tensorflow-2.12.1-cp38-cp38-macosx_10_15_x86_64.whl", hash = "sha256:af855bf03d51b10aa500427c025ae81f08a97ccbcb864f432c9336b916af2004"},
+    {file = "tensorflow-2.12.1-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:2670f3cbefa6adf9f839ff8849ffaa80686b73d7fb70a10e4cf969463e0b69ae"},
+    {file = "tensorflow-2.12.1-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:88f47e035d34f3eca5d7f27278d59b129240ad9a9780408c1ce717d6cd583a3f"},
+    {file = "tensorflow-2.12.1-cp38-cp38-win_amd64.whl", hash = "sha256:3a7527d3d1672bea53c327ff3c6f6f10206fa1d0df0fb8dcdf71e512037f35c8"},
+    {file = "tensorflow-2.12.1-cp39-cp39-macosx_10_15_x86_64.whl", hash = "sha256:383b28b254c6079644e6a8f08583db60488bb1e50d19b99e003103eb7f6cb6f3"},
+    {file = "tensorflow-2.12.1-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:bb0b21cc715b62e30c7916196252f62fc6d183d6ce74a772a1f7ed246a887ff1"},
+    {file = "tensorflow-2.12.1-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:4856c8e3f45df4dd7bc1f47cdf275bdb759895d386141d8234f4d83f58707db7"},
+    {file = "tensorflow-2.12.1-cp39-cp39-win_amd64.whl", hash = "sha256:7ed56c28031ad10d0d48f5b5375034e79b31ab166ded9318152174670798d537"},
 ]
 
 [package.dependencies]
@@ -7146,7 +7146,7 @@ h5py = ">=2.9.0"
 jax = ">=0.3.15"
 keras = ">=2.12.0,<2.13"
 libclang = ">=13.0.0"
-numpy = ">=1.22,<1.24"
+numpy = ">=1.22,<=1.24.3"
 opt-einsum = ">=2.3.2"
 packaging = "*"
 protobuf = ">=3.20.3,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<5.0.0dev"
@@ -7156,7 +7156,7 @@ tensorboard = ">=2.12,<2.13"
 tensorflow-estimator = ">=2.12.0,<2.13"
 tensorflow-io-gcs-filesystem = {version = ">=0.23.1", markers = "platform_machine != \"arm64\" or platform_system != \"Darwin\""}
 termcolor = ">=1.1.0"
-typing-extensions = ">=3.6.6"
+typing-extensions = ">=3.6.6,<4.6.0"
 wrapt = ">=1.11.0,<1.15"
 
 [package.source]
@@ -7166,15 +7166,15 @@ reference = "internal repository mirroring psycopg binary for macos"
 
 [[package]]
 name = "tensorflow-cpu-aws"
-version = "2.12.0"
+version = "2.12.1"
 description = "TensorFlow is an open source machine learning framework for everyone."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "tensorflow_cpu_aws-2.12.0-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:d3d5f0cb1bdec07157220f95620af0a25b170273cec9a9b26b3f51229220b965"},
-    {file = "tensorflow_cpu_aws-2.12.0-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:92cc4ff90710a2dfa901994503a65545a75ea7a7ffe830344c201d4a5eee1190"},
-    {file = "tensorflow_cpu_aws-2.12.0-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:8b527847d00ec39e10cd3f92fc925cf89ae51944edcba46eea26bb6af276ff35"},
-    {file = "tensorflow_cpu_aws-2.12.0-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:3eb8c4d34161cb2af4adebdb71edb25a390d4610c5254e39ac5a790eff2c7ba8"},
+    {file = "tensorflow_cpu_aws-2.12.1-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:a3e26d75c373877a243d6cc8fe7b17ab5d7707cdd432d15095fcd24035515436"},
+    {file = "tensorflow_cpu_aws-2.12.1-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:7c3ead9d34f0a32a7dd0714c713a9e71361228620ffd7d0aa633b8c88a27971c"},
+    {file = "tensorflow_cpu_aws-2.12.1-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:ac69fa90a972945219e3c18df75004ae8037450285d5e4f1f1e1ed7c5c12d9a6"},
+    {file = "tensorflow_cpu_aws-2.12.1-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:18a8dc1c1d5f2cb8b0073b51ef270eca1f591d2d17d1f00eaf6400ea15304cf0"},
 ]
 
 [package.dependencies]
@@ -7188,7 +7188,7 @@ h5py = ">=2.9.0"
 jax = ">=0.3.15"
 keras = ">=2.12.0,<2.13"
 libclang = ">=13.0.0"
-numpy = ">=1.22,<1.24"
+numpy = ">=1.22,<=1.24.3"
 opt-einsum = ">=2.3.2"
 packaging = "*"
 protobuf = ">=3.20.3,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<5.0.0dev"
@@ -7198,7 +7198,7 @@ tensorboard = ">=2.12,<2.13"
 tensorflow-estimator = ">=2.12.0,<2.13"
 tensorflow-io-gcs-filesystem = {version = ">=0.23.1", markers = "platform_machine != \"arm64\" or platform_system != \"Darwin\""}
 termcolor = ">=1.1.0"
-typing-extensions = ">=3.6.6"
+typing-extensions = ">=3.6.6,<4.6.0"
 wrapt = ">=1.11.0,<1.15"
 
 [package.source]
@@ -7389,19 +7389,19 @@ reference = "internal repository mirroring psycopg binary for macos"
 
 [[package]]
 name = "tensorflow-text"
-version = "2.12.0"
+version = "2.12.1"
 description = "TF.Text is a TensorFlow library of text related ops, modules, and subgraphs."
 optional = false
 python-versions = "*"
 files = [
-    {file = "tensorflow_text-2.12.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:6eedfb6a57c2b7dd320aa2b1dd3662c85de3c62fa74cec17a619836ae38e823a"},
-    {file = "tensorflow_text-2.12.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:a101244702c1a618ab29d1e034ccadccd290538670f08b3a845d8160a313fd39"},
-    {file = "tensorflow_text-2.12.0-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:f88a3f57b0ba2561d979038420d12ac1d3892a0c89f9918df686fe041afec61c"},
-    {file = "tensorflow_text-2.12.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:0ac0e01501165e2eaf70d90c054069ac74c24f311ac576c616ef925408918904"},
-    {file = "tensorflow_text-2.12.0-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:c7444166a76b993c0918909e7c4378c61148a079f347a3fba8017f6b820a8fcf"},
-    {file = "tensorflow_text-2.12.0-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:6e029bdbfe3678054463a58a5d76e9d7f78052848369f32316ba1bd5e6fd632a"},
-    {file = "tensorflow_text-2.12.0-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:1562c3ae0893402ca5175c3c6002a4d6cbac6fbce4eee6c7798a30c12d0ffcc0"},
-    {file = "tensorflow_text-2.12.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:332a65951576c174183df2c25df4e9a8a34e254cc5862fd8c27401eb17658bb3"},
+    {file = "tensorflow_text-2.12.1-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:a04956680ad5d08f21ddcd5d0c21ebf90b5cdb2edd6f0859e833d62e2640f4c2"},
+    {file = "tensorflow_text-2.12.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:6d4cfd03f7cc9751f92f5692f5dfc32aa86e65403a300681edfc74bc41a32e24"},
+    {file = "tensorflow_text-2.12.1-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:d834d63052be092246ed3374fe2beaaea40a64a29904104b00a93519fd63a6ca"},
+    {file = "tensorflow_text-2.12.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:9d5751ff8ad3eea2f32641e65bf29814a1b6059f0dc0ccb09d44676f26fbf6ac"},
+    {file = "tensorflow_text-2.12.1-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:625e72e2f444c41243556c3155b48eef78127988e6e0aa43adcab2998caed268"},
+    {file = "tensorflow_text-2.12.1-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:d196d43d8bdcc80153c097485c7c24862c550ef129423323f9a18cf1a4241598"},
+    {file = "tensorflow_text-2.12.1-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:4963d6bb0e5741ea8d2426e2f2c98fa9267b45bcc8304be78740e874f2094df9"},
+    {file = "tensorflow_text-2.12.1-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:82a716b3b87551cc8b917629a7ac04abe1028815a7d4e0c8aa366ee613dca343"},
 ]
 
 [package.dependencies]
@@ -7410,7 +7410,7 @@ tensorflow-hub = ">=0.8.0"
 
 [package.extras]
 tensorflow-cpu = ["tensorflow-cpu (>=2.12.0,<2.13)"]
-tests = ["absl-py", "pytest", "tensorflow-datasets (>=3.2.0)"]
+tests = ["absl-py", "pytest", "tensorflow-datasets (<4.9.0)"]
 
 [package.source]
 type = "legacy"
@@ -8853,4 +8853,4 @@ transformers = ["sentencepiece", "transformers"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10, <3.11"
-content-hash = "fe116cdfb42ab630304a9be9b14e02bb6dd044959dc40a01a374f1bc3028a916"
+content-hash = "6ee58cfe409679b5a4ea80531a76b5831b71e931bd6e4891500e9cbdd4b3a06d"
