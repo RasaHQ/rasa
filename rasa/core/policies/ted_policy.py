@@ -949,7 +949,7 @@ class TEDPolicy(Policy):
                 checkpoint_marker = model_path / f"{model_filename}.from_checkpoint.pkl"
                 checkpoint_marker.touch()
 
-            self.model.save(str(tf_model_file), save_format="h5")
+            self.model.save(str(tf_model_file))
 
             self.persist_model_utilities(model_path)
 
