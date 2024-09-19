@@ -147,7 +147,8 @@ jobs:
           # Build and push the image to both GCP and Docker Hub using multiple tags
           docker buildx bake \
             --set *.platform=linux/amd64,linux/arm64 \
-            --set default.tags="${GCP_IMAGE_TAG},${DOCKER_HUB_IMAGE_TAG}" \
+            --set default.tags="${GCP_IMAGE_TAG}" \
+            --set default.tags="${DOCKER_HUB_IMAGE_TAG}" \
             -f docker/docker-bake.hcl \
             default \
             --push
@@ -228,12 +229,12 @@ jobs:
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
 
-      - name: Notify Slack of unsuccessful release ⛔️
-        if: failure()
-        uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 #v 1.25.0
-        with:
-           # Send notication to #devtribe slack channel
-           channel-id: "C061J0LGHU0"
-           slack-message: ":broken_heart: *Rasa Private* release version `${{ env.TAG_VERSION }}` has failed! More information can be found <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|here>."
-        env:
-           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      # - name: Notify Slack of unsuccessful release ⛔️
+      #   if: failure()
+      #   uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 #v 1.25.0
+      #   with:
+      #      # Send notication to #devtribe slack channel
+      #      channel-id: "C061J0LGHU0"
+      #      slack-message: ":broken_heart: *Rasa Private* release version `${{ env.TAG_VERSION }}` has failed! More information can be found <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|here>."
+      #   env:
+      #      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
