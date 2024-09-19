@@ -70,6 +70,12 @@ jobs:
         with:
            workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER_OIDC}}
            service_account: "github-actions-oidc-atom@rasa-releases.iam.gserviceaccount.com"
+      
+      - name: Authenticate with Docker Hub
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@98ddc00a17442e89a24bbf282954a3b65ce6d200 # v2.1.0
@@ -132,24 +138,23 @@ jobs:
         run: |
            ./scripts/write_keys_file.sh
 
-      - name: Build and push rasa-pro docker image to GCP
+      - name: Build and push rasa-pro docker image to GCP and Docker Hub
         run: |
-           IMAGE_TAG=${TAG_VERSION} docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl default --push
-        env:
-           BASE_IMAGE_HASH: ${{ steps.check_image.outputs.base_image_hash }}
-           RASA_DEPS_IMAGE_HASH: ${{ steps.check_image.outputs.rasa_deps_image_hash }}
+          # Set up the Docker Hub and GCP image tags
+          GCP_IMAGE_TAG=${{ env.TARGET_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${TAG_VERSION}
+          DOCKER_HUB_IMAGE_TAG=docker.io/rasadeploy/${{ env.IMAGE_NAME }}:${TAG_VERSION}
       
-      - name: Log in to Docker Hub
-        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Push rasa-pro docker image to Docker Hub
-        run: |
-          docker images
-          docker tag rasa/rasa-pro:${TAG_VERSION} rasadeploy/rasa-pro:${TAG_VERSION}
-          docker push ${{ env.TARGET_IMAGE_REGISTRY }}/rasa-pro:${TAG_VERSION}
+          # Build and push the image to both GCP and Docker Hub using multiple tags
+          docker buildx bake \
+            --set *.platform=linux/amd64,linux/arm64 \
+            --set default.tags="${GCP_IMAGE_TAG},${DOCKER_HUB_IMAGE_TAG}" \
+            -f docker/docker-bake.hcl \
+            default \
+            --push
+        env:
+          BASE_IMAGE_HASH: ${{ steps.check_image.outputs.base_image_hash }}
+          RASA_DEPS_IMAGE_HASH: ${{ steps.check_image.outputs.rasa_deps_image_hash }}
+          IMAGE_NAME: rasa-pro
       
       - name: Set up Python 3.9 🐍
         uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
