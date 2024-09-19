@@ -1075,7 +1075,7 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
                 checkpoint_marker = model_path / f"{file_name}.from_checkpoint.pkl"
                 checkpoint_marker.touch()
 
-            self.model.save(str(tf_model_file))
+            self.model.save(str(tf_model_file), save_format="h5")
 
             io_utils.pickle_dump(
                 model_path / f"{file_name}.data_example.pkl", self._data_example
