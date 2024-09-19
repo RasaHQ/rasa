@@ -625,7 +625,7 @@ reference = "internal repository mirroring psycopg binary for macos"
 name = "blis"
 version = "0.7.9"
 description = "The Blis BLAS-like linear algebra library, as a self-contained C-extension."
-optional = false
+optional = true
 python-versions = "*"
 files = [
     {file = "blis-0.7.9-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:b3ea73707a7938304c08363a0b990600e579bfb52dece7c674eafac4bf2df9f7"},
@@ -759,7 +759,7 @@ reference = "internal repository mirroring psycopg binary for macos"
 name = "catalogue"
 version = "2.0.8"
 description = "Super lightweight function registries for your library"
-optional = false
+optional = true
 python-versions = ">=3.6"
 files = [
     {file = "catalogue-2.0.8-py3-none-any.whl", hash = "sha256:2d786e229d8d202b4f8a2a059858e45a2331201d831e39746732daa704b99f69"},
@@ -998,7 +998,7 @@ reference = "internal repository mirroring psycopg binary for macos"
 name = "cloudpathlib"
 version = "0.19.0"
 description = "pathlib-style classes for cloud storage services."
-optional = false
+optional = true
 python-versions = ">=3.8"
 files = [
     {file = "cloudpathlib-0.19.0-py3-none-any.whl", hash = "sha256:eb7758648812d5906af44f14cf9a6a64f687342a6f547a1c20deb7241d769dcb"},
@@ -1112,7 +1112,7 @@ reference = "internal repository mirroring psycopg binary for macos"
 name = "confection"
 version = "0.1.0"
 description = "The sweetest config system for Python"
-optional = false
+optional = true
 python-versions = ">=3.6"
 files = [
     {file = "confection-0.1.0-py3-none-any.whl", hash = "sha256:1d6de16297efe937efaad13f83f45467dedc05acafdb0fb16074299a9c683d85"},
@@ -1419,7 +1419,7 @@ reference = "internal repository mirroring psycopg binary for macos"
 name = "cymem"
 version = "2.0.7"
 description = "Manage calls to calloc/free through Cython"
-optional = false
+optional = true
 python-versions = "*"
 files = [
     {file = "cymem-2.0.7-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:4981fc9182cc1fe54bfedf5f73bfec3ce0c27582d9be71e130c46e35958beef0"},
@@ -2134,6 +2134,32 @@ files = [
 
 [package.dependencies]
 smmap = ">=3.0.1,<6"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.org/simple"
+reference = "internal repository mirroring psycopg binary for macos"
+
+[[package]]
+name = "github3-py"
+version = "4.0.1"
+description = "Python wrapper for the GitHub API(http://developer.github.com/v3)"
+optional = true
+python-versions = ">=3.7"
+files = [
+    {file = "github3.py-4.0.1-py3-none-any.whl", hash = "sha256:a89af7de25650612d1da2f0609622bcdeb07ee8a45a1c06b2d16a05e4234e753"},
+    {file = "github3.py-4.0.1.tar.gz", hash = "sha256:30d571076753efc389edc7f9aaef338a4fcb24b54d8968d5f39b1342f45ddd36"},
+]
+
+[package.dependencies]
+pyjwt = {version = ">=2.3.0", extras = ["crypto"]}
+python-dateutil = ">=2.6.0"
+requests = ">=2.18"
+uritemplate = ">=3.0.0"
+
+[package.extras]
+dev = ["build", "github3-py[test]", "tox (>=3.1.3)", "twine", "wheel"]
+test = ["betamax (>=0.5.1)", "betamax-matchers (>=0.3.0)", "pytest (>=7.0)", "pytest-xdist[psutil]"]
 
 [package.source]
 type = "legacy"
@@ -2975,6 +3001,21 @@ url = "https://pypi.org/simple"
 reference = "internal repository mirroring psycopg binary for macos"
 
 [[package]]
+name = "jieba"
+version = "0.42.1"
+description = "Chinese Words Segmentation Utilities"
+optional = true
+python-versions = "*"
+files = [
+    {file = "jieba-0.42.1.tar.gz", hash = "sha256:055ca12f62674fafed09427f176506079bc135638a14e23e25be909131928db2"},
+]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.org/simple"
+reference = "internal repository mirroring psycopg binary for macos"
+
+[[package]]
 name = "jinja2"
 version = "3.1.2"
 description = "A very fast and expressive template engine."
@@ -3195,7 +3236,7 @@ reference = "internal repository mirroring psycopg binary for macos"
 name = "langcodes"
 version = "3.3.0"
 description = "Tools for labeling human languages with IETF language tags"
-optional = false
+optional = true
 python-versions = ">=3.6"
 files = [
     {file = "langcodes-3.3.0-py3-none-any.whl", hash = "sha256:4d89fc9acb6e9c8fdef70bcdf376113a3db09b67285d9e1d534de6d8818e7e69"},
@@ -3796,7 +3837,7 @@ reference = "internal repository mirroring psycopg binary for macos"
 name = "murmurhash"
 version = "1.0.9"
 description = "Cython bindings for MurmurHash"
-optional = false
+optional = true
 python-versions = ">=3.6"
 files = [
     {file = "murmurhash-1.0.9-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:697ed01454d92681c7ae26eb1adcdc654b54062bcc59db38ed03cad71b23d449"},
@@ -4477,7 +4518,7 @@ reference = "internal repository mirroring psycopg binary for macos"
 name = "preshed"
 version = "3.0.8"
 description = "Cython hash table that trusts the keys are pre-hashed"
-optional = false
+optional = true
 python-versions = ">=3.6"
 files = [
     {file = "preshed-3.0.8-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:ea4b6df8ef7af38e864235256793bc3056e9699d991afcf6256fa298858582fc"},
@@ -4727,7 +4768,7 @@ reference = "internal repository mirroring psycopg binary for macos"
 name = "pydantic"
 version = "1.10.9"
 description = "Data validation and settings management using python type hints"
-optional = false
+optional = true
 python-versions = ">=3.7"
 files = [
     {file = "pydantic-1.10.9-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:e692dec4a40bfb40ca530e07805b1208c1de071a18d26af4a2a0d79015b352ca"},
@@ -5247,7 +5288,7 @@ reference = "internal repository mirroring psycopg binary for macos"
 name = "python-dotenv"
 version = "1.0.1"
 description = "Read key-value pairs from a .env file and set them as environment variables"
-optional = false
+optional = true
 python-versions = ">=3.8"
 files = [
     {file = "python-dotenv-1.0.1.tar.gz", hash = "sha256:e324ee90a023d808f1959c46bcbc04446a10ced277783dc6ee09987c37ec10ca"},
@@ -6584,7 +6625,7 @@ reference = "internal repository mirroring psycopg binary for macos"
 name = "smart-open"
 version = "6.3.0"
 description = "Utils for streaming large files (S3, HDFS, GCS, Azure Blob Storage, gzip, bz2...)"
-optional = false
+optional = true
 python-versions = ">=3.6,<4.0"
 files = [
     {file = "smart_open-6.3.0-py3-none-any.whl", hash = "sha256:b4c9ae193ad6d3e7add50944b86afa0d150bd821ab8ec21edb26d9a06b66f6a8"},
@@ -6658,7 +6699,7 @@ reference = "internal repository mirroring psycopg binary for macos"
 name = "spacy"
 version = "3.7.6"
 description = "Industrial-strength Natural Language Processing (NLP) in Python"
-optional = false
+optional = true
 python-versions = ">=3.7"
 files = [
     {file = "spacy-3.7.6-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:8b0862280d10b063faffab597225f53873a790d02634dedfaffb70fb696b70a0"},
@@ -6737,7 +6778,7 @@ reference = "internal repository mirroring psycopg binary for macos"
 name = "spacy-legacy"
 version = "3.0.12"
 description = "Legacy registered functions for spaCy backwards compatibility"
-optional = false
+optional = true
 python-versions = ">=3.6"
 files = [
     {file = "spacy-legacy-3.0.12.tar.gz", hash = "sha256:b37d6e0c9b6e1d7ca1cf5bc7152ab64a4c4671f59c85adaf7a3fcb870357a774"},
@@ -6753,7 +6794,7 @@ reference = "internal repository mirroring psycopg binary for macos"
 name = "spacy-loggers"
 version = "1.0.4"
 description = "Logging utilities for SpaCy"
-optional = false
+optional = true
 python-versions = ">=3.6"
 files = [
     {file = "spacy-loggers-1.0.4.tar.gz", hash = "sha256:e6f983bf71230091d5bb7b11bf64bd54415eca839108d5f83d9155d0ba93bf28"},
@@ -6855,7 +6896,7 @@ reference = "internal repository mirroring psycopg binary for macos"
 name = "srsly"
 version = "2.4.6"
 description = "Modern high-performance serialization utilities for Python"
-optional = false
+optional = true
 python-versions = ">=3.6"
 files = [
     {file = "srsly-2.4.6-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:9b96569976420be2ac3716db9ac05b06bf4cd7a358953879ba34f03c9533c123"},
@@ -7213,41 +7254,6 @@ reference = "internal repository mirroring psycopg binary for macos"
 
 [[package]]
 name = "tensorflow-io-gcs-filesystem"
-version = "0.32.0"
-description = "TensorFlow IO"
-optional = false
-python-versions = ">=3.7, <3.12"
-files = [
-    {file = "tensorflow_io_gcs_filesystem-0.32.0-cp310-cp310-macosx_10_14_x86_64.whl", hash = "sha256:74a7e25e83d4117a7ebb09a3f247553a5497393ab48c3ee0cf0d17b405026817"},
-    {file = "tensorflow_io_gcs_filesystem-0.32.0-cp310-cp310-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:045d51bba586390d0545fcd8a18727d62b175eb142f6f4c6d719d39de40774cd"},
-    {file = "tensorflow_io_gcs_filesystem-0.32.0-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:db682e9a510c27dd35710ba5a2c62c371e25b727741b2fe3a920355fa501e947"},
-    {file = "tensorflow_io_gcs_filesystem-0.32.0-cp311-cp311-macosx_10_14_x86_64.whl", hash = "sha256:7f15fd22e592661b10de317be2f42a0f84be7bfc5e6a565fcfcb04b60d625b78"},
-    {file = "tensorflow_io_gcs_filesystem-0.32.0-cp311-cp311-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:336d9b3fe6b55aea149c4f6aa1fd6ffaf27d4e5c37e55a182340b47caba38846"},
-    {file = "tensorflow_io_gcs_filesystem-0.32.0-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:842f5f09cd756bdb3b4d0b5571b3a6f72fd534d42da938b9acf0ef462995eada"},
-    {file = "tensorflow_io_gcs_filesystem-0.32.0-cp37-cp37m-macosx_10_14_x86_64.whl", hash = "sha256:1ce80e1555d6ee88dda67feddf366cc8b30252b5837a7a17303df7b06a71fc2e"},
-    {file = "tensorflow_io_gcs_filesystem-0.32.0-cp37-cp37m-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:05e65d3cb6c93a7929b384d86c6369c63cbbab8a770440a3d95e094878403f9f"},
-    {file = "tensorflow_io_gcs_filesystem-0.32.0-cp38-cp38-macosx_10_14_x86_64.whl", hash = "sha256:21de7dcc06eb1e7de3c022b0072d90ba35ef886578149663437aa7a6fb5bf6b3"},
-    {file = "tensorflow_io_gcs_filesystem-0.32.0-cp38-cp38-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:79fdd02103b8ae9f8b89af41f744c013fa1caaea709de19833917795e3063857"},
-    {file = "tensorflow_io_gcs_filesystem-0.32.0-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:5635df0bbe40f971dc1b946e3372744b0bdfda45c38ffcd28ef53a32bb8da4da"},
-    {file = "tensorflow_io_gcs_filesystem-0.32.0-cp39-cp39-macosx_10_14_x86_64.whl", hash = "sha256:122be149e5f6a030f5c2901be0cc3cb07619232f7b03889e2cdf3da1c0d4f92f"},
-    {file = "tensorflow_io_gcs_filesystem-0.32.0-cp39-cp39-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:8214cdf85bea694160f9035ff395221c1e25e119784ccb4c104919b1f5dec84e"},
-    {file = "tensorflow_io_gcs_filesystem-0.32.0-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:28202492d904a6e280cf27560791e87ac1c7566000db82065d63a70c27008af2"},
-]
-
-[package.extras]
-tensorflow = ["tensorflow (>=2.12.0,<2.13.0)"]
-tensorflow-aarch64 = ["tensorflow-aarch64 (>=2.12.0,<2.13.0)"]
-tensorflow-cpu = ["tensorflow-cpu (>=2.12.0,<2.13.0)"]
-tensorflow-gpu = ["tensorflow-gpu (>=2.12.0,<2.13.0)"]
-tensorflow-rocm = ["tensorflow-rocm (>=2.12.0,<2.13.0)"]
-
-[package.source]
-type = "legacy"
-url = "https://pypi.org/simple"
-reference = "internal repository mirroring psycopg binary for macos"
-
-[[package]]
-name = "tensorflow-io-gcs-filesystem"
 version = "0.37.1"
 description = "TensorFlow IO"
 optional = false
@@ -7435,7 +7441,7 @@ reference = "internal repository mirroring psycopg binary for macos"
 name = "thinc"
 version = "8.2.5"
 description = "A refreshing functional take on deep learning, compatible with your favorite libraries"
-optional = false
+optional = true
 python-versions = ">=3.6"
 files = [
     {file = "thinc-8.2.5-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:dc267f6aad80a681a85f50383afe91da9e2bec56fefdda86bfa2e4f529bef191"},
@@ -7881,7 +7887,7 @@ reference = "internal repository mirroring psycopg binary for macos"
 name = "typer"
 version = "0.9.0"
 description = "Typer, build great CLIs. Easy to code. Based on Python type hints."
-optional = false
+optional = true
 python-versions = ">=3.6"
 files = [
     {file = "typer-0.9.0-py3-none-any.whl", hash = "sha256:5d96d986a21493606a358cae4461bd8cdf83cbf33a5aa950ae629ca3b51467ee"},
@@ -8207,6 +8213,22 @@ url = "https://pypi.org/simple"
 reference = "internal repository mirroring psycopg binary for macos"
 
 [[package]]
+name = "uritemplate"
+version = "4.1.1"
+description = "Implementation of RFC 6570 URI Templates"
+optional = true
+python-versions = ">=3.6"
+files = [
+    {file = "uritemplate-4.1.1-py2.py3-none-any.whl", hash = "sha256:830c08b8d99bdd312ea4ead05994a38e8936266f84b9a7878232db50b044e02e"},
+    {file = "uritemplate-4.1.1.tar.gz", hash = "sha256:4346edfc5c3b79f694bccd6d6099a322bbeb628dbf2cd86eea55a456ce5124f0"},
+]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.org/simple"
+reference = "internal repository mirroring psycopg binary for macos"
+
+[[package]]
 name = "urllib3"
 version = "1.26.17"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
@@ -8280,7 +8302,7 @@ reference = "internal repository mirroring psycopg binary for macos"
 name = "wasabi"
 version = "1.1.2"
 description = "A lightweight console printing and formatting toolkit"
-optional = false
+optional = true
 python-versions = ">=3.6"
 files = [
     {file = "wasabi-1.1.2-py3-none-any.whl", hash = "sha256:0a3f933c4bf0ed3f93071132c1b87549733256d6c8de6473c5f7ed2e171b5cf9"},
@@ -8359,7 +8381,7 @@ reference = "internal repository mirroring psycopg binary for macos"
 name = "weasel"
 version = "0.4.1"
 description = "Weasel: A small and easy workflow system"
-optional = false
+optional = true
 python-versions = ">=3.7"
 files = [
     {file = "weasel-0.4.1-py3-none-any.whl", hash = "sha256:24140a090ea1ac512a2b2f479cc64192fd1d527a7f3627671268d08ed5ac418c"},
@@ -8806,11 +8828,14 @@ url = "https://pypi.org/simple"
 reference = "internal repository mirroring psycopg binary for macos"
 
 [extras]
-full = ["sentencepiece", "transformers"]
+full = ["jieba", "sentencepiece", "spacy", "spacy", "transformers"]
+gh-release-notes = ["github3.py"]
+jieba = ["jieba"]
 metal = ["tensorflow-metal"]
+spacy = ["spacy", "spacy"]
 transformers = ["sentencepiece", "transformers"]
 
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10, <3.11"
-content-hash = "6ee58cfe409679b5a4ea80531a76b5831b71e931bd6e4891500e9cbdd4b3a06d"
+content-hash = "555f92394ed40e3ec8dc8b24ddf8f43e38f60bcebc1541f70bbd667a71348f7d"
