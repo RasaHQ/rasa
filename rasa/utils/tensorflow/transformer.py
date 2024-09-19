@@ -4,8 +4,8 @@ import numpy as np
 import tensorflow as tf
 
 # TODO: The following is not (yet) available via tf.keras
-from tensorflow.python.keras.utils.control_flow_util import smart_cond
-from tensorflow.python.keras import backend as K
+from keras.utils.control_flow_util import smart_cond
+from tensorflow.keras import backend as K
 
 import rasa.shared.utils.cli
 from rasa.utils.tensorflow.layers import RandomlyConnectedDense

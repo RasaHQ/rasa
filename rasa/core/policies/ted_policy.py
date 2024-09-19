@@ -8,7 +8,6 @@ import contextlib
 
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.optimizers import Adam
 from typing import Any, List, Optional, Text, Dict, Tuple, Union, Type
 
 from rasa.engine.graph import ExecutionContext
@@ -660,7 +659,9 @@ class TEDPolicy(Policy):
                 self._label_data,
                 self._entity_tag_specs,
             )
-            self.model.compile(optimizer=Adam(self.config[LEARNING_RATE]))
+            self.model.compile(
+                optimizer=tf.keras.optimizers.Adam(self.config[LEARNING_RATE])
+            )
         (
             data_generator,
             validation_data_generator,

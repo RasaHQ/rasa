@@ -10,7 +10,6 @@ from rasa.nlu.featurizers.featurizer import Featurizer
 import numpy as np
 import scipy.sparse
 import tensorflow as tf
-from tensorflow.keras.optimizers import Adam
 
 from typing import Any, Dict, List, Optional, Text, Tuple, Union, TypeVar, Type
 
@@ -907,7 +906,9 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
             # No pre-trained model to load from. Create a new instance of the model.
             self.model = self._instantiate_model_class(model_data)
             self.model.compile(
-                optimizer=Adam(self.component_config[LEARNING_RATE]),
+                optimizer=tf.keras.optimizers.Adam(
+                    self.component_config[LEARNING_RATE]
+                ),
                 run_eagerly=self.component_config[RUN_EAGERLY],
             )
         else:
