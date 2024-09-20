@@ -184,17 +184,19 @@ qdrant-client = "^1.9.0"
 psutil = "^5.9.5"
 tenacity = "~8.4.1"
 types-protobuf = "4.25.0.20240417"
+
 [[tool.poetry.dependencies.tensorflow-io-gcs-filesystem]]
-version = "==0.31"
+version = "==0.31" # newer versions doesn't provide wheels for Windows
 markers = "sys_platform == 'win32'"
 
 [[tool.poetry.dependencies.tensorflow-io-gcs-filesystem]]
-version = "==0.32"
+version = "==0.34"
 markers = "sys_platform == 'linux'"
 
 [[tool.poetry.dependencies.tensorflow-io-gcs-filesystem]]
-version = "==0.32"
+version = "==0.34"
 markers = "sys_platform == 'darwin' and platform_machine != 'arm64'"
+
 
 [[tool.poetry.dependencies.dask]]
 version = "2022.10.2"
@@ -202,13 +204,7 @@ python = ">=3.9,<3.11"
 
 [[tool.poetry.dependencies.numpy]]
 version = ">=1.23.5,<1.25.0"
-markers = "sys_platform != 'win32' or platform_python_implementation == 'PyPy'"
 python = ">=3.9,<3.11"
-
-[[tool.poetry.dependencies.numpy]]
-version = "1.22.3"
-markers = "sys_platform =='win32' and platform_python_implementation != 'PyPy'"
-python = "3.10"
 
 [[tool.poetry.dependencies.scipy]]
 version = ">=1.10.1,<1.11.0"
@@ -256,22 +252,22 @@ version = "3.9.1"
 allow-prereleases = true
 
 [tool.poetry.dependencies.keras]
-version = "2.13.1"
+version = "2.14.0"
 
 [tool.poetry.dependencies.tensorflow]
-version = "2.13.0rc0"
+version = "2.14.1"
 markers = "sys_platform != 'darwin' or platform_machine != 'arm64'"
 
 [tool.poetry.dependencies.tensorflow-intel]
-version = "2.13.0rc0"
+version = "2.14.1"
 markers = "sys_platform == 'win32'"
 
 [tool.poetry.dependencies.tensorflow-cpu-aws]
-version = "2.13.0rc0"
+version = "2.14.1"
 markers = "sys_platform == 'linux' and (platform_machine == 'arm64' or platform_machine == 'aarch64')"
 
 [tool.poetry.dependencies.tensorflow-macos]
-version = "2.13.0rc0"
+version = "2.14.1"
 markers = "sys_platform == 'darwin' and platform_machine == 'arm64'"
 
 [tool.poetry.dependencies.PyJWT]
@@ -283,12 +279,12 @@ version = "^0.4.6"
 markers = "sys_platform == 'win32'"
 
 [tool.poetry.dependencies.tensorflow-metal]
-version = "0.8.0"
+version = "1.1.0"
 markers = "sys_platform == 'darwin' and platform_machine == 'arm64'"
 optional = true
 
 [tool.poetry.dependencies.tensorflow-text]
-version = "2.13.0rc0"
+version = "2.14.0"
 markers = "sys_platform != 'win32' and platform_machine != 'arm64' and platform_machine != 'aarch64'"
 
 [tool.poetry.dependencies."github3.py"]
