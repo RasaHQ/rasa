@@ -129,8 +129,8 @@ jobs:
         uses: devops-infra/action-pull-request@e66e2ba93519dc63b9884a26e620e2fd0cffab2c
         with:
           github_token: ${{ secrets.RASABOT_GITHUB_TOKEN }}
-          source_branch: $ {{ env.base_branch }}
-          target_branch: prepare-release-${{ github.event.inputs.version }}
+          source_branch: prepare-release-${{ github.event.inputs.version }}
+          target_branch: $ {{ env.base_branch }}
           body: "**Automated pull request for Rasa Pro release.**"
           title: Release ${{ github.event.inputs.version }}
   
