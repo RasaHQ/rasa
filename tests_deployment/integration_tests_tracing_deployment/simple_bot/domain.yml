@@ -4,6 +4,7 @@ intents:
   - greet
   - goodbye
   - request_name
+  - say_favourite_food
 
 responses:
   utter_greet:
@@ -17,6 +18,10 @@ actions:
   - action_goodbye
   - utter_submit
   - validate_name_form
+  - action_validate_slot_mappings
+
+entities:
+  - favourite_food
 
 forms:
   name_form:
@@ -32,6 +37,12 @@ slots:
         conditions:
          - active_loop: name_form
            requested_slot: name
+  favourite_food:
+    type: text
+    influence_conversation: true
+    mappings:
+      - type: from_entity
+        entity: favourite_food
 
 session_config:
   session_expiration_time: 60
