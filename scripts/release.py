@@ -405,7 +405,7 @@ def prepare_release(args: argparse.Namespace) -> None:
     version = next_version(args)
 
     # Confirm version if interactive mode is enabled or next_version is provided
-    if args.interactive or args.next_version:
+    if args.interactive:
         confirm_version(version)
 
     validate_code_is_release_ready(version)
