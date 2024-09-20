@@ -4379,6 +4379,25 @@ url = "https://pypi.org/simple"
 reference = "internal repository mirroring psycopg binary for macos"
 
 [[package]]
+name = "pep440-version-utils"
+version = "1.1.1"
+description = "Utilities to deal with pep440 versioning"
+optional = false
+python-versions = ">=3.8,<3.13"
+files = [
+    {file = "pep440_version_utils-1.1.1-py3-none-any.whl", hash = "sha256:44661f4af7b610f55746903fe39c326bc52944b1aebb985ee9de198f56ba131e"},
+    {file = "pep440_version_utils-1.1.1.tar.gz", hash = "sha256:f7a8bc8091f386e3da509f8e08e01d43218b6520c746c5c2dde9cf0c72286321"},
+]
+
+[package.dependencies]
+packaging = ">=21.3,<25"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.org/simple"
+reference = "internal repository mirroring psycopg binary for macos"
+
+[[package]]
 name = "pillow"
 version = "10.0.1"
 description = "Python Imaging Library (Fork)"
@@ -6268,6 +6287,25 @@ files = [
     {file = "sanic-routing-0.7.2.tar.gz", hash = "sha256:139ce88b3f054e7aa336e2ecc8459837092b103b275d3a97609a34092c55374d"},
     {file = "sanic_routing-0.7.2-py3-none-any.whl", hash = "sha256:523034ffd07aca056040e08de438269c9a880722eee1ace3a32e4f74b394d9aa"},
 ]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.org/simple"
+reference = "internal repository mirroring psycopg binary for macos"
+
+[[package]]
+name = "sanic-testing"
+version = "22.12.0"
+description = "Core testing clients for Sanic"
+optional = false
+python-versions = "*"
+files = [
+    {file = "sanic-testing-22.12.0.tar.gz", hash = "sha256:c9582c9bb9aabd82d3bf9fba2514a0274d0d741d84ce600e3ba2bef7b6c87aed"},
+    {file = "sanic_testing-22.12.0-py3-none-any.whl", hash = "sha256:2cc3338207c6aab4cdc6b89264744a3d51ea66685fe1f30f81f9c376f3ee93a3"},
+]
+
+[package.dependencies]
+httpx = ">=0.18,<0.24"
 
 [package.source]
 type = "legacy"
@@ -8838,4 +8876,4 @@ transformers = ["sentencepiece", "transformers"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10, <3.11"
-content-hash = "555f92394ed40e3ec8dc8b24ddf8f43e38f60bcebc1541f70bbd667a71348f7d"
+content-hash = "58c7d04d778b363275f38830e251d199f96f72481b9eb709421cc7d05678e603"
