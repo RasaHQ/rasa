@@ -142,7 +142,7 @@ jobs:
         run: |
           # Set up the Docker Hub and GCP image tags
           GCP_IMAGE_TAG=${{ env.TARGET_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${TAG_VERSION}
-          DOCKER_HUB_IMAGE_TAG=docker.io/rasadeploy/${{ env.IMAGE_NAME }}:${TAG_VERSION}
+          DOCKER_HUB_IMAGE_TAG=docker.io/rasa/${{ env.IMAGE_NAME }}:${TAG_VERSION}
       
           # Build and push the image to both GCP and Docker Hub using multiple tags
           docker buildx bake \
