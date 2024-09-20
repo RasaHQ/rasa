@@ -119,7 +119,10 @@ jobs:
           git commit -m "bump rasa-sdk dependency"
 
       - name: Prepare the release
-        run: poetry run python scripts/release.py prepare --next_version ${{ github.event.inputs.version }}
+        run:  |
+          git config user.name "rasabot"
+          git config user.email "rasabot@rasa.com"
+          poetry run python scripts/release.py prepare --next_version ${{ github.event.inputs.version }}
   
   if_merged_tag_release:
     if: startsWith(github.head_ref, 'prepare-release-') && github.event.pull_request.merged == true
