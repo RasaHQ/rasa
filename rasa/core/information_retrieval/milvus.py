@@ -48,5 +48,12 @@ class Milvus_Store(InformationRetrieval):
         except Exception as exc:
             raise InformationRetrievalException from exc
 
-        filtered_hits = [doc for doc, score in hits if score >= threshold]
+        scores = [score for _, score in hits]
+        logger.debug(
+            "information_retrieval.milvus_store.search_results_before_threshold",
+            scores=scores,
+        )
+        # Milvus uses Euclidean distance metric by default
+        # so the lower the score, the better the match.
+        filtered_hits = [doc for doc, score in hits if score <= threshold]
         return SearchResultList.from_document_list(filtered_hits)

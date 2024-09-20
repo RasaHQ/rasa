@@ -685,6 +685,14 @@ async def test_enterprise_search_policy_no_retrieval(
             ],
             "second message after query... first message after query...",
         ),
+        (
+            [
+                BotUttered("Hi, I'm a bot."),
+                BotUttered("Can I help you with something?"),
+                UserUttered("why is the sky blue?"),
+            ],
+            "why is the sky blue? Can I help you with something?",
+        ),
     ],
 )
 def test_prepare_search_query(
