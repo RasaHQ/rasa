@@ -73,6 +73,7 @@ jobs:
           version="$INPUT_VERSION"
           IFS='.' read -r -a version_parts <<< "$version"
           release_branch="${version_parts[0]}.${version_parts[1]}.x"
+          echo "base_branch=${version_parts[0]}.${version_parts[1]}.x" >> $GITHUB_ENV
           
           git checkout $release_branch
           git branch
@@ -123,6 +124,15 @@ jobs:
           git config user.name "rasabot"
           git config user.email "rasabot@rasa.com"
           poetry run python scripts/release.py prepare --next_version ${{ github.event.inputs.version }}
+
+      - name: Create pull request
+        uses: devops-infra/action-pull-request@e66e2ba93519dc63b9884a26e620e2fd0cffab2c
+        with:
+          github_token: ${{ secrets.RASABOT_GITHUB_TOKEN }}
+          source_branch: $ {{ env.base_branch }}
+          target_branch: prepare-release-${{ github.event.inputs.version }}
+          body: "**Automated pull request for Rasa Pro release.**"
+          title: Release ${{ github.event.inputs.version }}
   
   if_merged_tag_release:
     if: startsWith(github.head_ref, 'prepare-release-') && github.event.pull_request.merged == true
