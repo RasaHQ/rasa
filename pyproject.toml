@@ -246,7 +246,6 @@ timeout = 60
 timeout_func_only = true
 asyncio_mode = "auto"
 
-
 [tool.poetry.dependencies.tensorflow]
 version = "2.12.1"
 markers = "sys_platform != 'darwin' or platform_machine != 'arm64'"
