@@ -74,6 +74,7 @@ jobs:
           IFS='.' read -r -a version_parts <<< "$version"
           release_branch="${version_parts[0]}.${version_parts[1]}.x"
           echo "base_branch=${version_parts[0]}.${version_parts[1]}.x" >> $GITHUB_ENV
+          echo $base_branch
           
           git checkout $release_branch
           git branch
@@ -130,7 +131,7 @@ jobs:
         with:
           github_token: ${{ secrets.RASABOT_GITHUB_TOKEN }}
           source_branch: prepare-release-${{ github.event.inputs.version }}
-          target_branch: $ {{ env.base_branch }}
+          target_branch: ${{ env.base_branch }}
           body: "**Automated pull request for Rasa Pro release.**"
           title: Release ${{ github.event.inputs.version }}
   
