@@ -10,6 +10,23 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.8.14] - 2024-09-20
+                        
+Rasa Pro 3.8.14 (2024-09-20)                             
+### Deprecations and Removals
+- [#1230](https://github.com/rasahq/rasa-private/issues/1230): Dropped support for Python 3.8 ahead of [Python 3.8 End of Life in October 2024](https://devguide.python.org/versions/#supported-versions). In Rasa Pro versions 3.10.0, 3.9.11 and 3.8.13, we needed to pin the TensorFlow library version to 2.13.0rc1 in order to remove critical vulnerabilities; this resulted in poor user experience when installing these versions of Rasa Pro with `uv pip`. Removing support for Python 3.8 will make it possible to upgrade to a stabler version of TensorFlow.
+
+### Improvements
+- [#1336](https://github.com/rasahq/rasa-private/issues/1336): Update Keras and Tensorflow to version 2.14.
+  This will eliminate the need to use the `--prerelease allow` flag when installing Rasa Pro using `uv pip` tool.
+
+### Bugfixes
+- [#12948](https://github.com/rasahq/rasa-private/issues/12948): Fixed UnexpecTEDIntentlessPolicy training errors that resulted from a change to batching behavior. Changed the batching behavior back to the original for all components. Made the changed batching behavior accessible in DietClassifier using `drop_small_last_batch: True`.
+
+### Miscellaneous internal changes
+- [#1204](https://github.com/rasahq/rasa-private/issues/1204)
+
+
 ## [3.8.13] - 2024-09-12
                         
 Rasa Pro 3.8.13 (2024-09-12)                             
