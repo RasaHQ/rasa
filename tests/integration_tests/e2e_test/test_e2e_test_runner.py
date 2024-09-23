@@ -8,10 +8,10 @@ import boto3
 import pytest
 from moto import mock_aws
 from pytest import MonkeyPatch
-from rasa.core.agent import Agent
-from rasa.nlu.persistor import AWSPersistor
 
+from rasa.core.agent import Agent
 from rasa.e2e_test.e2e_test_runner import E2ETestRunner
+from rasa.nlu.persistor import AWSPersistor, RemoteStorageType
 
 
 @pytest.fixture
@@ -125,10 +125,13 @@ def test_e2e_test_runner_load_agent_from_remote_storage(
     monkeypatch.setattr("rasa.nlu.persistor.get_persistor", mock_aws_persistor)
     monkeypatch.setattr("rasa.core.agent.Agent.load_model", mock_load_model)
 
-    test_runner = E2ETestRunner(model_path=model_name, remote_storage="aws")
+    test_runner = E2ETestRunner(
+        model_path=model_name,
+        remote_storage=RemoteStorageType.AWS,
+    )
 
     assert isinstance(test_runner.agent, Agent)
-    assert test_runner.agent.remote_storage == "aws"
+    assert test_runner.agent.remote_storage == RemoteStorageType.AWS
 
     assert test_runner.agent.processor is not None
     assert test_runner.agent.model_name is not None

@@ -156,7 +156,7 @@ jobs:
           BASE_IMAGE_HASH: ${{ steps.check_image.outputs.base_image_hash }}
           RASA_DEPS_IMAGE_HASH: ${{ steps.check_image.outputs.rasa_deps_image_hash }}
           IMAGE_NAME: rasa-pro
-
+      
       - name: Set up Python 3.9 🐍
         uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
         with:
@@ -229,12 +229,12 @@ jobs:
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
 
-      - name: Notify Slack of unsuccessful release ⛔️
-        if: failure()
-        uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 #v 1.25.0
-        with:
-           # Send notication to #devtribe slack channel
-           channel-id: "C061J0LGHU0"
-           slack-message: ":broken_heart: *Rasa Private* release version `${{ env.TAG_VERSION }}` has failed! More information can be found <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|here>."
-        env:
-           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      # - name: Notify Slack of unsuccessful release ⛔️
+      #   if: failure()
+      #   uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 #v 1.25.0
+      #   with:
+      #      # Send notication to #devtribe slack channel
+      #      channel-id: "C061J0LGHU0"
+      #      slack-message: ":broken_heart: *Rasa Private* release version `${{ env.TAG_VERSION }}` has failed! More information can be found <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|here>."
+      #   env:
+      #      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}

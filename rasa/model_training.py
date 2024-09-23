@@ -22,6 +22,7 @@ from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.training.components import FingerprintStatus
 from rasa.engine.training.graph_trainer import GraphTrainer
+from rasa.nlu.persistor import StorageType
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import SlotSet
 from rasa.shared.core.training_data.structures import StoryGraph
@@ -154,7 +155,7 @@ async def train(
     nlu_additional_arguments: Optional[Dict] = None,
     model_to_finetune: Optional[Text] = None,
     finetuning_epoch_fraction: float = 1.0,
-    remote_storage: Optional[Text] = None,
+    remote_storage: Optional[StorageType] = None,
     file_importer: Optional[TrainingDataImporter] = None,
 ) -> TrainingResult:
     """Trains a Rasa model (Core and NLU).
@@ -275,7 +276,7 @@ async def _train_graph(
     model_to_finetune: Optional[Union[Text, Path]] = None,
     force_full_training: bool = False,
     dry_run: bool = False,
-    remote_storage: Optional[Text] = None,
+    remote_storage: Optional[StorageType] = None,
     **kwargs: Any,
 ) -> TrainingResult:
     if model_to_finetune:
@@ -557,14 +558,14 @@ async def train_nlu(
     ).model
 
 
-def push_model_to_remote_storage(model_path: Path, remote_storage: Text) -> None:
+def push_model_to_remote_storage(model_path: Path, remote_storage: StorageType) -> None:
     """push model to remote storage"""
     from rasa.nlu.persistor import get_persistor
 
     persistor = get_persistor(remote_storage)
 
     if persistor is not None:
-        persistor.persist(model_path)
+        persistor.persist(str(model_path))
 
     else:
         raise RasaException(

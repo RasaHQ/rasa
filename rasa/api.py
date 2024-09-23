@@ -2,6 +2,7 @@ import asyncio
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text, Union
 
 import rasa.shared.constants
+from rasa.nlu.persistor import StorageType
 
 # WARNING: Be careful about adding any top level imports at this place!
 #   These functions are imported in `rasa.__init__` and any top level import
@@ -17,11 +18,11 @@ if TYPE_CHECKING:
 
 
 def run(
-    model: "Text",
-    endpoints: "Text",
-    connector: "Optional[Text]" = None,
-    credentials: "Optional[Text]" = None,
-    **kwargs: "Dict[Text, Any]",
+    model: Text,
+    endpoints: Text,
+    connector: Optional[Text] = None,
+    credentials: Optional[Text] = None,
+    **kwargs: Dict[Text, Any],
 ) -> None:
     """Runs a Rasa model.
 
@@ -65,19 +66,19 @@ def run(
 
 
 def train(
-    domain: "Text",
-    config: "Text",
+    domain: Text,
+    config: Text,
     training_files: "Union[Text, List[Text]]",
-    output: "Text" = rasa.shared.constants.DEFAULT_MODELS_PATH,
+    output: Text = rasa.shared.constants.DEFAULT_MODELS_PATH,
     dry_run: bool = False,
     force_training: bool = False,
-    fixed_model_name: "Optional[Text]" = None,
+    fixed_model_name: Optional[Text] = None,
     persist_nlu_training_data: bool = False,
-    core_additional_arguments: "Optional[Dict]" = None,
-    nlu_additional_arguments: "Optional[Dict]" = None,
-    model_to_finetune: "Optional[Text]" = None,
+    core_additional_arguments: Optional[Dict] = None,
+    nlu_additional_arguments: Optional[Dict] = None,
+    model_to_finetune: Optional[Text] = None,
     finetuning_epoch_fraction: float = 1.0,
-    remote_storage: "Optional[Text]" = None,
+    remote_storage: Optional[StorageType] = None,
     file_importer: Optional["TrainingDataImporter"] = None,
 ) -> "TrainingResult":
     """Runs Rasa Core and NLU training in `async` loop.
@@ -131,11 +132,11 @@ def train(
 
 
 def test(
-    model: "Text",
-    stories: "Text",
-    nlu_data: "Text",
-    output: "Text" = rasa.shared.constants.DEFAULT_RESULTS_PATH,
-    additional_arguments: "Optional[Dict]" = None,
+    model: Text,
+    stories: Text,
+    nlu_data: Text,
+    output: Text = rasa.shared.constants.DEFAULT_RESULTS_PATH,
+    additional_arguments: Optional[Dict] = None,
 ) -> None:
     """Test a Rasa model against a set of test data.
 

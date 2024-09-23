@@ -9,7 +9,7 @@ import pytest
 from moto import mock_aws
 from pytest import MonkeyPatch
 
-from rasa.nlu.persistor import AWSPersistor
+from rasa.nlu.persistor import AWSPersistor, RemoteStorageType
 from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
     DEFAULT_DATA_PATH,
@@ -195,7 +195,7 @@ def test_remote_file_importer(
     # load domain, stories, nlu data and conversation tests
     importer = RemoteTrainingDataImporter(
         config_file=str(default_config_file),
-        remote_storage="aws",
+        remote_storage=RemoteStorageType.AWS,
         training_data_path=str(tmp_path),
     )
 

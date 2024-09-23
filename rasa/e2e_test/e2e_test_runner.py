@@ -5,7 +5,7 @@ import difflib
 from asyncio import CancelledError
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Text, Tuple, Union, DefaultDict
+from typing import Any, DefaultDict, Dict, List, Optional, Text, Tuple, Union
 from urllib.parse import urlparse
 
 import requests
@@ -14,18 +14,18 @@ from tqdm import tqdm
 
 import rasa.shared.utils.io
 from rasa.core.channels import CollectingOutputChannel, UserMessage
-from rasa.core.constants import STEP_ID_METADATA_KEY, ACTIVE_FLOW_METADATA_KEY
+from rasa.core.constants import ACTIVE_FLOW_METADATA_KEY, STEP_ID_METADATA_KEY
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.utils import AvailableEndpoints
-from rasa.e2e_test.constants import TEST_FILE_NAME, TEST_CASE_NAME
+from rasa.e2e_test.constants import TEST_CASE_NAME, TEST_FILE_NAME
 from rasa.e2e_test.e2e_config import create_llm_judge_config
 from rasa.e2e_test.e2e_test_case import (
+    KEY_STUB_CUSTOM_ACTIONS,
     ActualStepOutput,
     Fixture,
     Metadata,
     TestCase,
     TestStep,
-    KEY_STUB_CUSTOM_ACTIONS,
 )
 from rasa.e2e_test.e2e_test_result import (
     NO_RESPONSE,
@@ -34,15 +34,16 @@ from rasa.e2e_test.e2e_test_result import (
     TestResult,
 )
 from rasa.llm_fine_tuning.conversations import Conversation
+from rasa.nlu.persistor import StorageType
 from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
 from rasa.shared.core.events import (
+    ActionExecuted,
     BotUttered,
+    Event,
+    FlowCompleted,
+    FlowStarted,
     SlotSet,
     UserUttered,
-    FlowCompleted,
-    Event,
-    ActionExecuted,
-    FlowStarted,
 )
 from rasa.shared.core.flows.flow_path import FlowPath, PathNode
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -61,7 +62,7 @@ class E2ETestRunner:
         self,
         model_path: Optional[Text] = None,
         model_server: Optional[EndpointConfig] = None,
-        remote_storage: Optional[Text] = None,
+        remote_storage: Optional[StorageType] = None,
         endpoints: Optional[AvailableEndpoints] = None,
         **kwargs: Any,
     ) -> None:
@@ -70,7 +71,7 @@ class E2ETestRunner:
         Args:
             model_path: Path to the model.
             model_server: Model server configuration.
-            remote_storage: Remote storage configuration.
+            remote_storage: Remote storage to use for model retrieval.
             endpoints: Endpoints configuration.
             **kwargs: Additional arguments
         """

@@ -277,9 +277,10 @@ class TestAzureOpenAIEmbeddingClient:
         }
 
         # When
-        with pytest.raises(
-            ProviderClientValidationError
-        ) as exc, structlog.testing.capture_logs() as caplog:
+        with (
+            pytest.raises(ProviderClientValidationError) as exc,
+            structlog.testing.capture_logs() as caplog,
+        ):
             AzureOpenAIEmbeddingClient.from_config(config)
 
         expected_event = "azure_openai_embedding_client.validate_environment_variables"

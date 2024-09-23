@@ -2,15 +2,15 @@ import json
 import os
 from pathlib import Path
 from typing import Any, Text
+from unittest.mock import patch
 
 import boto3
 import pytest
 from moto import mock_aws
 from pytest import MonkeyPatch
-from unittest.mock import patch
 
 from rasa.core.agent import Agent
-from rasa.nlu.persistor import AWSPersistor
+from rasa.nlu.persistor import AWSPersistor, RemoteStorageType
 from rasa.shared.exceptions import RasaException
 
 
@@ -108,7 +108,7 @@ def test_load_model_from_aws_remote_storage_sub_path(
         return aws_persistor
 
     monkeypatch.setattr("rasa.nlu.persistor.get_persistor", mock_aws_persistor)
-    empty_agent.remote_storage = "aws"
+    empty_agent.remote_storage = RemoteStorageType.AWS
     with patch.dict(os.environ, {"REMOTE_STORAGE_PATH": remote_storage_path}):
         try:
             empty_agent.load_model_from_remote_storage(model_name)

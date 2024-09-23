@@ -6,6 +6,7 @@ from rasa.cli.arguments.default_arguments import (
     add_endpoint_param,
     add_model_param,
     add_skip_validation_flag,
+    add_remote_storage_param,
 )
 from rasa.core import constants
 from rasa.env import (
@@ -140,10 +141,7 @@ def add_server_settings_arguments(parser: argparse.ArgumentParser) -> None:
         type=int,
         help="Maximum time a request can take to process (sec).",
     )
-    server_arguments.add_argument(
-        "--remote-storage",
-        help="Set the remote location where your Rasa model is stored, e.g. on AWS.",
-    )
+    add_remote_storage_param(server_arguments)
     server_arguments.add_argument(
         "--ssl-certificate",
         help="Set the SSL Certificate to create a TLS secured server.",

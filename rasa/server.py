@@ -54,6 +54,7 @@ from rasa.core.test import test
 from rasa.core.utils import AvailableEndpoints
 from rasa.nlu.emulators.emulator import Emulator
 from rasa.nlu.emulators.no_emulator import NoEmulator
+from rasa.nlu.persistor import parse_remote_storage
 from rasa.nlu.test import CVEvaluationResult
 from rasa.shared.constants import (
     DEFAULT_MODELS_PATH,
@@ -1379,7 +1380,13 @@ def create_app(
 
         model_path = request.json.get("model_file", None)
         model_server = request.json.get("model_server", None)
-        remote_storage = request.json.get("remote_storage", None)
+
+        remote_storage_argument = request.json.get("remote_storage", None)
+        remote_storage = (
+            parse_remote_storage(remote_storage_argument)
+            if remote_storage_argument
+            else None
+        )
 
         if model_server:
             try:

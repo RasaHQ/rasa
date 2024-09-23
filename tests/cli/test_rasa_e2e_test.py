@@ -9,6 +9,7 @@ from pytest import MonkeyPatch, RunResult
 from structlog.testing import capture_logs
 
 import rasa.cli.utils
+from rasa.cli.arguments.default_arguments import parse_remote_storage_arg
 from rasa.cli.e2e_test import (
     add_e2e_test_arguments,
     add_subparser,
@@ -251,8 +252,12 @@ def test_e2e_cli_add_e2e_test_arguments(monkeypatch: MonkeyPatch) -> None:
             ),
             call(
                 "--remote-storage",
-                help="Set the remote location where your Rasa model is stored, "
-                "e.g. on AWS.",
+                help="Remote storage which should be used to store/load "
+                "the model.Supported storages are: ['aws', 'gcs', 'azure']. "
+                "You can also provide your own "
+                "implementation of the `Persistor` interface.",
+                required=False,
+                type=parse_remote_storage_arg,
             ),
         ],
     )

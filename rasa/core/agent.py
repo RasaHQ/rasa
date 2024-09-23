@@ -1,37 +1,41 @@
 from __future__ import annotations
-from asyncio import AbstractEventLoop, CancelledError
+
 import functools
 import logging
 import os
+import uuid
+from asyncio import AbstractEventLoop, CancelledError
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Text, Union
-import uuid
 
 import aiohttp
 from aiohttp import ClientError
 
+import rasa.shared.utils.io
 from rasa.core import jobs
 from rasa.core.channels.channel import OutputChannel, UserMessage
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
-from rasa.core.http_interpreter import RasaNLUHttpInterpreter
-from rasa.shared.core.domain import Domain
 from rasa.core.exceptions import AgentNotReady
-from rasa.shared.constants import DEFAULT_SENDER_ID
+from rasa.core.http_interpreter import RasaNLUHttpInterpreter
 from rasa.core.lock_store import InMemoryLockStore, LockStore
 from rasa.core.nlg import NaturalLanguageGenerator, TemplatedNaturalLanguageGenerator
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.processor import MessageProcessor
-from rasa.core.tracker_store import FailSafeTrackerStore, InMemoryTrackerStore
-from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
+from rasa.core.tracker_store import (
+    FailSafeTrackerStore,
+    InMemoryTrackerStore,
+    TrackerStore,
+)
+from rasa.core.utils import AvailableEndpoints
 from rasa.exceptions import ModelNotFound
+from rasa.nlu.persistor import StorageType
 from rasa.nlu.utils import is_url
+from rasa.shared.constants import DEFAULT_SENDER_ID
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.shared.exceptions import RasaException
-import rasa.shared.utils.io
 from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
 from rasa.utils.endpoints import EndpointConfig
-
-from rasa.core.tracker_store import TrackerStore
-from rasa.core.utils import AvailableEndpoints
 
 logger = logging.getLogger(__name__)
 
@@ -194,7 +198,7 @@ async def _schedule_model_pulling(
 async def load_agent(
     model_path: Optional[Text] = None,
     model_server: Optional[EndpointConfig] = None,
-    remote_storage: Optional[Text] = None,
+    remote_storage: Optional[StorageType] = None,
     endpoints: Optional[AvailableEndpoints] = None,
     loop: Optional[AbstractEventLoop] = None,
 ) -> Agent:
@@ -203,15 +207,15 @@ async def load_agent(
     Args:
         model_path: Path to the model if it's on disk.
         model_server: Configuration for a potential server which serves the model.
-        remote_storage: URL of remote storage for model.
+        remote_storage: Remote storage to use for loading the model.
         endpoints: Endpoint configuration.
         loop: Optional async loop to pass to broker creation.
 
     Returns:
         The instantiated `Agent` or `None`.
     """
-    from rasa.core.tracker_store import TrackerStore
     from rasa.core.brokers.broker import EventBroker
+    from rasa.core.tracker_store import TrackerStore
 
     tracker_store = None
     lock_store = None
@@ -299,7 +303,7 @@ class Agent:
         action_endpoint: Optional[EndpointConfig] = None,
         fingerprint: Optional[Text] = None,
         model_server: Optional[EndpointConfig] = None,
-        remote_storage: Optional[Text] = None,
+        remote_storage: Optional[StorageType] = None,
         http_interpreter: Optional[RasaNLUHttpInterpreter] = None,
         endpoints: Optional[AvailableEndpoints] = None,
     ):
@@ -329,11 +333,11 @@ class Agent:
         action_endpoint: Optional[EndpointConfig] = None,
         fingerprint: Optional[Text] = None,
         model_server: Optional[EndpointConfig] = None,
-        remote_storage: Optional[Text] = None,
+        remote_storage: Optional[StorageType] = None,
         http_interpreter: Optional[RasaNLUHttpInterpreter] = None,
         endpoints: Optional[AvailableEndpoints] = None,
     ) -> Agent:
-        """Constructs a new agent and loads the processer and model."""
+        """Constructs a new agent and loads the processor and model."""
         agent = Agent(
             domain=domain,
             generator=generator,

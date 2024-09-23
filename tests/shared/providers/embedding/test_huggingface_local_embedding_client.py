@@ -15,19 +15,24 @@ from tests.utilities import filter_logs
 class TestHuggingFaceLocalEmbeddingClient:
     @pytest.fixture
     def client(self, tmpdir) -> HuggingFaceLocalEmbeddingClient:
-        with patch(
-            "rasa.shared.providers.embedding.huggingface_local_embedding_client"
-            ".HuggingFaceLocalEmbeddingClient._init_client"
-        ) as mock_init_client, patch(
-            "rasa.shared.providers.embedding.huggingface_local_embedding_client"
-            ".HuggingFaceLocalEmbeddingClient._embed_without_multiprocessing"
-        ) as mock_embed_without_multiprocessing, patch(
-            "rasa.shared.providers.embedding.huggingface_local_embedding_client"
-            ".HuggingFaceLocalEmbeddingClient._embed_with_multiprocessing"
-        ) as mock_embed_with_multiprocessing, patch(
-            "rasa.shared.providers.embedding.huggingface_local_embedding_client"
-            ".HuggingFaceLocalEmbeddingClient._validate_if_sentence_transformers_installed"
-        ) as mock_validate_if_sentence_transformers_installed:
+        with (
+            patch(
+                "rasa.shared.providers.embedding.huggingface_local_embedding_client"
+                ".HuggingFaceLocalEmbeddingClient._init_client"
+            ) as mock_init_client,
+            patch(
+                "rasa.shared.providers.embedding.huggingface_local_embedding_client"
+                ".HuggingFaceLocalEmbeddingClient._embed_without_multiprocessing"
+            ) as mock_embed_without_multiprocessing,
+            patch(
+                "rasa.shared.providers.embedding.huggingface_local_embedding_client"
+                ".HuggingFaceLocalEmbeddingClient._embed_with_multiprocessing"
+            ) as mock_embed_with_multiprocessing,
+            patch(
+                "rasa.shared.providers.embedding.huggingface_local_embedding_client"
+                ".HuggingFaceLocalEmbeddingClient._validate_if_sentence_transformers_installed"
+            ) as mock_validate_if_sentence_transformers_installed,
+        ):
             mock_init_client.return_value = None
             mock_validate_if_sentence_transformers_installed.return_value = None
             embeddings = np.random.rand(384).reshape(1, 384)
@@ -106,13 +111,16 @@ class TestHuggingFaceLocalEmbeddingClient:
         }
 
         # When
-        with patch(
-            "rasa.shared.providers.embedding.huggingface_local_embedding_client"
-            ".HuggingFaceLocalEmbeddingClient._init_client"
-        ) as mock_init_client, patch(
-            "rasa.shared.providers.embedding.huggingface_local_embedding_client"
-            ".HuggingFaceLocalEmbeddingClient._validate_if_sentence_transformers_installed"
-        ) as mock_validate_if_sentence_transformers_installed:
+        with (
+            patch(
+                "rasa.shared.providers.embedding.huggingface_local_embedding_client"
+                ".HuggingFaceLocalEmbeddingClient._init_client"
+            ) as mock_init_client,
+            patch(
+                "rasa.shared.providers.embedding.huggingface_local_embedding_client"
+                ".HuggingFaceLocalEmbeddingClient._validate_if_sentence_transformers_installed"
+            ) as mock_validate_if_sentence_transformers_installed,
+        ):
             mock_init_client.return_value = None
             mock_validate_if_sentence_transformers_installed.return_value = None
 

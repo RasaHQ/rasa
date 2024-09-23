@@ -2,35 +2,35 @@ import argparse
 import os
 import sys
 from pathlib import Path
+from typing import Callable, List, Union
 from unittest.mock import patch
 
-from _pytest.capture import CaptureFixture
 import pytest
-from pytest import MonkeyPatch
-from typing import Callable, List, Union
+from _pytest.capture import CaptureFixture
 from _pytest.pytester import RunResult
 from _pytest.tmpdir import TempPathFactory
+from pytest import MonkeyPatch
 
 import rasa.shared.utils.io
+import rasa.utils.io
 from rasa.cli.train import _check_nlg_endpoint_validity, run_training
 from rasa.constants import NUMBER_OF_TRAINING_STORIES_FILE
 from rasa.core.policies.policy import Policy
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
-from rasa.shared.core.domain import Domain
 from rasa.model_training import (
-    CODE_NEEDS_TO_BE_RETRAINED,
     CODE_FORCED_TRAINING,
+    CODE_NEEDS_TO_BE_RETRAINED,
     TrainingResult,
 )
 from rasa.shared.constants import (
     LATEST_TRAINING_DATA_FORMAT_VERSION,
     OPENAI_API_KEY_ENV_VAR,
 )
+from rasa.shared.core.domain import Domain
 from rasa.shared.nlu.training_data.training_data import (
     DEFAULT_TRAINING_DATA_OUTPUT_PATH,
 )
-import rasa.utils.io
 from rasa.shared.utils.yaml import read_yaml_file
 from tests.cli.conftest import RASA_EXE
 
@@ -655,7 +655,7 @@ def test_train_validate_nlg_config_valid(monkeypatch: MonkeyPatch) -> None:
         remote_storage=None,
     )
 
-    with patch("rasa.train", return_value=TrainingResult(0)):
+    with patch("rasa.api.train", return_value=TrainingResult(0)):
         run_training(args)
 
 

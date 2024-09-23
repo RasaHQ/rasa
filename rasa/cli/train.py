@@ -94,7 +94,7 @@ def run_training(args: argparse.Namespace, can_exit: bool = False) -> Optional[T
     Returns:
         Path to a trained model or `None` if training was not successful.
     """
-    from rasa import train as train_all
+    from rasa.api import train as train_all
 
     domain = rasa.cli.utils.get_validated_path(
         args.domain, "domain", DEFAULT_DOMAIN_PATHS, none_is_valid=True

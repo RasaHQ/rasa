@@ -1,25 +1,32 @@
 import asyncio
-from http import HTTPStatus
 import json
-from pathlib import Path
-from typing import Any, Dict, Text, Callable, Optional
-from unittest.mock import patch
 import uuid
+from http import HTTPStatus
+from pathlib import Path
+from typing import Any, Callable, Dict, Optional, Text
+from unittest.mock import patch
 
-from aioresponses import aioresponses
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
+from aioresponses import aioresponses
 from pytest_sanic.utils import TestClient
 from sanic import Sanic, response
 from sanic.request import Request
 from sanic.response import ResponseStream
 
 import rasa.core
+import rasa.shared.utils.common
+import rasa.utils.io
+from rasa.core import jobs
+from rasa.core.agent import Agent, load_agent
+from rasa.core.channels.channel import UserMessage
 from rasa.core.constants import UTTER_SOURCE_METADATA_KEY
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.utils import AvailableEndpoints
 from rasa.exceptions import ModelNotFound
-from rasa.nlu.persistor import Persistor
+from rasa.nlu.persistor import Persistor, RemoteStorageType
+from rasa.shared.constants import INTENT_MESSAGE_PREFIX
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     ActionExecuted,
     BotUttered,
@@ -28,13 +35,6 @@ from rasa.shared.core.events import (
     UserUttered,
 )
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
-import rasa.shared.utils.common
-import rasa.utils.io
-from rasa.core import jobs
-from rasa.core.agent import Agent, load_agent
-from rasa.core.channels.channel import UserMessage
-from rasa.shared.core.domain import Domain
-from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.utils.endpoints import EndpointConfig
 from tests.conftest import with_assistant_ids, with_model_ids
 
@@ -216,7 +216,7 @@ async def test_load_from_remote_storage(trained_nlu_model: Text):
 
     with patch("rasa.nlu.persistor.get_persistor", new=lambda _: FakePersistor()):
         agent = await load_agent(
-            remote_storage="some-random-remote", model_path=trained_nlu_model
+            remote_storage=RemoteStorageType.AWS, model_path=trained_nlu_model
         )
 
     assert agent is not None

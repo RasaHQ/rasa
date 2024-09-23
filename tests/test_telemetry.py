@@ -3,18 +3,18 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Generator, Optional, Text
-
-import yaml
-from pytest import MonkeyPatch, LogCaptureFixture
+from typing import Any, Dict, Generator, List, Optional, Text
 from unittest.mock import MagicMock, Mock, patch
+
 import pytest
 import responses
+import yaml
+from pytest import LogCaptureFixture, MonkeyPatch
 
-from rasa import telemetry
+import rasa.api
 import rasa.constants
-from rasa.utils import licensing
 import rasa.utils.licensing
+from rasa import telemetry
 from rasa.anonymization.anonymisation_rule_yaml_reader import KEY_ANONYMIZATION_RULES
 from rasa.dialogue_understanding.generator.constants import (
     DEFAULT_LLM_CONFIG as LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG,
@@ -22,32 +22,32 @@ from rasa.dialogue_understanding.generator.constants import (
 from rasa.dialogue_understanding.generator.flow_retrieval import (
     DEFAULT_EMBEDDINGS_CONFIG,
 )
-
 from rasa.e2e_test.e2e_test_case import Fixture, Metadata, TestCase, TestSuite
 from rasa.telemetry import (
+    E2E_TEST_CONVERSION_FILE_TYPE,
+    E2E_TEST_CONVERSION_TEST_CASE_COUNT,
+    FLOW_RETRIEVAL_EMBEDDING_MODEL_NAME,
+    FLOW_RETRIEVAL_ENABLED,
+    LLM_COMMAND_GENERATOR_CUSTOM_PROMPT_USED,
+    LLM_COMMAND_GENERATOR_MODEL_NAME,
     METRICS_BACKEND,
+    MULTI_STEP_LLM_COMMAND_GENERATOR_FILL_SLOTS_PROMPT_USED,
+    MULTI_STEP_LLM_COMMAND_GENERATOR_HANDLE_FLOWS_PROMPT_USED,
     SEGMENT_IDENTIFY_ENDPOINT,
     SEGMENT_REQUEST_TIMEOUT,
     SEGMENT_TRACK_ENDPOINT,
+    TELEMETRY_E2E_TEST_CONVERSION_EVENT,
     TELEMETRY_E2E_TEST_RUN_STARTED_EVENT,
     TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE,
+    TELEMETRY_ENTERPRISE_SEARCH_POLICY_PREDICT_EVENT,
+    TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_COMPLETED_EVENT,
+    TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_STARTED_EVENT,
     TELEMETRY_ID,
     TELEMETRY_WRITE_KEY_ENVIRONMENT_VARIABLE,
     TRACING_BACKEND,
-    FLOW_RETRIEVAL_ENABLED,
-    FLOW_RETRIEVAL_EMBEDDING_MODEL_NAME,
-    LLM_COMMAND_GENERATOR_MODEL_NAME,
     _get_llm_command_generator_config,
-    TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_COMPLETED_EVENT,
-    TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_STARTED_EVENT,
-    TELEMETRY_ENTERPRISE_SEARCH_POLICY_PREDICT_EVENT,
-    TELEMETRY_E2E_TEST_CONVERSION_EVENT,
-    E2E_TEST_CONVERSION_FILE_TYPE,
-    E2E_TEST_CONVERSION_TEST_CASE_COUNT,
-    LLM_COMMAND_GENERATOR_CUSTOM_PROMPT_USED,
-    MULTI_STEP_LLM_COMMAND_GENERATOR_HANDLE_FLOWS_PROMPT_USED,
-    MULTI_STEP_LLM_COMMAND_GENERATOR_FILL_SLOTS_PROMPT_USED,
 )
+from rasa.utils import licensing
 from rasa.utils.licensing import LICENSE_ENV_VAR
 
 TELEMETRY_TEST_USER = "083642a3e448423ca652134f00e7fc76"  # just some random static id
@@ -362,7 +362,7 @@ def test_sentry_event_pii_removal():
                                 "context_line": '    raise Exception("Some unexpected exception.")',
                                 "post_context": [
                                     "",
-                                    "    return rasa.train(",
+                                    "    return rasa.api.train(",
                                     "        domain=domain,",
                                     "        config=config,",
                                     "        training_files=training_files,",
@@ -1455,7 +1455,7 @@ def test_track_rasa_train_telemetry_disabled(
     monkeypatch.setenv(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE, "false")
 
     # when rasa train is called
-    rasa.train(
+    rasa.api.train(
         domain_path,
         stack_config_path,
         [stories_path, nlu_data_path],
