@@ -6,7 +6,7 @@ from rasa.cli.arguments.default_arguments import (
     add_endpoint_param,
     add_model_param,
     add_skip_validation_flag,
-    add_remote_storage_param
+    add_remote_storage_param,
 )
 from rasa.core import constants
 from rasa.env import (
@@ -33,7 +33,7 @@ def set_run_action_arguments(parser: argparse.ArgumentParser) -> None:
 
 
 def add_interface_argument(
-        parser: Union[argparse.ArgumentParser, argparse._ArgumentGroup],
+    parser: Union[argparse.ArgumentParser, argparse._ArgumentGroup],
 ) -> None:
     """Binds the RASA process to a network interface."""
     parser.add_argument(
@@ -47,7 +47,7 @@ def add_interface_argument(
 
 # noinspection PyProtectedMember
 def add_port_argument(
-        parser: Union[argparse.ArgumentParser, argparse._ArgumentGroup],
+    parser: Union[argparse.ArgumentParser, argparse._ArgumentGroup],
 ) -> None:
     """Add an argument for port."""
     parser.add_argument(
@@ -93,7 +93,7 @@ def add_server_arguments(parser: argparse.ArgumentParser) -> None:
     add_endpoint_param(
         parser,
         help_text="Configuration file for the model server and the connectors as a "
-                  "yml file.",
+        "yml file.",
     )
 
     add_server_settings_arguments(parser)
@@ -116,7 +116,7 @@ def add_server_settings_arguments(parser: argparse.ArgumentParser) -> None:
         type=str,
         default=os.getenv(AUTH_TOKEN_ENV),
         help="Enable token based authentication. Requests need to provide "
-             "the token to be accepted.",
+        "the token to be accepted.",
     )
     server_arguments.add_argument(
         "--cors",
@@ -152,13 +152,13 @@ def add_server_settings_arguments(parser: argparse.ArgumentParser) -> None:
     server_arguments.add_argument(
         "--ssl-ca-file",
         help="If your SSL certificate needs to be verified, "
-             "you can specify the CA file "
-             "using this parameter.",
+        "you can specify the CA file "
+        "using this parameter.",
     )
     server_arguments.add_argument(
         "--ssl-password",
         help="If your ssl-keyfile is protected by a password, you can specify it "
-             "using this paramer.",
+        "using this paramer.",
     )
     channel_arguments = parser.add_argument_group("Channels")
     channel_arguments.add_argument(
@@ -185,10 +185,10 @@ def add_jwt_arguments(parser: argparse.ArgumentParser) -> None:
         type=str,
         default=os.getenv(JWT_SECRET_ENV),
         help="Public key for asymmetric JWT methods or shared secret"
-             "for symmetric methods. Please also make sure to use "
-             "--jwt-method to select the method of the signature, "
-             "otherwise this argument will be ignored."
-             "Note that this key is meant for securing the HTTP API.",
+        "for symmetric methods. Please also make sure to use "
+        "--jwt-method to select the method of the signature, "
+        "otherwise this argument will be ignored."
+        "Note that this key is meant for securing the HTTP API.",
     )
     jwt_auth.add_argument(
         "--jwt-method",
@@ -201,6 +201,6 @@ def add_jwt_arguments(parser: argparse.ArgumentParser) -> None:
         type=str,
         default=os.getenv(JWT_PRIVATE_KEY_ENV),
         help="A private key used for generating web tokens, dependent upon "
-             "which hashing algorithm is used. It must be used together with "
-             "--jwt-secret for providing the public key.",
+        "which hashing algorithm is used. It must be used together with "
+        "--jwt-secret for providing the public key.",
     )
