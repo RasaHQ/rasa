@@ -1,6 +1,5 @@
-import textwrap
 from pathlib import Path
-from typing import Any, Dict, List, Text, Union, Optional
+from typing import Any, Dict, List, Optional, Text, Union
 
 import jsonschema
 import ruamel.yaml.nodes as yaml_nodes
@@ -12,12 +11,11 @@ import rasa.shared.utils.io
 from rasa.shared.core.flows.flow import Flow
 from rasa.shared.core.flows.flows_list import FlowsList
 from rasa.shared.exceptions import RasaException, YamlException
-from rasa.shared.importers.importer import FlowSyncImporter
 from rasa.shared.utils.yaml import (
-    validate_yaml_with_jsonschema,
-    read_yaml,
     dump_obj_as_yaml_to_string,
     is_key_in_yaml,
+    read_yaml,
+    validate_yaml_with_jsonschema,
 )
 
 FLOWS_SCHEMA_FILE = "shared/core/flows/flows_yaml_schema.json"
@@ -260,25 +258,6 @@ class YamlFlowsWriter:
             filename: The path to the file to write to.
         """
         rasa.shared.utils.io.write_text_file(YamlFlowsWriter.dumps(flows), filename)
-
-
-def flows_from_str(yaml_str: str) -> FlowsList:
-    """Reads flows from a YAML string."""
-    flows = YAMLFlowsReader.read_from_string(
-        textwrap.dedent(yaml_str), add_line_numbers=False
-    )
-    flows.validate()
-    return flows
-
-
-def flows_from_str_including_defaults(yaml_str: str) -> FlowsList:
-    """Reads flows from a YAML string and combine them with default flows."""
-    flows = YAMLFlowsReader.read_from_string(
-        textwrap.dedent(yaml_str), add_line_numbers=False
-    )
-    all_flows = FlowSyncImporter.merge_with_default_flows(flows)
-    all_flows.validate()
-    return all_flows
 
 
 def is_flows_file(file_path: Union[Text, Path]) -> bool:

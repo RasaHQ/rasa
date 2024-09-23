@@ -14,6 +14,7 @@ from rasa.nlu.persistor import StorageType
 
 if TYPE_CHECKING:
     from rasa.model_training import TrainingResult
+    from rasa.shared.importers.importer import TrainingDataImporter
 
 
 def run(
@@ -78,6 +79,7 @@ def train(
     model_to_finetune: Optional[Text] = None,
     finetuning_epoch_fraction: float = 1.0,
     remote_storage: Optional[StorageType] = None,
+    file_importer: Optional["TrainingDataImporter"] = None,
 ) -> "TrainingResult":
     """Runs Rasa Core and NLU training in `async` loop.
 
@@ -99,7 +101,10 @@ def train(
             a directory in case the latest trained model should be used.
         finetuning_epoch_fraction: The fraction currently specified training epochs
             in the model configuration which should be used for finetuning.
-        remote_storage: Remote storage to use for model storage.
+        remote_storage: Optional name of the remote storage to
+            use for storing the model.
+        file_importer: Instance of `TrainingDataImporter` to use for training.
+            If it is not provided, a new instance will be created.
 
     Returns:
         An instance of `TrainingResult`.
@@ -121,6 +126,7 @@ def train(
             model_to_finetune=model_to_finetune,
             finetuning_epoch_fraction=finetuning_epoch_fraction,
             remote_storage=remote_storage,
+            file_importer=file_importer,
         )
     )
 

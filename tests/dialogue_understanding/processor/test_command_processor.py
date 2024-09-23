@@ -57,11 +57,11 @@ from rasa.shared.core.events import (
 )
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.flows.steps import CollectInformationFlowStep
-from rasa.shared.core.flows.yaml_flows_io import flows_from_str
 from rasa.shared.core.slots import TextSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import COMMANDS
 from rasa.shared.utils.io import deep_container_fingerprint
+from tests.utilities import flows_from_str
 
 
 @pytest.fixture

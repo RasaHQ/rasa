@@ -27,7 +27,6 @@ from rasa.shared.core.events import (
     FlowCompleted,
 )
 from rasa.shared.core.flows import FlowsList
-from rasa.shared.core.flows.yaml_flows_io import flows_from_str
 from rasa.shared.core.slots import TextSlot, BooleanSlot, CategoricalSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import TEXT
@@ -39,6 +38,7 @@ from rasa.shared.providers.embedding.openai_embedding_client import (
     OpenAIEmbeddingClient,
 )
 from rasa.shared.utils.llm import USER, AI
+from tests.utilities import flows_from_str
 
 
 class TestFlowRetrieval:
@@ -107,9 +107,7 @@ class TestFlowRetrieval:
 
     @pytest.fixture(scope="session")
     def startable_flows_documents(self) -> List[Document]:
-        """
-        Documents based on the flows fixture defined above
-        """
+        """Documents based on the flows fixture defined above"""
         docs = [
             Document(
                 page_content=(

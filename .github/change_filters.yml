@@ -15,3 +15,6 @@ docker:
   - 'rasa/**/*'
   - 'docker/**/*'
   - 'Makefile'
+
+lock_file:
+  - 'poetry.lock'

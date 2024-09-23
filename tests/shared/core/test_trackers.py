@@ -1,107 +1,107 @@
+import dataclasses
 import datetime
 import json
 import logging
 import os
+import tempfile
 import textwrap
 import time
 from pathlib import Path
-import tempfile
-from typing import List, Text, Dict, Any, Type, Optional, Set
-import dataclasses
+from typing import Any, Dict, List, Optional, Set, Text, Type
 
 import fakeredis
 import freezegun
 import pytest
 
-from rasa.core.actions.action import ActionExtractSlots
-from rasa.core.channels import CollectingOutputChannel
-from rasa.core.nlg import TemplatedNaturalLanguageGenerator
-from rasa.core.training import load_data
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.core import training
+from rasa.core.actions.action import ActionExtractSlots
+from rasa.core.agent import Agent
+from rasa.core.channels import CollectingOutputChannel
+from rasa.core.nlg import TemplatedNaturalLanguageGenerator
+from rasa.core.tracker_store import (
+    InMemoryTrackerStore,
+    RedisTrackerStore,
+    SQLTrackerStore,
+    TrackerStore,
+)
+from rasa.core.training import load_data
 from rasa.dialogue_understanding.patterns.completed import (
     CompletedPatternFlowStackFrame,
 )
-from rasa.shared.core.constants import (
-    ACTION_LISTEN_NAME,
-    ACTION_SESSION_START_NAME,
-    LOOP_NAME,
-    REQUESTED_SLOT,
-    LOOP_INTERRUPTED,
-)
+from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
+from rasa.dialogue_understanding.stack.frames.flow_stack_frame import UserFlowStackFrame
 from rasa.shared.constants import (
     ASSISTANT_ID_KEY,
     DEFAULT_SENDER_ID,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
     ROUTE_TO_CALM_SLOT,
 )
-from rasa.core.agent import Agent
+from rasa.shared.core.constants import (
+    ACTION_LISTEN_NAME,
+    ACTION_SESSION_START_NAME,
+    LOOP_INTERRUPTED,
+    LOOP_NAME,
+    REQUESTED_SLOT,
+)
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
+    ActionExecuted,
+    ActionExecutionRejected,
+    ActionReverted,
+    ActiveLoop,
     AgentUttered,
     AllSlotsReset,
+    BotUttered,
     ConversationPaused,
     ConversationResumed,
-    FollowupAction,
-    ReminderScheduled,
-    SlotSet,
-    StoryExported,
-    UserUttered,
-    ActionExecuted,
-    Restarted,
-    ActionReverted,
-    UserUtteranceReverted,
-    SessionStarted,
+    DefinePrevUserUtteredFeaturization,
+    DialogueStackUpdated,
+    EntitiesAdded,
     Event,
-    ActiveLoop,
-    ActionExecutionRejected,
-    BotUttered,
+    FlowCompleted,
+    FlowStarted,
+    FollowupAction,
     LegacyForm,
     LegacyFormValidation,
     LoopInterrupted,
-    DefinePrevUserUtteredFeaturization,
-    EntitiesAdded,
-    FlowStarted,
-    FlowCompleted,
-    DialogueStackUpdated,
+    ReminderScheduled,
+    Restarted,
     RoutingSessionEnded,
+    SessionStarted,
+    SlotSet,
+    StoryExported,
+    UserUtteranceReverted,
+    UserUttered,
 )
-from rasa.shared.core.flows import FlowsList, Flow
-from rasa.shared.core.flows.yaml_flows_io import flows_from_str
+from rasa.shared.core.flows import Flow, FlowsList
 from rasa.shared.core.slots import (
-    FloatSlot,
-    BooleanSlot,
-    ListSlot,
-    TextSlot,
-    Slot,
     AnySlot,
+    BooleanSlot,
     CategoricalSlot,
+    FloatSlot,
+    ListSlot,
+    Slot,
+    TextSlot,
 )
-from rasa.core.tracker_store import (
-    InMemoryTrackerStore,
-    RedisTrackerStore,
-    SQLTrackerStore,
-)
-from rasa.core.tracker_store import TrackerStore
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     YAMLStoryReader,
 )
-from tests.core.conftest import MockedMongoTrackerStore
-from tests.dialogues import (
-    TEST_DIALOGUES,
-    TEST_MOODBOT_DIALOGUE,
-    TEST_DOMAINS_FOR_DIALOGUES,
-)
-from tests.core.utilities import tracker_from_dialogue, user_uttered, get_tracker
 from rasa.shared.nlu.constants import (
     ACTION_NAME,
     METADATA_MODEL_ID,
     PREDICTED_CONFIDENCE_KEY,
 )
-from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
-from rasa.dialogue_understanding.stack.frames.flow_stack_frame import UserFlowStackFrame
+from tests.core.conftest import MockedMongoTrackerStore
+from tests.core.utilities import get_tracker, tracker_from_dialogue, user_uttered
+from tests.dialogues import (
+    TEST_DIALOGUES,
+    TEST_DOMAINS_FOR_DIALOGUES,
+    TEST_MOODBOT_DIALOGUE,
+)
+from tests.utilities import flows_from_str
 
 test_domain = Domain.load("data/test_moodbot/domain.yml")
 

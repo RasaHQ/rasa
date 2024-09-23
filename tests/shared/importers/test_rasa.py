@@ -1,12 +1,15 @@
+import os
 from pathlib import Path
 from typing import Text
-import os
+from unittest.mock import MagicMock
+
+from _pytest.monkeypatch import MonkeyPatch
 
 from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
-    DEFAULT_DOMAIN_PATH,
-    DEFAULT_DATA_PATH,
     DEFAULT_CONVERSATION_TEST_PATH,
+    DEFAULT_DATA_PATH,
+    DEFAULT_DOMAIN_PATH,
 )
 from rasa.shared.core.constants import (
     DEFAULT_ACTION_NAMES,
@@ -76,3 +79,169 @@ def test_rasa_file_importer_with_invalid_domain(tmp_path: Path):
 
     actual = importer.get_domain()
     assert actual.as_dict() == Domain.empty().as_dict()
+
+
+def test_rasa_file_importer_cached_get_config(
+    monkeypatch: MonkeyPatch,
+    empty_config_file: Path,
+    small_domain_file: Path,
+) -> None:
+    """Test that the cached result of get_config is used."""
+
+    mock_read_model_configuration = MagicMock()
+    monkeypatch.setattr(
+        "rasa.shared.importers.rasa.read_model_configuration",
+        mock_read_model_configuration,
+    )
+
+    importer = RasaFileImporter(
+        config_file=str(empty_config_file), domain_path=str(small_domain_file)
+    )
+    importer.get_config()
+
+    assert mock_read_model_configuration.call_count == 1
+
+    importer.get_config()
+
+    # the fact that mock of read_model_configuration was only called once
+    # indicates that the cached result was used for get_config
+    assert mock_read_model_configuration.call_count == 1
+
+
+def test_rasa_file_importer_cached_get_stories(
+    monkeypatch: MonkeyPatch,
+    empty_config_file: Path,
+    small_domain_file: Path,
+) -> None:
+    """Test that the cached result of get_stories is used."""
+
+    mock_story_graph_from_paths = MagicMock()
+    monkeypatch.setattr(
+        "rasa.shared.importers.rasa.utils.story_graph_from_paths",
+        mock_story_graph_from_paths,
+    )
+
+    importer = RasaFileImporter(
+        config_file=str(empty_config_file), domain_path=str(small_domain_file)
+    )
+    importer.get_stories()
+
+    assert mock_story_graph_from_paths.call_count == 1
+
+    importer.get_stories()
+
+    # the fact that mock of read_model_configuration was only called once
+    # indicates that the cached result was used for get_stories
+    assert mock_story_graph_from_paths.call_count == 1
+
+
+def test_rasa_file_importer_cached_get_flows(
+    monkeypatch: MonkeyPatch,
+    empty_config_file: Path,
+    small_domain_file: Path,
+) -> None:
+    """Test that the cached result of get_flows is used."""
+
+    mock_story_graph_from_paths = MagicMock()
+    monkeypatch.setattr(
+        "rasa.shared.importers.rasa.utils.flows_from_paths",
+        mock_story_graph_from_paths,
+    )
+
+    importer = RasaFileImporter(
+        config_file=str(empty_config_file), domain_path=str(small_domain_file)
+    )
+    importer.get_flows()
+
+    assert mock_story_graph_from_paths.call_count == 1
+
+    importer.get_flows()
+
+    # the fact that mock of read_model_configuration was only called once
+    # indicates that the cached result was used for get_flows
+    assert mock_story_graph_from_paths.call_count == 1
+
+
+def test_rasa_file_importer_cached_get_conversation_tests(
+    monkeypatch: MonkeyPatch,
+    empty_config_file: Path,
+    small_domain_file: Path,
+) -> None:
+    """Test that the cached result of get_conversation_tests is used."""
+
+    mock_story_graph_from_paths = MagicMock()
+    monkeypatch.setattr(
+        "rasa.shared.importers.rasa.utils.story_graph_from_paths",
+        mock_story_graph_from_paths,
+    )
+
+    importer = RasaFileImporter(
+        config_file=str(empty_config_file), domain_path=str(small_domain_file)
+    )
+    importer.get_conversation_tests()
+
+    assert mock_story_graph_from_paths.call_count == 1
+
+    importer.get_conversation_tests()
+
+    # the fact that mock of story_graph_from_paths was only called once
+    # indicates that the cached result was used for get_conversation_tests
+    assert mock_story_graph_from_paths.call_count == 1
+
+
+def test_rasa_file_importer_cached_get_nlu_data(
+    monkeypatch: MonkeyPatch,
+    empty_config_file: Path,
+    small_domain_file: Path,
+) -> None:
+    """Test that the cached result of get_nlu_data is used."""
+
+    mock_training_data_from_paths = MagicMock()
+    monkeypatch.setattr(
+        "rasa.shared.importers.rasa.utils.training_data_from_paths",
+        mock_training_data_from_paths,
+    )
+
+    importer = RasaFileImporter(
+        config_file=str(empty_config_file), domain_path=str(small_domain_file)
+    )
+    importer.get_nlu_data()
+
+    assert mock_training_data_from_paths.call_count == 1
+
+    importer.get_nlu_data()
+
+    # the fact that mock of training_data_from_paths was only called once
+    # indicates that the cached result was used for get_nlu_data
+    assert mock_training_data_from_paths.call_count == 1
+
+
+def test_rasa_file_importer_cached_get_domain(
+    monkeypatch: MonkeyPatch,
+    empty_config_file: Path,
+    small_domain_file: Path,
+) -> None:
+    """Test that the cached result of get_domain is used."""
+    mock_domain_load = MagicMock()
+    mock_domain_load.return_value = Domain.load(small_domain_file)
+
+    mock_empty_domain = MagicMock()
+    mock_empty_domain.return_value = Domain.empty()
+
+    monkeypatch.setattr(Domain, "load", mock_domain_load)
+    monkeypatch.setattr(Domain, "empty", mock_empty_domain)
+
+    importer = RasaFileImporter(
+        config_file=str(empty_config_file), domain_path=str(small_domain_file)
+    )
+    importer.get_domain()
+
+    assert mock_empty_domain.call_count == 1
+    assert mock_domain_load.call_count == 1
+
+    importer.get_domain()
+
+    # the fact that mock of training_data_from_paths was only called once
+    # indicates that the cached result was used for get_domain
+    assert mock_empty_domain.call_count == 1
+    assert mock_domain_load.call_count == 1
