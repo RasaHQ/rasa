@@ -1,0 +1,43 @@
+name: Setup Python Environment
+description: Encapsulates steps for Testing
+
+inputs:
+  PYTHON_VERSION:
+    description: 'Default Python Version'
+    required: true
+  
+runs:
+  using: 'composite'
+  steps:
+      - name: Set up Python ${{ inputs.PYTHON_VERSION }} 🐍
+        id: setup-python
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
+        with:
+          python-version: ${{ inputs.PYTHON_VERSION }}
+
+      - name: Read Poetry Version 🔢
+        run: |
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+        shell: bash
+
+      # Install & configure poetry
+      -  name: Install Poetry ${{ env.POETRY_VERSION }}
+         uses: snok/install-poetry@93ada01c735cc8a383ce0ce2ae205a21c415379b # v1.3.4
+         with:
+          version: ${{ env.POETRY_VERSION }}
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          installer-parallel: true
+      
+      # Load cached venv if cache exists
+      - name: Load cached venv
+        id: cached-poetry-dependencies
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+
+      - name: Install Dependencies (Linux) 📦
+        run: |
+          make install
+        shell: bash

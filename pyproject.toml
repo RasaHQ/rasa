@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "rasa-pro"
-version = "3.10.1"
+version = "3.10.3"
 description = "State-of-the-art open-core Conversational AI framework for Enterprises that natively leverages generative AI for effortless assistant development."
 authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
 maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
@@ -188,7 +188,18 @@ types-protobuf = "4.25.0.20240417"
 litellm = "~1.44.7"
 openpyxl = "^3.1.5"
 diskcache = "~5.6.3"
-tensorflow-io-gcs-filesystem = "0.34"
+[[tool.poetry.dependencies.tensorflow-io-gcs-filesystem]]
+version = "==0.31" # newer versions doesn't provide wheels for Windows
+markers = "sys_platform == 'win32'"
+
+[[tool.poetry.dependencies.tensorflow-io-gcs-filesystem]]
+version = "==0.34"
+markers = "sys_platform == 'linux'"
+
+[[tool.poetry.dependencies.tensorflow-io-gcs-filesystem]]
+version = "==0.34"
+markers = "sys_platform == 'darwin' and platform_machine != 'arm64'"
+
 [[tool.poetry.dependencies.dask]]
 version = "2022.10.2"
 python = ">=3.9,<3.11"

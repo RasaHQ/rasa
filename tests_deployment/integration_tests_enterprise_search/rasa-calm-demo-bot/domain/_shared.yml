@@ -8,10 +8,6 @@ slots:
     type: any
     mappings:
       - type: from_llm
-  route_session_to_calm:
-    type: bool
-    mappings:
-      - type: from_llm
 
 responses:
   utter_goodbye:

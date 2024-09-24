@@ -650,6 +650,7 @@ jobs:
         run: |
           make test-enterprise-search-integration-with-calm-bot
         env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           PYTHONIOENCODING: "utf-8"
           RASA_TELEMETRY_WRITE_KEY: ${{ secrets.SEGMENT_WRITE_DEV_KEY }}
           TEST_NAME: "test_search_with_vector_stores.py"
