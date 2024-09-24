@@ -170,7 +170,7 @@ jobs:
       - name: Build ⚒️ Distributions
         run: poetry build
 
-      # Push to the internal release registry
+      # Push to the internal PYPI release registry
       - name: Publish to internal PyPI 📦
         uses: pypa/gh-action-pypi-publish@e53eb8b103ffcb59469888563dc324e3c8ba6f06
         with:
@@ -178,6 +178,14 @@ jobs:
            password: ${{ secrets.PYPI_PASSWORD }}
            repository-url: "https://pypi.rasa.com/simple/"
            packages-dir: ${{ format('{0}/dist', github.workspace) }}
+      
+      # Push to the public PYPI release registry
+      - name: Publish to public PyPI 📦
+        uses: pypa/gh-action-pypi-publish@e53eb8b103ffcb59469888563dc324e3c8ba6f06
+        with:
+          password: ${{ secrets.PYPI_TOKEN }}
+          repository-url: "https://upload.pypi.org/legacy/"
+          packages-dir: ${{ format('{0}/dist', github.workspace) }}
     
       # Push library to GCP Artifact Registry rasa-plus-py
       - name: Release via GCP Artifact Registry
