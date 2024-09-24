@@ -177,10 +177,9 @@ jobs:
       - name: Publish to public PyPI 📦
         uses: pypa/gh-action-pypi-publish@e53eb8b103ffcb59469888563dc324e3c8ba6f06
         with:
-           user: "rasa-aadlv"
-           password: ${{ secrets.PYPI_TOKEN }}
-           repository-url: "https://pypi.org/project/rasa-pro/"
-           packages-dir: ${{ format('{0}/dist', github.workspace) }}
+          password: ${{ secrets.PYPI_TOKEN }}
+          repository-url: "https://upload.pypi.org/legacy/"
+          packages-dir: ${{ format('{0}/dist', github.workspace) }}
     
       # Push library to GCP Artifact Registry rasa-plus-py
       - name: Release via GCP Artifact Registry
