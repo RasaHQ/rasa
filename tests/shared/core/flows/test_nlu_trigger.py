@@ -1,6 +1,5 @@
 import pytest
 
-from rasa.shared.core.flows.yaml_flows_io import flows_from_str
 from rasa.shared.nlu.constants import (
     TEXT,
     INTENT,
@@ -8,6 +7,7 @@ from rasa.shared.nlu.constants import (
     INTENT_NAME_KEY,
 )
 from rasa.shared.nlu.training_data.message import Message
+from tests.utilities import flows_from_str
 
 
 def test_valid_flow_with_nlu_triggers():
