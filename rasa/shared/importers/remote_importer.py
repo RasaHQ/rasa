@@ -8,7 +8,7 @@ import rasa.shared.core.flows.yaml_flows_io
 import rasa.shared.data
 import rasa.shared.utils.common
 import rasa.shared.utils.io
-from rasa.nlu.persistor import StorageType
+from rasa.core.persistor import StorageType
 from rasa.shared.core.domain import Domain, InvalidDomain
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
@@ -79,7 +79,7 @@ class RemoteTrainingDataImporter(TrainingDataImporter):
         self, training_file: str, training_data_path: Optional[str] = None
     ) -> str:
         """Fetches training files from remote storage."""
-        from rasa.nlu.persistor import get_persistor
+        from rasa.core.persistor import get_persistor
 
         persistor = get_persistor(self.remote_storage)
         if persistor is None:

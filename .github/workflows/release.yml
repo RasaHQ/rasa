@@ -124,7 +124,9 @@ jobs:
         run:  |
           git config user.name "rasabot"
           git config user.email "rasabot@rasa.com"
-          poetry run python scripts/release.py prepare --next_version ${{ github.event.inputs.version }}
+          poetry run python scripts/release.py prepare --next_version $INPUT_VERSION
+        env:
+          INPUT_VERSION: ${{ github.event.inputs.version }}
 
       - name: Create pull request
         uses: devops-infra/action-pull-request@e66e2ba93519dc63b9884a26e620e2fd0cffab2c

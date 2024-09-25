@@ -126,7 +126,7 @@ test: clean  ## Run Rasa unit tests using pytest.
 			--cov rasa \
 			--ignore $(INTEGRATION_TEST_FOLDER)/
 
-test-integration:  ## Run general integration tests using pytest. It will run all integration tests except ones for metrics, tracing and custom actions.
+test-integration:  ## Run general integration tests using pytest. It will run all integration tests except ones for metrics, tracing, custom actions and enterprise search.
 	# OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
 	# TF_CPP_MIN_LOG_LEVEL=2 sets C code log level for tensorflow to error suppressing lower log events
 ifeq (,$(wildcard $(INTEGRATION_TEST_DEPLOYMENT_PATH)/.env))

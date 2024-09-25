@@ -63,14 +63,14 @@ from rasa.shared.core.flows.steps.collect import (
     CollectInformationFlowStep,
     SlotRejection,
 )
-from rasa.shared.core.flows.yaml_flows_io import (
-    flows_from_str,
-    flows_from_str_including_defaults,
-)
 from rasa.shared.core.slots import FloatSlot, TextSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from tests.dialogue_understanding.conftest import update_tracker_with_path_through_flow
 from tests.utilities import filter_logs
+from tests.utilities import (
+    flows_from_str,
+    flows_from_str_including_defaults,
+)
 
 
 def test_render_template_variables():

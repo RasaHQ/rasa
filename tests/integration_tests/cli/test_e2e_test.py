@@ -5,7 +5,7 @@ import pytest
 
 from rasa.cli import SubParsersAction, e2e_test, test
 from rasa.cli.e2e_test import DEFAULT_E2E_OUTPUT_TESTS_PATH
-from rasa.nlu.persistor import RemoteStorageType
+from rasa.core.persistor import RemoteStorageType
 
 
 @pytest.fixture
