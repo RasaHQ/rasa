@@ -10,6 +10,13 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.10.4] - 2024-09-25
+                        
+Rasa Pro 3.10.4 (2024-09-25)                             
+### Bugfixes
+- [#1297](https://github.com/rasahq/rasa-private/issues/1297): Fix failing validation of categorical slots when slot values contain Apostrophe.
+
+
 ## [3.10.3] - 2024-09-20
                         
 Rasa Pro 3.10.3 (2024-09-20)                              
