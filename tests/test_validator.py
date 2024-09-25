@@ -1643,6 +1643,96 @@ def test_verify_categorical_predicate_invalid_value(predicate: str) -> None:
         assert len(logs) == 1
 
 
+def test_verify_categorical_predicate_with_apostrophe_valid() -> None:
+    """checks that a categorical slot with apostrophe is valid."""
+    flows = flows_from_str(
+        """
+        flows:
+          flow_bar:
+            description: Test that values in checks for categorical slots are validated.
+            steps:
+            - id: first
+              action: action_listen
+              next:
+                - if: slots.account_type == "don't know"
+                  then: END
+                - else: END
+          flow_bar2:
+            description: Test that values in checks for categorical slots are validated.
+            steps:
+            - id: first
+              action: action_listen
+              next:
+                - if: slots.account_type == "dont know'"
+                  then: END
+                - else: END
+        """
+    )
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        slots:
+          account_type:
+            type: categorical
+            values:
+              - don't know
+              - dont know'
+            mappings: []
+        """
+    )
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), flows, None)
+
+    with structlog.testing.capture_logs() as caplog:
+        assert validator.verify_predicates()
+        logs = filter_logs(caplog, log_level="error")
+        assert len(logs) == 0
+
+
+def test_verify_categorical_predicate_with_double_quotes_valid() -> None:
+    """checks that a categorical slot with double quotes is invalid."""
+    flows = flows_from_str(
+        """
+        flows:
+          flow_bar:
+            description: Test that values in checks for categorical slots are validated.
+            steps:
+            - id: first
+              action: action_listen
+              next:
+                - if: slots.account_type == 'don"t know'
+                  then: END
+                - else: END
+          flow_bar2:
+            description: Test that values in checks for categorical slots are validated.
+            steps:
+            - id: first
+              action: action_listen
+              next:
+                - if: slots.account_type == 'dont know"'
+                  then: END
+                - else: END
+        """
+    )
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        slots:
+          account_type:
+            type: categorical
+            values:
+              - don"t know
+              - dont know"
+            mappings: []
+        """
+    )
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), flows, None)
+
+    with structlog.testing.capture_logs() as caplog:
+        assert validator.verify_predicates()
+        logs = filter_logs(caplog, log_level="error")
+        assert len(logs) == 0
+
+
 @pytest.mark.parametrize(
     "predicate",
     [

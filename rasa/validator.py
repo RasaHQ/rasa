@@ -965,7 +965,8 @@ class Validator:
             slot_value = [Literal(slot_value)]
 
         slot_values_validity = [
-            sv is None or re.sub(r"\'|\"", "", sv.value) in valid_slot_values
+            sv is None
+            or re.sub(r'^[\'"](.+)[\'"]$', r"\1", sv.value) in valid_slot_values
             for sv in slot_value
         ]
         if not all(slot_values_validity):
