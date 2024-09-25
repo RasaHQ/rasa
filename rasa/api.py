@@ -2,7 +2,7 @@ import asyncio
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text, Union
 
 import rasa.shared.constants
-from rasa.nlu.persistor import StorageType
+from rasa.core.persistor import StorageType
 
 # WARNING: Be careful about adding any top level imports at this place!
 #   These functions are imported in `rasa.__init__` and any top level import

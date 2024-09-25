@@ -15,6 +15,7 @@ import rasa.shared.utils.common
 import rasa.shared.utils.io
 import rasa.utils.common
 from rasa import telemetry
+from rasa.core.persistor import StorageType
 from rasa.engine.caching import LocalTrainingCache
 from rasa.engine.recipes.recipe import Recipe
 from rasa.engine.runner.dask import DaskGraphRunner
@@ -22,7 +23,6 @@ from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.training.components import FingerprintStatus
 from rasa.engine.training.graph_trainer import GraphTrainer
-from rasa.nlu.persistor import StorageType
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import SlotSet
 from rasa.shared.core.training_data.structures import StoryGraph
@@ -560,7 +560,7 @@ async def train_nlu(
 
 def push_model_to_remote_storage(model_path: Path, remote_storage: StorageType) -> None:
     """push model to remote storage"""
-    from rasa.nlu.persistor import get_persistor
+    from rasa.core.persistor import get_persistor
 
     persistor = get_persistor(remote_storage)
 

@@ -3,7 +3,7 @@ import logging
 from enum import Enum
 from typing import List, Optional, Text, Union
 
-from rasa.nlu.persistor import RemoteStorageType, StorageType, parse_remote_storage
+from rasa.core.persistor import RemoteStorageType, StorageType, parse_remote_storage
 from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
     DEFAULT_DATA_PATH,

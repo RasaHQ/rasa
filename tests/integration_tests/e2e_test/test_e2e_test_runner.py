@@ -10,8 +10,8 @@ from moto import mock_aws
 from pytest import MonkeyPatch
 
 from rasa.core.agent import Agent
+from rasa.core.persistor import AWSPersistor, RemoteStorageType
 from rasa.e2e_test.e2e_test_runner import E2ETestRunner
-from rasa.nlu.persistor import AWSPersistor, RemoteStorageType
 
 
 @pytest.fixture
@@ -122,7 +122,7 @@ def test_e2e_test_runner_load_agent_from_remote_storage(
         monkeypatch.setattr(aws_persistor, "bucket", conn.Bucket(bucket_name))
         return aws_persistor
 
-    monkeypatch.setattr("rasa.nlu.persistor.get_persistor", mock_aws_persistor)
+    monkeypatch.setattr("rasa.core.persistor.get_persistor", mock_aws_persistor)
     monkeypatch.setattr("rasa.core.agent.Agent.load_model", mock_load_model)
 
     test_runner = E2ETestRunner(
