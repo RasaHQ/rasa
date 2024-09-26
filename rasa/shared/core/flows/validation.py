@@ -101,6 +101,31 @@ class DuplicatedStepIdException(RasaException):
         )
 
 
+class DuplicatedFlowIdException(RasaException):
+    """Raised when a flow is using the same id as another flow."""
+
+    def __init__(
+        self, flow_id: str, first_file_path: str, second_file_path: str
+    ) -> None:
+        """Initializes the exception."""
+        self.flow_id = flow_id
+        self.first_file_path = first_file_path
+        self.second_file_path = second_file_path
+
+    def __str__(self) -> str:
+        """Return a string representation of the exception."""
+        if self.first_file_path == self.second_file_path:
+            return (
+                f"Flow '{self.flow_id}' is used twice in `{self.first_file_path}`. "
+                f"Please make sure flow IDs are unique across all files."
+            )
+        return (
+            f"Flow '{self.flow_id}' is used in both "
+            f"`{self.first_file_path}` and `{self.second_file_path}`. "
+            f"Please make sure flow IDs are unique across all files."
+        )
+
+
 class MissingElseBranchException(RasaException):
     """Raised when a flow step is missing an else branch."""
 
