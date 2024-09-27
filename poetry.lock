@@ -6026,6 +6026,17 @@ packaging = "*"
 requests = "*"
 
 [[package]]
+name = "rootpath"
+version = "0.1.0"
+description = "Python project/package root path detection."
+optional = false
+python-versions = "*"
+files = [
+    {file = "rootpath-0.1.0-py3-none-any.whl", hash = "sha256:53528aff82109cc438538be52768dbb3c60193111c39e34592cc1553007aab0d"},
+    {file = "rootpath-0.1.0.tar.gz", hash = "sha256:ccf8b1f62cec58240b702a986c1825b1c62f1dbef0b1edaee1786bf61853e4ed"},
+]
+
+[[package]]
 name = "rpds-py"
 version = "0.17.1"
 description = "Python bindings to Rust's persistent data structures (rpds)"
@@ -7061,6 +7072,26 @@ files = [
 [package.dependencies]
 sentry-sdk = "*"
 structlog = "*"
+
+[[package]]
+name = "swagger-coverage"
+version = "3.5.1"
+description = "Python adapter for \"swagger-coverage\" tool"
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "swagger_coverage-3.5.1-py3-none-any.whl", hash = "sha256:130f74370e4a1f3b18ed08d9602dd84498e655307276b1a268b3b78f97efbf91"},
+    {file = "swagger_coverage-3.5.1.tar.gz", hash = "sha256:62139c2930c8f71f3daf639de2eb78d21707167e26faef434a226bfd7e2cf2ab"},
+]
+
+[package.dependencies]
+environs = ">=9.5.0"
+Faker = ">=15.2.0"
+python-dotenv = ">=0.21.0"
+PyYAML = ">=6.0"
+requests = ">=2.31.0"
+rootpath = "0.1.0"
+setuptools = ">=69.0.3"
 
 [[package]]
 name = "tabulate"
@@ -8690,4 +8721,4 @@ transformers = ["sentencepiece", "transformers"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.11"
-content-hash = "be8d2e497e9fefcc69dc0b16533c84210cc12e26e1d97eb911e39a8d0cd2d6af"
+content-hash = "f6017abc453ff44ac1cc196a9fb32bfcbf0e63373e0f98c48ad50cef0c3b2f24"

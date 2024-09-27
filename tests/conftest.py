@@ -95,6 +95,7 @@ from tests.license_env import (
     UNSCOPED_LICENSE_ENV,
     VALID_LICENSE_ENV,
 )
+from swagger_coverage_py.reporter import CoverageReporter
 
 # we reuse a bit of pytest's own testing machinery, this should eventually come
 # from a separately installable pytest-cli plugin.
@@ -195,6 +196,11 @@ def e2e_stories_path() -> Text:
 @pytest.fixture(scope="session")
 def simple_stories_path() -> Text:
     return "data/test_yaml_stories/stories_simple.yml"
+
+
+@pytest.fixture(scope="session")
+def basic_flows_path() -> Text:
+    return "data/test_flows/basic_flows.yml"
 
 
 @pytest.fixture(scope="session")
@@ -387,6 +393,11 @@ async def nlu_agent(trained_nlu_model: Text) -> Agent:
     return await load_agent(model_path=trained_nlu_model)
 
 
+@pytest.fixture(scope="session")
+async def agent_with_flows(trained_rasa_model_with_flows: Text) -> Agent:
+    return await load_agent(model_path=trained_rasa_model_with_flows)
+
+
 @pytest.fixture(scope="module")
 async def unexpected_intent_policy_agent(
     trained_unexpected_intent_policy_path: Text,
@@ -456,6 +467,22 @@ async def trained_rasa_model(
         domain=domain_path,
         config=stack_config_path,
         training_files=[nlu_data_path, stories_path],
+    )
+
+    return trained_stack_model_path
+
+
+@pytest.fixture(scope="session")
+async def trained_rasa_model_with_flows(
+    trained_async: Callable,
+    domain_path: Text,
+    basic_flows_path: Text,
+    stack_config_path: Text,
+) -> Text:
+    trained_stack_model_path = await trained_async(
+        domain=domain_path,
+        config=stack_config_path,
+        training_files=[basic_flows_path],
     )
 
     return trained_stack_model_path
@@ -571,6 +598,12 @@ def rasa_nlu_server(nlu_agent: Agent) -> Sanic:
 def rasa_server_secured(default_agent: Agent) -> Sanic:
     app = server.create_app(agent=default_agent, auth_token="rasa", jwt_secret="core")
     channel.register([RestInput()], app, "/webhooks/")
+    return app
+
+
+@pytest.fixture
+def rasa_server_with_flows(agent_with_flows: Agent) -> Sanic:
+    app = server.create_app(agent=agent_with_flows, auth_token="rasa")
     return app
 
 
@@ -1385,3 +1418,15 @@ def valid_license(load_env_vars) -> str:
         f" by setting the environment variable {VALID_LICENSE_ENV}"
     )
     return value
+
+
+@pytest.fixture
+def setup_swagger_coverage():
+    reporter = CoverageReporter(
+        api_name="rasa-pro", host="https://rasa.com/docs/rasa-pro/spec"
+    )
+    reporter.cleanup_input_files()
+    reporter.setup("/rasa.yml")
+
+    yield
+    reporter.generate_report()
