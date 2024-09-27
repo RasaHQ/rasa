@@ -12,7 +12,17 @@ import threading
 import time
 import uuid
 from pathlib import Path
-from typing import Any, Callable, Dict, Generator, Iterator, List, Optional, Text
+from typing import (
+    Any,
+    Callable,
+    Coroutine,
+    Dict,
+    Generator,
+    Iterator,
+    List,
+    Optional,
+    Text,
+)
 from unittest.mock import Mock
 
 import jwt
@@ -290,12 +300,39 @@ def loop(
     yield event_loop
 
 
+TrainedAsync = Callable[..., Coroutine[Any, Any, Optional[str]]]
+
+
+@pytest.fixture(scope="session")
+def trained_async(
+    tmp_path_factory: TempPathFactory,
+) -> TrainedAsync:
+    async def _train(
+        *args: Any,
+        output_path: Optional[Text] = None,
+        cache_dir: Optional[Path] = None,
+        **kwargs: Any,
+    ) -> Optional[Text]:
+        if not cache_dir:
+            cache_dir = tmp_path_factory.mktemp("cache")
+
+        if output_path is None:
+            output_path = str(tmp_path_factory.mktemp("models"))
+
+        with enable_cache(cache_dir):
+            result = await train(*args, output=output_path, **kwargs)
+
+        return result.model
+
+    return _train
+
+
 @pytest.fixture(scope="session")
 async def trained_default_agent_model(
     stories_path: Text,
     domain_path: Text,
     nlu_data_path: Text,
-    trained_async: Callable,
+    trained_async: TrainedAsync,
     simple_config_path: Text,
 ) -> Text:
     model_path = await trained_async(
@@ -325,7 +362,7 @@ def default_agent(trained_default_agent_model: Text) -> Agent:
 
 
 @pytest.fixture(scope="session")
-async def trained_moodbot_path(trained_async: Callable) -> Text:
+async def trained_moodbot_path(trained_async: TrainedAsync) -> Text:
     return await trained_async(
         domain="data/test_moodbot/domain.yml",
         config="data/test_moodbot/config.yml",
@@ -334,7 +371,7 @@ async def trained_moodbot_path(trained_async: Callable) -> Text:
 
 
 @pytest.fixture(scope="session")
-async def trained_moodbot_core_path(trained_async: Callable) -> Text:
+async def trained_moodbot_core_path(trained_async: TrainedAsync) -> Text:
     return await trained_async(
         domain="data/test_moodbot/domain.yml",
         config="data/test_moodbot/config.yml",
@@ -343,7 +380,7 @@ async def trained_moodbot_core_path(trained_async: Callable) -> Text:
 
 
 @pytest.fixture(scope="session")
-async def trained_moodbot_nlu_path(trained_async: Callable) -> Text:
+async def trained_moodbot_nlu_path(trained_async: TrainedAsync) -> Text:
     return await trained_async(
         domain="data/test_moodbot/domain.yml",
         config="data/test_moodbot/config.yml",
@@ -352,7 +389,7 @@ async def trained_moodbot_nlu_path(trained_async: Callable) -> Text:
 
 
 @pytest.fixture(scope="session")
-async def trained_unexpected_intent_policy_path(trained_async: Callable) -> Text:
+async def trained_unexpected_intent_policy_path(trained_async: TrainedAsync) -> Text:
     return await trained_async(
         domain="data/test_moodbot/domain.yml",
         config="data/test_moodbot/unexpected_intent_policy_config.yml",
@@ -370,7 +407,7 @@ async def trained_nlu_moodbot_path(trained_nlu: Callable) -> Text:
 
 
 @pytest.fixture(scope="session")
-async def trained_spacybot_path(trained_async: Callable) -> Text:
+async def trained_spacybot_path(trained_async: TrainedAsync) -> Text:
     return await trained_async(
         domain="data/test_spacybot/domain.yml",
         config="data/test_spacybot/config.yml",
@@ -421,28 +458,6 @@ def domain(_domain: Domain) -> Domain:
 
 
 @pytest.fixture(scope="session")
-def trained_async(tmp_path_factory: TempPathFactory) -> Callable:
-    async def _train(
-        *args: Any,
-        output_path: Optional[Text] = None,
-        cache_dir: Optional[Path] = None,
-        **kwargs: Any,
-    ) -> Optional[Text]:
-        if not cache_dir:
-            cache_dir = tmp_path_factory.mktemp("cache")
-
-        if output_path is None:
-            output_path = str(tmp_path_factory.mktemp("models"))
-
-        with enable_cache(cache_dir):
-            result = await train(*args, output=output_path, **kwargs)
-
-        return result.model
-
-    return _train
-
-
-@pytest.fixture(scope="session")
 def trained_nlu(tmp_path_factory: TempPathFactory) -> Callable:
     async def _train_nlu(
         *args: Any, output_path: Optional[Text] = None, **kwargs: Any
@@ -457,7 +472,7 @@ def trained_nlu(tmp_path_factory: TempPathFactory) -> Callable:
 
 @pytest.fixture(scope="session")
 async def trained_rasa_model(
-    trained_async: Callable,
+    trained_async: TrainedAsync,
     domain_path: Text,
     nlu_data_path: Text,
     stories_path: Text,
@@ -490,7 +505,7 @@ async def trained_rasa_model_with_flows(
 
 @pytest.fixture(scope="session")
 async def trained_core_model(
-    trained_async: Callable,
+    trained_async: TrainedAsync,
     domain_path: Text,
     stack_config_path: Text,
     stories_path: Text,
@@ -504,7 +519,7 @@ async def trained_core_model(
 
 @pytest.fixture(scope="session")
 async def trained_nlu_model(
-    trained_async: Callable,
+    trained_async: TrainedAsync,
     domain_path: Text,
     nlu_data_path: Text,
     stack_config_path: Text,
@@ -536,7 +551,7 @@ def trained_e2e_model_cache(
 
 @pytest.fixture(scope="session")
 async def trained_e2e_model(
-    trained_async: Callable,
+    trained_async: TrainedAsync,
     moodbot_domain_path: Text,
     e2e_bot_config_file: Path,
     nlu_data_path: Text,
@@ -729,7 +744,7 @@ async def response_selector_test_stories() -> Path:
 
 
 @pytest.fixture(scope="session")
-async def trained_response_selector_bot(trained_async: Callable) -> Path:
+async def trained_response_selector_bot(trained_async: TrainedAsync) -> Path:
     zipped_model = await trained_async(
         domain="data/test_response_selector_bot/domain.yml",
         config="data/test_response_selector_bot/config.yml",
@@ -771,7 +786,7 @@ def e2e_bot_test_stories_with_unknown_bot_utterances() -> Path:
 # FIXME: This fixture is very slow, do not use it without fixing that first
 @pytest.fixture(scope="session")
 async def e2e_bot(
-    trained_async: Callable,
+    trained_async: TrainedAsync,
     e2e_bot_domain_file: Path,
     e2e_bot_config_file: Path,
     e2e_bot_training_files: List[Path],
@@ -1063,7 +1078,15 @@ def wait(
         raise TimeoutError(timeout_msg)
 
 
-def create_simple_project(path: Path):
+def create_simple_project(path: Path) -> Path:
+    """Create a simple project structure in the given path.
+
+    Args:
+        path: Path to the project directory.
+
+    Returns:
+        Path to the project directory
+    """
     scaffold.create_initial_project(str(path))
 
     # create a config file
@@ -1175,7 +1198,7 @@ def fake_embedding_client() -> EmbeddingClient:
 
 @pytest.fixture(scope="session")
 async def trained_custom_actions_model(
-    trained_async: Callable,
+    trained_async: TrainedAsync,
 ) -> Text:
     parent_folder = "data/test_custom_action_triggers_action_extract_slots"
     domain_path = f"{parent_folder}/domain.yml"

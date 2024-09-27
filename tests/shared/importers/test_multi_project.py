@@ -16,6 +16,7 @@ from rasa.shared.core.domain import Domain
 from rasa.shared.importers.multi_project import MultiProjectImporter
 from rasa.shared.nlu.training_data.formats import RasaYAMLReader
 from rasa.shared.utils.yaml import write_yaml
+from tests.conftest import TrainedAsync
 
 
 def test_load_imports_from_directory_tree(tmp_path: Path):
@@ -248,7 +249,9 @@ def test_single_additional_file(tmp_path: Path):
     assert selector.is_imported(str(additional_file))
 
 
-async def test_multi_project_training(trained_async, tmp_path_factory: TempPathFactory):
+async def test_multi_project_training(
+    trained_async: TrainedAsync, tmp_path_factory: TempPathFactory
+):
     example_directory = "data/test_multi_domain"
     config_file = os.path.join(example_directory, "config.yml")
     domain_file = os.path.join(example_directory, "domain.yml")

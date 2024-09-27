@@ -1,38 +1,41 @@
+import json
+import logging
 import os
 import textwrap
 from pathlib import Path
-import json
-import logging
-from typing import Any, Text, Dict, Callable
+from typing import Any, Dict, Text
 
 import pytest
 
 import rasa.shared.utils.io
 import rasa.utils.io
-from rasa.core.test import (
-    _create_data_generator,
-    _collect_story_predictions,
-    test as evaluate_stories,
-    _clean_entity_results,
-)
+from rasa.core.agent import Agent, load_agent
 from rasa.core.constants import (
     CONFUSION_MATRIX_STORIES_FILE,
-    REPORT_STORIES_FILE,
     FAILED_STORIES_FILE,
-    SUCCESSFUL_STORIES_FILE,
+    REPORT_STORIES_FILE,
     STORIES_WITH_WARNINGS_FILE,
+    SUCCESSFUL_STORIES_FILE,
+)
+from rasa.core.test import (
+    _clean_entity_results,
+    _collect_story_predictions,
+    _create_data_generator,
+)
+from rasa.core.test import (
+    test as evaluate_stories,
 )
 
 # we need this import to ignore the warning...
 # noinspection PyUnresolvedReferences
 from rasa.nlu.test import evaluate_entities, run_evaluation  # noqa: F401
-from rasa.core.agent import Agent, load_agent
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.exceptions import RasaException
+from tests.conftest import TrainedAsync
 
 
 @pytest.fixture(scope="module")
-async def trained_restaurantbot(trained_async: Callable) -> Path:
+async def trained_restaurantbot(trained_async: TrainedAsync) -> Path:
     zipped_model = await trained_async(
         domain="data/test_restaurantbot/domain.yml",
         config="data/test_restaurantbot/config.yml",
@@ -179,7 +182,7 @@ async def test_source_in_failed_stories(
 
 async def test_end_to_evaluation_trips_circuit_breaker(
     e2e_story_file_trips_circuit_breaker_path: Text,
-    trained_async: Callable,
+    trained_async: TrainedAsync,
     tmp_path: Path,
 ):
     config = textwrap.dedent(

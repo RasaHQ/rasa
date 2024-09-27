@@ -218,3 +218,36 @@ def test_run_cli_skip_yaml_validation_flag(
     args = parser.parse_args(input_args)
 
     assert args.skip_yaml_validation == expected_skip_yaml_validation
+
+
+def test_default_run_arguments(
+    run_parser: argparse.ArgumentParser,
+) -> None:
+    """Tests default settings for `rasa run` CLI command."""
+    args = run_parser.parse_args(["run"])
+
+    assert args.model == "models"
+    assert args.log_file is None
+    assert not args.use_syslog
+    assert args.syslog_address == "localhost"
+    assert args.syslog_port == 514
+    assert args.syslog_protocol == "UDP"
+    assert args.endpoints == "endpoints.yml"
+    assert args.interface == "0.0.0.0"
+    assert args.port == 5005
+    assert args.auth_token is None
+    assert args.cors is None
+    assert not args.enable_api
+    assert args.response_timeout == 3600
+    assert args.request_timeout == 300
+    assert args.remote_storage is None
+    assert args.ssl_certificate is None
+    assert args.ssl_keyfile is None
+    assert args.ssl_ca_file is None
+    assert args.ssl_password is None
+    assert args.credentials is None
+    assert args.connector is None
+    assert args.jwt_secret is None
+    assert args.jwt_method == "HS256"
+    assert args.jwt_private_key is None
+    assert args.skip_yaml_validation == []

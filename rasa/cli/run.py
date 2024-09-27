@@ -6,8 +6,9 @@ from typing import List, Text
 from rasa.api import run as rasa_run
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import run as arguments
-from rasa.cli.utils import get_validated_path
 from rasa.cli.arguments.default_arguments import SkipYamlValidation
+from rasa.cli.utils import get_validated_path
+from rasa.exceptions import ModelNotFound
 from rasa.shared.constants import (
     DEFAULT_ACTIONS_PATH,
     DEFAULT_CREDENTIALS_PATH,
@@ -15,7 +16,6 @@ from rasa.shared.constants import (
     DEFAULT_MODELS_PATH,
     DOCS_BASE_URL,
 )
-from rasa.exceptions import ModelNotFound
 from rasa.shared.core.domain import Domain
 from rasa.shared.utils.cli import print_error
 
@@ -89,7 +89,7 @@ def run(args: argparse.Namespace) -> None:
         args.credentials, "credentials", DEFAULT_CREDENTIALS_PATH, True
     )
 
-    if SkipYamlValidation.DOMAIN in args.skip_yaml_validation:
+    if SkipYamlValidation.DOMAIN.value in args.skip_yaml_validation:
         Domain.validate_yaml = False
     else:
         Domain.validate_yaml = True

@@ -1,16 +1,16 @@
-from pathlib import Path
-
-from subprocess import check_call
-
-from typing import Callable, Text
-import pytest
-import shutil
+import argparse
 import os
+import shutil
+from pathlib import Path
+from subprocess import check_call
+from typing import Callable, Text
 
-from pytest import TempPathFactory, Testdir
+import pytest
 from _pytest.pytester import RunResult
+from pytest import TempPathFactory, Testdir
 
-from rasa.cli import scaffold
+from rasa.cli import inspect, scaffold
+from rasa.cli import run as cli_run
 from rasa.shared.utils.yaml import write_yaml
 from tests.conftest import create_simple_project
 
@@ -120,3 +120,21 @@ def run_in_simple_project_with_model(
         return result
 
     return do_run
+
+
+@pytest.fixture
+def inspect_parser() -> argparse.ArgumentParser:
+    """Fixture for the `rasa inspect` parser."""
+    parser = argparse.ArgumentParser(prog="rasa")
+    subparsers = parser.add_subparsers(help="Rasa commands")
+    inspect.add_subparser(subparsers, [])
+    return parser
+
+
+@pytest.fixture
+def run_parser() -> argparse.ArgumentParser:
+    """Fixture for the `rasa run` parser."""
+    parser = argparse.ArgumentParser(prog="rasa")
+    subparsers = parser.add_subparsers(help="Rasa commands")
+    cli_run.add_subparser(subparsers, [])
+    return parser
