@@ -790,13 +790,18 @@ class Domain:
             }
         else:
             intent_name = next(iter(intent.keys()))
-
-        return (
-            intent_name,
-            cls._transform_intent_properties_for_internal_use(
-                intent, entity_properties
-            ),
-        )
+        try:
+            return (
+                intent_name,
+                cls._transform_intent_properties_for_internal_use(
+                    intent, entity_properties
+                ),
+            )
+        except AttributeError:
+            raise InvalidDomain(
+                f"Detected invalid intent definition: {intent}. "
+                f"Please make sure all intent definitions are valid."
+            )
 
     @classmethod
     def _add_default_intents(

@@ -743,6 +743,25 @@ def test_collect_intent_properties(
 
 
 @pytest.mark.parametrize(
+    "intents, entity_properties",
+    [
+        (
+            [{"intent": "ask_help"}],
+            {"entities": [], "roles": {}, "groups": {}, "default_ignored_entities": []},
+        ),
+    ],
+)
+def test_collect_intent_properties_invalid_intent(
+    intents: Union[Set[Text], List[Union[Text, Dict[Text, Any]]]],
+    entity_properties: Dict[Text, Union[List[Text], Dict[Text, List[Text]]]],
+):
+    entity_properties = EntityProperties(**entity_properties)
+    error_message = f"Detected invalid intent definition: {intents[0]}. Please make sure all intent definitions are valid."
+    with pytest.raises(InvalidDomain, match=error_message):
+        Domain.collect_intent_properties(intents, entity_properties)
+
+
+@pytest.mark.parametrize(
     "entities, entity_properties",
     [
         (
