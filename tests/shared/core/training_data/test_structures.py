@@ -1,3 +1,6 @@
+import pytest
+from typing import List
+
 import rasa.core
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.constants import ACTION_SESSION_START_NAME
@@ -19,6 +22,7 @@ from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
 from rasa.shared.core.training_data.structures import Story
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.shared.utils.yaml import read_yaml
+from rasa.shared.core.training_data.structures import StoryGraph, StoryStep
 
 domain = Domain.load("data/test_moodbot/domain.yml")
 
@@ -96,3 +100,21 @@ def test_cap_length_without_ellipsis():
 
 def test_cap_length_with_short_string():
     assert rasa.shared.core.training_data.structures._cap_length("my", 3) == "my"
+
+
+@pytest.mark.parametrize(
+    "story_steps, expected_result",
+    [
+        # Case 1: No story steps -> Should return False
+        ([], False),
+        # Case 2: Story steps with no UserUttered events -> Should return False
+        ([StoryStep(block_name="x", events=[])], False),
+        # Case 3: Story steps with UserUttered events but no text -> Should return False
+        ([StoryStep(block_name="x", events=[UserUttered(text=None)])], False),
+        # Case 4: Story steps with UserUttered events with text -> Should return True
+        ([StoryStep(block_name="x", events=[UserUttered(text="Hello!")])], True),
+    ],
+)
+def test_has_e2e_stories(story_steps: List[StoryStep], expected_result: bool):
+    story_graph = StoryGraph(story_steps=story_steps)
+    assert story_graph.has_e2e_stories() == expected_result

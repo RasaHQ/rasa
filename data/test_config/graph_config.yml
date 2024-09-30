@@ -255,7 +255,7 @@ train_schema:
         importer: finetuning_validator
       uses: rasa.graph_components.providers.story_graph_provider.StoryGraphProvider
       constructor_name: create
-      fn: provide
+      fn: provide_train
       config:
         exclusion_percentage: null
       eager: false
@@ -341,6 +341,17 @@ predict_schema:
       is_target: false
       is_input: false
       resource: null
+    story_graph_provider:
+      needs: { }
+      uses: rasa.graph_components.providers.story_graph_provider.StoryGraphProvider
+      constructor_name: load
+      fn: provide_inference
+      config: { }
+      eager: true
+      is_target: false
+      is_input: false
+      resource:
+        name: story_graph_provider
     flows_provider:
       needs: {}
       uses: rasa.graph_components.providers.flows_provider.FlowsProvider
@@ -356,6 +367,7 @@ predict_schema:
       needs:
           tracker: __tracker__
           flows: flows_provider
+          story_graph: story_graph_provider
       uses: rasa.dialogue_understanding.processor.command_processor_component.CommandProcessorComponent
       constructor_name: load
       fn: execute_commands

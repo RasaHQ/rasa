@@ -115,7 +115,13 @@ async def test_end_to_end_evaluation_script(
         '[{"name": "Max"}]{"entity": "name", "value": "Max"}',
     ]
 
-    assert story_evaluation.evaluation_store.serialise()[0] == serialised_store
+    # The sorting below is necessary because python3.10 on the CI
+    # modifies the order as compared to python3.8 and python3.9. but the order is
+    # irrelevant for the tested functionality
+    assert (
+        story_evaluation.evaluation_store.serialise()[0].sort()
+        == serialised_store.sort()
+    )
     assert not story_evaluation.evaluation_store.check_prediction_target_mismatch()
     assert len(story_evaluation.failed_stories) == 0
     assert num_stories == 3

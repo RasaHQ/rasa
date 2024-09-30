@@ -62,6 +62,7 @@ from rasa.shared.core.slots import TextSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import COMMANDS
 from rasa.shared.utils.io import deep_container_fingerprint
+from rasa.shared.core.training_data.structures import StoryStep, StoryGraph
 
 
 @pytest.fixture
@@ -521,20 +522,56 @@ def test_clean_up_commands_with_start_flow(
 @pytest.mark.parametrize(
     (
         "commands,"
-        "expected_clean_commands,"
+        "uses_action_trigger_chitchat,"
         "defines_intentless_policy,"
-        "uses_action_trigger_chitchat"
+        "e2e_stories,"
+        "expected_clean_commands"
     ),
     [
-        ([ChitChatAnswerCommand()], [ChitChatAnswerCommand()], True, True),
-        ([ChitChatAnswerCommand()], [ChitChatAnswerCommand()], False, False),
+        ## working inputs
+        # trigger, policy and stories
         (
             [ChitChatAnswerCommand()],
-            [CannotHandleCommand(RASA_PATTERN_CANNOT_HANDLE_CHITCHAT)],
+            True,
+            True,
+            [StoryStep(block_name="smth", events=[UserUttered(text="Hi")])],
+            [ChitChatAnswerCommand()],
+        ),
+        # no trigger, no policy and no stories
+        ([ChitChatAnswerCommand()], False, False, [], [ChitChatAnswerCommand()]),
+        # no trigger, but policy and stories
+        (
+            [ChitChatAnswerCommand()],
             False,
             True,
+            [StoryStep(block_name="smth", events=[UserUttered(text="Hi")])],
+            [ChitChatAnswerCommand()],
         ),
-        ([ChitChatAnswerCommand()], [ChitChatAnswerCommand()], True, False),
+        ## inputs leading to cannot-handle
+        # no trigger, policy and no stories
+        (
+            [ChitChatAnswerCommand()],
+            False,
+            True,
+            [],
+            [CannotHandleCommand(RASA_PATTERN_CANNOT_HANDLE_CHITCHAT)],
+        ),
+        # trigger, policy and no stories
+        (
+            [ChitChatAnswerCommand()],
+            True,
+            True,
+            [],
+            [CannotHandleCommand(RASA_PATTERN_CANNOT_HANDLE_CHITCHAT)],
+        ),
+        # trigger, no policy and no stories
+        (
+            [ChitChatAnswerCommand()],
+            True,
+            False,
+            [],
+            [CannotHandleCommand(RASA_PATTERN_CANNOT_HANDLE_CHITCHAT)],
+        ),
     ],
 )
 @patch("rasa.shared.core.flows.flows_list.FlowsList.flow_by_id")
@@ -543,9 +580,10 @@ def test_clean_up_chitchat_commands(
     mock_execution_context_has_node: Mock,
     mock_flow_by_id: Mock,
     commands,
-    expected_clean_commands,
-    defines_intentless_policy,
     uses_action_trigger_chitchat,
+    defines_intentless_policy,
+    e2e_stories,
+    expected_clean_commands,
 ):
     # Given
     # mock getting the pattern_chitchat flow
@@ -555,14 +593,21 @@ def test_clean_up_chitchat_commands(
         return_value=uses_action_trigger_chitchat
     )
     mock_flow_by_id.return_value = mock_pattern_chitchat
+
     # mock the presence of the intentless policy in the execution context
     execution_context = ExecutionContext(Mock())
     mock_execution_context_has_node.return_value = defines_intentless_policy
+
     # mock the tracker
     tracker = DialogueStateTracker.from_events(sender_id="test", evts=[])
 
+    # Mock the StoryGraph with story steps
+    story_graph = StoryGraph(e2e_stories)
+
     # When
-    clean_commands = clean_up_commands(commands, tracker, flows, execution_context)
+    clean_commands = clean_up_commands(
+        commands, tracker, flows, execution_context, story_graph
+    )
 
     # Then
     mock_execution_context_has_node.assert_called_once()

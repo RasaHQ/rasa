@@ -634,8 +634,10 @@ def test_response_filtering_default_flows() -> None:
     assert len(domain.responses) > 0
     assert len(default_flows.utterances) > 0
 
-    num_unused_default_utterances = len(domain.responses) - len(
-        default_flows.utterances
+    # excluding utter_free_chitchat_response (-1 below)
+    # when action_trigger_chitchat is used in the pattern
+    num_unused_default_utterances = (
+        len(domain.responses) - len(default_flows.utterances) - 1
     )
 
     assert len(filtered_responses.data.keys()) == num_unused_default_utterances

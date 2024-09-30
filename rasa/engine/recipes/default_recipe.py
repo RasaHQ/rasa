@@ -405,7 +405,7 @@ class DefaultV1Recipe(Recipe):
             return {}
 
         def resolver_name_from_parameter(parameter: str) -> str:
-            # we got a couple special cases to handle wher the parameter name
+            # we got a couple special cases to handle where the parameter name
             # doesn't match the provider name
             if "training_trackers" == parameter:
                 return "training_tracker_provider"
@@ -597,7 +597,7 @@ class DefaultV1Recipe(Recipe):
             needs={"importer": "finetuning_validator"},
             uses=StoryGraphProvider,
             constructor_name="create",
-            fn="provide",
+            fn="provide_train",
             config={"exclusion_percentage": cli_parameters.get("exclusion_percentage")},
             is_input=True,
         )
@@ -881,6 +881,14 @@ class DefaultV1Recipe(Recipe):
             fn="provide_inference",
             config={},
             resource=Resource("domain_provider"),
+        )
+        predict_nodes["story_graph_provider"] = SchemaNode(
+            **DEFAULT_PREDICT_KWARGS,
+            needs={},
+            uses=StoryGraphProvider,
+            fn="provide_inference",
+            config={},
+            resource=Resource("story_graph_provider"),
         )
         predict_nodes["flows_provider"] = SchemaNode(
             **DEFAULT_PREDICT_KWARGS,

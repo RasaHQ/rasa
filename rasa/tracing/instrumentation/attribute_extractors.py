@@ -42,6 +42,7 @@ from rasa.tracing.constants import (
     PROMPT_TOKEN_LENGTH_ATTRIBUTE_NAME,
     REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME,
 )
+from rasa.shared.core.training_data.structures import StoryGraph
 
 if TYPE_CHECKING:
     from langchain.llms.base import BaseLLM
@@ -374,6 +375,7 @@ def extract_attrs_for_execute_commands(
     tracker: DialogueStateTracker,
     all_flows: FlowsList,
     execution_context: ExecutionContext,
+    story_graph: Optional[StoryGraph] = None,
 ) -> Dict[str, Any]:
     return {
         "number_of_events": len(tracker.events),
@@ -416,6 +418,7 @@ def extract_attrs_for_clean_up_commands(
     tracker: DialogueStateTracker,
     all_flows: FlowsList,
     execution_context: ExecutionContext,
+    story_graph: Optional[StoryGraph] = None,
 ) -> Dict[str, Any]:
     commands_list = []
 

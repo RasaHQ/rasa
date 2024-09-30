@@ -80,6 +80,8 @@ from rasa.utils.ml_utils import (
     persist_faiss_vector_store,
     response_for_template,
 )
+from rasa.dialogue_understanding.patterns.chitchat import FLOW_PATTERN_CHITCHAT
+from rasa.shared.core.constants import ACTION_TRIGGER_CHITCHAT
 from rasa.utils.log_utils import log_llm
 
 if TYPE_CHECKING:
@@ -174,6 +176,21 @@ def filter_responses(responses: Responses, forms: Forms, flows: FlowsList) -> Re
         for name, variants in responses.data.items()
         if name not in combined_responses
     }
+
+    pattern_chitchat = flows.flow_by_id(FLOW_PATTERN_CHITCHAT)
+
+    # The following condition is highly unlikely, but mypy requires the case
+    # of pattern_chitchat == None to be addressed
+    if not pattern_chitchat:
+        return Responses(data=filtered_responses)
+
+    # if action_trigger_chitchat, filter out "utter_free_chitchat_response"
+    has_action_trigger_chitchat = pattern_chitchat.has_action_step(
+        ACTION_TRIGGER_CHITCHAT
+    )
+    if has_action_trigger_chitchat:
+        filtered_responses.pop("utter_free_chitchat_response", None)
+
     return Responses(data=filtered_responses)
 
 
@@ -709,6 +726,7 @@ class IntentlessPolicy(Policy):
             number_of_samples=NUMBER_OF_CONVERSATION_SAMPLES,
             max_number_of_tokens=MAX_NUMBER_OF_TOKENS_FOR_SAMPLES,
         )
+
         extra_ai_responses = self.extract_ai_responses(conversation_samples)
 
         # put conversation responses in front of sampled examples,
