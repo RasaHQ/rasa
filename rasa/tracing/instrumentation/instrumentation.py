@@ -1137,7 +1137,7 @@ def _instrument_grpc_custom_action_executor(
     )
 
     logger.debug(
-        f"Instrumented '{grpc_custom_action_executor_class.__name__}.request'."
+        f"Instrumented '{grpc_custom_action_executor_class.__name__}.run."
     )
 
 
