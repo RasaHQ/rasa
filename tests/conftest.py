@@ -66,7 +66,11 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.model_training import train, train_nlu
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.utils.spacy_utils import SpacyModel, SpacyNLP
-from rasa.shared.constants import ASSISTANT_ID_KEY, LATEST_TRAINING_DATA_FORMAT_VERSION
+from rasa.shared.constants import (
+    ASSISTANT_ID_KEY,
+    LATEST_TRAINING_DATA_FORMAT_VERSION,
+    LLM_API_HEALTH_CHECK_ENV_VAR,
+)
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     ACTION_RESTART_NAME,
@@ -1453,3 +1457,9 @@ def setup_swagger_coverage():
 
     yield
     reporter.generate_report()
+
+
+@pytest.fixture(autouse=True)
+def set_llm_api_health_check_env_var(monkeypatch) -> None:
+    # Set environment variables for all tests
+    monkeypatch.setenv(LLM_API_HEALTH_CHECK_ENV_VAR, "false")

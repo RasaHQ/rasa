@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib
+import os
 from typing import Any, Dict, List, Optional
 
 import structlog
@@ -21,6 +22,7 @@ from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import (
+    LLM_API_HEALTH_CHECK_ENV_VAR,
     ROUTE_TO_CALM_SLOT,
     PROMPT_CONFIG_KEY,
     PROVIDER_CONFIG_KEY,
@@ -36,6 +38,7 @@ from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.utils.llm import (
     DEFAULT_OPENAI_CHAT_MODEL_NAME,
     get_prompt_template,
+    llm_api_health_check,
     llm_factory,
     try_instantiate_llm_client,
 )
@@ -130,12 +133,16 @@ class LLMBasedRouter(GraphComponent):
     def train(self, training_data: TrainingData) -> Resource:
         """Train the intent classifier on a data set."""
         # Validate llm configuration
-        try_instantiate_llm_client(
+        llm_client = try_instantiate_llm_client(
             self.config.get(LLM_CONFIG_KEY),
             DEFAULT_LLM_CONFIG,
             "llm_based_router.train",
-            "LLMBasedRouter",
+            LLMBasedRouter.__name__,
         )
+        if os.getenv(LLM_API_HEALTH_CHECK_ENV_VAR, "true").lower() == "true":
+            llm_api_health_check(
+                llm_client, "llm_based_router.train", LLMBasedRouter.__name__
+            )
 
         self.persist()
         return self._resource

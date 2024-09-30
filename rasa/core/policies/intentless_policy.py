@@ -1,5 +1,6 @@
 import importlib.resources
 import math
+import os
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, TYPE_CHECKING, Text, Tuple
 
@@ -31,6 +32,7 @@ from rasa.graph_components.providers.responses_provider import Responses
 from rasa.shared.constants import (
     REQUIRED_SLOTS_KEY,
     EMBEDDINGS_CONFIG_KEY,
+    LLM_API_HEALTH_CHECK_ENV_VAR,
     LLM_CONFIG_KEY,
     MODEL_CONFIG_KEY,
     MODEL_NAME_CONFIG_KEY,
@@ -67,6 +69,7 @@ from rasa.shared.utils.llm import (
     combine_custom_and_default_config,
     embedder_factory,
     get_prompt_template,
+    llm_api_health_check,
     llm_factory,
     sanitize_message_for_prompt,
     tracker_as_readable_transcript,
@@ -470,12 +473,16 @@ class IntentlessPolicy(Policy):
             A policy must return its resource locator so that potential children nodes
             can load the policy from the resource.
         """
-        try_instantiate_llm_client(
+        llm_client = try_instantiate_llm_client(
             self.config.get(LLM_CONFIG_KEY),
             DEFAULT_LLM_CONFIG,
             "intentless_policy.train",
-            "IntentlessPolicy",
+            IntentlessPolicy.__name__,
         )
+        if os.getenv(LLM_API_HEALTH_CHECK_ENV_VAR, "true").lower() == "true":
+            llm_api_health_check(
+                llm_client, "intentless_policy.train", IntentlessPolicy.__name__
+            )
 
         responses = filter_responses(responses, forms, flows or FlowsList([]))
         telemetry.track_intentless_policy_train()
