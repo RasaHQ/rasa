@@ -67,6 +67,7 @@ updates:
           - "responses"
           - "aioresponses"
           - "datadog"
+          - "gitpython"
         update-types:
           - "minor"
           - "patch"
