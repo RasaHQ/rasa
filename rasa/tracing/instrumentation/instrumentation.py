@@ -1136,9 +1136,7 @@ def _instrument_grpc_custom_action_executor(
         grpc_custom_action_executor_class.run
     )
 
-    logger.debug(
-        f"Instrumented '{grpc_custom_action_executor_class.__name__}.run."
-    )
+    logger.debug(f"Instrumented '{grpc_custom_action_executor_class.__name__}.run.")
 
 
 def _mangled_instrumented_boolean_attribute_name(instrumented_class: Type) -> Text:
