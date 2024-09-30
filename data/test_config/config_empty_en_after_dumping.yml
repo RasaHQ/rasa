@@ -29,9 +29,6 @@ policies:
 # # See https://rasa.com/docs/rasa-pro/concepts/policies/policy-overview for more information.
 #   - name: MemoizationPolicy
 #   - name: RulePolicy
-#   - name: UnexpecTEDIntentPolicy
-#     max_history: 5
-#     epochs: 100
 #   - name: TEDPolicy
 #     max_history: 5
 #     epochs: 100
