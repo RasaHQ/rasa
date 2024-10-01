@@ -14,6 +14,7 @@ from rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer import SparseFeatu
 from rasa.nlu.utils.spacy_utils import SpacyModel
 from rasa.shared.constants import DOCS_URL_COMPONENTS
 import rasa.utils.io as io_utils
+from sklearn.exceptions import NotFittedError
 from sklearn.feature_extraction.text import CountVectorizer
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
@@ -551,36 +552,39 @@ class CountVectorsFeaturizer(SparseFeaturizer, GraphComponent):
         sequence_features: List[Optional[scipy.sparse.spmatrix]] = []
         sentence_features: List[Optional[scipy.sparse.spmatrix]] = []
 
-        for i, tokens in enumerate(all_tokens):
-            if not tokens:
-                # nothing to featurize
-                sequence_features.append(None)
-                sentence_features.append(None)
-                continue
+        try:
+            for i, tokens in enumerate(all_tokens):
+                # vectorizer.transform returns a sparse matrix of size
+                # [n_samples, n_features]
+                # set input to list of tokens if sequence should be returned
+                # otherwise join all tokens to a single string and pass that as a list
+                if not tokens:
+                    # attribute is not set (e.g. response not present)
+                    sequence_features.append(None)
+                    sentence_features.append(None)
+                    continue
 
-            # vectorizer.transform returns a sparse matrix of size
-            # [n_samples, n_features]
-            # set input to list of tokens if sequence should be returned
-            # otherwise join all tokens to a single string and pass that as a list
-            if not tokens:
-                # attribute is not set (e.g. response not present)
-                sequence_features.append(None)
-                sentence_features.append(None)
-                continue
+                seq_vec = self.vectorizers[attribute].transform(tokens)
+                seq_vec.sort_indices()
 
-            seq_vec = self.vectorizers[attribute].transform(tokens)
-            seq_vec.sort_indices()
+                sequence_features.append(seq_vec.tocoo())
 
-            sequence_features.append(seq_vec.tocoo())
+                if attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
+                    tokens_text = [" ".join(tokens)]
+                    sentence_vec = self.vectorizers[attribute].transform(tokens_text)
+                    sentence_vec.sort_indices()
 
-            if attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
-                tokens_text = [" ".join(tokens)]
-                sentence_vec = self.vectorizers[attribute].transform(tokens_text)
-                sentence_vec.sort_indices()
-
-                sentence_features.append(sentence_vec.tocoo())
-            else:
-                sentence_features.append(None)
+                    sentence_features.append(sentence_vec.tocoo())
+                else:
+                    sentence_features.append(None)
+        except NotFittedError:
+            logger.warning(
+                f"Unable to train CountVectorizer for message "
+                f"attribute - {attribute}, since the call to sklearn's "
+                f"`.fit()` method failed. Leaving an untrained "
+                f"CountVectorizer for it."
+            )
+            return [None], [None]
 
         return sequence_features, sentence_features
 
