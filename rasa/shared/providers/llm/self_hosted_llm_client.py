@@ -1,12 +1,19 @@
 from typing import Any, Dict, List, Optional, Union
-from rasa.shared.providers.llm.llm_response import LLMResponse
+from litellm import (
+    text_completion,
+    atext_completion,
+)
+import logging
 import structlog
 
 from rasa.shared.constants import OPENAI_PROVIDER
 from rasa.shared.providers._configs.self_hosted_llm_client_config import (
     SelfHostedLLMClientConfig,
 )
+from rasa.shared.exceptions import ProviderClientAPIException
 from rasa.shared.providers.llm._base_litellm_client import _BaseLiteLLMClient
+from rasa.shared.providers.llm.llm_response import LLMResponse, LLMUsage
+from rasa.shared.utils.io import suppress_logs
 
 structlogger = structlog.get_logger()
 
@@ -175,6 +182,42 @@ class SelfHostedLLMClient(_BaseLiteLLMClient):
         )
         return fn_args
 
+    @suppress_logs(log_level=logging.WARNING)
+    def _text_completion(self, prompt: Union[List[str], str]) -> LLMResponse:
+        """
+        Synchronously generate completions for given prompt.
+
+        Args:
+            prompt: Prompt to generate the completion for.
+        Returns:
+            List of message completions.
+        Raises:
+            ProviderClientAPIException: If the API request fails.
+        """
+        try:
+            response = text_completion(prompt=prompt, **self._completion_fn_args)
+            return self._format_text_completion_response(response)
+        except Exception as e:
+            raise ProviderClientAPIException(e)
+
+    @suppress_logs(log_level=logging.WARNING)
+    async def _atext_completion(self, prompt: Union[List[str], str]) -> LLMResponse:
+        """
+        Asynchronously generate completions for given prompt.
+
+        Args:
+            prompt: Prompt to generate the completion for.
+        Returns:
+            List of message completions.
+        Raises:
+            ProviderClientAPIException: If the API request fails.
+        """
+        try:
+            response = await atext_completion(prompt=prompt, **self._completion_fn_args)
+            return self._format_text_completion_response(response)
+        except Exception as e:
+            raise ProviderClientAPIException(e)
+
     async def acompletion(self, messages: Union[List[str], str]) -> LLMResponse:
         """Asynchronous completion of the model with the given messages.
 
@@ -191,7 +234,7 @@ class SelfHostedLLMClient(_BaseLiteLLMClient):
         """
         if self._use_chat_completions_endpoint:
             return await super().acompletion(messages)
-        return await super().atext_completion(messages)
+        return await self._atext_completion(messages)
 
     def completion(self, messages: Union[List[str], str]) -> LLMResponse:
         """Completion of the model with the given messages.
@@ -209,4 +252,30 @@ class SelfHostedLLMClient(_BaseLiteLLMClient):
         """
         if self._use_chat_completions_endpoint:
             return super().completion(messages)
-        return super().text_completion(messages)
+        return self._text_completion(messages)
+
+    def _format_text_completion_response(self, response: Any) -> LLMResponse:
+        """Parses the LiteLLM text completion response to Rasa format."""
+        formatted_response = LLMResponse(
+            id=response.id,
+            created=response.created,
+            choices=[choice.text for choice in response.choices],
+            model=response.model,
+        )
+        if (usage := response.usage) is not None:
+            prompt_tokens = (
+                num_tokens
+                if isinstance(num_tokens := usage.prompt_tokens, (int, float))
+                else 0
+            )
+            completion_tokens = (
+                num_tokens
+                if isinstance(num_tokens := usage.completion_tokens, (int, float))
+                else 0
+            )
+            formatted_response.usage = LLMUsage(prompt_tokens, completion_tokens)
+        structlogger.debug(
+            "base_litellm_client.formatted_response",
+            formatted_response=formatted_response.to_dict(),
+        )
+        return formatted_response

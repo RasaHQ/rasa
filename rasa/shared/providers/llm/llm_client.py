@@ -60,36 +60,6 @@ class LLMClient(Protocol):
         """
         ...
 
-    def text_completion(self, prompt: Union[List[str], str]) -> LLMResponse:
-        """
-        Synchronously generate completions for given prompt.
-
-        This method should be implemented to take a list of messages (as
-        strings) and return a list of completions (as strings) by invoking the
-        text completion API.
-
-        Args:
-            prompt: Prompt to generate the completion for.
-        Returns:
-            LLMResponse
-        """
-        ...
-
-    async def atext_completion(self, prompt: Union[List[str], str]) -> LLMResponse:
-        """
-        Asynchronously generate completions for given prompt.
-
-        This method should be implemented to take a list of messages (as
-        strings) and return a list of completions (as strings) by invoking the
-        text completion API.
-
-        Args:
-            prompt: Prompt to generate the completion for.
-        Returns:
-            LLMResponse
-        """
-        ...
-
     def validate_client_setup(self, *args, **kwargs) -> None:  # type: ignore
         """
         Perform client setup validation.
