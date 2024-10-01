@@ -10,6 +10,13 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.8.15] - 2024-10-01
+                        
+Rasa Pro 3.8.15 (2024-10-01)                             
+### Bugfixes
+- [#1333](https://github.com/rasahq/rasa-private/issues/1333): Fixes an issue where the `CountVectorsFeaturizer` and `LogisticRegressionClassifier` would throw error during inference when no NLU training data is provided.
+
+
 ## [3.8.14] - 2024-09-20
                         
 Rasa Pro 3.8.14 (2024-09-20)                             

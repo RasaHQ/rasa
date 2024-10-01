@@ -9,7 +9,7 @@ exclude = "((.eggs | .git | .pytest_cache | build | dist))"
 
 [tool.poetry]
 name = "rasa-pro"
-version = "3.8.14"
+version = "3.8.15"
 description = "State-of-the-art open-core Conversational AI framework for Enterprises that natively leverages generative AI for effortless assistant development."
 authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
 maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
@@ -190,7 +190,7 @@ psutil = "^5.9.5"
 tenacity = "~8.4.1"
 types-protobuf = "4.25.0.20240417"
 [[tool.poetry.dependencies.tensorflow-io-gcs-filesystem]]
-version = "==0.31" # newer versions doesn't provide wheels for Windows
+version = "==0.31"
 markers = "sys_platform == 'win32'"
 
 [[tool.poetry.dependencies.tensorflow-io-gcs-filesystem]]
