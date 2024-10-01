@@ -3,7 +3,9 @@ from typing import Any, Text, Dict, List, Type, Tuple
 import joblib
 import structlog
 from scipy.sparse import hstack, vstack, csr_matrix
+from sklearn.exceptions import NotFittedError
 from sklearn.linear_model import LogisticRegression
+from sklearn.utils.validation import check_is_fitted
 
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
@@ -154,6 +156,17 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
 
     def process(self, messages: List[Message]) -> List[Message]:
         """Return the most likely intent and its probability for a message."""
+        # Check if the classifier is trained
+        if not self.is_trained():
+            structlogger.warning(
+                "logistic_regression_classifier.not_trained.skip_intent_prediction",
+                event_info=(
+                    f"The '{self.__class__.__name__}' is not trained. "
+                    f"Skipping intent prediction."
+                ),
+            )
+            return messages
+
         X = self._create_X(messages)
         probas = self.clf.predict_proba(X)
         for idx, message in enumerate(messages):
@@ -216,3 +229,12 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
     def validate_config(cls, config: Dict[Text, Any]) -> None:
         """Validates that the component is configured properly."""
         pass
+
+    def is_trained(self) -> bool:
+        """Checks if the model has been trained."""
+        try:
+            # This will raise a NotFittedError if the classifier isn't fitted
+            check_is_fitted(self.clf)
+            return True
+        except NotFittedError:
+            return False
