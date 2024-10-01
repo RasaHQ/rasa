@@ -585,7 +585,7 @@ def instrument(
         )
 
     if grpc_custom_action_executor_class is not None and not class_is_instrumented(
-            grpc_custom_action_executor_class
+        grpc_custom_action_executor_class
     ):
         _instrument_grpc_custom_action_executor(
             tracer_provider.get_tracer(grpc_custom_action_executor_class.__module__),
@@ -1111,6 +1111,7 @@ def _instrument_grpc_custom_action_executor(
     tracer: Tracer, grpc_custom_action_executor_class: Type[GRPCCustomActionExecutor]
 ) -> None:
     """Instrument the `run` method of the `GRPCCustomActionExecutor` class.
+
     Args:
         tracer: The `Tracer` that shall be used for tracing.
         grpc_custom_action_executor_class: The `GRPCCustomActionExecutor` to
