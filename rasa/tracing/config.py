@@ -20,6 +20,7 @@ from rasa.core.actions.custom_action_executor import (
     CustomActionExecutor,
     RetryCustomActionExecutor,
 )
+from rasa.core.actions.grpc_custom_action_executor import GRPCCustomActionExecutor
 from rasa.core.agent import Agent
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import TrackerStore
@@ -44,10 +45,9 @@ from rasa.tracing.constants import (
     ENDPOINTS_ROOT_CERTIFICATES_KEY,
     ENDPOINTS_METRICS_KEY,
 )
+from rasa.tracing.instrumentation import instrumentation
 from rasa.tracing.metric_instrument_provider import MetricInstrumentProvider
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
-
-from rasa.tracing.instrumentation import instrumentation
 
 TRACING_SERVICE_NAME = os.environ.get("TRACING_SERVICE_NAME", "rasa")
 
@@ -107,6 +107,7 @@ def configure_tracing(tracer_provider: Optional[TracerProvider]) -> None:
         vector_store_subclasses=vector_store_subclasses,
         nlu_command_adapter_class=NLUCommandAdapter,
         endpoint_config_class=EndpointConfig,
+        grpc_custom_action_executor_class=GRPCCustomActionExecutor,
         single_step_llm_command_generator_class=SingleStepLLMCommandGenerator,
         multi_step_llm_command_generator_class=MultiStepLLMCommandGenerator,
         custom_action_executor_subclasses=custom_action_executor_subclasses,

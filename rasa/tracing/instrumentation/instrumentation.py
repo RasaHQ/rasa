@@ -20,10 +20,10 @@ from typing import (
 
 from multidict import MultiDict
 from opentelemetry.context import Context
-
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.trace import SpanKind, Tracer
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
+
 from rasa.core.actions.action import Action, RemoteAction, CustomActionExecutor
 from rasa.core.actions.custom_action_executor import RetryCustomActionExecutor
 from rasa.core.actions.grpc_custom_action_executor import GRPCCustomActionExecutor
@@ -48,11 +48,13 @@ from rasa.dialogue_understanding.generator import (
 from rasa.dialogue_understanding.generator.nlu_command_adapter import NLUCommandAdapter
 from rasa.engine.graph import GraphNode
 from rasa.engine.training.graph_trainer import GraphTrainer
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import SET_SLOT_COMMAND
 from rasa.shared.nlu.training_data.message import Message
 from rasa.tracing.constants import REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME
+from rasa.tracing.instrumentation import attribute_extractors
 from rasa.tracing.instrumentation.intentless_policy_instrumentation import (
     _instrument_extract_ai_responses,
     _instrument_generate_answer,
@@ -67,9 +69,6 @@ from rasa.tracing.instrumentation.metrics import (
     record_request_size_in_bytes,
 )
 from rasa.utils.endpoints import concat_url, EndpointConfig
-
-from rasa.tracing.instrumentation import attribute_extractors
-
 
 # The `TypeVar` representing the return type for a function to be wrapped.
 S = TypeVar("S")
@@ -308,6 +307,7 @@ def instrument(
     vector_store_subclasses: Optional[List[Type[InformationRetrievalType]]] = None,
     nlu_command_adapter_class: Optional[Type[NLUCommandAdapterType]] = None,
     endpoint_config_class: Optional[Type[EndpointConfigType]] = None,
+    grpc_custom_action_executor_class: Optional[Type[GRPCCustomActionExecutor]] = None,
     single_step_llm_command_generator_class: Optional[
         Type[SingleStepLLMCommandGeneratorType]
     ] = None,
@@ -354,6 +354,9 @@ def instrument(
         `None` is given, no `NLUCommandAdapter` will be instrumented.
     :param endpoint_config_class: The `EndpointConfig` to be instrumented. If
         `None` is given, no `EndpointConfig` will be instrumented.
+    :param grpc_custom_action_executor_class: The `GRPCCustomActionExecution` to be
+        instrumented. If `None` is given, no `GRPCCustomActionExecution`
+        will be instrumented.
     :param single_step_llm_command_generator_class: The `SingleStepLLMCommandGenerator`
         to be instrumented. If `None` is given, no `SingleStepLLMCommandGenerator` will
         be instrumented.
@@ -579,6 +582,14 @@ def instrument(
         _instrument_endpoint_config(
             tracer_provider.get_tracer(endpoint_config_class.__module__),
             endpoint_config_class,
+        )
+
+    if grpc_custom_action_executor_class is not None and not class_is_instrumented(
+            grpc_custom_action_executor_class
+    ):
+        _instrument_grpc_custom_action_executor(
+            tracer_provider.get_tracer(grpc_custom_action_executor_class.__module__),
+            grpc_custom_action_executor_class,
         )
 
     if custom_action_executor_subclasses:
@@ -1094,6 +1105,37 @@ def _instrument_endpoint_config(
     )
 
     logger.debug(f"Instrumented '{endpoint_config_class.__name__}.request'.")
+
+
+def _instrument_grpc_custom_action_executor(
+    tracer: Tracer, grpc_custom_action_executor_class: Type[GRPCCustomActionExecutor]
+) -> None:
+    """Instrument the `run` method of the `GRPCCustomActionExecutor` class.
+    Args:
+        tracer: The `Tracer` that shall be used for tracing.
+        grpc_custom_action_executor_class: The `GRPCCustomActionExecutor` to
+            be instrumented.
+    """
+
+    def tracing_grpc_custom_action_executor_wrapper(fn: Callable) -> Callable:
+        @functools.wraps(fn)
+        async def wrapper(
+            self: Type[GRPCCustomActionExecutor],
+            tracker: Type[DialogueStateTracker],
+            domain: Type[Domain],
+            include_domain: bool = False,
+        ) -> bool:
+            TraceContextTextMapPropagator().inject(self.action_endpoint.headers)
+            result = await fn(self, tracker, domain, include_domain)
+            return result
+
+        return wrapper
+
+    grpc_custom_action_executor_class.run = tracing_grpc_custom_action_executor_wrapper(  # type: ignore[assignment]
+        grpc_custom_action_executor_class.run
+    )
+
+    logger.debug(f"Instrumented '{grpc_custom_action_executor_class.__name__}.run.")
 
 
 def _mangled_instrumented_boolean_attribute_name(instrumented_class: Type) -> Text:
