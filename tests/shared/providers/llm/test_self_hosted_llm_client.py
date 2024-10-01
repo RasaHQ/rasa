@@ -1,6 +1,6 @@
 import pytest
 import structlog
-from _pytest.monkeypatch import MonkeyPatch
+from pytest import MonkeyPatch
 
 from rasa.shared.constants import OPENAI_API_BASE_ENV_VAR
 from rasa.shared.providers.llm.llm_client import LLMClient
@@ -174,6 +174,7 @@ class TestSelfHostedLLMClient:
         assert client.api_base == "https://my.api.base.com/my_model"
         assert client.api_type == "openai"
         assert client.api_version is None
+        assert client._use_chat_completions_endpoint is True
 
     def test_completion(self, client: SelfHostedLLMClient) -> None:
         # Given
@@ -308,6 +309,7 @@ class TestSelfHostedLLMClient:
         assert client.model == "test_model"
         assert client.provider == "self-hosted"
         assert client.api_type == "openai"
+        assert client._use_chat_completions_endpoint is True
         assert client._extra_parameters == {}
 
     @pytest.mark.parametrize(
@@ -352,3 +354,28 @@ class TestSelfHostedLLMClient:
                 break
 
         assert found_validation_log
+
+    async def test_atext_completion(self) -> None:
+        # Given
+        test_prompt = "Hello, this is a test prompt."
+        test_response = "Hello, this is mocked response!"
+
+        client = SelfHostedLLMClient(
+            model="test_model",
+            api_base="https://my.api.base.com/my_model",
+            api_type="openai",
+            provider="self-hosted",
+            use_chat_completions_endpoint=False,  # Ensures atext_completion is used.
+        )
+        # LiteLLM supports mocking response for testing purposes
+        client._extra_parameters = {"mock_response": test_response}
+
+        # When
+        response = await client.acompletion([test_prompt])
+
+        # Then
+        assert response.choices == [test_response]
+        assert response.model == client.model
+        assert response.usage.prompt_tokens > 0
+        assert response.usage.completion_tokens > 0
+        assert response.usage.total_tokens > 0

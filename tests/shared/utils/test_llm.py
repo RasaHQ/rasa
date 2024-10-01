@@ -1771,6 +1771,7 @@ def test_to_show_that_cache_is_persisted_across_different_calls() -> None:
                 "api_base": "http://localhost:8000",
                 "api_type": "openai",
                 "api_version": None,
+                "use_chat_completions_endpoint": True,
             },
         ),
         # case: 26
@@ -1787,6 +1788,7 @@ def test_to_show_that_cache_is_persisted_across_different_calls() -> None:
                 "api_base": "http://localhost:8000",
                 "api_type": "openai",
                 "api_version": None,
+                "use_chat_completions_endpoint": True,
             },
         ),
         # case: 27
@@ -1802,6 +1804,7 @@ def test_to_show_that_cache_is_persisted_across_different_calls() -> None:
                 "api_base": "http://localhost:8000",
                 "api_type": "openai",
                 "api_version": None,
+                "use_chat_completions_endpoint": True,
             },
         ),
         # case: 28
@@ -1820,6 +1823,7 @@ def test_to_show_that_cache_is_persisted_across_different_calls() -> None:
                 "api_base": "http://localhost:8000",
                 "api_type": "openai",
                 "api_version": "v1",
+                "use_chat_completions_endpoint": True,
             },
         ),
         # case: 29
@@ -1836,6 +1840,7 @@ def test_to_show_that_cache_is_persisted_across_different_calls() -> None:
                 "api_base": "http://localhost:8000",
                 "api_type": "openai",
                 "api_version": None,
+                "use_chat_completions_endpoint": True,
             },
         ),
         # case: 30
@@ -1854,6 +1859,25 @@ def test_to_show_that_cache_is_persisted_across_different_calls() -> None:
                 "timeout": 10,
                 "api_type": "openai",
                 "api_version": None,
+                "use_chat_completions_endpoint": True,
+            },
+        ),
+        # case: 31
+        # with use_chat_completions_endpoint set to False
+        (
+            {
+                "provider": "self-hosted",
+                "model": "some_model",
+                "api_base": "http://localhost:8000",
+                "use_chat_completions_endpoint": False,
+            },
+            {
+                "provider": "self-hosted",
+                "model": "some_model",
+                "api_base": "http://localhost:8000",
+                "api_type": "openai",
+                "api_version": None,
+                "use_chat_completions_endpoint": False,
             },
         ),
     ),

@@ -3,7 +3,13 @@ from typing import Dict, List, Any, Union
 
 import logging
 import structlog
-from litellm import completion, acompletion, validate_environment
+from litellm import (
+    completion,
+    acompletion,
+    text_completion,
+    atext_completion,
+    validate_environment,
+)
 
 from rasa.shared.exceptions import (
     ProviderClientAPIException,
@@ -170,6 +176,42 @@ class _BaseLiteLLMClient:
         except Exception as e:
             raise ProviderClientAPIException(e)
 
+    @suppress_logs(log_level=logging.WARNING)
+    def text_completion(self, prompt: Union[List[str], str]) -> LLMResponse:
+        """
+        Synchronously generate completions for given prompt.
+
+        Args:
+            prompt: Prompt to generate the completion for.
+        Returns:
+            List of message completions.
+        Raises:
+            ProviderClientAPIException: If the API request fails.
+        """
+        try:
+            response = text_completion(prompt=prompt, **self._completion_fn_args)
+            return self._format_text_completion_response(response)
+        except Exception as e:
+            raise ProviderClientAPIException(e)
+
+    @suppress_logs(log_level=logging.WARNING)
+    async def atext_completion(self, prompt: Union[List[str], str]) -> LLMResponse:
+        """
+        Asynchronously generate completions for given prompt.
+
+        Args:
+            prompt: Prompt to generate the completion for.
+        Returns:
+            List of message completions.
+        Raises:
+            ProviderClientAPIException: If the API request fails.
+        """
+        try:
+            response = await atext_completion(prompt=prompt, **self._completion_fn_args)
+            return self._format_text_completion_response(response)
+        except Exception as e:
+            raise ProviderClientAPIException(e)
+
     def _format_messages(self, messages: Union[List[str], str]) -> List[Dict[str, str]]:
         """Formats messages (or a single message) to OpenAI format."""
         if isinstance(messages, str):
@@ -201,6 +243,32 @@ class _BaseLiteLLMClient:
                 if isinstance(
                     num_tokens := usage.get("completion_tokens", 0), (int, float)
                 )
+                else 0
+            )
+            formatted_response.usage = LLMUsage(prompt_tokens, completion_tokens)
+        structlogger.debug(
+            "base_litellm_client.formatted_response",
+            formatted_response=formatted_response.to_dict(),
+        )
+        return formatted_response
+
+    def _format_text_completion_response(self, response: Any) -> LLMResponse:
+        """Parses the LiteLLM text completion response to Rasa format."""
+        formatted_response = LLMResponse(
+            id=response.id,
+            created=response.created,
+            choices=[choice.text for choice in response.choices],
+            model=response.model,
+        )
+        if (usage := response.usage) is not None:
+            prompt_tokens = (
+                num_tokens
+                if isinstance(num_tokens := usage.prompt_tokens, (int, float))
+                else 0
+            )
+            completion_tokens = (
+                num_tokens
+                if isinstance(num_tokens := usage.completion_tokens, (int, float))
                 else 0
             )
             formatted_response.usage = LLMUsage(prompt_tokens, completion_tokens)
