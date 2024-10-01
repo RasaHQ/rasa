@@ -10,6 +10,15 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.9.13] - 2024-10-01
+                        
+Rasa Pro 3.9.13 (2024-10-01)                             
+### Bugfixes
+- [#1188](https://github.com/rasahq/rasa-private/issues/1188): Fix inconsistent recording of telemetry events for llm-based command generators.
+- [#1325](https://github.com/rasahq/rasa-private/issues/1325): Added tracing explicitly to `GRPCCustomActionExecutor.run` in order to pass the tracing context to the action server.
+- [#1332](https://github.com/rasahq/rasa-private/issues/1332): Fixes an issue where the `CountVectorsFeaturizer` and `LogisticRegressionClassifier` would throw error during inference when no NLU training data is provided.
+
+
 ## [3.9.12] - 2024-09-20
                         
 Rasa Pro 3.9.12 (2024-09-20)                             
