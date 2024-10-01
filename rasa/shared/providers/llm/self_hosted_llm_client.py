@@ -1,4 +1,5 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Union
+from rasa.shared.providers.llm.llm_response import LLMResponse
 import structlog
 
 from rasa.shared.constants import OPENAI_PROVIDER
@@ -19,6 +20,8 @@ class SelfHostedLLMClient(_BaseLiteLLMClient):
         api_base (str): The base URL of the API endpoint.
         api_type (Optional[str]): The type of the API endpoint.
         api_version (Optional[str]): The version of the API endpoint.
+        use_chat_completions_endpoint (Optional[bool]): Whether to use the chat
+            completions endpoint for completions. Defaults to True.
         kwargs: Any: Additional configuration parameters that can include, but
             are not limited to model parameters and lite-llm specific
             parameters. These parameters will be passed to the
@@ -36,6 +39,7 @@ class SelfHostedLLMClient(_BaseLiteLLMClient):
         api_base: str,
         api_type: Optional[str] = None,
         api_version: Optional[str] = None,
+        use_chat_completions_endpoint: Optional[bool] = True,
         **kwargs: Any,
     ):
         super().__init__()  # type: ignore
@@ -44,6 +48,7 @@ class SelfHostedLLMClient(_BaseLiteLLMClient):
         self._api_base = api_base
         self._api_type = api_type
         self._api_version = api_version
+        self._use_chat_completions_endpoint = use_chat_completions_endpoint
         self._extra_parameters = kwargs or {}
 
     @classmethod
@@ -66,6 +71,7 @@ class SelfHostedLLMClient(_BaseLiteLLMClient):
             api_base=client_config.api_base,
             api_type=client_config.api_type,
             api_version=client_config.api_version,
+            use_chat_completions_endpoint=client_config.use_chat_completions_endpoint,
             **client_config.extra_parameters,
         )
 
@@ -132,6 +138,7 @@ class SelfHostedLLMClient(_BaseLiteLLMClient):
             api_base=self._api_base,
             api_type=self._api_type,
             api_version=self._api_version,
+            use_chat_completions_endpoint=self._use_chat_completions_endpoint,
             extra_parameters=self._extra_parameters,
         )
         return config.to_dict()
@@ -167,3 +174,39 @@ class SelfHostedLLMClient(_BaseLiteLLMClient):
             }
         )
         return fn_args
+
+    async def acompletion(self, messages: Union[List[str], str]) -> LLMResponse:
+        """Asynchronous completion of the model with the given messages.
+
+        Method overrides the base class method to call the appropriate
+        completion method based on the configuration. If the chat completions
+        endpoint is enabled, the acompletion method is called. Otherwise, the
+        atext_completion method is called.
+
+        Args:
+            messages: The messages to be used for completion.
+
+        Returns:
+            The completion response.
+        """
+        if self._use_chat_completions_endpoint:
+            return await super().acompletion(messages)
+        return await super().atext_completion(messages)
+
+    def completion(self, messages: Union[List[str], str]) -> LLMResponse:
+        """Completion of the model with the given messages.
+
+        Method overrides the base class method to call the appropriate
+        completion method based on the configuration. If the chat completions
+        endpoint is enabled, the completion method is called. Otherwise, the
+        text_completion method is called.
+
+        Args:
+            messages: The messages to be used for completion.
+
+        Returns:
+            The completion response.
+        """
+        if self._use_chat_completions_endpoint:
+            return super().completion(messages)
+        return super().text_completion(messages)
