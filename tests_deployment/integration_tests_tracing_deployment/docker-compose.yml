@@ -20,7 +20,7 @@ configs:
         type: jaeger
         host: jaeger
         port: 6831
-        service_name: rasa_sdk
+        service_name: action-server-jaeger-testing
         sync_export: ~
   endpoints-jaeger-no-action-server.yml:
     content: |
