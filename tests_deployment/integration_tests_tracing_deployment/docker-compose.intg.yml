@@ -2,6 +2,7 @@ version: "3"
 
 x-license: &license
   RASA_PRO_LICENSE: ${RASA_PRO_LICENSE}
+  OPENAI_API_KEY: ${OPENAI_API_KEY}
 
 services:
   otel-collector:
@@ -106,5 +107,55 @@ services:
     environment:
       <<: *license
 
+  rasa-pro-grpc-jaeger:
+    image: ${TARGET_IMAGE_REGISTRY}:${IMAGE_TAG}
+    volumes:
+      - "./simple_bot:/app"
+      - "./endpoints-grpc-jaeger.yml:/app/endpoints.yml"
+    entrypoint: ""
+    command: rasa run -p 5014 --enable-api
+    networks: [ 'rasa-pro-network' ]
+    ports:
+      - "5014:5014"
+    environment:
+      <<: *license
+
+  rasa-grpc-action-server-jaeger:
+    image: ${SDK_TARGET_IMAGE_REGISTRY}:latest
+    volumes:
+      - "./simple_bot/actions:/app/actions"
+      - "./endpoints-jaeger-for-action-server.yml:/app/endpoints.yml"
+    networks: [ 'rasa-pro-network' ]
+    entrypoint: ""
+    command: python -m rasa_sdk --actions actions -p 5058 --grpc
+    environment:
+      <<: *license
+
+  rasa-pro-grpc-ssl-jaeger:
+    image: ${TARGET_IMAGE_REGISTRY}:${IMAGE_TAG}
+    volumes:
+      - "./simple_bot:/app"
+      - "./certs/ssl/ca.pem:/certs/ca.pem"
+      - "./endpoints-grpc-ssl-jaeger.yml:/app/endpoints.yml"
+    entrypoint: ""
+    command: rasa run -p 5015 --enable-api
+    networks: [ 'rasa-pro-network' ]
+    ports:
+      - "5015:5015"
+    environment:
+      <<: *license
+
+  rasa-grpc-ssl-action-server:
+    image: ${SDK_TARGET_IMAGE_REGISTRY}:latest
+    volumes:
+      - "./certs/ssl/server.pem:/certs/server.pem"
+      - "./certs/ssl/server-key.pem:/certs/server-key.pem"
+      - "./simple_bot/actions:/app/actions"
+      - "./endpoints-jaeger-for-action-server.yml:/app/endpoints.yml"
+    networks: [ 'rasa-pro-network' ]
+    entrypoint: "python -m rasa_sdk"
+    command: --actions actions -p 5059 --grpc --ssl-certificate /certs/server.pem --ssl-keyfile /certs/server-key.pem
+    environment:
+      <<: *license
 
 networks: { rasa-pro-network: { } }
