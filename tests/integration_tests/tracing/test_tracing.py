@@ -32,6 +32,9 @@ from tests.integration_tests.tracing.conftest import (
     DIRECT_CUSTOM_ACTION_EXECUTION_SUB_SPAN_NAME,
     RASA_SERVER_TRIGGER_MESSAGE,
     TraceQueryTimestamps,
+    GRPC_RASA_SERVER_JAEGER,
+    GRPC_SSL_RASA_SERVER_JAEGER,
+    GRPC_ACTION_SERVER_PARENT_SUB_SPAN_NAME,
 )
 
 if typing.TYPE_CHECKING:
@@ -79,15 +82,27 @@ def test_traces_get_sent_to_backend(
 
 
 @pytest.mark.parametrize(
-    "tracing_service_name, rasa_server_endpoint",
+    "tracing_service_name, rasa_server_endpoint, parent_span_name",
     [
         (
             ACTION_SERVER_JAEGER_TRACING_SERVICE_NAME,
             RASA_SERVER_JAEGER,
+            ACTION_SERVER_PARENT_SPAN_NAME,
         ),
         (
             ACTION_SERVER_OTLP_ACTION_SERVER_NAME,
             RASA_SERVER_OTLP,
+            ACTION_SERVER_PARENT_SPAN_NAME,
+        ),
+        (
+            ACTION_SERVER_JAEGER_TRACING_SERVICE_NAME,
+            GRPC_RASA_SERVER_JAEGER,
+            GRPC_ACTION_SERVER_PARENT_SUB_SPAN_NAME,
+        ),
+        (
+            ACTION_SERVER_JAEGER_TRACING_SERVICE_NAME,
+            GRPC_SSL_RASA_SERVER_JAEGER,
+            GRPC_ACTION_SERVER_PARENT_SUB_SPAN_NAME,
         ),
     ],
 )
@@ -96,6 +111,7 @@ def test_trace_context_propagated_to_action_server(
     tracing_service_name: Text,
     rasa_server_endpoint: Text,
     trace_query_timestamps: TraceQueryTimestamps,
+    parent_span_name: Text,
 ) -> None:
     if rasa_server_endpoint == RASA_SERVER_OTLP:
         pytest.skip("Temporary disabled due to TLS timeout error")
@@ -130,7 +146,7 @@ def test_trace_context_propagated_to_action_server(
         spans_for_user_turn, ACTION_SERVER_SPAN_NAME
     )
     parent_spans = _filter_spans_by_name(
-        spans_for_user_turn, ACTION_SERVER_PARENT_SPAN_NAME
+        spans_for_user_turn, parent_span_name
     )
     action_server_span = action_server_spans[0]
     parent_span = parent_spans[0]

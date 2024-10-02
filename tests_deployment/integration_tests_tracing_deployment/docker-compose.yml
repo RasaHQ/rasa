@@ -20,7 +20,7 @@ configs:
         type: jaeger
         host: jaeger
         port: 6831
-        service_name: action-server-jaeger-testing
+        service_name: rasa_sdk
         sync_export: ~
   endpoints-jaeger-no-action-server.yml:
     content: |
@@ -61,7 +61,6 @@ configs:
         insecure: false
         root_certificates: /certs/ca.pem
         service_name: rasa-otlp-testing
-
   otel-collector-config.yml:
     content: |
       receivers:
@@ -88,7 +87,27 @@ configs:
             receivers: [otlp]
             exporters: [jaeger, logging]
             processors: [batch]
-
+  endpoints-grpc-jaeger.yml:
+    content: |
+      action_endpoint:
+        url: "grpc://rasa-grpc-action-server-jaeger:5058"
+      tracing:
+        type: jaeger
+        host: jaeger
+        port: 6831
+        service_name: rasa-jaeger-testing
+        sync_export: ~
+  endpoints-grpc-ssl-jaeger.yml:
+    content: |
+      action_endpoint:
+        url: "grpc://rasa-grpc-ssl-action-server:5059"
+        cafile: "/certs/ca.pem"
+      tracing:
+        type: jaeger
+        host: jaeger
+        port: 6831
+        service_name: rasa-jaeger-testing
+        sync_export: ~
 
 services:
   otel-collector:
@@ -234,6 +253,89 @@ services:
       - "5057:5057"
     environment:
       <<: *environment
+
+  rasa-pro-grpc-jaeger:
+    image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
+    volumes:
+      - "./simple_bot:/app"
+    configs:
+      - source: endpoints-grpc-jaeger.yml
+        target: /endpoints-grpc-jaeger.yml
+    entrypoint: ""
+    command: rasa run -p 5014 --enable-api --endpoints /endpoints-grpc-jaeger.yml
+    networks: [ 'rasa-pro-network' ]
+    ports:
+      - "5014:5014"
+    environment:
+      <<: *environment
+    healthcheck:
+      test: curl localhost:5014 || exit 1
+      interval: 10s
+      retries: 10
+      start_period: 15s
+      timeout: 10s
+    user: ${USER_ID}
+    depends_on:
+      - rasa-grpc-action-server-jaeger
+
+  rasa-grpc-action-server-jaeger:
+    image: ${RASA_SDK_REPOSITORY}:latest
+    volumes:
+      - "./simple_bot/actions:/app/actions"
+    configs:
+      - source: endpoints-jaeger-for-action-server.yml
+        target: /app/endpoints.yml
+    networks: [ 'rasa-pro-network' ]
+    entrypoint: ""
+    command: python -m rasa_sdk --actions actions -p 5058 --grpc
+    ports:
+      - "5058:5058"
+    environment:
+      <<: *environment
+    user: ${USER_ID}
+
+  rasa-pro-grpc-ssl-jaeger:
+    image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
+    volumes:
+      - "./simple_bot:/app"
+      - "./certs/ssl/ca.pem:/certs/ca.pem"
+    configs:
+      - source: endpoints-grpc-ssl-jaeger.yml
+        target: /endpoints-grpc-ssl-jaeger.yml
+    entrypoint: ""
+    command: rasa run -p 5015 --enable-api --endpoints /endpoints-grpc-ssl-jaeger.yml
+    networks: [ 'rasa-pro-network' ]
+    ports:
+      - "5015:5015"
+    environment:
+      <<: *environment
+    healthcheck:
+      test: curl localhost:5015 || exit 1
+      interval: 10s
+      retries: 10
+      start_period: 15s
+      timeout: 10s
+    user: ${USER_ID}
+    depends_on:
+      - rasa-grpc-ssl-action-server
+
+  rasa-grpc-ssl-action-server:
+    image: ${RASA_SDK_REPOSITORY}:latest
+    volumes:
+      - "./certs/ssl/server.pem:/certs/server.pem"
+      - "./certs/ssl/server-key.pem:/certs/server-key.pem"
+      - "./simple_bot/actions:/app/actions"
+    configs:
+      - source: endpoints-jaeger-for-action-server.yml
+        target: /app/endpoints.yml
+    networks: [ 'rasa-pro-network' ]
+    entrypoint: "python -m rasa_sdk"
+    command: --actions actions -p 5059 --grpc --ssl-certificate /certs/server.pem --ssl-keyfile /certs/server-key.pem
+    ports:
+      - "5059:5059"
+    environment:
+      <<: *environment
+    user: ${USER_ID}
 
 
 networks: { rasa-pro-network: { } }
