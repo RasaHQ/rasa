@@ -145,9 +145,7 @@ def test_trace_context_propagated_to_action_server(
     action_server_spans = _filter_spans_by_name(
         spans_for_user_turn, ACTION_SERVER_SPAN_NAME
     )
-    parent_spans = _filter_spans_by_name(
-        spans_for_user_turn, parent_span_name
-    )
+    parent_spans = _filter_spans_by_name(spans_for_user_turn, parent_span_name)
     action_server_span = action_server_spans[0]
     parent_span = parent_spans[0]
 
