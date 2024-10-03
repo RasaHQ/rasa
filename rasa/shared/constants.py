@@ -241,8 +241,3 @@ RASA_PATTERN_CANNOT_HANDLE_INVALID_INTENT = (
 )
 
 ROUTE_TO_CALM_SLOT = "route_session_to_calm"
-EMBEDDINGS_CONFIG_KEY = "embeddings"
-MODEL_CONFIG_KEY = "model"
-MODEL_NAME_CONFIG_KEY = "model_name"
-PROMPT_CONFIG_KEY = "prompt"
-PROMPT_TEMPLATE_CONFIG_KEY = "prompt_template"
