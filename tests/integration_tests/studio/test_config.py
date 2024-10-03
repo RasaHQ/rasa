@@ -26,7 +26,6 @@ def mock_global_config_path(mock_config_path: Path, monkeypatch: MonkeyPatch) ->
 
 @pytest.mark.usefixtures("mock_global_config_path")
 def test_studio_config_read_empty_file() -> None:
-
     config = StudioConfig.read_config()
     assert config.is_valid() is False
 

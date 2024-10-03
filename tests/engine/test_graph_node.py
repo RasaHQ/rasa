@@ -180,8 +180,7 @@ def test_constructor_exception(default_model_storage: ModelStorage):
         ) -> BadConstructor:
             raise ValueError("oh no!")
 
-        def run(self) -> None:
-            ...
+        def run(self) -> None: ...
 
     with pytest.raises(GraphComponentException):
         GraphNode(

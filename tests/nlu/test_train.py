@@ -98,6 +98,7 @@ def pipelines_for_tests() -> List[Tuple[Text, List[Dict[Text, Any]]]]:
             ),
         ),
         ("fallback", as_pipeline("KeywordIntentClassifier", "FallbackClassifier")),
+        ("calm", as_pipeline("NLUCommandAdapter", "SingleStepLLMCommandGenerator")),
         ("calm", as_pipeline("NLUCommandAdapter", "LLMCommandGenerator")),
     ]
 
@@ -119,7 +120,7 @@ def coexistence_pipelines_for_tests() -> List[Tuple[Text, List[Dict[Text, Any]]]
                 "LogisticRegressionClassifier",
                 "CRFEntityExtractor",
                 "NLUCommandAdapter",
-                "LLMCommandGenerator",
+                "SingleStepLLMCommandGenerator",
             ),
         ),
         (
@@ -135,7 +136,7 @@ def coexistence_pipelines_for_tests() -> List[Tuple[Text, List[Dict[Text, Any]]]
                 "LogisticRegressionClassifier",
                 "CRFEntityExtractor",
                 "NLUCommandAdapter",
-                "LLMCommandGenerator",
+                "SingleStepLLMCommandGenerator",
             ),
         ),
     ]
@@ -186,7 +187,6 @@ def test_all_components_are_in_at_least_one_test_pipeline():
         pipelines_for_tests()
         + coexistence_pipelines_for_tests()
         + pipelines_for_non_windows_tests()
-        + [("en", as_pipeline("LLMIntentClassifier"))]
     )
     all_components = [c["name"] for _, p in all_pipelines for c in p]
 
@@ -212,12 +212,16 @@ def test_all_components_are_in_at_least_one_test_pipeline():
 @pytest.mark.timeout(600, func_only=True)
 @pytest.mark.parametrize("language, pipeline", pipelines_for_tests())
 @pytest.mark.skip_on_windows
-@patch("langchain.vectorstores.faiss.FAISS.from_documents")
-@patch("langchain.vectorstores.faiss.FAISS.load_local")
+@patch("langchain_community.vectorstores.faiss.FAISS.from_documents")
+@patch("langchain_community.vectorstores.faiss.FAISS.load_local")
 @patch(
     "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval._create_embedder"
 )
+@patch(
+    "rasa.dialogue_understanding.generator.llm_based_command_generator.try_instantiate_llm_client"
+)
 async def test_train_persist_load_parse(
+    mock_try_instantiate_llm_client: Mock,
     mock_flow_search_create_embedder: Mock,
     mock_load_local: Mock,
     mock_from_documents: Mock,
@@ -226,6 +230,7 @@ async def test_train_persist_load_parse(
     tmp_path: Path,
     nlu_as_json_path: Text,
 ):
+    mock_try_instantiate_llm_client.return_value = Mock()
     mock_from_documents.return_value = Mock()
     mock_flow_search_create_embedder.return_value = Mock()
     mock_load_local.return_value = Mock()
@@ -259,8 +264,8 @@ async def test_train_persist_load_parse(
 @pytest.mark.timeout(600, func_only=True)
 @pytest.mark.parametrize("language, pipeline", coexistence_pipelines_for_tests())
 @pytest.mark.skip_on_windows
-@patch("langchain.vectorstores.faiss.FAISS.from_documents")
-@patch("langchain.vectorstores.faiss.FAISS.load_local")
+@patch("langchain_community.vectorstores.faiss.FAISS.from_documents")
+@patch("langchain_community.vectorstores.faiss.FAISS.load_local")
 @patch(
     "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval._create_embedder"
 )

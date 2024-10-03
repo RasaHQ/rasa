@@ -109,6 +109,9 @@ mapping:
                             nullable: True
                           requested_slot:
                             type: "str"
+                          active_flow:
+                            type: "str"
+                            nullable: True
   forms:
     type: "map"
     required: False

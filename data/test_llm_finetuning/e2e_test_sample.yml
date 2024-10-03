@@ -1,0 +1,26 @@
+fixtures:
+  - premium:
+      - membership_type: premium
+  - standard:
+      - membership_type: standard
+
+metadata:
+  - user_info:
+      language: English
+      location: Europe
+  - device_info:
+      os: linux
+
+test_cases:
+  - test_case: "test1"
+    metadata: user_info
+    fixtures:
+      - premium
+    steps:
+      - user: "user_utterance_1"
+      - utter: "utter_something"
+  
+  - test_case: "test2"
+    steps:
+      - user: "user_utterance_2"
+      - utter: "utter_something_else"

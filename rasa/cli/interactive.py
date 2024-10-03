@@ -108,6 +108,7 @@ def _set_not_required_args(args: argparse.Namespace) -> None:
     args.skip_validation = True
     args.fail_on_validation_warnings = False
     args.validation_max_history = None
+    args.remote_storage = None
 
 
 def perform_interactive_learning(

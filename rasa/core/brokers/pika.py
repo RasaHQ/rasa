@@ -1,6 +1,8 @@
 import asyncio
 import json
 import logging
+from functools import cached_property
+
 import structlog
 import os
 import ssl
@@ -94,7 +96,7 @@ class PikaEventBroker(EventBroker):
 
     @staticmethod
     def _get_queues_from_args(
-        queues_arg: Union[List[Text], Tuple[Text, ...], Text, None]
+        queues_arg: Union[List[Text], Tuple[Text, ...], Text, None],
     ) -> Union[List[Text], Tuple[Text, ...]]:
         """Get queues for this event broker.
 
@@ -166,7 +168,6 @@ class PikaEventBroker(EventBroker):
         url = None
 
         if self.host.startswith("amqp"):
-
             parsed_host = urlparse(self.host)
 
             amqp_user = f"{self.username}:{self.password}"
@@ -334,7 +335,7 @@ class PikaEventBroker(EventBroker):
             delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
         )
 
-    @rasa.shared.utils.common.lazy_property
+    @cached_property
     def rasa_environment(self) -> Optional[Text]:
         """Get value of the `RASA_ENVIRONMENT` environment variable."""
         return os.environ.get("RASA_ENVIRONMENT")

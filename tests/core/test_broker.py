@@ -99,7 +99,6 @@ def test_pika_queues_from_args(
 
 
 async def test_pika_raise_connection_exception(monkeypatch: MonkeyPatch):
-
     monkeypatch.setattr(
         PikaEventBroker, "connect", AsyncMock(side_effect=ChannelNotFoundEntity())
     )
@@ -318,7 +317,7 @@ async def test_no_pika_logs_if_no_debug_mode(caplog: LogCaptureFixture):
         with pytest.raises(Exception):
             await broker.connect()
 
-    # Only Rasa Open Source logs, but logs from the library itself.
+    # Only Rasa Pro logs, but logs from the library itself.
     assert all(
         record.name
         in ["rasa.core.brokers.pika", "asyncio", "ddtrace.internal.writer.writer"]
@@ -327,7 +326,6 @@ async def test_no_pika_logs_if_no_debug_mode(caplog: LogCaptureFixture):
 
 
 async def test_create_pika_invalid_port():
-
     cfg = EndpointConfig(
         username="username", password="password", type="pika", port="PORT"
     )

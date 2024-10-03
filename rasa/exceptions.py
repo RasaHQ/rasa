@@ -20,9 +20,9 @@ class UnsupportedModelVersionError(RasaException):
     def __str__(self) -> Text:
         minimum_version = version.parse(MINIMUM_COMPATIBLE_VERSION)
         return (
-            f"The model version is trained using Rasa Open Source {self.model_version} "
+            f"The model version is trained using Rasa Pro {self.model_version} "
             f"and is not compatible with your current installation "
-            f"which supports models build with Rasa Open Source {minimum_version} "
+            f"which supports models build with Rasa Pro {minimum_version} "
             f"or higher. "
             f"This means that you either need to retrain your model "
             f"or revert back to the Rasa version that trained the model "

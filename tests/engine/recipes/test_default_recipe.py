@@ -407,8 +407,7 @@ def test_register_component_using_tracker():
     class MyClassGraphComponent(GraphComponent):
         def process(
             self, messages: List[Message], tracker: DialogueStateTracker
-        ) -> List[Message]:
-            ...
+        ) -> List[Message]: ...
 
     config = read_yaml(
         """
@@ -593,7 +592,6 @@ def test_add_missing_config_keys_to_file(
 
 
 def test_dump_config_missing_file(tmp_path: Path, capsys: CaptureFixture):
-
     config_path = tmp_path / "non_existent_config.yml"
 
     config = read_config_file(str(SOME_CONFIG))

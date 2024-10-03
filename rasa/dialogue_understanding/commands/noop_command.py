@@ -43,3 +43,12 @@ class NoopCommand(Command):
             The events to apply to the tracker.
         """
         return []
+
+    def __hash__(self) -> int:
+        return hash(self.command())
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, NoopCommand):
+            return False
+
+        return True

@@ -86,7 +86,8 @@ if TYPE_CHECKING:
     )
 
     IntentPrediction = TypedDict(
-        "IntentPrediction", {INTENT_NAME_KEY: Text, PREDICTED_CONFIDENCE_KEY: float}  # type: ignore[misc]  # noqa: E501
+        "IntentPrediction",
+        {INTENT_NAME_KEY: Text, PREDICTED_CONFIDENCE_KEY: float},  # type: ignore[misc]
     )
     NLUPredictionData = TypedDict(
         "NLUPredictionData",
@@ -317,7 +318,6 @@ class Event(ABC):
     def from_parameters(
         parameters: Dict[Text, Any], default: Optional[Type["Event"]] = None
     ) -> Optional["Event"]:
-
         event_name = parameters.get("event")
         if event_name is None:
             return None
@@ -533,7 +533,8 @@ class UserUttered(Event):
     def commands(self) -> List[Dict[str, Any]]:
         """Returns commands included in the message."""
         if COMMANDS in self.parse_data and isinstance(
-            self.parse_data[COMMANDS], list  # type: ignore[literal-required]
+            self.parse_data[COMMANDS],  # type: ignore[literal-required]
+            list,
         ):
             return self.parse_data[COMMANDS]  # type: ignore[literal-required]
         return []
@@ -929,16 +930,42 @@ class BotUttered(SkipEventInMDStoryMixin):
 
         return self.__members() == other.__members()
 
+    def _clean_up_metadata(self) -> Dict[str, Any]:
+        """Removes search_results metadata key from the metadata.
+
+        This is intended to prevent increasing the string representation
+        character length of the bot event.
+        """
+        from rasa.core.policies.enterprise_search_policy import (
+            SEARCH_RESULTS_METADATA_KEY,
+        )
+
+        metadata = copy.deepcopy(self.metadata)
+
+        if SEARCH_RESULTS_METADATA_KEY in self.metadata:
+            metadata.pop(SEARCH_RESULTS_METADATA_KEY)
+            structlogger.debug(
+                "search_results.metadata.removed",
+                event_info="Removed search_results metadata key only "
+                "from the string representation of the bot event.",
+            )
+
+        return metadata
+
     def __str__(self) -> Text:
         """Returns text representation of event."""
+        metadata = self._clean_up_metadata()
+
         return "BotUttered(text: {}, data: {}, metadata: {})".format(
-            self.text, json.dumps(self.data), json.dumps(self.metadata)
+            self.text, json.dumps(self.data), json.dumps(metadata)
         )
 
     def __repr__(self) -> Text:
         """Returns text representation of event for debugging."""
+        metadata = self._clean_up_metadata()
+
         return "BotUttered('{}', {}, {}, {})".format(
-            self.text, json.dumps(self.data), json.dumps(self.metadata), self.timestamp
+            self.text, json.dumps(self.data), json.dumps(metadata), self.timestamp
         )
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
@@ -1040,7 +1067,6 @@ class SlotSet(Event):
     def _from_story_string(
         cls, parameters: Dict[Text, Any]
     ) -> Optional[List["SlotSet"]]:
-
         slots = []
         for slot_key, slot_val in parameters.items():
             slots.append(SlotSet(slot_key, slot_val))
@@ -1193,7 +1219,6 @@ class DialogueStackUpdated(Event):
     def _from_story_string(
         cls, parameters: Dict[Text, Any]
     ) -> Optional[List["DialogueStackUpdated"]]:
-
         return [
             DialogueStackUpdated(
                 parameters.get("update"),
@@ -1315,7 +1340,6 @@ class ReminderScheduled(Event):
     def _from_story_string(
         cls, parameters: Dict[Text, Any]
     ) -> Optional[List["ReminderScheduled"]]:
-
         trigger_date_time = parser.parse(parameters.get("date_time"))
 
         return [
@@ -1567,7 +1591,6 @@ class FollowupAction(Event):
     def _from_story_string(
         cls, parameters: Dict[Text, Any]
     ) -> Optional[List["FollowupAction"]]:
-
         return [
             FollowupAction(
                 parameters.get("name"),

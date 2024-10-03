@@ -103,17 +103,15 @@ def _print_bot_output(
 
 
 @overload
-async def _get_user_input(previous_response: None) -> Text:
-    ...
+async def _get_user_input(previous_response: None) -> Text: ...
 
 
 @overload
-async def _get_user_input(previous_response: Dict[str, Any]) -> Optional[Text]:
-    ...
+async def _get_user_input(previous_response: Dict[str, Any]) -> Optional[Text]: ...
 
 
 async def _get_user_input(
-    previous_response: Optional[Dict[str, Any]]
+    previous_response: Optional[Dict[str, Any]],
 ) -> Optional[Text]:
     button_response = None
     if previous_response is not None:
@@ -162,7 +160,6 @@ async def _send_message_receive_stream(
 
     async with aiohttp.ClientSession(timeout=timeout) as session:
         async with session.post(url, json=payload, raise_for_status=True) as resp:
-
             async for line in resp.content:
                 if line:
                     yield json.loads(line.decode(DEFAULT_ENCODING))
@@ -197,8 +194,9 @@ async def record_messages(
     exit_text = INTENT_MESSAGE_PREFIX + "stop"
 
     rasa.shared.utils.cli.print_success(
-        "Bot loaded. Type a message and press enter "
-        "(use '{}' to exit): ".format(exit_text)
+        "Bot loaded. Type a message and press enter (use '{}' to exit): ".format(
+            exit_text
+        )
     )
 
     num_messages = 0

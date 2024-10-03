@@ -1,23 +1,22 @@
+import argparse
 import contextlib
 import copy
-import re
-import argparse
-import structlog
 import io
 import os
 import pathlib
+import re
 import sys
 import tempfile
-from typing import Any, Dict, Text
 from pathlib import Path
-from rasa.shared.importers.importer import TrainingDataImporter
-from rasa.shared.utils.yaml import read_yaml_file, write_yaml
-from rasa.utils.common import EXPECTED_WARNINGS
-from ruamel.yaml import YAML
+from typing import Any, Dict, Text, Callable
 
 import pytest
+import structlog
+from _pytest.pytester import RunResult
+from ruamel.yaml import YAML
 
 import rasa.cli.utils
+import rasa.shared.utils.io
 from rasa.shared.constants import (
     ASSISTANT_ID_DEFAULT_VALUE,
     ASSISTANT_ID_KEY,
@@ -27,7 +26,9 @@ from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
 )
-import rasa.shared.utils.io
+from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.utils.yaml import read_yaml_file, write_yaml
+from rasa.utils.common import EXPECTED_WARNINGS
 from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
 from tests.cli.conftest import RASA_EXE
 from tests.conftest import AsyncMock
@@ -109,7 +110,6 @@ def test_validate_with_multiple_default_options(tmp_path: pathlib.Path):
 
 
 def test_validate_with_none_if_default_is_valid(tmp_path: pathlib.Path):
-
     expected_event = "cli.get_validated_path.path_does_not_exists"
     expected_log_level = "warning"
 
@@ -122,7 +122,6 @@ def test_validate_with_none_if_default_is_valid(tmp_path: pathlib.Path):
 
 
 def test_validate_with_invalid_directory_if_default_is_valid(tmp_path: pathlib.Path):
-
     invalid_directory = "gcfhvjkb"
 
     expected_event = "cli.get_validated_path.path_does_not_exists"
@@ -288,7 +287,7 @@ def test_get_validated_config_with_invalid_input(parameters: Dict[Text, Any]) ->
     ],
 )
 def test_get_validated_config_with_default_and_no_config(
-    parameters: Dict[Text, Any]
+    parameters: Dict[Text, Any],
 ) -> None:
     config_path = None
     default_config_content = {
@@ -354,9 +353,9 @@ def test_validate_assistant_id_in_config(
         )
         assert len(logs) == 1
 
-    config_data = read_yaml_file(config_file)
+    # Calling the wrapped function to avoid getting cached result
+    config_data = read_yaml_file.__wrapped__(config_file)
     assistant_name = config_data.get(ASSISTANT_ID_KEY)
-
     assert assistant_name is not None
     assert assistant_name != ASSISTANT_ID_DEFAULT_VALUE
 
@@ -653,7 +652,7 @@ def test_validate_files_config_missing_assistant_id():
 
 def test_validate_assistant_id_in_config_preserves_comment() -> None:
     config_file = "data/test_config/config_no_assistant_id_with_comments.yml"
-    reader_type = ["safe", "rt"]
+    reader_type = "rt"
     original_config_data = copy.deepcopy(
         read_yaml_file(config_file, reader_type=reader_type)
     )
@@ -661,7 +660,8 @@ def test_validate_assistant_id_in_config_preserves_comment() -> None:
     # append assistant_id to the config file
     rasa.cli.utils.validate_assistant_id_in_config(config_file)
 
-    config_data = read_yaml_file(config_file, reader_type=reader_type)
+    # Calling the wrapped function to avoid getting cached result
+    config_data = read_yaml_file.__wrapped__(config_file, reader_type=reader_type)
 
     assert "assistant_id" in config_data
 
@@ -692,3 +692,54 @@ async def test_payload_from_button_question(text_input: str, button: str) -> Non
     question.ask_async.return_value = text_input
     result = await rasa.cli.utils.payload_from_button_question(question)
     assert result == button
+
+
+@pytest.mark.parametrize(
+    "argv, expected",
+    [
+        ([RASA_EXE, "run"], False),
+        ([RASA_EXE, "inspect", "actions"], False),
+        ([RASA_EXE, "studio", "download" "--endpoints"], True),
+        ([RASA_EXE, "interactive", "nlu", "--param", "xy"], False),
+    ],
+)
+def test_check_if_studio_command(argv, expected):
+    sys.argv = argv.copy()
+    result = rasa.cli.utils.check_if_studio_command()
+
+    assert result == expected
+
+
+def test_rasa_version_raises_no_warnings(
+    run_in_simple_project: Callable[..., RunResult],
+):
+    # Run the CLI command "rasa --version"
+    result = run_in_simple_project("--version")
+
+    # Get the standard output and error
+    stderr = "\n".join(result.stderr.lines)
+
+    # Check if there are any warnings in the output
+    assert "warning" not in stderr.lower()
+
+
+@pytest.mark.parametrize("results_type", ["passed", "failed"])
+def test_get_e2e_results_file_name_path_is_dir(
+    tmp_path: Path, results_type: str
+) -> None:
+    results_path = tmp_path / "results"
+    results_path.mkdir(exist_ok=True)
+
+    results_file = rasa.cli.utils.get_e2e_results_file_name(results_path, results_type)
+    assert results_file == str(results_path / f"e2e_results_{results_type}.yml")
+
+
+@pytest.mark.parametrize("results_type", ["passed", "failed"])
+def test_get_e2e_results_file_name_path_is_file(
+    tmp_path: Path, results_type: str
+) -> None:
+    results_path = tmp_path / "results" / "e2e_test_results.yml"
+    results_file = rasa.cli.utils.get_e2e_results_file_name(results_path, results_type)
+    assert results_file == str(
+        results_path.parent / f"e2e_test_results_{results_type}.yml"
+    )

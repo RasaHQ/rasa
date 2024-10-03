@@ -30,6 +30,7 @@ def vault_secrets_manager(
         # deepcode ignore HardcodedNonCryptoSecret/test: Test secret
         host="localhost:8200",
         token="myroot",
+        # deepcode ignore HardcodedNonCryptoSecret/test: Test credential
         secrets_path="rasa-secrets",
     )
 
@@ -51,7 +52,7 @@ def make_mock_get_credentials_from_secret_managers(
     """
 
     def _make_mock_get_credentials_from_secret_managers(
-        result_credentials: Optional[Dict[Text, Text]]
+        result_credentials: Optional[Dict[Text, Text]],
     ) -> MagicMock:
         mock_get_credentials_from_secret_managers.return_value = result_credentials
         return mock_get_credentials_from_secret_managers

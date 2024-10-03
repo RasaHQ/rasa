@@ -1,12 +1,15 @@
 import textwrap
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
-from langchain.embeddings import FakeEmbeddings
-from langchain.llms.fake import FakeListLLM
+from langchain_community.embeddings import FakeEmbeddings
+from langchain_community.llms.fake import FakeListLLM
 from pytest import MonkeyPatch
+
+from rasa.core.constants import UTTER_SOURCE_METADATA_KEY
+
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import (
     ChitChatStackFrame,
@@ -14,19 +17,29 @@ from rasa.dialogue_understanding.stack.frames import (
     SearchStackFrame,
     UserFlowStackFrame,
 )
+from rasa.core.policies.policy import PolicyPrediction
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.shared.constants import (
+    OPENAI_API_KEY_ENV_VAR,
+    LLM_CONFIG_KEY,
+    ROUTE_TO_CALM_SLOT,
+)
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, UserUttered, BotUttered
-from rasa.shared.core.trackers import DialogueStateTracker
-
-from rasa.core.information_retrieval.information_retrieval import (
+from rasa.shared.core.slots import BooleanSlot
+from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
+from rasa.core.information_retrieval import (
     InformationRetrieval,
+    SearchResultList,
+    SearchResult,
     InformationRetrievalException,
 )
 from rasa.core.policies.enterprise_search_policy import (
-    LLM_CONFIG_KEY,
+    SEARCH_QUERY_METADATA_KEY,
+    SEARCH_RESULTS_METADATA_KEY,
+    USE_LLM_PROPERTY,
     EnterpriseSearchPolicy,
     VectorStoreConfigurationError,
 )
@@ -83,14 +96,16 @@ def mocked_enterprise_search_policy(
     default_execution_context: ExecutionContext,
     vector_store: InformationRetrieval,
 ):
-    monkeypatch.setenv("OPENAI_API_KEY", "test")
+    monkeypatch.setenv(
+        OPENAI_API_KEY_ENV_VAR, "mock key in test_enterprise_search_policy"
+    )
     policy = EnterpriseSearchPolicy(
         config={},
         model_storage=default_model_storage,
         resource=resource,
         execution_context=default_execution_context,
+        vector_store=vector_store,
     )
-    policy.vector_store = vector_store
     return policy
 
 
@@ -114,17 +129,50 @@ def mock_create_prediction_cannot_handle():
         yield mock_create_prediction_cannot_handle
 
 
+@pytest.fixture
+def search_results() -> SearchResultList:
+    return SearchResultList(
+        results=[
+            SearchResult(
+                text="test query",
+                metadata={"id": "doc1", "answer": "test response"},
+            ),
+            SearchResult(
+                text="test query2",
+                metadata={"id": "doc2", "answer": "world response"},
+            ),
+        ],
+        metadata={},
+    )
+
+
 @pytest.mark.parametrize(
-    "config,prompt_starts_with",
+    "config,prompt_starts_with,prompt_contains",
     [
         (
             {"prompt": "data/prompt_templates/test_prompt.jinja2"},
             "Identify the user's message intent",
+            "",
         ),
         (
             {},
             "Given the following information, please provide an answer based on"
             " the provided documents",
+            "",
+        ),
+        (
+            {
+                "prompt": "data/prompt_templates/test_prompt.jinja2",
+                "citation_enabled": True,
+            },
+            "Identify the user's message intent",
+            "",
+        ),
+        (
+            {"citation_enabled": True},
+            "Given the following information, please provide an answer based on"
+            " the provided documents",
+            "Citing Sources",
         ),
     ],
 )
@@ -134,8 +182,13 @@ async def test_enterprise_search_policy_prompt(
     vector_store: InformationRetrieval,
     config: dict,
     prompt_starts_with: str,
+    prompt_contains: str,
+    monkeypatch: MonkeyPatch,
 ) -> None:
     """Test that the prompt is set correctly based on the config."""
+    monkeypatch.setenv(
+        OPENAI_API_KEY_ENV_VAR, "mock key in test_enterprise_search_policy"
+    )
     policy = EnterpriseSearchPolicy(
         config={**config, **{"vector_store": {"type": "milvus"}}},
         model_storage=default_model_storage,
@@ -144,6 +197,7 @@ async def test_enterprise_search_policy_prompt(
         vector_store=vector_store,
     )
     assert policy.prompt_template.startswith(prompt_starts_with)
+    assert prompt_contains in policy.prompt_template
     with patch(
         "rasa.core.policies.enterprise_search_policy.llm_factory",
         Mock(return_value=FakeListLLM(responses=["Hello there", "Goodbye"])),
@@ -160,6 +214,7 @@ async def test_enterprise_search_policy_prompt(
                 default_execution_context,
             )
     assert loaded.prompt_template.startswith(prompt_starts_with)
+    assert prompt_contains in loaded.prompt_template
 
 
 @pytest.mark.parametrize(
@@ -588,16 +643,17 @@ async def test_enterprise_search_policy_no_retrieval(
     mock_create_prediction_cannot_handle: MagicMock,
 ) -> None:
     tracker = enterprise_search_tracker
+    search_results = SearchResultList(results=[], metadata={})
 
     with patch("rasa.shared.utils.llm.llm_factory") as mock_llm_factory:
         mock_llm = MagicMock()
         mock_llm_factory.return_value = mock_llm.return_value
 
-        # mock self.vector_store.search() to return []
+        # mock self.vector_store.search() to return empty results
         with patch.object(
             mocked_enterprise_search_policy.vector_store,
             "search",
-            return_value=[],
+            return_value=search_results,
         ):
             await mocked_enterprise_search_policy.predict_action_probabilities(
                 tracker=tracker,
@@ -612,14 +668,14 @@ async def test_enterprise_search_policy_no_retrieval(
     "events,search_query",
     [
         ([UserUttered("search")], "search"),
-        ([BotUttered("Hi, I am a bot")], ""),
+        ([BotUttered("Hi, I am a bot")], "Hi, I am a bot"),
         ([UserUttered("\nsearch\n\nthis query")], " search  this query"),
         (
             [
                 UserUttered("why is the sky blue?"),
                 BotUttered("let me find out the answer for you..."),
             ],
-            "why is the sky blue?",
+            "let me find out the answer for you... why is the sky blue?",
         ),
         (
             [
@@ -627,11 +683,19 @@ async def test_enterprise_search_policy_no_retrieval(
                 BotUttered("first message after query..."),
                 BotUttered("second message after query..."),
             ],
-            "search",
+            "second message after query... first message after query...",
+        ),
+        (
+            [
+                BotUttered("Hi, I'm a bot."),
+                BotUttered("Can I help you with something?"),
+                UserUttered("why is the sky blue?"),
+            ],
+            "why is the sky blue? Can I help you with something?",
         ),
     ],
 )
-def test_get_last_user_message(
+def test_prepare_search_query(
     default_enterprise_search_policy: EnterpriseSearchPolicy,
     events: List,
     search_query: str,
@@ -643,7 +707,8 @@ def test_get_last_user_message(
     )
 
     assert (
-        default_enterprise_search_policy._get_last_user_message(tracker) == search_query
+        default_enterprise_search_policy._prepare_search_query(tracker, 2)
+        == search_query
     )
 
 
@@ -661,12 +726,17 @@ def test_enterprise_search_policy_citation_enabled(
     )
 
     assert policy.citation_enabled is True
+    assert policy.prompt_template == policy.citation_prompt_template
 
 
 def test_enterprise_search_policy_citation_disabled(
     default_enterprise_search_policy: EnterpriseSearchPolicy,
 ) -> None:
     assert default_enterprise_search_policy.citation_enabled is False
+    assert (
+        default_enterprise_search_policy.prompt_template
+        != default_enterprise_search_policy.citation_prompt_template
+    )
 
 
 def test_enterprise_search_policy_post_process_citations_same_order(
@@ -935,4 +1005,174 @@ Sources:
 You can find directions to campus by following PA Route {number} West, turning left onto College Street, then left at the next stoplight onto Wheeling Street. Continue straight down the hill to the Burnett Center on your right, then turn right onto Grant Street. The Taylor lot will be on your left [1].
 Sources:
 [1] docs/txt/52a4386a.txt""".strip()  # noqa: E501
+    )
+
+
+async def test_enterprise_search_policy_tracker_state_is_passed(
+    mocked_enterprise_search_policy: EnterpriseSearchPolicy,
+    enterprise_search_tracker: DialogueStateTracker,
+) -> None:
+    tracker = enterprise_search_tracker
+    search_results = SearchResultList(results=[], metadata={})
+
+    with patch("rasa.shared.utils.llm.llm_factory") as mock_llm_factory:
+        mock_llm = MagicMock()
+        mock_llm_factory.return_value = mock_llm.return_value
+
+        # assert self.vector_store.search was called with tracker_state
+        with patch.object(
+            mocked_enterprise_search_policy.vector_store,
+            "search",
+            return_value=search_results,
+        ) as mock_search:
+            await mocked_enterprise_search_policy.predict_action_probabilities(
+                tracker=tracker,
+                domain=Domain.empty(),
+                endpoints=None,
+            )
+
+            mock_search.assert_called_once_with(
+                query="what is the meaning of life?",
+                tracker_state=tracker.current_state(EventVerbosity.AFTER_RESTART),
+                threshold=0.0,
+            )
+
+
+def test_enterprise_search_policy_use_llm_config(
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    vector_store: InformationRetrieval,
+) -> None:
+    policy = EnterpriseSearchPolicy(
+        config={
+            USE_LLM_PROPERTY: False,
+        },
+        model_storage=default_model_storage,
+        resource=Resource("enterprisesearchpolicy"),
+        execution_context=default_execution_context,
+        vector_store=vector_store,
+    )
+    assert policy.config.get(USE_LLM_PROPERTY) is False
+
+
+async def test_enterprise_search_policy_response_with_use_llm_false(
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    vector_store: InformationRetrieval,
+    enterprise_search_tracker: DialogueStateTracker,
+    search_results: SearchResultList,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Given the `USE_LLM_PROPERTY` is set to False, the policy should return
+    a response without using the LLM. Response text should be from the first
+    search result.
+    """
+    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "my key")
+    policy = EnterpriseSearchPolicy(
+        config={USE_LLM_PROPERTY: False},
+        model_storage=default_model_storage,
+        resource=Resource("enterprisesearchpolicy"),
+        execution_context=default_execution_context,
+        vector_store=vector_store,
+    )
+
+    with patch("rasa.shared.utils.llm.llm_factory") as mock_llm_factory:
+        mock_llm = MagicMock()
+        mock_llm_factory.return_value = mock_llm.return_value
+
+        # mock self.vector_store.search() to return search results
+        with patch.object(
+            policy.vector_store,
+            "search",
+            return_value=search_results,
+        ):
+            prediction = await policy.predict_action_probabilities(
+                tracker=enterprise_search_tracker,
+                domain=Domain.empty(),
+                endpoints=None,
+            )
+
+            assert isinstance(prediction, PolicyPrediction)
+            assert (
+                prediction.action_metadata.get("message").get("text") == "test response"
+            )
+
+
+async def test_enterprise_search_policy_response_with_use_llm_true(
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    vector_store: InformationRetrieval,
+    enterprise_search_tracker: DialogueStateTracker,
+    search_results: SearchResultList,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Given the `USE_LLM_PROPERTY` is set to True, the policy should return
+    a response using the LLM. Response text should be from the LLM.
+    """
+    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "my key")
+    policy = EnterpriseSearchPolicy(
+        config={USE_LLM_PROPERTY: True},
+        model_storage=default_model_storage,
+        resource=Resource("enterprisesearchpolicy"),
+        execution_context=default_execution_context,
+        vector_store=vector_store,
+    )
+
+    with patch("rasa.shared.utils.llm.llm_factory") as mock_llm_factory:
+        mock_llm = MagicMock()
+        mock_llm_factory.return_value = mock_llm.return_value
+
+        # mock self.vector_store.search() to return search results
+        with patch.object(
+            policy.vector_store,
+            "search",
+            return_value=search_results,
+        ):
+            # mock self._generate_llm_answer(llm, prompt) to
+            # return LLM generated response
+            with patch.object(
+                policy,
+                "_generate_llm_answer",
+                return_value="LLM generated response",
+            ):
+                prediction = await policy.predict_action_probabilities(
+                    tracker=enterprise_search_tracker,
+                    domain=Domain.empty(),
+                    endpoints=None,
+                )
+
+                assert isinstance(prediction, PolicyPrediction)
+
+                message_metadata = prediction.action_metadata.get("message")
+                assert message_metadata.get("text") == "LLM generated response"
+                assert (
+                    message_metadata.get(UTTER_SOURCE_METADATA_KEY)
+                    == "EnterpriseSearchPolicy"
+                )
+                assert SEARCH_QUERY_METADATA_KEY in message_metadata
+                assert message_metadata.get(SEARCH_RESULTS_METADATA_KEY) == [
+                    result.text for result in search_results.results
+                ]
+
+
+@pytest.mark.parametrize(
+    "routing_slot_value,result",
+    [
+        (None, True),
+        (True, False),
+        (False, True),
+    ],
+)
+def test_should_abstain_in_coexistence(
+    routing_slot_value: Optional[bool],
+    result: bool,
+    default_enterprise_search_policy: EnterpriseSearchPolicy,
+):
+    tracker = DialogueStateTracker(
+        "id1",
+        slots=[BooleanSlot(ROUTE_TO_CALM_SLOT, [], initial_value=routing_slot_value)],
+    )
+
+    assert result == default_enterprise_search_policy.should_abstain_in_coexistence(
+        tracker, True
     )

@@ -20,7 +20,8 @@ def remove_argument_from_parser(
         for option in action.option_strings:
             if option == argument:
                 parser._handle_conflict_resolve(
-                    None, [(option, action)]  # type: ignore[arg-type]
+                    None,
+                    [(option, action)],
                 )
                 return
 

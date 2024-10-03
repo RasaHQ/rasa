@@ -147,7 +147,6 @@ async def test_pull_runtime_config_from_server():
 
 
 def test_rasa_x_raises_warning_and_exits_without_production_flag():
-
     args = argparse.Namespace(loglevel=None, log_file=None, production=None)
     with pytest.raises(SystemExit):
         with pytest.warns(

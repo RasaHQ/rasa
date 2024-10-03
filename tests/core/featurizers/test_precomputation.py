@@ -497,7 +497,6 @@ def test_collection(
     collector: CoreFeaturizationCollector,
     messages_with_unique_lookup_key: List[Message],
 ):
-
     messages = messages_with_unique_lookup_key
 
     # pass as training data

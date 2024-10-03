@@ -1,13 +1,15 @@
 import argparse
 import logging
-from typing import Text, Union, Optional
+from enum import Enum
+from typing import List, Optional, Text, Union
 
+from rasa.core.persistor import RemoteStorageType, StorageType, parse_remote_storage
 from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
-    DEFAULT_DOMAIN_PATH,
-    DEFAULT_MODELS_PATH,
     DEFAULT_DATA_PATH,
+    DEFAULT_DOMAIN_PATH,
     DEFAULT_ENDPOINTS_PATH,
+    DEFAULT_MODELS_PATH,
 )
 
 
@@ -73,7 +75,7 @@ def add_config_param(
         "--config",
         type=str,
         default=default,
-        help="The policy and NLU pipeline configuration of your bot.",
+        help="The policy and pipeline configuration of your bot.",
     )
 
 
@@ -162,4 +164,45 @@ def add_logging_options(parser: argparse.ArgumentParser) -> None:
         type=str,
         help="If set, the name of the logging configuration file will be set "
         "to the given name.",
+    )
+
+
+def add_remote_storage_param(
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer],
+    required: bool = False,
+) -> None:
+    parser.add_argument(
+        "--remote-storage",
+        help="Remote storage which should be used to store/load the model."
+        f"Supported storages are: {RemoteStorageType.list()}. "
+        "You can also provide your own implementation of the `Persistor` interface.",
+        required=required,
+        type=parse_remote_storage_arg,
+    )
+
+
+def parse_remote_storage_arg(value: str) -> StorageType:
+    try:
+        return parse_remote_storage(value)
+    except ValueError as e:
+        raise argparse.ArgumentTypeError(str(e))
+
+
+class SkipYamlValidation(Enum):
+    DOMAIN = "domain"
+
+    @classmethod
+    def list(cls) -> List[str]:
+        return [e.value for e in SkipYamlValidation]
+
+
+def add_skip_validation_flag(
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer],
+) -> None:
+    parser.add_argument(
+        "--skip-yaml-validation",
+        default=[],
+        choices=SkipYamlValidation.list(),
+        action="append",
+        help="Skip YAML validation for selected parts of the training data.",
     )

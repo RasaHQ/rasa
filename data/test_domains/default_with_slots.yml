@@ -1,3 +1,4 @@
+version: "3.1"
 # all hashtags are comments :)
 intents:
  - greet

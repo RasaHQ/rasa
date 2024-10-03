@@ -65,7 +65,6 @@ def test_example_bot_training_data_raises_only_auto_fill_warning(
     raise_slot_warning: bool,
     msg: Optional[Text],
 ):
-
     importer = TrainingDataImporter.load_from_config(
         config_file, domain_file, [data_folder]
     )
@@ -80,7 +79,7 @@ def test_example_bot_training_data_raises_only_auto_fill_warning(
             importer.get_nlu_data()
             importer.get_stories()
 
-        assert len(record) == 2
+        assert len(record) == 1
         assert all(
             [
                 "Slot auto-fill has been removed in 3.0 and replaced with "

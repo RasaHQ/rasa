@@ -5,9 +5,6 @@ on:
     # Runs at the end of every day
     - cron: 0 0 * * *
   workflow_dispatch:
-  push:
-    branches:
-      - testfix/ATO-2138-test_tracing_enterprise_search_policy_generate_llm_answer_len_prompt_tokens
 
 env:
   # needed to fix issues with boto during testing:
@@ -21,7 +18,7 @@ env:
 jobs:
   test:
     name: Run Tests
-    runs-on: windows-2019
+    runs-on: windows-2022
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -52,7 +49,7 @@ jobs:
         shell: bash
 
       - name: Install poetry 🦄
-        uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844 # v8
+        uses: Gr1N/setup-poetry@48b0f77c8c1b1b19cb962f0f00dff7b4be8f81ec #v9
         with:
           poetry-version: ${{ env.POETRY_VERSION }}
 
@@ -116,7 +113,7 @@ jobs:
       - name: Install ddtrace on Windows
         run: |
           .\.venv\Scripts\activate
-          py -m pip install -U 'ddtrace<2.0.0'
+          py -m pip install -U 'ddtrace==2.10.5'
 
       - name: Test Code 🔍 (multi-process)
         env:
@@ -132,7 +129,7 @@ jobs:
 
   test-anonymization:
     name: Run Anonymization Unit Tests
-    runs-on: windows-2019
+    runs-on: windows-2022
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -154,7 +151,7 @@ jobs:
         shell: bash
 
       - name: Install poetry 🦄
-        uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844 # v8
+        uses: Gr1N/setup-poetry@48b0f77c8c1b1b19cb962f0f00dff7b4be8f81ec #v9
         with:
           poetry-version: ${{ env.POETRY_VERSION }}
 
@@ -207,7 +204,7 @@ jobs:
 
       - name: Install spaCy language model
         run: |
-          poetry run python -m pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.5.0/en_core_web_lg-3.5.0-py3-none-any.whl
+          poetry run python -m pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.7.1/en_core_web_lg-3.7.1-py3-none-any.whl
 
       - name: Disable "LongPathsEnabled" option on Windows
         # On Windows laptops, a default preset prevents path names from being longer than
@@ -222,7 +219,7 @@ jobs:
       - name: Install ddtrace on Windows
         run: |
           .\.venv\Scripts\activate
-          py -m pip install -U 'ddtrace<2.0.0'
+          py -m pip install -U 'ddtrace==2.10.5'
 
       - name: Test Code 🔍 (multi-process)
         env:
@@ -236,7 +233,7 @@ jobs:
 
   test-flaky:
     name: Run Flaky Tests
-    runs-on: windows-2019
+    runs-on: windows-2022
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -258,7 +255,7 @@ jobs:
         shell: bash
 
       - name: Install poetry 🦄
-        uses: Gr1N/setup-poetry@15821dc8a61bc630db542ae4baf6a7c19a994844 # v8
+        uses: Gr1N/setup-poetry@48b0f77c8c1b1b19cb962f0f00dff7b4be8f81ec #v9
         with:
           poetry-version: ${{ env.POETRY_VERSION }}
 
@@ -320,7 +317,7 @@ jobs:
       - name: Install ddtrace on Windows
         run: |
           .\.venv\Scripts\activate
-          py -m pip install -U 'ddtrace<2.0.0'
+          py -m pip install -U 'ddtrace==2.10.5'
 
       - name: Test Code 🔍 (multi-process)
         env:

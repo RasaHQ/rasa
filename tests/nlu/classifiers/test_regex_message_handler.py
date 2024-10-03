@@ -38,7 +38,6 @@ def regex_message_handler(
 def test_process_does_not_do_anything(
     regex_message_handler: RegexMessageHandler, text: Text
 ):
-
     message = Message(
         data={TEXT: text, INTENT: "bla"},
         features=[
@@ -78,7 +77,6 @@ def test_process_does_not_do_anything(
 def test_regex_message_handler_adds_extractor_name(
     regex_message_handler: RegexMessageHandler, text: Text
 ):
-
     message = Message(
         data={TEXT: text, INTENT: "bla"},
         features=[
@@ -93,6 +91,5 @@ def test_regex_message_handler_adds_extractor_name(
     parsed_messages = regex_message_handler.process([message])
 
     for message in parsed_messages:
-
         for entity in message.get(ENTITIES):
             assert entity[EXTRACTOR] == RegexMessageHandler.__name__

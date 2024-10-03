@@ -2,7 +2,12 @@ import argparse
 from typing import List
 
 from rasa.cli import SubParsersAction
+from rasa.cli.arguments.default_arguments import (
+    add_config_param,
+    add_endpoint_param,
+)
 from rasa.cli.arguments.train import add_data_param, add_domain_param
+from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH, DEFAULT_CONFIG_PATH
 
 from rasa.studio.download import handle_download
 
@@ -35,6 +40,12 @@ def set_studio_download_arguments(parser: argparse.ArgumentParser) -> None:
     """Add arguments for running `rasa studio download`."""
     add_domain_param(parser)
     add_data_param(parser)
+    add_config_param(parser, default=DEFAULT_CONFIG_PATH)
+    add_endpoint_param(
+        parser,
+        "Configuration file for the model endpoints.",
+        default=DEFAULT_ENDPOINTS_PATH,
+    )
 
     parser.add_argument(
         "assistant_name",

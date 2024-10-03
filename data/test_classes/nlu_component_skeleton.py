@@ -7,6 +7,7 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 
+
 # TODO: Correctly register your component with its type
 @DefaultV1Recipe.register(
     [DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER], is_trainable=True
@@ -36,6 +37,6 @@ class CustomNLUComponent(GraphComponent):
         return training_data
 
     def process(self, messages: List[Message]) -> List[Message]:
-        # TODO: This is the method which Rasa Open Source will call during inference.
+        # TODO: This is the method which Rasa Pro will call during inference.
         ...
         return messages

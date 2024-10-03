@@ -83,8 +83,9 @@ class StoryReader:
         )
         if parsed_events is None:
             raise StoryParseError(
-                "Unknown event '{}'. It is Neither an event "
-                "nor an action).".format(event_name)
+                "Unknown event '{}'. It is Neither an event nor an action).".format(
+                    event_name
+                )
             )
 
         return parsed_events
@@ -110,7 +111,6 @@ class StoryReader:
     def _add_checkpoint(
         self, name: Text, conditions: Optional[Dict[Text, Any]]
     ) -> None:
-
         # Ensure story part already has a name
         if not self.current_step_builder:
             raise StoryParseError(

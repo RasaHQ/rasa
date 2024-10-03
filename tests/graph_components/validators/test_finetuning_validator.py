@@ -70,7 +70,7 @@ def get_finetuning_validator(
 
 @pytest.fixture
 def get_validation_method(
-    get_finetuning_validator: Callable[[bool, bool], FinetuningValidator]
+    get_finetuning_validator: Callable[[bool, bool], FinetuningValidator],
 ) -> Callable[[bool, bool, bool, bool, GraphSchema], ValidationMethodType]:
     def inner(
         finetuning: bool,
@@ -520,7 +520,7 @@ def test_validate_with_finetuning_fails_without_training(
 def test_loading_without_persisting(
     get_finetuning_validator: Callable[
         [bool, bool, Dict[Text, bool]], FinetuningValidator
-    ]
+    ],
 ):
     with pytest.raises(ValueError):
         get_finetuning_validator(finetuning=False, load=True, config={})

@@ -1,9 +1,12 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import List, Generator, Any, Optional, Dict, Text, Set
+from pathlib import Path
+from typing import List, Generator, Any, Optional, Dict, Text, Set, Union
 
 import rasa.shared.utils.io
 from rasa.shared.core.flows import Flow
+from rasa.shared.core.flows.flow_path import FlowPathsList
 from rasa.shared.core.flows.validation import (
     validate_flow,
     validate_link_in_call_restriction,
@@ -13,6 +16,7 @@ from rasa.shared.core.flows.validation import (
     validate_patterns_are_not_called_or_linked,
     validate_patterns_are_not_calling_or_linking_other_flows,
     validate_step_ids_are_unique,
+    DuplicatedFlowIdException,
 )
 from rasa.shared.core.slots import Slot
 
@@ -46,29 +50,44 @@ class FlowsList:
         return len(self.underlying_flows) == 0
 
     @classmethod
-    def from_multiple_flows_lists(cls, *other: FlowsList) -> FlowsList:
+    def from_multiple_flows_lists(
+        cls, *other: FlowsList, ignore_duplicates: bool = True
+    ) -> FlowsList:
         """Merges multiple lists of flows into a single flow ensuring each flow is
         unique, based on its ID.
 
         Args:
             other: Variable number of flow lists instances to be merged.
+            ignore_duplicates: Whether to ignore duplicate flow ids, or raise an error.
 
         Returns:
             Merged flow list.
         """
-        merged_flows = dict()
+        merged_flows: Dict[Text, Flow] = dict()
         for flow_list in other:
             for flow in flow_list:
-                if flow.id not in merged_flows:
-                    merged_flows[flow.id] = flow
+                if flow.id in merged_flows:
+                    if ignore_duplicates:
+                        continue
+                    current_flow_path = flow.file_path
+                    other_flow_path = merged_flows[flow.id].file_path
+                    raise DuplicatedFlowIdException(
+                        flow.id, current_flow_path, other_flow_path
+                    )
+                merged_flows[flow.id] = flow
         return FlowsList(list(merged_flows.values()))
 
     @classmethod
-    def from_json(cls, data: Optional[Dict[Text, Dict[Text, Any]]]) -> FlowsList:
-        """Create a FlowsList object from serialized data
+    def from_json(
+        cls,
+        data: Optional[Dict[Text, Dict[Text, Any]]],
+        file_path: Optional[Union[str, Path]] = None,
+    ) -> FlowsList:
+        """Create a FlowsList object from serialized data.
 
         Args:
             data: data for a FlowsList in a serialized format
+            file_path: the file path of the flows
 
         Returns:
             A FlowsList object.
@@ -78,7 +97,7 @@ class FlowsList:
 
         return cls(
             underlying_flows=[
-                Flow.from_json(flow_id, flow_config)
+                Flow.from_json(flow_id, flow_config, file_path)
                 for flow_id, flow_config in data.items()
             ]
         )
@@ -110,9 +129,11 @@ class FlowsList:
         flow_dicts = [flow.as_json() for flow in self.underlying_flows]
         return rasa.shared.utils.io.get_list_fingerprint(flow_dicts)
 
-    def merge(self, other: FlowsList) -> FlowsList:
+    def merge(self, other: FlowsList, ignore_duplicates: bool = True) -> FlowsList:
         """Merges two lists of flows together."""
-        return FlowsList.from_multiple_flows_lists(self, other)
+        return FlowsList.from_multiple_flows_lists(
+            self, other, ignore_duplicates=ignore_duplicates
+        )
 
     def flow_by_id(self, flow_id: Text) -> Optional[Flow]:
         """Return the flow with the given id."""
@@ -139,7 +160,8 @@ class FlowsList:
         """Get all ids of flows that can be started by a user.
 
         Returns:
-            The ids of all flows that can be started by a user."""
+        The ids of all flows that can be started by a user.
+        """
         return {f.id for f in self.user_flows}
 
     @property
@@ -147,7 +169,8 @@ class FlowsList:
         """Get all ids of flows.
 
         Returns:
-            The ids of all flows."""
+        The ids of all flows.
+        """
         return {f.id for f in self.underlying_flows}
 
     @property
@@ -155,7 +178,8 @@ class FlowsList:
         """Get all flows that can be started by a user.
 
         Returns:
-            All flows that can be started by a user."""
+        All flows that can be started by a user.
+        """
         return FlowsList(
             [f for f in self.underlying_flows if not f.is_rasa_default_flow]
         )
@@ -179,14 +203,14 @@ class FlowsList:
             slots: The slots to evaluate the starting conditions against.
 
         Returns:
-            All flows for which the starting conditions are met."""
+        All flows for which the starting conditions are met.
+        """
         return FlowsList(
             [f for f in self.underlying_flows if f.is_startable(context, slots)]
         )
 
     def get_flows_always_included_in_prompt(self) -> FlowsList:
-        """
-        Gets all flows based on their inclusion status in prompts.
+        """Gets all flows based on their inclusion status in prompts.
 
         Args:
             always_included: Inclusion status.
@@ -209,3 +233,22 @@ class FlowsList:
         return FlowsList(
             [f for f in self.underlying_flows if not f.is_startable_only_via_link()]
         )
+
+    def available_slot_names(self) -> Set[str]:
+        """Get all slot names collected by flows."""
+        return {
+            step.collect
+            for flow in self.underlying_flows
+            for step in flow.get_collect_steps()
+        }
+
+    def available_custom_actions(self) -> Set[str]:
+        """Get all custom actions collected by flows."""
+        return set().union(*[flow.custom_actions for flow in self.underlying_flows])
+
+    def extract_flow_paths(self) -> Dict[str, FlowPathsList]:
+        paths = {}
+        for flow in self.user_flows.underlying_flows:
+            paths[flow.id] = flow.extract_all_paths()
+
+        return paths

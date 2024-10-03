@@ -178,7 +178,7 @@ class SocketIOInput(InputChannel):
             rasa.shared.utils.io.raise_warning(
                 "SocketIO output channel cannot be recreated. "
                 "This is expected behavior when using multiple Sanic "
-                "workers or multiple Rasa Open Source instances. "
+                "workers or multiple Rasa Pro instances. "
                 "Please use a different channel for external events in these "
                 "scenarios."
             )

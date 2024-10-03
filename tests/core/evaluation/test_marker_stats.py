@@ -258,7 +258,6 @@ def test_overall_statistics_to_csv(tmp_path: Path, seed: int):
 
 @pytest.mark.parametrize("seed", [2345, 5654, 2345234])
 def test_per_session_statistics_to_csv(tmp_path: Path, seed: int):
-
     rng = np.random.default_rng(seed=seed)
     (
         per_session_results,
@@ -296,9 +295,7 @@ def test_per_session_statistics_to_csv(tmp_path: Path, seed: int):
             str(session_idx),
             marker_name,
             MarkerStatistics._add_num_user_turns_str_to(stat_name),
-        ): str(value)
-        if np.isnan(value)
-        else str(round(value, num_digits))
+        ): str(value) if np.isnan(value) else str(round(value, num_digits))
         for marker_name in markers
         for stat_name, values in stats.session_results[marker_name].items()
         for (sender_id, session_idx), value in zip(stats.session_identifier, values)

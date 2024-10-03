@@ -418,7 +418,6 @@ def test_encode_state__with_lookup__looksup_or_creates_features(action_name: Tex
 
 
 def test_encode_entities__with_entity_roles_and_groups():
-
     # create fake message that has been tokenized and entities have been extracted
     text = "I am flying from London to Paris"
     tokens = [
@@ -476,7 +475,6 @@ def test_encode_entities__with_entity_roles_and_groups():
 
 
 def test_encode_entities__with_bilou_entity_roles_and_groups():
-
     # Instantiate domain and configure the single state featurizer for this domain.
     # Note that there are 2 entity tags here.
     entity_tags = ["city", f"city{ENTITY_LABEL_SEPARATOR}to"]

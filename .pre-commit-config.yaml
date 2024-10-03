@@ -35,9 +35,9 @@ repos:
       - id: check-added-large-files
         args: [ --maxkb=1024 ]
     # ruff placed before black because --fix can require reformatting
-  - repo: https://github.com/charliermarsh/ruff-pre-commit
+  - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
-    rev: "v0.0.275"
+    rev: "v0.3.5"
     hooks:
       - id: ruff
         args: [ "--fix" ]
@@ -46,11 +46,10 @@ repos:
         # ignore D (docstring) for tests
         args: [ "--fix", "--extend-ignore", "D" ]
         files: tests\/.+
-  - repo: https://github.com/psf/black
-    rev: "22.8.0"
-    hooks:
-      - id: black
-        args: [ --line-length=88 ]
+      - id: ruff-format
+        files: rasa\/.+
+      - id: ruff-format
+        files: tests\/.+
   - repo: local
     hooks:
       - id: docstring-check

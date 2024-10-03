@@ -2,8 +2,8 @@ from typing import Optional
 
 import structlog
 from jinja2 import Template
-from langchain.llms.base import BaseLLM
 from rasa.core.tracker_store import DialogueStateTracker
+from rasa.shared.providers.llm.llm_client import LLMClient
 from rasa.shared.utils.llm import (
     tracker_as_readable_transcript,
 )
@@ -43,7 +43,7 @@ def _create_summarization_prompt(
 
 async def summarize_conversation(
     tracker: DialogueStateTracker,
-    llm: BaseLLM,
+    llm: LLMClient,
     max_turns: Optional[int] = MAX_TURNS_DEFAULT,
 ) -> str:
     """Summarizes the dialogue using the LLM.
@@ -58,7 +58,8 @@ async def summarize_conversation(
     """
     prompt = _create_summarization_prompt(tracker, max_turns)
     try:
-        summarization = (await llm.apredict(prompt)).strip()
+        llm_response = await llm.acompletion(prompt)
+        summarization = llm_response.choices[0].strip()
         structlogger.debug(
             "summarization.success", summarization=summarization, prompt=prompt
         )

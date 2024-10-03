@@ -1,5 +1,6 @@
 import logging
 import os
+from functools import cached_property
 from pathlib import Path
 import random
 from collections import Counter, OrderedDict
@@ -9,7 +10,6 @@ from typing import Any, Dict, List, Optional, Set, Text, Tuple, Callable
 import operator
 
 import rasa.shared.data
-from rasa.shared.utils.common import lazy_property
 import rasa.shared.utils.io
 from rasa.shared.nlu.constants import (
     RESPONSE,
@@ -47,7 +47,6 @@ class TrainingData:
         lookup_tables: Optional[List[Dict[Text, Any]]] = None,
         responses: Optional[Dict[Text, List[Dict[Text, Any]]]] = None,
     ) -> None:
-
         if training_examples:
             self.training_examples = self.sanitize_examples(training_examples)
         else:
@@ -203,7 +202,7 @@ class TrainingData:
 
         return list(OrderedDict.fromkeys(examples))
 
-    @lazy_property
+    @cached_property
     def nlu_examples(self) -> List[Message]:
         """Return examples which have come from NLU training data.
 
@@ -216,32 +215,32 @@ class TrainingData:
             ex for ex in self.training_examples if not ex.is_core_or_domain_message()
         ]
 
-    @lazy_property
+    @cached_property
     def intent_examples(self) -> List[Message]:
         """Returns the list of examples that have intent."""
         return [ex for ex in self.nlu_examples if ex.get(INTENT)]
 
-    @lazy_property
+    @cached_property
     def response_examples(self) -> List[Message]:
         """Returns the list of examples that have response."""
         return [ex for ex in self.nlu_examples if ex.get(INTENT_RESPONSE_KEY)]
 
-    @lazy_property
+    @cached_property
     def entity_examples(self) -> List[Message]:
         """Returns the list of examples that have entities."""
         return [ex for ex in self.nlu_examples if ex.get(ENTITIES)]
 
-    @lazy_property
+    @cached_property
     def intents(self) -> Set[Text]:
         """Returns the set of intents in the training data."""
         return {ex.get(INTENT) for ex in self.training_examples} - {None}
 
-    @lazy_property
+    @cached_property
     def action_names(self) -> Set[Text]:
         """Returns the set of action names in the training data."""
         return {ex.get(ACTION_NAME) for ex in self.training_examples} - {None}
 
-    @lazy_property
+    @cached_property
     def retrieval_intents(self) -> Set[Text]:
         """Returns the total number of response types in the training data."""
         return {
@@ -250,13 +249,13 @@ class TrainingData:
             if ex.get(INTENT_RESPONSE_KEY)
         }
 
-    @lazy_property
+    @cached_property
     def number_of_examples_per_intent(self) -> Dict[Text, int]:
         """Calculates the number of examples per intent."""
         intents = [ex.get(INTENT) for ex in self.nlu_examples]
         return dict(Counter(intents))
 
-    @lazy_property
+    @cached_property
     def number_of_examples_per_response(self) -> Dict[Text, int]:
         """Calculates the number of examples per response."""
         responses = [
@@ -266,12 +265,12 @@ class TrainingData:
         ]
         return dict(Counter(responses))
 
-    @lazy_property
+    @cached_property
     def entities(self) -> Set[Text]:
         """Returns the set of entity types in the training data."""
         return {e.get(ENTITY_ATTRIBUTE_TYPE) for e in self.sorted_entities()}
 
-    @lazy_property
+    @cached_property
     def entity_roles(self) -> Set[Text]:
         """Returns the set of entity roles in the training data."""
         entity_types = {
@@ -281,7 +280,7 @@ class TrainingData:
         }
         return entity_types - {NO_ENTITY_TAG}
 
-    @lazy_property
+    @cached_property
     def entity_groups(self) -> Set[Text]:
         """Returns the set of entity groups in the training data."""
         entity_types = {
@@ -300,7 +299,7 @@ class TrainingData:
 
         return entity_groups_used or entity_roles_used
 
-    @lazy_property
+    @cached_property
     def number_of_examples_per_entity(self) -> Dict[Text, int]:
         """Calculates the number of examples per entity."""
         entities = []
@@ -339,7 +338,6 @@ class TrainingData:
             )
             assistant_utterances = self.responses.get(story_lookup_key, [])
             if assistant_utterances:
-
                 # Use the first response text as training label if needed downstream
                 for assistant_utterance in assistant_utterances:
                     if assistant_utterance.get(TEXT):
@@ -428,8 +426,9 @@ class TrainingData:
     def persist(
         self, dir_name: Text, filename: Text = DEFAULT_TRAINING_DATA_OUTPUT_PATH
     ) -> Dict[Text, Any]:
-        """Persists this training data to disk and returns necessary
-        information to load it again.
+        """Persists this training data to disk.
+
+        Returns: necessary information to load it again.
         """
         if not os.path.exists(dir_name):
             os.makedirs(dir_name)
@@ -500,9 +499,7 @@ class TrainingData:
     def train_test_split(
         self, train_frac: float = 0.8, random_seed: Optional[int] = None
     ) -> Tuple["TrainingData", "TrainingData"]:
-        """Split into a training and test dataset,
-        preserving the fraction of examples per intent.
-        """
+        """Split into a training and test dataset, preserving the fraction of examples per intent."""  # noqa: E501
         # collect all nlu data
         test, train = self.split_nlu_examples(train_frac, random_seed)
 

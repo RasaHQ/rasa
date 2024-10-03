@@ -222,7 +222,6 @@ def test_auth_retry_tracker_store_recreate_tracker_store(
     mock_create_tracker_store: MagicMock,
     set_mock_create_tracker_store: None,
 ) -> None:
-
     updated_config = EndpointConfig(url="new_url")
     mock_update_config = MagicMock()
     mock_update_config.return_value = updated_config

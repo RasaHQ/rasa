@@ -9,9 +9,11 @@ from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
 
 from rasa.core.agent import Agent
+from rasa.core.constants import UTTER_SOURCE_METADATA_KEY
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.actions import action
-from rasa.core.actions.action import ActionExecutionRejection, ActionExtractSlots
+from rasa.core.actions.action import ActionExtractSlots
+from rasa.core.actions.action_exceptions import ActionExecutionRejection
 from rasa.shared.constants import (
     LATEST_TRAINING_DATA_FORMAT_VERSION,
     REQUIRED_SLOTS_KEY,
@@ -339,7 +341,10 @@ responses:
         SlotSet(REQUESTED_SLOT, slot_a),
         BotUttered(
             text=utter_ask_form_1,
-            metadata={"utter_action": f"utter_ask_{form_1}_{slot_a}"},
+            metadata={
+                "utter_action": f"utter_ask_{form_1}_{slot_a}",
+                UTTER_SOURCE_METADATA_KEY: "TemplatedNaturalLanguageGenerator",
+            },
         ),
     ]
     assert tracker.applied_events() == events_expected
@@ -380,7 +385,10 @@ responses:
             SlotSet(REQUESTED_SLOT, slot_a),
             BotUttered(
                 text=utter_ask_form_2,
-                metadata={"utter_action": f"utter_ask_{form_2}_{slot_a}"},
+                metadata={
+                    "utter_action": f"utter_ask_{form_2}_{slot_a}",
+                    UTTER_SOURCE_METADATA_KEY: "TemplatedNaturalLanguageGenerator",
+                },
             ),
         ]
     )

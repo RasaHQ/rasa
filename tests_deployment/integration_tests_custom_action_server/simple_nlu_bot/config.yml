@@ -1,0 +1,10 @@
+recipe: default.v1
+
+language: en
+
+pipeline:
+- name: KeywordIntentClassifier
+
+policies:
+- name: RulePolicy
+assistant_id: 20240617-131538-sunny-philly

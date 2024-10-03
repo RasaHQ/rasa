@@ -6,7 +6,6 @@ import rasa.shared.core.flows.yaml_flows_io
 from rasa.shared.core.flows import FlowsList
 
 import rasa.shared.data
-import rasa.shared.utils.common
 import rasa.shared.utils.io
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.importers import utils
@@ -16,6 +15,7 @@ from rasa.shared.core.domain import InvalidDomain, Domain
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     YAMLStoryReader,
 )
+from rasa.shared.utils.common import cached_method
 from rasa.shared.utils.yaml import read_model_configuration
 
 logger = logging.getLogger(__name__)
@@ -30,7 +30,6 @@ class RasaFileImporter(TrainingDataImporter):
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[Union[List[Text], Text]] = None,
     ):
-
         self._domain_path = domain_path
 
         self._nlu_files = rasa.shared.data.get_data_files(
@@ -48,6 +47,7 @@ class RasaFileImporter(TrainingDataImporter):
 
         self.config_file = config_file
 
+    @cached_method
     def get_config(self) -> Dict:
         """Retrieves model config (see parent class for full docstring)."""
         if not self.config_file or not os.path.exists(self.config_file):
@@ -57,31 +57,35 @@ class RasaFileImporter(TrainingDataImporter):
         config = read_model_configuration(self.config_file)
         return config
 
-    @rasa.shared.utils.common.cached_method
     def get_config_file_for_auto_config(self) -> Optional[Text]:
         """Returns config file path for auto-config only if there is a single one."""
         return self.config_file
 
+    @cached_method
     def get_stories(self, exclusion_percentage: Optional[int] = None) -> StoryGraph:
         """Retrieves training stories / rules (see parent class for full docstring)."""
         return utils.story_graph_from_paths(
             self._story_files, self.get_domain(), exclusion_percentage
         )
 
+    @cached_method
     def get_flows(self) -> FlowsList:
         """Retrieves training stories / rules (see parent class for full docstring)."""
         return utils.flows_from_paths(self._flow_files)
 
+    @cached_method
     def get_conversation_tests(self) -> StoryGraph:
         """Retrieves conversation test stories (see parent class for full docstring)."""
         return utils.story_graph_from_paths(
             self._conversation_test_files, self.get_domain()
         )
 
+    @cached_method
     def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
         """Retrieves NLU training data (see parent class for full docstring)."""
         return utils.training_data_from_paths(self._nlu_files, language)
 
+    @cached_method
     def get_domain(self) -> Domain:
         """Retrieves model domain (see parent class for full docstring)."""
         domain = Domain.empty()

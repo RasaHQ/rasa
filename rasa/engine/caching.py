@@ -305,7 +305,6 @@ class LocalTrainingCache(TrainingCache):
         with rasa.utils.common.TempDirectoryPath(tempdir_name) as temp_dir:
             tmp_path = Path(temp_dir)
             try:
-
                 output.to_cache(tmp_path, model_storage)
 
                 logger.debug(

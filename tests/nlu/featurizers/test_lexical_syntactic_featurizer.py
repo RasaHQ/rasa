@@ -145,7 +145,7 @@ def test_feature_computation(
 def test_features_for_messages_with_missing_part_of_speech_tags(
     create_lexical_syntactic_featurizer: Callable[
         [Dict[Text, Any]], LexicalSyntacticFeaturizer
-    ]
+    ],
 ):
     # build the message and do NOT add part of speech information
     sentence = "hello goodbye hello"
@@ -170,7 +170,7 @@ def test_features_for_messages_with_missing_part_of_speech_tags(
 def test_only_featurizes_text_attribute(
     create_lexical_syntactic_featurizer: Callable[
         [Dict[Text, Any]], LexicalSyntacticFeaturizer
-    ]
+    ],
 ):
     # build a message with tokens for lots of attributes
     sentence = "hello goodbye hello"
@@ -197,7 +197,7 @@ def test_only_featurizes_text_attribute(
 def test_process_multiple_messages(
     create_lexical_syntactic_featurizer: Callable[
         [Dict[Text, Any]], LexicalSyntacticFeaturizer
-    ]
+    ],
 ):
     # build a message with tokens for lots of attributes
     multiple_messages = []
@@ -235,7 +235,6 @@ def test_create_train_load_and_process(
     resource_lexical_syntactic_featurizer: Resource,
     feature_config: List[Text],
 ) -> Callable[..., LexicalSyntacticFeaturizer]:
-
     config = {"alias": "lsf", "features": feature_config}
     featurizer = create_lexical_syntactic_featurizer(config)
 
@@ -297,7 +296,6 @@ def test_warn_if_part_of_speech_features_cannot_be_computed(
     feature_config: Dict[Text, Any],
     expected_features: np.ndarray,
 ):
-
     featurizer = create_lexical_syntactic_featurizer(
         {"alias": "lsf", "features": feature_config}
     )

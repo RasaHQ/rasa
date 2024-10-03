@@ -1,46 +1,59 @@
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text, Tuple, Union
 
 import tiktoken
 from numpy import ndarray
+from rasa_sdk.grpc_py import action_webhook_pb2
 
+from rasa.core.actions.action import DirectCustomActionExecutor
+from rasa.core.actions.grpc_custom_action_executor import GRPCCustomActionExecutor
+from rasa.core.actions.http_custom_action_executor import HTTPCustomActionExecutor
 from rasa.core.agent import Agent
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels import UserMessage
-from rasa.core.nlg.contextual_response_rephraser import ContextualResponseRephraser
 from rasa.core.lock_store import LOCK_LIFETIME, LockStore
+from rasa.core.nlg.contextual_response_rephraser import ContextualResponseRephraser
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import TrackerStore
 from rasa.dialogue_understanding.commands import Command
-from rasa.dialogue_understanding.generator.llm_command_generator import (
-    LLMCommandGenerator,
-)
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
-from rasa.engine.graph import GraphModelConfiguration, GraphNode, ExecutionContext
+from rasa.engine.graph import ExecutionContext, GraphModelConfiguration, GraphNode
 from rasa.engine.training.graph_trainer import GraphTrainer
+from rasa.shared.constants import (
+    EMBEDDINGS_CONFIG_KEY,
+    MODEL_CONFIG_KEY,
+    PROVIDER_CONFIG_KEY,
+    TIMEOUT_CONFIG_KEY,
+    DEPLOYMENT_CONFIG_KEY,
+)
 from rasa.shared.core.constants import REQUESTED_SLOT
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import DialogueStackUpdated, Event
-from rasa.shared.core.flows import Flow, FlowStep, FlowsList
+from rasa.shared.core.flows import Flow, FlowsList, FlowStep
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.importers.importer import TrainingDataImporter
-from rasa.shared.nlu.constants import INTENT_NAME_KEY
-from rasa.shared.utils.llm import combine_custom_and_default_config
+from rasa.shared.nlu.constants import INTENT_NAME_KEY, SET_SLOT_COMMAND
+from rasa.shared.utils.llm import (
+    combine_custom_and_default_config,
+)
 from rasa.tracing.constants import (
     PROMPT_TOKEN_LENGTH_ATTRIBUTE_NAME,
-    ENDPOINT_REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME,
+    REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME,
 )
-from rasa.utils.endpoints import concat_url
+from rasa.shared.core.training_data.structures import StoryGraph
 
 if TYPE_CHECKING:
     from langchain.llms.base import BaseLLM
+
     from rasa.core.policies.enterprise_search_policy import EnterpriseSearchPolicy
     from rasa.core.policies.intentless_policy import IntentlessPolicy
     from rasa.core.policies.policy import PolicyPrediction
-    from rasa.dialogue_understanding.generator.command_generator import CommandGenerator
-    from rasa.utils.endpoints import EndpointConfig
+    from rasa.dialogue_understanding.generator import (
+        CommandGenerator,
+        LLMBasedCommandGenerator,
+    )
 
 # This file contains all attribute extractors for tracing instrumentation.
 # These are functions that are applied to the arguments of the wrapped function to be
@@ -84,7 +97,7 @@ def extract_llm_command_generator_attrs(
         command_name = command.get("command")
         commands_list.append(command_name)
 
-        if command_name == "set slot":
+        if command_name == SET_SLOT_COMMAND:
             attributes["slot_name"] = command.get("name")
 
         if command_name == "start flow":
@@ -269,7 +282,7 @@ def extract_intent_name_and_slots(
             slots[slot_name] = slot_value.value
             break
     return {
-        "intent_name": str(tracker.latest_message.intent.get(INTENT_NAME_KEY)),  # type: ignore[union-attr]  # noqa: E501
+        "intent_name": str(tracker.latest_message.intent.get(INTENT_NAME_KEY)),  # type: ignore[union-attr]
         **slots,
     }
 
@@ -299,27 +312,24 @@ def extract_llm_config(self: Any, default_llm_config: Dict[str, Any]) -> Dict[st
 
     attributes = {
         "class_name": self.__class__.__name__,
-        "llm_model": str(config.get("model", llm_property.get("model_name"))),
-        "llm_type": str(llm_property.get("_type")),
-        "embeddings": json.dumps(config.get("embeddings", {})),
+        "llm_model": str(llm_property.get(MODEL_CONFIG_KEY)),
+        "llm_type": str(llm_property.get(PROVIDER_CONFIG_KEY)),
+        "embeddings": json.dumps(config.get(EMBEDDINGS_CONFIG_KEY, {})),
         "llm_temperature": str(llm_property.get("temperature")),
-        "request_timeout": str(llm_property.get("request_timeout")),
+        "request_timeout": str(llm_property.get(TIMEOUT_CONFIG_KEY)),
     }
 
-    if "model" in llm_property:
-        attributes["llm_model"] = str(llm_property.get("model"))
-
-    if "engine" in llm_property:
-        attributes["llm_engine"] = str(llm_property.get("engine"))
+    if DEPLOYMENT_CONFIG_KEY in llm_property:
+        attributes["llm_engine"] = str(llm_property.get(DEPLOYMENT_CONFIG_KEY))
 
     return attributes
 
 
-def extract_attrs_for_llm_command_generator(
-    self: LLMCommandGenerator,
+def extract_attrs_for_llm_based_command_generator(
+    self: "LLMBasedCommandGenerator",
     prompt: str,
 ) -> Dict[str, Any]:
-    from rasa.dialogue_understanding.generator.llm_command_generator import (
+    from rasa.dialogue_understanding.generator.constants import (
         DEFAULT_LLM_CONFIG,
     )
 
@@ -365,6 +375,7 @@ def extract_attrs_for_execute_commands(
     tracker: DialogueStateTracker,
     all_flows: FlowsList,
     execution_context: ExecutionContext,
+    story_graph: Optional[StoryGraph] = None,
 ) -> Dict[str, Any]:
     return {
         "number_of_events": len(tracker.events),
@@ -382,7 +393,7 @@ def extract_attrs_for_validate_state_of_commands(
         command_type = command.command()
         command_as_dict = command.as_dict()
 
-        if command_type == "set slot":
+        if command_type == SET_SLOT_COMMAND:
             command_as_dict.pop("value", None)
 
         if command_type == "correct slot":
@@ -407,6 +418,7 @@ def extract_attrs_for_clean_up_commands(
     tracker: DialogueStateTracker,
     all_flows: FlowsList,
     execution_context: ExecutionContext,
+    story_graph: Optional[StoryGraph] = None,
 ) -> Dict[str, Any]:
     commands_list = []
 
@@ -414,7 +426,7 @@ def extract_attrs_for_clean_up_commands(
         command_type = command.command()
         command_as_dict = command.as_dict()
 
-        if command_type == "set slot":
+        if command_type == SET_SLOT_COMMAND:
             command_as_dict.pop("value", None)
 
         commands_list.append(command_as_dict)
@@ -467,7 +479,7 @@ def extract_attrs_for_check_commands_against_startable_flows(
         command_as_dict = command.as_dict()
         command_type = command.command()
 
-        if command_type == "set slot":
+        if command_type == SET_SLOT_COMMAND:
             slot_value = command_as_dict.pop("value", None)
             command_as_dict["is_slot_value_missing_or_none"] = slot_value is None
 
@@ -523,7 +535,6 @@ def extract_attrs_for_policy_prediction(
     diagnostic_data: Optional[Dict[Text, Any]] = None,
     action_metadata: Optional[Dict[Text, Any]] = None,
 ) -> Dict[str, Any]:
-
     # diagnostic_data can contain ndarray type values which need to be converted
     # into a list since the returning values have to be JSON serializable.
     if isinstance(diagnostic_data, dict):
@@ -638,26 +649,39 @@ def extend_attributes_with_prompt_tokens_length(
     return attributes
 
 
-def extract_attrs_for_endpoint_config(
-    self: "EndpointConfig",
-    method: Text = "post",
-    subpath: Optional[Text] = None,
-    content_type: Optional[Text] = "application/json",
-    compress: bool = False,
-    **kwargs: Any,
+def extract_attrs_for_custom_action_executor_run(
+    self: Union[
+        HTTPCustomActionExecutor, GRPCCustomActionExecutor, DirectCustomActionExecutor
+    ],
+    tracker: DialogueStateTracker,
+    domain: Domain,
+    include_domain: bool = False,
 ) -> Dict[str, Any]:
-    request_body = kwargs.get("json")
-    attrs: Dict[str, Any] = {"url": concat_url(self.url, subpath)}
+    actions_module, url = None, None
+    if hasattr(self, "action_endpoint"):
+        url = self.action_endpoint.url
+        actions_module = self.action_endpoint.actions_module
 
-    if not request_body:
-        attrs.update({ENDPOINT_REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME: 0})
-    else:
-        attrs.update(
-            {
-                ENDPOINT_REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME: len(
-                    json.dumps(request_body).encode("utf-8")
-                )
-            }
-        )
+    attrs: Dict[str, Any] = {
+        "class_name": self.__class__.__name__,
+        "action_name": self.action_name if hasattr(self, "action_name") else "None",
+        "sender_id": tracker.sender_id,
+        "url": str(url),
+        "actions_module": str(actions_module),
+    }
+    return attrs
+
+
+def extract_attrs_for_grpc_custom_action_executor_request(
+    self: GRPCCustomActionExecutor,
+    request: action_webhook_pb2.WebhookRequest,
+) -> Dict[str, Any]:
+    attrs: Dict[str, Any] = {"url": self.action_endpoint.url}
+
+    attrs.update(
+        {
+            REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME: request.ByteSize(),
+        }
+    )
 
     return attrs

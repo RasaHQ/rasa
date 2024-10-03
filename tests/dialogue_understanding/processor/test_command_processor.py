@@ -1,7 +1,10 @@
-from typing import List, Optional
+import uuid
+from typing import Any, Dict, List, Optional
 from unittest.mock import Mock, patch
 
 import pytest
+from pytest import MonkeyPatch
+
 from rasa.dialogue_understanding.commands import (
     CancelFlowCommand,
     ClarifyCommand,
@@ -14,6 +17,7 @@ from rasa.dialogue_understanding.commands import (
     CannotHandleCommand,
 )
 from rasa.dialogue_understanding.commands.correct_slots_command import CorrectedSlot
+from rasa.dialogue_understanding.commands.set_slot_command import SetSlotExtractor
 from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
 )
@@ -21,6 +25,7 @@ from rasa.dialogue_understanding.patterns.correction import (
     CorrectionPatternFlowStackFrame,
 )
 from rasa.dialogue_understanding.processor.command_processor import (
+    clean_up_slot_command,
     get_commands_from_tracker,
     calculate_flow_fingerprints,
     clean_up_commands,
@@ -28,6 +33,7 @@ from rasa.dialogue_understanding.processor.command_processor import (
     execute_commands,
     get_current_collect_step,
     remove_duplicated_set_slots,
+    should_slot_be_set,
     validate_state_of_commands,
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
@@ -41,6 +47,7 @@ from rasa.shared.constants import (
     RASA_PATTERN_CANNOT_HANDLE_CHITCHAT,
 )
 from rasa.shared.core.constants import ACTION_TRIGGER_CHITCHAT
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     BotUttered,
     DialogueStackUpdated,
@@ -50,11 +57,12 @@ from rasa.shared.core.events import (
 )
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.flows.steps import CollectInformationFlowStep
-from rasa.shared.core.flows.yaml_flows_io import flows_from_str
 from rasa.shared.core.slots import TextSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import COMMANDS
 from rasa.shared.utils.io import deep_container_fingerprint
+from tests.utilities import flows_from_str
+from rasa.shared.core.training_data.structures import StoryStep, StoryGraph
 
 
 @pytest.fixture
@@ -401,10 +409,19 @@ def test_clean_up_commands(
     commands: List[Command],
     expected_clean_commands: List[Command],
 ):
-
     stack = DialogueStack(frames=[user_frame_collect_eggs, pattern_frame_collect_eggs])
-
-    tracker_eggs = DialogueStateTracker.from_events(sender_id="test", evts=[])
+    domain = Domain.from_yaml(
+        """
+        slots:
+          ham:
+            type: text
+          eggs:
+            type: text
+        """
+    )
+    tracker_eggs = DialogueStateTracker.from_events(
+        sender_id="test", evts=[], slots=domain.slots
+    )
     tracker_eggs.update_stack(stack)
     # When
     with patch(
@@ -505,20 +522,56 @@ def test_clean_up_commands_with_start_flow(
 @pytest.mark.parametrize(
     (
         "commands,"
-        "expected_clean_commands,"
+        "uses_action_trigger_chitchat,"
         "defines_intentless_policy,"
-        "uses_action_trigger_chitchat"
+        "e2e_stories,"
+        "expected_clean_commands"
     ),
     [
-        ([ChitChatAnswerCommand()], [ChitChatAnswerCommand()], True, True),
-        ([ChitChatAnswerCommand()], [ChitChatAnswerCommand()], False, False),
+        ## working inputs
+        # trigger, policy and stories
         (
             [ChitChatAnswerCommand()],
-            [CannotHandleCommand(RASA_PATTERN_CANNOT_HANDLE_CHITCHAT)],
+            True,
+            True,
+            [StoryStep(block_name="smth", events=[UserUttered(text="Hi")])],
+            [ChitChatAnswerCommand()],
+        ),
+        # no trigger, no policy and no stories
+        ([ChitChatAnswerCommand()], False, False, [], [ChitChatAnswerCommand()]),
+        # no trigger, but policy and stories
+        (
+            [ChitChatAnswerCommand()],
             False,
             True,
+            [StoryStep(block_name="smth", events=[UserUttered(text="Hi")])],
+            [ChitChatAnswerCommand()],
         ),
-        ([ChitChatAnswerCommand()], [ChitChatAnswerCommand()], True, False),
+        ## inputs leading to cannot-handle
+        # no trigger, policy and no stories
+        (
+            [ChitChatAnswerCommand()],
+            False,
+            True,
+            [],
+            [CannotHandleCommand(RASA_PATTERN_CANNOT_HANDLE_CHITCHAT)],
+        ),
+        # trigger, policy and no stories
+        (
+            [ChitChatAnswerCommand()],
+            True,
+            True,
+            [],
+            [CannotHandleCommand(RASA_PATTERN_CANNOT_HANDLE_CHITCHAT)],
+        ),
+        # trigger, no policy and no stories
+        (
+            [ChitChatAnswerCommand()],
+            True,
+            False,
+            [],
+            [CannotHandleCommand(RASA_PATTERN_CANNOT_HANDLE_CHITCHAT)],
+        ),
     ],
 )
 @patch("rasa.shared.core.flows.flows_list.FlowsList.flow_by_id")
@@ -527,9 +580,10 @@ def test_clean_up_chitchat_commands(
     mock_execution_context_has_node: Mock,
     mock_flow_by_id: Mock,
     commands,
-    expected_clean_commands,
-    defines_intentless_policy,
     uses_action_trigger_chitchat,
+    defines_intentless_policy,
+    e2e_stories,
+    expected_clean_commands,
 ):
     # Given
     # mock getting the pattern_chitchat flow
@@ -539,14 +593,21 @@ def test_clean_up_chitchat_commands(
         return_value=uses_action_trigger_chitchat
     )
     mock_flow_by_id.return_value = mock_pattern_chitchat
+
     # mock the presence of the intentless policy in the execution context
     execution_context = ExecutionContext(Mock())
     mock_execution_context_has_node.return_value = defines_intentless_policy
+
     # mock the tracker
     tracker = DialogueStateTracker.from_events(sender_id="test", evts=[])
 
+    # Mock the StoryGraph with story steps
+    story_graph = StoryGraph(e2e_stories)
+
     # When
-    clean_commands = clean_up_commands(commands, tracker, flows, execution_context)
+    clean_commands = clean_up_commands(
+        commands, tracker, flows, execution_context, story_graph
+    )
 
     # Then
     mock_execution_context_has_node.assert_called_once()
@@ -554,3 +615,187 @@ def test_clean_up_chitchat_commands(
         ACTION_TRIGGER_CHITCHAT
     )
     assert clean_commands == expected_clean_commands
+
+
+@pytest.mark.parametrize(
+    "mappings, extractor",
+    [
+        ([], SetSlotExtractor.LLM.value),
+        ([{}], SetSlotExtractor.LLM.value),
+        ([{"type": "from_llm"}], SetSlotExtractor.LLM.value),
+        ([{"type": "from_entity", "entity": "name"}], SetSlotExtractor.NLU.value),
+        ([{"type": "from_intent", "intent": "inform"}], SetSlotExtractor.NLU.value),
+        ([{"type": "from_text", "intent": "inform"}], SetSlotExtractor.NLU.value),
+        ([{"type": "from_llm"}], SetSlotExtractor.COMMAND_PAYLOAD_READER.value),
+        ([{"type": "custom"}], SetSlotExtractor.COMMAND_PAYLOAD_READER.value),
+        (
+            [{"type": "from_entity", "entity": "name"}],
+            SetSlotExtractor.COMMAND_PAYLOAD_READER.value,
+        ),
+        (
+            [{"type": "from_intent", "intent": "inform"}],
+            SetSlotExtractor.COMMAND_PAYLOAD_READER.value,
+        ),
+        (
+            [{"type": "from_text", "intent": "inform"}],
+            SetSlotExtractor.COMMAND_PAYLOAD_READER.value,
+        ),
+    ],
+)
+def test_command_processor_should_slot_be_set(
+    mappings: List[Dict[str, Any]], extractor: str
+) -> None:
+    slot = TextSlot("name", mappings=mappings, initial_value=None)
+
+    command = SetSlotCommand("name", "Daisy", extractor)
+    assert should_slot_be_set(slot, command) is True
+
+
+@pytest.mark.parametrize(
+    "mappings, extractor",
+    [
+        ([], SetSlotExtractor.NLU.value),
+        ([{}], SetSlotExtractor.NLU.value),
+        ([{"type": "from_llm"}], SetSlotExtractor.NLU.value),
+        ([{"type": "custom"}], SetSlotExtractor.NLU.value),
+        ([{"type": "from_entity", "entity": "name"}], SetSlotExtractor.LLM.value),
+        ([{"type": "from_intent", "intent": "inform"}], SetSlotExtractor.LLM.value),
+        ([{"type": "from_text", "intent": "inform"}], SetSlotExtractor.LLM.value),
+        ([{"type": "custom"}], SetSlotExtractor.LLM.value),
+    ],
+)
+def test_command_processor_should_slot_be_set_invalid(
+    mappings: List[Dict[str, Any]], extractor: str
+) -> None:
+    slot = TextSlot("name", mappings=mappings, initial_value=None)
+
+    command = SetSlotCommand("name", "Daisy", extractor)
+    assert should_slot_be_set(slot, command) is False
+
+
+def test_command_processor_clean_up_slot_command_adds_cannot_handle() -> None:
+    slot_name = "name"
+    domain = Domain.from_yaml(f"""
+    entities:
+    - name
+    slots:
+      {slot_name}:
+        type: text
+        mappings:
+        - type: from_entity
+          entity: name
+    """)
+
+    commands_so_far = []
+    command = SetSlotCommand(slot_name, "Daisy", SetSlotExtractor.LLM.value)
+    sender_id = uuid.uuid4().hex
+    tracker = DialogueStateTracker.from_events(sender_id, [], slots=domain.slots)
+    slots_so_far = {slot_name}
+    all_flows = FlowsList(underlying_flows=[])
+
+    cleaned_commands = clean_up_slot_command(
+        commands_so_far, command, tracker, all_flows, slots_so_far
+    )
+
+    assert len(cleaned_commands) == 1
+    assert isinstance(cleaned_commands[0], CannotHandleCommand)
+
+    expected_reason = (
+        "A command generator attempted to set a slot with a value "
+        "extracted by an extractor that is incompatible with the slot mapping type."
+    )
+    assert cleaned_commands[0].reason == expected_reason
+
+
+def test_command_processor_clean_up_slot_command_adds_cannot_handle_multiple_slots(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    first_slot = "name"
+    second_slot = "email_address"
+    domain = Domain.from_yaml(f"""
+    entities:
+    - name
+    - email_address
+    slots:
+      {first_slot}:
+        type: text
+        mappings:
+        - type: from_entity
+          entity: name
+      {second_slot}:
+         type: text
+         mappings:
+         - type: from_entity
+           entity: email_address
+    """)
+    commands = [
+        SetSlotCommand(first_slot, "Daisy", SetSlotExtractor.LLM.value),
+        SetSlotCommand(second_slot, "test@test.com", SetSlotExtractor.LLM.value),
+    ]
+    sender_id = uuid.uuid4().hex
+    tracker = DialogueStateTracker.from_events(sender_id, [], slots=domain.slots)
+    slots_so_far = {first_slot, second_slot}
+    all_flows = FlowsList(underlying_flows=[])
+
+    def mock_filled_slots_for_active_flow(*args, **kwargs):
+        return slots_so_far, None
+
+    monkeypatch.setattr(
+        "rasa.dialogue_understanding.processor.command_processor.filled_slots_for_active_flow",
+        mock_filled_slots_for_active_flow,
+    )
+
+    cleaned_commands = clean_up_commands(commands, tracker, all_flows, Mock())
+
+    assert len(cleaned_commands) == 1
+    assert isinstance(cleaned_commands[0], CannotHandleCommand)
+
+    expected_reason = (
+        "A command generator attempted to set a slot with a value "
+        "extracted by an extractor that is incompatible with the slot mapping type."
+    )
+    assert cleaned_commands[0].reason == expected_reason
+
+
+def test_command_processor_clean_up_commands_with_cannot_handle(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Test that the `clean_up_commands` function correctly.
+
+    The function should remove any CannotHandleCommands if
+    there are other commands present.
+    """
+    slot_name = "name"
+    domain = Domain.from_yaml(f"""
+    entities:
+    - name
+    slots:
+      {slot_name}:
+        type: text
+        mappings:
+        - type: from_entity
+          entity: name
+    """)
+    commands = [
+        SetSlotCommand(slot_name, "Daisy", SetSlotExtractor.LLM.value),
+        StartFlowCommand("flow_name"),
+    ]
+    sender_id = uuid.uuid4().hex
+    tracker = DialogueStateTracker.from_events(sender_id, [], slots=domain.slots)
+    all_flows = FlowsList(underlying_flows=[])
+
+    monkeypatch.setattr(
+        "rasa.dialogue_understanding.processor.command_processor.filled_slots_for_active_flow",
+        lambda *args, **kwargs: ({slot_name}, None),
+    )
+
+    cleaned_commands = clean_up_commands(commands, tracker, all_flows, Mock())
+
+    assert len(cleaned_commands) == 1
+
+    expected_reason = (
+        "A command generator attempted to set a slot with a value "
+        "extracted by an extractor that is incompatible with the slot mapping type."
+    )
+    filtered_out_command = CannotHandleCommand(reason=expected_reason)
+    assert filtered_out_command not in cleaned_commands

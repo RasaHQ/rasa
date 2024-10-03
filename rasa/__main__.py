@@ -25,11 +25,13 @@ from rasa.cli import (
     visualize,
     x,
     evaluate,
+    llm_fine_tuning,
 )
 from rasa.cli.arguments.default_arguments import add_logging_options
 from rasa.cli.utils import (
     parse_last_positional_argument_as_model_path,
     warn_if_rasa_plus_package_installed,
+    check_if_studio_command,
 )
 from rasa.plugin import plugin_manager
 from rasa.shared.exceptions import RasaException
@@ -75,6 +77,7 @@ def create_argument_parser() -> argparse.ArgumentParser:
     export.add_subparser(subparsers, parents=parent_parsers)
     x.add_subparser(subparsers, parents=parent_parsers)
     evaluate.add_subparser(subparsers, parents=parent_parsers)
+    llm_fine_tuning.add_subparser(subparsers, parent_parsers)
     plugin_manager().hook.refine_cli(
         subparsers=subparsers, parent_parsers=parent_parsers
     )
@@ -84,12 +87,15 @@ def create_argument_parser() -> argparse.ArgumentParser:
 
 def print_version() -> None:
     """Prints version information of rasa tooling and python."""
+    from rasa.utils.licensing import get_license_expiration_date
+
     print(f"Rasa Version      :         {version.__version__}")
     print(f"Minimum Compatible Version: {MINIMUM_COMPATIBLE_VERSION}")
     print(f"Rasa SDK Version  :         {rasa_sdk_version}")
     print(f"Python Version    :         {platform.python_version()}")
     print(f"Operating System  :         {platform.platform()}")
     print(f"Python Path       :         {sys.executable}")
+    print(f"License Expires   :         {get_license_expiration_date()}")
 
 
 def main() -> None:
@@ -115,18 +121,22 @@ def main() -> None:
         if hasattr(cmdline_arguments, "func"):
             rasa.utils.io.configure_colored_logging(log_level)
 
-            result = plugin_manager().hook.configure_commandline(
-                cmdline_arguments=cmdline_arguments
-            )
-            endpoints_file = result[0] if result else None
+            is_studio_command = check_if_studio_command()
+
+            if not is_studio_command:
+                result = plugin_manager().hook.configure_commandline(
+                    cmdline_arguments=cmdline_arguments
+                )
+                endpoints_file = result[0] if result else None
 
             rasa.telemetry.initialize_telemetry()
             rasa.telemetry.initialize_error_reporting()
-            plugin_manager().hook.init_telemetry(endpoints_file=endpoints_file)
-            plugin_manager().hook.init_managers(endpoints_file=endpoints_file)
-            plugin_manager().hook.init_anonymization_pipeline(
-                endpoints_file=endpoints_file
-            )
+            if not is_studio_command:
+                plugin_manager().hook.init_telemetry(endpoints_file=endpoints_file)
+                plugin_manager().hook.init_managers(endpoints_file=endpoints_file)
+                plugin_manager().hook.init_anonymization_pipeline(
+                    endpoints_file=endpoints_file
+                )
             # configure structlog
             configure_structlog(log_level)
 

@@ -3,9 +3,8 @@ from typing import Any, Dict, Generator, Optional, Sequence
 from unittest.mock import Mock, patch
 
 import pytest
+from pytest import MonkeyPatch
 from pytest import LogCaptureFixture
-from langchain.embeddings import FakeEmbeddings
-from langchain.llms.fake import FakeListLLM
 from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 
@@ -13,25 +12,31 @@ from rasa.core.policies.intentless_policy import IntentlessPolicy
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.shared.constants import OPENAI_API_KEY_ENV_VAR
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import DialogueStackUpdated
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.providers.embedding.embedding_client import EmbeddingClient
+from rasa.shared.providers.llm.llm_client import LLMClient
 from rasa.tracing.instrumentation import instrumentation
 
 
 @pytest.fixture
 def intentless_policy_generator(
+    fake_llm_client: LLMClient,
+    fake_embedding_client: EmbeddingClient,
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
     monkeypatch: pytest.MonkeyPatch,
 ) -> Generator[IntentlessPolicy, None, None]:
+    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "my key")
     with patch(
         "rasa.core.policies.intentless_policy.llm_factory",
-        Mock(return_value=FakeListLLM(responses=["Hello there", "Goodbye"])),
+        Mock(return_value=fake_llm_client),
     ):
         with patch(
             "rasa.core.policies.intentless_policy.embedder_factory",
-            Mock(return_value=FakeEmbeddings(size=100)),
+            Mock(return_value=fake_embedding_client),
         ):
             yield IntentlessPolicy.create(
                 IntentlessPolicy.get_default_config(),
@@ -46,6 +51,7 @@ async def test_tracing_intentless_policy_generate_answer(
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
     previous_num_captured_spans: int,
+    monkeypatch: MonkeyPatch,
 ) -> None:
     component_class = IntentlessPolicy
 
@@ -60,9 +66,7 @@ async def test_tracing_intentless_policy_generate_answer(
         "",
     )
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     # includes the child span for `_generate_llm_answer` method call
@@ -72,7 +76,7 @@ async def test_tracing_intentless_policy_generate_answer(
 
     assert captured_span.name == "IntentlessPolicy.generate_answer"
 
-    assert captured_span.attributes == {"llm_response": '"Hello there"'}
+    assert captured_span.attributes == {"llm_response": '"Hello there!"'}
 
 
 def test_tracing_intentless_policy_extract_ai_responses(
@@ -80,7 +84,10 @@ def test_tracing_intentless_policy_extract_ai_responses(
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
     previous_num_captured_spans: int,
+    monkeypatch: MonkeyPatch,
 ) -> None:
+    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "my key")
+
     component_class = IntentlessPolicy
 
     instrumentation.instrument(
@@ -99,9 +106,7 @@ def test_tracing_intentless_policy_extract_ai_responses(
     ]
     intentless_policy_generator.extract_ai_responses(conversation_samples)
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1
@@ -119,7 +124,10 @@ def test_tracing_intentless_policy_select_few_shot_conversations(
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
     previous_num_captured_spans: int,
+    monkeypatch: MonkeyPatch,
 ) -> None:
+    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "my key")
+
     component_class = IntentlessPolicy
 
     instrumentation.instrument(
@@ -133,9 +141,7 @@ def test_tracing_intentless_policy_select_few_shot_conversations(
         100,
     )
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1
@@ -153,7 +159,9 @@ def test_tracing_intentless_policy_select_response_examples(
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
     previous_num_captured_spans: int,
+    monkeypatch: MonkeyPatch,
 ) -> None:
+    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "my key")
     component_class = IntentlessPolicy
 
     instrumentation.instrument(
@@ -167,9 +175,7 @@ def test_tracing_intentless_policy_select_response_examples(
         100,
     )
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1
@@ -187,7 +193,9 @@ async def test_tracing_intentless_policy_find_closest_response(
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
     previous_num_captured_spans: int,
+    monkeypatch: MonkeyPatch,
 ) -> None:
+    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "my key")
     component_class = IntentlessPolicy
 
     instrumentation.instrument(
@@ -233,9 +241,7 @@ async def test_tracing_intentless_policy_find_closest_response(
 
     await intentless_policy_generator.find_closest_response(tracker)
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1
@@ -262,7 +268,9 @@ def test_tracing_intentless_policy_prediction_result(
     previous_num_captured_spans: int,
     action_name: Optional[str],
     expected_attributes: Dict[str, Any],
+    monkeypatch: MonkeyPatch,
 ) -> None:
+    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "my key")
     component_class = IntentlessPolicy
 
     instrumentation.instrument(
@@ -272,9 +280,7 @@ def test_tracing_intentless_policy_prediction_result(
 
     intentless_policy_generator._prediction_result(action_name, Domain.empty())
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1
@@ -290,7 +296,9 @@ async def test_tracing_intentless_policy_generate_llm_answer_len_prompt_tokens(
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
     previous_num_captured_spans: int,
+    monkeypatch: MonkeyPatch,
 ) -> None:
+    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "my key")
     component_class = IntentlessPolicy
 
     instrumentation.instrument(
@@ -304,9 +312,7 @@ async def test_tracing_intentless_policy_generate_llm_answer_len_prompt_tokens(
         Mock(), "This is a test prompt."
     )
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1
@@ -319,7 +325,7 @@ async def test_tracing_intentless_policy_generate_llm_answer_len_prompt_tokens(
         "class_name": "IntentlessPolicy",
         "llm_model": "gpt-3.5-turbo",
         "llm_type": "openai",
-        "embeddings": '{"_type": "openai", "model": "text-embedding-ada-002"}',
+        "embeddings": '{"provider": "openai", "model": "text-embedding-ada-002"}',
         "llm_temperature": "0.0",
         "request_timeout": "5",
         "len_prompt_tokens": "6",
@@ -332,7 +338,9 @@ async def test_intentless_policy_generate_llm_answer_len_prompt_tokens_non_opena
     span_exporter: InMemorySpanExporter,
     previous_num_captured_spans: int,
     caplog: LogCaptureFixture,
+    monkeypatch: MonkeyPatch,
 ) -> None:
+    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "my key")
     component_class = IntentlessPolicy
 
     instrumentation.instrument(
@@ -341,7 +349,9 @@ async def test_intentless_policy_generate_llm_answer_len_prompt_tokens_non_opena
     )
 
     intentless_policy_generator.trace_prompt_tokens = True
-    intentless_policy_generator.config = {"llm": {"type": "cohere", "model": "command"}}
+    intentless_policy_generator.config = {
+        "llm": {"provider": "cohere", "model": "command"}
+    }
 
     with caplog.at_level(logging.WARNING):
         await intentless_policy_generator._generate_llm_answer(
@@ -352,9 +362,7 @@ async def test_intentless_policy_generate_llm_answer_len_prompt_tokens_non_opena
             in caplog.text
         )
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1

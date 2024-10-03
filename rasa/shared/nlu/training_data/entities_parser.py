@@ -24,7 +24,7 @@ GROUP_COMPLETE_MATCH = 0
 
 # regex for: `[entity_text]((entity_type(:entity_synonym)?)|{entity_dict}|[list_entity_dicts])` # noqa: E501
 ENTITY_REGEX = re.compile(
-    r"\[(?P<entity_text>[^\]]+?)\](\((?P<entity>[^:)]+?)(?:\:(?P<value>[^)]+))?\)|\{(?P<entity_dict>[^}]+?)\}|\[(?P<list_entity_dicts>.*?)\])"  # noqa: E501
+    r"\[(?P<entity_text>[^\]]+?)\](\((?P<entity>[^:)]+?)(?:\:(?P<value>[^)]+))?\)|\{(?P<entity_dict>[^}]+?)\}|\[(?P<list_entity_dicts>.*?)\])"
 )
 
 SINGLE_ENTITY_DICT = re.compile(r"{(?P<entity_dict>[^}]+?)\}")
@@ -84,7 +84,6 @@ def find_entities_in_training_example(example: Text) -> List[Dict[Text, Any]]:
             for match_inner in re.finditer(
                 SINGLE_ENTITY_DICT, match.groupdict()[GROUP_ENTITY_DICT_LIST]
             ):
-
                 entity_attributes = extract_entity_attributes_from_dict(
                     entity_text=entity_text, match=match_inner
                 )

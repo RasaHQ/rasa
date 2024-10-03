@@ -1,24 +1,28 @@
 import asyncio
 import logging
-import uuid
-import platform
 import os
+import platform
+import uuid
+import warnings
+from asyncio import AbstractEventLoop
 from functools import partial
 from typing import (
     Any,
     Callable,
+    Dict,
     List,
     Optional,
     Text,
     Tuple,
     Union,
-    Dict,
 )
 
+from sanic import Sanic
+from sanic.worker.loader import AppLoader
+
 import rasa.core.utils
-from rasa.plugin import plugin_manager
-from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.common
+import rasa.shared.utils.io
 import rasa.utils
 import rasa.utils.common
 import rasa.utils.io
@@ -28,12 +32,12 @@ from rasa.core import agent, channels, constants
 from rasa.core.agent import Agent
 from rasa.core.channels import console
 from rasa.core.channels.channel import InputChannel
+from rasa.core.persistor import StorageType
 from rasa.core.utils import AvailableEndpoints
-import rasa.shared.utils.io
-from sanic import Sanic
-from asyncio import AbstractEventLoop
-
+from rasa.plugin import plugin_manager
+from rasa.shared.exceptions import RasaException
 from rasa.shared.utils.yaml import read_config_file
+from rasa.utils import licensing
 
 logger = logging.getLogger()  # get the root logger
 
@@ -84,6 +88,10 @@ def _create_single_channel(channel: Text, credentials: Dict[Text, Any]) -> Any:
 
 def _create_app_without_api(cors: Optional[Union[Text, List[Text]]] = None) -> Sanic:
     app = Sanic("rasa_core_no_api", configure_logging=False)
+
+    # Reset Sanic warnings filter that allows the triggering of Sanic warnings
+    warnings.filterwarnings("ignore", category=DeprecationWarning, module=r"sanic.*")
+
     server.add_root_route(app)
     server.configure_cors(app, cors)
     return app
@@ -126,19 +134,24 @@ def configure_app(
     )
 
     if enable_api:
-        app = server.create_app(
-            cors_origins=cors,
-            auth_token=auth_token,
-            response_timeout=response_timeout,
-            jwt_secret=jwt_secret,
-            jwt_private_key=jwt_private_key,
-            jwt_method=jwt_method,
-            endpoints=endpoints,
+        loader = AppLoader(
+            factory=partial(
+                server.create_app,
+                cors_origins=cors,
+                auth_token=auth_token,
+                response_timeout=response_timeout,
+                jwt_secret=jwt_secret,
+                jwt_private_key=jwt_private_key,
+                jwt_method=jwt_method,
+                endpoints=endpoints,
+            )
         )
     else:
-        app = _create_app_without_api(cors)
+        loader = AppLoader(factory=partial(_create_app_without_api, cors))
 
+    app = loader.load()
     app.config.KEEP_ALIVE_TIMEOUT = keep_alive_timeout
+
     if _is_apple_silicon_system() or not use_uvloop:
         app.config.USE_UVLOOP = False
         # some library still sets the loop to uvloop, even if disabled for sanic
@@ -154,18 +167,16 @@ def configure_app(
     if logger.isEnabledFor(logging.DEBUG):
         rasa.core.utils.list_routes(app)
 
-    async def configure_async_logging() -> None:
+    @app.main_process_start
+    async def configure_async_logging(running_app: Sanic) -> None:
         if logger.isEnabledFor(logging.DEBUG):
             rasa.utils.io.enable_async_loop_debugging(asyncio.get_event_loop())
 
-    app.add_task(configure_async_logging)
-
     if "cmdline" in {c.name() for c in input_channels}:
 
+        @app.after_server_start
         async def run_cmdline_io(running_app: Sanic) -> None:
             """Small wrapper to shut down the server once cmd io is done."""
-            await asyncio.sleep(1)  # allow server to start
-
             await console.record_messages(
                 server_url=constants.DEFAULT_SERVER_FORMAT.format("http", port),
                 sender_id=conversation_id,
@@ -174,12 +185,13 @@ def configure_app(
 
             logger.info("Killing Sanic server now.")
             running_app.stop()  # kill the sanic server
-            plugin_manager().hook.after_server_stop()
 
-        app.add_task(run_cmdline_io)
+    @app.after_server_stop
+    async def after_server_stop(running_app: Sanic) -> None:
+        plugin_manager().hook.after_server_stop()
 
     if server_listeners:
-        for (listener, event) in server_listeners:
+        for listener, event in server_listeners:
             app.register_listener(listener, event)
 
     return app
@@ -199,7 +211,7 @@ def serve_application(
     jwt_private_key: Optional[Text] = None,
     jwt_method: Optional[Text] = None,
     endpoints: Optional[AvailableEndpoints] = None,
-    remote_storage: Optional[Text] = None,
+    remote_storage: Optional[StorageType] = None,
     log_file: Optional[Text] = None,
     ssl_certificate: Optional[Text] = None,
     ssl_keyfile: Optional[Text] = None,
@@ -252,6 +264,10 @@ def serve_application(
         "before_server_start",
     )
 
+    app.register_listener(
+        licensing.validate_limited_server_license, "after_server_start"
+    )
+
     app.register_listener(close_resources, "after_server_stop")
 
     number_of_workers = rasa.core.utils.number_of_sanic_workers(
@@ -272,6 +288,7 @@ def serve_application(
         ssl=ssl_context,
         backlog=int(os.environ.get(ENV_SANIC_BACKLOG, "100")),
         workers=number_of_workers,
+        legacy=True,
     )
 
 
@@ -279,7 +296,7 @@ def serve_application(
 async def load_agent_on_start(
     model_path: Text,
     endpoints: AvailableEndpoints,
-    remote_storage: Optional[Text],
+    remote_storage: Optional[StorageType],
     app: Sanic,
     loop: AbstractEventLoop,
 ) -> Agent:
@@ -294,6 +311,7 @@ async def load_agent_on_start(
         endpoints=endpoints,
         loop=loop,
     )
+
     logger.info("Rasa server is up and running.")
     return app.ctx.agent
 

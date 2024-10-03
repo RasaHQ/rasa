@@ -13,6 +13,7 @@ from rasa.dialogue_understanding.stack.frames.dialogue_stack_frame import (
     DialogueStackFrame,
     InvalidStackFrameType,
     generate_stack_frame_id,
+    _get_all_subclasses,
 )
 
 
@@ -25,7 +26,6 @@ class MockStackFrame(DialogueStackFrame):
 
 @dataclass
 class MockStackFrameWithAdditionalProperty(DialogueStackFrame):
-
     foo: str = ""
 
     @classmethod
@@ -71,12 +71,13 @@ def test_dialogue_stack_frame_context_as_dict():
 
 def test_create_typed_frame():
     frame = MockStackFrameWithAdditionalProperty(foo="foofoo", frame_id="test")
-
+    # we need to clear lru cache to make sure that
+    # MockStackFrameWithAdditionalProperty will be found by _get_all_subclasses
+    _get_all_subclasses.cache_clear()
     assert DialogueStackFrame.create_typed_frame(frame.as_dict()) == frame
 
 
 def test_create_typed_frame_with_unknown_type():
-
     with pytest.raises(InvalidStackFrameType):
         DialogueStackFrame.create_typed_frame({"type": "unknown"})
 

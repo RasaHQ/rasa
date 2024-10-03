@@ -84,7 +84,7 @@ def _get_updated_or_new_mappings(
 
 
 def _migrate_form_slots(
-    domain: Dict[Text, Any]
+    domain: Dict[Text, Any],
 ) -> Tuple[Dict[Any, Dict[str, Any]], Optional[Any]]:
     updated_slots = domain.get(KEY_SLOTS, {})
     forms = domain.get(KEY_FORMS, {})
@@ -228,7 +228,6 @@ def _migrate_domain_files(
         )
 
     for file in domain_files:
-
         backup = backup_location / file.name
         original_content = _create_back_up(file, backup)
 

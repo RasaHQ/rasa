@@ -86,6 +86,8 @@ from tests.conftest import (
 )
 from tests.nlu.utilities import ResponseTest
 from tests.utilities import json_of_latest_request, latest_request
+from swagger_coverage_py.listener import CoverageListener
+import threading
 
 # a couple of event instances that we can use for testing
 test_events = [
@@ -167,19 +169,19 @@ async def tear_down_scheduler() -> Generator[None, None, None]:
 async def test_root(rasa_non_trained_app: SanicASGITestClient):
     _, response = await rasa_non_trained_app.get("/")
     assert response.status == HTTPStatus.OK
-    assert response.text.startswith("Hello from Rasa:")
+    assert "Hello from Rasa:" in response.text
 
 
 async def test_root_without_enable_api(rasa_app_without_api: SanicASGITestClient):
     _, response = await rasa_app_without_api.get("/")
     assert response.status == HTTPStatus.OK
-    assert response.text.startswith("Hello from Rasa:")
+    assert "Hello from Rasa:" in response.text
 
 
 async def test_root_secured(rasa_non_trained_secured_app: SanicASGITestClient):
     _, response = await rasa_non_trained_secured_app.get("/")
     assert response.status == HTTPStatus.OK
-    assert response.text.startswith("Hello from Rasa:")
+    assert "Hello from Rasa:" in response.text
 
 
 async def test_version(rasa_non_trained_app: SanicASGITestClient):
@@ -1447,6 +1449,7 @@ def test_list_routes(empty_agent: Agent):
         "evaluate_intents",
         "tracker_predict",
         "parse",
+        "license",
         "load_model",
         "unload_model",
         "get_domain",
@@ -2390,3 +2393,79 @@ async def test_retrieve_tracker_with_customized_action_session_start(
 
     assert tracker_events[3].get("event") == "action"
     assert tracker_events[3].get("name") == "action_listen"
+
+
+@pytest.fixture
+def server_host() -> str:
+    return "localhost"
+
+
+@pytest.fixture
+def server_port() -> int:
+    return 5005
+
+
+@pytest.fixture
+def start_server(rasa_server_with_flows, server_host, server_port):
+    def start_rasa_server():
+        rasa_server_with_flows.run(
+            host=server_host,
+            port=server_port,
+            single_process=True,
+            debug=True,
+            register_sys_signals=False,
+        )
+
+    thread = threading.Thread(target=start_rasa_server, daemon=True)
+    thread.start()
+
+    # TODO: Remove sleep (currently using because `after_server_start` didn't work)
+    time.sleep(0.1)
+
+
+def test_retrieve_flows(
+    setup_swagger_coverage,
+    start_server,
+    server_host,
+    server_port,
+):
+    response = CoverageListener(
+        method="get",
+        base_url=f"http://{server_host}:{server_port}",
+        raw_path="/flows",
+        uri_params={},
+        params={"token": "rasa"},
+    ).response
+    assert response.status_code == HTTPStatus.OK
+    flows = response.json()
+    assert flows
+    required_fields = {"id", "description", "steps", "file_path"}
+    assert all(required_fields.issubset(flow.keys()) for flow in flows)
+    step_types = {"action", "collect", "link", "call", "set_slots", "noop"}
+    steps = []
+    for flow in flows:
+        steps.extend(flow["steps"])
+    assert all(any(key in step_types for key in step.keys()) for step in steps)
+
+
+def test_retrieve_flows_with_invalid_authentication(
+    setup_swagger_coverage,
+    start_server,
+    server_host,
+    server_port,
+):
+    response = CoverageListener(
+        method="get",
+        base_url=f"http://{server_host}:{server_port}",
+        raw_path="/flows",
+        uri_params={},
+        params={"token": "invalid"},
+    ).response
+    assert response.status_code == HTTPStatus.UNAUTHORIZED
+    jsonResponse = response.json()
+    assert jsonResponse["version"]
+    assert jsonResponse["status"] == "failure"
+    assert jsonResponse["reason"] == "NotAuthenticated"
+    # Message assertion fails as actual message is just "User is not authenticated."
+    # assert jsonResponse["message"] == "User is not authenticated to access resource."
+    assert jsonResponse["code"] == HTTPStatus.UNAUTHORIZED

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Text, Dict, Any, Set
+from typing import Optional, Text, Dict, Any, Set
 
 from rasa.shared.constants import UTTER_PREFIX
 from rasa.shared.core.flows.flow_step import FlowStep
@@ -47,5 +47,10 @@ class ActionFlowStep(FlowStep):
 
     @property
     def utterances(self) -> Set[str]:
-        """Return all the utterances used in this step"""
+        """Return all the utterances used in this step."""
         return {self.action} if self.action.startswith(UTTER_PREFIX) else set()
+
+    @property
+    def custom_action(self) -> Optional[str]:
+        """Return all the custom actions used in this step."""
+        return self.action if not self.action.startswith(UTTER_PREFIX) else None

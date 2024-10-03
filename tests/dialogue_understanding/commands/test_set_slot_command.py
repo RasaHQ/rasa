@@ -1,19 +1,21 @@
-from typing import List
+from typing import Any, List
 
 import pytest
 from rasa.dialogue_understanding.commands.set_slot_command import (
+    SetSlotExtractor,
     get_flows_predicted_to_start_from_tracker,
     Command,
     SetSlotCommand,
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import SlotSet, UserUttered
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.slots import TextSlot
 from rasa.dialogue_understanding.commands.start_flow_command import StartFlowCommand
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.core.flows.yaml_flows_io import flows_from_str
 from rasa.shared.nlu.constants import COMMANDS
+from tests.utilities import flows_from_str
 
 
 def test_command_name():
@@ -366,3 +368,50 @@ def test_get_flows_predicted_to_start_from_tracker(
         ],
     )
     assert get_flows_predicted_to_start_from_tracker(tracker) == expected
+
+
+@pytest.mark.parametrize(
+    "command, expected_value",
+    [
+        (
+            SetSlotCommand(
+                "foo", "foofoo", SetSlotExtractor.COMMAND_PAYLOAD_READER.value
+            ),
+            "foofoo",
+        ),
+        (SetSlotCommand("bar", "1", SetSlotExtractor.COMMAND_PAYLOAD_READER.value), 1),
+        (
+            SetSlotCommand(
+                "baz", "true", SetSlotExtractor.COMMAND_PAYLOAD_READER.value
+            ),
+            True,
+        ),
+        (
+            SetSlotCommand("qux", "a", SetSlotExtractor.COMMAND_PAYLOAD_READER.value),
+            "a",
+        ),
+    ],
+)
+def test_run_command_on_tracker_slot_value_is_coerced_to_right_type(
+    command: SetSlotCommand, expected_value: Any
+) -> None:
+    domain = Domain.from_yaml("""
+    slots:
+        foo:
+          type: text
+        bar:
+          type: float
+        baz:
+          type: bool
+        qux:
+          type: categorical
+          values:
+            - a
+            - b
+    """)
+
+    tracker = DialogueStateTracker.from_events("test_id", evts=[], slots=domain.slots)
+    events = command.run_command_on_tracker(
+        tracker, FlowsList(underlying_flows=[]), tracker
+    )
+    assert events == [SlotSet(command.name, expected_value)]

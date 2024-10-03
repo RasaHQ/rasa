@@ -276,7 +276,6 @@ def _load_orchestrators(
                     continue
 
                 if rule_list.id == topic.get("anonymization_rules"):
-
                     event_broker = create_event_broker(topic_name, event_broker_config)
 
                     orchestrators.append(

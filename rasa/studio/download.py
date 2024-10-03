@@ -1,19 +1,24 @@
 import argparse
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Tuple
+
+import questionary
+import structlog
 
 import rasa.cli.utils
 import rasa.shared.utils.cli
 from rasa.shared.constants import (
     DEFAULT_DATA_PATH,
-    DEFAULT_DOMAIN_PATHS,
+    DEFAULT_DOMAIN_PATH,
+    DEFAULT_CONFIG_PATH,
+    DEFAULT_ENDPOINTS_PATH,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows.yaml_flows_io import YamlFlowsWriter
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.utils.yaml import read_yaml
-
+from rasa.studio import data_handler
 from rasa.studio.config import StudioConfig
 from rasa.studio.constants import (
     STUDIO_DOMAIN_FILENAME,
@@ -21,13 +26,119 @@ from rasa.studio.constants import (
     STUDIO_NLU_FILENAME,
 )
 from rasa.studio.data_handler import (
-    DataDiffGenerator,
     StudioDataHandler,
     import_data_from_studio,
 )
 from rasa.utils.mapper import RasaPrimitiveStorageMapper
 
 logger = logging.getLogger(__name__)
+structlogger = structlog.getLogger(__name__)
+
+
+def _handle_file_overwrite(
+    file_path: Optional[str], default_path: str, file_type: str
+) -> Tuple[Optional[Path], bool]:
+    """Handles the logic for determining whether to
+    overwrite an existing file or create a new one.
+    Works for config and endpoints at this moment
+
+    Args:
+        file_path (Optional[str]): The path to the file
+                    provided by the user. Can be None.
+        default_path (str): The default path to use if `file_path`
+                    is None or invalid. Must be a file path.
+        file_type (str): The type of the file (e.g., "config",
+            "endpoints") for logging and messaging purposes.
+
+    Returns:
+        tuple[Optional[Path], bool]: A tuple containing the
+                            resolved file path and a boolean
+                        indicating whether to write the file.
+    """
+    file_already_exists = rasa.cli.utils.get_validated_path(
+        file_path, file_type, default_path, none_is_valid=True
+    )
+    write_file = False
+    path = None
+    file_or_default_path = file_path or default_path
+
+    if file_already_exists is None:
+        path = Path(file_or_default_path)
+        if path.is_dir():
+            path = path / default_path
+        return path, True
+
+    if questionary.confirm(
+        f"{file_type.capitalize()} file '{file_or_default_path}' "
+        f"already exists. Do you want to overwrite it?"
+    ).ask():
+        write_file = True
+        path = Path(file_or_default_path)
+    return path, write_file
+
+
+def _prepare_data_and_domain_paths(args: argparse.Namespace) -> Tuple[Path, List[Path]]:
+    """Handles the logic for preparing the domain and data paths
+    based on the provided arguments.
+
+    Args:
+        args (argparse.Namespace): The parsed arguments.
+
+    Returns:
+        tuple[Path, list[Path]]: A tuple containing the domain path
+                        and a list of data paths.
+    """
+    # prepare domain
+    domain_path = rasa.cli.utils.get_validated_path(
+        args.domain, "domain", DEFAULT_DOMAIN_PATH, none_is_valid=True
+    )
+    domain_or_default_path = args.domain or DEFAULT_DOMAIN_PATH
+
+    if domain_path is None:
+        # If the path is None, use the provided domain path
+        domain_path = Path(domain_or_default_path)
+        domain_path.touch()
+
+    if isinstance(domain_path, str):
+        domain_path = Path(domain_path)
+
+    if domain_path.is_file():
+        if not args.overwrite:
+            domain_path.unlink()
+            domain_path.touch()
+
+    if domain_path.is_dir():
+        if not args.overwrite:
+            domain_path = domain_path / STUDIO_DOMAIN_FILENAME
+            domain_path.touch()
+
+    # prepare data
+    data_paths = []
+
+    for f in args.data:
+        data_path = rasa.cli.utils.get_validated_path(
+            f, "data", DEFAULT_DATA_PATH, none_is_valid=True
+        )
+
+        if data_path is None:
+            # If the path is None, use the default data path
+            data_path = Path(f)
+            data_path.mkdir(parents=True, exist_ok=True)
+        else:
+            data_path = Path(data_path)
+
+        if data_path.is_file() or data_path.is_dir():
+            # If it's a file, add it directly
+            data_paths.append(data_path)
+        else:
+            # If it doesn't exist, create the directory
+            data_path.mkdir(parents=True, exist_ok=True)
+            data_paths.append(data_path)
+
+    # Remove duplicates while preserving order
+    data_paths = list(dict.fromkeys(data_paths))
+
+    return domain_path, data_paths
 
 
 def handle_download(args: argparse.Namespace) -> None:
@@ -35,19 +146,43 @@ def handle_download(args: argparse.Namespace) -> None:
         studio_config=StudioConfig.read_config(), assistant_name=args.assistant_name[0]
     )
     handler.request_all_data()
-    domain_path = rasa.cli.utils.get_validated_path(
-        args.domain, "domain", DEFAULT_DOMAIN_PATHS, none_is_valid=True
-    )
-    domain_path = Path(domain_path)
 
-    data_paths = [
-        Path(
-            rasa.cli.utils.get_validated_path(
-                f, "data", DEFAULT_DATA_PATH, none_is_valid=False
-            )
-        )
-        for f in args.data
-    ]
+    domain_path, data_paths = _prepare_data_and_domain_paths(args)
+
+    # handle config and endpoints
+    config_path, write_config = _handle_file_overwrite(
+        args.config, DEFAULT_CONFIG_PATH, "config"
+    )
+    endpoints_path, write_endpoints = _handle_file_overwrite(
+        args.endpoints, DEFAULT_ENDPOINTS_PATH, "endpoints"
+    )
+
+    # generate log message if we write the config or endpoints
+    message_parts = []
+
+    config_path = config_path if write_config else None
+    endpoints_path = endpoints_path if write_endpoints else None
+
+    if config_path:
+        config_data = handler.get_config()
+        if not config_data:
+            rasa.shared.utils.cli.print_error_and_exit("No config data found.")
+        with open(config_path, "w") as f:
+            f.write(config_data)
+            message_parts.append(f"config to '{config_path}'")
+
+    if endpoints_path:
+        endpoints_data = handler.get_endpoints()
+        if not endpoints_data:
+            raise ValueError("No endpoints data found.")
+
+        with open(endpoints_path, "w") as f:
+            f.write(endpoints_data)
+            message_parts.append(f"endpoints to '{endpoints_path}'")
+
+    if message_parts:
+        message = "Downloaded " + " and ".join(message_parts)
+        structlogger.info("studio.download.config_endpoints", event_info=message)
 
     if not args.overwrite:
         _handle_download_no_overwrite(
@@ -74,18 +209,19 @@ def _handle_download_no_overwrite(
 
     if domain_path.is_dir():
         studio_domain_path = domain_path / STUDIO_DOMAIN_FILENAME
-        diff_eng = DataDiffGenerator(
-            original_domain=data_original.get_domain().as_dict(),
-            studio_domain=data_from_studio.get_domain().as_dict(),
+        new_domain_data = data_handler.combine_domains(
+            data_from_studio.get_user_domain().as_dict(),
+            data_original.get_user_domain().as_dict(),
         )
-        new_domain_data = diff_eng.create_new_domain_from_diff()
         studio_domain = Domain.from_dict(new_domain_data)
         if not studio_domain.is_empty():
             studio_domain.persist(studio_domain_path)
         else:
             logger.warning("No additional domain data found.")
     elif domain_path.is_file():
-        domain_merged = data_original.get_domain().merge(data_from_studio.get_domain())
+        domain_merged = data_original.get_user_domain().merge(
+            data_from_studio.get_user_domain()
+        )
         domain_merged.persist(domain_path)
 
     if len(data_paths) == 1 and data_paths[0].is_file():
@@ -96,7 +232,9 @@ def _handle_download_no_overwrite(
             )
             data_nlu.persist_nlu(data_path)
         if handler.has_flows():
-            data_flows = data_original.get_flows().merge(data_from_studio.get_flows())
+            data_flows = data_original.get_user_flows().merge(
+                data_from_studio.get_user_flows()
+            )
             YamlFlowsWriter.dump(data_flows.underlying_flows, data_path)
 
     elif len(data_paths) == 1 and data_paths[0].is_dir():
@@ -125,11 +263,10 @@ def _persist_nlu_diff(
     data_path: Path,
 ) -> None:
     """Creates a new nlu file from the diff of original and studio data."""
-    diff_eng = DataDiffGenerator(
-        original_nlu=read_yaml(data_original.get_nlu_data().nlu_as_yaml()),
-        studio_nlu=read_yaml(data_from_studio.get_nlu_data().nlu_as_yaml()),
+    new_nlu_data = data_handler.create_new_nlu_from_diff(
+        read_yaml(data_from_studio.get_nlu_data().nlu_as_yaml()),
+        read_yaml(data_original.get_nlu_data().nlu_as_yaml()),
     )
-    new_nlu_data = diff_eng.create_new_nlu_from_diff()
     if new_nlu_data["nlu"]:
         pretty_write_nlu_yaml(new_nlu_data, data_path)
     else:
@@ -142,11 +279,10 @@ def _persist_flows_diff(
     data_path: Path,
 ) -> None:
     """Creates a new flows file from the diff of original and studio data."""
-    diff_eng = DataDiffGenerator(
-        original_flows=data_original.get_flows().underlying_flows,
-        studio_flows=data_from_studio.get_flows().underlying_flows,
+    new_flows_data = data_handler.create_new_flows_from_diff(
+        data_from_studio.get_user_flows().underlying_flows,
+        data_original.get_user_flows().underlying_flows,
     )
-    new_flows_data = diff_eng.create_new_flows_from_diff()
     if new_flows_data:
         YamlFlowsWriter.dump(new_flows_data, data_path)
     else:
@@ -183,12 +319,15 @@ def _handle_download_with_overwrite(
     mapper = RasaPrimitiveStorageMapper(
         domain_path=domain_path, training_data_paths=data_paths
     )
+
     if domain_path.is_file():
-        domain_merged = data_from_studio.get_domain().merge(data_original.get_domain())
+        domain_merged = data_from_studio.get_user_domain().merge(
+            data_original.get_user_domain()
+        )
         domain_merged.persist(domain_path)
     elif domain_path.is_dir():
         default = domain_path / Path(STUDIO_DOMAIN_FILENAME)
-        studio_domain = data_from_studio.get_domain()
+        studio_domain = data_from_studio.get_user_domain()
 
         paths = get_domain_path(domain_path, data_from_studio, mapper)
 
@@ -225,8 +364,8 @@ def _handle_download_with_overwrite(
             )
             nlu_data_merged.persist_nlu(data_paths[0])
         if handler.has_flows():
-            flows_data_merged = data_from_studio.get_flows().merge(
-                data_original.get_flows()
+            flows_data_merged = data_from_studio.get_user_flows().merge(
+                data_original.get_user_flows()
             )
             YamlFlowsWriter.dump(flows_data_merged.underlying_flows, data_paths[0])
     elif len(data_paths) == 1 and data_paths[0].is_dir():
@@ -241,12 +380,12 @@ def _handle_download_with_overwrite(
                 nlu_data = nlu_data.merge(nlu_file.get_nlu_data())
             pretty_write_nlu_yaml(read_yaml(nlu_data.nlu_as_yaml()), paths["nlu_path"])
         if handler.has_flows():
-            flows_data = data_from_studio.get_flows()
+            flows_data = data_from_studio.get_user_flows()
             if paths["flow_path"].exists():
                 flows_file = TrainingDataImporter.load_from_dict(
                     training_data_paths=[str(paths["flow_path"])]
                 )
-                flows_data = flows_data.merge(flows_file.get_flows())
+                flows_data = flows_data.merge(flows_file.get_user_flows())
             YamlFlowsWriter.dump(flows_data.underlying_flows, paths["flow_path"])
     else:
         #  TODO: we are not handling the case of multiple data paths?
@@ -274,7 +413,7 @@ def get_training_path(
     for intent in data_original.get_nlu_data().intents:
         for path in mapper.get_file(intent, "intents").get("training", []):
             nlu_paths.add(path)
-    flows = [flow.id for flow in data_original.get_flows().underlying_flows]
+    flows = [flow.id for flow in data_original.get_user_flows().underlying_flows]
     for flow in flows:
         for path in mapper.get_file(flow, "flows").get("training", []):
             flow_paths.add(path)

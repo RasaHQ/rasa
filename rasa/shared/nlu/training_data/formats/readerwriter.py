@@ -122,7 +122,6 @@ class TrainingDataWriter:
         # format (e.g. `/greet{"name": "Rasa"}) and we don't have to add the NLU
         # entity annotation
         if not text.startswith(INTENT_MESSAGE_PREFIX):
-
             entities = message.get("entities", [])
             entities_with_start_and_end = [
                 e for e in entities if "start" in e and "end" in e

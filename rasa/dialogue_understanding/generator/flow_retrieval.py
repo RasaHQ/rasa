@@ -25,15 +25,24 @@ import structlog
 from jinja2 import Template
 from langchain.docstore.document import Document
 from langchain.schema.embeddings import Embeddings
-from langchain.vectorstores.faiss import FAISS
-from langchain.vectorstores.utils import DistanceStrategy
+from langchain_community.vectorstores.faiss import FAISS
+from langchain_community.vectorstores.utils import DistanceStrategy
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.shared.constants import (
+    EMBEDDINGS_CONFIG_KEY,
+    PROVIDER_CONFIG_KEY,
+    OPENAI_PROVIDER,
+)
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import TEXT, FLOWS_FROM_SEMANTIC_SEARCH
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.exceptions import ProviderClientAPIException
+from rasa.shared.providers.embedding._langchain_embedding_client_adapter import (
+    _LangchainEmbeddingClientAdapter,
+)
 from rasa.shared.utils.llm import (
     tracker_as_readable_transcript,
     embedder_factory,
@@ -47,9 +56,8 @@ DEFAULT_FLOW_DOCUMENT_TEMPLATE = importlib.resources.read_text(
     "rasa.dialogue_understanding.generator", "flow_document_template.jinja2"
 )
 
-EMBEDDINGS_CONFIG_KEY = "embeddings"
 DEFAULT_EMBEDDINGS_CONFIG = {
-    "_type": "openai",
+    PROVIDER_CONFIG_KEY: OPENAI_PROVIDER,
     "model": DEFAULT_OPENAI_EMBEDDING_MODEL_NAME,
 }
 
@@ -93,11 +101,10 @@ class FlowRetrieval:
 
     @classmethod
     def validate_config(cls, config: Dict[Text, Any]) -> Dict[Text, Any]:
-
         if config[MAX_FLOWS_FROM_SEMANTIC_SEARCH_KEY] < 0:
-            config[
-                MAX_FLOWS_FROM_SEMANTIC_SEARCH_KEY
-            ] = DEFAULT_MAX_FLOWS_FROM_SEMANTIC_SEARCH
+            config[MAX_FLOWS_FROM_SEMANTIC_SEARCH_KEY] = (
+                DEFAULT_MAX_FLOWS_FROM_SEMANTIC_SEARCH
+            )
             structlogger.error(
                 f"flow_retrieval.validate_config.{MAX_FLOWS_FROM_SEMANTIC_SEARCH_KEY}.set_as_negative",
                 event_info=(
@@ -154,6 +161,7 @@ class FlowRetrieval:
                     folder_path=model_path,
                     embeddings=embeddings,
                     distance_strategy=DistanceStrategy.MAX_INNER_PRODUCT,
+                    allow_dangerous_deserialization=True,
                 )
         except Exception as e:
             structlogger.warning(
@@ -170,9 +178,10 @@ class FlowRetrieval:
         Returns:
             The embedder.
         """
-        return embedder_factory(
+        client = embedder_factory(
             config.get(EMBEDDINGS_CONFIG_KEY), DEFAULT_EMBEDDINGS_CONFIG
         )
+        return _LangchainEmbeddingClientAdapter(client)
 
     def persist(self) -> None:
         self._persist_vector_store()
@@ -407,4 +416,6 @@ class FlowRetrieval:
                 error=e,
                 query=query,
             )
-            raise
+            raise ProviderClientAPIException(
+                message="Cannot fetch flows from vector store", original_exception=e
+            )

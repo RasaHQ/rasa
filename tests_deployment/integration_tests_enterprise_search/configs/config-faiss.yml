@@ -1,0 +1,12 @@
+recipe: default.v1
+language: en
+pipeline:
+- name: SingleStepLLMCommandGenerator
+
+policies:
+- name: FlowPolicy
+- name: EnterpriseSearchPolicy
+  max_messages_in_query: 1
+- name: IntentlessPolicy
+
+assistant_id: 20240219-110701-dichotomic-inference

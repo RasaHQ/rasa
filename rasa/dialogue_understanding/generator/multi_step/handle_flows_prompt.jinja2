@@ -1,0 +1,38 @@
+Your task is to analyze the current situation and to start and/or end business processes that we call flows.
+
+===
+Here are the available flows, read them carefully. They represent the central business logic:
+{% for flow in available_flows %}
+- {{ flow.name }}: {{ flow.description }}
+{%- endfor %}
+
+===
+Here is the current conversation:
+{{ current_conversation }}
+
+===
+{% if current_flow != None and not top_flow_is_pattern%}You are currently in the flow "{{ current_flow }}".{% else %}You are currently not in any flow.{% endif %}
+
+===
+Based on this information generate a list of actions, you want to take. Any logic of what happens afterwards is handled
+by the flow engine. These are your available actions:
+1. Starting a flow, described by "StartFlow(flow_name)".
+2. If unsure which flow should be started, clarify candidate flows, described by "Clarify(flow_name_1, flow_name_2, ...)". This is particularly useful for short messages.{% if current_flow != None %}
+3. Stopping the current flow on request of the user, described by "CancelFlow()".{% endif %}
+4. Indicating that the users intent goes beyond starting, clarifying or canceling a flow, described by "CannotHandle()".
+
+===
+Here are some examples of user messages -> action list:
+1. "book" -> Clarify(book_hotel, book_restaurant, book_flight)
+2. "I want to book a hotel in Paris." -> StartFlow(book_hotel)
+3. "Can you help me with my booking?" -> Clarify(book_hotel, book_restaurant, book_flight)
+4. "Nevermind, stop it." -> CancelFlow()
+===
+Write out the actions you want to take for the last user message, one per line.
+Do not take unnecessary actions.
+Strictly adhere to the provided actions and their format listed above.
+Use the previous conversation steps only to aid understanding.
+
+Summarize the last user message in the context of the conversation. Then generate a final list of actions.
+===
+The user saying "{{ last_user_message }}" means that they might

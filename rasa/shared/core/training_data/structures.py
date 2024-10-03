@@ -691,7 +691,7 @@ class StoryGraph:
 
     @staticmethod
     def topological_sort(
-        graph: Dict[Text, Set[Text]]
+        graph: Dict[Text, Set[Text]],
     ) -> Tuple[deque, List[Tuple[Text, Text]]]:
         """Creates a top sort of a directed graph. This is an unstable sorting!
 
@@ -803,6 +803,26 @@ class StoryGraph:
     def __repr__(self) -> Text:
         """Returns text representation of object."""
         return f"{self.__class__.__name__}: {len(self.story_steps)} story steps"
+
+    def has_e2e_stories(self) -> bool:
+        """
+        Checks if there are end-to-end (E2E) stories present in the story steps.
+
+        An E2E story is determined by checking if any `UserUttered` event has
+        associated text within the story steps.
+
+        Returns:
+            bool: True if any E2E story (i.e., a `UserUttered` event with text)
+            is found, False otherwise.
+        """
+        if not self.story_steps:
+            return False
+        for story_step in self.story_steps:
+            for event in story_step.events:
+                if isinstance(event, UserUttered):
+                    if event.text:
+                        return True
+        return False
 
 
 def generate_id(prefix: Text = "", max_chars: Optional[int] = None) -> Text:

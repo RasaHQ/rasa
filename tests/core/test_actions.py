@@ -1,90 +1,100 @@
 import logging
 import textwrap
 from datetime import datetime
-from typing import List, Text, Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Text
 from unittest.mock import Mock
 
 import pytest
-from pytest import MonkeyPatch
 from _pytest.logging import LogCaptureFixture
 from aioresponses import aioresponses
 from jsonschema import ValidationError
+from pytest import MonkeyPatch
 
 import rasa.core
+import rasa.shared.utils.common
+from rasa.core import ContextualResponseRephraser
 from rasa.core.actions import action
 from rasa.core.actions.action import (
     ActionBack,
+    ActionBotResponse,
     ActionDefaultAskAffirmation,
     ActionDefaultAskRephrase,
     ActionDefaultFallback,
-    ActionExecutionRejection,
-    ActionRestart,
-    ActionBotResponse,
-    ActionRetrieveResponse,
-    ActionSendText,
-    RemoteAction,
-    ActionSessionStart,
     ActionEndToEndResponse,
     ActionExtractSlots,
-    default_actions,
     ActionResetRouting,
+    ActionRestart,
+    ActionRetrieveResponse,
+    ActionSendText,
+    ActionSessionStart,
+    RemoteAction,
+    default_actions,
 )
+from rasa.core.actions.action_exceptions import ActionExecutionRejection
 from rasa.core.actions.forms import FormAction
 from rasa.core.channels import CollectingOutputChannel, OutputChannel
 from rasa.core.channels.slack import SlackBot
-from rasa.core.constants import COMPRESS_ACTION_SERVER_REQUEST_ENV_NAME
+from rasa.core.constants import (
+    COMPRESS_ACTION_SERVER_REQUEST_ENV_NAME,
+    UTTER_SOURCE_METADATA_KEY,
+)
 from rasa.core.nlg import NaturalLanguageGenerator
+from rasa.core.nlg.response import TemplatedNaturalLanguageGenerator
+from rasa.core.policies.enterprise_search_policy import (
+    SEARCH_QUERY_METADATA_KEY,
+    SEARCH_RESULTS_METADATA_KEY,
+)
 from rasa.shared.constants import (
     LATEST_TRAINING_DATA_FORMAT_VERSION,
-    UTTER_PREFIX,
+    OPENAI_API_KEY_ENV_VAR,
     REQUIRED_SLOTS_KEY,
     ROUTE_TO_CALM_SLOT,
+    UTTER_PREFIX,
 )
-from rasa.shared.core.domain import (
-    ActionNotFoundException,
-    SessionConfig,
-    Domain,
-    KEY_E2E_ACTIONS,
-)
-from rasa.shared.core.events import (
-    Restarted,
-    SlotSet,
-    UserUtteranceReverted,
-    BotUttered,
-    ActiveLoop,
-    SessionStarted,
-    ActionExecuted,
-    Event,
-    UserUttered,
-    EntitiesAdded,
-    DefinePrevUserUtteredFeaturization,
-    AllSlotsReset,
-    ReminderScheduled,
-    ReminderCancelled,
-    ActionReverted,
-    StoryExported,
-    FollowupAction,
-    ConversationPaused,
-    ConversationResumed,
-    AgentUttered,
-    LoopInterrupted,
-    ActionExecutionRejected,
-    LegacyFormValidation,
-    LegacyForm,
-    RoutingSessionEnded,
-)
-import rasa.shared.utils.common
-from rasa.core.nlg.response import TemplatedNaturalLanguageGenerator
 from rasa.shared.core.constants import (
-    USER_INTENT_SESSION_START,
     ACTION_LISTEN_NAME,
     ACTIVE_LOOP,
+    DEFAULT_ACTION_NAMES,
+    FLOW_HASHES_SLOT,
     FOLLOWUP_ACTION,
     REQUESTED_SLOT,
-    SESSION_START_METADATA_SLOT,
-    FLOW_HASHES_SLOT,
-    DEFAULT_ACTION_NAMES,
     RULE_SNIPPET_ACTION_NAME,
+    SESSION_START_METADATA_SLOT,
+    USER_INTENT_SESSION_START,
+)
+from rasa.shared.core.domain import (
+    KEY_RESPONSES_TEXT,
+    KEY_E2E_ACTIONS,
+    ActionNotFoundException,
+    Domain,
+    SessionConfig,
+)
+from rasa.shared.core.events import (
+    ActionExecuted,
+    ActionExecutionRejected,
+    ActionReverted,
+    ActiveLoop,
+    AgentUttered,
+    AllSlotsReset,
+    BotUttered,
+    ConversationPaused,
+    ConversationResumed,
+    DefinePrevUserUtteredFeaturization,
+    EntitiesAdded,
+    Event,
+    FollowupAction,
+    LegacyForm,
+    LegacyFormValidation,
+    LoopInterrupted,
+    ReminderCancelled,
+    ReminderScheduled,
+    Restarted,
+    RoutingSessionEnded,
+    SessionStarted,
+    SlotSet,
+    StoryExported,
+    UserUtteranceReverted,
+    UserUttered,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
@@ -128,9 +138,10 @@ def test_domain_action_instantiation():
         forms={},
         data={},
     )
+    endpoint = EndpointConfig("https://example.com/webhooks/actions")
 
     instantiated_actions = [
-        action.action_for_name_or_text(action_name, domain, None)
+        action.action_for_name_or_text(action_name, domain, endpoint)
         for action_name in domain.action_names_or_texts
     ]
     expected_action_names = DEFAULT_ACTION_NAMES + [
@@ -161,8 +172,8 @@ async def test_remote_actions_are_compressed(
     monkeypatch: MonkeyPatch,
 ):
     endpoint = EndpointConfig("https://example.com/webhooks/actions")
-    remote_action = action.RemoteAction("my_action", endpoint)
     monkeypatch.setenv(COMPRESS_ACTION_SERVER_REQUEST_ENV_NAME, is_compression_enabled)
+    remote_action = action.RemoteAction("my_action", endpoint)
 
     with aioresponses() as mocked:
         mocked.post(
@@ -183,11 +194,16 @@ async def test_remote_action_runs(
     default_nlg: NaturalLanguageGenerator,
     default_tracker: DialogueStateTracker,
     domain: Domain,
+    monkeypatch: MonkeyPatch,
 ):
     endpoint = EndpointConfig("https://example.com/webhooks/actions")
     remote_action = action.RemoteAction("my_action", endpoint)
 
     with aioresponses() as mocked:
+        mocked.post(
+            "https://example.com/webhooks/actions",
+            status=449,
+        )
         mocked.post(
             "https://example.com/webhooks/actions",
             payload={"events": [], "responses": []},
@@ -201,6 +217,7 @@ async def test_remote_action_runs(
 
         assert json_of_latest_request(r) == {
             "domain": domain.as_dict(),
+            "domain_digest": domain.fingerprint(),
             "next_action": "my_action",
             "sender_id": "my-sender",
             "version": rasa.__version__,
@@ -237,6 +254,7 @@ async def test_remote_action_logs_events(
     default_nlg: NaturalLanguageGenerator,
     default_tracker: DialogueStateTracker,
     domain: Domain,
+    monkeypatch: MonkeyPatch,
 ):
     endpoint = EndpointConfig("https://example.com/webhooks/actions")
     remote_action = action.RemoteAction("my_action", endpoint)
@@ -254,6 +272,7 @@ async def test_remote_action_logs_events(
     }
 
     with aioresponses() as mocked:
+        mocked.post("https://example.com/webhooks/actions", status=449)
         mocked.post("https://example.com/webhooks/actions", payload=response)
 
         events = await remote_action.run(
@@ -265,6 +284,7 @@ async def test_remote_action_logs_events(
 
         assert json_of_latest_request(r) == {
             "domain": domain.as_dict(),
+            "domain_digest": domain.fingerprint(),
             "next_action": "my_action",
             "sender_id": "my-sender",
             "version": rasa.__version__,
@@ -296,10 +316,16 @@ async def test_remote_action_logs_events(
         }
     assert len(events) == 3  # first two events are bot utterances
     assert events[0] == BotUttered(
-        "test text", {"buttons": [{"title": "cheap", "payload": "cheap"}]}
+        "test text",
+        {"buttons": [{"title": "cheap", "payload": "cheap"}]},
+        metadata={UTTER_SOURCE_METADATA_KEY: "my_action"},
     )
     assert events[1] == BotUttered(
-        "hey there None!", metadata={"utter_action": "utter_greet"}
+        "hey there None!",
+        metadata={
+            "utter_action": "utter_greet",
+            UTTER_SOURCE_METADATA_KEY: "TemplatedNaturalLanguageGenerator",
+        },
     )
     assert events[2] == SlotSet("name", "rasa")
 
@@ -345,7 +371,11 @@ async def test_remote_action_utterances_with_none_values(
 
     assert events == [
         BotUttered(
-            "what dou want to eat?", metadata={"utter_action": "utter_ask_cuisine"}
+            "what dou want to eat?",
+            metadata={
+                "utter_action": "utter_ask_cuisine",
+                UTTER_SOURCE_METADATA_KEY: "TemplatedNaturalLanguageGenerator",
+            },
         ),
         ActiveLoop("restaurant_form"),
         SlotSet("requested_slot", "cuisine"),
@@ -726,7 +756,11 @@ async def test_response(default_channel, default_nlg, default_tracker, domain: D
 
     assert events == [
         BotUttered(
-            "this is a default channel", metadata={"utter_action": "utter_channel"}
+            "this is a default channel",
+            metadata={
+                "utter_action": "utter_channel",
+                UTTER_SOURCE_METADATA_KEY: "TemplatedNaturalLanguageGenerator",
+            },
         )
     ]
 
@@ -757,7 +791,10 @@ async def test_response_with_buttons(
                     {"payload": "button2", "title": "button2"},
                 ]
             },
-            metadata={"utter_action": "utter_buttons"},
+            metadata={
+                "utter_action": "utter_buttons",
+                UTTER_SOURCE_METADATA_KEY: "TemplatedNaturalLanguageGenerator",
+            },
         )
     ]
 
@@ -775,7 +812,6 @@ async def test_response_invalid_response(
 
 
 async def test_response_channel_specific(default_nlg, default_tracker, domain: Domain):
-
     output_channel = SlackBot("DummyToken", "General")
 
     events = await ActionBotResponse("utter_channel").run(
@@ -785,7 +821,11 @@ async def test_response_channel_specific(default_nlg, default_tracker, domain: D
     assert events == [
         BotUttered(
             "you're talking to me on slack!",
-            metadata={"channel": "slack", "utter_action": "utter_channel"},
+            metadata={
+                "channel": "slack",
+                "utter_action": "utter_channel",
+                UTTER_SOURCE_METADATA_KEY: "TemplatedNaturalLanguageGenerator",
+            },
         )
     ]
 
@@ -824,7 +864,11 @@ async def test_response_with_response_id(
     assert events == [
         BotUttered(
             "test",
-            metadata={"id": "1", "utter_action": "utter_one_id"},
+            metadata={
+                "id": "1",
+                "utter_action": "utter_one_id",
+                UTTER_SOURCE_METADATA_KEY: "TemplatedNaturalLanguageGenerator",
+            },
         )
     ]
 
@@ -837,7 +881,13 @@ async def test_action_back(
     )
 
     assert events == [
-        BotUttered("backing up...", metadata={"utter_action": "utter_back"}),
+        BotUttered(
+            "backing up...",
+            metadata={
+                "utter_action": "utter_back",
+                UTTER_SOURCE_METADATA_KEY: "TemplatedNaturalLanguageGenerator",
+            },
+        ),
         UserUtteranceReverted(),
         UserUtteranceReverted(),
     ]
@@ -852,7 +902,11 @@ async def test_action_restart(
 
     assert events == [
         BotUttered(
-            "congrats, you've restarted me!", metadata={"utter_action": "utter_restart"}
+            "congrats, you've restarted me!",
+            metadata={
+                "utter_action": "utter_restart",
+                UTTER_SOURCE_METADATA_KEY: "TemplatedNaturalLanguageGenerator",
+            },
         ),
         Restarted(),
     ]
@@ -963,7 +1017,10 @@ async def test_action_default_fallback(
     assert events == [
         BotUttered(
             "sorry, I didn't get that, can you rephrase it?",
-            metadata={"utter_action": "utter_default"},
+            metadata={
+                "utter_action": "utter_default",
+                UTTER_SOURCE_METADATA_KEY: "TemplatedNaturalLanguageGenerator",
+            },
         ),
         UserUtteranceReverted(),
     ]
@@ -1036,7 +1093,11 @@ async def test_action_default_ask_rephrase(
 
     assert events == [
         BotUttered(
-            "can you rephrase that?", metadata={"utter_action": "utter_ask_rephrase"}
+            "can you rephrase that?",
+            metadata={
+                "utter_action": "utter_ask_rephrase",
+                UTTER_SOURCE_METADATA_KEY: "TemplatedNaturalLanguageGenerator",
+            },
         )
     ]
 
@@ -1089,7 +1150,8 @@ def test_overridden_form_action():
         )
     )
 
-    actual = action.action_for_name_or_text(form_action_name, domain, None)
+    endpoint = EndpointConfig("https://example.com/webhooks/actions")
+    actual = action.action_for_name_or_text(form_action_name, domain, endpoint)
     assert isinstance(actual, RemoteAction)
 
 
@@ -1174,12 +1236,14 @@ async def test_run_end_to_end_utterance_action():
     [
         (
             UserUttered(
+                "I am travelling to London.",
                 intent={"name": "inform"},
                 entities=[{"entity": "city", "value": "London"}],
             ),
             "location",
             "London",
             UserUttered(
+                "I am travelling to Berlin.",
                 intent={"name": "inform"},
                 entities=[{"entity": "city", "value": "Berlin"}],
             ),
@@ -1208,6 +1272,7 @@ async def test_run_end_to_end_utterance_action():
         ),
         (
             UserUttered(
+                text="I am travelling with Bob and Mary.",
                 intent={"name": "inform"},
                 entities=[
                     {"entity": "name", "value": "Bob"},
@@ -1217,6 +1282,7 @@ async def test_run_end_to_end_utterance_action():
             "guest_names",
             ["Bob", "Mary"],
             UserUttered(
+                text="I am travelling with John also.",
                 intent={"name": "inform"},
                 entities=[{"entity": "name", "value": "John"}],
             ),
@@ -1283,21 +1349,10 @@ async def test_action_extract_slots_predefined_mappings(
             domain,
         )
 
-    assert events == [SlotSet(slot_name, slot_value)]
+    assert SlotSet(slot_name, slot_value) in events
 
-    events.extend([user])
+    events.extend([BotUttered(), ActionExecuted("action_listen"), new_user])
     tracker.update_with_events(events)
-
-    new_events = await action_extract_slots.run(
-        CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.responses),
-        tracker,
-        domain,
-    )
-    assert new_events == [SlotSet(slot_name, slot_value)]
-
-    new_events.extend([BotUttered(), ActionExecuted("action_listen"), new_user])
-    tracker.update_with_events(new_events)
 
     updated_evts = await action_extract_slots.run(
         CollectingOutputChannel(),
@@ -1306,7 +1361,7 @@ async def test_action_extract_slots_predefined_mappings(
         domain,
     )
 
-    assert updated_evts == [SlotSet(slot_name, updated_value)]
+    assert SlotSet(slot_name, updated_value) in updated_evts
 
 
 async def test_action_extract_slots_with_from_trigger_mappings():
@@ -2500,7 +2555,8 @@ async def test_action_extract_slots_with_none_value_predefined_mapping():
     event = UserUttered("Hi", entities=[{"entity": "some_entity", "value": None}])
     tracker = DialogueStateTracker.from_events(sender_id="test_id", evts=[event])
 
-    action_extract_slots = ActionExtractSlots(None)
+    endpoint = EndpointConfig("https://example.com/webhooks/actions")
+    action_extract_slots = ActionExtractSlots(endpoint)
 
     events = await action_extract_slots.run(
         CollectingOutputChannel(),
@@ -3030,7 +3086,8 @@ async def test_action_send_text(
     events = await ActionSendText().run(
         default_channel, template_nlg, template_sender_tracker, domain, metadata
     )
-
+    # assert metadata remains unmodified through the bot utterance creation
+    assert metadata == {"message": {"text": "foobar"}}
     assert events == [BotUttered("foobar")]
 
 
@@ -3044,9 +3101,210 @@ async def test_action_send_text_handles_missing_metadata(
     assert events == [BotUttered("")]
 
 
+async def test_action_send_text_propagates_metadata_to_bot_uttered(
+    default_channel, template_nlg, template_sender_tracker, domain: Domain
+) -> None:
+    action_metadata = {
+        SEARCH_RESULTS_METADATA_KEY: [
+            {
+                "text": "Q: Who is Finley?\nA: Finley is your smart "
+                "assistant for the FinX App."
+            }
+        ],
+        UTTER_SOURCE_METADATA_KEY: "EnterpriseSearchPolicy",
+        SEARCH_QUERY_METADATA_KEY: "Who is Finley?",
+    }
+    bot_message = "Finley is your intelligent assistant for the FinX app"
+    metadata = {
+        "message": {
+            "text": bot_message,
+            **action_metadata,
+        }
+    }
+
+    events = await ActionSendText().run(
+        default_channel, template_nlg, template_sender_tracker, domain, metadata
+    )
+
+    assert events == [BotUttered(bot_message, metadata=action_metadata)]
+
+
 def test_default_actions_and_names_consistency():
     names_of_default_actions = {action.name() for action in default_actions()}
     names_of_executable_actions_in_constants = set(DEFAULT_ACTION_NAMES) - {
         RULE_SNIPPET_ACTION_NAME
     }
     assert names_of_default_actions == names_of_executable_actions_in_constants
+
+
+async def test_action_extract_slots_with_flows_metadata(
+    caplog: LogCaptureFixture, monkeypatch: MonkeyPatch
+):
+    """Test that the action `action_extract_slots` can handle metadata with flows.
+
+    The action should not extract slots that are collected by flows or actions that are
+    run within flows.
+    """
+    slot_name = "store_location"
+    action_name = "action_find_closest_store"
+    domain_yaml = textwrap.dedent(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+
+        slots:
+          {slot_name}:
+            type: text
+            mappings:
+            - type: custom
+              action: {action_name}
+
+        actions:
+        - {action_name}"""
+    )
+    domain = Domain.from_yaml(domain_yaml)
+
+    metadata = {"all_flows": {"find_store": {"steps": [{"action": action_name}]}}}
+
+    event = UserUttered("Hi")
+    tracker = DialogueStateTracker.from_events(
+        sender_id="test_id", evts=[event], slots=domain.slots
+    )
+
+    action_server_url = "https://my-action-server:5055/webhook"
+
+    with aioresponses() as mocked:
+        mocked.post(
+            action_server_url,
+            payload={
+                "events": [
+                    {"event": "slot", "name": slot_name, "value": "Shoreditch Branch"}
+                ]
+            },
+        )
+
+        action_server = EndpointConfig(action_server_url)
+        action_extract_slots = ActionExtractSlots(action_server)
+
+        with caplog.at_level(logging.DEBUG):
+            events = await action_extract_slots.run(
+                CollectingOutputChannel(),
+                TemplatedNaturalLanguageGenerator(domain.responses),
+                tracker,
+                domain,
+                metadata,
+            )
+
+        assert all(
+            [
+                f"Calling action endpoint to run action '{action_name}'."
+                not in record.message
+                for record in caplog.records
+            ]
+        )
+        assert events == []
+
+
+async def test_action_bot_response_with_rephrased_utterance(
+    default_channel: OutputChannel,
+    default_tracker: DialogueStateTracker,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key in test_actions")
+    test_domain = Domain.from_yaml("""
+    responses:
+      utter_rephrased:
+        - text: "this is a rephrased utterance"
+          metadata:
+            rephrase: True
+    """)
+
+    rephrased_message = "The utterance has been rephrased."
+
+    async def mock_rephrase(*args, **kwargs) -> Dict[str, Any]:
+        return {KEY_RESPONSES_TEXT: rephrased_message}
+
+    mock_rephraser = ContextualResponseRephraser(EndpointConfig(), test_domain)
+    monkeypatch.setattr(mock_rephraser, "rephrase", mock_rephrase)
+
+    events = await ActionBotResponse("utter_rephrased").run(
+        default_channel, mock_rephraser, default_tracker, test_domain
+    )
+
+    assert events == [
+        BotUttered(
+            rephrased_message,
+            data={
+                "elements": None,
+                "quick_replies": None,
+                "buttons": None,
+                "attachment": None,
+                "image": None,
+                "custom": None,
+            },
+            metadata={
+                "utter_action": "utter_rephrased",
+                UTTER_SOURCE_METADATA_KEY: "ContextualResponseRephraser",
+                "domain_ground_truth": [
+                    response["text"]
+                    for response in test_domain.responses.get("utter_rephrased")
+                ],
+            },
+        )
+    ]
+
+
+async def test_remote_action_valid_with_rephrased_utterance(
+    default_channel: OutputChannel,
+    default_tracker: DialogueStateTracker,
+    monkeypatch: MonkeyPatch,
+):
+    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key in test_actions")
+    utter_action = "utter_rephrased"
+    test_domain = Domain.from_yaml(f"""
+    responses:
+      {utter_action}:
+        - text: "this is a rephrased utterance"
+          metadata:
+            rephrase: True
+    """)
+
+    rephrased_message = "The utterance has been rephrased."
+
+    async def mock_rephrase(*args, **kwargs) -> Dict[str, Any]:
+        return {KEY_RESPONSES_TEXT: rephrased_message}
+
+    mock_rephraser = ContextualResponseRephraser(EndpointConfig(), test_domain)
+    monkeypatch.setattr(mock_rephraser, "rephrase", mock_rephrase)
+
+    endpoint = EndpointConfig("https://example.com/webhooks/actions")
+    remote_action = action.RemoteAction("my_action", endpoint)
+    response = {"events": [], "responses": [{"response": utter_action}]}
+
+    with aioresponses() as mocked:
+        mocked.post("https://example.com/webhooks/actions", payload=response)
+
+        events = await remote_action.run(
+            default_channel, mock_rephraser, default_tracker, test_domain
+        )
+
+    assert events == [
+        BotUttered(
+            rephrased_message,
+            data={
+                "elements": None,
+                "quick_replies": None,
+                "buttons": None,
+                "attachment": None,
+                "image": None,
+                "custom": None,
+            },
+            metadata={
+                "utter_action": "utter_rephrased",
+                UTTER_SOURCE_METADATA_KEY: "ContextualResponseRephraser",
+                "domain_ground_truth": [
+                    response["text"]
+                    for response in test_domain.responses.get("utter_rephrased")
+                ],
+            },
+        )
+    ]

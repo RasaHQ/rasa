@@ -15,6 +15,7 @@ from rasa.utils.endpoints import EndpointConfig
 from rasa.core.secrets_manager.constants import (
     TRACKER_STORE_ENDPOINT_TYPE,
     TRANSIT_KEY_FOR_ENCRYPTION_LABEL,
+    VAULT_MOUNT_POINT_DEFAULT_VALUE,
     VAULT_SECRET_MANAGER_NAME,
 )
 from rasa.core.secrets_manager.endpoints import (
@@ -124,7 +125,6 @@ class VaultEndpointConfigReader:
                 credentials_location.get_secret_manager_name()
                 == VAULT_SECRET_MANAGER_NAME
             ):
-
                 return VaultCredentialsLocation.from_credentials_location(
                     credentials_location=credentials_location
                 )
@@ -161,11 +161,10 @@ class VaultEndpointConfigReader:
                     credentials_location
                 )
             ):
-
                 if credentials_location.transit_key:
-                    transit_keys[
-                        credentials_location.secret_key
-                    ] = credentials_location.transit_key
+                    transit_keys[credentials_location.secret_key] = (
+                        credentials_location.transit_key
+                    )
 
         return transit_keys if transit_keys else None
 
@@ -183,6 +182,7 @@ class VaultSecretsManager(SecretsManager):
         secrets_path: Text,
         transit_mount_point: Optional[Text] = None,
         namespace: Optional[Text] = None,
+        mount_point: Optional[Text] = None,
     ):
         """Initialise the VaultSecretsManager.
 
@@ -192,11 +192,13 @@ class VaultSecretsManager(SecretsManager):
             secrets_path: The path to the secrets in the vault server.
             transit_mount_point: The mount point of the transit engine.
             namespace: The namespace in which secrets reside in.
+            mount_point: The mount point of the kv engine.
         """
         self.host = host
         self.transit_mount_point = transit_mount_point
         self.token = token
         self.secrets_path = secrets_path
+        self.mount_point = mount_point or VAULT_MOUNT_POINT_DEFAULT_VALUE
         self.namespace = namespace
 
         # Create client
@@ -238,7 +240,7 @@ class VaultSecretsManager(SecretsManager):
         """
         logger.info(f"Loading secrets from vault server at {self.host}.")
         read_response = self.client.secrets.kv.read_secret_version(
-            mount_point="secret", path=self.secrets_path
+            mount_point=self.mount_point, path=self.secrets_path
         )
 
         secrets = read_response["data"]["data"]
@@ -357,9 +359,9 @@ class VaultTokenManager:
 
     def start(self) -> None:
         """Start refreshing the token if it is expiring."""
-        renew_response: Dict[
-            Text, Dict[Text, Any]
-        ] = self.client.auth.token.lookup_self()
+        renew_response: Dict[Text, Dict[Text, Any]] = (
+            self.client.auth.token.lookup_self()
+        )
         is_token_expiring = renew_response["data"]["renewable"]
         if is_token_expiring:
             refresh_interval_in_seconds = renew_response["data"]["creation_ttl"]
@@ -457,6 +459,7 @@ class VaultSecretManagerConfig(SecretManagerConfig):
         secrets_path: Text,
         transit_mount_point: Text = "transit",
         namespace: Optional[Text] = None,
+        mount_point: Optional[Text] = None,
     ) -> None:
         """Initialise the VaultSecretManagerConfig.
 
@@ -473,6 +476,7 @@ class VaultSecretManagerConfig(SecretManagerConfig):
         self.secrets_path = secrets_path
         self.transit_mount_point = transit_mount_point
         self.namespace = namespace
+        self.mount_point = mount_point
 
 
 @dataclass
@@ -488,6 +492,7 @@ class VaultSecretManagerNonStrictConfig:
     secrets_path: Optional[Text]
     transit_mount_point: Optional[Text]
     namespace: Optional[Text] = None
+    mount_point: Optional[Text] = None
 
     def is_empty(self) -> bool:
         """Check if all the values are empty."""
@@ -497,6 +502,7 @@ class VaultSecretManagerNonStrictConfig:
             and (self.secrets_path is None or self.secrets_path == "")
             and (self.transit_mount_point is None or self.transit_mount_point == "")
             and (self.namespace is None or self.namespace == "")
+            and (self.mount_point is None or self.mount_point == "")
         )
 
     def is_valid(self) -> bool:
@@ -518,6 +524,7 @@ class VaultSecretManagerNonStrictConfig:
             and self.secrets_path != ""
             and self._is_optional_value_valid(self.transit_mount_point)
             and self._is_optional_value_valid(self.namespace)
+            and self._is_optional_value_valid(self.mount_point)
         )
 
     @staticmethod
@@ -549,6 +556,7 @@ class VaultSecretManagerNonStrictConfig:
             secrets_path=self.secrets_path or other.secrets_path,
             transit_mount_point=self.transit_mount_point or other.transit_mount_point,
             namespace=self.namespace or other.namespace,
+            mount_point=self.mount_point or other.mount_point,
         )
 
 

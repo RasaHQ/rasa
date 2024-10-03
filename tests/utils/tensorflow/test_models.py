@@ -35,7 +35,6 @@ def test_merging_batch_outputs(
     new_batch_outputs: Dict[Text, Union[np.ndarray, Dict[Text, np.ndarray]]],
     expected_output: Dict[Text, Union[np.ndarray, Dict[Text, np.ndarray]]],
 ):
-
     predicted_output = RasaModel._merge_batch_outputs(
         existing_outputs, new_batch_outputs
     )
@@ -73,7 +72,6 @@ def test_batch_inference(
     def _batch_predict(
         batch_in: Tuple[np.ndarray],
     ) -> Dict[Text, Union[np.ndarray, Dict[Text, np.ndarray]]]:
-
         dummy_output = batch_in[0]
         output = {
             "dummy_output": dummy_output,

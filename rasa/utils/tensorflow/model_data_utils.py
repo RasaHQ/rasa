@@ -460,7 +460,6 @@ def _extract_features(
         attribute_mask = np.ones(len(list_of_list_of_features), np.float32)
 
         for i, list_of_features in enumerate(list_of_list_of_features):
-
             if list_of_features is None:
                 # use zero features and set mask to zero
                 attribute_mask[i] = 0

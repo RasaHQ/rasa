@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from asyncio import AbstractEventLoop
 from contextlib import asynccontextmanager
-from langchain.schema import Document
 from pathlib import Path
 from typing import (
     Any,
@@ -21,11 +20,22 @@ import pytest
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
-from rasa.core.actions.action import Action
+from rasa.core.actions.action import (
+    Action,
+    CustomActionExecutor,
+    NoEndpointCustomActionExecutor,
+    RetryCustomActionExecutor,
+)
+from rasa.core.actions.grpc_custom_action_executor import GRPCCustomActionExecutor
+from rasa.core.actions.http_custom_action_executor import HTTPCustomActionExecutor
 from rasa.core.agent import Agent
 from rasa.core.brokers.broker import EB, EventBroker
 from rasa.core.channels import OutputChannel, UserMessage
-from rasa.core.information_retrieval.information_retrieval import InformationRetrieval
+from rasa.core.information_retrieval import (
+    SearchResult,
+    SearchResultList,
+    InformationRetrieval,
+)
 from rasa.core.lock import TicketLock
 from rasa.core.lock_store import LockStore
 from rasa.core.nlg import NaturalLanguageGenerator
@@ -33,8 +43,10 @@ from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import TrackerStore
 from rasa.dialogue_understanding.commands import Command, StartFlowCommand
-from rasa.dialogue_understanding.generator.llm_command_generator import (
+from rasa.dialogue_understanding.generator import (
     LLMCommandGenerator,
+    SingleStepLLMCommandGenerator,
+    MultiStepLLMCommandGenerator,
 )
 from rasa.dialogue_understanding.generator.nlu_command_adapter import NLUCommandAdapter
 from rasa.engine.caching import LocalTrainingCache, TrainingCache
@@ -310,7 +322,7 @@ class MockLLMCommandgenerator(LLMCommandGenerator):
         model_storage: ModelStorage,
         resource: Resource,
     ) -> None:
-        self.fail_if_undefined("_generate_action_list_using_llm")
+        self.fail_if_undefined("invoke_llm")
         super().__init__(config, model_storage, resource)
 
     def fail_if_undefined(self, method_name: Text) -> None:
@@ -324,7 +336,57 @@ class MockLLMCommandgenerator(LLMCommandGenerator):
                 f"instrumentation needs to be adapted!"
             )
 
-    async def _generate_action_list_using_llm(self, prompt: str) -> Optional[str]:
+    async def invoke_llm(self, prompt: str) -> Optional[str]:
+        pass
+
+
+class MockSingleStepLLMCommandGenerator(SingleStepLLMCommandGenerator):
+    def __init__(
+        self,
+        config: Dict[str, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+    ) -> None:
+        self.fail_if_undefined("invoke_llm")
+        super().__init__(config, model_storage, resource)
+
+    def fail_if_undefined(self, method_name: Text) -> None:
+        if not (
+            hasattr(self.__class__.__base__, method_name)
+            and callable(getattr(self.__class__.__base__, method_name))
+        ):
+            pytest.fail(
+                f"method '{method_name}' not found in {self.__class__.__base__}. "
+                f"This likely means the method was renamed, which means the "
+                f"instrumentation needs to be adapted!"
+            )
+
+    async def invoke_llm(self, prompt: str) -> Optional[str]:
+        pass
+
+
+class MockMultiStepLLMCommandGenerator(MultiStepLLMCommandGenerator):
+    def __init__(
+        self,
+        config: Dict[str, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+    ) -> None:
+        self.fail_if_undefined("invoke_llm")
+        super().__init__(config, model_storage, resource)
+
+    def fail_if_undefined(self, method_name: Text) -> None:
+        if not (
+            hasattr(self.__class__.__base__, method_name)
+            and callable(getattr(self.__class__.__base__, method_name))
+        ):
+            pytest.fail(
+                f"method '{method_name}' not found in {self.__class__.__base__}. "
+                f"This likely means the method was renamed, which means the "
+                f"instrumentation needs to be adapted!"
+            )
+
+    async def invoke_llm(self, prompt: str) -> Optional[str]:
         pass
 
 
@@ -495,11 +557,15 @@ class MockInformationRetrieval(InformationRetrieval):
     async def search(
         self,
         query: Text,
+        tracker_state: Dict[Text, Any],
         threshold: float = 0.0,
-    ) -> List[Document]:
-        return [
-            Document(page_content="Some content", metadata={"source": "docs/test.txt"})
-        ]
+    ) -> SearchResultList:
+        return SearchResultList(
+            results=[
+                SearchResult(text="Some content", metadata={"source": "docs/test.txt"}),
+            ],
+            metadata={"total_results": 1},
+        )
 
 
 class MockNLUCommandAdapter(NLUCommandAdapter):
@@ -518,6 +584,7 @@ class MockNLUCommandAdapter(NLUCommandAdapter):
         message: Message,
         flows: FlowsList,
         tracker: Optional[DialogueStateTracker] = None,
+        **kwargs: Any,
     ) -> List[Command]:
         return [StartFlowCommand(flow="health_advice")]
 
@@ -559,6 +626,132 @@ class MockEndpointConfig(EndpointConfig):
         **kwargs: Any,
     ) -> Optional[Any]:
         return None
+
+    def fail_if_undefined(self, method_name: Text) -> None:
+        if not (
+            hasattr(self.__class__.__base__, method_name)
+            and callable(getattr(self.__class__.__base__, method_name))
+        ):
+            pytest.fail(
+                f"method '{method_name}' not found in {self.__class__.__base__}. "
+                f"This likely means the method was renamed, which means the "
+                f"instrumentation needs to be adapted!"
+            )
+
+
+class MockCustomActionExecutor(CustomActionExecutor):
+    async def run(
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        include_domain: bool = False,
+    ) -> Dict[Text, Any]:
+        if not (
+            hasattr(self.__class__.__base__, "run")
+            and callable(getattr(self.__class__.__base__, "run"))
+        ):
+            pytest.fail(
+                f"method 'run' not found in {self.__class__.__base__}. "
+                f"This likely means the method was renamed, which means the "
+                f"instrumentation needs to be adapted!"
+            )
+
+
+class MockNoEndpointCustomActionExecutor(NoEndpointCustomActionExecutor):
+    def __init__(self, action_name: str) -> None:
+        self.fail_if_undefined("run")
+        super().__init__(action_name)
+
+    async def run(
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        include_domain: bool = False,
+    ) -> Dict[Text, Any]:
+        pass
+
+    def fail_if_undefined(self, method_name: Text) -> None:
+        if not (
+            hasattr(self.__class__.__base__, method_name)
+            and callable(getattr(self.__class__.__base__, method_name))
+        ):
+            pytest.fail(
+                f"method '{method_name}' not found in {self.__class__.__base__}. "
+                f"This likely means the method was renamed, which means the "
+                f"instrumentation needs to be adapted!"
+            )
+
+
+class MockRetryCustomActionExecutor(RetryCustomActionExecutor):
+    def __init__(self, custom_action_executor: CustomActionExecutor) -> None:
+        self.fail_if_undefined("run")
+        super().__init__(custom_action_executor)
+
+    async def run(
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        include_domain: bool = False,
+    ) -> Dict[Text, Any]:
+        pass
+
+    def fail_if_undefined(self, method_name: Text) -> None:
+        if not (
+            hasattr(self.__class__.__base__, method_name)
+            and callable(getattr(self.__class__.__base__, method_name))
+        ):
+            pytest.fail(
+                f"method '{method_name}' not found in {self.__class__.__base__}. "
+                f"This likely means the method was renamed, which means the "
+                f"instrumentation needs to be adapted!"
+            )
+
+
+class MockGRPCCustomActionExecutor(GRPCCustomActionExecutor):
+    def __init__(
+        self,
+        action_name: str,
+        action_endpoint: EndpointConfig,
+    ) -> None:
+        self.fail_if_undefined("run")
+        super().__init__(action_name, action_endpoint)
+
+    async def run(
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        include_domain: bool = False,
+    ) -> Dict[Text, Any]:
+        pass
+
+    def fail_if_undefined(self, method_name: Text) -> None:
+        if not (
+            hasattr(self.__class__.__base__, method_name)
+            and callable(getattr(self.__class__.__base__, method_name))
+        ):
+            pytest.fail(
+                f"method '{method_name}' not found in {self.__class__.__base__}. "
+                f"This likely means the method was renamed, which means the "
+                f"instrumentation needs to be adapted!"
+            )
+
+
+class MockHTTPCustomActionExecutor(HTTPCustomActionExecutor):
+    def __init__(
+        self,
+        action_name: str,
+        action_endpoint: EndpointConfig,
+    ) -> None:
+        self.fail_if_undefined("run")
+        super().__init__(action_name, action_endpoint)
+
+    async def run(
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        include_domain: bool = False,
+    ) -> Dict[Text, Any]:
+        pass
 
     def fail_if_undefined(self, method_name: Text) -> None:
         if not (

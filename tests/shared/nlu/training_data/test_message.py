@@ -60,7 +60,6 @@ def test_get_dense_features(
     expected_seq_features: Optional[List[Features]],
     expected_sen_features: Optional[List[Features]],
 ):
-
     message = Message(data={TEXT: "This is a test sentence."}, features=features)
 
     actual_seq_features, actual_sen_features = message.get_dense_features(

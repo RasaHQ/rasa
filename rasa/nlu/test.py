@@ -886,7 +886,6 @@ def evaluate_entities(
             exclude_label=NO_ENTITY,
         )
         if output_directory:
-
             _dump_report(output_directory, f"{extractor}_report.json", report)
 
         if successes:
@@ -1550,7 +1549,6 @@ async def combine_result(
 
 
 def _contains_entity_labels(entity_results: List[EntityEvaluationResult]) -> bool:
-
     for result in entity_results:
         if result.entity_targets or result.entity_predictions:
             return True
@@ -1791,7 +1789,6 @@ async def compare_nlu(
     training_examples_per_run = []
 
     for run in range(runs):
-
         logger.info("Beginning comparison run {}/{}".format(run + 1, runs))
 
         run_path = os.path.join(output, "run_{}".format(run + 1))

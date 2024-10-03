@@ -1,14 +1,15 @@
 # Usage: python data-upload.py --docs_folder data/documents
 
-import logging
-from langchain.embeddings.openai import OpenAIEmbeddings
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.vectorstores import Milvus
-from langchain.document_loaders import DirectoryLoader, TextLoader
-from pathlib import Path
-from langchain.schema import Document
-from typing import List
 import argparse
+import logging
+from langchain.schema import Document
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_community.document_loaders.directory import DirectoryLoader
+from langchain_community.document_loaders.text import TextLoader
+from langchain_community.embeddings.openai import OpenAIEmbeddings
+from langchain_community.vectorstores import Milvus
+from pathlib import Path
+from typing import List
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -36,7 +37,9 @@ def extract_documents(docs_folder: str) -> List[Document]:
     return loader.load()
 
 
-def create_chunks(documents: List[Document], chunk_size: int, chunk_overlap: int) -> List[Document]:
+def create_chunks(
+    documents: List[Document], chunk_size: int, chunk_overlap: int
+) -> List[Document]:
     """Splits the documents into chunks with RecursiveCharacterTextSplitter.
 
     Args:
@@ -56,12 +59,12 @@ def create_chunks(documents: List[Document], chunk_size: int, chunk_overlap: int
 
 
 def create_milvus_collection(
-        docs: List[Document],
-        host: str,
-        port: str,
-        user: str,
-        password: str,
-        collection_name: str,
+    docs: List[Document],
+    host: str,
+    port: str,
+    user: str,
+    password: str,
+    collection_name: str,
 ) -> Milvus:
     """Creates a Milvus collection from the documents.
 
@@ -102,15 +105,36 @@ def main():
         description="Extract documents from a folder and create a Milvus collection. Requires the pymilvus package. Make sure that you have the OPENAI_API_KEY environment variables set.",
         epilog="Example: python data-upload.py --docs_folder data/documents",
     )
-    parser.add_argument("--docs_folder", type=str, default="data/documents",
-                        help="The folder containing the txt documents.")
-    parser.add_argument("--chunk_size", type=int, default=1000, help="The size of the chunks.")
-    parser.add_argument("--chunk_overlap", type=int, default=20, help="The overlap of the chunks.")
-    parser.add_argument("--milvus_host", type=str, default="localhost", help="The Milvus host.")
-    parser.add_argument("--milvus_port", type=str, default="19530", help="The Milvus port.")
-    parser.add_argument("--milvus_user", type=str, default=None, help="The Milvus user.")
-    parser.add_argument("--milvus_pass", type=str, default=None, help="The Milvus password.")
-    parser.add_argument("--milvus_collection", type=str, default="rasa", help="The Milvus collection name.")
+    parser.add_argument(
+        "--docs_folder",
+        type=str,
+        default="data/documents",
+        help="The folder containing the txt documents.",
+    )
+    parser.add_argument(
+        "--chunk_size", type=int, default=1000, help="The size of the chunks."
+    )
+    parser.add_argument(
+        "--chunk_overlap", type=int, default=20, help="The overlap of the chunks."
+    )
+    parser.add_argument(
+        "--milvus_host", type=str, default="localhost", help="The Milvus host."
+    )
+    parser.add_argument(
+        "--milvus_port", type=str, default="19530", help="The Milvus port."
+    )
+    parser.add_argument(
+        "--milvus_user", type=str, default=None, help="The Milvus user."
+    )
+    parser.add_argument(
+        "--milvus_pass", type=str, default=None, help="The Milvus password."
+    )
+    parser.add_argument(
+        "--milvus_collection",
+        type=str,
+        default="rasa",
+        help="The Milvus collection name.",
+    )
     args = parser.parse_args()
 
     docs = extract_documents(args.docs_folder)

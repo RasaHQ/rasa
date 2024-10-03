@@ -247,6 +247,27 @@ def test_environment_variable_with_dollar_char_in_the_middle():
     assert content["model"]["test1"] == "test$123"
 
 
+def test_read_yaml_datatime_as_string():
+    config = """
+    some_key: 2024-03-20
+    """
+    content = read_yaml(config)
+    assert content["some_key"] == "2024-03-20"
+    assert isinstance(content["some_key"], str)
+
+
+def test_read_yaml_non_standard_datatime_as_string():
+    config = """
+    some_key: 2024-3-20
+    some_other_key: 20-03-2024
+    """
+    content = read_yaml(config)
+    assert content["some_key"] == "2024-3-20"
+    assert isinstance(content["some_key"], str)
+    assert content["some_other_key"] == "20-03-2024"
+    assert isinstance(content["some_other_key"], str)
+
+
 def test_emojis_in_yaml():
     test_data = """
     data:
@@ -595,7 +616,6 @@ async def test_is_key_in_yaml_with_unicode_files():
 
 @pytest.mark.parametrize("length", [4, 8, 16, 32])
 def test_random_string(length):
-
     s = rasa.shared.utils.io.random_string(length)
     s2 = rasa.shared.utils.io.random_string(length)
 

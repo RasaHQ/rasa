@@ -1,111 +1,120 @@
 import copy
-import json
 import logging
+from functools import lru_cache
 from typing import (
-    List,
-    Text,
-    Optional,
-    Dict,
-    Any,
     TYPE_CHECKING,
-    Tuple,
+    Any,
+    Dict,
+    List,
+    Optional,
     Set,
+    Text,
+    Tuple,
     cast,
 )
 
-import aiohttp
 import rasa.core
-from rasa.core.actions.constants import DEFAULT_SELECTIVE_DOMAIN, SELECTIVE_DOMAIN
+import rasa.shared.utils.io
+from rasa.core.actions.custom_action_executor import (
+    CustomActionExecutor,
+    NoEndpointCustomActionExecutor,
+    RetryCustomActionExecutor,
+)
+from rasa.core.actions.direct_custom_actions_executor import DirectCustomActionExecutor
+from rasa.core.actions.e2e_stub_custom_action_executor import (
+    E2EStubCustomActionExecutor,
+)
+from rasa.core.actions.grpc_custom_action_executor import GRPCCustomActionExecutor
+from rasa.core.actions.http_custom_action_executor import HTTPCustomActionExecutor
 from rasa.core.constants import (
-    DEFAULT_REQUEST_TIMEOUT,
-    COMPRESS_ACTION_SERVER_REQUEST_ENV_NAME,
-    DEFAULT_COMPRESS_ACTION_SERVER_REQUEST,
+    UTTER_SOURCE_METADATA_KEY,
 )
 from rasa.core.policies.policy import PolicyPrediction
+from rasa.core.utils import add_bot_utterance_metadata
+from rasa.e2e_test.constants import KEY_STUB_CUSTOM_ACTIONS
 from rasa.nlu.constants import (
     RESPONSE_SELECTOR_DEFAULT_INTENT,
-    RESPONSE_SELECTOR_PROPERTY_NAME,
     RESPONSE_SELECTOR_PREDICTION_KEY,
+    RESPONSE_SELECTOR_PROPERTY_NAME,
     RESPONSE_SELECTOR_UTTER_ACTION_KEY,
 )
 from rasa.shared.constants import (
-    DOCS_BASE_URL,
     DEFAULT_NLU_FALLBACK_INTENT_NAME,
+    DOCS_BASE_URL,
+    FLOW_PREFIX,
     ROUTE_TO_CALM_SLOT,
     UTTER_PREFIX,
-    FLOW_PREFIX,
 )
 from rasa.shared.core.constants import (
-    ACTION_RESET_ROUTING,
-    USER_INTENT_OUT_OF_SCOPE,
-    ACTION_LISTEN_NAME,
-    ACTION_RESTART_NAME,
-    ACTION_SEND_TEXT_NAME,
-    ACTION_SESSION_START_NAME,
-    ACTION_DEFAULT_FALLBACK_NAME,
+    ACTION_BACK_NAME,
     ACTION_DEACTIVATE_LOOP_NAME,
-    ACTION_REVERT_FALLBACK_EVENTS_NAME,
     ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
     ACTION_DEFAULT_ASK_REPHRASE_NAME,
-    ACTION_UNLIKELY_INTENT_NAME,
-    ACTION_BACK_NAME,
-    REQUESTED_SLOT,
+    ACTION_DEFAULT_FALLBACK_NAME,
     ACTION_EXTRACT_SLOTS,
-    DEFAULT_SLOT_NAMES,
-    MAPPING_CONDITIONS,
-    ACTIVE_LOOP,
+    ACTION_LISTEN_NAME,
+    ACTION_RESET_ROUTING,
+    ACTION_RESTART_NAME,
+    ACTION_REVERT_FALLBACK_EVENTS_NAME,
+    ACTION_SEND_TEXT_NAME,
+    ACTION_SESSION_START_NAME,
+    ACTION_UNLIKELY_INTENT_NAME,
     ACTION_VALIDATE_SLOT_MAPPINGS,
-    MAPPING_TYPE,
-    SlotMappingType,
+    DEFAULT_SLOT_NAMES,
     KNOWLEDGE_BASE_SLOT_NAMES,
+    MAPPING_TYPE,
+    REQUESTED_SLOT,
+    USER_INTENT_OUT_OF_SCOPE,
+    SlotMappingType,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
+    ActionExecuted,
+    ActiveLoop,
+    BotUttered,
+    Event,
+    Restarted,
     RoutingSessionEnded,
+    SessionStarted,
+    SlotSet,
     UserUtteranceReverted,
     UserUttered,
-    ActionExecuted,
-    Event,
-    BotUttered,
-    SlotSet,
-    ActiveLoop,
-    Restarted,
-    SessionStarted,
 )
-from rasa.shared.core.slot_mappings import SlotMapping
-from rasa.shared.core.slots import ListSlot
+from rasa.shared.core.flows import FlowsList
+from rasa.shared.core.slot_mappings import (
+    SlotFillingManager,
+    extract_slot_value,
+)
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import (
     INTENT_NAME_KEY,
     INTENT_RANKING_KEY,
-    ENTITY_ATTRIBUTE_TYPE,
-    ENTITY_ATTRIBUTE_ROLE,
-    ENTITY_ATTRIBUTE_GROUP,
 )
+from rasa.shared.utils.io import raise_warning
 from rasa.shared.utils.schemas.events import EVENTS_SCHEMA
-import rasa.shared.utils.io
-from rasa.utils.common import get_bool_env_variable
-from rasa.utils.endpoints import EndpointConfig, ClientResponseError
+from rasa.utils.endpoints import ClientResponseError, EndpointConfig
+from rasa.utils.url_tools import UrlSchema, get_url_schema
 
 if TYPE_CHECKING:
-    from rasa.core.nlg import NaturalLanguageGenerator
     from rasa.core.channels.channel import OutputChannel
+    from rasa.core.nlg import NaturalLanguageGenerator
     from rasa.shared.core.events import IntentPrediction
+
 
 logger = logging.getLogger(__name__)
 
 
 def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["Action"]:
     """List default actions."""
-    from rasa.core.actions.two_stage_fallback import TwoStageFallbackAction
-    from rasa.dialogue_understanding.patterns.correction import ActionCorrectFlowSlot
-    from rasa.dialogue_understanding.patterns.cancel import ActionCancelFlow
-    from rasa.dialogue_understanding.patterns.clarify import ActionClarifyFlows
+    from rasa.core.actions.action_clean_stack import ActionCleanStack
     from rasa.core.actions.action_run_slot_rejections import ActionRunSlotRejections
     from rasa.core.actions.action_trigger_chitchat import ActionTriggerChitchat
     from rasa.core.actions.action_trigger_search import ActionTriggerSearch
-    from rasa.core.actions.action_clean_stack import ActionCleanStack
+    from rasa.core.actions.two_stage_fallback import TwoStageFallbackAction
+    from rasa.dialogue_understanding.patterns.cancel import ActionCancelFlow
+    from rasa.dialogue_understanding.patterns.clarify import ActionClarifyFlows
+    from rasa.dialogue_understanding.patterns.correction import ActionCorrectFlowSlot
 
     return [
         ActionListen(),
@@ -133,7 +142,9 @@ def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["A
 
 
 def action_for_index(
-    index: int, domain: Domain, action_endpoint: Optional[EndpointConfig]
+    index: int,
+    domain: Domain,
+    action_endpoint: Optional[EndpointConfig],
 ) -> "Action":
     """Get an action based on its index in the list of available actions.
 
@@ -156,7 +167,9 @@ def action_for_index(
         )
 
     return action_for_name_or_text(
-        domain.action_names_or_texts[index], domain, action_endpoint
+        domain.action_names_or_texts[index],
+        domain,
+        action_endpoint,
     )
 
 
@@ -180,7 +193,9 @@ def is_retrieval_action(action_name: Text, retrieval_intents: List[Text]) -> boo
 
 
 def action_for_name_or_text(
-    action_name_or_text: Text, domain: Domain, action_endpoint: Optional[EndpointConfig]
+    action_name_or_text: Text,
+    domain: Domain,
+    action_endpoint: Optional[EndpointConfig],
 ) -> "Action":
     """Retrieves an action by its name or by its text in case it's an end-to-end action.
 
@@ -345,12 +360,16 @@ class ActionBotResponse(Action):
         if message is None:
             if not self.silent_fail:
                 logger.error(
-                    "Couldn't create message for response '{}'."
-                    "".format(self.utter_action)
+                    "Couldn't create message for response '{}'.".format(
+                        self.utter_action
+                    )
                 )
             return []
-        message["utter_action"] = self.utter_action
 
+        message.update(metadata or {})
+        message = add_bot_utterance_metadata(
+            message, self.utter_action, nlg, domain, tracker
+        )
         return [create_bot_utterance(message)]
 
     def name(self) -> Text:
@@ -492,8 +511,9 @@ class ActionRetrieveResponse(ActionBotResponse):
         else:
             if not self.silent_fail:
                 logger.error(
-                    "Couldn't create message for response action '{}'."
-                    "".format(self.action_name)
+                    "Couldn't create message for response action '{}'.".format(
+                        self.action_name
+                    )
                 )
             return []
 
@@ -702,41 +722,61 @@ class ActionDeactivateLoop(Action):
 
 
 class RemoteAction(Action):
-    def __init__(self, name: Text, action_endpoint: Optional[EndpointConfig]) -> None:
-
+    def __init__(
+        self,
+        name: Text,
+        action_endpoint: Optional[EndpointConfig] = None,
+    ) -> None:
         self._name = name
         self.action_endpoint = action_endpoint
+        self.executor = self._create_executor()
 
-    def _action_call_format(
-        self,
-        tracker: "DialogueStateTracker",
-        domain: "Domain",
-    ) -> Dict[Text, Any]:
-        """Create the request json send to the action server."""
-        from rasa.shared.core.trackers import EventVerbosity
+    @lru_cache(maxsize=1)
+    def _create_executor(self) -> CustomActionExecutor:
+        """Creates an executor based on the action endpoint configuration.
 
-        tracker_state = tracker.current_state(EventVerbosity.ALL)
+        Returns:
+            An instance of CustomActionExecutor.
 
-        result = {
-            "next_action": self._name,
-            "sender_id": tracker.sender_id,
-            "tracker": tracker_state,
-            "version": rasa.__version__,
-        }
+        Raises:
+            RasaException: If no valid action endpoint is configured.
+        """
+        if not self.action_endpoint:
+            return NoEndpointCustomActionExecutor(self.name())
 
-        if (
-            not self._is_selective_domain_enabled()
-            or domain.does_custom_action_explicitly_need_domain(self.name())
+        if self.action_endpoint.kwargs.get(KEY_STUB_CUSTOM_ACTIONS):
+            return E2EStubCustomActionExecutor(self.name(), self.action_endpoint)
+
+        if self.action_endpoint.url and self.action_endpoint.actions_module:
+            raise_warning(
+                "Both 'actions_module' and 'url' are defined. "
+                "As they are mutually exclusive and 'actions_module' "
+                "is prioritized, actions will be executed by the assistant."
+            )
+
+        if self.action_endpoint and self.action_endpoint.actions_module:
+            return DirectCustomActionExecutor(self.name(), self.action_endpoint)
+
+        url_schema = get_url_schema(self.action_endpoint.url)
+
+        if url_schema == UrlSchema.GRPC:
+            return RetryCustomActionExecutor(
+                GRPCCustomActionExecutor(self.name(), self.action_endpoint)
+            )
+        elif (
+            url_schema == UrlSchema.HTTP
+            or url_schema == UrlSchema.HTTPS
+            or url_schema == UrlSchema.NOT_SPECIFIED
         ):
-            result["domain"] = domain.as_dict()
-
-        return result
-
-    def _is_selective_domain_enabled(self) -> bool:
-        if self.action_endpoint is None:
-            return False
-        return bool(
-            self.action_endpoint.kwargs.get(SELECTIVE_DOMAIN, DEFAULT_SELECTIVE_DOMAIN)
+            return RetryCustomActionExecutor(
+                HTTPCustomActionExecutor(self.name(), self.action_endpoint)
+            )
+        raise RasaException(
+            f"Failed to create a custom action executor. "
+            f"Please make sure to include an action endpoint configuration in your "
+            f"endpoints configuration file. Make sure that for grpc, http and https "
+            f"an url schema is set. "
+            f"Found url '{self.action_endpoint.url}'."
         )
 
     @staticmethod
@@ -756,8 +796,7 @@ class RemoteAction(Action):
         return schema
 
     def _validate_action_result(self, result: Dict[Text, Any]) -> bool:
-        from jsonschema import validate
-        from jsonschema import ValidationError
+        from jsonschema import ValidationError, validate
 
         try:
             validate(result, self.action_response_format_spec())
@@ -777,20 +816,25 @@ class RemoteAction(Action):
         output_channel: "OutputChannel",
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
+        **kwargs: Any,
     ) -> List[BotUttered]:
         """Use the responses generated by the action endpoint and utter them."""
         bot_messages = []
+        domain: Domain = kwargs.get("domain", None)
+        action_name: str = kwargs.get("action_name", None)
         for response in responses:
             generated_response = response.pop("response", None)
-            if generated_response:
+            if generated_response is not None:
                 draft = await nlg.generate(
                     generated_response, tracker, output_channel.name(), **response
                 )
                 if not draft:
                     continue
-                draft["utter_action"] = generated_response
+                draft = add_bot_utterance_metadata(
+                    draft, generated_response, nlg, domain, tracker
+                )
             else:
-                draft = {}
+                draft = {UTTER_SOURCE_METADATA_KEY: action_name}
 
             buttons = response.pop("buttons", []) or []
             if buttons:
@@ -813,100 +857,28 @@ class RemoteAction(Action):
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> List[Event]:
         """Runs action. Please see parent class for the full docstring."""
-        json_body = self._action_call_format(tracker, domain)
-        if not self.action_endpoint:
-            raise RasaException(
-                f"Failed to execute custom action '{self.name()}' "
-                f"because no endpoint is configured to run this "
-                f"custom action. Please take a look at "
-                f"the docs and set an endpoint configuration via the "
-                f"--endpoints flag. "
-                f"{DOCS_BASE_URL}/custom-actions"
-            )
+        response = await self.executor.run(
+            domain=domain,
+            tracker=tracker,
+        )
+        self._validate_action_result(response)
 
-        try:
-            logger.debug(
-                "Calling action endpoint to run action '{}'.".format(self.name())
-            )
+        events_json = response.get("events", [])
+        responses = response.get("responses", [])
+        bot_messages = await self._utter_responses(
+            responses,
+            output_channel,
+            nlg,
+            tracker,
+            domain=domain,
+            action_name=self.name(),
+        )
 
-            should_compress = get_bool_env_variable(
-                COMPRESS_ACTION_SERVER_REQUEST_ENV_NAME,
-                DEFAULT_COMPRESS_ACTION_SERVER_REQUEST,
-            )
-
-            response: Any = await self.action_endpoint.request(
-                json=json_body,
-                method="post",
-                timeout=DEFAULT_REQUEST_TIMEOUT,
-                compress=should_compress,
-            )
-            self._validate_action_result(response)
-
-            events_json = response.get("events", [])
-            responses = response.get("responses", [])
-            bot_messages = await self._utter_responses(
-                responses, output_channel, nlg, tracker
-            )
-
-            events = rasa.shared.core.events.deserialise_events(events_json)
-            return cast(List[Event], bot_messages) + events
-
-        except ClientResponseError as e:
-            if e.status == 400:
-                response_data = json.loads(e.text)
-                exception = ActionExecutionRejection(
-                    response_data["action_name"], response_data.get("error")
-                )
-                logger.error(exception.message)
-                raise exception
-            else:
-                raise RasaException(
-                    f"Failed to execute custom action '{self.name()}'"
-                ) from e
-
-        except aiohttp.ClientConnectionError as e:
-            logger.error(
-                f"Failed to run custom action '{self.name()}'. Couldn't connect "
-                f"to the server at '{self.action_endpoint.url}'. "
-                f"Is the server running? "
-                f"Error: {e}"
-            )
-            raise RasaException(
-                f"Failed to execute custom action '{self.name()}'. Couldn't connect "
-                f"to the server at '{self.action_endpoint.url}."
-            )
-
-        except aiohttp.ClientError as e:
-            # not all errors have a status attribute, but
-            # helpful to log if they got it
-
-            # noinspection PyUnresolvedReferences
-            status = getattr(e, "status", None)
-            raise RasaException(
-                "Failed to run custom action '{}'. Action server "
-                "responded with a non 200 status code of {}. "
-                "Make sure your action server properly runs actions "
-                "and returns a 200 once the action is executed. "
-                "Error: {}".format(self.name(), status, e)
-            )
+        events = rasa.shared.core.events.deserialise_events(events_json)
+        return cast(List[Event], bot_messages) + events
 
     def name(self) -> Text:
         return self._name
-
-
-class ActionExecutionRejection(RasaException):
-    """Raising this exception allows other policies to predict a different action."""
-
-    def __init__(self, action_name: Text, message: Optional[Text] = None) -> None:
-        """Create a new ActionExecutionRejection exception."""
-        self.action_name = action_name
-        self.message = message or "Custom action '{}' rejected to run".format(
-            action_name
-        )
-        super(ActionExecutionRejection, self).__init__()
-
-    def __str__(self) -> Text:
-        return self.message
 
 
 class ActionRevertFallbackEvents(Action):
@@ -987,7 +959,7 @@ def _revert_affirmation_events(tracker: "DialogueStateTracker") -> List[Event]:
     last_user_event = copy.deepcopy(last_user_event)
     # FIXME: better type annotation for `parse_data` would require
     # a larger refactoring (e.g. switch to dataclass)
-    last_user_event.parse_data["intent"]["confidence"] = 1.0  # type: ignore[typeddict-item]  # noqa: E501
+    last_user_event.parse_data["intent"]["confidence"] = 1.0  # type: ignore[typeddict-item]
 
     return revert_events + [last_user_event]
 
@@ -1061,7 +1033,7 @@ class ActionDefaultAskAffirmation(Action):
             intent_to_affirm == DEFAULT_NLU_FALLBACK_INTENT_NAME
             and len(intent_ranking) > 1
         ):
-            intent_to_affirm = intent_ranking[1][INTENT_NAME_KEY]  # type: ignore[literal-required] # noqa: E501
+            intent_to_affirm = intent_ranking[1][INTENT_NAME_KEY]  # type: ignore[literal-required]
 
         affirmation_message = f"Did you mean '{intent_to_affirm}'?"
 
@@ -1105,7 +1077,8 @@ class ActionSendText(Action):
     ) -> List[Event]:
         """Runs action. Please see parent class for the full docstring."""
         fallback = {"text": ""}
-        message = metadata.get("message", fallback) if metadata else fallback
+        metadata_copy = copy.deepcopy(metadata) if metadata else {}
+        message = metadata_copy.get("message", fallback)
         return [create_bot_utterance(message)]
 
 
@@ -1126,51 +1099,6 @@ class ActionExtractSlots(Action):
     def name(self) -> Text:
         """Returns action_extract_slots name."""
         return ACTION_EXTRACT_SLOTS
-
-    @staticmethod
-    def _matches_mapping_conditions(
-        mapping: Dict[Text, Any], tracker: "DialogueStateTracker", slot_name: Text
-    ) -> bool:
-        slot_mapping_conditions = mapping.get(MAPPING_CONDITIONS)
-
-        if not slot_mapping_conditions:
-            return True
-
-        if (
-            tracker.is_active_loop_rejected
-            and tracker.get_slot(REQUESTED_SLOT) == slot_name
-        ):
-            return False
-
-        # check if found mapping conditions matches form
-        for condition in slot_mapping_conditions:
-            active_loop = condition.get(ACTIVE_LOOP)
-
-            if active_loop and active_loop == tracker.active_loop_name:
-                condition_requested_slot = condition.get(REQUESTED_SLOT)
-                if not condition_requested_slot:
-                    return True
-                if condition_requested_slot == tracker.get_slot(REQUESTED_SLOT):
-                    return True
-
-            if active_loop is None and tracker.active_loop_name is None:
-                return True
-
-        return False
-
-    @staticmethod
-    def _verify_mapping_conditions(
-        mapping: Dict[Text, Any], tracker: "DialogueStateTracker", slot_name: Text
-    ) -> bool:
-        if mapping.get(MAPPING_CONDITIONS) and mapping[MAPPING_TYPE] != str(
-            SlotMappingType.FROM_TRIGGER_INTENT
-        ):
-            if not ActionExtractSlots._matches_mapping_conditions(
-                mapping, tracker, slot_name
-            ):
-                return False
-
-        return True
 
     async def _run_custom_action(
         self,
@@ -1221,10 +1149,17 @@ class ActionExtractSlots(Action):
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
+        calm_custom_action_names: Optional[Set[str]] = None,
     ) -> Tuple[List[Event], Set[Text]]:
         custom_action = mapping.get("action")
 
         if not custom_action or custom_action in executed_custom_actions:
+            return [], executed_custom_actions
+
+        if (
+            calm_custom_action_names is not None
+            and custom_action in calm_custom_action_names
+        ):
             return [], executed_custom_actions
 
         slot_events = await self._run_custom_action(
@@ -1272,36 +1207,6 @@ class ActionExtractSlots(Action):
             event for event in slot_events if event.key not in validated_slot_names
         ]
 
-    def _fails_unique_entity_mapping_check(
-        self,
-        slot_name: Text,
-        mapping: Dict[Text, Any],
-        tracker: "DialogueStateTracker",
-        domain: "Domain",
-    ) -> bool:
-        from rasa.core.actions.forms import FormAction
-
-        if mapping[MAPPING_TYPE] != str(SlotMappingType.FROM_ENTITY):
-            return False
-
-        form_name = tracker.active_loop_name
-
-        if not form_name:
-            return False
-
-        if tracker.get_slot(REQUESTED_SLOT) == slot_name:
-            return False
-
-        form = FormAction(form_name, self._action_endpoint)
-
-        if slot_name not in form.required_slots(domain):
-            return False
-
-        if form.entity_mapping_is_unique(mapping, domain):
-            return False
-
-        return True
-
     async def run(
         self,
         output_channel: "OutputChannel",
@@ -1320,50 +1225,32 @@ class ActionExtractSlots(Action):
             if slot.name not in DEFAULT_SLOT_NAMES | KNOWLEDGE_BASE_SLOT_NAMES
         ]
 
+        calm_slot_names = set()
+        calm_custom_action_names = None
+        flows = None
+
+        if metadata is not None:
+            flows = metadata.get("all_flows")
+
+        if flows is not None:
+            flows = FlowsList.from_json(flows)
+            calm_slot_names = flows.available_slot_names()
+            calm_custom_action_names = flows.available_custom_actions()
+
+        slot_filling_manager = SlotFillingManager(
+            domain, tracker, action_endpoint=self._action_endpoint
+        )
+
         for slot in user_slots:
+            if slot.name in calm_slot_names:
+                continue
+
+            slot_value, is_extracted = extract_slot_value(slot, slot_filling_manager)
+            if is_extracted:
+                slot_events.append(SlotSet(slot.name, slot_value))
+
             for mapping in slot.mappings:
                 mapping_type = SlotMappingType(mapping.get(MAPPING_TYPE))
-
-                if not SlotMapping.check_mapping_validity(
-                    slot_name=slot.name,
-                    mapping_type=mapping_type,
-                    mapping=mapping,
-                    domain=domain,
-                ):
-                    continue
-
-                intent_is_desired = SlotMapping.intent_is_desired(
-                    mapping, tracker, domain
-                )
-
-                if not intent_is_desired:
-                    continue
-
-                if not ActionExtractSlots._verify_mapping_conditions(
-                    mapping, tracker, slot.name
-                ):
-                    continue
-
-                if self._fails_unique_entity_mapping_check(
-                    slot.name, mapping, tracker, domain
-                ):
-                    continue
-
-                if mapping_type.is_predefined_type():
-                    value = extract_slot_value_from_predefined_mapping(
-                        mapping_type, mapping, tracker
-                    )
-                else:
-                    value = None
-
-                if value:
-                    if not isinstance(slot, ListSlot):
-                        value = value[-1]
-
-                    if value is not None or tracker.get_slot(slot.name) is not None:
-                        slot_events.append(SlotSet(slot.name, value))
-                        break
-
                 should_fill_custom_slot = mapping_type == SlotMappingType.CUSTOM
 
                 if should_fill_custom_slot:
@@ -1377,6 +1264,7 @@ class ActionExtractSlots(Action):
                         nlg,
                         tracker,
                         domain,
+                        calm_custom_action_names,
                     )
                     slot_events.extend(custom_evts)
 
@@ -1384,67 +1272,3 @@ class ActionExtractSlots(Action):
             slot_events, output_channel, nlg, tracker, domain
         )
         return validated_events
-
-
-def extract_slot_value_from_predefined_mapping(
-    mapping_type: SlotMappingType,
-    mapping: Dict[Text, Any],
-    tracker: "DialogueStateTracker",
-) -> List[Any]:
-    """Extracts slot value if slot has an applicable predefined mapping."""
-    if tracker.has_bot_message_after_latest_user_message():
-        # TODO: this needs further validation - not sure if this breaks something!!!
-
-        # If the bot sent a message after the user sent a message, we can't
-        # extract any slots from the user message. We assume that the user
-        # message was already processed by the bot and the slot value was
-        # already extracted (e.g. for a prior form slot).
-        return []
-
-    should_fill_entity_slot = (
-        mapping_type == SlotMappingType.FROM_ENTITY
-        and SlotMapping.entity_is_desired(mapping, tracker)
-    )
-
-    should_fill_intent_slot = mapping_type == SlotMappingType.FROM_INTENT
-
-    should_fill_text_slot = mapping_type == SlotMappingType.FROM_TEXT
-
-    active_loops_in_mapping_conditions = [
-        active_loop.get(ACTIVE_LOOP)
-        for active_loop in mapping.get(MAPPING_CONDITIONS, [])
-    ]
-
-    trigger_mapping_condition_met = True
-
-    if tracker.active_loop_name is None:
-        trigger_mapping_condition_met = False
-    elif (
-        active_loops_in_mapping_conditions
-        and tracker.active_loop_name is not None
-        and (tracker.active_loop_name not in active_loops_in_mapping_conditions)
-    ):
-        trigger_mapping_condition_met = False
-
-    should_fill_trigger_slot = (
-        mapping_type == SlotMappingType.FROM_TRIGGER_INTENT
-        and trigger_mapping_condition_met
-    )
-
-    value: List[Any] = []
-    if should_fill_entity_slot:
-        value = list(
-            tracker.get_latest_entity_values(
-                mapping.get(ENTITY_ATTRIBUTE_TYPE),
-                mapping.get(ENTITY_ATTRIBUTE_ROLE),
-                mapping.get(ENTITY_ATTRIBUTE_GROUP),
-            )
-        )
-    elif should_fill_intent_slot or should_fill_trigger_slot:
-        value = [mapping.get("value")]
-    elif should_fill_text_slot:
-        value = [
-            tracker.latest_message.text if tracker.latest_message is not None else None
-        ]
-
-    return value

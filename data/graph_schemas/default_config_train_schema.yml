@@ -242,7 +242,7 @@ nodes:
       importer: finetuning_validator
     uses: rasa.graph_components.providers.story_graph_provider.StoryGraphProvider
     constructor_name: create
-    fn: provide
+    fn: provide_train
     config:
       exclusion_percentage: null
     eager: false
@@ -285,21 +285,7 @@ nodes:
     is_target: true
     is_input: false
     resource: null
-  train_UnexpecTEDIntentPolicy2:
-    needs:
-      training_trackers: training_tracker_provider
-      domain: domain_for_core_training_provider
-    uses: rasa.core.policies.unexpected_intent_policy.UnexpecTEDIntentPolicy
-    constructor_name: create
-    fn: train
-    config:
-      max_history: 5
-      epochs: 100
-    eager: false
-    is_target: true
-    is_input: false
-    resource: null
-  train_TEDPolicy3:
+  train_TEDPolicy2:
     needs:
       training_trackers: training_tracker_provider
       domain: domain_for_core_training_provider

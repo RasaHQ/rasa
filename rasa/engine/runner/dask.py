@@ -222,9 +222,7 @@ async def execute_dask_graph(dsk: Dict[str, Any], result: List[str]) -> Any:
     state = {}
     keyorder = dask.local.order(dsk)  # type:ignore[no-untyped-call]
 
-    state = dask.local.start_state_from_dask(
-        dsk, cache=cache, sortkey=keyorder.get
-    )  # type:ignore[no-untyped-call]
+    state = dask.local.start_state_from_dask(dsk, cache=cache, sortkey=keyorder.get)  # type:ignore[no-untyped-call]
 
     if state["waiting"] and not state["ready"]:
         raise ValueError("Found no accessible jobs in dask")
@@ -237,17 +235,13 @@ async def execute_dask_graph(dsk: Dict[str, Any], result: List[str]) -> Any:
         # Notify task is running
         state["running"].add(key)
 
-        dependencies = dask.local.get_dependencies(
-            dsk, key
-        )  # type:ignore[no-untyped-call]
+        dependencies = dask.local.get_dependencies(dsk, key)  # type:ignore[no-untyped-call]
         # Prep args to send
         data = {dep: state["cache"][dep] for dep in dependencies}
 
         task_result = await _execute_task(dsk[key], data)
         state["cache"][key] = task_result
-        dask.local.finish_task(
-            dsk, key, state, results, keyorder.get
-        )  # type:ignore[no-untyped-call]
+        dask.local.finish_task(dsk, key, state, results, keyorder.get)  # type:ignore[no-untyped-call]
 
     # Main loop, wait on tasks to finish, insert new ones
     while state["ready"]:

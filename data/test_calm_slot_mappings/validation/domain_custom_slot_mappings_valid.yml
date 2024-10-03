@@ -1,0 +1,27 @@
+slots:
+  num_people:
+    type: float
+    mappings:
+      - type: from_llm
+
+  cuisine:
+    type: text
+    mappings:
+      - type: custom
+
+  timestamp:
+    type: text
+    mappings:
+      - type: custom
+        action: action_calculate_timestamp
+
+responses:
+  utter_ask_num_people:
+    - text: "How many people are you booking for?"
+
+  utter_confirm_booking:
+    - text: "You are booking a table for {num_people} people to eat {cuisine} cuisine. Is that correct?"
+
+actions:
+  - action_ask_cuisine
+  - action_calculate_timestamp

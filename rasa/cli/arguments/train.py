@@ -8,6 +8,7 @@ from rasa.cli.arguments.default_arguments import (
     add_out_param,
     add_domain_param,
     add_endpoint_param,
+    add_remote_storage_param,
 )
 from rasa.graph_components.providers.training_tracker_provider import (
     TrainingTrackerProvider,
@@ -38,6 +39,7 @@ def set_train_arguments(parser: argparse.ArgumentParser) -> None:
     add_endpoint_param(
         parser, help_text="Configuration file for the connectors as a yml file."
     )
+    add_remote_storage_param(parser)
 
 
 def set_train_core_arguments(parser: argparse.ArgumentParser) -> None:
@@ -75,7 +77,7 @@ def set_train_nlu_arguments(parser: argparse.ArgumentParser) -> None:
 
 
 def add_force_param(
-    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer],
 ) -> None:
     """Specifies if the model should be trained from scratch."""
     parser.add_argument(
@@ -86,7 +88,7 @@ def add_force_param(
 
 
 def add_data_param(
-    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer],
 ) -> None:
     """Specifies path to training data."""
     parser.add_argument(
@@ -110,7 +112,7 @@ def _add_core_config_param(parser: argparse.ArgumentParser) -> None:
 
 
 def _add_compare_params(
-    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer],
 ) -> None:
     parser.add_argument(
         "--percentages",
@@ -125,7 +127,7 @@ def _add_compare_params(
 
 
 def add_dry_run_param(
-    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer],
 ) -> None:
     """Adds `--dry-run` argument to a specified `parser`.
 
@@ -149,7 +151,7 @@ def add_dry_run_param(
 
 
 def add_validate_before_train(
-    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer],
 ) -> None:
     """Adds parameters for validating the domain and data files before training.
 
@@ -180,7 +182,7 @@ def add_validate_before_train(
 
 
 def add_augmentation_param(
-    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer],
 ) -> None:
     """Sets the augmentation factor for the Core training.
 
@@ -196,7 +198,7 @@ def add_augmentation_param(
 
 
 def add_debug_plots_param(
-    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer],
 ) -> None:
     """Specifies if conversation flow should be visualized."""
     parser.add_argument(
@@ -210,7 +212,7 @@ def add_debug_plots_param(
 
 
 def _add_num_threads_param(
-    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer],
 ) -> None:
     parser.add_argument(
         "--num-threads",
@@ -229,7 +231,7 @@ def _add_model_name_param(parser: argparse.ArgumentParser) -> None:
 
 
 def add_persist_nlu_data_param(
-    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer],
 ) -> None:
     """Adds parameters for persisting the NLU training data with the model."""
     parser.add_argument(
@@ -240,7 +242,7 @@ def add_persist_nlu_data_param(
 
 
 def add_finetune_params(
-    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer],
 ) -> None:
     """Adds parameters for model finetuning."""
     parser.add_argument(

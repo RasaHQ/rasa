@@ -3,16 +3,21 @@ import logging
 import os
 from typing import List, Text
 
+from rasa.api import run as rasa_run
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import run as arguments
-from rasa.shared.constants import (
-    DOCS_BASE_URL,
-    DEFAULT_ENDPOINTS_PATH,
-    DEFAULT_CREDENTIALS_PATH,
-    DEFAULT_ACTIONS_PATH,
-    DEFAULT_MODELS_PATH,
-)
+from rasa.cli.arguments.default_arguments import SkipYamlValidation
+from rasa.cli.utils import get_validated_path
 from rasa.exceptions import ModelNotFound
+from rasa.shared.constants import (
+    DEFAULT_ACTIONS_PATH,
+    DEFAULT_CREDENTIALS_PATH,
+    DEFAULT_ENDPOINTS_PATH,
+    DEFAULT_MODELS_PATH,
+    DOCS_BASE_URL,
+)
+from rasa.shared.core.domain import Domain
+from rasa.shared.utils.cli import print_error
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +63,6 @@ def run_actions(args: argparse.Namespace) -> None:
 
 
 def _validate_model_path(model_path: Text, parameter: Text, default: Text) -> Text:
-
     if model_path is not None and not os.path.exists(model_path):
         reason_str = f"'{model_path}' not found."
         if model_path is None:
@@ -78,19 +82,22 @@ def run(args: argparse.Namespace) -> None:
     Args:
         args: The CLI arguments.
     """
-    import rasa
-
-    args.endpoints = rasa.cli.utils.get_validated_path(
+    args.endpoints = get_validated_path(
         args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
     )
-    args.credentials = rasa.cli.utils.get_validated_path(
+    args.credentials = get_validated_path(
         args.credentials, "credentials", DEFAULT_CREDENTIALS_PATH, True
     )
+
+    if SkipYamlValidation.DOMAIN.value in args.skip_yaml_validation:
+        Domain.validate_yaml = False
+    else:
+        Domain.validate_yaml = True
 
     if args.enable_api:
         if not args.remote_storage:
             args.model = _validate_model_path(args.model, "model", DEFAULT_MODELS_PATH)
-        rasa.run(**vars(args))
+        rasa_run(**vars(args))
         return
 
     # if the API is not enable you cannot start without a model
@@ -102,14 +109,14 @@ def run(args: argparse.Namespace) -> None:
 
     # start server if remote storage is configured
     if args.remote_storage is not None:
-        rasa.run(**vars(args))
+        rasa_run(**vars(args))
         return
 
     # start server if model server is configured
     endpoints = AvailableEndpoints.read_endpoints(args.endpoints)
     model_server = endpoints.model if endpoints and endpoints.model else None
     if model_server is not None:
-        rasa.run(**vars(args))
+        rasa_run(**vars(args))
         return
 
     # start server if local model found
@@ -121,10 +128,10 @@ def run(args: argparse.Namespace) -> None:
         local_model_set = False
 
     if local_model_set:
-        rasa.run(**vars(args))
+        rasa_run(**vars(args))
         return
 
-    rasa.shared.utils.cli.print_error(
+    print_error(
         f"No model found. You have three options to provide a model:\n"
         f"1. Configure a model server in the endpoint configuration and provide "
         f"the configuration via '--endpoints'.\n"

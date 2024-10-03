@@ -1,8 +1,10 @@
 import argparse
 import logging
 import os
+from functools import partial
 
 from sanic import Sanic, response
+from sanic.worker.loader import AppLoader
 
 from rasa.shared.core.domain import Domain
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
@@ -59,7 +61,7 @@ async def generate_response(nlg_call, domain):
     )
 
 
-def run_server(domain, port, workers):
+def create_app(domain):
     app = Sanic("nlg_server")
 
     @app.route("/nlg", methods=["POST", "OPTIONS"])
@@ -70,11 +72,19 @@ def run_server(domain, port, workers):
 
         return response.json(bot_response)
 
+    return app
+
+
+def run_server(domain, port, workers):
+    loader = AppLoader(factory=partial(create_app, domain=domain))
+    app = loader.load()
+
     app.run(
         host="0.0.0.0",
         port=port,
         workers=workers,
         backlog=int(os.environ.get(ENV_SANIC_BACKLOG, "100")),
+        legacy=True,
     )
 
 

@@ -39,7 +39,6 @@ def train_and_preprocess(
     def inner(
         pipeline: List[Dict[Text, Any]], training_data: Union[Text, TrainingData]
     ) -> Tuple[TrainingData, List[GraphComponent]]:
-
         if isinstance(training_data, str):
             importer = RasaFileImporter(training_data_paths=[training_data])
             training_data: TrainingData = importer.get_nlu_data()
@@ -76,7 +75,6 @@ def train_and_preprocess(
 @pytest.fixture()
 def process_message(default_model_storage: ModelStorage) -> Callable[..., Message]:
     def inner(loaded_pipeline: List[GraphComponent], message: Message) -> Message:
-
         for component in loaded_pipeline:
             component.process([message])
 

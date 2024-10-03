@@ -1,13 +1,15 @@
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Text
+from typing import TYPE_CHECKING, List, Optional, Text, Any, Dict
 
 import structlog
-from langchain.document_loaders import DirectoryLoader, TextLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.vectorstores.faiss import FAISS
+from langchain_community.document_loaders.text import TextLoader
+from langchain_community.document_loaders.directory import DirectoryLoader
+from langchain_community.vectorstores.faiss import FAISS
 from rasa.utils.endpoints import EndpointConfig
 
-from rasa.core.information_retrieval.information_retrieval import (
+from rasa.core.information_retrieval import (
+    SearchResultList,
     InformationRetrieval,
     InformationRetrievalException,
 )
@@ -45,7 +47,9 @@ class FAISS_Store(InformationRetrieval):
             logger.info(
                 "information_retrieval.faiss_store.load_index", path=path.absolute()
             )
-            self.index = FAISS.load_local(str(path), embeddings)
+            self.index = FAISS.load_local(
+                str(path), embeddings, allow_dangerous_deserialization=True
+            )
 
     @staticmethod
     def load_documents(docs_folder: str) -> List["Document"]:
@@ -108,9 +112,13 @@ class FAISS_Store(InformationRetrieval):
         """Faiss does not need to connect to a server."""
         pass
 
-    async def search(self, query: Text, threshold: float = 0.0) -> List["Document"]:
+    async def search(
+        self, query: Text, tracker_state: Dict[str, Any], threshold: float = 0.0
+    ) -> SearchResultList:
         logger.debug("information_retrieval.faiss_store.search", query=query)
         try:
-            return await self.index.as_retriever().aget_relevant_documents(query)
+            documents = await self.index.as_retriever().ainvoke(query)
         except Exception as exc:
             raise InformationRetrievalException from exc
+
+        return SearchResultList.from_document_list(documents)

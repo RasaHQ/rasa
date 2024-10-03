@@ -64,7 +64,7 @@ class Featurizer(Generic[FeatureType], ABC):
 
     @staticmethod
     def raise_if_featurizer_configs_are_not_compatible(
-        featurizer_configs: Iterable[Dict[Text, Any]]
+        featurizer_configs: Iterable[Dict[Text, Any]],
     ) -> None:
         """Validates that the given configurations of featurizers can be used together.
 

@@ -99,7 +99,6 @@ class CountVectorsFeaturizer(SparseFeaturizer, GraphComponent):
         return ["sklearn"]
 
     def _load_count_vect_params(self) -> None:
-
         # Use shared vocabulary between text and all other attributes of Message
         self.use_shared_vocab = self._config["use_shared_vocab"]
 
@@ -340,7 +339,7 @@ class CountVectorsFeaturizer(SparseFeaturizer, GraphComponent):
 
     @staticmethod
     def _convert_attribute_tokens_to_texts(
-        attribute_tokens: Dict[Text, List[List[Text]]]
+        attribute_tokens: Dict[Text, List[List[Text]]],
     ) -> Dict[Text, List[Text]]:
         attribute_texts = {}
 
@@ -659,7 +658,6 @@ class CountVectorsFeaturizer(SparseFeaturizer, GraphComponent):
 
         for message in messages:
             for attribute in self._attributes:
-
                 message_tokens = self._get_processed_message_tokens_by_attribute(
                     message, attribute
                 )
@@ -685,7 +683,7 @@ class CountVectorsFeaturizer(SparseFeaturizer, GraphComponent):
 
     @staticmethod
     def _is_any_model_trained(
-        attribute_vocabularies: Dict[Text, Optional[Dict[Text, int]]]
+        attribute_vocabularies: Dict[Text, Optional[Dict[Text, int]]],
     ) -> bool:
         """Check if any model got trained."""
         return any(value is not None for value in attribute_vocabularies.values())

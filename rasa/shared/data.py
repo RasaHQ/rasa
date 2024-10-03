@@ -4,11 +4,32 @@ import tempfile
 import uuid
 from enum import Enum
 from pathlib import Path
-from typing import Text, Optional, Union, List, Callable, Set, Iterable
+from typing import (
+    Any,
+    Protocol,
+    TYPE_CHECKING,
+    Text,
+    Optional,
+    Union,
+    List,
+    Callable,
+    Set,
+    Iterable,
+    runtime_checkable,
+)
+
+import structlog
+
+if TYPE_CHECKING:
+    from rasa.core.channels import UserMessage
+    from rasa.shared.core.domain import Domain
+    from rasa.shared.nlu.training_data.message import Message
 
 YAML_FILE_EXTENSIONS = [".yml", ".yaml"]
 JSON_FILE_EXTENSIONS = [".json"]
 TRAINING_DATA_EXTENSIONS = set(JSON_FILE_EXTENSIONS + YAML_FILE_EXTENSIONS)
+
+structlogger = structlog.get_logger()
 
 
 def yaml_file_extension() -> Text:
@@ -190,3 +211,39 @@ class TrainingType(Enum):
         if self == TrainingType.CORE:
             return "core"
         return "rasa"
+
+
+@runtime_checkable
+class RegexReader(Protocol):
+    def unpack_regex_message(self, message: "Message", **kwargs: Any) -> "Message": ...
+
+
+def create_regex_pattern_reader(
+    message: "UserMessage", domain: "Domain"
+) -> Optional[RegexReader]:
+    """Create a new instance of a class to unpack regex patterns.
+
+    Args:
+        message: The user message to unpack.
+        domain: The domain of the assistant.
+    """
+    from rasa.shared.core.command_payload_reader import CommandPayloadReader
+    from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
+        YAMLStoryReader,
+    )
+
+    if message.text is None:
+        structlogger.warning(
+            "empty.user.message",
+            user_text="None",
+        )
+        return None
+
+    reader: Union[CommandPayloadReader, YAMLStoryReader, None] = None
+
+    if message.text.startswith("/SetSlots"):
+        reader = CommandPayloadReader()
+    elif message.text.startswith("/"):
+        reader = YAMLStoryReader(domain)
+
+    return reader if isinstance(reader, RegexReader) else None

@@ -1,28 +1,29 @@
+import logging
 from abc import ABC, abstractmethod
 from functools import reduce
-from typing import Text, Optional, List, Dict, Set, Any, Tuple, Type, Union, cast
-import logging
+from typing import Any, Dict, List, Optional, Set, Text, Tuple, Type, Union, cast
 
 import importlib_resources
 
 import rasa.shared.constants
-from rasa.shared.core.flows import FlowsList
-import rasa.shared.utils.common
 import rasa.shared.core.constants
+import rasa.shared.utils.common
 import rasa.shared.utils.io
 from rasa.shared.core.domain import (
-    Domain,
+    IS_RETRIEVAL_INTENT_KEY,
+    KEY_ACTIONS,
     KEY_E2E_ACTIONS,
     KEY_INTENTS,
     KEY_RESPONSES,
-    KEY_ACTIONS,
+    Domain,
 )
 from rasa.shared.core.events import ActionExecuted, UserUttered
+from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.training_data.structures import StoryGraph
+from rasa.shared.nlu.constants import ACTION_NAME, ENTITIES
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.nlu.constants import ENTITIES, ACTION_NAME
-from rasa.shared.core.domain import IS_RETRIEVAL_INTENT_KEY
+from rasa.shared.utils.common import cached_method
 from rasa.shared.utils.yaml import read_config_file
 
 logger = logging.getLogger(__name__)
@@ -113,7 +114,7 @@ class TrainingDataImporter(ABC):
         config_path: Text,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
-        args: Optional[Dict[Text, Any]] = {},
+        args: Optional[Dict[Text, Any]] = None,
     ) -> "TrainingDataImporter":
         """Loads a `TrainingDataImporter` instance from a configuration file."""
         config = read_config_file(config_path)
@@ -126,7 +127,7 @@ class TrainingDataImporter(ABC):
         config_path: Text,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
-        args: Optional[Dict[Text, Any]] = {},
+        args: Optional[Dict[Text, Any]] = None,
     ) -> "TrainingDataImporter":
         """Loads core `TrainingDataImporter` instance.
 
@@ -142,7 +143,7 @@ class TrainingDataImporter(ABC):
         config_path: Text,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
-        args: Optional[Dict[Text, Any]] = {},
+        args: Optional[Dict[Text, Any]] = None,
     ) -> "TrainingDataImporter":
         """Loads nlu `TrainingDataImporter` instance.
 
@@ -165,7 +166,7 @@ class TrainingDataImporter(ABC):
         config_path: Optional[Text] = None,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
-        args: Optional[Dict[Text, Any]] = {},
+        args: Optional[Dict[Text, Any]] = None,
     ) -> "TrainingDataImporter":
         """Loads a `TrainingDataImporter` instance from a dictionary."""
         from rasa.shared.importers.rasa import RasaFileImporter
@@ -194,16 +195,19 @@ class TrainingDataImporter(ABC):
         config_path: Text,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
-        args: Optional[Dict[Text, Any]] = {},
+        args: Optional[Dict[Text, Any]] = None,
     ) -> Optional["TrainingDataImporter"]:
         from rasa.shared.importers.multi_project import MultiProjectImporter
         from rasa.shared.importers.rasa import RasaFileImporter
+        from rasa.shared.importers.remote_importer import RemoteTrainingDataImporter
 
         module_path = importer_config.pop("name", None)
         if module_path == RasaFileImporter.__name__:
             importer_class: Type[TrainingDataImporter] = RasaFileImporter
         elif module_path == MultiProjectImporter.__name__:
             importer_class = MultiProjectImporter
+        elif module_path == RemoteTrainingDataImporter.__name__:
+            importer_class = RemoteTrainingDataImporter
         else:
             try:
                 importer_class = rasa.shared.utils.common.class_from_module_path(
@@ -216,7 +220,6 @@ class TrainingDataImporter(ABC):
         constructor_arguments = rasa.shared.utils.common.minimal_kwargs(
             {**importer_config, **(args or {})}, importer_class
         )
-
         return importer_class(
             config_path,
             domain_path,
@@ -224,13 +227,34 @@ class TrainingDataImporter(ABC):
             **constructor_arguments,
         )
 
-    def fingerprint(self) -> Text:
+    @staticmethod
+    def fingerprint() -> Text:
         """Returns a random fingerprint as data shouldn't be cached."""
         return rasa.shared.utils.io.random_string(25)
 
     def __repr__(self) -> Text:
         """Returns text representation of object."""
         return self.__class__.__name__
+
+    def get_user_flows(self) -> FlowsList:
+        """Retrieves the user-defined flows that should be used for training.
+
+        Implemented by FlowSyncImporter and E2EImporter only.
+
+        Returns:
+            `FlowsList` containing all loaded flows.
+        """
+        raise NotImplementedError
+
+    def get_user_domain(self) -> Domain:
+        """Retrieves the user-defined domain that should be used for training.
+
+        Implemented by FlowSyncImporter and E2EImporter only.
+
+        Returns:
+            `Domain`.
+        """
+        raise NotImplementedError
 
 
 class NluDataImporter(TrainingDataImporter):
@@ -260,7 +284,6 @@ class NluDataImporter(TrainingDataImporter):
         """Retrieves NLU training data (see parent class for full docstring)."""
         return self._importer.get_nlu_data(language)
 
-    @rasa.shared.utils.common.cached_method
     def get_config_file_for_auto_config(self) -> Optional[Text]:
         """Returns config file path for auto-config only if there is a single one."""
         return self._importer.get_config_file_for_auto_config()
@@ -276,14 +299,14 @@ class CombinedDataImporter(TrainingDataImporter):
     def __init__(self, importers: List[TrainingDataImporter]):
         self._importers = importers
 
-    @rasa.shared.utils.common.cached_method
+    @cached_method
     def get_config(self) -> Dict:
         """Retrieves model config (see parent class for full docstring)."""
         configs = [importer.get_config() for importer in self._importers]
 
         return reduce(lambda merged, other: {**merged, **(other or {})}, configs, {})
 
-    @rasa.shared.utils.common.cached_method
+    @cached_method
     def get_domain(self) -> Domain:
         """Retrieves model domain (see parent class for full docstring)."""
         domains = [importer.get_domain() for importer in self._importers]
@@ -294,7 +317,7 @@ class CombinedDataImporter(TrainingDataImporter):
             Domain.empty(),
         )
 
-    @rasa.shared.utils.common.cached_method
+    @cached_method
     def get_stories(self, exclusion_percentage: Optional[int] = None) -> StoryGraph:
         """Retrieves training stories / rules (see parent class for full docstring)."""
         stories = [
@@ -305,7 +328,7 @@ class CombinedDataImporter(TrainingDataImporter):
             lambda merged, other: merged.merge(other), stories, StoryGraph([])
         )
 
-    @rasa.shared.utils.common.cached_method
+    @cached_method
     def get_flows(self) -> FlowsList:
         """Retrieves training stories / rules (see parent class for full docstring)."""
         flow_lists = [importer.get_flows() for importer in self._importers]
@@ -316,7 +339,7 @@ class CombinedDataImporter(TrainingDataImporter):
             FlowsList(underlying_flows=[]),
         )
 
-    @rasa.shared.utils.common.cached_method
+    @cached_method
     def get_conversation_tests(self) -> StoryGraph:
         """Retrieves conversation test stories (see parent class for full docstring)."""
         stories = [importer.get_conversation_tests() for importer in self._importers]
@@ -325,7 +348,7 @@ class CombinedDataImporter(TrainingDataImporter):
             lambda merged, other: merged.merge(other), stories, StoryGraph([])
         )
 
-    @rasa.shared.utils.common.cached_method
+    @cached_method
     def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
         """Retrieves NLU training data (see parent class for full docstring)."""
         nlu_data = [importer.get_nlu_data(language) for importer in self._importers]
@@ -334,7 +357,7 @@ class CombinedDataImporter(TrainingDataImporter):
             lambda merged, other: merged.merge(other), nlu_data, TrainingData()
         )
 
-    @rasa.shared.utils.common.cached_method
+    @cached_method
     def get_config_file_for_auto_config(self) -> Optional[Text]:
         """Returns config file path for auto-config only if there is a single one."""
         if len(self._importers) != 1:
@@ -393,26 +416,22 @@ class FlowSyncImporter(PassThroughImporter):
         """Loads the default flows from the file system."""
         from rasa.shared.core.flows.yaml_flows_io import YAMLFlowsReader
 
-        default_flows_file = str(
-            importlib_resources.files("rasa.dialogue_understanding.patterns").joinpath(
-                DEFAULT_PATTERN_FLOWS_FILE_NAME
-            )
-        )
-
-        flows = YAMLFlowsReader.read_from_file(default_flows_file)
+        flows = YAMLFlowsReader.read_from_file(FlowSyncImporter.default_pattern_path())
         flows.validate()
         return flows
 
     @staticmethod
-    def load_default_pattern_flows_domain() -> Domain:
-        """Loads the default flows from the file system."""
-        default_flows_file = str(
+    def default_pattern_path() -> str:
+        return str(
             importlib_resources.files("rasa.dialogue_understanding.patterns").joinpath(
                 DEFAULT_PATTERN_FLOWS_FILE_NAME
             )
         )
 
-        return Domain.from_path(default_flows_file)
+    @staticmethod
+    def load_default_pattern_flows_domain() -> Domain:
+        """Loads the default flows from the file system."""
+        return Domain.from_path(FlowSyncImporter.default_pattern_path())
 
     @classmethod
     def merge_with_default_flows(cls, flows: FlowsList) -> FlowsList:
@@ -438,7 +457,7 @@ class FlowSyncImporter(PassThroughImporter):
 
         return flows.merge(FlowsList(missing_default_flows))
 
-    @rasa.shared.utils.common.cached_method
+    @cached_method
     def get_flows(self) -> FlowsList:
         flows = self._importer.get_flows()
 
@@ -448,7 +467,11 @@ class FlowSyncImporter(PassThroughImporter):
 
         return self.merge_with_default_flows(flows)
 
-    @rasa.shared.utils.common.cached_method
+    @cached_method
+    def get_user_flows(self) -> FlowsList:
+        return self._importer.get_flows()
+
+    @cached_method
     def get_domain(self) -> Domain:
         """Merge existing domain with properties of flows."""
         # load domain data from user defined domain files
@@ -476,6 +499,11 @@ class FlowSyncImporter(PassThroughImporter):
         )
         return domain
 
+    @rasa.shared.utils.common.cached_method
+    def get_user_domain(self) -> Domain:
+        """Retrieves only user defined domain."""
+        return self._importer.get_domain()
+
 
 class ResponsesSyncImporter(PassThroughImporter):
     """Importer that syncs `responses` between Domain and NLU training data.
@@ -485,7 +513,7 @@ class ResponsesSyncImporter(PassThroughImporter):
     back to the Domain.
     """
 
-    @rasa.shared.utils.common.cached_method
+    @cached_method
     def get_domain(self) -> Domain:
         """Merge existing domain with properties of retrieval intents in NLU data."""
         existing_domain = self._importer.get_domain()
@@ -567,7 +595,7 @@ class ResponsesSyncImporter(PassThroughImporter):
             }
         )
 
-    @rasa.shared.utils.common.cached_method
+    @cached_method
     def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
         """Updates NLU data with responses for retrieval intents from domain."""
         existing_nlu_data = self._importer.get_nlu_data(language)
@@ -581,7 +609,7 @@ class ResponsesSyncImporter(PassThroughImporter):
 
     @staticmethod
     def _get_nlu_data_with_responses(
-        responses: Dict[Text, List[Dict[Text, Any]]]
+        responses: Dict[Text, List[Dict[Text, Any]]],
     ) -> TrainingData:
         """Construct training data object with only the responses supplied.
 
@@ -602,16 +630,36 @@ class E2EImporter(PassThroughImporter):
     - adds potential end-to-end bot messages from stories as actions to the domain
     """
 
-    @rasa.shared.utils.common.cached_method
+    @cached_method
+    def get_user_flows(self) -> FlowsList:
+        if not isinstance(self._importer, FlowSyncImporter):
+            raise NotImplementedError(
+                "Accessing user flows is only supported with FlowSyncImporter."
+            )
+
+        return self._importer.get_user_flows()
+
+    @cached_method
     def get_domain(self) -> Domain:
-        """Retrieves model domain (see parent class for full docstring)."""
+        """Merge existing domain with properties of end-to-end actions in stories.
+
+        Returns: Domain with end-to-end actions added to action names.
+        """
         original = self._importer.get_domain()
         e2e_domain = self._get_domain_with_e2e_actions()
 
         return original.merge(e2e_domain)
 
-    def _get_domain_with_e2e_actions(self) -> Domain:
+    @rasa.shared.utils.common.cached_method
+    def get_user_domain(self) -> Domain:
+        """Retrieves only user defined domain."""
+        if not isinstance(self._importer, FlowSyncImporter):
+            raise NotImplementedError(
+                "Accessing user domain is only supported with FlowSyncImporter."
+            )
+        return self._importer.get_user_domain()
 
+    def _get_domain_with_e2e_actions(self) -> Domain:
         stories = self.get_stories()
 
         additional_e2e_action_names = set()
@@ -626,7 +674,7 @@ class E2EImporter(PassThroughImporter):
 
         return Domain.from_dict({KEY_E2E_ACTIONS: list(additional_e2e_action_names)})
 
-    @rasa.shared.utils.common.cached_method
+    @cached_method
     def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
         """Retrieves NLU training data (see parent class for full docstring)."""
         training_datasets = [
