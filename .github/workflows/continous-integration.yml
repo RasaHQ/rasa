@@ -1006,7 +1006,7 @@ jobs:
 
       - name: Make direcory for Swagger/OpenAPI coverage results
         if: matrix.test == 'test-other-unit-tests'
-        run: mkdir -p 'swagger-coverage-output/localhost:5005' 
+        run: mkdir -p 'swagger-coverage-output/localhost:5005'
 
       - name: Test Code 🔍 (multi-process)
         env:

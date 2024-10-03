@@ -52,7 +52,7 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           ref: ${{ env.TAG_VERSION }}
-          
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
 
@@ -70,7 +70,7 @@ jobs:
         with:
            workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER_OIDC}}
            service_account: "github-actions-oidc-atom@rasa-releases.iam.gserviceaccount.com"
-      
+
       - name: Authenticate with Docker Hub
         uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
         with:
@@ -156,7 +156,7 @@ jobs:
           BASE_IMAGE_HASH: ${{ steps.check_image.outputs.base_image_hash }}
           RASA_DEPS_IMAGE_HASH: ${{ steps.check_image.outputs.rasa_deps_image_hash }}
           IMAGE_NAME: rasa-pro
-      
+
       - name: Set up Python 3.9 🐍
         uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
         with:
@@ -166,29 +166,32 @@ jobs:
         uses: Gr1N/setup-poetry@48b0f77c8c1b1b19cb962f0f00dff7b4be8f81ec #v9
         with:
            poetry-version: ${{ env.POETRY_VERSION }}
-      
+
       - name: Build ⚒️ Distributions
         run: poetry build
 
       # Push to the internal PYPI release registry
       - name: Publish to internal PyPI 📦
+        if: always()
         uses: pypa/gh-action-pypi-publish@e53eb8b103ffcb59469888563dc324e3c8ba6f06
         with:
            user: "github-ci"
            password: ${{ secrets.PYPI_PASSWORD }}
            repository-url: "https://pypi.rasa.com/simple/"
            packages-dir: ${{ format('{0}/dist', github.workspace) }}
-      
+
       # Push to the public PYPI release registry
       - name: Publish to public PyPI 📦
+        if: always()
         uses: pypa/gh-action-pypi-publish@e53eb8b103ffcb59469888563dc324e3c8ba6f06
         with:
           password: ${{ secrets.PYPI_TOKEN }}
           repository-url: "https://upload.pypi.org/legacy/"
           packages-dir: ${{ format('{0}/dist', github.workspace) }}
-    
+
       # Push library to GCP Artifact Registry rasa-plus-py
       - name: Release via GCP Artifact Registry
+        if: always()
         run: |
            pip install keyring
            pip install keyrings.google-artifactregistry-auth
@@ -237,12 +240,12 @@ jobs:
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
 
-      # - name: Notify Slack of unsuccessful release ⛔️
-      #   if: failure()
-      #   uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 #v 1.25.0
-      #   with:
-      #      # Send notication to #devtribe slack channel
-      #      channel-id: "C061J0LGHU0"
-      #      slack-message: ":broken_heart: *Rasa Private* release version `${{ env.TAG_VERSION }}` has failed! More information can be found <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|here>."
-      #   env:
-      #      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      - name: Notify Slack of unsuccessful release ⛔️
+        if: failure()
+        uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 #v 1.25.0
+        with:
+           # Send notication to #devtribe slack channel
+           channel-id: "C061J0LGHU0"
+           slack-message: ":broken_heart: *Rasa Private* release version `${{ env.TAG_VERSION }}` has failed! More information can be found <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|here>."
+        env:
+           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
