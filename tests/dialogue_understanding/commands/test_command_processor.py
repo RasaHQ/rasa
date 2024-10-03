@@ -22,7 +22,7 @@ from rasa.dialogue_understanding.stack.frames import (
 from rasa.shared.core.constants import FLOW_HASHES_SLOT
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.core.flows.yaml_flows_io import flows_from_str
+from tests.utilities import flows_from_str
 from tests.dialogue_understanding.conftest import start_bar_user_uttered
 
 

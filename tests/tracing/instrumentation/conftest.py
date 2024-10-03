@@ -20,7 +20,14 @@ import pytest
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
-from rasa.core.actions.action import Action
+from rasa.core.actions.action import (
+    Action,
+    CustomActionExecutor,
+    NoEndpointCustomActionExecutor,
+    RetryCustomActionExecutor,
+)
+from rasa.core.actions.grpc_custom_action_executor import GRPCCustomActionExecutor
+from rasa.core.actions.http_custom_action_executor import HTTPCustomActionExecutor
 from rasa.core.agent import Agent
 from rasa.core.brokers.broker import EB, EventBroker
 from rasa.core.channels import OutputChannel, UserMessage
@@ -619,6 +626,132 @@ class MockEndpointConfig(EndpointConfig):
         **kwargs: Any,
     ) -> Optional[Any]:
         return None
+
+    def fail_if_undefined(self, method_name: Text) -> None:
+        if not (
+            hasattr(self.__class__.__base__, method_name)
+            and callable(getattr(self.__class__.__base__, method_name))
+        ):
+            pytest.fail(
+                f"method '{method_name}' not found in {self.__class__.__base__}. "
+                f"This likely means the method was renamed, which means the "
+                f"instrumentation needs to be adapted!"
+            )
+
+
+class MockCustomActionExecutor(CustomActionExecutor):
+    async def run(
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        include_domain: bool = False,
+    ) -> Dict[Text, Any]:
+        if not (
+            hasattr(self.__class__.__base__, "run")
+            and callable(getattr(self.__class__.__base__, "run"))
+        ):
+            pytest.fail(
+                f"method 'run' not found in {self.__class__.__base__}. "
+                f"This likely means the method was renamed, which means the "
+                f"instrumentation needs to be adapted!"
+            )
+
+
+class MockNoEndpointCustomActionExecutor(NoEndpointCustomActionExecutor):
+    def __init__(self, action_name: str) -> None:
+        self.fail_if_undefined("run")
+        super().__init__(action_name)
+
+    async def run(
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        include_domain: bool = False,
+    ) -> Dict[Text, Any]:
+        pass
+
+    def fail_if_undefined(self, method_name: Text) -> None:
+        if not (
+            hasattr(self.__class__.__base__, method_name)
+            and callable(getattr(self.__class__.__base__, method_name))
+        ):
+            pytest.fail(
+                f"method '{method_name}' not found in {self.__class__.__base__}. "
+                f"This likely means the method was renamed, which means the "
+                f"instrumentation needs to be adapted!"
+            )
+
+
+class MockRetryCustomActionExecutor(RetryCustomActionExecutor):
+    def __init__(self, custom_action_executor: CustomActionExecutor) -> None:
+        self.fail_if_undefined("run")
+        super().__init__(custom_action_executor)
+
+    async def run(
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        include_domain: bool = False,
+    ) -> Dict[Text, Any]:
+        pass
+
+    def fail_if_undefined(self, method_name: Text) -> None:
+        if not (
+            hasattr(self.__class__.__base__, method_name)
+            and callable(getattr(self.__class__.__base__, method_name))
+        ):
+            pytest.fail(
+                f"method '{method_name}' not found in {self.__class__.__base__}. "
+                f"This likely means the method was renamed, which means the "
+                f"instrumentation needs to be adapted!"
+            )
+
+
+class MockGRPCCustomActionExecutor(GRPCCustomActionExecutor):
+    def __init__(
+        self,
+        action_name: str,
+        action_endpoint: EndpointConfig,
+    ) -> None:
+        self.fail_if_undefined("run")
+        super().__init__(action_name, action_endpoint)
+
+    async def run(
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        include_domain: bool = False,
+    ) -> Dict[Text, Any]:
+        pass
+
+    def fail_if_undefined(self, method_name: Text) -> None:
+        if not (
+            hasattr(self.__class__.__base__, method_name)
+            and callable(getattr(self.__class__.__base__, method_name))
+        ):
+            pytest.fail(
+                f"method '{method_name}' not found in {self.__class__.__base__}. "
+                f"This likely means the method was renamed, which means the "
+                f"instrumentation needs to be adapted!"
+            )
+
+
+class MockHTTPCustomActionExecutor(HTTPCustomActionExecutor):
+    def __init__(
+        self,
+        action_name: str,
+        action_endpoint: EndpointConfig,
+    ) -> None:
+        self.fail_if_undefined("run")
+        super().__init__(action_name, action_endpoint)
+
+    async def run(
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        include_domain: bool = False,
+    ) -> Dict[Text, Any]:
+        pass
 
     def fail_if_undefined(self, method_name: Text) -> None:
         if not (

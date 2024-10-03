@@ -9,12 +9,11 @@ from pytest import CaptureFixture
 
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.flows.yaml_flows_io import flows_from_str
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.validator import Validator
-from tests.utilities import filter_logs
+from tests.utilities import filter_logs, flows_from_str
 
 
 @pytest.fixture(scope="class")
@@ -309,8 +308,8 @@ def test_early_exit_on_invalid_domain():
         validator = Validator.from_importer(importer)
     validator.verify_domain_validity()
 
-    # two for non-unique domains, 2 for auto-fill removal
-    assert len(record) == 4
+    # one for non-unique domain and second one for auto-fill removal
+    assert len(record) == 2
 
     non_unique_warnings = list(
         filter(
@@ -321,7 +320,7 @@ def test_early_exit_on_invalid_domain():
             record,
         )
     )
-    assert len(non_unique_warnings) == 2
+    assert len(non_unique_warnings) == 1
 
     auto_fill_warnings = list(
         filter(
@@ -330,7 +329,7 @@ def test_early_exit_on_invalid_domain():
             record,
         )
     )
-    assert len(auto_fill_warnings) == 2
+    assert len(auto_fill_warnings) == 1
 
 
 def test_verify_there_is_not_example_repetition_in_intents():

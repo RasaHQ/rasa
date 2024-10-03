@@ -4,7 +4,7 @@ from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import UserFlowStackFrame
 from rasa.shared.core.events import DialogueStackUpdated, FlowInterrupted
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.core.flows.yaml_flows_io import flows_from_str
+from tests.utilities import flows_from_str
 
 
 def test_command_name():

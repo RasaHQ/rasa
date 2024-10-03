@@ -17,13 +17,13 @@ from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
 )
 from rasa.shared.core.events import Event
 from tests.dialogue_understanding.conftest import update_tracker_with_path_through_flow
-from tests.utilities import flows_from_str_with_defaults
-from rasa.shared.core.events import DialogueStackUpdated, SlotSet
-from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.core.flows.yaml_flows_io import (
+from tests.utilities import (
+    flows_from_str_with_defaults,
     flows_from_str,
     flows_from_str_including_defaults,
 )
+from rasa.shared.core.events import DialogueStackUpdated, SlotSet
+from rasa.shared.core.trackers import DialogueStateTracker
 import jsonpatch
 
 

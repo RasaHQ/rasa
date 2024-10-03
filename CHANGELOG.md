@@ -142,6 +142,7 @@ Rasa Pro 3.10.0 (2024-09-04)
   ```
   export RASA_PRO_BETA_FINETUNING_RECIPE=true
   ```
+  More information can be found on the [documentation](https://rasa.com/docs/rasa-pro/production/testing-your-assistant#e2e-test-coverage-report) of the feature.
 - [#1138](https://github.com/rasahq/rasa-private/issues/1138): Create a self-hosted LLM client compatible with OpenAI format.
   Users can connect to their own self-hosted LLM server that is compatible with OpenAI format.
 
@@ -153,7 +154,7 @@ Rasa Pro 3.10.0 (2024-09-04)
           api_base: <deployment_url>
           api_type: openai [Optional]
   ```
-- [#1157](https://github.com/rasahq/rasa-private/issues/1157): Add new CLI command `rasa llm finetune prepare-data` to create a dataset from e2e tests that can be used to
+- [#1157](https://github.com/rasahq/rasa-private/issues/1157): Add a new [CLI command](https://rasa.com/docs/rasa-pro/command-line-interface#rasa-llm-finetune-prepare-data) `rasa llm finetune prepare-data` to create a dataset from e2e tests that can be used to
   fine-tune a base model for the task of command generation.
 
   To enable this feature, please set the environment variable `RASA_PRO_BETA_FINETUNING_RECIPE` to `true`.
@@ -170,6 +171,7 @@ Rasa Pro 3.10.0 (2024-09-04)
     - Added dedicated clients for Azure OpenAI and OpenAI to support both LLMs and embedding models.
     - Added a HuggingFace client to compute embeddings using locally stored transformer models via the `sentence-transformers` package.
   - **LangChain Update:** Upgraded to the latest version (0.2.x) for improved compatibility and features.
+  To understand the implications on your assistant, please refer to the [feature documentation](https://rasa.com/docs/rasa-pro/concepts/components/llm-configuration) and the [migration guide](https://rasa.com/docs/rasa-pro/migration-guide#rasa-pro-39-to-rasa-pro-310).
 - [#937](https://github.com/rasahq/rasa-private/issues/937): Implement as part of E2E testing a new type of evaluation specifically designed to increase confidence in CALM.
   This evaluation runs assertions on the assistant's actual events and generative responses. 
   New assertions include the ability to check for the presence of specific events, such as:
@@ -321,6 +323,21 @@ Rasa Pro 3.10.0 (2024-09-04)
 
 ### Miscellaneous internal changes
 - [#1038](https://github.com/rasahq/rasa-private/issues/1038), [#1040](https://github.com/rasahq/rasa-private/issues/1040), [#1053](https://github.com/rasahq/rasa-private/issues/1053), [#1068](https://github.com/rasahq/rasa-private/issues/1068), [#1123](https://github.com/rasahq/rasa-private/issues/1123), [#1318](https://github.com/rasahq/rasa-private/issues/1318), [#713](https://github.com/rasahq/rasa-private/issues/713)
+
+
+## [3.9.11] - 2024-09-13
+                        
+Rasa Pro 3.9.11 (2024-09-13)                             
+### Bugfixes
+- [#1323](https://github.com/rasahq/rasa-private/issues/1323): Update Keras to 2.13.1 and Tensorflow to 2.13.0rc0 to fix critical vulnerability (CVE-2024-3660).
+
+
+## [3.9.10] - 2024-09-12
+                        
+Rasa Pro 3.9.10 (2024-09-12)                             
+### Bugfixes
+- [#1150](https://github.com/rasahq/rasa-private/issues/1150): Fix `FileNotFound` error when running `rasa studio` commands and no pre-existing local assistant project exists.
+- [#1154](https://github.com/rasahq/rasa-private/issues/1154): Fixed telemetry collection for the components Rephraser, LLM Intent Classifier, Intentless Policy and Enterprise Search Policy to ensure that the telemetry data is only collected when it is enabled
 
 
 ## [3.9.9] - 2024-08-23

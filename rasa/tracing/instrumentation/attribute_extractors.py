@@ -664,7 +664,7 @@ def extract_attrs_for_custom_action_executor_run(
 
     attrs: Dict[str, Any] = {
         "class_name": self.__class__.__name__,
-        "action_name": self.action_name,
+        "action_name": self.action_name if hasattr(self, "action_name") else "None",
         "sender_id": tracker.sender_id,
         "url": str(url),
         "actions_module": str(actions_module),

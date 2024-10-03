@@ -7,9 +7,9 @@ import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from moto import mock_aws
 
+from rasa.core import persistor
+from rasa.core.persistor import Persistor
 from rasa.env import REMOTE_STORAGE_PATH_ENV
-from rasa.nlu import persistor
-from rasa.nlu.persistor import Persistor
 from rasa.shared.exceptions import RasaException
 
 
@@ -125,7 +125,7 @@ class TestPersistor(Persistor):
 
 
 def test_get_external_persistor():
-    p = persistor.get_persistor("tests.nlu.test_persistor.TestPersistor")
+    p = persistor.get_persistor("tests.core.test_persistor.TestPersistor")
     assert isinstance(p, TestPersistor)
 
 
@@ -290,7 +290,7 @@ def test_create_file_key_remote_storage_path_deprecation_logging(
 ) -> None:
     monkeypatch.setenv(REMOTE_STORAGE_PATH_ENV, "test_model")
     mock_raise_warning = MagicMock()
-    monkeypatch.setattr("rasa.nlu.persistor.raise_warning", mock_raise_warning)
+    monkeypatch.setattr("rasa.core.persistor.raise_warning", mock_raise_warning)
     Persistor._create_file_key("model1.pkl")
     warning_text = (
         f"{REMOTE_STORAGE_PATH_ENV} is deprecated and will be "

@@ -15,6 +15,7 @@ import rasa.shared.utils.common
 import rasa.shared.utils.io
 import rasa.utils.common
 from rasa import telemetry
+from rasa.core.persistor import StorageType
 from rasa.engine.caching import LocalTrainingCache
 from rasa.engine.recipes.recipe import Recipe
 from rasa.engine.runner.dask import DaskGraphRunner
@@ -22,7 +23,6 @@ from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.training.components import FingerprintStatus
 from rasa.engine.training.graph_trainer import GraphTrainer
-from rasa.nlu.persistor import StorageType
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import SlotSet
 from rasa.shared.core.training_data.structures import StoryGraph
@@ -156,6 +156,7 @@ async def train(
     model_to_finetune: Optional[Text] = None,
     finetuning_epoch_fraction: float = 1.0,
     remote_storage: Optional[StorageType] = None,
+    file_importer: Optional[TrainingDataImporter] = None,
 ) -> TrainingResult:
     """Trains a Rasa model (Core and NLU).
 
@@ -177,14 +178,18 @@ async def train(
             a directory in case the latest trained model should be used.
         finetuning_epoch_fraction: The fraction currently specified training epochs
             in the model configuration which should be used for finetuning.
-        remote_storage: The remote storage which should be used to store the model.
+        remote_storage: Optional name of the remote storage to
+            use for storing the model.
+        file_importer: Instance of `TrainingDataImporter` to use for training.
+            If it is not provided, a new instance will be created.
 
     Returns:
         An instance of `TrainingResult`.
     """
-    file_importer = TrainingDataImporter.load_from_config(
-        config, domain, training_files, core_additional_arguments
-    )
+    if not file_importer:
+        file_importer = TrainingDataImporter.load_from_config(
+            config, domain, training_files, core_additional_arguments
+        )
 
     stories = file_importer.get_stories()
     flows = file_importer.get_flows()
@@ -555,7 +560,7 @@ async def train_nlu(
 
 def push_model_to_remote_storage(model_path: Path, remote_storage: StorageType) -> None:
     """push model to remote storage"""
-    from rasa.nlu.persistor import get_persistor
+    from rasa.core.persistor import get_persistor
 
     persistor = get_persistor(remote_storage)
 
