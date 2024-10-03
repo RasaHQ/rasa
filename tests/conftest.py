@@ -6,50 +6,77 @@ import pathlib
 import random
 import re
 import shutil
+import sys
 import textwrap
 import threading
 import time
+import uuid
+from pathlib import Path
+from typing import (
+    Any,
+    Callable,
+    Coroutine,
+    Dict,
+    Generator,
+    Iterator,
+    List,
+    Optional,
+    Text,
+)
+from unittest.mock import Mock
 
 import jwt
 import pytest
-import sys
-import uuid
-
-from pytest import TempdirFactory, MonkeyPatch, Function, TempPathFactory
+from dotenv import load_dotenv
+from pytest import (
+    Function,
+    MonkeyPatch,
+    Pytester,
+    RunResult,
+    TempdirFactory,
+    TempPathFactory,
+    WarningsRecorder,
+)
+from sanic import Sanic
+from sanic.request import Request
 from spacy import Language
-from pytest import WarningsRecorder, Pytester, RunResult
 
+import rasa.core.run
+import rasa.shared.utils.io
+import rasa.utils.common
+import rasa.utils.io
+from rasa import server
 from rasa.cli import scaffold
+from rasa.core.agent import Agent, load_agent
+from rasa.core.brokers.broker import EventBroker
+from rasa.core.channels import RestInput, channel
+from rasa.core.exporter import Exporter
+from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
+from rasa.e2e_test.constants import (
+    KEY_STUB_CUSTOM_ACTIONS,
+    STUB_CUSTOM_ACTION_NAME_SEPARATOR,
+    TEST_CASE_NAME,
+    TEST_FILE_NAME,
+)
+from rasa.e2e_test.stub_custom_action import StubCustomAction
 from rasa.engine.caching import LocalTrainingCache
 from rasa.engine.graph import ExecutionContext, GraphSchema
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.storage import ModelStorage
-from sanic.request import Request
-
-from typing import Generator, Iterator, Callable
-
-from pathlib import Path
-from sanic import Sanic
-from typing import Text, List, Optional, Dict, Any
-from unittest.mock import Mock
-
+from rasa.model_training import train, train_nlu
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.nlu.utils.spacy_utils import SpacyModel, SpacyNLP
+from rasa.shared.constants import (
+    ASSISTANT_ID_KEY,
+    LATEST_TRAINING_DATA_FORMAT_VERSION,
+    LLM_API_HEALTH_CHECK_ENV_VAR,
+)
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     ACTION_RESTART_NAME,
     ACTION_SESSION_START_NAME,
 )
-from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.nlu.constants import METADATA_MODEL_ID
-import rasa.shared.utils.io
-from rasa import server
-from rasa.core.agent import Agent, load_agent
-from rasa.core.brokers.broker import EventBroker
-from rasa.core.channels import channel, RestInput
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-
-from rasa.nlu.utils.spacy_utils import SpacyNLP, SpacyModel
-from rasa.shared.constants import ASSISTANT_ID_KEY, LATEST_TRAINING_DATA_FORMAT_VERSION
-from rasa.shared.core.domain import SessionConfig, Domain
+from rasa.shared.core.domain import Domain, SessionConfig
 from rasa.shared.core.events import (
     ActionExecuted,
     Event,
@@ -57,15 +84,32 @@ from rasa.shared.core.events import (
     SessionStarted,
     UserUttered,
 )
-from rasa.core.exporter import Exporter
-
-import rasa.core.run
-from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
-from rasa.model_training import train, train_nlu
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
-import rasa.utils.common
-import rasa.utils.io
+from rasa.shared.nlu.constants import METADATA_MODEL_ID
+from rasa.shared.providers.embedding._base_litellm_embedding_client import (
+    _BaseLiteLLMEmbeddingClient,
+)
+from rasa.shared.providers.embedding.embedding_client import EmbeddingClient
+from rasa.shared.providers.embedding.embedding_response import EmbeddingResponse
+from rasa.shared.providers.llm._base_litellm_client import _BaseLiteLLMClient
+from rasa.shared.providers.llm.llm_client import LLMClient
 from rasa.shared.utils.yaml import read_yaml_file, write_yaml
+from rasa.utils.endpoints import EndpointConfig
+from tests.license_env import (
+    BLOCKED_LICENSE_ENV,
+    CHAMPION_LICENSE_ENV,
+    CHAMPION_SERVER_INTERNAL_LICENSE_ENV,
+    CHAMPION_SERVER_LIMITED_LICENSE_ENV,
+    EXPIRED_LICENSE_ENV,
+    IMMATURE_LICENSE_ENV,
+    INVALID_SCHEMA_LICENSE_ENV,
+    INVALID_SIGNATURE_LICENSE_ENV,
+    NON_JWT_LICENSE_ENV,
+    UNSCOPED_LICENSE_ENV,
+    VALID_LICENSE_ENV,
+)
+from swagger_coverage_py.reporter import CoverageReporter
 
 # we reuse a bit of pytest's own testing machinery, this should eventually come
 # from a separately installable pytest-cli plugin.
@@ -169,6 +213,11 @@ def simple_stories_path() -> Text:
 
 
 @pytest.fixture(scope="session")
+def basic_flows_path() -> Text:
+    return "data/test_flows/basic_flows.yml"
+
+
+@pytest.fixture(scope="session")
 def stack_config_path() -> Text:
     return "data/test_config/stack_config.yml"
 
@@ -255,12 +304,39 @@ def loop(
     yield event_loop
 
 
+TrainedAsync = Callable[..., Coroutine[Any, Any, Optional[str]]]
+
+
+@pytest.fixture(scope="session")
+def trained_async(
+    tmp_path_factory: TempPathFactory,
+) -> TrainedAsync:
+    async def _train(
+        *args: Any,
+        output_path: Optional[Text] = None,
+        cache_dir: Optional[Path] = None,
+        **kwargs: Any,
+    ) -> Optional[Text]:
+        if not cache_dir:
+            cache_dir = tmp_path_factory.mktemp("cache")
+
+        if output_path is None:
+            output_path = str(tmp_path_factory.mktemp("models"))
+
+        with enable_cache(cache_dir):
+            result = await train(*args, output=output_path, **kwargs)
+
+        return result.model
+
+    return _train
+
+
 @pytest.fixture(scope="session")
 async def trained_default_agent_model(
     stories_path: Text,
     domain_path: Text,
     nlu_data_path: Text,
-    trained_async: Callable,
+    trained_async: TrainedAsync,
     simple_config_path: Text,
 ) -> Text:
     model_path = await trained_async(
@@ -290,7 +366,7 @@ def default_agent(trained_default_agent_model: Text) -> Agent:
 
 
 @pytest.fixture(scope="session")
-async def trained_moodbot_path(trained_async: Callable) -> Text:
+async def trained_moodbot_path(trained_async: TrainedAsync) -> Text:
     return await trained_async(
         domain="data/test_moodbot/domain.yml",
         config="data/test_moodbot/config.yml",
@@ -299,7 +375,7 @@ async def trained_moodbot_path(trained_async: Callable) -> Text:
 
 
 @pytest.fixture(scope="session")
-async def trained_moodbot_core_path(trained_async: Callable) -> Text:
+async def trained_moodbot_core_path(trained_async: TrainedAsync) -> Text:
     return await trained_async(
         domain="data/test_moodbot/domain.yml",
         config="data/test_moodbot/config.yml",
@@ -308,7 +384,7 @@ async def trained_moodbot_core_path(trained_async: Callable) -> Text:
 
 
 @pytest.fixture(scope="session")
-async def trained_moodbot_nlu_path(trained_async: Callable) -> Text:
+async def trained_moodbot_nlu_path(trained_async: TrainedAsync) -> Text:
     return await trained_async(
         domain="data/test_moodbot/domain.yml",
         config="data/test_moodbot/config.yml",
@@ -317,7 +393,7 @@ async def trained_moodbot_nlu_path(trained_async: Callable) -> Text:
 
 
 @pytest.fixture(scope="session")
-async def trained_unexpected_intent_policy_path(trained_async: Callable) -> Text:
+async def trained_unexpected_intent_policy_path(trained_async: TrainedAsync) -> Text:
     return await trained_async(
         domain="data/test_moodbot/domain.yml",
         config="data/test_moodbot/unexpected_intent_policy_config.yml",
@@ -335,7 +411,7 @@ async def trained_nlu_moodbot_path(trained_nlu: Callable) -> Text:
 
 
 @pytest.fixture(scope="session")
-async def trained_spacybot_path(trained_async: Callable) -> Text:
+async def trained_spacybot_path(trained_async: TrainedAsync) -> Text:
     return await trained_async(
         domain="data/test_spacybot/domain.yml",
         config="data/test_spacybot/config.yml",
@@ -356,6 +432,11 @@ async def core_agent(trained_core_model: Text) -> Agent:
 @pytest.fixture(scope="session")
 async def nlu_agent(trained_nlu_model: Text) -> Agent:
     return await load_agent(model_path=trained_nlu_model)
+
+
+@pytest.fixture(scope="session")
+async def agent_with_flows(trained_rasa_model_with_flows: Text) -> Agent:
+    return await load_agent(model_path=trained_rasa_model_with_flows)
 
 
 @pytest.fixture(scope="module")
@@ -381,28 +462,6 @@ def domain(_domain: Domain) -> Domain:
 
 
 @pytest.fixture(scope="session")
-def trained_async(tmp_path_factory: TempPathFactory) -> Callable:
-    async def _train(
-        *args: Any,
-        output_path: Optional[Text] = None,
-        cache_dir: Optional[Path] = None,
-        **kwargs: Any,
-    ) -> Optional[Text]:
-        if not cache_dir:
-            cache_dir = tmp_path_factory.mktemp("cache")
-
-        if output_path is None:
-            output_path = str(tmp_path_factory.mktemp("models"))
-
-        with enable_cache(cache_dir):
-            result = await train(*args, output=output_path, **kwargs)
-
-        return result.model
-
-    return _train
-
-
-@pytest.fixture(scope="session")
 def trained_nlu(tmp_path_factory: TempPathFactory) -> Callable:
     async def _train_nlu(
         *args: Any, output_path: Optional[Text] = None, **kwargs: Any
@@ -417,7 +476,7 @@ def trained_nlu(tmp_path_factory: TempPathFactory) -> Callable:
 
 @pytest.fixture(scope="session")
 async def trained_rasa_model(
-    trained_async: Callable,
+    trained_async: TrainedAsync,
     domain_path: Text,
     nlu_data_path: Text,
     stories_path: Text,
@@ -433,8 +492,24 @@ async def trained_rasa_model(
 
 
 @pytest.fixture(scope="session")
-async def trained_core_model(
+async def trained_rasa_model_with_flows(
     trained_async: Callable,
+    domain_path: Text,
+    basic_flows_path: Text,
+    stack_config_path: Text,
+) -> Text:
+    trained_stack_model_path = await trained_async(
+        domain=domain_path,
+        config=stack_config_path,
+        training_files=[basic_flows_path],
+    )
+
+    return trained_stack_model_path
+
+
+@pytest.fixture(scope="session")
+async def trained_core_model(
+    trained_async: TrainedAsync,
     domain_path: Text,
     stack_config_path: Text,
     stories_path: Text,
@@ -448,7 +523,7 @@ async def trained_core_model(
 
 @pytest.fixture(scope="session")
 async def trained_nlu_model(
-    trained_async: Callable,
+    trained_async: TrainedAsync,
     domain_path: Text,
     nlu_data_path: Text,
     stack_config_path: Text,
@@ -480,7 +555,7 @@ def trained_e2e_model_cache(
 
 @pytest.fixture(scope="session")
 async def trained_e2e_model(
-    trained_async: Callable,
+    trained_async: TrainedAsync,
     moodbot_domain_path: Text,
     e2e_bot_config_file: Path,
     nlu_data_path: Text,
@@ -546,6 +621,12 @@ def rasa_server_secured(default_agent: Agent) -> Sanic:
 
 
 @pytest.fixture
+def rasa_server_with_flows(agent_with_flows: Agent) -> Sanic:
+    app = server.create_app(agent=agent_with_flows, auth_token="rasa")
+    return app
+
+
+@pytest.fixture
 def test_public_key() -> Text:
     test_public_key = """-----BEGIN PUBLIC KEY-----
 MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC34ht9inqGq79HecpyOAnu2Cgv
@@ -559,6 +640,7 @@ Sa0EqvZQP+Hnayab7QIDAQAB
 
 @pytest.fixture
 def test_private_key() -> Text:
+    # deepcode ignore HardcodedNonCryptoSecret/test: Test credential
     test_private_key = """-----BEGIN RSA PRIVATE KEY-----
 MIICXQIBAAKBgQC34ht9inqGq79HecpyOAnu2CgvjvgcpFifpFLPmCNdiomAgE48
 tfUAXJRoOGlVtrqc8KgQWjTFLjqDjUh1sBFF69FlwQGt7pgH10ZbERWpMTAbpjI9
@@ -629,6 +711,7 @@ def rasa_server_without_api() -> Sanic:
 @pytest.fixture(scope="session")
 def project() -> Text:
     import tempfile
+
     from rasa.cli.scaffold import create_initial_project
 
     directory = tempfile.mkdtemp()
@@ -665,7 +748,7 @@ async def response_selector_test_stories() -> Path:
 
 
 @pytest.fixture(scope="session")
-async def trained_response_selector_bot(trained_async: Callable) -> Path:
+async def trained_response_selector_bot(trained_async: TrainedAsync) -> Path:
     zipped_model = await trained_async(
         domain="data/test_response_selector_bot/domain.yml",
         config="data/test_response_selector_bot/config.yml",
@@ -707,7 +790,7 @@ def e2e_bot_test_stories_with_unknown_bot_utterances() -> Path:
 # FIXME: This fixture is very slow, do not use it without fixing that first
 @pytest.fixture(scope="session")
 async def e2e_bot(
-    trained_async: Callable,
+    trained_async: TrainedAsync,
     e2e_bot_domain_file: Path,
     e2e_bot_config_file: Path,
     e2e_bot_training_files: List[Path],
@@ -971,16 +1054,6 @@ def tests_data_folder(tests_folder: str) -> str:
     return tests_data_folder
 
 
-def read_license_file(license_file: Text) -> Text:
-    filepath = str(pathlib.Path(__file__).parent / "utils" / "fixtures" / license_file)
-    return open(filepath).read().strip()
-
-
-@pytest.fixture()
-def valid_license() -> Text:
-    return read_license_file("valid_license")
-
-
 def wait(
     func: Callable,
     result_available_event: threading.Event,
@@ -1009,7 +1082,15 @@ def wait(
         raise TimeoutError(timeout_msg)
 
 
-def create_simple_project(path: Path):
+def create_simple_project(path: Path) -> Path:
+    """Create a simple project structure in the given path.
+
+    Args:
+        path: Path to the project directory.
+
+    Returns:
+        Path to the project directory
+    """
     scaffold.create_initial_project(str(path))
 
     # create a config file
@@ -1043,11 +1124,342 @@ def run_in_simple_project(pytester: Pytester) -> Callable[..., RunResult]:
     return do_run
 
 
-@pytest.fixture(scope="session", autouse=True)
-def set_open_ai_env_variable():
-    os.environ["OPENAI_API_KEY"] = "test"
-
-
 @pytest.fixture(autouse=True)
 def clear_read_yaml_file_cache() -> None:
     read_yaml_file.cache_clear()
+
+
+@pytest.fixture
+def fake_llm_client() -> LLMClient:
+    class FakeLLMClient(_BaseLiteLLMClient):
+        @classmethod
+        def from_config(cls, config: Dict[str, Any]) -> "_BaseLiteLLMClient":
+            pass
+
+        @property
+        def config(self) -> dict:
+            return {
+                "model": self._litellm_model_name,
+            }
+
+        @property
+        def _litellm_model_name(self) -> str:
+            return "openai/test-gpt-model"
+
+        @property
+        def _completion_fn_args(self) -> dict:
+            return {"model": "openai/test-gpt-model", "mock_response": "Hello there!"}
+
+    client = FakeLLMClient()
+
+    return client
+
+
+@pytest.fixture
+def fake_embedding_client() -> EmbeddingClient:
+    class FakeEmbeddingClient(_BaseLiteLLMEmbeddingClient):
+        @property
+        def _litellm_extra_parameters(self) -> Dict[str, Any]:
+            return {}
+
+        @property
+        def _embedding_fn_args(self) -> Dict[str, Any]:
+            return {
+                "model": "openai/test-gpt-model",
+            }
+
+        @classmethod
+        def from_config(cls, config: Dict[str, Any]) -> "_BaseLiteLLMClient":
+            pass
+
+        @property
+        def config(self) -> dict:
+            return {
+                "model": self._litellm_model_name,
+            }
+
+        @property
+        def _litellm_model_name(self) -> str:
+            return "openai/test-embedding-model"
+
+        def embed(self, documents: List[str]) -> EmbeddingResponse:
+            return self._get_test_response(documents)
+
+        async def aembed(self, documents: List[str]) -> EmbeddingResponse:
+            return self._get_test_response(documents)
+
+        def _get_test_response(self, documents: List[str]):
+            responses = []
+            for _ in documents:
+                random_embeddings = [random.uniform(0, 1) for _ in range(100)]
+                responses.append(random_embeddings)
+            return EmbeddingResponse(data=responses, model=self._litellm_model_name)
+
+    client = FakeEmbeddingClient()
+
+    return client
+
+
+@pytest.fixture(scope="session")
+async def trained_custom_actions_model(
+    trained_async: TrainedAsync,
+) -> Text:
+    parent_folder = "data/test_custom_action_triggers_action_extract_slots"
+    domain_path = f"{parent_folder}/domain.yml"
+    config_path = f"{parent_folder}/config.yml"
+    stories_path = f"{parent_folder}/stories.yml"
+    nlu_path = f"{parent_folder}/nlu.yml"
+    return await trained_async(domain_path, config_path, [stories_path, nlu_path])
+
+
+@pytest.fixture
+def custom_actions_agent(trained_custom_actions_model: Text) -> Agent:
+    return Agent.load(trained_custom_actions_model)
+
+
+@pytest.fixture
+def test_file_name() -> str:
+    return "test_file_name.yml"
+
+
+@pytest.fixture
+def test_case_name() -> str:
+    return "test_case_name"
+
+
+@pytest.fixture
+def action_name_test_file() -> str:
+    return "action_test_file"
+
+
+@pytest.fixture
+def action_name_test_case() -> str:
+    return "action_test_case"
+
+
+@pytest.fixture
+def stub_data() -> Dict[str, Any]:
+    return {
+        "events": [{"event": "sample_event"}],
+        "responses": [{"response": "sample_response"}],
+    }
+
+
+@pytest.fixture
+def action_name_test_file_with_separator(
+    test_file_name: str, action_name_test_file: str
+) -> str:
+    return (
+        f"{test_file_name}"
+        f"{STUB_CUSTOM_ACTION_NAME_SEPARATOR}"
+        f"{action_name_test_file}"
+    )
+
+
+@pytest.fixture
+def action_name_test_case_with_separator(
+    test_case_name: str, action_name_test_case: str
+) -> str:
+    return (
+        f"{test_case_name}"
+        f"{STUB_CUSTOM_ACTION_NAME_SEPARATOR}"
+        f"{action_name_test_case}"
+    )
+
+
+@pytest.fixture
+def action_test_file_stub(
+    stub_data: Dict[str, Any], action_name_test_file: str
+) -> StubCustomAction:
+    return StubCustomAction.from_dict(action_name_test_file, stub_data)
+
+
+@pytest.fixture
+def action_test_case_stub(
+    stub_data: Dict[str, Any], action_name_test_case: str
+) -> StubCustomAction:
+    return StubCustomAction.from_dict(action_name_test_case, stub_data)
+
+
+@pytest.fixture
+def endpoint_stub_config(
+    test_file_name: str,
+    test_case_name: str,
+    action_test_file_stub: StubCustomAction,
+    action_test_case_stub: StubCustomAction,
+    action_name_test_file_with_separator: str,
+    action_name_test_case_with_separator: str,
+) -> EndpointConfig:
+    return EndpointConfig(
+        url="http://localhost:5055/webhook",
+        **{
+            TEST_FILE_NAME: test_file_name,
+            TEST_CASE_NAME: test_case_name,
+            KEY_STUB_CUSTOM_ACTIONS: {
+                action_name_test_file_with_separator: action_test_file_stub,
+                action_name_test_case_with_separator: action_test_case_stub,
+            },
+        },
+    )
+
+
+@pytest.fixture
+def e2e_input_folder() -> pathlib.Path:
+    return (
+        pathlib.Path(__file__).parent.parent / "data" / "end_to_end_testing_input_files"
+    )
+
+
+@pytest.fixture(scope="session")
+def load_env_vars() -> None:
+    load_dotenv()
+
+
+@pytest.fixture(scope="session")
+def expired_license(load_env_vars) -> str:
+    value = os.getenv(EXPIRED_LICENSE_ENV)
+    assert value is not None, (
+        "Expired license not found. "
+        "To setup license for testing, "
+        "please provide a valid expired license"
+        f" by setting the environment variable {EXPIRED_LICENSE_ENV}"
+    )
+    return value
+
+
+@pytest.fixture(scope="session")
+def blocked_license(load_env_vars) -> str:
+    value = os.getenv(BLOCKED_LICENSE_ENV)
+    assert value is not None, (
+        "Blocked license not found. "
+        "To setup license for testing, "
+        "please provide a valid blocked license"
+        f" by setting the environment variable {BLOCKED_LICENSE_ENV}"
+    )
+    return value
+
+
+@pytest.fixture(scope="session")
+def champion_license(load_env_vars) -> str:
+    value = os.getenv(CHAMPION_LICENSE_ENV)
+    assert value is not None, (
+        "Champion license not found. "
+        "To setup license for testing, "
+        "please provide a valid champion license"
+        f" by setting the environment variable {CHAMPION_LICENSE_ENV}"
+    )
+    return value
+
+
+@pytest.fixture(scope="session")
+def champion_server_internal_license(load_env_vars) -> str:
+    value = os.getenv(CHAMPION_SERVER_INTERNAL_LICENSE_ENV)
+    assert value is not None, (
+        "Champion server internal license not found. "
+        "To setup license for testing, "
+        "please provide a valid champion server internal license"
+        f" by setting the environment variable {CHAMPION_SERVER_INTERNAL_LICENSE_ENV}"
+    )
+    return value
+
+
+@pytest.fixture(scope="session")
+def champion_server_limited_license(load_env_vars) -> str:
+    value = os.getenv(CHAMPION_SERVER_LIMITED_LICENSE_ENV)
+    assert value is not None, (
+        "Champion server limited license not found. "
+        "To setup license for testing, "
+        "please provide a valid champion server limited license"
+        f" by setting the environment variable {CHAMPION_SERVER_LIMITED_LICENSE_ENV}"
+    )
+    return value
+
+
+@pytest.fixture(scope="session")
+def immature_license(load_env_vars) -> str:
+    value = os.getenv(IMMATURE_LICENSE_ENV)
+    assert value is not None, (
+        "Immature license not found. "
+        "To setup license for testing, "
+        "please provide a valid immature license"
+        f" by setting the environment variable {IMMATURE_LICENSE_ENV}"
+    )
+    return value
+
+
+@pytest.fixture(scope="session")
+def invalid_schema_license(load_env_vars) -> str:
+    value = os.getenv(INVALID_SCHEMA_LICENSE_ENV)
+    assert value is not None, (
+        "Invalid schema license not found. "
+        "To setup license for testing, "
+        "please provide a valid invalid schema license"
+        f" by setting the environment variable {INVALID_SCHEMA_LICENSE_ENV}"
+    )
+    return value
+
+
+@pytest.fixture(scope="session")
+def invalid_signature_license(load_env_vars) -> str:
+    value = os.getenv(INVALID_SIGNATURE_LICENSE_ENV)
+    assert value is not None, (
+        "Invalid signature license not found. "
+        "To setup license for testing, "
+        "please provide a valid invalid signature license"
+        f" by setting the environment variable {INVALID_SIGNATURE_LICENSE_ENV}"
+    )
+    return value
+
+
+@pytest.fixture(scope="session")
+def non_jwt_license(load_env_vars) -> str:
+    value = os.getenv(NON_JWT_LICENSE_ENV)
+    assert value is not None, (
+        "Non-JWT license not found. "
+        "To setup license for testing, "
+        "please provide a valid non-JWT license"
+        f" by setting the environment variable {NON_JWT_LICENSE_ENV}"
+    )
+    return value
+
+
+@pytest.fixture(scope="session")
+def unscoped_license(load_env_vars) -> str:
+    value = os.getenv(UNSCOPED_LICENSE_ENV)
+    assert value is not None, (
+        "Unscoped license not found. "
+        "To setup license for testing, "
+        "please provide a valid unscoped license"
+        f" by setting the environment variable {UNSCOPED_LICENSE_ENV}"
+    )
+    return value
+
+
+@pytest.fixture(scope="session")
+def valid_license(load_env_vars) -> str:
+    value = os.getenv(VALID_LICENSE_ENV)
+    assert value is not None, (
+        "Valid license not found. "
+        "To setup license for testing, "
+        "please provide a valid license"
+        f" by setting the environment variable {VALID_LICENSE_ENV}"
+    )
+    return value
+
+
+@pytest.fixture
+def setup_swagger_coverage():
+    reporter = CoverageReporter(
+        api_name="rasa-pro", host="https://rasa.com/docs/rasa-pro/spec"
+    )
+    reporter.cleanup_input_files()
+    reporter.setup("/rasa.yml")
+
+    yield
+    reporter.generate_report()
+
+
+@pytest.fixture(autouse=True)
+def set_llm_api_health_check_env_var(monkeypatch) -> None:
+    # Set environment variables for all tests
+    monkeypatch.setenv(LLM_API_HEALTH_CHECK_ENV_VAR, "false")

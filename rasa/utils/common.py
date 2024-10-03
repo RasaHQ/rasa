@@ -32,6 +32,7 @@ from rasa.constants import (
     DEFAULT_LOG_LEVEL_LIBRARIES,
     ENV_LOG_LEVEL_LIBRARIES,
     ENV_LOG_LEVEL_MATPLOTLIB,
+    ENV_LOG_LEVEL_MLFLOW,
     ENV_LOG_LEVEL_RABBITMQ,
     ENV_LOG_LEVEL_KAFKA,
 )
@@ -44,12 +45,6 @@ logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
-EXPECTED_PILLOW_DEPRECATION_WARNINGS: List[Tuple[Type[Warning], str]] = [
-    # Keras uses deprecated Pillow features
-    # cf. https://github.com/keras-team/keras/issues/16639
-    (DeprecationWarning, f"{method} is deprecated and will be removed in Pillow 10 .*")
-    for method in ["BICUBIC", "NEAREST", "BILINEAR", "HAMMING", "BOX", "LANCZOS"]
-]
 
 EXPECTED_WARNINGS: List[Tuple[Type[Warning], str]] = [
     # TODO (issue #9932)
@@ -57,22 +52,17 @@ EXPECTED_WARNINGS: List[Tuple[Type[Warning], str]] = [
         np.VisibleDeprecationWarning,
         "Creating an ndarray from ragged nested sequences.*",
     ),
-    # raised by langchain -> faiss
-    (
-        DeprecationWarning,
-        "distutils Version classes are deprecated. Use packaging.version instead",
-    ),
     # raised by pycountry (rasa-plus anonymization), magic_filter, google rpc
     # and probably other dependencies that use pkg_resources instead of importlib
     (DeprecationWarning, ".*pkg_resources.*"),
-    # This warning is triggered by sanic-cors 2.0.0.
+    # This warning is triggered by sanic-cors 2.0.0 and by langchain -> faiss.
     # The warning can be removed after the packages are updated:
     # sanic-cors: ^2.1.0
     # packaging`: 23.2 (introduces breaking changes)
     # pep440-version-utils (also requires update on packaging)
     (
         DeprecationWarning,
-        "distutils Version classes are deprecated. Use packaging.version instead.",
+        "distutils Version classes are deprecated. Use packaging.version instead",
     ),
     # cf. https://github.com/tensorflow/tensorflow/issues/38168
     (
@@ -81,11 +71,6 @@ EXPECTED_WARNINGS: List[Tuple[Type[Warning], str]] = [
         "shape. This may consume a large amount of memory.",
     ),
     (UserWarning, "Slot auto-fill has been removed in 3.0 .*"),
-    # This warning is caused by the flatbuffers package
-    # The import was fixed on Github, but the latest version
-    # is not available on PyPi, so we cannot pin the newer version.
-    # cf. https://github.com/google/flatbuffers/issues/6957
-    (DeprecationWarning, "the imp module is deprecated in favour of importlib.*"),
     # Cannot fix this deprecation warning since we need to support two
     # numpy versions as long as we keep python 37 around
     (DeprecationWarning, "the `interpolation=` argument to quantile was renamed"),
@@ -102,10 +87,11 @@ EXPECTED_WARNINGS: List[Tuple[Type[Warning], str]] = [
         DeprecationWarning,
         "non-integer arguments to randrange\\(\\) have been deprecated since",
     ),
+    # Ignore Keras DeprecationWarning since it requires that we
+    # upgrade tensorflow-macos to 2.13.0 version.
     (DeprecationWarning, "invalid escape sequence*"),
 ]
 
-EXPECTED_WARNINGS.extend(EXPECTED_PILLOW_DEPRECATION_WARNINGS)
 PYTHON_LOGGING_SCHEMA_DOCS = (
     "https://docs.python.org/3/library/logging.config.html#dictionary-schema-details"
 )
@@ -400,6 +386,19 @@ def update_faker_log_level(library_log_level: Text) -> None:
     log_level = os.environ.get(ENV_LOG_LEVEL_FAKER, library_log_level)
     logging.getLogger("faker").setLevel(log_level)
     logging.getLogger("faker").propagate = False
+
+
+def update_mlflow_log_level() -> None:
+    """Set the log level of mlflow.
+
+    Uses the library specific log level or the general libraries log level.
+    """
+    library_log_level = os.environ.get(
+        ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES
+    )
+    log_level = os.environ.get(ENV_LOG_LEVEL_MLFLOW, library_log_level)
+    logging.getLogger("mlflow").setLevel(log_level)
+    logging.getLogger("mlflow").propagate = False
 
 
 def sort_list_of_dicts_by_first_key(dicts: List[Dict]) -> List[Dict]:

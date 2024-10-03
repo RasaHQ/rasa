@@ -1,15 +1,15 @@
 from typing import Text
 from unittest.mock import AsyncMock, patch
-from freezegun import freeze_time
 
 import pytest
+from freezegun import freeze_time
 from pytest import MonkeyPatch
+
 from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import SessionStarted
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils import licensing
-
 from rasa.utils.licensing import (
     LICENSE_ENV_VAR,
     PRODUCT_AREA,
@@ -21,11 +21,11 @@ from rasa.utils.licensing import (
     LicenseScopeException,
     LicenseSignatureInvalidException,
     LicenseValidationException,
+    get_license_expiration_date,
     is_valid_license_scope,
     property_of_active_license,
     validate_license_from_env,
 )
-from tests.conftest import read_license_file
 
 BLOCKED_JTI = "8e0d440f-704a-44c3-b7b4-a6f2357e9768"
 
@@ -46,7 +46,7 @@ def test_validate_license_env_var_not_set(monkeypatch: MonkeyPatch) -> None:
 
 
 @pytest.mark.parametrize(
-    "license_filename, exception",
+    "license_fixture, exception",
     [
         ("expired_license", LicenseExpiredException),
         ("invalid_signature_license", LicenseSignatureInvalidException),
@@ -57,28 +57,32 @@ def test_validate_license_env_var_not_set(monkeypatch: MonkeyPatch) -> None:
     ],
 )
 def test_decode_invalid_license_raises_exception(
-    license_filename: Text, exception: LicenseValidationException
+    license_fixture: str,
+    exception: LicenseValidationException,
+    request: pytest.FixtureRequest,
 ) -> None:
-    license = read_license_file(license_filename)
+    license_value = request.getfixturevalue(license_fixture)
     with pytest.raises(exception):  # type: ignore
-        License.decode(license)
+        License.decode(license_value)
 
 
 @pytest.mark.parametrize(
-    "license_filename, exception",
+    "license_fixture, exception",
     [
         ("blocked_license", LicenseExpiredException),
     ],
 )
 def test_decode_blocked_license_raises_exception(
-    license_filename: Text,
+    license_fixture: str,
     exception: LicenseValidationException,
     monkeypatch: MonkeyPatch,
+    request: pytest.FixtureRequest,
 ) -> None:
-    monkeypatch.setattr("rasa.utils.licensing.JTI_BLOCKLIST", set([BLOCKED_JTI]))
-    license = read_license_file(license_filename)
+    license_value = request.getfixturevalue(license_fixture)
+
+    monkeypatch.setattr("rasa.utils.licensing.JTI_BLOCKLIST", {BLOCKED_JTI})
     with pytest.raises(exception):  # type: ignore
-        License.decode(license)
+        License.decode(license_value)
 
 
 @pytest.mark.parametrize(
@@ -155,23 +159,25 @@ def test_is_developer_license(monkeypatch: MonkeyPatch, valid_license: str) -> N
 
 
 @pytest.mark.parametrize(
-    "developer_license_name",
+    "developer_license_fixture",
     [
         "champion_server_limited_license",
         "champion_server_internal_license",
     ],
 )
 def test_is_developer_license_with_developer_license(
-    monkeypatch: MonkeyPatch, developer_license_name: str
+    monkeypatch: MonkeyPatch,
+    developer_license_fixture: str,
+    request: pytest.FixtureRequest,
 ) -> None:
-    developer_license = read_license_file(developer_license_name)
+    developer_license = request.getfixturevalue(developer_license_fixture)
     monkeypatch.setenv(LICENSE_ENV_VAR, developer_license)
 
     assert licensing.is_champion_server_license()
 
 
 @pytest.mark.parametrize(
-    "developer_license_name, limit",
+    "developer_license_fixture, limit",
     [
         ("champion_license", None),
         ("champion_server_limited_license", 1000),
@@ -180,9 +186,12 @@ def test_is_developer_license_with_developer_license(
     ],
 )
 def test_conversation_limits_for_license(
-    monkeypatch: MonkeyPatch, developer_license_name: str, limit: int
+    monkeypatch: MonkeyPatch,
+    developer_license_fixture: str,
+    limit: int,
+    request: pytest.FixtureRequest,
 ) -> None:
-    developer_license = read_license_file(developer_license_name)
+    developer_license = request.getfixturevalue(developer_license_fixture)
     monkeypatch.setenv(LICENSE_ENV_VAR, developer_license)
 
     assert licensing.conversation_limit_for_license() == limit
@@ -190,11 +199,10 @@ def test_conversation_limits_for_license(
 
 async def test_conversation_counting_job_triggers_limits(
     monkeypatch: MonkeyPatch,
+    champion_server_limited_license: str,
 ) -> None:
     tracker_store = InMemoryTrackerStore(Domain.empty())
-    monkeypatch.setenv(
-        LICENSE_ENV_VAR, read_license_file("champion_server_limited_license")
-    )
+    monkeypatch.setenv(LICENSE_ENV_VAR, champion_server_limited_license)
 
     # mock the hard & soft limit handlers to validate they get called
 
@@ -238,3 +246,11 @@ async def test_conversation_counting_job_triggers_limits(
     # also assert that the soft limit was not called again (count should
     # still be 1 from before)
     mocked_handle_soft_limit_reached.assert_called_once()
+
+
+def test_get_license_expiration_date(
+    monkeypatch: MonkeyPatch, valid_license: str
+) -> None:
+    monkeypatch.setenv(LICENSE_ENV_VAR, valid_license)
+
+    assert get_license_expiration_date() == "3000-01-01T00:00:00+00:00"

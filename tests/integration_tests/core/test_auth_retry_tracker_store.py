@@ -87,6 +87,7 @@ def vault_secrets_manager(
         # deepcode ignore HardcodedNonCryptoSecret/test: Test secret
         host="localhost:8200",
         token="myroot",
+        # deepcode ignore HardcodedNonCryptoSecret/test: Test credential
         secrets_path="rasa-secrets",
     )
 

@@ -19,6 +19,14 @@ logger = structlog.get_logger()
 
 @dataclass
 class SearchResult:
+    """A search result object.
+
+    Attributes:
+        text: The text content of the retrieved document result.
+        metadata: The metadata associated with the document result.
+        score: The score of the search result.
+    """
+
     text: str
     metadata: dict
     score: Optional[float] = None

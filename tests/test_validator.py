@@ -9,12 +9,11 @@ from pytest import CaptureFixture
 
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.flows.yaml_flows_io import flows_from_str
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.validator import Validator
-from tests.utilities import filter_logs
+from tests.utilities import filter_logs, flows_from_str
 
 
 @pytest.fixture(scope="class")
@@ -309,8 +308,8 @@ def test_early_exit_on_invalid_domain():
         validator = Validator.from_importer(importer)
     validator.verify_domain_validity()
 
-    # two for non-unique domains, 2 for auto-fill removal
-    assert len(record) == 4
+    # one for non-unique domain and second one for auto-fill removal
+    assert len(record) == 2
 
     non_unique_warnings = list(
         filter(
@@ -321,7 +320,7 @@ def test_early_exit_on_invalid_domain():
             record,
         )
     )
-    assert len(non_unique_warnings) == 2
+    assert len(non_unique_warnings) == 1
 
     auto_fill_warnings = list(
         filter(
@@ -330,7 +329,7 @@ def test_early_exit_on_invalid_domain():
             record,
         )
     )
-    assert len(auto_fill_warnings) == 2
+    assert len(auto_fill_warnings) == 1
 
 
 def test_verify_there_is_not_example_repetition_in_intents():
@@ -1538,6 +1537,288 @@ def test_verify_predicates_reference_namespaces(predicate: str) -> None:
         assert validator.verify_predicates()
         logs = filter_logs(caplog, log_level="error")
         assert len(logs) == 0
+
+
+@pytest.mark.parametrize(
+    "predicate",
+    [
+        "{'credit' 'debit'} contains slots.account_type",
+        "slots.account_type is 'debit'",
+        "slots.account_type == 'debit'",
+        "slots.account_type != 'debit'",
+        "not slots.account_type",
+        "context.collect is not null",
+        "not context.collect",
+    ],
+)
+def test_verify_categorical_predicate_valid_value(predicate: str) -> None:
+    flows = flows_from_str(
+        f"""
+        flows:
+          flow_bar:
+            description: Test that values in checks for categorical slots are validated.
+            steps:
+            - id: first
+              action: action_listen
+              next:
+                - if: "{predicate}"
+                  then: END
+                - else: END
+        """
+    )
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        slots:
+          account_type:
+            type: categorical
+            values:
+              - credit
+              - debit
+            mappings: []
+        """
+    )
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), flows, None)
+
+    with structlog.testing.capture_logs() as caplog:
+        assert validator.verify_predicates()
+        logs = filter_logs(caplog, log_level="error")
+        assert len(logs) == 0
+
+
+@pytest.mark.parametrize(
+    "predicate",
+    [
+        "slots.account_type is savings",
+        "slots.account_type == savings",
+        "slots.account_type != savings",
+        "{'savings' 'investment'} contains slots.account_type",
+    ],
+)
+def test_verify_categorical_predicate_invalid_value(predicate: str) -> None:
+    flows = flows_from_str(
+        f"""
+        flows:
+          flow_bar:
+            description: Test that values in checks for categorical slots are validated.
+            steps:
+            - id: first
+              action: action_listen
+              next:
+                - if: "{predicate}"
+                  then: END
+                - else: END
+        """
+    )
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        slots:
+          account_type:
+            type: categorical
+            values:
+              - credit
+              - debit
+            mappings: []
+        """
+    )
+    expected_log_level = "error"
+    expected_log_event = "validator.verify_predicates.link.invalid_condition"
+    expected_log_message_parts = [
+        f"Detected invalid condition '{predicate}' ",
+        "at step 'first' for flow id 'flow_bar'. ",
+        "Please make sure that all conditions are valid.",
+    ]
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), flows, None)
+    with structlog.testing.capture_logs() as caplog:
+        assert not validator.verify_predicates()
+        logs = filter_logs(
+            caplog,
+            expected_log_event,
+            expected_log_level,
+            expected_log_message_parts,
+            log_contains_all_message_parts=False,
+        )
+        assert len(logs) == 1
+
+
+def test_verify_categorical_predicate_with_apostrophe_valid() -> None:
+    """checks that a categorical slot with apostrophe is valid."""
+    flows = flows_from_str(
+        """
+        flows:
+          flow_bar:
+            description: Test that values in checks for categorical slots are validated.
+            steps:
+            - id: first
+              action: action_listen
+              next:
+                - if: slots.account_type == "don't know"
+                  then: END
+                - else: END
+          flow_bar2:
+            description: Test that values in checks for categorical slots are validated.
+            steps:
+            - id: first
+              action: action_listen
+              next:
+                - if: slots.account_type == "dont know'"
+                  then: END
+                - else: END
+        """
+    )
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        slots:
+          account_type:
+            type: categorical
+            values:
+              - don't know
+              - dont know'
+            mappings: []
+        """
+    )
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), flows, None)
+
+    with structlog.testing.capture_logs() as caplog:
+        assert validator.verify_predicates()
+        logs = filter_logs(caplog, log_level="error")
+        assert len(logs) == 0
+
+
+def test_verify_categorical_predicate_with_double_quotes_valid() -> None:
+    """checks that a categorical slot with double quotes is invalid."""
+    flows = flows_from_str(
+        """
+        flows:
+          flow_bar:
+            description: Test that values in checks for categorical slots are validated.
+            steps:
+            - id: first
+              action: action_listen
+              next:
+                - if: slots.account_type == 'don"t know'
+                  then: END
+                - else: END
+          flow_bar2:
+            description: Test that values in checks for categorical slots are validated.
+            steps:
+            - id: first
+              action: action_listen
+              next:
+                - if: slots.account_type == 'dont know"'
+                  then: END
+                - else: END
+        """
+    )
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        slots:
+          account_type:
+            type: categorical
+            values:
+              - don"t know
+              - dont know"
+            mappings: []
+        """
+    )
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), flows, None)
+
+    with structlog.testing.capture_logs() as caplog:
+        assert validator.verify_predicates()
+        logs = filter_logs(caplog, log_level="error")
+        assert len(logs) == 0
+
+
+@pytest.mark.parametrize(
+    "predicate",
+    [
+        "slots.confirmation",
+        "not slots.confirmation",
+        "slots.confirmation == true",
+        "slots.confirmation is not true",
+        "not slots.confirmation == true",
+    ],
+)
+def test_verify_boolean_predicate_valid_value(predicate: str) -> None:
+    flows = flows_from_str(
+        f"""
+        flows:
+          flow_bar:
+            description: Test that values in checks for boolean slots are validated.
+            steps:
+            - id: first
+              action: action_listen
+              next:
+                - if: "{predicate}"
+                  then: END
+                - else: END
+        """
+    )
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        slots:
+          confirmation:
+            type: bool
+            mappings: []
+        """
+    )
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), flows, None)
+
+    with structlog.testing.capture_logs() as caplog:
+        assert validator.verify_predicates()
+        logs = filter_logs(caplog, log_level="error")
+        assert len(logs) == 0
+
+
+@pytest.mark.parametrize(
+    "predicate",
+    [
+        "slots.confirmation == test",
+        "slots.confirmation is not test",
+    ],
+)
+def test_verify_boolean_predicate_invalid_value(predicate: str) -> None:
+    flows = flows_from_str(
+        f"""
+        flows:
+          flow_bar:
+            description: Test that values in checks for boolean slots are validated.
+            steps:
+            - id: first
+              action: action_listen
+              next:
+                - if: "{predicate}"
+                  then: END
+                - else: END
+        """
+    )
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        slots:
+          confirmation:
+            type: bool
+            mappings: []
+        """
+    )
+    expected_log_level = "error"
+    expected_log_event = "validator.verify_predicates.link.invalid_condition"
+    expected_log_message_parts = [
+        f"Detected invalid condition '{predicate}' ",
+        "at step 'first' for flow id 'flow_bar'. ",
+        "Please make sure that all conditions are valid.",
+    ]
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), flows, None)
+    with structlog.testing.capture_logs() as caplog:
+        assert not validator.verify_predicates()
+        logs = filter_logs(
+            caplog, expected_log_event, expected_log_level, expected_log_message_parts
+        )
+        assert len(logs) == 1
 
 
 def test_verify_namespaces_reference_slots_not_in_the_domain() -> None:

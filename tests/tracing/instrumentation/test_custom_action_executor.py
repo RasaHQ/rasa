@@ -28,17 +28,29 @@ def mock_url() -> str:
 
 
 def mock_endpoint() -> EndpointConfig:
-    return EndpointConfig(mock_url())
+    return EndpointConfig(mock_url(), actions_module=mock_actions_module())
+
+
+def mock_actions_module() -> str:
+    return "dummy.test_actions_module"
 
 
 @pytest.mark.parametrize(
-    "component_class, arg_dict, action_name, action_endpoint, span_name",
+    "component_class, arg_dict, action_name, action_endpoint, actions_module,span_name",
     [
-        (MockCustomActionExecutor, {}, "None", "None", "MockCustomActionExecutor"),
+        (
+            MockCustomActionExecutor,
+            {},
+            "None",
+            "None",
+            "None",
+            "MockCustomActionExecutor",
+        ),
         (
             MockNoEndpointCustomActionExecutor,
             {"action_name": mock_action_name()},
             mock_action_name(),
+            "None",
             "None",
             "MockNoEndpointCustomActionExecutor",
         ),
@@ -47,6 +59,7 @@ def mock_endpoint() -> EndpointConfig:
             {"action_name": mock_action_name(), "action_endpoint": mock_endpoint()},
             mock_action_name(),
             mock_url(),
+            mock_actions_module(),
             "MockHTTPCustomActionExecutor",
         ),
         (
@@ -54,11 +67,13 @@ def mock_endpoint() -> EndpointConfig:
             {"action_name": mock_action_name(), "action_endpoint": mock_endpoint()},
             mock_action_name(),
             mock_url(),
+            mock_actions_module(),
             "MockGRPCCustomActionExecutor",
         ),
         (
             MockRetryCustomActionExecutor,
             {"custom_action_executor": MockCustomActionExecutor()},
+            "None",
             "None",
             "None",
             "MockRetryCustomActionExecutor",
@@ -73,6 +88,7 @@ async def test_tracing_custom_action_executor_run_no_endpoint(
     arg_dict: Dict[str, Any],
     action_name: str,
     action_endpoint: Any,
+    actions_module: str,
     span_name: str,
 ) -> None:
     instrumentation.instrument(
@@ -104,6 +120,7 @@ async def test_tracing_custom_action_executor_run_no_endpoint(
         "class_name": component_class.__name__,
         "action_name": action_name,
         "url": action_endpoint,
+        "actions_module": actions_module,
         "sender_id": "test",
     }
     assert captured_span.attributes == expected_attributes

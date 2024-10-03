@@ -147,6 +147,7 @@ def test_endpoint_resolver_update_credentials_from_secret_manager_no_secrets(
             ),
             {
                 "username": "new username",
+                # deepcode ignore NoHardcodedPasswords/test: Test credential
                 "password": "new password",
             },
             EndpointConfig(

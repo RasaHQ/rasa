@@ -52,7 +52,7 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           ref: ${{ env.TAG_VERSION }}
-          
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
 
@@ -156,7 +156,7 @@ jobs:
           BASE_IMAGE_HASH: ${{ steps.check_image.outputs.base_image_hash }}
           RASA_DEPS_IMAGE_HASH: ${{ steps.check_image.outputs.rasa_deps_image_hash }}
           IMAGE_NAME: rasa-pro
-      
+
       - name: Set up Python 3.9 🐍
         uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
         with:
@@ -166,7 +166,7 @@ jobs:
         uses: Gr1N/setup-poetry@48b0f77c8c1b1b19cb962f0f00dff7b4be8f81ec #v9
         with:
            poetry-version: ${{ env.POETRY_VERSION }}
-      
+
       - name: Build ⚒️ Distributions
         run: poetry build
 
@@ -188,7 +188,7 @@ jobs:
           password: ${{ secrets.PYPI_TOKEN }}
           repository-url: "https://upload.pypi.org/legacy/"
           packages-dir: ${{ format('{0}/dist', github.workspace) }}
-    
+
       # Push library to GCP Artifact Registry rasa-plus-py
       - name: Release via GCP Artifact Registry
         if: always()

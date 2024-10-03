@@ -1,3 +1,5 @@
+import math
+import shutil
 import sys
 from typing import Any, Text, NoReturn
 
@@ -70,3 +72,31 @@ def print_error_and_exit(message: Text, exit_code: int = 1) -> NoReturn:
     """
     print_error(message)
     sys.exit(exit_code)
+
+
+def pad(text: Text, char: Text = "=", min: int = 3) -> Text:
+    """Pad text to a certain length.
+
+    Uses `char` to pad the text to the specified length. If the text is longer
+    than the specified length, at least `min` are used.
+
+    The padding is applied to the left and right of the text (almost) equally.
+
+    Example:
+        >>> pad("Hello")
+        "========= Hello ========"
+        >>> pad("Hello", char="-")
+        "--------- Hello --------"
+
+    Args:
+        text: Text to pad.
+        min: Minimum length of the padding.
+        char: Character to pad with.
+
+    Returns:
+        Padded text.
+    """
+    width = shutil.get_terminal_size((80, 20)).columns
+    padding = max(width - len(text) - 2, min * 2)
+
+    return char * (padding // 2) + " " + text + " " + char * math.ceil(padding / 2)

@@ -5,8 +5,8 @@ from rasa.dialogue_understanding.patterns.skip_question import (
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames.pattern_frame import PatternFlowStackFrame
 from rasa.shared.core.events import DialogueStackUpdated
-from rasa.shared.core.flows.yaml_flows_io import flows_from_str
 from rasa.shared.core.trackers import DialogueStateTracker
+from tests.utilities import flows_from_str
 
 
 def test_command_name():

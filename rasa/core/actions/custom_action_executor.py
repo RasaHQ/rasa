@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import abc
 import logging
 from typing import TYPE_CHECKING, Any, Dict, Text
@@ -36,7 +38,7 @@ class CustomActionExecutor(abc.ABC):
         Args:
             tracker: The current state of the dialogue.
             domain: The domain object containing domain-specific information.
-            include_domain: If True, the domain information is included in the request.
+            include_domain: If True, the domain is included in the request.
 
         Returns:
             The response from the execution of the custom action.
@@ -71,8 +73,7 @@ class NoEndpointCustomActionExecutor(CustomActionExecutor):
         Args:
             tracker: The current state of the dialogue.
             domain: The domain object containing domain-specific information.
-            include_domain: If True, the domain information
-                            is included in the request.
+            include_domain: If True, the domain is included in the request.
 
         Returns:
             The response from the execution of the custom action.
@@ -123,7 +124,7 @@ class CustomActionRequestWriter:
         Args:
             tracker: The current state of the dialogue.
             domain: The domain object containing domain-specific information.
-            include_domain: If True, the domain information is included in the request.
+            include_domain: If True, the domain is included in the request.
 
         Returns:
             A JSON payload to be sent to the action server.
@@ -173,14 +174,16 @@ class RetryCustomActionExecutor(CustomActionExecutor):
         Args:
             tracker: The current state of the dialogue.
             domain: The domain object containing domain-specific information.
-            include_domain: If True, the domain information is included in the request
+            include_domain: If True, the domain is included in the request.
 
         Returns:
             The response from the execution of the custom action.
         """
         try:
             return await self._custom_action_executor.run(
-                tracker, domain, include_domain=include_domain
+                tracker,
+                domain,
+                include_domain=include_domain,
             )
         except DomainNotFound:
             return await self._custom_action_executor.run(

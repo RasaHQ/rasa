@@ -31,8 +31,12 @@ from tests.integration_tests.tracing.conftest import (
     RASA_SERVER_PARENT_SPAN_NAME,
     RASA_SERVER_PROCESSOR_SPAN_NAME,
     RASA_SERVER_PROCESSOR_SUB_SPAN_NAME,
+    DIRECT_CUSTOM_ACTION_EXECUTION_SUB_SPAN_NAME,
     RASA_SERVER_TRIGGER_MESSAGE,
     TraceQueryTimestamps,
+    GRPC_RASA_SERVER_JAEGER,
+    GRPC_SSL_RASA_SERVER_JAEGER,
+    GRPC_ACTION_SERVER_PARENT_SUB_SPAN_NAME,
 )
 
 if typing.TYPE_CHECKING:
@@ -109,6 +113,20 @@ def test_traces_get_sent_to_backend(
             ACTION_SERVER_VALIDATION_ACTION_TRIGGER_MESSAGE,
             ACTION_SERVER_VALIDATION_ACTION_TRIGGERED,
             ACTION_SERVER_PARENT_SUB_SPAN_NAME,
+        ),
+        (
+            ACTION_SERVER_JAEGER_TRACING_SERVICE_NAME,
+            GRPC_RASA_SERVER_JAEGER,
+            ACTION_SERVER_TRIGGER_MESSAGE,
+            ACTION_SERVER_ACTION_TRIGGERED,
+            GRPC_ACTION_SERVER_PARENT_SUB_SPAN_NAME,
+        ),
+        (
+            ACTION_SERVER_JAEGER_TRACING_SERVICE_NAME,
+            GRPC_SSL_RASA_SERVER_JAEGER,
+            ACTION_SERVER_TRIGGER_MESSAGE,
+            ACTION_SERVER_ACTION_TRIGGERED,
+            GRPC_ACTION_SERVER_PARENT_SUB_SPAN_NAME,
         ),
     ],
 )
@@ -285,15 +303,27 @@ def test_missing_action_server_endpoint_does_not_stop_tracing(
 
 
 @pytest.mark.parametrize(
-    "tracing_service_name, rasa_server_endpoint",
+    "tracing_service_name, rasa_server_endpoint, sub_span_name",
     [
         (
             RASA_JAEGER_TRACING_SERVICE_NAME,
             RASA_SERVER_JAEGER_NO_ACTION_SERVER,
+            RASA_SERVER_PROCESSOR_SUB_SPAN_NAME,
         ),
         (
             RASA_OTLP_TRACING_SERVICE_NAME,
             RASA_SERVER_OTLP_NO_ACTION_SERVER,
+            RASA_SERVER_PROCESSOR_SUB_SPAN_NAME,
+        ),
+        (
+            RASA_JAEGER_TRACING_SERVICE_NAME,
+            RASA_SERVER_JAEGER_NO_ACTION_SERVER,
+            DIRECT_CUSTOM_ACTION_EXECUTION_SUB_SPAN_NAME,
+        ),
+        (
+            RASA_OTLP_TRACING_SERVICE_NAME,
+            RASA_SERVER_OTLP_NO_ACTION_SERVER,
+            DIRECT_CUSTOM_ACTION_EXECUTION_SUB_SPAN_NAME,
         ),
     ],
 )
@@ -301,6 +331,7 @@ def test_context_propagated_to_subspans_in_rasa_server(
     jaeger_query_service: "QueryServiceStub",
     tracing_service_name: Text,
     rasa_server_endpoint: Text,
+    sub_span_name: Text,
     trace_query_timestamps: TraceQueryTimestamps,
 ) -> None:
     if tracing_service_name == RASA_OTLP_TRACING_SERVICE_NAME:
@@ -313,7 +344,7 @@ def test_context_propagated_to_subspans_in_rasa_server(
 
     params = TraceQueryParameters(
         service_name=tracing_service_name,
-        operation_name=RASA_SERVER_PROCESSOR_SUB_SPAN_NAME,
+        operation_name=sub_span_name,
         start_time_min=trace_query_timestamps.min_time,
         start_time_max=trace_query_timestamps.max_time,
     )
@@ -327,9 +358,7 @@ def test_context_propagated_to_subspans_in_rasa_server(
         )
 
     spans_for_user_turn = _spans_for_user_turn()
-    processor_sub_spans = _filter_spans_by_name(
-        spans_for_user_turn, RASA_SERVER_PROCESSOR_SUB_SPAN_NAME
-    )
+    processor_sub_spans = _filter_spans_by_name(spans_for_user_turn, sub_span_name)
     sub_parent_spans = _filter_spans_by_name(
         spans_for_user_turn, RASA_SERVER_PROCESSOR_SPAN_NAME
     )

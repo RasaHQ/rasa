@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from functools import lru_cache
 from typing import Dict, Any, List, Optional, Tuple, Union, Text
 
+import os
 import structlog
 from jinja2 import Template
 
@@ -22,6 +23,7 @@ from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.shared.constants import LLM_API_HEALTH_CHECK_ENV_VAR
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows import FlowStep, Flow, FlowsList
 from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
@@ -32,8 +34,10 @@ from rasa.shared.nlu.constants import FLOWS_IN_PROMPT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.utils.llm import (
-    llm_factory,
     allowed_values_for_slot,
+    llm_api_health_check,
+    llm_factory,
+    try_instantiate_llm_client,
 )
 from rasa.utils.log_utils import log_llm
 
@@ -167,6 +171,20 @@ class LLMBasedCommandGenerator(GraphComponent, CommandGenerator, ABC):
         """Train the llm based command generator. Stores all flows into a vector
         store.
         """
+        # Validate llm configuration
+        llm_client = try_instantiate_llm_client(
+            self.config.get(LLM_CONFIG_KEY),
+            DEFAULT_LLM_CONFIG,
+            "llm_based_command_generator.train",
+            LLMBasedCommandGenerator.__name__,
+        )
+        if os.getenv(LLM_API_HEALTH_CHECK_ENV_VAR, "true").lower() == "true":
+            llm_api_health_check(
+                llm_client,
+                "llm_based_command_generator.train",
+                LLMBasedCommandGenerator.__name__,
+            )
+
         # flow retrieval is populated with only user-defined flows
         try:
             if self.flow_retrieval is not None and not flows.is_empty():
@@ -286,7 +304,8 @@ class LLMBasedCommandGenerator(GraphComponent, CommandGenerator, ABC):
         """
         llm = llm_factory(self.config.get(LLM_CONFIG_KEY), DEFAULT_LLM_CONFIG)
         try:
-            return await llm.apredict(prompt)
+            llm_response = await llm.acompletion(prompt)
+            return llm_response.choices[0]
         except Exception as e:
             # unfortunately, langchain does not wrap LLM exceptions which means
             # we have to catch all exceptions here

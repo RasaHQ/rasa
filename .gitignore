@@ -98,3 +98,10 @@ integration-results-tracing.xml
 integration-results-metric.xml
 integration-results-custom-actions-with-nlu-bot-results.xml
 integration-results-custom-actions-with-calm-bot-results.xml
+certs
+tests_deployment/integration_tests_enterprise_search/volumes/
+.env
+swagger-coverage-output
+swagger-coverage-report*.html
+swagger-coverage-results.json
+swagger-doc*

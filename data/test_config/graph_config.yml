@@ -255,7 +255,7 @@ train_schema:
         importer: finetuning_validator
       uses: rasa.graph_components.providers.story_graph_provider.StoryGraphProvider
       constructor_name: create
-      fn: provide
+      fn: provide_train
       config:
         exclusion_percentage: null
       eager: false
@@ -298,21 +298,7 @@ train_schema:
       is_target: true
       is_input: false
       resource: null
-    train_UnexpecTEDIntentPolicy2:
-      needs:
-        training_trackers: training_tracker_provider
-        domain: domain_for_core_training_provider
-      uses: rasa.core.policies.unexpected_intent_policy.UnexpecTEDIntentPolicy
-      constructor_name: create
-      fn: train
-      config:
-        max_history: 5
-        epochs: 100
-      eager: false
-      is_target: true
-      is_input: false
-      resource: null
-    train_TEDPolicy3:
+    train_TEDPolicy2:
       needs:
         training_trackers: training_tracker_provider
         domain: domain_for_core_training_provider
@@ -341,6 +327,17 @@ predict_schema:
       is_target: false
       is_input: false
       resource: null
+    story_graph_provider:
+      needs: { }
+      uses: rasa.graph_components.providers.story_graph_provider.StoryGraphProvider
+      constructor_name: load
+      fn: provide_inference
+      config: { }
+      eager: true
+      is_target: false
+      is_input: false
+      resource:
+        name: story_graph_provider
     flows_provider:
       needs: {}
       uses: rasa.graph_components.providers.flows_provider.FlowsProvider
@@ -356,6 +353,7 @@ predict_schema:
       needs:
           tracker: __tracker__
           flows: flows_provider
+          story_graph: story_graph_provider
       uses: rasa.dialogue_understanding.processor.command_processor_component.CommandProcessorComponent
       constructor_name: load
       fn: execute_commands
@@ -531,23 +529,7 @@ predict_schema:
       is_input: false
       resource:
         name: train_RulePolicy1
-    run_UnexpecTEDIntentPolicy2:
-      needs:
-        domain: domain_provider
-        tracker: __tracker__
-        rule_only_data: rule_only_data_provider
-      uses: rasa.core.policies.unexpected_intent_policy.UnexpecTEDIntentPolicy
-      constructor_name: load
-      fn: predict_action_probabilities
-      config:
-        max_history: 5
-        epochs: 100
-      eager: true
-      is_target: false
-      is_input: false
-      resource:
-        name: train_UnexpecTEDIntentPolicy2
-    run_TEDPolicy3:
+    run_TEDPolicy2:
       needs:
         domain: domain_provider
         tracker: __tracker__
@@ -563,7 +545,7 @@ predict_schema:
       is_target: false
       is_input: false
       resource:
-        name: train_TEDPolicy3
+        name: train_TEDPolicy2
     rule_only_data_provider:
       needs: {}
       uses: rasa.graph_components.providers.rule_only_provider.RuleOnlyDataProvider
@@ -579,8 +561,7 @@ predict_schema:
       needs:
         policy0: run_MemoizationPolicy0
         policy1: run_RulePolicy1
-        policy2: run_UnexpecTEDIntentPolicy2
-        policy3: run_TEDPolicy3
+        policy2: run_TEDPolicy2
         domain: domain_provider
         tracker: __tracker__
       uses: rasa.core.policies.ensemble.DefaultPolicyPredictionEnsemble

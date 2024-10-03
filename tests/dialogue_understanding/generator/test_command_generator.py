@@ -22,10 +22,10 @@ from rasa.shared.constants import (
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows import Flow, FlowsList
-from rasa.shared.core.flows.yaml_flows_io import flows_from_str
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import TEXT, COMMANDS
 from rasa.shared.nlu.training_data.message import Message
+from tests.utilities import flows_from_str
 
 
 class WackyCommandGenerator(CommandGenerator):

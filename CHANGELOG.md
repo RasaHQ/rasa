@@ -10,6 +10,321 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.10.5] - 2024-10-01
+                        
+Rasa Pro 3.10.5 (2024-10-01)                             
+### Bugfixes
+- [#1108](https://github.com/rasahq/rasa-private/issues/1108): Fix the case where IntentlessPolicy is triggered while no e2e stories were written to guide it. In this situation a CannotHandleCommand will be issued.
+- [#1236](https://github.com/rasahq/rasa-private/issues/1236): Update litellm to version 1.45.0 to fix security vulnerability (CVE-2024-6587).
+  Update gitpython to version 3.1.41 to fix security vulnerability (CVE-2024-22190).
+  Update certifi to version 2024.07.04 to fix security vulnerability (CVE-2024-39689).
+- [#1320](https://github.com/rasahq/rasa-private/issues/1320): Prevent invalid domain with incorrectly defined intent from throwing stack trace.
+  Throw InvalidDomain exception and send message to the user instead.
+  The message looks like this:
+  `Detected invalid intent definition: {'intent': 'ask_help'}.  Please make sure all intent definitions are valid.`
+- [#1321](https://github.com/rasahq/rasa-private/issues/1321): Support text completions endpoint when using self hosted models.
+
+  The `use_chat_completions_endpoint` parameter is now supported when using self-hosted models. This parameter is used to enable the use of the chat completions endpoint when using a self-hosted model. This parameter is set to `True` by default.
+  To use the text completions endpoint, set `use_chat_completions_endpoint` to `False` in the `llm` section of the component.
+
+  Usage:
+  ```yaml
+  llm:
+      provider: self-hosted
+      model: meta-llama/Meta-Llama-3-8B
+      api_base: "https://my-endpoint/v1"
+      use_chat_completions_endpoint: false
+  ```
+- [#1327](https://github.com/rasahq/rasa-private/issues/1327): Fixes an issue where the `CountVectorsFeaturizer` and `LogisticRegressionClassifier` would throw error during inference when no NLU training data is provided.
+- [#1334](https://github.com/rasahq/rasa-private/issues/1334): Added tracing explicitly to `GRPCCustomActionExecutor.run` in order to pass the tracing context to the action server.
+
+
+## [3.10.4] - 2024-09-25
+                        
+Rasa Pro 3.10.4 (2024-09-25)                             
+### Bugfixes
+- [#1297](https://github.com/rasahq/rasa-private/issues/1297): Fix failing validation of categorical slots when slot values contain Apostrophe.
+
+
+## [3.10.3] - 2024-09-20
+                        
+Rasa Pro 3.10.3 (2024-09-20)                              
+
+No significant changes.
+
+
+## [3.10.2] - 2024-09-19
+                        
+Rasa Pro 3.10.2 (2024-09-19)                             
+### Deprecations and Removals
+- [#1213](https://github.com/rasahq/rasa-private/issues/1213): Dropped support for Python 3.8 ahead of [Python 3.8 End of Life in October 2024](https://devguide.python.org/versions/#supported-versions). In Rasa Pro versions 3.10.0, 3.9.11 and 3.8.13, we needed to pin the TensorFlow library version to 2.13.0rc1 in order to remove critical vulnerabilities; this resulted in poor user experience when installing these versions of Rasa Pro with `uv pip`. Removing support for Python 3.8 will make it possible to upgrade to a stabler version of TensorFlow.
+
+### Improvements
+- [#1336](https://github.com/rasahq/rasa-private/issues/1336): Update Keras and Tensorflow to version 2.14.
+  This will eliminate the need to use the `--prerelease allow` flag when installing Rasa Pro using `uv pip` tool.
+
+### Bugfixes
+- [#1185](https://github.com/rasahq/rasa-private/issues/1185): Revert the old behavior when loading trained model by supplying a path to the model on the remote storage
+  by using the model path (`-m`) argument when `REMOTE_STORAGE_PATH` environment variable is not set.
+  Resulting path on the remote storage will be the same as the model path (`-m`) argument.
+
+  Additionally, entire model path (`-m`) argument wil be used when trained model is being uploaded to the 
+  remote storage with `REMOTE_STORAGE_PATH` environment variable not set.
+  Resulting path on the remote storage will be the same as the model path (`-m`) argument.
+
+  If `REMOTE_STORAGE_PATH` environment variable is set, only the file name part of the model path (`-m`) argument
+  is used in both loading and storage from/to the remote storage. Resulting path on the remote storage will be:
+  `REMOTE_STORAGE_PATH` + file name part of the model path (`-m`) argument.
+- [#12948](https://github.com/rasahq/rasa-private/issues/12948): Fixed UnexpecTEDIntentlessPolicy training errors that resulted from a change to batching behavior. Changed the batching behavior back to the original for all components. Made the changed batching behavior accessible in DietClassifier using `drop_small_last_batch: True`.
+
+### Miscellaneous internal changes
+- [#1204](https://github.com/rasahq/rasa-private/issues/1204)
+
+
+## [3.10.1] - 2024-09-11
+                        
+Rasa Pro 3.10.1 (2024-09-11)                             
+### Bugfixes
+- [#1101](https://github.com/rasahq/rasa-private/issues/1101): Fix OpenAI LLM client ignoring API base and API version arguments if set.
+- [#1150](https://github.com/rasahq/rasa-private/issues/1150): Fix `FileNotFound` error when running `rasa studio` commands and no pre-existing local assistant project exists.
+- [#1154](https://github.com/rasahq/rasa-private/issues/1154): Fixed telemetry collection for the components Rephraser, LLM Intent Classifier, Intentless Policy and Enterprise Search Policy to ensure that the telemetry data is only collected when it is enabled
+- [#1174](https://github.com/rasahq/rasa-private/issues/1174): Update the default config for E2E test conversion to use the `provider` key instead of `api_type`.
+- [#1188](https://github.com/rasahq/rasa-private/issues/1188): Fix inconsistent recording of telemetry events for llm-based command generators.
+- [#1312](https://github.com/rasahq/rasa-private/issues/1312): Throw deprecation warning when REQUESTS_CA_BUNDLE env var is used.
+
+
+## [3.10.0] - 2024-09-04
+                        
+Rasa Pro 3.10.0 (2024-09-04)                             
+### Deprecations and Removals
+- [#1199](https://github.com/rasahq/rasa-private/issues/1199): Remove experimental `LLMIntentClassifier`. Use Rasa CALM instead.
+
+### Features
+- [#1002](https://github.com/rasahq/rasa-private/issues/1002): Implement the shell output of [accuracy rate by assertion type](https://rasa.com/docs/rasa-pro/testing/e2e-testing-assertions/assertions-how-to-guide#test-results-analysis) as a table when running end-to-end testing with assertions.
+- [#1015](https://github.com/rasahq/rasa-private/issues/1015): Implement E2E testing assertions that measure metrics such as grounded-ness and answer relevance of generative responses
+  issued by either Enterprise Search or the Contextual Response Rephraser.
+
+  You must specify a threshold which must be reached for the generative evaluation assertion to pass.
+  In addition, you can also specify `ground_truth` if you prefer providing this in the E2E test rather than relying on the 
+  retrieved context from the vector store (in the case of Enterprise Search) or from the domain (in the case
+  of Contextual Response Rephraser) that is stored in the bot utterance event metadata.
+  For rephrased answers, you must specify `utter_name` to run the assertion.
+
+  These assertions can be specified for user steps only and cannot be used alongside the former E2E test format.
+  You can learn more about this new feature in the documentation sections for [grounded](https://rasa.com/docs/rasa-pro/testing/e2e-testing-assertions/assertions-fundamentals#generative-response-is-grounded-assertion)
+  and [relevant](https://rasa.com/docs/rasa-pro/testing/e2e-testing-assertions/assertions-fundamentals#generative-response-is-relevant-assertion) assertion types.
+
+  To enable this feature, please set the environment variable `RASA_PRO_BETA_E2E_ASSERTIONS` to `true`.
+  ```
+  export RASA_PRO_BETA_E2E_ASSERTIONS=true
+  ```
+- [#1124](https://github.com/rasahq/rasa-private/issues/1124): You can now produce a coverage report of your e2e tests via the following command:
+
+  ```commandline
+  rasa test e2e <e2e-test-folder> --coverage-report [--coverage-output-path <output-folder>]
+  ```
+
+  The coverage report contains the number of steps and the number of tested steps per flow. Untested steps are
+  referenced by line numbers.
+
+  ```commandline
+  Flow Name Coverage  Num Steps  Missing Steps  Line Numbers
+     flow_1    0.00%          1              1       [10-10]
+     flow_2  100.00%          4              0            []
+      Total   80.00%          5              1                      
+  ```
+
+  Additionally, we also create a histogram of command coverage showing how many and what
+  commands are produced in your e2e tests.
+
+  To enable this feature, please set the environment variable `RASA_PRO_BETA_FINETUNING_RECIPE` to `true`.
+
+  ```
+  export RASA_PRO_BETA_FINETUNING_RECIPE=true
+  ```
+  More information can be found on the [documentation](https://rasa.com/docs/rasa-pro/production/testing-your-assistant#e2e-test-coverage-report) of the feature.
+- [#1138](https://github.com/rasahq/rasa-private/issues/1138): Create a self-hosted LLM client compatible with OpenAI format.
+  Users can connect to their own self-hosted LLM server that is compatible with OpenAI format.
+
+  Sample basic usage:
+  ```
+      llm:
+          provider: self-hosted
+          model: <deployment_name>
+          api_base: <deployment_url>
+          api_type: openai [Optional]
+  ```
+- [#1157](https://github.com/rasahq/rasa-private/issues/1157): Add a new [CLI command](https://rasa.com/docs/rasa-pro/command-line-interface#rasa-llm-finetune-prepare-data) `rasa llm finetune prepare-data` to create a dataset from e2e tests that can be used to
+  fine-tune a base model for the task of command generation.
+
+  To enable this feature, please set the environment variable `RASA_PRO_BETA_FINETUNING_RECIPE` to `true`.
+
+  ```
+  export RASA_PRO_BETA_FINETUNING_RECIPE=true
+  ```
+- [#1207](https://github.com/rasahq/rasa-private/issues/1207): It is now allowed to link to `pattern_human_handoff` from any pattern and user flow.
+- [#1208](https://github.com/rasahq/rasa-private/issues/1208): Allow links from all patterns to user flows except for `pattern_internal_error`.
+- [#857](https://github.com/rasahq/rasa-private/issues/857): - **LiteLLM Integration & Reduced LangChain Reliance:**
+    - Introduced `LLMClient` and `EmbeddingClient` protocols for standardized client interfaces.
+    - Created lightweight client wrappers for LiteLLM to streamline model instantiation, management, and inference.
+    - Updated `llm_factory` and `embedder_factory` to utilize these LiteLLM client wrappers.
+    - Added dedicated clients for Azure OpenAI and OpenAI to support both LLMs and embedding models.
+    - Added a HuggingFace client to compute embeddings using locally stored transformer models via the `sentence-transformers` package.
+  - **LangChain Update:** Upgraded to the latest version (0.2.x) for improved compatibility and features.
+  To understand the implications on your assistant, please refer to the [feature documentation](https://rasa.com/docs/rasa-pro/concepts/components/llm-configuration) and the [migration guide](https://rasa.com/docs/rasa-pro/migration-guide#rasa-pro-39-to-rasa-pro-310).
+- [#937](https://github.com/rasahq/rasa-private/issues/937): Implement as part of E2E testing a new type of evaluation specifically designed to increase confidence in CALM.
+  This evaluation runs assertions on the assistant's actual events and generative responses. 
+  New assertions include the ability to check for the presence of specific events, such as:
+  - flow started, flow completed or flow cancelled events
+  - whether `pattern_clarification` was triggered for specific flows 
+  - whether buttons rendered well as part of the bot uttered event
+  - whether slots were set correctly or not
+  - whether the bot text response matches a provided regex pattern
+  - whether the bot response matches a provided domain response name
+
+  These assertions can be specified for user steps only and cannot be used alongside the former E2E test format.
+  You can learn more about this new feature in the [documentation](https://rasa.com/docs/rasa-pro/testing/e2e-testing-assertions/assertions-introduction).
+
+  To enable this feature, please set the environment variable `RASA_PRO_BETA_E2E_ASSERTIONS` to `true`.
+  ```
+  export RASA_PRO_BETA_E2E_ASSERTIONS=true
+  ```
+- [#980](https://github.com/rasahq/rasa-private/issues/980): Configure [LLM-as-Judge settings](https://rasa.com/docs/rasa-pro/testing/e2e-testing-assertions/assertions-installation#generative-response-llm-judge-configuration)
+  in the `llm_as_judge` section of the `conftest.yml` file.
+  These settings will be used to evaluate the groundedness and relevance of generated bot responses.
+  The `conftest.yml` is discoverable as long as it is in the root directory of the assistant project, 
+  at the same level as the `config.yml` file.
+
+  If the `conftest.yml` file is not present in the root directory, the default LLM judge settings will be used.
+- [#983](https://github.com/rasahq/rasa-private/issues/983): Implement automatic E2E test case conversion from sample conversation data.
+
+  This feature includes:
+  - A CLI command to convert sample conversation data (CSV, XLSX) into executable E2E test cases.
+  - Conversion of sample data using an LLM to generate YAML formatted test cases.
+  - Export of generated test cases into a specified YAML file.
+
+  Usage:
+  ```
+  rasa data convert e2e <path>
+  ```
+
+
+  To enable this feature, please set the environment variable `RASA_PRO_BETA_E2E_CONVERSION` to `true`.
+  ```
+  export RASA_PRO_BETA_E2E_CONVERSION=true
+  ```
+
+  For more details, please refer to this [documentation page](https://rasa.com/docs/rasa-pro/testing/e2e-test-conversion).
+
+### Improvements
+- [#1011](https://github.com/rasahq/rasa-private/issues/1011): Implemented custom action stubbing for E2E test cases. To define custom action stubs, add `stub_custom_actions` to the test case file.
+
+  Stubs can be defined in two ways:
+  - Test file level: Define each action by its name (`action_name`).
+  - Test case level: Define the stub using the test case ID as a prefix (`test_case_id::action_name`).
+
+  To learn more about this feature, please refer to the [documentation](https://rasa.com/docs/rasa-pro/production/testing-your-assistant#stubbing-custom-actions).
+
+  To enable this feature, set the environment variable `RASA_PRO_BETA_STUB_CUSTOM_ACTION` to `true`:
+
+  ```
+  export RASA_PRO_BETA_STUB_CUSTOM_ACTION=true
+  ```
+- [#1012](https://github.com/rasahq/rasa-private/issues/1012): Add `max_messages_in_query` parameter to Enterprise Search Policy, it allows controlling the number of past messages that are used in the search query for retrieval
+- [#1019](https://github.com/rasahq/rasa-private/issues/1019): Configure [LLM E2E test converter settings](https://rasa.com/docs/rasa-pro/testing/e2e-test-conversion#llm-configuration)
+  in the `llm_e2e_test_conversion` section of the `conftest.yml` file.
+
+  These settings will be used to configure the LLM used to convert sample conversation data into E2E test cases.
+
+  The `conftest.yml` is discoverable as long as it is in the root directory of the tests output path.
+
+  If the `conftest.yml` file is not present in the root directory, the default LLM settings will be used.
+- [#1045](https://github.com/rasahq/rasa-private/issues/1045): Add the datetime of Rasa Pro license expiry to `rasa --version` command
+  Add `/license` API endpoint that also returns the same information
+- [#1046](https://github.com/rasahq/rasa-private/issues/1046): Suppress LiteLLM info and debug log messages in the console.
+- [#1048](https://github.com/rasahq/rasa-private/issues/1048): Cache llm_factory and embedder_factory methods to avoid client instantiation and validation for every user utterance.
+- [#1110](https://github.com/rasahq/rasa-private/issues/1110): Added E2E Test Conversion Completed telemetry event with file type and test case count properties.
+- [#1115](https://github.com/rasahq/rasa-private/issues/1115): Separate writing of failed and passed e2e test results to distinct file paths.
+- [#1116](https://github.com/rasahq/rasa-private/issues/1116): Implement support for evaluating IntentlessPolicy responses with generative response assertions.
+- [#1118](https://github.com/rasahq/rasa-private/issues/1118): Use direct custom action execution in tutorial and CALM templates.
+  Skip action server health check in e2e testing if direct custom action execution is configured.
+- [#1125](https://github.com/rasahq/rasa-private/issues/1125): Modified the type of flows which are included into the import CLI (previously only user flows were enabled, now patterns are included).
+  Use case: This is needed for Studio 1.7, since that release is enabling modification and management of patterns inside Studio,
+  and needs the ability to import patterns from yaml files.
+- [#1126](https://github.com/rasahq/rasa-private/issues/1126): Improve events and responses sub-schemas used by the `stub_custom_actions` sub-schema of end-to-end testing.
+  The events sub-schema only allows the usage of events which are supported by the `rasa-sdk`.
+  These are documented in the [action server API documentation](https://rasa.com/docs/rasa/pages/action-server-api#operation/call_action).
+- [#1260](https://github.com/rasahq/rasa-private/issues/1260): Change default model of conversation rephraser to 'gpt-4o-mini'.
+- [#1285](https://github.com/rasahq/rasa-private/issues/1285): Add `file_path` to `Flow` so that we can show the full name, e.g. `path/to/flow.py::flow name` in the
+  e2e test coverage report.
+- [#2769](https://github.com/rasahq/rasa-private/issues/2769): Introduced remote storage to upload trained model to persistors(AWS, GCP, Azure)
+- [#2771](https://github.com/rasahq/rasa-private/issues/2771): Add ability to download training data from remote storage(gcs, aws, azure)
+- [#2822](https://github.com/rasahq/rasa-private/issues/2822): Allow saving models to and retrieving from sub folders in cloud storage.
+- [#696](https://github.com/rasahq/rasa-private/issues/696): Introduced `DirectCustomActionExecutor` for executing custom actions directly through the assistant.  
+
+  Introduced `actions_module` variable under `action_endpoint` in `endpoints.yml` to explicitly specify the path to custom actions module.
+
+  If `actions_module` is set, custom actions will be executed directly through the assistant.
+- [#903](https://github.com/rasahq/rasa-private/issues/903): Add validation for the values against which categorical and boolean slots are checked in the if conditional steps.
+  An error will be thrown when a slot is compared to an invalid/non-existent value for boolean and categorical slots.
+- [#919](https://github.com/rasahq/rasa-private/issues/919): Add user query and retrieved document results to the metadata of `action_send_text` predicted by EnterpriseSearchPolicy.
+  In addition, add domain ground truth responses to the `BotUttered` event metadata when rephrasing is enabled.
+  These changes were required to allow evaluations of generative responses against the ground truth stored in the metadata
+  of `BotUttered` events.
+
+### Bugfixes
+- [#1032](https://github.com/rasahq/rasa-private/issues/1032): Fix problem with custom action invocation when model is loaded from remote storage.
+- [#1062](https://github.com/rasahq/rasa-private/issues/1062): Ensure certificates for openai based clients.
+- [#1063](https://github.com/rasahq/rasa-private/issues/1063): Mark the first slot event as seen when the user turn in a E2E test case contains multiple slot events for the same slot.
+  This fixes the issue when the `assertion_order_enabled` is set to `true` and the user step in a test case contained
+  multiple `slot_was_set` assertions for the same slot, the last slot event was marked as seen when the first assertion was running.
+  This caused the test to fail for subsequent `slot_was_set` assertions for the same slot with error `Slot <slot_name> was not set`.
+- [#1069](https://github.com/rasahq/rasa-private/issues/1069): Validate the LLM configuration during training for the following components:
+
+  - `Contextual Response Rephraser`
+  - `Enterprise Search Policy`
+  - `Intentless Policy`
+  - `LLM Based Command Generator`
+  - `LLM Based Router`
+
+  Additionally, update the `get_provider_from_config` method to retrieve the provider
+  using both the `model` and `model_name` configuration parameters.
+- [#1075](https://github.com/rasahq/rasa-private/issues/1075): Fixes throwing the deprecation warning if the setting for Azure OpenAI Embedding Client was not set through the
+  deprecated environment variable.
+- [#1077](https://github.com/rasahq/rasa-private/issues/1077): Fix execution of stub custom actions when they contain test case name and the separator in its provided stub name.
+  Test runner will now correctly execute the correct stub implementation for the same custom action dependent on the test name.
+- [#1080](https://github.com/rasahq/rasa-private/issues/1080): Add validation to conversation rephraser.
+- [#1091](https://github.com/rasahq/rasa-private/issues/1091): Ensure YAML files with datetime-formatted strings are read as plain strings instead of being converted to datetime objects.
+- [#1092](https://github.com/rasahq/rasa-private/issues/1092): Deprecate 'request_timeout' for OpenAI and Azure OpenAI clients in favor of 'timeout'
+- [#1094](https://github.com/rasahq/rasa-private/issues/1094): Forbid `stream` and `n` parameters for clients. Having these parameters within `llm` and `embeddings`
+  configuration will result in error.
+- [#1095](https://github.com/rasahq/rasa-private/issues/1095): Raise deprecation warning if `api_type` is set to `huggingface` instead of `huggingface_local` for
+  HuggingFace local embeddings.
+- [#1109](https://github.com/rasahq/rasa-private/issues/1109): Fix resolving aliases for deprecated keys when instantiating LLM and embedding clients.
+- [#1112](https://github.com/rasahq/rasa-private/issues/1112): Fix detection of conftest file which contained custom LLM judge configuration.
+- [#1139](https://github.com/rasahq/rasa-private/issues/1139): Fix issue with Rasa Pro Studio download command exporting default flows which had not been customized by the Studio user.
+  Rasa Pro Studio download command only exports user defined flows, customized patterns and user defined domain locally from the Studio instance.
+
+  Similarly, fix issue with Rasa Pro Studio upload command importing default flows which had not been customized to Studio.
+  Rasa Pro Studio upload command only imports user defined flows, customized patterns and user defined domain to the Studio instance.
+- [#1147](https://github.com/rasahq/rasa-private/issues/1147): Disable auto-inferring provider from the config. Ensure the provider is explicitly read from the `provider` key.
+- [#1257](https://github.com/rasahq/rasa-private/issues/1257): Fix writing e2e test cases to disk. `slot_was_set` and `slot_was_not_set` are now written down correctly.
+- [#1259](https://github.com/rasahq/rasa-private/issues/1259): The rephraser of the `rasa llm finetune data-prepare` command now compares the original user message and the user
+  message returned in the LLM output case-insensitive.
+- [#1261](https://github.com/rasahq/rasa-private/issues/1261): [rasa llm finetune prepare-data] Do not rephrase user messages that come from a button payload.
+- [#1262](https://github.com/rasahq/rasa-private/issues/1262): Separate commands in the expected LLM output by newlines.
+- [#1294](https://github.com/rasahq/rasa-private/issues/1294): Fix TypeError in PatternClarificationContainsAssertion hash function by converting sets to lists for successful JSON serialization.
+- [#1319](https://github.com/rasahq/rasa-private/issues/1319): Fix validation in case a link to `pattern_human_handoff` is used.
+- [#1328](https://github.com/rasahq/rasa-private/issues/1328): [`rasa llm finetune prepare-data`] Skip paraphrasing module in case `num-rephrases` is set to 0.
+- [#797](https://github.com/rasahq/rasa-private/issues/797): Update the handling of incorrect use of slash syntax. Messages with undefined intents do not automatically trigger
+  `pattern_cannot_handle`; instead, they are sanitized (prepended slash(es) are removed) and passed through the graph.
+- [#920](https://github.com/rasahq/rasa-private/issues/920): Allow suitable patterns to be properly started using nlu triggers
+- [#940](https://github.com/rasahq/rasa-private/issues/940): Fix API connection error for bedrock embedding endpoint.
+
+### Miscellaneous internal changes
+- [#1038](https://github.com/rasahq/rasa-private/issues/1038), [#1040](https://github.com/rasahq/rasa-private/issues/1040), [#1053](https://github.com/rasahq/rasa-private/issues/1053), [#1068](https://github.com/rasahq/rasa-private/issues/1068), [#1123](https://github.com/rasahq/rasa-private/issues/1123), [#1318](https://github.com/rasahq/rasa-private/issues/1318), [#713](https://github.com/rasahq/rasa-private/issues/713)
+
+
 ## [3.9.14] - 2024-10-02
                         
 Rasa Pro 3.9.14 (2024-10-02)                              
@@ -71,6 +386,10 @@ Rasa Pro 3.9.9 (2024-08-23)
 - [#1154](https://github.com/rasahq/rasa-private/issues/1154): Don't create an instance of `FlowRetrieval` in the command generators in case no flows exists.
 - [#1203](https://github.com/rasahq/rasa-private/issues/1203): Patterns do not count as active flows in `MultiStepLLMCommandGenerator` anymore.
 - [#1255](https://github.com/rasahq/rasa-private/issues/1255): Make sure that all e2e test cases in rasa inspector are valid.
+- [#979](https://github.com/RasaHQ/rasa-private/pull/979): Downloading of CALM Assistants from Studio improved:
+
+  * Downloading CALM assistants from Studio now includes `config` and `endpoints` files
+  * Downloading CALM assistants from Studio now doesn't require `config.yml` and `data` folder to exist
 
 
 ## [3.9.8] - 2024-08-21
@@ -85,8 +404,8 @@ Rasa Pro 3.9.8 (2024-08-21)
 Rasa Pro 3.9.7 (2024-08-15)                            
 ### Bugfixes
 - [#916](https://github.com/rasahq/rasa-private/issues/916): Fix extraction of tracing context from the request headers and injection into the Rasa server tracing context.
-- [#957](https://github.com/rasahq/rasa-private/issues/957): `YamlValidationException` will correctly return line number of the element where the error ocurred when line number of that element is not returned by `ruamel.yaml` (for elements of primitive types, e.g. `str`, `int`, etc.), instead of returning the line number of the parent element.
-- [#963](https://github.com/rasahq/rasa-private/issues/963): Updated `setuptools` to fix security vulnarability.
+- [#957](https://github.com/rasahq/rasa-private/issues/957): `YamlValidationException` will correctly return line number of the element where the error occurred when line number of that element is not returned by `ruamel.yaml` (for elements of primitive types, e.g. `str`, `int`, etc.), instead of returning the line number of the parent element.
+- [#963](https://github.com/rasahq/rasa-private/issues/963): Updated `setuptools` to fix security vulnerability.
 - [#986](https://github.com/rasahq/rasa-private/issues/986): Fix tracing context propagation to work for all external service calls.
 
 ### Miscellaneous internal changes
@@ -232,7 +551,7 @@ Rasa Pro 3.9.0 (2024-07-03)
   - Coexistence bot should ignore `NoOpCommand` when checking if the processed message contains commands.
   - Update condition under which FlowPolicy triggers `pattern_internal_error` for slots with custom slot mappings.
 - [#753](https://github.com/rasahq/rasa-private/issues/753): Remove invalid warnings during collect step.
-- [#754](https://github.com/rasahq/rasa-private/issues/754): * Fixed issue where messages with invalid intent triggers ('/<intent>') were not handled correctly. Now triggering the `pattern_cannot_handle`.
+- [#754](https://github.com/rasahq/rasa-private/issues/754): * Fixed issue where messages with invalid intent triggers ('/&lt;intent&gt;') were not handled correctly. Now triggering the `pattern_cannot_handle`.
   * Introduced a new reason `cannot_handle_invalid_intent` for use in the pattern_cannot_handle switch mechanism to
   improve error handling.
 - [#756](https://github.com/rasahq/rasa-private/issues/756): Validates that a collect step in a flow either has an action or an utterance defined in the domain to avoid the bot being silent.
@@ -255,6 +574,79 @@ Rasa Pro 3.9.0 (2024-07-03)
 
 ### Miscellaneous internal changes
 - [#448](https://github.com/rasahq/rasa-private/issues/448), [#458](https://github.com/rasahq/rasa-private/issues/458), [#475](https://github.com/rasahq/rasa-private/issues/475), [#610](https://github.com/rasahq/rasa-private/issues/610), [#646](https://github.com/rasahq/rasa-private/issues/646), [#709](https://github.com/rasahq/rasa-private/issues/709), [#784](https://github.com/rasahq/rasa-private/issues/784), [#802](https://github.com/rasahq/rasa-private/issues/802), [#803](https://github.com/rasahq/rasa-private/issues/803)
+
+
+## [3.8.16] - 2024-10-02
+                        
+Rasa Pro 3.8.16 (2024-10-02)                              
+
+No significant changes.
+
+
+## [3.8.15] - 2024-10-01
+                        
+Rasa Pro 3.8.15 (2024-10-01)                             
+### Bugfixes
+- [#1333](https://github.com/rasahq/rasa-private/issues/1333): Fixes an issue where the `CountVectorsFeaturizer` and `LogisticRegressionClassifier` would throw error during inference when no NLU training data is provided.
+
+
+## [3.8.14] - 2024-09-20
+                        
+Rasa Pro 3.8.14 (2024-09-20)                             
+### Deprecations and Removals
+- [#1230](https://github.com/rasahq/rasa-private/issues/1230): Dropped support for Python 3.8 ahead of [Python 3.8 End of Life in October 2024](https://devguide.python.org/versions/#supported-versions). In Rasa Pro versions 3.10.0, 3.9.11 and 3.8.13, we needed to pin the TensorFlow library version to 2.13.0rc1 in order to remove critical vulnerabilities; this resulted in poor user experience when installing these versions of Rasa Pro with `uv pip`. Removing support for Python 3.8 will make it possible to upgrade to a stabler version of TensorFlow.
+
+### Improvements
+- [#1336](https://github.com/rasahq/rasa-private/issues/1336): Update Keras and Tensorflow to version 2.14.
+  This will eliminate the need to use the `--prerelease allow` flag when installing Rasa Pro using `uv pip` tool.
+
+### Bugfixes
+- [#12948](https://github.com/rasahq/rasa-private/issues/12948): Fixed UnexpecTEDIntentlessPolicy training errors that resulted from a change to batching behavior. Changed the batching behavior back to the original for all components. Made the changed batching behavior accessible in DietClassifier using `drop_small_last_batch: True`.
+
+### Miscellaneous internal changes
+- [#1204](https://github.com/rasahq/rasa-private/issues/1204)
+
+
+## [3.8.13] - 2024-09-12
+                        
+Rasa Pro 3.8.13 (2024-09-12)                             
+### Bugfixes
+- [#1155](https://github.com/rasahq/rasa-private/issues/1155): Fixed telemetry collection for the components Rephraser, LLM Intent Classifier, Intentless Policy and Enterprise Search Policy to ensure that the telemetry data is only collected when it is enabled
+- [#1323](https://github.com/rasahq/rasa-private/issues/1323): Update Keras to 2.13.1 and Tensorflow to 2.13.0rc0 to fix critical vulnerability (CVE-2024-3660).
+
+
+## [3.8.12] - 2024-08-12
+                        
+Rasa Pro 3.8.12 (2024-08-12)                             
+### Bugfixes
+- [#851](https://github.com/rasahq/rasa/issues/851): Fix `TypeError: InformationRetrieval.search() got an unexpected keyword argument` when tracing is enabled with `EnterpriseSearchPolicy`.
+- [#916](https://github.com/rasahq/rasa/issues/916): Fix extraction of tracing context from the request headers and injection into the Rasa server tracing context.
+- [#921](https://github.com/rasahq/rasa/issues/921): Update the usage of `time.process_time_ns` with `time.perf_counter_ns` to fix the inconsistencies between duration metrics and trace spans duration.
+- [#957](https://github.com/rasahq/rasa/issues/957): `YamlValidationException` will correctly return line number of the element where the error ocurred when line number of that element is not returned by `ruamel.yaml` (for elements of primitive types, e.g. `str`, `int`, etc.), instead of returning the line number of the parent element.
+- [#964](https://github.com/rasahq/rasa/issues/964): Updated `setuptools` to fix security vulnarability.
+
+### Miscellaneous internal changes
+- [#887](https://github.com/rasahq/rasa/issues/887), [#955](https://github.com/rasahq/rasa/issues/955)
+
+
+## [3.8.11] - 2024-07-04
+                        
+Rasa Pro 3.8.11 (2024-07-04)                             
+### Improvements
+- [#779](https://github.com/rasahq/rasa/issues/779): Improve debug logging for predicate evaluation.
+
+### Bugfixes
+- [#736](https://github.com/rasahq/rasa/issues/736): Raise an error if action_reset_routing is used without the defined ROUTE_TO_CALM_SLOT / router.
+- [#753](https://github.com/rasahq/rasa/issues/753): Remove invalid warnings during collect step.
+- [#754](https://github.com/rasahq/rasa/issues/754): * Fixed issue where messages with invalid intent triggers ('/<intent>') were not handled correctly. Now triggering the `pattern_cannot_handle`.
+  * Introduced a new reason `cannot_handle_invalid_intent` for use in the pattern_cannot_handle switch mechanism to
+  improve error handling.
+- [#756](https://github.com/rasahq/rasa/issues/756): Validates that a collect step in a flow either has an action or an utterance defined in the domain to avoid the bot being silent.
+- [#778](https://github.com/rasahq/rasa/issues/778): Skip command cleaning when no commands are present in NLUCommandAdapter. 
+  Fix get active flows to return the correct active flows, including all the nested parent flows if present.
+- [#800](https://github.com/rasahq/rasa/issues/800): Update the handling of incorrect use of slash syntax. Messages with undefined intents do not automatically trigger
+  `pattern_cannot_handle`; instead, they are sanitized (prepended slash(es) are removed) and passed through the graph.
+- [#815](https://github.com/rasahq/rasa/issues/815): Modify the validation to throw an error for a missing associated action/utterance in a collect step only if the slot does not have a defined initial value.
 
 
 ## [3.8.10] - 2024-06-19
@@ -295,17 +687,6 @@ Rasa Pro 3.8.7 (2024-05-29)
 ## [3.8.6] - 2024-05-27
 
 Rasa Pro 3.8.6 (2024-05-27)
-### Improvements
-- [#619](https://github.com/rasahq/rasa/issues/619): Adds `tracker_state` attribute to `OutputChannel`. It simplifies the access of tracker state for custom channel connector with `CollectingOutputChannel.tracker_state`.
-
-### Bugfixes
-- [#581](https://github.com/rasahq/rasa/issues/581): If a button in a response does not have a payload, socketio channel will use
-  the title as payload by default rather than throwing an exception.
-
-
-## [3.8.6] - 2024-05-27
-                       
-Rasa Pro 3.8.6 (2024-05-27)                            
 ### Improvements
 - [#619](https://github.com/rasahq/rasa/issues/619): Adds `tracker_state` attribute to `OutputChannel`. It simplifies the access of tracker state for custom channel connector with `CollectingOutputChannel.tracker_state`.
 
@@ -3517,12 +3898,8 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   intent classification and response selection.
 - [#7122](https://github.com/rasahq/rasa/issues/7122): Add validations for [slot mappings](https://rasa.com/docs/rasa-pro/nlu-based-assistants/forms#slot-mappings).
   If a slot mapping is not valid, an `InvalidDomain` error is raised.
-- [#7132](https://github.com/rasahq/rasa/issues/7132): Adapt the training data reader and emulator for LUIS to
-  [their latest format](https://westus.dev.cognitive.microsoft.com/docs/services/luis-endpoint-api-v3-0)
-  and add support for roles.
-  Update the instructions in the
-  "Migrate from LUIS" documentation page
-  to reflect the recent changes made to the UI of LUIS.
+- [#7132](https://github.com/rasahq/rasa/issues/7132): Adapt the training data reader and emulator for LUIS to their v3 format and add support for roles.
+  Update the instructions in the "Migrate from LUIS" documentation page to reflect the recent changes made to the UI of LUIS.
 - [#7160](https://github.com/rasahq/rasa/issues/7160): Adapt the training data reader and emulator for DialogFlow to
   [their latest format](https://cloud.google.com/dialogflow/es/docs/reference/rest/v2/DetectIntentResponse)
   and add support for regex entities.

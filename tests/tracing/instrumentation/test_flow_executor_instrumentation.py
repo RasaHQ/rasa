@@ -73,7 +73,8 @@ def test_tracing_flow_executor_advance_flows(
     current_span = captured_spans[-1]
     assert current_span.name == "rasa.core.policies.flows.flow_executor.advance_flows"
     assert current_span.attributes == {
-        "available_actions": '["action_listen", "utter_ask_transfer_money_amount_of_money"]',  # noqa: E501
+        "available_actions": '["action_listen", '
+        '"utter_ask_transfer_money_amount_of_money"]',
         "current_context": "{}",
     }
 
@@ -150,6 +151,6 @@ def test_tracing_flow_executor_advance_flows_until_next_action(
     assert current_span.attributes == {
         "action_name": "action_listen",
         "score": 1.0,
-        "metadata": "{}",
+        "metadata": '{"active_flow": null, "step_id": null}',
         "events": "[]",
     }
