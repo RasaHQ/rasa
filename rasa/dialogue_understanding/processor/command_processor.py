@@ -494,22 +494,23 @@ def clean_up_slot_command(
     stack = tracker.stack
 
     resulting_commands = commands_so_far[:]
+
+    slot = tracker.slots.get(command.name)
+    if slot is None:
+        structlogger.debug(
+            "command_processor.clean_up_slot_command.skip_command_slot_not_in_domain",
+            command=command,
+        )
+        return resulting_commands
+
+    if not should_slot_be_set(slot, command):
+        cannot_handle = CannotHandleCommand(reason=CANNOT_HANDLE_REASON)
+        if cannot_handle not in resulting_commands:
+            resulting_commands.append(cannot_handle)
+
+        return resulting_commands
+
     if command.name in slots_so_far and command.name != ROUTE_TO_CALM_SLOT:
-        slot = tracker.slots.get(command.name)
-        if slot is None:
-            structlogger.debug(
-                "command_processor.clean_up_slot_command.skip_command_slot_not_in_domain",
-                command=command,
-            )
-            return resulting_commands
-
-        if not should_slot_be_set(slot, command):
-            cannot_handle = CannotHandleCommand(reason=CANNOT_HANDLE_REASON)
-            if cannot_handle not in resulting_commands:
-                resulting_commands.append(cannot_handle)
-
-            return resulting_commands
-
         current_collect_info = get_current_collect_step(stack, all_flows)
 
         if current_collect_info and current_collect_info.collect == command.name:
