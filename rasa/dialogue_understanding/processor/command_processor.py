@@ -1,6 +1,7 @@
 from typing import List, Optional, Type, Set, Dict
 
 import structlog
+from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.dialogue_understanding.commands import (
     CancelFlowCommand,
     ClarifyCommand,
@@ -179,6 +180,7 @@ def execute_commands(
     tracker: DialogueStateTracker,
     all_flows: FlowsList,
     execution_context: ExecutionContext,
+    story_graph: Optional[StoryGraph] = None,
 ) -> List[Event]:
     """Executes a list of commands.
 
@@ -187,6 +189,7 @@ def execute_commands(
         tracker: The tracker to execute the commands on.
         all_flows: All flows.
         execution_context: Information about the single graph run.
+        story_graph: StoryGraph object with stories available for training.
 
     Returns:
         A list of the events that were created.
@@ -194,7 +197,9 @@ def execute_commands(
     commands: List[Command] = get_commands_from_tracker(tracker)
     original_tracker = tracker.copy()
 
-    commands = clean_up_commands(commands, tracker, all_flows, execution_context)
+    commands = clean_up_commands(
+        commands, tracker, all_flows, execution_context, story_graph
+    )
 
     updated_flows = find_updated_flows(tracker, all_flows)
     if updated_flows:
@@ -326,6 +331,7 @@ def clean_up_commands(
     tracker: DialogueStateTracker,
     all_flows: FlowsList,
     execution_context: ExecutionContext,
+    story_graph: Optional[StoryGraph] = None,
 ) -> List[Command]:
     """Clean up a list of commands.
 
@@ -340,6 +346,7 @@ def clean_up_commands(
         tracker: The tracker to clean up the commands for.
         all_flows: All flows.
         execution_context: Information about a single graph run.
+        story_graph: StoryGraph object with stories available for training.
 
     Returns:
     The cleaned up commands.
@@ -386,7 +393,7 @@ def clean_up_commands(
         # handle chitchat command differently from other free-form answer commands
         elif isinstance(command, ChitChatAnswerCommand):
             clean_commands = clean_up_chitchat_command(
-                clean_commands, command, all_flows, execution_context
+                clean_commands, command, all_flows, execution_context, story_graph
             )
 
         elif isinstance(command, FreeFormAnswerCommand):
@@ -562,6 +569,7 @@ def clean_up_chitchat_command(
     command: ChitChatAnswerCommand,
     flows: FlowsList,
     execution_context: ExecutionContext,
+    story_graph: Optional[StoryGraph] = None,
 ) -> List[Command]:
     """Clean up a chitchat answer command.
 
@@ -573,6 +581,7 @@ def clean_up_chitchat_command(
         command: The command to clean up.
         flows: All flows.
         execution_context: Information about a single graph run.
+        story_graph: StoryGraph object with stories available for training.
     Returns:
         The cleaned up commands.
     """
@@ -598,7 +607,11 @@ def clean_up_chitchat_command(
     )
     defines_intentless_policy = execution_context.has_node(IntentlessPolicy)
 
-    if has_action_trigger_chitchat and not defines_intentless_policy:
+    has_e2e_stories = True if (story_graph and story_graph.has_e2e_stories()) else False
+
+    if (has_action_trigger_chitchat and not defines_intentless_policy) or (
+        defines_intentless_policy and not has_e2e_stories
+    ):
         resulting_commands.insert(
             0, CannotHandleCommand(RASA_PATTERN_CANNOT_HANDLE_CHITCHAT)
         )

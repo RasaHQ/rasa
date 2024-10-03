@@ -17,10 +17,13 @@ RASA_SERVER_JAEGER = "http://localhost:5006"
 RASA_SERVER_OTLP = "http://localhost:5007"
 RASA_SERVER_JAEGER_NO_ACTION_SERVER = "http://localhost:5008"
 RASA_SERVER_OTLP_NO_ACTION_SERVER = "http://localhost:5009"
+GRPC_RASA_SERVER_JAEGER = "http://localhost:5014"
+GRPC_SSL_RASA_SERVER_JAEGER = "http://localhost:5015"
 
 
 ACTION_SERVER_PARENT_SPAN_NAME = "MessageProcessor._run_action"
 ACTION_SERVER_PARENT_SUB_SPAN_NAME = "HTTPCustomActionExecutor.run"
+GRPC_ACTION_SERVER_PARENT_SUB_SPAN_NAME = "GRPCCustomActionExecutor.run"
 ACTION_SERVER_SPAN_NAME = "ActionExecutor.run"
 ACTION_SERVER_TRIGGER_MESSAGE = "/goodbye"
 ACTION_SERVER_ACTION_TRIGGERED = "action_goodbye"

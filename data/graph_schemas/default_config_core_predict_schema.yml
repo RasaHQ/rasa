@@ -10,6 +10,17 @@ nodes:
     is_input: false
     resource:
       name: domain_provider
+  story_graph_provider:
+    needs: { }
+    uses: rasa.graph_components.providers.story_graph_provider.StoryGraphProvider
+    constructor_name: load
+    fn: provide_inference
+    config: { }
+    eager: true
+    is_target: false
+    is_input: false
+    resource:
+      name: story_graph_provider
   flows_provider:
     needs: {}
     uses: rasa.graph_components.providers.flows_provider.FlowsProvider
@@ -25,6 +36,7 @@ nodes:
     needs:
         tracker: __tracker__
         flows: flows_provider
+        story_graph: story_graph_provider
     uses: rasa.dialogue_understanding.processor.command_processor_component.CommandProcessorComponent
     constructor_name: load
     fn: execute_commands

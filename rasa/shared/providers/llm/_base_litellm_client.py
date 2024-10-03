@@ -3,7 +3,11 @@ from typing import Dict, List, Any, Union
 
 import logging
 import structlog
-from litellm import completion, acompletion, validate_environment
+from litellm import (
+    completion,
+    acompletion,
+    validate_environment,
+)
 
 from rasa.shared.exceptions import (
     ProviderClientAPIException,

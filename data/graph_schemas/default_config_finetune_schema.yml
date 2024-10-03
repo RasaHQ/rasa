@@ -242,7 +242,7 @@ nodes:
       importer: finetuning_validator
     uses: rasa.graph_components.providers.story_graph_provider.StoryGraphProvider
     constructor_name: create
-    fn: provide
+    fn: provide_train
     config:
       exclusion_percentage: null
     eager: false

@@ -10,6 +10,35 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.10.5] - 2024-10-01
+                        
+Rasa Pro 3.10.5 (2024-10-01)                             
+### Bugfixes
+- [#1108](https://github.com/rasahq/rasa-private/issues/1108): Fix the case where IntentlessPolicy is triggered while no e2e stories were written to guide it. In this situation a CannotHandleCommand will be issued.
+- [#1236](https://github.com/rasahq/rasa-private/issues/1236): Update litellm to version 1.45.0 to fix security vulnerability (CVE-2024-6587).
+  Update gitpython to version 3.1.41 to fix security vulnerability (CVE-2024-22190).
+  Update certifi to version 2024.07.04 to fix security vulnerability (CVE-2024-39689).
+- [#1320](https://github.com/rasahq/rasa-private/issues/1320): Prevent invalid domain with incorrectly defined intent from throwing stack trace.
+  Throw InvalidDomain exception and send message to the user instead.
+  The message looks like this:
+  `Detected invalid intent definition: {'intent': 'ask_help'}.  Please make sure all intent definitions are valid.`
+- [#1321](https://github.com/rasahq/rasa-private/issues/1321): Support text completions endpoint when using self hosted models.
+
+  The `use_chat_completions_endpoint` parameter is now supported when using self-hosted models. This parameter is used to enable the use of the chat completions endpoint when using a self-hosted model. This parameter is set to `True` by default.
+  To use the text completions endpoint, set `use_chat_completions_endpoint` to `False` in the `llm` section of the component.
+
+  Usage:
+  ```yaml
+  llm:
+      provider: self-hosted
+      model: meta-llama/Meta-Llama-3-8B
+      api_base: "https://my-endpoint/v1"
+      use_chat_completions_endpoint: false
+  ```
+- [#1327](https://github.com/rasahq/rasa-private/issues/1327): Fixes an issue where the `CountVectorsFeaturizer` and `LogisticRegressionClassifier` would throw error during inference when no NLU training data is provided.
+- [#1334](https://github.com/rasahq/rasa-private/issues/1334): Added tracing explicitly to `GRPCCustomActionExecutor.run` in order to pass the tracing context to the action server.
+
+
 ## [3.10.4] - 2024-09-25
                         
 Rasa Pro 3.10.4 (2024-09-25)                             

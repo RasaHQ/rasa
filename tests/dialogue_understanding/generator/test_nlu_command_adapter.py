@@ -1,6 +1,6 @@
 import uuid
 from typing import List, Optional, Type
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -439,7 +439,6 @@ class TestNLUCommandAdapter:
         "pattern,expected_command_class",
         [
             ("pattern_cancel_flow", CancelFlowCommand),
-            ("pattern_chitchat", ChitChatAnswerCommand),
             ("pattern_search", KnowledgeAnswerCommand),
             ("pattern_human_handoff", HumanHandoffCommand),
             ("pattern_skip_question", SkipQuestionCommand),
@@ -483,6 +482,7 @@ class TestNLUCommandAdapter:
         flows = flows_pattern_overwritten.merge(flows)
 
         tracker = DialogueStateTracker.from_events(sender_id, [], slots=domain.slots)
+
         predicted_commands = await command_generator.predict_commands(
             Message(
                 data={
@@ -503,3 +503,62 @@ class TestNLUCommandAdapter:
             assert isinstance(predicted_commands[0], expected_command_class)
         else:
             assert len(predicted_commands) == 0
+
+    @pytest.mark.parametrize(
+        "pattern,expected_command_class",
+        [
+            ("pattern_chitchat", ChitChatAnswerCommand),
+        ],
+    )
+    async def test_predict_chitchat_pattern_commands(
+        self,
+        command_generator: NLUCommandAdapter,
+        pattern: str,
+        expected_command_class: Optional[Type[Command]],
+    ):
+        """Test whether other patterns can be made triggerable via intents."""
+        sender_id = uuid.uuid4().hex
+        test_trigger_intent = "test_trigger_intent"
+        domain = FlowSyncImporter.load_default_pattern_flows_domain()
+        domain_addon = Domain.from_dict({KEY_INTENTS: [test_trigger_intent]})
+        domain = domain.merge(domain_addon)
+
+        flows = FlowSyncImporter.load_default_pattern_flows()
+        flows_pattern_overwritten = flows_from_str(
+            f"""
+                flows:
+                  {pattern}:
+                    description: overwritten pattern
+                    nlu_trigger:
+                      - intent: {test_trigger_intent}
+                    steps:
+                    - id: first_step
+                      action: action_listen
+                """
+        )
+        flows = flows_pattern_overwritten.merge(flows)
+
+        tracker = DialogueStateTracker.from_events(sender_id, [], slots=domain.slots)
+
+        with patch(
+            "rasa.dialogue_understanding.processor.command_processor.clean_up_chitchat_command"
+        ) as mock_clean_up_chitchat_command:
+            mock_clean_up_chitchat_command.return_value = [ChitChatAnswerCommand()]
+
+            predicted_commands = await command_generator.predict_commands(
+                Message(
+                    data={
+                        TEXT: f"/{test_trigger_intent}",
+                        INTENT: {
+                            INTENT_NAME_KEY: test_trigger_intent,
+                            PREDICTED_CONFIDENCE_KEY: 1.0,
+                        },
+                    }
+                ),
+                flows=flows,
+                tracker=tracker,
+                domain=domain,
+            )
+
+        assert len(predicted_commands) == 1
+        assert isinstance(predicted_commands[0], expected_command_class)

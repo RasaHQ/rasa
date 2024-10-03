@@ -21,6 +21,7 @@ from rasa.shared.constants import (
     PROVIDER_CONFIG_KEY,
     OPENAI_PROVIDER,
     SELF_HOSTED_PROVIDER,
+    USE_CHAT_COMPLETIONS_ENDPOINT_CONFIG_KEY,
 )
 from rasa.shared.providers._configs.utils import (
     raise_deprecation_warnings,
@@ -71,6 +72,7 @@ class SelfHostedLLMClientConfig:
     api_base: str
     api_version: Optional[str] = None
     api_type: Optional[str] = OPENAI_PROVIDER
+    use_chat_completions_endpoint: Optional[bool] = True
     extra_parameters: dict = field(default_factory=dict)
 
     def __post_init__(self) -> None:
@@ -140,6 +142,9 @@ class SelfHostedLLMClientConfig:
             # Optional parameters
             api_type=config.pop(API_TYPE_CONFIG_KEY, OPENAI_PROVIDER),
             api_version=config.pop(API_VERSION_CONFIG_KEY, None),
+            use_chat_completions_endpoint=config.pop(
+                USE_CHAT_COMPLETIONS_ENDPOINT_CONFIG_KEY, True
+            ),
             # The rest of parameters (e.g. model parameters) are considered
             # as extra parameters
             extra_parameters=config,

@@ -1,11 +1,19 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Union
+from litellm import (
+    text_completion,
+    atext_completion,
+)
+import logging
 import structlog
 
 from rasa.shared.constants import OPENAI_PROVIDER
 from rasa.shared.providers._configs.self_hosted_llm_client_config import (
     SelfHostedLLMClientConfig,
 )
+from rasa.shared.exceptions import ProviderClientAPIException
 from rasa.shared.providers.llm._base_litellm_client import _BaseLiteLLMClient
+from rasa.shared.providers.llm.llm_response import LLMResponse, LLMUsage
+from rasa.shared.utils.io import suppress_logs
 
 structlogger = structlog.get_logger()
 
@@ -19,6 +27,8 @@ class SelfHostedLLMClient(_BaseLiteLLMClient):
         api_base (str): The base URL of the API endpoint.
         api_type (Optional[str]): The type of the API endpoint.
         api_version (Optional[str]): The version of the API endpoint.
+        use_chat_completions_endpoint (Optional[bool]): Whether to use the chat
+            completions endpoint for completions. Defaults to True.
         kwargs: Any: Additional configuration parameters that can include, but
             are not limited to model parameters and lite-llm specific
             parameters. These parameters will be passed to the
@@ -36,6 +46,7 @@ class SelfHostedLLMClient(_BaseLiteLLMClient):
         api_base: str,
         api_type: Optional[str] = None,
         api_version: Optional[str] = None,
+        use_chat_completions_endpoint: Optional[bool] = True,
         **kwargs: Any,
     ):
         super().__init__()  # type: ignore
@@ -44,6 +55,7 @@ class SelfHostedLLMClient(_BaseLiteLLMClient):
         self._api_base = api_base
         self._api_type = api_type
         self._api_version = api_version
+        self._use_chat_completions_endpoint = use_chat_completions_endpoint
         self._extra_parameters = kwargs or {}
 
     @classmethod
@@ -66,6 +78,7 @@ class SelfHostedLLMClient(_BaseLiteLLMClient):
             api_base=client_config.api_base,
             api_type=client_config.api_type,
             api_version=client_config.api_version,
+            use_chat_completions_endpoint=client_config.use_chat_completions_endpoint,
             **client_config.extra_parameters,
         )
 
@@ -132,6 +145,7 @@ class SelfHostedLLMClient(_BaseLiteLLMClient):
             api_base=self._api_base,
             api_type=self._api_type,
             api_version=self._api_version,
+            use_chat_completions_endpoint=self._use_chat_completions_endpoint,
             extra_parameters=self._extra_parameters,
         )
         return config.to_dict()
@@ -167,3 +181,101 @@ class SelfHostedLLMClient(_BaseLiteLLMClient):
             }
         )
         return fn_args
+
+    @suppress_logs(log_level=logging.WARNING)
+    def _text_completion(self, prompt: Union[List[str], str]) -> LLMResponse:
+        """
+        Synchronously generate completions for given prompt.
+
+        Args:
+            prompt: Prompt to generate the completion for.
+        Returns:
+            List of message completions.
+        Raises:
+            ProviderClientAPIException: If the API request fails.
+        """
+        try:
+            response = text_completion(prompt=prompt, **self._completion_fn_args)
+            return self._format_text_completion_response(response)
+        except Exception as e:
+            raise ProviderClientAPIException(e)
+
+    @suppress_logs(log_level=logging.WARNING)
+    async def _atext_completion(self, prompt: Union[List[str], str]) -> LLMResponse:
+        """
+        Asynchronously generate completions for given prompt.
+
+        Args:
+            prompt: Prompt to generate the completion for.
+        Returns:
+            List of message completions.
+        Raises:
+            ProviderClientAPIException: If the API request fails.
+        """
+        try:
+            response = await atext_completion(prompt=prompt, **self._completion_fn_args)
+            return self._format_text_completion_response(response)
+        except Exception as e:
+            raise ProviderClientAPIException(e)
+
+    async def acompletion(self, messages: Union[List[str], str]) -> LLMResponse:
+        """Asynchronous completion of the model with the given messages.
+
+        Method overrides the base class method to call the appropriate
+        completion method based on the configuration. If the chat completions
+        endpoint is enabled, the acompletion method is called. Otherwise, the
+        atext_completion method is called.
+
+        Args:
+            messages: The messages to be used for completion.
+
+        Returns:
+            The completion response.
+        """
+        if self._use_chat_completions_endpoint:
+            return await super().acompletion(messages)
+        return await self._atext_completion(messages)
+
+    def completion(self, messages: Union[List[str], str]) -> LLMResponse:
+        """Completion of the model with the given messages.
+
+        Method overrides the base class method to call the appropriate
+        completion method based on the configuration. If the chat completions
+        endpoint is enabled, the completion method is called. Otherwise, the
+        text_completion method is called.
+
+        Args:
+            messages: The messages to be used for completion.
+
+        Returns:
+            The completion response.
+        """
+        if self._use_chat_completions_endpoint:
+            return super().completion(messages)
+        return self._text_completion(messages)
+
+    def _format_text_completion_response(self, response: Any) -> LLMResponse:
+        """Parses the LiteLLM text completion response to Rasa format."""
+        formatted_response = LLMResponse(
+            id=response.id,
+            created=response.created,
+            choices=[choice.text for choice in response.choices],
+            model=response.model,
+        )
+        if (usage := response.usage) is not None:
+            prompt_tokens = (
+                num_tokens
+                if isinstance(num_tokens := usage.prompt_tokens, (int, float))
+                else 0
+            )
+            completion_tokens = (
+                num_tokens
+                if isinstance(num_tokens := usage.completion_tokens, (int, float))
+                else 0
+            )
+            formatted_response.usage = LLMUsage(prompt_tokens, completion_tokens)
+        structlogger.debug(
+            "base_litellm_client.formatted_response",
+            formatted_response=formatted_response.to_dict(),
+        )
+        return formatted_response
