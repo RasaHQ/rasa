@@ -172,6 +172,7 @@ jobs:
 
       # Push to the internal PYPI release registry
       - name: Publish to internal PyPI 📦
+        if: always()
         uses: pypa/gh-action-pypi-publish@e53eb8b103ffcb59469888563dc324e3c8ba6f06
         with:
            user: "github-ci"
@@ -181,6 +182,7 @@ jobs:
 
       # Push to the public PYPI release registry
       - name: Publish to public PyPI 📦
+        if: always()
         uses: pypa/gh-action-pypi-publish@e53eb8b103ffcb59469888563dc324e3c8ba6f06
         with:
           password: ${{ secrets.PYPI_TOKEN }}
@@ -189,6 +191,7 @@ jobs:
     
       # Push library to GCP Artifact Registry rasa-plus-py
       - name: Release via GCP Artifact Registry
+        if: always()
         run: |
            pip install keyring
            pip install keyrings.google-artifactregistry-auth

@@ -10,6 +10,13 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.9.14] - 2024-10-02
+                        
+Rasa Pro 3.9.14 (2024-10-02)                              
+
+No significant changes.
+
+
 ## [3.9.13] - 2024-10-01
                         
 Rasa Pro 3.9.13 (2024-10-01)                             
