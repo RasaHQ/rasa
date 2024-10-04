@@ -1,0 +1,8 @@
+action_endpoint:
+  url: "grpc://rasa-grpc-action-server-jaeger:5058"
+tracing:
+  type: jaeger
+  host: jaeger
+  port: 6831
+  service_name: rasa-jaeger-testing
+  sync_export: ~
