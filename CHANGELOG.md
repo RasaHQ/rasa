@@ -156,6 +156,7 @@ Rasa Pro 3.10.0 (2024-09-04)
   ```
   export RASA_PRO_BETA_FINETUNING_RECIPE=true
   ```
+  More information can be found on the [documentation](https://rasa.com/docs/rasa-pro/production/testing-your-assistant#e2e-test-coverage-report) of the feature.
 - [#1138](https://github.com/rasahq/rasa-private/issues/1138): Create a self-hosted LLM client compatible with OpenAI format.
   Users can connect to their own self-hosted LLM server that is compatible with OpenAI format.
 
@@ -167,7 +168,7 @@ Rasa Pro 3.10.0 (2024-09-04)
           api_base: <deployment_url>
           api_type: openai [Optional]
   ```
-- [#1157](https://github.com/rasahq/rasa-private/issues/1157): Add new CLI command `rasa llm finetune prepare-data` to create a dataset from e2e tests that can be used to
+- [#1157](https://github.com/rasahq/rasa-private/issues/1157): Add a new [CLI command](https://rasa.com/docs/rasa-pro/command-line-interface#rasa-llm-finetune-prepare-data) `rasa llm finetune prepare-data` to create a dataset from e2e tests that can be used to
   fine-tune a base model for the task of command generation.
 
   To enable this feature, please set the environment variable `RASA_PRO_BETA_FINETUNING_RECIPE` to `true`.
@@ -184,6 +185,7 @@ Rasa Pro 3.10.0 (2024-09-04)
     - Added dedicated clients for Azure OpenAI and OpenAI to support both LLMs and embedding models.
     - Added a HuggingFace client to compute embeddings using locally stored transformer models via the `sentence-transformers` package.
   - **LangChain Update:** Upgraded to the latest version (0.2.x) for improved compatibility and features.
+  To understand the implications on your assistant, please refer to the [feature documentation](https://rasa.com/docs/rasa-pro/concepts/components/llm-configuration) and the [migration guide](https://rasa.com/docs/rasa-pro/migration-guide#rasa-pro-39-to-rasa-pro-310).
 - [#937](https://github.com/rasahq/rasa-private/issues/937): Implement as part of E2E testing a new type of evaluation specifically designed to increase confidence in CALM.
   This evaluation runs assertions on the assistant's actual events and generative responses. 
   New assertions include the ability to check for the presence of specific events, such as:
@@ -335,6 +337,55 @@ Rasa Pro 3.10.0 (2024-09-04)
 
 ### Miscellaneous internal changes
 - [#1038](https://github.com/rasahq/rasa-private/issues/1038), [#1040](https://github.com/rasahq/rasa-private/issues/1040), [#1053](https://github.com/rasahq/rasa-private/issues/1053), [#1068](https://github.com/rasahq/rasa-private/issues/1068), [#1123](https://github.com/rasahq/rasa-private/issues/1123), [#1318](https://github.com/rasahq/rasa-private/issues/1318), [#713](https://github.com/rasahq/rasa-private/issues/713)
+
+
+## [3.9.14] - 2024-10-02
+                        
+Rasa Pro 3.9.14 (2024-10-02)                              
+
+No significant changes.
+
+
+## [3.9.13] - 2024-10-01
+                        
+Rasa Pro 3.9.13 (2024-10-01)                             
+### Bugfixes
+- [#1188](https://github.com/rasahq/rasa-private/issues/1188): Fix inconsistent recording of telemetry events for llm-based command generators.
+- [#1325](https://github.com/rasahq/rasa-private/issues/1325): Added tracing explicitly to `GRPCCustomActionExecutor.run` in order to pass the tracing context to the action server.
+- [#1332](https://github.com/rasahq/rasa-private/issues/1332): Fixes an issue where the `CountVectorsFeaturizer` and `LogisticRegressionClassifier` would throw error during inference when no NLU training data is provided.
+
+
+## [3.9.12] - 2024-09-20
+                        
+Rasa Pro 3.9.12 (2024-09-20)                             
+### Deprecations and Removals
+- [#1228](https://github.com/rasahq/rasa-private/issues/1228): Dropped support for Python 3.8 ahead of [Python 3.8 End of Life in October 2024](https://devguide.python.org/versions/#supported-versions). In Rasa Pro versions 3.10.0, 3.9.11 and 3.8.13, we needed to pin the TensorFlow library version to 2.13.0rc1 in order to remove critical vulnerabilities; this resulted in poor user experience when installing these versions of Rasa Pro with `uv pip`. Removing support for Python 3.8 will make it possible to upgrade to a stabler version of TensorFlow.
+
+### Improvements
+- [#1336](https://github.com/rasahq/rasa-private/issues/1336): Update Keras and Tensorflow to version 2.14.
+  This will eliminate the need to use the `--prerelease allow` flag when installing Rasa Pro using `uv pip` tool.
+
+### Bugfixes
+- [#1198](https://github.com/rasahq/rasa-private/issues/1198): Fix `AttributeError` with the instrumentation of the `run` method of the `CustomActionExecutor` class.
+- [#12948](https://github.com/rasahq/rasa-private/issues/12948): Fixed UnexpecTEDIntentlessPolicy training errors that resulted from a change to batching behavior. Changed the batching behavior back to the original for all components. Made the changed batching behavior accessible in DietClassifier using `drop_small_last_batch: True`.
+
+### Miscellaneous internal changes
+- [#1160](https://github.com/rasahq/rasa-private/issues/1160), [#1204](https://github.com/rasahq/rasa-private/issues/1204)
+
+
+## [3.9.11] - 2024-09-13
+                        
+Rasa Pro 3.9.11 (2024-09-13)                             
+### Bugfixes
+- [#1323](https://github.com/rasahq/rasa-private/issues/1323): Update Keras to 2.13.1 and Tensorflow to 2.13.0rc0 to fix critical vulnerability (CVE-2024-3660).
+
+
+## [3.9.10] - 2024-09-12
+                        
+Rasa Pro 3.9.10 (2024-09-12)                             
+### Bugfixes
+- [#1150](https://github.com/rasahq/rasa-private/issues/1150): Fix `FileNotFound` error when running `rasa studio` commands and no pre-existing local assistant project exists.
+- [#1154](https://github.com/rasahq/rasa-private/issues/1154): Fixed telemetry collection for the components Rephraser, LLM Intent Classifier, Intentless Policy and Enterprise Search Policy to ensure that the telemetry data is only collected when it is enabled
 
 
 ## [3.9.9] - 2024-08-23
@@ -539,6 +590,79 @@ Rasa Pro 3.9.0 (2024-07-03)
 - [#448](https://github.com/rasahq/rasa-private/issues/448), [#458](https://github.com/rasahq/rasa-private/issues/458), [#475](https://github.com/rasahq/rasa-private/issues/475), [#610](https://github.com/rasahq/rasa-private/issues/610), [#646](https://github.com/rasahq/rasa-private/issues/646), [#709](https://github.com/rasahq/rasa-private/issues/709), [#784](https://github.com/rasahq/rasa-private/issues/784), [#802](https://github.com/rasahq/rasa-private/issues/802), [#803](https://github.com/rasahq/rasa-private/issues/803)
 
 
+## [3.8.16] - 2024-10-02
+                        
+Rasa Pro 3.8.16 (2024-10-02)                              
+
+No significant changes.
+
+
+## [3.8.15] - 2024-10-01
+                        
+Rasa Pro 3.8.15 (2024-10-01)                             
+### Bugfixes
+- [#1333](https://github.com/rasahq/rasa-private/issues/1333): Fixes an issue where the `CountVectorsFeaturizer` and `LogisticRegressionClassifier` would throw error during inference when no NLU training data is provided.
+
+
+## [3.8.14] - 2024-09-20
+                        
+Rasa Pro 3.8.14 (2024-09-20)                             
+### Deprecations and Removals
+- [#1230](https://github.com/rasahq/rasa-private/issues/1230): Dropped support for Python 3.8 ahead of [Python 3.8 End of Life in October 2024](https://devguide.python.org/versions/#supported-versions). In Rasa Pro versions 3.10.0, 3.9.11 and 3.8.13, we needed to pin the TensorFlow library version to 2.13.0rc1 in order to remove critical vulnerabilities; this resulted in poor user experience when installing these versions of Rasa Pro with `uv pip`. Removing support for Python 3.8 will make it possible to upgrade to a stabler version of TensorFlow.
+
+### Improvements
+- [#1336](https://github.com/rasahq/rasa-private/issues/1336): Update Keras and Tensorflow to version 2.14.
+  This will eliminate the need to use the `--prerelease allow` flag when installing Rasa Pro using `uv pip` tool.
+
+### Bugfixes
+- [#12948](https://github.com/rasahq/rasa-private/issues/12948): Fixed UnexpecTEDIntentlessPolicy training errors that resulted from a change to batching behavior. Changed the batching behavior back to the original for all components. Made the changed batching behavior accessible in DietClassifier using `drop_small_last_batch: True`.
+
+### Miscellaneous internal changes
+- [#1204](https://github.com/rasahq/rasa-private/issues/1204)
+
+
+## [3.8.13] - 2024-09-12
+                        
+Rasa Pro 3.8.13 (2024-09-12)                             
+### Bugfixes
+- [#1155](https://github.com/rasahq/rasa-private/issues/1155): Fixed telemetry collection for the components Rephraser, LLM Intent Classifier, Intentless Policy and Enterprise Search Policy to ensure that the telemetry data is only collected when it is enabled
+- [#1323](https://github.com/rasahq/rasa-private/issues/1323): Update Keras to 2.13.1 and Tensorflow to 2.13.0rc0 to fix critical vulnerability (CVE-2024-3660).
+
+
+## [3.8.12] - 2024-08-12
+                        
+Rasa Pro 3.8.12 (2024-08-12)                             
+### Bugfixes
+- [#851](https://github.com/rasahq/rasa/issues/851): Fix `TypeError: InformationRetrieval.search() got an unexpected keyword argument` when tracing is enabled with `EnterpriseSearchPolicy`.
+- [#916](https://github.com/rasahq/rasa/issues/916): Fix extraction of tracing context from the request headers and injection into the Rasa server tracing context.
+- [#921](https://github.com/rasahq/rasa/issues/921): Update the usage of `time.process_time_ns` with `time.perf_counter_ns` to fix the inconsistencies between duration metrics and trace spans duration.
+- [#957](https://github.com/rasahq/rasa/issues/957): `YamlValidationException` will correctly return line number of the element where the error ocurred when line number of that element is not returned by `ruamel.yaml` (for elements of primitive types, e.g. `str`, `int`, etc.), instead of returning the line number of the parent element.
+- [#964](https://github.com/rasahq/rasa/issues/964): Updated `setuptools` to fix security vulnarability.
+
+### Miscellaneous internal changes
+- [#887](https://github.com/rasahq/rasa/issues/887), [#955](https://github.com/rasahq/rasa/issues/955)
+
+
+## [3.8.11] - 2024-07-04
+                        
+Rasa Pro 3.8.11 (2024-07-04)                             
+### Improvements
+- [#779](https://github.com/rasahq/rasa/issues/779): Improve debug logging for predicate evaluation.
+
+### Bugfixes
+- [#736](https://github.com/rasahq/rasa/issues/736): Raise an error if action_reset_routing is used without the defined ROUTE_TO_CALM_SLOT / router.
+- [#753](https://github.com/rasahq/rasa/issues/753): Remove invalid warnings during collect step.
+- [#754](https://github.com/rasahq/rasa/issues/754): * Fixed issue where messages with invalid intent triggers ('/<intent>') were not handled correctly. Now triggering the `pattern_cannot_handle`.
+  * Introduced a new reason `cannot_handle_invalid_intent` for use in the pattern_cannot_handle switch mechanism to
+  improve error handling.
+- [#756](https://github.com/rasahq/rasa/issues/756): Validates that a collect step in a flow either has an action or an utterance defined in the domain to avoid the bot being silent.
+- [#778](https://github.com/rasahq/rasa/issues/778): Skip command cleaning when no commands are present in NLUCommandAdapter. 
+  Fix get active flows to return the correct active flows, including all the nested parent flows if present.
+- [#800](https://github.com/rasahq/rasa/issues/800): Update the handling of incorrect use of slash syntax. Messages with undefined intents do not automatically trigger
+  `pattern_cannot_handle`; instead, they are sanitized (prepended slash(es) are removed) and passed through the graph.
+- [#815](https://github.com/rasahq/rasa/issues/815): Modify the validation to throw an error for a missing associated action/utterance in a collect step only if the slot does not have a defined initial value.
+
+
 ## [3.8.10] - 2024-06-19
                         
 Rasa Pro 3.8.10 (2024-06-19)                             
@@ -577,17 +701,6 @@ Rasa Pro 3.8.7 (2024-05-29)
 ## [3.8.6] - 2024-05-27
 
 Rasa Pro 3.8.6 (2024-05-27)
-### Improvements
-- [#619](https://github.com/rasahq/rasa/issues/619): Adds `tracker_state` attribute to `OutputChannel`. It simplifies the access of tracker state for custom channel connector with `CollectingOutputChannel.tracker_state`.
-
-### Bugfixes
-- [#581](https://github.com/rasahq/rasa/issues/581): If a button in a response does not have a payload, socketio channel will use
-  the title as payload by default rather than throwing an exception.
-
-
-## [3.8.6] - 2024-05-27
-                       
-Rasa Pro 3.8.6 (2024-05-27)                            
 ### Improvements
 - [#619](https://github.com/rasahq/rasa/issues/619): Adds `tracker_state` attribute to `OutputChannel`. It simplifies the access of tracker state for custom channel connector with `CollectingOutputChannel.tracker_state`.
 

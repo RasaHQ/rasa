@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from functools import lru_cache
 from typing import Dict, Any, List, Optional, Tuple, Union, Text
 
+import os
 import structlog
 from jinja2 import Template
 
@@ -22,6 +23,7 @@ from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.shared.constants import LLM_API_HEALTH_CHECK_ENV_VAR
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows import FlowStep, Flow, FlowsList
 from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
@@ -33,6 +35,7 @@ from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.utils.llm import (
     allowed_values_for_slot,
+    llm_api_health_check,
     llm_factory,
     try_instantiate_llm_client,
 )
@@ -169,12 +172,18 @@ class LLMBasedCommandGenerator(GraphComponent, CommandGenerator, ABC):
         store.
         """
         # Validate llm configuration
-        try_instantiate_llm_client(
+        llm_client = try_instantiate_llm_client(
             self.config.get(LLM_CONFIG_KEY),
             DEFAULT_LLM_CONFIG,
             "llm_based_command_generator.train",
-            "LLMBasedCommandGenerator",
+            LLMBasedCommandGenerator.__name__,
         )
+        if os.getenv(LLM_API_HEALTH_CHECK_ENV_VAR, "true").lower() == "true":
+            llm_api_health_check(
+                llm_client,
+                "llm_based_command_generator.train",
+                LLMBasedCommandGenerator.__name__,
+            )
 
         # flow retrieval is populated with only user-defined flows
         try:

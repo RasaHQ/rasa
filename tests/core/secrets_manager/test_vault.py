@@ -9,6 +9,7 @@ import pytest
 from apscheduler.triggers.interval import IntervalTrigger
 from pytest import LogCaptureFixture, MonkeyPatch
 
+from rasa.core.secrets_manager.constants import VAULT_MOUNT_POINT_DEFAULT_VALUE
 from rasa.core.secrets_manager.endpoints import EndpointTrait
 from rasa.core.secrets_manager.vault import (
     VaultCredentialsLocation,
@@ -502,7 +503,7 @@ def test_vault_secret_manager_name(
 
 
 @pytest.mark.parametrize(
-    "host, token, secrets_path, transit_keys, transit_mount_point",
+    "host, token, secrets_path, transit_keys, transit_mount_point, mount_point, expected_mount_point",  # noqa: E501
     [
         (
             "some_host",
@@ -510,8 +511,18 @@ def test_vault_secret_manager_name(
             "some_secrets_path",
             {},
             "some_transit_mount_point",
+            "some_mount_point",
+            "some_mount_point",
         ),
-        ("some_host", "some_token", "some_secrets_path", None, None),
+        (
+            "some_host",
+            "some_token",
+            "some_secrets_path",
+            None,
+            None,
+            None,
+            VAULT_MOUNT_POINT_DEFAULT_VALUE,
+        ),
         (
             "some_host",
             "some_token",
@@ -523,6 +534,8 @@ def test_vault_secret_manager_name(
                 }
             ),
             "some_transit_mount_point",
+            "some_mount_point",
+            "some_mount_point",
         ),
     ],
 )
@@ -534,6 +547,8 @@ def test_vault_secret_manager_init(
     secrets_path: Text,
     transit_keys: Optional[Dict[Text, Text]],
     transit_mount_point: Text,
+    mount_point: Optional[str],
+    expected_mount_point: str,
 ) -> None:
     token_manager_instance = mock_token_manager.return_value
     token_manager_instance.start = MagicMock()
@@ -555,6 +570,7 @@ def test_vault_secret_manager_init(
         token=token,
         secrets_path=secrets_path,
         transit_mount_point=transit_mount_point,
+        mount_point=mount_point,
     )
     assert vault.host == host
     assert vault.token == token
@@ -562,6 +578,8 @@ def test_vault_secret_manager_init(
     assert vault.transit_mount_point == transit_mount_point
     assert vault.client == client
     assert vault.vault_token_manager == token_manager_instance
+    assert vault.mount_point == expected_mount_point
+
     token_manager_instance.start.assert_called_once()
 
 

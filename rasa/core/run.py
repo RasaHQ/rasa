@@ -32,8 +32,8 @@ from rasa.core import agent, channels, constants
 from rasa.core.agent import Agent
 from rasa.core.channels import console
 from rasa.core.channels.channel import InputChannel
+from rasa.core.persistor import StorageType
 from rasa.core.utils import AvailableEndpoints
-from rasa.nlu.persistor import StorageType
 from rasa.plugin import plugin_manager
 from rasa.shared.exceptions import RasaException
 from rasa.shared.utils.yaml import read_config_file
@@ -311,6 +311,7 @@ async def load_agent_on_start(
         endpoints=endpoints,
         loop=loop,
     )
+
     logger.info("Rasa server is up and running.")
     return app.ctx.agent
 

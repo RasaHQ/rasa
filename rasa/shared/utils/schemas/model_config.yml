@@ -34,13 +34,3 @@ mapping:
           name:
             type: str
             required: True
-  spaces:
-    type: "seq"
-    required: False
-    sequence:
-      - type: "map"
-        allowempty: True
-        mapping:
-          name:
-            type: str
-            required: True

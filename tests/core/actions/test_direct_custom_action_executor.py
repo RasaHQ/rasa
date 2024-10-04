@@ -1,5 +1,3 @@
-from typing import Callable
-
 import pytest
 from pytest import LogCaptureFixture
 
@@ -11,6 +9,7 @@ from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
+from tests.conftest import TrainedAsync
 
 DUMMY_ACTIONS_MODULE_PATH = "data.dummy_actions_module"
 DUMMY_INVALID_ACTIONS_MODULE_PATH = "data.dummy_invalid_actions_module"
@@ -141,7 +140,7 @@ async def test_executor_runs_action(
 
 
 async def test_executor_runs_action_invalid_actions_module(
-    trained_async: Callable, caplog: LogCaptureFixture, custom_actions_agent: Agent
+    trained_async: TrainedAsync, caplog: LogCaptureFixture, custom_actions_agent: Agent
 ):
     """
     Ensure that the inappropriately configured actions_module doesn't
