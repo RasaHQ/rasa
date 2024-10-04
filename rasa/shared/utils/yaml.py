@@ -416,6 +416,47 @@ def validate_raw_yaml_using_schema_file_with_responses(
     )
 
 
+def process_content(content: str) -> str:
+    """
+    Process the content to handle both Windows paths and emojis.
+    Windows paths are processed by escaping backslashes but emojis are left untouched.
+
+    Args:
+        content: yaml content to be processed
+    """
+    # Detect common Windows path patterns: e.g., C:\ or \\
+    UNESCAPED_WINDOWS_PATH_PATTERN = re.compile(
+        r"(?<!\w)[a-zA-Z]:(\\[a-zA-Z0-9_ -]+)*(\\)?(?!\\n)"
+    )
+    ESCAPED_WINDOWS_PATH_PATTERN = re.compile(
+        r"(?<!\w)[a-zA-Z]:(\\\\[a-zA-Z0-9_ -]+)+\\\\?(?!\\n)"
+    )
+
+    # Function to escape backslashes in Windows paths but leave other content as is
+    def escape_windows_paths(match: re.Match) -> str:
+        path = str(match.group(0))
+        return path.replace("\\", "\\\\")  # Escape backslashes only in Windows paths
+
+    def unescape_windows_paths(match: re.Match) -> str:
+        path = str(match.group(0))
+        return path.replace("\\\\", "\\")
+
+    # First, process Windows paths by escaping backslashes
+    content = re.sub(UNESCAPED_WINDOWS_PATH_PATTERN, escape_windows_paths, content)
+
+    # Ensure proper handling of emojis by decoding Unicode sequences
+    content = (
+        content.encode("utf-8")
+        .decode("raw_unicode_escape")
+        .encode("utf-16", "surrogatepass")
+        .decode("utf-16")
+    )
+
+    content = re.sub(ESCAPED_WINDOWS_PATH_PATTERN, unescape_windows_paths, content)
+
+    return content
+
+
 def read_yaml(
     content: str,
     reader_type: Union[str, List[str]] = "safe",
@@ -432,13 +473,7 @@ def read_yaml(
         ruamel.yaml.parser.ParserError: If there was an error when parsing the YAML.
     """
     if _is_ascii(content):
-        # Required to make sure emojis are correctly parsed
-        content = (
-            content.encode("utf-8")
-            .decode("raw_unicode_escape")
-            .encode("utf-16", "surrogatepass")
-            .decode("utf-16")
-        )
+        content = process_content(content)
 
     custom_constructor = kwargs.get("custom_constructor", None)
 

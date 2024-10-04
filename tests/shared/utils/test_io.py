@@ -268,6 +268,14 @@ def test_read_yaml_non_standard_datatime_as_string():
     assert isinstance(content["some_other_key"], str)
 
 
+def test_read_yaml_windows_path():
+    config = """
+    some_key: C:\\Users\\Admin\\Docs"""
+    content = read_yaml(config)
+    assert content["some_key"] == r"C:\Users\Admin\Docs"
+    assert isinstance(content["some_key"], str)
+
+
 def test_emojis_in_yaml():
     test_data = """
     data:
