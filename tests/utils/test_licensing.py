@@ -18,7 +18,6 @@ from rasa.utils.licensing import (
     property_of_active_license,
     validate_license_from_env,
 )
-from tests.conftest import read_license_file
 
 BLOCKED_JTI = "8e0d440f-704a-44c3-b7b4-a6f2357e9768"
 
@@ -39,7 +38,7 @@ def test_validate_license_env_var_not_set(monkeypatch: MonkeyPatch) -> None:
 
 
 @pytest.mark.parametrize(
-    "license_filename, exception",
+    "license_fixture, exception",
     [
         ("expired_license", LicenseExpiredException),
         ("invalid_signature_license", LicenseSignatureInvalidException),
@@ -50,28 +49,32 @@ def test_validate_license_env_var_not_set(monkeypatch: MonkeyPatch) -> None:
     ],
 )
 def test_decode_invalid_license_raises_exception(
-    license_filename: Text, exception: LicenseValidationException
+    license_fixture: str,
+    exception: LicenseValidationException,
+    request: pytest.FixtureRequest,
 ) -> None:
-    license = read_license_file(license_filename)
+    license_value = request.getfixturevalue(license_fixture)
     with pytest.raises(exception):  # type: ignore
-        License.decode(license)
+        License.decode(license_value)
 
 
 @pytest.mark.parametrize(
-    "license_filename, exception",
+    "license_fixture, exception",
     [
         ("blocked_license", LicenseExpiredException),
     ],
 )
 def test_decode_blocked_license_raises_exception(
-    license_filename: Text,
+    license_fixture: str,
     exception: LicenseValidationException,
     monkeypatch: MonkeyPatch,
+    request: pytest.FixtureRequest,
 ) -> None:
-    monkeypatch.setattr("rasa.utils.licensing.JTI_BLOCKLIST", set([BLOCKED_JTI]))
-    license = read_license_file(license_filename)
+    license_value = request.getfixturevalue(license_fixture)
+
+    monkeypatch.setattr("rasa.utils.licensing.JTI_BLOCKLIST", {BLOCKED_JTI})
     with pytest.raises(exception):  # type: ignore
-        License.decode(license)
+        License.decode(license_value)
 
 
 @pytest.mark.parametrize(
