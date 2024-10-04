@@ -7,9 +7,22 @@ import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from moto import mock_aws
 
-from rasa.env import REMOTE_STORAGE_PATH_ENV
+from rasa.env import (
+    AZURE_ACCOUNT_KEY_ENV,
+    AZURE_ACCOUNT_NAME_ENV,
+    AZURE_CONTAINER_ENV,
+    BUCKET_NAME_ENV,
+    REMOTE_STORAGE_PATH_ENV,
+)
 from rasa.nlu import persistor
-from rasa.nlu.persistor import Persistor
+from rasa.nlu.persistor import (
+    AWSPersistor,
+    AzurePersistor,
+    GCSPersistor,
+    Persistor,
+    RemoteStorageType,
+    get_persistor,
+)
 from rasa.shared.exceptions import RasaException
 
 
@@ -302,3 +315,55 @@ def test_create_file_key_remote_storage_path_deprecation_logging(
         "trained model to remote storage."
     )
     mock_raise_warning.assert_called_once_with(warning_text)
+
+
+def test_get_persistor_for_aws_remote_storage(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        "rasa.nlu.persistor.AWSPersistor._ensure_bucket_exists",
+        lambda *args, **kwargs: None,
+    )
+    monkeypatch.setenv(BUCKET_NAME_ENV, "test_bucket")
+
+    persistor_obj = get_persistor(RemoteStorageType("aws"))
+    assert isinstance(persistor_obj, AWSPersistor)
+
+
+def test_get_persistor_for_gcs_remote_storage(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    mock_gcs_client = MagicMock()
+    mock_gcs_client.bucket.return_value = MagicMock()
+    monkeypatch.setattr("google.cloud.storage.Client", mock_gcs_client)
+
+    monkeypatch.setattr(
+        "rasa.nlu.persistor.GCSPersistor._ensure_bucket_exists",
+        lambda *args, **kwargs: None,
+    )
+    monkeypatch.setenv(BUCKET_NAME_ENV, "test_bucket")
+
+    persistor_obj = get_persistor(RemoteStorageType("gcs"))
+    assert isinstance(persistor_obj, GCSPersistor)
+
+
+def test_get_persistor_with_custom_persistor() -> None:
+    persistor_obj = get_persistor("tests.nlu.test_persistor.TestPersistor")
+    assert isinstance(persistor_obj, TestPersistor)
+
+
+def test_get_persistor_for_azure_remote_storage(monkeypatch: MonkeyPatch) -> None:
+    monkeypatch.setenv(AZURE_CONTAINER_ENV, "test_container")
+    monkeypatch.setenv(AZURE_ACCOUNT_NAME_ENV, "test_account")
+    monkeypatch.setenv(AZURE_ACCOUNT_KEY_ENV, "test_key")
+    monkeypatch.setattr(
+        AzurePersistor, "_ensure_container_exists", lambda *args, **kwargs: None
+    )
+
+    persistor_obj = get_persistor(RemoteStorageType("azure"))
+    assert isinstance(persistor_obj, AzurePersistor)
+
+
+def test_get_persistor_with_unknown_storage_type() -> None:
+    with pytest.raises(ImportError, match="Unknown model persistor"):
+        get_persistor("unknown")
