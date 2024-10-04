@@ -12,14 +12,21 @@ import threading
 import time
 import uuid
 from pathlib import Path
-from typing import Generator, Iterator, Callable
-from typing import Text, List, Optional, Dict, Any
+from typing import Any, Callable, Dict, Generator, Iterator, List, Optional, Text
 from unittest.mock import Mock
 
 import jwt
 import pytest
-from pytest import TempdirFactory, MonkeyPatch, Function, TempPathFactory
-from pytest import WarningsRecorder, Pytester, RunResult
+from dotenv import load_dotenv
+from pytest import (
+    Function,
+    MonkeyPatch,
+    Pytester,
+    RunResult,
+    TempdirFactory,
+    TempPathFactory,
+    WarningsRecorder,
+)
 from sanic import Sanic
 from sanic.request import Request
 from spacy import Language
@@ -32,14 +39,14 @@ from rasa import server
 from rasa.cli import scaffold
 from rasa.core.agent import Agent, load_agent
 from rasa.core.brokers.broker import EventBroker
-from rasa.core.channels import channel, RestInput
+from rasa.core.channels import RestInput, channel
 from rasa.core.exporter import Exporter
 from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
 from rasa.e2e_test.constants import (
-    TEST_FILE_NAME,
-    TEST_CASE_NAME,
     KEY_STUB_CUSTOM_ACTIONS,
     STUB_CUSTOM_ACTION_NAME_SEPARATOR,
+    TEST_CASE_NAME,
+    TEST_FILE_NAME,
 )
 from rasa.e2e_test.stub_custom_action import StubCustomAction
 from rasa.engine.caching import LocalTrainingCache
@@ -48,14 +55,14 @@ from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.storage import ModelStorage
 from rasa.model_training import train, train_nlu
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.nlu.utils.spacy_utils import SpacyNLP, SpacyModel
+from rasa.nlu.utils.spacy_utils import SpacyModel, SpacyNLP
 from rasa.shared.constants import ASSISTANT_ID_KEY, LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     ACTION_RESTART_NAME,
     ACTION_SESSION_START_NAME,
 )
-from rasa.shared.core.domain import SessionConfig, Domain
+from rasa.shared.core.domain import Domain, SessionConfig
 from rasa.shared.core.events import (
     ActionExecuted,
     Event,
@@ -75,6 +82,19 @@ from rasa.shared.providers.llm._base_litellm_client import _BaseLiteLLMClient
 from rasa.shared.providers.llm.llm_client import LLMClient
 from rasa.shared.utils.yaml import read_yaml_file, write_yaml
 from rasa.utils.endpoints import EndpointConfig
+from tests.license_env import (
+    BLOCKED_LICENSE_ENV,
+    CHAMPION_LICENSE_ENV,
+    CHAMPION_SERVER_INTERNAL_LICENSE_ENV,
+    CHAMPION_SERVER_LIMITED_LICENSE_ENV,
+    EXPIRED_LICENSE_ENV,
+    IMMATURE_LICENSE_ENV,
+    INVALID_SCHEMA_LICENSE_ENV,
+    INVALID_SIGNATURE_LICENSE_ENV,
+    NON_JWT_LICENSE_ENV,
+    UNSCOPED_LICENSE_ENV,
+    VALID_LICENSE_ENV,
+)
 
 # we reuse a bit of pytest's own testing machinery, this should eventually come
 # from a separately installable pytest-cli plugin.
@@ -639,6 +659,7 @@ def rasa_server_without_api() -> Sanic:
 @pytest.fixture(scope="session")
 def project() -> Text:
     import tempfile
+
     from rasa.cli.scaffold import create_initial_project
 
     directory = tempfile.mkdtemp()
@@ -981,16 +1002,6 @@ def tests_data_folder(tests_folder: str) -> str:
     return tests_data_folder
 
 
-def read_license_file(license_file: Text) -> Text:
-    filepath = str(pathlib.Path(__file__).parent / "utils" / "fixtures" / license_file)
-    return open(filepath).read().strip()
-
-
-@pytest.fixture()
-def valid_license() -> Text:
-    return read_license_file("valid_license")
-
-
 def wait(
     func: Callable,
     result_available_event: threading.Event,
@@ -1237,3 +1248,140 @@ def e2e_input_folder() -> pathlib.Path:
     return (
         pathlib.Path(__file__).parent.parent / "data" / "end_to_end_testing_input_files"
     )
+
+
+@pytest.fixture(scope="session")
+def load_env_vars() -> None:
+    load_dotenv()
+
+
+@pytest.fixture(scope="session")
+def expired_license(load_env_vars) -> str:
+    value = os.getenv(EXPIRED_LICENSE_ENV)
+    assert value is not None, (
+        "Expired license not found. "
+        "To setup license for testing, "
+        "please provide a valid expired license"
+        f" by setting the environment variable {EXPIRED_LICENSE_ENV}"
+    )
+    return value
+
+
+@pytest.fixture(scope="session")
+def blocked_license(load_env_vars) -> str:
+    value = os.getenv(BLOCKED_LICENSE_ENV)
+    assert value is not None, (
+        "Blocked license not found. "
+        "To setup license for testing, "
+        "please provide a valid blocked license"
+        f" by setting the environment variable {BLOCKED_LICENSE_ENV}"
+    )
+    return value
+
+
+@pytest.fixture(scope="session")
+def champion_license(load_env_vars) -> str:
+    value = os.getenv(CHAMPION_LICENSE_ENV)
+    assert value is not None, (
+        "Champion license not found. "
+        "To setup license for testing, "
+        "please provide a valid champion license"
+        f" by setting the environment variable {CHAMPION_LICENSE_ENV}"
+    )
+    return value
+
+
+@pytest.fixture(scope="session")
+def champion_server_internal_license(load_env_vars) -> str:
+    value = os.getenv(CHAMPION_SERVER_INTERNAL_LICENSE_ENV)
+    assert value is not None, (
+        "Champion server internal license not found. "
+        "To setup license for testing, "
+        "please provide a valid champion server internal license"
+        f" by setting the environment variable {CHAMPION_SERVER_INTERNAL_LICENSE_ENV}"
+    )
+    return value
+
+
+@pytest.fixture(scope="session")
+def champion_server_limited_license(load_env_vars) -> str:
+    value = os.getenv(CHAMPION_SERVER_LIMITED_LICENSE_ENV)
+    assert value is not None, (
+        "Champion server limited license not found. "
+        "To setup license for testing, "
+        "please provide a valid champion server limited license"
+        f" by setting the environment variable {CHAMPION_SERVER_LIMITED_LICENSE_ENV}"
+    )
+    return value
+
+
+@pytest.fixture(scope="session")
+def immature_license(load_env_vars) -> str:
+    value = os.getenv(IMMATURE_LICENSE_ENV)
+    assert value is not None, (
+        "Immature license not found. "
+        "To setup license for testing, "
+        "please provide a valid immature license"
+        f" by setting the environment variable {IMMATURE_LICENSE_ENV}"
+    )
+    return value
+
+
+@pytest.fixture(scope="session")
+def invalid_schema_license(load_env_vars) -> str:
+    value = os.getenv(INVALID_SCHEMA_LICENSE_ENV)
+    assert value is not None, (
+        "Invalid schema license not found. "
+        "To setup license for testing, "
+        "please provide a valid invalid schema license"
+        f" by setting the environment variable {INVALID_SCHEMA_LICENSE_ENV}"
+    )
+    return value
+
+
+@pytest.fixture(scope="session")
+def invalid_signature_license(load_env_vars) -> str:
+    value = os.getenv(INVALID_SIGNATURE_LICENSE_ENV)
+    assert value is not None, (
+        "Invalid signature license not found. "
+        "To setup license for testing, "
+        "please provide a valid invalid signature license"
+        f" by setting the environment variable {INVALID_SIGNATURE_LICENSE_ENV}"
+    )
+    return value
+
+
+@pytest.fixture(scope="session")
+def non_jwt_license(load_env_vars) -> str:
+    value = os.getenv(NON_JWT_LICENSE_ENV)
+    assert value is not None, (
+        "Non-JWT license not found. "
+        "To setup license for testing, "
+        "please provide a valid non-JWT license"
+        f" by setting the environment variable {NON_JWT_LICENSE_ENV}"
+    )
+    return value
+
+
+@pytest.fixture(scope="session")
+def unscoped_license(load_env_vars) -> str:
+    value = os.getenv(UNSCOPED_LICENSE_ENV)
+    assert value is not None, (
+        "Unscoped license not found. "
+        "To setup license for testing, "
+        "please provide a valid unscoped license"
+        f" by setting the environment variable {UNSCOPED_LICENSE_ENV}"
+    )
+    return value
+
+
+@pytest.fixture(scope="session")
+def valid_license(load_env_vars) -> str:
+    value = os.getenv(VALID_LICENSE_ENV)
+    assert value is not None, (
+        "Valid license not found. "
+        "To setup license for testing, "
+        "please provide a valid license"
+        f" by setting the environment variable {VALID_LICENSE_ENV}"
+    )
+    return value

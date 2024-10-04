@@ -100,3 +100,4 @@ integration-results-custom-actions-with-nlu-bot-results.xml
 integration-results-custom-actions-with-calm-bot-results.xml
 certs
 tests_deployment/integration_tests_enterprise_search/volumes/
+.env
