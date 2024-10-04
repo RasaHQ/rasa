@@ -417,6 +417,15 @@ def test_clean_up_commands(
             type: text
           eggs:
             type: text
+          slot_name:
+            type: text
+          slot_a:
+            type: text
+          slot_b:
+            type: text
+          route_session_to_calm:
+            type: bool
+            influence_conversation: false
         """
     )
     tracker_eggs = DialogueStateTracker.from_events(
@@ -467,7 +476,10 @@ def test_clean_up_commands_with_correction_pattern_on_stack(
     tracker_eggs = DialogueStateTracker.from_events(
         sender_id="test",
         evts=[],
-        slots=[TextSlot("egg", mappings=[], initial_value="some_value")],
+        slots=[
+            TextSlot("egg", mappings=[], initial_value="some_value"),
+            TextSlot("eggs", mappings=[], initial_value=None),
+        ],
     )
     tracker_eggs.update_stack(stack)
     # When
@@ -799,3 +811,44 @@ def test_command_processor_clean_up_commands_with_cannot_handle(
     )
     filtered_out_command = CannotHandleCommand(reason=expected_reason)
     assert filtered_out_command not in cleaned_commands
+
+
+def test_clean_up_slot_set_command_from_llm_extractor_for_custom_slot_mapping() -> None:
+    """Test that the `clean_up_slot_command` function correctly handles a slot command.
+
+    The function should return a CannotHandleCommand if the slot command extractor
+    is incompatible with the slot mapping type. In this case, the slot mapping type
+    is custom. This test case reproduces the scenario when there are no prefilled
+    slots at the beginning of the conversation.
+    """
+    slot_name = "name"
+    domain = Domain.from_yaml(f"""
+    entities:
+    - name
+    slots:
+      {slot_name}:
+        type: text
+        mappings:
+        - type: custom
+          action: action_set_custom_slot
+    """)
+
+    commands_so_far = []
+    command = SetSlotCommand(slot_name, "Daisy", SetSlotExtractor.LLM.value)
+    sender_id = uuid.uuid4().hex
+    tracker = DialogueStateTracker.from_events(sender_id, [], slots=domain.slots)
+    slots_so_far = set()
+    all_flows = FlowsList(underlying_flows=[])
+
+    cleaned_commands = clean_up_slot_command(
+        commands_so_far, command, tracker, all_flows, slots_so_far
+    )
+
+    assert len(cleaned_commands) == 1
+    assert isinstance(cleaned_commands[0], CannotHandleCommand)
+
+    expected_reason = (
+        "A command generator attempted to set a slot with a value "
+        "extracted by an extractor that is incompatible with the slot mapping type."
+    )
+    assert cleaned_commands[0].reason == expected_reason

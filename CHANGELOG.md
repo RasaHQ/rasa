@@ -10,6 +10,20 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.10.6] - 2024-10-04
+                        
+Rasa Pro 3.10.6 (2024-10-04)                             
+### Bugfixes
+- [#1351](https://github.com/rasahq/rasa-private/issues/1351): Fix cleanup of `SetSlot` commands issued by the LLM-based command generator for slots that define a slot mapping other than
+  the `from_llm` slot mapping. The command processor now correctly removes the SetSlot command in these scenarios
+  and instead adds a `CannotHandleCommand`.
+- [#1356](https://github.com/rasahq/rasa-private/issues/1356): Fix `UnicodeDecodeError` while reading Windows path from yaml files.
+- [#1369](https://github.com/rasahq/rasa-private/issues/1369): Fix model loading from remote storage by correcting the handling of remote storage enum during the creation of the persistor object.
+
+### Miscellaneous internal changes
+- [#1355](https://github.com/rasahq/rasa-private/issues/1355)
+
+
 ## [3.10.5] - 2024-10-01
                         
 Rasa Pro 3.10.5 (2024-10-01)                             

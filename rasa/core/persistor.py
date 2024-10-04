@@ -64,14 +64,14 @@ def parse_remote_storage(value: str) -> StorageType:
 
         if isinstance(value, str):
             if value == "":
-                raise ValueError(
+                raise RasaException(
                     f"The value can't be an empty string."
                     f" {supported_storages_help_text}"
                 )
 
             return value
 
-        raise ValueError(
+        raise RasaException(
             f"Invalid storage type '{value}'. {supported_storages_help_text}"
         )
 
@@ -82,6 +82,8 @@ def get_persistor(storage: StorageType) -> Optional[Persistor]:
     Currently, `aws`, `gcs`, `azure` and providing module paths are supported remote
     storages.
     """
+    storage = storage.value if isinstance(storage, RemoteStorageType) else storage
+
     if storage == RemoteStorageType.AWS.value:
         return AWSPersistor(
             os.environ.get(BUCKET_NAME_ENV), os.environ.get(AWS_ENDPOINT_URL_ENV)
