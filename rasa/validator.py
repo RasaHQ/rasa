@@ -1,10 +1,10 @@
 import logging
-import structlog
 import re
 import string
 from collections import defaultdict
 from typing import Set, Text, Optional, Dict, Any, List, Tuple
 
+import structlog
 from jinja2 import Template
 from pypred import Predicate
 from pypred.ast import Literal, CompareOperator, NegateOperator
@@ -596,6 +596,7 @@ class Validator:
         collect: CollectInformationFlowStep,
         all_good: bool,
         domain_slots: Dict[Text, Slot],
+        flow_id: str,
     ) -> bool:
         """Validates that a collect step can have either an action or an utterance.
         Also logs an error if neither an action nor an utterance is defined.
@@ -625,6 +626,7 @@ class Validator:
                 collect=collect.collect,
                 has_utterance_defined=has_utterance_defined,
                 has_action_defined=has_action_defined,
+                flow=flow_id,
                 event_info=(
                     f"The collect step '{collect.collect}' has an utterance "
                     f"'{collect.utter}' as well as an action "
@@ -648,6 +650,7 @@ class Validator:
                 collect=collect.collect,
                 has_utterance_defined=has_utterance_defined,
                 has_action_defined=has_action_defined,
+                flow=flow_id,
                 event_info=(
                     f"The collect step '{collect.collect}' has neither an utterance "
                     f"nor an action defined, or an initial value defined in the domain."
@@ -716,7 +719,7 @@ class Validator:
                 if isinstance(step, CollectInformationFlowStep):
                     all_good = (
                         self._log_error_if_either_action_or_utterance_are_not_defined(
-                            step, all_good, domain_slots
+                            step, all_good, domain_slots, flow.id
                         )
                     )
 
