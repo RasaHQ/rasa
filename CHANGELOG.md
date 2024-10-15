@@ -35,7 +35,10 @@ Rasa Pro 3.10.5 (2024-10-01)
 - [#1320](https://github.com/rasahq/rasa-private/issues/1320): Prevent invalid domain with incorrectly defined intent from throwing stack trace.
   Throw InvalidDomain exception and send message to the user instead.
   The message looks like this:
-  `Detected invalid intent definition: {'intent': 'ask_help'}.  Please make sure all intent definitions are valid.`
+  ```
+  Detected invalid intent definition: {'intent': 'ask_help'}.
+  Please make sure all intent definitions are valid.
+  ```
 - [#1321](https://github.com/rasahq/rasa-private/issues/1321): Support text completions endpoint when using self hosted models.
 
   The `use_chat_completions_endpoint` parameter is now supported when using self-hosted models. This parameter is used to enable the use of the chat completions endpoint when using a self-hosted model. This parameter is set to `True` by default.
@@ -636,8 +639,8 @@ Rasa Pro 3.8.12 (2024-08-12)
 - [#851](https://github.com/rasahq/rasa/issues/851): Fix `TypeError: InformationRetrieval.search() got an unexpected keyword argument` when tracing is enabled with `EnterpriseSearchPolicy`.
 - [#916](https://github.com/rasahq/rasa/issues/916): Fix extraction of tracing context from the request headers and injection into the Rasa server tracing context.
 - [#921](https://github.com/rasahq/rasa/issues/921): Update the usage of `time.process_time_ns` with `time.perf_counter_ns` to fix the inconsistencies between duration metrics and trace spans duration.
-- [#957](https://github.com/rasahq/rasa/issues/957): `YamlValidationException` will correctly return line number of the element where the error ocurred when line number of that element is not returned by `ruamel.yaml` (for elements of primitive types, e.g. `str`, `int`, etc.), instead of returning the line number of the parent element.
-- [#964](https://github.com/rasahq/rasa/issues/964): Updated `setuptools` to fix security vulnarability.
+- [#957](https://github.com/rasahq/rasa/issues/957): `YamlValidationException` will correctly return line number of the element where the error occurred when line number of that element is not returned by `ruamel.yaml` (for elements of primitive types, e.g. `str`, `int`, etc.), instead of returning the line number of the parent element.
+- [#964](https://github.com/rasahq/rasa/issues/964): Updated `setuptools` to fix security vulnerability.
 
 ### Miscellaneous internal changes
 - [#887](https://github.com/rasahq/rasa/issues/887), [#955](https://github.com/rasahq/rasa/issues/955)
@@ -652,7 +655,7 @@ Rasa Pro 3.8.11 (2024-07-04)
 ### Bugfixes
 - [#736](https://github.com/rasahq/rasa/issues/736): Raise an error if action_reset_routing is used without the defined ROUTE_TO_CALM_SLOT / router.
 - [#753](https://github.com/rasahq/rasa/issues/753): Remove invalid warnings during collect step.
-- [#754](https://github.com/rasahq/rasa/issues/754): * Fixed issue where messages with invalid intent triggers ('/<intent>') were not handled correctly. Now triggering the `pattern_cannot_handle`.
+- [#754](https://github.com/rasahq/rasa/issues/754): * Fixed issue where messages with invalid intent triggers ("/intent_name") were not handled correctly. Now triggering the `pattern_cannot_handle`.
   * Introduced a new reason `cannot_handle_invalid_intent` for use in the pattern_cannot_handle switch mechanism to
   improve error handling.
 - [#756](https://github.com/rasahq/rasa/issues/756): Validates that a collect step in a flow either has an action or an utterance defined in the domain to avoid the bot being silent.
