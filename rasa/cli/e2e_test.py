@@ -221,17 +221,15 @@ def execute_e2e_tests(args: argparse.Namespace) -> None:
     if args.e2e_results is not None:
         results_path = Path(args.e2e_results)
 
-        if passed:
-            passed_file = rasa.cli.utils.get_e2e_results_file_name(
-                results_path, STATUS_PASSED
-            )
-            write_test_results_to_file(passed, passed_file)
+        passed_file = rasa.cli.utils.get_e2e_results_file_name(
+            results_path, STATUS_PASSED
+        )
+        write_test_results_to_file(passed, passed_file)
 
-        if failed:
-            failed_file = rasa.cli.utils.get_e2e_results_file_name(
-                results_path, STATUS_FAILED
-            )
-            write_test_results_to_file(failed, failed_file)
+        failed_file = rasa.cli.utils.get_e2e_results_file_name(
+            results_path, STATUS_FAILED
+        )
+        write_test_results_to_file(failed, failed_file)
 
     aggregate_stats_calculator = AggregateTestStatsCalculator(
         passed_results=passed, failed_results=failed, test_cases=test_suite.test_cases
