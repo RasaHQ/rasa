@@ -41,3 +41,9 @@ runs:
         run: |
           make install
         shell: bash
+
+      - name: Activate virtualenv
+        run: |
+          . .venv/bin/activate
+          echo PATH=$PATH >> $GITHUB_ENV
+        shell: bash

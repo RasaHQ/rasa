@@ -1,0 +1,336 @@
+name: E2E Test on Rasa-Calm-Demo with supported providers
+
+on:
+  schedule:
+    # Run at 1am UTC each Sunday
+    - cron: "0 1 * * SUN"
+
+  # Allow running manually also, specifying the provider
+  # and `rasa-calm-demo` branch
+  workflow_dispatch:
+    inputs:
+      provider:
+        # In-case provider only has supported model for one
+        # (for e.g. only chat-completion), then default OpenAI
+        # would be used for the other
+        description: "LLM chat-completion and Embeddings model provider"
+        type: choice
+        required: true
+        default: "all" # Run e2e-test on all providers by default
+
+        # TODO: Enable testing of all the providers
+        options:
+          - all
+          # - openai
+          - azure
+          # - bedrock
+          # - huggingface
+          # - anthropic
+          # - cohere
+          # - mistral
+          # - together_ai
+          # - groq
+          # - huggingface_local
+          # - voyage
+
+      rasa-calm-demo-branch:
+        description: "Branch to checkout for `rasa-calm-demo`"
+        type: string
+        required: true
+        default: "main"
+
+      e2e-test-with-assertions:
+        description: "Path to test file, on `rasa-calm-demo` repository"
+        type: string
+        required: true
+        default: "e2e_tests_with_assertions/passing/happy_path/user_adds_contact_to_their_list.yml"
+
+    # Enable optionally calling this re-usable Workflow from
+    # `release-artifacts-workflow` also, with same input
+    # parameters as above
+  workflow_call:
+    inputs:
+      provider:
+        # In-case provider only has supported model for one
+        # (for e.g. only chat-completion), then default OpenAI
+        # would be used for the other
+        description: "LLM chat-completion and Embeddings model provider"
+        type: string
+        required: true
+        default: "all" # Run e2e-test on all providers by default
+      rasa-calm-demo-branch:
+        description: "Branch to checkout for `rasa-calm-demo`"
+        type: string
+        required: true
+        default: "main"
+
+env:
+  AZURE_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY_DEVTRIBE_TESTING_CANADA_EAST }}
+  DEFAULT_PYTHON_VERSION: "3.10"
+  RASA_PRO_BETA_E2E_ASSERTIONS: true
+
+jobs:
+  e2e_test:
+    name: Run e2e Test
+    if: ${{ github.event_name == 'schedule' || inputs.provider == 'all' }}
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        provider: [
+            # openai,
+            azure,
+            # bedrock,
+            # bedrock,
+            # huggingface,
+            # anthropic,
+            # cohere,
+            # mistral,
+            # together_ai,
+            # groq,
+            # huggingface_local,
+            # voyage,
+          ] # TODO: Enable testing all the providers
+
+    steps:
+      # Checkout rasa-private
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+
+      # Checkout `rasa-calm-demo` on corresponding branch (i.e. main or release)
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+        with:
+          repository: RasaHQ/rasa-calm-demo
+          ref: ${{ inputs.rasa-calm-demo-branch || 'main' }}
+          path: rasa-calm-demo
+          token: ${{ secrets.RASA_CALM_DEMO_READ }}
+
+      # Install and setup Python and Poetry, and install + cache dependencies
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
+        with:
+          PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+
+      - name: Train model - SingleStepCommandGenerator
+        env:
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          RASA_PRO_BETA_INTENTLESS: true
+        run: |
+          rasa train \
+          --config data/test_config/providers/${{ matrix.provider }}/config.yml \
+          --endpoints data/test_config/providers/${{ matrix.provider }}/endpoints.yml \
+          --domain rasa-calm-demo/domain \
+          --data rasa-calm-demo/data
+
+      - name: Run duckling server
+        working-directory: rasa-calm-demo
+        run: |
+          make run-duckling
+
+      - name: Run action server
+        env:
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          RASA_DUCKLING_HTTP_URL: ${{ secrets.DUCKLING_URL }}
+          RASA_PRO_BETA_INTENTLESS: true
+        working-directory: rasa-calm-demo
+        run: |
+          rasa run actions &
+
+      - name: Make test results directory
+        working-directory: rasa-calm-demo
+        run: |
+          mkdir tests
+
+      - name: Run e2e passing happy path test (Single Step Command Generator)
+        env:
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          RASA_DUCKLING_HTTP_URL: ${{ secrets.DUCKLING_URL }}
+          RASA_PRO_BETA_INTENTLESS: true
+        working-directory: rasa-calm-demo
+        run: |
+          rasa test e2e e2e_tests_with_assertions/passing/happy_path/user_adds_contact_to_their_list.yml \
+          --e2e-results \
+          --endpoints ../data/test_config/providers/${{ matrix.provider }}/endpoints.yml \
+          --model ../models
+
+      - name: Save SingleStepCommandGenerator test results
+        if: failure()
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
+        with:
+          name: ${{ matrix.provider }}-E2E-test-SingleStepCommandGenerator-results
+          path: rasa-calm-demo/tests
+
+      - name: Train model - MultiStepCommandGenerator
+        env:
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          RASA_PRO_BETA_INTENTLESS: true
+        run: |
+          rasa train \
+          --config data/test_config/providers/${{ matrix.provider }}/multistep-config.yml \
+          --endpoints data/test_config/providers/${{ matrix.provider }}/endpoints.yml \
+          --domain rasa-calm-demo/domain \
+          --data rasa-calm-demo/data
+
+      - name: Run e2e passing happy path test (Multi-Step Command Generator)
+        env:
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          RASA_DUCKLING_HTTP_URL: ${{ secrets.DUCKLING_URL }}
+          RASA_PRO_BETA_INTENTLESS: true
+        working-directory: rasa-calm-demo
+        run: |
+          rasa test e2e ${{ inputs.e2e-test-with-assertions || 'e2e_tests_with_assertions/passing/happy_path/user_adds_contact_to_their_list.yml' }} \
+          --e2e-results \
+          --endpoints ../data/test_config/providers/${{ matrix.provider }}/endpoints.yml \
+          --model ../models
+
+      - name: Save MultiStepCommandGenerator test results
+        if: failure()
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
+        with:
+          name: ${{ matrix.provider }}-E2E-test-MultiStepCommandGenerator-results
+          path: rasa-calm-demo/tests
+
+      - name: Notify Slack of successful test 💬
+        if: success()
+        uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 #v 1.25.0
+        with:
+          # Send notication to #devtribe slack channel
+          channel-id: "C061J0LGHU0"
+          slack-message: ":rocket: *Rasa-Pro* (`rasa-private` sha `${{ github.sha }}`) CALM E2E test passed against provider: `${{ matrix.provider }}`. More information can be found <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|here>."
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
+      - name: Notify Slack of failing test ⛔️
+        if: failure()
+        uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 #v 1.25.0
+        with:
+          # Send notication to #devtribe slack channel
+          channel-id: "C061J0LGHU0"
+          slack-message: ":broken_heart: *Rasa-Pro* (`rasa-private` sha `${{ github.sha }}`) CALM E2E test failed against provider: `${{ matrix.provider }}`! More information can be found <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|here>."
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
+  e2e_test_on_single_provider:
+    name: Run e2e Test
+    if: ${{ inputs.provider != 'all' && github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-22.04
+
+    steps:
+      # Checkout rasa-private
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+
+      # Checkout `rasa-calm-demo` on corresponding branch (i.e. main or release)
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+        with:
+          repository: RasaHQ/rasa-calm-demo
+          ref: ${{ inputs.rasa-calm-demo-branch || 'main' }}
+          path: rasa-calm-demo
+          token: ${{ secrets.RASA_CALM_DEMO_READ }}
+
+      # Install and setup Python and Poetry, and install + cache dependencies
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
+        with:
+          PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+
+      - name: Train model - SingleStepCommandGenerator
+        env:
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          RASA_PRO_BETA_INTENTLESS: true
+        run: |
+          rasa train \
+          --config data/test_config/providers/${{ inputs.provider }}/config.yml \
+          --endpoints data/test_config/providers/${{ inputs.provider }}/endpoints.yml \
+          --domain rasa-calm-demo/domain \
+          --data rasa-calm-demo/data
+
+      - name: Run duckling server
+        working-directory: rasa-calm-demo
+        run: |
+          make run-duckling
+
+      - name: Run action server
+        env:
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          RASA_DUCKLING_HTTP_URL: ${{ secrets.DUCKLING_URL }}
+          RASA_PRO_BETA_INTENTLESS: true
+        working-directory: rasa-calm-demo
+        run: |
+          rasa run actions &
+
+      - name: Make test results directory
+        working-directory: rasa-calm-demo
+        run: |
+          mkdir tests
+
+      - name: Run e2e passing happy path test (Single Step Command Generator)
+        env:
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          RASA_DUCKLING_HTTP_URL: ${{ secrets.DUCKLING_URL }}
+          RASA_PRO_BETA_INTENTLESS: true
+        working-directory: rasa-calm-demo
+        run: |
+          rasa test e2e ${{ inputs.e2e-test-with-assertions }} \
+          --e2e-results \
+          --endpoints ../data/test_config/providers/${{ inputs.provider }}/endpoints.yml \
+          --model ../models
+
+      - name: Save SingleStepCommandGenerator test results
+        if: failure()
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
+        with:
+          name: ${{ inputs.provider }}-E2E-test-SingleStepCommandGenerator-results
+          path: rasa-calm-demo/tests
+
+      - name: Train model - MultiStepCommandGenerator
+        env:
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          RASA_PRO_BETA_INTENTLESS: true
+        run: |
+          rasa train \
+          --config data/test_config/providers/${{ inputs.provider }}/multistep-config.yml \
+          --endpoints data/test_config/providers/${{ inputs.provider }}/endpoints.yml \
+          --domain rasa-calm-demo/domain \
+          --data rasa-calm-demo/data
+
+      - name: Run e2e passing happy path test (Multi-Step Command Generator)
+        env:
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          RASA_DUCKLING_HTTP_URL: ${{ secrets.DUCKLING_URL }}
+          RASA_PRO_BETA_INTENTLESS: true
+        working-directory: rasa-calm-demo
+        run: |
+          rasa test e2e ${{ inputs.e2e-test-with-assertions }} \
+          --e2e-results \
+          --endpoints ../data/test_config/providers/${{ inputs.provider }}/endpoints.yml \
+          --model ../models
+
+      - name: Save MultiStepCommandGenerator test results
+        if: failure()
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
+        with:
+          name: ${{ inputs.provider }}-E2E-test-MultiStepCommandGenerator-results
+          path: rasa-calm-demo/tests
+
+      - name: Notify Slack of successful test 💬
+        if: success()
+        uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 #v 1.25.0
+        with:
+          # Send notication to #devtribe slack channel
+          channel-id: "C061J0LGHU0"
+          slack-message: ":rocket: *Rasa-Pro* (`rasa-private` sha `${{ github.sha }}`) CALM E2E test passed against provider: `${{ matrix.provider }}`. More information can be found <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|here>."
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
+      - name: Notify Slack of failing test ⛔️
+        if: failure()
+        uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 #v 1.25.0
+        with:
+          # Send notication to #devtribe slack channel
+          channel-id: "C061J0LGHU0"
+          slack-message: ":broken_heart: *Rasa-Pro* (`rasa-private` sha `${{ github.sha }}`) CALM E2E test failed against provider: `${{ matrix.provider }}`! More information can be found <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|here>."
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
