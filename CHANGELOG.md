@@ -10,6 +10,23 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.10.7] - 2024-10-17
+                        
+Rasa Pro 3.10.7 (2024-10-17)                             
+### Improvements
+- [#1342](https://github.com/rasahq/rasa-private/issues/1342): Change default response of `utter_free_chitchat_response` from `"placeholder_this_utterance_needs_the_rephraser"` to
+  `"Sorry, I'm not able to answer that right now."`.
+
+### Bugfixes
+- [#1354](https://github.com/rasahq/rasa-private/issues/1354): Disallow using the command payload syntax to set slots not filled by any of the active or startable flow(s) `collect` steps.
+- [#1375](https://github.com/rasahq/rasa-private/issues/1375): Add flow name to error message `validator.verify_flows_steps_against_domain.collect_step`.
+- [#1392](https://github.com/rasahq/rasa-private/issues/1392): Update e2e test results output files on each test run so that, for example, when all tests pass on subsequent runs after
+  failing previously, the failed results output file is emptied.
+- [#1396](https://github.com/rasahq/rasa-private/issues/1396): Disable strict SSL verification to the Rasa Studio authentication server via the `--disable-verify` or `-x` CLI
+  argument added to the `rasa studio config` command.
+- [#1397](https://github.com/rasahq/rasa-private/issues/1397): Upgrade `zipp` dependency version to fix a security vulnerability: [CVE-2024-5569](https://github.com/advisories/GHSA-jfmj-5v4g-7637).
+
+
 ## [3.10.6] - 2024-10-04
                         
 Rasa Pro 3.10.6 (2024-10-04)                             
