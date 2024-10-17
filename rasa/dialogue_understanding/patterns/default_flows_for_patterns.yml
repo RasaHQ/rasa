@@ -55,7 +55,7 @@ responses:
         template: jinja
 
   utter_free_chitchat_response:
-    - text: placeholder_this_utterance_needs_the_rephraser
+    - text: "Sorry, I'm not able to answer that right now."
       metadata:
         rephrase: True
         rephrase_prompt: |
@@ -160,9 +160,9 @@ flows:
         action: action_run_slot_rejections
       - action: validate_{{context.collect}}
         next:
-        - if: "slots.{{context.collect}} is not null"
-          then: END
-        - else: ask_collect
+          - if: "slots.{{context.collect}} is not null"
+            then: END
+          - else: ask_collect
       - id: ask_collect
         action: "{{context.utter}}"
       - action: "{{context.collect_action}}"
@@ -205,17 +205,17 @@ flows:
     steps:
       - noop: true
         next:
-        - if: "'{{context.error_type}}' = 'rasa_internal_error_user_input_too_long'"
-          then:
-          - action: utter_user_input_too_long_error_rasa
-            next: END
-        - if: "'{{context.error_type}}' = 'rasa_internal_error_user_input_empty'"
-          then:
-            - action: utter_user_input_empty_error_rasa
-              next: END
-        - else:
-            - action: utter_internal_error_rasa
-              next: END
+          - if: "'{{context.error_type}}' = 'rasa_internal_error_user_input_too_long'"
+            then:
+              - action: utter_user_input_too_long_error_rasa
+                next: END
+          - if: "'{{context.error_type}}' = 'rasa_internal_error_user_input_empty'"
+            then:
+              - action: utter_user_input_empty_error_rasa
+                next: END
+          - else:
+              - action: utter_internal_error_rasa
+                next: END
 
 
   pattern_restart:
