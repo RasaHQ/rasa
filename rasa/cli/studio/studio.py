@@ -5,6 +5,7 @@ from urllib.parse import ParseResult, urlparse
 import questionary
 from rasa.cli import SubParsersAction
 
+import rasa.shared.utils.cli
 import rasa.cli.studio.download
 import rasa.cli.studio.train
 import rasa.cli.studio.upload
@@ -49,6 +50,15 @@ def _add_config_subparser(
     )
 
     studio_config_parser.set_defaults(func=create_and_store_studio_config)
+
+    studio_config_parser.add_argument(
+        "--disable-verify",
+        "-x",
+        action="store_true",
+        default=False,
+        help="Disable strict SSL verification for the "
+        "Rasa Studio authentication server.",
+    )
 
     # add advanced configuration flag to trigger
     # advanced configuration setup for authentication settings
@@ -219,7 +229,17 @@ def _configure_studio_config(args: argparse.Namespace) -> StudioConfig:
     studio_config = _create_studio_config(
         studio_url, keycloak_url, realm_name, client_id
     )
-    studio_auth = StudioAuth(studio_config)
+
+    if args.disable_verify:
+        rasa.shared.utils.cli.print_info(
+            "Disabling SSL verification for the Rasa Studio authentication server."
+        )
+        studio_auth = StudioAuth(studio_config, verify=False)
+    else:
+        rasa.shared.utils.cli.print_info(
+            "Enabling SSL verification for the Rasa Studio authentication server."
+        )
+        studio_auth = StudioAuth(studio_config, verify=True)
 
     if _check_studio_auth(studio_auth):
         return studio_config
