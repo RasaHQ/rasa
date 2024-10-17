@@ -195,8 +195,8 @@ jobs:
         if: success()
         uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 #v 1.25.0
         with:
-          # Send notication to #devtribe slack channel
-          channel-id: "C061J0LGHU0"
+          # Send notication to #dev-tribe-alerts slack channel
+          channel-id: "C070ELPSLBB"
           slack-message: ":rocket: *Rasa-Pro* (`rasa-private` sha `${{ github.sha }}`) CALM E2E test passed against provider: `${{ matrix.provider }}`. More information can be found <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|here>."
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
@@ -205,8 +205,8 @@ jobs:
         if: failure()
         uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 #v 1.25.0
         with:
-          # Send notication to #devtribe slack channel
-          channel-id: "C061J0LGHU0"
+          # Send notication to #dev-tribe-alerts slack channel
+          channel-id: "C070ELPSLBB"
           slack-message: ":broken_heart: *Rasa-Pro* (`rasa-private` sha `${{ github.sha }}`) CALM E2E test failed against provider: `${{ matrix.provider }}`! More information can be found <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|here>."
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
@@ -319,8 +319,8 @@ jobs:
         if: success()
         uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 #v 1.25.0
         with:
-          # Send notication to #devtribe slack channel
-          channel-id: "C061J0LGHU0"
+          # Send notication to #dev-tribe-alerts slack channel
+          channel-id: "C070ELPSLBB"
           slack-message: ":rocket: *Rasa-Pro* (`rasa-private` sha `${{ github.sha }}`) CALM E2E test passed against provider: `${{ matrix.provider }}`. More information can be found <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|here>."
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
@@ -329,8 +329,8 @@ jobs:
         if: failure()
         uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 #v 1.25.0
         with:
-          # Send notication to #devtribe slack channel
-          channel-id: "C061J0LGHU0"
+          # Send notication to #dev-tribe-alerts slack channel
+          channel-id: "C070ELPSLBB"
           slack-message: ":broken_heart: *Rasa-Pro* (`rasa-private` sha `${{ github.sha }}`) CALM E2E test failed against provider: `${{ matrix.provider }}`! More information can be found <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|here>."
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
