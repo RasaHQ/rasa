@@ -16,3 +16,12 @@ slots:
     type: bool
   button_slot_b:
     type: bool
+  secret_slot:
+    type: text
+
+responses:
+  utter_ask_button_slot_a:
+    - text: "Do you want to press the button a?"
+
+  utter_ask_button_slot_b:
+    - text: "Do you want to press the button b?"

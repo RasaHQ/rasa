@@ -2,11 +2,11 @@ import argparse
 import sys
 from typing import Callable, Generator, TYPE_CHECKING
 
+from pytest import RunResult, CaptureFixture
 import pytest
 from prompt_toolkit.application import create_app_session
 from prompt_toolkit.input import create_pipe_input
 from prompt_toolkit.output import DummyOutput
-from pytest import RunResult
 
 from rasa.cli.studio.studio import _configure_studio_config
 
@@ -27,7 +27,7 @@ def test_studio_config_help(run: Callable[..., RunResult]):
 
     help_text = """usage: rasa studio config [-h] [-v] [-vv] [--quiet]
                  [--logging-config-file LOGGING_CONFIG_FILE]
-                 [--advanced]"""
+                 [--disable-verify] [--advanced]"""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
@@ -51,7 +51,7 @@ def test_advanced_asks_for_additional_parameters(mock_cli: "PipeInput") -> None:
     mock_cli.send_text(inputs)
 
     # if the advanced flag is set, the function should ask for additional parameters
-    args: argparse.Namespace = argparse.Namespace(advanced=True)
+    args: argparse.Namespace = argparse.Namespace(advanced=True, disable_verify=False)
 
     studio_config = _configure_studio_config(args)
     # the default values are not removed from the input so our input ("2") is
@@ -73,7 +73,8 @@ def test_non_advanced_only_asks_for_url(mock_cli: "PipeInput") -> None:
     mock_cli.send_text(inputs)
 
     # if the advanced flag is not set, the function should only ask for the studio url
-    args: argparse.Namespace = argparse.Namespace(advanced=False)
+    args: argparse.Namespace = argparse.Namespace(advanced=False, disable_verify=False)
+
     studio_config = _configure_studio_config(args)
     # the default values are not removed from the input so our input ("url") is
     # just appended to the default values
@@ -81,6 +82,26 @@ def test_non_advanced_only_asks_for_url(mock_cli: "PipeInput") -> None:
     assert studio_config.client_id == "admin-cli"
     assert studio_config.authentication_server_url == "https://url/auth/"
     assert studio_config.studio_url == "https://url/api/graphql/"
+
+
+@pytest.mark.skipif(
+    sys.platform == "win32",
+    reason=" '\n' key that accepts the input is not working on Windows.",
+)
+def test_non_advanced_only_asks_for_url_disable_verify(
+    mock_cli: "PipeInput", capsys: CaptureFixture
+):
+    mock_cli.send_text("url\n\n")
+    # if the advanced flag is not set, the function should only ask for the studio url
+    args: argparse.Namespace = argparse.Namespace(advanced=False, disable_verify=True)
+
+    _configure_studio_config(args)
+
+    captured = capsys.readouterr()
+    assert (
+        "Disabling SSL verification for the Rasa Studio authentication server."
+        in captured.out
+    )
 
 
 def test_studio_download_does_not_throw_endpoints_file_not_found_error(

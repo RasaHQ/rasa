@@ -127,7 +127,11 @@ class SetSlotCommand(Command):
         if (
             self.name not in slots_of_active_flow
             and self.name != ROUTE_TO_CALM_SLOT
-            and self.extractor == SetSlotExtractor.LLM.value
+            and self.extractor
+            in {
+                SetSlotExtractor.LLM.value,
+                SetSlotExtractor.COMMAND_PAYLOAD_READER.value,
+            }
         ):
             # Get the other predicted flows from the most recent message on the tracker.
             predicted_flows = get_flows_predicted_to_start_from_tracker(tracker)

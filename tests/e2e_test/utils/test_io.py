@@ -317,6 +317,84 @@ def test_write_test_results_to_file(
 
 
 @pytest.mark.parametrize(
+    "results, output_file, expected_content",
+    [
+        (
+            [
+                TestResult(
+                    test_case=TestCase(
+                        name="test case 1",
+                        steps=[
+                            TestStep(
+                                actor="user", text="Hi!", _underlying={"user": "Hi!"}
+                            )
+                        ],
+                    ),
+                    pass_status=True,
+                    difference=[],
+                ),
+            ],
+            "e2e_results_passed.yml",
+            """test_results:
+
+- name: test case 1
+  pass_status: true
+  expected_steps:
+  - user: Hi!""",
+        ),
+        (
+            [
+                TestResult(
+                    test_case=TestCase(
+                        name="test case 2",
+                        steps=[
+                            TestStep(
+                                actor="bot", text="Hey!", _underlying={"bot": "Hey!"}
+                            )
+                        ],
+                    ),
+                    pass_status=False,
+                    difference=["something", "different"],
+                ),
+            ],
+            "e2e_results_failed.yml",
+            """test_results:
+
+- name: test case 2
+  pass_status: false
+  expected_steps:
+  - bot: Hey!
+  difference:
+  - something
+  - different""",
+        ),
+        ([], "e2e_results_empty.yml", "test_results: []"),
+    ],
+)
+def test_write_test_results_to_file_already_exists(
+    results: List[TestResult], output_file: str, tmp_path: Path, expected_content: str
+) -> None:
+    existing_content = """
+    test_results:
+    - name: test case 3
+      pass_status: false
+      expected_steps:
+      - {}
+      difference:
+      - something
+      - different
+    """
+    output_file_path = tmp_path / output_file
+    output_file_path.touch()
+    output_file_path.write_text(existing_content)
+
+    write_test_results_to_file(results, str(output_file_path))
+
+    content = output_file_path.read_text()
+    assert content.strip() == expected_content.strip()
+
+
+@pytest.mark.parametrize(
     "full_path_to_test_case, expected_path_to_test_cases, expected_test_case",
     [
         ("some/file/path/e2e_one_test.yml", "some/file/path/e2e_one_test.yml", ""),
