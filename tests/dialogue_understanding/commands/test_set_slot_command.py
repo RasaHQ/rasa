@@ -410,8 +410,31 @@ def test_run_command_on_tracker_slot_value_is_coerced_to_right_type(
             - b
     """)
 
-    tracker = DialogueStateTracker.from_events("test_id", evts=[], slots=domain.slots)
-    events = command.run_command_on_tracker(
-        tracker, FlowsList(underlying_flows=[]), tracker
+    all_flows = flows_from_str(
+        f"""
+        flows:
+            my_flow:
+                description: test my flow
+                steps:
+                - id: collect_{command.name}
+                  collect: {command.name}
+        """
     )
+
+    tracker = DialogueStateTracker.from_events("test_id", evts=[], slots=domain.slots)
+
+    # ask for the slot
+    tracker.update_stack(
+        DialogueStack.from_dict(
+            [
+                {
+                    "type": "flow",
+                    "flow_id": "my_flow",
+                    "step_id": f"collect_{command.name}",
+                    "frame_id": "some-frame-id",
+                },
+            ],
+        )
+    )
+    events = command.run_command_on_tracker(tracker, all_flows, tracker)
     assert events == [SlotSet(command.name, expected_value)]
