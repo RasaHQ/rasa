@@ -16,6 +16,7 @@ import rasa.shared.utils.io
 from rasa.core.channels import CollectingOutputChannel, UserMessage
 from rasa.core.constants import ACTIVE_FLOW_METADATA_KEY, STEP_ID_METADATA_KEY
 from rasa.core.exceptions import AgentNotReady
+from rasa.core.persistor import StorageType
 from rasa.core.utils import AvailableEndpoints
 from rasa.e2e_test.constants import TEST_CASE_NAME, TEST_FILE_NAME
 from rasa.e2e_test.e2e_config import create_llm_judge_config
@@ -34,7 +35,6 @@ from rasa.e2e_test.e2e_test_result import (
     TestResult,
 )
 from rasa.llm_fine_tuning.conversations import Conversation
-from rasa.nlu.persistor import StorageType
 from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
 from rasa.shared.core.events import (
     ActionExecuted,

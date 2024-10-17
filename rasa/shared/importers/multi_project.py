@@ -1,22 +1,23 @@
-import logging
-from functools import reduce
-from typing import Text, Set, Dict, Optional, List, Union, Any
 import os
+from functools import reduce
+from typing import Any, Dict, List, Optional, Set, Text, Union
+
+import structlog
 
 import rasa.shared.data
 import rasa.shared.utils.io
 from rasa.shared.core.domain import Domain
-from rasa.shared.importers.importer import TrainingDataImporter
-from rasa.shared.importers import utils
-from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.core.training_data.structures import StoryGraph
-from rasa.shared.utils.common import mark_as_experimental_feature
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     YAMLStoryReader,
 )
+from rasa.shared.core.training_data.structures import StoryGraph
+from rasa.shared.importers import utils
+from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.utils.common import cached_method, mark_as_experimental_feature
 from rasa.shared.utils.yaml import read_config_file, read_model_configuration
 
-logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger()
 
 
 class MultiProjectImporter(TrainingDataImporter):
@@ -50,8 +51,13 @@ class MultiProjectImporter(TrainingDataImporter):
         self._story_paths += extra_story_files
         self._nlu_paths += extra_nlu_files
 
-        logger.debug(
-            "Selected projects: {}".format("".join([f"\n-{i}" for i in self._imports]))
+        structlogger.debug(
+            "multi_project_importer.initialisation",
+            event_info=(
+                "Selected projects: {}".format(
+                    "".join([f"\n-{i}" for i in self._imports])
+                )
+            ),
         )
 
         mark_as_experimental_feature(feature_name="MultiProjectImporter")
@@ -135,6 +141,7 @@ class MultiProjectImporter(TrainingDataImporter):
 
         return training_paths
 
+    @cached_method
     def is_imported(self, path: Text) -> bool:
         """Checks whether a path is imported by a skill.
 
@@ -175,6 +182,7 @@ class MultiProjectImporter(TrainingDataImporter):
             [rasa.shared.utils.io.is_subdirectory(path, i) for i in self._imports]
         )
 
+    @cached_method
     def get_domain(self) -> Domain:
         """Retrieves model domain (see parent class for full docstring)."""
         domains = [Domain.load(path) for path in self._domain_paths]
@@ -184,20 +192,24 @@ class MultiProjectImporter(TrainingDataImporter):
             Domain.empty(),
         )
 
+    @cached_method
     def get_stories(self, exclusion_percentage: Optional[int] = None) -> StoryGraph:
         """Retrieves training stories / rules (see parent class for full docstring)."""
         return utils.story_graph_from_paths(
             self._story_paths, self.get_domain(), exclusion_percentage
         )
 
+    @cached_method
     def get_conversation_tests(self) -> StoryGraph:
         """Retrieves conversation test stories (see parent class for full docstring)."""
         return utils.story_graph_from_paths(self._e2e_story_paths, self.get_domain())
 
+    @cached_method
     def get_config(self) -> Dict:
         """Retrieves model config (see parent class for full docstring)."""
         return self.config
 
+    @cached_method
     def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
         """Retrieves NLU training data (see parent class for full docstring)."""
         return utils.training_data_from_paths(self._nlu_paths, language)

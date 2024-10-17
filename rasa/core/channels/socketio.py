@@ -49,9 +49,31 @@ class SocketIOOutput(OutputChannel):
     def __init__(self, sio: AsyncServer, bot_message_evt: Text) -> None:
         self.sio = sio
         self.bot_message_evt = bot_message_evt
+        self.last_event_timestamp = (
+            -1
+        )  # Initialize with -1 to send all events on first message
+
+    def _get_new_events(self) -> List[Dict[Text, Any]]:
+        """Get events that are newer than the last sent event."""
+        events = self.tracker_state.get("events", [])
+        new_events = [
+            event for event in events if event["timestamp"] > self.last_event_timestamp
+        ]
+        if new_events:
+            self.last_event_timestamp = new_events[-1]["timestamp"]
+        return new_events
 
     async def _send_message(self, socket_id: Text, response: Any) -> None:
         """Sends a message to the recipient using the bot event."""
+        # send tracker state (contains stack, slots and more)
+        await self.sio.emit("tracker_state", self.tracker_state, room=socket_id)
+
+        # send new events
+        new_events = self._get_new_events()
+        if new_events:
+            await self.sio.emit("rasa_events", new_events, room=socket_id)
+
+        # send bot response
         await self.sio.emit(self.bot_message_evt, response, room=socket_id)
 
     async def send_text_message(

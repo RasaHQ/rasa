@@ -9,7 +9,7 @@ import pytest
 from moto import mock_aws
 from pytest import MonkeyPatch
 
-from rasa.nlu.persistor import AWSPersistor, RemoteStorageType
+from rasa.core.persistor import AWSPersistor, RemoteStorageType
 from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
     DEFAULT_DATA_PATH,
@@ -179,7 +179,7 @@ def test_remote_file_importer(
 
     _get_persistor_mock = MagicMock()
     _get_persistor_mock.return_value = aws_persistor
-    monkeypatch.setattr("rasa.nlu.persistor.get_persistor", _get_persistor_mock)
+    monkeypatch.setattr("rasa.core.persistor.get_persistor", _get_persistor_mock)
 
     # Given the tar archive with bot config files
     # is uploaded to the S3 bucket

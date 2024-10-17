@@ -1,4 +1,4 @@
-from rasa.shared.core.flows.yaml_flows_io import flows_from_str
+from tests.utilities import flows_from_str
 
 
 def test_depth_in_tree():

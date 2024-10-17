@@ -20,6 +20,7 @@ from rasa.shared.core.flows.steps.constants import (
     END_STEP,
     START_STEP,
 )
+from rasa.shared.core.flows.validation import DuplicatedFlowIdException
 from rasa.shared.core.flows.yaml_flows_io import (
     YAMLFlowsReader,
 )
@@ -253,7 +254,6 @@ def test_flows_list_is_empty(user_flows_and_patterns: FlowsList):
         (
             [
                 FlowsList([Flow(id="A"), Flow(id="B")]),
-                FlowsList([Flow(id="B"), Flow(id="C")]),
                 FlowsList([Flow(id="C"), Flow(id="D")]),
                 FlowsList([Flow(id="E"), Flow(id="F")]),
             ],
@@ -261,7 +261,7 @@ def test_flows_list_is_empty(user_flows_and_patterns: FlowsList):
         ),
     ],
 )
-def test_create_flows_list_by_merging_multiple_flows_lists(
+def test_create_flows_list_by_merging_multiple_flows_lists_no_duplicates(
     flows: List[FlowsList],
     expected_ids: List,
 ):
@@ -270,6 +270,53 @@ def test_create_flows_list_by_merging_multiple_flows_lists(
     # Then
     assert len(merged) == len(expected_ids)
     assert list(sorted([f.id for f in merged])) == expected_ids
+
+
+@pytest.mark.parametrize(
+    "flows, expected_ids",
+    [
+        (
+            [
+                FlowsList([Flow(id="A"), Flow(id="B")]),
+                FlowsList([Flow(id="B"), Flow(id="C")]),
+                FlowsList([Flow(id="C"), Flow(id="D")]),
+                FlowsList([Flow(id="E"), Flow(id="F")]),
+            ],
+            ["A", "B", "C", "D", "E", "F"],
+        ),
+    ],
+)
+def test_create_flows_list_by_merging_multiple_flows_lists_with_duplicates(
+    flows: List[FlowsList],
+    expected_ids: List,
+):
+    # When
+    merged = FlowsList.from_multiple_flows_lists(*flows)
+    # Then
+    assert len(merged) == len(expected_ids)
+    assert list(sorted([f.id for f in merged])) == expected_ids
+
+
+@pytest.mark.parametrize(
+    "flows, expected_ids",
+    [
+        (
+            [
+                FlowsList([Flow(id="A"), Flow(id="B")]),
+                FlowsList([Flow(id="B"), Flow(id="C")]),
+                FlowsList([Flow(id="C"), Flow(id="D")]),
+                FlowsList([Flow(id="E"), Flow(id="F")]),
+            ],
+            ["A", "B", "C", "D", "E", "F"],
+        ),
+    ],
+)
+def test_create_flows_list_by_merging_multiple_flows_lists_throws_duplicate_error(
+    flows: List[FlowsList],
+    expected_ids: List,
+):
+    with pytest.raises(DuplicatedFlowIdException):
+        FlowsList.from_multiple_flows_lists(*flows, ignore_duplicates=False)
 
 
 def test_flows_list_as_json_list(user_flows_and_patterns: FlowsList):

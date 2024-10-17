@@ -19,6 +19,7 @@ from rasa.core.exceptions import AgentNotReady
 from rasa.core.http_interpreter import RasaNLUHttpInterpreter
 from rasa.core.lock_store import InMemoryLockStore, LockStore
 from rasa.core.nlg import NaturalLanguageGenerator, TemplatedNaturalLanguageGenerator
+from rasa.core.persistor import StorageType
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import (
@@ -28,7 +29,6 @@ from rasa.core.tracker_store import (
 )
 from rasa.core.utils import AvailableEndpoints
 from rasa.exceptions import ModelNotFound
-from rasa.nlu.persistor import StorageType
 from rasa.nlu.utils import is_url
 from rasa.shared.constants import DEFAULT_SENDER_ID
 from rasa.shared.core.domain import Domain
@@ -544,7 +544,7 @@ class Agent:
 
     def load_model_from_remote_storage(self, model_name: Text) -> None:
         """Loads an Agent from remote storage."""
-        from rasa.nlu.persistor import get_persistor
+        from rasa.core.persistor import get_persistor
 
         persistor = get_persistor(self.remote_storage)
 

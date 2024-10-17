@@ -114,6 +114,7 @@ updates:
           - "responses"
           - "aioresponses"
           - "datadog"
+          - "swagger-coverage"
         update-types:
           - "minor"
           - "patch"

@@ -10,7 +10,7 @@ from moto import mock_aws
 from pytest import MonkeyPatch
 
 from rasa.core.agent import Agent
-from rasa.nlu.persistor import AWSPersistor, RemoteStorageType
+from rasa.core.persistor import AWSPersistor, RemoteStorageType
 from rasa.shared.exceptions import RasaException
 
 
@@ -107,7 +107,7 @@ def test_load_model_from_aws_remote_storage_sub_path(
         monkeypatch.setattr(aws_persistor, "bucket", conn.Bucket(bucket_name))
         return aws_persistor
 
-    monkeypatch.setattr("rasa.nlu.persistor.get_persistor", mock_aws_persistor)
+    monkeypatch.setattr("rasa.core.persistor.get_persistor", mock_aws_persistor)
     empty_agent.remote_storage = RemoteStorageType.AWS
     with patch.dict(os.environ, {"REMOTE_STORAGE_PATH": remote_storage_path}):
         try:
