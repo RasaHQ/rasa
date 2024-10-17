@@ -33,7 +33,7 @@ providers' APIs.
 
 This workflow runs as a cron job at 1am UTC every Sunday, and can 
 also be triggered manually/on-demand, and test results' notification is sent to 
-`#dev-tribe` Slack channel. In case of failure, test results are saved, and can be
+`#dev-tribe-alerts` Slack channel. In case of failure, test results are saved, and can be
 found on GitHub's web interface, in the `Artifacts` section of the `Action`'s run summary page.
 
 ### Release Artifacts Workflow
