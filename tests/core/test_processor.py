@@ -23,8 +23,6 @@ from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
 
-import rasa.shared.utils.io
-import tests.utilities
 from rasa.core import jobs
 from rasa.core.actions.action import (
     ActionBotResponse,

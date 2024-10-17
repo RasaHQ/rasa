@@ -7,7 +7,6 @@ import pytest
 from prompt_toolkit.application import create_app_session
 from prompt_toolkit.input import create_pipe_input
 from prompt_toolkit.output import DummyOutput
-from pytest import RunResult
 
 from rasa.cli.studio.studio import _configure_studio_config
 
