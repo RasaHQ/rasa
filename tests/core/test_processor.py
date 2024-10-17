@@ -15,6 +15,7 @@ from unittest.mock import MagicMock, Mock, patch, AsyncMock
 
 import freezegun
 import pytest
+from pytest import CaptureFixture
 
 from rasa.core.constants import UTTER_SOURCE_METADATA_KEY
 from rasa.dialogue_understanding.commands.set_slot_command import SetSlotExtractor
@@ -2399,6 +2400,19 @@ async def test_parse_message_with_multiple_set_slots_button(
     processor = flow_policy_bot_agent.processor
     sender_id = uuid.uuid4().hex
 
+    tracker = await processor.get_tracker(sender_id)
+    tracker.update_stack(
+        DialogueStack(
+            frames=[
+                UserFlowStackFrame(
+                    flow_id="button_flow", step_id="collect_button_slot_a"
+                ),
+                CollectInformationPatternFlowStackFrame(collect="button_slot_a"),
+            ]
+        )
+    )
+    await processor.save_tracker(tracker)
+
     await processor.handle_message(
         UserMessage(
             f"/SetSlots(button_slot_a={slot_value}, button_slot_b={slot_value})",
@@ -2445,3 +2459,37 @@ def test_handle_message_with_commands_from_buttons_does_not_run_nlu_command_adap
     )
 
     mock_nlu_to_commands.assert_not_called()
+
+
+async def test_parse_message_with_set_slot_command_payload_for_disallowed_slot(
+    flow_policy_bot_agent: Agent,
+    capsys: CaptureFixture,
+) -> None:
+    processor = flow_policy_bot_agent.processor
+    sender_id = uuid.uuid4().hex
+
+    tracker = await processor.get_tracker(sender_id)
+    tracker.update_stack(
+        DialogueStack(
+            frames=[
+                UserFlowStackFrame(
+                    flow_id="button_flow", step_id="collect_button_slot_a"
+                ),
+                CollectInformationPatternFlowStackFrame(collect="button_slot_a"),
+            ]
+        )
+    )
+    await processor.save_tracker(tracker)
+
+    await processor.handle_message(
+        UserMessage(
+            "/SetSlots(secret_slot=secret_value)",
+            sender_id=sender_id,
+        ),
+    )
+
+    tracker = await processor.get_tracker(sender_id)
+    assert tracker.get_slot("secret_slot") is None
+
+    captured = capsys.readouterr()
+    assert "command_executor.skip_command.slot_not_asked_for" in captured.out

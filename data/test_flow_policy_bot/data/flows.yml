@@ -15,3 +15,15 @@ flows:
         description: Bar slot a
       - collect: bar_slot_b
         description: Bar slot b
+
+  button_flow:
+    description: This is a flow with buttons
+    name: "Button flow"
+    steps:
+      - collect: button_slot_a
+        id: collect_button_slot_a
+        description: Button slot a
+        reset_after_flow_ends: false
+      - collect: button_slot_b
+        description: Button slot b
+        reset_after_flow_ends: false
