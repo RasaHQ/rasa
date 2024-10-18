@@ -10,6 +10,14 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.8.17] - 2024-10-18
+                        
+Rasa Pro 3.8.17 (2024-10-18)                             
+### Improvements
+- [#1342](https://github.com/rasahq/rasa-private/issues/1342): Change default response of `utter_free_chitchat_response` from `"placeholder_this_utterance_needs_the_rephraser"` to
+  `"Sorry, I'm not able to answer that right now."`.
+
+
 ## [3.8.16] - 2024-10-02
                         
 Rasa Pro 3.8.16 (2024-10-02)                              
