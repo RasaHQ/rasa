@@ -10,6 +10,23 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.9.15] - 2024-10-18
+                        
+Rasa Pro 3.9.15 (2024-10-18)                             
+### Improvements
+- [#1342](https://github.com/rasahq/rasa-private/issues/1342): Change default response of `utter_free_chitchat_response` from `"placeholder_this_utterance_needs_the_rephraser"` to
+  `"Sorry, I'm not able to answer that right now."`.
+
+### Bugfixes
+- [#1351](https://github.com/rasahq/rasa-private/issues/1351): Fix cleanup of `SetSlot` commands issued by the LLM-based command generator for slots that define a slot mapping other than
+  the `from_llm` slot mapping. The command processor now correctly removes the SetSlot command in these scenarios
+  and instead adds a `CannotHandleCommand`.
+- [#1354](https://github.com/rasahq/rasa-private/issues/1354): Disallow using the command payload syntax to set slots not filled by any of the active or startable flow(s) `collect` steps.
+
+### Miscellaneous internal changes
+- [#1353](https://github.com/rasahq/rasa-private/issues/1353)
+
+
 ## [3.9.14] - 2024-10-02
                         
 Rasa Pro 3.9.14 (2024-10-02)                              
