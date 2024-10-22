@@ -75,7 +75,8 @@ env:
 jobs:
   e2e_test:
     name: Run e2e Test
-    if: ${{ github.event_name == 'schedule' || inputs.provider == 'all' }}
+    # TODO: re-instate condition check after testing pipeline on feature branch
+    # if: ${{ github.event_name == 'schedule' || inputs.provider == 'all' }}
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
