@@ -106,6 +106,10 @@ jobs:
           provider: ${{ matrix.provider }}
           rasa-calm-demo-branch: ${{ inputs.rasa-calm-demo-branch || 'main' }}
           e2e-test-with-assertions: ${{ inputs.e2e-test-with-assertions || 'e2e_tests_with_assertions/passing/happy_path/user_adds_contact_to_their_list.yml' }}
+          rasa-calm-demo-read-token: ${{ secrets.RASA_CALM_DEMO_READ }}
+          rasa-pro-license: ${{ secrets.RASA_PRO_LICENSE }}
+          duckling-url: ${{ secrets.DUCKLING_URL }}
+          slack-bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
 
   e2e_test_on_single_provider:
     name: Run e2e Test
@@ -122,3 +126,7 @@ jobs:
           provider: ${{ inputs.provider }}
           rasa-calm-demo-branch: ${{ inputs.rasa-calm-demo-branch || 'main' }}
           e2e-test-with-assertions: ${{ inputs.e2e-test-with-assertions || 'e2e_tests_with_assertions/passing/happy_path/user_adds_contact_to_their_list.yml' }}
+          rasa-calm-demo-read-token: ${{ secrets.RASA_CALM_DEMO_READ }}
+          rasa-pro-license: ${{ secrets.RASA_PRO_LICENSE }}
+          duckling-url: ${{ secrets.DUCKLING_URL }}
+          slack-bot-token: ${{ secrets.SLACK_BOT_TOKEN }}

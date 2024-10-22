@@ -20,6 +20,22 @@ inputs:
     required: true
     default: e2e_tests_with_assertions/passing/happy_path/user_adds_contact_to_their_list.yml
 
+  rasa-calm-demo-read-token:
+    description: 'Token to enable read access to `rasa-calm-demo` repository'
+    required: true
+
+  rasa-pro-license:
+    description: 'RASA-Pro license'
+    required: true
+
+  duckling-url:
+    description: 'Duckling server URL'
+    required: true
+
+  slack-bot-token:
+    description: 'Token to enable sending Slack notifications'
+    required: true
+
 runs:
   using: composite
   steps:
@@ -29,7 +45,7 @@ runs:
         repository: RasaHQ/rasa-calm-demo
         ref: ${{ inputs.rasa-calm-demo-branch || 'main' }}
         path: rasa-calm-demo
-        token: ${{ secrets.RASA_CALM_DEMO_READ }}
+        token: ${{ inputs.rasa-calm-demo-read-token }}
 
     - name: Setup Python Environment
       uses: ../actions/setup-python-env
@@ -38,7 +54,7 @@ runs:
 
     - name: Train model - SingleStepCommandGenerator
       env:
-        RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+        RASA_PRO_LICENSE: ${{ inputs.rasa-pro-license }}
         RASA_PRO_BETA_INTENTLESS: true
       run: |
         rasa train \
@@ -56,8 +72,8 @@ runs:
 
     - name: Run action server
       env:
-        RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
-        RASA_DUCKLING_HTTP_URL: ${{ secrets.DUCKLING_URL }}
+        RASA_PRO_LICENSE: ${{ inputs.rasa-pro-license }}
+        RASA_DUCKLING_HTTP_URL: ${{ inputs.duckling-url }}
         RASA_PRO_BETA_INTENTLESS: true
       working-directory: rasa-calm-demo
       run: |
@@ -72,8 +88,8 @@ runs:
 
     - name: Run e2e passing happy path test (Single Step Command Generator)
       env:
-        RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
-        RASA_DUCKLING_HTTP_URL: ${{ secrets.DUCKLING_URL }}
+        RASA_PRO_LICENSE: ${{ inputs.rasa-pro-license }}
+        RASA_DUCKLING_HTTP_URL: ${{ inputs.duckling-url }}
         RASA_PRO_BETA_INTENTLESS: true
       working-directory: rasa-calm-demo
       run: |
@@ -92,7 +108,7 @@ runs:
 
     - name: Train model - MultiStepCommandGenerator
       env:
-        RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+        RASA_PRO_LICENSE: ${{ inputs.rasa-pro-license }}
         RASA_PRO_BETA_INTENTLESS: true
       run: |
         rasa train \
@@ -104,8 +120,8 @@ runs:
 
     - name: Run e2e passing happy path test (Multi-Step Command Generator)
       env:
-        RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
-        RASA_DUCKLING_HTTP_URL: ${{ secrets.DUCKLING_URL }}
+        RASA_PRO_LICENSE: ${{ inputs.rasa-pro-license }}
+        RASA_DUCKLING_HTTP_URL: ${{ inputs.duckling-url }}
         RASA_PRO_BETA_INTENTLESS: true
       working-directory: rasa-calm-demo
       run: |
@@ -133,7 +149,7 @@ runs:
           information can be found <https://github.com/${{ github.repository
           }}/actions/runs/${{ github.run_id }}|here>.'
       env:
-        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+        SLACK_BOT_TOKEN: ${{ inputs.slack-bot-token }}
 
     - name: Notify Slack of failing test ⛔️
       if: failure()
@@ -146,4 +162,4 @@ runs:
           More information can be found <https://github.com/${{
           github.repository }}/actions/runs/${{ github.run_id }}|here>.'
       env:
-        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+        SLACK_BOT_TOKEN: ${{ inputs.slack-bot-token }}
