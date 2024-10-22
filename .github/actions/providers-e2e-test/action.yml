@@ -48,7 +48,8 @@ runs:
         token: ${{ inputs.rasa-calm-demo-read-token }}
 
     - name: Setup Python Environment
-      uses: ../actions/setup-python-env
+      # TODO: Remove feature branch reference after testing change
+      uses: RasaHQ/rasa-private/.github/actions/setup-python-env@ENG-1394-auto-e2e-tests-for-CALM-supported-llm-and-embeddings-providers
       with:
         PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
 
