@@ -64,9 +64,6 @@ on:
         required: true
         default: "main"
 
-  # TODO: Remove after testing changes on feature branch
-  pull_request:
-
 env:
   AZURE_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY_DEVTRIBE_TESTING_CANADA_EAST }}
   DEFAULT_PYTHON_VERSION: "3.10"
@@ -75,8 +72,7 @@ env:
 jobs:
   e2e_test:
     name: Run e2e Test
-    # TODO: re-instate condition check after testing pipeline on feature branch
-    # if: ${{ github.event_name == 'schedule' || inputs.provider == 'all' }}
+    if: ${{ github.event_name == 'schedule' || inputs.provider == 'all' }}
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
