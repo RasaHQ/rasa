@@ -15,6 +15,7 @@ from rasa.dialogue_understanding.commands import (
     SkipQuestionCommand,
     StartFlowCommand,
     SetSlotCommand,
+    RestartCommand,
 )
 from rasa.dialogue_understanding.commands.set_slot_command import SetSlotExtractor
 from rasa.dialogue_understanding.generator.nlu_command_adapter import NLUCommandAdapter
@@ -24,7 +25,6 @@ from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.slots import BooleanSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.importers.importer import FlowSyncImporter
-
 from rasa.shared.nlu.constants import (
     ENTITIES,
     INTENT,
@@ -142,7 +142,8 @@ class TestNLUCommandAdapter:
         tracker: DialogueStateTracker,
     ):
         """Test that predict_commands returns an empty list when
-        message does not have any intents."""
+        message does not have any intents.
+        """
         # When
         predicted_commands = await command_generator.predict_commands(
             Message(
@@ -163,7 +164,8 @@ class TestNLUCommandAdapter:
         tracker_with_routing_slot: DialogueStateTracker,
     ):
         """Test that predict_commands returns an empty list when
-        message does not have any intents."""
+        message does not have any intents.
+        """
         # When
         predicted_commands = await command_generator.predict_commands(
             Message(
@@ -184,8 +186,8 @@ class TestNLUCommandAdapter:
         tracker: DialogueStateTracker,
     ):
         """Test that predict_commands returns StartFlowCommand
-        if flow with valid nlu trigger."""
-
+        if flow with valid nlu trigger.
+        """
         test_message = Message(
             data={
                 TEXT: "some message",
@@ -207,8 +209,8 @@ class TestNLUCommandAdapter:
         tracker_with_routing_slot: DialogueStateTracker,
     ):
         """Test that predict_commands returns StartFlowCommand
-        if flow with valid nlu trigger."""
-
+        if flow with valid nlu trigger.
+        """
         test_message = Message(
             data={
                 TEXT: "some message",
@@ -232,7 +234,8 @@ class TestNLUCommandAdapter:
         domain: Domain,
     ):
         """Test that predict_commands returns just one StartFlowCommand
-        if multiple flows can be triggered by the predicted intent."""
+        if multiple flows can be triggered by the predicted intent.
+        """
         # create flows one by one to avoid DuplicateNLUTriggerException
         first_flow = flows_from_str(
             """
@@ -282,7 +285,8 @@ class TestNLUCommandAdapter:
         tracker: DialogueStateTracker,
     ):
         """Test that predict_commands returns an empty list when
-        message does not have any entities."""
+        message does not have any entities.
+        """
         # When
         predicted_commands = await command_generator.predict_commands(
             Message(
@@ -434,6 +438,30 @@ class TestNLUCommandAdapter:
 
         assert len(predicted_commands) == 1
         assert isinstance(predicted_commands[0], SessionStartCommand)
+
+    async def test_predict_restart_command(self, command_generator: NLUCommandAdapter):
+        """Test whether start session is triggerable by default."""
+        sender_id = uuid.uuid4().hex
+        domain = FlowSyncImporter.load_default_pattern_flows_domain()
+        flows = FlowSyncImporter.load_default_pattern_flows()
+        tracker = DialogueStateTracker.from_events(sender_id, [], slots=domain.slots)
+        predicted_commands = await command_generator.predict_commands(
+            Message(
+                data={
+                    TEXT: "/restart",
+                    INTENT: {
+                        INTENT_NAME_KEY: "restart",
+                        PREDICTED_CONFIDENCE_KEY: 1.0,
+                    },
+                }
+            ),
+            flows=flows,
+            tracker=tracker,
+            domain=domain,
+        )
+
+        assert len(predicted_commands) == 1
+        assert isinstance(predicted_commands[0], RestartCommand)
 
     @pytest.mark.parametrize(
         "pattern,expected_command_class",
