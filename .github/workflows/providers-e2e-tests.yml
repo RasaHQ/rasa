@@ -97,6 +97,9 @@ jobs:
           ] # TODO: Enable testing all the providers
 
     steps:
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+
       - name: E2E test
         uses: ./github/actions/providers-e2e-test
         with:
@@ -110,6 +113,9 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+
       - name: E2E test on single provider
         uses: ./github/actions/providers-e2e-test
         with:
