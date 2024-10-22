@@ -1,0 +1,14 @@
+{
+  "repoOwner": "RasaHQ",
+  "repoName": "rasa-private",
+  "targetBranchChoices": ["main", "3.8.x", "3.9.x", "3.10.x"],
+  "commitConflicts": true,
+  "branchLabelMapping": {
+    "^backport-to-(.+)$": "$1"
+  },
+  "prTitle": "Backport PR #{{sourcePullRequest.number}} '{{sourcePullRequest.title}}' to {{targetBranch}}",
+  "prDescription": "This PR was created by the Backporting workflow, learn more in the README.\n\nSource PR description:\n{{defaultPrDescription}}.",
+  "publishStatusCommentOnSuccess": true,
+  "publishStatusCommentOnFailure": true,
+  "backportBranchName": "backport-pr-{{sourcePullRequest.number}}-to-{{targetBranch}}"
+}

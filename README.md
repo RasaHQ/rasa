@@ -236,6 +236,39 @@ To check the types execute
 make types
 ```
 
+### Backporting
+
+In order to port changes to `main` and across release branches, we use the `backport` workflow located at
+the `.github/workflows/backport.yml` path.
+This workflow is triggered by the `backport-to-<release-branch>` label applied to a PR, for example `backport-to-3.8.x`.
+Current available target branches are `main` and maintained release branches.
+
+When a PR gets labelled `backport-to-<release-branch>`, a PR is opened by the `backport-github-action` as soon as the
+source PR gets closed (by merging). If you want to close the PR without merging changes, make sure to remove the `backport-to-<release-branch>` label.
+
+The PR author which the action assigns to the backporting PR has to resolve any conflicts before approving and merging.
+Release PRs should also be labelled with `backport-to-main` to backport the `CHANGELOG.md` updates to `main`.
+Backporting version updates should be accepted to the `main` branch from the latest release branch only.
+
+Here are some guidelines to follow when backporting changes and resolving conflicts:
+
+a) for conflicts in `version.py`: accept only the version from the latest release branch. Do not merge version changes
+from earlier release branches into `main` because this could cause issues when trying to make the next minor release.
+
+b) for conflicts in `pyproject.toml`: if related to the `rasa-pro` version, accept only the latest release branch; 
+if related to other dependencies, accept `main` or whichever is the higher upgrade (main usually has the updated 
+dependencies because we only do housekeeping on `main`, apart from vulnerability updates). Be mindful of dependencies that
+are removed from `main` but still exist in former release branches (for example `langchain`).
+
+c) for conflicts in `poetry.lock`: accept changes which were already present on the target branch, then run
+`poetry lock --no-update` so that the lock file contains your changes from `pyproject.toml` too.
+
+d) for conflicts in `CHANGELOG.md`: Manually place the changelog in their allocated section (e.g. 3.8.10 will go under the 
+3.8 section with the other releases, rather than go at the top of the file)
+
+If the backporting workflow fails, you are encouraged to cherry-pick the commits manually and create a PR to
+the target branch. Alternatively, you can install the backporting CLI tool as described [here](https://github.com/sorenlouv/backport?tab=readme-ov-file#install).
+
 ## Releases
 Rasa has implemented robust policies governing version naming, as well as release pace for major, minor, and patch releases.
 
@@ -318,9 +351,12 @@ Releasing a new version is quite simple, as the packages are build and distribut
 9. If however an error occurs in the build, then we should see a failure message automatically posted in the company's Slack (`dev-tribe` channel) like this [one](https://rasa-hq.slack.com/archives/C01M5TAHDHA/p1701444735622919)
    (In this case do the following checks):
     - Check the workflows in [Github Actions](https://github.com/RasaHQ/rasa-private/actions) and make sure that the merged PR of the current release is completed successfully. To easily find your PR you can use the filters `event: push` and `branch: <version number>` (example on release 2.4 you can see [here](https://github.com/RasaHQ/rasa/actions/runs/643344876))
-    - If the workflow is not completed, then try to re run the workflow in case that solves the problem
+    - If the workflow is not completed, then try to re-run the workflow in case that solves the problem
     - If the problem persists, check also the log files and try to find the root cause of the issue
     - If you still cannot resolve the error, contact the infrastructure team by providing any helpful information from your investigation
+10. If the release is successful, add the newly created release branch to the backporting configuration in the `.backportrc.json` file to
+the `targetBranchesChoices` list. This is necessary for the backporting workflow to work correctly with new release branches.
+
 
 ### Cutting a Patch release
 

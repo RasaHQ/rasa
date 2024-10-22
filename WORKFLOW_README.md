@@ -43,9 +43,21 @@ Workflow runs only on tag pushes and branches starting with `prepare-release*`.
 It checks if the tag version is a pre-release version or not and 
 checks changelog folder to list any unexpected files.
 
-### Automatic Release To Main Merger
-When a pull request is merged into a release branch, a pull request is opened by auto user `Roberto`
-to merge the changes  into the `main` branch. This workflow is active on all current active `release branches`.
+### Backport
+In order to backport changes to main and across release branches, we use the [backport-github-action](https://github.com/sorenlouv/backport-github-action) GitHub Action.
+This GitHub Action backports the changes to the specified release branch(es) and assigns the original PR author as the reviewer.
+The label `backport-to-main` should be applied to release PRs too to backport the `CHANGELOG.md` updates to `main`.
+While the action will backport all release changes, including version updates, version updates should be accepted to
+the `main` branch from the latest release branch only.
+
+Note that the label should be applied before the source PR gets merged.
+When a pull request gets labelled `backport-to-<release-branch>`, a pull request is opened by the `backport-github-action`
+as soon as the source PR gets closed (by merging).
+
+The configuration for this GitHub action can be found in the `.backportrc.json` file located in the root folder.
+We have to update `targetBranchChoices` with every new release branch created after every minor or major.
+The configuration allows PRs to be opened which might contain conflicts with the target branch: the PR author has to 
+resolve any conflicts before approving and merging.
 
 ### Run Performance Checks On Main
 This workflow is run to check the rasa-pro package installation performance. It gathers metrics such as, `installation time`,
