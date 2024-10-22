@@ -627,6 +627,14 @@ Rasa Pro 3.9.0 (2024-07-03)
 - [#448](https://github.com/rasahq/rasa-private/issues/448), [#458](https://github.com/rasahq/rasa-private/issues/458), [#475](https://github.com/rasahq/rasa-private/issues/475), [#610](https://github.com/rasahq/rasa-private/issues/610), [#646](https://github.com/rasahq/rasa-private/issues/646), [#709](https://github.com/rasahq/rasa-private/issues/709), [#784](https://github.com/rasahq/rasa-private/issues/784), [#802](https://github.com/rasahq/rasa-private/issues/802), [#803](https://github.com/rasahq/rasa-private/issues/803)
 
 
+## [3.8.17] - 2024-10-18
+                        
+Rasa Pro 3.8.17 (2024-10-18)                             
+### Improvements
+- [#1342](https://github.com/rasahq/rasa-private/issues/1342): Change default response of `utter_free_chitchat_response` from `"placeholder_this_utterance_needs_the_rephraser"` to
+  `"Sorry, I'm not able to answer that right now."`.
+
+
 ## [3.8.16] - 2024-10-02
                         
 Rasa Pro 3.8.16 (2024-10-02)                              
