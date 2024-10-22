@@ -31,7 +31,6 @@ ENV HOME=/app
 # update permissions & change user to not run as root
 WORKDIR /app
 RUN chgrp -R 0 /app && chmod -R g=u /app && chmod o+wr /app
-VOLUME /app
 USER 1001
 
 # create a volume for temporary data

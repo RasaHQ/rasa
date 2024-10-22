@@ -9,6 +9,7 @@ from rasa.dialogue_understanding.commands.knowledge_answer_command import (
 from rasa.dialogue_understanding.commands.chit_chat_answer_command import (
     ChitChatAnswerCommand,
 )
+from rasa.dialogue_understanding.commands.restart_command import RestartCommand
 from rasa.dialogue_understanding.commands.skip_question_command import (
     SkipQuestionCommand,
 )
@@ -50,4 +51,5 @@ __all__ = [
     "NoopCommand",
     "ChangeFlowCommand",
     "SessionStartCommand",
+    "RestartCommand",
 ]
