@@ -20,6 +20,8 @@ from tests.integration_tests.tracing.conftest import (
     ACTION_SERVER_PARENT_SUB_SPAN_NAME,
     ACTION_SERVER_SPAN_NAME,
     ACTION_SERVER_TRIGGER_MESSAGE,
+    ACTION_SERVER_VALIDATION_ACTION_TRIGGERED,
+    ACTION_SERVER_VALIDATION_ACTION_TRIGGER_MESSAGE,
     RASA_JAEGER_TRACING_SERVICE_NAME,
     RASA_OTLP_TRACING_SERVICE_NAME,
     RASA_SERVER_JAEGER,
@@ -82,26 +84,48 @@ def test_traces_get_sent_to_backend(
 
 
 @pytest.mark.parametrize(
-    "tracing_service_name, rasa_server_endpoint, parent_span_name",
+    "tracing_service_name, rasa_server_endpoint, message, action, parent_span_name",
     [
         (
             ACTION_SERVER_JAEGER_TRACING_SERVICE_NAME,
             RASA_SERVER_JAEGER,
+            ACTION_SERVER_TRIGGER_MESSAGE,
+            ACTION_SERVER_ACTION_TRIGGERED,
             ACTION_SERVER_PARENT_SPAN_NAME,
         ),
         (
             ACTION_SERVER_OTLP_ACTION_SERVER_NAME,
             RASA_SERVER_OTLP,
+            ACTION_SERVER_TRIGGER_MESSAGE,
+            ACTION_SERVER_ACTION_TRIGGERED,
             ACTION_SERVER_PARENT_SPAN_NAME,
         ),
         (
             ACTION_SERVER_JAEGER_TRACING_SERVICE_NAME,
+            RASA_SERVER_JAEGER,
+            ACTION_SERVER_VALIDATION_ACTION_TRIGGER_MESSAGE,
+            ACTION_SERVER_VALIDATION_ACTION_TRIGGERED,
+            ACTION_SERVER_PARENT_SUB_SPAN_NAME,
+        ),
+        (
+            ACTION_SERVER_OTLP_ACTION_SERVER_NAME,
+            RASA_SERVER_OTLP,
+            ACTION_SERVER_VALIDATION_ACTION_TRIGGER_MESSAGE,
+            ACTION_SERVER_VALIDATION_ACTION_TRIGGERED,
+            ACTION_SERVER_PARENT_SUB_SPAN_NAME,
+        ),
+        (
+            ACTION_SERVER_JAEGER_TRACING_SERVICE_NAME,
             GRPC_RASA_SERVER_JAEGER,
+            ACTION_SERVER_TRIGGER_MESSAGE,
+            ACTION_SERVER_ACTION_TRIGGERED,
             GRPC_ACTION_SERVER_PARENT_SUB_SPAN_NAME,
         ),
         (
             ACTION_SERVER_JAEGER_TRACING_SERVICE_NAME,
             GRPC_SSL_RASA_SERVER_JAEGER,
+            ACTION_SERVER_TRIGGER_MESSAGE,
+            ACTION_SERVER_ACTION_TRIGGERED,
             GRPC_ACTION_SERVER_PARENT_SUB_SPAN_NAME,
         ),
     ],
@@ -111,6 +135,8 @@ def test_trace_context_propagated_to_action_server(
     tracing_service_name: Text,
     rasa_server_endpoint: Text,
     trace_query_timestamps: TraceQueryTimestamps,
+    message: Text,
+    action: Text,
     parent_span_name: Text,
 ) -> None:
     if rasa_server_endpoint == RASA_SERVER_OTLP:
@@ -119,9 +145,7 @@ def test_trace_context_propagated_to_action_server(
     from api_v3.query_service_pb2 import TraceQueryParameters
     from model_pb2 import Span
 
-    sender_id, _ = send_message_to_rasa_server(
-        rasa_server_endpoint, ACTION_SERVER_TRIGGER_MESSAGE
-    )
+    sender_id, _ = send_message_to_rasa_server(rasa_server_endpoint, message)
 
     params = TraceQueryParameters(
         service_name=tracing_service_name,
@@ -136,7 +160,7 @@ def test_trace_context_propagated_to_action_server(
         return _filter_spans_by_attributes(
             spans,
             {
-                "action_name": ACTION_SERVER_ACTION_TRIGGERED,
+                "action_name": action,
                 "sender_id": sender_id,
             },
         )

@@ -1,11 +1,13 @@
 from typing import Any, Dict, Optional, Text
 
+import os
 import structlog
 from jinja2 import Template
 
 from rasa import telemetry
 from rasa.core.nlg.response import TemplatedNaturalLanguageGenerator
 from rasa.shared.constants import (
+    LLM_API_HEALTH_CHECK_ENV_VAR,
     LLM_CONFIG_KEY,
     MODEL_CONFIG_KEY,
     MODEL_NAME_CONFIG_KEY,
@@ -23,6 +25,7 @@ from rasa.shared.utils.llm import (
     USER,
     combine_custom_and_default_config,
     get_prompt_template,
+    llm_api_health_check,
     llm_factory,
     try_instantiate_llm_client,
 )
@@ -97,12 +100,18 @@ class ContextualResponseRephraser(TemplatedNaturalLanguageGenerator):
         self.trace_prompt_tokens = self.nlg_endpoint.kwargs.get(
             "trace_prompt_tokens", False
         )
-        try_instantiate_llm_client(
+        llm_client = try_instantiate_llm_client(
             self.nlg_endpoint.kwargs.get(LLM_CONFIG_KEY),
             DEFAULT_LLM_CONFIG,
             "contextual_response_rephraser.init",
-            "ContextualResponseRephraser",
+            ContextualResponseRephraser.__name__,
         )
+        if os.getenv(LLM_API_HEALTH_CHECK_ENV_VAR, "true").lower() == "true":
+            llm_api_health_check(
+                llm_client,
+                "contextual_response_rephraser.init",
+                ContextualResponseRephraser.__name__,
+            )
 
     def _last_message_if_human(self, tracker: DialogueStateTracker) -> Optional[str]:
         """Returns the latest message from the tracker.

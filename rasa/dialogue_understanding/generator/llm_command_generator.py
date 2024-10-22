@@ -1,4 +1,4 @@
-from typing import Dict, Any, Optional, Text
+from typing import Any, Dict, Optional, Text
 
 import structlog
 from deprecated import deprecated  # type: ignore[import]

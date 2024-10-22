@@ -11,8 +11,8 @@ from pytest import MonkeyPatch
 
 import rasa.api
 from rasa.core.agent import Agent
+from rasa.core.persistor import AWSPersistor, RemoteStorageType
 from rasa.env import BUCKET_NAME_ENV, REMOTE_STORAGE_PATH_ENV
-from rasa.nlu.persistor import AWSPersistor, RemoteStorageType
 
 
 @pytest.fixture
@@ -78,7 +78,7 @@ def setup_aws_persistor(
     _get_persistor = MagicMock()
     _get_persistor.return_value = aws_persistor
 
-    monkeypatch.setattr("rasa.nlu.persistor.get_persistor", _get_persistor)
+    monkeypatch.setattr("rasa.core.persistor.get_persistor", _get_persistor)
 
 
 @pytest.mark.parametrize(

@@ -86,31 +86,11 @@ def sort_list_of_dicts_by_first_key(dicts: List[Dict]) -> List[Dict]:
     return sorted(dicts, key=lambda d: next(iter(d.keys())))
 
 
-def lazy_property(function: Callable) -> Any:
-    """Allows to avoid recomputing a property over and over.
-
-    The result gets stored in a local var. Computation of the property
-    will happen once, on the first call of the property. All
-    succeeding calls will use the value stored in the private property.
-    """
-    attr_name = "_lazy_" + function.__name__
-
-    def _lazyprop(self: Any) -> Any:
-        if not hasattr(self, attr_name):
-            setattr(self, attr_name, function(self))
-        return getattr(self, attr_name)
-
-    return property(_lazyprop)
-
-
 def cached_method(f: Callable[..., Any]) -> Callable[..., Any]:
     """Caches method calls based on the call's `args` and `kwargs`.
-
     Works for `async` and `sync` methods. Don't apply this to functions.
-
     Args:
         f: The decorated method whose return value should be cached.
-
     Returns:
         The return value which the method gives for the first call with the given
         arguments.
@@ -176,8 +156,9 @@ def transform_collection_to_sentence(collection: Collection[Text]) -> Text:
 def minimal_kwargs(
     kwargs: Dict[Text, Any], func: Callable, excluded_keys: Optional[List] = None
 ) -> Dict[Text, Any]:
-    """Returns only the kwargs which are required by a function. Keys, contained in
-    the exception list, are not included.
+    """Returns only the kwargs which are required by a function.
+
+    Keys, contained in the exception list, are not included.
 
     Args:
         kwargs: All available kwargs.

@@ -5,6 +5,7 @@ from typing import Union
 from rasa.cli.arguments.default_arguments import (
     add_endpoint_param,
     add_model_param,
+    add_skip_validation_flag,
     add_remote_storage_param,
 )
 from rasa.core import constants
@@ -21,6 +22,7 @@ def set_run_arguments(parser: argparse.ArgumentParser) -> None:
     """Arguments for running Rasa directly using `rasa run`."""
     add_model_param(parser)
     add_server_arguments(parser)
+    add_skip_validation_flag(parser)
 
 
 def set_run_action_arguments(parser: argparse.ArgumentParser) -> None:

@@ -50,11 +50,11 @@ from rasa.core.channels.channel import (
     UserMessage,
 )
 from rasa.core.constants import DEFAULT_RESPONSE_TIMEOUT
+from rasa.core.persistor import parse_remote_storage
 from rasa.core.test import test
 from rasa.core.utils import AvailableEndpoints
 from rasa.nlu.emulators.emulator import Emulator
 from rasa.nlu.emulators.no_emulator import NoEmulator
-from rasa.nlu.persistor import parse_remote_storage
 from rasa.nlu.test import CVEvaluationResult
 from rasa.shared.constants import (
     DEFAULT_MODELS_PATH,

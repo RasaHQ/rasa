@@ -16,6 +16,7 @@ from rasa.shared.core.flows.validation import (
     validate_patterns_are_not_called_or_linked,
     validate_patterns_are_not_calling_or_linking_other_flows,
     validate_step_ids_are_unique,
+    DuplicatedFlowIdException,
 )
 from rasa.shared.core.slots import Slot
 
@@ -49,21 +50,31 @@ class FlowsList:
         return len(self.underlying_flows) == 0
 
     @classmethod
-    def from_multiple_flows_lists(cls, *other: FlowsList) -> FlowsList:
+    def from_multiple_flows_lists(
+        cls, *other: FlowsList, ignore_duplicates: bool = True
+    ) -> FlowsList:
         """Merges multiple lists of flows into a single flow ensuring each flow is
         unique, based on its ID.
 
         Args:
             other: Variable number of flow lists instances to be merged.
+            ignore_duplicates: Whether to ignore duplicate flow ids, or raise an error.
 
         Returns:
             Merged flow list.
         """
-        merged_flows = dict()
+        merged_flows: Dict[Text, Flow] = dict()
         for flow_list in other:
             for flow in flow_list:
-                if flow.id not in merged_flows:
-                    merged_flows[flow.id] = flow
+                if flow.id in merged_flows:
+                    if ignore_duplicates:
+                        continue
+                    current_flow_path = flow.file_path
+                    other_flow_path = merged_flows[flow.id].file_path
+                    raise DuplicatedFlowIdException(
+                        flow.id, current_flow_path, other_flow_path
+                    )
+                merged_flows[flow.id] = flow
         return FlowsList(list(merged_flows.values()))
 
     @classmethod
@@ -118,9 +129,11 @@ class FlowsList:
         flow_dicts = [flow.as_json() for flow in self.underlying_flows]
         return rasa.shared.utils.io.get_list_fingerprint(flow_dicts)
 
-    def merge(self, other: FlowsList) -> FlowsList:
+    def merge(self, other: FlowsList, ignore_duplicates: bool = True) -> FlowsList:
         """Merges two lists of flows together."""
-        return FlowsList.from_multiple_flows_lists(self, other)
+        return FlowsList.from_multiple_flows_lists(
+            self, other, ignore_duplicates=ignore_duplicates
+        )
 
     def flow_by_id(self, flow_id: Text) -> Optional[Flow]:
         """Return the flow with the given id."""

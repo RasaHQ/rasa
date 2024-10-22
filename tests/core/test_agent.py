@@ -22,9 +22,9 @@ from rasa.core.agent import Agent, load_agent
 from rasa.core.channels.channel import UserMessage
 from rasa.core.constants import UTTER_SOURCE_METADATA_KEY
 from rasa.core.exceptions import AgentNotReady
+from rasa.core.persistor import Persistor, RemoteStorageType
 from rasa.core.utils import AvailableEndpoints
 from rasa.exceptions import ModelNotFound
-from rasa.nlu.persistor import Persistor, RemoteStorageType
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -214,7 +214,7 @@ async def test_load_from_remote_storage(trained_nlu_model: Text):
         def retrieve(self, model_name: Text, target_path: Text) -> None:
             self._copy(model_name, target_path)
 
-    with patch("rasa.nlu.persistor.get_persistor", new=lambda _: FakePersistor()):
+    with patch("rasa.core.persistor.get_persistor", new=lambda _: FakePersistor()):
         agent = await load_agent(
             remote_storage=RemoteStorageType.AWS, model_path=trained_nlu_model
         )

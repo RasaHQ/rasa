@@ -91,6 +91,7 @@ def test_license_scope_missing_voice_scope(
     ) in str(result.stderr)
 
 
+@pytest.mark.flaky
 def test_license_scope_voice_scope_ok(
     monkeypatch: MonkeyPatch,
     audiocodes_credentials,

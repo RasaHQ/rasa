@@ -165,7 +165,7 @@ class Persistor(abc.ABC):
             os.path.join(dirpath, base_name),
             "gztar",
             root_dir=model_directory,
-            base_dir=".",
+            base_dir="../nlu",
         )
         file_key = os.path.basename(tar_name)
         return file_key, tar_name

@@ -285,21 +285,7 @@ nodes:
     is_target: true
     is_input: false
     resource: null
-  train_UnexpecTEDIntentPolicy2:
-    needs:
-      training_trackers: training_tracker_provider
-      domain: domain_for_core_training_provider
-    uses: rasa.core.policies.unexpected_intent_policy.UnexpecTEDIntentPolicy
-    constructor_name: load
-    fn: train
-    config:
-      max_history: 5
-      epochs: 100
-    eager: false
-    is_target: true
-    is_input: false
-    resource: null
-  train_TEDPolicy3:
+  train_TEDPolicy2:
     needs:
       training_trackers: training_tracker_provider
       domain: domain_for_core_training_provider

@@ -12,7 +12,7 @@ from rasa.shared.core.flows.steps import (
 from rasa.shared.core.flows.flow_step_links import FlowStepLinks
 from rasa.shared.core.flows.steps.call import CallFlowStep
 from rasa.shared.core.flows.steps.no_operation import NoOperationFlowStep
-from rasa.shared.core.flows.yaml_flows_io import flows_from_str
+from tests.utilities import flows_from_str
 
 
 @pytest.fixture

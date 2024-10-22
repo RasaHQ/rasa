@@ -14,8 +14,8 @@ from rasa.env import (
     BUCKET_NAME_ENV,
     REMOTE_STORAGE_PATH_ENV,
 )
-from rasa.nlu import persistor
-from rasa.nlu.persistor import (
+from rasa.core import persistor
+from rasa.core.persistor import (
     AWSPersistor,
     AzurePersistor,
     GCSPersistor,
@@ -138,7 +138,7 @@ class TestPersistor(Persistor):
 
 
 def test_get_external_persistor():
-    p = persistor.get_persistor("tests.nlu.test_persistor.TestPersistor")
+    p = persistor.get_persistor("tests.core.test_persistor.TestPersistor")
     assert isinstance(p, TestPersistor)
 
 
@@ -303,7 +303,7 @@ def test_create_file_key_remote_storage_path_deprecation_logging(
 ) -> None:
     monkeypatch.setenv(REMOTE_STORAGE_PATH_ENV, "test_model")
     mock_raise_warning = MagicMock()
-    monkeypatch.setattr("rasa.nlu.persistor.raise_warning", mock_raise_warning)
+    monkeypatch.setattr("rasa.core.persistor.raise_warning", mock_raise_warning)
     Persistor._create_file_key("model1.pkl")
     warning_text = (
         f"{REMOTE_STORAGE_PATH_ENV} is deprecated and will be "
@@ -321,7 +321,7 @@ def test_get_persistor_for_aws_remote_storage(
     monkeypatch: MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(
-        "rasa.nlu.persistor.AWSPersistor._ensure_bucket_exists",
+        "rasa.core.persistor.AWSPersistor._ensure_bucket_exists",
         lambda *args, **kwargs: None,
     )
     monkeypatch.setenv(BUCKET_NAME_ENV, "test_bucket")
@@ -338,18 +338,13 @@ def test_get_persistor_for_gcs_remote_storage(
     monkeypatch.setattr("google.cloud.storage.Client", mock_gcs_client)
 
     monkeypatch.setattr(
-        "rasa.nlu.persistor.GCSPersistor._ensure_bucket_exists",
+        "rasa.core.persistor.GCSPersistor._ensure_bucket_exists",
         lambda *args, **kwargs: None,
     )
     monkeypatch.setenv(BUCKET_NAME_ENV, "test_bucket")
 
     persistor_obj = get_persistor(RemoteStorageType("gcs"))
     assert isinstance(persistor_obj, GCSPersistor)
-
-
-def test_get_persistor_with_custom_persistor() -> None:
-    persistor_obj = get_persistor("tests.nlu.test_persistor.TestPersistor")
-    assert isinstance(persistor_obj, TestPersistor)
 
 
 def test_get_persistor_for_azure_remote_storage(monkeypatch: MonkeyPatch) -> None:
