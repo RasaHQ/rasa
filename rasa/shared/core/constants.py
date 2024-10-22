@@ -85,6 +85,7 @@ LOOP_INTERRUPTED = "is_interrupted"
 LOOP_REJECTED = "rejected"
 TRIGGER_MESSAGE = "trigger_message"
 FOLLOWUP_ACTION = "followup_action"
+ACTIVE_FLOW = "active_flow"
 
 # start of special user message section
 EXTERNAL_MESSAGE_PREFIX = "EXTERNAL: "
@@ -130,6 +131,7 @@ class SlotMappingType(Enum):
     FROM_INTENT = "from_intent"
     FROM_TRIGGER_INTENT = "from_trigger_intent"
     FROM_TEXT = "from_text"
+    FROM_LLM = "from_llm"
     CUSTOM = "custom"
 
     def __str__(self) -> str:
@@ -137,11 +139,8 @@ class SlotMappingType(Enum):
         return self.value
 
     def is_predefined_type(self) -> bool:
-        """Returns True iff the mapping type is predefined.
-
-        That is, to evaluate the mapping no custom action execution is needed.
-        """
-        return self != SlotMappingType.CUSTOM
+        """Returns True if the mapping type is NLU-predefined."""
+        return not (self == SlotMappingType.CUSTOM or self == SlotMappingType.FROM_LLM)
 
 
 # the keys for `State` (USER, PREVIOUS_ACTION, SLOTS, ACTIVE_LOOP)

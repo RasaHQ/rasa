@@ -308,7 +308,7 @@ def test_read_unsupported_model(
     load_model_storage_dir = tmp_path_factory.mktemp("load model storage")
 
     expected_message = (
-        f"The model version is trained using Rasa Open Source "
+        f"The model version is trained using Rasa Pro "
         f"{old_version} and is not compatible with your current "
         f"installation .*"
     )

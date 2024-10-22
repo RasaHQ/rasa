@@ -1,0 +1,10 @@
+recipe: default.v1
+language: en
+pipeline:
+  - name: WhitespaceTokenizer
+  - name: LLMCommandGenerator
+    llm:
+      model_name: gpt-4
+policies:
+  - name: FlowPolicy
+assistant_id: financial-demo-assistant

@@ -1,0 +1,21 @@
+flows:
+  book_restaurant:
+    name: book restaurant
+    description: user asks to book a restaurant
+    steps:
+    - collect: cuisine
+    - collect: num_people
+    - collect: date
+    - call: "payment"
+      next:
+        - if: slots.card_number
+          then:
+            - action: utter_confirm_booking
+              next: END
+        - else: END
+
+  payment:
+    name: payment
+    description: user is asked to provide payment details
+    steps:
+      - collect: card_number

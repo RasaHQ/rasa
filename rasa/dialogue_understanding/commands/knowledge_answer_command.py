@@ -46,3 +46,12 @@ class KnowledgeAnswerCommand(FreeFormAnswerCommand):
         stack = tracker.stack
         stack.push(SearchPatternFlowStackFrame())
         return tracker.create_stack_updated_events(stack)
+
+    def __hash__(self) -> int:
+        return hash(self.command())
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, KnowledgeAnswerCommand):
+            return False
+
+        return True

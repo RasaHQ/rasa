@@ -78,7 +78,6 @@ def create_tracker_store(
     domain: "Domain",
     event_broker: Optional["EventBroker"],
 ) -> "TrackerStore":
-
     if isinstance(endpoint_config, EndpointConfig):
         return AuthRetryTrackerStore(
             endpoint_config=endpoint_config, domain=domain, event_broker=event_broker

@@ -6,7 +6,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import List, Tuple, Union, Text, Generator, Dict, Any, Optional
+from typing import Tuple, Union, Text, Generator, Dict, Any, Optional
 from packaging import version
 
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION
@@ -140,7 +140,6 @@ class ModelMetadata:
     core_target: Optional[Text]
     nlu_target: Text
     language: Optional[Text]
-    spaces: Optional[List[Dict[Text, Any]]] = None
     training_type: TrainingType = TrainingType.BOTH
 
     def __post_init__(self) -> None:
@@ -170,7 +169,6 @@ class ModelMetadata:
             "core_target": self.core_target,
             "nlu_target": self.nlu_target,
             "language": self.language,
-            "spaces": self.spaces,
         }
 
     @classmethod
@@ -198,6 +196,4 @@ class ModelMetadata:
             core_target=serialized["core_target"],
             nlu_target=serialized["nlu_target"],
             language=serialized["language"],
-            # optional, since introduced later
-            spaces=serialized.get("spaces"),
         )

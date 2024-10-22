@@ -21,7 +21,7 @@ RUN curl -sSL https://install.python-poetry.org | python3 -
 ENV PATH "/root/.local/bin:${PATH}"
 
 # install dependencies
-RUN python -m venv /opt/venv && \
+RUN python3 -m venv /opt/venv && \
   . /opt/venv/bin/activate && \
   poetry config virtualenvs.create false && \
   pip install --no-cache-dir -U "pip==22.*" -U "wheel>0.38.0" && \

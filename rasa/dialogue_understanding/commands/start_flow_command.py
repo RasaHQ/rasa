@@ -96,3 +96,12 @@ class StartFlowCommand(Command):
         structlogger.debug("command_executor.start_flow", command=self)
         stack.push(UserFlowStackFrame(flow_id=self.flow, frame_type=frame_type))
         return applied_events + tracker.create_stack_updated_events(stack)
+
+    def __hash__(self) -> int:
+        return hash(self.flow)
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, StartFlowCommand):
+            return False
+
+        return other.flow == self.flow

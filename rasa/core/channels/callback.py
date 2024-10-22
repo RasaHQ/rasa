@@ -22,7 +22,6 @@ class CallbackOutput(CollectingOutputChannel):
         return "callback"
 
     def __init__(self, endpoint: EndpointConfig) -> None:
-
         self.callback_endpoint = endpoint
         super().__init__()
 

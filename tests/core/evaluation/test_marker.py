@@ -648,7 +648,6 @@ def test_marker_from_path_only_reads_yamls(tmp_path: Path):
     ],
 )
 def test_marker_from_path_adds_special_or_marker(tmp_path: Path, configs: Any):
-
     yaml_file = tmp_path / "config.yml"
     write_yaml(data=configs, target=yaml_file)
     loaded = Marker.from_path(tmp_path)

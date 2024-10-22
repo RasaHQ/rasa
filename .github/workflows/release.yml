@@ -95,12 +95,12 @@ jobs:
             echo "Version match: Input version of rasa-sdk ($input_rasa_sdk_version) matches rasa-sdk ($rasa_sdk) version in pyproject.toml."
             echo "update_required=false" >> $GITHUB_ENV
           fi
-      
+
       - name: Setup Python Environment
         uses: ./.github/actions/setup-python-env
         with:
             PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
-      
+
       - name: Update Rasa SDK Version
         if: env.update_required == 'true'
         run: |
@@ -136,7 +136,7 @@ jobs:
           target_branch: ${{ env.base_branch }}
           body: "**Automated pull request for Rasa Pro release.**"
           title: Release ${{ github.event.inputs.version }}
-  
+
   if_merged_tag_release:
     if: startsWith(github.head_ref, 'prepare-release-') && github.event.pull_request.merged == true
     runs-on: ubuntu-22.04

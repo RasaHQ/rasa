@@ -1,0 +1,60 @@
+Given the following information, please provide an answer based on the provided documents and the context of the recent conversation.
+If the answer is not known or cannot be determined from the provided documents or context, please state that you do not know to the user.
+### Relevant Documents
+Use the following documents to answer the question:
+{% for doc in docs %}
+{{ loop.cycle("*")}}. {{ doc.metadata }}
+{{ doc.page_content }}
+{% endfor %}
+
+{% if citation_enabled %}
+### Citing Sources
+Find the sources from the documents that are most relevant to answering the question.
+The sources must be extracted from the given document metadata source property and not from the conversation context.
+If there are no relevant sources, write "No relevant sources" instead.
+
+For each source you cite, follow a 1-based numbering system for citations.
+Start with [1] for the first source you refer to, regardless of its index in the provided list of documents.
+If you cite another source, use the next number in sequence, [2], and so on.
+Ensure each source is only assigned one number, even if referenced multiple times.
+If you refer back to a previously cited source, use its originally assigned number.
+
+For example, if you first cite the third source in the list, refer to it as [1].
+If you then cite the first source in the list, refer to it as [2].
+If you mention the third source again, still refer to it as [1].
+
+Don't say "According to Source [1]" when answering. Instead, make references to sources relevant to each section of the answer solely by adding the bracketed number at the end of the relevant sentence.
+#### Formatting
+First print the answer with in-text citations which follow a numbered order starting with index 1, then add the sources section.
+The format of your overall answer must look like what's shown between the <example></example> tags.
+Make sure to follow the formatting exactly and remove any line breaks or whitespaces between the answer and the Sources section.
+<example>
+You can use flows to model business logic in Rasa assistants. [1] You can use the Enterprise Search Policy to search vector stores for relevant knowledge base documents. [2]
+Sources:
+[1] https://rasa.com/docs/rasa-pro/concepts/flows
+[2] https://rasa.com/docs/rasa-pro/concepts/policies/enterprise-search-policy
+</example>
+{% endif %}
+
+{% if slots|length > 0 %}
+### Slots or Variables
+Here are the variables of the currently active conversation which may be used to answer the question:
+{% for slot in slots -%}
+- name: {{ slot.name }}, value: {{ slot.value }}, type: {{ slot.type }}
+{% endfor %}
+{% endif %}
+### Current Conversation
+Transcript of the current conversation, use it to determine the context of the question:
+{{ current_conversation }}
+
+
+## Answering the Question
+Based on the above sections, please formulate an answer to the question or request in the user's last message.
+It is important that you ensure the answer is grounded in the provided documents and conversation context.
+Avoid speculating or making assumptions beyond the given information and keep your answers short, 2 to 3 sentences at most.
+
+{% if citation_enabled %}
+If you are unable to find an answer in the given relevant documents, do not cite sources from elsewhere in the conversation context.
+{% endif %}
+
+Your answer:

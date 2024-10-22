@@ -1,41 +1,29 @@
-from io import StringIO
-from pathlib import Path
-import re
-from collections import OrderedDict
+import datetime
 import logging
 import os
+import re
+from collections import OrderedDict
+from dataclasses import dataclass
+from dataclasses import field
+from functools import lru_cache
+from io import StringIO
+from pathlib import Path
 from typing import Dict, List, Optional, Any, Callable, Tuple, Union
 
-
+import jsonschema
 from importlib_resources import files
 from packaging import version
-from packaging.version import LegacyVersion
 from pykwalify.core import Core
 from pykwalify.errors import SchemaError
-from dataclasses import dataclass
-import jsonschema
-from dataclasses import field
+from ruamel import yaml as yaml
 from ruamel.yaml import RoundTripRepresenter, YAMLError
 from ruamel.yaml.constructor import DuplicateKeyError, BaseConstructor, ScalarNode
-from ruamel import yaml as yaml
 from ruamel.yaml.comments import CommentedSeq, CommentedMap
+from ruamel.yaml.loader import SafeLoader
 
-from rasa.shared.utils.constants import DEFAULT_ENCODING
-from rasa.shared.utils.io import (
-    read_file,
-    convert_to_ordered_dict,
-    raise_warning,
-    read_json_file,
-)
-
-from rasa.shared.exceptions import (
-    YamlException,
-    YamlSyntaxException,
-    SchemaValidationError,
-    RasaException,
-    FileNotFoundException,
-)
 from rasa.shared.constants import (
+    ASSERTIONS_SCHEMA_EXTENSIONS_FILE,
+    ASSERTIONS_SCHEMA_FILE,
     MODEL_CONFIG_SCHEMA_FILE,
     CONFIG_SCHEMA_FILE,
     DOCS_URL_TRAINING_DATA,
@@ -44,11 +32,32 @@ from rasa.shared.constants import (
     SCHEMA_EXTENSIONS_FILE,
     RESPONSES_SCHEMA_FILE,
 )
+from rasa.shared.exceptions import (
+    YamlException,
+    YamlSyntaxException,
+    SchemaValidationError,
+    RasaException,
+    FileNotFoundException,
+)
+from rasa.shared.utils.constants import (
+    DEFAULT_ENCODING,
+    READ_YAML_FILE_CACHE_MAXSIZE_ENV_VAR,
+    DEFAULT_READ_YAML_FILE_CACHE_MAXSIZE,
+)
+from rasa.shared.utils.io import (
+    read_file,
+    convert_to_ordered_dict,
+    raise_warning,
+    read_json_file,
+)
 
 logger = logging.getLogger(__name__)
 
 KEY_TRAINING_DATA_FORMAT_VERSION = "version"
 YAML_VERSION = (1, 2)
+READ_YAML_FILE_CACHE_MAXSIZE = os.environ.get(
+    READ_YAML_FILE_CACHE_MAXSIZE_ENV_VAR, DEFAULT_READ_YAML_FILE_CACHE_MAXSIZE
+)
 
 
 @dataclass
@@ -407,38 +416,161 @@ def validate_raw_yaml_using_schema_file_with_responses(
     )
 
 
-def read_yaml(content: str, reader_type: Union[str, List[str]] = "safe") -> Any:
+def process_content(content: str) -> str:
+    """
+    Process the content to handle both Windows paths and emojis.
+    Windows paths are processed by escaping backslashes but emojis are left untouched.
+
+    Args:
+        content: yaml content to be processed
+    """
+    # Detect common Windows path patterns: e.g., C:\ or \\
+    UNESCAPED_WINDOWS_PATH_PATTERN = re.compile(
+        r"(?<!\w)[a-zA-Z]:(\\[a-zA-Z0-9_ -]+)*(\\)?(?!\\n)"
+    )
+    ESCAPED_WINDOWS_PATH_PATTERN = re.compile(
+        r"(?<!\w)[a-zA-Z]:(\\\\[a-zA-Z0-9_ -]+)+\\\\?(?!\\n)"
+    )
+
+    # Function to escape backslashes in Windows paths but leave other content as is
+    def escape_windows_paths(match: re.Match) -> str:
+        path = str(match.group(0))
+        return path.replace("\\", "\\\\")  # Escape backslashes only in Windows paths
+
+    def unescape_windows_paths(match: re.Match) -> str:
+        path = str(match.group(0))
+        return path.replace("\\\\", "\\")
+
+    # First, process Windows paths by escaping backslashes
+    content = re.sub(UNESCAPED_WINDOWS_PATH_PATTERN, escape_windows_paths, content)
+
+    # Ensure proper handling of emojis by decoding Unicode sequences
+    content = (
+        content.encode("utf-8")
+        .decode("raw_unicode_escape")
+        .encode("utf-16", "surrogatepass")
+        .decode("utf-16")
+    )
+
+    content = re.sub(ESCAPED_WINDOWS_PATH_PATTERN, unescape_windows_paths, content)
+
+    return content
+
+
+def read_yaml(
+    content: str,
+    reader_type: Union[str, List[str]] = "safe",
+    **kwargs: Any,
+) -> Any:
     """Parses yaml from a text.
 
     Args:
         content: A text containing yaml content.
         reader_type: Reader type to use. By default, "safe" will be used.
+        **kwargs: Any
 
     Raises:
         ruamel.yaml.parser.ParserError: If there was an error when parsing the YAML.
     """
     if _is_ascii(content):
-        # Required to make sure emojis are correctly parsed
-        content = (
-            content.encode("utf-8")
-            .decode("raw_unicode_escape")
-            .encode("utf-16", "surrogatepass")
-            .decode("utf-16")
-        )
+        content = process_content(content)
 
+    custom_constructor = kwargs.get("custom_constructor", None)
+
+    # Create YAML parser with custom constructor
+    yaml_parser, reset_constructors = create_yaml_parser(
+        reader_type, custom_constructor
+    )
+    yaml_content = yaml_parser.load(content) or {}
+
+    # Reset to default constructors
+    reset_constructors()
+
+    return yaml_content
+
+
+def create_yaml_parser(
+    reader_type: str,
+    custom_constructor: Optional[Callable] = None,
+) -> Tuple[yaml.YAML, Callable[[], None]]:
+    """Create a YAML parser with an optional custom constructor.
+
+    Args:
+        reader_type (str): The type of the reader
+        (e.g., 'safe', 'rt', 'unsafe').
+        custom_constructor (Optional[Callable]):
+        A custom constructor function for YAML parsing.
+
+    Returns:
+        Tuple[yaml.YAML, Callable[[], None]]: A tuple containing
+        the YAML parser and a function to reset constructors to
+        their original state.
+    """
     yaml_parser = yaml.YAML(typ=reader_type)
     yaml_parser.version = YAML_VERSION  # type: ignore[assignment]
     yaml_parser.preserve_quotes = True  # type: ignore[assignment]
 
-    return yaml_parser.load(content) or {}
+    # Save the original constructors
+    original_mapping_constructor = yaml_parser.constructor.yaml_constructors.get(
+        yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG
+    )
+    original_sequence_constructor = yaml_parser.constructor.yaml_constructors.get(
+        yaml.resolver.BaseResolver.DEFAULT_SEQUENCE_TAG
+    )
+
+    if custom_constructor is not None:
+        # Attach the custom constructor to the loader
+        yaml_parser.constructor.add_constructor(
+            yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, custom_constructor
+        )
+        yaml_parser.constructor.add_constructor(
+            yaml.resolver.BaseResolver.DEFAULT_SEQUENCE_TAG, custom_constructor
+        )
+
+    def reset_constructors() -> None:
+        """Reset the constructors back to their original state."""
+        yaml_parser.constructor.add_constructor(
+            yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, original_mapping_constructor
+        )
+        yaml_parser.constructor.add_constructor(
+            yaml.resolver.BaseResolver.DEFAULT_SEQUENCE_TAG,
+            original_sequence_constructor,
+        )
+
+    def custom_date_constructor(loader: SafeLoader, node: ScalarNode) -> str:
+        """Custom constructor for parsing dates in the format '%Y-%m-%d'.
+
+        This constructor parses dates in the '%Y-%m-%d' format and returns them as
+        strings instead of datetime objects. This change was introduced because the
+        default timestamp constructor in ruamel.yaml returns datetime objects, which
+        caused issues in our use case where the `api_version` in the LLM config must
+        be a string, but was being interpreted as a datetime object.
+        """
+        value = loader.construct_scalar(node)
+        try:
+            # Attempt to parse the date
+            date_obj = datetime.datetime.strptime(value, "%Y-%m-%d").date()
+            # Return the date as a string instead of a datetime object
+            return date_obj.strftime("%Y-%m-%d")
+        except ValueError:
+            # If the date is not in the correct format, return the original value
+            return value
+
+    # Add the custom date constructor
+    yaml_parser.constructor.add_constructor(
+        "tag:yaml.org,2002:timestamp", custom_date_constructor
+    )
+
+    return yaml_parser, reset_constructors
 
 
 def _is_ascii(text: str) -> bool:
     return all(ord(character) < 128 for character in text)
 
 
+@lru_cache(maxsize=READ_YAML_FILE_CACHE_MAXSIZE)
 def read_yaml_file(
-    filename: Union[str, Path], reader_type: Union[str, List[str]] = "safe"
+    filename: Union[str, Path], reader_type: Union[str, Tuple[str]] = "safe"
 ) -> Union[List[Any], Dict[str, Any]]:
     """Parses a yaml file.
 
@@ -452,7 +584,10 @@ def read_yaml_file(
         Parsed content of the file.
     """
     try:
-        return read_yaml(read_file(filename, DEFAULT_ENCODING), reader_type)
+        fixed_reader_type = (
+            list(reader_type) if isinstance(reader_type, tuple) else reader_type
+        )
+        return read_yaml(read_file(filename, DEFAULT_ENCODING), fixed_reader_type)
     except (YAMLError, DuplicateKeyError) as e:
         raise YamlSyntaxException(filename, e)
 
@@ -635,14 +770,14 @@ def validate_training_data_format_version(
     """Validates version on the training data content using `version` field.
 
        Warns users if the file is not compatible with the current version of
-       Rasa Open Source.
+       Rasa Pro.
 
     Args:
         yaml_file_content: Raw content of training data file as a dictionary.
         filename: Name of the validated file.
 
     Returns:
-        `True` if the file can be processed by current version of Rasa Open Source,
+        `True` if the file can be processed by current version of Rasa Pro,
         `False` otherwise.
     """
     if filename:
@@ -662,7 +797,7 @@ def validate_training_data_format_version(
         logger.info(
             f"The '{KEY_TRAINING_DATA_FORMAT_VERSION}' key is missing in "
             f"the training data file {filename}. "
-            f"Rasa Open Source will read the file as a "
+            f"Rasa Pro will read the file as a "
             f"version '{LATEST_TRAINING_DATA_FORMAT_VERSION}' file. "
             f"See {DOCS_URL_TRAINING_DATA}."
         )
@@ -674,15 +809,12 @@ def validate_training_data_format_version(
         parsed_version = version.parse(version_value)
         latest_version = version.parse(LATEST_TRAINING_DATA_FORMAT_VERSION)
 
-        if isinstance(parsed_version, LegacyVersion):
-            raise TypeError
-
         if parsed_version < latest_version:
             raise_warning(
                 f"Training data file {filename} has a lower "
-                f"format version than your Rasa Open Source installation: "
+                f"format version than your Rasa Pro installation: "
                 f"{version_value} < {LATEST_TRAINING_DATA_FORMAT_VERSION}. "
-                f"Rasa Open Source will read the file as a version "
+                f"Rasa Pro will read the file as a version "
                 f"{LATEST_TRAINING_DATA_FORMAT_VERSION} file. "
                 f"Please update your version key to "
                 f"{LATEST_TRAINING_DATA_FORMAT_VERSION}. "
@@ -690,16 +822,15 @@ def validate_training_data_format_version(
             )
 
         if latest_version >= parsed_version:
-
             return True
 
-    except TypeError:
+    except (TypeError, version.InvalidVersion):
         raise_warning(
             f"Training data file {filename} must specify "
             f"'{KEY_TRAINING_DATA_FORMAT_VERSION}' as string, for example:\n"
             f"{KEY_TRAINING_DATA_FORMAT_VERSION}: "
             f"'{LATEST_TRAINING_DATA_FORMAT_VERSION}'\n"
-            f"Rasa Open Source will read the file as a "
+            f"Rasa Pro will read the file as a "
             f"version '{LATEST_TRAINING_DATA_FORMAT_VERSION}' file.",
             docs=DOCS_URL_TRAINING_DATA,
         )
@@ -707,9 +838,9 @@ def validate_training_data_format_version(
 
     raise_warning(
         f"Training data file {filename} has a greater "
-        f"format version than your Rasa Open Source installation: "
+        f"format version than your Rasa Pro installation: "
         f"{version_value} > {LATEST_TRAINING_DATA_FORMAT_VERSION}. "
-        f"Please consider updating to the latest version of Rasa Open Source."
+        f"Please consider updating to the latest version of Rasa Pro."
         f"This file will be skipped.",
         docs=DOCS_URL_TRAINING_DATA,
     )
@@ -775,3 +906,31 @@ def validate_yaml_with_jsonschema(
             errors,
             content=source_data,
         )
+
+
+def validate_yaml_data_using_schema_with_assertions(
+    yaml_data: Any,
+    schema_content: Union[List[Any], Dict[str, Any]],
+    package_name: str = PACKAGE_NAME,
+) -> None:
+    """Validate raw yaml content using a schema with assertions sub-schema.
+
+    Args:
+        yaml_data: the parsed yaml data to be validated
+        schema_content: the content of the YAML schema
+        package_name: the name of the package the schema is located in. defaults
+        to `rasa`.
+    """
+    # test case assertions are part of the schema extension
+    # it will be included if the schema explicitly references it with
+    # include: assertions
+    e2e_test_cases_schema_content = read_schema_file(
+        ASSERTIONS_SCHEMA_FILE, package_name
+    )
+
+    schema_content = dict(schema_content, **e2e_test_cases_schema_content)
+    schema_extensions = [
+        str(files(package_name).joinpath(ASSERTIONS_SCHEMA_EXTENSIONS_FILE))
+    ]
+
+    validate_yaml_content_using_schema(yaml_data, schema_content, schema_extensions)

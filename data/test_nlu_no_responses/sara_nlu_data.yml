@@ -1475,25 +1475,25 @@ nlu:
     - I am trying to build a bot using rasa
     - i am [new](user_type) but so how can i start
     - where can i find rasa document
-    - more about [Rasa open source](product)
-    - tell me about [rasa open source](product)
-    - i want to know about [rasa Open source](product)
-    - get started with [Rasa Open Source](product)
-    - [Rasa open source](product)
-    - [rasa open source](product)
-    - [rasa Open source](product)
-    - [Rasa Open Source](product)
-    - [rasa open source](product) then lets talk about [rasa x](product)
-    - [rasa open source](product) please and thank you
-    - [rasa open source](product) to begin with
+    - more about [Rasa pro](product)
+    - tell me about [rasa pro](product)
+    - i want to know about [rasa Pro](product)
+    - get started with [Rasa Pro](product)
+    - [Rasa pro](product)
+    - [rasa pro](product)
+    - [rasa Pro](product)
+    - [Rasa Pro](product)
+    - [rasa pro](product) then lets talk about [rasa x](product)
+    - [rasa pro](product) please and thank you
+    - [rasa pro](product) to begin with
     - [open source rasa](product)
-    - the [rasa open source](product)
-    - Tell me about [rasa open source](product)
+    - the [rasa pro](product)
+    - Tell me about [rasa pro](product)
     - Rada [open source](product)
-    - how to train [rasa open source](product)
-    - More about [Rasa open source](product)
+    - how to train [rasa pro](product)
+    - More about [Rasa pro](product)
     - Rosa [open source](product)
-    - [rasa open source](product) first
+    - [rasa pro](product) first
     - rasa basics
     - how can i get stared
     - how to build assistant?
@@ -1671,7 +1671,7 @@ nlu:
     - what do I need to install Rasa
     - what sould i do to install rasa
     - installation steps of rasa
-    - how can I install [rasa open source](product)?
+    - how can I install [rasa pro](product)?
     - How to download rasa
     - where do i download rasa
     - I have a specific question regarding installation
@@ -2340,13 +2340,13 @@ nlu:
 - synonym: rasa
   examples: |
     - Rasa
-    - rasa open source
-    - Rasa Open Source
-    - Rasa open source
-    - rasa Open Source
+    - rasa pro
+    - Rasa Pro
+    - Rasa pro
+    - rasa Pro
     - open source
     - open source rasa
-    - RASA open source
+    - RASA pro
 - synonym: stack
   examples: |
     - fullstack

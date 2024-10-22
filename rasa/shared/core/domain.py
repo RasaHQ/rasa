@@ -1,85 +1,88 @@
-import copy
+from __future__ import annotations
+
 import collections
+import copy
 import json
-import structlog
 import os
+from dataclasses import dataclass
+from functools import cached_property
 from pathlib import Path
 from typing import (
+    TYPE_CHECKING,
     Any,
+    Callable,
+    ClassVar,
     Dict,
+    Iterable,
     List,
+    MutableMapping,
+    NamedTuple,
     NoReturn,
     Optional,
     Set,
     Text,
     Tuple,
     Union,
-    TYPE_CHECKING,
-    Iterable,
-    MutableMapping,
-    NamedTuple,
-    Callable,
     cast,
 )
-from dataclasses import dataclass
 
+import structlog
 from ruamel.yaml.scalarstring import DoubleQuotedScalarString
 
+import rasa.shared.core.slot_mappings
+import rasa.shared.utils.common
+import rasa.shared.utils.io
 from rasa.shared.constants import (
-    DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
     DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION,
-    DOMAIN_SCHEMA_FILE,
+    DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
     DOCS_URL_DOMAINS,
     DOCS_URL_FORMS,
-    LATEST_TRAINING_DATA_FORMAT_VERSION,
     DOCS_URL_RESPONSES,
-    REQUIRED_SLOTS_KEY,
+    DOMAIN_SCHEMA_FILE,
     IGNORED_INTENTS,
+    LATEST_TRAINING_DATA_FORMAT_VERSION,
+    REQUIRED_SLOTS_KEY,
     RESPONSE_CONDITION,
 )
 from rasa.shared.core.constants import (
     ACTION_SHOULD_SEND_DOMAIN,
+    ACTIVE_LOOP,
+    KNOWLEDGE_BASE_SLOT_NAMES,
+    MAPPING_CONDITIONS,
+    MAPPING_TYPE,
     SLOT_MAPPINGS,
     SlotMappingType,
-    MAPPING_TYPE,
-    MAPPING_CONDITIONS,
-    KNOWLEDGE_BASE_SLOT_NAMES,
-    ACTIVE_LOOP,
+)
+from rasa.shared.core.events import SlotSet, UserUttered
+from rasa.shared.core.slots import (
+    AnySlot,
+    CategoricalSlot,
+    ListSlot,
+    Slot,
+    TextSlot,
 )
 from rasa.shared.exceptions import (
     RasaException,
     YamlException,
     YamlSyntaxException,
 )
-from rasa.shared.utils.cli import print_error_and_exit
-import rasa.shared.utils.io
-import rasa.shared.utils.common
-import rasa.shared.core.slot_mappings
-from rasa.shared.core.events import SlotSet, UserUttered
-from rasa.shared.core.slots import (
-    Slot,
-    CategoricalSlot,
-    TextSlot,
-    AnySlot,
-    ListSlot,
+from rasa.shared.nlu.constants import (
+    ENTITIES,
+    ENTITY_ATTRIBUTE_GROUP,
+    ENTITY_ATTRIBUTE_ROLE,
+    ENTITY_ATTRIBUTE_TYPE,
+    INTENT_NAME_KEY,
+    RESPONSE_IDENTIFIER_DELIMITER,
 )
+from rasa.shared.utils.cli import print_error_and_exit
 from rasa.shared.utils.yaml import (
     KEY_TRAINING_DATA_FORMAT_VERSION,
-    read_yaml,
-    validate_training_data_format_version,
-    read_yaml_file,
     dump_obj_as_yaml_to_string,
+    read_yaml,
+    read_yaml_file,
     validate_raw_yaml_using_schema_file_with_responses,
+    validate_training_data_format_version,
 )
-from rasa.shared.nlu.constants import (
-    ENTITY_ATTRIBUTE_TYPE,
-    ENTITY_ATTRIBUTE_ROLE,
-    ENTITY_ATTRIBUTE_GROUP,
-    RESPONSE_IDENTIFIER_DELIMITER,
-    INTENT_NAME_KEY,
-    ENTITIES,
-)
-
 
 if TYPE_CHECKING:
     from rasa.shared.core.trackers import DialogueStateTracker
@@ -156,7 +159,7 @@ class SessionConfig(NamedTuple):
     carry_over_slots: bool
 
     @staticmethod
-    def default() -> "SessionConfig":
+    def default() -> SessionConfig:
         """Returns the SessionConfig with the default values."""
         return SessionConfig(
             DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
@@ -192,13 +195,15 @@ class Domain:
     and entities it can recognise.
     """
 
+    validate_yaml: ClassVar[bool] = True
+
     @classmethod
-    def empty(cls) -> "Domain":
+    def empty(cls) -> Domain:
         """Returns empty Domain."""
         return Domain.from_dict({})
 
     @classmethod
-    def load(cls, paths: Union[List[Union[Path, Text]], Text, Path]) -> "Domain":
+    def load(cls, paths: Union[List[Union[Path, Text]], Text, Path]) -> Domain:
         """Returns loaded Domain after merging all domain files."""
         if not paths:
             raise InvalidDomain(
@@ -216,8 +221,15 @@ class Domain:
         return domain
 
     @classmethod
-    def from_path(cls, path: Union[Text, Path]) -> "Domain":
-        """Loads the `Domain` from a path."""
+    def from_path(cls, path: Union[Text, Path]) -> Domain:
+        """Loads the `Domain` from a path.
+
+        Args:
+            path: Path to the domain file.
+
+        Returns:
+            The instantiated `Domain` object.
+        """
         path = os.path.abspath(path)
 
         if os.path.isfile(path):
@@ -233,17 +245,30 @@ class Domain:
         return domain
 
     @classmethod
-    def from_file(cls, path: Text) -> "Domain":
-        """Loads the `Domain` from a YAML file."""
+    def from_file(cls, path: Text) -> Domain:
+        """Loads the `Domain` from a YAML file.
+
+        Args:
+            path: Path to the domain file.
+
+        Returns:
+            The instantiated `Domain` object.
+        """
         return cls.from_yaml(rasa.shared.utils.io.read_file(path), path)
 
     @classmethod
-    def from_yaml(cls, yaml: Text, original_filename: Text = "") -> "Domain":
-        """Loads the `Domain` from YAML text after validating it."""
-        try:
-            validate_raw_yaml_using_schema_file_with_responses(yaml, DOMAIN_SCHEMA_FILE)
+    def from_yaml(cls, yaml: Text, original_filename: Text = "") -> Domain:
+        """Loads the `Domain` from YAML text after validating it.
 
-            data = read_yaml(yaml)
+        Args:
+            yaml: The YAML string to load the domain from.
+            original_filename: The filename of the original YAML file.
+
+        Returns:
+            The instantiated `Domain` object.
+        """
+        try:
+            data = cls._dict_from_raw_yaml_content(yaml)
             if not validate_training_data_format_version(data, original_filename):
                 return Domain.empty()
             return cls.from_dict(data)
@@ -252,7 +277,7 @@ class Domain:
             raise e
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "Domain":
+    def from_dict(cls, data: Dict) -> Domain:
         """Deserializes and creates domain.
 
         Args:
@@ -272,8 +297,8 @@ class Domain:
 
         additional_arguments = {
             **data.get("config", {}),
-            "actions_which_explicitly_need_domain": cls._collect_actions_which_explicitly_need_domain(  # noqa: E501
-                domain_actions
+            "actions_which_explicitly_need_domain": (
+                cls._collect_actions_which_explicitly_need_domain(domain_actions)
             ),
         }
         session_config = cls._get_session_config(data.get(SESSION_CONFIG_KEY, {}))
@@ -283,8 +308,8 @@ class Domain:
         _validate_forms(forms)
 
         return cls(
-            intents=intents,
-            entities=data.get(KEY_ENTITIES, {}),
+            intents=intents or [],
+            entities=data.get(KEY_ENTITIES, []),
             slots=slots,
             responses=responses,
             action_names=actions,
@@ -309,22 +334,28 @@ class Domain:
         return SessionConfig(session_expiration_time_min, carry_over_slots)
 
     @classmethod
-    def from_directory(cls, path: Text) -> "Domain":
-        """Loads and merges multiple domain files recursively from a directory tree."""
+    def from_directory(cls, path: Text) -> Domain:
+        """Loads and merges multiple domain files recursively from a directory tree.
+
+        Args:
+            path: Path to the root directory.
+
+        Returns:
+            The instantiated `Domain` object.
+        """
         combined: Dict[Text, Any] = {}
         duplicates: List[Dict[Text, List[Text]]] = []
 
         for root, _, files in os.walk(path, followlinks=True):
             for file in files:
-
                 full_path = os.path.join(root, file)
                 if not Domain.is_domain_file(full_path):
                     continue
 
-                # does the validation here only
-                _ = Domain.from_file(full_path)
+                other_dict = cls._dict_from_raw_yaml_content(
+                    rasa.shared.utils.io.read_file(full_path)
+                )
 
-                other_dict = read_yaml(rasa.shared.utils.io.read_file(full_path))
                 combined = Domain.merge_domain_dicts(other_dict, combined)
                 duplicates.append(combined.pop("duplicates", {}))
 
@@ -335,7 +366,7 @@ class Domain:
 
     @staticmethod
     def _handle_duplicates_from_multiple_files(
-        duplicates_from_multiple_files: List[Dict[Text, List[Text]]]
+        duplicates_from_multiple_files: List[Dict[Text, List[Text]]],
     ) -> None:
         combined_duplicates: Dict[Text, List[Text]] = collections.defaultdict(list)
 
@@ -370,10 +401,10 @@ class Domain:
 
     def merge(
         self,
-        domain: Optional["Domain"],
+        domain: Optional[Domain],
         override: bool = False,
         ignore_warnings_about_duplicates: bool = False,
-    ) -> "Domain":
+    ) -> Domain:
         """Merges this domain dict with another one, combining their attributes.
 
         This method merges domain dicts, and ensures all attributes (like ``intents``,
@@ -560,10 +591,12 @@ class Domain:
                     "domain.collect_slots.no_mappings_defined",
                     event_info=(
                         f"Slot '{slot_name}' has no mappings defined. "
-                        f"We will continue with an empty list of mappings."
+                        f"Assigning the default FROM_LLM slot mapping."
                     ),
                 )
-                slot_dict[slot_name][SLOT_MAPPINGS] = []
+                slot_dict[slot_name][SLOT_MAPPINGS] = [
+                    {MAPPING_TYPE: SlotMappingType.FROM_LLM.value}
+                ]
 
             slot = slot_class(slot_name, **slot_dict[slot_name])
             slots.append(slot)
@@ -674,7 +707,7 @@ class Domain:
 
         return intent
 
-    @rasa.shared.utils.common.lazy_property
+    @cached_property
     def retrieval_intents(self) -> List[Text]:
         """List retrieval intents present in the domain."""
         return [
@@ -790,13 +823,18 @@ class Domain:
             }
         else:
             intent_name = next(iter(intent.keys()))
-
-        return (
-            intent_name,
-            cls._transform_intent_properties_for_internal_use(
-                intent, entity_properties
-            ),
-        )
+        try:
+            return (
+                intent_name,
+                cls._transform_intent_properties_for_internal_use(
+                    intent, entity_properties
+                ),
+            )
+        except AttributeError:
+            raise InvalidDomain(
+                f"Detected invalid intent definition: {intent}. "
+                f"Please make sure all intent definitions are valid."
+            )
 
     @classmethod
     def _add_default_intents(
@@ -894,7 +932,7 @@ class Domain:
         self.store_entities_as_slots = store_entities_as_slots
         self._check_domain_sanity()
 
-    def __deepcopy__(self, memo: Optional[Dict[int, Any]]) -> "Domain":
+    def __deepcopy__(self, memo: Optional[Dict[int, Any]]) -> Domain:
         """Enables making a deep copy of the `Domain` using `copy.deepcopy`.
 
         See https://docs.python.org/3/library/copy.html#copy.deepcopy
@@ -922,7 +960,7 @@ class Domain:
 
     @staticmethod
     def _collect_overridden_default_intents(
-        intents: Union[Set[Text], List[Text], List[Dict[Text, Any]]]
+        intents: Union[Set[Text], List[Text], List[Dict[Text, Any]]],
     ) -> List[Text]:
         """Collects the default intents overridden by the user.
 
@@ -942,7 +980,7 @@ class Domain:
 
     @staticmethod
     def _initialize_forms(
-        forms: Dict[Text, Any]
+        forms: Dict[Text, Any],
     ) -> Tuple[List[Text], Dict[Text, Any], List[Text]]:
         """Retrieves the initial values for the Domain's form fields.
 
@@ -952,7 +990,7 @@ class Domain:
         Returns:
             The form names, a mapping of form names and required slots, and custom
             actions.
-            Returning custom actions for each forms means that Rasa Open Source should
+            Returning custom actions for each forms means that Rasa Pro should
             not use the default `FormAction` for the forms, but rather a custom action
             for it. This can e.g. be used to run the deprecated Rasa Open Source 1
             `FormAction` which is implemented in the Rasa SDK.
@@ -966,6 +1004,7 @@ class Domain:
         """Returns a unique hash for the domain."""
         return int(self.fingerprint(), 16)
 
+    @rasa.shared.utils.common.cached_method
     def fingerprint(self) -> Text:
         """Returns a unique hash for the domain which is stable across python runs.
 
@@ -986,7 +1025,7 @@ class Domain:
 
     @staticmethod
     def _sort_intent_names_alphabetical_order(
-        intents: List[Union[Text, Dict]]
+        intents: List[Union[Text, Dict]],
     ) -> List[Union[Text, Dict]]:
         def sort(elem: Union[Text, Dict]) -> Union[Text, Dict]:
             if isinstance(elem, dict):
@@ -997,23 +1036,23 @@ class Domain:
         sorted_intents = sorted(intents, key=sort)
         return sorted_intents
 
-    @rasa.shared.utils.common.lazy_property
+    @cached_property
     def user_actions_and_forms(self) -> List[Text]:
         """Returns combination of user actions and forms."""
         return self.user_actions + self.form_names
 
-    @rasa.shared.utils.common.lazy_property
+    @cached_property
     def num_actions(self) -> int:
         """Returns the number of available actions."""
         # noinspection PyTypeChecker
         return len(self.action_names_or_texts)
 
-    @rasa.shared.utils.common.lazy_property
+    @cached_property
     def num_states(self) -> int:
         """Number of used input states for the action prediction."""
         return len(self.input_states)
 
-    @rasa.shared.utils.common.lazy_property
+    @cached_property
     def retrieval_intent_responses(self) -> Dict[Text, List[Dict[Text, Any]]]:
         """Return only the responses which are defined for retrieval intents."""
         return dict(
@@ -1027,7 +1066,7 @@ class Domain:
 
     @staticmethod
     def is_retrieval_intent_response(
-        response: Tuple[Text, List[Dict[Text, Any]]]
+        response: Tuple[Text, List[Dict[Text, Any]]],
     ) -> bool:
         """Check if the response is for a retrieval intent.
 
@@ -1165,8 +1204,7 @@ class Domain:
             f"Available actions are: \n{action_names}"
         )
 
-    # noinspection PyTypeChecker
-    @rasa.shared.utils.common.lazy_property
+    @cached_property
     def slot_states(self) -> List[Text]:
         """Returns all available slot state strings."""
         return [
@@ -1175,8 +1213,7 @@ class Domain:
             for feature_index in range(0, slot.feature_dimensionality())
         ]
 
-    # noinspection PyTypeChecker
-    @rasa.shared.utils.common.lazy_property
+    @cached_property
     def entity_states(self) -> List[Text]:
         """Returns all available entity state strings."""
         entity_states = copy.deepcopy(self.entities)
@@ -1224,12 +1261,12 @@ class Domain:
             for entity_sub_label in entity_sub_labels
         ]
 
-    @rasa.shared.utils.common.lazy_property
+    @cached_property
     def input_state_map(self) -> Dict[Text, int]:
         """Provide a mapping from state names to indices."""
         return {f: i for i, f in enumerate(self.input_states)}
 
-    @rasa.shared.utils.common.lazy_property
+    @cached_property
     def input_states(self) -> List[Text]:
         """Returns all available states."""
         return (
@@ -1459,7 +1496,7 @@ class Domain:
         ignore_rule_only_turns: bool = False,
         rule_only_data: Optional[Dict[Text, Any]] = None,
     ) -> List[State]:
-        """List of states for each state of the trackers history.
+        """List of states for each state of the tracker's history.
 
         Args:
             tracker: Dialogue state tracker containing the dialogue so far.
@@ -1603,7 +1640,7 @@ class Domain:
 
     @staticmethod
     def get_responses_with_multilines(
-        responses: Dict[Text, List[Dict[Text, Any]]]
+        responses: Dict[Text, List[Dict[Text, Any]]],
     ) -> Dict[Text, List[Dict[Text, Any]]]:
         """Returns `responses` with preserved multilines in the `text` key.
 
@@ -1622,9 +1659,9 @@ class Domain:
                 if not response_text or "\n" not in response_text:
                     continue
                 # Has new lines, use `LiteralScalarString`
-                final_responses[utter_action][i][
-                    KEY_RESPONSES_TEXT
-                ] = LiteralScalarString(response_text)
+                final_responses[utter_action][i][KEY_RESPONSES_TEXT] = (
+                    LiteralScalarString(response_text)
+                )
 
         return final_responses
 
@@ -1676,12 +1713,12 @@ class Domain:
         """Return the configuration for an intent."""
         return self.intent_properties.get(intent_name, {})
 
-    @rasa.shared.utils.common.lazy_property
+    @cached_property
     def intents(self) -> List[Text]:
         """Returns sorted list of intents."""
         return sorted(self.intent_properties.keys())
 
-    @rasa.shared.utils.common.lazy_property
+    @cached_property
     def entities(self) -> List[Text]:
         """Returns sorted list of entities."""
         return sorted(self.entity_properties.entities)
@@ -1802,7 +1839,7 @@ class Domain:
             ]
 
         def check_mappings(
-            intent_properties: Dict[Text, Dict[Text, Union[bool, List]]]
+            intent_properties: Dict[Text, Dict[Text, Union[bool, List]]],
         ) -> List[Tuple[Text, Text]]:
             """Checks whether intent-action mappings use valid action names or texts."""
             incorrect = []
@@ -1840,7 +1877,7 @@ class Domain:
             return message
 
         def get_duplicate_exception_message(
-            duplicates: List[Tuple[List[Text], Text]]
+            duplicates: List[Tuple[List[Text], Text]],
         ) -> Text:
             """Return a message given a list of duplicates."""
             message = ""
@@ -2014,7 +2051,7 @@ class Domain:
 
     @staticmethod
     def _collect_action_names(
-        actions: List[Union[Text, Dict[Text, Any]]]
+        actions: List[Union[Text, Dict[Text, Any]]],
     ) -> List[Text]:
         action_names: List[Text] = []
 
@@ -2028,7 +2065,7 @@ class Domain:
 
     @staticmethod
     def _collect_actions_which_explicitly_need_domain(
-        actions: List[Union[Text, Dict[Text, Any]]]
+        actions: List[Union[Text, Dict[Text, Any]]],
     ) -> List[Text]:
         action_names: List[Text] = []
 
@@ -2046,9 +2083,35 @@ class Domain:
 
         return action_names
 
+    def is_custom_action(self, action_name: str) -> bool:
+        return action_name in self._custom_actions
+
+    @classmethod
+    def _dict_from_raw_yaml_content(cls, raw_yaml_content: Text) -> Any:
+        """Loads the Domain dict from raw YAML content.
+
+        Validates the raw YAML content using the schema file if `validate_yaml` is set
+        to `True`.
+
+        Args:
+            raw_yaml_content: The raw YAML content of the domain file.
+
+        Returns:
+            The Domain dict.
+        """
+        if cls.validate_yaml:
+            structlogger.info(
+                "domain.from_yaml.validating",
+            )
+            validate_raw_yaml_using_schema_file_with_responses(
+                raw_yaml_content, DOMAIN_SCHEMA_FILE
+            )
+
+        return read_yaml(raw_yaml_content)
+
 
 def warn_about_duplicates_found_during_domain_merging(
-    duplicates: Dict[str, List[str]]
+    duplicates: Dict[Text, List[Text]],
 ) -> None:
     """Emits a warning about found duplicates while loading multiple domain paths."""
     domain_keys = [

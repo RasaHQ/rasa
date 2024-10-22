@@ -104,7 +104,7 @@ def test_test(run_in_simple_project_with_model: Callable[..., RunResult]):
 
 
 def test_test_with_no_user_utterance(
-    run_in_simple_project_with_model: Callable[..., RunResult]
+    run_in_simple_project_with_model: Callable[..., RunResult],
 ):
     write_yaml(
         {"pipeline": "KeywordIntentClassifier", "policies": [{"name": "TEDPolicy"}]},
@@ -220,7 +220,7 @@ def test_test_nlu_comparison(run_in_simple_project: Callable[..., RunResult]):
 
 
 def test_test_core_comparison(
-    run_in_simple_project_with_model: Callable[..., RunResult]
+    run_in_simple_project_with_model: Callable[..., RunResult],
 ):
     files = list_files("models")
     copyfile(files[0], "models/copy-model.tar.gz")

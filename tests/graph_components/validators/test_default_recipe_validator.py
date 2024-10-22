@@ -705,7 +705,6 @@ def test_nlu_raise_if_featurizers_are_not_compatible(
 def test_core_warn_if_data_but_no_policy(
     monkeypatch: MonkeyPatch, policy_type: Optional[Type[Policy]]
 ):
-
     importer = TrainingDataImporter.load_from_dict(
         domain_path="data/test_e2ebot/domain.yml",
         training_data_paths=[
@@ -814,7 +813,7 @@ def test_core_raise_if_domain_contains_form_names_but_no_rule_policy_given(
     importer = DummyImporter(domain=domain_with_form)
     graph_schema = GraphSchema(
         {
-            "policy": SchemaNode({}, policy_type, "", "", {})  # noqa: RUF011
+            "policy": SchemaNode({}, policy_type, "", "", {})
             for policy_type in policy_types
         }
     )
@@ -843,7 +842,6 @@ def test_core_raise_if_domain_contains_form_names_but_no_rule_policy_given(
 def test_core_raise_if_a_rule_policy_is_incompatible_with_domain(
     monkeypatch: MonkeyPatch,
 ):
-
     domain = Domain.empty()
 
     num_instances = 2
@@ -889,7 +887,6 @@ def test_core_warn_if_policy_priorities_are_not_unique(
     num_duplicates: bool,
     priority: int,
 ):
-
     assert (
         len(policy_types) >= priority + num_duplicates
     ), f"This tests needs at least {priority+num_duplicates} many types."
@@ -954,7 +951,6 @@ def test_core_raise_if_policy_has_no_priority():
 
 @pytest.mark.parametrize("policy_type_consuming_rule_data", [RulePolicy])
 def test_core_warn_if_rule_data_missing(policy_type_consuming_rule_data: Type[Policy]):
-
     importer = TrainingDataImporter.load_from_dict(
         domain_path="data/test_e2ebot/domain.yml",
         training_data_paths=[
@@ -984,7 +980,6 @@ def test_core_warn_if_rule_data_missing(policy_type_consuming_rule_data: Type[Po
 def test_core_warn_if_rule_data_unused(
     policy_type_not_consuming_rule_data: Type[Policy],
 ):
-
     importer = TrainingDataImporter.load_from_dict(
         domain_path="data/test_moodbot/domain.yml",
         training_data_paths=[

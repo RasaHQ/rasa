@@ -1,26 +1,26 @@
 import argparse
-import structlog
-import sys
 import asyncio
+import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Text, Union
 
-from rasa.cli import SubParsersAction
-import rasa.cli.arguments.train as train_arguments
+import structlog
 
+import rasa.cli.arguments.train as train_arguments
 import rasa.cli.utils
 import rasa.core.utils
-from rasa.shared.importers.importer import TrainingDataImporter
 import rasa.utils.common
+from rasa.cli import SubParsersAction
 from rasa.core.nlg.generator import NaturalLanguageGenerator
 from rasa.core.train import do_compare_training
 from rasa.shared.constants import (
+    CONFIG_MANDATORY_KEYS,
     CONFIG_MANDATORY_KEYS_CORE,
     CONFIG_MANDATORY_KEYS_NLU,
-    CONFIG_MANDATORY_KEYS,
     DEFAULT_DATA_PATH,
     DEFAULT_DOMAIN_PATHS,
 )
+from rasa.shared.importers.importer import TrainingDataImporter
 
 structlogger = structlog.getLogger(__name__)
 
@@ -94,7 +94,7 @@ def run_training(args: argparse.Namespace, can_exit: bool = False) -> Optional[T
     Returns:
         Path to a trained model or `None` if training was not successful.
     """
-    from rasa import train as train_all
+    from rasa.api import train as train_all
 
     domain = rasa.cli.utils.get_validated_path(
         args.domain, "domain", DEFAULT_DOMAIN_PATHS, none_is_valid=True
@@ -110,16 +110,20 @@ def run_training(args: argparse.Namespace, can_exit: bool = False) -> Optional[T
         for f in args.data
     ]
 
+    training_data_importer = TrainingDataImporter.load_from_config(
+        domain_path=domain, training_data_paths=args.data, config_path=config
+    )
+
     if not args.skip_validation:
         structlogger.info(
             "cli.train.run_training",
             event_info="Started validating domain and training data...",
         )
-        importer = TrainingDataImporter.load_from_config(
-            domain_path=domain, training_data_paths=args.data, config_path=config
-        )
+
         rasa.cli.utils.validate_files(
-            args.fail_on_validation_warnings, args.validation_max_history, importer
+            args.fail_on_validation_warnings,
+            args.validation_max_history,
+            training_data_importer,
         )
 
     training_result = train_all(
@@ -137,6 +141,8 @@ def run_training(args: argparse.Namespace, can_exit: bool = False) -> Optional[T
         nlu_additional_arguments=extract_nlu_additional_arguments(args),
         model_to_finetune=_model_for_finetuning(args),
         finetuning_epoch_fraction=args.epoch_fraction,
+        remote_storage=args.remote_storage,
+        file_importer=training_data_importer,
     )
     if training_result.code != 0 and can_exit:
         sys.exit(training_result.code)

@@ -15,7 +15,6 @@ logger = logging.getLogger(__name__)
 
 
 async def test_twilio_voice_twiml_response_text():
-
     inputs = {
         "initial_prompt": "hello",
         "reprompt_fallback_phrase": "i didn't get that",
@@ -44,7 +43,6 @@ async def test_twilio_voice_twiml_response_text():
 
 
 async def test_twilio_voice_twiml_response_buttons():
-
     inputs = {
         "initial_prompt": "hello",
         "reprompt_fallback_phrase": "i didn't get that",
@@ -158,7 +156,6 @@ def test_invalid_configs(configs: Dict[Text, Any], expected: Type[RasaException]
 
 
 async def test_twilio_voice_remove_image():
-
     with pytest.warns(UserWarning):
         output_channel = TwilioVoiceCollectingOutputChannel()
         await output_channel.send_response(
@@ -168,7 +165,6 @@ async def test_twilio_voice_remove_image():
 
 
 async def test_twilio_voice_keep_image_text():
-
     output_channel = TwilioVoiceCollectingOutputChannel()
     await output_channel.send_response(
         recipient_id="Chuck Norris",
@@ -179,7 +175,6 @@ async def test_twilio_voice_keep_image_text():
 
 
 async def test_twilio_emoji_warning():
-
     with pytest.warns(UserWarning):
         output_channel = TwilioVoiceCollectingOutputChannel()
         await output_channel.send_response(
@@ -188,7 +183,6 @@ async def test_twilio_emoji_warning():
 
 
 async def test_twilio_voice_multiple_responses():
-
     inputs = {
         "initial_prompt": "hello",
         "reprompt_fallback_phrase": "i didn't get that",

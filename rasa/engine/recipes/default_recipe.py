@@ -157,10 +157,10 @@ class DefaultV1Recipe(Recipe):
             else:
                 unique_types = set(component_types)
 
-            cls._registered_components[
-                registered_class.__name__
-            ] = cls.RegisteredComponent(
-                registered_class, unique_types, is_trainable, model_from
+            cls._registered_components[registered_class.__name__] = (
+                cls.RegisteredComponent(
+                    registered_class, unique_types, is_trainable, model_from
+                )
             )
             return registered_class
 
@@ -233,7 +233,6 @@ class DefaultV1Recipe(Recipe):
             training_type=training_type,
             assistant_id=config.get(ASSISTANT_ID_KEY),
             language=config.get("language"),
-            spaces=config.get("spaces"),
             core_target=core_target,
             nlu_target=f"run_{RegexMessageHandler.__name__}",
         )
@@ -405,7 +404,7 @@ class DefaultV1Recipe(Recipe):
             return {}
 
         def resolver_name_from_parameter(parameter: str) -> str:
-            # we got a couple special cases to handle wher the parameter name
+            # we got a couple special cases to handle where the parameter name
             # doesn't match the provider name
             if "training_trackers" == parameter:
                 return "training_tracker_provider"
@@ -597,7 +596,7 @@ class DefaultV1Recipe(Recipe):
             needs={"importer": "finetuning_validator"},
             uses=StoryGraphProvider,
             constructor_name="create",
-            fn="provide",
+            fn="provide_train",
             config={"exclusion_percentage": cli_parameters.get("exclusion_percentage")},
             is_input=True,
         )
@@ -699,7 +698,6 @@ class DefaultV1Recipe(Recipe):
         preprocessors: List[Text],
         train_nodes: Dict[Text, SchemaNode],
     ) -> Dict[Text, SchemaNode]:
-
         predict_config = copy.deepcopy(config)
         predict_nodes = {}
 
@@ -882,6 +880,14 @@ class DefaultV1Recipe(Recipe):
             fn="provide_inference",
             config={},
             resource=Resource("domain_provider"),
+        )
+        predict_nodes["story_graph_provider"] = SchemaNode(
+            **DEFAULT_PREDICT_KWARGS,
+            needs={},
+            uses=StoryGraphProvider,
+            fn="provide_inference",
+            config={},
+            resource=Resource("story_graph_provider"),
         )
         predict_nodes["flows_provider"] = SchemaNode(
             **DEFAULT_PREDICT_KWARGS,

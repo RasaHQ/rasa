@@ -139,7 +139,7 @@ def test_webexteams_channel():
     input_channel = WebexTeamsInput(
         access_token="YOUR_ACCESS_TOKEN",
         # this is the `bot access token`
-        room="YOUR_WEBEX_ROOM"
+        room="YOUR_WEBEX_ROOM",
         # the name of your channel to which the bot posts (optional)
     )
 

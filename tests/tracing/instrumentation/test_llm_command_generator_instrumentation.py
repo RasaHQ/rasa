@@ -38,7 +38,9 @@ TEST_PROMPT_DIRECTORY = str(TRACING_TESTS_FIXTURES_DIRECTORY / "test_prompt.jinj
         (
             {
                 "prompt": TEST_PROMPT_DIRECTORY,
-                "model": "gpt-3.5-turbo",
+                "llm": {
+                    "model": "gpt-3.5-turbo",
+                },
             },
             "gpt-3.5-turbo",
         ),
@@ -75,19 +77,15 @@ async def test_tracing_llm_command_generator_default_attrs(
         model_storage=default_model_storage,
         resource=None,
     )
-    await mock_llm_command_generator._generate_action_list_using_llm("some text")
+    await mock_llm_command_generator.invoke_llm("some text")
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1
 
     captured_span = captured_spans[-1]
-    assert (
-        captured_span.name == "MockLLMCommandgenerator._generate_action_list_using_llm"
-    )
+    assert captured_span.name == "MockLLMCommandgenerator.invoke_llm"
 
     expected_attributes = {
         "class_name": component_class.__name__,
@@ -130,24 +128,20 @@ async def test_tracing_llm_command_generator_azure_attrs(
         model_storage=default_model_storage,
         resource=None,
     )
-    await mock_llm_command_generator._generate_action_list_using_llm("some text")
+    await mock_llm_command_generator.invoke_llm("some text")
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1
 
     captured_span = captured_spans[-1]
-    assert (
-        captured_span.name == "MockLLMCommandgenerator._generate_action_list_using_llm"
-    )
+    assert captured_span.name == "MockLLMCommandgenerator.invoke_llm"
 
     expected_attributes = {
         "class_name": component_class.__name__,
         "llm_model": model,
-        "llm_type": "openai",
+        "llm_type": "azure",
         "llm_temperature": "0.3",
         "request_timeout": "15",
         "llm_engine": "azure-test",
@@ -173,7 +167,7 @@ async def test_tracing_llm_command_generator_non_default_llm_attrs(
     config = {
         "prompt": TEST_PROMPT_DIRECTORY,
         "llm": {
-            "type": "cohere",
+            "provider": "cohere",
             "model": model,
             "request_timeout": 10,
             "temperature": 0.7,
@@ -186,19 +180,15 @@ async def test_tracing_llm_command_generator_non_default_llm_attrs(
         model_storage=default_model_storage,
         resource=None,
     )
-    await mock_llm_command_generator._generate_action_list_using_llm("some text")
+    await mock_llm_command_generator.invoke_llm("some text")
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1
 
     captured_span = captured_spans[-1]
-    assert (
-        captured_span.name == "MockLLMCommandgenerator._generate_action_list_using_llm"
-    )
+    assert captured_span.name == "MockLLMCommandgenerator.invoke_llm"
 
     expected_attributes = {
         "class_name": component_class.__name__,
@@ -238,9 +228,7 @@ def test_tracing_llm_command_generator_check_commands_against_startable_flows(
         startable_flows=FlowsList(underlying_flows=[Flow(id="transfer_money")]),
     )
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     #
@@ -254,7 +242,7 @@ def test_tracing_llm_command_generator_check_commands_against_startable_flows(
 
     expected_attributes = {
         "commands": '[{"flow": "transfer_money", "command": "start flow"}, '
-        '{"name": "amount", "command": "set slot", "is_slot_value_missing_or_none": false}]',  # noqa: E501
+        '{"name": "amount", "extractor": "LLM", "command": "set slot", "is_slot_value_missing_or_none": false}]',  # noqa: E501
         "startable_flow_ids": '["transfer_money"]',
     }
     assert captured_span.attributes == expected_attributes
@@ -278,21 +266,15 @@ async def test_tracing_llm_command_generator_prompt_tokens(
         model_storage=default_model_storage,
         resource=Resource("llm-command-generator"),
     )
-    await mock_llm_command_generator._generate_action_list_using_llm(
-        "This is a test prompt."
-    )
+    await mock_llm_command_generator.invoke_llm("This is a test prompt.")
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1
 
     captured_span = captured_spans[-1]
-    assert (
-        captured_span.name == "MockLLMCommandgenerator._generate_action_list_using_llm"
-    )
+    assert captured_span.name == "MockLLMCommandgenerator.invoke_llm"
 
     expected_attributes = {
         "class_name": component_class.__name__,
@@ -323,31 +305,25 @@ async def test_tracing_llm_command_generator_prompt_tokens_non_openai(
     mock_llm_command_generator = component_class(
         config={
             "trace_prompt_tokens": True,
-            "llm": {"type": "cohere", "model": "command"},
+            "llm": {"provider": "cohere", "model": "command"},
         },
         model_storage=default_model_storage,
         resource=Resource("llm-command-generator"),
     )
 
     with caplog.at_level(logging.WARNING):
-        await mock_llm_command_generator._generate_action_list_using_llm(
-            "This is a test prompt."
-        )
+        await mock_llm_command_generator.invoke_llm("This is a test prompt.")
         assert (
             "Tracing prompt tokens is only supported for OpenAI models. Skipping."
             in caplog.text
         )
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1
 
     captured_span = captured_spans[-1]
-    assert (
-        captured_span.name == "MockLLMCommandgenerator._generate_action_list_using_llm"
-    )
+    assert captured_span.name == "MockLLMCommandgenerator.invoke_llm"
 
     assert captured_span.attributes["len_prompt_tokens"] == "None"

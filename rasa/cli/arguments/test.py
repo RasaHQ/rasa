@@ -96,7 +96,7 @@ def add_test_core_argument_group(
 
 
 def add_test_nlu_argument_group(
-    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer],
 ) -> None:
     add_nlu_data_param(parser, help_text="File or folder containing your NLU data.")
 

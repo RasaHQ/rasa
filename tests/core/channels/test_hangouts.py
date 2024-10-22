@@ -9,7 +9,6 @@ logger = logging.getLogger(__name__)
 
 
 def test_hangouts_channel():
-
     from rasa.core.channels.hangouts import HangoutsInput
     import rasa.core
 
@@ -162,7 +161,6 @@ def test_hangouts_extract_functions():
 
 @pytest.mark.asyncio
 async def test_hangouts_output_channel_functions():
-
     from rasa.core.channels.hangouts import HangoutsOutput
 
     output_channel = HangoutsOutput()

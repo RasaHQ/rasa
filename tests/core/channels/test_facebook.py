@@ -15,7 +15,7 @@ def test_facebook_channel():
         # you need tell facebook this token, to confirm your URL
         # deepcode ignore HardcodedNonCryptoSecret/test: Test credential
         fb_secret="YOUR_FB_SECRET",  # your app secret
-        fb_access_token="YOUR_FB_PAGE_ACCESS_TOKEN"
+        fb_access_token="YOUR_FB_PAGE_ACCESS_TOKEN",
         # token for the page you subscribed to
     )
 

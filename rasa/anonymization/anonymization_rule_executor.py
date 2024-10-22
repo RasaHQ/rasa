@@ -87,19 +87,19 @@ class AnonymizationAnalyzer(metaclass=Singleton):
         if anonymization_rule_list.model_provider == "transformers":
             nlp_engine = TransformersNlpEngine(
                 models={
-                    anonymization_rule_list.language: anonymization_rule_list.models  # noqa: E501
+                    anonymization_rule_list.language: anonymization_rule_list.models
                 },
             )
         elif anonymization_rule_list.model_provider == "stanza":
             nlp_engine = StanzaNlpEngine(
                 models={
-                    anonymization_rule_list.language: anonymization_rule_list.models  # noqa: E501
+                    anonymization_rule_list.language: anonymization_rule_list.models
                 },
             )
         else:
             nlp_engine = SpacyNlpEngine(
                 models={
-                    anonymization_rule_list.language: anonymization_rule_list.models  # noqa: E501
+                    anonymization_rule_list.language: anonymization_rule_list.models
                 },
             )
 
@@ -123,7 +123,7 @@ class AnonymizationRuleExecutor:
             else None
         )
 
-        self.anonymizer_engine = AnonymizerEngine()
+        self.anonymizer_engine = AnonymizerEngine()  # type: ignore
 
     @staticmethod
     def _validate_anonymization_rule_list(
@@ -146,7 +146,7 @@ class AnonymizationRuleExecutor:
 
         return True
 
-    def run(self, text: Text) -> Text:
+    def run(self, text: Text) -> Optional[Text]:
         """Anonymizes the given text using the given anonymization rule list."""
         if (
             self.analyzer is None

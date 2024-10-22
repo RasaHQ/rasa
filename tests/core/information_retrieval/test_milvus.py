@@ -2,16 +2,14 @@ from typing import Any
 
 from pytest import MonkeyPatch
 
-from rasa.core.information_retrieval.information_retrieval import (
-    InformationRetrievalException,
-)
+from rasa.core.information_retrieval import InformationRetrievalException
 from rasa.core.information_retrieval.milvus import Milvus_Store
 from langchain.schema.embeddings import Embeddings
 from langchain.schema import Document
 from unittest.mock import AsyncMock, patch
 import pytest
 from unittest.mock import MagicMock
-from langchain.vectorstores.milvus import Milvus
+from langchain_community.vectorstores.milvus import Milvus
 
 
 def test_milvus_store(embeddings: Embeddings):
@@ -25,10 +23,10 @@ def test_milvus_store(embeddings: Embeddings):
 @pytest.mark.parametrize(
     "threshold, expected_count, expected_id",
     [
-        (0.5, 5, "doc1"),
-        (0.9, 1, "doc1"),
-        (0.0, 9, "doc1"),
-        (1.0, 0, None),
+        (1.0, 9, "doc1"),
+        (0.9, 9, "doc1"),
+        (0.5, 5, "doc5"),
+        (0.0, 0, None),
     ],
 )
 async def test_milvus_store_search(
@@ -54,10 +52,10 @@ async def test_milvus_store_search(
         "asimilarity_search_with_score",
         return_value=search_results,
     ):
-        hits = await milvus_store.search("test", threshold=threshold)
-        assert len(hits) == expected_count
-        if hits:
-            assert hits[0].metadata["id"] == expected_id
+        hits = await milvus_store.search("test", {}, threshold=threshold)
+        assert len(hits.results) == expected_count
+        if hits.results:
+            assert hits.results[0].metadata["id"] == expected_id
 
 
 async def test_milvus_search_raises_custom_exception(
@@ -83,7 +81,7 @@ async def test_milvus_search_raises_custom_exception(
     )
 
     with pytest.raises(InformationRetrievalException) as e:
-        await milvus_store.search("test")
+        await milvus_store.search("test", {})
 
     assert (
         f"An error occurred while searching for documents: {base_exception_msg}"

@@ -72,7 +72,6 @@ TEST_EVENT = {
 
 @pytest.mark.parametrize("event_class", rasa.shared.utils.common.all_subclasses(Event))
 def test_remote_action_validate_all_event_subclasses(event_class: Type[Event]):
-
     if event_class.type_name == "slot":
         response = {
             "events": [{"event": "slot", "name": "test", "value": "example"}],

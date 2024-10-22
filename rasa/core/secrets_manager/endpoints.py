@@ -47,7 +47,7 @@ class CredentialsLocation:
 
     @staticmethod
     def is_credentials_location_instance(
-        value: Union[Text, "CredentialsLocation"]
+        value: Union[Text, "CredentialsLocation"],
     ) -> bool:
         """Check if the value is a CredentialsLocation.
 
@@ -85,7 +85,7 @@ class CredentialsLocation:
 
     @staticmethod
     def is_credentials_location_valid(
-        raw_credentials_location: Dict[Text, Text]
+        raw_credentials_location: Dict[Text, Text],
     ) -> bool:
         """Check if the configuration is a secret manager configuration.
 

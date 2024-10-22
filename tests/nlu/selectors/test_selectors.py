@@ -125,7 +125,6 @@ def train_persist_load_with_different_settings(
         config_params: Dict[Text, Any],
         should_finetune: bool,
     ):
-
         training_data, loaded_pipeline = train_and_preprocess(
             pipeline, "data/examples/rasa/demo-rasa.yml"
         )
@@ -226,7 +225,6 @@ def test_preprocess_selector_multiple_retrieval_intents(
     response_selector_training_data: TrainingData,
     create_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
 ):
-
     training_data_extra_intent = TrainingData(
         [
             Message.build(
@@ -282,7 +280,6 @@ def test_resolve_intent_response_key_from_label(
     response_selector_training_data: TrainingData,
     create_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
 ):
-
     response_selector = create_response_selector({"use_text_as_label": train_on_text})
     response_selector.preprocess_train_data(response_selector_training_data)
 
@@ -348,7 +345,6 @@ def test_train_persist_load(
     default_execution_context: ExecutionContext,
     train_persist_load_with_different_settings,
 ):
-
     pipeline = [
         {"component": WhitespaceTokenizer},
         {"component": CountVectorsFeaturizer},
@@ -601,7 +597,8 @@ def test_sets_integer_transformer_size_when_needed(
         assert not any(warning_str in record.message.args[0] for record in records)
         # check that transformer size was not changed
         assert selector.component_config[TRANSFORMER_SIZE] == config.get(
-            TRANSFORMER_SIZE, None  # None is the default transformer size
+            TRANSFORMER_SIZE,
+            None,  # None is the default transformer size
         )
 
 
@@ -779,9 +776,7 @@ async def test_adjusting_layers_incremental_training(
         ]
 
         for attribute, signatures in new_signature.items():
-
             for feature_type, feature_signatures in signatures.items():
-
                 if feature_type == "sequence_lengths":
                     assert feature_signatures[0].units == expected_sequence_lengths
 

@@ -8,13 +8,20 @@ import pytest
 import requests
 
 from tests.conftest import wait
+from tests.integration_tests.conftest import send_message_to_rasa_server
 from tests.integration_tests.tracing.conftest import (
     ACTION_SERVER_ACTION_TRIGGERED,
+    ACTION_SERVER_FORM_FILL_MESSAGE,
+    ACTION_SERVER_FORM_VALIDATION_ACTION_TRIGGERED,
+    ACTION_SERVER_FORM_TRIGGER_MESSAGE,
     ACTION_SERVER_JAEGER_TRACING_SERVICE_NAME,
     ACTION_SERVER_OTLP_ACTION_SERVER_NAME,
     ACTION_SERVER_PARENT_SPAN_NAME,
+    ACTION_SERVER_PARENT_SUB_SPAN_NAME,
     ACTION_SERVER_SPAN_NAME,
     ACTION_SERVER_TRIGGER_MESSAGE,
+    ACTION_SERVER_VALIDATION_ACTION_TRIGGERED,
+    ACTION_SERVER_VALIDATION_ACTION_TRIGGER_MESSAGE,
     RASA_JAEGER_TRACING_SERVICE_NAME,
     RASA_OTLP_TRACING_SERVICE_NAME,
     RASA_SERVER_JAEGER,
@@ -24,9 +31,12 @@ from tests.integration_tests.tracing.conftest import (
     RASA_SERVER_PARENT_SPAN_NAME,
     RASA_SERVER_PROCESSOR_SPAN_NAME,
     RASA_SERVER_PROCESSOR_SUB_SPAN_NAME,
+    DIRECT_CUSTOM_ACTION_EXECUTION_SUB_SPAN_NAME,
     RASA_SERVER_TRIGGER_MESSAGE,
     TraceQueryTimestamps,
-    send_message_to_rasa_server,
+    GRPC_RASA_SERVER_JAEGER,
+    GRPC_SSL_RASA_SERVER_JAEGER,
+    GRPC_ACTION_SERVER_PARENT_SUB_SPAN_NAME,
 )
 
 if typing.TYPE_CHECKING:
@@ -56,7 +66,7 @@ def test_traces_get_sent_to_backend(
     from api_v3.query_service_pb2 import TraceQueryParameters
     from model_pb2 import Span
 
-    sender_id = send_message_to_rasa_server(rasa_server_endpoint)
+    sender_id, _ = send_message_to_rasa_server(rasa_server_endpoint)
     params = TraceQueryParameters(
         service_name=tracing_service_name,
         operation_name="Agent.handle_message",
@@ -74,15 +84,63 @@ def test_traces_get_sent_to_backend(
 
 
 @pytest.mark.parametrize(
-    "tracing_service_name, rasa_server_endpoint",
+    "tracing_service_name, rasa_server_endpoint, message, action, parent_span_name",
     [
         (
             ACTION_SERVER_JAEGER_TRACING_SERVICE_NAME,
             RASA_SERVER_JAEGER,
+            ACTION_SERVER_TRIGGER_MESSAGE,
+            ACTION_SERVER_ACTION_TRIGGERED,
+            ACTION_SERVER_PARENT_SPAN_NAME,
         ),
         (
             ACTION_SERVER_OTLP_ACTION_SERVER_NAME,
             RASA_SERVER_OTLP,
+            ACTION_SERVER_TRIGGER_MESSAGE,
+            ACTION_SERVER_ACTION_TRIGGERED,
+            ACTION_SERVER_PARENT_SPAN_NAME,
+        ),
+        (
+            ACTION_SERVER_JAEGER_TRACING_SERVICE_NAME,
+            RASA_SERVER_JAEGER,
+            ACTION_SERVER_VALIDATION_ACTION_TRIGGER_MESSAGE,
+            ACTION_SERVER_VALIDATION_ACTION_TRIGGERED,
+            ACTION_SERVER_PARENT_SUB_SPAN_NAME,
+        ),
+        (
+            ACTION_SERVER_OTLP_ACTION_SERVER_NAME,
+            RASA_SERVER_OTLP,
+            ACTION_SERVER_VALIDATION_ACTION_TRIGGER_MESSAGE,
+            ACTION_SERVER_VALIDATION_ACTION_TRIGGERED,
+            ACTION_SERVER_PARENT_SUB_SPAN_NAME,
+        ),
+        (
+            ACTION_SERVER_JAEGER_TRACING_SERVICE_NAME,
+            GRPC_RASA_SERVER_JAEGER,
+            ACTION_SERVER_TRIGGER_MESSAGE,
+            ACTION_SERVER_ACTION_TRIGGERED,
+            GRPC_ACTION_SERVER_PARENT_SUB_SPAN_NAME,
+        ),
+        (
+            ACTION_SERVER_JAEGER_TRACING_SERVICE_NAME,
+            GRPC_SSL_RASA_SERVER_JAEGER,
+            ACTION_SERVER_TRIGGER_MESSAGE,
+            ACTION_SERVER_ACTION_TRIGGERED,
+            GRPC_ACTION_SERVER_PARENT_SUB_SPAN_NAME,
+        ),
+        (
+            ACTION_SERVER_JAEGER_TRACING_SERVICE_NAME,
+            GRPC_RASA_SERVER_JAEGER,
+            ACTION_SERVER_VALIDATION_ACTION_TRIGGER_MESSAGE,
+            ACTION_SERVER_VALIDATION_ACTION_TRIGGERED,
+            GRPC_ACTION_SERVER_PARENT_SUB_SPAN_NAME,
+        ),
+        (
+            ACTION_SERVER_JAEGER_TRACING_SERVICE_NAME,
+            GRPC_SSL_RASA_SERVER_JAEGER,
+            ACTION_SERVER_VALIDATION_ACTION_TRIGGER_MESSAGE,
+            ACTION_SERVER_VALIDATION_ACTION_TRIGGERED,
+            GRPC_ACTION_SERVER_PARENT_SUB_SPAN_NAME,
         ),
     ],
 )
@@ -91,18 +149,17 @@ def test_trace_context_propagated_to_action_server(
     tracing_service_name: Text,
     rasa_server_endpoint: Text,
     trace_query_timestamps: TraceQueryTimestamps,
+    message: Text,
+    action: Text,
+    parent_span_name: Text,
 ) -> None:
-    if tracing_service_name == ACTION_SERVER_OTLP_ACTION_SERVER_NAME:
+    if rasa_server_endpoint == RASA_SERVER_OTLP:
         pytest.skip("Temporary disabled due to TLS timeout error")
 
     from api_v3.query_service_pb2 import TraceQueryParameters
     from model_pb2 import Span
 
-    sender_id = send_message_to_rasa_server(
-        rasa_server_endpoint, ACTION_SERVER_TRIGGER_MESSAGE
-    )
-    tracker = _fetch_tracker(server_location=rasa_server_endpoint, sender_id=sender_id)
-    message_id = tracker.get("latest_message", {}).get("message_id")
+    sender_id, _ = send_message_to_rasa_server(rasa_server_endpoint, message)
 
     params = TraceQueryParameters(
         service_name=tracing_service_name,
@@ -117,9 +174,8 @@ def test_trace_context_propagated_to_action_server(
         return _filter_spans_by_attributes(
             spans,
             {
-                "action_name": ACTION_SERVER_ACTION_TRIGGERED,
+                "action_name": action,
                 "sender_id": sender_id,
-                "message_id": message_id,
             },
         )
 
@@ -127,8 +183,72 @@ def test_trace_context_propagated_to_action_server(
     action_server_spans = _filter_spans_by_name(
         spans_for_user_turn, ACTION_SERVER_SPAN_NAME
     )
+    parent_spans = _filter_spans_by_name(spans_for_user_turn, parent_span_name)
+    action_server_span = action_server_spans[0]
+    parent_span = parent_spans[0]
+
+    assert action_server_span.trace_id == parent_span.trace_id
+
+
+@pytest.mark.parametrize(
+    "tracing_service_name, rasa_server_endpoint",
+    [
+        (
+            ACTION_SERVER_JAEGER_TRACING_SERVICE_NAME,
+            RASA_SERVER_JAEGER,
+        ),
+        (
+            ACTION_SERVER_OTLP_ACTION_SERVER_NAME,
+            RASA_SERVER_OTLP,
+        ),
+    ],
+)
+def test_trace_context_propagated_to_action_server_with_form_validation_action(
+    jaeger_query_service: "QueryServiceStub",
+    tracing_service_name: Text,
+    rasa_server_endpoint: Text,
+    trace_query_timestamps: TraceQueryTimestamps,
+) -> None:
+    if rasa_server_endpoint == RASA_SERVER_OTLP:
+        pytest.skip("Temporary disabled due to TLS timeout error")
+
+    from api_v3.query_service_pb2 import TraceQueryParameters
+    from model_pb2 import Span
+
+    # trigger form
+    sender_id, _ = send_message_to_rasa_server(
+        rasa_server_endpoint, ACTION_SERVER_FORM_TRIGGER_MESSAGE
+    )
+    params = TraceQueryParameters(
+        service_name=tracing_service_name,
+        operation_name=ACTION_SERVER_SPAN_NAME,
+        start_time_min=trace_query_timestamps.min_time,
+        start_time_max=trace_query_timestamps.max_time,
+    )
+
+    # fill form
+    sender_id, _ = send_message_to_rasa_server(
+        rasa_server_endpoint, ACTION_SERVER_FORM_FILL_MESSAGE, sender_id
+    )
+
+    @wait_for_spans
+    def _spans_for_user_turn() -> List[Span]:
+        spans = _fetch_spans(jaeger_query_service, params)
+        return _filter_spans_by_attributes(
+            spans,
+            {
+                "action_name": ACTION_SERVER_FORM_VALIDATION_ACTION_TRIGGERED,
+                "sender_id": sender_id,
+            },
+        )
+
+    spans_for_user_turn = _spans_for_user_turn()
+
+    action_server_spans = _filter_spans_by_name(
+        spans_for_user_turn, ACTION_SERVER_SPAN_NAME
+    )
     parent_spans = _filter_spans_by_name(
-        spans_for_user_turn, ACTION_SERVER_PARENT_SPAN_NAME
+        spans_for_user_turn, ACTION_SERVER_PARENT_SUB_SPAN_NAME
     )
     action_server_span = action_server_spans[0]
     parent_span = parent_spans[0]
@@ -161,7 +281,7 @@ def test_missing_action_server_endpoint_does_not_stop_tracing(
     from api_v3.query_service_pb2 import TraceQueryParameters
     from model_pb2 import Span
 
-    sender_id = send_message_to_rasa_server(
+    sender_id, _ = send_message_to_rasa_server(
         rasa_server_endpoint, ACTION_SERVER_TRIGGER_MESSAGE
     )
     tracker = _fetch_tracker(server_location=rasa_server_endpoint, sender_id=sender_id)
@@ -197,15 +317,27 @@ def test_missing_action_server_endpoint_does_not_stop_tracing(
 
 
 @pytest.mark.parametrize(
-    "tracing_service_name, rasa_server_endpoint",
+    "tracing_service_name, rasa_server_endpoint, sub_span_name",
     [
         (
             RASA_JAEGER_TRACING_SERVICE_NAME,
             RASA_SERVER_JAEGER_NO_ACTION_SERVER,
+            RASA_SERVER_PROCESSOR_SUB_SPAN_NAME,
         ),
         (
             RASA_OTLP_TRACING_SERVICE_NAME,
             RASA_SERVER_OTLP_NO_ACTION_SERVER,
+            RASA_SERVER_PROCESSOR_SUB_SPAN_NAME,
+        ),
+        (
+            RASA_JAEGER_TRACING_SERVICE_NAME,
+            RASA_SERVER_JAEGER_NO_ACTION_SERVER,
+            DIRECT_CUSTOM_ACTION_EXECUTION_SUB_SPAN_NAME,
+        ),
+        (
+            RASA_OTLP_TRACING_SERVICE_NAME,
+            RASA_SERVER_OTLP_NO_ACTION_SERVER,
+            DIRECT_CUSTOM_ACTION_EXECUTION_SUB_SPAN_NAME,
         ),
     ],
 )
@@ -213,6 +345,7 @@ def test_context_propagated_to_subspans_in_rasa_server(
     jaeger_query_service: "QueryServiceStub",
     tracing_service_name: Text,
     rasa_server_endpoint: Text,
+    sub_span_name: Text,
     trace_query_timestamps: TraceQueryTimestamps,
 ) -> None:
     if tracing_service_name == RASA_OTLP_TRACING_SERVICE_NAME:
@@ -225,7 +358,7 @@ def test_context_propagated_to_subspans_in_rasa_server(
 
     params = TraceQueryParameters(
         service_name=tracing_service_name,
-        operation_name=RASA_SERVER_PROCESSOR_SUB_SPAN_NAME,
+        operation_name=sub_span_name,
         start_time_min=trace_query_timestamps.min_time,
         start_time_max=trace_query_timestamps.max_time,
     )
@@ -239,9 +372,7 @@ def test_context_propagated_to_subspans_in_rasa_server(
         )
 
     spans_for_user_turn = _spans_for_user_turn()
-    processor_sub_spans = _filter_spans_by_name(
-        spans_for_user_turn, RASA_SERVER_PROCESSOR_SUB_SPAN_NAME
-    )
+    processor_sub_spans = _filter_spans_by_name(spans_for_user_turn, sub_span_name)
     sub_parent_spans = _filter_spans_by_name(
         spans_for_user_turn, RASA_SERVER_PROCESSOR_SPAN_NAME
     )

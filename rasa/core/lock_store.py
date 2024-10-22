@@ -100,7 +100,6 @@ class LockStore:
         """
         ticket = self.issue_ticket(conversation_id, lock_lifetime)
         try:
-
             yield await self._acquire_lock(
                 conversation_id, ticket, wait_time_in_seconds
             )

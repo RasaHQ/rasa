@@ -1,0 +1,15 @@
+version: "3.1"
+
+slots:
+  current_balance:
+    type: float
+    mappings:
+      - type: custom
+        action: check_balance
+
+actions:
+  - check_balance
+
+responses:
+  utter_current_balance:
+    - text: You still have {current_balance} in your account.

@@ -160,7 +160,6 @@ def test_anonymization_rule_executor_multiple_entities(
 def test_anonymization_rule_executor_no_entities(
     anonymization_rule_executor: AnonymizationRuleExecutor,
 ) -> None:
-
     text = "Navigate to www.test-domain.com."
 
     anonymized_text = anonymization_rule_executor.run(text)

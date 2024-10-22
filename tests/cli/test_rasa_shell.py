@@ -8,6 +8,7 @@ from _pytest.pytester import RunResult
 
 from rasa.shared.constants import ASSISTANT_ID_KEY
 from tests.cli.conftest import RASA_EXE, create_simple_project_with_missing_assistant_id
+from tests.conftest import TrainedAsync
 
 
 def test_shell_help(run: Callable[..., RunResult]):
@@ -68,7 +69,7 @@ def test_shell_nlu_help(run: Callable[..., RunResult]):
 # FIXME: this test passes locally but fails in the CI with timeout > 300s
 @pytest.mark.skip_on_ci
 async def test_shell_without_assistant_id_issues_warning(
-    tmp_path: Path, trained_async: Callable, run: Callable[..., RunResult]
+    tmp_path: Path, trained_async: TrainedAsync, run: Callable[..., RunResult]
 ):
     os.environ["LOG_LEVEL"] = "ERROR"
 

@@ -30,7 +30,7 @@ def test_story_graph_provider_provide(
         config_path, domain_path, [stories_path]
     )
 
-    story_graph_from_component = component.provide(importer)
+    story_graph_from_component = component.provide_train(importer)
     assert isinstance(story_graph_from_component, StoryGraph)
 
     story_graph = importer.get_stories(**config)

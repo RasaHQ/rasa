@@ -9,40 +9,35 @@ import time
 import uuid
 from http import HTTPStatus
 from pathlib import Path
-from typing import Optional, Text, List, Callable, Type, Any
+from typing import Any, Callable, List, Optional, Text, Type
 from unittest import mock
-from unittest.mock import MagicMock, Mock, patch, AsyncMock
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import freezegun
 import pytest
+from pytest import CaptureFixture
 
-from rasa.dialogue_understanding.commands import (
-    SetSlotCommand,
-    StartFlowCommand,
-    ErrorCommand,
-    ChitChatAnswerCommand,
-    Command,
-)
-from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 import rasa.shared.utils.io
 import tests.utilities
 from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
+
 from rasa.core import jobs
 from rasa.core.actions.action import (
     ActionBotResponse,
     ActionListen,
-    ActionExecutionRejection,
     ActionSendText,
     ActionUnlikelyIntent,
 )
+from rasa.core.actions.action_exceptions import ActionExecutionRejection
 from rasa.core.agent import Agent, load_agent
 from rasa.core.channels.channel import (
     CollectingOutputChannel,
-    UserMessage,
     OutputChannel,
+    UserMessage,
 )
+from rasa.core.constants import UTTER_SOURCE_METADATA_KEY
 from rasa.core.http_interpreter import RasaNLUHttpInterpreter
 from rasa.core.lock_store import InMemoryLockStore
 from rasa.core.nlg import NaturalLanguageGenerator, TemplatedNaturalLanguageGenerator
@@ -50,9 +45,19 @@ from rasa.core.policies.ensemble import DefaultPolicyPredictionEnsemble
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import InMemoryTrackerStore
+from rasa.core.utils import AvailableEndpoints
+from rasa.dialogue_understanding.commands import (
+    ChitChatAnswerCommand,
+    Command,
+    ErrorCommand,
+    SetSlotCommand,
+    StartFlowCommand,
+)
+from rasa.dialogue_understanding.commands.set_slot_command import SetSlotExtractor
 from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
 )
+from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.storage import ModelStorage
@@ -62,53 +67,56 @@ from rasa.plugin import plugin_manager
 from rasa.shared.constants import (
     ASSISTANT_ID_KEY,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
-    ROUTE_TO_CALM_SLOT,
+    OPENAI_API_KEY_ENV_VAR,
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
+    ROUTE_TO_CALM_SLOT,
 )
 from rasa.shared.core.constants import (
     ACTION_CORRECT_FLOW_SLOT,
     ACTION_EXTRACT_SLOTS,
+    ACTION_LISTEN_NAME,
     ACTION_RESTART_NAME,
     ACTION_SEND_TEXT_NAME,
+    ACTION_SESSION_START_NAME,
     ACTION_UNLIKELY_INTENT_NAME,
     DEFAULT_INTENTS,
-    ACTION_LISTEN_NAME,
-    ACTION_SESSION_START_NAME,
     EXTERNAL_MESSAGE_PREFIX,
+    FLOW_HASHES_SLOT,
     IS_EXTERNAL,
     SESSION_START_METADATA_SLOT,
-    FLOW_HASHES_SLOT,
 )
-from rasa.shared.core.domain import SessionConfig, Domain, KEY_ACTIONS
+from rasa.shared.core.domain import KEY_ACTIONS, Domain, SessionConfig
 from rasa.shared.core.events import (
     ActionExecuted,
+    ActionExecutionRejected,
     ActiveLoop,
     BotUttered,
+    DefinePrevUserUtteredFeaturization,
     DialogueStackUpdated,
+    Event,
+    LoopInterrupted,
     ReminderCancelled,
     ReminderScheduled,
     Restarted,
-    UserUttered,
     SessionStarted,
-    Event,
     SlotSet,
-    DefinePrevUserUtteredFeaturization,
-    ActionExecutionRejected,
-    LoopInterrupted,
+    UserUttered,
 )
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.slots import BooleanSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import (
+    COMMANDS,
+    FULL_RETRIEVAL_INTENT_NAME_KEY,
     INTENT,
     INTENT_NAME_KEY,
-    FULL_RETRIEVAL_INTENT_NAME_KEY,
     METADATA_MODEL_ID,
-    COMMANDS,
 )
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.providers.llm.llm_response import LLMResponse
 from rasa.utils.endpoints import EndpointConfig
 from tests.conftest import (
+    TrainedAsync,
     with_assistant_id,
     with_assistant_ids,
     with_model_id,
@@ -116,6 +124,11 @@ from tests.conftest import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+@pytest.fixture(autouse=True)
+def set_mock_openai_api_key(monkeypatch: MonkeyPatch):
+    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key in test_processor")
 
 
 async def test_message_processor(
@@ -916,7 +929,12 @@ async def test_handle_message_with_session_start(
                 "utter_greet", policy="AugmentedMemoizationPolicy", confidence=1.0
             ),
             BotUttered(
-                "hey there Core!", data={}, metadata={"utter_action": "utter_greet"}
+                "hey there Core!",
+                data={},
+                metadata={
+                    "utter_action": "utter_greet",
+                    UTTER_SOURCE_METADATA_KEY: "TemplatedNaturalLanguageGenerator",
+                },
             ),
             ActionExecuted(ACTION_LISTEN_NAME, confidence=1.0),
             ActionExecuted(ACTION_SESSION_START_NAME),
@@ -944,7 +962,10 @@ async def test_handle_message_with_session_start(
             BotUttered(
                 "hey there post-session start hello!",
                 data={},
-                metadata={"utter_action": "utter_greet"},
+                metadata={
+                    "utter_action": "utter_greet",
+                    UTTER_SOURCE_METADATA_KEY: "TemplatedNaturalLanguageGenerator",
+                },
             ),
             ActionExecuted(ACTION_LISTEN_NAME),
         ],
@@ -1321,7 +1342,7 @@ async def test_logging_of_end_to_end_action(
 
 
 async def test_predict_next_action_with_hidden_rules(
-    trained_async: Callable, tmp_path: Path
+    trained_async: TrainedAsync, tmp_path: Path
 ):
     rule_intent = "rule_intent"
     rule_action = "rule_action"
@@ -1392,7 +1413,10 @@ async def test_predict_next_action_with_hidden_rules(
     model_path = await trained_async(
         str(domain_path), str(config_path), [str(training_data_path)]
     )
-    agent = await load_agent(model_path=model_path)
+
+    action_endpoint = EndpointConfig("https://example.com/webhooks/actions")
+    endpoints = AvailableEndpoints(action=action_endpoint)
+    agent = await load_agent(model_path=model_path, endpoints=endpoints)
     processor = agent.processor
 
     tracker = DialogueStateTracker.from_events(
@@ -1638,18 +1662,11 @@ async def test_loads_correct_model_from_path(
 @pytest.mark.flaky
 @pytest.mark.timeout(180, func_only=True)
 async def test_custom_action_triggers_action_extract_slots(
-    trained_async: Callable,
+    trained_async: TrainedAsync,
     caplog: LogCaptureFixture,
+    custom_actions_agent: Agent,
 ):
-    parent_folder = "data/test_custom_action_triggers_action_extract_slots"
-    domain_path = f"{parent_folder}/domain.yml"
-    config_path = f"{parent_folder}/config.yml"
-    stories_path = f"{parent_folder}/stories.yml"
-    nlu_path = f"{parent_folder}/nlu.yml"
-
-    model_path = await trained_async(domain_path, config_path, [stories_path, nlu_path])
-    agent = Agent.load(model_path)
-    processor = agent.processor
+    processor = custom_actions_agent.processor
 
     action_server_url = "http://some-url"
     endpoint = EndpointConfig(action_server_url)
@@ -1785,7 +1802,7 @@ async def test_processor_executes_bot_uttered_returned_by_action_extract_slots(
     ],
 )
 async def test_from_trigger_intent_with_mapping_conditions_when_form_not_activated(
-    trained_async: Callable,
+    trained_async: TrainedAsync,
     sender_id: Text,
     message_text: Text,
     message_intent: Text,
@@ -1835,7 +1852,7 @@ async def test_from_trigger_intent_with_mapping_conditions_when_form_not_activat
 @pytest.mark.flaky
 @pytest.mark.timeout(120, func_only=True)
 async def test_from_trigger_intent_no_form_condition_when_form_not_activated(
-    trained_async: Callable,
+    trained_async: TrainedAsync,
 ):
     parent_folder = "data/test_from_trigger_intent_with_no_mapping_conditions"
     domain_path = f"{parent_folder}/domain.yml"
@@ -1900,7 +1917,7 @@ async def test_from_trigger_intent_no_form_condition_when_form_not_activated(
 
 @pytest.mark.timeout(120, func_only=True)
 async def test_message_processor_raises_warning_if_no_assistant_id(
-    trained_async: Callable,
+    trained_async: TrainedAsync,
 ):
     parent_folder = "data/test_moodbot"
     domain_path = f"{parent_folder}/domain.yml"
@@ -2009,8 +2026,9 @@ async def test_run_anonymization_pipeline_mocked_pipeline(
 
 
 async def test_run_command_processor_starting_a_flow(
-    flow_policy_bot_agent: Agent, monkeypatch: MonkeyPatch
-):
+    flow_policy_bot_agent: Agent,
+    monkeypatch: MonkeyPatch,
+) -> None:
     # Given
     processor = flow_policy_bot_agent.processor
     sender_id = uuid.uuid4().hex
@@ -2048,8 +2066,9 @@ async def test_run_command_processor_starting_a_flow(
 
 
 async def test_run_command_processor_setting_a_slot(
-    flow_policy_bot_agent: Agent, monkeypatch: MonkeyPatch
-):
+    flow_policy_bot_agent: Agent,
+    monkeypatch: MonkeyPatch,
+) -> None:
     # Given
     processor = flow_policy_bot_agent.processor
     sender_id = uuid.uuid4().hex
@@ -2102,7 +2121,7 @@ async def test_run_command_processor_setting_a_slot(
 
 async def test_handle_message_with_intent_trigger_and_no_nlu_trigger(
     flow_policy_bot_agent: Agent,
-):
+) -> None:
     # Given
     processor = flow_policy_bot_agent.processor
     processor.domain.intents.append("welcome")
@@ -2120,7 +2139,7 @@ async def test_handle_message_with_intent_trigger_and_no_nlu_trigger(
 
 async def test_handle_message_with_intent_trigger_and_nlu_trigger(
     nlu_trigger_flow_policy_bot_agent: Agent,
-):
+) -> None:
     processor = nlu_trigger_flow_policy_bot_agent.processor
     sender_id = uuid.uuid4().hex
     tracker = await processor.tracker_store.get_or_create_tracker(sender_id)
@@ -2164,22 +2183,22 @@ async def test_handle_message_with_intent_trigger_and_nlu_trigger(
 )
 @patch(
     "rasa.dialogue_understanding.generator"
-    ".flow_retrieval"
-    ".FlowRetrieval.filter_flows"
+    ".single_step.single_step_llm_command_generator"
+    ".SingleStepLLMCommandGenerator.filter_flows"
 )
 @patch(
     "rasa.dialogue_understanding.generator"
-    ".llm_command_generator"
-    ".LLMCommandGenerator._generate_action_list_using_llm"
+    ".single_step.single_step_llm_command_generator"
+    ".SingleStepLLMCommandGenerator.invoke_llm"
 )
 async def test_run_command_processor_parsing_a_message_with_invalid_use_of_slash_syntax(
-    mock_generate_action_list_using_llm: AsyncMock,
+    mock_invoke_llm: AsyncMock,
     mock_filter_flows: AsyncMock,
     message: UserMessage,
     predicted_commands: List[Command],
     flow_policy_bot_agent: Agent,
     domain: Domain,
-):
+) -> None:
     # Given
     processor = flow_policy_bot_agent.processor
     sender_id = uuid.uuid4().hex
@@ -2190,7 +2209,7 @@ async def test_run_command_processor_parsing_a_message_with_invalid_use_of_slash
     mock_filter_flows.return_value = FlowsList(underlying_flows=[])
     # the return value does not matter here, it only matters
     # that we got the response from the LLM
-    mock_generate_action_list_using_llm.return_value = "ChitChat()"
+    mock_invoke_llm.return_value = "ChitChat()"
 
     # When
     parse_data = await processor.parse_message(message, tracker)
@@ -2259,8 +2278,9 @@ async def test_update_full_retrieval_intent(
 
 
 async def test_predict_does_not_block_on_command_generator_llm_calls(
-    trained_async: Callable, tmp_path: Path
-):
+    trained_async: TrainedAsync,
+    tmp_path: Path,
+) -> None:
     domain_content = textwrap.dedent(
         f"""
         version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
@@ -2308,17 +2328,22 @@ async def test_predict_does_not_block_on_command_generator_llm_calls(
     async def sleepy_prediction(*args, **kwargs):
         # a prediction mock that takes a bit to return
         await asyncio.sleep(1)
-        return "StartFlow(greet_user)"
+        return LLMResponse(
+            id="123",
+            choices=["StartFlow(greet_user)"],
+            created=123456789,
+            model="test_model",
+        )
 
     # we should have a trained model now and can start an agent with it
     # let's patch the LLM though, as we don't want to make external calls
     with patch(
-        "rasa.dialogue_understanding.generator.llm_command_generator.llm_factory",
+        "rasa.dialogue_understanding.generator.llm_based_command_generator.llm_factory",
         Mock(),
     ) as mock_llm_factory:
         llm_mock = Mock()
-        apredict_mock = AsyncMock(side_effect=sleepy_prediction)
-        llm_mock.apredict = apredict_mock
+        acompletion_mock = AsyncMock(side_effect=sleepy_prediction)
+        llm_mock.acompletion = acompletion_mock
         mock_llm_factory.return_value = llm_mock
 
         agent = await load_agent(model_path=model_path)
@@ -2346,3 +2371,127 @@ async def test_predict_does_not_block_on_command_generator_llm_calls(
         # than 10 seconds, if it takes longer this is a sign that the
         # calls are not done in parallel but sequentially.
         assert time_needed < 10
+
+
+async def test_parse_message_with_set_slot_button(flow_policy_bot_agent: Agent) -> None:
+    processor = flow_policy_bot_agent.processor
+    sender_id = uuid.uuid4().hex
+    tracker = await processor.tracker_store.get_or_create_tracker(sender_id)
+
+    parse_data = await processor.parse_message(
+        UserMessage("/SetSlots(foo_slot_a=foo)"), tracker
+    )
+
+    assert len(parse_data[COMMANDS]) == 1
+    assert (
+        SetSlotCommand(
+            "foo_slot_a", "foo", SetSlotExtractor.COMMAND_PAYLOAD_READER.value
+        ).as_dict()
+        in parse_data[COMMANDS]
+    )
+
+
+@pytest.mark.parametrize(
+    "slot_value, expected_value", [("true", True), ("false", False)]
+)
+async def test_parse_message_with_multiple_set_slots_button(
+    flow_policy_bot_agent: Agent,
+    slot_value: str,
+    expected_value: bool,
+) -> None:
+    processor = flow_policy_bot_agent.processor
+    sender_id = uuid.uuid4().hex
+
+    tracker = await processor.get_tracker(sender_id)
+    tracker.update_stack(
+        DialogueStack(
+            frames=[
+                UserFlowStackFrame(
+                    flow_id="button_flow", step_id="collect_button_slot_a"
+                ),
+                CollectInformationPatternFlowStackFrame(collect="button_slot_a"),
+            ]
+        )
+    )
+    await processor.save_tracker(tracker)
+
+    await processor.handle_message(
+        UserMessage(
+            f"/SetSlots(button_slot_a={slot_value}, button_slot_b={slot_value})",
+            sender_id=sender_id,
+        ),
+    )
+
+    tracker = await processor.get_tracker(sender_id)
+    assert tracker.get_slot("button_slot_a") is expected_value
+    assert tracker.get_slot("button_slot_b") is expected_value
+
+
+def test_handle_message_with_commands_does_not_run_action_extract_slots(
+    flow_policy_bot_agent: Agent,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    processor = flow_policy_bot_agent.processor
+    sender_id = uuid.uuid4().hex
+
+    mock_run_action_extract_slots = MagicMock()
+    monkeypatch.setattr(
+        processor, "run_action_extract_slots", mock_run_action_extract_slots
+    )
+
+    processor.handle_message(
+        UserMessage("/SetSlots(foo_slot_a=foo)", sender_id=sender_id)
+    )
+
+    mock_run_action_extract_slots.assert_not_called()
+
+
+def test_handle_message_with_commands_from_buttons_does_not_run_nlu_command_adapter(
+    flow_policy_bot_agent: Agent,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    processor = flow_policy_bot_agent.processor
+    sender_id = uuid.uuid4().hex
+
+    mock_nlu_to_commands = MagicMock()
+    monkeypatch.setattr(processor, "_nlu_to_commands", mock_nlu_to_commands)
+
+    processor.handle_message(
+        UserMessage("/SetSlots(foo_slot_a=foo)", sender_id=sender_id)
+    )
+
+    mock_nlu_to_commands.assert_not_called()
+
+
+async def test_parse_message_with_set_slot_command_payload_for_disallowed_slot(
+    flow_policy_bot_agent: Agent,
+    capsys: CaptureFixture,
+) -> None:
+    processor = flow_policy_bot_agent.processor
+    sender_id = uuid.uuid4().hex
+
+    tracker = await processor.get_tracker(sender_id)
+    tracker.update_stack(
+        DialogueStack(
+            frames=[
+                UserFlowStackFrame(
+                    flow_id="button_flow", step_id="collect_button_slot_a"
+                ),
+                CollectInformationPatternFlowStackFrame(collect="button_slot_a"),
+            ]
+        )
+    )
+    await processor.save_tracker(tracker)
+
+    await processor.handle_message(
+        UserMessage(
+            "/SetSlots(secret_slot=secret_value)",
+            sender_id=sender_id,
+        ),
+    )
+
+    tracker = await processor.get_tracker(sender_id)
+    assert tracker.get_slot("secret_slot") is None
+
+    captured = capsys.readouterr()
+    assert "command_executor.skip_command.slot_not_asked_for" in captured.out

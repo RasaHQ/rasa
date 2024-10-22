@@ -1,0 +1,267 @@
+no.,conversation
+1,"User: Hi, I'm looking for the most affordable loan for first-time home buyers. Can you help?
+Finbo: Hello! Yes, I can help. 
+Finbo: Are you interested in fixed or variable interest rates? I can explain the benefits of each.
+User: I think fixed interest rates are better. What are the rates?
+Finbo: Our fixed interest rates for first-time home buyers start at 3.5%. The rate depends on your credit score and loan term. Would you like to check your eligibility?
+User: Yes. But what is the maximum loan amount I can get?
+Finbo: The maximum loan amount is usually 80% of the property's value. Do you have a specific property in mind? I can calculate an estimate for you.
+User: Yes, the property is worth €250,000.
+User: Sorry, €300,000.
+Finbo: No problem. With a property worth €300,000, you can potentially get up to €240,000. 
+Finbo: Would you like to proceed with checking your eligibility for the fixed rate?
+User: No, I would like to speak to a loan officer.
+Finbo: Sure, I'll connect you with a loan officer now. They can guide you through the process. Please hold on for a moment."
+,
+2,"User: Hi, I need to know if I'm eligible for a mortgage. Can you help?
+Finbo: Hello! Yes, I can help.
+Finbo: Eligibility for a mortgage depends on factors like your income, credit score, and debt-to-income ratio. Would you like to do a quick eligibility check now?
+User: yes
+Finbo: I'll need some basic information to get started. Could you provide your approximate annual income and credit score?
+User: annual income is €50,000, credit score is around 700
+Finbo: Thank you. Based on your information, you likely meet the basic requirements for a mortgage. For a detailed assessment and pre-approval, would you like to speak to a mortgage specialist?
+User: sure
+Finbo: I'll connect you with a mortgage specialist who can provide a thorough evaluation. Please hold on for a moment.
+User: thanks
+Finbo: You're welcome! A specialist will be with you shortly."
+,
+3,"User: Hey I need to get a car loan, which conditions do you offer?
+Finbo: Hello! You can find detailed information about our car loan conditions on our website right here: [Car Loans Information] It tells about rates, terms, and requirements. 
+Finbo: If you have any questions later, feel free to reach out. I’m here to help whenever you’re ready.
+User: thanks
+Finbo: You are most welcome!"
+,
+4,"User: Hi, I'm looking to invest my savings. What investment opportunities does your bank offer?
+Finbo: Hello! We offer a variety of investment opportunities, including mutual funds, stocks, bonds, and savings plans. Are you interested in a specific type of investment, or would you like a general overview?
+User: I'm not sure how to invest. Can I get a free consultation?
+Finbo: Absolutely! We offer free consultations with our financial advisors. They can help you understand your options and choose the best investment strategy. Would you like me to arrange an appointment for you?
+User: Yes please. Also, do you have any information I can read before the consultation?
+Finbo: Yes, we have brochures and online resources on our investment options. I'll send you a link to our investment information. 
+Finbo: Would you prefer a call or a meeting at your nearest branch for the consultation?
+User: A call is better. Can we schedule it for tomorrow?
+Finbo: Sure, I can arrange that. What is your contact details?
+User: My phone number is 468364932
+Finbo: What is your preferred time for the call?
+User: I prefer the call in the afternoon.
+Finbo: Got it. I'll schedule the call for tomorrow afternoon. You will receive a confirmation shortly. If you have any other questions or need further assistance, feel free to ask.
+User: Thanks. Can you help with tax advice as well?
+Finbo: We don't provide tax advice directly, but I can make a note for the investment officer who will be calling you tomorrow. Would you like that?
+User: Yes, that would be great.
+Finbo: Okay, I will do that. If you need anything else, just let me know."
+,
+5,"User: Hi, I want to talk about my investment opportunities, but I don't know whom to contact. Can you help?
+Finbo: Hello! Our financial advisors specialize in investment opportunities and can provide personalized guidance. Would you like me to connect you to one of our advisors now?
+User: Yes, please.
+Finbo: Sure, I’ll need a few details to connect you to the right advisor. Could you please provide your contact number and preferred time for the call?
+User: My number is 3463y45y64, and I’m available anytime after 2 PM.
+Finbo: Thank you! I’ll arrange for an advisor to call you after 2 PM today. You’ll receive a confirmation shortly. If you need anything else, feel free to ask.
+User: Thanks.
+Finbo: You’re welcome! Have a great day!"
+,
+6,"User: Hi, I’m looking for a pension product for early retirement.
+Finbo: Hello! I'd be happy to help with that.
+Finbo: We have several pension products. What are you specifically looking for?
+User: Options that support early retirement, not just any pension plan.
+Finbo: To find the best product for early retirement, can I ask a few questions? 
+User: Sure
+Finbo: First, at what age are you planning to retire?
+User: I’m aiming to retire by 55
+Finbo: Do you prefer a plan with higher contributions now for greater payouts later, or something more balanced?
+User: Higher contributions now for better payouts later
+Finbo: Are you looking for a plan with investment options, or a guaranteed payout?
+User: I prefer first option
+Finbo: I am sorry I did not understand your choice. Do you mean investment options or guaranteed payout?
+User: Investment option
+Finbo: Thanks for the details! Here are some links to our pension products that cater to early retirement with investment options: [A], [B], and [C]. There is lots of information but let me know if you'd like to talk to our Pension Consultants, I will organize the meeting.
+User: Okay, I’ll check these out. Thanks!
+Finbo: You’re welcome! Enjoy your reading!"
+,
+7,"User: Hi, I would like to know more self-directed pension funds.
+Finbo: Hello! Unfortunately, we don't offer self-directed pension funds, and I don't have detailed information on them. However, I can connect you with a financial advisor who might be able to provide some guidance or suggest alternative options. Would you like me to arrange that?
+User: No, that's okay. I'll look elsewhere.
+Finbo: You're welcome! If you need any other assistance or have questions about our pension products, feel free to ask. Have a great day!"
+,
+8,"User: Hi, I'm looking for a savings account for my children. What options do you have? Also, what are the interest rates and fees?
+Finbo: Hello! We offer children's savings accounts with competitive interest rates and low fees. Interest rates start at 2%. Fees are minimal and depend on the account type. Would you like detailed information on each option?
+User: I want to know about any age restrictions.
+Finbo: We have two main types of children's savings accounts: basic and premium. The basic account has no age restrictions, while the premium account is for children under 18 and offers higher interest rates. Would you like to know more about the premium account?
+User: Yes. What are the exact interest rates? 
+Finbo: The premium account offers a 3% interest rate.
+Finbo: Are you also interested in learning about the fees?
+User: What happens if we need to make a withdrawal before the child turns 18? 
+Finbo: Early withdrawals are allowed but may incur a small penalty fee.
+Finbo: Would you like to know about the fees for premium account?
+Finbo: I can also send you the full terms and conditions for premium account.
+User: 
+Finbo: I am sorry I did not receive your message. Could you type it again please?
+User: Yes, I would like the full terms and conditions. Also, is there a mobile app available?
+Finbo: Yes, we have a mobile app available.
+Finbo: I'll send you the full terms and conditions in a moment.
+Finbo: If you have any more questions or need assistance, feel free to ask."
+,
+9,"User: Hi, I want to open a savings account for my child.
+Finbo: Hello! Opening a savings account for your child is a great way to start their financial journey. Our bank offers secure and reliable savings accounts with competitive interest rates for children.
+User: What do I need to do to open the account?
+Finbo: The process is straightforward. First, you’ll need to provide some basic information about your child, such as their birth certificate and your identification. You can start the application online, but you'll need to visit a branch to finalize it. Would you like to begin the online application now?
+User: Are there any initial deposit requirements?
+Finbo: Yes, for our children's savings account, there's an initial deposit requirement of €100. This account has no monthly maintenance fees and offers a 3% interest rate.
+Finbo: Do you have any other questions before we proceed?
+User: No, that's clear. How do I start the online application?
+Finbo: Great! I’ll guide you through the process. Please follow this link to our online application form [link].
+Finbo: Once you’ve completed it, you’ll receive a confirmation email. After that, you can visit your nearest branch to finalize the account opening. Would you like me to schedule an appointment at your preferred branch?
+User: Can we do it for Friday?
+Finbo: Sure, I'll need your contact details and the branch location you prefer. Could you please provide them?
+User: my phone number is 798399370, and I prefer the branch at Berlin.
+Finbo: Thank you! I’ve scheduled your appointment for Friday at Berlin branch. You’ll receive a confirmation shortly. If you need to reschedule or have any questions, feel free to ask.
+User: Thanks. 
+Finbo: Have a wonderful day!"
+,
+10,"User: Hi, tell me about credits.
+Finbo: Hello! Just to clarify, are you looking for information about personal loans, credit cards, or consumer credits?
+User: Consumer credits
+Finbo: Got it. We offer several types of consumer credit options, including personal loans and credit cards. Personal loans can be used for larger expenses, while credit cards are useful for everyday purchases. Would you like details on one of these, or both?
+User: I’d like to know about personal loans
+Finbo: Sure! Our personal loans come with competitive interest rates and flexible terms. You can borrow up to €50,000 with repayment periods ranging from 1 to 5 years. Do you need information on interest rates, fees, or how to apply?
+User: Not really
+Finbo: Would you like to connect to the loan officer?
+User: The online application link would be great.
+Finbo: Here’s the link to apply online: [URL]. If you need help during the application process or have more questions, feel free to ask. 
+User: Okay
+Finbo: If you need anything else, just let me know. Have a great day!"
+,
+11,"User: Hi, I'd like to know the conditions for eligibility for a loan
+Finbo: Hello! Eligibility for a loan depends on several factors: your income, credit score, employment history, and debt-to-income ratio. We look at these to ensure you can repay the loan comfortably. Are you interested in a specific type of loan?
+User: Yes, a housing loan.
+Finbo: For a housing loan, we usually require a minimum credit score of 650, a stable income, and a debt-to-income ratio of less than 40%. Could you provide some details about your income and credit score?
+User: My income is €45,000 a year, and my credit score is 700.
+Finbo: Based on your income and credit score, you seem to meet the basic requirements. Do you have any existing debts or loans?
+User: No.
+Finbo: Do you have a property in mind, and what's its value?
+User: Yes, the property is worth €250,000.
+Finbo: Great! With your details, you might qualify for a loan up to 80% of the property’s value, which would be €200,000. Would you like to proceed with a pre-qualification?
+User: I'd like to get a consultation.
+Finbo: I can connect you with a loan officer who can help with the pre-qualification process and answer any other questions. Can I have your contact number and a good time to call?
+Finbo: My number is 4363763, and I’m free after 4 PM.
+Finbo: Thank you! I’ll arrange for a loan officer to call you after 4 PM today. You’ll receive a confirmation shortly.
+User: No, that’s all. Thanks!
+Finbo: You're welcome! A loan officer will contact you soon to guide you through the next steps. Have a great day!"
+,
+12,"User: Hi, I’m looking for the best savings account for students, do you have something for me?
+Finbo: Hello, sure thing! We have great savings accounts for students with high interest rates and no fees. Want me to connect you with a client manager to get all the details?
+User: That would be great
+Finbo:  Just need your contact number and the best time to reach you.
+User: 2345357438, I’m free after 3 PM.
+Finbo:  I’ll have a client manager call you after 3 PM today. You’ll get a confirmation soon. Anything else you need?
+User: No, thanks
+Finbo: A manager will be in touch. Have a nice day!"
+,
+13,"User: hi, looking for info on student loans. can you help?
+Finbo: Hello! Yes, I can help. Are you looking for undergraduate or postgraduate student loans?
+User: undergraduate. rates?
+Finbo: Rates for undergraduate student loans start at 4%. It depends on your credit score and loan term. Would you like to check your eligibility?
+User: what's the maximum?
+Finbo: Do you mean what is the maximum loan amount or loan term?
+User: amount
+Finbo: The maximum amount depends on your financial need and cost of attendance. Do you have a specific school or program in mind? I can estimate for you.
+User: university, €20,000 per year
+Finbo: You can typically get up to the full cost of attendance, so €20,000 per year
+Finbo: Would you like to check your eligibility?
+User: can you also help with scholarships?
+Finbo: We don't handle scholarships directly, but I can connect you to a loan officer who can give an advice for your situation. Does that work for you?
+User: sure
+Finbo: Connecting you right now. One moment, please."
+,
+14,"User: Hi, can you tell me about the different insurance products you offer?
+Finbo: Hello! We offer a wide range of insurance products, including life, health, home, and car insurance. To recommend the best options for you, may I ask about your age?
+User: In my thirties.
+Finbo: Do you have children?
+User: No
+Finbo: Perhaps, you might be interested in life and health insurance for future planning. We also have home insurances if you own property. Would you like details on any specific type?
+User: What if I had children?
+Finbo: In that case, we also offer family plans that provide broader coverage for children. Would you like information on these plans?
+User: Yes, family plans sound good.
+Finbo: Great, I’ll send you links to our family life and health insurance plans. They provide comprehensive coverage and benefits. 
+Finbo: Here they are: [Family Life Insurance], [Family Health Insurance]. 
+User: Thanks.
+Finbo:  You’re welcome! If you have any more questions or need assistance, feel free to reach out."
+,
+15,"User: hello
+Finbo: Hello! How can I help you today?
+User: I want to change my insurance type. How do I do that?
+Finbo: The first step is to review your current policy and the new type of insurance you're interested in. Are you looking to switch from a basic to a premium plan?
+User: yes
+Finbo: Okay, to switch to a premium plan, you’ll need to update your policy details. This might include a higher coverage amount and additional benefits. You can start the process online yourself. Alternatively, our insurance manager will call you to guide you through the application. Which option works best for you?
+User: I'd prefer a call from an insurance manager.
+Finbo: I will arrange that. Could you please provide your contact number and a convenient time for the call?
+User: My number is 213729833, and I’m available after 3 PM.
+Finbo: Great, thank you! I’ll schedule a call with an insurance manager for today, after 3 PM. You’ll receive a confirmation soon.
+User: Okay, thanks!
+Finbo:  You're welcome! If you have any more questions in the meantime, feel free to ask :)"
+,
+16,"User: Hello! I am looking for a good travel insurance.
+Finbo: Hello! I'd be happy to help with that.
+To find the best travel insurance option, I’ll need to ask a few questions. First, are you traveling domestically or internationally?
+User: Internationally.
+Finbo: Next, could you tell me the duration of your trip: how many days will you be traveling?
+User: I might go for just a week.
+Finbo: Okay, a week-long international trip.
+Finbo: Are you planning any specific activities, like skiing or scuba diving, which might need extra coverage?
+User: No extreme sports, just regular sightseeing
+Finbo: Understood.
+Finbo: Do you want coverage for trip cancellations and lost luggage, or just medical coverage?
+User: Just medical...
+Finbo: Got it. Do you have any pre-existing medical conditions that you'd like to cover?
+User: No, wait, better include trip cancellations and lost luggage too
+Finbo: Okay, including comprehensive coverage.
+Finbo: For medical coverage, do you have any pre-existing medical conditions?
+User: I'd rather not say.
+Finbo: I understand your hesitation. However, knowing about pre-existing conditions is important to ensure you're fully covered. Could you please let me know if you have any conditions that need coverage?
+User: Yes, I do.
+Finbo: Thank you for your answers. I recommend our comprehensive travel insurance plan with a high medical coverage limit and additional coverage for trip cancellations and lost luggage. I'll connect you with our insurance manager to finalize the details and complete your order. Could you please confirm your contact number?
+User: Sure, it's 348359850
+Finbo: Thanks! An insurance manager will reach out shortly to complete your travel insurance order. You’ll receive a confirmation soon.
+User: Great, thanks
+Finbo: You're welcome! Have a fantastic trip, and feel free to reach out if you need anything else."
+,
+17,"User: hey looking to open an investment account
+Finbo: Hello! We offer several types of investment accounts, including mutual funds, stocks, and bonds. Do you have a specific type in mind?
+User: what's with pension funds?
+Finbo: I'm afraid I don't understand you. Do you want to learn more about our pension products?
+User: yes
+Finbo: We have various pension products, including traditional and early retirement plans. They offer different benefits depending on your retirement goals. Would you like details on any specific type?
+User: you know what, forget it. I’ll look into it later
+Finbo: No problem! If you have any questions in the future or need further assistance, feel free to reach out. I’m here to help whenever you’re ready.
+User: okay
+Finbo: Have a nice day!"
+,
+18,"User: loans for builders
+Finbo: Hello! Could you clarify what you mean? We offer various types of loans, I want to make sure I give you the right information.
+User: I need a loan to fund a project for building a shelter
+Finbo: I see! While we don't have a specific loan product for custom projects like building a shelter, we offer personal loans that can be used for a wide range of purposes on flexible terms.
+User: okay, thanks for the info
+Finbo: Would you like to discuss personal loans with our loan officers who can give you more details about the conditions?
+User: no need
+Finbo: Sure, if you might have any other questions, I'm here to help. Feel free to reach out!"
+,
+19,"User: I want to open a credit line
+Finbo: Hello! We can certainly help with that. To get started, I'll need some basic information. Could you tell me the amount you’re looking to borrow and the purpose of the credit line?
+User: I need around €10,000 for home renovations
+Finbo: Do you have an estimate of your monthly income and any existing debts?
+User: just tell me what I need to do to get it approved
+Finbo: To proceed, we'll still need to assess your income and current financial obligations. This helps us determine the best terms for your credit line. It’s a quick process, I promise!
+User: never mind, I’ll figure it out later
+Finbo: No problem! If you decide to explore a credit line or have any other questions in the future, feel free to reach out. I’m here to assist whenever you're ready.
+User: ok
+Finbo: Have a nice day!"
+,
+20,"User: Hi, can you tell me more about housing loans?
+Finbo: Hello! Certainly. Our housing loans offer flexible terms, competitive interest rates, and options for fixed or variable rates. You can use them for purchasing a new home or refinancing an existing one. Are you looking for details on loan amounts or repayment options?
+User: Actually, what are the general conditions for a mortgage?
+Finbo: For our mortgages, we consider factors like your credit score, income, employment history, and the property value. We usually require a down payment and offer loans up to 80-90% of the property's value. Would you like to know if you're eligible?
+User: yes
+Finbo: To determine eligibility, we need to look at your financial details, like income and credit score. I can connect you with a loan officer who can provide a thorough assessment and discuss specific conditions.
+Finbo: Could you provide your contact number and a good time to call?
+User:  My number is 6786960009, and I’m free after 5 PM.
+Finbo: Perfect, thanks! I’ll have a loan officer call you after 5 PM. You'll receive a confirmation shortly.
+User:  Okay, sounds good.
+Finbo: If you need anything else, just let me know. Have a wonderful day!"

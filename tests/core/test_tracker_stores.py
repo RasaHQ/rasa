@@ -14,7 +14,7 @@ import uuid
 from _pytest.capture import CaptureFixture
 from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
-from moto import mock_dynamodb
+from moto import mock_aws
 from pymongo.errors import OperationFailure
 
 from rasa.core.agent import Agent
@@ -86,12 +86,12 @@ def test_get_or_create():
 
 
 # noinspection PyPep8Naming
-@mock_dynamodb
+@mock_aws
 def test_dynamo_get_or_create():
     get_or_create_tracker_store(DynamoTrackerStore(test_domain))
 
 
-@mock_dynamodb
+@mock_aws
 async def test_dynamo_tracker_floats():
     conversation_id = uuid.uuid4().hex
 
@@ -188,7 +188,6 @@ def test_create_tracker_store_from_endpoint_config(
 
 
 def test_redis_tracker_store_invalid_key_prefix(domain: Domain):
-
     test_invalid_key_prefix = "$$ &!"
 
     tracker_store = RedisTrackerStore(
@@ -344,9 +343,9 @@ def test_tracker_store_from_invalid_string(domain: Domain, monkeypatch: MonkeyPa
     assert isinstance(tracker_store, InMemoryTrackerStore)
 
 
-async def _tracker_store_and_tracker_with_slot_set() -> Tuple[
-    InMemoryTrackerStore, DialogueStateTracker
-]:
+async def _tracker_store_and_tracker_with_slot_set() -> (
+    Tuple[InMemoryTrackerStore, DialogueStateTracker]
+):
     # returns an InMemoryTrackerStore containing a tracker with a slot set
 
     slot_key = "cuisine"
@@ -773,6 +772,39 @@ async def test_tracker_store_retrieve_with_events_from_previous_sessions(
     actual = await tracker_store.retrieve_full_tracker(conversation_id)
 
     assert len(actual.events) == len(tracker.events)
+
+
+@pytest.mark.parametrize(
+    "tracker_store_type,tracker_store_kwargs",
+    [
+        (MockedMongoTrackerStore, {}),
+        (SQLTrackerStore, {"host": "sqlite:///"}),
+        (InMemoryTrackerStore, {}),
+    ],
+)
+async def test_tracker_store_counts_conversations(
+    tracker_store_type: Type[TrackerStore], tracker_store_kwargs: Dict
+):
+    tracker_store = tracker_store_type(Domain.empty(), **tracker_store_kwargs)
+
+    # Create two trackers
+    tracker1 = DialogueStateTracker.from_events("1", [SessionStarted(timestamp=1)])
+    tracker2 = DialogueStateTracker.from_events("2", [SessionStarted(timestamp=3)])
+    await tracker_store.save(tracker1)
+    await tracker_store.save(tracker2)
+
+    # Assert that the tracker store counts the conversations correctly
+    assert await tracker_store.count_conversations() == 2
+    assert await tracker_store.count_conversations(after_timestamp=2) == 1
+    assert await tracker_store.count_conversations(after_timestamp=4) == 0
+
+    # Create another tracker
+    tracker3 = DialogueStateTracker.from_events("3", [SessionStarted(timestamp=5)])
+    await tracker_store.save(tracker3)
+
+    # Assert that the tracker store counts the conversations correctly
+    assert await tracker_store.count_conversations() == 3
+    assert await tracker_store.count_conversations(after_timestamp=4) == 1
 
 
 def test_session_scope_error(

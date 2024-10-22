@@ -918,7 +918,6 @@ def test_get_active_entity_extractors(
 
 
 def test_entity_evaluation_report(tmp_path: Path):
-
     path = tmp_path / "evaluation"
     path.mkdir()
     report_folder = str(path / "reports")

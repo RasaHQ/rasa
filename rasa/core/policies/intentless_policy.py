@@ -1,20 +1,22 @@
 import importlib.resources
 import math
+import os
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, TYPE_CHECKING, Text, Tuple
 
-import rasa.shared.utils.io
 import structlog
 import tiktoken
 from jinja2 import Template
 from langchain.docstore.document import Document
 from langchain.schema.embeddings import Embeddings
-from langchain.vectorstores import FAISS
+from langchain_community.vectorstores.faiss import FAISS
 
+import rasa.shared.utils.io
 from rasa import telemetry
 from rasa.core.constants import (
     CHAT_POLICY_PRIORITY,
     POLICY_PRIORITY,
+    UTTER_SOURCE_METADATA_KEY,
 )
 from rasa.core.policies.policy import Policy, PolicyPrediction, SupportedData
 from rasa.dialogue_understanding.stack.frames import (
@@ -27,7 +29,18 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.graph_components.providers.forms_provider import Forms
 from rasa.graph_components.providers.responses_provider import Responses
-from rasa.shared.constants import REQUIRED_SLOTS_KEY
+from rasa.shared.constants import (
+    REQUIRED_SLOTS_KEY,
+    EMBEDDINGS_CONFIG_KEY,
+    LLM_API_HEALTH_CHECK_ENV_VAR,
+    LLM_CONFIG_KEY,
+    MODEL_CONFIG_KEY,
+    MODEL_NAME_CONFIG_KEY,
+    PROMPT_CONFIG_KEY,
+    PROVIDER_CONFIG_KEY,
+    OPENAI_PROVIDER,
+    TIMEOUT_CONFIG_KEY,
+)
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.shared.core.domain import KEY_RESPONSES_TEXT, Domain
 from rasa.shared.core.events import (
@@ -42,6 +55,10 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import FileIOException, RasaCoreException
 from rasa.shared.nlu.constants import PREDICTED_CONFIDENCE_KEY
 from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.providers.embedding._langchain_embedding_client_adapter import (
+    _LangchainEmbeddingClientAdapter,
+)
+from rasa.shared.providers.llm.llm_client import LLMClient
 from rasa.shared.utils.io import deep_container_fingerprint
 from rasa.shared.utils.llm import (
     AI,
@@ -52,11 +69,12 @@ from rasa.shared.utils.llm import (
     combine_custom_and_default_config,
     embedder_factory,
     get_prompt_template,
+    llm_api_health_check,
     llm_factory,
     sanitize_message_for_prompt,
     tracker_as_readable_transcript,
+    try_instantiate_llm_client,
 )
-
 from rasa.utils.ml_utils import (
     extract_ai_response_examples,
     extract_participant_messages_from_transcript,
@@ -65,12 +83,12 @@ from rasa.utils.ml_utils import (
     persist_faiss_vector_store,
     response_for_template,
 )
-
+from rasa.dialogue_understanding.patterns.chitchat import FLOW_PATTERN_CHITCHAT
+from rasa.shared.core.constants import ACTION_TRIGGER_CHITCHAT
 from rasa.utils.log_utils import log_llm
 
 if TYPE_CHECKING:
     from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
-    from langchain.llms.base import BaseLLM
 
 structlogger = structlog.get_logger()
 
@@ -89,18 +107,16 @@ MAX_NUMBER_OF_TOKENS_FOR_SAMPLES = 900
 # the config property name for the confidence of the nlu prediction
 NLU_ABSTENTION_THRESHOLD = "nlu_abstention_threshold"
 
-PROMPT = "prompt"
-
 DEFAULT_LLM_CONFIG = {
-    "_type": "openai",
-    "request_timeout": 5,
+    PROVIDER_CONFIG_KEY: OPENAI_PROVIDER,
+    MODEL_CONFIG_KEY: DEFAULT_OPENAI_CHAT_MODEL_NAME,
     "temperature": 0.0,
-    "model_name": DEFAULT_OPENAI_CHAT_MODEL_NAME,
     "max_tokens": DEFAULT_OPENAI_MAX_GENERATED_TOKENS,
+    TIMEOUT_CONFIG_KEY: 5,
 }
 
 DEFAULT_EMBEDDINGS_CONFIG = {
-    "_type": "openai",
+    PROVIDER_CONFIG_KEY: OPENAI_PROVIDER,
     "model": DEFAULT_OPENAI_EMBEDDING_MODEL_NAME,
 }
 
@@ -108,8 +124,6 @@ DEFAULT_INTENTLESS_PROMPT_TEMPLATE = importlib.resources.open_text(
     "rasa.core.policies", "intentless_prompt_template.jinja2"
 ).name
 
-EMBEDDINGS_CONFIG_KEY = "embeddings"
-LLM_CONFIG_KEY = "llm"
 INTENTLESS_PROMPT_TEMPLATE_FILE_NAME = "intentless_policy_prompt.jinja2"
 
 
@@ -165,6 +179,21 @@ def filter_responses(responses: Responses, forms: Forms, flows: FlowsList) -> Re
         for name, variants in responses.data.items()
         if name not in combined_responses
     }
+
+    pattern_chitchat = flows.flow_by_id(FLOW_PATTERN_CHITCHAT)
+
+    # The following condition is highly unlikely, but mypy requires the case
+    # of pattern_chitchat == None to be addressed
+    if not pattern_chitchat:
+        return Responses(data=filtered_responses)
+
+    # if action_trigger_chitchat, filter out "utter_free_chitchat_response"
+    has_action_trigger_chitchat = pattern_chitchat.has_action_step(
+        ACTION_TRIGGER_CHITCHAT
+    )
+    if has_action_trigger_chitchat:
+        filtered_responses.pop("utter_free_chitchat_response", None)
+
     return Responses(data=filtered_responses)
 
 
@@ -368,7 +397,7 @@ class IntentlessPolicy(Policy):
             NLU_ABSTENTION_THRESHOLD: 0.9,
             LLM_CONFIG_KEY: DEFAULT_LLM_CONFIG,
             EMBEDDINGS_CONFIG_KEY: DEFAULT_EMBEDDINGS_CONFIG,
-            PROMPT: DEFAULT_INTENTLESS_PROMPT_TEMPLATE,
+            PROMPT_CONFIG_KEY: DEFAULT_INTENTLESS_PROMPT_TEMPLATE,
         }
 
     @staticmethod
@@ -407,7 +436,7 @@ class IntentlessPolicy(Policy):
         self.conversation_samples_index = samples_docsearch
         self.embedder = self._create_plain_embedder(config)
         self.prompt_template = prompt_template or rasa.shared.utils.io.read_file(
-            self.config[PROMPT]
+            self.config[PROMPT_CONFIG_KEY]
         )
         self.trace_prompt_tokens = self.config.get("trace_prompt_tokens", False)
 
@@ -418,9 +447,10 @@ class IntentlessPolicy(Policy):
         Returns:
         The embedder.
         """
-        return embedder_factory(
+        client = embedder_factory(
             config.get(EMBEDDINGS_CONFIG_KEY), DEFAULT_EMBEDDINGS_CONFIG
         )
+        return _LangchainEmbeddingClientAdapter(client)
 
     def embeddings_property(self, prop: str) -> Optional[str]:
         """Returns the property of the embeddings config."""
@@ -460,6 +490,17 @@ class IntentlessPolicy(Policy):
             A policy must return its resource locator so that potential children nodes
             can load the policy from the resource.
         """
+        llm_client = try_instantiate_llm_client(
+            self.config.get(LLM_CONFIG_KEY),
+            DEFAULT_LLM_CONFIG,
+            "intentless_policy.train",
+            IntentlessPolicy.__name__,
+        )
+        if os.getenv(LLM_API_HEALTH_CHECK_ENV_VAR, "true").lower() == "true":
+            llm_api_health_check(
+                llm_client, "intentless_policy.train", IntentlessPolicy.__name__
+            )
+
         responses = filter_responses(responses, forms, flows or FlowsList([]))
         telemetry.track_intentless_policy_train()
         response_texts = [r for r in extract_ai_response_examples(responses.data)]
@@ -502,11 +543,12 @@ class IntentlessPolicy(Policy):
 
         structlogger.info("intentless_policy.training.completed")
         telemetry.track_intentless_policy_train_completed(
-            embeddings_type=self.embeddings_property("_type"),
-            embeddings_model=self.embeddings_property("model")
-            or self.embeddings_property("model_name"),
-            llm_type=self.llm_property("_type"),
-            llm_model=self.llm_property("model") or self.llm_property("model_name"),
+            embeddings_type=self.embeddings_property(PROVIDER_CONFIG_KEY),
+            embeddings_model=self.embeddings_property(MODEL_CONFIG_KEY)
+            or self.embeddings_property(MODEL_NAME_CONFIG_KEY),
+            llm_type=self.llm_property(PROVIDER_CONFIG_KEY),
+            llm_model=self.llm_property(MODEL_CONFIG_KEY)
+            or self.llm_property(MODEL_NAME_CONFIG_KEY),
         )
 
         self.persist()
@@ -543,7 +585,9 @@ class IntentlessPolicy(Policy):
         Returns:
              The prediction.
         """
-        if not self.supports_current_stack_frame(tracker):
+        if not self.supports_current_stack_frame(
+            tracker
+        ) or self.should_abstain_in_coexistence(tracker, True):
             return self._prediction(self._default_predictions(domain))
 
         if tracker.has_bot_message_after_latest_user_message():
@@ -578,11 +622,12 @@ class IntentlessPolicy(Policy):
         )
 
         telemetry.track_intentless_policy_predict(
-            embeddings_type=self.embeddings_property("_type"),
-            embeddings_model=self.embeddings_property("model")
-            or self.embeddings_property("model_name"),
-            llm_type=self.llm_property("_type"),
-            llm_model=self.llm_property("model") or self.llm_property("model_name"),
+            embeddings_type=self.embeddings_property(PROVIDER_CONFIG_KEY),
+            embeddings_model=self.embeddings_property(MODEL_CONFIG_KEY)
+            or self.embeddings_property(MODEL_NAME_CONFIG_KEY),
+            llm_type=self.llm_property(PROVIDER_CONFIG_KEY),
+            llm_model=self.llm_property(MODEL_CONFIG_KEY)
+            or self.llm_property(MODEL_NAME_CONFIG_KEY),
             score=score,
         )
 
@@ -595,7 +640,9 @@ class IntentlessPolicy(Policy):
         else:
             events = []
 
-        return self._prediction(result, events=events)
+        action_metadata = {UTTER_SOURCE_METADATA_KEY: self.__class__.__name__}
+
+        return self._prediction(result, events=events, action_metadata=action_metadata)
 
     async def generate_answer(
         self,
@@ -619,9 +666,10 @@ class IntentlessPolicy(Policy):
         )
         return await self._generate_llm_answer(llm, prompt)
 
-    async def _generate_llm_answer(self, llm: "BaseLLM", prompt: str) -> Optional[str]:
+    async def _generate_llm_answer(self, llm: LLMClient, prompt: str) -> Optional[str]:
         try:
-            return await llm.apredict(prompt)
+            llm_response = await llm.acompletion(prompt)
+            return llm_response.choices[0]
         except Exception as e:
             # unfortunately, langchain does not wrap LLM exceptions which means
             # we have to catch all exceptions here
@@ -670,7 +718,7 @@ class IntentlessPolicy(Policy):
         if tracker.latest_message.text.startswith("/"):
             # we don't want to generate a response if the user is trying to
             # execute a "command" - this should be handled by the regex
-            # intent classifier in rasa open source.
+            # intent classifier in rasa pro.
             structlogger.debug("intentless_policy.prediction.skip_slash")
             return None, 0.0
 
@@ -685,6 +733,7 @@ class IntentlessPolicy(Policy):
             number_of_samples=NUMBER_OF_CONVERSATION_SAMPLES,
             max_number_of_tokens=MAX_NUMBER_OF_TOKENS_FOR_SAMPLES,
         )
+
         extra_ai_responses = self.extract_ai_responses(conversation_samples)
 
         # put conversation responses in front of sampled examples,
@@ -863,7 +912,7 @@ class IntentlessPolicy(Policy):
         """
         result = self._default_predictions(domain)
         if action_name:
-            result[domain.index_for_action(action_name)] = score  # type: ignore[assignment]  # noqa: E501
+            result[domain.index_for_action(action_name)] = score  # type: ignore[assignment]
         return result
 
     @classmethod
@@ -892,9 +941,7 @@ class IntentlessPolicy(Policy):
                 #  normalized. unfortunatley langchain doesn't persist / load
                 #  this parameter.
                 if responses_docsearch:
-                    responses_docsearch._normalize_L2 = (
-                        True  # pylint: disable=protected-access
-                    )
+                    responses_docsearch._normalize_L2 = True  # pylint: disable=protected-access
                 prompt_template = rasa.shared.utils.io.read_file(
                     path / INTENTLESS_PROMPT_TEMPLATE_FILE_NAME
                 )
@@ -918,7 +965,7 @@ class IntentlessPolicy(Policy):
     def fingerprint_addon(cls, config: Dict[str, Any]) -> Optional[str]:
         """Add a fingerprint of the knowledge base for the graph."""
         prompt_template = get_prompt_template(
-            config.get("prompt"),
+            config.get(PROMPT_CONFIG_KEY),
             DEFAULT_INTENTLESS_PROMPT_TEMPLATE,
         )
         return deep_container_fingerprint(prompt_template)

@@ -1,0 +1,13 @@
+version: "3.1"
+
+rules:
+
+- rule: goodbye
+  steps:
+  - intent: goodbye
+  - action: action_goodbye
+
+- rule: hi
+  steps:
+  - intent: greet
+  - action: utter_greet

@@ -1,0 +1,11 @@
+name: Setup build-x
+description: Encapsulates steps for setting up build-x
+  
+runs:
+  using: 'composite'
+  steps:
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3  # v3.0.0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@0d103c3126aa41d772a8362f6aa67afac040f80c  # v3.1.0

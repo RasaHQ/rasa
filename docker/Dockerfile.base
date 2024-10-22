@@ -1,5 +1,5 @@
 # The base image used for all images
-FROM python:3.10-slim
+FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND="noninteractive"
 

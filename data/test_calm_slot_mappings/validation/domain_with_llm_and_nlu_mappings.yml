@@ -1,0 +1,10 @@
+entities:
+  - card_number
+
+slots:
+  card_number:
+    type: text
+    mappings:
+      - type: from_llm
+      - type: from_entity
+        entity: card_number

@@ -1,12 +1,10 @@
 from __future__ import annotations
+
 import abc
 import copy
 import logging
 from enum import Enum
 from pathlib import Path
-
-from rasa.shared.constants import ROUTE_TO_CALM_SLOT
-from rasa.shared.core.events import Event
 from typing import (
     Any,
     List,
@@ -21,6 +19,8 @@ from typing import (
 
 import numpy as np
 
+from rasa.shared.constants import ROUTE_TO_CALM_SLOT
+from rasa.shared.core.events import Event
 from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
@@ -40,13 +40,11 @@ from rasa.core.constants import (
 from rasa.shared.core.constants import USER, SLOTS, PREVIOUS_ACTION, ACTIVE_LOOP
 import rasa.shared.utils.common
 
-
 if TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
     from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
     from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
     from rasa.dialogue_understanding.stack.frames import DialogueStackFrame
-
 
 logger = logging.getLogger(__name__)
 
@@ -137,10 +135,20 @@ class Policy(GraphComponent):
     def should_abstain_in_coexistence(
         self, tracker: DialogueStateTracker, is_calm_policy: bool
     ) -> bool:
-        """Whether a policy should abstain making predictions in coexistence."""
+        """Whether a policy should abstain making predictions in coexistence.
+
+        A calm policy should run when the routing slot is set to True.
+        A nlu-based policy should run when the routing slot is set to False or None.
+        """
+        if is_calm_policy:
+            return tracker.has_coexistence_routing_slot and (
+                tracker.get_slot(ROUTE_TO_CALM_SLOT) is False
+                or tracker.get_slot(ROUTE_TO_CALM_SLOT) is None
+            )
+
         return (
             tracker.has_coexistence_routing_slot
-            and tracker.get_slot(ROUTE_TO_CALM_SLOT) != is_calm_policy
+            and tracker.get_slot(ROUTE_TO_CALM_SLOT) is True
         )
 
     def __init__(
@@ -299,8 +307,9 @@ class Policy(GraphComponent):
         max_training_samples = kwargs.get("max_training_samples")
         if max_training_samples is not None:
             logger.debug(
-                "Limit training data to {} training samples."
-                "".format(max_training_samples)
+                "Limit training data to {} training samples.".format(
+                    max_training_samples
+                )
             )
             state_features = state_features[:max_training_samples]
             label_ids = label_ids[:max_training_samples]

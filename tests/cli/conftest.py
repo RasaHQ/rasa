@@ -1,17 +1,16 @@
-import pathlib
-from pathlib import Path
-
-from subprocess import check_call
-
-from typing import Callable, Text
-import pytest
-import shutil
+import argparse
 import os
+import shutil
+from pathlib import Path
+from subprocess import check_call
+from typing import Callable, Text
 
-from pytest import TempPathFactory, Testdir
+import pytest
 from _pytest.pytester import RunResult
+from pytest import TempPathFactory, Testdir
 
-from rasa.cli import scaffold
+from rasa.cli import inspect, scaffold
+from rasa.cli import run as cli_run
 from rasa.shared.utils.yaml import write_yaml
 from tests.conftest import create_simple_project
 
@@ -64,6 +63,10 @@ def trained_simple_project(tmp_path_factory: TempPathFactory) -> Text:
 
     os.environ["LOG_LEVEL"] = "DEBUG"
 
+    # Very low risk - an exploit
+    # would first need to compromise the host running the tests and maliciously
+    # edit the environment variables.
+    # deepcode ignore CommandInjection/test:
     check_call([shutil.which(RASA_EXE), "train"], cwd=path)
 
     return str(path)
@@ -120,9 +123,18 @@ def run_in_simple_project_with_model(
 
 
 @pytest.fixture
-def e2e_input_folder() -> pathlib.Path:
-    return (
-        pathlib.Path(__file__).parent.parent.parent
-        / "data"
-        / "end_to_end_testing_input_files"
-    )
+def inspect_parser() -> argparse.ArgumentParser:
+    """Fixture for the `rasa inspect` parser."""
+    parser = argparse.ArgumentParser(prog="rasa")
+    subparsers = parser.add_subparsers(help="Rasa commands")
+    inspect.add_subparser(subparsers, [])
+    return parser
+
+
+@pytest.fixture
+def run_parser() -> argparse.ArgumentParser:
+    """Fixture for the `rasa run` parser."""
+    parser = argparse.ArgumentParser(prog="rasa")
+    subparsers = parser.add_subparsers(help="Rasa commands")
+    cli_run.add_subparser(subparsers, [])
+    return parser

@@ -25,6 +25,9 @@ export const DiagramFlow = (props: Props) => {
   const config = {
     startOnLoad: true,
     logLevel: 'info',
+    flowchart: {
+      useMaxWidth: false,
+    },
   }
 
   useEffect(() => {
@@ -37,6 +40,13 @@ export const DiagramFlow = (props: Props) => {
     // attribute prevents it. We need to remove it each time `text` changes
     mermaidRef.current?.removeAttribute("data-processed");
     mermaid.contentLoaded();
+
+    setTimeout(() => {
+      const active = document.querySelectorAll(".active")[0];
+      if (active) {
+        active.scrollIntoView({ behavior: "smooth"});
+      }
+    }, 0);
   }, [text]);
 
   useEffect(() => {

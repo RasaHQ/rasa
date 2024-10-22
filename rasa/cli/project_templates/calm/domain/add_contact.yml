@@ -6,18 +6,24 @@ actions:
 slots:
   add_contact_confirmation:
     type: bool
+    mappings:
+      - type: from_llm
   add_contact_name:
     type: text
+    mappings:
+      - type: from_llm
   add_contact_handle:
     type: text
+    mappings:
+      - type: from_llm
 
 responses:
   utter_ask_add_contact_confirmation:
     - text: Do you want to add {add_contact_name}({add_contact_handle}) to your contacts?
       buttons:
-        - payload: "yes"
+        - payload: "/SetSlots(add_contact_confirmation=true)"
           title: Yes
-        - payload: "no"
+        - payload: "/SetSlots(add_contact_confirmation=false)"
           title: No, cancel
   utter_ask_add_contact_handle:
     - text: What's the handle of the user you want to add?

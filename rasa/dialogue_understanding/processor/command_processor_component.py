@@ -9,6 +9,7 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.events import Event
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.training_data.structures import StoryGraph
 
 
 class CommandProcessorComponent(GraphComponent):
@@ -31,9 +32,12 @@ class CommandProcessorComponent(GraphComponent):
         return cls(execution_context)
 
     def execute_commands(
-        self, tracker: DialogueStateTracker, flows: FlowsList
+        self,
+        tracker: DialogueStateTracker,
+        flows: FlowsList,
+        story_graph: StoryGraph,
     ) -> List[Event]:
         """Execute commands to update tracker state."""
         return rasa.dialogue_understanding.processor.command_processor.execute_commands(
-            tracker, flows, self._execution_context
+            tracker, flows, self._execution_context, story_graph
         )

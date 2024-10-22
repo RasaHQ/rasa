@@ -308,7 +308,6 @@ def test_yaml_wrong_yaml_format_warning(domain: Domain):
 
 
 def test_read_rules_with_stories(domain: Domain):
-
     yaml_file = "data/test_yaml_stories/stories_and_rules.yml"
 
     steps = loading.load_data_from_files([yaml_file], domain)

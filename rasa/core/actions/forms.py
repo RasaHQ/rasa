@@ -11,7 +11,8 @@ from rasa.core.channels import OutputChannel
 from rasa.shared.core.domain import Domain, KEY_SLOTS
 from rasa.shared.core.constants import SlotMappingType, SLOT_MAPPINGS, MAPPING_TYPE
 
-from rasa.core.actions.action import ActionExecutionRejection, RemoteAction
+from rasa.core.actions.action import RemoteAction
+from rasa.core.actions.action_exceptions import ActionExecutionRejection
 from rasa.shared.core.constants import (
     ACTION_EXTRACT_SLOTS,
     ACTION_LISTEN_NAME,
@@ -293,7 +294,8 @@ class FormAction(LoopAction):
             + [SlotSet(REQUESTED_SLOT, self.get_slot_to_fill(current_tracker))]
             # Insert form execution event so that it's clearly distinguishable which
             # events were newly added.
-            + [ActionExecuted(self.name())] + additional_events,
+            + [ActionExecuted(self.name())]
+            + additional_events,
             slots=domain.slots,
         )
 
@@ -565,6 +567,7 @@ class FormAction(LoopAction):
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
+        metadata: Optional[Dict[Text, Any]] = None,
     ) -> List[Event]:
         """Activate form if the form is called for the first time.
 
@@ -596,7 +599,7 @@ class FormAction(LoopAction):
         )
 
         extraction_events = await action_extract_slots.run(
-            output_channel, nlg, tracker, domain
+            output_channel, nlg, tracker, domain, metadata
         )
 
         events_as_str = "\n".join(str(e) for e in extraction_events)
@@ -712,9 +715,7 @@ class FormAction(LoopAction):
                 if isinstance(event, ActiveLoop)
             ),
             None,
-        ) == ActiveLoop(
-            None
-        )
+        ) == ActiveLoop(None)
 
     async def deactivate(self, *args: Any, **kwargs: Any) -> List[Event]:
         """Deactivates form."""
@@ -727,11 +728,14 @@ class FormAction(LoopAction):
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
+        metadata: Optional[Dict[Text, Any]] = None,
     ) -> List[Event]:
         events = self._default_activation_events()
 
         temp_tracker = tracker.copy()
         temp_tracker.update_with_events(events)
-        events += await self.activate(output_channel, nlg, temp_tracker, domain)
+        events += await self.activate(
+            output_channel, nlg, temp_tracker, domain, metadata
+        )
 
         return events

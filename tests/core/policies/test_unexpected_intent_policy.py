@@ -1,12 +1,13 @@
 import json
 from pathlib import Path
 from typing import Optional, List, Dict, Type
+import logging
+
 import tensorflow as tf
 import numpy as np
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.logging import LogCaptureFixture
-import logging
 
 from rasa.core.featurizers.single_state_featurizer import (
     IntentTokenizerSingleStateFeaturizer,
@@ -61,7 +62,6 @@ from tests.core.policies.test_ted_policy import TestTEDPolicy
 class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
     @staticmethod
     def _policy_class_to_test() -> Type[UnexpecTEDIntentPolicy]:
-
         return UnexpecTEDIntentPolicy
 
     @pytest.fixture(scope="class")
@@ -106,7 +106,6 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
     def test_label_data_assembly(
         self, trained_policy: UnexpecTEDIntentPolicy, default_domain: Domain
     ):
-
         # Construct input data
         state_featurizer = trained_policy.featurizer.state_featurizer
         encoded_all_labels = state_featurizer.encode_all_labels(
@@ -854,7 +853,6 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
             all_similarities: np.array,
             label_index: int,
         ):
-
             expected_score = all_similarities[0][label_index]
             expected_threshold = (
                 all_thresholds[label_index] if label_index in all_thresholds else None
@@ -1130,6 +1128,29 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
 
         # check that the policy didn't predict anything
         assert prediction.max_confidence == 0.0
+
+    @pytest.mark.parametrize(
+        "routing_slot_value,result",
+        [
+            (None, False),
+            (True, True),
+            (False, False),
+        ],
+    )
+    def test_should_abstain_in_coexistence(
+        self,
+        routing_slot_value: Optional[bool],
+        result: bool,
+        trained_policy: UnexpecTEDIntentPolicy,
+    ):
+        tracker = DialogueStateTracker(
+            "id1",
+            slots=[
+                BooleanSlot(ROUTE_TO_CALM_SLOT, [], initial_value=routing_slot_value)
+            ],
+        )
+
+        assert result == trained_policy.should_abstain_in_coexistence(tracker, False)
 
 
 @pytest.mark.parametrize(

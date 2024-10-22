@@ -3,12 +3,23 @@ import copy
 import inspect
 import json
 import logging
+from functools import partial
+
 import structlog
 from asyncio import Queue, CancelledError
 from sanic import Blueprint, response
 from sanic.request import Request
 from sanic.response import HTTPResponse, ResponseStream
-from typing import Text, Dict, Any, Optional, Callable, Awaitable, NoReturn, Union
+from typing import (
+    Text,
+    Dict,
+    Any,
+    Optional,
+    Callable,
+    Awaitable,
+    NoReturn,
+    Union,
+)
 
 import rasa.utils.endpoints
 from rasa.core.channels.channel import (
@@ -77,14 +88,15 @@ class RestInput(InputChannel):
         """
         return request.json.get("metadata", None)
 
-    def stream_response(
+    async def stream_response(
         self,
         on_new_message: Callable[[UserMessage], Awaitable[None]],
         text: Text,
         sender_id: Text,
         input_channel: Text,
         metadata: Optional[Dict[Text, Any]],
-    ) -> Callable[[Any], Awaitable[None]]:
+        resp: ResponseStream,
+    ) -> None:
         """Streams response to the client.
 
          If the stream option is enabled, this method will be called to
@@ -96,27 +108,25 @@ class RestInput(InputChannel):
             sender_id: message sender_id
             input_channel: input channel name
             metadata: optional metadata sent with the message
+            resp: response stream
 
         Returns:
             Sanic stream
         """
-
-        async def stream(resp: Any) -> None:
-            q: Queue = Queue()
-            task = asyncio.ensure_future(
-                self.on_message_wrapper(
-                    on_new_message, text, q, sender_id, input_channel, metadata
-                )
+        q: Queue = Queue()
+        task = asyncio.ensure_future(
+            self.on_message_wrapper(
+                on_new_message, text, q, sender_id, input_channel, metadata
             )
-            while True:
-                result = await q.get()
-                if result == "DONE":
-                    break
-                else:
-                    await resp.write(json.dumps(result) + "\n")
-            await task
+        )
+        while True:
+            result = await q.get()
+            if result == "DONE":
+                break
+            else:
+                await resp.write(json.dumps(result) + "\n")
 
-        return stream
+        await task
 
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[None]]
@@ -149,9 +159,14 @@ class RestInput(InputChannel):
             metadata = self.get_metadata(request)
 
             if should_use_stream:
-                return response.stream(
-                    self.stream_response(
-                        on_new_message, text, sender_id, input_channel, metadata
+                return ResponseStream(
+                    partial(
+                        self.stream_response,
+                        on_new_message,
+                        text,
+                        sender_id,
+                        input_channel,
+                        metadata,
                     ),
                     content_type="text/event-stream",
                 )

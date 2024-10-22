@@ -2,6 +2,8 @@ TEXT = "text"
 TEXT_TOKENS = "text_tokens"
 INTENT = "intent"
 COMMANDS = "commands"
+LLM_COMMANDS = "llm_commands"  # needed for fine-tuning
+LLM_PROMPT = "llm_prompt"  # needed for fine-tuning
 FLOWS_FROM_SEMANTIC_SEARCH = "flows_from_semantic_search"
 FLOWS_IN_PROMPT = "flows_in_prompt"
 NOT_INTENT = "not_intent"
@@ -43,3 +45,5 @@ NO_ENTITY_TAG = "O"
 SPLIT_ENTITIES_BY_COMMA = "split_entities_by_comma"
 SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE = True
 SINGLE_ENTITY_ALLOWED_INTERLEAVING_CHARSET = {".", ",", " ", ";"}
+
+SET_SLOT_COMMAND = "set slot"

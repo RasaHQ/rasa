@@ -1,0 +1,3 @@
+action_endpoint:
+    url: "grpc://localhost:5100"
+    cafile: "../certs/ca.pem"

@@ -32,6 +32,7 @@ from rasa.constants import (
     CONFIG_TELEMETRY_ENABLED,
     CONFIG_TELEMETRY_ID,
 )
+from rasa.shared.constants import PROMPT_CONFIG_KEY, PROMPT_TEMPLATE_CONFIG_KEY
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.shared.constants import DOCS_URL_TELEMETRY, UTTER_ASK_PREFIX
 from rasa.shared.core.flows import Flow
@@ -43,7 +44,6 @@ from rasa.shared.core.flows.steps import (
 )
 from rasa.shared.exceptions import RasaException
 from rasa.utils import common as rasa_utils
-from rasa.utils.licensing import property_of_active_license, get_license_hash
 
 if typing.TYPE_CHECKING:
     from rasa.core.brokers.broker import EventBroker
@@ -53,7 +53,7 @@ if typing.TYPE_CHECKING:
     from rasa.shared.nlu.training_data.training_data import TrainingData
     from rasa.shared.importers.importer import TrainingDataImporter
     from rasa.core.utils import AvailableEndpoints
-    from rasa.e2e_test.e2e_test_case import TestCase, Fixture
+    from rasa.e2e_test.e2e_test_case import TestCase, Fixture, Metadata
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +93,8 @@ CI_ENVIRONMENT_TELL = [
 ]
 
 # If updating or creating a new event, remember to update
-# https://rasa.com/docs/rasa/telemetry
+# https://rasa.com/docs/rasa-pro/telemetry/telemetry OR
+# https://rasa.com/docs/rasa-pro/telemetry/reference
 TRAINING_STARTED_EVENT = "Training Started"
 TRAINING_COMPLETED_EVENT = "Training Completed"
 TELEMETRY_DISABLED_EVENT = "Telemetry Disabled"
@@ -121,9 +122,19 @@ TELEMETRY_INTENTLESS_POLICY_TRAINING_COMPLETED_EVENT = (
     "Intentless Policy Training Completed"
 )
 TELEMETRY_INTENTLESS_POLICY_PREDICT_EVENT = "Intentless Policy Predicted"
-TELEMETRY_LLM_INTENT_PREDICT_EVENT = "LLM Intent Predicted"
-TELEMETRY_LLM_INTENT_TRAIN_COMPLETED_EVENT = "LLM Intent Training Completed"
 TELEMETRY_E2E_TEST_RUN_STARTED_EVENT = "E2E Test Run Started"
+TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_STARTED_EVENT = (
+    "Enterprise Search Policy Training Started"
+)
+TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_COMPLETED_EVENT = (
+    "Enterprise Search Policy Training Completed"
+)
+TELEMETRY_ENTERPRISE_SEARCH_POLICY_PREDICT_EVENT = "Enterprise Search Policy Predicted"
+
+# licensing events
+TELEMETRY_CONVERSATION_COUNT = "Conversation Count"
+TELEMETRY_CONVERSATION_SOFT_LIMIT_REACHED = "Conversation Soft Limit Reached"
+TELEMETRY_CONVERSATION_HARD_LIMIT_REACHED = "Conversation Hard Limit Reached"
 
 # used to calculate the context on the first call and cache it afterwards
 TELEMETRY_CONTEXT = None
@@ -147,18 +158,29 @@ NUM_CALL_STEPS = "num_call_steps"
 NUM_SHARED_SLOTS_BETWEEN_FLOWS = "num_shared_slots_between_flows"
 LLM_COMMAND_GENERATOR_MODEL_NAME = "llm_command_generator_model_name"
 LLM_COMMAND_GENERATOR_CUSTOM_PROMPT_USED = "llm_command_generator_custom_prompt_used"
+MULTI_STEP_LLM_COMMAND_GENERATOR_HANDLE_FLOWS_PROMPT_USED = (
+    "multi_step_llm_command_generator_custom_handle_flows_prompt_used"
+)
+MULTI_STEP_LLM_COMMAND_GENERATOR_FILL_SLOTS_PROMPT_USED = (
+    "multi_step_llm_command_generator_custom_fill_slots_prompt_used"
+)
 FLOW_RETRIEVAL_ENABLED = "flow_retrieval_enabled"
 FLOW_RETRIEVAL_EMBEDDING_MODEL_NAME = "flow_retrieval_embedding_model_name"
 TRACING_BACKEND = "tracing_backend"
 METRICS_BACKEND = "metrics_backend"
 VERSION = "version"
 
+# E2E test conversion
+TELEMETRY_E2E_TEST_CONVERSION_EVENT = "E2E Test Conversion Completed"
+E2E_TEST_CONVERSION_FILE_TYPE = "file_type"
+E2E_TEST_CONVERSION_TEST_CASE_COUNT = "test_case_count"
+
 
 def print_telemetry_reporting_info() -> None:
     """Print telemetry information to std out."""
     message = textwrap.dedent(
         f"""
-        Rasa Open Source reports anonymous usage telemetry to help improve the product
+        Rasa Pro reports anonymous usage telemetry to help improve the product
         for all its users.
 
         If you'd like to opt-out, you can use `rasa telemetry disable`.
@@ -225,6 +247,12 @@ def is_telemetry_enabled() -> bool:
     Returns:
         `True`, if telemetry is enabled, `False` otherwise.
     """
+    from rasa.utils import licensing
+
+    if licensing.is_champion_server_license():
+        logger.debug("Telemetry is enabled for developer licenses.")
+        return True
+
     telemetry_environ = os.environ.get(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE)
 
     if telemetry_environ is not None:
@@ -336,7 +364,7 @@ def telemetry_write_key() -> Optional[Text]:
     """Read the Segment write key from the segment key text file.
 
     The segment key text file should by present only in wheel/sdist packaged
-    versions of Rasa Open Source. This avoids running telemetry locally when
+    versions of Rasa Pro. This avoids running telemetry locally when
     developing on Rasa or when running CI builds.
 
     In local development, this should always return `None` to avoid logging telemetry.
@@ -542,7 +570,7 @@ def _is_docker() -> bool:
 
 
 def with_default_context_fields(
-    context: Optional[Dict[Text, Any]] = None
+    context: Optional[Dict[Text, Any]] = None,
 ) -> Dict[Text, Any]:
     """Return a new context dictionary with default and provided field values merged.
 
@@ -565,6 +593,8 @@ def _default_context_fields() -> Dict[Text, Any]:
     Return:
         A new context containing information about the runtime environment.
     """
+    from rasa.utils.licensing import property_of_active_license, get_license_hash
+
     global TELEMETRY_CONTEXT
 
     if not TELEMETRY_CONTEXT:
@@ -600,7 +630,7 @@ def _track(
 
     It is OK to use this function from outside telemetry.py, but note that it
     is recommended to create a new track_xyz() function for complex telemetry
-    events, or events that are generated from many parts of the Rasa Open Source code.
+    events, or events that are generated from many parts of the Rasa Pro code.
 
     Args:
         event_name: Name of the event.
@@ -714,6 +744,8 @@ def get_telemetry_id() -> Optional[Text]:
     Returns:
         The identifier, if it is configured correctly.
     """
+    from rasa.utils.licensing import property_of_active_license
+
     return property_of_active_license(lambda active_license: active_license.jti)
 
 
@@ -1043,12 +1075,26 @@ def _collect_flow_statistics(flows: List[Flow]) -> Dict[str, Any]:
 
 
 def _get_llm_command_generator_config(config: Dict[str, Any]) -> Optional[Dict]:
-    """Returns the configuration for the LLMCommandGenerator including the model name,
-    whether a custom prompt is used, whether flow retrieval is enabled, and flow
-    retrieval embedding model.
+    """Returns the configuration for the LLMCommandGenerator.
+
+    Includes the model name, whether a custom prompt is used, whether flow
+    retrieval is enabled, and flow retrieval embedding model.
     """
-    from rasa.dialogue_understanding.generator import LLMCommandGenerator
-    from rasa.dialogue_understanding.generator.llm_command_generator import (
+    from rasa.shared.constants import (
+        EMBEDDINGS_CONFIG_KEY,
+        MODEL_CONFIG_KEY,
+        MODEL_NAME_CONFIG_KEY,
+    )
+    from rasa.dialogue_understanding.generator import (
+        LLMCommandGenerator,
+        SingleStepLLMCommandGenerator,
+        MultiStepLLMCommandGenerator,
+    )
+    from rasa.dialogue_understanding.generator.multi_step.multi_step_llm_command_generator import (  # noqa: E501
+        HANDLE_FLOWS_KEY,
+        FILL_SLOTS_KEY,
+    )
+    from rasa.dialogue_understanding.generator.constants import (
         LLM_CONFIG_KEY,
         DEFAULT_LLM_CONFIG,
         FLOW_RETRIEVAL_KEY,
@@ -1060,28 +1106,43 @@ def _get_llm_command_generator_config(config: Dict[str, Any]) -> Optional[Dict]:
     def find_command_generator_component(pipeline: List) -> Optional[Dict]:
         """Finds the LLMCommandGenerator component in the pipeline."""
         for component in pipeline:
-            if component["name"] == LLMCommandGenerator.__name__:
+            if component["name"] in [
+                LLMCommandGenerator.__name__,
+                SingleStepLLMCommandGenerator.__name__,
+                MultiStepLLMCommandGenerator.__name__,
+            ]:
                 return component
         return None
 
     def extract_settings(component: Dict) -> Dict:
         """Extracts the settings from the command generator component."""
-        custom_prompt_used = "prompt" in component
-        llm_model_name = component.get(LLM_CONFIG_KEY, {}).get(
-            "model_name", DEFAULT_LLM_CONFIG["model_name"]
+        llm_config = component.get(LLM_CONFIG_KEY, {})
+        llm_model_name = (
+            llm_config.get(MODEL_CONFIG_KEY)
+            or llm_config.get(MODEL_NAME_CONFIG_KEY)
+            or DEFAULT_LLM_CONFIG[MODEL_CONFIG_KEY]
         )
         flow_retrieval_config = component.get(FLOW_RETRIEVAL_KEY, {})
         flow_retrieval_enabled = flow_retrieval_config.get("active", True)
+        flow_retrieval_embeddings_config = flow_retrieval_config.get(
+            EMBEDDINGS_CONFIG_KEY, DEFAULT_EMBEDDINGS_CONFIG
+        )
         flow_retrieval_embedding_model_name = (
-            flow_retrieval_config.get("embeddings", DEFAULT_EMBEDDINGS_CONFIG).get(
-                "model"
+            (
+                flow_retrieval_embeddings_config.get(MODEL_NAME_CONFIG_KEY)
+                or flow_retrieval_embeddings_config.get(MODEL_CONFIG_KEY)
             )
             if flow_retrieval_enabled
             else None
         )
         return {
             LLM_COMMAND_GENERATOR_MODEL_NAME: llm_model_name,
-            LLM_COMMAND_GENERATOR_CUSTOM_PROMPT_USED: custom_prompt_used,
+            LLM_COMMAND_GENERATOR_CUSTOM_PROMPT_USED: PROMPT_CONFIG_KEY in component
+            or PROMPT_TEMPLATE_CONFIG_KEY in component,
+            MULTI_STEP_LLM_COMMAND_GENERATOR_HANDLE_FLOWS_PROMPT_USED: HANDLE_FLOWS_KEY
+            in component.get("prompt_templates", {}),
+            MULTI_STEP_LLM_COMMAND_GENERATOR_FILL_SLOTS_PROMPT_USED: FILL_SLOTS_KEY
+            in component.get("prompt_templates", {}),
             FLOW_RETRIEVAL_ENABLED: flow_retrieval_enabled,
             FLOW_RETRIEVAL_EMBEDDING_MODEL_NAME: flow_retrieval_embedding_model_name,
         }
@@ -1089,6 +1150,8 @@ def _get_llm_command_generator_config(config: Dict[str, Any]) -> Optional[Dict]:
     command_generator_config = {
         LLM_COMMAND_GENERATOR_MODEL_NAME: None,
         LLM_COMMAND_GENERATOR_CUSTOM_PROMPT_USED: None,
+        MULTI_STEP_LLM_COMMAND_GENERATOR_HANDLE_FLOWS_PROMPT_USED: None,
+        MULTI_STEP_LLM_COMMAND_GENERATOR_FILL_SLOTS_PROMPT_USED: None,
         FLOW_RETRIEVAL_ENABLED: None,
         FLOW_RETRIEVAL_EMBEDDING_MODEL_NAME: None,
     }
@@ -1230,19 +1293,19 @@ def track_server_start(
             "number_of_workers": number_of_workers,
             "endpoints_nlg": endpoints.nlg.type if endpoints.nlg else None,
             "endpoints_nlu": endpoints.nlu.type if endpoints.nlu else None,
-            "endpoints_action_server": (
-                endpoints.action.type if endpoints.action else None
-            ),
+            "endpoints_action_server": endpoints.action.type
+            if endpoints.action
+            else None,
             "endpoints_model_server": endpoints.model.type if endpoints.model else None,
-            "endpoints_tracker_store": (
-                endpoints.tracker_store.type if endpoints.tracker_store else None
-            ),
-            "endpoints_lock_store": (
-                endpoints.lock_store.type if endpoints.lock_store else None
-            ),
-            "endpoints_event_broker": (
-                endpoints.event_broker.type if endpoints.event_broker else None
-            ),
+            "endpoints_tracker_store": endpoints.tracker_store.type
+            if endpoints.tracker_store
+            else None,
+            "endpoints_lock_store": endpoints.lock_store.type
+            if endpoints.lock_store
+            else None,
+            "endpoints_event_broker": endpoints.event_broker.type
+            if endpoints.event_broker
+            else None,
             "project": project_fingerprint_from_model(model_directory),
         },
     )
@@ -1384,18 +1447,103 @@ def track_markers_parsed_count(
     )
 
 
+def extract_assertion_type_counts(
+    input_test_cases: List["TestCase"],
+) -> typing.Tuple[bool, Dict[str, Any]]:
+    """Extracts the total count of different assertion types from the test cases."""
+    from rasa.e2e_test.assertions import AssertionType
+
+    uses_assertions = False
+
+    flow_started_count = 0
+    flow_completed_count = 0
+    flow_cancelled_count = 0
+    pattern_clarification_contains_count = 0
+    action_executed_count = 0
+    slot_was_set_count = 0
+    slot_was_not_set_count = 0
+    bot_uttered_count = 0
+    generative_response_is_relevant_count = 0
+    generative_response_is_grounded_count = 0
+
+    for test_case in input_test_cases:
+        for step in test_case.steps:
+            assertions = step.assertions if step.assertions else []
+            for assertion in assertions:
+                if assertion.type == AssertionType.ACTION_EXECUTED.value:
+                    action_executed_count += 1
+                elif assertion.type == AssertionType.SLOT_WAS_SET.value:
+                    slot_was_set_count += 1
+                elif assertion.type == AssertionType.SLOT_WAS_NOT_SET.value:
+                    slot_was_not_set_count += 1
+                elif assertion.type == AssertionType.BOT_UTTERED.value:
+                    bot_uttered_count += 1
+                elif (
+                    assertion.type
+                    == AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT.value
+                ):
+                    generative_response_is_relevant_count += 1
+                elif (
+                    assertion.type
+                    == AssertionType.GENERATIVE_RESPONSE_IS_GROUNDED.value
+                ):
+                    generative_response_is_grounded_count += 1
+                elif assertion.type == AssertionType.FLOW_STARTED.value:
+                    flow_started_count += 1
+                elif assertion.type == AssertionType.FLOW_COMPLETED.value:
+                    flow_completed_count += 1
+                elif assertion.type == AssertionType.FLOW_CANCELLED.value:
+                    flow_cancelled_count += 1
+                elif (
+                    assertion.type == AssertionType.PATTERN_CLARIFICATION_CONTAINS.value
+                ):
+                    pattern_clarification_contains_count += 1
+
+                uses_assertions = True
+
+    result = {
+        "flow_started_count": flow_started_count,
+        "flow_completed_count": flow_completed_count,
+        "flow_cancelled_count": flow_cancelled_count,
+        "pattern_clarification_contains_count": pattern_clarification_contains_count,
+        "action_executed_count": action_executed_count,
+        "slot_was_set_count": slot_was_set_count,
+        "slot_was_not_set_count": slot_was_not_set_count,
+        "bot_uttered_count": bot_uttered_count,
+        "generative_response_is_relevant_count": generative_response_is_relevant_count,
+        "generative_response_is_grounded_count": generative_response_is_grounded_count,
+    }
+
+    return uses_assertions, result
+
+
 @ensure_telemetry_enabled
 def track_e2e_test_run(
-    input_test_cases: List["TestCase"], input_fixtures: List["Fixture"]
+    input_test_cases: List["TestCase"],
+    input_fixtures: List["Fixture"],
+    input_metadata: List["Metadata"],
 ) -> None:
     """Track an end-to-end test run."""
+    properties = {
+        "number_of_test_cases": len(input_test_cases),
+        "number_of_fixtures": len(input_fixtures),
+        "uses_fixtures": len(input_fixtures) > 0,
+        "uses_metadata": len(input_metadata) > 0,
+        "number_of_metadata": len(input_metadata),
+    }
+
+    uses_assertions, assertion_type_counts = extract_assertion_type_counts(
+        input_test_cases
+    )
+
+    properties.update({"uses_assertions": uses_assertions})
+
+    if uses_assertions:
+        properties.update(assertion_type_counts)
+
     _track(
         TELEMETRY_E2E_TEST_RUN_STARTED_EVENT,
-        {
-            "number_of_test_cases": len(input_test_cases),
-            "number_of_fixtures": len(input_fixtures),
-            "uses_fixtures": len(input_fixtures) > 0,
-        },
+        properties,
     )
 
 
@@ -1465,52 +1613,6 @@ def track_intentless_policy_predict(
 
 
 @ensure_telemetry_enabled
-def track_llm_intent_predict(
-    embeddings_type: Optional[str],
-    embeddings_model: Optional[str],
-    llm_type: Optional[str],
-    llm_model: Optional[str],
-) -> None:
-    """Track when a user predicts an intent using the llm intent classifier."""
-    _track(
-        TELEMETRY_LLM_INTENT_PREDICT_EVENT,
-        {
-            "embeddings_type": embeddings_type,
-            "embeddings_model": embeddings_model,
-            "llm_type": llm_type,
-            "llm_model": llm_model,
-        },
-    )
-
-
-@ensure_telemetry_enabled
-def track_llm_intent_train_completed(
-    embeddings_type: Optional[str],
-    embeddings_model: Optional[str],
-    llm_type: Optional[str],
-    llm_model: Optional[str],
-    fallback_intent: Optional[str],
-    custom_prompt_template: Optional[str],
-    number_of_examples: int,
-    number_of_available_intents: int,
-) -> None:
-    """Track when a user trains the llm intent classifier."""
-    _track(
-        TELEMETRY_LLM_INTENT_TRAIN_COMPLETED_EVENT,
-        {
-            "embeddings_type": embeddings_type,
-            "embeddings_model": embeddings_model,
-            "llm_type": llm_type,
-            "llm_model": llm_model,
-            "fallback_intent": fallback_intent,
-            "custom_prompt_template": custom_prompt_template,
-            "number_of_examples": number_of_examples,
-            "number_of_available_intents": number_of_available_intents,
-        },
-    )
-
-
-@ensure_telemetry_enabled
 def identify_endpoint_config_traits(
     endpoints_file: Optional[Text],
     context: Optional[Dict[Text, Any]] = None,
@@ -1574,10 +1676,117 @@ def append_anonymization_trait(
         endpoints_file, KEY_ANONYMIZATION_RULES
     )
 
-    traits[
-        KEY_ANONYMIZATION_RULES
-    ] = rasa.anonymization.utils.extract_anonymization_traits(
-        anonymization_config, KEY_ANONYMIZATION_RULES
+    traits[KEY_ANONYMIZATION_RULES] = (
+        rasa.anonymization.utils.extract_anonymization_traits(
+            anonymization_config, KEY_ANONYMIZATION_RULES
+        )
     )
 
     return traits
+
+
+@ensure_telemetry_enabled
+def track_enterprise_search_policy_train_started() -> None:
+    """Track when a user starts training Enterprise Search policy."""
+    _track(TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_STARTED_EVENT)
+
+
+@ensure_telemetry_enabled
+def track_enterprise_search_policy_train_completed(
+    vector_store_type: Optional[str],
+    embeddings_type: Optional[str],
+    embeddings_model: Optional[str],
+    llm_type: Optional[str],
+    llm_model: Optional[str],
+    citation_enabled: Optional[bool],
+) -> None:
+    """Track when a user completes training Enterprise Search policy."""
+    _track(
+        TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_COMPLETED_EVENT,
+        {
+            "vector_store_type": vector_store_type,
+            "embeddings_type": embeddings_type,
+            "embeddings_model": embeddings_model,
+            "llm_type": llm_type,
+            "llm_model": llm_model,
+            "citation_enabled": citation_enabled,
+        },
+    )
+
+
+@ensure_telemetry_enabled
+def track_enterprise_search_policy_predict(
+    vector_store_type: Optional[str],
+    embeddings_type: Optional[str],
+    embeddings_model: Optional[str],
+    llm_type: Optional[str],
+    llm_model: Optional[str],
+    citation_enabled: Optional[bool],
+) -> None:
+    """Track when a user predicts the next action using Enterprise Search policy."""
+    _track(
+        TELEMETRY_ENTERPRISE_SEARCH_POLICY_PREDICT_EVENT,
+        {
+            "vector_store_type": vector_store_type,
+            "embeddings_type": embeddings_type,
+            "embeddings_model": embeddings_model,
+            "llm_type": llm_type,
+            "llm_model": llm_model,
+            "citation_enabled": citation_enabled,
+        },
+    )
+
+
+@ensure_telemetry_enabled
+def track_conversation_count_hard_limit(
+    conversation_count: int, tracked_month: datetime
+) -> None:
+    """Track when the number of conversations reaches the hard limit."""
+    _track(
+        TELEMETRY_CONVERSATION_HARD_LIMIT_REACHED,
+        {
+            "conversation_count": conversation_count,
+            "year": tracked_month.year,
+            "month": tracked_month.month,
+        },
+    )
+
+
+@ensure_telemetry_enabled
+def track_conversation_count_soft_limit(
+    conversation_count: int, tracked_month: datetime
+) -> None:
+    """Track when the number of conversations reaches the soft limit."""
+    _track(
+        TELEMETRY_CONVERSATION_SOFT_LIMIT_REACHED,
+        {
+            "conversation_count": conversation_count,
+            "year": tracked_month.year,
+            "month": tracked_month.month,
+        },
+    )
+
+
+@ensure_telemetry_enabled
+def track_conversation_count(conversation_count: int, tracked_month: datetime) -> None:
+    """Track the number of conversations."""
+    _track(
+        TELEMETRY_CONVERSATION_COUNT,
+        {
+            "conversation_count": conversation_count,
+            "year": tracked_month.year,
+            "month": tracked_month.month,
+        },
+    )
+
+
+@ensure_telemetry_enabled
+def track_e2e_test_conversion_completed(file_type: str, test_case_count: int) -> None:
+    """Track the used input file type for E2E test conversion."""
+    _track(
+        TELEMETRY_E2E_TEST_CONVERSION_EVENT,
+        {
+            E2E_TEST_CONVERSION_FILE_TYPE: file_type,
+            E2E_TEST_CONVERSION_TEST_CASE_COUNT: test_case_count,
+        },
+    )

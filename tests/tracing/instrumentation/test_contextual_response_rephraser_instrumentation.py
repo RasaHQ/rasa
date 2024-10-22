@@ -2,9 +2,10 @@ import logging
 from typing import Any, Dict, Sequence
 
 import pytest
-from pytest import LogCaptureFixture
+from pytest import LogCaptureFixture, MonkeyPatch
 from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
+from rasa.shared.constants import OPENAI_API_KEY_ENV_VAR
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import SlotSet, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -13,6 +14,13 @@ from rasa.utils.endpoints import EndpointConfig
 
 from rasa.tracing.instrumentation import instrumentation
 from tests.tracing.instrumentation.conftest import MockContextualResponseRephraser
+
+
+"""@pytest.fixture(autouse=True)
+def set_mock_openai_api_key(monkeypatch: MonkeyPatch):
+    monkeypatch.setenv(
+        OPENAI_API_KEY_ENV_VAR, "mock key in test_single_step_llm_command_generator"
+    )"""
 
 
 @pytest.fixture
@@ -69,13 +77,13 @@ def greet_tracker() -> DialogueStateTracker:
 
 
 @pytest.mark.parametrize(
-    "llm_config, expected",
+    "llm_config, mock_env_key, expected",
     [
         (
             {
-                "type": "openai",
                 "model_name": DEFAULT_OPENAI_GENERATE_MODEL_NAME,
             },
+            OPENAI_API_KEY_ENV_VAR,
             {
                 "llm_model": DEFAULT_OPENAI_GENERATE_MODEL_NAME,
                 "llm_type": "openai",
@@ -83,34 +91,22 @@ def greet_tracker() -> DialogueStateTracker:
         ),
         (
             {
-                "type": "cohere",
-                "model": "gptd-instruct-tft",
+                "provider": "cohere",
+                "model": "cohere/gptd-instruct-tft",
                 "temperature": 0.7,
                 "request_timeout": 10,
             },
+            "COHERE_API_KEY",
             {
                 "llm_type": "cohere",
-                "llm_model": "gptd-instruct-tft",
-                "llm_temperature": "0.7",
-                "request_timeout": "10",
-            },
-        ),
-        (
-            {
-                "type": "test",
-                "model_name": None,
-                "temperature": 0.7,
-                "request_timeout": 10,
-            },
-            {
-                "llm_type": "test",
-                "llm_model": "None",
+                "llm_model": "cohere/gptd-instruct-tft",
                 "llm_temperature": "0.7",
                 "request_timeout": "10",
             },
         ),
         (
             {"model_name": "gpt-3.5-turbo"},
+            OPENAI_API_KEY_ENV_VAR,
             {
                 "llm_model": "gpt-3.5-turbo",
                 "llm_type": "openai",
@@ -118,6 +114,7 @@ def greet_tracker() -> DialogueStateTracker:
         ),
         (
             {},
+            OPENAI_API_KEY_ENV_VAR,
             {
                 "llm_model": DEFAULT_OPENAI_GENERATE_MODEL_NAME,
                 "llm_type": "openai",
@@ -132,7 +129,10 @@ async def test_tracing_contextual_response_rephraser_generate_llm_response(
     domain_with_responses: Domain,
     llm_config: Dict[str, Any],
     expected: Dict[str, Any],
+    mock_env_key: str,
+    monkeypatch: MonkeyPatch,
 ) -> None:
+    monkeypatch.setenv(mock_env_key, "mock key in test_tracing_rephraser")
     component_class = MockContextualResponseRephraser
 
     instrumentation.instrument(
@@ -147,9 +147,7 @@ async def test_tracing_contextual_response_rephraser_generate_llm_response(
 
     await mock_rephraser._generate_llm_response("some text")
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1
@@ -176,7 +174,10 @@ async def test_tracing_contextual_response_rephraser_rephrase(
     previous_num_captured_spans: int,
     domain_with_responses: Domain,
     greet_tracker: DialogueStateTracker,
+    monkeypatch: MonkeyPatch,
 ) -> None:
+    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key in test_tracing_rephraser")
+
     component_class = MockContextualResponseRephraser
 
     instrumentation.instrument(
@@ -195,9 +196,7 @@ async def test_tracing_contextual_response_rephraser_rephrase(
         output_channel="callback",
     )
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1
@@ -218,7 +217,10 @@ async def test_tracing_contextual_response_rephraser_len_prompt_tokens(
     span_exporter: InMemorySpanExporter,
     previous_num_captured_spans: int,
     domain_with_responses: Domain,
+    monkeypatch: MonkeyPatch,
 ) -> None:
+    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key in test_tracing_rephraser")
+
     component_class = MockContextualResponseRephraser
 
     instrumentation.instrument(
@@ -233,9 +235,7 @@ async def test_tracing_contextual_response_rephraser_len_prompt_tokens(
 
     await mock_rephraser._generate_llm_response("This is a test prompt.")
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1
@@ -264,7 +264,10 @@ async def test_tracing_contextual_response_rephraser_len_prompt_tokens_non_opena
     previous_num_captured_spans: int,
     domain_with_responses: Domain,
     caplog: LogCaptureFixture,
+    monkeypatch: MonkeyPatch,
 ) -> None:
+    monkeypatch.setenv("COHERE_API_KEY", "mock key in test_tracing_rephraser")
+
     component_class = MockContextualResponseRephraser
 
     instrumentation.instrument(
@@ -273,7 +276,7 @@ async def test_tracing_contextual_response_rephraser_len_prompt_tokens_non_opena
     )
 
     endpoint_config = EndpointConfig.from_dict(
-        {"trace_prompt_tokens": True, "llm": {"type": "cohere", "model": "command"}}
+        {"trace_prompt_tokens": True, "llm": {"provider": "cohere", "model": "command"}}
     )
     mock_rephraser = component_class(
         endpoint_config=endpoint_config, domain=domain_with_responses
@@ -286,9 +289,7 @@ async def test_tracing_contextual_response_rephraser_len_prompt_tokens_non_opena
             in caplog.text
         )
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1
@@ -303,13 +304,14 @@ async def test_tracing_contextual_response_rephraser_len_prompt_tokens_non_opena
 
 
 @pytest.mark.parametrize(
-    "llm_config, expected",
+    "llm_config, mock_env_key, expected",
     [
         (
             {
-                "type": "openai",
+                "provider": "openai",
                 "model_name": DEFAULT_OPENAI_GENERATE_MODEL_NAME,
             },
+            OPENAI_API_KEY_ENV_VAR,
             {
                 "llm_model": DEFAULT_OPENAI_GENERATE_MODEL_NAME,
                 "llm_type": "openai",
@@ -317,34 +319,22 @@ async def test_tracing_contextual_response_rephraser_len_prompt_tokens_non_opena
         ),
         (
             {
-                "type": "cohere",
-                "model": "gptd-instruct-tft",
+                "provider": "cohere",
+                "model": "cohere/gptd-instruct-tft",
                 "temperature": 0.7,
                 "request_timeout": 10,
             },
+            "COHERE_API_KEY",
             {
                 "llm_type": "cohere",
-                "llm_model": "gptd-instruct-tft",
-                "llm_temperature": "0.7",
-                "request_timeout": "10",
-            },
-        ),
-        (
-            {
-                "type": "test",
-                "model_name": None,
-                "temperature": 0.7,
-                "request_timeout": 10,
-            },
-            {
-                "llm_type": "test",
-                "llm_model": "None",
+                "llm_model": "cohere/gptd-instruct-tft",
                 "llm_temperature": "0.7",
                 "request_timeout": "10",
             },
         ),
         (
             {"model_name": "gpt-3.5-turbo"},
+            OPENAI_API_KEY_ENV_VAR,
             {
                 "llm_model": "gpt-3.5-turbo",
                 "llm_type": "openai",
@@ -352,6 +342,7 @@ async def test_tracing_contextual_response_rephraser_len_prompt_tokens_non_opena
         ),
         (
             {},
+            OPENAI_API_KEY_ENV_VAR,
             {
                 "llm_model": DEFAULT_OPENAI_GENERATE_MODEL_NAME,
                 "llm_type": "openai",
@@ -367,7 +358,11 @@ async def test_tracing_contextual_response_rephraser_create_history(
     greet_tracker: DialogueStateTracker,
     llm_config: Dict[str, Any],
     expected: Dict[str, Any],
+    mock_env_key: str,
+    monkeypatch: MonkeyPatch,
 ) -> None:
+    monkeypatch.setenv(mock_env_key, "mock key in test_tracing_rephraser")
+
     component_class = MockContextualResponseRephraser
 
     instrumentation.instrument(
@@ -382,9 +377,7 @@ async def test_tracing_contextual_response_rephraser_create_history(
 
     await mock_rephraser._create_history(greet_tracker)
 
-    captured_spans: Sequence[
-        ReadableSpan
-    ] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1

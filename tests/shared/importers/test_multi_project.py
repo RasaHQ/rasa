@@ -1,18 +1,22 @@
+import os
 from pathlib import Path
 from typing import Dict, Text
+from unittest.mock import MagicMock
 
-from _pytest.tmpdir import TempPathFactory
 import pytest
-import os
+from _pytest.monkeypatch import MonkeyPatch
+from _pytest.tmpdir import TempPathFactory
 
-from rasa.engine.storage.local_model_storage import LocalModelStorage
-from rasa.engine.storage.resource import Resource
 import rasa.shared.utils.io
-from rasa.shared.nlu.training_data.formats import RasaYAMLReader
 import rasa.utils.io
 from rasa.core import utils
+from rasa.engine.storage.local_model_storage import LocalModelStorage
+from rasa.engine.storage.resource import Resource
+from rasa.shared.core.domain import Domain
 from rasa.shared.importers.multi_project import MultiProjectImporter
+from rasa.shared.nlu.training_data.formats import RasaYAMLReader
 from rasa.shared.utils.yaml import write_yaml
+from tests.conftest import TrainedAsync
 
 
 def test_load_imports_from_directory_tree(tmp_path: Path):
@@ -245,7 +249,9 @@ def test_single_additional_file(tmp_path: Path):
     assert selector.is_imported(str(additional_file))
 
 
-async def test_multi_project_training(trained_async, tmp_path_factory: TempPathFactory):
+async def test_multi_project_training(
+    trained_async: TrainedAsync, tmp_path_factory: TempPathFactory
+):
     example_directory = "data/test_multi_domain"
     config_file = os.path.join(example_directory, "config.yml")
     domain_file = os.path.join(example_directory, "domain.yml")
@@ -293,3 +299,122 @@ async def test_multi_project_training(trained_async, tmp_path_factory: TempPathF
     ]
 
     assert all([a in domain.action_names_or_texts for a in expected_actions])
+
+
+def test_multi_project_cached_get_domain(
+    monkeypatch: MonkeyPatch,
+    empty_config_file: Path,
+    small_domain_file: Path,
+) -> None:
+    mock_domain_load = MagicMock()
+    mock_domain_load.return_value = Domain.load(small_domain_file)
+
+    monkeypatch.setattr(Domain, "load", mock_domain_load)
+
+    mock_reduce = MagicMock()
+    monkeypatch.setattr("rasa.shared.importers.multi_project.reduce", mock_reduce)
+
+    importer = MultiProjectImporter(
+        config_file=str(empty_config_file), domain_path=str(small_domain_file)
+    )
+    importer.get_domain()
+
+    assert mock_domain_load.call_count == 1
+    assert mock_reduce.call_count == 1
+
+    importer.get_domain()
+
+    # the fact that mock of Domain.load was only called once
+    # indicates that the cached result was used for get_domain
+    assert mock_domain_load.call_count == 1
+    assert mock_reduce.call_count == 1
+
+
+def test_multi_project_cached_get_stories(
+    monkeypatch: MonkeyPatch,
+    empty_config_file: Path,
+    small_domain_file: Path,
+) -> None:
+    mock_domain_load = MagicMock()
+    mock_domain_load.return_value = Domain.load(small_domain_file)
+
+    monkeypatch.setattr(Domain, "load", mock_domain_load)
+
+    mock_story_graph_from_paths = MagicMock()
+    monkeypatch.setattr(
+        "rasa.shared.importers.multi_project.utils.story_graph_from_paths",
+        mock_story_graph_from_paths,
+    )
+
+    importer = MultiProjectImporter(
+        config_file=str(empty_config_file), domain_path=str(small_domain_file)
+    )
+    importer.get_stories()
+
+    assert mock_story_graph_from_paths.call_count == 1
+
+    importer.get_stories()
+
+    # the fact that mock of story_graph_from_paths was only called once
+    # indicates that the cached result was used for get_stories
+    assert mock_story_graph_from_paths.call_count == 1
+
+
+def test_multi_project_cached_get_conversation_tests(
+    monkeypatch: MonkeyPatch,
+    empty_config_file: Path,
+    small_domain_file: Path,
+) -> None:
+    mock_domain_load = MagicMock()
+    mock_domain_load.return_value = Domain.load(small_domain_file)
+
+    monkeypatch.setattr(Domain, "load", mock_domain_load)
+
+    mock_story_graph_from_paths = MagicMock()
+    monkeypatch.setattr(
+        "rasa.shared.importers.multi_project.utils.story_graph_from_paths",
+        mock_story_graph_from_paths,
+    )
+
+    importer = MultiProjectImporter(
+        config_file=str(empty_config_file), domain_path=str(small_domain_file)
+    )
+    importer.get_conversation_tests()
+
+    assert mock_story_graph_from_paths.call_count == 1
+
+    importer.get_conversation_tests()
+
+    # the fact that mock of story_graph_from_paths was only called once
+    # indicates that the cached result was used for get_conversation_tests
+    assert mock_story_graph_from_paths.call_count == 1
+
+
+def test_multi_project_cached_get_nlu_data(
+    monkeypatch: MonkeyPatch,
+    empty_config_file: Path,
+    small_domain_file: Path,
+) -> None:
+    mock_domain_load = MagicMock()
+    mock_domain_load.return_value = Domain.load(small_domain_file)
+
+    monkeypatch.setattr(Domain, "load", mock_domain_load)
+
+    mock_training_data_from_paths = MagicMock()
+    monkeypatch.setattr(
+        "rasa.shared.importers.multi_project.utils.training_data_from_paths",
+        mock_training_data_from_paths,
+    )
+
+    importer = MultiProjectImporter(
+        config_file=str(empty_config_file), domain_path=str(small_domain_file)
+    )
+    importer.get_nlu_data()
+
+    assert mock_training_data_from_paths.call_count == 1
+
+    importer.get_nlu_data()
+
+    # the fact that mock of training_data_from_paths was only called once
+    # indicates that the cached result was used for get_nlu_data
+    assert mock_training_data_from_paths.call_count == 1

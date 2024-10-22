@@ -1,15 +1,21 @@
 import logging
-import structlog
 import re
 import string
 from collections import defaultdict
 from typing import Set, Text, Optional, Dict, Any, List, Tuple
 
+import structlog
 from jinja2 import Template
 from pypred import Predicate
+from pypred.ast import Literal, CompareOperator, NegateOperator
 
 import rasa.core.training.story_conflict
+from rasa.core.channels import UserMessage
 from rasa.dialogue_understanding.stack.frames import PatternFlowStackFrame
+from rasa.shared.core.command_payload_reader import (
+    CommandPayloadReader,
+    MAX_NUMBER_OF_SLOTS,
+)
 from rasa.shared.core.flows.flow_step_links import IfFlowStepLink
 from rasa.shared.core.flows.steps.set_slots import SetSlotsFlowStep
 from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
@@ -21,8 +27,10 @@ from rasa.shared.constants import (
     ASSISTANT_ID_DEFAULT_VALUE,
     ASSISTANT_ID_KEY,
     CONFIG_MANDATORY_KEYS,
+    DOCS_URL_DOMAIN,
     DOCS_URL_DOMAINS,
     DOCS_URL_FORMS,
+    DOCS_URL_RESPONSES,
     UTTER_PREFIX,
     DOCS_URL_ACTIONS,
     REQUIRED_SLOTS_KEY,
@@ -37,9 +45,15 @@ from rasa.shared.core.domain import (
 )
 from rasa.shared.core.generator import TrainingDataGenerator
 from rasa.shared.core.constants import SlotMappingType, MAPPING_TYPE
-from rasa.shared.core.slots import ListSlot, Slot
+from rasa.shared.core.slots import BooleanSlot, CategoricalSlot, ListSlot, Slot
+from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
+    YAMLStoryReader,
+)
 from rasa.shared.core.training_data.structures import StoryGraph
+from rasa.shared.data import create_regex_pattern_reader
 from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.nlu.constants import COMMANDS
+from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 import rasa.shared.utils.cli
 import rasa.shared.utils.io
@@ -326,7 +340,7 @@ class Validator:
                     continue
 
                 if event.name not in self.domain.action_names_or_texts:
-                    structlogger.warn(
+                    structlogger.error(
                         "validator.verify_forms_in_stories_rules.not_in_domain",
                         form=event.name,
                         block=story.block_name,
@@ -365,7 +379,7 @@ class Validator:
                     continue
 
                 if event.action_name not in self.domain.action_names_or_texts:
-                    structlogger.warn(
+                    structlogger.error(
                         "validator.verify_actions_in_stories_rules.not_in_domain",
                         action=event.action_name,
                         block=story.block_name,
@@ -582,6 +596,7 @@ class Validator:
         collect: CollectInformationFlowStep,
         all_good: bool,
         domain_slots: Dict[Text, Slot],
+        flow_id: str,
     ) -> bool:
         """Validates that a collect step can have either an action or an utterance.
         Also logs an error if neither an action nor an utterance is defined.
@@ -611,6 +626,7 @@ class Validator:
                 collect=collect.collect,
                 has_utterance_defined=has_utterance_defined,
                 has_action_defined=has_action_defined,
+                flow=flow_id,
                 event_info=(
                     f"The collect step '{collect.collect}' has an utterance "
                     f"'{collect.utter}' as well as an action "
@@ -634,6 +650,7 @@ class Validator:
                 collect=collect.collect,
                 has_utterance_defined=has_utterance_defined,
                 has_action_defined=has_action_defined,
+                flow=flow_id,
                 event_info=(
                     f"The collect step '{collect.collect}' has neither an utterance "
                     f"nor an action defined, or an initial value defined in the domain."
@@ -702,7 +719,7 @@ class Validator:
                 if isinstance(step, CollectInformationFlowStep):
                     all_good = (
                         self._log_error_if_either_action_or_utterance_are_not_defined(
-                            step, all_good, domain_slots
+                            step, all_good, domain_slots, flow.id
                         )
                     )
 
@@ -786,7 +803,7 @@ class Validator:
 
         for flow in self.flows.underlying_flows:
             flow_description = flow.description
-            cleaned_description = flow_description.translate(punctuation_table)  # type: ignore[union-attr] # noqa: E501
+            cleaned_description = flow_description.translate(punctuation_table)  # type: ignore[union-attr]
             if cleaned_description in flow_descriptions:
                 structlogger.error(
                     "validator.verify_unique_flows.duplicate_description",
@@ -880,6 +897,191 @@ class Validator:
 
         return pred, all_good
 
+    def _extract_predicate_syntax_tree(self, predicate: Predicate) -> Any:
+        """Extract the predicate syntax tree from the given predicate.
+
+        Args:
+            predicate: The predicate from which to extract the syntax tree.
+
+        Returns:
+            The extracted syntax tree.
+        """
+        if isinstance(predicate.ast, NegateOperator):
+            return predicate.ast.left
+        return predicate.ast
+
+    def _extract_slot_name_and_slot_value(
+        self,
+        predicate_syntax_tree: Any,
+    ) -> tuple:
+        """Extract the slot name and slot value from the predicate syntax tree.
+
+        Args:
+            predicate_syntax_tree: The predicate syntax tree.
+
+        Returns:
+            A tuple containing the slot name and slot value.
+        """
+        try:
+            if isinstance(predicate_syntax_tree.left, Literal):
+                slot_name = predicate_syntax_tree.left.value.split(".")
+                slot_value = predicate_syntax_tree.right.value
+            else:
+                slot_name = predicate_syntax_tree.right.value.split(".")
+                slot_value = predicate_syntax_tree.left.value
+        except AttributeError:
+            # predicate only has negation and doesn't need to be checked further
+            return None, None
+        return slot_name, slot_value
+
+    def _validate_categorical_value_check(
+        self,
+        slot_name: str,
+        slot_value: Any,
+        valid_slot_values: List[str],
+        all_good: bool,
+        step_id: str,
+        link_condition: str,
+        flow_id: str,
+    ) -> bool:
+        """Validates the categorical slot check.
+
+        Validates that the categorical slot is checked against valid values.
+
+        Args:
+            slot_name: name of the slot to be checked
+            slot_value: value of the slot to be checked
+            valid_slot_values: valid values for the given slot
+            all_good: flag whether all the validations have passed so far
+            step_id: id of the step in which the values are being checked
+            link_condition: condition where the values are being checked
+            flow_id: id of the flow where the values are being checked
+
+        Returns:
+            False, if validation failed, previous value of all_good, otherwise
+        """
+        valid_slot_values.append(None)
+        # slot_value can either be None, a string or a list of Literal objects
+        if slot_value is None:
+            slot_value = [None]
+        if isinstance(slot_value, str):
+            slot_value = [Literal(slot_value)]
+
+        slot_values_validity = [
+            sv is None
+            or re.sub(r'^[\'"](.+)[\'"]$', r"\1", sv.value) in valid_slot_values
+            for sv in slot_value
+        ]
+        if not all(slot_values_validity):
+            invalid_slot_values = [
+                sv
+                for (sv, slot_value_valid) in zip(slot_value, slot_values_validity)
+                if not slot_value_valid
+            ]
+            structlogger.error(
+                "validator.verify_predicates.link.invalid_condition",
+                step=step_id,
+                link=link_condition,
+                flow=flow_id,
+                event_info=(
+                    f"Detected invalid condition '{link_condition}' "
+                    f"at step '{step_id}' for flow id '{flow_id}'. "
+                    f"Values {invalid_slot_values} are not valid values "
+                    f"for slot {slot_name}. "
+                    f"Please make sure that all conditions are valid."
+                ),
+            )
+            return False
+        return all_good
+
+    def _validate_categorical_and_boolean_values_check(
+        self,
+        predicate: Predicate,
+        all_good: bool,
+        step_id: str,
+        link_condition: str,
+        flow_id: str,
+    ) -> bool:
+        """Validates the categorical and boolean slot checks.
+
+        Validates that the categorical and boolean slots
+        are checked against valid values.
+
+        Args:
+            predicate: condition that is supposed to be validated
+            all_good: flag whether all the validations have passed so far
+            step_id: id of the step in which the values are being checked
+            link_condition: condition where the values are being checked
+            flow_id: id of the flow where the values are being checked
+
+        Returns:
+            False, if validation failed, previous value of all_good, otherwise
+        """
+        predicate_syntax_tree = self._extract_predicate_syntax_tree(predicate)
+        slot_name, slot_value = self._extract_slot_name_and_slot_value(
+            predicate_syntax_tree
+        )
+
+        if slot_name is None:
+            return all_good
+
+        if slot_name[0] == "slots":
+            slot_name = slot_name[1]
+            # slots.{{context.variable}} gets evaluated to `slots.None`,
+            # these predicates can only be validated during runtime
+            if slot_name == "None":
+                return all_good
+        else:
+            return all_good
+
+        try:
+            slot = next(slot for slot in self.domain.slots if slot.name == slot_name)
+        except StopIteration:
+            structlogger.error(
+                "validator.verify_predicates.link.invalid_condition",
+                step=step_id,
+                link=link_condition,
+                flow=flow_id,
+                event_info=(
+                    f"Detected invalid condition '{link_condition}' "
+                    f"at step '{step_id}' for flow id '{flow_id}'. "
+                    f"Slot {slot_name} is not defined in the domain file. "
+                    f"Please make sure that all conditions are valid."
+                ),
+            )
+            return False
+        if isinstance(slot, CategoricalSlot):
+            return self._validate_categorical_value_check(
+                slot_name,
+                slot_value,
+                slot.values,
+                all_good,
+                step_id,
+                link_condition,
+                flow_id,
+            )
+
+        if (
+            isinstance(slot, BooleanSlot)
+            and isinstance(predicate_syntax_tree, CompareOperator)
+            and not isinstance(predicate_syntax_tree.right.value, bool)
+        ):
+            structlogger.error(
+                "validator.verify_predicates.link.invalid_condition",
+                step=step_id,
+                link=link_condition,
+                flow=flow_id,
+                event_info=(
+                    f"Detected invalid condition '{link_condition}' "
+                    f"at step '{step_id}' for flow id '{flow_id}'. "
+                    f"Boolean slots can only be compared to "
+                    f"boolean values (true, false). "
+                    f"Please make sure that all conditions are valid."
+                ),
+            )
+            return False
+        return all_good
+
     def verify_predicates(self) -> bool:
         """Validate predicates used in flow step links and slot rejections."""
         all_good = True
@@ -933,6 +1135,15 @@ class Validator:
                                 ),
                             )
                             all_good = False
+
+                        all_good = self._validate_categorical_and_boolean_values_check(
+                            predicate,
+                            all_good=all_good,
+                            step_id=step.id,
+                            link_condition=link.condition,
+                            flow_id=flow.id,
+                        )
+
                 if isinstance(step, CollectInformationFlowStep):
                     predicates = [predicate.if_ for predicate in step.rejections]
                     for predicate in predicates:
@@ -1033,3 +1244,292 @@ class Validator:
         structlogger.info("validation.flows.ended")
 
         return all_good
+
+    def validate_button_payloads(self) -> bool:
+        """Check if the response button payloads are valid."""
+        all_good = True
+        for utter_name, response in self.domain.responses.items():
+            for variation in response:
+                for button in variation.get("buttons", []):
+                    payload = button.get("payload")
+                    if payload is None:
+                        structlogger.error(
+                            "validator.validate_button_payloads.missing_payload",
+                            event_info=(
+                                f"The button '{button.get('title')}' in response "
+                                f"'{utter_name}' does not have a payload. "
+                                f"Please add a payload to the button."
+                            ),
+                        )
+                        all_good = False
+                        continue
+
+                    if not payload.strip():
+                        structlogger.error(
+                            "validator.validate_button_payloads.empty_payload",
+                            event_info=(
+                                f"The button '{button.get('title')}' in response "
+                                f"'{utter_name}' has an empty payload. "
+                                f"Please add a payload to the button."
+                            ),
+                        )
+                        all_good = False
+                        continue
+
+                    regex_reader = create_regex_pattern_reader(
+                        UserMessage(text=payload), self.domain
+                    )
+
+                    if regex_reader is None:
+                        structlogger.warning(
+                            "validator.validate_button_payloads.free_form_string",
+                            event_info=(
+                                "Using a free form string in payload of a button "
+                                "implies that the string will be sent to the NLU "
+                                "interpreter for parsing. To avoid the need for "
+                                "parsing at runtime, it is recommended to use one "
+                                "of the documented formats "
+                                "(https://rasa.com/docs/rasa-pro/concepts/responses#buttons)"
+                            ),
+                        )
+                        continue
+
+                    if isinstance(
+                        regex_reader, CommandPayloadReader
+                    ) and regex_reader.is_above_slot_limit(payload):
+                        structlogger.error(
+                            "validator.validate_button_payloads.slot_limit_exceeded",
+                            event_info=(
+                                f"The button '{button.get('title')}' in response "
+                                f"'{utter_name}' has a payload that sets more than "
+                                f"{MAX_NUMBER_OF_SLOTS} slots. "
+                                f"Please make sure that the number of slots set by "
+                                f"the button payload does not exceed the limit."
+                            ),
+                        )
+                        all_good = False
+                        continue
+
+                    if isinstance(regex_reader, YAMLStoryReader):
+                        # the payload could contain double curly braces
+                        # we need to remove 1 set of curly braces
+                        payload = payload.replace("{{", "{").replace("}}", "}")
+
+                    resulting_message = regex_reader.unpack_regex_message(
+                        message=Message(data={"text": payload}), domain=self.domain
+                    )
+
+                    if not (
+                        resulting_message.has_intent()
+                        or resulting_message.has_commands()
+                    ):
+                        structlogger.error(
+                            "validator.validate_button_payloads.invalid_payload_format",
+                            event_info=(
+                                f"The button '{button.get('title')}' in response "
+                                f"'{utter_name}' does not follow valid payload formats "
+                                f"for triggering a specific intent and entities or for "
+                                f"triggering a SetSlot command."
+                            ),
+                            calm_docs_link=DOCS_URL_RESPONSES + "#payload-syntax",
+                            nlu_docs_link=DOCS_URL_RESPONSES
+                            + "#triggering-intents-or-passing-entities",
+                        )
+                        all_good = False
+
+                    if resulting_message.has_commands():
+                        # validate that slot names are unique
+                        slot_names = set()
+                        for command in resulting_message.get(COMMANDS, []):
+                            slot_name = command.get("name")
+                            if slot_name and slot_name in slot_names:
+                                structlogger.error(
+                                    "validator.validate_button_payloads.duplicate_slot_name",
+                                    event_info=(
+                                        f"The button '{button.get('title')}' "
+                                        f"in response '{utter_name}' has a "
+                                        f"command to set the slot "
+                                        f"'{slot_name}' multiple times. "
+                                        f"Please make sure that each slot "
+                                        f"is set only once."
+                                    ),
+                                )
+                                all_good = False
+                            slot_names.add(slot_name)
+
+        return all_good
+
+    def validate_CALM_slot_mappings(self) -> bool:
+        """Check if the usage of slot mappings in a CALM assistant is valid."""
+        all_good = True
+
+        for slot in self.domain._user_slots:
+            nlu_mappings = any(
+                [
+                    SlotMappingType(
+                        mapping.get("type", SlotMappingType.FROM_LLM.value)
+                    ).is_predefined_type()
+                    for mapping in slot.mappings
+                ]
+            )
+            llm_mappings = any(
+                [
+                    SlotMappingType(mapping.get("type", SlotMappingType.FROM_LLM.value))
+                    == SlotMappingType.FROM_LLM
+                    for mapping in slot.mappings
+                ]
+            )
+            custom_mappings = any(
+                [
+                    SlotMappingType(mapping.get("type", SlotMappingType.FROM_LLM.value))
+                    == SlotMappingType.CUSTOM
+                    for mapping in slot.mappings
+                ]
+            )
+
+            all_good = self._slot_contains_all_mappings_types(
+                llm_mappings, nlu_mappings, custom_mappings, slot.name, all_good
+            )
+
+            all_good = self._custom_action_name_is_defined_in_the_domain(
+                custom_mappings, slot, all_good
+            )
+
+            all_good = self._config_contains_nlu_command_adapter(
+                nlu_mappings, slot.name, all_good
+            )
+
+            all_good = self._uses_from_llm_mappings_in_a_NLU_based_assistant(
+                llm_mappings, slot.name, all_good
+            )
+
+        return all_good
+
+    @staticmethod
+    def _slot_contains_all_mappings_types(
+        llm_mappings: bool,
+        nlu_mappings: bool,
+        custom_mappings: bool,
+        slot_name: str,
+        all_good: bool,
+    ) -> bool:
+        if llm_mappings and (nlu_mappings or custom_mappings):
+            structlogger.error(
+                "validator.validate_slot_mappings_in_CALM.llm_and_nlu_mappings",
+                slot_name=slot_name,
+                event_info=(
+                    f"The slot '{slot_name}' has both LLM and "
+                    f"NLU or custom slot mappings. "
+                    f"Please make sure that the slot has only one type of mapping."
+                ),
+                docs_link=DOCS_URL_DOMAIN + "#calm-slot-mappings",
+            )
+            all_good = False
+
+        return all_good
+
+    def _custom_action_name_is_defined_in_the_domain(
+        self,
+        custom_mappings: bool,
+        slot: Slot,
+        all_good: bool,
+    ) -> bool:
+        if not custom_mappings:
+            return all_good
+
+        if not self.flows:
+            return all_good
+
+        is_custom_action_defined = any(
+            [
+                mapping.get("action") is not None
+                and mapping.get("action") in self.domain.action_names_or_texts
+                for mapping in slot.mappings
+            ]
+        )
+
+        if is_custom_action_defined:
+            return all_good
+
+        slot_collected_by_flows = any(
+            [
+                step.collect == slot.name
+                for flow in self.flows.underlying_flows
+                for step in flow.steps
+                if isinstance(step, CollectInformationFlowStep)
+            ]
+        )
+
+        if not slot_collected_by_flows:
+            # if the slot is not collected by any flow,
+            # it could be a DM1 custom slot
+            return all_good
+
+        custom_action_ask_name = f"action_ask_{slot.name}"
+        if custom_action_ask_name not in self.domain.action_names_or_texts:
+            structlogger.error(
+                "validator.validate_slot_mappings_in_CALM.custom_action_not_in_domain",
+                slot_name=slot.name,
+                event_info=(
+                    f"The slot '{slot.name}' has a custom slot mapping, but "
+                    f"neither the action '{custom_action_ask_name}' nor "
+                    f"another custom action are defined in the domain file. "
+                    f"Please add one of the actions to your domain file."
+                ),
+                docs_link=DOCS_URL_DOMAIN + "#custom-slot-mappings",
+            )
+            all_good = False
+
+        return all_good
+
+    def _config_contains_nlu_command_adapter(
+        self, nlu_mappings: bool, slot_name: str, all_good: bool
+    ) -> bool:
+        if not nlu_mappings:
+            return all_good
+
+        if not self.flows:
+            return all_good
+
+        contains_nlu_command_adapter = any(
+            [
+                component.get("name") == "NLUCommandAdapter"
+                for component in self.config.get("pipeline", [])
+            ]
+        )
+
+        if not contains_nlu_command_adapter:
+            structlogger.error(
+                "validator.validate_slot_mappings_in_CALM.nlu_mappings_without_adapter",
+                slot_name=slot_name,
+                event_info=(
+                    f"The slot '{slot_name}' has NLU slot mappings, "
+                    f"but the NLUCommandAdapter is not present in the "
+                    f"pipeline. Please add the NLUCommandAdapter to the "
+                    f"pipeline in the config file."
+                ),
+                docs_link=DOCS_URL_DOMAIN + "#nlu-based-predefined-slot-mappings",
+            )
+            all_good = False
+
+        return all_good
+
+    def _uses_from_llm_mappings_in_a_NLU_based_assistant(
+        self, llm_mappings: bool, slot_name: str, all_good: bool
+    ) -> bool:
+        if not llm_mappings:
+            return all_good
+
+        if self.flows:
+            return all_good
+
+        structlogger.error(
+            "validator.validate_slot_mappings_in_CALM.llm_mappings_without_flows",
+            slot_name=slot_name,
+            event_info=(
+                f"The slot '{slot_name}' has LLM slot mappings, "
+                f"but no flows are present in the training data files. "
+                f"Please add flows to the training data files."
+            ),
+        )
+        return False

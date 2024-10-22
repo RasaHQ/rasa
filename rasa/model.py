@@ -74,7 +74,7 @@ def get_latest_model(model_path: Text = DEFAULT_MODELS_PATH) -> Optional[Text]:
 
 
 def get_model_for_finetuning(
-    previous_model_file_or_dir: Union[Path, Text]
+    previous_model_file_or_dir: Union[Path, Text],
 ) -> Optional[Path]:
     """Gets validated path for model to finetune.
 

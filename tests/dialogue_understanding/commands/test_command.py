@@ -1,6 +1,9 @@
 import pytest
 from rasa.dialogue_understanding.commands.command import Command
-from rasa.dialogue_understanding.commands.set_slot_command import SetSlotCommand
+from rasa.dialogue_understanding.commands.set_slot_command import (
+    SetSlotCommand,
+    SetSlotExtractor,
+)
 
 
 def test_command_from_json():
@@ -16,4 +19,9 @@ def test_command_from_dict_handles_unknown_commands():
 
 def test_command_as_dict():
     command = SetSlotCommand(name="foo", value="bar")
-    assert command.as_dict() == {"command": "set slot", "name": "foo", "value": "bar"}
+    assert command.as_dict() == {
+        "command": "set slot",
+        "name": "foo",
+        "value": "bar",
+        "extractor": SetSlotExtractor.LLM.value,
+    }

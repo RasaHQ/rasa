@@ -74,7 +74,6 @@ def load_data_from_files(
     story_steps = []
 
     for story_file in story_files:
-
         reader = _get_reader(story_file, domain)
 
         steps = reader.read_from_file(story_file)

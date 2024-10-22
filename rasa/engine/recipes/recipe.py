@@ -33,7 +33,7 @@ class Recipe(abc.ABC):
 
         if name is None:
             rasa.shared.utils.io.raise_deprecation_warning(
-                "From Rasa Open Source 4.0.0 onwards it will be required to specify "
+                "From Rasa Pro 4.0.0 onwards it will be required to specify "
                 "a recipe in your model configuration. Defaulting to recipe "
                 f"'{DefaultV1Recipe.name}'."
             )

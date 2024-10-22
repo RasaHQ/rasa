@@ -401,8 +401,9 @@ class TrainingDataGenerator:
 
             if num_active_trackers:
                 logger.debug(
-                    "Starting {} ... (with {} trackers)"
-                    "".format(phase_name, num_active_trackers)
+                    "Starting {} ... (with {} trackers)".format(
+                        phase_name, num_active_trackers
+                    )
                 )
             else:
                 logger.debug(f"There are no trackers for {phase_name}")
@@ -516,14 +517,14 @@ class TrainingDataGenerator:
                     phase = 0
                 else:
                     logger.debug(
-                        "Found {} unused checkpoints "
-                        "in current phase."
-                        "".format(len(unused_checkpoints))
+                        "Found {} unused checkpoints in current phase.".format(
+                            len(unused_checkpoints)
+                        )
                     )
                     logger.debug(
-                        "Found {} active trackers "
-                        "for these checkpoints."
-                        "".format(num_active_trackers)
+                        "Found {} active trackers for these checkpoints.".format(
+                            num_active_trackers
+                        )
                     )
 
             if everything_reachable_is_reached:
@@ -552,8 +553,9 @@ class TrainingDataGenerator:
                 augmented_trackers, self.config.max_number_of_augmented_trackers
             )
             logger.debug(
-                "Subsampled to {} augmented training trackers."
-                "".format(len(augmented_trackers))
+                "Subsampled to {} augmented training trackers.".format(
+                    len(augmented_trackers)
+                )
             )
             logger.debug(
                 "There are {} original trackers.".format(len(original_trackers))
@@ -672,7 +674,6 @@ class TrainingDataGenerator:
 
         trackers = []
         if events:  # small optimization
-
             # need to copy the tracker as multiple story steps
             # might start with the same checkpoint and all of them
             # will use the same set of incoming trackers

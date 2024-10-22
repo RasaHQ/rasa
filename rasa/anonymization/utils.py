@@ -30,8 +30,9 @@ def read_endpoint_config(
         return content
     except FileNotFoundError:
         logger.error(
-            "Failed to read configuration "
-            "from {}. No such file.".format(os.path.abspath(filename)),
+            "Failed to read configuration from {}. No such file.".format(
+                os.path.abspath(filename)
+            ),
         )
         return None
 
@@ -96,7 +97,7 @@ def validate_anonymization_yaml(yaml_content: Dict[Text, Any]) -> None:
 
     If the yaml_content is not in the right format, an exception will be raised.
     """
-    schema = read_yaml_file(SCHEMA_FILE, reader_type=["safe", "rt"])
+    schema = read_yaml_file(SCHEMA_FILE, reader_type=("safe", "rt"))
     try:
         validate_yaml_content_using_schema(yaml_content, schema)
     except YamlException as exception:

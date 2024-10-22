@@ -4,27 +4,34 @@ import logging
 import multiprocessing
 import os
 import traceback
+import warnings
 from collections import defaultdict
 from functools import reduce, wraps
 from http import HTTPStatus
 from inspect import isawaitable
 from pathlib import Path
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
+    Coroutine,
     DefaultDict,
+    Dict,
     List,
+    NoReturn,
     Optional,
     Text,
     Union,
-    Dict,
-    TYPE_CHECKING,
-    NoReturn,
-    Coroutine,
 )
 
 import aiohttp
 import jsonschema
+from sanic import Sanic, response
+from sanic.request import Request
+from sanic.response import HTTPResponse
+from sanic_cors import CORS
+from sanic_jwt import Initialize, exceptions
+
 import rasa
 import rasa.core.utils
 import rasa.nlu.test
@@ -43,19 +50,20 @@ from rasa.core.channels.channel import (
     UserMessage,
 )
 from rasa.core.constants import DEFAULT_RESPONSE_TIMEOUT
+from rasa.core.persistor import parse_remote_storage
 from rasa.core.test import test
 from rasa.core.utils import AvailableEndpoints
 from rasa.nlu.emulators.emulator import Emulator
 from rasa.nlu.emulators.no_emulator import NoEmulator
 from rasa.nlu.test import CVEvaluationResult
 from rasa.shared.constants import (
-    DOCS_URL_TRAINING_DATA,
-    DOCS_BASE_URL,
-    DEFAULT_SENDER_ID,
     DEFAULT_MODELS_PATH,
+    DEFAULT_SENDER_ID,
+    DOCS_BASE_URL,
+    DOCS_URL_TRAINING_DATA,
     TEST_STORIES_FILE_PREFIX,
 )
-from rasa.shared.core.domain import InvalidDomain, Domain
+from rasa.shared.core.domain import Domain, InvalidDomain
 from rasa.shared.core.events import Event
 from rasa.shared.core.trackers import (
     DialogueStateTracker,
@@ -70,16 +78,13 @@ from rasa.shared.utils.schemas.events import EVENTS_SCHEMA
 from rasa.shared.utils.yaml import validate_training_data
 from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
 from rasa.utils.endpoints import EndpointConfig
-from sanic import Sanic, response
-from sanic.request import Request
-from sanic.response import HTTPResponse
-from sanic_cors import CORS
-from sanic_jwt import Initialize, exceptions
 
 if TYPE_CHECKING:
     from ssl import SSLContext
+
+    from mypy_extensions import Arg, KwArg, VarArg
+
     from rasa.core.processor import MessageProcessor
-    from mypy_extensions import Arg, VarArg, KwArg
 
     SanicResponse = Union[
         response.HTTPResponse, Coroutine[Any, Any, response.HTTPResponse]
@@ -233,7 +238,6 @@ def requires_auth(
         async def decorated(
             request: Request, *args: Any, **kwargs: Any
         ) -> response.HTTPResponse:
-
             provided = request.args.get("token", None)
 
             # noinspection PyProtectedMember
@@ -518,7 +522,44 @@ def add_root_route(app: Sanic) -> None:
     @app.get("/")
     async def hello(request: Request) -> HTTPResponse:
         """Check if the server is running and responds with the version."""
-        return response.text("Hello from Rasa: " + rasa.__version__)
+        html_content = f"""
+        <html>
+            <body>
+                <p>Hello from Rasa: {rasa.__version__}</p>
+                <a href="./webhooks/inspector/inspect.html">Go to the inspector</a>
+                <script>
+                    window.location.replace("./webhooks/inspector/inspect.html");
+                </script>
+            </body>
+        </html>
+        """
+        return response.html(html_content)
+
+    @app.get("/license")
+    async def license(request: Request) -> HTTPResponse:
+        """Respond with the license expiration date."""
+        from rasa.utils.licensing import (
+            get_license_expiration_date,
+            property_of_active_license,
+        )
+
+        body = {
+            "id": property_of_active_license(lambda active_license: active_license.jti),
+            "company": property_of_active_license(
+                lambda active_license: active_license.company
+            ),
+            "scope": property_of_active_license(
+                lambda active_license: active_license.scope
+            ),
+            "email": property_of_active_license(
+                lambda active_license: active_license.email
+            ),
+            "expires": get_license_expiration_date(),
+        }
+        return response.json(
+            body=body,
+            headers={"Content-Type": "application/json"},
+        )
 
 
 def async_if_callback_url(f: Callable[..., Coroutine]) -> Callable:
@@ -646,6 +687,9 @@ def create_app(
     app = Sanic("rasa_server")
     app.config.RESPONSE_TIMEOUT = response_timeout
     configure_cors(app, cors_origins)
+
+    # Reset Sanic warnings filter that allows the triggering of Sanic warnings
+    warnings.filterwarnings("ignore", category=DeprecationWarning, module=r"sanic.*")
 
     # Set up the Sanic-JWT extension
     if jwt_secret and jwt_method:
@@ -1336,7 +1380,13 @@ def create_app(
 
         model_path = request.json.get("model_file", None)
         model_server = request.json.get("model_server", None)
-        remote_storage = request.json.get("remote_storage", None)
+
+        remote_storage_argument = request.json.get("remote_storage", None)
+        remote_storage = (
+            parse_remote_storage(remote_storage_argument)
+            if remote_storage_argument
+            else None
+        )
 
         if model_server:
             try:

@@ -1,0 +1,25 @@
+name: Automatic backport action
+
+on:
+  pull_request_target:
+    types: ["labeled", "closed"]
+
+jobs:
+  backport:
+    name: Backport PR
+    if: github.event.pull_request.merged == true && !(contains(github.event.pull_request.labels.*.name, 'backport'))
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Backport Action
+        uses: sorenlouv/backport-github-action@ad888e978060bc1b2798690dd9d03c4036560947  #v.9.5.1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          auto_backport_label_prefix: backport-to-
+
+      - name: Info log
+        if: ${{ success() }}
+        run: cat ~/.backport/backport.info.log
+
+      - name: Debug log
+        if: ${{ failure() }}
+        run: cat ~/.backport/backport.debug.log

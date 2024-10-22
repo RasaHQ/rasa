@@ -189,7 +189,7 @@ class ConveRTFeaturizer(DenseFeaturizer, GraphComponent):
                 f"Parameter 'model_url' of "
                 f"'{ConveRTFeaturizer.__name__}' was "
                 f"set to '{model_url}' which is strictly reserved for pytests of "
-                f"Rasa Open Source only. Due to licensing issues you are "
+                f"Rasa Pro only. Due to licensing issues you are "
                 f"not allowed to use the model from this URL. "
                 f"You can either use a community hosted URL or if you have a "
                 f"local copy of the model, pass the path to the directory "
@@ -323,13 +323,11 @@ class ConveRTFeaturizer(DenseFeaturizer, GraphComponent):
         return texts
 
     def _sentence_encoding_of_text(self, batch: List[Text]) -> np.ndarray:
-
         return self.sentence_encoding_signature(tf.convert_to_tensor(batch))[
             "default"
         ].numpy()
 
     def _sequence_encoding_of_text(self, batch: List[Text]) -> np.ndarray:
-
         return self.sequence_encoding_signature(tf.convert_to_tensor(batch))[
             "sequence_encoding"
         ].numpy()
@@ -346,7 +344,6 @@ class ConveRTFeaturizer(DenseFeaturizer, GraphComponent):
         batch_size = 64
 
         for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
-
             non_empty_examples = list(
                 filter(lambda x: x.get(attribute), training_data.training_examples)
             )
@@ -410,7 +407,6 @@ class ConveRTFeaturizer(DenseFeaturizer, GraphComponent):
             )
 
     def _tokenize(self, sentence: Text) -> Any:
-
         return self.tokenize_signature(tf.convert_to_tensor([sentence]))[
             "default"
         ].numpy()

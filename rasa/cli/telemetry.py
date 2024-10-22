@@ -7,6 +7,7 @@ from rasa.cli import SubParsersAction
 import rasa.cli.utils
 from rasa.shared.constants import DOCS_URL_TELEMETRY
 import rasa.shared.utils.cli
+from rasa.utils import licensing
 
 
 def add_subparser(
@@ -21,7 +22,7 @@ def add_subparser(
     telemetry_parser = subparsers.add_parser(
         "telemetry",
         parents=parents,
-        help="Configuration of Rasa Open Source telemetry reporting.",
+        help="Configuration of Rasa Pro telemetry reporting.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
 
@@ -30,7 +31,7 @@ def add_subparser(
         "disable",
         parents=parents,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        help="Disable Rasa Open Source Telemetry reporting.",
+        help="Disable Rasa Pro Telemetry reporting.",
     )
     telemetry_disable_parser.set_defaults(func=disable_telemetry)
 
@@ -38,7 +39,7 @@ def add_subparser(
         "enable",
         parents=parents,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        help="Enable Rasa Open Source Telemetry reporting.",
+        help="Enable Rasa Pro Telemetry reporting.",
     )
     telemetry_enable_parser.set_defaults(func=enable_telemetry)
     telemetry_parser.set_defaults(func=inform_about_telemetry)
@@ -60,11 +61,15 @@ def inform_about_telemetry(_: argparse.Namespace) -> None:
         textwrap.dedent(
             """
             Rasa uses telemetry to report anonymous usage information. This information
-            is essential to help improve Rasa Open Source for all users."""
+            is essential to help improve Rasa Pro for all users."""
         )
     )
-
-    if not is_enabled:
+    if licensing.is_champion_server_license():
+        print(
+            "\nYou are using a developer license, which requires telemetry "
+            "reporting to be enabled."
+        )
+    elif not is_enabled:
         print("\nYou can enable telemetry reporting using")
         rasa.shared.utils.cli.print_info("\n\trasa telemetry enable")
     else:
@@ -79,6 +84,13 @@ def inform_about_telemetry(_: argparse.Namespace) -> None:
 
 def disable_telemetry(_: argparse.Namespace) -> None:
     """Disable telemetry tracking."""
+    if licensing.is_champion_server_license():
+        rasa.shared.utils.cli.print_error(
+            "You are using a developer license, which requires telemetry "
+            "reporting to be enabled."
+        )
+        return
+
     telemetry.track_telemetry_disabled()
     telemetry.toggle_telemetry_reporting(is_enabled=False)
     rasa.shared.utils.cli.print_success("Disabled telemetry reporting.")

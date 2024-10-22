@@ -1,6 +1,34 @@
+import argparse
+from pathlib import Path
 from typing import Callable
+from unittest.mock import MagicMock
 
+import pytest
 from pytest import RunResult
+
+from rasa.cli.inspect import add_subparser, inspect
+from rasa.core.persistor import RemoteStorageType
+from rasa.shared.core.domain import Domain
+
+run_module_path = "rasa.cli.run"
+
+
+@pytest.fixture
+def mock_rasa_run(monkeypatch: pytest.MonkeyPatch) -> Callable:
+    """Mocks the `rasa.cli.run.run` function."""
+    _mock_rasa_run = MagicMock()
+
+    monkeypatch.setattr(f"{run_module_path}.rasa_run", _mock_rasa_run)
+    return _mock_rasa_run
+
+
+@pytest.fixture
+def inspect_parser() -> argparse.ArgumentParser:
+    """Fixture for the `rasa inspect` parser."""
+    parser = argparse.ArgumentParser(prog="rasa")
+    subparsers = parser.add_subparsers(help="Rasa commands")
+    add_subparser(subparsers, [])
+    return parser
 
 
 def test_rasa_inspect_help(run: Callable[..., RunResult]) -> None:
@@ -26,3 +54,107 @@ def test_rasa_inspect_help(run: Callable[..., RunResult]) -> None:
     printed_help = {line.strip() for line in output.outlines}
     for line in lines:
         assert line.strip() in printed_help
+
+
+def test_inspect_invokes_cli_run_with_local_model(
+    inspect_parser: argparse.ArgumentParser,
+    mock_rasa_run: MagicMock,
+    trained_simple_project: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Tests whether the `rasa inspect` command invokes `rasa run` with a local model."""  # noqa: E501
+    # Parse the arguments with which Rasa inspect will be run
+    args = inspect_parser.parse_args(
+        [
+            "inspect",
+            "--endpoints",
+            f"{trained_simple_project}/endpoints.yml",
+            "--model",
+            f"{trained_simple_project}/models",
+        ]
+    )
+
+    # Run the inspect function
+    inspect(args)
+
+    # Assert that the arguments are correctly passed to the `rasa run` command
+    assert args.model == f"{trained_simple_project}/models"
+    assert args.endpoints == f"{trained_simple_project}/endpoints.yml"
+
+    mock_rasa_run.assert_called_once_with(**vars(args))
+
+
+@pytest.mark.parametrize(
+    "remote_storage, expected_remote_storage",
+    [
+        ("aws", RemoteStorageType.AWS),
+        ("gcs", RemoteStorageType.GCS),
+        ("azure", RemoteStorageType.AZURE),
+    ],
+)
+def test_inspect_invokes_cli_run_with_remote_storage(
+    remote_storage: str,
+    expected_remote_storage: RemoteStorageType,
+    inspect_parser: argparse.ArgumentParser,
+    mock_rasa_run: MagicMock,
+    trained_simple_project: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Tests whether the `rasa inspect` command invokes `rasa run` with remote storage."""  # noqa: E501
+    # Parse the arguments with which Rasa will be run
+    args = inspect_parser.parse_args(
+        [
+            "inspect",
+            "--endpoints",
+            f"{trained_simple_project}/endpoints.yml",
+            "--model",
+            "/models/model.tar.gz",
+            "--remote-storage",
+            remote_storage,
+        ]
+    )
+
+    # Run the inspect function
+    inspect(args)
+
+    # Assert that the arguments are correctly passed to the `rasa run` command
+    assert args.remote_storage == expected_remote_storage
+    assert args.model == "/models/model.tar.gz"
+    assert args.endpoints == f"{trained_simple_project}/endpoints.yml"
+
+    mock_rasa_run.assert_called_once_with(**vars(args))
+
+
+def test_cli_run_with_skip_yaml_validation(
+    inspect_parser: argparse.ArgumentParser,
+    mock_rasa_run: MagicMock,
+    trained_simple_project: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Tests whether the `rasa inspect` command is invoked to skip Domain YAML validation."""  # noqa: E501
+    # Parse the arguments with which Rasa inspect will be run
+    args = inspect_parser.parse_args(
+        [
+            "inspect",
+            "--endpoints",
+            f"{trained_simple_project}/endpoints.yml",
+            "--model",
+            f"{trained_simple_project}/models",
+            "--skip-yaml-validation",
+            "domain",
+        ]
+    )
+
+    # Assert that default value for `Domain.validate_yaml` is True
+    assert Domain.validate_yaml
+
+    # Run the inspect function
+    inspect(args)
+
+    # Assert that the arguments are correctly passed to the `rasa run` command
+    assert args.model == f"{trained_simple_project}/models"
+    assert args.endpoints == f"{trained_simple_project}/endpoints.yml"
+    assert args.skip_yaml_validation == ["domain"]
+    assert not Domain.validate_yaml
+
+    mock_rasa_run.assert_called_once_with(**vars(args))

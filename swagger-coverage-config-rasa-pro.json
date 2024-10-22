@@ -1,0 +1,26 @@
+{
+  "rules": {
+    "status": {
+      "enable": true,
+      "ignore": [],
+      "filter": []
+    },
+    "paths": {
+      "enable": true,
+      "ignore": []
+    },
+    "only-declared-status": {
+      "enable": false
+    },
+    "exclude-deprecated": {
+      "enable": true
+    }
+  },
+  "writers": {
+    "html": {
+      "locale": "en",
+      "filename": "swagger-coverage-report-rasa-pro.html"
+    }
+  }
+}
+
