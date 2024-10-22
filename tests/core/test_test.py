@@ -1,35 +1,34 @@
 import shutil
 import textwrap
 from pathlib import Path
-from typing import Text, Optional, Dict, Any, List, Callable, Coroutine
+from typing import Any, Callable, Coroutine, Dict, List, Optional, Text
+
 import pytest
+from _pytest.capture import CaptureFixture
+from _pytest.monkeypatch import MonkeyPatch
+
 import rasa.core.test
 import rasa.shared.utils.io
-from rasa.core.policies.ensemble import DefaultPolicyPredictionEnsemble
-from rasa.core.policies.policy import PolicyPrediction
-from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
-from rasa.shared.core.events import UserUttered
-from _pytest.monkeypatch import MonkeyPatch
-from _pytest.capture import CaptureFixture
 from rasa.core.agent import Agent, load_agent
-from rasa.shared.utils.yaml import read_yaml_file
-from rasa.utils.tensorflow.constants import (
-    QUERY_INTENT_KEY,
-    NAME,
-    THRESHOLD_KEY,
-    SEVERITY_KEY,
-    SCORE_KEY,
-)
 from rasa.core.constants import STORIES_WITH_WARNINGS_FILE
-from rasa.shared.core.constants import ACTION_UNLIKELY_INTENT_NAME
-from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.core.domain import Domain
-
+from rasa.core.policies.ensemble import DefaultPolicyPredictionEnsemble
+from rasa.core.policies.policy import PolicyPrediction, SupportedData
 from rasa.core.policies.rule_policy import RulePolicy
-from rasa.shared.core.domain import State
-from rasa.core.policies.policy import SupportedData
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
+from rasa.shared.core.constants import ACTION_UNLIKELY_INTENT_NAME
+from rasa.shared.core.domain import Domain, State
+from rasa.shared.core.events import UserUttered
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.utils.io import read_file
-from rasa.shared.utils.yaml import read_yaml
+from rasa.shared.utils.yaml import read_yaml, read_yaml_file
+from rasa.utils.tensorflow.constants import (
+    NAME,
+    QUERY_INTENT_KEY,
+    SCORE_KEY,
+    SEVERITY_KEY,
+    THRESHOLD_KEY,
+)
+from tests.conftest import TrainedAsync
 
 
 def _probabilities_with_action_unlikely_intent_for(
@@ -196,7 +195,7 @@ async def test_testing_valid_with_non_e2e_core_model(core_agent: Agent, tmp_path
 async def _train_rule_based_agent(
     moodbot_domain: Domain,
     tmp_path: Path,
-    trained_async: Callable,
+    trained_async: TrainedAsync,
     monkeypatch: MonkeyPatch,
     moodbot_domain_path: Path,
 ) -> Callable[[Path, bool], Coroutine]:

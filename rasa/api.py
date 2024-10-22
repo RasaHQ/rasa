@@ -1,6 +1,8 @@
-from typing import Any, Text, Dict, Union, List, Optional, TYPE_CHECKING
 import asyncio
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text, Union
+
 import rasa.shared.constants
+from rasa.core.persistor import StorageType
 
 # WARNING: Be careful about adding any top level imports at this place!
 #   These functions are imported in `rasa.__init__` and any top level import
@@ -12,14 +14,15 @@ import rasa.shared.constants
 
 if TYPE_CHECKING:
     from rasa.model_training import TrainingResult
+    from rasa.shared.importers.importer import TrainingDataImporter
 
 
 def run(
-    model: "Text",
-    endpoints: "Text",
-    connector: "Optional[Text]" = None,
-    credentials: "Optional[Text]" = None,
-    **kwargs: "Dict[Text, Any]",
+    model: Text,
+    endpoints: Text,
+    connector: Optional[Text] = None,
+    credentials: Optional[Text] = None,
+    **kwargs: Dict[Text, Any],
 ) -> None:
     """Runs a Rasa model.
 
@@ -34,10 +37,10 @@ def run(
 
     """
     import rasa.core.run
-    from rasa.core.utils import AvailableEndpoints
-    from rasa.shared.utils.cli import print_warning
     import rasa.shared.utils.common
+    from rasa.core.utils import AvailableEndpoints
     from rasa.shared.constants import DOCS_BASE_URL
+    from rasa.shared.utils.cli import print_warning
 
     _endpoints = AvailableEndpoints.read_endpoints(endpoints)
 
@@ -63,18 +66,20 @@ def run(
 
 
 def train(
-    domain: "Text",
-    config: "Text",
+    domain: Text,
+    config: Text,
     training_files: "Union[Text, List[Text]]",
-    output: "Text" = rasa.shared.constants.DEFAULT_MODELS_PATH,
+    output: Text = rasa.shared.constants.DEFAULT_MODELS_PATH,
     dry_run: bool = False,
     force_training: bool = False,
-    fixed_model_name: "Optional[Text]" = None,
+    fixed_model_name: Optional[Text] = None,
     persist_nlu_training_data: bool = False,
-    core_additional_arguments: "Optional[Dict]" = None,
-    nlu_additional_arguments: "Optional[Dict]" = None,
-    model_to_finetune: "Optional[Text]" = None,
+    core_additional_arguments: Optional[Dict] = None,
+    nlu_additional_arguments: Optional[Dict] = None,
+    model_to_finetune: Optional[Text] = None,
     finetuning_epoch_fraction: float = 1.0,
+    remote_storage: Optional[StorageType] = None,
+    file_importer: Optional["TrainingDataImporter"] = None,
 ) -> "TrainingResult":
     """Runs Rasa Core and NLU training in `async` loop.
 
@@ -96,6 +101,10 @@ def train(
             a directory in case the latest trained model should be used.
         finetuning_epoch_fraction: The fraction currently specified training epochs
             in the model configuration which should be used for finetuning.
+        remote_storage: Optional name of the remote storage to
+            use for storing the model.
+        file_importer: Instance of `TrainingDataImporter` to use for training.
+            If it is not provided, a new instance will be created.
 
     Returns:
         An instance of `TrainingResult`.
@@ -116,16 +125,18 @@ def train(
             nlu_additional_arguments=nlu_additional_arguments,
             model_to_finetune=model_to_finetune,
             finetuning_epoch_fraction=finetuning_epoch_fraction,
+            remote_storage=remote_storage,
+            file_importer=file_importer,
         )
     )
 
 
 def test(
-    model: "Text",
-    stories: "Text",
-    nlu_data: "Text",
-    output: "Text" = rasa.shared.constants.DEFAULT_RESULTS_PATH,
-    additional_arguments: "Optional[Dict]" = None,
+    model: Text,
+    stories: Text,
+    nlu_data: Text,
+    output: Text = rasa.shared.constants.DEFAULT_RESULTS_PATH,
+    additional_arguments: Optional[Dict] = None,
 ) -> None:
     """Test a Rasa model against a set of test data.
 
@@ -136,8 +147,7 @@ def test(
         output: path to folder where all output will be stored
         additional_arguments: additional arguments for the test call
     """
-    from rasa.model_testing import test_core
-    from rasa.model_testing import test_nlu
+    from rasa.model_testing import test_core, test_nlu
 
     if additional_arguments is None:
         additional_arguments = {}

@@ -1,7 +1,7 @@
 from typing import Text, Any, Dict
 
 import structlog
-from langchain.vectorstores.qdrant import Qdrant
+from langchain_community.vectorstores.qdrant import Qdrant
 from pydantic import ValidationError
 from qdrant_client import QdrantClient
 from rasa.utils.endpoints import EndpointConfig

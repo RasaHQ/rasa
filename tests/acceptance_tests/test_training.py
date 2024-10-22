@@ -1,9 +1,8 @@
-from pathlib import Path
 import secrets
-
+from pathlib import Path
 from typing import Text
 
-import rasa
+import rasa.api
 from rasa.shared.core.domain import Domain
 from rasa.shared.utils.yaml import write_yaml
 
@@ -20,7 +19,7 @@ def test_models_not_retrained_if_no_new_data(
     nlu_data_path: Text,
     trained_e2e_model_cache: Path,
 ):
-    result = rasa.train(
+    result = rasa.api.train(
         str(moodbot_domain_path),
         str(e2e_bot_config_file),
         [e2e_stories_path, nlu_data_path],
@@ -53,7 +52,7 @@ def test_dry_run_model_will_not_be_retrained_if_only_new_responses(
     new_domain_path = tmp_path / "domain.yml"
     write_yaml(new_domain.as_dict(), new_domain_path)
 
-    result = rasa.train(
+    result = rasa.api.train(
         str(new_domain_path),
         str(e2e_bot_config_file),
         [e2e_stories_path, nlu_data_path],

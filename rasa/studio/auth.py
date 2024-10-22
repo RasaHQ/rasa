@@ -21,15 +21,19 @@ from rasa.studio.results_logger import with_studio_error_handler, StudioResult
 
 
 class StudioAuth:
+    """Handles the authentication with the Rasa Studio authentication server."""
+
     def __init__(
         self,
         studio_config: StudioConfig,
+        verify: bool = True,
     ) -> None:
         self.config = studio_config
         self.keycloak_openid = KeycloakOpenID(
             server_url=studio_config.authentication_server_url,
             client_id=studio_config.client_id,
             realm_name=studio_config.realm_name,
+            verify=verify,
         )
 
     def health_check(self) -> bool:

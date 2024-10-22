@@ -9,12 +9,12 @@ from functools import partial
 from typing import (
     Any,
     Callable,
+    Dict,
     List,
     Optional,
     Text,
     Tuple,
     Union,
-    Dict,
 )
 
 from sanic import Sanic
@@ -24,7 +24,6 @@ import rasa.core.utils
 import rasa.shared.utils.common
 import rasa.shared.utils.io
 import rasa.utils
-from rasa.utils import licensing
 import rasa.utils.common
 import rasa.utils.io
 from rasa import server, telemetry
@@ -33,10 +32,12 @@ from rasa.core import agent, channels, constants
 from rasa.core.agent import Agent
 from rasa.core.channels import console
 from rasa.core.channels.channel import InputChannel
+from rasa.core.persistor import StorageType
 from rasa.core.utils import AvailableEndpoints
 from rasa.plugin import plugin_manager
 from rasa.shared.exceptions import RasaException
 from rasa.shared.utils.yaml import read_config_file
+from rasa.utils import licensing
 
 logger = logging.getLogger()  # get the root logger
 
@@ -210,7 +211,7 @@ def serve_application(
     jwt_private_key: Optional[Text] = None,
     jwt_method: Optional[Text] = None,
     endpoints: Optional[AvailableEndpoints] = None,
-    remote_storage: Optional[Text] = None,
+    remote_storage: Optional[StorageType] = None,
     log_file: Optional[Text] = None,
     ssl_certificate: Optional[Text] = None,
     ssl_keyfile: Optional[Text] = None,
@@ -295,7 +296,7 @@ def serve_application(
 async def load_agent_on_start(
     model_path: Text,
     endpoints: AvailableEndpoints,
-    remote_storage: Optional[Text],
+    remote_storage: Optional[StorageType],
     app: Sanic,
     loop: AbstractEventLoop,
 ) -> Agent:
@@ -310,6 +311,7 @@ async def load_agent_on_start(
         endpoints=endpoints,
         loop=loop,
     )
+
     logger.info("Rasa server is up and running.")
     return app.ctx.agent
 

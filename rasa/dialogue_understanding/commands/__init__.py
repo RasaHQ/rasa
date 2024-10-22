@@ -9,6 +9,7 @@ from rasa.dialogue_understanding.commands.knowledge_answer_command import (
 from rasa.dialogue_understanding.commands.chit_chat_answer_command import (
     ChitChatAnswerCommand,
 )
+from rasa.dialogue_understanding.commands.restart_command import RestartCommand
 from rasa.dialogue_understanding.commands.skip_question_command import (
     SkipQuestionCommand,
 )
@@ -28,6 +29,9 @@ from rasa.dialogue_understanding.commands.correct_slots_command import (
 )
 from rasa.dialogue_understanding.commands.noop_command import NoopCommand
 from rasa.dialogue_understanding.commands.change_flow_command import ChangeFlowCommand
+from rasa.dialogue_understanding.commands.session_start_command import (
+    SessionStartCommand,
+)
 
 __all__ = [
     "Command",
@@ -46,4 +50,6 @@ __all__ = [
     "ErrorCommand",
     "NoopCommand",
     "ChangeFlowCommand",
+    "SessionStartCommand",
+    "RestartCommand",
 ]

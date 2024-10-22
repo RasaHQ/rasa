@@ -10,7 +10,7 @@ from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
 )
 from rasa.shared.core.events import DialogueStackUpdated, FlowCancelled
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.core.flows.yaml_flows_io import flows_from_str
+from tests.utilities import flows_from_str
 import jsonpatch
 
 

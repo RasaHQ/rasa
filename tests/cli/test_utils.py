@@ -1,23 +1,22 @@
+import argparse
 import contextlib
 import copy
-import re
-import argparse
-import structlog
 import io
 import os
 import pathlib
+import re
 import sys
 import tempfile
-from typing import Any, Dict, Text
 from pathlib import Path
-from rasa.shared.importers.importer import TrainingDataImporter
-from rasa.shared.utils.yaml import read_yaml_file, write_yaml
-from rasa.utils.common import EXPECTED_WARNINGS
-from ruamel.yaml import YAML
+from typing import Any, Dict, Text, Callable
 
 import pytest
+import structlog
+from _pytest.pytester import RunResult
+from ruamel.yaml import YAML
 
 import rasa.cli.utils
+import rasa.shared.utils.io
 from rasa.shared.constants import (
     ASSISTANT_ID_DEFAULT_VALUE,
     ASSISTANT_ID_KEY,
@@ -27,7 +26,9 @@ from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
 )
-import rasa.shared.utils.io
+from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.utils.yaml import read_yaml_file, write_yaml
+from rasa.utils.common import EXPECTED_WARNINGS
 from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
 from tests.cli.conftest import RASA_EXE
 from tests.conftest import AsyncMock
@@ -707,3 +708,38 @@ def test_check_if_studio_command(argv, expected):
     result = rasa.cli.utils.check_if_studio_command()
 
     assert result == expected
+
+
+def test_rasa_version_raises_no_warnings(
+    run_in_simple_project: Callable[..., RunResult],
+):
+    # Run the CLI command "rasa --version"
+    result = run_in_simple_project("--version")
+
+    # Get the standard output and error
+    stderr = "\n".join(result.stderr.lines)
+
+    # Check if there are any warnings in the output
+    assert "warning" not in stderr.lower()
+
+
+@pytest.mark.parametrize("results_type", ["passed", "failed"])
+def test_get_e2e_results_file_name_path_is_dir(
+    tmp_path: Path, results_type: str
+) -> None:
+    results_path = tmp_path / "results"
+    results_path.mkdir(exist_ok=True)
+
+    results_file = rasa.cli.utils.get_e2e_results_file_name(results_path, results_type)
+    assert results_file == str(results_path / f"e2e_results_{results_type}.yml")
+
+
+@pytest.mark.parametrize("results_type", ["passed", "failed"])
+def test_get_e2e_results_file_name_path_is_file(
+    tmp_path: Path, results_type: str
+) -> None:
+    results_path = tmp_path / "results" / "e2e_test_results.yml"
+    results_file = rasa.cli.utils.get_e2e_results_file_name(results_path, results_type)
+    assert results_file == str(
+        results_path.parent / f"e2e_test_results_{results_type}.yml"
+    )

@@ -87,7 +87,6 @@ class LocalModelStorage(ModelStorage):
                 model_archive_path, temporary_directory_path
             )
             logger.debug(f"Extracted model to '{temporary_directory_path}'.")
-
             cls._initialize_model_storage_from_model_archive(
                 temporary_directory_path, storage_path
             )
@@ -239,7 +238,6 @@ class LocalModelStorage(ModelStorage):
             predict_schema=model_configuration.predict_schema,
             training_type=model_configuration.training_type,
             project_fingerprint=rasa.model.project_fingerprint(),
-            spaces=model_configuration.spaces,
             language=model_configuration.language,
             core_target=model_configuration.core_target,
             nlu_target=model_configuration.nlu_target,

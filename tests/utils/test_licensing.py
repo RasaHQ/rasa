@@ -21,6 +21,7 @@ from rasa.utils.licensing import (
     LicenseScopeException,
     LicenseSignatureInvalidException,
     LicenseValidationException,
+    get_license_expiration_date,
     is_valid_license_scope,
     property_of_active_license,
     validate_license_from_env,
@@ -245,3 +246,11 @@ async def test_conversation_counting_job_triggers_limits(
     # also assert that the soft limit was not called again (count should
     # still be 1 from before)
     mocked_handle_soft_limit_reached.assert_called_once()
+
+
+def test_get_license_expiration_date(
+    monkeypatch: MonkeyPatch, valid_license: str
+) -> None:
+    monkeypatch.setenv(LICENSE_ENV_VAR, valid_license)
+
+    assert get_license_expiration_date() == "3000-01-01T00:00:00+00:00"

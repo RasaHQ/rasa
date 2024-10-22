@@ -1,0 +1,52 @@
+version: "3.1"
+
+actions:
+  - check_transfer_funds
+  - execute_transfer
+
+slots:
+  transfer_money_transfer_successful:
+    type: bool
+    mappings:
+      - type: custom
+        action: execute_transfer
+  transfer_money_has_sufficient_funds:
+    type: bool
+    mappings:
+      - type: custom
+        action: check_transfer_funds
+  transfer_money_recipient:
+    type: text
+    mappings:
+      - type: from_llm
+  transfer_money_amount_of_money:
+    type: text
+    mappings:
+      - type: from_llm
+  transfer_money_final_confirmation:
+    type: text
+    mappings:
+      - type: from_llm
+
+responses:
+  utter_transfer_money_insufficient_funds:
+    - text: You don't have so much money on your account!
+  utter_transfer_failed:
+    - text: something went wrong transferring the money.
+  utter_out_of_scope:
+    - text: Sorry, I'm not sure how to respond to that. Type "help" for assistance.
+  utter_ask_transfer_money_amount_of_money:
+    - text: How much money do you want to transfer?
+  utter_ask_transfer_money_recipient:
+    - text: Who do you want to transfer money to?
+  utter_transfer_complete:
+    - text: Successfully transferred {transfer_money_amount_of_money} to {transfer_money_recipient}.
+  utter_transfer_cancelled:
+    - text: Transfer cancelled.
+  utter_ask_transfer_money_final_confirmation:
+    - buttons:
+        - payload: yes
+          title: "Yes"
+        - payload: no
+          title: "No, cancel the transaction"
+      text: Would you like to transfer {transfer_money_amount_of_money} to {transfer_money_recipient}?

@@ -20,6 +20,7 @@ RASA_SERVER_OTLP_NO_ACTION_SERVER = "http://localhost:5009"
 GRPC_RASA_SERVER_JAEGER = "http://localhost:5014"
 GRPC_SSL_RASA_SERVER_JAEGER = "http://localhost:5015"
 
+
 ACTION_SERVER_PARENT_SPAN_NAME = "MessageProcessor._run_action"
 ACTION_SERVER_PARENT_SUB_SPAN_NAME = "HTTPCustomActionExecutor.run"
 GRPC_ACTION_SERVER_PARENT_SUB_SPAN_NAME = "GRPCCustomActionExecutor.run"
@@ -40,7 +41,8 @@ TraceQueryTimestamps = collections.namedtuple(
 RASA_SERVER_PARENT_SPAN_NAME = "Agent.handle_message"
 RASA_SERVER_PROCESSOR_SPAN_NAME = "MessageProcessor.handle_message"
 RASA_SERVER_PROCESSOR_SUB_SPAN_NAME = "MessageProcessor.log_message"
-RASA_SERVER_TRIGGER_MESSAGE = "/greet"
+DIRECT_CUSTOM_ACTION_EXECUTION_SUB_SPAN_NAME = "DirectCustomActionExecutor.run"
+RASA_SERVER_TRIGGER_MESSAGE = "/goodbye"
 
 
 @pytest.fixture

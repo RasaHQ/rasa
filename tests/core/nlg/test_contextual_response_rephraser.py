@@ -2,6 +2,7 @@ from typing import Any, Optional
 
 import pytest
 from pytest import MonkeyPatch
+from rasa.shared.constants import OPENAI_API_KEY_ENV_VAR
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -49,6 +50,11 @@ def greet_tracker() -> DialogueStateTracker:
             UserUttered("Hello", {"name": "greet", "confidence": 1.0}),
         ],
     )
+
+
+@pytest.fixture(autouse=True)
+def set_mock_openai_api_key(monkeypatch: MonkeyPatch) -> None:
+    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key in rephraser")
 
 
 class MockedContextualResponseRephraser(ContextualResponseRephraser):

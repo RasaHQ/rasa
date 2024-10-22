@@ -1,18 +1,22 @@
 import argparse
 from typing import Callable, Text
-from unittest.mock import Mock, ANY
+from unittest.mock import ANY, Mock
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.pytester import RunResult
 
-import rasa
+import rasa.api
+from rasa.cli import interactive, train
 from rasa.core.train import do_interactive_learning
 from rasa.core.training import interactive as interactive_learning
-from rasa.cli import interactive, train
 from rasa.model_training import TrainingResult
-
 from tests.cli.conftest import RASA_EXE
+
+# file deepcode ignore CodeInjection/test: These tests explicitly test command
+# execution for the Rasa CLI.
+# file deepcode ignore PT/test: These tests explicitly test command execution
+# for the Rasa CLI.
 
 
 def test_interactive_help(run: Callable[..., RunResult]):
@@ -71,7 +75,7 @@ def test_pass_arguments_to_rasa_train(
 
     # Mock actual training
     mock = Mock(return_value=TrainingResult(code=0))
-    monkeypatch.setattr(rasa, "train", mock.method)
+    monkeypatch.setattr(rasa.api, "train", mock.method)
 
     # If the `Namespace` object does not have all required fields this will throw
     train.run_training(args)

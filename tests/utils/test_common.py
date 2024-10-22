@@ -1,30 +1,30 @@
+import asyncio
 import json
-import os
 import logging
 import logging.config
+import os
 import sys
 from pathlib import Path
-from pytest import MonkeyPatch
 from typing import Any, Text, Type
 from unittest import mock
+from unittest.mock import Mock
 
 import pytest
-from pytest import LogCaptureFixture
+from pytest import LogCaptureFixture, MonkeyPatch
 
+import rasa.utils.common
+import tests.conftest
 from rasa.core.agent import Agent
-
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.shared.exceptions import RasaException
-import rasa.utils.common
 from rasa.utils.common import (
     RepeatedLogFilter,
-    find_unavailable_packages,
+    configure_library_logging,
     configure_logging_and_warnings,
     configure_logging_from_file,
+    find_unavailable_packages,
     get_bool_env_variable,
-    configure_library_logging,
 )
-import tests.conftest
 
 FAKER_LOGGER = logging.getLogger("faker")
 PRESIDIO_ANALYZER_LOGGER = logging.getLogger("presidio_analyzer")
@@ -49,16 +49,16 @@ def reset_logging() -> None:
 def test_repeated_log_filter():
     log_filter = RepeatedLogFilter()
     record1 = logging.LogRecord(
-        "rasa", logging.INFO, "/some/path.py", 42, "Super msg: %s", ("yes",), None
+        "rasa", logging.INFO, "/some/flow.py", 42, "Super msg: %s", ("yes",), None
     )
     record1_same = logging.LogRecord(
-        "rasa", logging.INFO, "/some/path.py", 42, "Super msg: %s", ("yes",), None
+        "rasa", logging.INFO, "/some/flow.py", 42, "Super msg: %s", ("yes",), None
     )
     record2_other_args = logging.LogRecord(
-        "rasa", logging.INFO, "/some/path.py", 42, "Super msg: %s", ("no",), None
+        "rasa", logging.INFO, "/some/flow.py", 42, "Super msg: %s", ("no",), None
     )
     record3_other = logging.LogRecord(
-        "rasa", logging.INFO, "/some/path.py", 42, "Other msg", (), None
+        "rasa", logging.INFO, "/some/flow.py", 42, "Other msg", (), None
     )
     assert log_filter.filter(record1) is True
     assert log_filter.filter(record1_same) is False  # same log
@@ -112,6 +112,89 @@ def test_dir_size_with_sub_directory(tmp_path: Path):
     tests.conftest.create_test_file_with_size(subdir, 3)
 
     assert rasa.utils.common.directory_size_in_mb(tmp_path) == pytest.approx(5)
+
+
+async def test_cached_method_with_sync_method():
+    expected = 5
+    mock = Mock(return_value=expected)
+
+    class Test:
+        @rasa.shared.utils.common.cached_method
+        def f(self):
+            return mock()
+
+    test_instance = Test()
+    assert test_instance.f() == expected
+    assert test_instance.f() == expected
+
+    mock.assert_called_once()
+
+
+async def test_cached_method_with_async_method():
+    expected = 5
+    mock = Mock(return_value=expected)
+
+    class Test:
+        @rasa.shared.utils.common.cached_method
+        async def f(self):
+            await asyncio.sleep(0)
+            return mock()
+
+    test_instance = Test()
+    assert await test_instance.f() == expected
+    assert await test_instance.f() == expected
+
+    mock.assert_called_once()
+
+
+async def test_cached_method_with_different_arguments():
+    expected = 5
+    mock = Mock(return_value=expected)
+
+    class Test:
+        @rasa.shared.utils.common.cached_method
+        async def f(self, _: bool, arg2: bool):
+            return mock()
+
+    test_instance = Test()
+
+    # Caching works
+    assert await test_instance.f(True, arg2=True) == expected
+    assert await test_instance.f(True, arg2=True) == expected
+
+    assert mock.call_count == 1
+
+    # Different arg results in cache miss
+    assert await test_instance.f(False, arg2=True) == expected
+    assert await test_instance.f(False, arg2=True) == expected
+
+    assert mock.call_count == 2
+
+    # Different kwarg results in cache miss
+    assert await test_instance.f(True, arg2=False) == expected
+    assert await test_instance.f(True, arg2=False) == expected
+
+    assert mock.call_count == 3
+
+
+def test_cached_method_with_function():
+    with pytest.raises(AssertionError):
+
+        @rasa.shared.utils.common.cached_method
+        def my_function():
+            pass
+
+        my_function()
+
+
+async def test_cached_method_with_async_function():
+    with pytest.raises(AssertionError):
+
+        @rasa.shared.utils.common.cached_method
+        async def my_function():
+            await asyncio.sleep(0)
+
+        await my_function()
 
 
 @pytest.mark.parametrize("create_destination", [True, False])

@@ -7,9 +7,11 @@ from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 from rasa.core.secrets_manager.constants import (
     SECRET_MANAGER_ENV_NAME,
     VAULT_DEFAULT_RASA_SECRETS_PATH,
+    VAULT_ENDPOINT_MOUNT_POINT_LABEL,
     VAULT_ENDPOINT_NAMESPACE_LABEL,
     VAULT_ENDPOINT_SECRETS_PATH_LABEL,
     VAULT_ENDPOINT_TRANSIT_MOUNT_POINT_LABEL,
+    VAULT_MOUNT_POINT_ENV_NAME,
     VAULT_NAMESPACE_ENV_NAME,
     VAULT_RASA_SECRETS_PATH_ENV_NAME,
     VAULT_SECRET_MANAGER_NAME,
@@ -48,6 +50,7 @@ def create(config: SecretManagerConfig) -> Optional[SecretsManager]:
             transit_mount_point=vault_config.transit_mount_point,
             secrets_path=vault_config.secrets_path,
             namespace=vault_config.namespace,
+            mount_point=vault_config.mount_point,
         )
 
     return secret_manager
@@ -79,6 +82,7 @@ def read_vault_endpoint_config(
         )
         secrets_path = endpoint_config.kwargs.get(VAULT_ENDPOINT_SECRETS_PATH_LABEL)
         namespace = endpoint_config.kwargs.get(VAULT_ENDPOINT_NAMESPACE_LABEL)
+        mount_point = endpoint_config.kwargs.get(VAULT_ENDPOINT_MOUNT_POINT_LABEL)
 
         return VaultSecretManagerNonStrictConfig(
             url=url,
@@ -86,6 +90,7 @@ def read_vault_endpoint_config(
             transit_mount_point=transit_mount_point,
             secrets_path=secrets_path or VAULT_DEFAULT_RASA_SECRETS_PATH,
             namespace=namespace,
+            mount_point=mount_point,
         )
 
     return None
@@ -102,6 +107,7 @@ def read_vault_env_vars() -> VaultSecretManagerNonStrictConfig:
     transit_mount_point = os.getenv(VAULT_TRANSIT_MOUNT_POINT_ENV_NAME)
     secrets_path = os.getenv(VAULT_RASA_SECRETS_PATH_ENV_NAME)
     namespace = os.getenv(VAULT_NAMESPACE_ENV_NAME)
+    mount_point = os.getenv(VAULT_MOUNT_POINT_ENV_NAME)
 
     return VaultSecretManagerNonStrictConfig(
         url=url,
@@ -109,6 +115,7 @@ def read_vault_env_vars() -> VaultSecretManagerNonStrictConfig:
         transit_mount_point=transit_mount_point,
         secrets_path=secrets_path,
         namespace=namespace,
+        mount_point=mount_point,
     )
 
 
@@ -149,6 +156,7 @@ def read_vault_config(
         f"{VAULT_RASA_SECRETS_PATH_ENV_NAME} = {env_config.secrets_path}, "
         f"{VAULT_TRANSIT_MOUNT_POINT_ENV_NAME} = {env_config.transit_mount_point}. "
         f"{VAULT_NAMESPACE_ENV_NAME} = {env_config.namespace}. "
+        f"{VAULT_MOUNT_POINT_ENV_NAME} = {env_config.mount_point}. "
     )
 
 

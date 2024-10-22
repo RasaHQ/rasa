@@ -39,8 +39,6 @@ VOLUME /tmp
 # change shell
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-RUN ls -la /opt/venv/bin
-
 # the entry point
 EXPOSE 5005
 ENTRYPOINT ["rasa"]

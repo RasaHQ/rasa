@@ -336,7 +336,7 @@ def generate_changelog(version: Version) -> None:
 
 def print_done_message(branch: Text, base: Text, version: Version) -> None:
     """Print final information for the user on what to do next."""
-    pull_request_url = f"{REPO_BASE_URL}/compare/{base}...{branch}?expand=1"
+    pull_request_url = f"{REPO_BASE_URL}/compare/{base}...{branch}?expand=1&labels=backport-to-main"
 
     print()
     print(f"\033[94m All done - changes for version {version} are ready! \033[0m")
