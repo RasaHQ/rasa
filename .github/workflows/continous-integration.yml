@@ -23,7 +23,7 @@ env:
   RASA_PRO_DEV_REPOSITORY: 329710836760.dkr.ecr.us-east-1.amazonaws.com/rasa-private-dev
   RASA_SDK_DEV_REPOSITORY: 329710836760.dkr.ecr.us-east-1.amazonaws.com/rasa-sdk-dev
   DEFAULT_PYTHON_VERSION: "3.10"
-  NODE_VERSION_INSPECTOR_BUILD: 16
+  NODE_VERSION_INSPECTOR_BUILD: 20
 
 permissions:
   checks: write

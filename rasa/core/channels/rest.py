@@ -9,7 +9,6 @@ import structlog
 from asyncio import Queue, CancelledError
 from sanic import Blueprint, response
 from sanic.request import Request
-from sanic.response import HTTPResponse, ResponseStream
 from typing import (
     Text,
     Dict,
@@ -20,6 +19,7 @@ from typing import (
     NoReturn,
     Union,
 )
+from sanic.response import HTTPResponse, ResponseStream, BaseHTTPResponse
 
 import rasa.utils.endpoints
 from rasa.core.channels.channel import (
@@ -128,6 +128,54 @@ class RestInput(InputChannel):
 
         await task
 
+    async def receive_messages(
+        self, request: Request, on_new_message: Callable[[UserMessage], Awaitable[None]]
+    ) -> Union[BaseHTTPResponse, ResponseStream]:
+        sender_id = await self._extract_sender(request)
+        text = self._extract_message(request)
+        should_use_stream = rasa.utils.endpoints.bool_arg(
+            request, "stream", default=False
+        )
+        input_channel = self._extract_input_channel(request)
+        metadata = self.get_metadata(request)
+
+        if should_use_stream:
+            return ResponseStream(
+                partial(
+                    self.stream_response,
+                    on_new_message,
+                    text,
+                    sender_id,
+                    input_channel,
+                    metadata,
+                ),
+                content_type="text/event-stream",
+            )
+        else:
+            collector = CollectingOutputChannel()
+            # noinspection PyBroadException
+            try:
+                await on_new_message(
+                    UserMessage(
+                        text,
+                        collector,
+                        sender_id,
+                        input_channel=input_channel,
+                        metadata=metadata,
+                        headers=request.headers,
+                    )
+                )
+            except CancelledError:
+                structlogger.error(
+                    "rest.message.received.timeout", text=copy.deepcopy(text)
+                )
+            except Exception:
+                structlogger.exception(
+                    "rest.message.received.failure", text=copy.deepcopy(text)
+                )
+
+            return response.json(collector.messages)
+
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[None]]
     ) -> Blueprint:
@@ -149,51 +197,8 @@ class RestInput(InputChannel):
             return response.json({"status": "ok"})
 
         @custom_webhook.route("/webhook", methods=["POST"])
-        async def receive(request: Request) -> Union[ResponseStream, HTTPResponse]:
-            sender_id = await self._extract_sender(request)
-            text = self._extract_message(request)
-            should_use_stream = rasa.utils.endpoints.bool_arg(
-                request, "stream", default=False
-            )
-            input_channel = self._extract_input_channel(request)
-            metadata = self.get_metadata(request)
-
-            if should_use_stream:
-                return ResponseStream(
-                    partial(
-                        self.stream_response,
-                        on_new_message,
-                        text,
-                        sender_id,
-                        input_channel,
-                        metadata,
-                    ),
-                    content_type="text/event-stream",
-                )
-            else:
-                collector = CollectingOutputChannel()
-                # noinspection PyBroadException
-                try:
-                    await on_new_message(
-                        UserMessage(
-                            text,
-                            collector,
-                            sender_id,
-                            input_channel=input_channel,
-                            metadata=metadata,
-                            headers=request.headers,
-                        )
-                    )
-                except CancelledError:
-                    structlogger.error(
-                        "rest.message.received.timeout", text=copy.deepcopy(text)
-                    )
-                except Exception:
-                    structlogger.exception(
-                        "rest.message.received.failure", text=copy.deepcopy(text)
-                    )
-
-                return response.json(collector.messages)
+        async def receive(request: Request) -> Union[ResponseStream, BaseHTTPResponse]:
+            return await self.receive_messages(request, on_new_message)
 
         return custom_webhook
 

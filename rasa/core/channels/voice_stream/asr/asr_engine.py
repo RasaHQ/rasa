@@ -1,0 +1,71 @@
+from dataclasses import dataclass
+from typing import Dict, AsyncIterator, Any, Generic, Optional, Type, TypeVar
+
+from websockets.legacy.client import WebSocketClientProtocol
+
+from rasa.core.channels.voice_stream.asr.asr_event import ASREvent
+from rasa.core.channels.voice_stream.audio_bytes import RasaAudioBytes
+from rasa.core.channels.voice_stream.util import MergeableConfig
+from rasa.shared.exceptions import ConnectionException
+
+T = TypeVar("T", bound="ASREngineConfig")
+E = TypeVar("E", bound="ASREngine")
+
+
+@dataclass
+class ASREngineConfig(MergeableConfig):
+    pass
+
+
+class ASREngine(Generic[T]):
+    def __init__(self, config: Optional[T] = None):
+        self.config = self.get_default_config().merge(config)
+        self.asr_socket: Optional[WebSocketClientProtocol] = None
+
+    async def connect(self) -> None:
+        self.asr_socket = await self.open_websocket_connection()
+
+    async def open_websocket_connection(self) -> WebSocketClientProtocol:
+        """Connect to the ASR system."""
+        raise NotImplementedError
+
+    @classmethod
+    def from_config_dict(cls: Type[E], config: Dict) -> E:
+        raise NotImplementedError
+
+    async def close_connection(self) -> None:
+        if self.asr_socket:
+            await self.asr_socket.close()
+
+    async def signal_audio_done(self) -> None:
+        """Signal to the ASR Api that you are done sending data."""
+        raise NotImplementedError
+
+    async def send_audio_chunks(self, chunk: RasaAudioBytes) -> None:
+        """Send audio chunks to the ASR system via the websocket."""
+        if self.asr_socket is None:
+            raise ConnectionException("Websocket not connected.")
+        engine_bytes = self.rasa_audio_bytes_to_engine_bytes(chunk)
+        await self.asr_socket.send(engine_bytes)
+
+    def rasa_audio_bytes_to_engine_bytes(self, chunk: RasaAudioBytes) -> bytes:
+        """Convert RasaAudioBytes to bytes usable by this engine."""
+        raise NotImplementedError
+
+    async def stream_asr_events(self) -> AsyncIterator[ASREvent]:
+        """Stream the events returned by the ASR system as it is fed audio bytes."""
+        if self.asr_socket is None:
+            raise ConnectionException("Websocket not connected.")
+        async for message in self.asr_socket:
+            asr_event = self.engine_event_to_asr_event(message)
+            if asr_event:
+                yield asr_event
+
+    def engine_event_to_asr_event(self, e: Any) -> Optional[ASREvent]:
+        """Translate an engine event to a common ASREvent."""
+        raise NotImplementedError
+
+    @staticmethod
+    def get_default_config() -> T:
+        """Get the default config for this component."""
+        raise NotImplementedError

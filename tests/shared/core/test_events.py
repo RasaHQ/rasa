@@ -61,6 +61,7 @@ from rasa.shared.core.events import (
     FlowCancelled,
     DialogueStackUpdated,
     RoutingSessionEnded,
+    SessionEnded,
 )
 from rasa.shared.nlu.constants import INTENT_NAME_KEY, METADATA_MODEL_ID
 from tests.core.policies.test_rule_policy import GREET_INTENT_NAME, UTTER_GREET_ACTION
@@ -862,6 +863,7 @@ tested_events = [
     FlowCompleted("foo", "bar"),
     FlowCancelled("foo", "bar"),
     RoutingSessionEnded(),
+    SessionEnded(metadata={"reason": "call disconnected"}),
 ]
 
 

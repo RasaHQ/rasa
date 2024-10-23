@@ -13,7 +13,7 @@ export const LoadingSpinner = () => {
         size="lg"
         mb={rasaSpace[1]}
       />
-      <Text>Loading</Text>
+      <Text fontSize="lg">waiting for a new conversation</Text>
     </Center>
   );
 };

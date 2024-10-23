@@ -25,6 +25,7 @@ from rasa.shared.core.trackers import (
     EventVerbosity,
 )
 
+
 try:
     from urlparse import urljoin
 except ImportError:
@@ -61,7 +62,7 @@ class UserMessage:
             input_channel: the name of the channel which received this message.
             message_id: ID of the message.
             metadata: additional metadata for this message.
-
+            **kwargs: additional arguments which will be included in the message.
         """
         self.text = text.strip() if text else text
 
@@ -235,7 +236,11 @@ class OutputChannel:
         """Attaches the current tracker state to the output channel."""
         self.tracker_state = tracker.current_state(EventVerbosity.AFTER_RESTART)
 
-    async def send_response(self, recipient_id: Text, message: Dict[Text, Any]) -> None:
+    async def send_response(
+        self,
+        recipient_id: Text,
+        message: Dict[Text, Any],
+    ) -> None:
         """Send a message to the client."""
         if message.get("quick_replies"):
             await self.send_quick_replies(
@@ -267,7 +272,10 @@ class OutputChannel:
             await self.send_elements(recipient_id, message.pop("elements"), **message)
 
     async def send_text_message(
-        self, recipient_id: Text, text: Text, **kwargs: Any
+        self,
+        recipient_id: Text,
+        text: Text,
+        **kwargs: Any,
     ) -> None:
         """Send a message through this channel."""
         raise NotImplementedError(
@@ -319,6 +327,7 @@ class OutputChannel:
         self, recipient_id: Text, elements: Iterable[Dict[Text, Any]], **kwargs: Any
     ) -> None:
         """Sends elements to the output.
+
         Default implementation will just post the elements as a string.
         """
         for element in elements:
@@ -333,9 +342,14 @@ class OutputChannel:
         self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
     ) -> None:
         """Sends json dict to the output channel.
+
         Default implementation will just post the json contents as a string.
         """
         await self.send_text_message(recipient_id, json.dumps(json_message))
+
+    async def hangup(self, recipient_id: Text, **kwargs: Any) -> None:
+        """Indicate that the conversation should be ended."""
+        pass
 
 
 class CollectingOutputChannel(OutputChannel):
@@ -385,7 +399,10 @@ class CollectingOutputChannel(OutputChannel):
         self.messages.append(message)
 
     async def send_text_message(
-        self, recipient_id: Text, text: Text, **kwargs: Any
+        self,
+        recipient_id: Text,
+        text: Text,
+        **kwargs: Any,
     ) -> None:
         for message_part in text.strip().split("\n\n"):
             await self._persist_message(self._message(recipient_id, text=message_part))

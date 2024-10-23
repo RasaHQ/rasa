@@ -32,6 +32,7 @@ from rasa.dialogue_understanding.commands.change_flow_command import ChangeFlowC
 from rasa.dialogue_understanding.commands.session_start_command import (
     SessionStartCommand,
 )
+from rasa.dialogue_understanding.commands.session_end_command import SessionEndCommand
 
 __all__ = [
     "Command",
@@ -51,5 +52,6 @@ __all__ = [
     "NoopCommand",
     "ChangeFlowCommand",
     "SessionStartCommand",
+    "SessionEndCommand",
     "RestartCommand",
 ]

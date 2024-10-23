@@ -5,13 +5,24 @@ export interface Slot {
 }
 
 export interface Event {
-  event: "user" | "bot";
+  event: "user" | "bot" | "flow_completed" | "flow_started" | "stack" | "restart";
   text?: string;
+  timestamp: string;
+  update?: string;
+  parse_data?: { commands: Command[] };
   metadata?: { utter_action?: string };
+}
+
+export interface Command {
+  command: string;
+  flow?: string;
+  name?: string;
+  value?: string;
 }
 
 export interface SelectedStack {
   stack: Stack;
+  activatedSteps: string[];
   isUserSelected: boolean;
 }
 
@@ -21,7 +32,16 @@ export interface Stack {
   step_id: string;
   collect?: string;
   utter?: string;
+  ended: boolean;
 }
+
+export interface Tracker {
+  sender_id: string;
+  slots: { [key: string]: unknown };
+  events: Event[];
+  stack: Stack[];
+}
+
 
 export interface Flow {
   id: string;

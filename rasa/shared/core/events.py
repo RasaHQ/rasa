@@ -2528,3 +2528,32 @@ class FlowCancelled(SkipEventInMDStoryMixin):
             )
         except KeyError as e:
             raise ValueError(f"Failed to parse flow_cancelled event. {e}")
+
+
+class SessionEnded(AlwaysEqualEventMixin):
+    """Mark the end of a conversation session."""
+
+    type_name = "session_ended"
+
+    def __hash__(self) -> int:
+        """Returns unique hash for event."""
+        return hash(32143124321)
+
+    def __repr__(self) -> Text:
+        """Returns event as string for debugging."""
+        return f"SessionEnded(type_name: {self.type_name})"
+
+    def __str__(self) -> Text:
+        """Returns event as human-readable string."""
+        return f"{self.__class__.__name__}({self.type_name})"
+
+    def as_story_string(self) -> None:
+        """Skips representing event in stories."""
+        logger.warning(
+            f"'{self.type_name}' events cannot be serialised as story strings."
+        )
+
+    def apply_to(self, tracker: "DialogueStateTracker") -> None:
+        """Applies event to current conversation state."""
+        # noinspection PyProtectedMember
+        tracker._reset()

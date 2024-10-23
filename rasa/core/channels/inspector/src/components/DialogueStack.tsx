@@ -14,13 +14,13 @@ import {
   Tooltip,
 } from "@chakra-ui/react";
 import { useOurTheme } from "../theme";
-import { SelectedStack, Stack } from "../types";
+import { Stack } from "../types";
 import { shouldShowTooltip } from "../helpers/utils";
 
 interface Props extends FlexProps {
   stack: Stack[];
   active?: Stack;
-  onItemClick?: (selectedStack: SelectedStack) => void;
+  onItemClick?: (stack: Stack) => void;
 }
 
 function StackRow({
@@ -32,15 +32,8 @@ function StackRow({
   stack: Stack;
   highlighted?: boolean;
   selectable?: boolean;
-  onItemClick?: (selectedStack: SelectedStack) => void;
+  onItemClick?: (stack: Stack) => void;
 }) {
-  const { rasaFontSizes } = useOurTheme();
-
-  const idSx = {
-    fontSize: rasaFontSizes.xs,
-    textTransform: "uppercase",
-  };
-
   // use pointy hand cursor when hovering over a row
   const clickableTrSx = {
     _hover: {
@@ -62,19 +55,12 @@ function StackRow({
   return (
     <Tr
       sx={highlighted ? highlightedTrSx : selectable ? clickableTrSx : undefined}
-      onClick={() => onItemClick?.({stack: stack, isUserSelected: true})}
+      onClick={() => onItemClick?.(stack)}
     >
-      <Td sx={idSx}>
-        <Text noOfLines={1}>{stack.frame_id}</Text>
-      </Td>
       <Td>
-        {shouldShowTooltip(stack.flow_id) ? (
-          <Tooltip label={stack.flow_id} hasArrow>
-            <Text noOfLines={1}>{stack.flow_id}</Text>
-          </Tooltip>
-        ) : (
+        <Tooltip label={`${stack.flow_id} (${stack.frame_id})`} hasArrow>
           <Text noOfLines={1}>{stack.flow_id}</Text>
-        )}
+        </Tooltip>
       </Td>
       <Td>
         {shouldShowTooltip(stack.step_id) ? (
@@ -115,17 +101,16 @@ export const DialogueStack = ({
     <Flex sx={containerSx} {...props}>
       <Flex>
         <Heading size="lg" mb={rasaSpace[0.5]}>
-          Stack
+          History
         </Heading>
-        <Text ml={rasaSpace[0.25]}>({stack.length} frames)</Text>
+        <Text ml={rasaSpace[0.25]}>({stack.length} flows)</Text>
       </Flex>
       <Box sx={overflowBox}>
         <Table width="100%" layout="fixed">
           <Thead>
             <Tr>
-              <Th width="20%">ID</Th>
               <Th>Flow</Th>
-              <Th width="30%">Step ID</Th>
+              <Th width="40%">Step ID</Th>
             </Tr>
           </Thead>
           <Tbody>
@@ -141,7 +126,7 @@ export const DialogueStack = ({
                   />
                 ))}
             {stack.length === 0 && (
-              <StackRow stack={{ frame_id: "-", flow_id: "-", step_id: "-" }} />
+              <StackRow stack={{ frame_id: "-", flow_id: "-", step_id: "-", ended: false }} />
             )}
           </Tbody>
         </Table>

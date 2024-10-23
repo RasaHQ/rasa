@@ -1,0 +1,13 @@
+from dataclasses import dataclass
+
+
+@dataclass
+class ASREvent:
+    @classmethod
+    def name(cls) -> str:
+        return cls.__name__
+
+
+@dataclass
+class NewTranscript(ASREvent):
+    text: str

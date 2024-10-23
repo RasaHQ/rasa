@@ -145,6 +145,9 @@ PATH_PYTEST_MARKER_MAPPINGS = {
         Path("tests", "core", "test_examples.py").absolute(),
     ],
     "category_performance": [Path("tests", "test_memory_leak.py").absolute()],
+    "category_audio_manual": [
+        Path("tests", "core", "channels", "voice_stream").absolute()
+    ],
 }
 
 
@@ -279,6 +282,11 @@ def e2e_story_file_trips_circuit_breaker_path() -> Text:
 @pytest.fixture(scope="session")
 def endpoints_path() -> Text:
     return "data/test_endpoints/example_endpoints.yml"
+
+
+@pytest.fixture(scope="session")
+def audio_data_path() -> str:
+    return "data/test_audio"
 
 
 # https://github.com/pytest-dev/pytest-asyncio/issues/68

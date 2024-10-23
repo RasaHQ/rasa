@@ -20,7 +20,7 @@ A rapid prototyping tool for enterprise developer personas working in Rasa Pro b
 - install a local version of the rasa-pro package
 - run `yarn build:watch` in the `/inspector` folder (this will watch over the React project and re-build it when necessary)
 - run `rasa inspect`
-- head to [http://localhost:5005/webhooks/inspector/inspect.html](http://localhost:5005/webhooks/inspector/inspect.html) - The page needs to be manually refreshed at every build
+- head to [http://localhost:5005/webhooks/socketio/inspect.html](http://localhost:5005/webhooks/socketio/inspect.html) - The page needs to be manually refreshed at every build
 - engage with the assistant
 
 ### Building the project
