@@ -4,9 +4,13 @@ from litellm import (
     atext_completion,
 )
 import logging
+import os
 import structlog
 
-from rasa.shared.constants import OPENAI_PROVIDER
+from rasa.shared.constants import (
+    SELF_HOSTED_VLLM_PREFIX,
+    SELF_HOSTED_VLLM_API_KEY_ENV_VAR,
+)
 from rasa.shared.providers._configs.self_hosted_llm_client_config import (
     SelfHostedLLMClientConfig,
 )
@@ -57,6 +61,7 @@ class SelfHostedLLMClient(_BaseLiteLLMClient):
         self._api_version = api_version
         self._use_chat_completions_endpoint = use_chat_completions_endpoint
         self._extra_parameters = kwargs or {}
+        self._apply_dummy_api_key_if_missing()
 
     @classmethod
     def from_config(cls, config: Dict[str, Any]) -> "SelfHostedLLMClient":
@@ -157,8 +162,8 @@ class SelfHostedLLMClient(_BaseLiteLLMClient):
 
         <openai>/<model or deployment name>
         """
-        if self.model and f"{OPENAI_PROVIDER}/" not in self.model:
-            return f"{OPENAI_PROVIDER}/{self.model}"
+        if self.model and f"{SELF_HOSTED_VLLM_PREFIX}/" not in self.model:
+            return f"{SELF_HOSTED_VLLM_PREFIX}/{self.model}"
         return self.model
 
     @property
@@ -279,3 +284,10 @@ class SelfHostedLLMClient(_BaseLiteLLMClient):
             formatted_response=formatted_response.to_dict(),
         )
         return formatted_response
+
+    @staticmethod
+    def _apply_dummy_api_key_if_missing() -> None:
+        if not os.getenv(SELF_HOSTED_VLLM_API_KEY_ENV_VAR):
+            os.environ[SELF_HOSTED_VLLM_API_KEY_ENV_VAR] = (
+                "dummy_self_hosted_llm_api_key"
+            )
