@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from typing import Dict, List, Any, Union
-
 import logging
+
 import structlog
 from litellm import (
     completion,
@@ -29,8 +29,7 @@ logging.getLogger("LiteLLM").setLevel(logging.WARNING)
 
 
 class _BaseLiteLLMClient:
-    """
-    An abstract base class for LiteLLM clients.
+    """An abstract base class for LiteLLM clients.
 
     This class defines the interface and common functionality for all clients
     based on LiteLLM.
@@ -132,14 +131,15 @@ class _BaseLiteLLMClient:
 
     @suppress_logs(log_level=logging.WARNING)
     def completion(self, messages: Union[List[str], str]) -> LLMResponse:
-        """
-        Synchronously generate completions for given list of messages.
+        """Synchronously generate completions for given list of messages.
 
         Args:
             messages: List of messages or a single message to generate the
                 completion for.
+
         Returns:
             List of message completions.
+
         Raises:
             ProviderClientAPIException: If the API request fails.
         """
@@ -154,14 +154,15 @@ class _BaseLiteLLMClient:
 
     @suppress_logs(log_level=logging.WARNING)
     async def acompletion(self, messages: Union[List[str], str]) -> LLMResponse:
-        """
-        Asynchronously generate completions for given list of messages.
+        """Asynchronously generate completions for given list of messages.
 
         Args:
             messages: List of messages or a single message to generate the
                 completion for.
+
         Returns:
             List of message completions.
+
         Raises:
             ProviderClientAPIException: If the API request fails.
         """
@@ -172,7 +173,23 @@ class _BaseLiteLLMClient:
             )
             return self._format_response(response)
         except Exception as e:
-            raise ProviderClientAPIException(e)
+            message = ""
+            from rasa.shared.providers.llm.self_hosted_llm_client import (
+                SelfHostedLLMClient,
+            )
+
+            if isinstance(self, SelfHostedLLMClient):
+                message = (
+                    "If you are using 'provider=self-hosted' to call a hosted vllm "
+                    "server make sure your config is correctly setup. You should have "
+                    "the following mandatory keys in your config: "
+                    "provider=self-hosted; "
+                    "model='<your-vllm-model-name>'; "
+                    "api_base='your-hosted-vllm-serv'."
+                    "In case you are getting OpenAI connection errors, such as missing "
+                    "API key, your configuration is incorrect."
+                )
+            raise ProviderClientAPIException(e, message)
 
     def _format_messages(self, messages: Union[List[str], str]) -> List[Dict[str, str]]:
         """Formats messages (or a single message) to OpenAI format."""
@@ -216,8 +233,7 @@ class _BaseLiteLLMClient:
 
     @staticmethod
     def _ensure_certificates() -> None:
-        """
-        Configures SSL certificates for LiteLLM. This method is invoked during
+        """Configures SSL certificates for LiteLLM. This method is invoked during
         client initialization.
 
         LiteLLM may utilize `openai` clients or other providers that require
