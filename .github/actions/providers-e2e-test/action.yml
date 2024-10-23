@@ -48,7 +48,7 @@ runs:
         token: ${{ inputs.rasa-calm-demo-read-token }}
 
     - name: Setup Python Environment
-      uses: RasaHQ/rasa-private/.github/actions/setup-python-env
+      uses: RasaHQ/rasa-private/.github/actions/setup-python-env@main
       with:
         PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
 
