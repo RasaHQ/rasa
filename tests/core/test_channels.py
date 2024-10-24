@@ -718,4 +718,3 @@ def test_set_console_stream_reading_timeout(monkeypatch: MonkeyPatch):
     monkeypatch.setenv(console.STREAM_READING_TIMEOUT_ENV, str(100))
 
     assert console._get_stream_reading_timeout() == ClientTimeout(expected)
-    
