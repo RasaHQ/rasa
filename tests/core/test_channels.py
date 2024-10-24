@@ -28,6 +28,7 @@ from rasa.core.channels.telegram import TelegramOutput
 from rasa.shared.exceptions import RasaException
 from rasa.utils.endpoints import EndpointConfig
 from tests.core import utilities
+
 # this is needed so that the tests included as code examples look better
 from tests.utilities import json_of_latest_request, latest_request
 
