@@ -1,21 +1,21 @@
 # file deepcode ignore HardcodedNonCryptoSecret/test: Secrets are all just examples for tests. # noqa: E501
 
 import logging
-
-import jwt
 from typing import Dict
 from unittest.mock import patch, MagicMock
 
+import jwt
 import pytest
 from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 from aiogram.exceptions import TelegramAPIError
+from aiogram.methods import TelegramMethod
 from aiohttp import ClientTimeout
 from aioresponses import aioresponses
 from sanic import Sanic
 
-import rasa.core.run
 import rasa.core.channels.channel
+import rasa.core.run
 from rasa.core import utils
 from rasa.core.channels import RasaChatInput, console
 from rasa.core.channels.channel import UserMessage
@@ -28,7 +28,6 @@ from rasa.core.channels.telegram import TelegramOutput
 from rasa.shared.exceptions import RasaException
 from rasa.utils.endpoints import EndpointConfig
 from tests.core import utilities
-
 # this is needed so that the tests included as code examples look better
 from tests.utilities import json_of_latest_request, latest_request
 
@@ -298,7 +297,7 @@ def test_telegram_channel_raise_rasa_exception_webhook_not_set(
     monkeypatch.setattr(
         rasa.core.channels.telegram.TelegramOutput,
         "set_webhook",
-        MagicMock(side_effect=TelegramAPIError("Error from Telegram.")),
+        MagicMock(side_effect=TelegramAPIError(TelegramMethod, "Error from Telegram.")),
     )
 
     with pytest.raises(RasaException) as e:
