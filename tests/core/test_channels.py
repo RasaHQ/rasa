@@ -9,7 +9,7 @@ from unittest.mock import patch, MagicMock
 import pytest
 from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
-from aiogram.utils.exceptions import TelegramAPIError
+from aiogram.exceptions import TelegramAPIError
 from aiohttp import ClientTimeout
 from aioresponses import aioresponses
 from sanic import Sanic

@@ -14,7 +14,7 @@ from aiogram.types import (
     ReplyKeyboardMarkup,
     Message,
 )
-from aiogram.utils.exceptions import TelegramAPIError
+from aiogram.exceptions import TelegramAPIError
 from typing import Dict, Text, Any, List, Optional, Callable, Awaitable
 
 from rasa.core.channels.channel import InputChannel, UserMessage, OutputChannel
