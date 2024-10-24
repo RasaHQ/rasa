@@ -127,6 +127,7 @@ ACTION_REVERTED = {"properties": {"event": {"const": "undo"}}}
 USER_UTTERANCE_REVERTED = {"properties": {"event": {"const": "rewind"}}}
 BOT_UTTERED = {"properties": {"event": {"const": "bot"}}}
 SESSION_STARTED = {"properties": {"event": {"const": "session_started"}}}
+SESSION_ENDED = {"properties": {"event": {"const": "session_ended"}}}
 AGENT_UTTERED = {"properties": {"event": {"const": "agent"}}}
 FLOW_STARTED = {
     "properties": {"event": {"const": "flow_started"}, "flow_id": {"type": "string"}}
@@ -206,6 +207,7 @@ EVENT_SCHEMA = {
         FLOW_CANCELLED,
         DIALOGUE_STACK_UPDATED,
         ROUTING_SESSION_ENDED,
+        SESSION_ENDED,
     ],
 }
 

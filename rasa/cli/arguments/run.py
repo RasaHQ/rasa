@@ -22,6 +22,7 @@ def set_run_arguments(parser: argparse.ArgumentParser) -> None:
     """Arguments for running Rasa directly using `rasa run`."""
     add_model_param(parser)
     add_server_arguments(parser)
+    add_inspect_argument(parser)
     add_skip_validation_flag(parser)
 
 
@@ -56,6 +57,18 @@ def add_port_argument(
         default=constants.DEFAULT_SERVER_PORT,
         type=int,
         help="Port to run the server at.",
+    )
+
+
+# noinspection PyProtectedMember
+def add_inspect_argument(
+    parser: Union[argparse.ArgumentParser, argparse._ArgumentGroup],
+) -> None:
+    """Add an argument for port."""
+    parser.add_argument(
+        "--inspect",
+        action="store_true",
+        help="Run development inspector alongside the assistant.",
     )
 
 

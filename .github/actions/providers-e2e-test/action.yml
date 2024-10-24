@@ -1,0 +1,165 @@
+name: E2E Test on Rasa-Calm-Demo with supported providers
+description: Runs E2E Test on `Rasa-Calm-Demo` bot with supported providers
+
+inputs:
+  provider:
+    # In-case provider only has supported model for one
+    # (for e.g. only chat-completion), then default OpenAI
+    # would be used for the other
+    description: LLM chat-completion and Embeddings model provider
+    required: true
+    default: all # Run e2e-test on all providers by default
+
+  rasa-calm-demo-branch:
+    description: Branch to checkout for `rasa-calm-demo`
+    required: true
+    default: main
+
+  e2e-test-with-assertions:
+    description: Path to test file, on `rasa-calm-demo` repository
+    required: true
+    default: e2e_tests_with_assertions/passing/happy_path/user_adds_contact_to_their_list.yml
+
+  rasa-calm-demo-read-token:
+    description: 'Token to enable read access to `rasa-calm-demo` repository'
+    required: true
+
+  rasa-pro-license:
+    description: 'RASA-Pro license'
+    required: true
+
+  duckling-url:
+    description: 'Duckling server URL'
+    required: true
+
+  slack-bot-token:
+    description: 'Token to enable sending Slack notifications'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout git repository 🕝
+      uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+      with:
+        repository: RasaHQ/rasa-calm-demo
+        ref: ${{ inputs.rasa-calm-demo-branch || 'main' }}
+        path: rasa-calm-demo
+        token: ${{ inputs.rasa-calm-demo-read-token }}
+
+    - name: Setup Python Environment
+      uses: RasaHQ/rasa-private/.github/actions/setup-python-env@main
+      with:
+        PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+
+    - name: Train model - SingleStepCommandGenerator
+      env:
+        RASA_PRO_LICENSE: ${{ inputs.rasa-pro-license }}
+        RASA_PRO_BETA_INTENTLESS: true
+      run: |
+        rasa train \
+        --config data/test_config/providers/${{ matrix.provider }}/config.yml \
+        --endpoints data/test_config/providers/${{ matrix.provider }}/endpoints.yml \
+        --domain rasa-calm-demo/domain \
+        --data rasa-calm-demo/data
+      shell: bash
+
+    - name: Run duckling server
+      working-directory: rasa-calm-demo
+      run: |
+        make run-duckling
+      shell: bash
+
+    - name: Run action server
+      env:
+        RASA_PRO_LICENSE: ${{ inputs.rasa-pro-license }}
+        RASA_DUCKLING_HTTP_URL: ${{ inputs.duckling-url }}
+        RASA_PRO_BETA_INTENTLESS: true
+      working-directory: rasa-calm-demo
+      run: |
+        rasa run actions &
+      shell: bash
+
+    - name: Make test results directory
+      working-directory: rasa-calm-demo
+      run: |
+        mkdir tests
+      shell: bash
+
+    - name: Run e2e passing happy path test (Single Step Command Generator)
+      env:
+        RASA_PRO_LICENSE: ${{ inputs.rasa-pro-license }}
+        RASA_DUCKLING_HTTP_URL: ${{ inputs.duckling-url }}
+        RASA_PRO_BETA_INTENTLESS: true
+      working-directory: rasa-calm-demo
+      run: |
+        rasa test e2e e2e_tests_with_assertions/passing/happy_path/user_adds_contact_to_their_list.yml \
+        --e2e-results \
+        --endpoints ../data/test_config/providers/${{ matrix.provider }}/endpoints.yml \
+        --model ../models
+      shell: bash
+
+    - name: Save SingleStepCommandGenerator test results
+      if: failure()
+      uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
+      with:
+        name: ${{ matrix.provider }}-E2E-test-SingleStepCommandGenerator-results
+        path: rasa-calm-demo/tests
+
+    - name: Train model - MultiStepCommandGenerator
+      env:
+        RASA_PRO_LICENSE: ${{ inputs.rasa-pro-license }}
+        RASA_PRO_BETA_INTENTLESS: true
+      run: |
+        rasa train \
+        --config data/test_config/providers/${{ matrix.provider }}/multistep-config.yml \
+        --endpoints data/test_config/providers/${{ matrix.provider }}/endpoints.yml \
+        --domain rasa-calm-demo/domain \
+        --data rasa-calm-demo/data
+      shell: bash
+
+    - name: Run e2e passing happy path test (Multi-Step Command Generator)
+      env:
+        RASA_PRO_LICENSE: ${{ inputs.rasa-pro-license }}
+        RASA_DUCKLING_HTTP_URL: ${{ inputs.duckling-url }}
+        RASA_PRO_BETA_INTENTLESS: true
+      working-directory: rasa-calm-demo
+      run: |
+        rasa test e2e ${{ inputs.e2e-test-with-assertions || 'e2e_tests_with_assertions/passing/happy_path/user_adds_contact_to_their_list.yml' }} \
+        --e2e-results \
+        --endpoints ../data/test_config/providers/${{ matrix.provider }}/endpoints.yml \
+        --model ../models
+      shell: bash
+
+    - name: Save MultiStepCommandGenerator test results
+      if: failure()
+      uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
+      with:
+        name: ${{ matrix.provider }}-E2E-test-MultiStepCommandGenerator-results
+        path: rasa-calm-demo/tests
+
+    - name: Notify Slack of successful test 💬
+      if: success()
+      uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 #v 1.25.0
+      with:
+        # Send notication to #dev-tribe-alerts slack channel
+        channel-id: C070ELPSLBB
+        slack-message: ':rocket: *Rasa-Pro* (`rasa-private` sha `${{ github.sha }}`)
+          CALM E2E test passed against provider: `${{ matrix.provider }}`. More
+          information can be found <https://github.com/${{ github.repository
+          }}/actions/runs/${{ github.run_id }}|here>.'
+      env:
+        SLACK_BOT_TOKEN: ${{ inputs.slack-bot-token }}
+
+    - name: Notify Slack of failing test ⛔️
+      if: failure()
+      uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 #v 1.25.0
+      with:
+        # Send notication to #dev-tribe-alerts slack channel
+        channel-id: C070ELPSLBB
+        slack-message: ':broken_heart: *Rasa-Pro* (`rasa-private` sha `${{ github.sha
+          }}`) CALM E2E test failed against provider: `${{ matrix.provider }}`!
+          More information can be found <https://github.com/${{
+          github.repository }}/actions/runs/${{ github.run_id }}|here>.'
+      env:
+        SLACK_BOT_TOKEN: ${{ inputs.slack-bot-token }}

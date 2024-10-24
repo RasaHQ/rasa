@@ -112,6 +112,7 @@ def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["A
     from rasa.core.actions.action_trigger_chitchat import ActionTriggerChitchat
     from rasa.core.actions.action_trigger_search import ActionTriggerSearch
     from rasa.core.actions.two_stage_fallback import TwoStageFallbackAction
+    from rasa.core.actions.action_hangup import ActionHangup
     from rasa.dialogue_understanding.patterns.cancel import ActionCancelFlow
     from rasa.dialogue_understanding.patterns.clarify import ActionClarifyFlows
     from rasa.dialogue_understanding.patterns.correction import ActionCorrectFlowSlot
@@ -138,6 +139,7 @@ def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["A
         ActionTriggerSearch(),
         ActionTriggerChitchat(),
         ActionResetRouting(),
+        ActionHangup(),
     ]
 
 

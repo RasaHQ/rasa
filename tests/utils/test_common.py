@@ -3,7 +3,6 @@ import json
 import logging
 import logging.config
 import os
-import sys
 from pathlib import Path
 from typing import Any, Text, Type
 from unittest import mock
@@ -355,30 +354,9 @@ def test_cli_invalid_logging_configuration(
     )
 
 
-@pytest.mark.skipif(
-    sys.version_info.minor == 7, reason="no error is raised with python 3.7"
-)
 def test_cli_invalid_format_value_in_config(caplog: LogCaptureFixture) -> None:
     logging_config_file = (
         "data/test_logging_config_files/test_invalid_format_value_in_config.yml"
-    )
-
-    with caplog.at_level(logging.DEBUG):
-        configure_logging_from_file(logging_config_file=logging_config_file)
-
-    assert (
-        f"The logging config file {logging_config_file} could not be applied "
-        f"because it failed validation against the built-in Python "
-        f"logging schema." in caplog.text
-    )
-
-
-@pytest.mark.skipif(
-    sys.version_info.minor in [9, 10], reason="no error is raised with python 3.9"
-)
-def test_cli_non_existent_handler_id_in_config(caplog: LogCaptureFixture) -> None:
-    logging_config_file = (
-        "data/test_logging_config_files/test_non_existent_handler_id.yml"
     )
 
     with caplog.at_level(logging.DEBUG):

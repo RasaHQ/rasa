@@ -857,6 +857,7 @@ def test_domain_from_multiple_files():
         "run_finished",
         "selection_troubleshooting",
         "self_selection",
+        "session_end",
         "session_start",
         "thanks",
         "unsure_selection_scaffold",

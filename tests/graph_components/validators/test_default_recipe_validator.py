@@ -29,7 +29,6 @@ from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.extractors.regex_entity_extractor import RegexEntityExtractor
 from rasa.nlu.extractors.crf_entity_extractor import (
     CRFEntityExtractor,
-    CRFEntityExtractorOptions,
 )
 from rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer import (
     LexicalSyntacticFeaturizer,
@@ -387,10 +386,10 @@ def test_nlu_warn_if_lookup_table_and_crf_extractor_pattern_feature_mismatch(
 
     if warns:
         match = (
-            f"You have defined training data consisting of lookup tables, "
-            f"but your NLU configuration's "
-            f"'{CRFEntityExtractor.__name__}' does not include the "
-            f"'{CRFEntityExtractorOptions.PATTERN}' feature"
+            "You have defined training data consisting of lookup tables, "
+            "but your NLU configuration's "
+            "'CRFEntityExtractor' does not include the "
+            "'pattern' feature"
         )
 
         with pytest.warns(UserWarning, match=match):

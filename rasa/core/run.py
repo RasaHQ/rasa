@@ -19,6 +19,7 @@ from typing import (
 
 from sanic import Sanic
 from sanic.worker.loader import AppLoader
+from rasa.core.channels.development_inspector import DevelopmentInspectProxy
 
 import rasa.core.utils
 import rasa.shared.utils.common
@@ -224,12 +225,20 @@ def serve_application(
     syslog_protocol: Optional[Text] = None,
     request_timeout: Optional[int] = None,
     server_listeners: Optional[List[Tuple[Callable, Text]]] = None,
+    inspect: Optional[bool] = False,
 ) -> None:
     """Run the API entrypoint."""
     if not channel and not credentials:
         channel = "cmdline"
 
     input_channels = create_http_input_channels(channel, credentials)
+
+    if inspect:
+        logger.info("Starting development inspector.")
+        input_channels = [DevelopmentInspectProxy(ic) for ic in input_channels]
+
+        # the inspector needs the api to retrieve slots and flows
+        enable_api = True
 
     app = configure_app(
         input_channels,

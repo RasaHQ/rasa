@@ -6,7 +6,6 @@ import {
   useToast,
 } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
-import { useInterval } from "usehooks-ts";
 import axios from "axios";
 import { useOurTheme } from "./theme";
 import { Welcome } from "./components/Welcome";
@@ -15,12 +14,15 @@ import { DialougeInformation } from "./components/DialogueInformation";
 import { LoadingSpinner } from "./components/LoadingSpinner";
 import { DiagramFlow } from "./components/DiagramFlow";
 import { formatSlots } from "./helpers/formatters";
-import { Slot, Stack, Event, Flow, SelectedStack } from "./types";
-import { updatedActiveFrame } from "./helpers/utils";
-
-const storyController = new AbortController();
-const trackerController = new AbortController();
-const pollingInterval = 1000;
+import { Slot, Stack, Event, Flow, SelectedStack, Tracker } from "./types";
+import {
+  createHistoricalStack,
+  flowStepTrail,
+  updatedActiveFrame,
+} from "./helpers/utils";
+import queryString from "query-string";
+import { Chat } from "./components/Chat";
+import useWebSocket, { ReadyState } from "react-use-websocket";
 
 export function App() {
   const toast = useToast();
@@ -32,6 +34,48 @@ export function App() {
   const [story, setStory] = useState<string>("");
   const [stack, setStack] = useState<Stack[]>([]);
   const [frame, setFrame] = useState<SelectedStack | undefined>(undefined);
+
+  // we only show the transcript if we are not on the socket io channel
+  // on the socketio channel, we show the chat component instead
+  const shouldShowTranscript = !window.location.href.includes("socketio");
+
+  const inspectWS = window.location.href
+    .replace("inspect.html", "tracker_stream")
+    .replace("http", "ws");
+  const { sendJsonMessage, lastJsonMessage, readyState } =
+    useWebSocket<Tracker>(inspectWS, {
+      share: false,
+      shouldReconnect: () => true,
+    });
+
+  useEffect(() => {
+    if (readyState === ReadyState.OPEN && rasaChatSessionId) {
+      sendJsonMessage({
+        action: "retrieve",
+        sender_id: rasaChatSessionId,
+      });
+    }
+  }, [readyState, sendJsonMessage, rasaChatSessionId]);
+
+  useEffect(() => {
+    // if we are on a "dynamic" input channel where the user can chat on
+    // the inspector page, these chat-uis (rasa chat, vortex chat) don't
+    // support loading an existing conversation. therefore, we don't set
+    // the sender id in the url and a reload of the page will start a new
+    // conversation.
+    if(!shouldShowTranscript) return;
+
+    const queryParameters = queryString.parse(window.location.search);
+    const urlSender = queryParameters.sender as string;
+    if (urlSender && urlSender !== rasaChatSessionId) {
+      setRasaChatSessionId(urlSender);
+    } else if (!urlSender && rasaChatSessionId) {
+      // update the sender query parameter
+      const url = new URL(window.location.href);
+      url.searchParams.set("sender", rasaChatSessionId);
+      window.history.pushState(null, "", url.toString());
+    }
+  }, [rasaChatSessionId, shouldShowTranscript]);
 
   useEffect(() => {
     axios
@@ -51,66 +95,54 @@ export function App() {
       });
   }, [toast]);
 
-  // `rasaChatSessionId` is set by @rasahq/rasa-chat on the window object 😞
-  // Since we can't control when that happens, we need to poll for it.
-  useInterval(
-    () => setRasaChatSessionId(window?.rasaChatSessionId || ""),
-    // null means: stop polling. We stop polling once we retrieve `rasaChatSessionId`
-    rasaChatSessionId ? null : 1000
-  );
-
-  useInterval(
-    () => {
-      if (!rasaChatSessionId) return;
-      storyController.abort();
-      axios
-        .get(`/conversations/${rasaChatSessionId}/story`)
-        .then((response) => setStory(response.data))
-        .catch((error) => {
-          // don't show a new toast if it's already active
-          if (toast.isActive("story-error")) return;
-          toast({
-            id: "story-error",
-            title: "Stories could not be retrieved",
-            description: error?.message || "An unknown error happened.",
-            status: "error",
-            duration: 4000,
-            isClosable: true,
-          });
+  function fetchStory() {
+    axios
+      .get(`/conversations/${rasaChatSessionId}/story`)
+      .then((response) => setStory(response.data))
+      .catch((error) => {
+        // don't show a new toast if it's already active
+        if (toast.isActive("story-error")) return;
+        toast({
+          id: "story-error",
+          title: "Stories could not be retrieved",
+          description: error?.message || "An unknown error happened.",
+          status: "error",
+          duration: 4000,
+          isClosable: true,
         });
-    },
-    // null means: stop polling. We start polling once we retrieve `rasaChatSessionId`
-    rasaChatSessionId ? pollingInterval : null
-  );
+      });
+  }
 
-  useInterval(
-    () => {
-      if (!rasaChatSessionId) return;
-      trackerController.abort();
-      axios
-        .get(`/conversations/${rasaChatSessionId}/tracker?start_session=false`)
-        .then((response) => {
-          setSlots(formatSlots(response.data.slots));
-          setEvents(response.data.events);
-          setStack(response.data.stack);
-          setFrame(updatedActiveFrame(frame, response.data.stack));
-        })
-        .catch((error) => {
-          // don't show a new toast if it's already active
-          if (toast.isActive("tracker-error")) return;
-          toast({
-            id: "tracker-error",
-            title: "Tracker could not be retrieved",
-            description: error?.message || "An unknown error happened.",
-            status: "error",
-            duration: 4000,
-            isClosable: true,
-          });
-        });
-    },
-    // null means: stop polling. We start polling once we retrieve `rasaChatSessionId`
-    rasaChatSessionId ? pollingInterval : null
-  );
+  // Run when a new WebSocket message is received (lastJsonMessage)
+  useEffect(() => {
+    // if the tracker update that we received is for the current chat session,
+    // update the tracker.
+    if (!lastJsonMessage) return;
+    if (
+      !rasaChatSessionId ||
+      lastJsonMessage?.sender_id === rasaChatSessionId
+    ) {
+      setSlots(formatSlots(lastJsonMessage.slots));
+      setEvents(lastJsonMessage.events);
+      const updatedStack = createHistoricalStack(
+        lastJsonMessage.stack,
+        lastJsonMessage.events
+      );
+      setStack(updatedStack);
+      setFrame(updatedActiveFrame(frame, updatedStack, lastJsonMessage.events));
+      setRasaChatSessionId(lastJsonMessage.sender_id);
+    } else if (
+      rasaChatSessionId &&
+      lastJsonMessage.sender_id !== rasaChatSessionId
+    ) {
+      // show a header link with the new sender the user can click a button to
+      // switch to the new chat session. the alert should be dissmissable.
+    }
+  }, [lastJsonMessage, rasaChatSessionId]);
+
+  useEffect(() => {
+    fetchStory();
+  }, [rasaChatSessionId]);
 
   const borderRadiusSx = {
     borderRadius: rasaRadii.normal,
@@ -140,6 +172,14 @@ export function App() {
     gridRowGap: rasaSpace[1],
   };
 
+  const onFrameSelected = (stack: Stack) => {
+    setFrame({
+      stack,
+      activatedSteps: flowStepTrail(events)[stack.flow_id],
+      isUserSelected: true,
+    });
+  };
+
   if (!rasaChatSessionId) return <LoadingSpinner />;
 
   return (
@@ -151,7 +191,7 @@ export function App() {
             sx={boxSx}
             stack={stack}
             active={frame?.stack}
-            onItemClick={setFrame}
+            onItemClick={onFrameSelected}
           />
           <DialougeInformation
             sx={boxSx}
@@ -163,8 +203,18 @@ export function App() {
         </Grid>
       </GridItem>
       <GridItem sx={boxSx}>
-        <DiagramFlow stackFrame={frame?.stack} flows={flows} slots={slots} />
+        <DiagramFlow
+          stackFrame={frame?.stack}
+          stepTrail={frame?.activatedSteps || []}
+          flows={flows}
+          slots={slots}
+        />
       </GridItem>
+      {shouldShowTranscript && (
+        <GridItem>
+          <Chat events={events || []} />
+        </GridItem>
+      )}
     </Grid>
   );
 }

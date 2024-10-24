@@ -203,6 +203,10 @@ test-acceptance: PYTEST_MARKER=acceptance and (not flaky) and (not category_anon
 test-acceptance: DD_ARGS := $(or $(DD_ARGS),)
 test-acceptance: prepare-spacy prepare-mitie test-marker ## Run acceptance tests
 
+test-audio-manual: PYTEST_MARKER=category_audio_manual and (not flaky) and (not category_anonymization)
+test-audio-manual: DD_ARGS := $(or $(DD_ARGS),)
+test-audio-manual: test-marker
+
 test-gh-actions:  ## Run all tests for GitHub Actions
 	OMP_NUM_THREADS=1 \
 	TF_CPP_MIN_LOG_LEVEL=2 \

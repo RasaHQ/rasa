@@ -32,7 +32,7 @@ jobs:
           - test-full-model-training
           - test-other-unit-tests
           - test-performance
-        python-version: [ 3.9, "3.10" ]
+        python-version: [ 3.9, "3.10", "3.11"]
 
     steps:
       - name: Checkout git repository 🕝
@@ -134,7 +134,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [ 3.9, "3.10" ]
+        python-version: [ 3.9, "3.10", "3.11"]
 
     steps:
       - name: Checkout git repository 🕝
@@ -238,7 +238,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [3.9, "3.10"]
+        python-version: [3.9, "3.10", "3.11"]
 
     steps:
       - name: Checkout git repository 🕝

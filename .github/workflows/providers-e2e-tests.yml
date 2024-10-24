@@ -1,0 +1,128 @@
+name: E2E Test on Rasa-Calm-Demo with supported providers
+
+on:
+  schedule:
+    # Run at 1am UTC each Sunday
+    - cron: "0 1 * * SUN"
+
+  # Allow running manually also, specifying the provider
+  # and `rasa-calm-demo` branch
+  workflow_dispatch:
+    inputs:
+      provider:
+        # In-case provider only has supported model for one
+        # (for e.g. only chat-completion), then default OpenAI
+        # would be used for the other
+        description: "LLM chat-completion and Embeddings model provider"
+        type: choice
+        required: true
+        default: "all" # Run e2e-test on all providers by default
+
+        # TODO: Enable testing of all the providers
+        options:
+          - all
+          # - openai
+          - azure
+          # - bedrock
+          # - huggingface
+          # - anthropic
+          # - cohere
+          # - mistral
+          # - together_ai
+          # - groq
+          # - huggingface_local
+          # - voyage
+
+      rasa-calm-demo-branch:
+        description: "Branch to checkout for `rasa-calm-demo`"
+        type: string
+        required: true
+        default: "main"
+
+      e2e-test-with-assertions:
+        description: "Path to test file, on `rasa-calm-demo` repository"
+        type: string
+        required: true
+        default: "e2e_tests_with_assertions/passing/happy_path/user_adds_contact_to_their_list.yml"
+
+    # Enable optionally calling this re-usable Workflow from
+    # `release-artifacts-workflow` also, with same input
+    # parameters as above
+  workflow_call:
+    inputs:
+      provider:
+        # In-case provider only has supported model for one
+        # (for e.g. only chat-completion), then default OpenAI
+        # would be used for the other
+        description: "LLM chat-completion and Embeddings model provider"
+        type: string
+        required: true
+        default: "all" # Run e2e-test on all providers by default
+      rasa-calm-demo-branch:
+        description: "Branch to checkout for `rasa-calm-demo`"
+        type: string
+        required: true
+        default: "main"
+
+env:
+  AZURE_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY_DEVTRIBE_TESTING_CANADA_EAST }}
+  DEFAULT_PYTHON_VERSION: "3.10"
+  RASA_PRO_BETA_E2E_ASSERTIONS: true
+
+jobs:
+  e2e_test:
+    name: Run e2e Test
+    if: ${{ github.event_name == 'schedule' || inputs.provider == 'all' }}
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        provider: [
+            # openai,
+            azure,
+            # bedrock,
+            # bedrock,
+            # huggingface,
+            # anthropic,
+            # cohere,
+            # mistral,
+            # together_ai,
+            # groq,
+            # huggingface_local,
+            # voyage,
+          ] # TODO: Enable testing all the providers
+
+    steps:
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+
+      - name: E2E test
+        uses: ./.github/actions/providers-e2e-test
+        with:
+          provider: ${{ matrix.provider }}
+          rasa-calm-demo-branch: ${{ inputs.rasa-calm-demo-branch || 'main' }}
+          e2e-test-with-assertions: ${{ inputs.e2e-test-with-assertions || 'e2e_tests_with_assertions/passing/happy_path/user_adds_contact_to_their_list.yml' }}
+          rasa-calm-demo-read-token: ${{ secrets.RASA_CALM_DEMO_READ }}
+          rasa-pro-license: ${{ secrets.RASA_PRO_LICENSE }}
+          duckling-url: ${{ secrets.DUCKLING_URL }}
+          slack-bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
+
+  e2e_test_on_single_provider:
+    name: Run e2e Test
+    if: ${{ inputs.provider != 'all' && github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+
+      - name: E2E test on single provider
+        uses: ./.github/actions/providers-e2e-test
+        with:
+          provider: ${{ inputs.provider }}
+          rasa-calm-demo-branch: ${{ inputs.rasa-calm-demo-branch || 'main' }}
+          e2e-test-with-assertions: ${{ inputs.e2e-test-with-assertions || 'e2e_tests_with_assertions/passing/happy_path/user_adds_contact_to_their_list.yml' }}
+          rasa-calm-demo-read-token: ${{ secrets.RASA_CALM_DEMO_READ }}
+          rasa-pro-license: ${{ secrets.RASA_PRO_LICENSE }}
+          duckling-url: ${{ secrets.DUCKLING_URL }}
+          slack-bot-token: ${{ secrets.SLACK_BOT_TOKEN }}

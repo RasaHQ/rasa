@@ -45,7 +45,7 @@ def add_subparser(
 
 async def open_inspector_in_browser(server_url: Text) -> None:
     """Opens the rasa inspector in the default browser."""
-    webbrowser.open(f"{server_url}/webhooks/inspector/inspect.html")
+    webbrowser.open(f"{server_url}/webhooks/socketio/inspect.html")
 
 
 def inspect(args: argparse.Namespace) -> None:
@@ -58,8 +58,9 @@ def inspect(args: argparse.Namespace) -> None:
         await open_inspector_in_browser(server_url)
 
     # the following arguments are not exposed to the user
-    args.connector = "rasa.core.channels.development_inspector.DevelopmentInspectInput"
+    args.connector = "rasa.core.channels.socketio.SocketIOInput"
     args.enable_api = True
+    args.inspect = True
     args.credentials = None
     args.server_listeners = [(after_start_hook_open_inspector, "after_server_start")]
 

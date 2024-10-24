@@ -87,7 +87,7 @@ target-version = "py39"
 exclude = [ "eggs", ".git", ".pytest_cache", "build", "dist",]
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.11"
+python = ">=3.9,<3.12"
 boto3 = "~1.35.15"
 google-cloud-storage = "^2.14.0"
 azure-storage-blob = ">=12.16.0, <12.17.0"
@@ -271,7 +271,7 @@ timeout_func_only = true
 asyncio_mode = "auto"
 
 [tool.poetry.dependencies.rasa-sdk]
-version = "3.10.0"
+version = "3.11.0.dev1"
 allow-prereleases = true
 
 [tool.poetry.dependencies.keras]

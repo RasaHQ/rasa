@@ -75,6 +75,7 @@ describe("helpers", () => {
         {
           event: "user",
           text: "book a restaurant",
+          timestamp: "123",
         },
         {
           event: "bot",
@@ -82,18 +83,22 @@ describe("helpers", () => {
             utter_action: "utter_ask_book_restaurant_name_of_restaurant",
           },
           text: "What's the name of the restaurant you are interested in?",
+          timestamp: "124",
         },
         {
           event: "user",
           text: "simsim",
+          timestamp: "125",
         },
         {
           event: "bot",
           text: "How many people are we talking?",
+          timestamp: "126",
         },
         {
           event: "user",
           text: "100",
+          timestamp: "127",
         },
         {
           event: "bot",
@@ -101,6 +106,7 @@ describe("helpers", () => {
             utter_action: "utter_ask_book_restaurant_date",
           },
           text: "For which day do you want to book?",
+          timestamp: "128",
         },
       ];
       const result = formatTestCases(events, sessionId);
@@ -287,6 +293,7 @@ describe("helpers", () => {
           flow_id: "flow_id",
           step_id: "step_id",
           collect: fieldValue,
+          ended: false,
         })
       ).toEqual(fieldValue);
     });
@@ -299,6 +306,7 @@ describe("helpers", () => {
           frame_id: "frame_id",
           flow_id: "flow_id",
           step_id: "step_id",
+          ended: false,
         })
       ).toEqual(fieldValue);
     });
@@ -312,6 +320,7 @@ describe("helpers", () => {
           flow_id: "flow_id",
           step_id: "step_id",
           collect: fieldValue,
+          ended: false,
         })
       ).toEqual(`${fieldValue} is not null`);
     });
@@ -325,6 +334,7 @@ describe("helpers", () => {
           flow_id: "flow_id",
           step_id: "step_id",
           collect: fieldValue,
+          ended: false,
         })
       ).toEqual(`not ${fieldValue}`);
     });
