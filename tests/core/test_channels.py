@@ -1,21 +1,21 @@
 # file deepcode ignore HardcodedNonCryptoSecret/test: Secrets are all just examples for tests. # noqa: E501
 
 import logging
+
+import jwt
 from typing import Dict
 from unittest.mock import patch, MagicMock
 
-import jwt
 import pytest
 from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
-from aiogram.exceptions import TelegramAPIError
-from aiogram.methods import TelegramMethod
+from aiogram.utils.exceptions import TelegramAPIError
 from aiohttp import ClientTimeout
 from aioresponses import aioresponses
 from sanic import Sanic
 
-import rasa.core.channels.channel
 import rasa.core.run
+import rasa.core.channels.channel
 from rasa.core import utils
 from rasa.core.channels import RasaChatInput, console
 from rasa.core.channels.channel import UserMessage
@@ -298,7 +298,7 @@ def test_telegram_channel_raise_rasa_exception_webhook_not_set(
     monkeypatch.setattr(
         rasa.core.channels.telegram.TelegramOutput,
         "set_webhook",
-        MagicMock(side_effect=TelegramAPIError(TelegramMethod, "Error from Telegram.")),
+        MagicMock(side_effect=TelegramAPIError("Error from Telegram.")),
     )
 
     with pytest.raises(RasaException) as e:
@@ -718,3 +718,4 @@ def test_set_console_stream_reading_timeout(monkeypatch: MonkeyPatch):
     monkeypatch.setenv(console.STREAM_READING_TIMEOUT_ENV, str(100))
 
     assert console._get_stream_reading_timeout() == ClientTimeout(expected)
+    
