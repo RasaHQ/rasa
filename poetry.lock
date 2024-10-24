@@ -42,33 +42,23 @@ files = [
 
 [[package]]
 name = "aiogram"
-version = "3.13.1"
-description = "Modern and fully asynchronous framework for Telegram Bot API"
+version = "2.15"
+description = "Is a pretty simple and fully asynchronous framework for Telegram Bot API"
 optional = false
-python-versions = ">=3.8"
+python-versions = "*"
 files = [
-    {file = "aiogram-3.13.1-py3-none-any.whl", hash = "sha256:148cbba15c2b6e0bc482aff6ae86848ed43e023b7102336bad17698242693000"},
-    {file = "aiogram-3.13.1.tar.gz", hash = "sha256:2674640ae74501ae30e68a5354e03f12e10db3adbcbd475bb56904536288c9c9"},
+    {file = "aiogram-2.15-py3-none-any.whl", hash = "sha256:5d4dae610625893fe53e07c01c9e95671fd863718caab692baac948e3746ab87"},
+    {file = "aiogram-2.15.tar.gz", hash = "sha256:13c740c52ee1301af8a9905e0a412754bcff03deb83dfdf1c578d9249ab35026"},
 ]
 
 [package.dependencies]
-aiofiles = ">=23.2.1,<24.2"
-aiohttp = ">=3.9.0,<3.11"
-certifi = ">=2023.7.22"
-magic-filter = ">=1.0.12,<1.1"
-pydantic = {version = ">=2.4.1,<2.10", markers = "python_version >= \"3.9\""}
-typing-extensions = ">=4.7.0,<=5.0"
+aiohttp = ">=3.7.2,<4.0.0"
+Babel = ">=2.8.0"
+certifi = ">=2020.6.20"
 
 [package.extras]
-cli = ["aiogram-cli (>=1.1.0,<2.0.0)"]
-dev = ["black (>=24.4.2,<24.5.0)", "isort (>=5.13.2,<5.14.0)", "motor-types (>=1.0.0b4,<1.1.0)", "mypy (>=1.10.0,<1.11.0)", "packaging (>=24.1,<25.0)", "pre-commit (>=3.5,<4.0)", "ruff (>=0.5.1,<0.6.0)", "toml (>=0.10.2,<0.11.0)"]
-docs = ["furo (>=2024.8.6,<2024.9.0)", "markdown-include (>=0.8.1,<0.9.0)", "pygments (>=2.18.0,<2.19.0)", "pymdown-extensions (>=10.3,<11.0)", "sphinx (>=8.0.2,<8.1.0)", "sphinx-autobuild (>=2024.9.3,<2024.10.0)", "sphinx-copybutton (>=0.5.2,<0.6.0)", "sphinx-intl (>=2.2.0,<2.3.0)", "sphinx-substitution-extensions (>=2024.8.6,<2024.9.0)", "sphinxcontrib-towncrier (>=0.4.0a0,<0.5.0)", "towncrier (>=24.8.0,<24.9.0)"]
-fast = ["aiodns (>=3.0.0)", "uvloop (>=0.17.0)"]
-i18n = ["babel (>=2.13.0,<2.14.0)"]
-mongo = ["motor (>=3.3.2,<3.7.0)"]
-proxy = ["aiohttp-socks (>=0.8.3,<0.9.0)"]
-redis = ["redis[hiredis] (>=5.0.1,<5.1.0)"]
-test = ["aresponses (>=2.1.6,<2.2.0)", "pycryptodomex (>=3.19.0,<3.20.0)", "pytest (>=7.4.2,<7.5.0)", "pytest-aiohttp (>=1.0.5,<1.1.0)", "pytest-asyncio (>=0.21.1,<0.22.0)", "pytest-cov (>=4.1.0,<4.2.0)", "pytest-html (>=4.0.2,<4.1.0)", "pytest-lazy-fixture (>=0.6.3,<0.7.0)", "pytest-mock (>=3.12.0,<3.13.0)", "pytest-mypy (>=0.10.3,<0.11.0)", "pytz (>=2023.3,<2024.0)"]
+fast = ["ujson (>=1.35)", "uvloop (>=0.14.0,<0.15.0)"]
+proxy = ["aiohttp-socks (>=0.5.3,<0.6.0)"]
 
 [[package]]
 name = "aiohttp"
@@ -490,6 +480,20 @@ typing-extensions = ">=4.0.1"
 
 [package.extras]
 aio = ["azure-core[aio] (>=1.26.0,<2.0.0)"]
+
+[[package]]
+name = "babel"
+version = "2.16.0"
+description = "Internationalization utilities"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "babel-2.16.0-py3-none-any.whl", hash = "sha256:368b5b98b37c06b7daf6696391c3240c938b37767d4584413e8438c5c435fa8b"},
+    {file = "babel-2.16.0.tar.gz", hash = "sha256:d1f3554ca26605fe173f3de0c65f750f5a42f924499bf134de6423582298e316"},
+]
+
+[package.extras]
+dev = ["freezegun (>=1.0,<2.0)", "pytest (>=6.0)", "pytest-cov"]
 
 [[package]]
 name = "backoff"
@@ -3287,20 +3291,6 @@ files = [
     {file = "locket-1.0.0-py2.py3-none-any.whl", hash = "sha256:b6c819a722f7b6bd955b80781788e4a66a55628b858d347536b7e81325a3a5e3"},
     {file = "locket-1.0.0.tar.gz", hash = "sha256:5c0d4c052a8bbbf750e056a8e65ccd309086f4f0f18a2eac306a8dfa4112a632"},
 ]
-
-[[package]]
-name = "magic-filter"
-version = "1.0.12"
-description = ""
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "magic_filter-1.0.12-py3-none-any.whl", hash = "sha256:e5929e544f310c2b1f154318db8c5cdf544dd658efa998172acd2e4ba0f6c6a6"},
-    {file = "magic_filter-1.0.12.tar.gz", hash = "sha256:4751d0b579a5045d1dc250625c4c508c18c3def5ea6afaf3957cb4530d03f7f9"},
-]
-
-[package.extras]
-dev = ["black (>=22.8.0,<22.9.0)", "flake8 (>=5.0.4,<5.1.0)", "isort (>=5.11.5,<5.12.0)", "mypy (>=1.4.1,<1.5.0)", "pre-commit (>=2.20.0,<2.21.0)", "pytest (>=7.1.3,<7.2.0)", "pytest-cov (>=3.0.0,<3.1.0)", "pytest-html (>=3.1.1,<3.2.0)", "types-setuptools (>=65.3.0,<65.4.0)"]
 
 [[package]]
 name = "mako"
@@ -8082,13 +8072,13 @@ types-urllib3 = "*"
 
 [[package]]
 name = "types-setuptools"
-version = "68.2.0.2"
+version = "75.2.0.20241019"
 description = "Typing stubs for setuptools"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.8"
 files = [
-    {file = "types-setuptools-68.2.0.2.tar.gz", hash = "sha256:09efc380ad5c7f78e30bca1546f706469568cf26084cfab73ecf83dea1d28446"},
-    {file = "types_setuptools-68.2.0.2-py3-none-any.whl", hash = "sha256:d5b5ff568ea2474eb573dcb783def7dadfd9b1ff638bb653b3c7051ce5aeb6d1"},
+    {file = "types-setuptools-75.2.0.20241019.tar.gz", hash = "sha256:86ea31b5f6df2c6b8f2dc8ae3f72b213607f62549b6fa2ed5866e5299f968694"},
+    {file = "types_setuptools-75.2.0.20241019-py3-none-any.whl", hash = "sha256:2e48ff3acd4919471e80d5e3f049cce5c177e108d5d36d2d4cee3fa4d4104258"},
 ]
 
 [[package]]
@@ -8738,4 +8728,4 @@ transformers = ["sentencepiece", "transformers"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.11"
-content-hash = "71bc15f8c503bf382ed6e1b453a5d5f84b4a107c9ccd57c5f1c0cc89712bf288"
+content-hash = "b81832eb89925c99216ed14db6e15fd97d8770b92fa4b7da42256b6c99b25e57"
