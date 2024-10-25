@@ -234,11 +234,6 @@ jobs:
             PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
             POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
 
-      - name: Install Dependencies (Linux) 📦
-        shell: bash
-        run: |
-          make install
-
       - name: Pull rasa-private dev image
         uses: ./.github/actions/pull-from-ecr
         with:
@@ -312,11 +307,6 @@ jobs:
             PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
             POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
 
-      - name: Install Dependencies (Linux) 📦
-        shell: bash
-        run: |
-          make install
-
       - name: Pull rasa-private dev image
         uses: ./.github/actions/pull-from-ecr
         with:
@@ -389,11 +379,6 @@ jobs:
         with:
             DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
             POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
-
-      - name: Install Dependencies (Linux) 📦
-        run: |
-          make install
-        shell: bash
 
       - name: Docker version
         run: docker --version && docker compose version
@@ -471,11 +456,6 @@ jobs:
         with:
           PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
           POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
-
-      - name: Install Dependencies (Linux) 📦
-        run: |
-          make install
-        shell: bash
 
       - name: Docker version
         run: docker --version && docker compose version
@@ -570,9 +550,11 @@ jobs:
           installer-parallel: true
 
       - name: Install Dependencies (Linux) 📦
+        # without this step the additional dependency installations with pip install
+        # in the `Install additional dependencies for Docs ingestion` step fails
+        shell: bash
         run: |
           make install
-        shell: bash
 
       - name: Pull rasa-private dev image
         uses: ./.github/actions/pull-from-ecr
