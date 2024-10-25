@@ -101,6 +101,9 @@ logger = logging.getLogger(__name__)
 structlogger = structlog.get_logger()
 
 MAX_NUMBER_OF_PREDICTIONS = int(os.environ.get("MAX_NUMBER_OF_PREDICTIONS", "10"))
+MAX_NUMBER_OF_PREDICTIONS_CALM = int(
+    os.environ.get("MAX_NUMBER_OF_PREDICTIONS_CALM", "1000")
+)
 
 
 class MessageProcessor:
@@ -114,6 +117,7 @@ class MessageProcessor:
         generator: NaturalLanguageGenerator,
         action_endpoint: Optional[EndpointConfig] = None,
         max_number_of_predictions: int = MAX_NUMBER_OF_PREDICTIONS,
+        max_number_of_predictions_calm: int = MAX_NUMBER_OF_PREDICTIONS_CALM,
         on_circuit_break: Optional[LambdaType] = None,
         http_interpreter: Optional[RasaNLUHttpInterpreter] = None,
         endpoints: Optional["AvailableEndpoints"] = None,
@@ -122,13 +126,16 @@ class MessageProcessor:
         self.nlg = generator
         self.tracker_store = tracker_store
         self.lock_store = lock_store
-        self.max_number_of_predictions = max_number_of_predictions
         self.on_circuit_break = on_circuit_break
         self.action_endpoint = action_endpoint
         self.model_filename, self.model_metadata, self.graph_runner = self._load_model(
             model_path
         )
         self.endpoints = endpoints
+
+        self.max_number_of_predictions = max_number_of_predictions
+        self.max_number_of_predictions_calm = max_number_of_predictions_calm
+        self.is_calm_assistant = self._is_calm_assistant()
 
         if self.model_metadata.assistant_id is None:
             rasa.shared.utils.io.raise_warning(
@@ -972,11 +979,15 @@ class MessageProcessor:
     ) -> int:
         """Select the action limit based on the tracker state.
 
-        Usually, we want to limit the number of predictions to the number of actions
-        that have been executed in the conversation so far. However, if the
-        conversation is currently in a state where the user is correcting the flow
-        we want to allow for more predictions to be made as we might be traversing
-        through a long flow.
+        This function determines the maximum number of predictions that should be
+        made during a dialogue conversation. Typically, the number of predictions
+        is limited to the number of actions executed so far in the conversation.
+        However, in certain states (e.g., when the user is correcting the
+        conversation flow), more predictions may be allowed as the system traverses
+        through a long dialogue flow.
+
+        Additionally, if the `ROUTE_TO_CALM_SLOT` is present in the tracker slots,
+        the action limit is adjusted to a separate limit for CALM-based flows.
 
         Args:
             tracker: instance of DialogueStateTracker.
@@ -984,6 +995,18 @@ class MessageProcessor:
         Returns:
         The maximum number of predictions to make.
         """
+        # Check if it is a CALM assistant and if so, that the `ROUTE_TO_CALM_SLOT`
+        # is either not present or set to `True`.
+        # If it does, use the specific prediction limit for CALM assistants.
+        # Otherwise, use the default prediction limit.
+        if self.is_calm_assistant and (
+            not tracker.has_coexistence_routing_slot
+            or tracker.get_slot(ROUTE_TO_CALM_SLOT)
+        ):
+            max_number_of_predictions = self.max_number_of_predictions_calm
+        else:
+            max_number_of_predictions = self.max_number_of_predictions
+
         reversed_events = list(tracker.events)[::-1]
         is_conversation_in_flow_correction = False
         for e in reversed_events:
@@ -998,8 +1021,10 @@ class MessageProcessor:
             # allow for more predictions to be made as we might be traversing through
             # a long flow. We multiply the number of predictions by 10 to allow for
             # more predictions to be made - the factor is a best guess.
-            return self.max_number_of_predictions * 5
-        return self.max_number_of_predictions
+            return max_number_of_predictions * 5
+
+        # Return the default
+        return max_number_of_predictions
 
     def is_action_limit_reached(
         self, tracker: DialogueStateTracker, should_predict_another_action: bool
@@ -1387,3 +1412,27 @@ class MessageProcessor:
         ]
 
         return len(filtered_commands) > 0
+
+    def _is_calm_assistant(self) -> bool:
+        """Inspects the nodes of the graph schema to determine whether
+        any node is associated with the `FlowPolicy`, which is indicative of a
+        CALM assistant setup.
+
+        Returns:
+            bool: True if any node in the graph schema uses `FlowPolicy`.
+        """
+        # Get the graph schema's nodes from the graph runner.
+        nodes: dict[str, Any] = self.graph_runner._graph_schema.nodes  # type: ignore[attr-defined]
+
+        flow_policy_class_path = "rasa.core.policies.flow_policy.FlowPolicy"
+        # Iterate over the nodes and check if any node uses `FlowPolicy`.
+        for node_name, schema_node in nodes.items():
+            if (
+                schema_node.uses is not None
+                and f"{schema_node.uses.__module__}.{schema_node.uses.__name__}"
+                == flow_policy_class_path
+            ):
+                return True
+
+        # Return False if no node is found using `FlowPolicy`.
+        return False
