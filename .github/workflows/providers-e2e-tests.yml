@@ -63,6 +63,11 @@ on:
         type: string
         required: true
         default: "main"
+      e2e-test-with-assertions:
+        description: "Path to test file, on `rasa-calm-demo` repository"
+        type: string
+        required: true
+        default: "e2e_tests_with_assertions/passing/happy_path/user_adds_contact_to_their_list.yml"
 
 env:
   AZURE_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY_DEVTRIBE_TESTING_CANADA_EAST }}

@@ -10,6 +10,20 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.10.8] - 2024-10-24
+                        
+Rasa Pro 3.10.8 (2024-10-24)                             
+### Bugfixes
+- [#1216](https://github.com/rasahq/rasa-private/issues/1216): The user message "/restart" is now restarting the session again after adding a proper implementation
+  (stack frame and command) for `pattern_restart`.
+- [#1378](https://github.com/rasahq/rasa-private/issues/1378): Only infer and set the provider to `azure` for our LLM clients in case NO `provider` is specified, but the
+  `deployment` key is set.
+- [#1436](https://github.com/rasahq/rasa-private/issues/1436): Fix OPENAI_API_KEY authentication error when using self-hosted provider.
+
+### Miscellaneous internal changes
+- [#1324](https://github.com/rasahq/rasa-private/issues/1324), [#1379](https://github.com/rasahq/rasa-private/issues/1379)
+
+
 ## [3.10.7] - 2024-10-17
                         
 Rasa Pro 3.10.7 (2024-10-17)                             
