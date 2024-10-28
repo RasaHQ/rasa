@@ -204,14 +204,6 @@ from = "/docs/rasa/action-server/deploy-action-server"
 to = "/docs/rasa/deploy/deploy-action-server/"
 
 [[redirects]]
-from = "/docs/rasa-x/changelog/rasa-x-changelog/"
-to = "/docs/rasa-enterprise/changelog/rasa-enterprise-changelog/"
-
-[[redirects]]
-from = "/docs/rasa-enterprise/changelog/rasa-x-changelog/"
-to = "/docs/rasa-enterprise/changelog/rasa-enterprise-changelog/"
-
-[[redirects]]
 from = "/docs/rasa/user-guide/how-to-deploy/"
 to = "/docs/rasa/deploy/deploy-rasa/"
 
@@ -220,40 +212,12 @@ from = "/docs/rasa/how-to-deploy/"
 to = "/docs/rasa/deploy/deploy-rasa/"
 
 [[redirects]]
-from = "/docs/rasa-enterprise/api/architecture/"
-to = "/docs/rasa-enterprise/installation-and-setup/architecture/"
-
-[[redirects]]
-from = "/docs/rasa-enterprise/api/rasa-x-http-api/"
-to = "/docs/rasa-enterprise/pages/http-api/"
-
-[[redirects]]
-from = "/docs/rasa-enterprise/api/rasa-x-http-api/"
-to = "/docs/rasa-enterprise/pages/http-api/"
-
-[[redirects]]
-from = "/docs/rasa-enterprise/user-guide/enable-workflows/"
-to = "/docs/rasa-enterprise/"
-
-[[redirects]]
 from = "/docs/rasa-enterprise/get-feedback-from-test-users/"
 to = "/docs/rasa-pro/building-assistants/user-satisfaction-survey/"
 
 [[redirects]]
 from = "/docs/studio/user-guide/flow-builder-introduction/"
 to = "/docs/studio/user-guide/flow-builder/introduction/"
-
-[[redirects]]
-from = "/docs/rasa-enterprise/installation-and-setup/openshift-kubernetes/"
-to = "/docs/rasa-enterprise/installation-and-setup/installation-guide/"
-
-[[redirects]]
-from = "/docs/rasa-enterprise/integrated-version-control/"
-to = "/docs/rasa-enterprise/installation-and-setup/post-deploy-steps/set-up-ivc/"
-
-[[redirects]]
-from = "/docs/rasa-enterprise/1.1.x/installation-and-setup/deploy-tools/install/helm-chart-installation/installation.mdx"
-to = "/docs/rasa-enterprise/installation-and-setup/install/helm-chart-installation/installation/"
 
 [[redirects]]
 from = "/docs/rasa-enterprise/installation-and-setup/customize/"
@@ -266,14 +230,6 @@ to = "/docs/rasa/training-data-format/"
 [[redirects]]
 from = "/docs/rasa-enterprise/annotate-conversations/"
 to = "/docs/studio/user-guide/annotation/"
-
-[[redirects]]
-from = "/docs/rasa-enterprise/0.24.1/installation-and-setup/integrated-version-control/"
-to = "/docs/rasa-enterprise/installation-and-setup/post-deploy-steps/set-up-ivc/"
-
-[[redirects]]
-from = "/docs/getting-started/demobot/"
-to = "/docs/"
 
 [[redirects]]
 from = "/docs/rasa/api/tensorflow_usage/"
@@ -298,7 +254,3 @@ to = "/docs/rasa/language-support/"
 [[redirects]]
 from = "/docs/rasa/api/tracker/"
 to = "/docs/rasa/action-server/sdk-tracker/"
-
-[[redirects]]
-from = "/docs/get_started_step1/"
-to = "/docs/rasa/"
