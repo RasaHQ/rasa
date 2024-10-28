@@ -24,6 +24,7 @@ from rasa.core.channels.twilio import TwilioInput
 from rasa.core.channels.voice_ready.twilio_voice import TwilioVoiceInput
 from rasa.core.channels.voice_ready.jambonz import JambonzVoiceReadyInput
 from rasa.core.channels.voice_ready.audiocodes import AudiocodesInput
+from rasa.core.channels.voice_stream.browser_audio import BrowserAudioInputChannel
 from rasa.core.channels.webexteams import WebexTeamsInput
 from rasa.core.channels.hangouts import HangoutsInput
 from rasa.core.channels.vier_cvg import CVGInput
@@ -51,6 +52,7 @@ input_channel_classes: List[Type[InputChannel]] = [
     CVGInput,
     JambonzVoiceReadyInput,
     TwilioMediaStreamsInputChannel,
+    BrowserAudioInputChannel,
 ]
 
 # Mapping from an input channel name to its class to allow name based lookup.

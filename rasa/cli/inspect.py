@@ -36,6 +36,8 @@ def add_subparser(
     arguments.set_shell_arguments(inspect_parser)
     add_skip_validation_flag(inspect_parser)
 
+    inspect_parser.add_argument("--voice", help="Enable voice", action="store_true")
+
     # it'd be confusing to expose those arguments to the user,
     # so we remove them
     remove_argument_from_parser(inspect_parser, "--credentials")
@@ -43,9 +45,10 @@ def add_subparser(
     remove_argument_from_parser(inspect_parser, "--enable-api")
 
 
-async def open_inspector_in_browser(server_url: Text) -> None:
+async def open_inspector_in_browser(server_url: Text, voice: bool = False) -> None:
     """Opens the rasa inspector in the default browser."""
-    webbrowser.open(f"{server_url}/webhooks/socketio/inspect.html")
+    channel = "socketio" if not voice else "browser_audio"
+    webbrowser.open(f"{server_url}/webhooks/{channel}/inspect.html")
 
 
 def inspect(args: argparse.Namespace) -> None:
@@ -55,10 +58,13 @@ def inspect(args: argparse.Namespace) -> None:
     async def after_start_hook_open_inspector(_: Sanic, __: AbstractEventLoop) -> None:
         """Hook to open the browser on server start."""
         server_url = constants.DEFAULT_SERVER_FORMAT.format("http", args.port)
-        await open_inspector_in_browser(server_url)
+        await open_inspector_in_browser(server_url, True)
 
     # the following arguments are not exposed to the user
-    args.connector = "rasa.core.channels.socketio.SocketIOInput"
+    if args.voice:
+        args.connector = "browser_audio"
+    else:
+        args.connector = "rasa.core.channels.socketio.SocketIOInput"
     args.enable_api = True
     args.inspect = True
     args.credentials = None

@@ -51,7 +51,6 @@ def create_http_input_channels(
         all_credentials = read_config_file(credentials_file)
     else:
         all_credentials = {}
-
     if channel:
         if len(all_credentials) > 1:
             logger.info(
@@ -226,6 +225,7 @@ def serve_application(
     request_timeout: Optional[int] = None,
     server_listeners: Optional[List[Tuple[Callable, Text]]] = None,
     inspect: Optional[bool] = False,
+    voice: Optional[bool] = False,
 ) -> None:
     """Run the API entrypoint."""
     if not channel and not credentials:
@@ -235,7 +235,7 @@ def serve_application(
 
     if inspect:
         logger.info("Starting development inspector.")
-        input_channels = [DevelopmentInspectProxy(ic) for ic in input_channels]
+        input_channels = [DevelopmentInspectProxy(ic, voice) for ic in input_channels]
 
         # the inspector needs the api to retrieve slots and flows
         enable_api = True

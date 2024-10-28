@@ -41,10 +41,11 @@ class DevelopmentInspectProxy(InputChannel):
     the state of the conversation.
     """
 
-    def __init__(self, underlying: InputChannel) -> None:
+    def __init__(self, underlying: InputChannel, is_voice: bool = False) -> None:
         """Initializes the DevelopmentInspectProxy channel."""
         super().__init__()
         self.underlying = underlying
+        self.is_voice = is_voice
         self.processor = None
         self.tracker_stream = TrackerStream(get_tracker=self.get_tracker_state)
 
