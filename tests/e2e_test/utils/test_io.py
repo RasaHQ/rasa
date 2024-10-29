@@ -191,6 +191,13 @@ def test_read_metadata(input_tests_path: str, expected_results: List[Metadata]) 
 
 
 def test_transform_results_output_to_yaml() -> None:
+    """Test that the function transforms the results output to yaml correctly.
+
+    It should add new lines to the strings that starts with `- name`.
+    It should strip out white spaces from strings that starts with `\n`.
+    It should also filter out all comments from the result output.
+    """
+
     yaml_string = textwrap.dedent(
         """
     test_results:
@@ -201,6 +208,10 @@ def test_transform_results_output_to_yaml() -> None:
        - bot: "Hey! How are you?"
        - user: "I am feeling amazing."
        - bot: "Great, carry on!"
+       #  - test_case: commented_out_test_case
+       #    steps:
+       #      - user: "Hi!"
+       #      - bot: "Hey! How are you?"
 
       difference: []
     - name: sad path with utter template (failing status)

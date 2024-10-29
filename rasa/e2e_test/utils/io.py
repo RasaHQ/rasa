@@ -506,6 +506,8 @@ def transform_results_output_to_yaml(yaml_string: str) -> str:
             result.append(s)
         elif s.startswith("\n"):
             result.append(s.strip())
+        elif s.strip().startswith("#"):
+            continue
         else:
             result.append(s)
     return "".join(result)
