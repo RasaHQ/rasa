@@ -170,15 +170,6 @@ jobs:
       - name: Build ⚒️ Distributions
         run: poetry build
 
-      # Push to the internal PYPI release registry
-      - name: Publish to internal PyPI 📦
-        uses: pypa/gh-action-pypi-publish@e53eb8b103ffcb59469888563dc324e3c8ba6f06
-        with:
-           user: "github-ci"
-           password: ${{ secrets.PYPI_PASSWORD }}
-           repository-url: "https://pypi.rasa.com/simple/"
-           packages-dir: ${{ format('{0}/dist', github.workspace) }}
-      
       # Push to the public PYPI release registry
       - name: Publish to public PyPI 📦
         uses: pypa/gh-action-pypi-publish@e53eb8b103ffcb59469888563dc324e3c8ba6f06
@@ -231,18 +222,18 @@ jobs:
         if: success()
         uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 #v 1.25.0
         with:
-          # Send notication to #release slack channel
+          # Send notification to #release slack channel
           channel-id: "C024Z61K9QU"
           slack-message: ":rocket: New *Rasa Private* version `${{ env.TAG_VERSION }}` has been released! More information can be found <https://github.com/RasaHQ/rasa-private/releases/tag/${{ env.TAG_VERSION }}|here>."
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
 
-      # - name: Notify Slack of unsuccessful release ⛔️
-      #   if: failure()
-      #   uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 #v 1.25.0
-      #   with:
-      #      # Send notication to #devtribe slack channel
-      #      channel-id: "C061J0LGHU0"
-      #      slack-message: ":broken_heart: *Rasa Private* release version `${{ env.TAG_VERSION }}` has failed! More information can be found <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|here>."
-      #   env:
-      #      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      - name: Notify Slack of unsuccessful release ⛔️
+        if: failure()
+        uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 #v 1.25.0
+        with:
+           # Send notification to #devtribe slack channel
+           channel-id: "C061J0LGHU0"
+           slack-message: ":broken_heart: *Rasa Private* release version `${{ env.TAG_VERSION }}` has failed! More information can be found <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|here>."
+        env:
+           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
