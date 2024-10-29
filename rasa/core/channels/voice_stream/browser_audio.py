@@ -71,7 +71,7 @@ class BrowserAudioInputChannel(VoiceInputChannel):
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
     ) -> Blueprint:
         """Defines a Sanic bluelogger.debug."""
-        blueprint = Blueprint("socketio_webhook", __name__)
+        blueprint = Blueprint("browser_audio", __name__)
 
         @blueprint.route("/", methods=["GET"])
         async def health(_: Request) -> HTTPResponse:

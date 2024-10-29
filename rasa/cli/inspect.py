@@ -58,7 +58,7 @@ def inspect(args: argparse.Namespace) -> None:
     async def after_start_hook_open_inspector(_: Sanic, __: AbstractEventLoop) -> None:
         """Hook to open the browser on server start."""
         server_url = constants.DEFAULT_SERVER_FORMAT.format("http", args.port)
-        await open_inspector_in_browser(server_url, True)
+        await open_inspector_in_browser(server_url, args.voice)
 
     # the following arguments are not exposed to the user
     if args.voice:
