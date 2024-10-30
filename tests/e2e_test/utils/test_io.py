@@ -8,7 +8,12 @@ import pytest
 from matplotlib import pyplot as plt
 from pytest import TempPathFactory
 from structlog.testing import capture_logs
-
+from rasa.e2e_test.constants import (
+    KEY_USER_INPUT,
+    KEY_BOT_INPUT,
+    KEY_TEST_CASE,
+    KEY_TEST_CASES,
+)
 from rasa.e2e_test.assertions import AssertionFailure, FlowStartedAssertion
 from rasa.e2e_test.constants import KEY_TEST_CASES, STATUS_PASSED
 from rasa.e2e_test.e2e_test_case import Fixture, Metadata, TestCase, TestStep, TestSuite
@@ -702,24 +707,24 @@ def test_writing_test_suite():
 
 def test_read_test_cases_with_utf_characters(tmp_path: Path):
     # 1) Generate a test case with utterances containing special characters
+    test_case_name = "user_utterance_with_special_characters"
     utterances = [
         "Grüß dich! Wie läuft's bei dir?",
         "Mir geht's großartig, danke. Möchtest du darüber sprechen?",
         "Mir ist heute ein bisschen langweilig. Irgendwelche Vorschläge?",
-        "Vielleicht könntest du ein neues Buch über Geschichte lesen."
+        "Vielleicht könntest du ein neues Buch über Geschichte lesen.",
     ]
-    tests = f"""
-test_cases:
-  - test_case: rag - no domain - 5g dangerous
+    tests = f"""{KEY_TEST_CASES}:
+  - {KEY_TEST_CASE}: {test_case_name}
     steps:
-      - user: {utterances[0]}
-      - bot: {utterances[1]}
-      - user: {utterances[2]}
-      - bot: {utterances[3]}
+      - {KEY_USER_INPUT}: {utterances[0]}
+      - {KEY_BOT_INPUT}: {utterances[1]}
+      - {KEY_USER_INPUT}: {utterances[2]}
+      - {KEY_BOT_INPUT}: {utterances[3]}
     """
 
     # 2) Write a test case to a temporary YAML file
-    e2e_test_file = tmp_path / "user_utterance_with_special_characters.yml"
+    e2e_test_file = tmp_path / f"{test_case_name}.yml"
     e2e_test_file.write_text(tests)
 
     # 3) Confirm that read test case is in the proper format
