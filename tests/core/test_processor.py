@@ -120,6 +120,9 @@ from tests.conftest import (
     with_model_id,
     with_model_ids,
 )
+from rasa.core.policies.flow_policy import (
+    FlowPolicy,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -2493,3 +2496,109 @@ async def test_parse_message_with_set_slot_command_payload_for_disallowed_slot(
 
     captured = capsys.readouterr()
     assert "command_executor.skip_command.slot_not_asked_for" in captured.out
+
+
+@pytest.mark.parametrize(
+    "is_calm_assistant,route_to_calm_slot,events,max_predictions_calm,max_predictions,expected_limit",
+    [
+        # Flow correction overrides the CALM limit
+        (True, True, [ActionExecuted(ACTION_CORRECT_FLOW_SLOT)], 5, 3, 25),
+        # Ends with listen, CALM applies
+        (True, True, [ActionExecuted(ACTION_LISTEN_NAME)], 5, 3, 5),
+        # No CALM routing, no flow correction (default behavior)
+        (False, None, [ActionExecuted("some_action")], 5, 3, 3),
+        # CALM active but no flow correction
+        (True, True, [ActionExecuted("some_action")], 5, 3, 5),
+        # Flow correction but ends with listen, so default limit applies
+        (
+            True,
+            True,
+            [
+                ActionExecuted(ACTION_CORRECT_FLOW_SLOT),
+                ActionExecuted(ACTION_LISTEN_NAME),
+            ],
+            5,
+            3,
+            5,
+        ),
+        # CALM routing disabled, flow correction active
+        (False, None, [ActionExecuted(ACTION_CORRECT_FLOW_SLOT)], 5, 3, 15),
+        # Mixed events: ends with session start, default limit should apply
+        (
+            False,
+            False,
+            [
+                ActionExecuted(ACTION_CORRECT_FLOW_SLOT),
+                ActionExecuted(ACTION_SESSION_START_NAME),
+            ],
+            5,
+            3,
+            3,
+        ),
+        # Mixed events: ends with an unrelated action, flow correction applies
+        (
+            True,
+            False,
+            [ActionExecuted("some_action"), ActionExecuted(ACTION_CORRECT_FLOW_SLOT)],
+            5,
+            3,
+            25,
+        ),
+    ],
+)
+async def test_tracker_state_specific_action_limit(
+    default_processor,
+    is_calm_assistant,
+    route_to_calm_slot,
+    events,
+    max_predictions_calm,
+    max_predictions,
+    expected_limit,
+):
+    conversation_id = "test_tracker_state_specific_action_limit"
+    message = UserMessage("/greet", sender_id=conversation_id)
+    await default_processor.handle_message(message)
+    tracker = await default_processor.tracker_store.retrieve(conversation_id)
+
+    default_processor.is_calm_assistant = is_calm_assistant
+    default_processor.max_number_of_predictions_calm = max_predictions_calm
+    default_processor.max_number_of_predictions = max_predictions
+    tracker.events = events
+
+    # Mock the slot value for the ROUTE_TO_CALM_SLOT
+    with mock.patch.object(tracker, "get_slot", return_value=route_to_calm_slot):
+        assert (
+            default_processor._tracker_state_specific_action_limit(tracker)
+            == expected_limit
+        )
+
+
+@pytest.mark.parametrize(
+    "nodes, expected_result",
+    [
+        (
+            {"node_1": mock.MagicMock(uses=FlowPolicy)},
+            True,
+        ),  # Case where FlowPolicy is used
+        (
+            {"node_1": mock.MagicMock(uses=None)},
+            False,
+        ),  # Case where FlowPolicy is not used
+        ({}, False),  # Case where there are no nodes
+        (
+            {
+                "node_1": mock.MagicMock(uses=None),
+                "node_2": mock.MagicMock(
+                    uses=FlowPolicy
+                ),  # Another case where FlowPolicy is used in a node
+            },
+            True,
+        ),
+    ],
+)
+def test_is_calm_assistant(default_processor, nodes, expected_result):
+    # Mock the graph runner's nodes with the parametrized nodes data
+    default_processor.graph_runner._graph_schema.nodes = nodes
+
+    # Assert the method returns the expected result
+    assert default_processor._is_calm_assistant() == expected_result
