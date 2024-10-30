@@ -698,3 +698,32 @@ def test_writing_test_suite():
     test_case = TestCase.from_dict(test_suite_dict[KEY_TEST_CASES][0])
 
     assert test_case.steps == test_suite.test_cases[0].steps
+
+
+def test_read_test_cases_with_utf_characters(tmp_path: Path):
+    # 1) Generate a test case with utterances containing special characters
+    utterances = [
+        "Grüß dich! Wie läuft's bei dir?",
+        "Mir geht's großartig, danke. Möchtest du darüber sprechen?",
+        "Mir ist heute ein bisschen langweilig. Irgendwelche Vorschläge?",
+        "Vielleicht könntest du ein neues Buch über Geschichte lesen."
+    ]
+    tests = f"""
+test_cases:
+  - test_case: rag - no domain - 5g dangerous
+    steps:
+      - user: {utterances[0]}
+      - bot: {utterances[1]}
+      - user: {utterances[2]}
+      - bot: {utterances[3]}
+    """
+
+    # 2) Write a test case to a temporary YAML file
+    e2e_test_file = tmp_path / "user_utterance_with_special_characters.yml"
+    e2e_test_file.write_text(tests)
+
+    # 3) Confirm that read test case is in the proper format
+    test_suite = read_test_cases(str(e2e_test_file))
+    test_case = test_suite.test_cases[0]
+    for idx, step in enumerate(test_case.steps):
+        assert step.text == utterances[idx]
