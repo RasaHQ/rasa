@@ -48,6 +48,7 @@ ACTION_TRIGGER_SEARCH = "action_trigger_search"
 ACTION_TRIGGER_CHITCHAT = "action_trigger_chitchat"
 ACTION_RESET_ROUTING = "action_reset_routing"
 ACTION_HANGUP = "action_hangup"
+ACTION_REPEAT_BOT_MESSAGES = "action_repeat_bot_messages"
 
 
 DEFAULT_ACTION_NAMES = [
@@ -74,6 +75,7 @@ DEFAULT_ACTION_NAMES = [
     ACTION_TRIGGER_CHITCHAT,
     ACTION_RESET_ROUTING,
     ACTION_HANGUP,
+    ACTION_REPEAT_BOT_MESSAGES,
 ]
 
 ACTION_SHOULD_SEND_DOMAIN = "send_domain"

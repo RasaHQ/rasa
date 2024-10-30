@@ -16,6 +16,7 @@ from rasa.dialogue_understanding.commands import (
     KnowledgeAnswerCommand,
     ClarifyCommand,
     CannotHandleCommand,
+    RepeatBotMessagesCommand,
 )
 from rasa.dialogue_understanding.generator.constants import (
     LLM_CONFIG_KEY,
@@ -50,6 +51,7 @@ from rasa.shared.utils.llm import (
     sanitize_message_for_prompt,
 )
 from rasa.utils.log_utils import log_llm
+from rasa.utils.beta import ensure_beta_feature_is_enabled, BetaNotEnabledException
 
 COMMAND_PROMPT_FILE_NAME = "command_prompt.jinja2"
 
@@ -293,6 +295,7 @@ class SingleStepLLMCommandGenerator(LLMBasedCommandGenerator):
         knowledge_re = re.compile(r"SearchAndReply\(\)")
         humand_handoff_re = re.compile(r"HumanHandoff\(\)")
         clarify_re = re.compile(r"Clarify\(([a-zA-Z0-9_, ]+)\)")
+        repeat_re = re.compile(r"RepeatLastBotMessages\(\)")
 
         for action in actions.strip().splitlines():
             if match := slot_set_re.search(action):
@@ -319,6 +322,8 @@ class SingleStepLLMCommandGenerator(LLMBasedCommandGenerator):
                 commands.append(KnowledgeAnswerCommand())
             elif humand_handoff_re.search(action):
                 commands.append(HumanHandoffCommand())
+            elif repeat_re.search(action):
+                commands.append(RepeatBotMessagesCommand())
             elif match := clarify_re.search(action):
                 options = sorted([opt.strip() for opt in match.group(1).split(",")])
                 valid_options = [
@@ -393,6 +398,20 @@ class SingleStepLLMCommandGenerator(LLMBasedCommandGenerator):
             "current_slot": current_slot,
             "current_slot_description": current_slot_description,
             "user_message": latest_user_message,
+            "is_repeat_command_enabled": self.is_repeat_command_enabled(),
         }
 
         return self.compile_template(self.prompt_template).render(**inputs)
+
+    def is_repeat_command_enabled(self) -> bool:
+        """Check for feature flag"""
+        RASA_PRO_BETA_REPEAT_COMMAND_ENV_VAR_NAME = "RASA_PRO_BETA_REPEAT_COMMAND"
+        try:
+            ensure_beta_feature_is_enabled(
+                "Repeat Command",
+                env_flag=RASA_PRO_BETA_REPEAT_COMMAND_ENV_VAR_NAME,
+            )
+        except BetaNotEnabledException:
+            return False
+
+        return True
