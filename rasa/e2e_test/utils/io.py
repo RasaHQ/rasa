@@ -346,7 +346,7 @@ def read_test_cases(path: str) -> TestSuite:
     beta_flag_verified = False
 
     for test_file in test_files:
-        test_file_content = parse_raw_yaml(Path(test_file).read_text())
+        test_file_content = parse_raw_yaml(Path(test_file).read_text(encoding="utf-8"))
 
         validate_yaml_data_using_schema_with_assertions(
             yaml_data=test_file_content, schema_content=e2e_test_schema
