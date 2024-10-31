@@ -8,11 +8,9 @@ from _pytest.monkeypatch import MonkeyPatch
 import sqlalchemy as sa
 
 from rasa.core.tracker_store import (
-    MongoTrackerStore,
     RedisTrackerStore,
     SQLTrackerStore,
 )
-from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import Event
 from rasa.shared.core.trackers import DialogueStateTracker
 from .conftest import (
@@ -232,34 +230,3 @@ async def test_redis_tracker_store_retrieve(
 
     tracker = await redis_tracker_store.retrieve(sender_id)
     assert list(tracker.events) == events_after_restart
-
-
-async def test_mongo_tracker_store_retrieve_full_tracker(
-    domain: Domain,
-    tracker_with_restarted_event: DialogueStateTracker,
-) -> None:
-    tracker_store = MongoTrackerStore(domain)
-    sender_id = tracker_with_restarted_event.sender_id
-
-    await tracker_store.save(tracker_with_restarted_event)
-
-    tracker = await tracker_store.retrieve_full_tracker(sender_id)
-    assert tracker == tracker_with_restarted_event
-
-
-async def test_mongo_tracker_store_retrieve(
-    domain: Domain,
-    tracker_with_restarted_event: DialogueStateTracker,
-    events_after_restart: List[Event],
-) -> None:
-    tracker_store = MongoTrackerStore(domain)
-    sender_id = tracker_with_restarted_event.sender_id
-
-    await tracker_store.save(tracker_with_restarted_event)
-
-    tracker = await tracker_store.retrieve(sender_id)
-
-    # the retrieved tracker with the latest session would not contain
-    # `action_session_start` event because the MongoTrackerStore filters
-    # only the events after `session_started` event
-    assert list(tracker.events) == events_after_restart[1:]

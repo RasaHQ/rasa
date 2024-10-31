@@ -377,7 +377,7 @@ jobs:
       - name: Prepare the job for integration tests
         uses: ./.github/actions/test-prerequisites
         with:
-            DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+            PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
             POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
 
       - name: Docker version
@@ -698,7 +698,7 @@ jobs:
             make install
           shell: bash
 
-        # these integration tests need to be ran in a sequential fashion,
+        # these integration tests need to be run in a sequential fashion,
         # due to environment constraints, so we're running them in a single process.
         - name: Test Code with Services 🩺 (sequential)
           env:
@@ -761,16 +761,6 @@ jobs:
           # mapping container ports to the host
           - 5432:5432
 
-      mongodb:
-        image: mongodb/mongodb-community-server:6.0.4-ubuntu2204
-        options: >-
-          --health-cmd "echo 'db.runCommand("ping").ok' | mongosh --quiet"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 27017:27017
-
     steps:
       - name: Check out code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -811,6 +801,68 @@ jobs:
         with:
           name: Non-Sequential Integration Test Results
           path: integration-results-non-sequential.xml
+
+  tracker-store-integration-test:
+    name: Run Tracker Store Integration Tests
+    runs-on: ubuntu-22.04-8core
+    timeout-minutes: 60
+    env:
+      DB_PORT: 27017
+      DB_ROOT_USER: root
+      DB_ROOT_PASSWORD: rootpass
+      DB_USER: user
+      DB_PASSWORD: userpass
+      DB_NAME: rasa
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Prepare the job for integration tests
+        uses: ./.github/actions/test-prerequisites
+        with:
+          PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+          POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
+
+      - name: Install Dependencies (Linux) 📦
+        run: |
+          make install
+        shell: bash
+
+      - name: Run containers for tracker store integration testing
+        run: |
+          make run-mongodb-container
+
+      - name: Test Code with Services 🩺
+        env:
+          JOBS: 6
+          PYTHONIOENCODING: "utf-8"
+          INTEGRATION_TESTS_STUDIO_LICENSE: ${{ secrets.INTEGRATION_TESTS_STUDIO_LICENSE }}
+          INTEGRATION_TESTS_PRO_LICENSE: ${{ secrets.INTEGRATION_TESTS_PRO_LICENSE }}
+          INTEGRATION_TESTS_PRO_LICENSE_ALL_FEATURES: ${{ secrets.INTEGRATION_TESTS_PRO_LICENSE_ALL_FEATURES }}
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          make prepare-tests-ubuntu
+          make test-mongodb-tracker-store
+
+      - name: Show container logs
+        if: always()
+        uses: ./.github/actions/debug-tracker-store-tests
+        with:
+          MONGODB_COMPOSE_FILE_PATH: tests_deployment/integration_tests_tracker_stores/mongo_db_tracker_store/docker-compose.mongodb.yml
+
+      - name: Stop containers for tracker store integration testing
+        if: always()
+        run: |
+          make stop-mongodb-container
+
+      - name: Save Test Results
+        if: always()
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
+        with:
+          name: Tracker Store Integration Test Results
+          path: integration-results-mongo-tracker-store.xml
 
   concurrent-lockstore-integration-test:
     name: Run Concurrent LockStore Integration Tests

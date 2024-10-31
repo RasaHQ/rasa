@@ -1,0 +1,79 @@
+configs:
+  mongod.conf:
+    content: |
+      net:
+         tls:
+            mode: requireTLS
+            certificateKeyFile: /etc/mongodb/mongodb.pem
+            CAFile: /etc/mongodb/ca.crt
+  db-entrypoint.sh:
+    content: |
+      #!/bin/bash
+      echo 'Creating application user and db'
+      mongosh ${DB_NAME} \
+        --host localhost \
+        --port ${DB_PORT} \
+        -u ${MONGODB_INITDB_ROOT_USERNAME} \
+        -p ${MONGODB_INITDB_ROOT_PASSWORD} \
+        --authenticationDatabase admin \
+        --eval "db.createUser({user: '${DB_USER}', pwd: '${DB_PASSWORD}', roles:[{role:'dbOwner', db: '${DB_NAME}'}]});"
+      echo 'User and db created'
+
+      # check if the user and db were created
+      mongosh ${DB_NAME} \
+        --host localhost \
+        --port ${DB_PORT} \
+        -u ${DB_USER} \
+        -p ${DB_PASSWORD} \
+        --authenticationDatabase rasa
+
+services:
+  mongodb-without-tls:
+    image: mongodb/mongodb-community-server:8.0-ubuntu2204
+    container_name: mongodb-without-tls
+    configs:
+      - source: db-entrypoint.sh
+        target: /docker-entrypoint-initdb.d/db-entrypoint.sh
+    environment:
+      - MONGODB_INITDB_ROOT_USERNAME=${DB_ROOT_USER}
+      - MONGODB_INITDB_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
+      - DB_PORT=${DB_PORT}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - mongodb_data:/data/db
+    ports:
+      - "27000:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  mongodb-with-tls:
+    image: mongodb/mongodb-community-server:8.0-ubuntu2204
+    container_name: mongodb-with-tls
+    configs:
+      - source: mongod.conf
+        target: /etc/mongodb/mongod.conf
+      - source: db-entrypoint.sh
+        target: /docker-entrypoint-initdb.d/db-entrypoint.sh
+    command: --config /etc/mongodb/mongod.conf
+    environment:
+      - MONGODB_INITDB_ROOT_USERNAME=${DB_ROOT_USER}
+      - MONGODB_INITDB_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
+      - DB_PORT=${DB_PORT}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - ./tls/mongodb.pem:/etc/mongodb/mongodb.pem
+      - ./tls/ca.crt:/etc/mongodb/ca.crt
+      - mongodb_tls_data:/data/db
+    ports:
+      - "27017:27017"
+
+volumes:
+  mongodb_data:
+  mongodb_tls_data:

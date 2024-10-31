@@ -328,8 +328,7 @@ version = ">=0.42.1, <0.43"
 optional = true
 
 [tool.poetry.dependencies.pymongo]
-version = ">=4.6.3,<4.7"
-extras = [ "tls", "srv",]
+version = "~4.10.1"
 
 [tool.poetry.dev-dependencies.pytest-sanic]
 git = "https://github.com/RasaHQ/pytest-sanic"
