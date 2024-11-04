@@ -1248,7 +1248,7 @@ def action_name_test_case() -> str:
 @pytest.fixture
 def stub_data() -> Dict[str, Any]:
     return {
-        "events": [{"event": "sample_event"}],
+        "events": [{"event": "slot", "name": "sample_slot_name", "value": None}],
         "responses": [{"response": "sample_response"}],
     }
 

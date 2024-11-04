@@ -1,4 +1,5 @@
 from typing import Dict, Any
+from unittest.mock import patch
 
 import pytest
 
@@ -71,3 +72,21 @@ def test_remote_action_initializes_e2e_stub_custom_action_executor(
     remote_action: RemoteAction,
 ):
     assert isinstance(remote_action.executor, E2EStubCustomActionExecutor)
+
+
+@pytest.mark.asyncio
+async def test_run_stub_action_with_response_validation(
+    endpoint_stub_config: EndpointConfig,
+    tracker: DialogueStateTracker,
+    domain: Domain,
+    stub_data: Dict[str, Any],
+    action_name_test_file: str,
+):
+    executor = E2EStubCustomActionExecutor(action_name_test_file, endpoint_stub_config)
+    with patch.object(
+        RemoteAction,
+        "validate_action_result",
+        wraps=RemoteAction.validate_action_result,
+    ) as mock_validate:
+        await executor.run(tracker, domain)
+        assert mock_validate.called

@@ -783,6 +783,22 @@ class RemoteAction(Action):
             f"Found url '{self.action_endpoint.url}'."
         )
 
+    @classmethod
+    def validate_action_result(cls, result: Dict[Text, Any]) -> bool:
+        from jsonschema import ValidationError, validate
+
+        try:
+            validate(result, cls.action_response_format_spec())
+            return True
+        except ValidationError as e:
+            e.message += (
+                f". Failed to validate Action server response from API, "
+                f"make sure your response from the Action endpoint is valid. "
+                f"For more information about the format visit "
+                f"{DOCS_BASE_URL}/custom-actions"
+            )
+            raise e
+
     @staticmethod
     def action_response_format_spec() -> Dict[Text, Any]:
         """Expected response schema for an Action endpoint.
@@ -798,21 +814,6 @@ class RemoteAction(Action):
             },
         }
         return schema
-
-    def _validate_action_result(self, result: Dict[Text, Any]) -> bool:
-        from jsonschema import ValidationError, validate
-
-        try:
-            validate(result, self.action_response_format_spec())
-            return True
-        except ValidationError as e:
-            e.message += (
-                f". Failed to validate Action server response from API, "
-                f"make sure your response from the Action endpoint is valid. "
-                f"For more information about the format visit "
-                f"{DOCS_BASE_URL}/custom-actions"
-            )
-            raise e
 
     @staticmethod
     async def _utter_responses(
@@ -865,7 +866,6 @@ class RemoteAction(Action):
             domain=domain,
             tracker=tracker,
         )
-        self._validate_action_result(response)
 
         events_json = response.get("events", [])
         responses = response.get("responses", [])

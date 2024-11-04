@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import pytest
 from pytest import LogCaptureFixture
 
@@ -137,6 +139,21 @@ async def test_executor_runs_action(
     result = await direct_custom_action_executor.run(tracker, domain=domain)
     assert isinstance(result, dict)
     assert "events" in result
+
+
+@pytest.mark.asyncio
+async def test_executor_runs_action_without_response_validation(
+    direct_custom_action_executor: DirectCustomActionExecutor,
+    tracker: DialogueStateTracker,
+    domain: Domain,
+):
+    with patch.object(
+        RemoteAction,
+        "validate_action_result",
+        wraps=RemoteAction.validate_action_result,
+    ) as mock_validate:
+        await direct_custom_action_executor.run(tracker, domain=domain)
+        assert not mock_validate.called
 
 
 async def test_executor_runs_action_invalid_actions_module(
