@@ -22,27 +22,45 @@ on:
         # TODO: Enable testing of all the providers
         options:
           - all
-          # - openai
+          - openai
           - azure
-          # - bedrock
-          # - huggingface
-          # - anthropic
-          # - cohere
-          # - mistral
-          # - together_ai
-          # - groq
-          # - huggingface_local
-          # - voyage
+          - bedrock
+          - gemini
+#          - huggingface TODO: Enable after ENG-1456 is resolved
+          - huggingface_local
+#          - anthropic TODO: Enable after ENG-1454 is resolved
+#          - cohere TODO: Enable after ENG-1411 is unblocked
+          - mistral
+#          - together_ai TODO: Enable after ENG-1449 is resolved
+#          - groq TODO: Enable after ENG-1453 is resolved
+#          - voyage TODO: Enable after ENG-1415 is unblocked
+#          - ollama TODO: Enable after ENG-1455 is resolved
+#          - self-hosted
       rasa-calm-demo-branch:
         description: "Branch to checkout for `rasa-calm-demo`. Ignored unless `run_e2e_test_on_providers==true`"
         type: string
         required: true
         default: "main"
-      e2e-test-with-assertions:
+      command-generator:
+        description: "Command-generator(s) to use: single-step, multi-step or both (1 job for each)"
+        type: string
+        required: true
+        default: multi-step # TODO: Change to 'both', after test failures are resolved
+      single-step-e2e-test-with-assertions:
         description: "Path to test file, on `rasa-calm-demo` repository. Ignored unless `run_e2e_test_on_providers==true`"
         type: string
         required: true
-        default: "e2e_tests_with_assertions/passing/happy_path/user_adds_contact_to_their_list.yml"
+        default: "e2e_tests_with_assertions/passing/knowledge/user_starts_with_a_knowledge_question.yml"
+      multi-step-e2e-test-with-assertions:
+        description: "Path to test file, on `rasa-calm-demo` repository. Ignored unless `run_e2e_test_on_providers==true`"
+        type: string
+        required: true
+        default: "e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml"
+      llm-as-judge-model:
+        description: "Judge model (must be from OpenAI) to be used by assertions."
+        type: string
+        required: true
+        default: gpt-4o-mini
 
 # SECRETS
 # - SLACK_BOT_TOKEN: token to post to RasaHQ slack account
@@ -68,7 +86,10 @@ jobs:
     with:
       provider: ${{ inputs.provider }}
       rasa-calm-demo-branch: ${{ inputs.rasa-calm-demo-branch }}
-      e2e-test-with-assertions: ${{ inputs.e2e-test-with-assertions }}
+      single-step-e2e-test-with-assertions: ${{ inputs.single-step-e2e-test-with-assertions }}
+      multi-step-e2e-test-with-assertions: ${{ inputs.multi-step-e2e-test-with-assertions }}
+      command-generator: ${{ inputs.command-generator }}
+      llm-as-judge-model: ${{ inputs.llm-as-judge-model }}
 
   release-artifacts-workflow:
     name: release-artifacts-workflow

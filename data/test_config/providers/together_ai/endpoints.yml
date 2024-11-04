@@ -1,0 +1,10 @@
+action_endpoint:
+  url: "http://localhost:5055/webhook"
+
+nlg:
+ type: rephrase
+ rephrase_all: True
+ llm:
+   provider: together_ai
+   model: meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo
+   timeout: 7

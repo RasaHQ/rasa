@@ -1,0 +1,10 @@
+action_endpoint:
+  url: "http://localhost:5055/webhook"
+
+nlg:
+ type: rephrase
+ rephrase_all: True
+ llm:
+   provider: groq
+   model: llama3-8b-8192
+   timeout: 7

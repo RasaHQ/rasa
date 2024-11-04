@@ -1,0 +1,10 @@
+action_endpoint:
+  url: "http://localhost:5055/webhook"
+
+nlg:
+ type: rephrase
+ rephrase_all: True
+ llm:
+   provider: bedrock
+   model: anthropic.claude-3-5-sonnet-20240620-v1:0
+   timeout: 7

@@ -1,0 +1,11 @@
+action_endpoint:
+  url: "http://localhost:5055/webhook"
+
+nlg:
+ type: rephrase
+ rephrase_all: True
+ llm:
+    provider: huggingface
+    model: meta-llama/CodeLlama-7b-Instruct-hf
+    api_base: "https://wjz8ma0uku5pwxnb.us-east-1.aws.endpoints.huggingface.cloud"
+    timeout: 7
