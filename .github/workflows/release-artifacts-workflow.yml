@@ -26,15 +26,15 @@ on:
           - azure
           - bedrock
           - gemini
-#          - huggingface TODO: Enable after ENG-1456 is resolved
+#          - huggingface # TODO: Enable after ENG-1459 is resolved
           - huggingface_local
-#          - anthropic TODO: Enable after ENG-1454 is resolved
+          - anthropic # TODO: Enable after ENG-1454 is resolved
 #          - cohere TODO: Enable after ENG-1411 is unblocked
-          - mistral
-#          - together_ai TODO: Enable after ENG-1449 is resolved
-#          - groq TODO: Enable after ENG-1453 is resolved
+#          - mistral TODO: Enable after ENG-1412 is unblocked
+          - together_ai # TODO: Enable after ENG-1449 is resolved
+          - groq # TODO: Enable after ENG-1453 is resolved
 #          - voyage TODO: Enable after ENG-1415 is unblocked
-#          - ollama TODO: Enable after ENG-1455 is resolved
+          - ollama # TODO: Enable after ENG-1455 is resolved
 #          - self-hosted
       rasa-calm-demo-branch:
         description: "Branch to checkout for `rasa-calm-demo`. Ignored unless `run_e2e_test_on_providers==true`"
