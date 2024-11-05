@@ -81,7 +81,6 @@ runs:
         PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
 
     - name: Install MLflow for e2e-tests-with-assertions
-      if: ${{ inputs.provider != 'huggingface_local' }}
       run: |
         : Install MLflow for e2e-tests-with-assertions
         source $VENV && poetry install -E mlflow
