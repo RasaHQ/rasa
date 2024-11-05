@@ -33,7 +33,7 @@ pipeline:
     timezone: "Europe/Berlin"
     timeout: 3
   - name: NLUCommandAdapter
-  - name: MultiStepLLMCommandGenerator
+  - name: SingleStepLLMCommandGenerator
     llm:
       provider: azure
       deployment: test-gpt-35-turbo

@@ -1,0 +1,11 @@
+action_endpoint:
+  url: "http://localhost:5055/webhook"
+
+nlg:
+ type: rephrase
+ rephrase_all: True
+ llm:
+   provider: self-hosted
+   model: Snowflake/snowflake-arctic-base
+   api_base: "http://localhost:8000/v1"
+   timeout: 7
