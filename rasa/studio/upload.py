@@ -61,24 +61,29 @@ def handle_upload(args: argparse.Namespace) -> None:
         rasa.shared.utils.cli.print_error_and_exit(
             "No GraphQL endpoint found in config. Please run `rasa studio config`."
         )
+        return
+
+    if not is_auth_working(endpoint):
+        rasa.shared.utils.cli.print_error_and_exit(
+            "Authentication is invalid or expired. Please run `rasa studio login`."
+        )
+        return
+
+    structlogger.info("rasa.studio.upload.loading_data", event_info="Loading data...")
+
+    args.domain = rasa.cli.utils.get_validated_path(
+        args.domain, "domain", DEFAULT_DOMAIN_PATHS
+    )
+
+    args.config = rasa.cli.utils.get_validated_path(
+        args.config, "config", DEFAULT_CONFIG_PATH
+    )
+
+    # check safely if args.calm is set and not fail if not
+    if hasattr(args, "calm") and args.calm:
+        upload_calm_assistant(args, endpoint)
     else:
-        structlogger.info(
-            "rasa.studio.upload.loading_data", event_info="Loading data..."
-        )
-
-        args.domain = rasa.cli.utils.get_validated_path(
-            args.domain, "domain", DEFAULT_DOMAIN_PATHS
-        )
-
-        args.config = rasa.cli.utils.get_validated_path(
-            args.config, "config", DEFAULT_CONFIG_PATH
-        )
-
-        # check safely if args.calm is set and not fail if not
-        if hasattr(args, "calm") and args.calm:
-            upload_calm_assistant(args, endpoint)
-        else:
-            upload_nlu_assistant(args, endpoint)
+        upload_nlu_assistant(args, endpoint)
 
 
 config_keys = [
@@ -121,7 +126,11 @@ def _get_assistant_name(config: Dict[Text, Any]) -> str:
             ),
         )
 
-    structlogger.info(f"Uploading assistant with the name '{assistant_name}'.")
+    structlogger.info(
+        "rasa.studio.upload.name_selected",
+        event_info=f"Uploading assistant with the name '{assistant_name}'.",
+        assistant_name=assistant_name,
+    )
     return assistant_name
 
 
@@ -215,7 +224,9 @@ def upload_calm_assistant(args: argparse.Namespace, endpoint: str) -> StudioResu
         nlu_yaml=nlu_examples_yaml,
     )
 
-    structlogger.info("Uploading to Rasa Studio...")
+    structlogger.info(
+        "rasa.studio.upload.calm", event_info="Uploading to Rasa Studio..."
+    )
     return make_request(endpoint, graphql_req)
 
 
@@ -233,7 +244,10 @@ def upload_nlu_assistant(args: argparse.Namespace, endpoint: str) -> StudioResul
     Returns:
         None
     """
-    structlogger.info("Found DM1 assistant data, parsing...")
+    structlogger.info(
+        "rasa.studio.upload.nlu_data_read",
+        event_info="Found DM1 assistant data, parsing...",
+    )
     importer = TrainingDataImporter.load_from_dict(
         domain_path=args.domain, training_data_paths=args.data, config_path=args.config
     )
@@ -250,7 +264,9 @@ def upload_nlu_assistant(args: argparse.Namespace, endpoint: str) -> StudioResul
 
     assistant_name = _get_assistant_name(config)
 
-    structlogger.info("Validating data...")
+    structlogger.info(
+        "rasa.studio.upload.nlu_data_validate", event_info="Validating data..."
+    )
     _check_for_missing_primitives(
         intents, entities, intents_from_files, entities_from_files
     )
@@ -267,8 +283,31 @@ def upload_nlu_assistant(args: argparse.Namespace, endpoint: str) -> StudioResul
 
     graphql_req = build_request(assistant_name, nlu_examples_yaml, domain_yaml)
 
-    structlogger.info("Uploading to Rasa Studio...")
+    structlogger.info(
+        "rasa.studio.upload.nlu", event_info="Uploading to Rasa Studio..."
+    )
     return make_request(endpoint, graphql_req)
+
+
+def is_auth_working(endpoint: str) -> bool:
+    """Send a test request to Studio to check if auth is working."""
+    result = make_request(
+        endpoint,
+        {
+            "operationName": "LicenseDetails",
+            "query": (
+                "query LicenseDetails {\n"
+                "  licenseDetails {\n"
+                "    valid\n"
+                "    scopes\n"
+                "    __typename\n"
+                "  }\n"
+                "}"
+            ),
+            "variables": {},
+        },
+    )
+    return result.was_successful
 
 
 def make_request(endpoint: str, graphql_req: Dict) -> StudioResult:
@@ -301,7 +340,12 @@ def _add_missing_entities(
     for entity in entities_from_intents:
         if entity not in entities:
             structlogger.warning(
-                f"Adding entity '{entity}' to upload since it is used in an intent."
+                "rasa.studio.upload.adding_missing_entity",
+                event_info=(
+                    f"Adding entity '{entity}' to upload "
+                    "since it is used in an intent."
+                ),
+                entity=entity,
             )
             all_entities.append(entity)
     return all_entities
