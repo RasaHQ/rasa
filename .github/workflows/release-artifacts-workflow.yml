@@ -260,7 +260,7 @@ jobs:
           twine upload --verbose --repository-url https://europe-west3-python.pkg.dev/rasa-releases/rasa-pro-python/ ${{ format('{0}/dist/*', github.workspace) }}
 
   release-atifacts-publish-release:
-    name:
+    name: Release Artifacts Publish Release
     runs-on: ubuntu-22.04
     needs: [release-artifacts-docker, release-artifacts-pypi]
     env:
