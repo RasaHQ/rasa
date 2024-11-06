@@ -758,6 +758,7 @@ class RemoteActionJSONValidator:
             )
             raise e
 
+
 class RemoteAction(Action):
     def __init__(
         self,
