@@ -26,15 +26,15 @@ on:
           - azure
           - bedrock
           - gemini
-#          - huggingface # TODO: Enable after ENG-1459 is resolved
+#          - huggingface TODO: Enable after ENG-1456 is resolved
           - huggingface_local
-          - anthropic # TODO: Enable after ENG-1454 is resolved
+#          - anthropic TODO: Enable after ENG-1454 is resolved
 #          - cohere TODO: Enable after ENG-1411 is unblocked
-#          - mistral TODO: Enable after ENG-1412 is unblocked
-          - together_ai # TODO: Enable after ENG-1449 is resolved
-          - groq # TODO: Enable after ENG-1453 is resolved
+          - mistral
+#          - together_ai TODO: Enable after ENG-1449 is resolved
+#          - groq TODO: Enable after ENG-1453 is resolved
 #          - voyage TODO: Enable after ENG-1415 is unblocked
-          - ollama # TODO: Enable after ENG-1455 is resolved
+#          - ollama TODO: Enable after ENG-1455 is resolved
 #          - self-hosted
       rasa-calm-demo-branch:
         description: "Branch to checkout for `rasa-calm-demo`. Ignored unless `run_e2e_test_on_providers==true`"
@@ -74,6 +74,7 @@ on:
 
 env:
   TARGET_IMAGE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-pro"
+  DEFAULT_PYTHON_VERSION: "3.10"
 
 permissions:
   id-token: write # This is required for requesting the JWT
@@ -91,23 +92,25 @@ jobs:
       command-generator: ${{ inputs.command-generator }}
       llm-as-judge-model: ${{ inputs.llm-as-judge-model }}
 
-  release-artifacts-workflow:
-    name: release-artifacts-workflow
+  release-artifacts-docker:
+    name: Release Artifacts Docker
     # Run this workflow on a large runner because ARM64 build consumes disk space
     # ubuntu-22.04-4core - 4 cores, 16GB of RAM and 150 GB SSD
     runs-on: ubuntu-22.04-4core
 
     steps:
       - name: Set tag version
+        id: set-tag
         run: |
           if [[ -n "$GITHUB_REF" && "$GITHUB_REF" == refs/tags/* ]]; then
-            echo "TAG_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+            echo "TAG_VERSION=${GITHUB_REF#refs/tags/}"
           elif [[ -n "$INPUT_TAG_VERSION" ]]; then
-            echo "TAG_VERSION=$INPUT_TAG_VERSION" >> $GITHUB_ENV
+            echo "TAG_VERSION=$INPUT_TAG_VERSION"
           else
             echo "No tag version found."
             exit 1
           fi
+          echo "::set-output name=TAG_VERSION::$TAG_VERSION"
         env:
           INPUT_TAG_VERSION: ${{ github.event.inputs.tag_version }}
 
@@ -115,7 +118,7 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           ref: ${{ env.TAG_VERSION }}
-          
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
 
@@ -133,7 +136,7 @@ jobs:
         with:
            workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER_OIDC}}
            service_account: "github-actions-oidc-atom@rasa-releases.iam.gserviceaccount.com"
-      
+
       - name: Authenticate with Docker Hub
         uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
         with:
@@ -219,38 +222,54 @@ jobs:
           BASE_IMAGE_HASH: ${{ steps.check_image.outputs.base_image_hash }}
           RASA_DEPS_IMAGE_HASH: ${{ steps.check_image.outputs.rasa_deps_image_hash }}
           IMAGE_NAME: rasa-pro
-      
-      - name: Set up Python 3.9 🐍
-        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
-        with:
-           python-version: 3.9
 
-      - name: Install poetry 🦄
-        uses: Gr1N/setup-poetry@48b0f77c8c1b1b19cb962f0f00dff7b4be8f81ec #v9
-        with:
-           poetry-version: ${{ env.POETRY_VERSION }}
-      
-      - name: Build ⚒️ Distributions
-        run: poetry build
-
-      # Push to the public PYPI release registry
-      - name: Publish to public PyPI 📦
-        uses: pypa/gh-action-pypi-publish@e53eb8b103ffcb59469888563dc324e3c8ba6f06
-        with:
-          password: ${{ secrets.PYPI_TOKEN }}
-          repository-url: "https://upload.pypi.org/legacy/"
-          packages-dir: ${{ format('{0}/dist', github.workspace) }}
+  release-artifacts-pypi:
+    name: Release Artifacts PyPI
+    runs-on: ubuntu-22.04
     
-      # Push library to GCP Artifact Registry rasa-plus-py
-      - name: Release via GCP Artifact Registry
-        run: |
-           pip install keyring
-           pip install keyrings.google-artifactregistry-auth
-           pip install twine
-           gcloud artifacts print-settings python --project=rasa-releases --repository=rasa-pro-python --location=europe-west3 > ~/.pypirc
-           twine upload --verbose --repository-url https://europe-west3-python.pkg.dev/rasa-releases/rasa-pro-python/ ${{ format('{0}/dist/*', github.workspace) }}
+    steps:
+    - name: Set up Python 3.10 🐍
+      uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
+      with:
+          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
+    - name: Install poetry 🦄
+      uses: Gr1N/setup-poetry@48b0f77c8c1b1b19cb962f0f00dff7b4be8f81ec #v9
+      with:
+          poetry-version: ${{ env.POETRY_VERSION }}
+
+    - name: Build ⚒️ Distributions
+      run: poetry build
+
+    # Push to the public PYPI release registry
+    - name: Publish to public PyPI 📦
+      if: always()
+      uses: pypa/gh-action-pypi-publish@e53eb8b103ffcb59469888563dc324e3c8ba6f06
+      with:
+        password: ${{ secrets.PYPI_TOKEN }}
+        repository-url: "https://upload.pypi.org/legacy/"
+        packages-dir: ${{ format('{0}/dist', github.workspace) }}
+
+    # Push library to GCP Artifact Registry rasa-plus-py
+    - name: Release via GCP Artifact Registry
+      if: always()
+      run: |
+          pip install keyring
+          pip install keyrings.google-artifactregistry-auth
+          pip install twine
+          gcloud artifacts print-settings python --project=rasa-releases --repository=rasa-pro-python --location=europe-west3 > ~/.pypirc
+          twine upload --verbose --repository-url https://europe-west3-python.pkg.dev/rasa-releases/rasa-pro-python/ ${{ format('{0}/dist/*', github.workspace) }}
+
+  release-atifacts-publish-release:
+    name: Release Artifacts Publish Release
+    runs-on: ubuntu-22.04
+    needs: [release-artifacts-docker, release-artifacts-pypi]
+    env:
+      TAG_VERSION: ${{ needs.set-tag-version.outputs.tag_version }}
+
+    steps:
       - name: Notify Sentry about the release
+        if: success()
         env:
            GITHUB_TAG: ${{ env.GITHUB_TAG }}
            SENTRY_ORG: rasahq
@@ -263,6 +282,7 @@ jobs:
            sentry-cli releases finalize "rasa-$GITHUB_TAG"
 
       - name: Publish Release Notes 🗞
+        if: success()
         env:
           GH_RELEASE_NOTES_TOKEN: ${{ secrets.GH_RELEASE_NOTES_TOKEN }}
           GITHUB_TAG: ${{ env.TAG_VERSION }}
@@ -274,6 +294,7 @@ jobs:
           python3 scripts/publish_gh_release_notes.py
 
       - name: Update CMS with new release record
+        if: success()
         uses: RasaHQ/push-release-record-to-datocms-gha@1be87116d0a2b555bd5b291ea5923ce5b7aeb83e
         # this step only has an effect for new majors and minors; the action skips other versions
         with:
@@ -281,6 +302,14 @@ jobs:
           product-name: "Rasa Pro"
           build-trigger-id: ${{ vars.DATO_CMS_BUILD_TRIGGER_ID }}
 
+  release-artifact-slack-notifications:
+    name: Release Artifact Slack Notifications
+    runs-on: ubuntu-22.04
+    needs: [release-artifacts-docker, release-artifacts-pypi, release-atifacts-publish-release]
+    env:
+      TAG_VERSION: ${{ needs.set-tag-version.outputs.tag_version }}
+
+    steps:
       - name: Notify Slack of successful release 💬
         if: success()
         uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 #v 1.25.0
