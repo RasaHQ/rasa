@@ -1,0 +1,13 @@
+action_endpoint:
+  url: "http://localhost:5055/webhook"
+
+nlg:
+ type: rephrase
+ rephrase_all: True
+ llm:
+    provider: azure
+    deployment: test-gpt-35-turbo
+    api_type: azure
+    api_base: https://devtribe-testing-canada-east.openai.azure.com/
+    api_version: 2024-02-01
+    timeout: 7

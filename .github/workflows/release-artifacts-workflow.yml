@@ -9,6 +9,58 @@ on:
       tag_version:
         description: 'Tag version:'
         required: true
+      run_e2e_test_on_providers:
+        description: "Run E2E test on CALM supported LLM and Embeddings model providers"
+        type: boolean
+        required: true
+        default: false
+      provider:
+        description: "Provider(s) to run e2e-test on. Ignored unless `run_e2e_test_on_providers==true`"
+        type: choice
+        required: true
+        default: "all"
+        # TODO: Enable testing of all the providers
+        options:
+          - all
+          - openai
+          - azure
+          - bedrock
+          - gemini
+#          - huggingface # TODO: Enable after ENG-1459 is resolved
+          - huggingface_local
+          - anthropic # TODO: Enable after ENG-1454 is resolved
+#          - cohere TODO: Enable after ENG-1411 is unblocked
+#          - mistral TODO: Enable after ENG-1412 is unblocked
+          - together_ai # TODO: Enable after ENG-1449 is resolved
+          - groq # TODO: Enable after ENG-1453 is resolved
+#          - voyage TODO: Enable after ENG-1415 is unblocked
+          - ollama # TODO: Enable after ENG-1455 is resolved
+#          - self-hosted
+      rasa-calm-demo-branch:
+        description: "Branch to checkout for `rasa-calm-demo`. Ignored unless `run_e2e_test_on_providers==true`"
+        type: string
+        required: true
+        default: "main"
+      command-generator:
+        description: "Command-generator(s) to use: single-step, multi-step or both (1 job for each)"
+        type: string
+        required: true
+        default: multi-step # TODO: Change to 'both', after test failures are resolved
+      single-step-e2e-test-with-assertions:
+        description: "Path to test file, on `rasa-calm-demo` repository. Ignored unless `run_e2e_test_on_providers==true`"
+        type: string
+        required: true
+        default: "e2e_tests_with_assertions/passing/knowledge/user_starts_with_a_knowledge_question.yml"
+      multi-step-e2e-test-with-assertions:
+        description: "Path to test file, on `rasa-calm-demo` repository. Ignored unless `run_e2e_test_on_providers==true`"
+        type: string
+        required: true
+        default: "e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml"
+      llm-as-judge-model:
+        description: "Judge model (must be from OpenAI) to be used by assertions."
+        type: string
+        required: true
+        default: gpt-4o-mini
 
 # SECRETS
 # - SLACK_BOT_TOKEN: token to post to RasaHQ slack account
@@ -28,6 +80,17 @@ permissions:
   contents: read # This is required for actions/checkout
 
 jobs:
+  run-e2e-test-on-providers:
+    uses: ./.github/workflows/providers-e2e-tests.yml
+    if: ${{ inputs.run_e2e_test_on_providers }}
+    with:
+      provider: ${{ inputs.provider }}
+      rasa-calm-demo-branch: ${{ inputs.rasa-calm-demo-branch }}
+      single-step-e2e-test-with-assertions: ${{ inputs.single-step-e2e-test-with-assertions }}
+      multi-step-e2e-test-with-assertions: ${{ inputs.multi-step-e2e-test-with-assertions }}
+      command-generator: ${{ inputs.command-generator }}
+      llm-as-judge-model: ${{ inputs.llm-as-judge-model }}
+
   release-artifacts-workflow:
     name: release-artifacts-workflow
     # Run this workflow on a large runner because ARM64 build consumes disk space

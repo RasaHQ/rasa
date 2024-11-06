@@ -1,0 +1,11 @@
+action_endpoint:
+  url: "http://localhost:5055/webhook"
+
+nlg:
+ type: rephrase
+ rephrase_all: True
+ llm:
+   provider: ollama
+   model: llama3.2
+   api_base: "http://localhost:11434"
+   timeout: 7

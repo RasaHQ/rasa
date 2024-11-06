@@ -25,9 +25,21 @@ This runs PII language and model provider specific tests on every merge to `main
 run as a [workflow dispatch](#glossary) event. 
 If this workflow fails a Slack notification is sent to the channel `#atom-squad-alerts`.
 
+### E2E Test on Rasa-Calm-Demo with supported providers
+This workflow runs a single E2E test (with assertions) on the `rasa-calm-demo` 
+bot (from its `passing/happy_path` category), using the various CALM supported LLM 
+and Embeddings providers, to verify CALM's integration/compatibility with the 
+providers' APIs. 
+
+This workflow runs as a cron job at 1am UTC every Sunday, and can 
+also be triggered manually/on-demand, and test results' notification is sent to 
+`#dev-tribe-alerts` Slack channel. In case of failure, test results are saved, and can be
+found on GitHub's web interface, in the `Artifacts` section of the `Action`'s run summary page.
+
 ### Release Artifacts Workflow
 Workflow runs on a tag push to the `main` branch and `release branches`. 
 This workflow does the following:
+- Optionally, runs the ["E2E Test on Rasa-Calm-Demo with supported providers"](./.github/workflows/providers-e2e-tests.yml) workflow, if this workflow is triggered manually with the `run_e2e_test_on_providers` option selected.
 - builds and pushes a docker image with the tag version to [GCP](https://console.cloud.google.com/artifacts/docker/rasa-releases/europe-west3/rasa-pro/rasa-pro?authuser=1&project=rasa-releases)
 - builds and pushes a python package to [GCP](https://console.cloud.google.com/artifacts/python/rasa-releases/europe-west3/rasa-pro-python/rasa-pro?authuser=1&project=rasa-releases)
 

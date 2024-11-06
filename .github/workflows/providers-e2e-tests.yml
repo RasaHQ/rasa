@@ -1,0 +1,239 @@
+name: E2E Test on Rasa-Calm-Demo with supported providers
+
+on:
+  workflow_dispatch:
+    inputs:
+      provider:
+        # In-case provider only has supported model for one
+        # (for e.g. only chat-completion), then default OpenAI
+        # would be used for the other
+        description: "LLM chat-completion and Embeddings model provider"
+        type: choice
+        required: true
+        default: "all" # Run e2e-test on all providers by default
+
+        options:
+          - all
+          - openai
+          - azure
+          - bedrock
+          - gemini
+          # - huggingface # TODO: Enable after ENG-1459 is resolved
+          - huggingface_local
+          - anthropic # TODO: Enable after ENG-1454 is resolved
+          # - cohere TODO: Enable after ENG-1411 is unblocked
+          # - mistral TODO: Enable after ENG-1412 is unblocked
+          - together_ai # TODO: Enable after ENG-1449 is resolved
+          - groq # TODO: Enable after ENG-1453 is resolved
+          # - voyage TODO: Enable after ENG-1415 is unblocked
+          - ollama # TODO: Enable after ENG-1455 is resolved
+          # - self-hosted
+
+      rasa-calm-demo-branch:
+        description: "Branch to checkout for `rasa-calm-demo`"
+        type: string
+        required: true
+        default: "main"
+
+      command-generator:
+        description: "Command-generator(s) to use: single-step, multi-step or both (1 job for each)"
+        type: choice
+        required: true
+        default: both
+        options:
+          - single-step
+          - multi-step
+          - both
+
+      single-step-e2e-test-with-assertions:
+        description: "Path to test file, on `rasa-calm-demo` repository, to be run with single-step trained model"
+        type: string
+        required: true
+        # Test on normal Transaction flows, as well as knowledge/enterprise-search included
+        default: "e2e_tests_with_assertions/passing/knowledge/user_starts_with_a_knowledge_question.yml"
+
+      multi-step-e2e-test-with-assertions:
+        description: "Path to test file, on `rasa-calm-demo` repository, to be run with multi-step trained model"
+        type: string
+        required: true
+        default: "e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml"
+
+      llm-as-judge-model:
+        description: "Judge model (must be from OpenAI) to be used by assertions."
+        type: string
+        required: true
+        default: gpt-4o-mini
+
+    # Enable optionally calling this re-usable Workflow from
+    # `release-artifacts-workflow` also, with same input
+    # parameters as above
+  workflow_call:
+    inputs:
+      provider:
+        # In-case provider only has supported model for one
+        # (for e.g. only chat-completion), then default OpenAI
+        # would be used for the other
+        description: "LLM chat-completion and Embeddings model provider"
+        type: string
+        required: true
+        default: "all" # Run e2e-test on all providers by default
+      rasa-calm-demo-branch:
+        description: "Branch to checkout for `rasa-calm-demo`"
+        type: string
+        required: true
+        default: "main"
+      command-generator:
+        description: "Command-generator(s) to use: single-step, multi-step or both (1 job for each)"
+        type: string
+        required: true
+        default: multi-step # TODO: Change to 'both', after test failures are resolved
+      single-step-e2e-test-with-assertions:
+        description: "Path to test file, on `rasa-calm-demo` repository"
+        type: string
+        required: true
+        # Test on normal Transaction flows, as well as knowledge/enterprise-search included
+        default: "e2e_tests_with_assertions/passing/knowledge/user_starts_with_a_knowledge_question.yml"
+      multi-step-e2e-test-with-assertions:
+        description: "Path to test file, on `rasa-calm-demo` repository"
+        type: string
+        required: true
+        default: "e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml"
+      llm-as-judge-model:
+        description: "Judge model (must be from OpenAI) to be used by assertions."
+        type: string
+        required: true
+        default: gpt-4o-mini
+
+env:
+  DEFAULT_PYTHON_VERSION: "3.10"
+  RASA_PRO_BETA_E2E_ASSERTIONS: true
+  RASA_PRO_BETA_STUB_CUSTOM_ACTION: true
+  LOG_LEVEL_LLM: DEBUG
+  COMMAND_GENERATOR: ${{ inputs.command-generator || 'multi-step' }} # TODO: Change to 'both', after test failures are resolved
+  COMMAND_GENERATOR_MATRIX: '{"single-step": ["singlestep"], "multi-step": ["multistep"], "both": ["singlestep", "multistep"]}'
+
+  # Providers' required environment variables (API key values also stored in 1Password):
+  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+  # Azure OpenAI
+  AZURE_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY_DEVTRIBE_TESTING_CANADA_EAST }}
+
+  # AWS Bedrock
+  AWS_REGION_NAME: us-east-1
+
+  # Gemini - Google AI Studio
+  GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+
+  # Anthropic
+  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+  # Hugging Face
+  HUGGINGFACE_API_KEY: ${{ secrets.HUGGINGFACE_API_KEY }}
+
+  # Mistral
+  MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+
+  # Together AI
+  TOGETHERAI_API_KEY: ${{ secrets.TOGETHERAI_API_KEY }}
+
+  # Groq
+  GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+
+  # Cohere
+  COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
+
+  # Voyage AI
+  VOYAGE_API_KEY: ${{ secrets.VOYAGE_API_KEY }}
+
+  # Ollama
+  OLLAMA_API_BASE: http://localhost:11434
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  job_setup:
+    runs-on: ubuntu-22.04
+    outputs:
+      COMMAND_GENERATOR: ${{ env.COMMAND_GENERATOR }}
+      COMMAND_GENERATOR_MATRIX: ${{ env.COMMAND_GENERATOR_MATRIX }}
+    steps:
+      - name: Set command-generator
+        run: |
+          echo "COMMAND_GENERATOR=${{ env.COMMAND_GENERATOR }}" >> $GITHUB_OUTPUT
+          echo "COMMAND_GENERATOR_MATRIX=${{ env.COMMAND_GENERATOR_MATRIX }}" >> $GITHUB_OUTPUT
+          echo "${{ fromJson(env.COMMAND_GENERATOR_MATRIX)[env.COMMAND_GENERATOR] }}"
+
+  e2e_test:
+    name: Run e2e Test
+    needs: job_setup
+    if: ${{ github.event_name == 'schedule' || inputs.provider == 'all' }}
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        provider: [
+            openai,
+            azure,
+            bedrock,
+            gemini,
+            # huggingface, # TODO: Enable after ENG-1459 is resolved
+            huggingface_local,
+            anthropic, # TODO: Enable after ENG-1454 is resolved
+            # cohere, TODO: Enable after ENG-1411 is unblocked
+            # mistral, TODO: Enable after ENG-1412 is unblocked
+            together_ai, # TODO: Enable after ENG-1449 is resolved
+            groq, # TODO: Enable after ENG-1453 is resolved
+            # voyage, TODO: Enable after ENG-1415 is unblocked
+            ollama, # TODO: Enable after ENG-1455 is resolved
+            # self-hosted,
+          ] # TODO: Enable testing all the providers
+        train-and-test: ${{ fromJson(needs.job_setup.outputs.COMMAND_GENERATOR_MATRIX)[needs.job_setup.outputs.COMMAND_GENERATOR] }}
+    steps:
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+
+      - name: E2E test
+        uses: ./.github/actions/providers-e2e-test
+        with:
+          provider: ${{ matrix.provider }}
+          train-and-test: ${{ matrix.train-and-test }}
+          rasa-calm-demo-branch: ${{ inputs.rasa-calm-demo-branch || 'main' }}
+          single-step-e2e-test-with-assertions: ${{ inputs.single-step-e2e-test-with-assertions || 'e2e_tests_with_assertions/passing/knowledge/user_starts_with_a_knowledge_question.yml' }}
+          multi-step-e2e-test-with-assertions: ${{ inputs.multi-step-e2e-test-with-assertions || 'e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml' }}
+          llm-as-judge-model: ${{ inputs.llm-as-judge-model || 'gpt-4o-mini' }}
+          rasa-calm-demo-read-token: ${{ secrets.RASA_CALM_DEMO_READ }}
+          rasa-pro-license: ${{ secrets.RASA_PRO_LICENSE }}
+          duckling-url: ${{ secrets.DUCKLING_URL }}
+          slack-bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
+          huggingface-api-key: ${{ secrets.HUGGINGFACE_API_KEY }}
+
+  e2e_test_on_single_provider:
+    name: Run e2e Test
+    needs: job_setup
+    if: ${{ inputs.provider != 'all' && github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        train-and-test: ${{ fromJson(needs.job_setup.outputs.COMMAND_GENERATOR_MATRIX)[needs.job_setup.outputs.COMMAND_GENERATOR] }}
+
+    steps:
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+
+      - name: E2E test on single provider
+        uses: ./.github/actions/providers-e2e-test
+        with:
+          provider: ${{ inputs.provider }}
+          train-and-test: ${{ matrix.train-and-test }}
+          rasa-calm-demo-branch: ${{ inputs.rasa-calm-demo-branch }}
+          single-step-e2e-test-with-assertions: ${{ inputs.single-step-e2e-test-with-assertions }}
+          multi-step-e2e-test-with-assertions: ${{ inputs.multi-step-e2e-test-with-assertions }}
+          llm-as-judge-model: ${{ inputs.llm-as-judge-model }}
+          rasa-calm-demo-read-token: ${{ secrets.RASA_CALM_DEMO_READ }}
+          rasa-pro-license: ${{ secrets.RASA_PRO_LICENSE }}
+          duckling-url: ${{ secrets.DUCKLING_URL }}
+          slack-bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
+          huggingface-api-key: ${{ secrets.HUGGINGFACE_API_KEY }}

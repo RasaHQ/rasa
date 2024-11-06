@@ -1,0 +1,252 @@
+name: E2E Test on Rasa-Calm-Demo with supported providers
+description: Runs E2E Test on `Rasa-Calm-Demo` bot with supported providers
+
+inputs:
+  provider:
+    # In-case provider only has supported model for one
+    # (for e.g. only chat-completion), then default OpenAI
+    # would be used for the other
+    description: LLM chat-completion and Embeddings model provider
+    required: true
+    default: all # Run e2e-test on all providers by default
+
+  train-and-test:
+    description: "Single-step or multi-step training type, and testing on corresponding model"
+    required: true
+
+  rasa-calm-demo-branch:
+    description: Branch to checkout for `rasa-calm-demo`
+    required: true
+    default: main
+
+  single-step-e2e-test-with-assertions:
+      description: "Path to test file, on `rasa-calm-demo` repository"
+      required: true
+      # Test on normal Transaction flows, as well as knowledge/enterprise-search included
+      default: "e2e_tests_with_assertions/passing/knowledge/user_starts_with_a_knowledge_question.yml"
+
+  multi-step-e2e-test-with-assertions:
+    description: "Path to test file, on `rasa-calm-demo` repository"
+    required: true
+    default: "e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml"
+
+  llm-as-judge-model:
+    description: "Judge model (must be from OpenAI) to be used by assertions."
+    required: true
+    default: gpt-4o-mini
+
+  rasa-calm-demo-read-token:
+    description: 'Token to enable read access to `rasa-calm-demo` repository'
+    required: true
+
+  rasa-pro-license:
+    description: 'RASA-Pro license'
+    required: true
+
+  duckling-url:
+    description: 'Duckling server URL'
+    required: true
+
+  slack-bot-token:
+    description: 'Token to enable sending Slack notifications'
+    required: true
+
+  huggingface-api-key:
+    description: 'Hugging Face API key'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout git repository 🕝
+      uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+      with:
+        repository: RasaHQ/rasa-calm-demo
+        ref: ${{ inputs.rasa-calm-demo-branch }}
+        path: rasa-calm-demo
+        token: ${{ inputs.rasa-calm-demo-read-token }}
+
+    - name: Setup LLM-as-judge model
+      working-directory: rasa-calm-demo
+      run: |
+        : Setup LLM-as-judge model
+        echo "llm_as_judge:
+                api_type: openai
+                model: ${{ inputs.llm-as-judge-model }}" > conftest.yml
+      shell: bash
+
+    - name: Setup Python Environment
+      uses: RasaHQ/rasa-private/.github/actions/setup-python-env@3.10.x
+      with:
+        PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+
+    - name: Install MLflow for e2e-tests-with-assertions
+      run: |
+        : Install MLflow for e2e-tests-with-assertions
+        source $VENV && poetry install -E mlflow
+      shell: bash
+
+    - name: Install google-generative-ai package
+      if: ${{ inputs.provider == 'gemini' }}
+      run: |
+        : Install google-generative-ai package
+        pip install google-generativeai
+      shell: bash
+
+    - name: Install sentence-transformers package
+      if: ${{ inputs.provider == 'huggingface_local' }}
+      run: |
+        : Install sentence-transformers package
+        source $VENV && pip install sentence-transformers
+      shell: bash
+
+    - name: Configure AWS credentials
+      if: ${{ inputs.provider == 'bedrock' }}
+      uses: aws-actions/configure-aws-credentials@8c3f20df09ac63af7b3ae3d7c91f105f857d8497 #v3.0.1
+      with:
+        role-to-assume: arn:aws:iam::329710836760:role/GitHubAction-BedrockFullAccess
+        aws-region: ${{ env.AWS_REGION_NAME }}
+
+    - name: Install and start Ollama server
+      if: ${{ inputs.provider == 'ollama' }}
+      run: |
+        : Install and start Ollama server
+        curl -fsSL https://ollama.com/install.sh | sh
+      shell: bash
+
+    - name: Pull Ollama LLM model
+      if: ${{ inputs.provider == 'ollama' }}
+      run: |
+        : Pull Ollama LLM model
+        ollama pull llama3.2
+      shell: bash
+
+    - name: Setup vLLM
+      if: ${{ inputs.provider == 'self-hosted' }}
+      run: |
+        : Setup vLLM
+        pip install vllm==0.6.0 && vllm serve --trust-remote-code Snowflake/snowflake-arctic-base 
+      shell: bash
+
+    # As endpoint is scaled-to-zero upon inactivity for cost minimisation,
+    # so need to wake it up before usage
+    - name: Wake up Hugging Face inference endpoint
+      if: ${{ inputs.provider == 'huggingface' }}
+      run: |
+        : Wake up Hugging Face inference endpoint
+        curl --fail-with-body --retry 10 --retry-max-time 300 --retry-all-errors -vvv 'https://z35w5f1azkh4s9id.us-east-1.aws.endpoints.huggingface.cloud' \
+        --header 'Content-Type: application/json' \
+        --header "Authorization: Bearer ${{ inputs.huggingface-api-key }}" \
+        --data '{
+            "inputs": "Can you please let us know more details about your ",
+            "parameters": {
+                "max_new_tokens": 150
+            }
+        }'
+      shell: bash
+
+    - name: Run duckling server
+      working-directory: rasa-calm-demo
+      run: |
+        make run-duckling
+      shell: bash
+
+    - name: Run action server
+      id: run-action-server
+      env:
+        RASA_PRO_LICENSE: ${{ inputs.rasa-pro-license }}
+        RASA_DUCKLING_HTTP_URL: ${{ inputs.duckling-url }}
+        RASA_PRO_BETA_INTENTLESS: true
+      working-directory: rasa-calm-demo
+      run: |
+        rasa run actions &
+      shell: bash
+
+    - name: Train model
+      env:
+        RASA_PRO_LICENSE: ${{ inputs.rasa-pro-license }}
+        RASA_PRO_BETA_INTENTLESS: true
+      run: |
+        : Train model
+        rm -rf .rasa models \
+          && rasa train \
+          --config data/test_config/providers/${{ inputs.provider }}/${{ inputs.train-and-test }}-config.yml \
+          --endpoints data/test_config/providers/${{ inputs.provider }}/endpoints.yml \
+          --domain rasa-calm-demo/domain \
+          --data rasa-calm-demo/data \
+          --fixed-model-name ${{ inputs.train-and-test }}-${{ inputs.provider }}-model
+      shell: bash
+
+    - name: Run e2e test (Single Step Command Generator)
+      if: ${{ inputs.train-and-test == 'singlestep' }}
+      id: e2e-test-on-singlestep-trained-model
+      env:
+        RASA_PRO_LICENSE: ${{ inputs.rasa-pro-license }}
+        RASA_DUCKLING_HTTP_URL: ${{ inputs.duckling-url }}
+        RASA_PRO_BETA_INTENTLESS: true
+      run: |
+        : Run e2e test on SingleStepCommandGenerator model
+        rasa test e2e rasa-calm-demo/${{ inputs.single-step-e2e-test-with-assertions }} \
+          --e2e-results \
+          --debug \
+          --endpoints data/test_config/providers/${{ inputs.provider }}/endpoints.yml \
+          --model models/${{ inputs.train-and-test }}-${{ inputs.provider }}-model.tar.gz
+      shell: bash
+
+    - name: Run e2e test (Multi-Step Command Generator)
+      if: ${{ inputs.train-and-test == 'multistep' }}
+      env:
+        RASA_PRO_LICENSE: ${{ inputs.rasa-pro-license }}
+        RASA_DUCKLING_HTTP_URL: ${{ inputs.duckling-url }}
+        RASA_PRO_BETA_INTENTLESS: true
+      run: |
+        : Run e2e test on MultiStepCommandGenerator model
+        rasa test e2e rasa-calm-demo/${{ inputs.multi-step-e2e-test-with-assertions }} \
+          --e2e-results \
+          --debug \
+          --endpoints data/test_config/providers/${{ inputs.provider }}/endpoints.yml \
+          --model models/${{ inputs.train-and-test }}-${{ inputs.provider }}-model.tar.gz
+      shell: bash
+
+    - name: Save test results
+      if: failure()
+      uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
+      with:
+        name: ${{ inputs.provider }}-E2E-test-${{ inputs.train-and-test }}-results
+        path: tests/e2e_results_failed.yml
+
+    - name: Get Rasa-pro version and short-SHA, and set as environment variables
+      if: always()
+      env:
+        RASA_PRO_LICENSE: ${{ inputs.rasa-pro-license }}
+      run: |
+        echo "RASA_VERSION=$(rasa --version | grep 'Rasa Version' | tr -d ' ' | awk -F ':' '{print $2}')" >> $GITHUB_ENV
+        echo "SHORT_SHA=`git rev-parse --short HEAD`" >> $GITHUB_ENV
+      shell: bash
+
+    - name: Notify Slack of successful test 💬
+      if: success()
+      uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 #v 1.25.0
+      with:
+        # Send notification to #dev-tribe-alerts slack channel
+        channel-id: C070ELPSLBB 
+        slack-message: ':rocket: *Rasa-Pro* (version `${{ env.RASA_VERSION }}`, `rasa-private` sha `${{ env.SHORT_SHA }}`)
+          CALM E2E tests (from `rasa-calm-demo` branch `${{ inputs.rasa-calm-demo-branch }}`) passed against provider: `${{ inputs.provider }}`, on ${{ inputs.train-and-test }} trained model. More
+          information can be found <https://github.com/${{ github.repository
+          }}/actions/runs/${{ github.run_id }}|here>.'
+      env:
+        SLACK_BOT_TOKEN: ${{ inputs.slack-bot-token }}
+
+    - name: Notify Slack of failing test ⛔️
+      if: failure()
+      uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 #v 1.25.0
+      with:
+        # Send notification to #dev-tribe-alerts slack channel
+        channel-id: C070ELPSLBB 
+        # Alert Engine-squad
+        slack-message: '<!subteam^S0322UJCPU1> :broken_heart: *Rasa-Pro* (version `${{ env.RASA_VERSION
+          }}`, `rasa-private` sha `${{ env.SHORT_SHA }}`) CALM E2E tests (from `rasa-calm-demo` branch `${{ inputs.rasa-calm-demo-branch }}`) failed against provider: `${{ inputs.provider }}`, on ${{ inputs.train-and-test }} trained model!
+          More information can be found <https://github.com/${{
+          github.repository }}/actions/runs/${{ github.run_id }}|here>.'
+      env:
+        SLACK_BOT_TOKEN: ${{ inputs.slack-bot-token }}

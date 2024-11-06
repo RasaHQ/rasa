@@ -1,0 +1,80 @@
+recipe: default.v1
+language: en
+pipeline:
+  - name: LLMBasedRouter
+    prompt: data/test_config/providers/router_template.jinja2
+    llm:
+      provider: cohere
+      model: command-r-plus-08-2024
+      timeout: 7
+    calm_entry:
+      sticky: "handles everything else, including finance, transactions, transfers, balance, contacts and pizza orders"
+    nlu_entry:
+      sticky: "handles everything around health advice and hotel or restaurant bookings"
+      non_sticky: "handles chitchat"
+  - name: WhitespaceTokenizer
+  - name: CountVectorsFeaturizer
+  - name: CountVectorsFeaturizer
+    analyzer: char_wb
+    min_ngram: 1
+    max_ngram: 4
+  - name: LogisticRegressionClassifier
+    max_iter: 100
+    solver: lbfgs
+    tol: 0.0001
+    random_state: 42
+    ranking_length: 10
+  - name: CRFEntityExtractor
+  - name: DucklingEntityExtractor
+    url: "http://localhost:8000"
+    dimensions: ["time", "number"]
+    timezone: "Europe/Berlin"
+    timeout: 3
+  - name: NLUCommandAdapter
+  - name: MultiStepLLMCommandGenerator
+    llm:
+      provider: cohere
+      model: command-r-plus-08-2024
+      timeout: 7
+    embeddings:
+      provider: cohere
+      model: embed-english-v3.0
+      timeout: 7
+    flow_retrieval:
+      embeddings:
+        provider: cohere
+        model: embed-english-v3.0
+        timeout: 7
+
+policies:
+  - name: RulePolicy
+  - name: TEDPolicy
+    constrain_similarities: true
+  - name: FlowPolicy
+  - name: EnterpriseSearchPolicy
+    citation_enabled: true
+    use_generative_llm: true
+    vector_store:
+      source: rasa-calm-demo/docs/
+    embeddings:
+      provider: cohere
+      model: embed-english-v3.0
+      timeout: 7
+    llm:
+      provider: cohere
+      model: command-r-plus-08-2024
+      timeout: 7
+  - name: IntentlessPolicy
+    llm:
+      provider: cohere
+      model: command-r-plus-08-2024
+      timeout: 7
+
+    # TODO: Resolve  IntentlessPolicy training failure with Cohere embedding models with error:
+    # `total number of texts must be at most 96 - received 299`.
+    # embeddings:
+    #   provider: cohere
+    #   model: embed-english-v3.0
+    #   timeout: 7
+
+assistant_id: 20240418-073244-narrow-archive
