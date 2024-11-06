@@ -13,6 +13,8 @@ from typing import (
     cast,
 )
 
+from jsonschema import Draft202012Validator
+
 import rasa.core
 import rasa.shared.utils.io
 from rasa.core.actions.custom_action_executor import (
@@ -99,8 +101,6 @@ from rasa.utils.url_tools import UrlSchema, get_url_schema
 if TYPE_CHECKING:
     from rasa.core.channels.channel import OutputChannel
     from rasa.core.nlg import NaturalLanguageGenerator
-    from rasa.shared.core.events import IntentPrediction
-
 
 logger = logging.getLogger(__name__)
 
@@ -726,12 +726,20 @@ class ActionDeactivateLoop(Action):
 
 
 class RemoteActionJSONValidator:
+    """
+    A validator class for ensuring that the JSON response from a custom action executor
+    adheres to the expected schema.
+    """
+
     @staticmethod
     def action_response_format_spec() -> Dict[Text, Any]:
         """Expected response schema for an Action endpoint.
 
         Used for validation of the response returned from the
         Action endpoint.
+
+        Returns:
+            Dict[Text, Any]: A dictionary representing the JSON schema for validation.
         """
         schema = {
             "type": "object",
@@ -742,12 +750,30 @@ class RemoteActionJSONValidator:
         }
         return schema
 
-    @staticmethod
-    def validate(result: Dict[Text, Any]) -> bool:
-        from jsonschema import ValidationError, validate
+    @classmethod
+    def validate(cls, result: Dict[Text, Any]) -> bool:
+        """
+        Validate the given JSON result against the expected Action response schema.
+
+        This method uses a cached JSON schema validator to check if the provided result
+        conforms to the predefined schema.
+
+        Args:
+            result (Dict[Text, Any]): The JSON response to validate.
+
+        Returns:
+            bool: True if validation is successful.
+
+        Raises:
+            ValidationError: If the JSON response does not conform to the schema.
+        """
+        from jsonschema import ValidationError
 
         try:
-            validate(result, RemoteActionJSONValidator.action_response_format_spec())
+            validator = cls.get_action_response_validator()
+            validator.validate(
+                result, RemoteActionJSONValidator.action_response_format_spec()
+            )
             return True
         except ValidationError as e:
             e.message += (
@@ -757,6 +783,17 @@ class RemoteActionJSONValidator:
                 f"{DOCS_BASE_URL}/custom-actions"
             )
             raise e
+
+    @classmethod
+    @lru_cache(maxsize=1)
+    def get_action_response_validator(cls) -> Draft202012Validator:
+        """
+        Retrieve a cached JSON schema validator for the Action response schema.
+
+        Returns:
+            Draft202012Validator: An instance of the JSON schema validator.
+        """
+        return Draft202012Validator(cls.action_response_format_spec())
 
 
 class RemoteAction(Action):
