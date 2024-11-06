@@ -252,7 +252,9 @@ runs:
       with:
         # Send notification to #dev-tribe-alerts slack channel
         channel-id: C070ELPSLBB 
-        slack-message: '@enginesquad :broken_heart: *Rasa-Pro* (version `${{ env.RASA_VERSION
+
+        # Alert Engine-squad
+        slack-message: '<!subteam^S0322UJCPU1> :broken_heart: *Rasa-Pro* (version `${{ env.RASA_VERSION
           }}`, `rasa-private` sha `${{ env.SHORT_SHA }}`) CALM E2E tests (from `rasa-calm-demo` branch `${{ inputs.rasa-calm-demo-branch }}`) failed against provider: `${{ inputs.provider }}`, on ${{ inputs.train-and-test }} trained model!
           More information can be found <https://github.com/${{
           github.repository }}/actions/runs/${{ github.run_id }}|here>.'
