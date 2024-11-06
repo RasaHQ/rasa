@@ -115,6 +115,7 @@ jobs:
             echo "No tag version found."
             exit 1
           fi
+          echo "::set-output name=TAG_VERSION::$TAG_VERSION"
         env:
           INPUT_TAG_VERSION: ${{ github.event.inputs.tag_version }}
 
@@ -300,6 +301,7 @@ jobs:
           ref: ${{ needs.release-artifacts-docker.outputs.tag_version }}
       
       - name: Notify Sentry about the release
+        if: success()
         env:
            GITHUB_TAG: ${{ needs.release-artifacts-docker.outputs.tag_version }}
            SENTRY_ORG: rasahq
@@ -312,6 +314,7 @@ jobs:
            sentry-cli releases finalize "rasa-$GITHUB_TAG"
 
       - name: Publish Release Notes 🗞
+        if: success()
         env:
           GH_RELEASE_NOTES_TOKEN: ${{ secrets.GH_RELEASE_NOTES_TOKEN }}
           GITHUB_TAG: ${{ needs.release-artifacts-docker.outputs.tag_version }}
@@ -323,6 +326,7 @@ jobs:
           python3 scripts/publish_gh_release_notes.py
 
       - name: Update CMS with new release record
+        if: success()
         uses: RasaHQ/push-release-record-to-datocms-gha@1be87116d0a2b555bd5b291ea5923ce5b7aeb83e
         # this step only has an effect for new majors and minors; the action skips other versions
         with:
