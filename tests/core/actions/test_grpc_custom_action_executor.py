@@ -1,7 +1,7 @@
 import json
 from abc import ABC
 from typing import List, Optional, Dict, Any, Text, Union
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import grpc
 import pytest
