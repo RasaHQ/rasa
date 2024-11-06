@@ -28,6 +28,7 @@ from rasa.core.actions.action import (
     ActionSendText,
     ActionSessionStart,
     RemoteAction,
+    RemoteActionJSONValidator,
     default_actions,
 )
 from rasa.core.actions.action_exceptions import ActionExecutionRejection
@@ -3330,9 +3331,9 @@ async def test_remote_action_runs_with_response_validation(
             payload={"events": [], "responses": []},
         )
         with patch.object(
-            RemoteAction,
-            "validate_action_result",
-            wraps=RemoteAction.validate_action_result,
+            RemoteActionJSONValidator,
+            "validate",
+            wraps=RemoteActionJSONValidator.validate,
         ) as mock_validate:
             await remote_action.run(
                 default_channel, default_nlg, default_tracker, domain

@@ -61,12 +61,12 @@ class E2EStubCustomActionExecutor(CustomActionExecutor):
         domain: "Domain",
         include_domain: bool = False,
     ) -> Dict[Text, Any]:
-        from rasa.core.actions.action import RemoteAction
+        from rasa.core.actions.action import RemoteActionJSONValidator
 
         structlogger.debug(
             "action.e2e_stub_custom_action_executor.run",
             action_name=self.action_name,
         )
         response = self.stub_custom_action.as_dict()
-        RemoteAction.validate_action_result(response)
+        RemoteActionJSONValidator.validate(response)
         return response

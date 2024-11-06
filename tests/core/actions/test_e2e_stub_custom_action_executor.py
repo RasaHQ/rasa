@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 import pytest
 
-from rasa.core.actions.action import RemoteAction
+from rasa.core.actions.action import RemoteAction, RemoteActionJSONValidator
 from rasa.core.actions.e2e_stub_custom_action_executor import (
     E2EStubCustomActionExecutor,
 )
@@ -84,9 +84,9 @@ async def test_run_stub_action_with_response_validation(
 ):
     executor = E2EStubCustomActionExecutor(action_name_test_file, endpoint_stub_config)
     with patch.object(
-        RemoteAction,
-        "validate_action_result",
-        wraps=RemoteAction.validate_action_result,
+        RemoteActionJSONValidator,
+        "validate",
+        wraps=RemoteActionJSONValidator.validate,
     ) as mock_validate:
         await executor.run(tracker, domain)
         assert mock_validate.called

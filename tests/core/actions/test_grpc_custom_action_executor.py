@@ -11,7 +11,7 @@ from pytest import MonkeyPatch
 from rasa_sdk.grpc_errors import ResourceNotFound, ResourceNotFoundType
 from rasa_sdk.grpc_py import action_webhook_pb2
 
-from rasa.core.actions.action import RemoteAction
+from rasa.core.actions.action import RemoteActionJSONValidator
 from rasa.core.actions.action_exceptions import DomainNotFound
 from rasa.core.actions.constants import (
     SSL_CLIENT_CERT_FIELD,
@@ -1891,9 +1891,9 @@ async def test_grpc_custom_action_executor_run_without_response_validation(
 ) -> None:
     grpc_custom_action_executor.action_endpoint.headers = {"key": "value"}
     with patch.object(
-        RemoteAction,
-        "validate_action_result",
-        wraps=RemoteAction.validate_action_result,
+        RemoteActionJSONValidator,
+        "validate",
+        wraps=RemoteActionJSONValidator.validate,
     ) as mock_validate:
         await grpc_custom_action_executor.run(
             tracker=tracker_without_tuple, domain=domain
