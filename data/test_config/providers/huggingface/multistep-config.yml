@@ -2,11 +2,13 @@ recipe: default.v1
 language: en
 pipeline:
   - name: LLMBasedRouter
+    prompt: data/test_config/providers/router_template.jinja2
     llm:
       provider: huggingface
-      model: meta-llama/CodeLlama-7b-Instruct-hf
-      api_base: "https://wjz8ma0uku5pwxnb.us-east-1.aws.endpoints.huggingface.cloud"
-      timeout: 7
+      model: meta-llama/Llama-3.2-3B
+      api_base: "https://z35w5f1azkh4s9id.us-east-1.aws.endpoints.huggingface.cloud"
+      timeout: 30
+      num_retries: 10
     calm_entry:
       sticky: "handles everything else, including finance, transactions, transfers, balance, contacts and pizza orders"
     nlu_entry:
@@ -34,9 +36,10 @@ pipeline:
   - name: MultiStepLLMCommandGenerator
     llm:
       provider: huggingface
-      model: meta-llama/CodeLlama-7b-Instruct-hf
-      api_base: "https://wjz8ma0uku5pwxnb.us-east-1.aws.endpoints.huggingface.cloud"
-      timeout: 7
+      model: meta-llama/Llama-3.2-3B
+      api_base: "https://z35w5f1azkh4s9id.us-east-1.aws.endpoints.huggingface.cloud"
+      timeout: 30
+      num_retries: 10
 
 policies:
   - name: RulePolicy
@@ -50,14 +53,16 @@ policies:
       source: rasa-calm-demo/docs/
     llm:
       provider: huggingface
-      model: meta-llama/CodeLlama-7b-Instruct-hf
-      api_base: "https://wjz8ma0uku5pwxnb.us-east-1.aws.endpoints.huggingface.cloud"
-      timeout: 7
+      model: meta-llama/Llama-3.2-3B
+      api_base: "https://z35w5f1azkh4s9id.us-east-1.aws.endpoints.huggingface.cloud"
+      timeout: 30
+      num_retries: 10
   - name: IntentlessPolicy
     llm:
       provider: huggingface
-      model: meta-llama/CodeLlama-7b-Instruct-hf
-      api_base: "https://wjz8ma0uku5pwxnb.us-east-1.aws.endpoints.huggingface.cloud"
-      timeout: 7
+      model: meta-llama/Llama-3.2-3B
+      api_base: "https://z35w5f1azkh4s9id.us-east-1.aws.endpoints.huggingface.cloud"
+      timeout: 30
+      num_retries: 10
 
 assistant_id: 20240418-073244-narrow-archive

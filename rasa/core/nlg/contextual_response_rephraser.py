@@ -30,6 +30,9 @@ from rasa.shared.utils.llm import (
     try_instantiate_llm_client,
 )
 from rasa.utils.endpoints import EndpointConfig
+from rasa.shared.utils.llm import (
+    tracker_as_readable_transcript,
+)
 
 from rasa.core.nlg.summarize import summarize_conversation
 
@@ -40,6 +43,8 @@ structlogger = structlog.get_logger()
 RESPONSE_REPHRASING_KEY = "rephrase"
 
 RESPONSE_REPHRASING_TEMPLATE_KEY = "rephrase_prompt"
+
+RESPONSE_SUMMARISE_CONVERSATION_KEY = "summarize_conversation"
 
 DEFAULT_REPHRASE_ALL = False
 
@@ -212,13 +217,25 @@ class ContextualResponseRephraser(TemplatedNaturalLanguageGenerator):
         if not (response_text := response.get(KEY_RESPONSES_TEXT)):
             return response
 
+        prompt_template_text = self._template_for_response_rephrasing(response)
+
+        # Retrieve inputs for the dynamic prompt
+        transcript = tracker_as_readable_transcript(tracker, max_turns=5)
         latest_message = self._last_message_if_human(tracker)
         current_input = f"{USER}: {latest_message}" if latest_message else ""
 
-        prompt_template_text = self._template_for_response_rephrasing(response)
+        # Only summarise conversation history if flagged
+        summarize_conversation_flag = response.get("metadata", {}).get(
+            RESPONSE_SUMMARISE_CONVERSATION_KEY, False
+        )
+        if summarize_conversation_flag:
+            history = await self._create_history(tracker)
+        else:
+            history = transcript
+            current_input = ""
 
         prompt = Template(prompt_template_text).render(
-            history=await self._create_history(tracker),
+            history=history,
             suggested_response=response_text,
             current_input=current_input,
             slots=tracker.current_slot_values(),

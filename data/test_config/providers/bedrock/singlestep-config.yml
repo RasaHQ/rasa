@@ -2,6 +2,7 @@ recipe: default.v1
 language: en
 pipeline:
   - name: LLMBasedRouter
+    prompt: data/test_config/providers/router_template.jinja2
     llm:
       provider: bedrock
       model: anthropic.claude-3-5-sonnet-20240620-v1:0

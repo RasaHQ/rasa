@@ -83,7 +83,7 @@ runs:
     - name: Install MLflow for e2e-tests-with-assertions
       run: |
         : Install MLflow for e2e-tests-with-assertions
-        source $VENV && pip install mlflow
+        source $VENV && poetry install -E mlflow
       shell: bash
 
     - name: Install google-generative-ai package
@@ -118,7 +118,7 @@ runs:
       if: ${{ inputs.provider == 'ollama' }}
       run: |
         : Pull Ollama LLM model
-        ollama pull llama3.2:1b
+        ollama pull llama3.2
       shell: bash
 
     - name: Setup vLLM
@@ -134,21 +134,15 @@ runs:
       if: ${{ inputs.provider == 'huggingface' }}
       run: |
         : Wake up Hugging Face inference endpoint
-        curl "https://wjz8ma0uku5pwxnb.us-east-1.aws.endpoints.huggingface.cloud/v1/chat/completions" \
-          -X POST \
-          -H "Authorization: Bearer ${{ inputs.huggingface-api-key }}" \
-          -H "Content-Type: application/json" \
-          -d '{
-              "model": "tgi",
-              "messages": [
-                  {
-                      "role": "user",
-                      "content": "What is deep learning?"
-                  }
-              ],
-              "max_tokens": 150,
-              "stream": false
-          }'
+        curl --fail-with-body --retry 10 --retry-max-time 300 --retry-all-errors -vvv 'https://z35w5f1azkh4s9id.us-east-1.aws.endpoints.huggingface.cloud' \
+        --header 'Content-Type: application/json' \
+        --header "Authorization: Bearer ${{ inputs.huggingface-api-key }}" \
+        --data '{
+            "inputs": "Can you please let us know more details about your ",
+            "parameters": {
+                "max_new_tokens": 150
+            }
+        }'
       shell: bash
 
     - name: Run duckling server
@@ -258,8 +252,10 @@ runs:
       with:
         # Send notification to #dev-tribe-alerts slack channel
         channel-id: C070ELPSLBB 
-        slack-message: ':broken_heart: *Rasa-Pro* (version `${{ env.RASA_VERSION
-          }}`, `rasa-private` sha `${{ env.SHORT_SHA }}`) CALM E2E tests (from `rasa-calm-demo` branch `${{ inputs.rasa-calm-demo-branch }}`) failed against provider: `${{ inputs.provider }}, on ${{ inputs.train-and-test }} trained model!
+
+        # Alert Engine-squad
+        slack-message: '<!subteam^S0322UJCPU1> :broken_heart: *Rasa-Pro* (version `${{ env.RASA_VERSION
+          }}`, `rasa-private` sha `${{ env.SHORT_SHA }}`) CALM E2E tests (from `rasa-calm-demo` branch `${{ inputs.rasa-calm-demo-branch }}`) failed against provider: `${{ inputs.provider }}`, on ${{ inputs.train-and-test }} trained model!
           More information can be found <https://github.com/${{
           github.repository }}/actions/runs/${{ github.run_id }}|here>.'
       env:
