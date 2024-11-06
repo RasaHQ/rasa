@@ -99,15 +99,17 @@ jobs:
 
     steps:
       - name: Set tag version
+        id: set-tag
         run: |
           if [[ -n "$GITHUB_REF" && "$GITHUB_REF" == refs/tags/* ]]; then
-            echo "TAG_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+            echo "TAG_VERSION=${GITHUB_REF#refs/tags/}"
           elif [[ -n "$INPUT_TAG_VERSION" ]]; then
-            echo "TAG_VERSION=$INPUT_TAG_VERSION" >> $GITHUB_ENV
+            echo "TAG_VERSION=$INPUT_TAG_VERSION"
           else
             echo "No tag version found."
             exit 1
           fi
+          echo "::set-output name=TAG_VERSION::$TAG_VERSION"
         env:
           INPUT_TAG_VERSION: ${{ github.event.inputs.tag_version }}
 
@@ -258,25 +260,13 @@ jobs:
           twine upload --verbose --repository-url https://europe-west3-python.pkg.dev/rasa-releases/rasa-pro-python/ ${{ format('{0}/dist/*', github.workspace) }}
 
   release-atifacts-publish-release:
-    name: Release Artifacts Publish Release
+    name:
     runs-on: ubuntu-22.04
     needs: [release-artifacts-docker, release-artifacts-pypi]
+    env:
+      TAG_VERSION: ${{ needs.set-tag-version.outputs.tag_version }}
 
     steps:
-      - name: Set tag version
-        if: success()
-        run: |
-          if [[ -n "$GITHUB_REF" && "$GITHUB_REF" == refs/tags/* ]]; then
-            echo "TAG_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
-          elif [[ -n "$INPUT_TAG_VERSION" ]]; then
-            echo "TAG_VERSION=$INPUT_TAG_VERSION" >> $GITHUB_ENV
-          else
-            echo "No tag version found."
-            exit 1
-          fi
-        env:
-          INPUT_TAG_VERSION: ${{ github.event.inputs.tag_version }}
-
       - name: Notify Sentry about the release
         if: success()
         env:
@@ -315,21 +305,10 @@ jobs:
     name: Release Artifact Slack Notifications
     runs-on: ubuntu-22.04
     needs: [release-artifacts-docker, release-artifacts-pypi, release-atifacts-publish-release]
+    env:
+      TAG_VERSION: ${{ needs.set-tag-version.outputs.tag_version }}
 
     steps:
-      - name: Set tag version
-        run: |
-          if [[ -n "$GITHUB_REF" && "$GITHUB_REF" == refs/tags/* ]]; then
-            echo "TAG_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
-          elif [[ -n "$INPUT_TAG_VERSION" ]]; then
-            echo "TAG_VERSION=$INPUT_TAG_VERSION" >> $GITHUB_ENV
-          else
-            echo "No tag version found."
-            exit 1
-          fi
-        env:
-          INPUT_TAG_VERSION: ${{ github.event.inputs.tag_version }}
-
       - name: Notify Slack of successful release 💬
         if: success()
         uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 #v 1.25.0
