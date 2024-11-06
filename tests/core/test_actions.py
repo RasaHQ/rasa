@@ -3339,3 +3339,71 @@ async def test_remote_action_runs_with_response_validation(
                 default_channel, default_nlg, default_tracker, domain
             )
             assert mock_validate.called
+
+
+def test_remote_action_json_validator_valid_response(stub_data: Dict[str, Any]):
+    assert RemoteActionJSONValidator.validate(stub_data)
+
+
+@pytest.mark.parametrize(
+    "response, error_message",
+    [
+        (
+            {
+                "events": [
+                    {"event": "slot", "name": "sample_slot_name"},
+                ],
+                "responses": [
+                    {"response_id": "rsp_1", "content": "Success"},
+                ],
+            },
+            "is not valid under any of the given schemas",
+        ),
+        (
+            {
+                "events": [
+                    {"event": "slot", "name": "sample_slot_name", "value": None},
+                ],
+                "responses": {"response_id": "rsp_1", "content": "Success"},
+            },
+            "is not valid under any of the given schemas",
+        ),
+        (
+            {
+                "events": [
+                    {"event": "slot", "name": "sample_slot_name", "value": None},
+                ],
+                "responses": [
+                    "This should be an object",
+                ],
+            },
+            "is not of type 'object'",
+        ),
+    ],
+)
+def test_remote_action_json_validator_events_not_matching_schema(
+    response: Dict[str, Any], error_message: str
+):
+    with pytest.raises(ValidationError) as exc_info:
+        RemoteActionJSONValidator.validate(response)
+        assert error_message in str(exc_info.value)
+
+
+def test_remote_action_json_validator_empty_arrays():
+    valid_response = {"events": [], "responses": []}
+    assert RemoteActionJSONValidator.validate(valid_response) is True
+
+
+def test_remote_action_json_validator_caching():
+    def check_cache_after_read(hits, misses, currsize):
+        assert RemoteActionJSONValidator.validate({}) is True
+        cache_info = (
+            RemoteActionJSONValidator.get_action_response_validator.cache_info()
+        )
+        assert cache_info.hits == hits
+        assert cache_info.misses == misses
+        assert cache_info.currsize == currsize
+
+    check_cache_after_read(hits=0, misses=1, currsize=1)
+    check_cache_after_read(hits=1, misses=1, currsize=1)
+    check_cache_after_read(hits=2, misses=1, currsize=1)
