@@ -74,6 +74,7 @@ on:
 
 env:
   TARGET_IMAGE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-pro"
+  DEFAULT_PYTHON_VERSION: "3.10"
 
 permissions:
   id-token: write # This is required for requesting the JWT
@@ -227,10 +228,10 @@ jobs:
     runs-on: ubuntu-22.04
     
     steps:
-    - name: Set up Python 3.9 🐍
+    - name: Set up Python 3.10 🐍
       uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
       with:
-          python-version: 3.9
+          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
     - name: Install poetry 🦄
       uses: Gr1N/setup-poetry@48b0f77c8c1b1b19cb962f0f00dff7b4be8f81ec #v9
