@@ -2,7 +2,7 @@ import logging
 import textwrap
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Text
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, MagicMock
 
 import pytest
 from _pytest.logging import LogCaptureFixture
@@ -3330,12 +3330,8 @@ async def test_remote_action_runs_with_response_validation(
             "https://example.com/webhooks/actions",
             payload={"events": [], "responses": []},
         )
-        with patch.object(
-            RemoteActionJSONValidator,
-            "validate",
-            wraps=RemoteActionJSONValidator.validate,
-        ) as mock_validate:
-            await remote_action.run(
-                default_channel, default_nlg, default_tracker, domain
-            )
-            assert mock_validate.called
+
+        mock_validate = MagicMock()
+        monkeypatch.setattr(RemoteActionJSONValidator, "validate", mock_validate)
+        await remote_action.run(default_channel, default_nlg, default_tracker, domain)
+        mock_validate.assert_called()

@@ -1888,14 +1888,10 @@ async def test_grpc_custom_action_executor_run_without_response_validation(
     tracker_without_tuple: DialogueStateTracker,
     domain: Domain,
     grpc_payload: action_webhook_pb2.WebhookRequest,
+    monkeypatch: MonkeyPatch,
 ) -> None:
     grpc_custom_action_executor.action_endpoint.headers = {"key": "value"}
-    with patch.object(
-        RemoteActionJSONValidator,
-        "validate",
-        wraps=RemoteActionJSONValidator.validate,
-    ) as mock_validate:
-        await grpc_custom_action_executor.run(
-            tracker=tracker_without_tuple, domain=domain
-        )
-        assert not mock_validate.called
+    mock_validate = MagicMock()
+    monkeypatch.setattr(RemoteActionJSONValidator, "validate", mock_validate)
+    await grpc_custom_action_executor.run(tracker=tracker_without_tuple, domain=domain)
+    mock_validate.assert_not_called()
