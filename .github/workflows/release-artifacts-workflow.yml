@@ -111,6 +111,7 @@ jobs:
             exit 1
           fi
           echo "::set-output name=TAG_VERSION::$TAG_VERSION"
+          echo "TAG_VERSION=$TAG_VERSION" >> $GITHUB_ENV
         env:
           INPUT_TAG_VERSION: ${{ github.event.inputs.tag_version }}
 
