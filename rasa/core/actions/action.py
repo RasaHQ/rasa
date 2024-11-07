@@ -101,6 +101,7 @@ from rasa.utils.url_tools import UrlSchema, get_url_schema
 if TYPE_CHECKING:
     from rasa.core.channels.channel import OutputChannel
     from rasa.core.nlg import NaturalLanguageGenerator
+    from rasa.shared.core.events import IntentPrediction
 
 logger = logging.getLogger(__name__)
 
