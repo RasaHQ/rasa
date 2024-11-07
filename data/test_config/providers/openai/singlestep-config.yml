@@ -28,6 +28,7 @@ pipeline:
     timeout: 3
   - name: NLUCommandAdapter
   - name: SingleStepLLMCommandGenerator
+    prompt_template: data/test_config/providers/command_prompt.jinja2
 
 policies:
   - name: RulePolicy
@@ -35,6 +36,7 @@ policies:
     constrain_similarities: true
   - name: FlowPolicy
   - name: EnterpriseSearchPolicy
+    max_messages_in_query: 4
     citation_enabled: true
     use_generative_llm: true
     vector_store:
