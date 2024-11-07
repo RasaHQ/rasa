@@ -3390,6 +3390,9 @@ def test_remote_action_json_validator_empty_arrays():
 
 
 def test_remote_action_json_validator_caching():
+    # Clear the cache before starting the test
+    RemoteActionJSONValidator.get_action_response_validator.cache_clear()
+
     def check_cache_after_validate(hits, misses, currsize):
         assert RemoteActionJSONValidator.validate({}) is True
         cache_info = (
