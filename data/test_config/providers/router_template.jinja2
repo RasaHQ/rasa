@@ -1,0 +1,20 @@
+You have to forward the user message to the right assistant.
+
+The following assistants are available:
+
+Assistant A: {{ calm_entry_sticky }}
+Assistant B: {{ nlu_entry_non_sticky }}
+Assistant C: {{ nlu_entry_sticky }}
+
+The user said: "{{ user_message }}"
+
+Answer which assistant needs to get this message. Answer must consist of ONLY a single alphabetical letter from these three choices: [A, B, C].
+Here are a few examples of valid answers:
+
+"""
+A
+
+B
+
+C
+"""
