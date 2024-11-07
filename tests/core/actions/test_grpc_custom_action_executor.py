@@ -7,11 +7,11 @@ import grpc
 import pytest
 import structlog
 from google.protobuf.json_format import Parse
-
 from pytest import MonkeyPatch
 from rasa_sdk.grpc_errors import ResourceNotFound, ResourceNotFoundType
 from rasa_sdk.grpc_py import action_webhook_pb2
 
+from rasa.core.actions.action import RemoteActionJSONValidator
 from rasa.core.actions.action_exceptions import DomainNotFound
 from rasa.core.actions.constants import (
     SSL_CLIENT_CERT_FIELD,
@@ -1879,3 +1879,19 @@ async def test_grpc_custom_action_executor_run(
     grpc_client.Webhook.assert_called_once_with(
         grpc_payload, metadata=expected_metadata
     )
+
+
+@pytest.mark.usefixtures("grpc_insecure_channel", "grpc_action_servicer_stub")
+async def test_grpc_custom_action_executor_run_without_response_validation(
+    grpc_client: MagicMock,
+    grpc_custom_action_executor: GRPCCustomActionExecutor,
+    tracker_without_tuple: DialogueStateTracker,
+    domain: Domain,
+    grpc_payload: action_webhook_pb2.WebhookRequest,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    grpc_custom_action_executor.action_endpoint.headers = {"key": "value"}
+    mock_validate = MagicMock()
+    monkeypatch.setattr(RemoteActionJSONValidator, "validate", mock_validate)
+    await grpc_custom_action_executor.run(tracker=tracker_without_tuple, domain=domain)
+    mock_validate.assert_not_called()

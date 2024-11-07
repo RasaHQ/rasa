@@ -2,7 +2,7 @@ import logging
 import textwrap
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Text
-from unittest.mock import Mock
+from unittest.mock import Mock, MagicMock
 
 import pytest
 from _pytest.logging import LogCaptureFixture
@@ -28,6 +28,7 @@ from rasa.core.actions.action import (
     ActionSendText,
     ActionSessionStart,
     RemoteAction,
+    RemoteActionJSONValidator,
     default_actions,
 )
 from rasa.core.actions.action_exceptions import ActionExecutionRejection
@@ -3308,3 +3309,29 @@ async def test_remote_action_valid_with_rephrased_utterance(
             },
         )
     ]
+
+
+async def test_remote_action_runs_with_response_validation(
+    default_channel: OutputChannel,
+    default_nlg: NaturalLanguageGenerator,
+    default_tracker: DialogueStateTracker,
+    domain: Domain,
+    monkeypatch: MonkeyPatch,
+):
+    endpoint = EndpointConfig("https://example.com/webhooks/actions")
+    remote_action = action.RemoteAction("my_action", endpoint)
+
+    with aioresponses() as mocked:
+        mocked.post(
+            "https://example.com/webhooks/actions",
+            status=449,
+        )
+        mocked.post(
+            "https://example.com/webhooks/actions",
+            payload={"events": [], "responses": []},
+        )
+
+        mock_validate = MagicMock()
+        monkeypatch.setattr(RemoteActionJSONValidator, "validate", mock_validate)
+        await remote_action.run(default_channel, default_nlg, default_tracker, domain)
+        mock_validate.assert_called()

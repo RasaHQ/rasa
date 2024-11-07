@@ -1,7 +1,10 @@
+from unittest.mock import MagicMock
+
 import pytest
 from pytest import LogCaptureFixture
+from pytest import MonkeyPatch
 
-from rasa.core.actions.action import RemoteAction
+from rasa.core.actions.action import RemoteAction, RemoteActionJSONValidator
 from rasa.core.actions.direct_custom_actions_executor import DirectCustomActionExecutor
 from rasa.core.agent import Agent
 from rasa.core.channels.channel import UserMessage
@@ -137,6 +140,19 @@ async def test_executor_runs_action(
     result = await direct_custom_action_executor.run(tracker, domain=domain)
     assert isinstance(result, dict)
     assert "events" in result
+
+
+@pytest.mark.asyncio
+async def test_executor_runs_action_without_response_validation(
+    direct_custom_action_executor: DirectCustomActionExecutor,
+    tracker: DialogueStateTracker,
+    domain: Domain,
+    monkeypatch: MonkeyPatch,
+):
+    mock_validate = MagicMock()
+    monkeypatch.setattr(RemoteActionJSONValidator, "validate", mock_validate)
+    await direct_custom_action_executor.run(tracker, domain=domain)
+    mock_validate.assert_not_called()
 
 
 async def test_executor_runs_action_invalid_actions_module(

@@ -1,8 +1,10 @@
 from typing import Dict, Any
+from unittest.mock import MagicMock
 
 import pytest
+from pytest import MonkeyPatch
 
-from rasa.core.actions.action import RemoteAction
+from rasa.core.actions.action import RemoteAction, RemoteActionJSONValidator
 from rasa.core.actions.e2e_stub_custom_action_executor import (
     E2EStubCustomActionExecutor,
 )
@@ -71,3 +73,19 @@ def test_remote_action_initializes_e2e_stub_custom_action_executor(
     remote_action: RemoteAction,
 ):
     assert isinstance(remote_action.executor, E2EStubCustomActionExecutor)
+
+
+@pytest.mark.asyncio
+async def test_run_stub_action_with_response_validation(
+    endpoint_stub_config: EndpointConfig,
+    tracker: DialogueStateTracker,
+    domain: Domain,
+    stub_data: Dict[str, Any],
+    action_name_test_file: str,
+    monkeypatch: MonkeyPatch,
+):
+    executor = E2EStubCustomActionExecutor(action_name_test_file, endpoint_stub_config)
+    mock_validate = MagicMock()
+    monkeypatch.setattr(RemoteActionJSONValidator, "validate", mock_validate)
+    await executor.run(tracker, domain)
+    mock_validate.assert_called()

@@ -725,6 +725,40 @@ class ActionDeactivateLoop(Action):
         return [ActiveLoop(None), SlotSet(REQUESTED_SLOT, None)]
 
 
+class RemoteActionJSONValidator:
+    @staticmethod
+    def action_response_format_spec() -> Dict[Text, Any]:
+        """Expected response schema for an Action endpoint.
+
+        Used for validation of the response returned from the
+        Action endpoint.
+        """
+        schema = {
+            "type": "object",
+            "properties": {
+                "events": EVENTS_SCHEMA,
+                "responses": {"type": "array", "items": {"type": "object"}},
+            },
+        }
+        return schema
+
+    @staticmethod
+    def validate(result: Dict[Text, Any]) -> bool:
+        from jsonschema import ValidationError, validate
+
+        try:
+            validate(result, RemoteActionJSONValidator.action_response_format_spec())
+            return True
+        except ValidationError as e:
+            e.message += (
+                f". Failed to validate Action server response from API, "
+                f"make sure your response from the Action endpoint is valid. "
+                f"For more information about the format visit "
+                f"{DOCS_BASE_URL}/custom-actions"
+            )
+            raise e
+
+
 class RemoteAction(Action):
     def __init__(
         self,
@@ -784,37 +818,6 @@ class RemoteAction(Action):
         )
 
     @staticmethod
-    def action_response_format_spec() -> Dict[Text, Any]:
-        """Expected response schema for an Action endpoint.
-
-        Used for validation of the response returned from the
-        Action endpoint.
-        """
-        schema = {
-            "type": "object",
-            "properties": {
-                "events": EVENTS_SCHEMA,
-                "responses": {"type": "array", "items": {"type": "object"}},
-            },
-        }
-        return schema
-
-    def _validate_action_result(self, result: Dict[Text, Any]) -> bool:
-        from jsonschema import ValidationError, validate
-
-        try:
-            validate(result, self.action_response_format_spec())
-            return True
-        except ValidationError as e:
-            e.message += (
-                f". Failed to validate Action server response from API, "
-                f"make sure your response from the Action endpoint is valid. "
-                f"For more information about the format visit "
-                f"{DOCS_BASE_URL}/custom-actions"
-            )
-            raise e
-
-    @staticmethod
     async def _utter_responses(
         responses: List[Dict[Text, Any]],
         output_channel: "OutputChannel",
@@ -865,7 +868,6 @@ class RemoteAction(Action):
             domain=domain,
             tracker=tracker,
         )
-        self._validate_action_result(response)
 
         events_json = response.get("events", [])
         responses = response.get("responses", [])
