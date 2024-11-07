@@ -3390,7 +3390,7 @@ def test_remote_action_json_validator_empty_arrays():
 
 
 def test_remote_action_json_validator_caching():
-    def check_cache_after_read(hits, misses, currsize):
+    def check_cache_after_validate(hits, misses, currsize):
         assert RemoteActionJSONValidator.validate({}) is True
         cache_info = (
             RemoteActionJSONValidator.get_action_response_validator.cache_info()
@@ -3399,6 +3399,6 @@ def test_remote_action_json_validator_caching():
         assert cache_info.misses == misses
         assert cache_info.currsize == currsize
 
-    check_cache_after_read(hits=0, misses=1, currsize=1)
-    check_cache_after_read(hits=1, misses=1, currsize=1)
-    check_cache_after_read(hits=2, misses=1, currsize=1)
+    check_cache_after_validate(hits=0, misses=1, currsize=1)
+    check_cache_after_validate(hits=1, misses=1, currsize=1)
+    check_cache_after_validate(hits=2, misses=1, currsize=1)
