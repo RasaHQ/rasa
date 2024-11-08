@@ -2,6 +2,8 @@ recipe: default.v1
 language: en
 pipeline:
   - name: LLMBasedRouter
+    llm:
+      model: gpt-4-0613
     prompt: data/test_config/providers/router_template.jinja2
     calm_entry:
       sticky: "handles everything else, including finance, transactions, transfers, balance, contacts and pizza orders"
@@ -28,6 +30,8 @@ pipeline:
     timeout: 3
   - name: NLUCommandAdapter
   - name: SingleStepLLMCommandGenerator
+    llm:
+      model: gpt-4-0613
     prompt_template: data/test_config/providers/command_prompt.jinja2
 
 policies:
@@ -36,11 +40,15 @@ policies:
     constrain_similarities: true
   - name: FlowPolicy
   - name: EnterpriseSearchPolicy
+    llm:
+      model: gpt-4-0613
     max_messages_in_query: 4
     citation_enabled: true
     use_generative_llm: true
     vector_store:
       source: rasa-calm-demo/docs/
   - name: IntentlessPolicy
+    llm:
+      model: gpt-4-0613
 
 assistant_id: 20240418-073244-narrow-archive
