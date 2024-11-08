@@ -341,6 +341,19 @@ jobs:
     if: always()  # Ensures this job runs regardless of the result of previous jobs
 
     steps:
+      - name: Set tag version
+        run: |
+          if [[ -n "$GITHUB_REF" && "$GITHUB_REF" == refs/tags/* ]]; then
+            echo "TAG_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+          elif [[ -n "$INPUT_TAG_VERSION" ]]; then
+            echo "TAG_VERSION=$INPUT_TAG_VERSION" >> $GITHUB_ENV
+          else
+            echo "No tag version found."
+            exit 1
+          fi
+        env:
+          INPUT_TAG_VERSION: ${{ github.event.inputs.tag_version }}
+          
       - name: Notify Slack of successful release 💬
         if: ${{ needs.release-artifacts-docker.result == 'success' && needs.release-artifacts-pypi.result == 'success' }}
         uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 #v 1.25.0
@@ -360,3 +373,4 @@ jobs:
            slack-message: ":broken_heart: *Rasa Private* release version `${{ needs.release-artifacts-docker.outputs.tag_version }}` has failed! More information can be found <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|here>."
         env:
            SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+           
