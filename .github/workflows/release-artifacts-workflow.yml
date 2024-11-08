@@ -26,14 +26,23 @@ on:
           - azure
           - bedrock
           - gemini
+          - huggingface
 #          - huggingface # TODO: Enable after ENG-1459 is resolved
           - huggingface_local
+          - huggingface_local
+          - anthropic
           - anthropic # TODO: Enable after ENG-1454 is resolved
 #          - cohere TODO: Enable after ENG-1411 is unblocked
+#          - cohere TODO: Enable after ENG-1411 is unblocked
 #          - mistral TODO: Enable after ENG-1412 is unblocked
+#          - mistral TODO: Enable after ENG-1412 is unblocked
+          - together_ai
           - together_ai # TODO: Enable after ENG-1449 is resolved
+          - groq
           - groq # TODO: Enable after ENG-1453 is resolved
 #          - voyage TODO: Enable after ENG-1415 is unblocked
+#          - voyage TODO: Enable after ENG-1415 is unblocked
+          - ollama
           - ollama # TODO: Enable after ENG-1455 is resolved
 #          - self-hosted
       rasa-calm-demo-branch:
@@ -74,7 +83,7 @@ on:
 
 env:
   TARGET_IMAGE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-pro"
-  DEFAULT_PYTHON_VERSION: "3.10"
+  DEFAULT_PYTHON_VERSION: "3.11"
 
 permissions:
   id-token: write # This is required for requesting the JWT
@@ -262,15 +271,15 @@ jobs:
 
     - name: Build ⚒️ Distributions
       run: poetry build
-    #  Temporarily disable this step, just for 3.10.9.dev1 release
-    # # Push to the public PYPI release registry
-    # - name: Publish to public PyPI 📦
-    #   if: always()
-    #   uses: pypa/gh-action-pypi-publish@e53eb8b103ffcb59469888563dc324e3c8ba6f06
-    #   with:
-    #     password: ${{ secrets.PYPI_TOKEN }}
-    #     repository-url: "https://upload.pypi.org/legacy/"
-    #     packages-dir: ${{ format('{0}/dist', github.workspace) }}
+
+    # Push to the public PYPI release registry
+    - name: Publish to public PyPI 📦
+      if: always()
+      uses: pypa/gh-action-pypi-publish@e53eb8b103ffcb59469888563dc324e3c8ba6f06
+      with:
+        password: ${{ secrets.PYPI_TOKEN }}
+        repository-url: "https://upload.pypi.org/legacy/"
+        packages-dir: ${{ format('{0}/dist', github.workspace) }}
 
     # Push library to GCP Artifact Registry rasa-plus-py
     - name: Release via GCP Artifact Registry
