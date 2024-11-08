@@ -240,7 +240,7 @@ jobs:
       with:
         ref: ${{ env.TAG_VERSION }}
           
-    - name: Set up Python 3.10 🐍
+    - name: Set up Python 3.11 🐍
       uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
       with:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
