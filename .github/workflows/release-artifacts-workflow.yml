@@ -26,14 +26,23 @@ on:
           - azure
           - bedrock
           - gemini
+          - huggingface
 #          - huggingface # TODO: Enable after ENG-1459 is resolved
           - huggingface_local
+          - huggingface_local
+          - anthropic
           - anthropic # TODO: Enable after ENG-1454 is resolved
 #          - cohere TODO: Enable after ENG-1411 is unblocked
+#          - cohere TODO: Enable after ENG-1411 is unblocked
 #          - mistral TODO: Enable after ENG-1412 is unblocked
+#          - mistral TODO: Enable after ENG-1412 is unblocked
+          - together_ai
           - together_ai # TODO: Enable after ENG-1449 is resolved
+          - groq
           - groq # TODO: Enable after ENG-1453 is resolved
 #          - voyage TODO: Enable after ENG-1415 is unblocked
+#          - voyage TODO: Enable after ENG-1415 is unblocked
+          - ollama
           - ollama # TODO: Enable after ENG-1455 is resolved
 #          - self-hosted
       rasa-calm-demo-branch:
@@ -74,7 +83,7 @@ on:
 
 env:
   TARGET_IMAGE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-pro"
-  DEFAULT_PYTHON_VERSION: "3.10"
+  DEFAULT_PYTHON_VERSION: "3.11"
 
 permissions:
   id-token: write # This is required for requesting the JWT
@@ -100,18 +109,15 @@ jobs:
 
     steps:
       - name: Set tag version
-        id: set-tag
         run: |
           if [[ -n "$GITHUB_REF" && "$GITHUB_REF" == refs/tags/* ]]; then
-            echo "TAG_VERSION=${GITHUB_REF#refs/tags/}"
+            echo "TAG_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
           elif [[ -n "$INPUT_TAG_VERSION" ]]; then
-            echo "TAG_VERSION=$INPUT_TAG_VERSION"
+            echo "TAG_VERSION=$INPUT_TAG_VERSION" >> $GITHUB_ENV
           else
             echo "No tag version found."
             exit 1
           fi
-          echo "::set-output name=TAG_VERSION::$TAG_VERSION"
-          echo "TAG_VERSION=$TAG_VERSION" >> $GITHUB_ENV
         env:
           INPUT_TAG_VERSION: ${{ github.event.inputs.tag_version }}
 
@@ -229,10 +235,34 @@ jobs:
     runs-on: ubuntu-22.04
     
     steps:
-    - name: Set up Python 3.10 🐍
+    - name: Check out code
+      uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      with:
+        ref: ${{ env.TAG_VERSION }}
+          
+    - name: Set up Python 3.11 🐍
       uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
       with:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
+      
+    - name: Read Poetry Version 🔢
+      run: |
+         echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+      shell: bash
+
+    - name: Authenticate with Google Cloud
+      id: auth
+      uses: google-github-actions/auth@55bd3a7c6e2ae7cf1877fd1ccb9d54c0503c457c # v2.1.2
+      with:
+         workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER_OIDC}}
+         service_account: "github-actions-oidc-atom@rasa-releases.iam.gserviceaccount.com"
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@98ddc00a17442e89a24bbf282954a3b65ce6d200 # v2.1.0
+
+    - name: Authenticate docker for release registry 🎫
+      run: |
+         gcloud auth configure-docker europe-west3-docker.pkg.dev
 
     - name: Install poetry 🦄
       uses: Gr1N/setup-poetry@48b0f77c8c1b1b19cb962f0f00dff7b4be8f81ec #v9
@@ -265,10 +295,26 @@ jobs:
     name: Release Artifacts Publish Release
     runs-on: ubuntu-22.04
     needs: [release-artifacts-docker, release-artifacts-pypi]
-    env:
-      TAG_VERSION: ${{ needs.set-tag-version.outputs.tag_version }}
 
     steps:
+      - name: Set tag version
+        run: |
+          if [[ -n "$GITHUB_REF" && "$GITHUB_REF" == refs/tags/* ]]; then
+            echo "TAG_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+          elif [[ -n "$INPUT_TAG_VERSION" ]]; then
+            echo "TAG_VERSION=$INPUT_TAG_VERSION" >> $GITHUB_ENV
+          else
+            echo "No tag version found."
+            exit 1
+          fi
+        env:
+          INPUT_TAG_VERSION: ${{ github.event.inputs.tag_version }}
+            
+      - name: Check out code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ env.TAG_VERSION }}
+      
       - name: Notify Sentry about the release
         if: success()
         env:
@@ -307,12 +353,24 @@ jobs:
     name: Release Artifact Slack Notifications
     runs-on: ubuntu-22.04
     needs: [release-artifacts-docker, release-artifacts-pypi, release-atifacts-publish-release]
-    env:
-      TAG_VERSION: ${{ needs.set-tag-version.outputs.tag_version }}
+    if: always()  # Ensures this job runs regardless of the result of previous jobs
 
     steps:
+      - name: Set tag version
+        run: |
+          if [[ -n "$GITHUB_REF" && "$GITHUB_REF" == refs/tags/* ]]; then
+            echo "TAG_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+          elif [[ -n "$INPUT_TAG_VERSION" ]]; then
+            echo "TAG_VERSION=$INPUT_TAG_VERSION" >> $GITHUB_ENV
+          else
+            echo "No tag version found."
+            exit 1
+          fi
+        env:
+          INPUT_TAG_VERSION: ${{ github.event.inputs.tag_version }}
+          
       - name: Notify Slack of successful release 💬
-        if: success()
+        if: ${{ needs.release-artifacts-docker.result == 'success' && needs.release-artifacts-pypi.result == 'success' && needs.release-atifacts-publish-release.result == 'success' }}
         uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 #v 1.25.0
         with:
           # Send notification to #release slack channel
@@ -322,7 +380,7 @@ jobs:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
 
       - name: Notify Slack of unsuccessful release ⛔️
-        if: failure()
+        if: ${{ needs.release-artifacts-docker.result != 'success' || needs.release-artifacts-pypi.result != 'success' || needs.release-atifacts-publish-release.result != 'success' }}
         uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 #v 1.25.0
         with:
            # Send notification to #devtribe slack channel
@@ -330,3 +388,4 @@ jobs:
            slack-message: ":broken_heart: *Rasa Private* release version `${{ env.TAG_VERSION }}` has failed! More information can be found <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|here>."
         env:
            SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+           
