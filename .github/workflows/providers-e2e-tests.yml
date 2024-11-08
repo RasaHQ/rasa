@@ -24,15 +24,15 @@ on:
           - azure
           - bedrock
           - gemini
-          # - huggingface # TODO: Enable after ENG-1459 is resolved
+          - huggingface
           - huggingface_local
-          - anthropic # TODO: Enable after ENG-1454 is resolved
+          - anthropic
           # - cohere TODO: Enable after ENG-1411 is unblocked
           # - mistral TODO: Enable after ENG-1412 is unblocked
-          - together_ai # TODO: Enable after ENG-1449 is resolved
-          - groq # TODO: Enable after ENG-1453 is resolved
+          - together_ai
+          - groq
           # - voyage TODO: Enable after ENG-1415 is unblocked
-          - ollama # TODO: Enable after ENG-1455 is resolved
+          - ollama
           # - self-hosted
 
       rasa-calm-demo-branch:
@@ -184,15 +184,15 @@ jobs:
             azure,
             bedrock,
             gemini,
-            # huggingface, # TODO: Enable after ENG-1459 is resolved
+            huggingface,
             huggingface_local,
-            anthropic, # TODO: Enable after ENG-1454 is resolved
+            anthropic,
             # cohere, TODO: Enable after ENG-1411 is unblocked
             # mistral, TODO: Enable after ENG-1412 is unblocked
-            together_ai, # TODO: Enable after ENG-1449 is resolved
-            groq, # TODO: Enable after ENG-1453 is resolved
+            together_ai,
+            groq,
             # voyage, TODO: Enable after ENG-1415 is unblocked
-            ollama, # TODO: Enable after ENG-1455 is resolved
+            ollama,
             # self-hosted,
           ] # TODO: Enable testing all the providers
         train-and-test: ${{ fromJson(needs.job_setup.outputs.COMMAND_GENERATOR_MATRIX)[needs.job_setup.outputs.COMMAND_GENERATOR] }}

@@ -134,14 +134,19 @@ runs:
       if: ${{ inputs.provider == 'huggingface' }}
       run: |
         : Wake up Hugging Face inference endpoint
-        curl --fail-with-body --retry 10 --retry-max-time 300 --retry-all-errors -vvv 'https://z35w5f1azkh4s9id.us-east-1.aws.endpoints.huggingface.cloud' \
-        --header 'Content-Type: application/json' \
-        --header "Authorization: Bearer ${{ inputs.huggingface-api-key }}" \
-        --data '{
-            "inputs": "Can you please let us know more details about your ",
-            "parameters": {
-                "max_new_tokens": 150
-            }
+        curl --fail-with-body --retry 10 --retry-max-time 300 --retry-all-errors -vvv "https://tli2t3mifcp9pjf8.us-east-1.aws.endpoints.huggingface.cloud/v1/chat/completions" \
+        -H "Authorization: Bearer ${{ inputs.huggingface-api-key }}" \
+        -H "Content-Type: application/json" \
+        -d '{
+            "model": "tgi",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "What is deep learning?"
+                }
+            ],
+            "max_tokens": 150,
+            "stream": true
         }'
       shell: bash
 
