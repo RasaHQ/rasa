@@ -233,7 +233,7 @@ class SocketIOInput(InputChannel):
             if "session_id" not in data or data["session_id"] is None:
                 data["session_id"] = uuid.uuid4().hex
             if self.session_persistence:
-                sio.enter_room(sid, data["session_id"])
+                await sio.enter_room(sid, data["session_id"])
             await sio.emit("session_confirm", data["session_id"], room=sid)
             logger.debug(f"User {sid} connected to socketIO endpoint.")
 
