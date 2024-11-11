@@ -22,7 +22,6 @@ class RasaLLMClient(SelfHostedLLMClient):
     Parameters:
         model (str): The model or deployment name.
         provider (str): The provider of the model.
-        api_base (str): The base URL of the API endpoint.
         api_type (Optional[str]): The type of the API endpoint.
         api_version (Optional[str]): The version of the API endpoint.
         use_chat_completions_endpoint (Optional[bool]): Whether to use the chat
@@ -47,16 +46,18 @@ class RasaLLMClient(SelfHostedLLMClient):
         use_chat_completions_endpoint: Optional[bool] = True,
         **kwargs: Any,
     ):
-        super().__init__()  # type: ignore
-        self._provider = provider
-        self._model = model
-        self._api_base = api_base
-        self._api_type = api_type
-        self._api_version = api_version
-        self._use_chat_completions_endpoint = use_chat_completions_endpoint
-        self._extra_parameters = kwargs or {}
+        super().__init__(
+            provider=provider,
+            model=model,
+            api_base=api_base,
+            api_type=api_type,
+            api_version=api_version,
+            use_chat_completions_endpoint=use_chat_completions_endpoint,
+            **kwargs
+        )
 
-    def set_rasa_pro_license_as_openai_api_key():
+    @classmethod
+    def set_rasa_pro_license_as_openai_api_key(cls):
         os.environ[OPENAI_API_KEY_ENV_VAR] = retrieve_license_from_env()
 
     @classmethod
@@ -72,7 +73,7 @@ class RasaLLMClient(SelfHostedLLMClient):
                 original_error=e,
             )
             raise
-        self.set_rasa_pro_license_as_openai_api_key()
+        cls.set_rasa_pro_license_as_openai_api_key()
         return cls(
             model=client_config.model,
             provider="self-hosted",
