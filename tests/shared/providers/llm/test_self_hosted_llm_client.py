@@ -24,7 +24,7 @@ class TestSelfHostedLLMClient:
 
     def test_completion_fn_args(self, client: SelfHostedLLMClient) -> None:
         assert client._completion_fn_args == {
-            "model": "openai/test_model",
+            "model": "hosted_vllm/test_model",
             "drop_params": False,
             "api_base": "https://my.api.base.com/my_model",
             "api_version": None,
@@ -289,7 +289,7 @@ class TestSelfHostedLLMClient:
         assert client._extra_parameters["timeout"] == 7
 
     def test_litellm_model_name(self, client: SelfHostedLLMClient) -> None:
-        assert client._litellm_model_name == "openai/test_model"
+        assert client._litellm_model_name == "hosted_vllm/test_model"
 
     def test_from_config_uses_api_version(self) -> None:
         # Given
