@@ -2,7 +2,7 @@ import logging
 import os
 from pathlib import Path
 from socket import SOCK_DGRAM, SOCK_STREAM
-from typing import Any, Dict, Optional, Set, TYPE_CHECKING, Text, Tuple, Union
+from typing import Any, Dict, Optional, List, Set, TYPE_CHECKING, Text, Tuple, Union
 
 import numpy as np
 from sanic import Sanic
@@ -19,7 +19,11 @@ from rasa.core.constants import (
 from rasa.core.lock_store import LockStore, RedisLockStore, InMemoryLockStore
 from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH, TCP_PROTOCOL
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
+from rasa.utils.endpoints import (
+    EndpointConfig,
+    read_endpoint_config,
+    read_property_config_from_endpoints_file,
+)
 from rasa.utils.io import write_yaml
 
 if TYPE_CHECKING:
@@ -171,6 +175,8 @@ def is_limit_reached(num_messages: int, limit: Optional[int]) -> bool:
 class AvailableEndpoints:
     """Collection of configured endpoints."""
 
+    _instance = None
+
     @classmethod
     def read_endpoints(cls, endpoint_file: Text) -> "AvailableEndpoints":
         """Read the different endpoints from a yaml file."""
@@ -184,6 +190,9 @@ class AvailableEndpoints:
         lock_store = read_endpoint_config(endpoint_file, endpoint_type="lock_store")
         event_broker = read_endpoint_config(endpoint_file, endpoint_type="event_broker")
         vector_store = read_endpoint_config(endpoint_file, endpoint_type="vector_store")
+        model_groups = read_property_config_from_endpoints_file(
+            endpoint_file, property_name="model_groups"
+        )
 
         return cls(
             nlg,
@@ -194,6 +203,7 @@ class AvailableEndpoints:
             lock_store,
             event_broker,
             vector_store,
+            model_groups,
         )
 
     def __init__(
@@ -206,6 +216,7 @@ class AvailableEndpoints:
         lock_store: Optional[EndpointConfig] = None,
         event_broker: Optional[EndpointConfig] = None,
         vector_store: Optional[EndpointConfig] = None,
+        model_groups: Optional[List[Dict[str, Any]]] = None,
     ) -> None:
         """Create an `AvailableEndpoints` object."""
         self.model = model
@@ -216,6 +227,15 @@ class AvailableEndpoints:
         self.lock_store = lock_store
         self.event_broker = event_broker
         self.vector_store = vector_store
+        self.model_groups = model_groups
+
+    @classmethod
+    def get_instance(cls, endpoint_file: Optional[Text] = None) -> "AvailableEndpoints":
+        """Get the singleton instance of AvailableEndpoints."""
+        # Ensure that the instance is initialized only once.
+        if cls._instance is None:
+            cls._instance = cls.read_endpoints(endpoint_file)
+        return cls._instance
 
 
 def read_endpoints_from_path(
@@ -234,7 +254,7 @@ def read_endpoints_from_path(
     endpoints_config_path = cli_utils.get_validated_path(
         endpoints_path, "endpoints", DEFAULT_ENDPOINTS_PATH, True
     )
-    return AvailableEndpoints.read_endpoints(endpoints_config_path)
+    return AvailableEndpoints.get_instance(endpoints_config_path)
 
 
 def _lock_store_is_multi_worker_compatible(

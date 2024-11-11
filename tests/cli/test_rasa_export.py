@@ -20,7 +20,7 @@ from tests.conftest import (
     write_endpoint_config_to_yaml,
     AsyncMock,
 )
-
+from tests.utilities import clear_available_endpoints_class_instance
 from tests.cli.conftest import RASA_EXE
 
 
@@ -83,6 +83,10 @@ async def test_get_event_broker_and_tracker_store_from_endpoint_config(tmp_path:
         },
     )
 
+    # Clear the singleton instance of `AvailableEndpoints` to make sure we read the
+    # endpoints from the test file.
+    clear_available_endpoints_class_instance()
+
     available_endpoints = rasa_core_utils.read_endpoints_from_path(endpoints_path)
 
     # fetching the event broker is successful
@@ -97,6 +101,10 @@ async def test_get_event_broker_from_endpoint_config_error_exit(tmp_path: Path):
         tmp_path, {"tracker_store": {"type": "sql"}}
     )
 
+    # Clear the singleton instance of `AvailableEndpoints` to make sure we read the
+    # endpoints from the test file.
+    clear_available_endpoints_class_instance()
+
     available_endpoints = rasa_core_utils.read_endpoints_from_path(endpoints_path)
 
     with pytest.raises(SystemExit):
@@ -106,6 +114,10 @@ async def test_get_event_broker_from_endpoint_config_error_exit(tmp_path: Path):
 def test_get_tracker_store_from_endpoint_config_error_exit(tmp_path: Path):
     # write config without event broker to file
     endpoints_path = write_endpoint_config_to_yaml(tmp_path, {})
+
+    # Clear the singleton instance of `AvailableEndpoints` to make sure we read the
+    # endpoints from the test file.
+    clear_available_endpoints_class_instance()
 
     available_endpoints = rasa_core_utils.read_endpoints_from_path(endpoints_path)
 
