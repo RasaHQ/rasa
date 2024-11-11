@@ -241,3 +241,6 @@ RASA_PATTERN_CANNOT_HANDLE_INVALID_INTENT = (
 )
 
 ROUTE_TO_CALM_SLOT = "route_session_to_calm"
+
+ORIGINAL_VALUE = "original_value"
+RESOLVED_VALUE = "resolved_value"
