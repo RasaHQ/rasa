@@ -211,6 +211,7 @@ OPENAI_PROVIDER = "openai"
 AZURE_OPENAI_PROVIDER = "azure"
 SELF_HOSTED_PROVIDER = "self-hosted"
 HUGGINGFACE_LOCAL_EMBEDDING_PROVIDER = "huggingface_local"
+RASA_PROVIDER = "rasa"
 
 AZURE_API_TYPE = "azure"
 OPENAI_API_TYPE = "openai"
