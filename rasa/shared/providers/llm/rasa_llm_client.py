@@ -72,10 +72,7 @@ class RasaLLMClient(_BaseLiteLLMClient):
 
     @property
     def _litellm_extra_parameters(self) -> Dict[str, Any]:
-        return {
-            "api_base": self._api_base,
-            **self._extra_parameters
-        }
+        return self._extra_parameters
 
     @property
     def config(self) -> dict:
