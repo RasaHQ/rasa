@@ -76,7 +76,7 @@ class RasaLLMClient(_BaseLiteLLMClient):
 
     @property
     def config(self) -> dict:
-        RasaLLMClientConfig(
+        return RasaLLMClientConfig(
             model = self._model,
             api_base = self._api_base,
             extra_parameters = self._extra_parameters,
@@ -109,7 +109,6 @@ class RasaLLMClient(_BaseLiteLLMClient):
                 original_error=e,
             )
             raise
-        cls.set_rasa_pro_license_as_openai_api_key()
         return cls(
             model=client_config.model,
             api_base=client_config.api_base,
