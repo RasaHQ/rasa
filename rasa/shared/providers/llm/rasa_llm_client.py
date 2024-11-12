@@ -94,13 +94,10 @@ class RasaLLMClient(_BaseLiteLLMClient):
         fn_args.update(
             {
                 "api_base": self.api_base,
+                "api_key": retrieve_license_from_env()
             }
         )
         return fn_args
-    
-    @classmethod
-    def set_rasa_pro_license_as_openai_api_key(cls):
-        os.environ[OPENAI_API_KEY_ENV_VAR] = retrieve_license_from_env()
 
     @classmethod
     def from_config(cls, config: Dict[str, Any]) -> "RasaLLMClient":
