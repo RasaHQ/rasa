@@ -39,6 +39,8 @@ from rasa.shared.providers._configs.openai_client_config import OpenAIClientConf
 from rasa.shared.providers._configs.self_hosted_llm_client_config import (
     SelfHostedLLMClientConfig,
 )
+from rasa.shared.providers._configs.rasa_llm_client_config import RasaLLMClientConfig
+
 from rasa.shared.providers._configs.client_config import ClientConfig
 
 _provider_to_llm_client_mapping: Dict[str, Type[LLMClient]] = {
@@ -59,6 +61,7 @@ _provider_to_client_config_class_mapping: Dict[str, Type] = {
     AZURE_OPENAI_PROVIDER: AzureOpenAIClientConfig,
     HUGGINGFACE_LOCAL_EMBEDDING_PROVIDER: HuggingFaceLocalEmbeddingClientConfig,
     SELF_HOSTED_PROVIDER: SelfHostedLLMClientConfig,
+    RASA_PROVIDER: RasaLLMClientConfig,
 }
 
 
