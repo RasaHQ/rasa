@@ -10,6 +10,18 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.10.9] - 2024-11-13
+                        
+Rasa Pro 3.10.9 (2024-11-13)                             
+### Bugfixes
+- [#1003](https://github.com/rasahq/rasa-private/issues/1003): Introduced the environment variable `MAX_NUMBER_OF_PREDICTIONS_CALM` to configure
+  the CALM-specific limit for the number of predictions. This variable defaults to 1000,
+  providing a higher prediction limit compared to the default value of 10 for
+  nlu-based assistants.
+- [#1449](https://github.com/rasahq/rasa-private/issues/1449): Filter out comments from e2e test input files when writing e2e results to file.
+- [#3023](https://github.com/rasahq/rasa-private/issues/3023): Specified UTF-8 encoding to correctly read test cases on Windows.
+
+
 ## [3.10.8] - 2024-10-24
                         
 Rasa Pro 3.10.8 (2024-10-24)                             
