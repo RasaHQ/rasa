@@ -213,6 +213,9 @@ SELF_HOSTED_PROVIDER = "self-hosted"
 HUGGINGFACE_LOCAL_EMBEDDING_PROVIDER = "huggingface_local"
 RASA_PROVIDER = "rasa"
 
+SELF_HOSTED_VLLM_PREFIX = "hosted_vllm"
+SELF_HOSTED_VLLM_API_KEY_ENV_VAR = "HOSTED_VLLM_API_KEY"
+
 AZURE_API_TYPE = "azure"
 OPENAI_API_TYPE = "openai"
 
@@ -242,3 +245,6 @@ RASA_PATTERN_CANNOT_HANDLE_INVALID_INTENT = (
 )
 
 ROUTE_TO_CALM_SLOT = "route_session_to_calm"
+
+ORIGINAL_VALUE = "original_value"
+RESOLVED_VALUE = "resolved_value"
