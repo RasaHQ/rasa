@@ -4,6 +4,7 @@ from pytest import MonkeyPatch
 
 from rasa.shared.constants import OPENAI_PROVIDER, RASA_PROVIDER
 from rasa.shared.providers.llm.rasa_llm_client import RasaLLMClient
+from rasa.shared.providers.llm.llm_client import LLMClient
 from rasa.shared.providers._configs.rasa_llm_client_config import RasaLLMClientConfig
 from rasa.shared.providers.llm.llm_response import LLMResponse
 
@@ -21,6 +22,10 @@ class TestRasaLLMClient:
         mock = Mock(return_value='mock-license')
         monkeypatch.setattr('rasa.shared.providers.llm.rasa_llm_client.retrieve_license_from_env', mock)
         return mock
+
+    def test_conforms_to_protocol(self, client: LLMClient, monkeypatch: MonkeyPatch):
+        monkeypatch.setenv("RASA_PRO_LICENSE", "my rasa license")
+        assert isinstance(client, LLMClient)
 
     def test_from_config_valid(self) -> None:
         config = {
