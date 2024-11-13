@@ -54,13 +54,14 @@ class RasaLLMClientConfig:
         # Validate that required keys are set
         validate_required_keys(config, REQUIRED_KEYS)
 
-        # Init client config
-        this = RasaLLMClientConfig(
-            model=config.pop(MODEL_CONFIG_KEY, None),
-            api_base=config.pop(API_BASE_CONFIG_KEY, None),
-            extra_parameters=config,
+        extra_parameters = {k: v for k, v in config.items() if k not in REQUIRED_KEYS}
+        
+        return cls(
+            model=config.get(MODEL_CONFIG_KEY),
+            api_base=config.get(API_BASE_CONFIG_KEY),
+            provider=config.get(PROVIDER_CONFIG_KEY, RASA_PROVIDER),
+            extra_parameters=extra_parameters
         )
-        return this
 
     def to_dict(self) -> dict:
         """Converts the config instance into a dictionary."""

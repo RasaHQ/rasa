@@ -4,6 +4,7 @@ from pytest import MonkeyPatch
 
 from rasa.shared.constants import OPENAI_PROVIDER, RASA_PROVIDER
 from rasa.shared.providers.llm.rasa_llm_client import RasaLLMClient
+from rasa.shared.providers._configs.rasa_llm_client_config import RasaLLMClientConfig
 from rasa.shared.providers.llm.llm_response import LLMResponse
 
 class TestRasaLLMClient:
@@ -72,3 +73,57 @@ class TestRasaLLMClient:
             "provider": RASA_PROVIDER,
         }
         assert client.config == expected_config
+
+    def test_config_roundtrip(self):
+        # Initial configuration
+        initial_config = {
+            'provider': RASA_PROVIDER,
+            'model': 'rasa/cmd_gen_codellama_13b_calm_demo',
+            'api_base': 'https://huggingface-proxy.rasa-e2e.workers.dev',
+            'extra_param1': 'value1',
+            'extra_param2': 'value2',
+        }
+
+        # Create RasaLLMClientConfig from initial config
+        config1 = RasaLLMClientConfig.from_dict(initial_config)
+
+        # Convert config1 to dict
+        dict1 = config1.to_dict()
+
+        # Create new RasaLLMClientConfig from dict1
+        config2 = RasaLLMClientConfig.from_dict(dict1)
+
+        # Convert config2 to dict
+        dict2 = config2.to_dict()
+
+        # Assert that all initial config keys are present in both dict1 and dict2
+        for key, value in initial_config.items():
+            assert key in dict1, f"Key '{key}' missing in dict1"
+            assert key in dict2, f"Key '{key}' missing in dict2"
+            assert dict1[key] == value, f"Value mismatch for key '{key}' in dict1"
+            assert dict2[key] == value, f"Value mismatch for key '{key}' in dict2"
+
+        # Assert that no extra keys were added
+        assert set(dict1.keys()) == set(initial_config.keys()), "Extra keys in dict1"
+        assert set(dict2.keys()) == set(initial_config.keys()), "Extra keys in dict2"
+
+        # Compare the two dicts directly
+        assert dict1 == dict2, "dict1 and dict2 are not identical"
+
+        # Create a RasaLLMClient from dict2
+        client = RasaLLMClient.from_config(dict2)
+
+        # Get config from client
+        client_config = client.config
+
+        # Assert that all initial config keys are present in client_config
+        for key, value in initial_config.items():
+            assert key in client_config, f"Key '{key}' missing in client_config"
+            assert client_config[key] == value, f"Value mismatch for key '{key}' in client_config"
+
+        # Assert that no extra keys were added
+        assert set(client_config.keys()) == set(initial_config.keys()), "Extra keys in client_config"
+
+        # Test roundtrip through RasaLLMClient
+        final_dict = RasaLLMClientConfig.from_dict(client_config).to_dict()
+        assert final_dict == initial_config, "Final dict does not match initial config after full roundtrip"
