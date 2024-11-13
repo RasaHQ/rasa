@@ -1,5 +1,5 @@
 from dataclasses import asdict, dataclass, field
-from typing import Any, Dict, Optional
+from typing import Optional
 
 import structlog
 
@@ -20,7 +20,8 @@ structlogger = structlog.get_logger()
 
 @dataclass
 class RasaLLMClientConfig:
-    """Parses configuration for a Rasa Hosted LiteLLM client, checks required keys present.
+    """Parses configuration for a Rasa Hosted LiteLLM client,
+    checks required keys present.
 
     Raises:
         ValueError: Raised in cases of invalid configuration:

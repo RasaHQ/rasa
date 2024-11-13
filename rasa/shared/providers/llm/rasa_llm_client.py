@@ -1,23 +1,17 @@
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Optional
 
 import structlog
-import os
 
 from rasa.shared.constants import (
-    SELF_HOSTED_PROVIDER,
     RASA_PROVIDER,
     OPENAI_PROVIDER,
-    OPENAI_API_KEY_ENV_VAR,
 )
 from rasa.shared.providers._configs.rasa_llm_client_config import (
     RasaLLMClientConfig,
 )
 from rasa.utils.licensing import retrieve_license_from_env
-from rasa.shared.exceptions import ProviderClientAPIException
 from rasa.shared.providers.llm._base_litellm_client import _BaseLiteLLMClient
 
-from rasa.shared.providers.llm.llm_response import LLMResponse, LLMUsage
-from rasa.shared.utils.io import suppress_logs
 
 structlogger = structlog.get_logger()
 
