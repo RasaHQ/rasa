@@ -8,8 +8,8 @@ from rasa.shared.providers.llm.llm_client import LLMClient
 from rasa.shared.providers._configs.rasa_llm_client_config import RasaLLMClientConfig
 from rasa.shared.providers.llm.llm_response import LLMResponse
 
-class TestRasaLLMClient:
 
+class TestRasaLLMClient:
     @pytest.fixture
     def client(self) -> RasaLLMClient:
         return RasaLLMClient(
@@ -19,8 +19,10 @@ class TestRasaLLMClient:
 
     @pytest.fixture
     def mock_retrieve_license(self, monkeypatch: MonkeyPatch) -> Mock:
-        mock = Mock(return_value='mock-license')
-        monkeypatch.setattr('rasa.shared.providers.llm.rasa_llm_client.retrieve_license_from_env', mock)
+        mock = Mock(return_value="mock-license")
+        monkeypatch.setattr(
+            "rasa.shared.providers.llm.rasa_llm_client.retrieve_license_from_env", mock
+        )
         return mock
 
     def test_conforms_to_protocol(self, client: LLMClient, monkeypatch: MonkeyPatch):
@@ -29,14 +31,14 @@ class TestRasaLLMClient:
 
     def test_from_config_valid(self) -> None:
         config = {
-            'provider': RASA_PROVIDER,            
-            'model': 'rasa/cmd_gen_codellama_13b_calm_demo',
-            'api_base': 'https://huggingface-proxy.rasa-e2e.workers.dev',
+            "provider": RASA_PROVIDER,
+            "model": "rasa/cmd_gen_codellama_13b_calm_demo",
+            "api_base": "https://huggingface-proxy.rasa-e2e.workers.dev",
         }
         client = RasaLLMClient.from_config(config)
         assert isinstance(client, RasaLLMClient)
-        assert client.model == 'rasa/cmd_gen_codellama_13b_calm_demo'
-        assert client.api_base == 'https://huggingface-proxy.rasa-e2e.workers.dev'
+        assert client.model == "rasa/cmd_gen_codellama_13b_calm_demo"
+        assert client.api_base == "https://huggingface-proxy.rasa-e2e.workers.dev"
         assert client.provider == RASA_PROVIDER
 
     def test_from_config_invalid(self) -> None:
@@ -45,29 +47,47 @@ class TestRasaLLMClient:
             RasaLLMClient.from_config(invalid_config)
 
     def test_completion(self, client: RasaLLMClient, monkeypatch: MonkeyPatch) -> None:
-        mock_completion = Mock(return_value=LLMResponse(id="test_id", created=1234567890, choices=["Test response"]))
-        monkeypatch.setattr(RasaLLMClient, 'completion', mock_completion)
+        mock_completion = Mock(
+            return_value=LLMResponse(
+                id="test_id", created=1234567890, choices=["Test response"]
+            )
+        )
+        monkeypatch.setattr(RasaLLMClient, "completion", mock_completion)
         response = client.completion(["Test prompt"])
         assert isinstance(response, LLMResponse)
         assert response.choices == ["Test response"]
 
     @pytest.mark.asyncio
-    async def test_acompletion(self, client: RasaLLMClient, monkeypatch: MonkeyPatch) -> None:
-        mock_acompletion = AsyncMock(return_value=LLMResponse(id="test_id", created=1234567890, choices=["Test response"]))
-        monkeypatch.setattr(RasaLLMClient, 'acompletion', mock_acompletion)
+    async def test_acompletion(
+        self, client: RasaLLMClient, monkeypatch: MonkeyPatch
+    ) -> None:
+        mock_acompletion = AsyncMock(
+            return_value=LLMResponse(
+                id="test_id", created=1234567890, choices=["Test response"]
+            )
+        )
+        monkeypatch.setattr(RasaLLMClient, "acompletion", mock_acompletion)
         response = await client.acompletion(["Test prompt"])
         assert isinstance(response, LLMResponse)
         assert response.choices == ["Test response"]
 
     def test_litellm_model_name(self, client: RasaLLMClient) -> None:
-        assert client._litellm_model_name == f"{OPENAI_PROVIDER}/rasa/cmd_gen_codellama_13b_calm_demo"
+        assert (
+            client._litellm_model_name
+            == f"{OPENAI_PROVIDER}/rasa/cmd_gen_codellama_13b_calm_demo"
+        )
 
     def test_litellm_extra_parameters(self, client: RasaLLMClient) -> None:
         assert client._litellm_extra_parameters == {}
 
-    def test_completion_fn_args(self, client: RasaLLMClient, mock_retrieve_license: Mock) -> None:
+    def test_completion_fn_args(
+        self, client: RasaLLMClient, mock_retrieve_license: Mock
+    ) -> None:
         fn_args = client._completion_fn_args
-        assert fn_args["model"] == f"{OPENAI_PROVIDER}/rasa/cmd_gen_codellama_13b_calm_demo"
+        assert (
+            fn_args["model"]
+            == f"{OPENAI_PROVIDER}/rasa/cmd_gen_codellama_13b_calm_demo"
+        )
         assert fn_args["api_base"] == "https://huggingface-proxy.rasa-e2e.workers.dev"
         assert fn_args["api_key"] == "mock-license"
 
@@ -82,11 +102,11 @@ class TestRasaLLMClient:
     def test_config_roundtrip(self):
         # Initial configuration
         initial_config = {
-            'provider': RASA_PROVIDER,
-            'model': 'rasa/cmd_gen_codellama_13b_calm_demo',
-            'api_base': 'https://huggingface-proxy.rasa-e2e.workers.dev',
-            'extra_param1': 'value1',
-            'extra_param2': 'value2',
+            "provider": RASA_PROVIDER,
+            "model": "rasa/cmd_gen_codellama_13b_calm_demo",
+            "api_base": "https://huggingface-proxy.rasa-e2e.workers.dev",
+            "extra_param1": "value1",
+            "extra_param2": "value2",
         }
 
         # Create RasaLLMClientConfig from initial config
@@ -124,11 +144,17 @@ class TestRasaLLMClient:
         # Assert that all initial config keys are present in client_config
         for key, value in initial_config.items():
             assert key in client_config, f"Key '{key}' missing in client_config"
-            assert client_config[key] == value, f"Value mismatch for key '{key}' in client_config"
+            assert (
+                client_config[key] == value
+            ), f"Value mismatch for key '{key}' in client_config"
 
         # Assert that no extra keys were added
-        assert set(client_config.keys()) == set(initial_config.keys()), "Extra keys in client_config"
+        assert set(client_config.keys()) == set(
+            initial_config.keys()
+        ), "Extra keys in client_config"
 
         # Test roundtrip through RasaLLMClient
         final_dict = RasaLLMClientConfig.from_dict(client_config).to_dict()
-        assert final_dict == initial_config, "Final dict does not match initial config after full roundtrip"
+        assert (
+            final_dict == initial_config
+        ), "Final dict does not match initial config after full roundtrip"

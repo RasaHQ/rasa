@@ -17,6 +17,7 @@ REQUIRED_KEYS = [MODEL_CONFIG_KEY, PROVIDER_CONFIG_KEY, API_BASE_CONFIG_KEY]
 
 structlogger = structlog.get_logger()
 
+
 @dataclass
 class RasaLLMClientConfig:
     """Parses configuration for a Rasa Hosted LiteLLM client, checks required keys present.
@@ -33,7 +34,6 @@ class RasaLLMClientConfig:
     provider: str = RASA_PROVIDER
 
     extra_parameters: dict = field(default_factory=dict)
-
 
     @classmethod
     def from_dict(cls, config: dict) -> "RasaLLMClientConfig":
@@ -55,12 +55,12 @@ class RasaLLMClientConfig:
         validate_required_keys(config, REQUIRED_KEYS)
 
         extra_parameters = {k: v for k, v in config.items() if k not in REQUIRED_KEYS}
-        
+
         return cls(
             model=config.get(MODEL_CONFIG_KEY),
             api_base=config.get(API_BASE_CONFIG_KEY),
             provider=config.get(PROVIDER_CONFIG_KEY, RASA_PROVIDER),
-            extra_parameters=extra_parameters
+            extra_parameters=extra_parameters,
         )
 
     def to_dict(self) -> dict:

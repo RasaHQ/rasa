@@ -3,7 +3,12 @@ from typing import Any, Dict, List, Optional, Union
 import structlog
 import os
 
-from rasa.shared.constants import SELF_HOSTED_PROVIDER, RASA_PROVIDER, OPENAI_PROVIDER, OPENAI_API_KEY_ENV_VAR
+from rasa.shared.constants import (
+    SELF_HOSTED_PROVIDER,
+    RASA_PROVIDER,
+    OPENAI_PROVIDER,
+    OPENAI_API_KEY_ENV_VAR,
+)
 from rasa.shared.providers._configs.rasa_llm_client_config import (
     RasaLLMClientConfig,
 )
@@ -22,7 +27,7 @@ class RasaLLMClient(_BaseLiteLLMClient):
 
     Parameters:
         model (str): The model or deployment name.
-        api_base (str): The base URL of the API endpoint.        
+        api_base (str): The base URL of the API endpoint.
         kwargs: Any: Additional configuration parameters that can include, but
             are not limited to model parameters and lite-llm specific
             parameters. These parameters will be passed to the
@@ -31,7 +36,7 @@ class RasaLLMClient(_BaseLiteLLMClient):
     Raises:
         ProviderClientValidationError: If validation of the client setup fails.
         ProviderClientAPIException: If the API request fails.
-    """    
+    """
 
     def __init__(
         self,
@@ -77,9 +82,9 @@ class RasaLLMClient(_BaseLiteLLMClient):
     @property
     def config(self) -> dict:
         return RasaLLMClientConfig(
-            model = self._model,
-            api_base = self._api_base,
-            extra_parameters = self._extra_parameters,
+            model=self._model,
+            api_base=self._api_base,
+            extra_parameters=self._extra_parameters,
         ).to_dict()
 
     @property
@@ -89,10 +94,7 @@ class RasaLLMClient(_BaseLiteLLMClient):
         """
         fn_args = super()._completion_fn_args
         fn_args.update(
-            {
-                "api_base": self.api_base,
-                "api_key": retrieve_license_from_env()
-            }
+            {"api_base": self.api_base, "api_key": retrieve_license_from_env()}
         )
         return fn_args
 
