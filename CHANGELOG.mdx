@@ -16,37 +16,43 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.6.21] - 2024-11-13
+
+Rasa 3.6.21 (2024-11-13)
+### Fixed socket connection issue
+- [#13030](https://github.com/rasahq/rasa/issues/13030), [#13031](https://github.com/rasahq/rasa/issues/13031)
+
 ## [3.6.20] - 2024-04-18
-                        
-Rasa 3.6.20 (2024-04-18)                         
+
+Rasa 3.6.20 (2024-04-18)
 ### Miscellaneous internal changes
 - [#13030](https://github.com/rasahq/rasa/issues/13030), [#13031](https://github.com/rasahq/rasa/issues/13031)
 
 
 ## [3.6.19] - 2024-03-04
-                        
-Rasa 3.6.19 (2024-03-04)                         
+
+Rasa 3.6.19 (2024-03-04)
 ### Bugfixes
 - [#13019](https://github.com/rasahq/rasa/issues/13019): Changed the ordering of returned events to order by ID (previously timestamp) in SQL Tracker Store
 
 
 ## [3.6.18] - 2024-02-23
-                        
-Rasa 3.6.18 (2024-02-23)                         
+
+Rasa 3.6.18 (2024-02-23)
 ### Bugfixes
 - [#13017](https://github.com/rasahq/rasa/issues/13017): Flush messages when Kafka producer is closed. This is to ensure that all messages in the producer's internal queue are sent to the broker.
 
 
 ## [3.6.17] - 2024-02-13
-                        
-Rasa 3.6.17 (2024-02-13)                         
+
+Rasa 3.6.17 (2024-02-13)
 ### Miscellaneous internal changes
 - [#13007](https://github.com/rasahq/rasa/issues/13007)
 
 
 ## [3.6.16] - 2024-01-19
-                        
-Rasa 3.6.16 (2024-01-19)                         
+
+Rasa 3.6.16 (2024-01-19)
 ### Bugfixes
 - [#12983](https://github.com/rasahq/rasa/issues/12983): Upgrade Cryptography to fix improper certificate validation.
 - [#12998](https://github.com/rasahq/rasa/issues/12998): Fixes a bug that caused the `full_retrieval_intent_name` key to be missing in the published event. Rasa Analytics makes use of this key to get the Retrieval Intent Name
