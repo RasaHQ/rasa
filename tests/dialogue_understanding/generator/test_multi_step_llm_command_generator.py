@@ -196,7 +196,6 @@ class TestMultiStepLLMCommandGenerator:
         command_generator: MultiStepLLMCommandGenerator,
     ):
         """Test predict_commands_for_handling_flows calls llm correctly."""
-
         llm_mock = Mock()
         predict_mock = AsyncMock()
         llm_mock.acompletion = predict_mock
@@ -364,8 +363,14 @@ class TestMultiStepLLMCommandGenerator:
                 "SetSlot(transfer_money_amount_of_money, )",
                 [SetSlotCommand(name="transfer_money_amount_of_money", value=None)],
             ),
+            (
+                "SetSlot('transfer_money_amount_of_money', 'value')",
+                [SetSlotCommand(name="transfer_money_amount_of_money", value=None)],
+            ),
             ("SetSlot(flow_name, some_flow)", [StartFlowCommand(flow="some_flow")]),
             ("StartFlow(some_flow)", [StartFlowCommand(flow="some_flow")]),
+            ("StartFlow('some_flow')", [StartFlowCommand(flow="some_flow")]),
+            ('StartFlow("some_flow")', [StartFlowCommand(flow="some_flow")]),
             ("StartFlow(does_not_exist)", []),
             (
                 "StartFlow(02_benefits_learning_days)",
@@ -403,6 +408,22 @@ class TestMultiStepLLMCommandGenerator:
             ),
             (
                 "Clarify(test_a, test_b, test_c, test_d, test_e)",
+                [
+                    ClarifyCommand(
+                        options=["test_a", "test_b", "test_c", "test_d", "test_e"]
+                    )
+                ],
+            ),
+            (
+                "Clarify('test_a', 'test_b', 'test_c', 'test_d', 'test_e')",
+                [
+                    ClarifyCommand(
+                        options=["test_a", "test_b", "test_c", "test_d", "test_e"]
+                    )
+                ],
+            ),
+            (
+                'Clarify("test_a", "test_b", "test_c", "test_d", "test_e")',
                 [
                     ClarifyCommand(
                         options=["test_a", "test_b", "test_c", "test_d", "test_e"]

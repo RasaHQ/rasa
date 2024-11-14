@@ -185,6 +185,12 @@ class SingleStepLLMCommandGenerator(LLMBasedCommandGenerator):
 
         if not commands:
             # no commands are parsed or there's an invalid command
+            structlogger.warning(
+                "single_step_llm_command_generator.predict_commands",
+                message="No commands were predicted as the LLM response could "
+                "not be parsed or the LLM responded with an invalid command."
+                "Returning a CannotHandleCommand instead.",
+            )
             commands = [CannotHandleCommand()]
 
         if tracker.has_coexistence_routing_slot:
@@ -285,14 +291,16 @@ class SingleStepLLMCommandGenerator(LLMBasedCommandGenerator):
 
         commands: List[Command] = []
 
-        slot_set_re = re.compile(r"""SetSlot\(([a-zA-Z_][a-zA-Z0-9_-]*?), ?(.*)\)""")
-        start_flow_re = re.compile(r"StartFlow\(([a-zA-Z0-9_-]+?)\)")
+        slot_set_re = re.compile(
+            r"""SetSlot\(['"]?([a-zA-Z_][a-zA-Z0-9_-]*)['"]?, ?['"]?(.*)['"]?\)"""
+        )
+        start_flow_re = re.compile(r"StartFlow\(['\"]?([a-zA-Z0-9_-]+)['\"]?\)")
         cancel_flow_re = re.compile(r"CancelFlow\(\)")
         chitchat_re = re.compile(r"ChitChat\(\)")
         skip_question_re = re.compile(r"SkipQuestion\(\)")
         knowledge_re = re.compile(r"SearchAndReply\(\)")
         humand_handoff_re = re.compile(r"HumanHandoff\(\)")
-        clarify_re = re.compile(r"Clarify\(([a-zA-Z0-9_, ]+)\)")
+        clarify_re = re.compile(r"Clarify\(([\"\'a-zA-Z0-9_, ]+)\)")
 
         for action in actions.strip().splitlines():
             if match := slot_set_re.search(action):
@@ -321,13 +329,30 @@ class SingleStepLLMCommandGenerator(LLMBasedCommandGenerator):
                 commands.append(HumanHandoffCommand())
             elif match := clarify_re.search(action):
                 options = sorted([opt.strip() for opt in match.group(1).split(",")])
+                # Remove surrounding quotes if present
+                cleaned_options = []
+                for flow in options:
+                    if (flow.startswith('"') and flow.endswith('"')) or (
+                        flow.startswith("'") and flow.endswith("'")
+                    ):
+                        cleaned_options.append(flow[1:-1])
+                    else:
+                        cleaned_options.append(flow)
+                # check if flow is valid
                 valid_options = [
-                    flow for flow in options if flow in flows.user_flow_ids
+                    flow for flow in cleaned_options if flow in flows.user_flow_ids
                 ]
                 if len(set(valid_options)) == 1:
                     commands.extend(cls.start_flow_by_name(valid_options[0], flows))
                 elif len(valid_options) > 1:
                     commands.append(ClarifyCommand(valid_options))
+
+        if not commands:
+            structlogger.debug(
+                "single_step_llm_command_generator.parse_commands",
+                message="No commands were parsed from the LLM actions.",
+                actions=actions,
+            )
 
         return commands
 
