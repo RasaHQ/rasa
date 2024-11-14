@@ -37,8 +37,8 @@ class RasaLLMClient(_BaseLiteLLMClient):
         model: str,
         api_base: str,
         **kwargs: Any,
-    ) -> None:
-        super().__init__()  # Initialize the base class without arguments
+    ):
+        super().__init__()  # type: ignore
         self._model = model
         self._api_base = api_base
         self._use_chat_completions_endpoint = True
