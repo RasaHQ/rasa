@@ -10,6 +10,13 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.10.10] - 2024-11-14
+                         
+Rasa Pro 3.10.10 (2024-11-14)                              
+### Bugfixes
+- [#1530](https://github.com/rasahq/rasa-private/issues/1530): Check for the metadata's `step_id` and `active_flow` keys when adding the `ActionExecuted` event to the flows paths stack.
+
+
 ## [3.10.9] - 2024-11-13
                         
 Rasa Pro 3.10.9 (2024-11-13)                             
