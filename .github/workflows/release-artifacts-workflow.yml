@@ -107,13 +107,19 @@ jobs:
     # ubuntu-22.04-4core - 4 cores, 16GB of RAM and 150 GB SSD
     runs-on: ubuntu-22.04-4core
 
+    outputs:
+      tag_version: ${{ steps.set-tag-version.outputs.tag_version }}
+
     steps:
       - name: Set tag version
+        id: set-tag-version
         run: |
           if [[ -n "$GITHUB_REF" && "$GITHUB_REF" == refs/tags/* ]]; then
             echo "TAG_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+            echo "tag_version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
           elif [[ -n "$INPUT_TAG_VERSION" ]]; then
             echo "TAG_VERSION=$INPUT_TAG_VERSION" >> $GITHUB_ENV
+            echo "tag_version=$INPUT_TAG_VERSION" >> $GITHUB_OUTPUT
           else
             echo "No tag version found."
             exit 1
@@ -297,28 +303,14 @@ jobs:
     needs: [release-artifacts-docker, release-artifacts-pypi]
 
     steps:
-      - name: Set tag version
-        run: |
-          if [[ -n "$GITHUB_REF" && "$GITHUB_REF" == refs/tags/* ]]; then
-            echo "TAG_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
-          elif [[ -n "$INPUT_TAG_VERSION" ]]; then
-            echo "TAG_VERSION=$INPUT_TAG_VERSION" >> $GITHUB_ENV
-          else
-            echo "No tag version found."
-            exit 1
-          fi
-        env:
-          INPUT_TAG_VERSION: ${{ github.event.inputs.tag_version }}
-            
       - name: Check out code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
-          ref: ${{ env.TAG_VERSION }}
+          ref: ${{ needs.release-artifacts-docker.outputs.tag_version }}
       
       - name: Notify Sentry about the release
-        if: success()
         env:
-           GITHUB_TAG: ${{ env.GITHUB_TAG }}
+           GITHUB_TAG: ${{ needs.release-artifacts-docker.outputs.tag_version }}
            SENTRY_ORG: rasahq
            SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: |
@@ -329,10 +321,9 @@ jobs:
            sentry-cli releases finalize "rasa-$GITHUB_TAG"
 
       - name: Publish Release Notes 🗞
-        if: success()
         env:
           GH_RELEASE_NOTES_TOKEN: ${{ secrets.GH_RELEASE_NOTES_TOKEN }}
-          GITHUB_TAG: ${{ env.TAG_VERSION }}
+          GITHUB_TAG: ${{ needs.release-artifacts-docker.outputs.tag_version }}
           GITHUB_REPO_SLUG: ${{ github.repository }}
           GITHUB_TOKEN: ${{ secrets.RELEASE_GITHUB_TOKEN }}
         run: |
@@ -341,7 +332,6 @@ jobs:
           python3 scripts/publish_gh_release_notes.py
 
       - name: Update CMS with new release record
-        if: success()
         uses: RasaHQ/push-release-record-to-datocms-gha@1be87116d0a2b555bd5b291ea5923ce5b7aeb83e
         # this step only has an effect for new majors and minors; the action skips other versions
         with:
@@ -352,39 +342,26 @@ jobs:
   release-artifact-slack-notifications:
     name: Release Artifact Slack Notifications
     runs-on: ubuntu-22.04
-    needs: [release-artifacts-docker, release-artifacts-pypi, release-atifacts-publish-release]
+    needs: [release-artifacts-docker, release-artifacts-pypi]
     if: always()  # Ensures this job runs regardless of the result of previous jobs
 
     steps:
-      - name: Set tag version
-        run: |
-          if [[ -n "$GITHUB_REF" && "$GITHUB_REF" == refs/tags/* ]]; then
-            echo "TAG_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
-          elif [[ -n "$INPUT_TAG_VERSION" ]]; then
-            echo "TAG_VERSION=$INPUT_TAG_VERSION" >> $GITHUB_ENV
-          else
-            echo "No tag version found."
-            exit 1
-          fi
-        env:
-          INPUT_TAG_VERSION: ${{ github.event.inputs.tag_version }}
-          
       - name: Notify Slack of successful release 💬
-        if: ${{ needs.release-artifacts-docker.result == 'success' && needs.release-artifacts-pypi.result == 'success' && needs.release-atifacts-publish-release.result == 'success' }}
+        if: ${{ needs.release-artifacts-docker.result == 'success' && needs.release-artifacts-pypi.result == 'success' }}
         uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 #v 1.25.0
         with:
           # Send notification to #release slack channel
           channel-id: "C024Z61K9QU"
-          slack-message: ":rocket: New *Rasa Private* version `${{ env.TAG_VERSION }}` has been released! More information can be found <https://github.com/RasaHQ/rasa-private/releases/tag/${{ env.TAG_VERSION }}|here>."
+          slack-message: ":rocket: New *Rasa Private* version `${{ needs.release-artifacts-docker.outputs.tag_version }}` has been released! More information can be found <https://github.com/RasaHQ/rasa-private/releases/tag/${{ needs.release-artifacts-docker.outputs.tag_version }}|here>."
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
 
       - name: Notify Slack of unsuccessful release ⛔️
-        if: ${{ needs.release-artifacts-docker.result != 'success' || needs.release-artifacts-pypi.result != 'success' || needs.release-atifacts-publish-release.result != 'success' }}
+        if: ${{ needs.release-artifacts-docker.result != 'success' || needs.release-artifacts-pypi.result != 'success' }}
         uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 #v 1.25.0
         with:
            # Send notification to #devtribe slack channel
            channel-id: "C061J0LGHU0"
-           slack-message: ":broken_heart: *Rasa Private* release version `${{ env.TAG_VERSION }}` has failed! More information can be found <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|here>."
+           slack-message: ":broken_heart: *Rasa Private* release version `${{ needs.release-artifacts-docker.outputs.tag_version }}` has failed! More information can be found <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|here>."
         env:
            SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
