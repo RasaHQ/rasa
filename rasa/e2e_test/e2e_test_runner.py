@@ -1155,6 +1155,8 @@ class E2ETestRunner:
                     flow_paths_stack
                     and self.agent.domain
                     and self.agent.domain.is_custom_action(event.action_name)
+                    and STEP_ID_METADATA_KEY in event.metadata
+                    and ACTIVE_FLOW_METADATA_KEY in event.metadata
                 ):
                     flow_paths_stack[-1].nodes.append(self._create_path_node(event))
 
