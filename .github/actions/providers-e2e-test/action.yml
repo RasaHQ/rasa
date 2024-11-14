@@ -51,10 +51,6 @@ inputs:
     description: 'Token to enable sending Slack notifications'
     required: true
 
-  huggingface-api-key:
-    description: 'Hugging Face API key'
-    required: true
-
 runs:
   using: composite
   steps:
@@ -132,22 +128,13 @@ runs:
     # so need to wake it up before usage
     - name: Wake up Hugging Face inference endpoint
       if: ${{ inputs.provider == 'huggingface' }}
+      working-directory: data/test_config/providers/huggingface
+      env:
+        ENDPOINT_NAME: cmd-gen-codellama-13b-calm-d-bfz
+        ENDPOINT_NAMESPACE: rasa
       run: |
         : Wake up Hugging Face inference endpoint
-        curl --fail-with-body --retry 10 --retry-max-time 300 --retry-all-errors -vvv "https://tli2t3mifcp9pjf8.us-east-1.aws.endpoints.huggingface.cloud/v1/chat/completions" \
-        -H "Authorization: Bearer ${{ inputs.huggingface-api-key }}" \
-        -H "Content-Type: application/json" \
-        -d '{
-            "model": "tgi",
-            "messages": [
-                {
-                    "role": "user",
-                    "content": "What is deep learning?"
-                }
-            ],
-            "max_tokens": 150,
-            "stream": true
-        }'
+        pip install huggingface_hub && ./wake-up-inference-endpoint.py
       shell: bash
 
     - name: Run duckling server
