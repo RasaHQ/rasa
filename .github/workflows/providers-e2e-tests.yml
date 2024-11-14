@@ -109,6 +109,9 @@ on:
         type: string
         required: true
         default: gpt-4o-mini
+  pull_request:
+    branches: main
+    paths: pyproject.toml
 
 env:
   DEFAULT_PYTHON_VERSION: "3.10"
@@ -171,10 +174,29 @@ jobs:
           echo "COMMAND_GENERATOR_MATRIX=${{ env.COMMAND_GENERATOR_MATRIX }}" >> $GITHUB_OUTPUT
           echo "${{ fromJson(env.COMMAND_GENERATOR_MATRIX)[env.COMMAND_GENERATOR] }}"
 
+  check_upgrades_to_litellm_or_openai_dependencies:
+    runs-on: ubuntu-22.04
+    if: ${{ github.event_name == 'pull_request' }}
+    outputs:
+      litellm_upgraded: ${{ steps.check_litellm_upgrade.outcome }}
+      openai_upgraded: ${{ steps.check_openai_upgrade.outcome }}
+    steps:
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+        with:
+          fetch-depth: 0
+      - name: Check upgrades to LiteLLM dependency
+        id: check_litellm_upgrade
+        run: git diff ${{ github.sha }}:pyproject.toml origin/${{ github.base_ref }}:pyproject.toml | grep -e '-litellm\|+litellm2'
+      - name: Check upgrades to OpenAI dependency
+        id: check_openai_upgrade
+        if: always()
+        run: git diff ${{ github.sha }}:pyproject.toml origin/${{ github.base_ref }}:pyproject.toml | grep -e '-openai\|+openai'
+
   e2e_test:
     name: Run e2e Test
-    needs: job_setup
-    if: ${{ github.event_name == 'schedule' || inputs.provider == 'all' }}
+    needs: [job_setup, check_upgrades_to_litellm_or_openai_dependencies]
+    if: ${{ always() && (github.event_name == 'schedule' || inputs.provider == 'all' || (needs.check_upgrades_to_litellm_or_openai_dependencies.outputs.litellm_upgraded == 'success' || needs.check_upgrades_to_litellm_or_openai_dependencies.outputs.openai_upgraded == 'success')) }}
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
