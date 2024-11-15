@@ -1,6 +1,6 @@
+import logging
 from abc import abstractmethod
 from typing import Dict, List, Any, Union
-import logging
 
 import structlog
 from litellm import (
@@ -18,7 +18,7 @@ from rasa.shared.providers._ssl_verification_utils import (
     ensure_ssl_certificates_for_litellm_openai_based_clients,
 )
 from rasa.shared.providers.llm.llm_response import LLMResponse, LLMUsage
-from rasa.shared.utils.io import suppress_logs
+from rasa.shared.utils.io import suppress_logs, resolve_environment_variables
 
 structlogger = structlog.get_logger()
 
@@ -145,9 +145,8 @@ class _BaseLiteLLMClient:
         """
         try:
             formatted_messages = self._format_messages(messages)
-            response = completion(
-                messages=formatted_messages, **self._completion_fn_args
-            )
+            arguments = resolve_environment_variables(self._completion_fn_args)
+            response = completion(messages=formatted_messages, **arguments)
             return self._format_response(response)
         except Exception as e:
             raise ProviderClientAPIException(e)
@@ -168,9 +167,8 @@ class _BaseLiteLLMClient:
         """
         try:
             formatted_messages = self._format_messages(messages)
-            response = await acompletion(
-                messages=formatted_messages, **self._completion_fn_args
-            )
+            arguments = resolve_environment_variables(self._completion_fn_args)
+            response = await acompletion(messages=formatted_messages, **arguments)
             return self._format_response(response)
         except Exception as e:
             message = ""
