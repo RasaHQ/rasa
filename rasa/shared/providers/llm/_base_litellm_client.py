@@ -1,7 +1,7 @@
+import logging
 from abc import abstractmethod
 from typing import Dict, List, Any, Union
 
-import logging
 import structlog
 from litellm import (
     completion,
@@ -18,7 +18,7 @@ from rasa.shared.providers._ssl_verification_utils import (
     ensure_ssl_certificates_for_litellm_openai_based_clients,
 )
 from rasa.shared.providers.llm.llm_response import LLMResponse, LLMUsage
-from rasa.shared.utils.io import suppress_logs
+from rasa.shared.utils.io import suppress_logs, resolve_environment_variables
 
 structlogger = structlog.get_logger()
 
@@ -29,8 +29,7 @@ logging.getLogger("LiteLLM").setLevel(logging.WARNING)
 
 
 class _BaseLiteLLMClient:
-    """
-    An abstract base class for LiteLLM clients.
+    """An abstract base class for LiteLLM clients.
 
     This class defines the interface and common functionality for all clients
     based on LiteLLM.
@@ -132,44 +131,44 @@ class _BaseLiteLLMClient:
 
     @suppress_logs(log_level=logging.WARNING)
     def completion(self, messages: Union[List[str], str]) -> LLMResponse:
-        """
-        Synchronously generate completions for given list of messages.
+        """Synchronously generate completions for given list of messages.
 
         Args:
             messages: List of messages or a single message to generate the
                 completion for.
+
         Returns:
             List of message completions.
+
         Raises:
             ProviderClientAPIException: If the API request fails.
         """
         try:
             formatted_messages = self._format_messages(messages)
-            response = completion(
-                messages=formatted_messages, **self._completion_fn_args
-            )
+            arguments = resolve_environment_variables(self._completion_fn_args)
+            response = completion(messages=formatted_messages, **arguments)
             return self._format_response(response)
         except Exception as e:
             raise ProviderClientAPIException(e)
 
     @suppress_logs(log_level=logging.WARNING)
     async def acompletion(self, messages: Union[List[str], str]) -> LLMResponse:
-        """
-        Asynchronously generate completions for given list of messages.
+        """Asynchronously generate completions for given list of messages.
 
         Args:
             messages: List of messages or a single message to generate the
                 completion for.
+
         Returns:
             List of message completions.
+
         Raises:
             ProviderClientAPIException: If the API request fails.
         """
         try:
             formatted_messages = self._format_messages(messages)
-            response = await acompletion(
-                messages=formatted_messages, **self._completion_fn_args
-            )
+            arguments = resolve_environment_variables(self._completion_fn_args)
+            response = await acompletion(messages=formatted_messages, **arguments)
             return self._format_response(response)
         except Exception as e:
             raise ProviderClientAPIException(e)
@@ -216,8 +215,7 @@ class _BaseLiteLLMClient:
 
     @staticmethod
     def _ensure_certificates() -> None:
-        """
-        Configures SSL certificates for LiteLLM. This method is invoked during
+        """Configures SSL certificates for LiteLLM. This method is invoked during
         client initialization.
 
         LiteLLM may utilize `openai` clients or other providers that require
