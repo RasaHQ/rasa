@@ -5,6 +5,7 @@ from rasa.shared.constants import (
     HUGGINGFACE_LOCAL_EMBEDDING_PROVIDER,
     OPENAI_PROVIDER,
     SELF_HOSTED_PROVIDER,
+    RASA_PROVIDER,
 )
 from rasa.shared.providers.embedding.azure_openai_embedding_client import (
     AzureOpenAIEmbeddingClient,
@@ -24,6 +25,7 @@ from rasa.shared.providers.llm.default_litellm_llm_client import DefaultLiteLLMC
 from rasa.shared.providers.llm.llm_client import LLMClient
 from rasa.shared.providers.llm.openai_llm_client import OpenAILLMClient
 from rasa.shared.providers.llm.self_hosted_llm_client import SelfHostedLLMClient
+from rasa.shared.providers.llm.rasa_llm_client import RasaLLMClient
 from rasa.shared.providers._configs.azure_openai_client_config import (
     AzureOpenAIClientConfig,
 )
@@ -37,12 +39,15 @@ from rasa.shared.providers._configs.openai_client_config import OpenAIClientConf
 from rasa.shared.providers._configs.self_hosted_llm_client_config import (
     SelfHostedLLMClientConfig,
 )
+from rasa.shared.providers._configs.rasa_llm_client_config import RasaLLMClientConfig
+
 from rasa.shared.providers._configs.client_config import ClientConfig
 
 _provider_to_llm_client_mapping: Dict[str, Type[LLMClient]] = {
     OPENAI_PROVIDER: OpenAILLMClient,
     AZURE_OPENAI_PROVIDER: AzureOpenAILLMClient,
     SELF_HOSTED_PROVIDER: SelfHostedLLMClient,
+    RASA_PROVIDER: RasaLLMClient,
 }
 
 _provider_to_embedding_client_mapping: Dict[str, Type[EmbeddingClient]] = {
@@ -56,6 +61,7 @@ _provider_to_client_config_class_mapping: Dict[str, Type] = {
     AZURE_OPENAI_PROVIDER: AzureOpenAIClientConfig,
     HUGGINGFACE_LOCAL_EMBEDDING_PROVIDER: HuggingFaceLocalEmbeddingClientConfig,
     SELF_HOSTED_PROVIDER: SelfHostedLLMClientConfig,
+    RASA_PROVIDER: RasaLLMClientConfig,
 }
 
 

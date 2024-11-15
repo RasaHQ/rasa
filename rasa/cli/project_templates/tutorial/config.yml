@@ -1,11 +1,14 @@
 recipe: default.v1
 language: en
 pipeline:
-  - name: SingleStepLLMCommandGenerator
-    llm:
-      model_name: gpt-4
+- name: SingleStepLLMCommandGenerator
+  llm:
+    provider: rasa
+    model: rasa/cmd_gen_codellama_13b_calm_demo
+    api_base: "https://huggingface-proxy.rasa-e2e.workers.dev"
+  flow_retrieval:
+    active: false
 
 policies:
   - name: FlowPolicy
 #  - name: EnterpriseSearchPolicy
-#  - name: RulePolicy
