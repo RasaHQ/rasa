@@ -7,6 +7,7 @@ import random
 import re
 import shutil
 import sys
+import tempfile
 import textwrap
 import threading
 import time
@@ -198,6 +199,11 @@ def simple_stories_path() -> Text:
 
 
 @pytest.fixture(scope="session")
+def basic_flows_path() -> Text:
+    return "data/test_flows/basic_flows.yml"
+
+
+@pytest.fixture(scope="session")
 def stack_config_path() -> Text:
     return "data/test_config/stack_config.yml"
 
@@ -220,6 +226,15 @@ def e2e_story_file_unknown_entity_path() -> Text:
 @pytest.fixture(scope="session")
 def domain_path() -> Text:
     return "data/test_domains/default_with_slots.yml"
+
+
+@pytest.fixture(scope="session")
+def windows_output_path() -> Text:
+    tmpdir = tempfile.mkdtemp()
+    bot_path = os.path.join(tmpdir, "undergraduate-bot")
+    os.makedirs(bot_path, exist_ok=True)
+
+    return bot_path
 
 
 @pytest.fixture(scope="session")
@@ -456,6 +471,24 @@ async def trained_rasa_model(
         domain=domain_path,
         config=stack_config_path,
         training_files=[nlu_data_path, stories_path],
+    )
+
+    return trained_stack_model_path
+
+
+@pytest.fixture(scope="session")
+async def trained_rasa_model_windows(
+    trained_async: Callable,
+    domain_path: Text,
+    basic_flows_path: Text,
+    stack_config_path: Text,
+    windows_output_path,
+) -> Text:
+    trained_stack_model_path = await trained_async(
+        domain=domain_path,
+        config=stack_config_path,
+        training_files=[basic_flows_path],
+        output_path=windows_output_path,
     )
 
     return trained_stack_model_path
