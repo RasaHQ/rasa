@@ -42,7 +42,7 @@ def run(
     from rasa.shared.constants import DOCS_BASE_URL
     from rasa.shared.utils.cli import print_warning
 
-    _endpoints = AvailableEndpoints.read_endpoints(endpoints)
+    _endpoints = AvailableEndpoints.get_instance(endpoints)
 
     if not connector and not credentials:
         connector = "rest"

@@ -19,6 +19,7 @@ from rasa.core.constants import (
     UTTER_SOURCE_METADATA_KEY,
 )
 from rasa.core.policies.policy import Policy, PolicyPrediction, SupportedData
+from rasa.dialogue_understanding.patterns.chitchat import FLOW_PATTERN_CHITCHAT
 from rasa.dialogue_understanding.stack.frames import (
     ChitChatStackFrame,
     DialogueStackFrame,
@@ -42,6 +43,7 @@ from rasa.shared.constants import (
     TIMEOUT_CONFIG_KEY,
 )
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
+from rasa.shared.core.constants import ACTION_TRIGGER_CHITCHAT
 from rasa.shared.core.domain import KEY_RESPONSES_TEXT, Domain
 from rasa.shared.core.events import (
     ActionExecuted,
@@ -74,7 +76,9 @@ from rasa.shared.utils.llm import (
     sanitize_message_for_prompt,
     tracker_as_readable_transcript,
     try_instantiate_llm_client,
+    resolve_model_client_config,
 )
+from rasa.utils.log_utils import log_llm
 from rasa.utils.ml_utils import (
     extract_ai_response_examples,
     extract_participant_messages_from_transcript,
@@ -83,9 +87,6 @@ from rasa.utils.ml_utils import (
     persist_faiss_vector_store,
     response_for_template,
 )
-from rasa.dialogue_understanding.patterns.chitchat import FLOW_PATTERN_CHITCHAT
-from rasa.shared.core.constants import ACTION_TRIGGER_CHITCHAT
-from rasa.utils.log_utils import log_llm
 
 if TYPE_CHECKING:
     from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
@@ -125,6 +126,7 @@ DEFAULT_INTENTLESS_PROMPT_TEMPLATE = importlib.resources.open_text(
 ).name
 
 INTENTLESS_PROMPT_TEMPLATE_FILE_NAME = "intentless_policy_prompt.jinja2"
+INTENTLESS_CONFIG_FILE_NAME = "config.json"
 
 
 class RasaMLPolicyTrainingException(RasaCoreException):
@@ -440,6 +442,13 @@ class IntentlessPolicy(Policy):
         )
         self.trace_prompt_tokens = self.config.get("trace_prompt_tokens", False)
 
+        self.config[LLM_CONFIG_KEY] = resolve_model_client_config(
+            self.config.get(LLM_CONFIG_KEY), IntentlessPolicy.__name__
+        )
+        self.config[EMBEDDINGS_CONFIG_KEY] = resolve_model_client_config(
+            self.config.get(EMBEDDINGS_CONFIG_KEY), IntentlessPolicy.__name__
+        )
+
     @classmethod
     def _create_plain_embedder(cls, config: Dict[Text, Any]) -> Embeddings:
         """Creates an embedder that uses the OpenAI API.
@@ -564,6 +573,9 @@ class IntentlessPolicy(Policy):
             rasa.shared.utils.io.write_text_file(
                 self.prompt_template, path / INTENTLESS_PROMPT_TEMPLATE_FILE_NAME
             )
+            rasa.shared.utils.io.dump_obj_as_json_to_file(
+                path / INTENTLESS_CONFIG_FILE_NAME, self.config
+            )
 
     async def predict_action_probabilities(
         self,
@@ -651,7 +663,7 @@ class IntentlessPolicy(Policy):
         history: str,
     ) -> Optional[str]:
         """Make the llm call to generate an answer."""
-        llm = llm_factory(self.config[LLM_CONFIG_KEY], DEFAULT_LLM_CONFIG)
+        llm = llm_factory(self.config.get(LLM_CONFIG_KEY), DEFAULT_LLM_CONFIG)
         inputs = {
             "conversations": conversation_samples,
             "responses": response_examples,
@@ -928,6 +940,7 @@ class IntentlessPolicy(Policy):
         responses_docsearch = None
         samples_docsearch = None
         prompt_template = None
+
         try:
             with model_storage.read_from(resource) as path:
                 responses_docsearch = load_faiss_vector_store(
@@ -945,6 +958,8 @@ class IntentlessPolicy(Policy):
                 prompt_template = rasa.shared.utils.io.read_file(
                     path / INTENTLESS_PROMPT_TEMPLATE_FILE_NAME
                 )
+                # TODO: needed for health check
+                rasa.shared.utils.io.read_json_file(path / INTENTLESS_CONFIG_FILE_NAME)
 
         except (ValueError, FileNotFoundError, FileIOException) as e:
             structlogger.warning(

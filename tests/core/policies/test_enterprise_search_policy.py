@@ -1,6 +1,6 @@
 import textwrap
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Any, Dict
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
@@ -8,28 +8,8 @@ from langchain_community.embeddings import FakeEmbeddings
 from langchain_community.llms.fake import FakeListLLM
 from pytest import MonkeyPatch
 
+import rasa.shared.utils.io
 from rasa.core.constants import UTTER_SOURCE_METADATA_KEY
-
-from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
-from rasa.dialogue_understanding.stack.frames import (
-    ChitChatStackFrame,
-    DialogueStackFrame,
-    SearchStackFrame,
-    UserFlowStackFrame,
-)
-from rasa.core.policies.policy import PolicyPrediction
-from rasa.engine.graph import ExecutionContext
-from rasa.engine.storage.resource import Resource
-from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.constants import (
-    OPENAI_API_KEY_ENV_VAR,
-    LLM_CONFIG_KEY,
-    ROUTE_TO_CALM_SLOT,
-)
-from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import ActionExecuted, UserUttered, BotUttered
-from rasa.shared.core.slots import BooleanSlot
-from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.core.information_retrieval import (
     InformationRetrieval,
     SearchResultList,
@@ -42,7 +22,30 @@ from rasa.core.policies.enterprise_search_policy import (
     USE_LLM_PROPERTY,
     EnterpriseSearchPolicy,
     VectorStoreConfigurationError,
+    ENTERPRISE_SEARCH_CONFIG_FILE_NAME,
 )
+from rasa.core.policies.policy import PolicyPrediction
+from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
+from rasa.dialogue_understanding.stack.frames import (
+    ChitChatStackFrame,
+    DialogueStackFrame,
+    SearchStackFrame,
+    UserFlowStackFrame,
+)
+from rasa.engine.graph import ExecutionContext
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
+from rasa.shared.constants import (
+    OPENAI_API_KEY_ENV_VAR,
+    LLM_CONFIG_KEY,
+    ROUTE_TO_CALM_SLOT,
+    EMBEDDINGS_CONFIG_KEY,
+)
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import ActionExecuted, UserUttered, BotUttered
+from rasa.shared.core.slots import BooleanSlot
+from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
+from rasa.shared.utils.llm import MODEL_GROUP_KEY
 
 
 @pytest.fixture
@@ -1176,3 +1179,156 @@ def test_should_abstain_in_coexistence(
     assert result == default_enterprise_search_policy.should_abstain_in_coexistence(
         tracker, True
     )
+
+
+@pytest.mark.parametrize(
+    "config, expected_llm_config, expected_embedding_config",
+    [
+        (
+            {
+                LLM_CONFIG_KEY: {"provider": "openai", "model": "gpt-4"},
+                EMBEDDINGS_CONFIG_KEY: {"provider": "openai", "model": "gpt-4"},
+            },
+            {"provider": "openai", "model": "gpt-4"},
+            {"provider": "openai", "model": "gpt-4"},
+        ),
+        (
+            {
+                "user_input": {"max_characters": -1},
+            },
+            None,
+            None,
+        ),
+        (
+            {
+                LLM_CONFIG_KEY: {MODEL_GROUP_KEY: "openai_gpt-4"},
+                EMBEDDINGS_CONFIG_KEY: {MODEL_GROUP_KEY: "openai_gpt-4"},
+            },
+            {
+                "id": "openai_gpt-4",
+                "models": [{"provider": "openai", "model": "gpt-4"}],
+            },
+            {
+                "id": "openai_gpt-4",
+                "models": [{"provider": "openai", "model": "gpt-4"}],
+            },
+        ),
+        (
+            {
+                LLM_CONFIG_KEY: {"provider": "openai", "model": "gpt-4"},
+                EMBEDDINGS_CONFIG_KEY: {MODEL_GROUP_KEY: "openai_gpt-4"},
+            },
+            {"provider": "openai", "model": "gpt-4"},
+            {
+                "id": "openai_gpt-4",
+                "models": [{"provider": "openai", "model": "gpt-4"}],
+            },
+        ),
+        (
+            {
+                LLM_CONFIG_KEY: {MODEL_GROUP_KEY: "openai_gpt-4"},
+                EMBEDDINGS_CONFIG_KEY: {"provider": "openai", "model": "gpt-4"},
+            },
+            {
+                "id": "openai_gpt-4",
+                "models": [{"provider": "openai", "model": "gpt-4"}],
+            },
+            {"provider": "openai", "model": "gpt-4"},
+        ),
+    ],
+)
+def test_enterprise_search_policy_init_with_different_llm_configs(
+    config: Optional[Dict[str, Any]],
+    expected_llm_config: Optional[Dict[str, Any]],
+    expected_embedding_config: Optional[Dict[str, Any]],
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    resource: Resource,
+    monkeypatch,
+) -> None:
+    class MockAvailableEndpoints:
+        @staticmethod
+        def get_instance():
+            return MockAvailableEndpoints()
+
+        def __init__(self):
+            self.model_groups = [
+                {
+                    "id": "openai_gpt-4",
+                    "models": [{"provider": "openai", "model": "gpt-4"}],
+                },
+                {
+                    "id": "openai_embedding",
+                    "models": [
+                        {"provider": "openai", "model": "text-embedding-ada-002"}
+                    ],
+                },
+            ]
+
+    mock_endpoints = MockAvailableEndpoints()
+    monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+
+    generator = EnterpriseSearchPolicy(
+        config, default_model_storage, resource, default_execution_context
+    )
+    assert generator.config[LLM_CONFIG_KEY] == expected_llm_config
+    assert generator.config[EMBEDDINGS_CONFIG_KEY] == expected_embedding_config
+
+
+def test_enterprise_search_policy_persist_config(
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    resource: Resource,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class MockAvailableEndpoints:
+        @staticmethod
+        def get_instance():
+            return MockAvailableEndpoints()
+
+        def __init__(self):
+            self.model_groups = [
+                {
+                    "id": "model_group_id",
+                    "models": [{"provider": "openai", "model": "gpt-4"}],
+                }
+            ]
+
+    mock_endpoints = MockAvailableEndpoints()
+    monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+
+    config = {
+        LLM_CONFIG_KEY: {MODEL_GROUP_KEY: "model_group_id"},
+        EMBEDDINGS_CONFIG_KEY: {MODEL_GROUP_KEY: "model_group_id"},
+    }
+    router = EnterpriseSearchPolicy(
+        config, default_model_storage, resource, default_execution_context
+    )
+
+    # Ensure the config is resolved
+    assert router.config[LLM_CONFIG_KEY] == {
+        "id": "model_group_id",
+        "models": [{"provider": "openai", "model": "gpt-4"}],
+    }
+    assert router.config[EMBEDDINGS_CONFIG_KEY] == {
+        "id": "model_group_id",
+        "models": [{"provider": "openai", "model": "gpt-4"}],
+    }
+
+    # Persist the generator
+    router.persist()
+
+    # Check that the persisted config is equal to our config
+    with default_model_storage.read_from(resource) as path:
+        persisted_config = rasa.shared.utils.io.read_json_file(
+            path / ENTERPRISE_SEARCH_CONFIG_FILE_NAME
+        )
+
+    assert persisted_config[LLM_CONFIG_KEY] == {
+        "id": "model_group_id",
+        "models": [{"provider": "openai", "model": "gpt-4"}],
+    }
+    assert persisted_config[EMBEDDINGS_CONFIG_KEY] == {
+        "id": "model_group_id",
+        "models": [{"provider": "openai", "model": "gpt-4"}],
+    }

@@ -1,14 +1,28 @@
 import os
+import uuid
 from pathlib import Path
 from typing import Any, Dict, Generator, List, Optional
 from unittest.mock import Mock, patch, AsyncMock
 
 import pytest
-from pytest import MonkeyPatch
 from langchain.docstore.document import Document
 from langchain_community.vectorstores import FAISS
+from pytest import MonkeyPatch
 
+import rasa.shared.utils.io
 from rasa.core.constants import UTTER_SOURCE_METADATA_KEY
+from rasa.core.policies.intentless_policy import (
+    Conversation,
+    IntentlessPolicy,
+    Interaction,
+    action_from_response,
+    conversation_as_prompt,
+    conversation_samples_from_trackers,
+    filter_responses,
+    truncate_documents,
+    INTENTLESS_CONFIG_FILE_NAME,
+    DEFAULT_INTENTLESS_PROMPT_TEMPLATE,
+)
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import ChitChatStackFrame
 from rasa.engine.graph import ExecutionContext
@@ -20,6 +34,8 @@ from rasa.shared.constants import (
     OPENAI_API_KEY_ENV_VAR,
     ROUTE_TO_CALM_SLOT,
     PROMPT_CONFIG_KEY,
+    LLM_CONFIG_KEY,
+    EMBEDDINGS_CONFIG_KEY,
 )
 from rasa.shared.core.domain import ActionNotFoundException, Domain
 from rasa.shared.core.events import ActiveLoop, BotUttered, UserUttered
@@ -31,18 +47,7 @@ from rasa.shared.importers.importer import FlowSyncImporter
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.providers.embedding.embedding_client import EmbeddingClient
 from rasa.shared.providers.llm.llm_client import LLMClient
-from rasa.shared.utils.llm import tracker_as_readable_transcript
-from rasa.core.policies.intentless_policy import (
-    Conversation,
-    IntentlessPolicy,
-    Interaction,
-    action_from_response,
-    conversation_as_prompt,
-    conversation_samples_from_trackers,
-    filter_responses,
-    truncate_documents,
-)
-
+from rasa.shared.utils.llm import tracker_as_readable_transcript, MODEL_GROUP_KEY
 from tests.utilities import flows_from_str
 
 UTTER_GREET_ACTION = "utter_greet"
@@ -99,6 +104,11 @@ def trackers_for_training() -> List[TrackerWithCachedStates]:
             [UserUttered("goodybe"), BotUttered("Bye!")],
         ),
     ]
+
+
+@pytest.fixture(scope="session")
+def resource() -> Resource:
+    return Resource(uuid.uuid4().hex)
 
 
 @pytest.fixture(autouse=True)
@@ -930,3 +940,161 @@ def test_should_abstain_in_coexistence(
     )
 
     assert result == intentless_policy.should_abstain_in_coexistence(tracker, True)
+
+
+@pytest.mark.parametrize(
+    "config, expected_llm_config, expected_embedding_config",
+    [
+        (
+            {
+                LLM_CONFIG_KEY: {"provider": "openai", "model": "gpt-4"},
+                EMBEDDINGS_CONFIG_KEY: {"provider": "openai", "model": "gpt-4"},
+            },
+            {"provider": "openai", "model": "gpt-4"},
+            {"provider": "openai", "model": "gpt-4"},
+        ),
+        (
+            {
+                "user_input": {"max_characters": -1},
+            },
+            None,
+            None,
+        ),
+        (
+            {
+                LLM_CONFIG_KEY: {MODEL_GROUP_KEY: "openai_gpt-4"},
+                EMBEDDINGS_CONFIG_KEY: {MODEL_GROUP_KEY: "openai_gpt-4"},
+            },
+            {
+                "id": "openai_gpt-4",
+                "models": [{"provider": "openai", "model": "gpt-4"}],
+            },
+            {
+                "id": "openai_gpt-4",
+                "models": [{"provider": "openai", "model": "gpt-4"}],
+            },
+        ),
+        (
+            {
+                LLM_CONFIG_KEY: {"provider": "openai", "model": "gpt-4"},
+                EMBEDDINGS_CONFIG_KEY: {MODEL_GROUP_KEY: "openai_gpt-4"},
+            },
+            {"provider": "openai", "model": "gpt-4"},
+            {
+                "id": "openai_gpt-4",
+                "models": [{"provider": "openai", "model": "gpt-4"}],
+            },
+        ),
+        (
+            {
+                LLM_CONFIG_KEY: {MODEL_GROUP_KEY: "openai_gpt-4"},
+                EMBEDDINGS_CONFIG_KEY: {"provider": "openai", "model": "gpt-4"},
+            },
+            {
+                "id": "openai_gpt-4",
+                "models": [{"provider": "openai", "model": "gpt-4"}],
+            },
+            {"provider": "openai", "model": "gpt-4"},
+        ),
+    ],
+)
+def test_intentless_policy_init_with_different_llm_configs(
+    config: Optional[Dict[str, Any]],
+    expected_llm_config: Optional[Dict[str, Any]],
+    expected_embedding_config: Optional[Dict[str, Any]],
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    resource: Resource,
+    monkeypatch,
+) -> None:
+    class MockAvailableEndpoints:
+        @staticmethod
+        def get_instance():
+            return MockAvailableEndpoints()
+
+        def __init__(self):
+            self.model_groups = [
+                {
+                    "id": "openai_gpt-4",
+                    "models": [{"provider": "openai", "model": "gpt-4"}],
+                },
+                {
+                    "id": "openai_embedding",
+                    "models": [
+                        {"provider": "openai", "model": "text-embedding-ada-002"}
+                    ],
+                },
+            ]
+
+    mock_endpoints = MockAvailableEndpoints()
+    monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+
+    config["nlu_abstention_threshold"] = 0.5
+    config[PROMPT_CONFIG_KEY] = DEFAULT_INTENTLESS_PROMPT_TEMPLATE
+
+    generator = IntentlessPolicy(
+        config, default_model_storage, resource, default_execution_context
+    )
+    assert generator.config[LLM_CONFIG_KEY] == expected_llm_config
+    assert generator.config[EMBEDDINGS_CONFIG_KEY] == expected_embedding_config
+
+
+def test_intentless_policy_persist_config(
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    resource: Resource,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class MockAvailableEndpoints:
+        @staticmethod
+        def get_instance():
+            return MockAvailableEndpoints()
+
+        def __init__(self):
+            self.model_groups = [
+                {
+                    "id": "model_group_id",
+                    "models": [{"provider": "openai", "model": "gpt-4"}],
+                }
+            ]
+
+    mock_endpoints = MockAvailableEndpoints()
+    monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+
+    config = {
+        LLM_CONFIG_KEY: {MODEL_GROUP_KEY: "model_group_id"},
+        EMBEDDINGS_CONFIG_KEY: {MODEL_GROUP_KEY: "model_group_id"},
+        "nlu_abstention_threshold": 0.5,
+        PROMPT_CONFIG_KEY: DEFAULT_INTENTLESS_PROMPT_TEMPLATE,
+    }
+    router = IntentlessPolicy(
+        config, default_model_storage, resource, default_execution_context
+    )
+
+    # Ensure the config is resolved
+    assert router.config[LLM_CONFIG_KEY] == {
+        "id": "model_group_id",
+        "models": [{"provider": "openai", "model": "gpt-4"}],
+    }
+    assert router.config[EMBEDDINGS_CONFIG_KEY] == {
+        "id": "model_group_id",
+        "models": [{"provider": "openai", "model": "gpt-4"}],
+    }
+
+    # Persist the generator
+    router.persist()
+
+    # Check that the persisted config is equal to our config
+    with default_model_storage.read_from(resource) as path:
+        persisted_config = rasa.shared.utils.io.read_json_file(
+            path / INTENTLESS_CONFIG_FILE_NAME
+        )
+
+    assert persisted_config[LLM_CONFIG_KEY] == {
+        "id": "model_group_id",
+        "models": [{"provider": "openai", "model": "gpt-4"}],
+    }
+    assert persisted_config[EMBEDDINGS_CONFIG_KEY] == {
+        "id": "model_group_id",
+        "models": [{"provider": "openai", "model": "gpt-4"}],
+    }

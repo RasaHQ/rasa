@@ -1,8 +1,8 @@
+import os
 from abc import ABC, abstractmethod
 from functools import lru_cache
 from typing import Dict, Any, List, Optional, Tuple, Union, Text
 
-import os
 import structlog
 from jinja2 import Template
 
@@ -38,10 +38,14 @@ from rasa.shared.utils.llm import (
     llm_api_health_check,
     llm_factory,
     try_instantiate_llm_client,
+    resolve_model_client_config,
 )
 from rasa.utils.log_utils import log_llm
 
 structlogger = structlog.get_logger()
+
+
+LLM_BASED_COMMAND_GENERATOR_CONFIG_FILE = "config.json"
 
 
 @DefaultV1Recipe.register(
@@ -68,11 +72,16 @@ class LLMBasedCommandGenerator(GraphComponent, CommandGenerator, ABC):
         self._resource = resource
         self.flow_retrieval: Optional[FlowRetrieval]
 
+        self.config[LLM_CONFIG_KEY] = resolve_model_client_config(
+            self.config.get(LLM_CONFIG_KEY), LLMBasedCommandGenerator.__name__
+        )
+
         if self.enabled_flow_retrieval:
             self.flow_retrieval = FlowRetrieval(
                 self.config[FLOW_RETRIEVAL_KEY], model_storage, resource
             )
             structlogger.info("llm_based_command_generator.flow_retrieval.enabled")
+            self.config[FLOW_RETRIEVAL_KEY] = self.flow_retrieval.config
         else:
             self.flow_retrieval = None
             structlogger.warn(
@@ -108,7 +117,11 @@ class LLMBasedCommandGenerator(GraphComponent, CommandGenerator, ABC):
     @abstractmethod
     def persist(self) -> None:
         """Persist the component to disk for future loading."""
-        pass
+        # persist the config to store the resolved llm and embedding config
+        with self._model_storage.write_to(self._resource) as path:
+            rasa.shared.utils.io.dump_obj_as_json_to_file(
+                path / LLM_BASED_COMMAND_GENERATOR_CONFIG_FILE, self.config
+            )
 
     @abstractmethod
     async def predict_commands(
@@ -232,8 +245,30 @@ class LLMBasedCommandGenerator(GraphComponent, CommandGenerator, ABC):
         return None
 
     @classmethod
+    def load_config_from_model_storage(
+        cls,
+        model_storage: ModelStorage,
+        resource: Resource,
+    ) -> Optional[Text]:
+        try:
+            with model_storage.read_from(resource) as path:
+                return rasa.shared.utils.io.read_json_file(
+                    path / LLM_BASED_COMMAND_GENERATOR_CONFIG_FILE
+                )
+        except (FileNotFoundError, FileIOException) as e:
+            structlogger.warning(
+                "llm_based_command_generator.load_config.failed",
+                error=e,
+                resource=resource.name,
+            )
+        return None
+
+    @classmethod
     def load_flow_retrival(
-        cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource
+        cls,
+        config: Dict[str, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
     ) -> Optional[FlowRetrieval]:
         """Load the FlowRetrieval component if it is enabled in the configuration."""
         enable_flow_retrieval = config.get(FLOW_RETRIEVAL_KEY, {}).get(

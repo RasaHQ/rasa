@@ -1,10 +1,11 @@
+from pathlib import Path
 from typing import Text, Any, Dict, Optional
+from unittest import mock
 from unittest.mock import patch
 
 import pytest
-from pathlib import Path
 from pytest import MonkeyPatch
-from unittest import mock
+
 from rasa.shared.constants import (
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
@@ -20,7 +21,7 @@ from rasa.shared.core.slots import (
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.engine.caching import CACHE_LOCATION_ENV
-from rasa.shared.exceptions import ProviderClientValidationError
+from rasa.shared.exceptions import ProviderClientValidationError, InvalidConfigException
 from rasa.shared.providers.embedding.azure_openai_embedding_client import (
     AzureOpenAIEmbeddingClient,
 )
@@ -47,6 +48,8 @@ from rasa.shared.utils.llm import (
     get_provider_from_config,
     ensure_cache,
     combine_custom_and_default_config,
+    MODEL_GROUP_KEY,
+    resolve_model_client_config,
 )
 
 
@@ -538,7 +541,6 @@ def test_llm_factory_raises_exception_when_azure_openai_client_setup_is_invalid(
     - AZURE_API_BASE
     - AZURE_API_VERSION
     """
-
     required_env_vars = ["AZURE_API_KEY", "AZURE_API_BASE", "AZURE_API_VERSION"]
     for env_var in required_env_vars:
         monkeypatch.setenv(env_var, "test")
@@ -862,7 +864,6 @@ def test_embedder_factory_raises_exception_when_azure_openai_client_setup_is_inv
     - AZURE_API_BASE
     - AZURE_API_VERSION
     """
-
     required_env_vars = ["AZURE_API_KEY", "AZURE_API_BASE", "AZURE_API_VERSION"]
 
     for env_var in required_env_vars:
@@ -1919,3 +1920,109 @@ def test_combine_custom_and_default_config_throw_error(
 
     with pytest.raises(SystemExit):
         combine_custom_and_default_config(custom_config, default_config)
+
+
+class MockAvailableEndpoints:
+    @staticmethod
+    def get_instance():
+        return MockAvailableEndpoints()
+
+    def __init__(self):
+        self.model_groups = [
+            {
+                "id": "valid_id",
+                "models": [{"provider": "openai", "model": "gpt-4"}],
+            }
+        ]
+
+
+def test_resolve_llm_config_with_invalid_model_group_id(monkeypatch):
+    llm_config = {MODEL_GROUP_KEY: "invalid_id"}
+    component_name = "test_component"
+
+    mock_endpoints = MockAvailableEndpoints()
+    monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+
+    with pytest.raises(InvalidConfigException, match="Could not resolve model group"):
+        resolve_model_client_config(llm_config, component_name)
+
+
+def test_resolve_llm_config_with_duplicate_model_groups_defined(monkeypatch):
+    llm_config = {MODEL_GROUP_KEY: "some_id"}
+    component_name = "test_component"
+
+    class MockAvailableEndpointsNoModelGroups:
+        @staticmethod
+        def get_instance():
+            return MockAvailableEndpointsNoModelGroups()
+
+        def __init__(self):
+            self.model_groups = [
+                {
+                    "id": "valid_id",
+                    "models": [{"provider": "openai", "model": "gpt-4"}],
+                },
+                {
+                    "id": "valid_id",
+                    "models": [{"provider": "openai", "model": "gpt-3.5"}],
+                },
+            ]
+
+    mock_endpoints = MockAvailableEndpointsNoModelGroups()
+    monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+
+    with pytest.raises(InvalidConfigException):
+        resolve_model_client_config(llm_config, component_name)
+
+
+def test_resolve_llm_config_with_model_id(monkeypatch: Any):
+    llm_config = {MODEL_GROUP_KEY: "valid_id"}
+    component_name = "test_component"
+
+    mock_endpoints = MockAvailableEndpoints()
+    monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+
+    result = resolve_model_client_config(llm_config, component_name)
+    assert result == {
+        "id": "valid_id",
+        "models": [{"provider": "openai", "model": "gpt-4"}],
+    }
+
+
+def test_resolve_llm_config_with_no_model_groups_defined(monkeypatch):
+    llm_config = {MODEL_GROUP_KEY: "some_id"}
+    component_name = "test_component"
+
+    class MockAvailableEndpointsNoModelGroups:
+        @staticmethod
+        def get_instance():
+            return MockAvailableEndpointsNoModelGroups()
+
+        def __init__(self):
+            self.model_groups = None
+
+    mock_endpoints = MockAvailableEndpointsNoModelGroups()
+    monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+
+    with pytest.raises(
+        InvalidConfigException,
+        match="No model group with that id found in endpoints.yml",
+    ):
+        resolve_model_client_config(llm_config, component_name)
+
+
+@pytest.mark.parametrize(
+    "llm_config",
+    ({"provider": "openai", "model": "gpt-4"}, None, {}),
+)
+def test_resolve_llm_config_return_same_config(llm_config: Optional[Dict[str, Any]]):
+    component_name = "test_component"
+
+    result = resolve_model_client_config(llm_config, component_name)
+    assert result == llm_config
+
+
+@pytest.fixture
+def patch_structlogger():
+    with patch("rasa.shared.utils.llm.structlogger.info") as mock:
+        yield mock

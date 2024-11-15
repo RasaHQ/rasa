@@ -317,6 +317,7 @@ async def _train_graph(
     rasa.engine.validation.validate_coexistance_routing_setup(
         domain, model_configuration, flows
     )
+    rasa.engine.validation.validate_model_client_configuration_setup(config)
     rasa.engine.validation.validate_flow_component_dependencies(
         flows, model_configuration
     )
@@ -559,7 +560,7 @@ async def train_nlu(
 
 
 def push_model_to_remote_storage(model_path: Path, remote_storage: StorageType) -> None:
-    """push model to remote storage"""
+    """Push model to remote storage"""
     from rasa.core.persistor import get_persistor
 
     persistor = get_persistor(remote_storage)

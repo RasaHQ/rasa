@@ -1,3 +1,5 @@
+import json
+from copy import deepcopy
 from functools import wraps
 from typing import (
     Any,
@@ -11,10 +13,11 @@ from typing import (
     Union,
     cast,
 )
-import json
+
 import structlog
 
 import rasa.shared.utils.io
+from rasa.core.utils import AvailableEndpoints
 from rasa.shared.constants import (
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
@@ -29,6 +32,7 @@ from rasa.shared.exceptions import (
     FileIOException,
     FileNotFoundException,
     ProviderClientValidationError,
+    InvalidConfigException,
 )
 from rasa.shared.providers._configs.azure_openai_client_config import (
     is_azure_openai_config,
@@ -75,6 +79,8 @@ DEFAULT_OPENAI_TEMPERATURE = 0.7
 DEFAULT_OPENAI_MAX_GENERATED_TOKENS = 256
 
 DEFAULT_MAX_USER_INPUT_CHARACTERS = 420
+
+MODEL_GROUP_KEY = "model_group"
 
 # Placeholder messages used in the transcript for
 # instances where user input results in an error
@@ -451,3 +457,62 @@ def llm_api_health_check(
             f"Call to the LLM API failed for component - {log_source_component}. "
             f"Error: {e}"
         )
+
+
+def resolve_model_client_config(
+    model_config: Optional[Dict[str, Any]], component_name: str
+) -> Optional[Dict[str, Any]]:
+    """Resolve the model group in the model config.
+
+    If the config is pointing to a model group, the corresponding model group
+    of the endpoints.yml is returned.
+    If the config is using the old syntax, e.g. defining the llm
+    directly in config.yml, the config is returned as is.
+
+    Args:
+        model_config: The model config to be resolved.
+        component_name: The name of the component.
+
+    Returns:
+        The resolved llm config.
+    """
+    if model_config is None:
+        return None
+
+    if MODEL_GROUP_KEY not in model_config:
+        return model_config
+
+    model_group_id = model_config.get(MODEL_GROUP_KEY)
+
+    endpoints = AvailableEndpoints.get_instance()
+    if endpoints.model_groups is None:
+        raise InvalidConfigException(
+            f"Could not resolve model group '{model_group_id}' for "
+            f"component '{component_name}'. "
+            f"No model group with that id found in endpoints.yml. "
+            f"Please make sure to define the model group."
+        )
+
+    copy_model_groups = deepcopy(endpoints.model_groups)
+    model_group = [
+        model_group
+        for model_group in copy_model_groups
+        if model_group.get("id") == model_group_id
+    ]
+
+    if len(model_group) == 0:
+        raise InvalidConfigException(
+            f"Could not resolve model group '{model_group_id}' for "
+            f"component '{component_name}'. "
+            f"No model group with that id found in endpoints.yml. "
+            f"Please make sure to define the model group."
+        )
+    if len(model_group) > 1:
+        raise InvalidConfigException(
+            f"Could not resolve model group '{model_group_id}' for "
+            f"component '{component_name}'. "
+            f"Multiple model groups with that id found in endpoints.yml. "
+            f"Please make sure to define the model group just once."
+        )
+
+    return model_group[0]

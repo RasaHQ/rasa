@@ -50,8 +50,8 @@ from rasa.shared.utils.llm import (
     tracker_as_readable_transcript,
     sanitize_message_for_prompt,
 )
-from rasa.utils.log_utils import log_llm
 from rasa.utils.beta import ensure_beta_feature_is_enabled, BetaNotEnabledException
+from rasa.utils.log_utils import log_llm
 
 COMMAND_PROMPT_FILE_NAME = "command_prompt.jinja2"
 
@@ -136,6 +136,9 @@ class SingleStepLLMCommandGenerator(LLMBasedCommandGenerator):
         prompt_template = cls.load_prompt_template_from_model_storage(
             model_storage, resource, COMMAND_PROMPT_FILE_NAME
         )
+        # TODO: needed for health check
+        cls.load_config_from_model_storage(model_storage, resource)
+
         # init base command generator
         command_generator = cls(config, model_storage, resource, prompt_template)
         # load flow retrieval if enabled
@@ -148,6 +151,8 @@ class SingleStepLLMCommandGenerator(LLMBasedCommandGenerator):
     def persist(self) -> None:
         """Persist this component to disk for future loading."""
         # persist prompt template
+        super().persist()
+
         with self._model_storage.write_to(self._resource) as path:
             rasa.shared.utils.io.write_text_file(
                 self.prompt_template, path / COMMAND_PROMPT_FILE_NAME

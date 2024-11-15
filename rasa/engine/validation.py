@@ -1,7 +1,7 @@
 import dataclasses
 import inspect
-import re
 import logging
+import re
 import sys
 import typing
 from typing import (
@@ -31,8 +31,16 @@ from rasa.dialogue_understanding.coexistence.constants import (
     STICKY,
     NON_STICKY,
 )
+from rasa.dialogue_understanding.coexistence.intent_based_router import (
+    IntentBasedRouter,
+)
+from rasa.dialogue_understanding.coexistence.llm_based_router import LLMBasedRouter
 from rasa.dialogue_understanding.generator import (
     LLMBasedCommandGenerator,
+)
+from rasa.dialogue_understanding.generator.constants import (
+    LLM_CONFIG_KEY,
+    FLOW_RETRIEVAL_KEY,
 )
 from rasa.dialogue_understanding.patterns.chitchat import FLOW_PATTERN_CHITCHAT
 from rasa.engine.constants import RESERVED_PLACEHOLDERS
@@ -47,18 +55,19 @@ from rasa.engine.graph import (
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.training.fingerprinting import Fingerprintable
-from rasa.shared.constants import DOCS_URL_GRAPH_COMPONENTS, ROUTE_TO_CALM_SLOT
+from rasa.shared.constants import (
+    DOCS_URL_GRAPH_COMPONENTS,
+    ROUTE_TO_CALM_SLOT,
+    EMBEDDINGS_CONFIG_KEY,
+)
 from rasa.shared.core.constants import ACTION_RESET_ROUTING, ACTION_TRIGGER_CHITCHAT
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows import FlowsList, Flow
 from rasa.shared.core.slots import Slot
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.training_data.message import Message
-
-from rasa.dialogue_understanding.coexistence.intent_based_router import (
-    IntentBasedRouter,
-)
-from rasa.dialogue_understanding.coexistence.llm_based_router import LLMBasedRouter
+from rasa.shared.utils.cli import print_error_and_exit
+from rasa.shared.utils.llm import MODEL_GROUP_KEY
 
 TypeAnnotation = Union[TypeVar, Text, Type, Optional[AvailableEndpoints]]
 
@@ -843,6 +852,137 @@ def validate_coexistance_routing_setup(
     validate_that_router_or_router_slot_are_defined_if_action_reset_routing_is_used(
         schema, flows, routing_slots
     )
+
+
+def _validate_component_model_client_config(
+    component_config: Dict[str, Any],
+    key: str,
+    model_group_syntax_used: List[bool],
+    model_group_ids: List[str],
+    component_name: Optional[str] = None,
+) -> None:
+    """Validate the LLM configuration of a component.
+
+    Checks if the llm is defined using the new syntax or the old syntax.
+    If the new syntax is used, it checks that no other parameters are present.
+
+    Args:
+        component_config: The config of the component
+        key: either 'llm' or 'embeddings'
+        model_group_syntax_used:
+            list of booleans indicating whether the new syntax is used
+        model_group_ids: list of model group ids
+        component_name: the name of the component
+    """
+    if key not in component_config:
+        # no llm configuration present
+        return
+
+    if MODEL_GROUP_KEY in component_config[key]:
+        model_group_syntax_used.append(True)
+        model_group_ids.append(component_config[key][MODEL_GROUP_KEY])
+
+        if len(component_config[key]) > 1:
+            print_error_and_exit(
+                f"You specified a '{MODEL_GROUP_KEY}' for the '{key}' "
+                f"config key for the component "
+                f"'{component_name or component_config['name']}'. "
+                "No other parameters are allowed under the "
+                f"'{key}' key in that case. Please update your config."
+            )
+    else:
+        model_group_syntax_used.append(False)
+
+
+def validate_model_client_configuration_setup(config: Dict[str, Any]) -> None:
+    """Validates the model client configuration setup.
+
+    Checks the model configuration of the components in the pipeline.
+    Validation fails, if
+    - the LLM/embeddings is/are defined using the old and the new syntax at
+      the same time (either at component level itself or across different components)
+    - the LLM/embeddings is/are defined using the new syntax, but no model
+      group is defined or the referenced model group does not exist
+
+    Args:
+        config: The config dictionary
+    """
+
+    def is_uniform_bool_list(bool_list: List[bool]) -> bool:
+        # check if list contains only True or False
+        return all(bool_list) or not any(bool_list)
+
+    model_group_syntax_used: List[bool] = []
+    model_group_ids: List[str] = []
+
+    if "pipeline" not in config:
+        return
+
+    for component in config["pipeline"]:
+        for key in [LLM_CONFIG_KEY, EMBEDDINGS_CONFIG_KEY]:
+            _validate_component_model_client_config(
+                component, key, model_group_syntax_used, model_group_ids
+            )
+
+        # as flow retrieval is not a component itself, we need to
+        # check it separately
+        if FLOW_RETRIEVAL_KEY in component:
+            if EMBEDDINGS_CONFIG_KEY in component[FLOW_RETRIEVAL_KEY]:
+                _validate_component_model_client_config(
+                    component[FLOW_RETRIEVAL_KEY],
+                    EMBEDDINGS_CONFIG_KEY,
+                    model_group_syntax_used,
+                    model_group_ids,
+                    component["name"] + "." + FLOW_RETRIEVAL_KEY,
+                )
+
+    if not is_uniform_bool_list(model_group_syntax_used):
+        print_error_and_exit(
+            "Some of your components refer to an LLM using the "
+            f"'{MODEL_GROUP_KEY}' parameter, other components directly"
+            f"define the LLM under the '{LLM_CONFIG_KEY}' or the "
+            f"'{EMBEDDINGS_CONFIG_KEY}' key. You cannot use"
+            "a both types of definition. Please chose one syntax "
+            "and update your config."
+        )
+
+    # Print a deprecation warning in case the old syntax is used.
+    if len(model_group_syntax_used) > 0 and model_group_syntax_used[0] is False:
+        structlogger.warning(
+            "validate_llm_configuration_setup",
+            event_info=(
+                "Defining the LLM configuration in the config.yml file itself is"
+                " deprecated and will be removed in Rasa 4.0.0. "
+                "Please use the new syntax and define your LLM configuration"
+                "in the endpoints.yml file."
+            ),
+        )
+
+    endpoints = AvailableEndpoints.get_instance()
+    if len(model_group_ids) > 0 and endpoints.model_groups is None:
+        print_error_and_exit(
+            "You are referring to (a) model group(s) in your "
+            "config.yml file, but no model group was defined in "
+            "the endpoints.yml file. Please define the model "
+            "group(s)."
+        )
+
+    if endpoints.model_groups is None:
+        return
+
+    existing_model_group_ids = [
+        model_group["id"] for model_group in endpoints.model_groups
+    ]
+
+    for model_group_id in model_group_ids:
+        if model_group_id not in existing_model_group_ids:
+            print_error_and_exit(
+                "One of your components is referring to the model group "
+                f"'{model_group_id}', but this model group does not exist in the "
+                f"endpoints.yml file. Please chose one of the existing "
+                f"model groups ({existing_model_group_ids}) or define "
+                f"the a model group for '{model_group_id}'."
+            )
 
 
 def validate_command_generator_exclusivity(schema: GraphSchema) -> None:

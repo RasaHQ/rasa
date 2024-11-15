@@ -39,7 +39,9 @@ from rasa.engine.graph import ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.constants import RASA_PATTERN_CANNOT_HANDLE_NOT_SUPPORTED
+from rasa.shared.constants import (
+    RASA_PATTERN_CANNOT_HANDLE_NOT_SUPPORTED,
+)
 from rasa.shared.constants import ROUTE_TO_CALM_SLOT
 from rasa.shared.core.flows import FlowStep, Flow, FlowsList
 from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
@@ -139,6 +141,9 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
     ) -> "MultiStepLLMCommandGenerator":
         """Loads trained component (see parent class for full docstring)."""
         prompts = cls._load_prompt_templates(model_storage, resource)
+        # TODO: needed for health check
+        cls.load_config_from_model_storage(model_storage, resource)
+
         # init base command generator
         command_generator = cls(config, model_storage, resource, prompts)
         # load flow retrieval if enabled
@@ -150,6 +155,8 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
 
     def persist(self) -> None:
         """Persist this component to disk for future loading."""
+        super().persist()
+
         # persist prompt template
         self._persist_prompt_templates()
         # persist flow retrieval

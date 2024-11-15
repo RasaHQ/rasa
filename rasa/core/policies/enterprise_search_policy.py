@@ -9,37 +9,34 @@ import structlog
 from jinja2 import Template
 from pydantic import ValidationError
 
-from rasa.shared.providers.embedding._langchain_embedding_client_adapter import (
-    _LangchainEmbeddingClientAdapter,
-)
-from rasa.shared.providers.llm.llm_client import LLMClient
-
 import rasa.shared.utils.io
-from rasa.telemetry import (
-    track_enterprise_search_policy_predict,
-    track_enterprise_search_policy_train_completed,
-    track_enterprise_search_policy_train_started,
-)
-from rasa.shared.exceptions import RasaException
 from rasa.core.constants import (
     POLICY_MAX_HISTORY,
     POLICY_PRIORITY,
     SEARCH_POLICY_PRIORITY,
     UTTER_SOURCE_METADATA_KEY,
 )
+from rasa.core.information_retrieval import (
+    InformationRetrieval,
+    SearchResult,
+    InformationRetrievalException,
+    create_from_endpoint_config,
+)
+from rasa.core.information_retrieval.faiss import FAISS_Store
 from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.core.utils import AvailableEndpoints
-from rasa.dialogue_understanding.patterns.internal_error import (
-    InternalErrorPatternFlowStackFrame,
-)
+from rasa.dialogue_understanding.generator.constants import LLM_CONFIG_KEY
 from rasa.dialogue_understanding.patterns.cannot_handle import (
     CannotHandlePatternFlowStackFrame,
 )
-from rasa.dialogue_understanding.stack.frames import PatternFlowStackFrame
+from rasa.dialogue_understanding.patterns.internal_error import (
+    InternalErrorPatternFlowStackFrame,
+)
 from rasa.dialogue_understanding.stack.frames import (
     DialogueStackFrame,
     SearchStackFrame,
 )
+from rasa.dialogue_understanding.stack.frames import PatternFlowStackFrame
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
@@ -49,9 +46,7 @@ from rasa.graph_components.providers.responses_provider import Responses
 from rasa.shared.constants import (
     EMBEDDINGS_CONFIG_KEY,
     LLM_API_HEALTH_CHECK_ENV_VAR,
-    LLM_CONFIG_KEY,
     MODEL_CONFIG_KEY,
-    MODEL_NAME_CONFIG_KEY,
     PROMPT_CONFIG_KEY,
     PROVIDER_CONFIG_KEY,
     OPENAI_PROVIDER,
@@ -66,7 +61,12 @@ from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import Event, UserUttered, BotUttered
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
+from rasa.shared.exceptions import RasaException, FileIOException
 from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.providers.embedding._langchain_embedding_client_adapter import (
+    _LangchainEmbeddingClientAdapter,
+)
+from rasa.shared.providers.llm.llm_client import LLMClient
 from rasa.shared.utils.cli import print_error_and_exit
 from rasa.shared.utils.io import deep_container_fingerprint
 from rasa.shared.utils.llm import (
@@ -79,13 +79,12 @@ from rasa.shared.utils.llm import (
     sanitize_message_for_prompt,
     tracker_as_readable_transcript,
     try_instantiate_llm_client,
+    resolve_model_client_config,
 )
-from rasa.core.information_retrieval.faiss import FAISS_Store
-from rasa.core.information_retrieval import (
-    InformationRetrieval,
-    SearchResult,
-    InformationRetrievalException,
-    create_from_endpoint_config,
+from rasa.telemetry import (
+    track_enterprise_search_policy_predict,
+    track_enterprise_search_policy_train_completed,
+    track_enterprise_search_policy_train_started,
 )
 
 if TYPE_CHECKING:
@@ -130,6 +129,7 @@ DEFAULT_EMBEDDINGS_CONFIG = {
 }
 
 ENTERPRISE_SEARCH_PROMPT_FILE_NAME = "enterprise_search_policy_prompt.jinja2"
+ENTERPRISE_SEARCH_CONFIG_FILE_NAME = "config.json"
 
 SEARCH_RESULTS_METADATA_KEY = "search_results"
 SEARCH_QUERY_METADATA_KEY = "search_query"
@@ -200,9 +200,16 @@ class EnterpriseSearchPolicy(Policy):
         """Constructs a new Policy object."""
         super().__init__(config, model_storage, resource, execution_context, featurizer)
 
+        self.config[LLM_CONFIG_KEY] = resolve_model_client_config(
+            self.config.get(LLM_CONFIG_KEY), EnterpriseSearchPolicy.__name__
+        )
+        self.config[EMBEDDINGS_CONFIG_KEY] = resolve_model_client_config(
+            self.config.get(EMBEDDINGS_CONFIG_KEY), EnterpriseSearchPolicy.__name__
+        )
+
         # Vector store object and configuration
         self.vector_store = vector_store
-        self.vector_store_config = config.get(
+        self.vector_store_config = self.config.get(
             VECTOR_STORE_PROPERTY, DEFAULT_VECTOR_STORE
         )
         # Embeddings configuration for encoding the search query
@@ -323,12 +330,17 @@ class EnterpriseSearchPolicy(Policy):
         # telemetry call to track training completion
         track_enterprise_search_policy_train_completed(
             vector_store_type=store_type,
-            embeddings_type=self.embeddings_config.get(PROVIDER_CONFIG_KEY),
-            embeddings_model=self.embeddings_config.get(MODEL_CONFIG_KEY)
-            or self.embeddings_config.get(MODEL_NAME_CONFIG_KEY),
-            llm_type=self.llm_config.get(PROVIDER_CONFIG_KEY),
-            llm_model=self.llm_config.get(MODEL_CONFIG_KEY)
-            or self.llm_config.get(MODEL_NAME_CONFIG_KEY),
+            # TODO https://rasahq.atlassian.net/browse/ENG-1481
+            # embeddings_type=self.embeddings_config.get(PROVIDER_CONFIG_KEY),
+            # embeddings_model=self.embeddings_config.get(MODEL_CONFIG_KEY)
+            # or self.embeddings_config.get(MODEL_NAME_CONFIG_KEY),
+            # llm_type=self.llm_config.get(PROVIDER_CONFIG_KEY),
+            # llm_model=self.llm_config.get(MODEL_CONFIG_KEY)
+            # or self.llm_config.get(MODEL_NAME_CONFIG_KEY),
+            embeddings_type=None,
+            embeddings_model=None,
+            llm_type=None,
+            llm_model=None,
             citation_enabled=self.citation_enabled,
         )
         self.persist()
@@ -339,6 +351,9 @@ class EnterpriseSearchPolicy(Policy):
         with self._model_storage.write_to(self._resource) as path:
             rasa.shared.utils.io.write_text_file(
                 self.prompt_template, path / ENTERPRISE_SEARCH_PROMPT_FILE_NAME
+            )
+            rasa.shared.utils.io.dump_obj_as_json_to_file(
+                path / ENTERPRISE_SEARCH_CONFIG_FILE_NAME, self.config
             )
 
     def _prepare_slots_for_template(
@@ -517,12 +532,17 @@ class EnterpriseSearchPolicy(Policy):
         # telemetry call to track policy prediction
         track_enterprise_search_policy_predict(
             vector_store_type=self.vector_store_config.get(VECTOR_STORE_TYPE_PROPERTY),
-            embeddings_type=self.embeddings_config.get(PROVIDER_CONFIG_KEY),
-            embeddings_model=self.embeddings_config.get(MODEL_CONFIG_KEY)
-            or self.embeddings_config.get(MODEL_NAME_CONFIG_KEY),
-            llm_type=self.llm_config.get(PROVIDER_CONFIG_KEY),
-            llm_model=self.llm_config.get(MODEL_CONFIG_KEY)
-            or self.llm_config.get(MODEL_NAME_CONFIG_KEY),
+            # TODO https://rasahq.atlassian.net/browse/ENG-1481
+            # embeddings_type=self.embeddings_config.get(PROVIDER_CONFIG_KEY),
+            # embeddings_model=self.embeddings_config.get(MODEL_CONFIG_KEY)
+            # or self.embeddings_config.get(MODEL_NAME_CONFIG_KEY),
+            # llm_type=self.llm_config.get(PROVIDER_CONFIG_KEY),
+            # llm_model=self.llm_config.get(MODEL_CONFIG_KEY)
+            # or self.llm_config.get(MODEL_NAME_CONFIG_KEY),
+            embeddings_type=None,
+            embeddings_model=None,
+            llm_type=None,
+            llm_model=None,
             citation_enabled=self.citation_enabled,
         )
         return self._create_prediction(
@@ -672,8 +692,26 @@ class EnterpriseSearchPolicy(Policy):
     ) -> "EnterpriseSearchPolicy":
         """Loads a trained policy (see parent class for full docstring)."""
         prompt_template = None
+        try:
+            with model_storage.read_from(resource) as path:
+                prompt_template = rasa.shared.utils.io.read_file(
+                    path / ENTERPRISE_SEARCH_PROMPT_FILE_NAME
+                )
+                # TODO: needed for health check
+                rasa.shared.utils.io.read_json_file(
+                    path / ENTERPRISE_SEARCH_CONFIG_FILE_NAME
+                )
+        except (FileNotFoundError, FileIOException) as e:
+            logger.warning(
+                "enterprise_search_policy.load.failed", error=e, resource=resource.name
+            )
+
         store_type = config.get(VECTOR_STORE_PROPERTY, {}).get(
             VECTOR_STORE_TYPE_PROPERTY
+        )
+
+        config[EMBEDDINGS_CONFIG_KEY] = resolve_model_client_config(
+            config.get(EMBEDDINGS_CONFIG_KEY), EnterpriseSearchPolicy.__name__
         )
 
         embeddings = cls._create_plain_embedder(config)
@@ -694,16 +732,6 @@ class EnterpriseSearchPolicy(Policy):
                 config_type=store_type,
                 embeddings=embeddings,
             )  # type: ignore
-        try:
-            with model_storage.read_from(resource) as path:
-                prompt_template = rasa.shared.utils.io.read_file(
-                    path / ENTERPRISE_SEARCH_PROMPT_FILE_NAME
-                )
-
-        except (FileNotFoundError, FileNotFoundError) as e:
-            logger.warning(
-                "enterprise_search_policy.load.failed", error=e, resource=resource.name
-            )
 
         return cls(
             config,

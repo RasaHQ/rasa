@@ -1,14 +1,12 @@
-import uuid
-
-import tempfile
-
 import logging
+import tempfile
+import uuid
 from typing import Sequence
 from unittest.mock import Mock
 
-from pytest import LogCaptureFixture, MonkeyPatch
 from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
+from pytest import LogCaptureFixture, MonkeyPatch
 
 from rasa.core import EnterpriseSearchPolicy
 from rasa.engine.graph import ExecutionContext
@@ -54,7 +52,7 @@ async def test_tracing_enterprise_search_policy_generate_llm_answer_default_conf
         "class_name": "EnterpriseSearchPolicy",
         "llm_model": "gpt-3.5-turbo",
         "llm_type": "openai",
-        "embeddings": "{}",
+        "embeddings": "null",
         "llm_temperature": "0.0",
         "request_timeout": "10",
     }
@@ -164,7 +162,7 @@ async def test_tracing_enterprise_search_policy_generate_llm_answer_len_prompt_t
             "llm_type": "openai",
             "llm_temperature": "0.0",
             "request_timeout": "10",
-            "embeddings": "{}",
+            "embeddings": "null",
             "len_prompt_tokens": "6",
         }
 

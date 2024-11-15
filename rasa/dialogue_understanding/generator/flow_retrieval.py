@@ -1,5 +1,4 @@
-"""
-The module is primarily centered around the `FlowRetrieval` class which handles the
+"""The module is primarily centered around the `FlowRetrieval` class which handles the
 initialization, configuration validation, vector store management, and flow retrieval
 logic. It integrates components for managing embeddings, vector stores, and
 flow-specific templates, facilitating semantic search functionalities.
@@ -27,6 +26,7 @@ from langchain.docstore.document import Document
 from langchain.schema.embeddings import Embeddings
 from langchain_community.vectorstores.faiss import FAISS
 from langchain_community.vectorstores.utils import DistanceStrategy
+
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import (
@@ -37,9 +37,9 @@ from rasa.shared.constants import (
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.exceptions import ProviderClientAPIException
 from rasa.shared.nlu.constants import TEXT, FLOWS_FROM_SEMANTIC_SEARCH
 from rasa.shared.nlu.training_data.message import Message
-from rasa.shared.exceptions import ProviderClientAPIException
 from rasa.shared.providers.embedding._langchain_embedding_client_adapter import (
     _LangchainEmbeddingClientAdapter,
 )
@@ -50,6 +50,7 @@ from rasa.shared.utils.llm import (
     USER,
     get_prompt_template,
     allowed_values_for_slot,
+    resolve_model_client_config,
 )
 
 DEFAULT_FLOW_DOCUMENT_TEMPLATE = importlib.resources.read_text(
@@ -98,6 +99,10 @@ class FlowRetrieval:
         )
         self._model_storage = model_storage
         self._resource = resource
+
+        self.config[EMBEDDINGS_CONFIG_KEY] = resolve_model_client_config(
+            self.config.get(EMBEDDINGS_CONFIG_KEY), FlowRetrieval.__name__
+        )
 
     @classmethod
     def validate_config(cls, config: Dict[Text, Any]) -> Dict[Text, Any]:

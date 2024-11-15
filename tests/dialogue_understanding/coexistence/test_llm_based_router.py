@@ -1,13 +1,13 @@
 import uuid
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from unittest.mock import Mock, patch, AsyncMock
 
 import pytest
 from _pytest.tmpdir import TempPathFactory
 from pytest import MonkeyPatch
-from rasa.shared.providers.llm.llm_response import LLMResponse
 from structlog.testing import capture_logs
 
+import rasa.shared.utils.io
 from rasa.dialogue_understanding.coexistence.constants import (
     CALM_ENTRY,
     STICKY,
@@ -15,18 +15,25 @@ from rasa.dialogue_understanding.coexistence.constants import (
 from rasa.dialogue_understanding.coexistence.llm_based_router import (
     LLMBasedRouter,
     DEFAULT_LLM_CONFIG,
+    LLM_BASED_ROUTER_CONFIG_FILE_NAME,
 )
 from rasa.dialogue_understanding.commands import Command, SetSlotCommand
 from rasa.dialogue_understanding.commands.noop_command import NoopCommand
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.constants import OPENAI_API_KEY_ENV_VAR, ROUTE_TO_CALM_SLOT
+from rasa.shared.constants import (
+    OPENAI_API_KEY_ENV_VAR,
+    ROUTE_TO_CALM_SLOT,
+    LLM_CONFIG_KEY,
+)
 from rasa.shared.core.slots import BooleanSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.providers.llm.llm_response import LLMResponse
+from rasa.shared.utils.llm import MODEL_GROUP_KEY
 
 EXPECTED_PROMPT_PATH = "./tests/dialogue_understanding/coexistence/rendered_prompt.txt"
 
@@ -227,3 +234,115 @@ class TestLLMBasedRouter:
             rendered_template.splitlines(True), expected_template
         ):
             assert rendered_line.strip() == expected_line.strip()
+
+    @pytest.mark.parametrize(
+        "config, expected_llm_config",
+        [
+            (
+                {
+                    LLM_CONFIG_KEY: {"provider": "openai", "model": "gpt-4"},
+                },
+                {"provider": "openai", "model": "gpt-4"},
+            ),
+            (
+                {
+                    "user_input": {"max_characters": -1},
+                },
+                None,
+            ),
+            (
+                {
+                    LLM_CONFIG_KEY: {MODEL_GROUP_KEY: "openai_gpt-4"},
+                },
+                {
+                    "id": "openai_gpt-4",
+                    "models": [{"provider": "openai", "model": "gpt-4"}],
+                },
+            ),
+        ],
+    )
+    def test_llm_based_router_init_with_different_llm_configs(
+        self,
+        config: Optional[Dict[str, Any]],
+        expected_llm_config: Optional[Dict[str, Any]],
+        model_storage: ModelStorage,
+        resource: Resource,
+        monkeypatch,
+    ) -> None:
+        class MockAvailableEndpoints:
+            @staticmethod
+            def get_instance():
+                return MockAvailableEndpoints()
+
+            def __init__(self):
+                self.model_groups = [
+                    {
+                        "id": "openai_gpt-4",
+                        "models": [{"provider": "openai", "model": "gpt-4"}],
+                    },
+                    {
+                        "id": "openai_embedding",
+                        "models": [
+                            {"provider": "openai", "model": "text-embedding-ada-002"}
+                        ],
+                    },
+                ]
+
+        mock_endpoints = MockAvailableEndpoints()
+        monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+
+        config[CALM_ENTRY] = {STICKY: "handles transactions"}
+
+        generator = LLMBasedRouter(
+            config,
+            model_storage,
+            resource,
+        )
+        assert generator.config[LLM_CONFIG_KEY] == expected_llm_config
+
+    def test_llm_based_router_persist_config(
+        self,
+        model_storage: LocalModelStorage,
+        resource: Resource,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        class MockAvailableEndpoints:
+            @staticmethod
+            def get_instance():
+                return MockAvailableEndpoints()
+
+            def __init__(self):
+                self.model_groups = [
+                    {
+                        "id": "model_group_id",
+                        "models": [{"provider": "openai", "model": "gpt-4"}],
+                    }
+                ]
+
+        mock_endpoints = MockAvailableEndpoints()
+        monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+
+        config = {
+            LLM_CONFIG_KEY: {MODEL_GROUP_KEY: "model_group_id"},
+            CALM_ENTRY: {STICKY: "handles transactions"},
+        }
+        router = LLMBasedRouter(config, model_storage, resource)
+
+        # Ensure the config is resolved
+        assert router.config[LLM_CONFIG_KEY] == {
+            "id": "model_group_id",
+            "models": [{"provider": "openai", "model": "gpt-4"}],
+        }
+
+        # Persist the generator
+        router.persist()
+
+        # Check that the persisted config is equal to our config
+        with model_storage.read_from(resource) as path:
+            persisted_config = rasa.shared.utils.io.read_json_file(
+                path / LLM_BASED_ROUTER_CONFIG_FILE_NAME
+            )
+        assert persisted_config[LLM_CONFIG_KEY] == {
+            "id": "model_group_id",
+            "models": [{"provider": "openai", "model": "gpt-4"}],
+        }

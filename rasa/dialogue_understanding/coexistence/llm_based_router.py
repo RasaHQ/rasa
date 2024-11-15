@@ -41,6 +41,7 @@ from rasa.shared.utils.llm import (
     llm_api_health_check,
     llm_factory,
     try_instantiate_llm_client,
+    resolve_model_client_config,
 )
 from rasa.utils.log_utils import log_llm
 
@@ -48,6 +49,7 @@ LLM_BASED_ROUTER_PROMPT_FILE_NAME = "llm_based_router_prompt.jinja2"
 DEFAULT_COMMAND_PROMPT_TEMPLATE = importlib.resources.read_text(
     "rasa.dialogue_understanding.coexistence", "router_template.jinja2"
 )
+LLM_BASED_ROUTER_CONFIG_FILE_NAME = "config.json"
 
 # Token ids for gpt 3.5 and gpt 4 corresponding to space + capitalized Letter
 A_TO_C_TOKEN_IDS_CHATGPT = [
@@ -109,6 +111,10 @@ class LLMBasedRouter(GraphComponent):
         self._resource = resource
         self.validate_config()
 
+        self.config[LLM_CONFIG_KEY] = resolve_model_client_config(
+            self.config.get(LLM_CONFIG_KEY), LLMBasedRouter.__name__
+        )
+
     def validate_config(self) -> None:
         """Validate the config of the router."""
         if (
@@ -128,6 +134,9 @@ class LLMBasedRouter(GraphComponent):
         with self._model_storage.write_to(self._resource) as path:
             rasa.shared.utils.io.write_text_file(
                 self.prompt_template, path / LLM_BASED_ROUTER_PROMPT_FILE_NAME
+            )
+            rasa.shared.utils.io.dump_obj_as_json_to_file(
+                path / LLM_BASED_ROUTER_CONFIG_FILE_NAME, self.config
             )
 
     def train(self, training_data: TrainingData) -> Resource:
@@ -162,6 +171,10 @@ class LLMBasedRouter(GraphComponent):
             with model_storage.read_from(resource) as path:
                 prompt_template = rasa.shared.utils.io.read_file(
                     path / LLM_BASED_ROUTER_PROMPT_FILE_NAME
+                )
+                # TODO: needed for health check
+                rasa.shared.utils.io.read_json_file(
+                    path / LLM_BASED_ROUTER_CONFIG_FILE_NAME
                 )
         except (FileNotFoundError, FileIOException) as e:
             structlogger.warning(

@@ -9,6 +9,15 @@ import pytest
 import structlog
 
 from rasa.core.policies.policy import PolicyPrediction
+from rasa.dialogue_understanding.coexistence.intent_based_router import (
+    IntentBasedRouter,
+)
+from rasa.dialogue_understanding.generator import (
+    SingleStepLLMCommandGenerator,
+    MultiStepLLMCommandGenerator,
+    LLMCommandGenerator,
+)
+from rasa.dialogue_understanding.generator.constants import FLOW_RETRIEVAL_KEY
 from rasa.engine import validation
 from rasa.engine.constants import PLACEHOLDER_IMPORTER
 from rasa.engine.exceptions import GraphSchemaValidationException
@@ -26,10 +35,13 @@ from rasa.engine.validation import (
     validate_coexistance_routing_setup,
     validate_intent_based_router_position,
     validate_command_generator_exclusivity,
+    validate_model_client_configuration_setup,
 )
 from rasa.shared.constants import (
     LATEST_TRAINING_DATA_FORMAT_VERSION,
     ROUTE_TO_CALM_SLOT,
+    LLM_CONFIG_KEY,
+    EMBEDDINGS_CONFIG_KEY,
 )
 from rasa.shared.core.constants import ACTION_RESET_ROUTING
 from rasa.shared.core.domain import Domain
@@ -39,16 +51,8 @@ from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.utils.llm import MODEL_GROUP_KEY
 from tests.utilities import filter_logs, flows_from_str
-
-from rasa.dialogue_understanding.coexistence.intent_based_router import (
-    IntentBasedRouter,
-)
-from rasa.dialogue_understanding.generator import (
-    SingleStepLLMCommandGenerator,
-    MultiStepLLMCommandGenerator,
-    LLMCommandGenerator,
-)
 
 
 class TestComponentWithoutRun(GraphComponent):
@@ -1717,7 +1721,7 @@ def test_validate_intent_based_router_position(
 
 
 @pytest.fixture
-def patch_structlogger():
+def patch_error():
     with patch("rasa.engine.validation.structlogger.error") as mock:
         yield mock
 
@@ -1725,6 +1729,18 @@ def patch_structlogger():
 @pytest.fixture
 def patch_exit():
     with patch("sys.exit") as mock:
+        yield mock
+
+
+@pytest.fixture
+def patch_warning():
+    with patch("rasa.engine.validation.structlogger.warning") as mock:
+        yield mock
+
+
+@pytest.fixture
+def patch_print_error_and_exit():
+    with patch("rasa.engine.validation.print_error_and_exit") as mock:
         yield mock
 
 
@@ -1771,7 +1787,7 @@ def patch_exit():
     ],
 )
 def test_validate_command_generator_exclusivity(
-    patch_structlogger, patch_exit, generator_types, should_exit
+    patch_error, patch_exit, generator_types, should_exit
 ):
     test_schema = GraphSchema({})
     for i, component in enumerate(generator_types):
@@ -1781,8 +1797,262 @@ def test_validate_command_generator_exclusivity(
     validate_command_generator_exclusivity(test_schema)
 
     if should_exit:
-        patch_structlogger.assert_called_once()
+        patch_error.assert_called_once()
         patch_exit.assert_called_once_with(1)
     else:
-        patch_structlogger.assert_not_called()
+        patch_error.assert_not_called()
         patch_exit.assert_not_called()
+
+
+class MockAvailableEndpointsForTestValidation:
+    @staticmethod
+    def get_instance():
+        return MockAvailableEndpointsForTestValidation()
+
+    def __init__(self):
+        self.model_groups = [
+            {
+                "id": "model_group_id",
+                "models": [{"provider": "openai", "model": "gpt-4"}],
+            },
+            {
+                "id": "another_model_group_id",
+                "models": [{"provider": "openai", "model": "gpt-3.5-turbo"}],
+            },
+        ]
+
+
+@pytest.mark.parametrize(
+    "pipeline_config, should_exit, should_warn",
+    [
+        (
+            [
+                {
+                    "name": "SingleStepLLMCommandGenerator",
+                }
+            ],
+            False,
+            False,
+        ),
+        (
+            [
+                {
+                    "name": "SingleStepLLMCommandGenerator",
+                    LLM_CONFIG_KEY: {MODEL_GROUP_KEY: "model_group_id"},
+                },
+                {
+                    "name": "IntentlessPolicy",
+                    LLM_CONFIG_KEY: {MODEL_GROUP_KEY: "model_group_id"},
+                    EMBEDDINGS_CONFIG_KEY: {MODEL_GROUP_KEY: "another_model_group_id"},
+                },
+            ],
+            False,
+            False,
+        ),
+        (
+            [
+                {
+                    "name": "SingleStepLLMCommandGenerator",
+                    LLM_CONFIG_KEY: {"provider": "openai", "model": "gpt-4"},
+                }
+            ],
+            False,
+            True,
+        ),
+        (
+            [
+                {
+                    "name": "SingleStepLLMCommandGenerator",
+                    LLM_CONFIG_KEY: {"provider": "openai", "model": "gpt-4"},
+                },
+                {
+                    "name": "IntentlessPolicy",
+                    LLM_CONFIG_KEY: {"provider": "openai", "model": "gpt-4"},
+                    EMBEDDINGS_CONFIG_KEY: {
+                        "provider": "openai",
+                        "model": "text-embeddings",
+                    },
+                },
+            ],
+            False,
+            True,
+        ),
+        (
+            [
+                {
+                    "name": "SingleStepLLMCommandGenerator",
+                    LLM_CONFIG_KEY: {"provider": "openai", "model": "gpt-4"},
+                },
+                {
+                    "name": "IntentlessPolicy",
+                    LLM_CONFIG_KEY: {MODEL_GROUP_KEY: "model_group_id"},
+                    EMBEDDINGS_CONFIG_KEY: {MODEL_GROUP_KEY: "another_model_group_id"},
+                },
+            ],
+            True,
+            True,
+        ),
+        (
+            [
+                {
+                    "name": "SingleStepLLMCommandGenerator",
+                    LLM_CONFIG_KEY: {
+                        "provider": "openai",
+                        "model": "gpt-4",
+                        MODEL_GROUP_KEY: "model_group_id",
+                    },
+                }
+            ],
+            True,
+            False,
+        ),
+        (
+            [
+                {
+                    "name": "SingleStepLLMCommandGenerator",
+                    LLM_CONFIG_KEY: {
+                        MODEL_GROUP_KEY: "non-existing-model-group",
+                    },
+                }
+            ],
+            True,
+            False,
+        ),
+        (
+            [
+                {
+                    "name": "SingleStepLLMCommandGenerator",
+                    LLM_CONFIG_KEY: {
+                        "provider": "openai",
+                        "model": "gpt-4",
+                    },
+                },
+                {
+                    "name": "IntentlessPolicy",
+                    LLM_CONFIG_KEY: {
+                        "provider": "openai",
+                        "model": "gpt-3.5-turbo",
+                    },
+                },
+            ],
+            False,
+            True,
+        ),
+        (
+            [
+                {
+                    "name": "IntentlessPolicy",
+                    LLM_CONFIG_KEY: {
+                        "provider": "openai",
+                        "model": "gpt-4",
+                    },
+                    EMBEDDINGS_CONFIG_KEY: {
+                        MODEL_GROUP_KEY: "model_group_id",
+                    },
+                },
+                {
+                    "name": "SingleStepLLMCommandGenerator",
+                    LLM_CONFIG_KEY: {
+                        "provider": "openai",
+                        "model": "gpt-3.5-turbo",
+                    },
+                },
+            ],
+            True,
+            True,
+        ),
+        (
+            [
+                {
+                    "name": "IntentlessPolicy",
+                    LLM_CONFIG_KEY: {
+                        "provider": "openai",
+                        "model": "gpt-4",
+                    },
+                    EMBEDDINGS_CONFIG_KEY: {
+                        MODEL_GROUP_KEY: "model_group_id",
+                    },
+                }
+            ],
+            True,
+            True,
+        ),
+        (
+            [
+                {
+                    "name": "SingleStepLLMCommandGenerator",
+                    LLM_CONFIG_KEY: {
+                        MODEL_GROUP_KEY: "model_group_id",
+                    },
+                    FLOW_RETRIEVAL_KEY: {
+                        EMBEDDINGS_CONFIG_KEY: {
+                            MODEL_GROUP_KEY: "model_group_id",
+                        }
+                    },
+                }
+            ],
+            False,
+            False,
+        ),
+        (
+            [
+                {
+                    "name": "SingleStepLLMCommandGenerator",
+                    LLM_CONFIG_KEY: {
+                        "provider": "openai",
+                        "model": "gpt-4",
+                    },
+                    FLOW_RETRIEVAL_KEY: {
+                        EMBEDDINGS_CONFIG_KEY: {
+                            "provider": "openai",
+                            "model": "gpt-4",
+                        }
+                    },
+                }
+            ],
+            False,
+            True,
+        ),
+        (
+            [
+                {
+                    "name": "SingleStepLLMCommandGenerator",
+                    LLM_CONFIG_KEY: {
+                        "provider": "openai",
+                        "model": "gpt-4",
+                    },
+                    FLOW_RETRIEVAL_KEY: {
+                        EMBEDDINGS_CONFIG_KEY: {
+                            MODEL_GROUP_KEY: "model_group_id",
+                        }
+                    },
+                }
+            ],
+            True,
+            True,
+        ),
+    ],
+)
+def test_validate_llm_configuration_setup(
+    patch_print_error_and_exit: Any,
+    patch_warning: Any,
+    pipeline_config: List[Dict[Text, Any]],
+    should_exit: bool,
+    should_warn: bool,
+    monkeypatch: Any,
+):
+    mock_endpoints = MockAvailableEndpointsForTestValidation()
+    monkeypatch.setattr("rasa.engine.validation.AvailableEndpoints", mock_endpoints)
+
+    config = {"pipeline": pipeline_config}
+    validate_model_client_configuration_setup(config)
+
+    if should_exit:
+        patch_print_error_and_exit.assert_called_once()
+    else:
+        patch_print_error_and_exit.assert_not_called()
+
+    if should_warn:
+        patch_warning.assert_called_once()
+    else:
+        patch_warning.assert_not_called()
