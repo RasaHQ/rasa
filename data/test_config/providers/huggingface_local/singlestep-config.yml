@@ -28,10 +28,7 @@ pipeline:
     timeout: 3
   - name: NLUCommandAdapter
   - name: SingleStepLLMCommandGenerator
-<<<<<<< HEAD
     prompt_template: data/test_config/providers/command_prompt.jinja2
-=======
->>>>>>> 3.10.x
     embeddings:
       provider: huggingface_local
       model: BAAI/bge-small-en-v1.5
@@ -56,10 +53,7 @@ policies:
     constrain_similarities: true
   - name: FlowPolicy
   - name: EnterpriseSearchPolicy
-<<<<<<< HEAD
     max_messages_in_query: 4
-=======
->>>>>>> 3.10.x
     citation_enabled: true
     use_generative_llm: true
     vector_store:

@@ -4,8 +4,5 @@ action_endpoint:
 nlg:
  type: rephrase
  rephrase_all: True
-<<<<<<< HEAD
  llm:
     model: gpt-4-0613
-=======
->>>>>>> 3.10.x

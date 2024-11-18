@@ -1,15 +1,12 @@
 name: E2E Test on Rasa-Calm-Demo with supported providers
 
 on:
-<<<<<<< HEAD
   schedule:
     # Run at 1am UTC each Sunday
     - cron: "0 1 * * SUN"
 
   # Allow running manually also, specifying the provider
   # and `rasa-calm-demo` branch
-=======
->>>>>>> 3.10.x
   workflow_dispatch:
     inputs:
       provider:
@@ -27,7 +24,6 @@ on:
           - azure
           - bedrock
           - gemini
-<<<<<<< HEAD
           - huggingface
           - huggingface_local
           - anthropic
@@ -37,17 +33,6 @@ on:
           - groq
           # - voyage TODO: Enable after ENG-1415 is unblocked
           - ollama
-=======
-          # - huggingface # TODO: Enable after ENG-1459 is resolved
-          - huggingface_local
-          - anthropic # TODO: Enable after ENG-1454 is resolved
-          # - cohere TODO: Enable after ENG-1411 is unblocked
-          # - mistral TODO: Enable after ENG-1412 is unblocked
-          - together_ai # TODO: Enable after ENG-1449 is resolved
-          - groq # TODO: Enable after ENG-1453 is resolved
-          # - voyage TODO: Enable after ENG-1415 is unblocked
-          - ollama # TODO: Enable after ENG-1455 is resolved
->>>>>>> 3.10.x
           # - self-hosted
 
       rasa-calm-demo-branch:
@@ -124,12 +109,9 @@ on:
         type: string
         required: true
         default: gpt-4o-mini
-<<<<<<< HEAD
   pull_request:
     branches: main
     paths: [pyproject.toml, rasa/shared/providers/**]
-=======
->>>>>>> 3.10.x
 
 env:
   DEFAULT_PYTHON_VERSION: "3.10"
@@ -178,10 +160,7 @@ env:
 permissions:
   id-token: write
   contents: read
-<<<<<<< HEAD
   pull-requests: read
-=======
->>>>>>> 3.10.x
 
 jobs:
   job_setup:
@@ -196,7 +175,6 @@ jobs:
           echo "COMMAND_GENERATOR_MATRIX=${{ env.COMMAND_GENERATOR_MATRIX }}" >> $GITHUB_OUTPUT
           echo "${{ fromJson(env.COMMAND_GENERATOR_MATRIX)[env.COMMAND_GENERATOR] }}"
 
-<<<<<<< HEAD
   check_changes_impacting_providers:
     runs-on: ubuntu-22.04
     if: ${{ github.event_name == 'pull_request' }}
@@ -227,12 +205,6 @@ jobs:
     name: Run e2e Test
     needs: [job_setup, check_changes_impacting_providers]
     if: ${{ always() && (github.event_name == 'schedule' || inputs.provider == 'all' || (needs.check_changes_impacting_providers.outputs.litellm_upgraded == 'success' || needs.check_changes_impacting_providers.outputs.openai_upgraded == 'success' || needs.check_changes_impacting_providers.outputs.provider_code_changed == 'true' )) }}
-=======
-  e2e_test:
-    name: Run e2e Test
-    needs: job_setup
-    if: ${{ github.event_name == 'schedule' || inputs.provider == 'all' }}
->>>>>>> 3.10.x
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
@@ -242,7 +214,6 @@ jobs:
             azure,
             bedrock,
             gemini,
-<<<<<<< HEAD
             huggingface,
             huggingface_local,
             anthropic,
@@ -252,17 +223,6 @@ jobs:
             groq,
             # voyage, TODO: Enable after ENG-1415 is unblocked
             ollama,
-=======
-            # huggingface, # TODO: Enable after ENG-1459 is resolved
-            huggingface_local,
-            anthropic, # TODO: Enable after ENG-1454 is resolved
-            # cohere, TODO: Enable after ENG-1411 is unblocked
-            # mistral, TODO: Enable after ENG-1412 is unblocked
-            together_ai, # TODO: Enable after ENG-1449 is resolved
-            groq, # TODO: Enable after ENG-1453 is resolved
-            # voyage, TODO: Enable after ENG-1415 is unblocked
-            ollama, # TODO: Enable after ENG-1455 is resolved
->>>>>>> 3.10.x
             # self-hosted,
           ] # TODO: Enable testing all the providers
         train-and-test: ${{ fromJson(needs.job_setup.outputs.COMMAND_GENERATOR_MATRIX)[needs.job_setup.outputs.COMMAND_GENERATOR] }}

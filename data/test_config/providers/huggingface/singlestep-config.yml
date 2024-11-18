@@ -5,13 +5,8 @@ pipeline:
     prompt: data/test_config/providers/router_template.jinja2
     llm:
       provider: huggingface
-<<<<<<< HEAD
       model: rasa/cmd_gen_codellama_13b_calm_demo
       api_base: https://tli2t3mifcp9pjf8.us-east-1.aws.endpoints.huggingface.cloud
-=======
-      model: meta-llama/Llama-3.2-3B
-      api_base: "https://z35w5f1azkh4s9id.us-east-1.aws.endpoints.huggingface.cloud"
->>>>>>> 3.10.x
       timeout: 30
       num_retries: 10
     calm_entry:
@@ -39,18 +34,11 @@ pipeline:
     timeout: 3
   - name: NLUCommandAdapter
   - name: SingleStepLLMCommandGenerator
-<<<<<<< HEAD
     prompt_template: data/test_config/providers/command_prompt.jinja2
     llm:
       provider: huggingface
       model: rasa/cmd_gen_codellama_13b_calm_demo
       api_base: https://tli2t3mifcp9pjf8.us-east-1.aws.endpoints.huggingface.cloud
-=======
-    llm:
-      provider: huggingface
-      model: meta-llama/Llama-3.2-3B
-      api_base: "https://z35w5f1azkh4s9id.us-east-1.aws.endpoints.huggingface.cloud"
->>>>>>> 3.10.x
       timeout: 30
       num_retries: 10
 
@@ -60,35 +48,22 @@ policies:
     constrain_similarities: true
   - name: FlowPolicy
   - name: EnterpriseSearchPolicy
-<<<<<<< HEAD
     max_messages_in_query: 4
-=======
->>>>>>> 3.10.x
     citation_enabled: true
     use_generative_llm: true
     vector_store:
       source: rasa-calm-demo/docs/
     llm:
       provider: huggingface
-<<<<<<< HEAD
       model: rasa/cmd_gen_codellama_13b_calm_demo
       api_base: https://tli2t3mifcp9pjf8.us-east-1.aws.endpoints.huggingface.cloud
-=======
-      model: meta-llama/Llama-3.2-3B
-      api_base: "https://z35w5f1azkh4s9id.us-east-1.aws.endpoints.huggingface.cloud"
->>>>>>> 3.10.x
       timeout: 30
       num_retries: 10
   - name: IntentlessPolicy
     llm:
       provider: huggingface
-<<<<<<< HEAD
       model: rasa/cmd_gen_codellama_13b_calm_demo
       api_base: https://tli2t3mifcp9pjf8.us-east-1.aws.endpoints.huggingface.cloud
-=======
-      model: meta-llama/Llama-3.2-3B
-      api_base: "https://z35w5f1azkh4s9id.us-east-1.aws.endpoints.huggingface.cloud"
->>>>>>> 3.10.x
       timeout: 30
       num_retries: 10
 
