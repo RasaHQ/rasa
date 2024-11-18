@@ -1,5 +1,5 @@
 import asyncio
-import logging
+import structlog
 import copy
 from dataclasses import asdict, dataclass
 from typing import Any, Awaitable, Callable, Dict, List, Optional
@@ -8,6 +8,7 @@ from sanic.exceptions import ServerError, WebsocketClosed
 
 from rasa.core.channels import InputChannel, OutputChannel, UserMessage
 from rasa.core.channels.voice_ready.utils import CallParameters
+from rasa.core.channels.voice_ready.utils import validate_voice_license_scope
 from rasa.core.channels.voice_stream.asr.asr_engine import ASREngine
 from rasa.core.channels.voice_stream.asr.asr_event import ASREvent, NewTranscript
 from sanic import Websocket  # type: ignore
@@ -19,7 +20,7 @@ from rasa.core.channels.voice_stream.tts.tts_engine import TTSEngine, TTSError
 from rasa.core.channels.voice_stream.tts.cartesia import CartesiaTTS
 from rasa.core.channels.voice_stream.tts.tts_cache import TTSCache
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 @dataclass
@@ -128,6 +129,7 @@ class VoiceOutputChannel(OutputChannel):
 
 class VoiceInputChannel(InputChannel):
     def __init__(self, server_url: str, asr_config: Dict, tts_config: Dict):
+        validate_voice_license_scope()
         self.server_url = server_url
         self.asr_config = asr_config
         self.tts_config = tts_config
@@ -232,7 +234,9 @@ class VoiceInputChannel(InputChannel):
     ) -> None:
         """Handle a new event from the ASR system."""
         if isinstance(e, NewTranscript) and e.text:
-            logger.info(f"New transcript: {e.text}")
+            logger.info(
+                "VoiceInputChannel.handle_asr_event.new_transcript", transcript=e.text
+            )
             output_channel = self.create_output_channel(voice_websocket, tts_engine)
             message = UserMessage(
                 e.text,
