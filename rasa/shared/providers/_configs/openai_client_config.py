@@ -19,8 +19,8 @@ from rasa.shared.constants import (
     REQUEST_TIMEOUT_CONFIG_KEY,
     TIMEOUT_CONFIG_KEY,
     PROVIDER_CONFIG_KEY,
-    OPENAI_PROVIDER,
     OPENAI_API_TYPE,
+    OPENAI_PROVIDER,
 )
 from rasa.shared.providers._configs.utils import (
     resolve_aliases,

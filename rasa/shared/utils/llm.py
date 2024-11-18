@@ -82,6 +82,8 @@ DEFAULT_MAX_USER_INPUT_CHARACTERS = 420
 
 MODEL_GROUP_KEY = "model_group"
 
+DEPLOYMENT_CENTRIC_PROVIDERS = [AZURE_OPENAI_PROVIDER]
+
 # Placeholder messages used in the transcript for
 # instances where user input results in an error
 ERROR_PLACEHOLDER = {

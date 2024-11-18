@@ -23,6 +23,7 @@ from rasa.shared.constants import (
     SELF_HOSTED_PROVIDER,
     USE_CHAT_COMPLETIONS_ENDPOINT_CONFIG_KEY,
 )
+
 from rasa.shared.providers._configs.utils import (
     raise_deprecation_warnings,
     resolve_aliases,
