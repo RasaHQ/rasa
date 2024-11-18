@@ -158,7 +158,23 @@ class _BaseLiteLLMClient:
             response = await acompletion(messages=formatted_messages, **arguments)
             return self._format_response(response)
         except Exception as e:
-            raise ProviderClientAPIException(e)
+            message = ""
+            from rasa.shared.providers.llm.self_hosted_llm_client import (
+                SelfHostedLLMClient,
+            )
+
+            if isinstance(self, SelfHostedLLMClient):
+                message = (
+                    "If you are using 'provider=self-hosted' to call a hosted vllm "
+                    "server make sure your config is correctly setup. You should have "
+                    "the following mandatory keys in your config: "
+                    "provider=self-hosted; "
+                    "model='<your-vllm-model-name>'; "
+                    "api_base='your-hosted-vllm-serv'."
+                    "In case you are getting OpenAI connection errors, such as missing "
+                    "API key, your configuration is incorrect."
+                )
+            raise ProviderClientAPIException(e, message)
 
     def _format_messages(self, messages: Union[List[str], str]) -> List[Dict[str, str]]:
         """Formats messages (or a single message) to OpenAI format."""

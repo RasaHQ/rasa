@@ -262,6 +262,7 @@ def test_sanitize_message_for_prompt_handles_string_with_newlines():
         ({"_type": "cohere"}, None),
         # Relying on azure openai specific config
         ({"deployment": "my-test-deployment-on-azure"}, "azure"),
+        ({"deployment": "left-over-key", "provider": "ollama"}, "ollama"),
     ),
 )
 def test_get_provider_from_config(config: dict, expected_provider: Optional[str]):

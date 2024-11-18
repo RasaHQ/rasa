@@ -428,7 +428,8 @@ def try_instantiate_llm_client(
         )
         print_error_and_exit(
             f"Unable to create the LLM client for component - {log_source_component}. "
-            f"Please make sure you specified the required environment variables. "
+            f"Please make sure you specified the required environment variables "
+            f"and configuration keys. "
             f"Error: {e}"
         )
 
