@@ -6,18 +6,16 @@ from typing import Union, Text, List, Optional, Type
 
 import aio_pika.exceptions
 import aiormq.exceptions
-import pamqp.exceptions
 import confluent_kafka
+import pamqp.exceptions
 import pytest
 from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 from aiormq import ChannelNotFoundEntity
 
-from rasa.core.brokers import pika
-from tests.conftest import AsyncMock
-
 import rasa.shared.utils.io
 import rasa.utils.io
+from rasa.core.brokers import pika
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.brokers.file import FileEventBroker
 from rasa.core.brokers.kafka import KafkaEventBroker, KafkaProducerInitializationError
@@ -26,6 +24,7 @@ from rasa.core.brokers.sql import SQLEventBroker
 from rasa.shared.core.events import Event, Restarted, SlotSet, UserUttered
 from rasa.shared.exceptions import ConnectionException, RasaException
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
+from tests.conftest import AsyncMock
 
 TEST_EVENTS = [
     UserUttered("/greet", {"name": "greet", "confidence": 1.0}, []),
@@ -305,8 +304,7 @@ async def test_kafka_broker_security_protocols(file: Text, exception: Exception)
 
 @pytest.mark.flaky
 async def test_no_pika_logs_if_no_debug_mode(caplog: LogCaptureFixture):
-    """
-    tests that when you run rasa with logging set at INFO,
+    """Tests that when you run rasa with logging set at INFO,
     the debugs from pika dependency are not going to be shown
     """
     broker = PikaEventBroker(
@@ -320,7 +318,12 @@ async def test_no_pika_logs_if_no_debug_mode(caplog: LogCaptureFixture):
     # Only Rasa Pro logs, but logs from the library itself.
     assert all(
         record.name
-        in ["rasa.core.brokers.pika", "asyncio", "ddtrace.internal.writer.writer"]
+        in [
+            "rasa.core.brokers.pika",
+            "asyncio",
+            "aio_pika.robust_connection",
+            "ddtrace.internal.writer.writer",
+        ]
         for record in caplog.records
     )
 

@@ -17,8 +17,8 @@ from pykwalify.core import Core
 from pykwalify.errors import SchemaError
 from ruamel import yaml as yaml
 from ruamel.yaml import RoundTripRepresenter, YAMLError
-from ruamel.yaml.constructor import DuplicateKeyError, BaseConstructor, ScalarNode
 from ruamel.yaml.comments import CommentedSeq, CommentedMap
+from ruamel.yaml.constructor import DuplicateKeyError, BaseConstructor, ScalarNode
 from ruamel.yaml.loader import SafeLoader
 
 from rasa.shared.constants import (
@@ -31,6 +31,9 @@ from rasa.shared.constants import (
     LATEST_TRAINING_DATA_FORMAT_VERSION,
     SCHEMA_EXTENSIONS_FILE,
     RESPONSES_SCHEMA_FILE,
+    ORIGINAL_VALUE,
+    RESOLVED_VALUE,
+    API_KEY,
 )
 from rasa.shared.exceptions import (
     YamlException,
@@ -58,6 +61,7 @@ YAML_VERSION = (1, 2)
 READ_YAML_FILE_CACHE_MAXSIZE = os.environ.get(
     READ_YAML_FILE_CACHE_MAXSIZE_ENV_VAR, DEFAULT_READ_YAML_FILE_CACHE_MAXSIZE
 )
+SENSITIVE_DATA = [API_KEY]
 
 
 @dataclass
@@ -84,9 +88,17 @@ def replace_environment_variables() -> None:
     env_var_pattern = re.compile(r"^(.*)\$\{(.*)\}(.*)$")
     yaml.Resolver.add_implicit_resolver("!env_var", env_var_pattern, None)
 
-    def env_var_constructor(loader: BaseConstructor, node: ScalarNode) -> str:
+    def env_var_constructor(
+        loader: BaseConstructor, node: ScalarNode
+    ) -> Union[dict, str]:
         """Process environment variables found in the YAML."""
         value = loader.construct_scalar(node)
+
+        # get key of current node
+        key_node = list(loader.constructed_objects)[-1]
+        if isinstance(key_node, ScalarNode) and key_node.value in SENSITIVE_DATA:
+            return value
+
         expanded_vars = os.path.expandvars(value)
         not_expanded = [
             w for w in expanded_vars.split() if w.startswith("$") and w in value
@@ -98,6 +110,11 @@ def replace_environment_variables() -> None:
                 f"Please make sure to also set these "
                 f"environment variables: '{not_expanded}'."
             )
+        if expanded_vars:
+            # if the environment variable is referenced using the ${} syntax
+            # then we return a dictionary with the original value and the resolved,
+            # value. So that the graph components can use the original value.
+            return {ORIGINAL_VALUE: value, RESOLVED_VALUE: expanded_vars}
         return expanded_vars
 
     yaml.SafeConstructor.add_constructor("!env_var", env_var_constructor)
@@ -417,8 +434,7 @@ def validate_raw_yaml_using_schema_file_with_responses(
 
 
 def process_content(content: str) -> str:
-    """
-    Process the content to handle both Windows paths and emojis.
+    """Process the content to handle both Windows paths and emojis.
     Windows paths are processed by escaping backslashes but emojis are left untouched.
 
     Args:

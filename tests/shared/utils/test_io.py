@@ -1,24 +1,24 @@
 import builtins
-import sys
+import copy
 import os
 import string
+import sys
 import textwrap
 import uuid
 from collections import OrderedDict
-from typing import Callable, Text, List, Set, Any, Dict
-import copy
-
 from pathlib import Path
+from typing import Callable, Text, List, Set, Any, Dict, Union
+from unittest.mock import MagicMock
+
 import numpy as np
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
-from unittest.mock import MagicMock
 
 import rasa.shared
-from rasa.shared.nlu.training_data.features import Features
-from rasa.shared.exceptions import FileIOException, FileNotFoundException, RasaException
 import rasa.shared.utils.io
 from rasa.shared.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
+from rasa.shared.exceptions import FileIOException, FileNotFoundException, RasaException
+from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.utils.yaml import (
     read_yaml,
     read_yaml_file,
@@ -128,7 +128,10 @@ def test_read_yaml_string_with_env_var():
     password: ${PASS}
     """
     content = read_yaml(config_with_env_var)
-    assert content["user"] == "user" and content["password"] == "pass"
+    assert content["user"]["resolved_value"] == "user"
+    assert content["user"]["original_value"] == "${USER_NAME}"
+    assert content["password"]["resolved_value"] == "pass"
+    assert content["password"]["original_value"] == "${PASS}"
 
 
 def test_read_yaml_string_with_multiple_env_vars_per_line():
@@ -137,7 +140,10 @@ def test_read_yaml_string_with_multiple_env_vars_per_line():
     password: ${PASS}
     """
     content = read_yaml(config_with_env_var)
-    assert content["user"] == "user pass" and content["password"] == "pass"
+    assert content["user"]["resolved_value"] == "user pass"
+    assert content["user"]["original_value"] == "${USER_NAME} ${PASS}"
+    assert content["password"]["resolved_value"] == "pass"
+    assert content["password"]["original_value"] == "${PASS}"
 
 
 def test_read_yaml_string_with_env_var_prefix():
@@ -146,7 +152,10 @@ def test_read_yaml_string_with_env_var_prefix():
     password: db_${PASS}
     """
     content = read_yaml(config_with_env_var_prefix)
-    assert content["user"] == "db_user" and content["password"] == "db_pass"
+    assert content["user"]["resolved_value"] == "db_user"
+    assert content["user"]["original_value"] == "db_${USER_NAME}"
+    assert content["password"]["resolved_value"] == "db_pass"
+    assert content["password"]["original_value"] == "db_${PASS}"
 
 
 def test_read_yaml_string_with_env_var_postfix():
@@ -155,7 +164,10 @@ def test_read_yaml_string_with_env_var_postfix():
     password: ${PASS}_admin
     """
     content = read_yaml(config_with_env_var_postfix)
-    assert content["user"] == "user_admin" and content["password"] == "pass_admin"
+    assert content["user"]["resolved_value"] == "user_admin"
+    assert content["user"]["original_value"] == "${USER_NAME}_admin"
+    assert content["password"]["resolved_value"] == "pass_admin"
+    assert content["password"]["original_value"] == "${PASS}_admin"
 
 
 def test_read_yaml_string_with_env_var_infix():
@@ -164,7 +176,10 @@ def test_read_yaml_string_with_env_var_infix():
     password: db_${PASS}_admin
     """
     content = read_yaml(config_with_env_var_infix)
-    assert content["user"] == "db_user_admin" and content["password"] == "db_pass_admin"
+    assert content["user"]["resolved_value"] == "db_user_admin"
+    assert content["user"]["original_value"] == "db_${USER_NAME}_admin"
+    assert content["password"]["resolved_value"] == "db_pass_admin"
+    assert content["password"]["original_value"] == "db_${PASS}_admin"
 
 
 def test_read_yaml_string_with_env_var_not_exist():
@@ -174,6 +189,17 @@ def test_read_yaml_string_with_env_var_not_exist():
     """
     with pytest.raises(RasaException):
         read_yaml(config_with_env_var_not_exist)
+
+
+def test_read_yaml_string_with_env_var_that_needs_to_be_resolved_later():
+    config_with_env_var = """
+    user: ${USER_NAME}
+    api_key: ${PASS}
+    """
+    content = read_yaml(config_with_env_var)
+    assert content["user"]["resolved_value"] == "user"
+    assert content["user"]["original_value"] == "${USER_NAME}"
+    assert content["api_key"] == "${PASS}"
 
 
 def test_environment_variable_not_existing():
@@ -188,7 +214,8 @@ def test_environment_variable_dict_without_prefix_and_postfix():
 
     content = read_yaml(content)
 
-    assert content["model"]["test"] == "test"
+    assert content["model"]["test"]["resolved_value"] == "test"
+    assert content["model"]["test"]["original_value"] == "${variable}"
 
 
 def test_environment_variable_in_list():
@@ -197,7 +224,8 @@ def test_environment_variable_in_list():
 
     content = read_yaml(content)
 
-    assert content["model"][1] == "test"
+    assert content["model"][1]["resolved_value"] == "test"
+    assert content["model"][1]["original_value"] == "${variable}"
 
 
 def test_environment_variable_dict_with_prefix():
@@ -206,7 +234,8 @@ def test_environment_variable_dict_with_prefix():
 
     content = read_yaml(content)
 
-    assert content["model"]["test"] == "dir/test"
+    assert content["model"]["test"]["resolved_value"] == "dir/test"
+    assert content["model"]["test"]["original_value"] == "dir/${variable}"
 
 
 def test_environment_variable_dict_with_postfix():
@@ -215,7 +244,8 @@ def test_environment_variable_dict_with_postfix():
 
     content = read_yaml(content)
 
-    assert content["model"]["test"] == "test/dir"
+    assert content["model"]["test"]["resolved_value"] == "test/dir"
+    assert content["model"]["test"]["original_value"] == "${variable}/dir"
 
 
 def test_environment_variable_dict_with_prefix_and_with_postfix():
@@ -224,7 +254,8 @@ def test_environment_variable_dict_with_prefix_and_with_postfix():
 
     content = read_yaml(content)
 
-    assert content["model"]["test"] == "dir/test/dir"
+    assert content["model"]["test"]["resolved_value"] == "dir/test/dir"
+    assert content["model"]["test"]["original_value"] == "dir/${variable}/dir"
 
 
 def test_environment_variable_with_dollar_char():
@@ -234,8 +265,10 @@ def test_environment_variable_with_dollar_char():
 
     content = read_yaml(content)
 
-    assert content["model"]["test1"] == "$test1"
-    assert content["model"]["test2"] == "test2"
+    assert content["model"]["test1"]["resolved_value"] == "$test1"
+    assert content["model"]["test1"]["original_value"] == "${variable1}"
+    assert content["model"]["test2"]["resolved_value"] == "test2"
+    assert content["model"]["test2"]["original_value"] == "${variable2}"
 
 
 def test_environment_variable_with_dollar_char_in_the_middle():
@@ -244,7 +277,45 @@ def test_environment_variable_with_dollar_char_in_the_middle():
 
     content = read_yaml(content)
 
-    assert content["model"]["test1"] == "test$123"
+    assert content["model"]["test1"]["resolved_value"] == "test$123"
+    assert content["model"]["test1"]["original_value"] == "${variable1}"
+
+
+def test_does_not_resolve_sensitive_environment_variable():
+    os.environ["AZURE_API_KEY_FR"] = "1234"
+    os.environ["AZURE_API_BASE_GPT3_5_TURBO_FR"] = "gpt-3.5-turbo"
+    os.environ["AZURE_DEPLOYMENT_GPT3_5_TURBO_FRANCE"] = "deployment"
+
+    content = """
+    model_groups:
+      - id: azure_llm
+        models:
+          - provider: openai
+            deployment: ${AZURE_DEPLOYMENT_GPT3_5_TURBO_FRANCE}
+            api_base: ${AZURE_API_BASE_GPT3_5_TURBO_FR}
+            api_key: ${AZURE_API_KEY_FR}
+            timeout: 14
+    """
+
+    content = read_yaml(content)
+
+    assert content["model_groups"][0]["models"][0]["api_key"] == "${AZURE_API_KEY_FR}"
+    assert (
+        content["model_groups"][0]["models"][0]["deployment"]["original_value"]
+        == "${AZURE_DEPLOYMENT_GPT3_5_TURBO_FRANCE}"
+    )
+    assert (
+        content["model_groups"][0]["models"][0]["deployment"]["resolved_value"]
+        == "deployment"
+    )
+    assert (
+        content["model_groups"][0]["models"][0]["api_base"]["original_value"]
+        == "${AZURE_API_BASE_GPT3_5_TURBO_FR}"
+    )
+    assert (
+        content["model_groups"][0]["models"][0]["api_base"]["resolved_value"]
+        == "gpt-3.5-turbo"
+    )
 
 
 def test_read_yaml_datatime_as_string():
@@ -696,3 +767,25 @@ def test_handle_print_blocking_windows(monkeypatch: MonkeyPatch):
 
     assert isinstance(mock_print.call_args[1]["file"], ansitowin32.StreamWrapper)
     assert mock_print.call_args[1]["flush"]
+
+
+@pytest.mark.parametrize(
+    "value, expected_value",
+    [
+        ("$USER_NAME", "user"),
+        (["$USER_NAME", "value", "$PASS"], ["user", "value", "pass"]),
+        (
+            {"user": "$USER_NAME", "pass": "$PASS", "other_value": "1234"},
+            {"user": "user", "pass": "pass", "other_value": "1234"},
+        ),
+        (
+            {"list": [{"user": "$USER_NAME", "pass": "$PASS", "other_value": "1234"}]},
+            {"list": [{"user": "user", "pass": "pass", "other_value": "1234"}]},
+        ),
+    ],
+)
+def test_resolve_environment_variables(
+    value: Union[str, List[Any], Dict[str, Any]],
+    expected_value: Union[str, List[Any], Dict[str, Any]],
+):
+    assert rasa.shared.utils.io.resolve_environment_variables(value) == expected_value

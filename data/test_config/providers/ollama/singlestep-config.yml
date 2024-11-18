@@ -2,9 +2,10 @@ recipe: default.v1
 language: en
 pipeline:
   - name: LLMBasedRouter
+    prompt: data/test_config/providers/router_template.jinja2
     llm:
       provider: ollama
-      model: llama3.2:1b
+      model: llama3.2
       api_base: "http://localhost:11434"
       timeout: 7
     calm_entry:
@@ -32,9 +33,10 @@ pipeline:
     timeout: 3
   - name: NLUCommandAdapter
   - name: SingleStepLLMCommandGenerator
+    prompt_template: data/test_config/providers/command_prompt.jinja2
     llm:
       provider: ollama
-      model: llama3.2:1b
+      model: llama3.2
       api_base: "http://localhost:11434"
       timeout: 7
 
@@ -44,19 +46,20 @@ policies:
     constrain_similarities: true
   - name: FlowPolicy
   - name: EnterpriseSearchPolicy
+    max_messages_in_query: 4
     citation_enabled: true
     use_generative_llm: true
     vector_store:
       source: rasa-calm-demo/docs/
     llm:
       provider: ollama
-      model: llama3.2:1b
+      model: llama3.2
       api_base: "http://localhost:11434"
       timeout: 7
   - name: IntentlessPolicy
     llm:
       provider: ollama
-      model: llama3.2:1b
+      model: llama3.2
       api_base: "http://localhost:11434"
       timeout: 7
 

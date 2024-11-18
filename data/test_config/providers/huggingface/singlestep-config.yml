@@ -2,11 +2,13 @@ recipe: default.v1
 language: en
 pipeline:
   - name: LLMBasedRouter
+    prompt: data/test_config/providers/router_template.jinja2
     llm:
       provider: huggingface
-      model: meta-llama/CodeLlama-7b-Instruct-hf
-      api_base: "https://wjz8ma0uku5pwxnb.us-east-1.aws.endpoints.huggingface.cloud"
-      timeout: 7
+      model: rasa/cmd_gen_codellama_13b_calm_demo
+      api_base: https://tli2t3mifcp9pjf8.us-east-1.aws.endpoints.huggingface.cloud
+      timeout: 30
+      num_retries: 10
     calm_entry:
       sticky: "handles everything else, including finance, transactions, transfers, balance, contacts and pizza orders"
     nlu_entry:
@@ -32,11 +34,13 @@ pipeline:
     timeout: 3
   - name: NLUCommandAdapter
   - name: SingleStepLLMCommandGenerator
+    prompt_template: data/test_config/providers/command_prompt.jinja2
     llm:
       provider: huggingface
-      model: meta-llama/CodeLlama-7b-Instruct-hf
-      api_base: "https://wjz8ma0uku5pwxnb.us-east-1.aws.endpoints.huggingface.cloud"
-      timeout: 7
+      model: rasa/cmd_gen_codellama_13b_calm_demo
+      api_base: https://tli2t3mifcp9pjf8.us-east-1.aws.endpoints.huggingface.cloud
+      timeout: 30
+      num_retries: 10
 
 policies:
   - name: RulePolicy
@@ -44,20 +48,23 @@ policies:
     constrain_similarities: true
   - name: FlowPolicy
   - name: EnterpriseSearchPolicy
+    max_messages_in_query: 4
     citation_enabled: true
     use_generative_llm: true
     vector_store:
       source: rasa-calm-demo/docs/
     llm:
       provider: huggingface
-      model: meta-llama/CodeLlama-7b-Instruct-hf
-      api_base: "https://wjz8ma0uku5pwxnb.us-east-1.aws.endpoints.huggingface.cloud"
-      timeout: 7
+      model: rasa/cmd_gen_codellama_13b_calm_demo
+      api_base: https://tli2t3mifcp9pjf8.us-east-1.aws.endpoints.huggingface.cloud
+      timeout: 30
+      num_retries: 10
   - name: IntentlessPolicy
     llm:
       provider: huggingface
-      model: meta-llama/CodeLlama-7b-Instruct-hf
-      api_base: "https://wjz8ma0uku5pwxnb.us-east-1.aws.endpoints.huggingface.cloud"
-      timeout: 7
+      model: rasa/cmd_gen_codellama_13b_calm_demo
+      api_base: https://tli2t3mifcp9pjf8.us-east-1.aws.endpoints.huggingface.cloud
+      timeout: 30
+      num_retries: 10
 
 assistant_id: 20240418-073244-narrow-archive

@@ -1,7 +1,7 @@
 import os
 import ssl
 from types import ModuleType
-from typing import Any, Optional, Text, Dict, Union
+from typing import Any, List, Optional, Text, Dict, Union
 
 import aiohttp
 import structlog
@@ -29,6 +29,32 @@ def read_endpoint_config(
             return None
 
         return EndpointConfig.from_dict(content[endpoint_type])
+    except FileNotFoundError:
+        structlogger.error(
+            "endpoint.read.failed_no_such_file",
+            filename=os.path.abspath(filename),
+            event_info=(
+                "Failed to read endpoint configuration file - "
+                "the file was not found."
+            ),
+        )
+        return None
+
+
+def read_property_config_from_endpoints_file(
+    filename: str, property_name: str
+) -> Optional[Union[Dict[str, Any], List]]:
+    """Read a property from an endpoint configuration file."""
+    if not filename:
+        return None
+
+    try:
+        content = read_config_file(filename)
+
+        if content.get(property_name) is None:
+            return None
+
+        return content[property_name]
     except FileNotFoundError:
         structlogger.error(
             "endpoint.read.failed_no_such_file",
