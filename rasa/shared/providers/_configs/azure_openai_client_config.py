@@ -107,8 +107,7 @@ class AzureOpenAIClientConfig:
 
     @classmethod
     def from_dict(cls, config: dict) -> "AzureOpenAIClientConfig":
-        """
-        Initializes a dataclass from the passed config.
+        """Initializes a dataclass from the passed config.
 
         Args:
             config: (dict) The config from which to initialize.
@@ -175,7 +174,10 @@ def is_azure_openai_config(config: dict) -> bool:
 
     # Case: Configuration contains `deployment` key
     # (specific to Azure OpenAI configuration)
-    if config.get(DEPLOYMENT_CONFIG_KEY) is not None:
+    if (
+        config.get(DEPLOYMENT_CONFIG_KEY) is not None
+        and config.get(PROVIDER_CONFIG_KEY) is None
+    ):
         return True
 
     return False
