@@ -2544,8 +2544,16 @@ async def test_error_logging_with_partial_custom_action_stubbing(
         "rasa.core.actions.action.default_actions", MagicMock(return_value=[])
     )
 
+    error_message = (
+        "An exception occurred while handling user message 'Hi!'. "
+        "Error: You are using custom action stubs, however action "
+        "`action_session_start` has not been stubbed. "
+        "Note that you cannot stub some custom actions while running an "
+        "action server instance, you must stub all custom actions called "
+        "by the tests in the provided test path.."
+    )
     expected_error = {
-        "error": "An exception occurred while handling user message 'Hi!'. Error: You are using custom action stubs, however action `action_session_start` has not been stubbed. Note that you cannot stub some custom actions while running an action server instance, you must stub all custom actions called by the tests in the provided test path..",
+        "error": error_message,
         "event": "e2e_test_runner.run_prediction_loop",
         "log_level": "error",
     }
