@@ -52,7 +52,6 @@ from rasa.shared.core.slots import TextSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
 from rasa.utils.endpoints import EndpointConfig
-from tests.core.conftest import default_processor
 
 if sys.version_info[:2] >= (3, 8):
     from unittest.mock import AsyncMock
