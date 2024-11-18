@@ -42,6 +42,7 @@ from rasa.shared.constants import (
     ROUTE_TO_CALM_SLOT,
     LLM_CONFIG_KEY,
     EMBEDDINGS_CONFIG_KEY,
+    API_KEY,
 )
 from rasa.shared.core.constants import ACTION_RESET_ROUTING
 from rasa.shared.core.domain import Domain
@@ -2025,6 +2026,40 @@ class MockAvailableEndpointsForTestValidation:
                         EMBEDDINGS_CONFIG_KEY: {
                             MODEL_GROUP_KEY: "model_group_id",
                         }
+                    },
+                }
+            ],
+            True,
+            True,
+        ),
+        (
+            [
+                {
+                    "name": "SingleStepLLMCommandGenerator",
+                    LLM_CONFIG_KEY: {
+                        "provider": "openai",
+                        "model": "gpt-4",
+                    },
+                    FLOW_RETRIEVAL_KEY: {
+                        EMBEDDINGS_CONFIG_KEY: {
+                            "provider": "openai",
+                            "model": "text-embeddings",
+                            API_KEY: "1234",
+                        }
+                    },
+                }
+            ],
+            True,
+            True,
+        ),
+        (
+            [
+                {
+                    "name": "SingleStepLLMCommandGenerator",
+                    LLM_CONFIG_KEY: {
+                        "provider": "openai",
+                        "model": "gpt-4",
+                        API_KEY: "1234",
                     },
                 }
             ],

@@ -59,6 +59,7 @@ from rasa.shared.constants import (
     DOCS_URL_GRAPH_COMPONENTS,
     ROUTE_TO_CALM_SLOT,
     EMBEDDINGS_CONFIG_KEY,
+    API_KEY,
 )
 from rasa.shared.core.constants import ACTION_RESET_ROUTING, ACTION_TRIGGER_CHITCHAT
 from rasa.shared.core.domain import Domain
@@ -892,6 +893,15 @@ def _validate_component_model_client_config(
             )
     else:
         model_group_syntax_used.append(False)
+
+        # check that api_key is not set in config
+        if API_KEY in component_config[key]:
+            print_error_and_exit(
+                f"You specified '{API_KEY}' in the config for"
+                f"{component_name or component_config['name']}, which "
+                "is not allowed. Set API keys through "
+                "environment variables."
+            )
 
 
 def validate_model_client_configuration_setup(config: Dict[str, Any]) -> None:
