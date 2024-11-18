@@ -181,10 +181,14 @@ class LLMBasedCommandGenerator(GraphComponent, CommandGenerator, ABC):
             structlogger.warn(
                 "llm_based_command_generator.flow_retrieval.disabled",
                 event_info=(
-                    f"You have {len(flows.user_flows)} user flows but flow retrieval is disabled. "
-                    f"It is recommended to enable flow retrieval if the total number of user flows exceeds 20. "
-                    f"Keeping it disabled can result in deterioration of command generator's functional "
-                    f"performance and higher costs because of increased number of tokens in the prompt. For more"
+                    f"You have {len(flows.user_flows)} user flows but flow "
+                    f"retrieval is disabled. "
+                    f"It is recommended to enable flow retrieval if the "
+                    f"total number of user flows exceeds 20. "
+                    f"Keeping it disabled can result in deterioration of "
+                    f"command generator's functional "
+                    f"performance and higher costs because of increased "
+                    f"number of tokens in the prompt. For more"
                     "information see:\n"
                     "https://rasa.com/docs/rasa-pro/concepts/dialogue-understanding#how-the-llmcommandgenerator-works"
                 ),
