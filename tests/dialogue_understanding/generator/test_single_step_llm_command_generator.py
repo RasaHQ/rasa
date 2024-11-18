@@ -33,10 +33,10 @@ from rasa.dialogue_understanding.generator.single_step.single_step_llm_command_g
     DEFAULT_COMMAND_PROMPT_TEMPLATE,
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
-from rasa.llm_fine_tuning.annotation_module import set_preparing_fine_tuning_data
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.llm_fine_tuning.annotation_module import set_preparing_fine_tuning_data
 from rasa.shared.constants import OPENAI_API_KEY_ENV_VAR, ROUTE_TO_CALM_SLOT
 from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
 from rasa.shared.core.flows import FlowsList
@@ -682,8 +682,14 @@ class TestSingleStepLLMCommandGenerator:
                 "SetSlot(transfer_money_amount_of_money, )",
                 [SetSlotCommand(name="transfer_money_amount_of_money", value=None)],
             ),
+            ("SetSlot(name, value)", [SetSlotCommand(name="name", value=None)]),
+            ("SetSlot('name', 'value')", [SetSlotCommand(name="name", value=None)]),
+            ('SetSlot("name", "value")', [SetSlotCommand(name="name", value=None)]),
+            # Start flow
             ("SetSlot(flow_name, some_flow)", [StartFlowCommand(flow="some_flow")]),
             ("StartFlow(some_flow)", [StartFlowCommand(flow="some_flow")]),
+            ("StartFlow('some_flow')", [StartFlowCommand(flow="some_flow")]),
+            ('StartFlow("some_flow")', [StartFlowCommand(flow="some_flow")]),
             ("StartFlow(does_not_exist)", []),
             (
                 "StartFlow(02_benefits_learning_days)",
@@ -713,16 +719,20 @@ class TestSingleStepLLMCommandGenerator:
                 "Clarify(some_flow, 02_benefits_learning_days)",
                 [ClarifyCommand(options=["02_benefits_learning_days", "some_flow"])],
             ),
+            # Clarify with quotes around the flow names
+            (
+                "Clarify('some_flow', 'another_flow')",
+                [ClarifyCommand(options=["another_flow", "some_flow"])],
+            ),
+            (
+                'Clarify("some_flow", "another_flow")',
+                [ClarifyCommand(options=["another_flow", "some_flow"])],
+            ),
             # Clarify with single option is converted to a StartFlowCommand
             ("Clarify(some_flow)", [StartFlowCommand(flow="some_flow")]),
             # Clarify with multiple but same options is converted to a StartFlowCommand
             (
                 "Clarify(some_flow, some_flow, some_flow, some_flow)",
-                [StartFlowCommand(flow="some_flow")],
-            ),
-            # Clarify with multiple but same options is converted to a StartFlowCommand
-            (
-                "Clarify(some_flow, some_flow)",
                 [StartFlowCommand(flow="some_flow")],
             ),
         ],
@@ -739,6 +749,11 @@ class TestSingleStepLLMCommandGenerator:
             flows:
               some_flow:
                 description: some description
+                steps:
+                - id: first_step
+                  collect: test_slot
+              another_flow:
+                description: some other description
                 steps:
                 - id: first_step
                   collect: test_slot

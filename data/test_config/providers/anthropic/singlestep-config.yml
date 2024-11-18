@@ -44,7 +44,10 @@ policies:
     constrain_similarities: true
   - name: FlowPolicy
   - name: EnterpriseSearchPolicy
+<<<<<<< HEAD
     max_messages_in_query: 4
+=======
+>>>>>>> 3.10.x
     citation_enabled: true
     use_generative_llm: true
     vector_store:
