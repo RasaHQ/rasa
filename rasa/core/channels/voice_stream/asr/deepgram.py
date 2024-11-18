@@ -18,6 +18,9 @@ class DeepgramASRConfig(ASREngineConfig):
     endpoint: Optional[str] = None
     # number of miliseconds of silence to determine end of speech
     endpointing: Optional[int] = None
+    language: Optional[str] = None
+    model: Optional[str] = None
+    smart_format: Optional[bool] = None
 
 
 class DeepgramASR(ASREngine[DeepgramASRConfig]):
@@ -42,7 +45,8 @@ class DeepgramASR(ASREngine[DeepgramASRConfig]):
     def _get_query_params(self) -> str:
         return (
             f"encoding=mulaw&sample_rate=8000&endpointing={self.config.endpointing}"
-            f"&vad_events=true"
+            f"&vad_events=true&language={self.config.language}"
+            f"&model={self.config.model}&smart_format={self.config.smart_format}"
         )
 
     async def signal_audio_done(self) -> None:
@@ -70,7 +74,7 @@ class DeepgramASR(ASREngine[DeepgramASRConfig]):
 
     @staticmethod
     def get_default_config() -> DeepgramASRConfig:
-        return DeepgramASRConfig("api.deepgram.com", 400)
+        return DeepgramASRConfig("api.deepgram.com", 400, "en", "nova-2-general", True)
 
     @classmethod
     def from_config_dict(cls, config: Dict) -> "DeepgramASR":

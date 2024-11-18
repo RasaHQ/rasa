@@ -1,24 +1,24 @@
 import builtins
-import sys
+import copy
 import os
 import string
+import sys
 import textwrap
 import uuid
 from collections import OrderedDict
-from typing import Callable, Text, List, Set, Any, Dict
-import copy
-
 from pathlib import Path
+from typing import Callable, Text, List, Set, Any, Dict, Union
+from unittest.mock import MagicMock
+
 import numpy as np
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
-from unittest.mock import MagicMock
 
 import rasa.shared
-from rasa.shared.nlu.training_data.features import Features
-from rasa.shared.exceptions import FileIOException, FileNotFoundException, RasaException
 import rasa.shared.utils.io
 from rasa.shared.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
+from rasa.shared.exceptions import FileIOException, FileNotFoundException, RasaException
+from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.utils.yaml import (
     read_yaml,
     read_yaml_file,
@@ -199,8 +199,7 @@ def test_read_yaml_string_with_env_var_that_needs_to_be_resolved_later():
     content = read_yaml(config_with_env_var)
     assert content["user"]["resolved_value"] == "user"
     assert content["user"]["original_value"] == "${USER_NAME}"
-    assert content["api_key"]["resolved_value"] == "pass"
-    assert content["api_key"]["original_value"] == "${PASS}"
+    assert content["api_key"] == "${PASS}"
 
 
 def test_environment_variable_not_existing():
@@ -280,6 +279,43 @@ def test_environment_variable_with_dollar_char_in_the_middle():
 
     assert content["model"]["test1"]["resolved_value"] == "test$123"
     assert content["model"]["test1"]["original_value"] == "${variable1}"
+
+
+def test_does_not_resolve_sensitive_environment_variable():
+    os.environ["AZURE_API_KEY_FR"] = "1234"
+    os.environ["AZURE_API_BASE_GPT3_5_TURBO_FR"] = "gpt-3.5-turbo"
+    os.environ["AZURE_DEPLOYMENT_GPT3_5_TURBO_FRANCE"] = "deployment"
+
+    content = """
+    model_groups:
+      - id: azure_llm
+        models:
+          - provider: openai
+            deployment: ${AZURE_DEPLOYMENT_GPT3_5_TURBO_FRANCE}
+            api_base: ${AZURE_API_BASE_GPT3_5_TURBO_FR}
+            api_key: ${AZURE_API_KEY_FR}
+            timeout: 14
+    """
+
+    content = read_yaml(content)
+
+    assert content["model_groups"][0]["models"][0]["api_key"] == "${AZURE_API_KEY_FR}"
+    assert (
+        content["model_groups"][0]["models"][0]["deployment"]["original_value"]
+        == "${AZURE_DEPLOYMENT_GPT3_5_TURBO_FRANCE}"
+    )
+    assert (
+        content["model_groups"][0]["models"][0]["deployment"]["resolved_value"]
+        == "deployment"
+    )
+    assert (
+        content["model_groups"][0]["models"][0]["api_base"]["original_value"]
+        == "${AZURE_API_BASE_GPT3_5_TURBO_FR}"
+    )
+    assert (
+        content["model_groups"][0]["models"][0]["api_base"]["resolved_value"]
+        == "gpt-3.5-turbo"
+    )
 
 
 def test_read_yaml_datatime_as_string():
@@ -731,3 +767,25 @@ def test_handle_print_blocking_windows(monkeypatch: MonkeyPatch):
 
     assert isinstance(mock_print.call_args[1]["file"], ansitowin32.StreamWrapper)
     assert mock_print.call_args[1]["flush"]
+
+
+@pytest.mark.parametrize(
+    "value, expected_value",
+    [
+        ("$USER_NAME", "user"),
+        (["$USER_NAME", "value", "$PASS"], ["user", "value", "pass"]),
+        (
+            {"user": "$USER_NAME", "pass": "$PASS", "other_value": "1234"},
+            {"user": "user", "pass": "pass", "other_value": "1234"},
+        ),
+        (
+            {"list": [{"user": "$USER_NAME", "pass": "$PASS", "other_value": "1234"}]},
+            {"list": [{"user": "user", "pass": "pass", "other_value": "1234"}]},
+        ),
+    ],
+)
+def test_resolve_environment_variables(
+    value: Union[str, List[Any], Dict[str, Any]],
+    expected_value: Union[str, List[Any], Dict[str, Any]],
+):
+    assert rasa.shared.utils.io.resolve_environment_variables(value) == expected_value

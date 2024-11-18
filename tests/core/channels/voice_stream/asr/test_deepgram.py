@@ -46,6 +46,14 @@ def test_configurating_endpointing():
     assert f"endpointing={custom_endpointing}" in asr_engine._get_query_params()
 
 
+def test_configurating_language():
+    custom_language = "es"
+    config = {"language": custom_language}
+    asr_engine = DeepgramASR.from_config_dict(config)
+    assert asr_engine.config.language == custom_language
+    assert f"language={custom_language}" in asr_engine._get_query_params()
+
+
 def test_configuration_addioinal_attributes():
     config = {"testingXYZ@@": "@@"}
     with pytest.raises(TypeError):

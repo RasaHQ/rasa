@@ -1,10 +1,11 @@
+import logging
 from abc import abstractmethod
 from typing import Any, Dict, List
 
 import litellm
-import logging
 import structlog
 from litellm import aembedding, embedding, validate_environment
+
 from rasa.shared.exceptions import (
     ProviderClientAPIException,
     ProviderClientValidationError,
@@ -17,7 +18,7 @@ from rasa.shared.providers.embedding.embedding_response import (
     EmbeddingResponse,
     EmbeddingUsage,
 )
-from rasa.shared.utils.io import suppress_logs
+from rasa.shared.utils.io import suppress_logs, resolve_environment_variables
 
 structlogger = structlog.get_logger()
 
@@ -25,8 +26,7 @@ _VALIDATE_ENVIRONMENT_MISSING_KEYS_KEY = "missing_keys"
 
 
 class _BaseLiteLLMEmbeddingClient:
-    """
-    An abstract base class for LiteLLM embedding clients.
+    """An abstract base class for LiteLLM embedding clients.
 
     This class defines the interface and common functionality for all clients
     based on LiteLLM.
@@ -113,8 +113,7 @@ class _BaseLiteLLMEmbeddingClient:
             raise ProviderClientValidationError(event_info)
 
     def validate_documents(self, documents: List[str]) -> None:
-        """
-        Validates a list of documents to ensure they are suitable for embedding.
+        """Validates a list of documents to ensure they are suitable for embedding.
 
         Args:
             documents: List of documents to be validated.
@@ -130,8 +129,7 @@ class _BaseLiteLLMEmbeddingClient:
 
     @suppress_logs(log_level=logging.WARNING)
     def embed(self, documents: List[str]) -> EmbeddingResponse:
-        """
-        Embeds a list of documents synchronously.
+        """Embeds a list of documents synchronously.
 
         Args:
             documents: List of documents to be embedded.
@@ -144,7 +142,8 @@ class _BaseLiteLLMEmbeddingClient:
         """
         self.validate_documents(documents)
         try:
-            response = embedding(input=documents, **self._embedding_fn_args)
+            arguments = resolve_environment_variables(self._embedding_fn_args)
+            response = embedding(input=documents, **arguments)
             return self._format_response(response)
         except Exception as e:
             raise ProviderClientAPIException(
@@ -153,8 +152,7 @@ class _BaseLiteLLMEmbeddingClient:
 
     @suppress_logs(log_level=logging.WARNING)
     async def aembed(self, documents: List[str]) -> EmbeddingResponse:
-        """
-        Embeds a list of documents asynchronously.
+        """Embeds a list of documents asynchronously.
 
         Args:
             documents: List of documents to be embedded.
@@ -167,7 +165,8 @@ class _BaseLiteLLMEmbeddingClient:
         """
         self.validate_documents(documents)
         try:
-            response = await aembedding(input=documents, **self._embedding_fn_args)
+            arguments = resolve_environment_variables(self._embedding_fn_args)
+            response = await aembedding(input=documents, **arguments)
             return self._format_response(response)
         except Exception as e:
             raise ProviderClientAPIException(
@@ -182,7 +181,6 @@ class _BaseLiteLLMEmbeddingClient:
         Raises:
             ValueError: If any response data is None.
         """
-
         # If data is not available (None), raise a ValueError
         if response.data is None:
             message = (
@@ -239,8 +237,7 @@ class _BaseLiteLLMEmbeddingClient:
 
     @staticmethod
     def _ensure_certificates() -> None:
-        """
-        Configures SSL certificates for LiteLLM. This method is invoked during
+        """Configures SSL certificates for LiteLLM. This method is invoked during
         client initialization.
 
         LiteLLM may utilize `openai` clients or other providers that require
