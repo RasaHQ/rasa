@@ -17,6 +17,7 @@ from rasa.dialogue_understanding.generator.constants import (
     LLM_CONFIG_KEY,
     FLOW_RETRIEVAL_KEY,
     FLOW_RETRIEVAL_ACTIVE_KEY,
+    FLOW_RETRIEVAL_FLOW_THRESHOLD,
 )
 from rasa.dialogue_understanding.generator.flow_retrieval import FlowRetrieval
 from rasa.engine.graph import GraphComponent, ExecutionContext
@@ -75,15 +76,6 @@ class LLMBasedCommandGenerator(GraphComponent, CommandGenerator, ABC):
             structlogger.info("llm_based_command_generator.flow_retrieval.enabled")
         else:
             self.flow_retrieval = None
-            structlogger.warn(
-                "llm_based_command_generator.flow_retrieval.disabled",
-                event_info=(
-                    "Disabling flow retrieval can cause issues when there are a "
-                    "large number of flows to be included in the prompt. For more"
-                    "information see:\n"
-                    "https://rasa.com/docs/rasa-pro/concepts/dialogue-understanding#how-the-llmcommandgenerator-works"
-                ),
-            )
 
     ### Abstract methods
     @staticmethod
@@ -185,6 +177,27 @@ class LLMBasedCommandGenerator(GraphComponent, CommandGenerator, ABC):
                 LLMBasedCommandGenerator.__name__,
             )
 
+        if (
+            self.flow_retrieval is None
+            and len(flows.user_flows) > FLOW_RETRIEVAL_FLOW_THRESHOLD
+        ):
+            structlogger.warn(
+                "llm_based_command_generator.flow_retrieval.disabled",
+                event_info=(
+                    f"You have {len(flows.user_flows)} user flows but flow "
+                    f"retrieval is disabled. "
+                    f"It is recommended to enable flow retrieval if the "
+                    f"total number of user flows exceed "
+                    f"{FLOW_RETRIEVAL_FLOW_THRESHOLD}. "
+                    f"Keeping it disabled can result in deterioration of "
+                    f"command generator's functional "
+                    f"performance and higher costs because of increased "
+                    f"number of tokens in the prompt. For more"
+                    "information see:\n"
+                    "https://rasa.com/docs/rasa-pro/concepts/dialogue-understanding#how-the-llmcommandgenerator-works"
+                ),
+            )
+
         # flow retrieval is populated with only user-defined flows
         try:
             if self.flow_retrieval is not None and not flows.is_empty():
@@ -192,7 +205,7 @@ class LLMBasedCommandGenerator(GraphComponent, CommandGenerator, ABC):
         except Exception as e:
             structlogger.error(
                 "llm_based_command_generator.train.failed",
-                event_info=("Flow retrieval store isinaccessible."),
+                event_info="Flow retrieval store isinaccessible.",
                 error=e,
             )
             raise
