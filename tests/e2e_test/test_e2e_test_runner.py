@@ -2538,7 +2538,8 @@ async def test_error_logging_with_partial_custom_action_stubbing(
         processor = default_processor
 
         # Configure the processor to use custom action stubs.
-        # We provide a stub for a mock action 'mock_stub' to trigger the stubbing mechanism.
+        # We provide a stub for a mock action 'mock_stub' to trigger
+        # the stubbing mechanism.
         processor.action_endpoint = EndpointConfig(
             actions_module="actions", stub_custom_actions={"mock_stub": None}
         )
