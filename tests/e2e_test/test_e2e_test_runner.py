@@ -2553,7 +2553,9 @@ async def test_error_logging_with_partial_custom_action_stubbing(
     monkeypatch.setattr(
         "rasa.e2e_test.e2e_test_runner.E2ETestRunner.__init__", mock_init
     )
-    # Mock the default_actions list to simulate triggering of a custom action
+    # Monkeypatch the default_actions list to simulate the customization
+    # of the default actions in regular custom actions for which stubs 
+    # were not provided during e2e testing
     monkeypatch.setattr(
         "rasa.core.actions.action.default_actions", MagicMock(return_value=[])
     )
