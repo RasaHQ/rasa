@@ -5709,13 +5709,13 @@ fire = "*"
 
 [[package]]
 name = "rasa-sdk"
-version = "3.10.0"
+version = "3.10.1"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 optional = false
 python-versions = "<3.11,>=3.8"
 files = [
-    {file = "rasa_sdk-3.10.0-py3-none-any.whl", hash = "sha256:134889d1d9c25daaa65ec6cc2f4883319a6fd87b506820fae3a62a6f859d7143"},
-    {file = "rasa_sdk-3.10.0.tar.gz", hash = "sha256:bd541b3d4c2bba46a3a816285ba4ea94c18f08e6bec6deb16c4485650e0c00a9"},
+    {file = "rasa_sdk-3.10.1-py3-none-any.whl", hash = "sha256:066e5e6f3e0687a40697d8658fded33a92572ae0c9d84b98ce09f32536541c23"},
+    {file = "rasa_sdk-3.10.1.tar.gz", hash = "sha256:fc8b26a6355a1f19d406f4d6b05c3d7bd5dd95fb25c37bf279c31caebfeb30ab"},
 ]
 
 [package.dependencies]
@@ -5730,7 +5730,7 @@ opentelemetry-sdk = ">=1.16.0,<1.17.0"
 pluggy = ">=1.0.0,<2.0.0"
 prompt-toolkit = ">=3.0,<3.0.29"
 protobuf = "4.25.3"
-pydantic = "2.6.4"
+pydantic = ">=2.6.4,<3.0.0"
 "ruamel.yaml" = ">=0.16.5,<0.18.0"
 sanic = ">=22.12,<23.0"
 Sanic-Cors = ">=2.0.0,<3.0.0"
@@ -8672,4 +8672,4 @@ transformers = ["sentencepiece", "transformers"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.11"
-content-hash = "ebb96eb66b601737fce3b538ae63e1496e35bdba5cd85397f428590aa65ea6c0"
+content-hash = "8e0b28a504e50311e29839da5e00fa7cb13eaa4839cdab081998c3f7d739ecf1"
