@@ -183,6 +183,17 @@ STREAM_CONFIG_KEY = "stream"
 N_REPHRASES_CONFIG_KEY = "n"
 USE_CHAT_COMPLETIONS_ENDPOINT_CONFIG_KEY = "use_chat_completions_endpoint"
 
+ROUTER_CONFIG_KEY = "router"
+ROUTER_STRATEGY_CONFIG_KEY = "router_strategy"
+MODELS_CONFIG_KEY = "models"
+MODEL_GROUPS_CONFIG_KEY = "model_groups"
+MODEL_GROUP_ID_CONFIG_KEY = "id"
+
+EXTRA_PARAMETERS_KEY = "extra_parameters"
+MODEL_GROUP_ID_KEY = "model_group_id"
+MODEL_LIST_KEY = "model_list"
+LITELLM_PARAMS_KEY = "litellm_params"
+
 LLM_API_HEALTH_CHECK_ENV_VAR = "LLM_API_HEALTH_CHECK"
 
 AZURE_API_KEY_ENV_VAR = "AZURE_API_KEY"
@@ -248,6 +259,3 @@ RASA_PATTERN_CANNOT_HANDLE_INVALID_INTENT = (
 )
 
 ROUTE_TO_CALM_SLOT = "route_session_to_calm"
-
-ORIGINAL_VALUE = "original_value"
-RESOLVED_VALUE = "resolved_value"

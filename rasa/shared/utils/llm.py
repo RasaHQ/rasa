@@ -77,6 +77,8 @@ DEFAULT_OPENAI_MAX_GENERATED_TOKENS = 256
 
 DEFAULT_MAX_USER_INPUT_CHARACTERS = 420
 
+DEPLOYMENT_CENTRIC_PROVIDERS = [AZURE_OPENAI_PROVIDER]
+
 # Placeholder messages used in the transcript for
 # instances where user input results in an error
 ERROR_PLACEHOLDER = {
