@@ -177,14 +177,16 @@ class LLMBasedCommandGenerator(GraphComponent, CommandGenerator, ABC):
                 LLMBasedCommandGenerator.__name__,
             )
 
-        if self.flow_retrieval is None and len(flows.user_flows) > FLOW_RETRIEVAL_FLOW_THRESHOLD:
+        if self.flow_retrieval is None and \
+                len(flows.user_flows) > FLOW_RETRIEVAL_FLOW_THRESHOLD:
             structlogger.warn(
                 "llm_based_command_generator.flow_retrieval.disabled",
                 event_info=(
                     f"You have {len(flows.user_flows)} user flows but flow "
                     f"retrieval is disabled. "
                     f"It is recommended to enable flow retrieval if the "
-                    f"total number of user flows exceed {FLOW_RETRIEVAL_FLOW_THRESHOLD}. "
+                    f"total number of user flows exceed "
+                    f"{FLOW_RETRIEVAL_FLOW_THRESHOLD}. "
                     f"Keeping it disabled can result in deterioration of "
                     f"command generator's functional "
                     f"performance and higher costs because of increased "
