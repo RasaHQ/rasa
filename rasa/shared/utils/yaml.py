@@ -31,8 +31,6 @@ from rasa.shared.constants import (
     LATEST_TRAINING_DATA_FORMAT_VERSION,
     SCHEMA_EXTENSIONS_FILE,
     RESPONSES_SCHEMA_FILE,
-    ORIGINAL_VALUE,
-    RESOLVED_VALUE,
     API_KEY,
 )
 from rasa.shared.exceptions import (
@@ -88,9 +86,7 @@ def replace_environment_variables() -> None:
     env_var_pattern = re.compile(r"^(.*)\$\{(.*)\}(.*)$")
     yaml.Resolver.add_implicit_resolver("!env_var", env_var_pattern, None)
 
-    def env_var_constructor(
-        loader: BaseConstructor, node: ScalarNode
-    ) -> Union[dict, str]:
+    def env_var_constructor(loader: BaseConstructor, node: ScalarNode) -> str:
         """Process environment variables found in the YAML."""
         value = loader.construct_scalar(node)
 
@@ -110,11 +106,6 @@ def replace_environment_variables() -> None:
                 f"Please make sure to also set these "
                 f"environment variables: '{not_expanded}'."
             )
-        if expanded_vars:
-            # if the environment variable is referenced using the ${} syntax
-            # then we return a dictionary with the original value and the resolved,
-            # value. So that the graph components can use the original value.
-            return {ORIGINAL_VALUE: value, RESOLVED_VALUE: expanded_vars}
         return expanded_vars
 
     yaml.SafeConstructor.add_constructor("!env_var", env_var_constructor)
