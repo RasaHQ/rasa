@@ -12,6 +12,7 @@ from typing import (
     cast,
 )
 import json
+
 import structlog
 
 import rasa.shared.utils.io
@@ -75,6 +76,8 @@ DEFAULT_OPENAI_TEMPERATURE = 0.7
 DEFAULT_OPENAI_MAX_GENERATED_TOKENS = 256
 
 DEFAULT_MAX_USER_INPUT_CHARACTERS = 420
+
+DEPLOYMENT_CENTRIC_PROVIDERS = [AZURE_OPENAI_PROVIDER]
 
 # Placeholder messages used in the transcript for
 # instances where user input results in an error
@@ -422,7 +425,8 @@ def try_instantiate_llm_client(
         )
         print_error_and_exit(
             f"Unable to create the LLM client for component - {log_source_component}. "
-            f"Please make sure you specified the required environment variables. "
+            f"Please make sure you specified the required environment variables "
+            f"and configuration keys. "
             f"Error: {e}"
         )
 

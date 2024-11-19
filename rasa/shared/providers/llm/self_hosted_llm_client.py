@@ -160,7 +160,7 @@ class SelfHostedLLMClient(_BaseLiteLLMClient):
         """Returns the value of LiteLLM's model parameter to be used in
         completion/acompletion in LiteLLM format:
 
-        <openai>/<model or deployment name>
+        <hosted_vllm>/<model or deployment name>
         """
         if self.model and f"{SELF_HOSTED_VLLM_PREFIX}/" not in self.model:
             return f"{SELF_HOSTED_VLLM_PREFIX}/{self.model}"

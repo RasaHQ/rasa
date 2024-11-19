@@ -128,10 +128,7 @@ def test_read_yaml_string_with_env_var():
     password: ${PASS}
     """
     content = read_yaml(config_with_env_var)
-    assert content["user"]["resolved_value"] == "user"
-    assert content["user"]["original_value"] == "${USER_NAME}"
-    assert content["password"]["resolved_value"] == "pass"
-    assert content["password"]["original_value"] == "${PASS}"
+    assert content["user"] == "user" and content["password"] == "pass"
 
 
 def test_read_yaml_string_with_multiple_env_vars_per_line():
@@ -140,10 +137,7 @@ def test_read_yaml_string_with_multiple_env_vars_per_line():
     password: ${PASS}
     """
     content = read_yaml(config_with_env_var)
-    assert content["user"]["resolved_value"] == "user pass"
-    assert content["user"]["original_value"] == "${USER_NAME} ${PASS}"
-    assert content["password"]["resolved_value"] == "pass"
-    assert content["password"]["original_value"] == "${PASS}"
+    assert content["user"] == "user pass" and content["password"] == "pass"
 
 
 def test_read_yaml_string_with_env_var_prefix():
@@ -152,10 +146,7 @@ def test_read_yaml_string_with_env_var_prefix():
     password: db_${PASS}
     """
     content = read_yaml(config_with_env_var_prefix)
-    assert content["user"]["resolved_value"] == "db_user"
-    assert content["user"]["original_value"] == "db_${USER_NAME}"
-    assert content["password"]["resolved_value"] == "db_pass"
-    assert content["password"]["original_value"] == "db_${PASS}"
+    assert content["user"] == "db_user" and content["password"] == "db_pass"
 
 
 def test_read_yaml_string_with_env_var_postfix():
@@ -164,10 +155,7 @@ def test_read_yaml_string_with_env_var_postfix():
     password: ${PASS}_admin
     """
     content = read_yaml(config_with_env_var_postfix)
-    assert content["user"]["resolved_value"] == "user_admin"
-    assert content["user"]["original_value"] == "${USER_NAME}_admin"
-    assert content["password"]["resolved_value"] == "pass_admin"
-    assert content["password"]["original_value"] == "${PASS}_admin"
+    assert content["user"] == "user_admin" and content["password"] == "pass_admin"
 
 
 def test_read_yaml_string_with_env_var_infix():
@@ -176,10 +164,7 @@ def test_read_yaml_string_with_env_var_infix():
     password: db_${PASS}_admin
     """
     content = read_yaml(config_with_env_var_infix)
-    assert content["user"]["resolved_value"] == "db_user_admin"
-    assert content["user"]["original_value"] == "db_${USER_NAME}_admin"
-    assert content["password"]["resolved_value"] == "db_pass_admin"
-    assert content["password"]["original_value"] == "db_${PASS}_admin"
+    assert content["user"] == "db_user_admin" and content["password"] == "db_pass_admin"
 
 
 def test_read_yaml_string_with_env_var_not_exist():
@@ -197,8 +182,7 @@ def test_read_yaml_string_with_env_var_that_needs_to_be_resolved_later():
     api_key: ${PASS}
     """
     content = read_yaml(config_with_env_var)
-    assert content["user"]["resolved_value"] == "user"
-    assert content["user"]["original_value"] == "${USER_NAME}"
+    assert content["user"] == "user"
     assert content["api_key"] == "${PASS}"
 
 
@@ -214,8 +198,7 @@ def test_environment_variable_dict_without_prefix_and_postfix():
 
     content = read_yaml(content)
 
-    assert content["model"]["test"]["resolved_value"] == "test"
-    assert content["model"]["test"]["original_value"] == "${variable}"
+    assert content["model"]["test"] == "test"
 
 
 def test_environment_variable_in_list():
@@ -224,8 +207,7 @@ def test_environment_variable_in_list():
 
     content = read_yaml(content)
 
-    assert content["model"][1]["resolved_value"] == "test"
-    assert content["model"][1]["original_value"] == "${variable}"
+    assert content["model"][1] == "test"
 
 
 def test_environment_variable_dict_with_prefix():
@@ -234,8 +216,7 @@ def test_environment_variable_dict_with_prefix():
 
     content = read_yaml(content)
 
-    assert content["model"]["test"]["resolved_value"] == "dir/test"
-    assert content["model"]["test"]["original_value"] == "dir/${variable}"
+    assert content["model"]["test"] == "dir/test"
 
 
 def test_environment_variable_dict_with_postfix():
@@ -244,8 +225,7 @@ def test_environment_variable_dict_with_postfix():
 
     content = read_yaml(content)
 
-    assert content["model"]["test"]["resolved_value"] == "test/dir"
-    assert content["model"]["test"]["original_value"] == "${variable}/dir"
+    assert content["model"]["test"] == "test/dir"
 
 
 def test_environment_variable_dict_with_prefix_and_with_postfix():
@@ -254,8 +234,7 @@ def test_environment_variable_dict_with_prefix_and_with_postfix():
 
     content = read_yaml(content)
 
-    assert content["model"]["test"]["resolved_value"] == "dir/test/dir"
-    assert content["model"]["test"]["original_value"] == "dir/${variable}/dir"
+    assert content["model"]["test"] == "dir/test/dir"
 
 
 def test_environment_variable_with_dollar_char():
@@ -265,10 +244,8 @@ def test_environment_variable_with_dollar_char():
 
     content = read_yaml(content)
 
-    assert content["model"]["test1"]["resolved_value"] == "$test1"
-    assert content["model"]["test1"]["original_value"] == "${variable1}"
-    assert content["model"]["test2"]["resolved_value"] == "test2"
-    assert content["model"]["test2"]["original_value"] == "${variable2}"
+    assert content["model"]["test1"] == "$test1"
+    assert content["model"]["test2"] == "test2"
 
 
 def test_environment_variable_with_dollar_char_in_the_middle():
@@ -277,8 +254,7 @@ def test_environment_variable_with_dollar_char_in_the_middle():
 
     content = read_yaml(content)
 
-    assert content["model"]["test1"]["resolved_value"] == "test$123"
-    assert content["model"]["test1"]["original_value"] == "${variable1}"
+    assert content["model"]["test1"] == "test$123"
 
 
 def test_does_not_resolve_sensitive_environment_variable():
@@ -300,22 +276,8 @@ def test_does_not_resolve_sensitive_environment_variable():
     content = read_yaml(content)
 
     assert content["model_groups"][0]["models"][0]["api_key"] == "${AZURE_API_KEY_FR}"
-    assert (
-        content["model_groups"][0]["models"][0]["deployment"]["original_value"]
-        == "${AZURE_DEPLOYMENT_GPT3_5_TURBO_FRANCE}"
-    )
-    assert (
-        content["model_groups"][0]["models"][0]["deployment"]["resolved_value"]
-        == "deployment"
-    )
-    assert (
-        content["model_groups"][0]["models"][0]["api_base"]["original_value"]
-        == "${AZURE_API_BASE_GPT3_5_TURBO_FR}"
-    )
-    assert (
-        content["model_groups"][0]["models"][0]["api_base"]["resolved_value"]
-        == "gpt-3.5-turbo"
-    )
+    assert content["model_groups"][0]["models"][0]["deployment"] == "deployment"
+    assert content["model_groups"][0]["models"][0]["api_base"] == "gpt-3.5-turbo"
 
 
 def test_read_yaml_datatime_as_string():

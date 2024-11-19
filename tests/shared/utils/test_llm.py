@@ -1,10 +1,11 @@
 from typing import Text, Any, Dict, Optional
 from unittest.mock import patch
+from pathlib import Path
+from unittest import mock
 
 import pytest
-from pathlib import Path
 from pytest import MonkeyPatch
-from unittest import mock
+
 from rasa.shared.constants import (
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
@@ -259,6 +260,7 @@ def test_sanitize_message_for_prompt_handles_string_with_newlines():
         ({"_type": "cohere"}, None),
         # Relying on azure openai specific config
         ({"deployment": "my-test-deployment-on-azure"}, "azure"),
+        ({"deployment": "left-over-key", "provider": "ollama"}, "ollama"),
     ),
 )
 def test_get_provider_from_config(config: dict, expected_provider: Optional[str]):
@@ -538,7 +540,6 @@ def test_llm_factory_raises_exception_when_azure_openai_client_setup_is_invalid(
     - AZURE_API_BASE
     - AZURE_API_VERSION
     """
-
     required_env_vars = ["AZURE_API_KEY", "AZURE_API_BASE", "AZURE_API_VERSION"]
     for env_var in required_env_vars:
         monkeypatch.setenv(env_var, "test")
@@ -862,7 +863,6 @@ def test_embedder_factory_raises_exception_when_azure_openai_client_setup_is_inv
     - AZURE_API_BASE
     - AZURE_API_VERSION
     """
-
     required_env_vars = ["AZURE_API_KEY", "AZURE_API_BASE", "AZURE_API_VERSION"]
 
     for env_var in required_env_vars:

@@ -111,7 +111,7 @@ on:
         default: gpt-4o-mini
   pull_request:
     branches: main
-    paths: pyproject.toml
+    paths: [pyproject.toml, rasa/shared/providers/**]
 
 env:
   DEFAULT_PYTHON_VERSION: "3.10"
@@ -160,6 +160,7 @@ env:
 permissions:
   id-token: write
   contents: read
+  pull-requests: read
 
 jobs:
   job_setup:
@@ -174,29 +175,36 @@ jobs:
           echo "COMMAND_GENERATOR_MATRIX=${{ env.COMMAND_GENERATOR_MATRIX }}" >> $GITHUB_OUTPUT
           echo "${{ fromJson(env.COMMAND_GENERATOR_MATRIX)[env.COMMAND_GENERATOR] }}"
 
-  check_upgrades_to_litellm_or_openai_dependencies:
+  check_changes_impacting_providers:
     runs-on: ubuntu-22.04
     if: ${{ github.event_name == 'pull_request' }}
     outputs:
       litellm_upgraded: ${{ steps.check_litellm_upgrade.outcome }}
       openai_upgraded: ${{ steps.check_openai_upgrade.outcome }}
+      provider_code_changed: ${{ steps.filter.outputs.providers }}
     steps:
       - name: Checkout git repository 🕝
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
         with:
           fetch-depth: 0
+      - id: filter
+        name: Check for changes in `rasa/shared/providers` folder
+        uses: dorny/paths-filter@4512585405083f25c027a35db413c2b3b9006d50  #v2.11.1
+        with:
+          filters: .github/change_filters.yml
       - name: Check upgrades to LiteLLM dependency
+        if: ${{ steps.filter.outputs.lock_file == 'true' }}
         id: check_litellm_upgrade
         run: git diff ${{ github.sha }}:pyproject.toml origin/${{ github.base_ref }}:pyproject.toml | grep -e '-litellm\|+litellm2'
       - name: Check upgrades to OpenAI dependency
         id: check_openai_upgrade
-        if: always()
+        if: ${{ always() && steps.filter.outputs.lock_file == 'true' }}
         run: git diff ${{ github.sha }}:pyproject.toml origin/${{ github.base_ref }}:pyproject.toml | grep -e '-openai\|+openai'
 
   e2e_test:
     name: Run e2e Test
-    needs: [job_setup, check_upgrades_to_litellm_or_openai_dependencies]
-    if: ${{ always() && (github.event_name == 'schedule' || inputs.provider == 'all' || (needs.check_upgrades_to_litellm_or_openai_dependencies.outputs.litellm_upgraded == 'success' || needs.check_upgrades_to_litellm_or_openai_dependencies.outputs.openai_upgraded == 'success')) }}
+    needs: [job_setup, check_changes_impacting_providers]
+    if: ${{ always() && (github.event_name == 'schedule' || inputs.provider == 'all' || (needs.check_changes_impacting_providers.outputs.litellm_upgraded == 'success' || needs.check_changes_impacting_providers.outputs.openai_upgraded == 'success' || needs.check_changes_impacting_providers.outputs.provider_code_changed == 'true' )) }}
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
