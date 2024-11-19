@@ -2512,6 +2512,17 @@ def test_get_tested_flow_paths_and_commands(
 async def test_error_logging_with_partial_custom_action_stubbing(
     monkeypatch: MonkeyPatch, default_processor: MessageProcessor
 ):
+    """
+    This test verifies that when running an end-to-end test with custom action
+    stubbing enabled, and some custom actions are not stubbed, an appropriate
+    error message is logged.
+
+    Context:
+    We set the default_actions to an empty list making the system consider them
+    as they are custom actions. Since we use stubs in the test YAML file, the assistant
+    would detect these "custom actions" have not been stubbed, and raise the appropriate
+    error message.
+    """
     test_cases = [
         TestCase(
             steps=[TestStep.from_dict({"user": "Hi!"})],
@@ -2525,11 +2536,14 @@ async def test_error_logging_with_partial_custom_action_stubbing(
             domain=domain, tracker_store=InMemoryTrackerStore(domain=domain)
         )
         processor = default_processor
-        # Configure the mock stub to trigger the E2EStubCustomActionExecutor
+
+        # Configure the processor to use custom action stubs.
+        # We provide a stub for a mock action 'mock_stub' to trigger the stubbing mechanism.
         processor.action_endpoint = EndpointConfig(
             actions_module="actions", stub_custom_actions={"mock_stub": None}
         )
-        # Use the actual tracker store instead of a mocked one
+
+        # Use the actual tracker store instead of a mocked one.
         processor.fetch_tracker_with_initial_session = (
             self.agent.tracker_store.get_or_create_tracker
         )
@@ -2549,7 +2563,7 @@ async def test_error_logging_with_partial_custom_action_stubbing(
         "`action_session_start` has not been stubbed. "
         "Note that you cannot stub some custom actions while running an "
         "action server instance, you must stub all custom actions called "
-        "by the tests in the provided test path.."
+        "by the tests in the provided test path."
     )
     expected_error = {
         "error": error_message,
