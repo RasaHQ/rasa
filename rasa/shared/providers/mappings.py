@@ -6,6 +6,7 @@ from rasa.shared.constants import (
     OPENAI_PROVIDER,
     SELF_HOSTED_PROVIDER,
     RASA_PROVIDER,
+    SELF_HOSTED_VLLM_PREFIX,
 )
 from rasa.shared.providers.embedding.azure_openai_embedding_client import (
     AzureOpenAIEmbeddingClient,
@@ -65,6 +66,14 @@ _provider_to_client_config_class_mapping: Dict[str, Type] = {
 }
 
 
+_provider_to_prefix_mapping: Dict[str, str] = {
+    # Specify the provider name as the key and its corresponding prefix as the value
+    # for providers where the prefix differs from the provider name.
+    SELF_HOSTED_PROVIDER: SELF_HOSTED_VLLM_PREFIX,
+    RASA_PROVIDER: OPENAI_PROVIDER,
+}
+
+
 def get_llm_client_from_provider(provider: Optional[str]) -> Type[LLMClient]:
     return _provider_to_llm_client_mapping.get(provider, DefaultLiteLLMClient)
 
@@ -79,3 +88,7 @@ def get_client_config_class_from_provider(provider: str) -> Type[ClientConfig]:
     return _provider_to_client_config_class_mapping.get(
         provider, DefaultLiteLLMClientConfig
     )
+
+
+def get_prefix_from_provider(provider: str) -> str:
+    return _provider_to_prefix_mapping.get(provider, provider)
