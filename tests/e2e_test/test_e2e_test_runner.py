@@ -15,6 +15,7 @@ import rasa.cli.e2e_test
 from rasa.core.agent import Agent
 from rasa.core.channels import CollectingOutputChannel
 from rasa.core.constants import ACTIVE_FLOW_METADATA_KEY, STEP_ID_METADATA_KEY
+from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.utils import AvailableEndpoints
 from rasa.e2e_test.e2e_test_case import (
@@ -2506,3 +2507,75 @@ def test_get_tested_flow_paths_and_commands(
 
     assert actual_flow_paths == expected_flow_paths
     assert actual_tested_commands == expected_tested_commands
+
+
+async def test_error_logging_with_partial_custom_action_stubbing(
+    monkeypatch: MonkeyPatch, default_processor: MessageProcessor
+):
+    """
+    This test verifies that when running an end-to-end test with custom action
+    stubbing enabled, and some custom actions are not stubbed, an appropriate
+    error message is logged.
+
+    Context:
+    We set the default_actions to an empty list making the system consider them
+    as they are custom actions. Since we use stubs in the test YAML file, the assistant
+    would detect these "custom actions" have not been stubbed, and raise the appropriate
+    error message.
+    """
+    test_cases = [
+        TestCase(
+            steps=[TestStep.from_dict({"user": "Hi!"})],
+            name="test_hi",
+        ),
+    ]
+
+    def mock_init(self: Any, *args: Any, **kwargs: Any) -> None:
+        domain = Domain.empty()
+        self.agent = Agent(
+            domain=domain, tracker_store=InMemoryTrackerStore(domain=domain)
+        )
+        processor = default_processor
+
+        # Configure the processor to use custom action stubs.
+        # We provide a stub for a mock action 'mock_stub' to trigger the stubbing mechanism.
+        processor.action_endpoint = EndpointConfig(
+            actions_module="actions", stub_custom_actions={"mock_stub": None}
+        )
+
+        # Use the actual tracker store instead of a mocked one.
+        processor.fetch_tracker_with_initial_session = (
+            self.agent.tracker_store.get_or_create_tracker
+        )
+        self.agent.processor = processor
+
+    monkeypatch.setattr(
+        "rasa.e2e_test.e2e_test_runner.E2ETestRunner.__init__", mock_init
+    )
+    # Mock the default_actions list to simulate triggering of a custom action
+    monkeypatch.setattr(
+        "rasa.core.actions.action.default_actions", MagicMock(return_value=[])
+    )
+
+    error_message = (
+        "An exception occurred while handling user message 'Hi!'. "
+        "Error: You are using custom action stubs, however action "
+        "`action_session_start` has not been stubbed. "
+        "Note that you cannot stub some custom actions while running an "
+        "action server instance, you must stub all custom actions called "
+        "by the tests in the provided test path."
+    )
+    expected_error = {
+        "error": error_message,
+        "event": "e2e_test_runner.run_prediction_loop",
+        "log_level": "error",
+    }
+
+    with capture_logs() as logs:
+        runner = E2ETestRunner()
+        await runner.run_tests(
+            test_cases,
+            input_fixtures=[],
+            input_metadata=[],
+        )
+        assert expected_error in logs
