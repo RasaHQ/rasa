@@ -25,7 +25,7 @@ from rasa.dialogue_understanding.commands import (
 from rasa.dialogue_understanding.generator.constants import (
     FLOW_RETRIEVAL_KEY,
     FLOW_RETRIEVAL_ACTIVE_KEY,
-    FLOW_RETRIEVAL_FLOW_THRESHOLD
+    FLOW_RETRIEVAL_FLOW_THRESHOLD,
 )
 from rasa.dialogue_understanding.generator.flow_retrieval import (
     FlowRetrieval,
@@ -862,9 +862,12 @@ class TestSingleStepLLMCommandGenerator:
         logs = filter_logs(caplog, expected_event, expected_log_level, [])
         assert generator.flow_retrieval is None
         assert len(logs) == 1
-        assert 'It is recommended to enable flow retrieval if the total ' \
-               'number of user flows exceed ' + str(FLOW_RETRIEVAL_FLOW_THRESHOLD) \
-               in logs[0].get("event_info")
+        assert (
+            "It is recommended to enable flow retrieval if the total "
+            "number of user flows exceed "
+            + str(FLOW_RETRIEVAL_FLOW_THRESHOLD)
+            in logs[0].get("event_info")
+        )
 
     @patch(
         "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.populate"

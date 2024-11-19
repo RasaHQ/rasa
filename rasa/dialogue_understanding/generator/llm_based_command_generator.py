@@ -17,7 +17,7 @@ from rasa.dialogue_understanding.generator.constants import (
     LLM_CONFIG_KEY,
     FLOW_RETRIEVAL_KEY,
     FLOW_RETRIEVAL_ACTIVE_KEY,
-    FLOW_RETRIEVAL_FLOW_THRESHOLD
+    FLOW_RETRIEVAL_FLOW_THRESHOLD,
 )
 from rasa.dialogue_understanding.generator.flow_retrieval import FlowRetrieval
 from rasa.engine.graph import GraphComponent, ExecutionContext
@@ -177,8 +177,10 @@ class LLMBasedCommandGenerator(GraphComponent, CommandGenerator, ABC):
                 LLMBasedCommandGenerator.__name__,
             )
 
-        if self.flow_retrieval is None and \
-                len(flows.user_flows) > FLOW_RETRIEVAL_FLOW_THRESHOLD:
+        if (
+            self.flow_retrieval is None
+            and len(flows.user_flows) > FLOW_RETRIEVAL_FLOW_THRESHOLD
+        ):
             structlogger.warn(
                 "llm_based_command_generator.flow_retrieval.disabled",
                 event_info=(
