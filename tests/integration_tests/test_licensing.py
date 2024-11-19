@@ -5,11 +5,11 @@ from pathlib import Path
 from typing import Callable
 
 import pytest
+import requests
+from _pytest.pytester import Pytester, RunResult
 from pytest import MonkeyPatch
-from _pytest.pytester import RunResult, Pytester
 
 from rasa.utils.licensing import LICENSE_ENV_VAR
-
 
 # licenses used in these tests
 # they all expire on 26.01.2034
@@ -91,29 +91,65 @@ def test_license_scope_missing_voice_scope(
     ) in str(result.stderr)
 
 
+def wait_for_rasa_server_to_start(url: str, token: str, retry_count: int = 120) -> None:
+    """Wait for the Rasa server to start.
+    Args:
+        url: URL of the Rasa server.
+        token: Token to use to authenticate with the server.
+        retry_count: Number of retries to wait for the server to start.
+    """
+    url = f"{url}/status?token={token}"
+    headers = {"Content-type": "application/json"}
+
+    while retry_count > 0:
+        try:
+            response = requests.request("GET", url, headers=headers)
+            if response.status_code == 200:
+                break
+            time.sleep(1)
+            retry_count -= 1
+        except requests.exceptions.ConnectionError:
+            time.sleep(1)
+            retry_count -= 1
+
+
 def test_license_scope_voice_scope_ok(
     monkeypatch: MonkeyPatch,
     audiocodes_credentials,
     run_in_simple_project: Callable[..., RunResult],
     pytester: Pytester,
 ):
+    """Tests that the voice channel is loaded when license has all features."""
     monkeypatch.setenv(LICENSE_ENV_VAR, LICENSE_PRO_ALL_FEATURES)
     # first, train a model
     result = run_in_simple_project("train")
     assert result.ret == 0
 
+    port = 9090
+    auth_token = "my-token"
     # then run; can't use run_in_simple_project() because
     # we need to communicate()
     popen = pytester.popen(
         # setting stdin to an empty bytes string prevents pytester
         # to close it; which is problematic below when we want to call
         # communicate()
-        ["rasa", "run", "--credentials", str(audiocodes_credentials)],
+        [
+            "rasa",
+            "run",
+            "--enable-api",  # enable API to be able to check the status of Rasa server
+            "-t",
+            auth_token,
+            "-p",
+            str(port),
+            "--credentials",
+            str(audiocodes_credentials),
+        ],
         stdin=b"",
     )
 
     # sleep some time to let the time for the server to start
-    time.sleep(10)
+    wait_for_rasa_server_to_start(f"http://localhost:{port}", auth_token)
+
     # send CTR-C to the process
     popen.send_signal(signal.SIGINT)
 

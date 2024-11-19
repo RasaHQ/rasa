@@ -3,7 +3,7 @@ ARG IMAGE_BASE_NAME
 ARG BASE_IMAGE_HASH
 ARG RASA_DEPS_IMAGE_HASH
 
-FROM ${IMAGE_BASE_NAME}:rasa-deps-${RASA_DEPS_IMAGE_HASH} as rasa-install
+FROM ${IMAGE_BASE_NAME}:${RASA_DEPS_IMAGE_HASH} as rasa-install
 
 ENV PATH="/opt/venv/bin:$PATH"
 
@@ -17,7 +17,7 @@ RUN poetry build -f wheel -n && \
 
 # start a new build stage
 
-FROM ${IMAGE_BASE_NAME}:base-${BASE_IMAGE_HASH} as runner
+FROM ${IMAGE_BASE_NAME}:${BASE_IMAGE_HASH} as runner
 
 # copy everything from /opt/venv
 COPY --from=rasa-install /opt/venv /opt/venv

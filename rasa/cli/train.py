@@ -1,18 +1,22 @@
 import argparse
 import asyncio
+import os
 import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Text, Union
 
 import structlog
+from tarsafe import TarSafe
 
 import rasa.cli.arguments.train as train_arguments
 import rasa.cli.utils
 import rasa.core.utils
 import rasa.utils.common
+from rasa.api import train as train_all
 from rasa.cli import SubParsersAction
 from rasa.core.nlg.generator import NaturalLanguageGenerator
 from rasa.core.train import do_compare_training
+from rasa.nlu.persistor import get_persistor
 from rasa.shared.constants import (
     CONFIG_MANDATORY_KEYS,
     CONFIG_MANDATORY_KEYS_CORE,
@@ -20,6 +24,7 @@ from rasa.shared.constants import (
     DEFAULT_DATA_PATH,
     DEFAULT_DOMAIN_PATHS,
 )
+from rasa.shared.exceptions import RasaException
 from rasa.shared.importers.importer import TrainingDataImporter
 
 structlogger = structlog.getLogger(__name__)
@@ -36,7 +41,7 @@ def add_subparser(
     """
     train_parser = subparsers.add_parser(
         "train",
-        help="Trains a Rasa model using your NLU data and stories.",
+        help="Trains a Rasa model using your CALM flows, NLU data and stories.",
         parents=parents,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
@@ -83,6 +88,37 @@ def _check_nlg_endpoint_validity(endpoint: Union[Path, str]) -> None:
         sys.exit(1)
 
 
+def retrieve_and_unpack_bot_config_from_remote_storage(
+    args: argparse.Namespace,
+) -> None:
+    """Retrieve and unpack bot config from remote storage.
+
+    Bot config is retrieved from remote storage and unpacked
+    to the current working directory.
+    """
+    persistor = get_persistor(args.remote_storage)
+    if persistor is None:
+        raise RasaException(
+            f"Could not find a persistor for "
+            f"the storage type '{args.remote_storage}'."
+        )
+
+    current_working_directory = os.getcwd()
+
+    persistor.retrieve(args.remote_bot_config_path, current_working_directory)
+
+    remote_bot_config_tar_file_name = os.path.basename(args.remote_bot_config_path)
+
+    with TarSafe.open(remote_bot_config_tar_file_name, "r:gz") as tar:
+        tar.extractall(path=current_working_directory)
+
+    structlogger.debug(
+        "rasa.train.retrieve_and_unpack_bot_config.remove_downloaded_archive",
+        training_data_path=args.remote_bot_config_path,
+    )
+    os.remove(Path(current_working_directory).joinpath(remote_bot_config_tar_file_name))
+
+
 def run_training(args: argparse.Namespace, can_exit: bool = False) -> Optional[Text]:
     """Trains a model.
 
@@ -94,7 +130,9 @@ def run_training(args: argparse.Namespace, can_exit: bool = False) -> Optional[T
     Returns:
         Path to a trained model or `None` if training was not successful.
     """
-    from rasa.api import train as train_all
+    # retrieve and unpack bot_config from remote storage
+    if hasattr(args, "remote_bot_config_path") and args.remote_bot_config_path:
+        retrieve_and_unpack_bot_config_from_remote_storage(args)
 
     domain = rasa.cli.utils.get_validated_path(
         args.domain, "domain", DEFAULT_DOMAIN_PATHS, none_is_valid=True

@@ -23,6 +23,8 @@ RASA_DEPS_IMAGE_HASH ?= localdev
 POETRY_VERSION ?= 1.8.2
 BOT_PATH ?=
 MODEL_NAME ?= model
+RASA_REPOSITORY ?= rasa-private
+RASA_IMAGE_TAG ?= latest
 
 # find user's id
 USER_ID := $(shell id -u)
@@ -228,26 +230,26 @@ release:  ## Prepare a release.
 
 build-docker-base: ## Build base Docker image which contains dependencies necessary to create builder and Rasa images.
 	docker build . \
-		-t rasa-private:base-localdev \
+		-t $(RASA_REPOSITORY)\:$(RASA_IMAGE_TAG)-base \
 		-f docker/Dockerfile.base \
 		--progress=plain \
 		--platform=$(PLATFORM)
 
 build-docker-builder:  ## Build Docker image which contains dependencies necessary to install Rasa's dependencies. Make sure to run build-docker-base before running this target.
 	docker build . \
-		-t rasa-private:base-builder-localdev \
+		-t $(RASA_REPOSITORY)\:$(RASA_IMAGE_TAG)-base-builder \
 		-f docker/Dockerfile.base-builder \
-		--build-arg IMAGE_BASE_NAME=rasa-private \
-		--build-arg BASE_IMAGE_HASH=$(BASE_IMAGE_HASH) \
+		--build-arg IMAGE_BASE_NAME=$(RASA_REPOSITORY) \
+		--build-arg BASE_IMAGE_HASH=$(RASA_IMAGE_TAG)-base \
 		--progress=plain \
 		--platform=$(PLATFORM)
 
 build-docker-rasa-deps:  ## Build Docker image which contains Rasa dependencies. Make sure to run build-docker-builder before running this target.
 	docker build . \
-		-t rasa-private:rasa-deps-localdev \
+		-t $(RASA_REPOSITORY)\:$(RASA_IMAGE_TAG)-rasa-deps-localdev \
 		-f docker/Dockerfile.rasa-deps \
-		--build-arg IMAGE_BASE_NAME=rasa-private \
-		--build-arg BASE_BUILDER_IMAGE_HASH=$(BASE_BUILDER_IMAGE_HASH) \
+		--build-arg IMAGE_BASE_NAME=$(RASA_REPOSITORY) \
+		--build-arg BASE_BUILDER_IMAGE_HASH=$(RASA_IMAGE_TAG)-base-builder \
 		--build-arg POETRY_VERSION=$(POETRY_VERSION) \
 		--progress=plain \
 		--platform=$(PLATFORM)
@@ -256,9 +258,9 @@ build-docker-rasa-image:  ## Build Rasa Pro Docker image. Make sure to run build
 	docker build . \
 		-t $(RASA_REPOSITORY)\:$(RASA_IMAGE_TAG) \
 		-f Dockerfile \
-		--build-arg IMAGE_BASE_NAME=rasa-private \
-		--build-arg BASE_IMAGE_HASH=$(BASE_IMAGE_HASH) \
-		--build-arg RASA_DEPS_IMAGE_HASH=$(RASA_DEPS_IMAGE_HASH) \
+		--build-arg IMAGE_BASE_NAME=$(RASA_REPOSITORY) \
+		--build-arg BASE_IMAGE_HASH=$(RASA_IMAGE_TAG)-base \
+		--build-arg RASA_DEPS_IMAGE_HASH=$(RASA_IMAGE_TAG)-rasa-deps-localdev \
 		--progress=plain \
 		--platform=$(PLATFORM)
 

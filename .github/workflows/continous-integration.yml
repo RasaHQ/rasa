@@ -137,31 +137,16 @@ jobs:
             echo "RASA_IMAGE_TAG=$(echo "${GITHUB_REF##*/}" | tr '[:upper:]' '[:lower:]')-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
           fi
 
-      - name: Build base image
+      - name: Build Rasa Private Dev Docker Image
         run: |
-          PLATFORM=${{ env.PLATFORM }} make build-docker-base
-
-      - name: Build base builder image
-        run: |
-          BASE_IMAGE_HASH=localdev \
-          PLATFORM=${{ env.PLATFORM }} \
-          make build-docker-builder
-
-      - name: Build Rasa Dependencies Image
-        run: |
-          BASE_BUILDER_IMAGE_HASH=localdev \
           POETRY_VERSION=$POETRY_VERSION \
           PLATFORM=${{ env.PLATFORM }} \
-          make build-docker-rasa-deps
-
-      - name: Build, tag, and push image to Amazon ECR
-        run: |
           RASA_REPOSITORY=${{ env.RASA_PRO_DEV_REPOSITORY }} \
           RASA_IMAGE_TAG=${{ env.RASA_IMAGE_TAG }} \
-          BASE_IMAGE_HASH=localdev \
-          RASA_DEPS_IMAGE_HASH=localdev \
-          PLATFORM=${{ env.PLATFORM }} \
-          make build-docker-rasa-image
+          make build-docker
+
+      - name: Tag, and push image to Amazon ECR
+        run: |
           docker push ${{ env.RASA_PRO_DEV_REPOSITORY }}:${{ env.RASA_IMAGE_TAG }}
 
   check_inspector_build:

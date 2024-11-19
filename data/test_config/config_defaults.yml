@@ -24,11 +24,11 @@ pipeline: []
 #     threshold: 0.3
 #     ambiguity_threshold: 0.1
 
-data:
-policies:
+data: null
+policies: null
 # # No configuration for policies was provided. The following default policies were used to train your model.
 # # If you'd like to customize them, uncomment and adjust the policies.
-# # See https://rasa.com/docs/rasa-pro/concepts/policies/policy-overview/ for more information.
+# # See https://rasa.com/docs/rasa-pro/concepts/policies/policy-overview for more information.
 #   - name: MemoizationPolicy
 #   - name: RulePolicy
 #   - name: UnexpecTEDIntentPolicy

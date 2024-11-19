@@ -22,7 +22,7 @@ from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.training.components import FingerprintStatus
 from rasa.engine.training.graph_trainer import GraphTrainer
-from rasa.nlu.persistor import StorageType
+from rasa.nlu.persistor import RemoteStorageType, StorageType
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import SlotSet
 from rasa.shared.core.training_data.structures import StoryGraph
@@ -350,18 +350,25 @@ async def _train_graph(
             if remote_storage:
                 push_model_to_remote_storage(full_model_path, remote_storage)
                 full_model_path.unlink()
+                remote_storage_string = (
+                    remote_storage.value
+                    if isinstance(remote_storage, RemoteStorageType)
+                    else remote_storage
+                )
                 structlogger.info(
                     "model_training.train.finished_training",
                     event_info=(
                         f"Your Rasa model {model_name} is trained "
-                        f"and saved at remote storage provider '{remote_storage}'."
+                        f"and saved at remote storage provider "
+                        f"'{remote_storage_string}'."
                     ),
                 )
             else:
                 structlogger.info(
                     "model_training.train.finished_training",
                     event_info=(
-                        f"Your Rasa model is trained and saved at '{full_model_path}'."
+                        f"Your Rasa model is trained and saved at "
+                        f"'{full_model_path}'."
                     ),
                 )
 

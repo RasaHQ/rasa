@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 from abc import ABC, abstractmethod
 from functools import reduce
@@ -114,7 +116,7 @@ class TrainingDataImporter(ABC):
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
         args: Optional[Dict[Text, Any]] = {},
-    ) -> "TrainingDataImporter":
+    ) -> TrainingDataImporter:
         """Loads a `TrainingDataImporter` instance from a configuration file."""
         config = read_config_file(config_path)
         return TrainingDataImporter.load_from_dict(
@@ -127,7 +129,7 @@ class TrainingDataImporter(ABC):
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
         args: Optional[Dict[Text, Any]] = {},
-    ) -> "TrainingDataImporter":
+    ) -> TrainingDataImporter:
         """Loads core `TrainingDataImporter` instance.
 
         Instance loaded from configuration file will only read Core training data.
@@ -143,7 +145,7 @@ class TrainingDataImporter(ABC):
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
         args: Optional[Dict[Text, Any]] = {},
-    ) -> "TrainingDataImporter":
+    ) -> TrainingDataImporter:
         """Loads nlu `TrainingDataImporter` instance.
 
         Instance loaded from configuration file will only read NLU training data.
@@ -166,7 +168,7 @@ class TrainingDataImporter(ABC):
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
         args: Optional[Dict[Text, Any]] = None,
-    ) -> "TrainingDataImporter":
+    ) -> TrainingDataImporter:
         """Loads a `TrainingDataImporter` instance from a dictionary."""
         from rasa.shared.importers.rasa import RasaFileImporter
 
@@ -195,18 +197,15 @@ class TrainingDataImporter(ABC):
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
         args: Optional[Dict[Text, Any]] = None,
-    ) -> Optional["TrainingDataImporter"]:
+    ) -> Optional[TrainingDataImporter]:
         from rasa.shared.importers.multi_project import MultiProjectImporter
         from rasa.shared.importers.rasa import RasaFileImporter
-        from rasa.shared.importers.remote_importer import RemoteTrainingDataImporter
 
         module_path = importer_config.pop("name", None)
         if module_path == RasaFileImporter.__name__:
             importer_class: Type[TrainingDataImporter] = RasaFileImporter
         elif module_path == MultiProjectImporter.__name__:
             importer_class = MultiProjectImporter
-        elif module_path == RemoteTrainingDataImporter.__name__:
-            importer_class = RemoteTrainingDataImporter
         else:
             try:
                 importer_class = rasa.shared.utils.common.class_from_module_path(

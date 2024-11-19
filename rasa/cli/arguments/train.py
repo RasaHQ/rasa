@@ -3,12 +3,12 @@ from typing import Union
 
 from rasa.cli.arguments.default_arguments import (
     add_config_param,
-    add_stories_param,
-    add_nlu_data_param,
-    add_out_param,
     add_domain_param,
     add_endpoint_param,
+    add_nlu_data_param,
+    add_out_param,
     add_remote_storage_param,
+    add_stories_param,
 )
 from rasa.graph_components.providers.training_tracker_provider import (
     TrainingTrackerProvider,
@@ -40,6 +40,12 @@ def set_train_arguments(parser: argparse.ArgumentParser) -> None:
         parser, help_text="Configuration file for the connectors as a yml file."
     )
     add_remote_storage_param(parser)
+    parser.add_argument(
+        "--remote-bot-config-path",
+        help="Path to the bot configuration file in the remote storage.",
+        required=False,
+        type=str,
+    )
 
 
 def set_train_core_arguments(parser: argparse.ArgumentParser) -> None:
