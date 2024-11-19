@@ -3,7 +3,7 @@ import uuid
 from pathlib import Path
 from typing import Optional, Dict, Text, Any, Set, List
 from unittest.mock import Mock, patch, AsyncMock
-import logging, structlog
+import structlog
 
 import pytest
 from _pytest.tmpdir import TempPathFactory
