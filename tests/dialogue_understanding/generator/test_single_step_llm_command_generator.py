@@ -42,6 +42,7 @@ from rasa.shared.constants import (
     OPENAI_API_KEY_ENV_VAR,
     ROUTE_TO_CALM_SLOT,
     EMBEDDINGS_CONFIG_KEY,
+    MODELS_CONFIG_KEY,
 )
 from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
 from rasa.shared.core.flows import FlowsList
@@ -57,7 +58,6 @@ from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.providers.llm.llm_response import LLMResponse
 from rasa.shared.utils.llm import (
     DEFAULT_MAX_USER_INPUT_CHARACTERS,
-    MODEL_GROUP_KEY,
 )
 from tests.utilities import flows_from_str
 
@@ -1069,9 +1069,9 @@ class TestSingleStepLLMCommandGenerator:
             ),
             (
                 {
-                    LLM_CONFIG_KEY: {MODEL_GROUP_KEY: "openai_gpt-4"},
+                    LLM_CONFIG_KEY: {MODELS_CONFIG_KEY: "openai_gpt-4"},
                     FLOW_RETRIEVAL_KEY: {
-                        EMBEDDINGS_CONFIG_KEY: {MODEL_GROUP_KEY: "openai_embedding"}
+                        EMBEDDINGS_CONFIG_KEY: {MODELS_CONFIG_KEY: "openai_embedding"}
                     },
                 },
                 {
@@ -1087,7 +1087,7 @@ class TestSingleStepLLMCommandGenerator:
             ),
             (
                 {
-                    LLM_CONFIG_KEY: {MODEL_GROUP_KEY: "openai_gpt-4"},
+                    LLM_CONFIG_KEY: {MODELS_CONFIG_KEY: "openai_gpt-4"},
                     FLOW_RETRIEVAL_KEY: {
                         EMBEDDINGS_CONFIG_KEY: {
                             "provider": "openai",
@@ -1171,7 +1171,7 @@ class TestSingleStepLLMCommandGenerator:
         mock_endpoints = MockAvailableEndpoints()
         monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
 
-        config = {LLM_CONFIG_KEY: {MODEL_GROUP_KEY: "model_group_id"}}
+        config = {LLM_CONFIG_KEY: {MODELS_CONFIG_KEY: "model_group_id"}}
         generator = SingleStepLLMCommandGenerator(config, model_storage, resource)
 
         # Ensure the config is resolved

@@ -22,6 +22,7 @@ from rasa.shared.constants import (
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
     PROVIDER_CONFIG_KEY,
+    MODELS_CONFIG_KEY,
 )
 from rasa.shared.core.events import BotUttered, UserUttered
 from rasa.shared.core.slots import Slot, BooleanSlot, CategoricalSlot
@@ -79,8 +80,6 @@ DEFAULT_OPENAI_TEMPERATURE = 0.7
 DEFAULT_OPENAI_MAX_GENERATED_TOKENS = 256
 
 DEFAULT_MAX_USER_INPUT_CHARACTERS = 420
-
-MODEL_GROUP_KEY = "model_group"
 
 DEPLOYMENT_CENTRIC_PROVIDERS = [AZURE_OPENAI_PROVIDER]
 
@@ -482,10 +481,10 @@ def resolve_model_client_config(
     if model_config is None:
         return None
 
-    if MODEL_GROUP_KEY not in model_config:
+    if MODELS_CONFIG_KEY not in model_config:
         return model_config
 
-    model_group_id = model_config.get(MODEL_GROUP_KEY)
+    model_group_id = model_config.get(MODELS_CONFIG_KEY)
 
     endpoints = AvailableEndpoints.get_instance()
     if endpoints.model_groups is None:

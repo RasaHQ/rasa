@@ -47,6 +47,7 @@ from rasa.shared.constants import (
     ROUTE_TO_CALM_SLOT,
     LLM_CONFIG_KEY,
     EMBEDDINGS_CONFIG_KEY,
+    MODELS_CONFIG_KEY,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import BotUttered, UserUttered
@@ -55,7 +56,6 @@ from rasa.shared.core.slots import TextSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import ProviderClientAPIException
 from rasa.shared.nlu.training_data.message import Message
-from rasa.shared.utils.llm import MODEL_GROUP_KEY
 from tests.utilities import (
     flows_from_str,
     flows_from_str_including_defaults,
@@ -1035,9 +1035,9 @@ class TestMultiStepLLMCommandGenerator:
             ),
             (
                 {
-                    LLM_CONFIG_KEY: {MODEL_GROUP_KEY: "openai_gpt-4"},
+                    LLM_CONFIG_KEY: {MODELS_CONFIG_KEY: "openai_gpt-4"},
                     FLOW_RETRIEVAL_KEY: {
-                        EMBEDDINGS_CONFIG_KEY: {MODEL_GROUP_KEY: "openai_embedding"}
+                        EMBEDDINGS_CONFIG_KEY: {MODELS_CONFIG_KEY: "openai_embedding"}
                     },
                 },
                 {
@@ -1053,7 +1053,7 @@ class TestMultiStepLLMCommandGenerator:
             ),
             (
                 {
-                    LLM_CONFIG_KEY: {MODEL_GROUP_KEY: "openai_gpt-4"},
+                    LLM_CONFIG_KEY: {MODELS_CONFIG_KEY: "openai_gpt-4"},
                     FLOW_RETRIEVAL_KEY: {
                         EMBEDDINGS_CONFIG_KEY: {
                             "provider": "openai",
@@ -1137,7 +1137,7 @@ class TestMultiStepLLMCommandGenerator:
         mock_endpoints = MockAvailableEndpoints()
         monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
 
-        config = {LLM_CONFIG_KEY: {MODEL_GROUP_KEY: "model_group_id"}}
+        config = {LLM_CONFIG_KEY: {MODELS_CONFIG_KEY: "model_group_id"}}
         generator = MultiStepLLMCommandGenerator(config, model_storage, resource)
 
         # Ensure the config is resolved

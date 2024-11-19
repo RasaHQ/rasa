@@ -36,6 +36,7 @@ from rasa.engine.validation import (
     validate_intent_based_router_position,
     validate_command_generator_exclusivity,
     validate_model_client_configuration_setup,
+    validate_model_group_configuration_setup,
 )
 from rasa.shared.constants import (
     LATEST_TRAINING_DATA_FORMAT_VERSION,
@@ -43,6 +44,7 @@ from rasa.shared.constants import (
     LLM_CONFIG_KEY,
     EMBEDDINGS_CONFIG_KEY,
     API_KEY,
+    MODELS_CONFIG_KEY,
 )
 from rasa.shared.core.constants import ACTION_RESET_ROUTING
 from rasa.shared.core.domain import Domain
@@ -52,7 +54,6 @@ from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.utils.llm import MODEL_GROUP_KEY
 from tests.utilities import filter_logs, flows_from_str
 
 
@@ -1839,12 +1840,14 @@ class MockAvailableEndpointsForTestValidation:
             [
                 {
                     "name": "SingleStepLLMCommandGenerator",
-                    LLM_CONFIG_KEY: {MODEL_GROUP_KEY: "model_group_id"},
+                    LLM_CONFIG_KEY: {MODELS_CONFIG_KEY: "model_group_id"},
                 },
                 {
                     "name": "IntentlessPolicy",
-                    LLM_CONFIG_KEY: {MODEL_GROUP_KEY: "model_group_id"},
-                    EMBEDDINGS_CONFIG_KEY: {MODEL_GROUP_KEY: "another_model_group_id"},
+                    LLM_CONFIG_KEY: {MODELS_CONFIG_KEY: "model_group_id"},
+                    EMBEDDINGS_CONFIG_KEY: {
+                        MODELS_CONFIG_KEY: "another_model_group_id"
+                    },
                 },
             ],
             False,
@@ -1886,8 +1889,10 @@ class MockAvailableEndpointsForTestValidation:
                 },
                 {
                     "name": "IntentlessPolicy",
-                    LLM_CONFIG_KEY: {MODEL_GROUP_KEY: "model_group_id"},
-                    EMBEDDINGS_CONFIG_KEY: {MODEL_GROUP_KEY: "another_model_group_id"},
+                    LLM_CONFIG_KEY: {MODELS_CONFIG_KEY: "model_group_id"},
+                    EMBEDDINGS_CONFIG_KEY: {
+                        MODELS_CONFIG_KEY: "another_model_group_id"
+                    },
                 },
             ],
             True,
@@ -1900,7 +1905,7 @@ class MockAvailableEndpointsForTestValidation:
                     LLM_CONFIG_KEY: {
                         "provider": "openai",
                         "model": "gpt-4",
-                        MODEL_GROUP_KEY: "model_group_id",
+                        MODELS_CONFIG_KEY: "model_group_id",
                     },
                 }
             ],
@@ -1912,7 +1917,7 @@ class MockAvailableEndpointsForTestValidation:
                 {
                     "name": "SingleStepLLMCommandGenerator",
                     LLM_CONFIG_KEY: {
-                        MODEL_GROUP_KEY: "non-existing-model-group",
+                        MODELS_CONFIG_KEY: "non-existing-model-group",
                     },
                 }
             ],
@@ -1948,7 +1953,7 @@ class MockAvailableEndpointsForTestValidation:
                         "model": "gpt-4",
                     },
                     EMBEDDINGS_CONFIG_KEY: {
-                        MODEL_GROUP_KEY: "model_group_id",
+                        MODELS_CONFIG_KEY: "model_group_id",
                     },
                 },
                 {
@@ -1971,7 +1976,7 @@ class MockAvailableEndpointsForTestValidation:
                         "model": "gpt-4",
                     },
                     EMBEDDINGS_CONFIG_KEY: {
-                        MODEL_GROUP_KEY: "model_group_id",
+                        MODELS_CONFIG_KEY: "model_group_id",
                     },
                 }
             ],
@@ -1983,11 +1988,11 @@ class MockAvailableEndpointsForTestValidation:
                 {
                     "name": "SingleStepLLMCommandGenerator",
                     LLM_CONFIG_KEY: {
-                        MODEL_GROUP_KEY: "model_group_id",
+                        MODELS_CONFIG_KEY: "model_group_id",
                     },
                     FLOW_RETRIEVAL_KEY: {
                         EMBEDDINGS_CONFIG_KEY: {
-                            MODEL_GROUP_KEY: "model_group_id",
+                            MODELS_CONFIG_KEY: "model_group_id",
                         }
                     },
                 }
@@ -2024,7 +2029,7 @@ class MockAvailableEndpointsForTestValidation:
                     },
                     FLOW_RETRIEVAL_KEY: {
                         EMBEDDINGS_CONFIG_KEY: {
-                            MODEL_GROUP_KEY: "model_group_id",
+                            MODELS_CONFIG_KEY: "model_group_id",
                         }
                     },
                 }
@@ -2091,3 +2096,150 @@ def test_validate_llm_configuration_setup(
         patch_warning.assert_called_once()
     else:
         patch_warning.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "model_groups, should_exit",
+    (
+        ([], False),
+        (None, False),
+        (
+            [
+                {
+                    "id": "model_group_id",
+                    "models": [{"provider": "openai", "model": "gpt-4"}],
+                },
+                {
+                    "id": "another_model_group_id",
+                    "models": [{"provider": "openai", "model": "gpt-3.5-turbo"}],
+                },
+            ],
+            False,
+        ),
+        (
+            [
+                {
+                    "id": "model_group_id",
+                    "models": [
+                        {"provider": "openai", "model": "gpt-4"},
+                        {"provider": "openai", "model": "gpt-3.5-turbo"},
+                    ],
+                    "router": {"routing_strategy": "least_busy"},
+                }
+            ],
+            False,
+        ),
+        (
+            [
+                {
+                    "id": "model_group_id",
+                    "models": [
+                        {
+                            "provider": "openai",
+                            "deployment": "${AZURE_DEPLOYMENT_GPT3_5_TURBO_FRANCE}",
+                            "api_base": "${AZURE_API_BASE_GPT3_5_TURBO_FR}",
+                            "api_key": "${AZURE_API_KEY_FR}",
+                            "api_version": "${AZURE_API_VERSION}",
+                        },
+                    ],
+                }
+            ],
+            False,
+        ),
+        (
+            [
+                {
+                    "id": "model_group_id",
+                    "models": [
+                        {
+                            "provider": "aws-bedrock",
+                            "aws_region_name": "${AWS_REGION_NAME}",
+                        },
+                    ],
+                }
+            ],
+            False,
+        ),
+        # same model group id
+        (
+            [
+                {
+                    "id": "model_group_id",
+                    "models": [{"provider": "openai", "model": "gpt-4"}],
+                },
+                {
+                    "id": "model_group_id",
+                    "models": [{"provider": "openai", "model": "gpt-3.5-turbo"}],
+                },
+            ],
+            True,
+        ),
+        # multiple models, but no router
+        (
+            [
+                {
+                    "id": "model_group_id",
+                    "models": [
+                        {"provider": "openai", "model": "gpt-4"},
+                        {"provider": "openai", "model": "gpt-3.5-turbo"},
+                    ],
+                }
+            ],
+            True,
+        ),
+        # incorrect usage of env_vars
+        (
+            [
+                {
+                    "id": "model_group_id",
+                    "models": [
+                        {"provider": "openai", "model": "${MODEL_NAME}"},
+                    ],
+                }
+            ],
+            True,
+        ),
+        # api_key is a string
+        (
+            [
+                {
+                    "id": "model_group_id",
+                    "models": [
+                        {
+                            "provider": "azure",
+                            "deployment": "${DEPLOYMENT_AZURE}",
+                            "api_base": "${AZURE_API_BASE_GPT3_5_TURBO_FR}",
+                            "api_key": "59968xxxxxxxxx5f355dd",
+                            "api_version": "2024-02-15-preview",
+                            "timeout": 14,
+                        },
+                    ],
+                }
+            ],
+            True,
+        ),
+    ),
+)
+def test_validate_model_group_configuration_setup(
+    patch_print_error_and_exit: Any,
+    model_groups: List[Dict[Text, Any]],
+    should_exit: bool,
+    monkeypatch: Any,
+):
+    class MockAvailableEndpoints:
+        @staticmethod
+        def get_instance():
+            return MockAvailableEndpoints()
+
+        def __init__(self):
+            self.model_groups = model_groups
+
+    mock_endpoints = MockAvailableEndpoints()
+    monkeypatch.setattr("rasa.engine.validation.AvailableEndpoints", mock_endpoints)
+
+    validate_model_group_configuration_setup()
+
+    if should_exit:
+        patch_print_error_and_exit.assert_called_once()
+    else:
+        patch_print_error_and_exit.assert_not_called()

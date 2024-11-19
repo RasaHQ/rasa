@@ -59,7 +59,14 @@ from rasa.shared.constants import (
     DOCS_URL_GRAPH_COMPONENTS,
     ROUTE_TO_CALM_SLOT,
     EMBEDDINGS_CONFIG_KEY,
+    API_BASE_CONFIG_KEY,
+    DEPLOYMENT_CONFIG_KEY,
+    API_VERSION_CONFIG_KEY,
     API_KEY,
+    AWS_REGION_NAME_CONFIG_KEY,
+    MODEL_GROUP_ID_CONFIG_KEY,
+    ROUTER_CONFIG_KEY,
+    MODELS_CONFIG_KEY,
 )
 from rasa.shared.core.constants import ACTION_RESET_ROUTING, ACTION_TRIGGER_CHITCHAT
 from rasa.shared.core.domain import Domain
@@ -68,7 +75,6 @@ from rasa.shared.core.slots import Slot
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.utils.cli import print_error_and_exit
-from rasa.shared.utils.llm import MODEL_GROUP_KEY
 
 TypeAnnotation = Union[TypeVar, Text, Type, Optional[AvailableEndpoints]]
 
@@ -879,13 +885,13 @@ def _validate_component_model_client_config(
         # no llm configuration present
         return
 
-    if MODEL_GROUP_KEY in component_config[key]:
+    if MODELS_CONFIG_KEY in component_config[key]:
         model_group_syntax_used.append(True)
-        model_group_ids.append(component_config[key][MODEL_GROUP_KEY])
+        model_group_ids.append(component_config[key][MODELS_CONFIG_KEY])
 
         if len(component_config[key]) > 1:
             print_error_and_exit(
-                f"You specified a '{MODEL_GROUP_KEY}' for the '{key}' "
+                f"You specified a '{MODELS_CONFIG_KEY}' for the '{key}' "
                 f"config key for the component "
                 f"'{component_name or component_config['name']}'. "
                 "No other parameters are allowed under the "
@@ -949,7 +955,7 @@ def validate_model_client_configuration_setup(config: Dict[str, Any]) -> None:
     if not is_uniform_bool_list(model_group_syntax_used):
         print_error_and_exit(
             "Some of your components refer to an LLM using the "
-            f"'{MODEL_GROUP_KEY}' parameter, other components directly"
+            f"'{MODELS_CONFIG_KEY}' parameter, other components directly"
             f"define the LLM under the '{LLM_CONFIG_KEY}' or the "
             f"'{EMBEDDINGS_CONFIG_KEY}' key. You cannot use"
             "a both types of definition. Please chose one syntax "
@@ -981,7 +987,7 @@ def validate_model_client_configuration_setup(config: Dict[str, Any]) -> None:
         return
 
     existing_model_group_ids = [
-        model_group["id"] for model_group in endpoints.model_groups
+        model_group[MODEL_GROUP_ID_CONFIG_KEY] for model_group in endpoints.model_groups
     ]
 
     for model_group_id in model_group_ids:
@@ -993,6 +999,97 @@ def validate_model_client_configuration_setup(config: Dict[str, Any]) -> None:
                 f"model groups ({existing_model_group_ids}) or define "
                 f"the a model group for '{model_group_id}'."
             )
+
+
+def _validate_unique_model_group_ids(model_groups: List[Dict[str, Any]]) -> None:
+    # Each model id must be unique within the model_groups
+    model_ids = [model_group[MODEL_GROUP_ID_CONFIG_KEY] for model_group in model_groups]
+    if len(model_ids) != len(set(model_ids)):
+        print_error_and_exit(
+            "Each model group id must be unique. Please make sure that "
+            "the model group ids are unique in your endpoints.yml file."
+        )
+
+
+def _validate_model_group_with_multiple_models(
+    model_groups: List[Dict[str, Any]],
+) -> None:
+    # You cannot define multiple models within a model group, when no router is defined.
+    for model_group in model_groups:
+        if (
+            len(model_group[MODELS_CONFIG_KEY]) > 1
+            and ROUTER_CONFIG_KEY not in model_group
+        ):
+            print_error_and_exit(
+                f"You defined multiple models for the model group "
+                f"'{model_group[MODEL_GROUP_ID_CONFIG_KEY]}', but no router. "
+                f"If a model group contains "
+                f"multiple models, a router must be defined. Please define a router "
+                f"for the model group '{model_group[MODEL_GROUP_ID_CONFIG_KEY]}'."
+            )
+
+
+def _validate_usage_of_environment_variables_in_model_group_config(
+    model_groups: List[Dict[str, Any]],
+) -> None:
+    # Limit the use of ${env_var} in the model_groups config to the following variables:
+    # deployment, api_base, api_key, api_version, aws_region_name
+    allowed_env_vars = {
+        DEPLOYMENT_CONFIG_KEY,
+        API_BASE_CONFIG_KEY,
+        API_KEY,
+        API_VERSION_CONFIG_KEY,
+        AWS_REGION_NAME_CONFIG_KEY,
+    }
+
+    for model_group in model_groups:
+        for model_config in model_group[MODELS_CONFIG_KEY]:
+            for key, value in model_config.items():
+                if isinstance(value, str):
+                    if re.match(r"\${(\w+)}", value) and key not in allowed_env_vars:
+                        print_error_and_exit(
+                            f"You defined '{key}' as environment variable in model "
+                            f"group '{model_group[MODEL_GROUP_ID_CONFIG_KEY]}', "
+                            f"which is not allowed. "
+                            f"You can only use environment variables for the following "
+                            f"keys: {', '.join(allowed_env_vars)}. "
+                            f"Please update your config."
+                        )
+
+
+def _validate_api_key_is_an_environment_variable(
+    model_groups: List[Dict[str, Any]],
+) -> None:
+    # the api key can only be set as an environment variable
+    for model_group in model_groups:
+        for model_config in model_group[MODELS_CONFIG_KEY]:
+            for key, value in model_config.items():
+                if (
+                    key == API_KEY
+                    and isinstance(value, str)
+                    and not re.match(r"\${(\w+)}", value)
+                ):
+                    print_error_and_exit(
+                        f"You defined the '{API_KEY}' in model group "
+                        f"'{model_group[MODEL_GROUP_ID_CONFIG_KEY]}' as a string. "
+                        f"The '{API_KEY}' must be set as an environment variable. "
+                        f"Please update your config."
+                    )
+
+
+def validate_model_group_configuration_setup() -> None:
+    """Validates the model group configuration setup in endpoints.yml."""
+    endpoints = AvailableEndpoints.get_instance()
+
+    if endpoints.model_groups is None:
+        return
+
+    _validate_unique_model_group_ids(endpoints.model_groups)
+    _validate_model_group_with_multiple_models(endpoints.model_groups)
+    _validate_usage_of_environment_variables_in_model_group_config(
+        endpoints.model_groups
+    )
+    _validate_api_key_is_an_environment_variable(endpoints.model_groups)
 
 
 def validate_command_generator_exclusivity(schema: GraphSchema) -> None:
