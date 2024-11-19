@@ -184,7 +184,7 @@ class LLMBasedCommandGenerator(GraphComponent, CommandGenerator, ABC):
                     f"You have {len(flows.user_flows)} user flows but flow "
                     f"retrieval is disabled. "
                     f"It is recommended to enable flow retrieval if the "
-                    f"total number of user flows exceeds 20. "
+                    f"total number of user flows exceed 20. "
                     f"Keeping it disabled can result in deterioration of "
                     f"command generator's functional "
                     f"performance and higher costs because of increased "
