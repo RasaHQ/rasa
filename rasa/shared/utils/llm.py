@@ -425,7 +425,6 @@ def try_instantiate_llm_client(
             f"Unable to create the LLM client for component - {log_source_component}. "
             f"Please make sure you specified the required environment variables "
             f"and configuration keys. "
-<<<<<<< HEAD
             f"Error: {e}"
         )
 
@@ -452,7 +451,5 @@ def llm_api_health_check(
         )
         print_error_and_exit(
             f"Call to the LLM API failed for component - {log_source_component}. "
-=======
->>>>>>> 3.10.x
             f"Error: {e}"
         )

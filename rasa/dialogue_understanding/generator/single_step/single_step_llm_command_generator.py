@@ -302,12 +302,8 @@ class SingleStepLLMCommandGenerator(LLMBasedCommandGenerator):
         skip_question_re = re.compile(r"SkipQuestion\(\)")
         knowledge_re = re.compile(r"SearchAndReply\(\)")
         humand_handoff_re = re.compile(r"HumanHandoff\(\)")
-<<<<<<< HEAD
         clarify_re = re.compile(r"Clarify\(([a-zA-Z0-9_, ]+)\)")
         repeat_re = re.compile(r"RepeatLastBotMessages\(\)")
-=======
-        clarify_re = re.compile(r"Clarify\(([\"\'a-zA-Z0-9_, ]+)\)")
->>>>>>> 3.10.x
 
         for action in actions.strip().splitlines():
             if match := slot_set_re.search(action):
