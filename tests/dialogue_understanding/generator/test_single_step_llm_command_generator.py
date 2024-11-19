@@ -863,7 +863,8 @@ class TestSingleStepLLMCommandGenerator:
         assert generator.flow_retrieval is None
         assert len(logs) == 1
         assert 'It is recommended to enable flow retrieval if the total ' \
-               'number of user flows exceed ' + FLOW_RETRIEVAL_FLOW_THRESHOLD in logs[0].get("event_info")
+               'number of user flows exceed ' + str(FLOW_RETRIEVAL_FLOW_THRESHOLD) \
+               in logs[0].get("event_info")
 
     @patch(
         "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.populate"
