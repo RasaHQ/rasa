@@ -36,7 +36,7 @@ from rasa.shared.constants import (
     PROMPT_CONFIG_KEY,
     LLM_CONFIG_KEY,
     EMBEDDINGS_CONFIG_KEY,
-    MODELS_CONFIG_KEY,
+    MODEL_GROUP_CONFIG_KEY,
 )
 from rasa.shared.core.domain import ActionNotFoundException, Domain
 from rasa.shared.core.events import ActiveLoop, BotUttered, UserUttered
@@ -963,8 +963,8 @@ def test_should_abstain_in_coexistence(
         ),
         (
             {
-                LLM_CONFIG_KEY: {MODELS_CONFIG_KEY: "openai_gpt-4"},
-                EMBEDDINGS_CONFIG_KEY: {MODELS_CONFIG_KEY: "openai_gpt-4"},
+                LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt-4"},
+                EMBEDDINGS_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt-4"},
             },
             {
                 "id": "openai_gpt-4",
@@ -978,7 +978,7 @@ def test_should_abstain_in_coexistence(
         (
             {
                 LLM_CONFIG_KEY: {"provider": "openai", "model": "gpt-4"},
-                EMBEDDINGS_CONFIG_KEY: {MODELS_CONFIG_KEY: "openai_gpt-4"},
+                EMBEDDINGS_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt-4"},
             },
             {"provider": "openai", "model": "gpt-4"},
             {
@@ -988,7 +988,7 @@ def test_should_abstain_in_coexistence(
         ),
         (
             {
-                LLM_CONFIG_KEY: {MODELS_CONFIG_KEY: "openai_gpt-4"},
+                LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt-4"},
                 EMBEDDINGS_CONFIG_KEY: {"provider": "openai", "model": "gpt-4"},
             },
             {
@@ -1063,8 +1063,8 @@ def test_intentless_policy_persist_config(
     monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
 
     config = {
-        LLM_CONFIG_KEY: {MODELS_CONFIG_KEY: "model_group_id"},
-        EMBEDDINGS_CONFIG_KEY: {MODELS_CONFIG_KEY: "model_group_id"},
+        LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "model_group_id"},
+        EMBEDDINGS_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "model_group_id"},
         "nlu_abstention_threshold": 0.5,
         PROMPT_CONFIG_KEY: DEFAULT_INTENTLESS_PROMPT_TEMPLATE,
     }

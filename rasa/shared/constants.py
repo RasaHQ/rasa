@@ -187,6 +187,7 @@ ROUTER_CONFIG_KEY = "router"
 ROUTER_STRATEGY_CONFIG_KEY = "router_strategy"
 MODELS_CONFIG_KEY = "models"
 MODEL_GROUPS_CONFIG_KEY = "model_groups"
+MODEL_GROUP_CONFIG_KEY = "model_group"
 MODEL_GROUP_ID_CONFIG_KEY = "id"
 
 EXTRA_PARAMETERS_KEY = "extra_parameters"

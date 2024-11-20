@@ -9,7 +9,7 @@ from pytest import MonkeyPatch
 from rasa.shared.constants import (
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
-    MODELS_CONFIG_KEY,
+    MODEL_GROUP_CONFIG_KEY,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import BotUttered, UserUttered, SessionStarted, Restarted
@@ -1938,7 +1938,7 @@ class MockAvailableEndpoints:
 
 
 def test_resolve_llm_config_with_invalid_model_group_id(monkeypatch):
-    llm_config = {MODELS_CONFIG_KEY: "invalid_id"}
+    llm_config = {MODEL_GROUP_CONFIG_KEY: "invalid_id"}
     component_name = "test_component"
 
     mock_endpoints = MockAvailableEndpoints()
@@ -1949,7 +1949,7 @@ def test_resolve_llm_config_with_invalid_model_group_id(monkeypatch):
 
 
 def test_resolve_llm_config_with_duplicate_model_groups_defined(monkeypatch):
-    llm_config = {MODELS_CONFIG_KEY: "some_id"}
+    llm_config = {MODEL_GROUP_CONFIG_KEY: "some_id"}
     component_name = "test_component"
 
     class MockAvailableEndpointsNoModelGroups:
@@ -1977,7 +1977,7 @@ def test_resolve_llm_config_with_duplicate_model_groups_defined(monkeypatch):
 
 
 def test_resolve_llm_config_with_model_id(monkeypatch: Any):
-    llm_config = {MODELS_CONFIG_KEY: "valid_id"}
+    llm_config = {MODEL_GROUP_CONFIG_KEY: "valid_id"}
     component_name = "test_component"
 
     mock_endpoints = MockAvailableEndpoints()
@@ -1991,7 +1991,7 @@ def test_resolve_llm_config_with_model_id(monkeypatch: Any):
 
 
 def test_resolve_llm_config_with_no_model_groups_defined(monkeypatch):
-    llm_config = {MODELS_CONFIG_KEY: "some_id"}
+    llm_config = {MODEL_GROUP_CONFIG_KEY: "some_id"}
     component_name = "test_component"
 
     class MockAvailableEndpointsNoModelGroups:

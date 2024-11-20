@@ -40,7 +40,7 @@ from rasa.shared.constants import (
     LLM_CONFIG_KEY,
     ROUTE_TO_CALM_SLOT,
     EMBEDDINGS_CONFIG_KEY,
-    MODELS_CONFIG_KEY,
+    MODEL_GROUP_CONFIG_KEY,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, UserUttered, BotUttered
@@ -1201,8 +1201,8 @@ def test_should_abstain_in_coexistence(
         ),
         (
             {
-                LLM_CONFIG_KEY: {MODELS_CONFIG_KEY: "openai_gpt-4"},
-                EMBEDDINGS_CONFIG_KEY: {MODELS_CONFIG_KEY: "openai_gpt-4"},
+                LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt-4"},
+                EMBEDDINGS_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt-4"},
             },
             {
                 "id": "openai_gpt-4",
@@ -1216,7 +1216,7 @@ def test_should_abstain_in_coexistence(
         (
             {
                 LLM_CONFIG_KEY: {"provider": "openai", "model": "gpt-4"},
-                EMBEDDINGS_CONFIG_KEY: {MODELS_CONFIG_KEY: "openai_gpt-4"},
+                EMBEDDINGS_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt-4"},
             },
             {"provider": "openai", "model": "gpt-4"},
             {
@@ -1226,7 +1226,7 @@ def test_should_abstain_in_coexistence(
         ),
         (
             {
-                LLM_CONFIG_KEY: {MODELS_CONFIG_KEY: "openai_gpt-4"},
+                LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt-4"},
                 EMBEDDINGS_CONFIG_KEY: {"provider": "openai", "model": "gpt-4"},
             },
             {
@@ -1298,8 +1298,8 @@ def test_enterprise_search_policy_persist_config(
     monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
 
     config = {
-        LLM_CONFIG_KEY: {MODELS_CONFIG_KEY: "model_group_id"},
-        EMBEDDINGS_CONFIG_KEY: {MODELS_CONFIG_KEY: "model_group_id"},
+        LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "model_group_id"},
+        EMBEDDINGS_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "model_group_id"},
     }
     router = EnterpriseSearchPolicy(
         config, default_model_storage, resource, default_execution_context

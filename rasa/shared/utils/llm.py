@@ -22,7 +22,8 @@ from rasa.shared.constants import (
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
     PROVIDER_CONFIG_KEY,
-    MODELS_CONFIG_KEY,
+    MODEL_GROUP_CONFIG_KEY,
+    MODEL_GROUP_ID_CONFIG_KEY,
 )
 from rasa.shared.core.events import BotUttered, UserUttered
 from rasa.shared.core.slots import Slot, BooleanSlot, CategoricalSlot
@@ -481,10 +482,10 @@ def resolve_model_client_config(
     if model_config is None:
         return None
 
-    if MODELS_CONFIG_KEY not in model_config:
+    if MODEL_GROUP_CONFIG_KEY not in model_config:
         return model_config
 
-    model_group_id = model_config.get(MODELS_CONFIG_KEY)
+    model_group_id = model_config.get(MODEL_GROUP_CONFIG_KEY)
 
     endpoints = AvailableEndpoints.get_instance()
     if endpoints.model_groups is None:
@@ -499,7 +500,7 @@ def resolve_model_client_config(
     model_group = [
         model_group
         for model_group in copy_model_groups
-        if model_group.get("id") == model_group_id
+        if model_group.get(MODEL_GROUP_ID_CONFIG_KEY) == model_group_id
     ]
 
     if len(model_group) == 0:

@@ -26,7 +26,7 @@ from rasa.shared.constants import (
     OPENAI_API_KEY_ENV_VAR,
     ROUTE_TO_CALM_SLOT,
     LLM_CONFIG_KEY,
-    MODELS_CONFIG_KEY,
+    MODEL_GROUP_CONFIG_KEY,
 )
 from rasa.shared.core.slots import BooleanSlot
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -252,7 +252,7 @@ class TestLLMBasedRouter:
             ),
             (
                 {
-                    LLM_CONFIG_KEY: {MODELS_CONFIG_KEY: "openai_gpt-4"},
+                    LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt-4"},
                 },
                 {
                     "id": "openai_gpt-4",
@@ -323,7 +323,7 @@ class TestLLMBasedRouter:
         monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
 
         config = {
-            LLM_CONFIG_KEY: {MODELS_CONFIG_KEY: "model_group_id"},
+            LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "model_group_id"},
             CALM_ENTRY: {STICKY: "handles transactions"},
         }
         router = LLMBasedRouter(config, model_storage, resource)
