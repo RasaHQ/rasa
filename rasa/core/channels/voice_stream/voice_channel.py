@@ -19,6 +19,7 @@ from rasa.core.channels.voice_stream.asr.asr_event import ASREvent, NewTranscrip
 from sanic import Websocket  # type: ignore
 
 from rasa.core.channels.voice_stream.asr.deepgram import DeepgramASR
+from rasa.core.channels.voice_stream.asr.azure import AzureASR
 from rasa.core.channels.voice_stream.audio_bytes import RasaAudioBytes
 from rasa.core.channels.voice_stream.tts.azure import AzureTTS
 from rasa.core.channels.voice_stream.tts.tts_engine import TTSEngine, TTSError
@@ -54,6 +55,8 @@ def asr_engine_from_config(asr_config: Dict) -> ASREngine:
     asr_config.pop("name")
     if name.lower() == "deepgram":
         return DeepgramASR.from_config_dict(asr_config)
+    if name == "azure":
+        return AzureASR.from_config_dict(asr_config)
     else:
         mark_as_beta_feature("Custom ASR Engine")
         try:

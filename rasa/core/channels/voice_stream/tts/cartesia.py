@@ -62,7 +62,7 @@ class CartesiaTTS(TTSEngine[CartesiaTTSConfig]):
 
     @staticmethod
     def get_request_headers(config: CartesiaTTSConfig) -> dict[str, str]:
-        cartesia_api_key = os.environ.get(CARTESIA_API_KEY)
+        cartesia_api_key = os.environ[CARTESIA_API_KEY]
         return {
             "Cartesia-Version": str(config.version),
             "Content-Type": "application/json",

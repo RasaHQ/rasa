@@ -46,7 +46,7 @@ class DeepgramASR(ASREngine[DeepgramASRConfig]):
         return (
             f"encoding=mulaw&sample_rate=8000&endpointing={self.config.endpointing}"
             f"&vad_events=true&language={self.config.language}"
-            f"&model={self.config.model}&smart_format={self.config.smart_format}"
+            f"&model={self.config.model}&smart_format={str(self.config.smart_format).lower()}"
         )
 
     async def signal_audio_done(self) -> None:

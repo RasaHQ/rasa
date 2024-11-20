@@ -10,7 +10,6 @@ async def run_single_utterance_through_tts_and_asr(
     text: str, asr_engine: ASREngine, tts_engine: TTSEngine, match_ratio: float = 0.75
 ):
     await asr_engine.connect()
-
     async for chunk in tts_engine.synthesize(text):
         await asr_engine.send_audio_chunks(chunk)
     await asr_engine.send_audio_chunks(generate_silence())
