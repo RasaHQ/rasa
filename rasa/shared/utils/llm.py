@@ -24,6 +24,8 @@ from rasa.shared.constants import (
     PROVIDER_CONFIG_KEY,
     MODEL_GROUP_CONFIG_KEY,
     MODEL_GROUP_ID_CONFIG_KEY,
+    MODELS_CONFIG_KEY,
+    ROUTER_CONFIG_KEY,
 )
 from rasa.shared.core.events import BotUttered, UserUttered
 from rasa.shared.core.slots import Slot, BooleanSlot, CategoricalSlot
@@ -337,6 +339,114 @@ def llm_factory(
 ) -> LLMClient:
     """Creates an LLM from the given config.
 
+    If the config is using the old syntax, e.g. defining the llm client directly in
+    config.yaml, then standalone client is initialised (no routing).
+
+    If the config uses the using the new, model group syntax, defined in the
+    endpoints.yml, then router client is initialised if there are more than one model
+    within the group.
+
+    Examples:
+
+    The config below will result in a standalone client:
+    ```
+    {
+       "provider": "openai",
+       "model": "gpt-4",
+       "timeout": 10,
+       "num_retries": 3,
+    }
+    ```
+
+    The config below will also result in a standalone client:
+    ```
+    {
+        "id": "model-group-id",
+        "models": [
+            {"provider": "openai", "model": "gpt-4", "api_key": "test"},
+        ],
+    }
+    ```
+
+    The config below will result in a router client:
+    ```
+    {
+        "id": "test-model-group-id",
+        "models": [
+            {"provider": "openai", "model": "gpt-4", "api_key": "test"},
+            {
+                "provider": "azure",
+                "deployment": "test-deployment",
+                "api_key": "test",
+                "api_base": "test-api-base",
+            },
+        ],
+        "router": {"routing_strategy": "test"},
+    }
+    ```
+
+    Args:
+        custom_config: The custom config  containing values to overwrite defaults.
+        default_config: The default config.
+
+    Returns:
+        Instantiated client based on the configuration.
+    """
+    if custom_config:
+        if ROUTER_CONFIG_KEY in custom_config:
+            return llm_router_factory(custom_config, default_config)
+        if MODELS_CONFIG_KEY in custom_config:
+            return llm_client_factory(
+                custom_config[MODELS_CONFIG_KEY][0], default_config
+            )
+    return llm_client_factory(custom_config, default_config)
+
+
+def llm_router_factory(
+    router_config: Dict[str, Any], default_model_config: Dict[str, Any], **kwargs: Any
+) -> LLMClient:
+    """Creates an LLM Router using the provided configurations.
+
+    This function initializes an LLM Router based on the given router configuration,
+    which includes multiple model configurations. For each model specified in the router
+    configuration, any missing parameters are supplemented using the default model
+    configuration.
+
+    Args:
+        router_config: The full router configuration containing multiple model
+            configurations. Each model's configuration can override parameters from the
+            default model configuration.
+        default_model_config: The default configuration parameters for a single model.
+            These defaults are used to fill in any missing parameters in each model's
+            configuration within the router.
+
+    Returns:
+        An instance that conforms to both `LLMClient` and `RouterClient` protocols
+        representing the configured LLM Router.
+    """
+    from rasa.shared.providers.llm.litellm_router_llm_client import (
+        LiteLLMRouterLLMClient,
+    )
+
+    _router_config_copy = deepcopy(router_config)
+
+    # Combine the custom config with the default config for each model.
+    custom_config_combined_with_defaults = [
+        combine_custom_and_default_config(model_config, default_model_config)
+        for model_config in router_config[MODELS_CONFIG_KEY]
+    ]
+
+    # Update the custom models config with the combined config.
+    _router_config_copy[MODELS_CONFIG_KEY] = custom_config_combined_with_defaults
+
+    return LiteLLMRouterLLMClient.from_config(_router_config_copy)
+
+
+def llm_client_factory(
+    custom_config: Optional[Dict[str, Any]], default_config: Dict[str, Any]
+) -> LLMClient:
+    """Creates an LLM from the given config.
+
     Args:
         custom_config: The custom config  containing values to overwrite defaults
         default_config: The default config.
@@ -357,6 +467,118 @@ def llm_factory(
 
 @_cache_factory
 def embedder_factory(
+    custom_config: Optional[Dict[str, Any]], default_config: Dict[str, Any]
+) -> EmbeddingClient:
+    """Creates an embedding client from the given config.
+
+    If the config is using the old syntax, e.g. defining the llm client directly in
+    config.yaml, then standalone client is initialised (no routing).
+
+    If the config uses the using the new, model group syntax, defined in the
+    endpoints.yml, then router client is initialised if there are more than one model
+    within the group and the router is defined.
+
+    Examples:
+
+    The config below will result in a standalone client:
+    ```
+    {
+       "provider": "openai",
+       "model": "text-embedding-3-small",
+       "timeout": 10,
+       "num_retries": 3,
+    }
+    ```
+
+    The config below will also result in a standalone client:
+    ```
+    {
+        "id": "model-group-id",
+        "models": [
+            {
+                "provider": "openai",
+                "model": "test-embedding-3-small",
+                "api_key": "test"
+            },
+        ],
+    }
+    ```
+
+    The config below will result in a router client:
+    ```
+    {
+        "id": "test-model-group-id",
+        "models": [
+            {"provider": "openai", "model": "gpt-4", "api_key": "test"},
+            {
+                "provider": "azure",
+                "deployment": "test-deployment",
+                "api_key": "test",
+                "api_base": "test-api-base",
+            },
+        ],
+        "router": {"routing_strategy": "test"},
+    }
+    ```
+
+    Args:
+        custom_config: The custom config  containing values to overwrite defaults.
+        default_config: The default config.
+
+    Returns:
+        Instantiated client based on the configuration.
+    """
+    if custom_config:
+        if ROUTER_CONFIG_KEY in custom_config:
+            return embedder_router_factory(custom_config, default_config)
+        if MODELS_CONFIG_KEY in custom_config:
+            return embedder_client_factory(
+                custom_config[MODELS_CONFIG_KEY][0], default_config
+            )
+    return embedder_client_factory(custom_config, default_config)
+
+
+def embedder_router_factory(
+    router_config: Dict[str, Any], default_model_config: Dict[str, Any], **kwargs: Any
+) -> EmbeddingClient:
+    """Creates an Embedder Router using the provided configurations.
+
+    This function initializes an Embedder Router based on the given router
+    configuration, which includes multiple model configurations. For each model
+    specified in the router configuration, any missing parameters are supplemented using
+    the default model configuration.
+
+    Args:
+        router_config: The full router configuration containing multiple model
+            configurations. Each model's configuration can override parameters from the
+            default model configuration.
+        default_model_config: The default configuration parameters for a single model.
+            These defaults are used to fill in any missing parameters in each model's
+            configuration within the router.
+
+    Returns:
+        An instance that conforms to both `EmbeddingClient` and `RouterClient` protocols
+        representing the configured Embedding Router.
+    """
+    from rasa.shared.providers.embedding.litellm_router_embedding_client import (
+        LiteLLMRouterEmbeddingClient,
+    )
+
+    _router_config_copy = deepcopy(router_config)
+
+    # Combine the custom config with the default config for each model.
+    custom_config_combined_with_defaults = [
+        combine_custom_and_default_config(model_config, default_model_config)
+        for model_config in router_config[MODELS_CONFIG_KEY]
+    ]
+
+    # Update the custom models config with the combined config.
+    _router_config_copy[MODELS_CONFIG_KEY] = custom_config_combined_with_defaults
+
+    return LiteLLMRouterEmbeddingClient.from_config(_router_config_copy)
+
+
+def embedder_client_factory(
     custom_config: Optional[Dict[str, Any]], default_config: Dict[str, Any]
 ) -> EmbeddingClient:
     """Creates an Embedder from the given config.
@@ -463,7 +685,7 @@ def llm_api_health_check(
 
 
 def resolve_model_client_config(
-    model_config: Optional[Dict[str, Any]], component_name: str
+    model_config: Optional[Dict[str, Any]], component_name: Optional[str] = None
 ) -> Optional[Dict[str, Any]]:
     """Resolve the model group in the model config.
 
@@ -479,6 +701,19 @@ def resolve_model_client_config(
     Returns:
         The resolved llm config.
     """
+
+    def _raise_invalid_config_exception(reason: str) -> None:
+        """Helper function to raise InvalidConfigException with a formatted message."""
+        if component_name:
+            message = (
+                f"Could not resolve model group '{model_group_id}'"
+                f" for component '{component_name}'."
+            )
+        else:
+            message = f"Could not resolve model group '{model_group_id}'."
+        message += f" {reason}"
+        raise InvalidConfigException(message)
+
     if model_config is None:
         return None
 
@@ -489,33 +724,33 @@ def resolve_model_client_config(
 
     endpoints = AvailableEndpoints.get_instance()
     if endpoints.model_groups is None:
-        raise InvalidConfigException(
-            f"Could not resolve model group '{model_group_id}' for "
-            f"component '{component_name}'. "
-            f"No model group with that id found in endpoints.yml. "
-            f"Please make sure to define the model group."
+        _raise_invalid_config_exception(
+            reason=(
+                "No model group with that id found in endpoints.yml. "
+                "Please make sure to define the model group."
+            )
         )
 
     copy_model_groups = deepcopy(endpoints.model_groups)
     model_group = [
         model_group
-        for model_group in copy_model_groups
+        for model_group in copy_model_groups  # type: ignore[union-attr]
         if model_group.get(MODEL_GROUP_ID_CONFIG_KEY) == model_group_id
     ]
 
     if len(model_group) == 0:
-        raise InvalidConfigException(
-            f"Could not resolve model group '{model_group_id}' for "
-            f"component '{component_name}'. "
-            f"No model group with that id found in endpoints.yml. "
-            f"Please make sure to define the model group."
+        _raise_invalid_config_exception(
+            reason=(
+                "No model group with that id found in endpoints.yml. "
+                "Please make sure to define the model group."
+            )
         )
     if len(model_group) > 1:
-        raise InvalidConfigException(
-            f"Could not resolve model group '{model_group_id}' for "
-            f"component '{component_name}'. "
-            f"Multiple model groups with that id found in endpoints.yml. "
-            f"Please make sure to define the model group just once."
+        _raise_invalid_config_exception(
+            reason=(
+                "Multiple model groups with that id found in endpoints.yml. "
+                "Please make sure to define the model group just once."
+            )
         )
 
     return model_group[0]

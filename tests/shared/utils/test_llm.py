@@ -5,7 +5,6 @@ from unittest.mock import patch
 
 import pytest
 from pytest import MonkeyPatch
-
 from rasa.shared.constants import (
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
@@ -29,15 +28,22 @@ from rasa.shared.providers.embedding.azure_openai_embedding_client import (
 from rasa.shared.providers.embedding.default_litellm_embedding_client import (
     DefaultLiteLLMEmbeddingClient,
 )
+from rasa.shared.providers.embedding.embedding_client import EmbeddingClient
 from rasa.shared.providers.embedding.huggingface_local_embedding_client import (
     HuggingFaceLocalEmbeddingClient,
+)
+from rasa.shared.providers.embedding.litellm_router_embedding_client import (
+    LiteLLMRouterEmbeddingClient,
 )
 from rasa.shared.providers.embedding.openai_embedding_client import (
     OpenAIEmbeddingClient,
 )
 from rasa.shared.providers.llm.azure_openai_llm_client import AzureOpenAILLMClient
 from rasa.shared.providers.llm.default_litellm_llm_client import DefaultLiteLLMClient
+from rasa.shared.providers.llm.litellm_router_llm_client import LiteLLMRouterLLMClient
+from rasa.shared.providers.llm.llm_client import LLMClient
 from rasa.shared.providers.llm.openai_llm_client import OpenAILLMClient
+from rasa.shared.providers.router.router_client import RouterClient
 from rasa.shared.utils.llm import (
     get_prompt_template,
     sanitize_message_for_prompt,
@@ -50,6 +56,10 @@ from rasa.shared.utils.llm import (
     ensure_cache,
     combine_custom_and_default_config,
     resolve_model_client_config,
+    embedder_client_factory,
+    llm_client_factory,
+    llm_router_factory,
+    embedder_router_factory,
 )
 
 
@@ -271,755 +281,1538 @@ def test_get_provider_from_config(config: dict, expected_provider: Optional[str]
     assert provider == expected_provider
 
 
-def test_llm_factory(monkeypatch: MonkeyPatch):
-    monkeypatch.setenv("OPENAI_API_KEY", "test")
+class TestLLMFactory:
+    @pytest.fixture
+    def default_model_configuration(self) -> dict:
+        return {
+            "provider": "openai",
+            "model": "gpt-4",
+            "timeout": 10,
+            "num_retries": 5,
+        }
 
-    llm = llm_factory(None, {"model": "openai/test-gpt", "provider": "openai"})
-    assert isinstance(llm, OpenAILLMClient)
-
-
-@pytest.mark.parametrize(
-    "config,"
-    "expected_model,"
-    "expected_api_type,"
-    "expected_api_base,"
-    "expected_api_version",
-    (
+    @pytest.mark.parametrize(
+        "custom_config, expected_client, api_key",
         (
-            {"model": "openai/test-gpt", "provider": "openai"},
-            "openai/test-gpt",
-            "openai",
-            None,
-            None,
-        ),
-        # Use deprecated provider aliases
-        (
-            {"model": "openai/test-gpt", "type": "openai"},
-            "openai/test-gpt",
-            "openai",
-            None,
-            None,
-        ),
-        (
-            {"model": "openai/test-gpt", "_type": "openai"},
-            "openai/test-gpt",
-            "openai",
-            None,
-            None,
-        ),
-        # No LiteLLM prefix, but a known model
-        ({"model": "gpt-4", "provider": "openai"}, "gpt-4", "openai", None, None),
-        # Deprecated 'model_name'
-        (
-            {"model_name": "openai/test-gpt", "provider": "openai"},
-            "openai/test-gpt",
-            "openai",
-            None,
-            None,
-        ),
-        # With api_base and deprecated aliases
-        (
-            {
-                "provider": "openai",
-                "model": "gpt-4",
-                "api_base": "https://my-test-base",
-            },
-            "gpt-4",
-            "openai",
-            "https://my-test-base",
-            None,
-        ),
-        (
-            {
-                "provider": "openai",
-                "model": "gpt-4",
-                "openai_api_base": "https://my-test-base",
-            },
-            "gpt-4",
-            "openai",
-            "https://my-test-base",
-            None,
-        ),
-        # With api_version and deprecated aliases
-        (
-            {"model": "gpt-4", "api_version": "v1", "provider": "openai"},
-            "gpt-4",
-            "openai",
-            None,
-            "v1",
-        ),
-        (
-            {"model": "gpt-4", "openai_api_version": "v2", "provider": "openai"},
-            "gpt-4",
-            "openai",
-            None,
-            "v2",
-        ),
-    ),
-)
-def test_llm_factory_returns_openai_llm_client(
-    config: dict,
-    expected_model: str,
-    expected_api_type: str,
-    expected_api_base: str,
-    expected_api_version: str,
-    monkeypatch: MonkeyPatch,
-):
-    # Given
-    # Client cannot be instantiated without the required environment variable
-    monkeypatch.setenv("OPENAI_API_KEY", "test")
-
-    # When
-    client = llm_factory(config, {"provider": "openai"})
-
-    # Then
-    assert isinstance(client, OpenAILLMClient)
-    assert client.model == expected_model
-    assert client.api_type == expected_api_type
-    assert client.api_base == expected_api_base
-    assert client.api_version == expected_api_version
-
-
-def test_llm_factory_raises_exception_when_openai_client_setup_is_invalid(
-    monkeypatch: MonkeyPatch,
-):
-    """OpenAI client requires the OPENAI_API_KEY environment variable
-    to be set.
-    """
-    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-    with pytest.raises(ProviderClientValidationError):
-        llm_factory(
-            {"model": "openai/gpt-4", "provider": "openai"}, {"provider": "openai"}
-        )
-
-
-@pytest.mark.parametrize(
-    "config,"
-    "expected_deployment,"
-    "expected_api_type,"
-    "expected_api_base,"
-    "expected_api_version",
-    (
-        (
-            {
-                "provider": "azure",
-                "deployment": "azure/my-test-gpt-deployment-on-azure",
-                "api_base": "https://my-test-base",
-                "api_version": "v1",
-            },
-            "azure/my-test-gpt-deployment-on-azure",
-            "azure",
-            "https://my-test-base",
-            "v1",
-        ),
-        # Use deprecated provider aliases
-        (
-            {
-                "type": "azure",
-                "deployment": "azure/my-test-gpt-deployment-on-azure",
-                "api_base": "https://my-test-base",
-                "api_version": "v1",
-            },
-            "azure/my-test-gpt-deployment-on-azure",
-            "azure",
-            "https://my-test-base",
-            "v1",
-        ),
-        (
-            {
-                "_type": "azure",
-                "deployment": "azure/my-test-gpt-deployment-on-azure",
-                "api_base": "https://my-test-base",
-                "api_version": "v1",
-            },
-            "azure/my-test-gpt-deployment-on-azure",
-            "azure",
-            "https://my-test-base",
-            "v1",
-        ),
-        # Deprecated aliases
-        (
-            {
-                "provider": "azure",
-                "deployment_name": "azure/my-test-gpt-deployment-on-azure",
-                "openai_api_type": "azure",
-                "openai_api_base": "https://my-test-base",
-                "openai_api_version": "v1",
-            },
-            "azure/my-test-gpt-deployment-on-azure",
-            "azure",
-            "https://my-test-base",
-            "v1",
-        ),
-        (
-            {
-                "provider": "azure",
-                "engine": "azure/my-test-gpt-deployment-on-azure",
-                "api_type": "azure",
-                "api_base": "https://my-test-base",
-                "api_version": "v1",
-            },
-            "azure/my-test-gpt-deployment-on-azure",
-            "azure",
-            "https://my-test-base",
-            "v1",
-        ),
-    ),
-)
-def test_llm_factory_returns_azure_openai_llm_client(
-    config: dict,
-    expected_deployment: str,
-    expected_api_type: str,
-    expected_api_base: str,
-    expected_api_version: str,
-    monkeypatch: MonkeyPatch,
-):
-    # Given
-    # Client cannot be instantiated without the required environment variable
-    monkeypatch.setenv("AZURE_API_KEY", "test")
-
-    # When
-    client = llm_factory(config, {"provider": "xyz"})
-
-    # Then
-    assert isinstance(client, AzureOpenAILLMClient)
-    assert client.deployment == expected_deployment
-    assert client.api_type == expected_api_type
-    assert client.api_base == expected_api_base
-    assert client.api_version == expected_api_version
-
-
-def test_llm_factory_returns_azure_openai_llm_client_without_specified_provider_key(
-    monkeypatch: MonkeyPatch,
-):
-    # Given
-    # Client cannot be instantiated without the required environment variable
-    monkeypatch.setenv("AZURE_API_KEY", "test")
-
-    # Do not specify provider key. This is tolerated by llm_factory for now,
-    # because of backward compatibility
-    config = {
-        "deployment": "azure/my-test-gpt-deployment-on-azure",
-        "api_base": "https://my-test-base",
-        "api_version": "v1",
-        "api_type": "azure",
-    }
-
-    # When
-    client = llm_factory(config, {"provider": "openai"})
-
-    # Then
-    assert isinstance(client, AzureOpenAILLMClient)
-    assert client.deployment == config["deployment"]
-    assert client.api_type == config["api_type"]
-    assert client.api_base == config["api_base"]
-    assert client.api_version == config["api_version"]
-
-
-def test_llm_factory_returns_azure_openai_llm_client_with_env_vars_settings(
-    monkeypatch: MonkeyPatch,
-):
-    monkeypatch.setenv("AZURE_API_KEY", "test")
-    monkeypatch.setenv("AZURE_API_BASE", "https://my-test-base")
-    monkeypatch.setenv("AZURE_API_VERSION", "v1")
-    client = llm_factory(
-        {"deployment": "azure/my-test-gpt-deployment-on-azure", "provider": "azure"},
-        {"provider": "openai"},
-    )
-    assert isinstance(client, AzureOpenAILLMClient)
-    assert client.deployment == "azure/my-test-gpt-deployment-on-azure"
-    assert client.api_type == "azure"
-    assert client.api_base == "https://my-test-base"
-    assert client.api_version == "v1"
-
-
-def test_llm_factory_raises_exception_when_azure_openai_client_setup_is_invalid(
-    monkeypatch: MonkeyPatch,
-):
-    """OpenAI client requires the following environment variables
-    to be set:
-    - AZURE_API_KEY
-    - AZURE_API_BASE
-    - AZURE_API_VERSION
-    """
-    required_env_vars = ["AZURE_API_KEY", "AZURE_API_BASE", "AZURE_API_VERSION"]
-    for env_var in required_env_vars:
-        monkeypatch.setenv(env_var, "test")
-        with pytest.raises(ProviderClientValidationError):
-            llm_factory.clear_cache()
-            llm_factory(
+            (
                 {
-                    "deployment": "azure/my-test-gpt-deployment-on-azure",
-                    "api_type": "azure",
+                    "provider": "cohere",
+                    "model": "test-cohere",
                 },
-                {"provider": "openai"},
+                DefaultLiteLLMClient,
+                "COHERE_API_KEY",
+            ),
+            (
+                {
+                    "provider": "openai",
+                    "model": "openai/test-gpt",
+                },
+                OpenAILLMClient,
+                "OPENAI_API_KEY",
+            ),
+            (
+                {
+                    "provider": "azure",
+                    "deployment": "azure/my-test-gpt-deployment-on-azure",
+                    "api_base": "https://my-test-base",
+                    "api_version": "v1",
+                },
+                AzureOpenAILLMClient,
+                "AZURE_API_KEY",
+            ),
+        ),
+    )
+    def test_correctly_initializes_llm_clients(
+        self,
+        custom_config,
+        expected_client,
+        api_key,
+        default_model_configuration,
+        monkeypatch,
+    ):
+        monkeypatch.setenv(api_key, "test")
+        client = llm_factory(custom_config, default_model_configuration)
+        assert isinstance(client, expected_client)
+
+    def test_correctly_initializes_router_clients(self, default_model_configuration):
+        router_config = {
+            "id": "test-model-group-id",
+            "models": [
+                {"provider": "cohere", "model": "test-cohere", "api_key": "test"},
+                {"provider": "openai", "model": "gpt-4", "api_key": "test"},
+                {
+                    "provider": "azure",
+                    "deployment": "test-deployment",
+                    "api_key": "test",
+                    "api_base": "test-api-base",
+                },
+                {
+                    "provider": "self-hosted",
+                    "model": "test-model",
+                    "api_base": "test-api-base",
+                    "api_key": "test",
+                    "api_version": "test-api-version",
+                    "use_chat_completions_endpoint": True,
+                },
+            ],
+            "router": {"routing_strategy": "test"},
+        }
+        client = llm_factory(router_config, default_model_configuration)
+        assert isinstance(client, LLMClient)
+        assert isinstance(client, RouterClient)
+        # Currently, this is one and only implementation of RouterClient, this might
+        # change in the future
+        assert isinstance(client, LiteLLMRouterLLMClient)
+
+    def test_initializes_llm_client_when_router_is_not_present(
+        self, default_model_configuration, monkeypatch
+    ):
+        monkeypatch.setenv("OPENAI_API_KEY", "test")
+        # This configuration is expected to be returned when llm config is
+        # resolved
+        router_config = {
+            "id": "valid_id",
+            "models": [{"provider": "openai", "model": "gpt-4"}],
+            # router: {...} not present
+        }
+        client = llm_factory(router_config, default_model_configuration)
+        assert isinstance(client, LLMClient)
+        assert isinstance(client, OpenAILLMClient)
+
+
+class TestLLMClientFactory:
+    def test_llm_client_factory(self, monkeypatch: MonkeyPatch):
+        monkeypatch.setenv("OPENAI_API_KEY", "test")
+
+        llm = llm_client_factory(
+            None, {"model": "openai/test-gpt", "provider": "openai"}
+        )
+        assert isinstance(llm, OpenAILLMClient)
+
+    @pytest.mark.parametrize(
+        "config,"
+        "expected_model,"
+        "expected_api_type,"
+        "expected_api_base,"
+        "expected_api_version",
+        (
+            (
+                {"model": "openai/test-gpt", "provider": "openai"},
+                "openai/test-gpt",
+                "openai",
+                None,
+                None,
+            ),
+            # Use deprecated provider aliases
+            (
+                {"model": "openai/test-gpt", "type": "openai"},
+                "openai/test-gpt",
+                "openai",
+                None,
+                None,
+            ),
+            (
+                {"model": "openai/test-gpt", "_type": "openai"},
+                "openai/test-gpt",
+                "openai",
+                None,
+                None,
+            ),
+            # No LiteLLM prefix, but a known model
+            ({"model": "gpt-4", "provider": "openai"}, "gpt-4", "openai", None, None),
+            # Deprecated 'model_name'
+            (
+                {"model_name": "openai/test-gpt", "provider": "openai"},
+                "openai/test-gpt",
+                "openai",
+                None,
+                None,
+            ),
+            # With api_base and deprecated aliases
+            (
+                {
+                    "provider": "openai",
+                    "model": "gpt-4",
+                    "api_base": "https://my-test-base",
+                },
+                "gpt-4",
+                "openai",
+                "https://my-test-base",
+                None,
+            ),
+            (
+                {
+                    "provider": "openai",
+                    "model": "gpt-4",
+                    "openai_api_base": "https://my-test-base",
+                },
+                "gpt-4",
+                "openai",
+                "https://my-test-base",
+                None,
+            ),
+            # With api_version and deprecated aliases
+            (
+                {"model": "gpt-4", "api_version": "v1", "provider": "openai"},
+                "gpt-4",
+                "openai",
+                None,
+                "v1",
+            ),
+            (
+                {"model": "gpt-4", "openai_api_version": "v2", "provider": "openai"},
+                "gpt-4",
+                "openai",
+                None,
+                "v2",
+            ),
+        ),
+    )
+    def test_returns_openai_llm_client(
+        self,
+        config: dict,
+        expected_model: str,
+        expected_api_type: str,
+        expected_api_base: str,
+        expected_api_version: str,
+        monkeypatch: MonkeyPatch,
+    ):
+        # Given
+        # Client cannot be instantiated without the required environment variable
+        monkeypatch.setenv("OPENAI_API_KEY", "test")
+
+        # When
+        client = llm_client_factory(config, {"provider": "openai"})
+
+        # Then
+        assert isinstance(client, OpenAILLMClient)
+        assert client.model == expected_model
+        assert client.api_type == expected_api_type
+        assert client.api_base == expected_api_base
+        assert client.api_version == expected_api_version
+
+    def test_raises_exception_when_openai_client_setup_is_invalid(
+        self,
+        monkeypatch: MonkeyPatch,
+    ):
+        """OpenAI client requires the OPENAI_API_KEY environment variable
+        to be set.
+        """
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+        with pytest.raises(ProviderClientValidationError):
+            llm_client_factory(
+                {"model": "openai/gpt-4", "provider": "openai"}, {"provider": "openai"}
             )
-        monkeypatch.delenv(env_var, raising=False)
 
-
-@pytest.mark.parametrize(
-    "config, api_key_env",
-    (
-        ({"model": "cohere/command", "provider": "cohere"}, "COHERE_API_KEY"),
-        ({"model": "command", "provider": "cohere"}, "COHERE_API_KEY"),
-        ({"model": "anthropic/claude", "provider": "anthropic"}, "ANTHROPIC_API_KEY"),
-        ({"model": "claude", "provider": "anthropic"}, "ANTHROPIC_API_KEY"),
-        ({"model": "some-random-model", "provider": "buzz-ai"}, "BUZZ_AI_API_KEY"),
-    ),
-)
-def test_llm_factory_returns_default_litellm_client(
-    config: dict, api_key_env: str, monkeypatch: MonkeyPatch
-):
-    # Given
-    # Client cannot be instantiated without the required environment variable
-    monkeypatch.setenv(api_key_env, "test")
-    # When
-    client = llm_factory(config, {"provider": "openai"})
-    # Then
-    assert isinstance(client, DefaultLiteLLMClient)
-    assert client.model == config["model"]
-    assert client.provider == config["provider"]
-
-
-def test_llm_factory_raises_exception_when_default_client_setup_is_invalid():
-    # Given
-    # config not containing `model` key
-    config = {"some_random_key": "cohere/command"}
-    # When / Then
-    with pytest.raises(ValueError):
-        llm_factory(config, {"provider": "openai"})
-
-
-def test_llm_factory_uses_custom_provider(monkeypatch: MonkeyPatch) -> None:
-    monkeypatch.setenv("OPENAI_API_KEY", "test")
-
-    llm = llm_factory(
-        {"provider": "openai", "model": "test-gpt"},
-        {"provider": "foobar", "model": "foo"},
+    @pytest.mark.parametrize(
+        "config,"
+        "expected_deployment,"
+        "expected_api_type,"
+        "expected_api_base,"
+        "expected_api_version",
+        (
+            (
+                {
+                    "provider": "azure",
+                    "deployment": "azure/my-test-gpt-deployment-on-azure",
+                    "api_base": "https://my-test-base",
+                    "api_version": "v1",
+                },
+                "azure/my-test-gpt-deployment-on-azure",
+                "azure",
+                "https://my-test-base",
+                "v1",
+            ),
+            # Use deprecated provider aliases
+            (
+                {
+                    "type": "azure",
+                    "deployment": "azure/my-test-gpt-deployment-on-azure",
+                    "api_base": "https://my-test-base",
+                    "api_version": "v1",
+                },
+                "azure/my-test-gpt-deployment-on-azure",
+                "azure",
+                "https://my-test-base",
+                "v1",
+            ),
+            (
+                {
+                    "_type": "azure",
+                    "deployment": "azure/my-test-gpt-deployment-on-azure",
+                    "api_base": "https://my-test-base",
+                    "api_version": "v1",
+                },
+                "azure/my-test-gpt-deployment-on-azure",
+                "azure",
+                "https://my-test-base",
+                "v1",
+            ),
+            # Deprecated aliases
+            (
+                {
+                    "provider": "azure",
+                    "deployment_name": "azure/my-test-gpt-deployment-on-azure",
+                    "openai_api_type": "azure",
+                    "openai_api_base": "https://my-test-base",
+                    "openai_api_version": "v1",
+                },
+                "azure/my-test-gpt-deployment-on-azure",
+                "azure",
+                "https://my-test-base",
+                "v1",
+            ),
+            (
+                {
+                    "provider": "azure",
+                    "engine": "azure/my-test-gpt-deployment-on-azure",
+                    "api_type": "azure",
+                    "api_base": "https://my-test-base",
+                    "api_version": "v1",
+                },
+                "azure/my-test-gpt-deployment-on-azure",
+                "azure",
+                "https://my-test-base",
+                "v1",
+            ),
+        ),
     )
-    assert isinstance(llm, OpenAILLMClient)
+    def test_returns_azure_openai_llm_client(
+        self,
+        config: dict,
+        expected_deployment: str,
+        expected_api_type: str,
+        expected_api_base: str,
+        expected_api_version: str,
+        monkeypatch: MonkeyPatch,
+    ):
+        # Given
+        # Client cannot be instantiated without the required environment variable
+        monkeypatch.setenv("AZURE_API_KEY", "test")
 
+        # When
+        client = llm_client_factory(config, {"provider": "xyz"})
 
-def test_llm_factory_ignores_irrelevant_default_args(monkeypatch: MonkeyPatch) -> None:
-    monkeypatch.setenv("OPENAI_API_KEY", "test")
-    # since the types of the custom config and the default are different
-    # all default arguments should be removed.
-    llm = llm_factory(
-        {"provider": "openai", "model": "test-gpt"},
-        {"provider": "foobar", "temperature": -1},
+        # Then
+        assert isinstance(client, AzureOpenAILLMClient)
+        assert client.deployment == expected_deployment
+        assert client.api_type == expected_api_type
+        assert client.api_base == expected_api_base
+        assert client.api_version == expected_api_version
+
+    def test_returns_azure_openai_llm_client_without_specified_provider_key(
+        self,
+        monkeypatch: MonkeyPatch,
+    ):
+        # Given
+        # Client cannot be instantiated without the required environment variable
+        monkeypatch.setenv("AZURE_API_KEY", "test")
+
+        # Do not specify provider key. This is tolerated by llm_factory for now,
+        # because of backward compatibility
+        config = {
+            "deployment": "azure/my-test-gpt-deployment-on-azure",
+            "api_base": "https://my-test-base",
+            "api_version": "v1",
+            "api_type": "azure",
+        }
+
+        # When
+        client = llm_client_factory(config, {"provider": "openai"})
+
+        # Then
+        assert isinstance(client, AzureOpenAILLMClient)
+        assert client.deployment == config["deployment"]
+        assert client.api_type == config["api_type"]
+        assert client.api_base == config["api_base"]
+        assert client.api_version == config["api_version"]
+
+    def test_returns_azure_openai_llm_client_with_env_vars_settings(
+        self,
+        monkeypatch: MonkeyPatch,
+    ):
+        monkeypatch.setenv("AZURE_API_KEY", "test")
+        monkeypatch.setenv("AZURE_API_BASE", "https://my-test-base")
+        monkeypatch.setenv("AZURE_API_VERSION", "v1")
+        client = llm_client_factory(
+            {
+                "deployment": "azure/my-test-gpt-deployment-on-azure",
+                "provider": "azure",
+            },
+            {"provider": "openai"},
+        )
+        assert isinstance(client, AzureOpenAILLMClient)
+        assert client.deployment == "azure/my-test-gpt-deployment-on-azure"
+        assert client.api_type == "azure"
+        assert client.api_base == "https://my-test-base"
+        assert client.api_version == "v1"
+
+    def test_raises_exception_when_azure_openai_client_setup_is_invalid(
+        self,
+        monkeypatch: MonkeyPatch,
+    ):
+        """OpenAI client requires the following environment variables
+        to be set:
+        - AZURE_API_KEY
+        - AZURE_API_BASE
+        - AZURE_API_VERSION
+        """
+        required_env_vars = ["AZURE_API_KEY", "AZURE_API_BASE", "AZURE_API_VERSION"]
+        for env_var in required_env_vars:
+            monkeypatch.setenv(env_var, "test")
+            with pytest.raises(ProviderClientValidationError):
+                llm_factory.clear_cache()
+                llm_client_factory(
+                    {
+                        "deployment": "azure/my-test-gpt-deployment-on-azure",
+                        "api_type": "azure",
+                    },
+                    {"provider": "openai"},
+                )
+            monkeypatch.delenv(env_var, raising=False)
+
+    @pytest.mark.parametrize(
+        "config, api_key_env",
+        (
+            ({"model": "cohere/command", "provider": "cohere"}, "COHERE_API_KEY"),
+            ({"model": "command", "provider": "cohere"}, "COHERE_API_KEY"),
+            (
+                {"model": "anthropic/claude", "provider": "anthropic"},
+                "ANTHROPIC_API_KEY",
+            ),
+            ({"model": "claude", "provider": "anthropic"}, "ANTHROPIC_API_KEY"),
+            ({"model": "some-random-model", "provider": "buzz-ai"}, "BUZZ_AI_API_KEY"),
+        ),
     )
-    assert isinstance(llm, OpenAILLMClient)
-    # since the default argument should be removed, this should be the default -
-    # which is not -1
-    assert llm._extra_parameters.get("temperature") != -1
+    def test_returns_default_litellm_client(
+        self, config: dict, api_key_env: str, monkeypatch: MonkeyPatch
+    ):
+        # Given
+        # Client cannot be instantiated without the required environment variable
+        monkeypatch.setenv(api_key_env, "test")
+        # When
+        client = llm_client_factory(config, {"provider": "openai"})
+        # Then
+        assert isinstance(client, DefaultLiteLLMClient)
+        assert client.model == config["model"]
+        assert client.provider == config["provider"]
+
+    def test_raises_exception_when_default_client_setup_is_invalid(
+        self,
+    ):
+        # Given
+        # config not containing `model` key
+        config = {"some_random_key": "cohere/command"}
+        # When / Then
+        with pytest.raises(ValueError):
+            llm_client_factory(config, {"provider": "openai"})
+
+    def test_uses_custom_provider(self, monkeypatch: MonkeyPatch) -> None:
+        monkeypatch.setenv("OPENAI_API_KEY", "test")
+
+        llm = llm_client_factory(
+            {"provider": "openai", "model": "test-gpt"},
+            {"provider": "foobar", "model": "foo"},
+        )
+        assert isinstance(llm, OpenAILLMClient)
+
+    def test_ignores_irrelevant_default_args(self, monkeypatch: MonkeyPatch) -> None:
+        monkeypatch.setenv("OPENAI_API_KEY", "test")
+        # since the types of the custom config and the default are different
+        # all default arguments should be removed.
+        llm = llm_client_factory(
+            {"provider": "openai", "model": "test-gpt"},
+            {"provider": "foobar", "temperature": -1},
+        )
+        assert isinstance(llm, OpenAILLMClient)
+        # since the default argument should be removed, this should be the default -
+        # which is not -1
+        assert llm._extra_parameters.get("temperature") != -1
+
+    def test_uses_additional_args_from_custom(self, monkeypatch: MonkeyPatch) -> None:
+        monkeypatch.setenv("OPENAI_API_KEY", "test")
+
+        llm = llm_client_factory(
+            {"temperature": -1}, {"provider": "openai", "model": "test-gpt"}
+        )
+        assert isinstance(llm, OpenAILLMClient)
+        assert llm._extra_parameters.get("temperature") == -1
 
 
-def test_llm_factory_uses_additional_args_from_custom(monkeypatch: MonkeyPatch) -> None:
-    monkeypatch.setenv("OPENAI_API_KEY", "test")
+class TestLLMRouterFactory:
+    @pytest.fixture
+    def default_model_configuration(self) -> dict:
+        return {
+            "provider": "openai",
+            "model": "gpt-4",
+            "timeout": 10,
+            "num_retries": 5,
+        }
 
-    llm = llm_factory({"temperature": -1}, {"provider": "openai", "model": "test-gpt"})
-    assert isinstance(llm, OpenAILLMClient)
-    assert llm._extra_parameters.get("temperature") == -1
+    def test_llm_router_factory(self, default_model_configuration: dict):
+        router_config = {
+            "id": "test-model-group-id",
+            "models": [
+                {"provider": "cohere", "model": "test-cohere", "api_key": "test"},
+                {"provider": "openai", "model": "gpt-4", "api_key": "test"},
+                {
+                    "provider": "azure",
+                    "deployment": "test-deployment",
+                    "api_key": "test",
+                    "api_base": "test-api-base",
+                },
+                {
+                    "provider": "self-hosted",
+                    "model": "test-model",
+                    "api_base": "test-api-base",
+                    "api_key": "test",
+                    "api_version": "test-api-version",
+                    "use_chat_completions_endpoint": True,
+                },
+            ],
+            "router": {"routing_strategy": "test"},
+        }
 
+        router = llm_router_factory(router_config, default_model_configuration)
+        assert isinstance(router, RouterClient)
+        assert isinstance(router, LLMClient)
+        # This for current and only implementation of Router. Could change in the
+        # future.
+        assert isinstance(router, LiteLLMRouterLLMClient)
 
-def test_embedder_factory(monkeypatch: MonkeyPatch) -> None:
-    monkeypatch.setenv("OPENAI_API_KEY", "test")
-    embedder = embedder_factory(None, {"provider": "openai", "model": "test-embedding"})
-    assert isinstance(embedder, OpenAIEmbeddingClient)
-
-
-@pytest.mark.parametrize(
-    "config,"
-    "expected_model,"
-    "expected_api_type,"
-    "expected_api_base,"
-    "expected_api_version",
-    (
-        (
-            {"model": "openai/test-embeddings", "provider": "openai"},
-            "openai/test-embeddings",
-            "openai",
-            None,
-            None,
-        ),
-        # Deprecated `provider` aliases
-        (
-            {"model": "openai/test-embeddings", "_type": "openai"},
-            "openai/test-embeddings",
-            "openai",
-            None,
-            None,
-        ),
-        (
-            {"model": "openai/test-embeddings", "type": "openai"},
-            "openai/test-embeddings",
-            "openai",
-            None,
-            None,
-        ),
-        # Deprecated `model_name`
-        (
-            {"model_name": "test-embeddings", "provider": "openai"},
-            "test-embeddings",
-            "openai",
-            None,
-            None,
-        ),
-        # With `api_type` deprecated aliases
-        (
+    def test_router_is_initialized_with_correctly_combined_with_default_parameters(
+        self, default_model_configuration
+    ):
+        router_config = {
+            "id": "test-model-group-id",
+            "models": [
+                {"provider": "cohere", "model": "test-cohere", "api_key": "test"},
+                {
+                    "provider": "azure",
+                    "deployment": "test-deployment",
+                    "api_key": "test",
+                    "api_base": "test-api-base",
+                },
+                {"provider": "openai", "model": "gpt-4", "api_key": "test"},
+                {
+                    "provider": "openai",
+                    "model": "gpt-4",
+                    "api_key": "test",
+                    "num_retries": 100,
+                    "timeout": 100,
+                },
+            ],
+            "router": {"routing_strategy": "test"},
+        }
+        expected_litellm_model_configurations = [
+            # For providers other than specified in default configuration,
+            # everything should be as provided.
             {
-                "model": "test-embeddings",
-                "provider": "openai",
-                "openai_api_type": "openai",
+                "model": "cohere/test-cohere",
+                "api_key": "test",
             },
-            "test-embeddings",
-            "openai",
-            None,
-            None,
-        ),
-        # With `api_base` and deprecated aliases
-        (
             {
-                "provider": "openai",
-                "model": "test-embeddings",
-                "api_base": "https://my-test-base",
+                "model": "azure/test-deployment",
+                "api_key": "test",
+                "api_base": "test-api-base",
             },
-            "test-embeddings",
-            "openai",
-            "https://my-test-base",
-            None,
-        ),
-        (
+            # For providers matching the provider specified in default configuration,
+            # we expect the default parameters to be present if not provided.
             {
-                "provider": "openai",
-                "model": "test-embeddings",
-                "openai_api_base": "https://my-test-base",
+                "model": "openai/gpt-4",
+                "api_key": "test",
+                "timeout": 10,
+                "num_retries": 5,
             },
-            "test-embeddings",
-            "openai",
-            "https://my-test-base",
-            None,
-        ),
-        # With `api_version` and deprecated aliases
-        (
-            {"model": "test-embeddings", "api_version": "v1", "provider": "openai"},
-            "test-embeddings",
-            "openai",
-            None,
-            "v1",
-        ),
-        (
+            # For providers matching the provider specified in default configuration,
+            # we expect the default parameters not to override the be present
+            # parameters.
             {
-                "provider": "openai",
-                "model": "test-embeddings",
-                "openai_api_version": "v2",
+                "model": "openai/gpt-4",
+                "api_key": "test",
+                "timeout": 100,
+                "num_retries": 100,
             },
-            "test-embeddings",
-            "openai",
-            None,
-            "v2",
-        ),
-    ),
-)
-def test_embedder_factory_returns_openai_embedding_client(
-    config: dict,
-    expected_model: str,
-    expected_api_type: str,
-    expected_api_base: str,
-    expected_api_version: str,
-    monkeypatch: MonkeyPatch,
-):
-    # Given
-    # Client cannot be instantiated without the required environment variable
-    monkeypatch.setenv("OPENAI_API_KEY", "test")
+        ]
 
-    # When
-    client = embedder_factory(config, {"provider": "openai"})
-
-    # Then
-    assert isinstance(client, OpenAIEmbeddingClient)
-    assert client.model == expected_model
-    assert client.api_type == expected_api_type
-    assert client.api_base == expected_api_base
-    assert client.api_version == expected_api_version
-
-
-def test_embedder_factory_raises_exception_when_openai_client_setup_is_invalid(
-    monkeypatch: MonkeyPatch,
-):
-    """OpenAI client requires the OPENAI_API_KEY environment variable
-    to be set.
-    """
-    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-    with pytest.raises(ProviderClientValidationError):
-        embedder_factory(
-            {"model": "openai/gpt-4", "provider": "openai"}, {"provider": "openai"}
+        router = llm_router_factory(router_config, default_model_configuration)
+        assert isinstance(router, RouterClient)
+        assert isinstance(router, LLMClient)
+        # This for current and only implementation of Router. Could change in the
+        # future.
+        assert isinstance(router, LiteLLMRouterLLMClient)
+        actual_litellm_model_configurations = [
+            model_configuration["litellm_params"]
+            for model_configuration in router.model_configurations
+        ]
+        assert (
+            actual_litellm_model_configurations == expected_litellm_model_configurations
         )
 
-
-@pytest.mark.parametrize(
-    "config,"
-    "expected_deployment,"
-    "expected_api_type,"
-    "expected_api_base,"
-    "expected_api_version",
-    (
-        (
+    @pytest.mark.parametrize(
+        "router_config",
+        [
+            # Use of forbidden 'n' parameter
             {
-                "provider": "azure",
-                "deployment": "my-test-embedding-deployment-on-azure",
-                "api_type": "azure",
-                "api_base": "https://my-test-base",
-                "api_version": "v1",
+                "id": "test-model-group-id",
+                "models": [
+                    {
+                        "provider": "cohere",
+                        "model": "test-cohere",
+                        "api_key": "test",
+                        "n": 10,
+                    },
+                ],
+                "router": {},
             },
-            "my-test-embedding-deployment-on-azure",
-            "azure",
-            "https://my-test-base",
-            "v1",
-        ),
-        # Deprecated `provider` aliases
-        (
+            # Use of forbidden 'stream' parameter
             {
-                "type": "azure",
-                "deployment": "my-test-embedding-deployment-on-azure",
-                "api_type": "azure",
-                "api_base": "https://my-test-base",
-                "api_version": "v1",
+                "id": "test-model-group-id",
+                "models": [
+                    {
+                        "provider": "cohere",
+                        "model": "test-cohere",
+                        "api_key": "test",
+                        "stream": 10,
+                    },
+                ],
+                "router": {},
             },
-            "my-test-embedding-deployment-on-azure",
-            "azure",
-            "https://my-test-base",
-            "v1",
-        ),
-        (
+            # Missing "api_key"
             {
-                "_type": "azure",
-                "deployment": "my-test-embedding-deployment-on-azure",
-                "api_type": "azure",
-                "api_base": "https://my-test-base",
-                "api_version": "v1",
+                "id": "test-model-group-id",
+                "models": [
+                    {
+                        "provider": "azure",
+                        "deployment": "test-deployment",
+                        # "api_key" missing
+                        "api_base": "https://example.azure.com",
+                    }
+                ],
+                "router": {"routing_strategy": "test"},
             },
-            "my-test-embedding-deployment-on-azure",
-            "azure",
-            "https://my-test-base",
-            "v1",
-        ),
-        # Deprecated aliases
-        (
+            # Missing "api_base"
             {
-                "provider": "azure",
-                "deployment_name": "my-test-embedding-deployment-on-azure",
-                "openai_api_type": "azure",
-                "openai_api_base": "https://my-test-base",
-                "openai_api_version": "v1",
+                "id": "test-model-group-id",
+                "models": [
+                    {
+                        "provider": "azure",
+                        "deployment": "test-deployment",
+                        "api_key": "test",
+                        # "api_base" missing
+                    }
+                ],
+                "router": {"routing_strategy": "test"},
             },
-            "my-test-embedding-deployment-on-azure",
-            "azure",
-            "https://my-test-base",
-            "v1",
-        ),
-        (
+            # Missing "router"
             {
-                "provider": "azure",
-                "engine": "my-test-embedding-deployment-on-azure",
-                "api_type": "azure",
-                "api_base": "https://my-test-base",
-                "api_version": "v1",
+                "id": "test-model-group-id",
+                "models": [
+                    {
+                        "provider": "azure",
+                        "deployment": "test-deployment",
+                        "api_key": "test",
+                        "api_base": "test-api-base",
+                    }
+                ],
+                # "router": {"routing_strategy": "test"}, missing
             },
-            "my-test-embedding-deployment-on-azure",
-            "azure",
-            "https://my-test-base",
-            "v1",
+        ],
+    )
+    def test_raises_error_if_configuration_is_invalid(
+        self, router_config: dict, default_model_configuration: dict
+    ):
+        with pytest.raises((ValueError, ProviderClientValidationError)):
+            llm_router_factory(router_config, default_model_configuration)
+
+
+class TestEmbedderFactory:
+    @pytest.fixture
+    def default_model_configuration(self) -> dict:
+        return {
+            "provider": "openai",
+            "model": "test-embeddings-3",
+            "timeout": 10,
+            "num_retries": 5,
+        }
+
+    @pytest.mark.parametrize(
+        "custom_config, expected_client, api_key",
+        (
+            (
+                {
+                    "provider": "huggingface",
+                    "model": "test-hf/test-embeddings",
+                },
+                DefaultLiteLLMEmbeddingClient,
+                "HUGGINGFACE_API_KEY",
+            ),
+            (
+                {
+                    "provider": "openai",
+                    "model": "openai/test-embeddings",
+                },
+                OpenAIEmbeddingClient,
+                "OPENAI_API_KEY",
+            ),
+            (
+                {
+                    "provider": "azure",
+                    "deployment": "azure/my-test-gpt-deployment-on-azure",
+                    "api_base": "https://my-test-base",
+                    "api_version": "v1",
+                },
+                AzureOpenAIEmbeddingClient,
+                "AZURE_API_KEY",
+            ),
         ),
-    ),
-)
-def test_embedder_factory_returns_azure_openai_embedding_client(
-    config: dict,
-    expected_deployment: str,
-    expected_api_type: str,
-    expected_api_base: str,
-    expected_api_version: str,
-    monkeypatch: MonkeyPatch,
-):
-    # Given
-    # Client cannot be instantiated without the required environment variable
-    monkeypatch.setenv("AZURE_API_KEY", "test")
+    )
+    def test_correctly_initializes_embedding_clients(
+        self,
+        custom_config,
+        expected_client,
+        api_key,
+        default_model_configuration,
+        monkeypatch,
+    ):
+        monkeypatch.setenv(api_key, "test")
+        client = embedder_factory(custom_config, default_model_configuration)
+        assert isinstance(client, expected_client)
 
-    # When
-    client = embedder_factory(config, {"provider": "xyz"})
+    def test_correctly_initializes_router_clients(self, default_model_configuration):
+        router_config = {
+            "id": "test-model-group-id",
+            "models": [
+                {
+                    "provider": "huggingface",
+                    "model": "test-hf/test-hf-embeddings",
+                    "api_key": "test",
+                },
+                {"provider": "openai", "model": "test-embeddings-3", "api_key": "test"},
+                {
+                    "provider": "azure",
+                    "deployment": "test-deployment",
+                    "api_key": "test",
+                    "api_base": "test-api-base",
+                },
+            ],
+            "router": {"routing_strategy": "test"},
+        }
+        client = embedder_factory(router_config, default_model_configuration)
+        assert isinstance(client, EmbeddingClient)
+        assert isinstance(client, RouterClient)
+        # Currently, this is one and only implementation of RouterClient, this might
+        # change in the future
+        assert isinstance(client, LiteLLMRouterEmbeddingClient)
 
-    # Then
-    assert isinstance(client, AzureOpenAIEmbeddingClient)
-    assert client.deployment == expected_deployment
-    assert client.api_type == expected_api_type
-    assert client.api_base == expected_api_base
-    assert client.api_version == expected_api_version
+    def test_initializes_embedding_client_when_router_is_not_present(
+        self, default_model_configuration, monkeypatch
+    ):
+        monkeypatch.setenv("OPENAI_API_KEY", "test")
+        # This configuration is expected to be returned when llm config is
+        # resolved
+        router_config = {
+            "id": "valid_id",
+            "models": [{"provider": "openai", "model": "test-embeddings-3"}],
+            # router: {...} not present
+        }
+        client = embedder_factory(router_config, default_model_configuration)
+        assert isinstance(client, EmbeddingClient)
+        assert isinstance(client, OpenAIEmbeddingClient)
 
 
-def test_embedder_factory_raises_exception_when_azure_openai_client_setup_is_invalid(
-    monkeypatch: MonkeyPatch,
-):
-    """Azure OpenAI client requires the following environment variables
-    to be set:
-    - AZURE_API_KEY
-    - AZURE_API_BASE
-    - AZURE_API_VERSION
-    """
-    required_env_vars = ["AZURE_API_KEY", "AZURE_API_BASE", "AZURE_API_VERSION"]
+class TestEmbedderClientFactory:
+    def test_embedder_client_factory(self, monkeypatch: MonkeyPatch) -> None:
+        monkeypatch.setenv("OPENAI_API_KEY", "test")
+        embedder = embedder_client_factory(
+            None, {"provider": "openai", "model": "test-embedding"}
+        )
+        assert isinstance(embedder, OpenAIEmbeddingClient)
 
-    for env_var in required_env_vars:
-        monkeypatch.setenv(env_var, "test")
+    @pytest.mark.parametrize(
+        "config,"
+        "expected_model,"
+        "expected_api_type,"
+        "expected_api_base,"
+        "expected_api_version",
+        (
+            (
+                {"model": "openai/test-embeddings", "provider": "openai"},
+                "openai/test-embeddings",
+                "openai",
+                None,
+                None,
+            ),
+            # Deprecated `provider` aliases
+            (
+                {"model": "openai/test-embeddings", "_type": "openai"},
+                "openai/test-embeddings",
+                "openai",
+                None,
+                None,
+            ),
+            (
+                {"model": "openai/test-embeddings", "type": "openai"},
+                "openai/test-embeddings",
+                "openai",
+                None,
+                None,
+            ),
+            # Deprecated `model_name`
+            (
+                {"model_name": "test-embeddings", "provider": "openai"},
+                "test-embeddings",
+                "openai",
+                None,
+                None,
+            ),
+            # With `api_type` deprecated aliases
+            (
+                {
+                    "model": "test-embeddings",
+                    "provider": "openai",
+                    "openai_api_type": "openai",
+                },
+                "test-embeddings",
+                "openai",
+                None,
+                None,
+            ),
+            # With `api_base` and deprecated aliases
+            (
+                {
+                    "provider": "openai",
+                    "model": "test-embeddings",
+                    "api_base": "https://my-test-base",
+                },
+                "test-embeddings",
+                "openai",
+                "https://my-test-base",
+                None,
+            ),
+            (
+                {
+                    "provider": "openai",
+                    "model": "test-embeddings",
+                    "openai_api_base": "https://my-test-base",
+                },
+                "test-embeddings",
+                "openai",
+                "https://my-test-base",
+                None,
+            ),
+            # With `api_version` and deprecated aliases
+            (
+                {"model": "test-embeddings", "api_version": "v1", "provider": "openai"},
+                "test-embeddings",
+                "openai",
+                None,
+                "v1",
+            ),
+            (
+                {
+                    "provider": "openai",
+                    "model": "test-embeddings",
+                    "openai_api_version": "v2",
+                },
+                "test-embeddings",
+                "openai",
+                None,
+                "v2",
+            ),
+        ),
+    )
+    def test_factory_returns_openai_embedding_client(
+        self,
+        config: dict,
+        expected_model: str,
+        expected_api_type: str,
+        expected_api_base: str,
+        expected_api_version: str,
+        monkeypatch: MonkeyPatch,
+    ):
+        # Given
+        # Client cannot be instantiated without the required environment variable
+        monkeypatch.setenv("OPENAI_API_KEY", "test")
+
+        # When
+        client = embedder_client_factory(config, {"provider": "openai"})
+
+        # Then
+        assert isinstance(client, OpenAIEmbeddingClient)
+        assert client.model == expected_model
+        assert client.api_type == expected_api_type
+        assert client.api_base == expected_api_base
+        assert client.api_version == expected_api_version
+
+    def test_raises_exception_when_openai_client_setup_is_invalid(
+        self,
+        monkeypatch: MonkeyPatch,
+    ):
+        """OpenAI client requires the OPENAI_API_KEY environment variable
+        to be set.
+        """
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
         with pytest.raises(ProviderClientValidationError):
-            embedder_factory(
+            embedder_client_factory(
+                {"model": "openai/gpt-4", "provider": "openai"}, {"provider": "openai"}
+            )
+
+    @pytest.mark.parametrize(
+        "config,"
+        "expected_deployment,"
+        "expected_api_type,"
+        "expected_api_base,"
+        "expected_api_version",
+        (
+            (
                 {
                     "provider": "azure",
                     "deployment": "my-test-embedding-deployment-on-azure",
+                    "api_type": "azure",
+                    "api_base": "https://my-test-base",
+                    "api_version": "v1",
                 },
-                {"provider": "openai"},
-            )
-        monkeypatch.delenv(env_var, raising=False)
-
-
-def test_embedder_factory_returns_azure_openai_embedding_client_without_specified_provider_key(  # noqa: E501
-    monkeypatch: MonkeyPatch,
-):
-    # Given
-    # Client cannot be instantiated without the required environment variable
-    monkeypatch.setenv("AZURE_API_KEY", "test")
-
-    # Do not specify provider key. This is tolerated by llm_factory for now,
-    # because of backward compatibility
-    config = {
-        "deployment": "azure/my-test-embedding-deployment-on-azure",
-        "api_base": "https://my-test-base",
-        "api_version": "v1",
-        "api_type": "azure",
-    }
-
-    # When
-    client = embedder_factory(config, {"provider": "openai"})
-
-    # Then
-    assert isinstance(client, AzureOpenAIEmbeddingClient)
-    assert client.deployment == config["deployment"]
-    assert client.api_type == config["api_type"]
-    assert client.api_base == config["api_base"]
-    assert client.api_version == config["api_version"]
-
-
-@pytest.mark.parametrize(
-    "config, api_key_env",
-    (
-        (
-            {"model": "cohere/embed-english-v3.0", "provider": "cohere"},
-            "COHERE_API_KEY",
+                "my-test-embedding-deployment-on-azure",
+                "azure",
+                "https://my-test-base",
+                "v1",
+            ),
+            # Deprecated `provider` aliases
+            (
+                {
+                    "type": "azure",
+                    "deployment": "my-test-embedding-deployment-on-azure",
+                    "api_type": "azure",
+                    "api_base": "https://my-test-base",
+                    "api_version": "v1",
+                },
+                "my-test-embedding-deployment-on-azure",
+                "azure",
+                "https://my-test-base",
+                "v1",
+            ),
+            (
+                {
+                    "_type": "azure",
+                    "deployment": "my-test-embedding-deployment-on-azure",
+                    "api_type": "azure",
+                    "api_base": "https://my-test-base",
+                    "api_version": "v1",
+                },
+                "my-test-embedding-deployment-on-azure",
+                "azure",
+                "https://my-test-base",
+                "v1",
+            ),
+            # Deprecated aliases
+            (
+                {
+                    "provider": "azure",
+                    "deployment_name": "my-test-embedding-deployment-on-azure",
+                    "openai_api_type": "azure",
+                    "openai_api_base": "https://my-test-base",
+                    "openai_api_version": "v1",
+                },
+                "my-test-embedding-deployment-on-azure",
+                "azure",
+                "https://my-test-base",
+                "v1",
+            ),
+            (
+                {
+                    "provider": "azure",
+                    "engine": "my-test-embedding-deployment-on-azure",
+                    "api_type": "azure",
+                    "api_base": "https://my-test-base",
+                    "api_version": "v1",
+                },
+                "my-test-embedding-deployment-on-azure",
+                "azure",
+                "https://my-test-base",
+                "v1",
+            ),
         ),
-        (
-            {"model": "huggingface/microsoft/codebert-base", "provider": "huggingface"},
-            "HUGGINGFACE_API_KEY",
-        ),
-    ),
-)
-def test_embedder_factory_returns_default_litellm_client(
-    config: dict, api_key_env: str, monkeypatch: MonkeyPatch
-):
-    # Given
-    # Client cannot be instantiated without the required environment variable
-    monkeypatch.setenv(api_key_env, "test")
-    # When
-    client = embedder_factory(config, {"provider": "openai"})
-    # Then
-    assert isinstance(client, DefaultLiteLLMEmbeddingClient)
-
-
-def test_embedder_factory_raises_exception_when_default_client_setup_is_invalid():
-    # Given
-    # config not containing `model` key
-    config = {"some_random_key": "cohere/command"}
-    # When / Then
-    with pytest.raises(ValueError):
-        embedder_factory(config, {"provider": "openai"})
-
-
-def test_embedder_factory_uses_custom_provider(monkeypatch: MonkeyPatch) -> None:
-    monkeypatch.setenv("OPENAI_API_KEY", "test")
-
-    embedder = embedder_factory(
-        {"provider": "openai", "model": "test-embedding"},
-        {"provider": "foobar", "model": "foo"},
     )
-    assert isinstance(embedder, OpenAIEmbeddingClient)
-
-
-@pytest.mark.parametrize(
-    "config," "expected_model",
-    [
-        (
-            {"provider": "huggingface_local", "model": "hf-repo/model_name"},
-            "hf-repo/model_name",
-        ),
-        # Deprecated `provider` aliases
-        (
-            {"type": "huggingface_local", "model": "hf-repo/model_name"},
-            "hf-repo/model_name",
-        ),
-        (
-            {"_type": "huggingface_local", "model": "hf-repo/model_name"},
-            "hf-repo/model_name",
-        ),
-        # Deprecated combination of `type: huggingface`
-        (
-            {"type": "huggingface", "model": "hf-repo/model_name"},
-            "hf-repo/model_name",
-        ),
-        (
-            {"_type": "huggingface", "model": "hf-repo/model_name"},
-            "hf-repo/model_name",
-        ),
-    ],
-)
-def test_embedder_factory_returns_huggingface_local_embedding_client(
-    config: dict,
-    expected_model: str,
-    monkeypatch: MonkeyPatch,
-):
-    # When
-    with (
-        patch(
-            "rasa.shared.providers.embedding.huggingface_local_embedding_client"
-            ".HuggingFaceLocalEmbeddingClient._init_client"
-        ) as mock_init_client,
-        patch(
-            "rasa.shared.providers.embedding.huggingface_local_embedding_client"
-            ".HuggingFaceLocalEmbeddingClient._validate_if_sentence_transformers_installed"
-        ) as mock_validate_if_sentence_transformers_installed,
+    def test_returns_azure_openai_embedding_client(
+        self,
+        config: dict,
+        expected_deployment: str,
+        expected_api_type: str,
+        expected_api_base: str,
+        expected_api_version: str,
+        monkeypatch: MonkeyPatch,
     ):
-        mock_init_client.return_value = None
-        mock_validate_if_sentence_transformers_installed.return_value = None
+        # Given
+        # Client cannot be instantiated without the required environment variable
+        monkeypatch.setenv("AZURE_API_KEY", "test")
 
-        client = embedder_factory(config, {"provider": "xyz"})
+        # When
+        client = embedder_client_factory(config, {"provider": "xyz"})
 
-    # Then
-    assert isinstance(client, HuggingFaceLocalEmbeddingClient)
-    assert client.model == expected_model
+        # Then
+        assert isinstance(client, AzureOpenAIEmbeddingClient)
+        assert client.deployment == expected_deployment
+        assert client.api_type == expected_api_type
+        assert client.api_base == expected_api_base
+        assert client.api_version == expected_api_version
+
+    def test_raises_exception_when_azure_openai_client_setup_is_invalid(
+        self,
+        monkeypatch: MonkeyPatch,
+    ):
+        """Azure OpenAI client requires the following environment variables
+        to be set:
+        - AZURE_API_KEY
+        - AZURE_API_BASE
+        - AZURE_API_VERSION
+        """
+        required_env_vars = ["AZURE_API_KEY", "AZURE_API_BASE", "AZURE_API_VERSION"]
+
+        for env_var in required_env_vars:
+            monkeypatch.setenv(env_var, "test")
+            with pytest.raises(ProviderClientValidationError):
+                embedder_client_factory(
+                    {
+                        "provider": "azure",
+                        "deployment": "my-test-embedding-deployment-on-azure",
+                    },
+                    {"provider": "openai"},
+                )
+            monkeypatch.delenv(env_var, raising=False)
+
+    def test_returns_azure_openai_embedding_client_without_specified_provider_key(
+        self,
+        monkeypatch: MonkeyPatch,
+    ):
+        # Given
+        # Client cannot be instantiated without the required environment variable
+        monkeypatch.setenv("AZURE_API_KEY", "test")
+
+        # Do not specify provider key. This is tolerated by llm_factory for now,
+        # because of backward compatibility
+        config = {
+            "deployment": "azure/my-test-embedding-deployment-on-azure",
+            "api_base": "https://my-test-base",
+            "api_version": "v1",
+            "api_type": "azure",
+        }
+
+        # When
+        client = embedder_client_factory(config, {"provider": "openai"})
+
+        # Then
+        assert isinstance(client, AzureOpenAIEmbeddingClient)
+        assert client.deployment == config["deployment"]
+        assert client.api_type == config["api_type"]
+        assert client.api_base == config["api_base"]
+        assert client.api_version == config["api_version"]
+
+    @pytest.mark.parametrize(
+        "config, api_key_env",
+        (
+            (
+                {"model": "cohere/embed-english-v3.0", "provider": "cohere"},
+                "COHERE_API_KEY",
+            ),
+            (
+                {
+                    "model": "huggingface/microsoft/codebert-base",
+                    "provider": "huggingface",
+                },
+                "HUGGINGFACE_API_KEY",
+            ),
+        ),
+    )
+    def test_returns_default_litellm_client(
+        self, config: dict, api_key_env: str, monkeypatch: MonkeyPatch
+    ):
+        # Given
+        # Client cannot be instantiated without the required environment variable
+        monkeypatch.setenv(api_key_env, "test")
+        # When
+        client = embedder_client_factory(config, {"provider": "openai"})
+        # Then
+        assert isinstance(client, DefaultLiteLLMEmbeddingClient)
+
+    def test_raises_exception_when_default_client_setup_is_invalid(self):
+        # Given
+        # config not containing `model` key
+        config = {"some_random_key": "cohere/command"}
+        # When / Then
+        with pytest.raises(ValueError):
+            embedder_client_factory(config, {"provider": "openai"})
+
+    def test_uses_custom_provider(
+        self,
+        monkeypatch: MonkeyPatch,
+    ) -> None:
+        monkeypatch.setenv("OPENAI_API_KEY", "test")
+
+        embedder = embedder_client_factory(
+            {"provider": "openai", "model": "test-embedding"},
+            {"provider": "foobar", "model": "foo"},
+        )
+        assert isinstance(embedder, OpenAIEmbeddingClient)
+
+    @pytest.mark.parametrize(
+        "config," "expected_model",
+        [
+            (
+                {"provider": "huggingface_local", "model": "hf-repo/model_name"},
+                "hf-repo/model_name",
+            ),
+            # Deprecated `provider` aliases
+            (
+                {"type": "huggingface_local", "model": "hf-repo/model_name"},
+                "hf-repo/model_name",
+            ),
+            (
+                {"_type": "huggingface_local", "model": "hf-repo/model_name"},
+                "hf-repo/model_name",
+            ),
+            # Deprecated combination of `type: huggingface`
+            (
+                {"type": "huggingface", "model": "hf-repo/model_name"},
+                "hf-repo/model_name",
+            ),
+            (
+                {"_type": "huggingface", "model": "hf-repo/model_name"},
+                "hf-repo/model_name",
+            ),
+        ],
+    )
+    def test_returns_huggingface_local_embedding_client(
+        self,
+        config: dict,
+        expected_model: str,
+        monkeypatch: MonkeyPatch,
+    ):
+        # When
+        with (
+            patch(
+                "rasa.shared.providers.embedding.huggingface_local_embedding_client"
+                ".HuggingFaceLocalEmbeddingClient._init_client"
+            ) as mock_init_client,
+            patch(
+                "rasa.shared.providers.embedding.huggingface_local_embedding_client"
+                ".HuggingFaceLocalEmbeddingClient._validate_if_sentence_transformers_installed"
+            ) as mock_validate_if_sentence_transformers_installed,
+        ):
+            mock_init_client.return_value = None
+            mock_validate_if_sentence_transformers_installed.return_value = None
+
+            client = embedder_client_factory(config, {"provider": "xyz"})
+
+        # Then
+        assert isinstance(client, HuggingFaceLocalEmbeddingClient)
+        assert client.model == expected_model
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            # `model` not provided
+            {"provider": "huggingface_local"},
+            # `model` not provided, deprecated configs
+            {"type": "huggingface_local"},
+            {"_type": "huggingface_local"},
+        ],
+    )
+    def test_raises_exception_when_huggingface_local_embedding_client_config_is_invalid(
+        self,
+        config,
+    ):
+        # When / Then
+        with pytest.raises(ValueError):
+            embedder_client_factory(config, {"provider": "xyz"})
 
 
-@pytest.mark.parametrize(
-    "config",
-    [
-        # `model` not provided
-        {"provider": "huggingface_local"},
-        # `model` not provided, deprecated configs
-        {"type": "huggingface_local"},
-        {"_type": "huggingface_local"},
-    ],
-)
-def test_embedder_factory_raises_exception_when_huggingface_local_embedding_client_config_is_invalid(  # noqa: E501
-    config,
-):
-    # When / Then
-    with pytest.raises(ValueError):
-        embedder_factory(config, {"provider": "xyz"})
+class TestEmbedderRouterFactory:
+    @pytest.fixture
+    def default_model_configuration(self) -> dict:
+        return {
+            "provider": "openai",
+            "model": "test-text-embedding",
+            "timeout": 10,
+            "num_retries": 5,
+        }
+
+    def test_llm_router_factory(self, default_model_configuration: dict):
+        router_config = {
+            "id": "test-model-group-id",
+            "models": [
+                {
+                    "provider": "openai",
+                    "model": "some-other-test-embeddings",
+                    "api_key": "test",
+                },
+                {
+                    "provider": "azure",
+                    "deployment": "test-deployment",
+                    "api_key": "test",
+                    "api_base": "test-api-base",
+                },
+            ],
+            "router": {"routing_strategy": "test"},
+        }
+
+        router = embedder_router_factory(router_config, default_model_configuration)
+        assert isinstance(router, RouterClient)
+        assert isinstance(router, EmbeddingClient)
+        # This for current and only implementation of Router. Could change in the
+        # future.
+        assert isinstance(router, LiteLLMRouterEmbeddingClient)
+
+    def test_router_is_initialized_with_correctly_combined_with_default_parameters(
+        self, default_model_configuration
+    ):
+        router_config = {
+            "id": "test-model-group-id",
+            "models": [
+                {
+                    "provider": "azure",
+                    "deployment": "test-deployment",
+                    "api_key": "test",
+                    "api_base": "test-api-base",
+                },
+                {
+                    "provider": "openai",
+                    "model": "some-other-test-embeddings",
+                    "api_key": "test",
+                },
+                {
+                    "provider": "openai",
+                    "model": "test-text-embedding",
+                    "api_key": "test",
+                    "num_retries": 100,
+                    "timeout": 100,
+                },
+            ],
+            "router": {"routing_strategy": "test"},
+        }
+        expected_litellm_model_configurations = [
+            # For providers other than specified in default configuration,
+            # everything should be as provided.
+            {
+                "model": "azure/test-deployment",
+                "api_key": "test",
+                "api_base": "test-api-base",
+            },
+            # For providers matching the provider specified in default configuration,
+            # we expect the default parameters to be present if not provided.
+            {
+                "model": "openai/some-other-test-embeddings",
+                "api_key": "test",
+                "timeout": 10,
+                "num_retries": 5,
+            },
+            # For providers matching the provider specified in default configuration,
+            # we expect the default parameters not to override the be present
+            # parameters.
+            {
+                "model": "openai/test-text-embedding",
+                "api_key": "test",
+                "timeout": 100,
+                "num_retries": 100,
+            },
+        ]
+
+        router = embedder_router_factory(router_config, default_model_configuration)
+        assert isinstance(router, RouterClient)
+        assert isinstance(router, EmbeddingClient)
+        # This for current and only implementation of Router. Could change in the
+        # future.
+        assert isinstance(router, LiteLLMRouterEmbeddingClient)
+        actual_litellm_model_configurations = [
+            model_configuration["litellm_params"]
+            for model_configuration in router.model_configurations
+        ]
+        assert (
+            actual_litellm_model_configurations == expected_litellm_model_configurations
+        )
+
+    @pytest.mark.parametrize(
+        "router_config",
+        [
+            # Missing "api_key"
+            {
+                "id": "test-model-group-id",
+                "models": [
+                    {
+                        "provider": "azure",
+                        "deployment": "test-deployment",
+                        # "api_key" missing
+                        "api_base": "https://example.azure.com",
+                    }
+                ],
+                "router": {"routing_strategy": "test"},
+            },
+            # Missing "api_base"
+            {
+                "id": "test-model-group-id",
+                "models": [
+                    {
+                        "provider": "azure",
+                        "deployment": "test-deployment",
+                        "api_key": "test",
+                        # "api_base" missing
+                    }
+                ],
+                "router": {"routing_strategy": "test"},
+            },
+            # Missing "router"
+            {
+                "id": "test-model-group-id",
+                "models": [
+                    {
+                        "provider": "azure",
+                        "deployment": "test-deployment",
+                        "api_key": "test",
+                        "api_base": "test-api-base",
+                    }
+                ],
+                # "router": {"routing_strategy": "test"}, missing
+            },
+        ],
+    )
+    def test_raises_error_if_configuration_is_invalid(
+        self, router_config: dict, default_model_configuration: dict
+    ):
+        with pytest.raises((ValueError, ProviderClientValidationError)):
+            llm_router_factory(router_config, default_model_configuration)
+
+
+class TestFactoryCaching:
+    def test_llm_cache_factory(self) -> None:
+        with mock.patch(
+            "rasa.shared.utils.llm.get_llm_client_from_provider"
+        ) as mock_get_llm_client_from_provider:
+            # Reset the cache as the cache is shared across tests.
+            llm_factory.clear_cache()
+
+            mock_get_llm_client_from_provider.reset_mock()
+            # Call llm_factory with the first set of configs.
+            llm_factory(
+                {"provider": "openai", "model": "test-gpt"},
+                {"provider": "foobar", "model": "foo"},
+            )
+            # Cache miss!
+            mock_get_llm_client_from_provider.assert_called_once()
+            # Reset the mock to track the next call
+            mock_get_llm_client_from_provider.reset_mock()
+
+            # Call llm_factory with the second set of configs.
+            llm_factory(
+                {"provider": "openai", "model": "test-gpt-1000"},
+                {"provider": "foobar", "model": "foo"},
+            )
+            # Cache miss!
+            mock_get_llm_client_from_provider.assert_called_once()
+            # Reset the mock to track the next call
+            mock_get_llm_client_from_provider.reset_mock()
+
+            # Call llm_factory with the third set of configs.
+            llm_factory(
+                {"provider": "openai", "model": "test-gpt"},
+                {"provider": "buzz", "model": "foo"},
+            )
+            # Cache miss!
+            mock_get_llm_client_from_provider.assert_called_once()
+            # Reset the mock to track the next call
+            mock_get_llm_client_from_provider.reset_mock()
+
+            # Call llm_factory with the first set of configs again
+            llm_factory(
+                {"provider": "openai", "model": "test-gpt"},
+                {"provider": "foobar", "model": "foo"},
+            )
+            # Cache hit!
+            mock_get_llm_client_from_provider.assert_not_called()
+
+            # Call llm_factory with the second set of configs again
+            llm_factory(
+                {"provider": "openai", "model": "test-gpt-1000"},
+                {"provider": "foobar", "model": "foo"},
+            )
+            # Cache hit!
+            mock_get_llm_client_from_provider.assert_not_called()
+
+    def test_cache_factory_ensures_no_mixup_between_llm_and_embedder_factory(
+        self,
+    ) -> None:
+        with (
+            mock.patch(
+                "rasa.shared.utils.llm.get_llm_client_from_provider"
+            ) as mock_get_llm_client_from_provider,
+            mock.patch(
+                "rasa.shared.utils.llm.get_embedding_client_from_provider"
+            ) as mock_get_embedding_client_from_provider,
+        ):
+            # Reset the cache as the cache is shared across tests.
+            llm_factory.clear_cache()
+            embedder_factory.clear_cache()
+
+            # Call llm_factory with the first set of configs.
+            llm_factory(
+                {"provider": "openai", "model": "test-gpt"},
+                {"provider": "foobar", "model": "foo"},
+            )
+            # Cache miss!
+            mock_get_llm_client_from_provider.assert_called_once()
+            # Ensure that the embedder factory is not called.
+            mock_get_embedding_client_from_provider.assert_not_called()
+
+            # Reset the mocks to track the next calls
+            mock_get_llm_client_from_provider.reset_mock()
+
+            # Call embedder_factory with the same configs.
+            embedder_factory(
+                {"provider": "openai", "model": "test-gpt"},
+                {"provider": "foobar", "model": "foo"},
+            )
+            # Ensure that the llm factory is not called.
+            mock_get_llm_client_from_provider.assert_not_called()
+            # Cache miss!
+            mock_get_embedding_client_from_provider.assert_called_once()
+
+            # Reset the mocks to track the next calls
+            mock_get_embedding_client_from_provider.reset_mock()
+
+            # Call llm_factory with the same configs again.
+            llm_factory(
+                {"provider": "openai", "model": "test-gpt"},
+                {"provider": "foobar", "model": "foo"},
+            )
+            # Cache hit!
+            mock_get_llm_client_from_provider.assert_not_called()
+
+            # Call embedder_factory with the same configs again.
+            embedder_factory(
+                {"provider": "openai", "model": "test-gpt"},
+                {"provider": "foobar", "model": "foo"},
+            )
+            # Cache hit!
+            mock_get_embedding_client_from_provider.assert_not_called()
+
+    def test_llm_cache_factory_for_config_keys_in_different_order(self) -> None:
+        with mock.patch(
+            "rasa.shared.utils.llm.get_llm_client_from_provider"
+        ) as mock_get_llm_client_from_provider:
+            # Reset the cache as the cache is shared across tests.
+            llm_factory.clear_cache()
+
+            # Call llm_factory with the 1st set of configs
+            llm_factory(
+                {"provider": "openai", "model": "test-gpt"},
+                {"provider": "foobar", "model": "foo"},
+            )
+            # Cache miss!
+            mock_get_llm_client_from_provider.assert_called_once()
+
+            # Reset the mock to track the second call
+            mock_get_llm_client_from_provider.reset_mock()
+
+            # Call llm_factory with the 2nd set of configs (same keys, different order)
+            llm_factory(
+                {"model": "test-gpt", "provider": "openai"},
+                {"model": "foo", "provider": "foobar"},
+            )
+            # Cache hit!
+            mock_get_llm_client_from_provider.assert_not_called()
+
+    def test_embedder_cache_factory(self) -> None:
+        with mock.patch(
+            "rasa.shared.utils.llm.get_embedding_client_from_provider"
+        ) as mock_get_embedding_client_from_provider:
+            # Reset the cache as the cache is shared across tests.
+            embedder_factory.clear_cache()
+
+            # Call embedder_factory with the 1st set of configs
+            embedder_factory(
+                {"provider": "openai", "model": "test-embedding"},
+                {"provider": "foobar", "model": "foo"},
+            )
+            # Cache miss!
+            mock_get_embedding_client_from_provider.assert_called_once()
+            # Reset the mock to track the next call
+            mock_get_embedding_client_from_provider.reset_mock()
+
+            # Call embedder_factory with the 2nd set of configs
+            embedder_factory(
+                {"provider": "openai", "model": "test-embedding-1000"},
+                {"provider": "foobar", "model": "foo"},
+            )
+            # Cache miss!
+            mock_get_embedding_client_from_provider.assert_called_once()
+            # Reset the mock to track the next call
+            mock_get_embedding_client_from_provider.reset_mock()
+
+            # Call embedder_factory with the 3rd set of configs
+            embedder_factory(
+                {"provider": "openai", "model": "test-embedding"},
+                {"provider": "buzz", "model": "foo"},
+            )
+            # Cache miss!
+            mock_get_embedding_client_from_provider.assert_called_once()
+            # Reset the mock to track the next call
+            mock_get_embedding_client_from_provider.reset_mock()
+
+            # Call embedder_factory with the 1st set of configs again
+            embedder_factory(
+                {"provider": "openai", "model": "test-embedding"},
+                {"provider": "foobar", "model": "foo"},
+            )
+            # Cache hit!
+            mock_get_embedding_client_from_provider.assert_not_called()
+
+            # Call embedder_factory with the 3rd set of configs again
+            embedder_factory(
+                {"provider": "openai", "model": "test-embedding"},
+                {"provider": "buzz", "model": "foo"},
+            )
+            # Cache hit!
+            mock_get_embedding_client_from_provider.assert_not_called()
+
+    def test_embedder_cache_factory_for_config_keys_in_different_order(self) -> None:
+        with mock.patch(
+            "rasa.shared.utils.llm.get_embedding_client_from_provider"
+        ) as mock_get_embedding_client_from_provider:
+            # Reset the cache as the cache is shared across tests.
+            embedder_factory.clear_cache()
+
+            # Call embedder_factory with the 1st set of configs
+            embedder_factory(
+                {"provider": "openai", "model": "test-embedding"},
+                {"provider": "foobar", "model": "foo"},
+            )
+            # Cache miss!
+            mock_get_embedding_client_from_provider.assert_called_once()
+
+            # Reset the mock to track the second call
+            mock_get_embedding_client_from_provider.reset_mock()
+
+            # Call embedder_factory with the 2nd set of configs
+            # (same keys, different order)
+            embedder_factory(
+                {"model": "test-embedding", "provider": "openai"},
+                {"model": "foo", "provider": "foobar"},
+            )
+            # Cache hit!
+            mock_get_embedding_client_from_provider.assert_not_called()
+
+    def test_to_show_that_cache_is_persisted_across_different_calls(self) -> None:
+        with mock.patch(
+            "rasa.shared.utils.llm.get_embedding_client_from_provider"
+        ) as mock_get_embedding_client_from_provider:
+            # Cache is not reset, hence the cache is shared across tests.
+            # Call embedder_factory with the config used in the previous test -
+            # test_embedder_cache_factory_for_config_keys_in_different_order.
+            embedder_factory(
+                {"provider": "openai", "model": "test-embedding"},
+                {"provider": "foobar", "model": "foo"},
+            )
+            # Cache hit!
+            mock_get_embedding_client_from_provider.assert_not_called()
 
 
 @pytest.mark.parametrize(
@@ -1077,240 +1870,6 @@ def test_ensure_cache_creates_creates_diskcache_sqlite_db(
     # cache.db is the database name that is
     # created in the given directory
     assert (cache_dir / "rasa-llm-cache" / "cache.db").exists()
-
-
-def test_llm_cache_factory() -> None:
-    with mock.patch(
-        "rasa.shared.utils.llm.get_llm_client_from_provider"
-    ) as mock_get_llm_client_from_provider:
-        # Reset the cache as the cache is shared across tests.
-        llm_factory.clear_cache()
-
-        mock_get_llm_client_from_provider.reset_mock()
-        # Call llm_factory with the first set of configs.
-        llm_factory(
-            {"provider": "openai", "model": "test-gpt"},
-            {"provider": "foobar", "model": "foo"},
-        )
-        # Cache miss!
-        mock_get_llm_client_from_provider.assert_called_once()
-        # Reset the mock to track the next call
-        mock_get_llm_client_from_provider.reset_mock()
-
-        # Call llm_factory with the second set of configs.
-        llm_factory(
-            {"provider": "openai", "model": "test-gpt-1000"},
-            {"provider": "foobar", "model": "foo"},
-        )
-        # Cache miss!
-        mock_get_llm_client_from_provider.assert_called_once()
-        # Reset the mock to track the next call
-        mock_get_llm_client_from_provider.reset_mock()
-
-        # Call llm_factory with the third set of configs.
-        llm_factory(
-            {"provider": "openai", "model": "test-gpt"},
-            {"provider": "buzz", "model": "foo"},
-        )
-        # Cache miss!
-        mock_get_llm_client_from_provider.assert_called_once()
-        # Reset the mock to track the next call
-        mock_get_llm_client_from_provider.reset_mock()
-
-        # Call llm_factory with the first set of configs again
-        llm_factory(
-            {"provider": "openai", "model": "test-gpt"},
-            {"provider": "foobar", "model": "foo"},
-        )
-        # Cache hit!
-        mock_get_llm_client_from_provider.assert_not_called()
-
-        # Call llm_factory with the second set of configs again
-        llm_factory(
-            {"provider": "openai", "model": "test-gpt-1000"},
-            {"provider": "foobar", "model": "foo"},
-        )
-        # Cache hit!
-        mock_get_llm_client_from_provider.assert_not_called()
-
-
-def test_cache_factory_ensures_no_mixup_between_llm_and_embedder_factory() -> None:
-    with (
-        mock.patch(
-            "rasa.shared.utils.llm.get_llm_client_from_provider"
-        ) as mock_get_llm_client_from_provider,
-        mock.patch(
-            "rasa.shared.utils.llm.get_embedding_client_from_provider"
-        ) as mock_get_embedding_client_from_provider,
-    ):
-        # Reset the cache as the cache is shared across tests.
-        llm_factory.clear_cache()
-        embedder_factory.clear_cache()
-
-        # Call llm_factory with the first set of configs.
-        llm_factory(
-            {"provider": "openai", "model": "test-gpt"},
-            {"provider": "foobar", "model": "foo"},
-        )
-        # Cache miss!
-        mock_get_llm_client_from_provider.assert_called_once()
-        # Ensure that the embedder factory is not called.
-        mock_get_embedding_client_from_provider.assert_not_called()
-
-        # Reset the mocks to track the next calls
-        mock_get_llm_client_from_provider.reset_mock()
-
-        # Call embedder_factory with the same configs.
-        embedder_factory(
-            {"provider": "openai", "model": "test-gpt"},
-            {"provider": "foobar", "model": "foo"},
-        )
-        # Ensure that the llm factory is not called.
-        mock_get_llm_client_from_provider.assert_not_called()
-        # Cache miss!
-        mock_get_embedding_client_from_provider.assert_called_once()
-
-        # Reset the mocks to track the next calls
-        mock_get_embedding_client_from_provider.reset_mock()
-
-        # Call llm_factory with the same configs again.
-        llm_factory(
-            {"provider": "openai", "model": "test-gpt"},
-            {"provider": "foobar", "model": "foo"},
-        )
-        # Cache hit!
-        mock_get_llm_client_from_provider.assert_not_called()
-
-        # Call embedder_factory with the same configs again.
-        embedder_factory(
-            {"provider": "openai", "model": "test-gpt"},
-            {"provider": "foobar", "model": "foo"},
-        )
-        # Cache hit!
-        mock_get_embedding_client_from_provider.assert_not_called()
-
-
-def test_llm_cache_factory_for_config_keys_in_different_order() -> None:
-    with mock.patch(
-        "rasa.shared.utils.llm.get_llm_client_from_provider"
-    ) as mock_get_llm_client_from_provider:
-        # Reset the cache as the cache is shared across tests.
-        llm_factory.clear_cache()
-
-        # Call llm_factory with the 1st set of configs
-        llm_factory(
-            {"provider": "openai", "model": "test-gpt"},
-            {"provider": "foobar", "model": "foo"},
-        )
-        # Cache miss!
-        mock_get_llm_client_from_provider.assert_called_once()
-
-        # Reset the mock to track the second call
-        mock_get_llm_client_from_provider.reset_mock()
-
-        # Call llm_factory with the 2nd set of configs (same keys, different order)
-        llm_factory(
-            {"model": "test-gpt", "provider": "openai"},
-            {"model": "foo", "provider": "foobar"},
-        )
-        # Cache hit!
-        mock_get_llm_client_from_provider.assert_not_called()
-
-
-def test_embedder_cache_factory() -> None:
-    with mock.patch(
-        "rasa.shared.utils.llm.get_embedding_client_from_provider"
-    ) as mock_get_embedding_client_from_provider:
-        # Reset the cache as the cache is shared across tests.
-        embedder_factory.clear_cache()
-
-        # Call embedder_factory with the 1st set of configs
-        embedder_factory(
-            {"provider": "openai", "model": "test-embedding"},
-            {"provider": "foobar", "model": "foo"},
-        )
-        # Cache miss!
-        mock_get_embedding_client_from_provider.assert_called_once()
-        # Reset the mock to track the next call
-        mock_get_embedding_client_from_provider.reset_mock()
-
-        # Call embedder_factory with the 2nd set of configs
-        embedder_factory(
-            {"provider": "openai", "model": "test-embedding-1000"},
-            {"provider": "foobar", "model": "foo"},
-        )
-        # Cache miss!
-        mock_get_embedding_client_from_provider.assert_called_once()
-        # Reset the mock to track the next call
-        mock_get_embedding_client_from_provider.reset_mock()
-
-        # Call embedder_factory with the 3rd set of configs
-        embedder_factory(
-            {"provider": "openai", "model": "test-embedding"},
-            {"provider": "buzz", "model": "foo"},
-        )
-        # Cache miss!
-        mock_get_embedding_client_from_provider.assert_called_once()
-        # Reset the mock to track the next call
-        mock_get_embedding_client_from_provider.reset_mock()
-
-        # Call embedder_factory with the 1st set of configs again
-        embedder_factory(
-            {"provider": "openai", "model": "test-embedding"},
-            {"provider": "foobar", "model": "foo"},
-        )
-        # Cache hit!
-        mock_get_embedding_client_from_provider.assert_not_called()
-
-        # Call embedder_factory with the 3rd set of configs again
-        embedder_factory(
-            {"provider": "openai", "model": "test-embedding"},
-            {"provider": "buzz", "model": "foo"},
-        )
-        # Cache hit!
-        mock_get_embedding_client_from_provider.assert_not_called()
-
-
-def test_embedder_cache_factory_for_config_keys_in_different_order() -> None:
-    with mock.patch(
-        "rasa.shared.utils.llm.get_embedding_client_from_provider"
-    ) as mock_get_embedding_client_from_provider:
-        # Reset the cache as the cache is shared across tests.
-        embedder_factory.clear_cache()
-
-        # Call embedder_factory with the 1st set of configs
-        embedder_factory(
-            {"provider": "openai", "model": "test-embedding"},
-            {"provider": "foobar", "model": "foo"},
-        )
-        # Cache miss!
-        mock_get_embedding_client_from_provider.assert_called_once()
-
-        # Reset the mock to track the second call
-        mock_get_embedding_client_from_provider.reset_mock()
-
-        # Call embedder_factory with the 2nd set of configs (same keys, different order)
-        embedder_factory(
-            {"model": "test-embedding", "provider": "openai"},
-            {"model": "foo", "provider": "foobar"},
-        )
-        # Cache hit!
-        mock_get_embedding_client_from_provider.assert_not_called()
-
-
-def test_to_show_that_cache_is_persisted_across_different_calls() -> None:
-    with mock.patch(
-        "rasa.shared.utils.llm.get_embedding_client_from_provider"
-    ) as mock_get_embedding_client_from_provider:
-        # Cache is not reset, hence the cache is shared across tests.
-        # Call embedder_factory with the config used in the previous test -
-        # test_embedder_cache_factory_for_config_keys_in_different_order.
-        embedder_factory(
-            {"provider": "openai", "model": "test-embedding"},
-            {"provider": "foobar", "model": "foo"},
-        )
-        # Cache hit!
-        mock_get_embedding_client_from_provider.assert_not_called()
 
 
 @pytest.mark.parametrize(
