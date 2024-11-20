@@ -1,11 +1,12 @@
+import os
 from typing import Any, Dict, Optional, Text
 
-import os
 import structlog
 from jinja2 import Template
 
 from rasa import telemetry
 from rasa.core.nlg.response import TemplatedNaturalLanguageGenerator
+from rasa.core.nlg.summarize import summarize_conversation
 from rasa.shared.constants import (
     LLM_API_HEALTH_CHECK_ENV_VAR,
     LLM_CONFIG_KEY,
@@ -28,14 +29,12 @@ from rasa.shared.utils.llm import (
     llm_api_health_check,
     llm_factory,
     try_instantiate_llm_client,
+    resolve_model_client_config,
 )
-from rasa.utils.endpoints import EndpointConfig
 from rasa.shared.utils.llm import (
     tracker_as_readable_transcript,
 )
-
-from rasa.core.nlg.summarize import summarize_conversation
-
+from rasa.utils.endpoints import EndpointConfig
 from rasa.utils.log_utils import log_llm
 
 structlogger = structlog.get_logger()
@@ -105,8 +104,14 @@ class ContextualResponseRephraser(TemplatedNaturalLanguageGenerator):
         self.trace_prompt_tokens = self.nlg_endpoint.kwargs.get(
             "trace_prompt_tokens", False
         )
-        llm_client = try_instantiate_llm_client(
+
+        self.llm_config = resolve_model_client_config(
             self.nlg_endpoint.kwargs.get(LLM_CONFIG_KEY),
+            ContextualResponseRephraser.__name__,
+        )
+
+        llm_client = try_instantiate_llm_client(
+            self.llm_config,
             DEFAULT_LLM_CONFIG,
             "contextual_response_rephraser.init",
             ContextualResponseRephraser.__name__,
@@ -145,9 +150,7 @@ class ContextualResponseRephraser(TemplatedNaturalLanguageGenerator):
         Returns:
             generated text
         """
-        llm = llm_factory(
-            self.nlg_endpoint.kwargs.get(LLM_CONFIG_KEY), DEFAULT_LLM_CONFIG
-        )
+        llm = llm_factory(self.llm_config, DEFAULT_LLM_CONFIG)
 
         try:
             llm_response = await llm.acompletion(prompt)
@@ -161,7 +164,7 @@ class ContextualResponseRephraser(TemplatedNaturalLanguageGenerator):
     def llm_property(self, prop: str) -> Optional[str]:
         """Returns a property of the LLM provider."""
         return combine_custom_and_default_config(
-            self.nlg_endpoint.kwargs.get(LLM_CONFIG_KEY), DEFAULT_LLM_CONFIG
+            self.llm_config, DEFAULT_LLM_CONFIG
         ).get(prop)
 
     def custom_prompt_template(self, prompt_template: str) -> Optional[str]:
@@ -194,9 +197,7 @@ class ContextualResponseRephraser(TemplatedNaturalLanguageGenerator):
         Returns:
         The history for the prompt.
         """
-        llm = llm_factory(
-            self.nlg_endpoint.kwargs.get(LLM_CONFIG_KEY), DEFAULT_LLM_CONFIG
-        )
+        llm = llm_factory(self.llm_config, DEFAULT_LLM_CONFIG)
         return await summarize_conversation(tracker, llm, max_turns=5)
 
     async def rephrase(
