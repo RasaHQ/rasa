@@ -229,9 +229,9 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
         commands: List[Command] = []
 
         slot_set_re = re.compile(
-            r"""SetSlot\((\"?[a-zA-Z_][a-zA-Z0-9_-]*?\"?), ?(.*)\)"""
+            r"""SetSlot\(['"]?([a-zA-Z_][a-zA-Z0-9_-]*)['"]?, ?['"]?(.*)['"]?\)"""
         )
-        start_flow_re = re.compile(r"StartFlow\(([a-zA-Z0-9_-]+?)\)")
+        start_flow_re = re.compile(r"StartFlow\(['\"]?([a-zA-Z0-9_-]+)['\"]?\)")
         change_flow_re = re.compile(r"ChangeFlow\(\)")
         cancel_flow_re = re.compile(r"CancelFlow\(\)")
         chitchat_re = re.compile(r"ChitChat\(\)")
@@ -280,9 +280,19 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
                 commands.append(HumanHandoffCommand())
             elif match := clarify_re.search(action):
                 options = sorted([opt.strip() for opt in match.group(1).split(",")])
+                # Remove surrounding quotes if present
+                cleaned_options = []
+                for flow in options:
+                    if (flow.startswith('"') and flow.endswith('"')) or (
+                        flow.startswith("'") and flow.endswith("'")
+                    ):
+                        cleaned_options.append(flow[1:-1])
+                    else:
+                        cleaned_options.append(flow)
+                # check if flow is valid
                 valid_options = [
                     flow
-                    for flow in options
+                    for flow in cleaned_options
                     if flow in flows.user_flow_ids
                     and flow not in user_flows_on_the_stack(tracker.stack)
                 ]
@@ -292,6 +302,13 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
                     commands.append(ClarifyCommand(valid_options))
             elif change_flow_re.search(action):
                 commands.append(ChangeFlowCommand())
+
+        if not commands:
+            structlogger.debug(
+                "multi_step_llm_command_generator.parse_commands",
+                message="No commands were parsed from the LLM actions.",
+                actions=actions,
+            )
 
         return commands
 
