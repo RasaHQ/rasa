@@ -104,3 +104,5 @@ swagger-coverage-output
 swagger-coverage-report*.html
 swagger-coverage-results.json
 swagger-doc*
+
+__pycache__/
