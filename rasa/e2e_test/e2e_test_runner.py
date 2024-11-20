@@ -190,11 +190,11 @@ class E2ETestRunner:
                     error=f"Message handling timed out for user message '{step.text}'.",
                     exc_info=True,
                 )
-            except Exception:
+            except Exception as exc:
                 structlogger.error(
                     "e2e_test_runner.run_prediction_loop",
                     error=f"An exception occurred while handling "
-                    f"user message '{step.text}'.",
+                    f"user message '{step.text}'. Error: {exc}",
                 )
             tracker = await self.agent.tracker_store.retrieve(sender_id)  # type: ignore[assignment]
             turns[position], event_cursor = self.get_actual_step_output(

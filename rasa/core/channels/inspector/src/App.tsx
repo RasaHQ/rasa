@@ -180,7 +180,7 @@ export function App() {
     });
   };
 
-  if (!rasaChatSessionId) return <LoadingSpinner />;
+  if (!rasaChatSessionId && !window.location.href.includes("socketio")) return <LoadingSpinner />;
 
   return (
     <Grid sx={gridSx}>

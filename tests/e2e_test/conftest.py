@@ -2,6 +2,8 @@ from typing import Any, Dict, List, Text, Union
 
 import pytest
 
+from rasa.core.agent import Agent
+from rasa.core.processor import MessageProcessor
 from rasa.e2e_test.assertions import (
     ActionExecutedAssertion,
     AssertedSlot,
@@ -153,3 +155,8 @@ def failed_assertion_results(test_cases: List[TestCase]) -> List[TestResult]:
             ),
         )
     ]
+
+
+@pytest.fixture
+async def default_processor(default_agent: Agent) -> MessageProcessor:
+    return default_agent.processor
