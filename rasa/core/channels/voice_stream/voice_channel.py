@@ -3,6 +3,11 @@ import structlog
 import copy
 from dataclasses import asdict, dataclass
 from typing import Any, Awaitable, Callable, Dict, List, Optional
+from rasa.shared.utils.common import (
+    class_from_module_path,
+    mark_as_beta_feature,
+)
+from rasa.shared.utils.cli import print_error_and_exit
 
 from sanic.exceptions import ServerError, WebsocketClosed
 
@@ -44,25 +49,53 @@ class ContinueConversationAction(VoiceChannelAction):
 
 
 def asr_engine_from_config(asr_config: Dict) -> ASREngine:
-    name = str(asr_config["name"]).lower()
+    name = str(asr_config["name"])
     asr_config = copy.copy(asr_config)
     asr_config.pop("name")
-    if name == "deepgram":
+    if name.lower() == "deepgram":
         return DeepgramASR.from_config_dict(asr_config)
     else:
-        raise NotImplementedError
+        mark_as_beta_feature("Custom ASR Engine")
+        try:
+            asr_engine_class = class_from_module_path(name)
+            return asr_engine_class.from_config_dict(asr_config)
+        except NameError:
+            print_error_and_exit(
+                f"Failed to initialize ASR Engine with type '{name}'. "
+                f"Please make sure the method `from_config_dict`is implemented."
+            )
+        except TypeError as e:
+            print_error_and_exit(
+                f"Failed to initialize ASR Engine with type '{name}'. "
+                f"Invalid configuration provided. "
+                f"Error: {e}"
+            )
 
 
 def tts_engine_from_config(tts_config: Dict) -> TTSEngine:
-    name = str(tts_config["name"]).lower()
+    name = str(tts_config["name"])
     tts_config = copy.copy(tts_config)
     tts_config.pop("name")
-    if name == "azure":
+    if name.lower() == "azure":
         return AzureTTS.from_config_dict(tts_config)
-    elif name == "cartesia":
+    elif name.lower() == "cartesia":
         return CartesiaTTS.from_config_dict(tts_config)
     else:
-        raise NotImplementedError(f"TTS engine {name} is not implemented")
+        mark_as_beta_feature("Custom TTS Engine")
+        try:
+            tts_engine_class = class_from_module_path(name)
+            return tts_engine_class.from_config_dict(tts_config)
+        except NameError:
+            print_error_and_exit(
+                f"Failed to initialize TTS Engine with type '{name}'. "
+                f"Please make sure the method `from_config_dict`is implemented."
+            )
+        except TypeError as e:
+            print_error_and_exit(
+                f"Failed to initialize ASR Engine with type '{name}'. "
+                f"Invalid configuration provided. "
+                f"Error: {e}"
+            )
 
 
 class VoiceOutputChannel(OutputChannel):

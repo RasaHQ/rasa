@@ -13,7 +13,7 @@ from sanic import Blueprint, response, Websocket  # type: ignore[attr-defined]
 from sanic.request import Request
 from sanic.response import HTTPResponse
 
-from rasa.shared.utils.common import mark_as_experimental_feature
+from rasa.shared.utils.common import mark_as_beta_feature
 
 
 structlogger = structlog.get_logger()
@@ -36,7 +36,7 @@ class JambonzVoiceReadyInput(InputChannel):
 
     def __init__(self) -> None:
         """Initializes the JambonzVoiceReadyInput channel."""
-        mark_as_experimental_feature("Jambonz Channel")
+        mark_as_beta_feature("Jambonz Channel")
         validate_voice_license_scope()
 
     def blueprint(
