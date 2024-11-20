@@ -33,7 +33,7 @@ jobs:
         fetch-depth: '0'
     - name: Run Trivy vulnerability scanner
       id: trivy
-      uses: aquasecurity/trivy-action@d43c1f16c00cfd3978dde6c07f4bbcf9eb6993ca
+      uses: aquasecurity/trivy-action@915b19bbe73b92a6cf82a1bc12b087c9a19a5fe2
       continue-on-error: true
       with:
         format: 'table'
@@ -84,7 +84,7 @@ jobs:
 
       - name: Set up Python 3.11 🐍
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
         with:
           python-version: '3.11'
 
