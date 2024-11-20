@@ -721,9 +721,7 @@ def test_training_logs_domain_correctly_when_using_domain_dir(
     default_template_path = parent_path / "../../rasa/cli/project_templates/default"
 
     # Copy over the contents of the default project to the test directory
-    rasa.utils.common.copy_directory(
-        default_template_path, Path(testdir.tmpdir)
-    )
+    rasa.utils.common.copy_directory(default_template_path, Path(testdir.tmpdir))
 
     # Create 'domain' directory inside the test directory
     domain_dir_path = os.path.join(testdir.tmpdir, "domain")
