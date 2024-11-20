@@ -128,20 +128,22 @@ def print_run_or_instructions(args: argparse.Namespace) -> None:
             setattr(args, a, None)
 
         args.port = constants.DEFAULT_SERVER_PORT
+        args.voice = False
+        args.skip_yaml_validation = ["domain"]
 
         inspect(args)
     else:
         if args.no_prompt:
             print(
                 "If you want to speak to the assistant, "
-                "run 'rasa shell' at any time inside "
+                "run 'rasa inspect' at any time inside "
                 "the project directory."
             )
         else:
             print_success(
                 "Ok 👍🏼. "
                 "If you want to speak to the assistant, "
-                "run 'rasa shell' at any time inside "
+                "run 'rasa inspect' at any time inside "
                 "the project directory."
             )
 
