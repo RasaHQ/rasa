@@ -10,6 +10,17 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.10.11] - 2024-11-20
+                         
+Rasa Pro 3.10.11 (2024-11-20)                              
+### Bugfixes
+- [#1420](https://github.com/rasahq/rasa-private/issues/1420): Fix parsing of commands in case the LLM response surrounds flow names, slot names, or slot values
+  with single or double quotes.
+
+### Miscellaneous internal changes
+- [#1435](https://github.com/rasahq/rasa-private/issues/1435), [#1556](https://github.com/rasahq/rasa-private/issues/1556)
+
+
 ## [3.10.10] - 2024-11-14
                          
 Rasa Pro 3.10.10 (2024-11-14)                              
