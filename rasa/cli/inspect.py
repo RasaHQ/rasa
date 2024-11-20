@@ -31,10 +31,12 @@ def add_subparser(
         ),
     )
     inspect_parser.set_defaults(func=inspect)
-
     arguments.set_shell_arguments(inspect_parser)
 
-    inspect_parser.add_argument("--voice", help="Enable voice", action="store_true")
+    # additional argument for voice
+    inspect_parser.add_argument(
+        "--voice", help="Enable voice", action="store_true", default=False
+    )
 
     # it'd be confusing to expose those arguments to the user,
     # so we remove them
