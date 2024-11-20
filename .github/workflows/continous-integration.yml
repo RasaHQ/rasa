@@ -198,7 +198,7 @@ jobs:
         yarn build
 
     - name: Store build output
-      uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
+      uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
       with:
         name: inspector-build
         path: rasa/core/channels/inspector/dist
@@ -279,7 +279,7 @@ jobs:
 
       - name: Save Test Results
         if: always()
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
         with:
           name: Tracing Integration Test Results
           path: integration-results-tracing.xml
@@ -345,7 +345,7 @@ jobs:
 
       - name: Save Test Results
         if: always()
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
         with:
           name: Metric Integration Test Results
           path: integration-results-metric.xml
@@ -427,7 +427,7 @@ jobs:
 
       - name: Save Test Results
         if: always()
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
         with:
           name: Custom Action Integration Test Results For NLU bot
           path: integration-results-custom-actions-with-nlu-bot-results.xml
@@ -505,7 +505,7 @@ jobs:
 
       - name: Save Test Results
         if: always()
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
         with:
           name: Custom Action Integration Test Results For CALM Bot
           path: integration-results-custom-actions-with-calm-bot-results.xml
@@ -531,7 +531,7 @@ jobs:
 
       - name: Set up Python ${{ inputs.PYTHON_VERSION }} 🐍
         id: setup-python
-        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
         with:
           python-version: ${{ inputs.PYTHON_VERSION }}
 
@@ -652,7 +652,7 @@ jobs:
 
       - name: Save Test Results
         if: always()
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
         with:
           name: Enterprise Search Integration Test Results
           path: integration-results-enterprise-search.xml
@@ -714,7 +714,7 @@ jobs:
 
         - name: Save Test Results
           if: always()
-          uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
+          uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
           with:
             name: Sequential Integration Test Results
             path: integration-results-sequential.xml
@@ -797,7 +797,7 @@ jobs:
 
       - name: Save Test Results
         if: always()
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
         with:
           name: Non-Sequential Integration Test Results
           path: integration-results-non-sequential.xml
@@ -859,7 +859,7 @@ jobs:
 
       - name: Save Test Results
         if: always()
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
         with:
           name: Tracker Store Integration Test Results
           path: integration-results-mongo-tracker-store.xml
@@ -916,7 +916,7 @@ jobs:
 
       - name: Save Test Results
         if: always()
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
         with:
           name: Concurrent LockStore Integration Test Results
           path: integration-results-concurrent-lockstore.xml
@@ -980,7 +980,7 @@ jobs:
 
       - name: Save Test Results
         if: always()
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
         with:
             name: Broker Integration Test Results
             path: integration-results-broker-integration.xml
@@ -1080,7 +1080,7 @@ jobs:
 
       - name: Save Test Results
         if: always()
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
         with:
           name: unit-tests-results-${{ matrix.test }}-python-${{ matrix.python-version }}
           path: |
@@ -1088,7 +1088,7 @@ jobs:
 
       - name: Save Rasa server OpenAPI tests coverage report
         if: always() && matrix.test == 'test-other-unit-tests'
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
         with:
           name: Rasa Server OpenAPI tests coverage report on python-${{ matrix.python-version }}
           path: swagger-coverage-report-rasa-pro.html
@@ -1144,7 +1144,7 @@ jobs:
 
       - name: Save Test Results
         if: always()
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
         with:
             name: unit-tests-results-test-anonymization-python-${{ matrix.python-version }}
             path: |

@@ -34,7 +34,7 @@ jobs:
         shell: bash
 
       - name: Set up Python 3.10 🐍
-        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
@@ -56,7 +56,7 @@ jobs:
         run: mv dist/rasa_pro-${{ steps.project_version.outputs.rasa_pro }}.tar.gz dist/rasa_pro-tmp.tar.gz
 
       - name: Store built package
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3  # v4
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882  # v4
         with:
           name: python-package
           path: dist/
@@ -86,7 +86,7 @@ jobs:
         shell: bash
 
       - name: Set up Python 3.10 🐍
-        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
