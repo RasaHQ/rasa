@@ -53,7 +53,7 @@ def add_nlu_data_param(
 
 def add_domain_param(
     parser: Union[argparse.ArgumentParser, argparse._ActionsContainer],
-    default: Optional[Text] = DEFAULT_DOMAIN_PATH,
+    default: Optional[Text] = None,
 ) -> None:
     parser.add_argument(
         "-d",
