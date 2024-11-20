@@ -978,9 +978,19 @@ class IntentlessPolicy(Policy):
 
     @classmethod
     def fingerprint_addon(cls, config: Dict[str, Any]) -> Optional[str]:
-        """Add a fingerprint of the knowledge base for the graph."""
+        """Add a fingerprint of intentless policy for the graph."""
         prompt_template = get_prompt_template(
             config.get(PROMPT_CONFIG_KEY),
             DEFAULT_INTENTLESS_PROMPT_TEMPLATE,
         )
-        return deep_container_fingerprint(prompt_template)
+
+        llm_config = resolve_model_client_config(
+            config.get(LLM_CONFIG_KEY), IntentlessPolicy.__name__
+        )
+        embedding_config = resolve_model_client_config(
+            config.get(EMBEDDINGS_CONFIG_KEY), IntentlessPolicy.__name__
+        )
+
+        return deep_container_fingerprint(
+            [prompt_template, llm_config, embedding_config]
+        )

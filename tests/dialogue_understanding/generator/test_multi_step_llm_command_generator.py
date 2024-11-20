@@ -1160,6 +1160,144 @@ class TestMultiStepLLMCommandGenerator:
             "models": [{"provider": "openai", "model": "gpt-4"}],
         }
 
+    @pytest.mark.parametrize(
+        "config_1, model_groups_1, config_2, model_groups_2, fingerprint_differs",
+        [
+            (
+                {"user_input": {"max_characters": 100}},
+                [],
+                {"user_input": {"max_characters": 200}},
+                [],
+                False,
+            ),
+            (
+                {LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt"}},
+                [
+                    {
+                        "id": "openai_gpt",
+                        "models": [{"provider": "openai", "model": "gpt-4"}],
+                    },
+                ],
+                {LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt"}},
+                [
+                    {
+                        "id": "openai_gpt",
+                        "models": [{"provider": "openai", "model": "gpt-3.5-turbo"}],
+                    },
+                ],
+                True,
+            ),
+            (
+                {LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt-1"}},
+                [
+                    {
+                        "id": "openai_gpt-1",
+                        "models": [{"provider": "openai", "model": "gpt-4"}],
+                    },
+                ],
+                {LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt-2"}},
+                [
+                    {
+                        "id": "openai_gpt-2",
+                        "models": [{"provider": "openai", "model": "gpt-3.5-turbo"}],
+                    },
+                ],
+                True,
+            ),
+            (
+                {
+                    LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt-4"},
+                    FLOW_RETRIEVAL_KEY: {
+                        EMBEDDINGS_CONFIG_KEY: {
+                            MODEL_GROUP_CONFIG_KEY: "openai_embedding"
+                        }
+                    },
+                },
+                [
+                    {
+                        "id": "openai_gpt-4",
+                        "models": [{"provider": "openai", "model": "gpt-4"}],
+                    },
+                    {
+                        "id": "openai_embedding",
+                        "models": [{"provider": "openai", "model": "embedding-model"}],
+                    },
+                ],
+                {
+                    LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt-4"},
+                    FLOW_RETRIEVAL_KEY: {
+                        EMBEDDINGS_CONFIG_KEY: {
+                            MODEL_GROUP_CONFIG_KEY: "openai_embedding_2"
+                        }
+                    },
+                },
+                [
+                    {
+                        "id": "openai_gpt-4",
+                        "models": [{"provider": "openai", "model": "gpt-4"}],
+                    },
+                    {
+                        "id": "openai_embedding_2",
+                        "models": [
+                            {"provider": "openai", "model": "different-embedding-model"}
+                        ],
+                    },
+                ],
+                True,
+            ),
+        ],
+    )
+    async def test_fingerprint_addon_with_different_model_configs(
+        self,
+        config_1: Dict[str, Any],
+        model_groups_1: List[Dict[str, Any]],
+        config_2: Dict[str, Any],
+        model_groups_2: List[Dict[str, Any]],
+        fingerprint_differs: bool,
+        model_storage: ModelStorage,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        generator = MultiStepLLMCommandGenerator(
+            {}, model_storage, Resource("llmcmdgen")
+        )
+
+        class MockAvailableEndpoints:
+            @staticmethod
+            def get_instance():
+                return MockAvailableEndpoints()
+
+            def __init__(self):
+                self.model_groups = model_groups_1
+
+        mock_endpoints_1 = MockAvailableEndpoints()
+        monkeypatch.setattr(
+            "rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints_1
+        )
+
+        fingerprint_1 = generator.fingerprint_addon(config_1)
+
+        class MockAvailableEndpoints:
+            @staticmethod
+            def get_instance():
+                return MockAvailableEndpoints()
+
+            def __init__(self):
+                self.model_groups = model_groups_2
+
+        mock_endpoints_2 = MockAvailableEndpoints()
+        monkeypatch.setattr(
+            "rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints_2
+        )
+
+        fingerprint_2 = generator.fingerprint_addon(config_2)
+
+        assert fingerprint_1 is not None
+        assert fingerprint_2 is not None
+        if fingerprint_differs:
+            assert fingerprint_1 != fingerprint_2
+        else:
+            assert fingerprint_1 == fingerprint_2
+
 
 class TestMultiStepLLMCommandGeneratorPredictCommandsErrorHandling:
     @pytest.fixture

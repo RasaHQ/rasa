@@ -773,14 +773,23 @@ class EnterpriseSearchPolicy(Policy):
 
     @classmethod
     def fingerprint_addon(cls, config: Dict[str, Any]) -> Optional[str]:
-        """Add a fingerprint of the knowledge base and prompt template for the graph."""
+        """Add a fingerprint of enterprise search policy for the graph."""
         local_knowledge_data = cls._get_local_knowledge_data(config)
 
         prompt_template = get_prompt_template(
             config.get(PROMPT_CONFIG_KEY),
             DEFAULT_ENTERPRISE_SEARCH_PROMPT_TEMPLATE,
         )
-        return deep_container_fingerprint([prompt_template, local_knowledge_data])
+
+        llm_config = resolve_model_client_config(
+            config.get(LLM_CONFIG_KEY), EnterpriseSearchPolicy.__name__
+        )
+        embedding_config = resolve_model_client_config(
+            config.get(EMBEDDINGS_CONFIG_KEY), EnterpriseSearchPolicy.__name__
+        )
+        return deep_container_fingerprint(
+            [prompt_template, local_knowledge_data, llm_config, embedding_config]
+        )
 
     @staticmethod
     def post_process_citations(llm_answer: str) -> str:

@@ -35,6 +35,7 @@ from rasa.shared.exceptions import InvalidConfigException, FileIOException
 from rasa.shared.nlu.constants import COMMANDS, TEXT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.utils.io import deep_container_fingerprint
 from rasa.shared.utils.llm import (
     DEFAULT_OPENAI_CHAT_MODEL_NAME,
     get_prompt_template,
@@ -311,3 +312,17 @@ class LLMBasedRouter(GraphComponent):
             # we have to catch all exceptions here
             structlogger.error("llm_based_router.llm.error", error=e)
             return None
+
+    @classmethod
+    def fingerprint_addon(cls, config: Dict[str, Any]) -> Optional[str]:
+        """Add a fingerprint of llm based router for the graph."""
+        prompt_template = get_prompt_template(
+            config.get(PROMPT_CONFIG_KEY),
+            DEFAULT_COMMAND_PROMPT_TEMPLATE,
+        )
+
+        llm_config = resolve_model_client_config(
+            config.get(LLM_CONFIG_KEY), LLMBasedRouter.__name__
+        )
+
+        return deep_container_fingerprint([prompt_template, llm_config])

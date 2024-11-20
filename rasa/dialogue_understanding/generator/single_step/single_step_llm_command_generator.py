@@ -38,6 +38,7 @@ from rasa.shared.constants import (
     ROUTE_TO_CALM_SLOT,
     PROMPT_CONFIG_KEY,
     PROMPT_TEMPLATE_CONFIG_KEY,
+    EMBEDDINGS_CONFIG_KEY,
 )
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -49,6 +50,7 @@ from rasa.shared.utils.llm import (
     get_prompt_template,
     tracker_as_readable_transcript,
     sanitize_message_for_prompt,
+    resolve_model_client_config,
 )
 from rasa.utils.beta import ensure_beta_feature_is_enabled, BetaNotEnabledException
 from rasa.utils.log_utils import log_llm
@@ -343,7 +345,7 @@ class SingleStepLLMCommandGenerator(LLMBasedCommandGenerator):
 
     @classmethod
     def fingerprint_addon(cls: Any, config: Dict[str, Any]) -> Optional[str]:
-        """Add a fingerprint of the knowledge base for the graph."""
+        """Add a fingerprint for the graph."""
         config_prompt = (
             config.get(PROMPT_CONFIG_KEY)
             or config.get(PROMPT_TEMPLATE_CONFIG_KEY)
@@ -353,7 +355,16 @@ class SingleStepLLMCommandGenerator(LLMBasedCommandGenerator):
             config_prompt,
             DEFAULT_COMMAND_PROMPT_TEMPLATE,
         )
-        return deep_container_fingerprint(prompt_template)
+        llm_config = resolve_model_client_config(
+            config.get(LLM_CONFIG_KEY), SingleStepLLMCommandGenerator.__name__
+        )
+        embedding_config = resolve_model_client_config(
+            config.get(FLOW_RETRIEVAL_KEY, {}).get(EMBEDDINGS_CONFIG_KEY),
+            FlowRetrieval.__name__,
+        )
+        return deep_container_fingerprint(
+            [prompt_template, llm_config, embedding_config]
+        )
 
     ### Helper methods
     def render_template(

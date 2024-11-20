@@ -1,4 +1,5 @@
 import uuid
+from pathlib import Path
 from typing import List, Optional, Dict, Any
 from unittest.mock import Mock, patch, AsyncMock
 
@@ -346,3 +347,170 @@ class TestLLMBasedRouter:
             "id": "model_group_id",
             "models": [{"provider": "openai", "model": "gpt-4"}],
         }
+
+    @pytest.mark.parametrize(
+        "config_1, model_groups_1, config_2, model_groups_2, fingerprint_differs",
+        [
+            (
+                {CALM_ENTRY: {STICKY: "handles transactions"}},
+                [],
+                {CALM_ENTRY: {STICKY: "handles transactions"}},
+                [],
+                False,
+            ),
+            (
+                {
+                    LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt"},
+                    CALM_ENTRY: {STICKY: "handles transactions"},
+                },
+                [
+                    {
+                        "id": "openai_gpt",
+                        "models": [{"provider": "openai", "model": "gpt-4"}],
+                    },
+                ],
+                {
+                    LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt"},
+                    CALM_ENTRY: {STICKY: "handles transactions"},
+                },
+                [
+                    {
+                        "id": "openai_gpt",
+                        "models": [{"provider": "openai", "model": "gpt-3.5-turbo"}],
+                    },
+                ],
+                True,
+            ),
+            (
+                {
+                    LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt-1"},
+                    CALM_ENTRY: {STICKY: "handles transactions"},
+                },
+                [
+                    {
+                        "id": "openai_gpt-1",
+                        "models": [{"provider": "openai", "model": "gpt-4"}],
+                    },
+                ],
+                {
+                    LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt-2"},
+                    CALM_ENTRY: {STICKY: "handles transactions"},
+                },
+                [
+                    {
+                        "id": "openai_gpt-2",
+                        "models": [{"provider": "openai", "model": "gpt-3.5-turbo"}],
+                    },
+                ],
+                True,
+            ),
+        ],
+    )
+    async def test_llm_based_router_fingerprint_addon_with_different_model_configs(
+        self,
+        config_1: Dict[str, Any],
+        model_groups_1: List[Dict[str, Any]],
+        config_2: Dict[str, Any],
+        model_groups_2: List[Dict[str, Any]],
+        fingerprint_differs: bool,
+        model_storage: ModelStorage,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        generator = LLMBasedRouter(
+            {CALM_ENTRY: {STICKY: "handles transactions"}},
+            model_storage,
+            Resource("llmcmdgen"),
+        )
+
+        class MockAvailableEndpoints:
+            @staticmethod
+            def get_instance():
+                return MockAvailableEndpoints()
+
+            def __init__(self):
+                self.model_groups = model_groups_1
+
+        mock_endpoints_1 = MockAvailableEndpoints()
+        monkeypatch.setattr(
+            "rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints_1
+        )
+
+        fingerprint_1 = generator.fingerprint_addon(config_1)
+
+        class MockAvailableEndpoints:
+            @staticmethod
+            def get_instance():
+                return MockAvailableEndpoints()
+
+            def __init__(self):
+                self.model_groups = model_groups_2
+
+        mock_endpoints_2 = MockAvailableEndpoints()
+        monkeypatch.setattr(
+            "rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints_2
+        )
+
+        fingerprint_2 = generator.fingerprint_addon(config_2)
+
+        assert fingerprint_1 is not None
+        assert fingerprint_2 is not None
+        if fingerprint_differs:
+            assert fingerprint_1 != fingerprint_2
+        else:
+            assert fingerprint_1 == fingerprint_2
+
+    async def test_llm_based_router_fingerprint_addon_diff_in_prompt_template(
+        self,
+        model_storage: ModelStorage,
+        tmp_path: Path,
+    ) -> None:
+        prompt_dir = Path(tmp_path) / "prompt"
+        prompt_dir.mkdir(parents=True, exist_ok=True)
+        prompt_file = prompt_dir / "llm_based_router_prompt.jinja2"
+        prompt_file.write_text("This is a test prompt")
+
+        config = {
+            "prompt": str(prompt_file),
+            CALM_ENTRY: {STICKY: "handles transactions"},
+        }
+        generator = LLMBasedRouter(config, model_storage, Resource("llmcmdgen"))
+        fingerprint_1 = generator.fingerprint_addon(config)
+
+        prompt_file.write_text("This is a test prompt. It has been changed.")
+        fingerprint_2 = generator.fingerprint_addon(config)
+        assert fingerprint_1 != fingerprint_2
+
+    async def test_llm_based_router_fingerprint_addon_no_diff_in_prompt_template(
+        self,
+        model_storage: ModelStorage,
+        tmp_path: Path,
+    ) -> None:
+        prompt_dir = Path(tmp_path) / "prompt"
+        prompt_dir.mkdir(parents=True, exist_ok=True)
+        prompt_file = prompt_dir / "llm_command_generator_prompt.jinja2"
+        prompt_file.write_text("This is a test prompt")
+
+        config = {
+            "prompt": str(prompt_file),
+            CALM_ENTRY: {STICKY: "handles transactions"},
+        }
+        generator = LLMBasedRouter(config, model_storage, Resource("llmcmdgen"))
+
+        fingerprint_1 = generator.fingerprint_addon(config)
+        fingerprint_2 = generator.fingerprint_addon(config)
+        assert fingerprint_1 is not None
+        assert fingerprint_1 == fingerprint_2
+
+    async def test_llm_based_router_fingerprint_addon_default_values(
+        self,
+        model_storage: ModelStorage,
+    ) -> None:
+        generator = LLMBasedRouter(
+            {CALM_ENTRY: {STICKY: "handles transactions"}},
+            model_storage,
+            Resource("llmcmdgen"),
+        )
+        fingerprint_1 = generator.fingerprint_addon({})
+        fingerprint_2 = generator.fingerprint_addon({})
+        assert fingerprint_1 is not None
+        assert fingerprint_1 == fingerprint_2

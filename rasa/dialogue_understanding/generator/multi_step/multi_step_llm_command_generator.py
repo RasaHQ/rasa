@@ -41,6 +41,7 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import (
     RASA_PATTERN_CANNOT_HANDLE_NOT_SUPPORTED,
+    EMBEDDINGS_CONFIG_KEY,
 )
 from rasa.shared.constants import ROUTE_TO_CALM_SLOT
 from rasa.shared.core.flows import FlowStep, Flow, FlowsList
@@ -55,6 +56,7 @@ from rasa.shared.utils.llm import (
     tracker_as_readable_transcript,
     sanitize_message_for_prompt,
     allowed_values_for_slot,
+    resolve_model_client_config,
 )
 
 # multistep template keys
@@ -768,11 +770,17 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
             .get(FILE_PATH_KEY),
             DEFAULT_FILL_SLOTS_TEMPLATE,
         )
+
+        llm_config = resolve_model_client_config(
+            config.get(LLM_CONFIG_KEY), MultiStepLLMCommandGenerator.__name__
+        )
+        embedding_config = resolve_model_client_config(
+            config.get(FLOW_RETRIEVAL_KEY, {}).get(EMBEDDINGS_CONFIG_KEY),
+            FlowRetrieval.__name__,
+        )
+
         return deep_container_fingerprint(
-            [
-                handle_flows_template,
-                fill_slots_template,
-            ]
+            [handle_flows_template, fill_slots_template, llm_config, embedding_config]
         )
 
     @staticmethod

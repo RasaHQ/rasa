@@ -1099,3 +1099,137 @@ def test_intentless_policy_persist_config(
         "id": "model_group_id",
         "models": [{"provider": "openai", "model": "gpt-4"}],
     }
+
+
+@pytest.mark.parametrize(
+    "config_1, model_groups_1, config_2, model_groups_2, fingerprint_differs",
+    [
+        (
+            {},
+            [],
+            {},
+            [],
+            False,
+        ),
+        (
+            {LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt"}},
+            [
+                {
+                    "id": "openai_gpt",
+                    "models": [{"provider": "openai", "model": "gpt-4"}],
+                },
+            ],
+            {LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt"}},
+            [
+                {
+                    "id": "openai_gpt",
+                    "models": [{"provider": "openai", "model": "gpt-3.5-turbo"}],
+                },
+            ],
+            True,
+        ),
+        (
+            {LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt-1"}},
+            [
+                {
+                    "id": "openai_gpt-1",
+                    "models": [{"provider": "openai", "model": "gpt-4"}],
+                },
+            ],
+            {LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt-2"}},
+            [
+                {
+                    "id": "openai_gpt-2",
+                    "models": [{"provider": "openai", "model": "gpt-3.5-turbo"}],
+                },
+            ],
+            True,
+        ),
+        (
+            {EMBEDDINGS_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_embeddings"}},
+            [
+                {
+                    "id": "openai_embeddings",
+                    "models": [{"provider": "openai", "model": "embedding-model-1"}],
+                },
+            ],
+            {EMBEDDINGS_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_embeddings"}},
+            [
+                {
+                    "id": "openai_embeddings",
+                    "models": [{"provider": "openai", "model": "embedding-model-2"}],
+                },
+            ],
+            True,
+        ),
+        (
+            {EMBEDDINGS_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_embeddings-1"}},
+            [
+                {
+                    "id": "openai_embeddings-1",
+                    "models": [{"provider": "openai", "model": "embedding-model"}],
+                },
+            ],
+            {EMBEDDINGS_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_embeddings-2"}},
+            [
+                {
+                    "id": "openai_embeddings-2",
+                    "models": [{"provider": "openai", "model": "embedding-model"}],
+                },
+            ],
+            True,
+        ),
+    ],
+)
+async def test_intentless_policy_fingerprint_addon_with_different_model_configs(
+    config_1: Dict[str, Any],
+    model_groups_1: List[Dict[str, Any]],
+    config_2: Dict[str, Any],
+    model_groups_2: List[Dict[str, Any]],
+    fingerprint_differs: bool,
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    generator = IntentlessPolicy(
+        {
+            "nlu_abstention_threshold": 0.5,
+            PROMPT_CONFIG_KEY: DEFAULT_INTENTLESS_PROMPT_TEMPLATE,
+        },
+        default_model_storage,
+        Resource("intentlesspolicy"),
+        default_execution_context,
+    )
+
+    class MockAvailableEndpoints:
+        @staticmethod
+        def get_instance():
+            return MockAvailableEndpoints()
+
+        def __init__(self):
+            self.model_groups = model_groups_1
+
+    mock_endpoints_1 = MockAvailableEndpoints()
+    monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints_1)
+
+    fingerprint_1 = generator.fingerprint_addon(config_1)
+
+    class MockAvailableEndpoints:
+        @staticmethod
+        def get_instance():
+            return MockAvailableEndpoints()
+
+        def __init__(self):
+            self.model_groups = model_groups_2
+
+    mock_endpoints_2 = MockAvailableEndpoints()
+    monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints_2)
+
+    fingerprint_2 = generator.fingerprint_addon(config_2)
+
+    assert fingerprint_1 is not None
+    assert fingerprint_2 is not None
+    if fingerprint_differs:
+        assert fingerprint_1 != fingerprint_2
+    else:
+        assert fingerprint_1 == fingerprint_2
