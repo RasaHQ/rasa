@@ -47,4 +47,4 @@ nlg:
   llm:
     provider: rasa
     model: rasa/cmd_gen_codellama_13b_calm_demo
-    api_base: "https://huggingface-proxy.rasa-e2e.workers.dev"
+    api_base: "https://tutorial-llm.rasa.ai"
