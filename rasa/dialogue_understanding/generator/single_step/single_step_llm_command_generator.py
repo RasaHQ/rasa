@@ -50,8 +50,8 @@ from rasa.shared.utils.llm import (
     tracker_as_readable_transcript,
     sanitize_message_for_prompt,
 )
-from rasa.utils.log_utils import log_llm
 from rasa.utils.beta import ensure_beta_feature_is_enabled, BetaNotEnabledException
+from rasa.utils.log_utils import log_llm
 
 COMMAND_PROMPT_FILE_NAME = "command_prompt.jinja2"
 
@@ -302,7 +302,7 @@ class SingleStepLLMCommandGenerator(LLMBasedCommandGenerator):
         skip_question_re = re.compile(r"SkipQuestion\(\)")
         knowledge_re = re.compile(r"SearchAndReply\(\)")
         humand_handoff_re = re.compile(r"HumanHandoff\(\)")
-        clarify_re = re.compile(r"Clarify\(([a-zA-Z0-9_, ]+)\)")
+        clarify_re = re.compile(r"Clarify\(([\"\'a-zA-Z0-9_, ]+)\)")
         repeat_re = re.compile(r"RepeatLastBotMessages\(\)")
 
         for action in actions.strip().splitlines():
