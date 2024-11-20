@@ -7,7 +7,6 @@ from sanic import Sanic
 
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import shell as arguments
-from rasa.cli.arguments.default_arguments import add_skip_validation_flag
 from rasa.core import constants
 from rasa.utils.cli import remove_argument_from_parser
 
@@ -32,11 +31,12 @@ def add_subparser(
         ),
     )
     inspect_parser.set_defaults(func=inspect)
-
     arguments.set_shell_arguments(inspect_parser)
-    add_skip_validation_flag(inspect_parser)
 
-    inspect_parser.add_argument("--voice", help="Enable voice", action="store_true")
+    # additional argument for voice
+    inspect_parser.add_argument(
+        "--voice", help="Enable voice", action="store_true", default=False
+    )
 
     # it'd be confusing to expose those arguments to the user,
     # so we remove them
