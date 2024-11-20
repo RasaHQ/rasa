@@ -711,13 +711,14 @@ def test_training_logs_domain_correctly_when_using_domain_dir(
     monkeypatch: MonkeyPatch, testdir: Testdir
 ) -> None:
     """
-    We want to make sure the assistant isn't raising warning logs when the domain
-    is provided in the "domain" directory, and not as the domain.yml file.
-    This should raise a debug log notifying the user about what default source
-    the assistant has used fot the domain.
+    Verify that when the domain is provided via the "domain" directory instead of
+    the "domain.yml" file, the assistant does not raise any warning logs. Instead,
+    it should emit a debug log notifying the user about the default domain source
+    that was used.
     """
-    # Compute the absolute path to the default project
-    default_template_path = Path(__file__).parent / "../../rasa/cli/project_templates/default"
+    # Compute the absolute path to the default template project
+    parent_path = Path(__file__).parent
+    default_template_path = parent_path / "../../rasa/cli/project_templates/default"
 
     # Copy over the contents of the default project to the test directory
     rasa.utils.common.copy_directory(

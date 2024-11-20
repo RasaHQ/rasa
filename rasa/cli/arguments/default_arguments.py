@@ -7,7 +7,6 @@ from rasa.core.persistor import RemoteStorageType, StorageType, parse_remote_sto
 from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
     DEFAULT_DATA_PATH,
-    DEFAULT_DOMAIN_PATH,
     DEFAULT_ENDPOINTS_PATH,
     DEFAULT_MODELS_PATH,
 )
