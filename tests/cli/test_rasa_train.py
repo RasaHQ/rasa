@@ -4,7 +4,7 @@ import shutil
 import sys
 from pathlib import Path
 from typing import Callable, List, Union
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 import pytest
 from _pytest.capture import CaptureFixture
@@ -729,12 +729,14 @@ def test_training_logs_domain_correctly_when_using_domain_dir(
     dst_path = domain_dir_path + "domain.yml"
     shutil.copy(src_path, dst_path)
 
+    monkeypatch.setattr(rasa.cli.train, "_check_nlg_endpoint_validity", MagicMock())
+
     # Run the training with "domain=None" to simulate the "rasa train" command
     args = argparse.Namespace(
         domain=None,
         config=default_template_path / "config.yml",
         data=[default_template_path / "data"],
-        endpoints="data/test_nlg/endpoint_with_valid_nlg.yml",
+        endpoints=default_template_path / "endpoints.yml",
         skip_validation=True,
         out="models",
         force=False,
