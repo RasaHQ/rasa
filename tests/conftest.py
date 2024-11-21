@@ -7,6 +7,7 @@ import random
 import re
 import shutil
 import sys
+import tempfile
 import textwrap
 import threading
 import time
@@ -243,6 +244,15 @@ def e2e_story_file_unknown_entity_path() -> Text:
 @pytest.fixture(scope="session")
 def domain_path() -> Text:
     return "data/test_domains/default_with_slots.yml"
+
+
+@pytest.fixture(scope="session")
+def windows_output_path() -> Text:
+    tmpdir = tempfile.mkdtemp()
+    bot_path = os.path.join(tmpdir, "undergraduate-bot")
+    os.makedirs(bot_path, exist_ok=True)
+
+    return bot_path
 
 
 @pytest.fixture(scope="session")
