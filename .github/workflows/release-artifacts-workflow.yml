@@ -212,12 +212,14 @@ jobs:
         run: |
           # Set up the Docker Hub and GCP image tags
           GCP_IMAGE_TAG=${{ env.TARGET_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${TAG_VERSION}
+          GCP_LATEST_IMAGE_TAG=${{ env.TARGET_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${TAG_VERSION}-latest
           DOCKER_HUB_IMAGE_TAG=docker.io/rasa/${{ env.IMAGE_NAME }}:${TAG_VERSION}
       
           # Build and push the image to both GCP and Docker Hub using multiple tags
           docker buildx bake \
             --set *.platform=linux/amd64,linux/arm64 \
             --set default.tags="${GCP_IMAGE_TAG}" \
+            --set default.tags="${GCP_LATEST_IMAGE_TAG}" \
             --set default.tags="${DOCKER_HUB_IMAGE_TAG}" \
             -f docker/docker-bake.hcl \
             default \
@@ -300,6 +302,7 @@ jobs:
           ref: ${{ needs.release-artifacts-docker.outputs.tag_version }}
       
       - name: Notify Sentry about the release
+        if: success()
         env:
            GITHUB_TAG: ${{ needs.release-artifacts-docker.outputs.tag_version }}
            SENTRY_ORG: rasahq
@@ -312,6 +315,7 @@ jobs:
            sentry-cli releases finalize "rasa-$GITHUB_TAG"
 
       - name: Publish Release Notes 🗞
+        if: success()
         env:
           GH_RELEASE_NOTES_TOKEN: ${{ secrets.GH_RELEASE_NOTES_TOKEN }}
           GITHUB_TAG: ${{ needs.release-artifacts-docker.outputs.tag_version }}
@@ -323,6 +327,7 @@ jobs:
           python3 scripts/publish_gh_release_notes.py
 
       - name: Update CMS with new release record
+        if: success()
         uses: RasaHQ/push-release-record-to-datocms-gha@1be87116d0a2b555bd5b291ea5923ce5b7aeb83e
         # this step only has an effect for new majors and minors; the action skips other versions
         with:

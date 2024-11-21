@@ -3,7 +3,6 @@ import uuid
 from pathlib import Path
 from typing import Optional, Dict, Text, Any, Set, List
 from unittest.mock import Mock, patch, AsyncMock
-
 import pytest
 import structlog
 from _pytest.tmpdir import TempPathFactory
@@ -690,8 +689,14 @@ class TestSingleStepLLMCommandGenerator:
                 "SetSlot(transfer_money_amount_of_money, )",
                 [SetSlotCommand(name="transfer_money_amount_of_money", value=None)],
             ),
+            ("SetSlot(name, value)", [SetSlotCommand(name="name", value=None)]),
+            ("SetSlot('name', 'value')", [SetSlotCommand(name="name", value=None)]),
+            ('SetSlot("name", "value")', [SetSlotCommand(name="name", value=None)]),
+            # Start flow
             ("SetSlot(flow_name, some_flow)", [StartFlowCommand(flow="some_flow")]),
             ("StartFlow(some_flow)", [StartFlowCommand(flow="some_flow")]),
+            ("StartFlow('some_flow')", [StartFlowCommand(flow="some_flow")]),
+            ('StartFlow("some_flow")', [StartFlowCommand(flow="some_flow")]),
             ("StartFlow(does_not_exist)", []),
             (
                 "StartFlow(02_benefits_learning_days)",
@@ -721,16 +726,20 @@ class TestSingleStepLLMCommandGenerator:
                 "Clarify(some_flow, 02_benefits_learning_days)",
                 [ClarifyCommand(options=["02_benefits_learning_days", "some_flow"])],
             ),
+            # Clarify with quotes around the flow names
+            (
+                "Clarify('some_flow', 'another_flow')",
+                [ClarifyCommand(options=["another_flow", "some_flow"])],
+            ),
+            (
+                'Clarify("some_flow", "another_flow")',
+                [ClarifyCommand(options=["another_flow", "some_flow"])],
+            ),
             # Clarify with single option is converted to a StartFlowCommand
             ("Clarify(some_flow)", [StartFlowCommand(flow="some_flow")]),
             # Clarify with multiple but same options is converted to a StartFlowCommand
             (
                 "Clarify(some_flow, some_flow, some_flow, some_flow)",
-                [StartFlowCommand(flow="some_flow")],
-            ),
-            # Clarify with multiple but same options is converted to a StartFlowCommand
-            (
-                "Clarify(some_flow, some_flow)",
                 [StartFlowCommand(flow="some_flow")],
             ),
         ],
@@ -747,6 +756,11 @@ class TestSingleStepLLMCommandGenerator:
             flows:
               some_flow:
                 description: some description
+                steps:
+                - id: first_step
+                  collect: test_slot
+              another_flow:
+                description: some other description
                 steps:
                 - id: first_step
                   collect: test_slot

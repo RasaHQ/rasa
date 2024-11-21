@@ -3,7 +3,7 @@ from typing import AsyncIterator, Dict, Optional
 import os
 import aiohttp
 import structlog
-from aiohttp import ClientConnectorError
+from aiohttp import ClientConnectorError, ClientTimeout
 
 from rasa.core.channels.voice_stream.tts.tts_engine import (
     TTSEngineConfig,
@@ -29,10 +29,11 @@ class CartesiaTTS(TTSEngine[CartesiaTTSConfig]):
 
     def __init__(self, config: Optional[CartesiaTTSConfig] = None):
         super().__init__(config)
+        timeout = ClientTimeout(total=self.config.timeout)
         # Have to create this class-shared session lazily at run time otherwise
         # the async event loop doesn't work
         if self.__class__.session is None or self.__class__.session.closed:
-            self.__class__.session = aiohttp.ClientSession()
+            self.__class__.session = aiohttp.ClientSession(timeout=timeout)
 
     @staticmethod
     def get_tts_endpoint() -> str:
@@ -61,7 +62,7 @@ class CartesiaTTS(TTSEngine[CartesiaTTSConfig]):
 
     @staticmethod
     def get_request_headers(config: CartesiaTTSConfig) -> dict[str, str]:
-        cartesia_api_key = os.environ.get(CARTESIA_API_KEY)
+        cartesia_api_key = os.environ[CARTESIA_API_KEY]
         return {
             "Cartesia-Version": str(config.version),
             "Content-Type": "application/json",
@@ -88,12 +89,14 @@ class CartesiaTTS(TTSEngine[CartesiaTTSConfig]):
                     return
                 else:
                     structlogger.error(
-                        "azure.synthesize.rest.failed",
+                        "cartesia.synthesize.rest.failed",
                         status_code=response.status,
                         msg=response.text(),
                     )
                     raise TTSError(f"TTS failed: {response.text()}")
         except ClientConnectorError as e:
+            raise TTSError(e)
+        except TimeoutError as e:
             raise TTSError(e)
 
     def engine_bytes_to_rasa_audio_bytes(self, chunk: bytes) -> RasaAudioBytes:
@@ -105,6 +108,7 @@ class CartesiaTTS(TTSEngine[CartesiaTTSConfig]):
         return CartesiaTTSConfig(
             language="en",
             voice="248be419-c632-4f23-adf1-5324ed7dbf1d",
+            timeout=10,
             model_id="sonic-english",
             version="2024-06-10",
         )

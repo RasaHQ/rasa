@@ -1,7 +1,8 @@
 import json
 
 import pytest
-
+from pytest import MonkeyPatch
+from unittest.mock import patch, AsyncMock
 from rasa.core.channels.voice_stream.asr.deepgram import DeepgramASR
 from rasa.core.channels.voice_stream.tts.cartesia import CartesiaTTS, CartesiaTTSConfig
 from rasa.core.channels.voice_stream.tts.tts_engine import TTSError
@@ -12,7 +13,7 @@ from tests.core.channels.voice_stream.tts.test_tts import (
 
 async def test_synthesis_with_asr():
     tts_engine = CartesiaTTS()
-    text = "hello there"
+    text = "hello my name is Edgar"
     asr_engine = DeepgramASR()
 
     await run_single_utterance_through_tts_and_asr(text, asr_engine, tts_engine)
@@ -63,3 +64,23 @@ async def test_tts_session_sharing():
     tts_engine = CartesiaTTS()
     tts_engine_2 = CartesiaTTS()
     assert tts_engine_2.session is tts_engine.session
+
+
+async def test_synthesize_timeout(monkeypatch: MonkeyPatch):
+    monkeypatch.setenv("CARTESIA_API_KEY", "my key")
+    tts_engine = CartesiaTTS()
+    text = "Test timeout"
+    assert tts_engine.session is not None
+
+    # Mock the response to be an async context manager
+    mock_response = AsyncMock()
+    # Did this to avoid AttributeError: __aenter__ error
+    mock_response.__aenter__.side_effect = TimeoutError("Request timed out")
+
+    # Patch the 'post' method to return the mock response
+    with patch.object(tts_engine.session, "post", return_value=mock_response):
+        with pytest.raises(TTSError) as exc_info:
+            async for chunk in tts_engine.synthesize(text):
+                pass
+
+        assert "Request timed out" in str(exc_info.value)

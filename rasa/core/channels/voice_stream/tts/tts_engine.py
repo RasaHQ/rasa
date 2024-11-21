@@ -18,6 +18,7 @@ E = TypeVar("E", bound="TTSEngine")
 class TTSEngineConfig(MergeableConfig):
     language: Optional[str] = None
     voice: Optional[str] = None
+    timeout: Optional[int] = None
 
 
 class TTSEngine(Generic[T]):

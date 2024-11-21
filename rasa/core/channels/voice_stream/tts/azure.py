@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 import aiohttp
 import structlog
-from aiohttp import ClientConnectorError
+from aiohttp import ClientConnectorError, ClientTimeout
 
 from rasa.core.channels.voice_stream.audio_bytes import RasaAudioBytes
 from rasa.core.channels.voice_stream.tts.tts_engine import (
@@ -28,10 +28,11 @@ class AzureTTS(TTSEngine[AzureTTSConfig]):
 
     def __init__(self, config: Optional[AzureTTSConfig] = None):
         super().__init__(config)
+        timeout = ClientTimeout(total=self.config.timeout)
         # Have to create this class-shared session lazily at run time otherwise
         # the async event loop doesn't work
         if self.__class__.session is None or self.__class__.session.closed:
-            self.__class__.session = aiohttp.ClientSession()
+            self.__class__.session = aiohttp.ClientSession(timeout=timeout)
 
     async def synthesize(
         self, text: str, config: Optional[AzureTTSConfig] = None
@@ -59,6 +60,8 @@ class AzureTTS(TTSEngine[AzureTTSConfig]):
                     )
                     raise TTSError(f"TTS failed: {response.text()}")
         except ClientConnectorError as e:
+            raise TTSError(e)
+        except TimeoutError as e:
             raise TTSError(e)
 
     @staticmethod
@@ -92,6 +95,7 @@ class AzureTTS(TTSEngine[AzureTTSConfig]):
         return AzureTTSConfig(
             language="en-US",
             voice="en-US-JennyNeural",
+            timeout=10,
             speech_region="germanywestcentral",
         )
 
