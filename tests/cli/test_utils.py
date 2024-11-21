@@ -743,3 +743,17 @@ def test_get_e2e_results_file_name_path_is_file(
     assert results_file == str(
         results_path.parent / f"e2e_test_results_{results_type}.yml"
     )
+
+
+@pytest.mark.parametrize(
+    "argv, expected",
+    [
+        ([RASA_EXE, "train"], False),
+        ([RASA_EXE, "train", "--skip-validation"], True),
+    ],
+)
+def test_is_skip_validation_flag_set(argv, expected):
+    sys.argv = argv.copy()
+    result = rasa.cli.utils.is_skip_validation_flag_set()
+
+    assert result == expected

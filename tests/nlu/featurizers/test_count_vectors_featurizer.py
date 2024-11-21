@@ -424,7 +424,7 @@ def test_count_vector_featurizer_persist_load(
     config = {
         "analyzer": "char",
         "strip_accents": "ascii",
-        "stop_words": "stop",
+        "stop_words": "english",
         "min_df": 2,
         "max_df": 3,
         "min_ngram": 2,

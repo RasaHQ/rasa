@@ -22,6 +22,11 @@ from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
 from rasa.shared.core.flows.steps.action import ActionFlowStep
 from rasa.shared.core.flows.steps.link import LinkFlowStep
 from rasa.shared.core.flows import FlowsList
+from rasa.shared.core.flows.utils import (
+    warn_deprecated_collect_step_config,
+    get_duplicate_slot_persistence_config_error_message,
+    get_invalid_slot_persistence_config_error_message,
+)
 import rasa.shared.nlu.constants
 from rasa.shared.constants import (
     ASSISTANT_ID_DEFAULT_VALUE,
@@ -55,6 +60,7 @@ from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.constants import COMMANDS
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
+
 import rasa.shared.utils.cli
 import rasa.shared.utils.io
 
@@ -1237,6 +1243,7 @@ class Validator:
             self.verify_flows_steps_against_domain(),
             self.verify_unique_flows(),
             self.verify_predicates(),
+            self.verify_slot_persistence_configuration(),
         ]
 
         all_good = all(flow_validation_conditions)
@@ -1533,3 +1540,66 @@ class Validator:
             ),
         )
         return False
+
+    def verify_slot_persistence_configuration(self) -> bool:
+        """Verifies the validity of slot persistence after flow ends configuration.
+
+        Only slots used in either a collect step or a set_slot step can be persisted and
+        the configuration can either set at the flow level or the collect step level,
+        but not both.
+
+        Returns:
+            bool: True if all slot persistence configuration is valid, False otherwise.
+
+        Raises:
+            DeprecationWarning: If reset_after_flow_ends is used in collect steps.
+        """
+        all_good = True
+
+        for flow in self.flows.underlying_flows:
+            flow_id = flow.id
+            persist_slots = flow.persisted_slots
+            has_flow_level_persistence = True if persist_slots else False
+            flow_slots = set()
+
+            for step in flow.steps_with_calls_resolved:
+                if isinstance(step, SetSlotsFlowStep):
+                    flow_slots.update([slot["key"] for slot in step.slots])
+
+                elif isinstance(step, CollectInformationFlowStep):
+                    collect_step = step.collect
+                    flow_slots.add(collect_step)
+                    if not step.reset_after_flow_ends:
+                        warn_deprecated_collect_step_config(flow_id, collect_step)
+
+                        if has_flow_level_persistence:
+                            structlogger.error(
+                                "validator.verify_slot_persistence_configuration.duplicate_config",
+                                flow=flow_id,
+                                collect_step=collect_step,
+                                event_info=get_duplicate_slot_persistence_config_error_message(
+                                    flow_id, collect_step
+                                ),
+                            )
+                            all_good = False
+
+            if has_flow_level_persistence:
+                if not self._is_persist_slots_valid(persist_slots, flow_slots, flow_id):
+                    all_good = False
+        return all_good
+
+    def _is_persist_slots_valid(
+        self, persist_slots: List[str], flow_slots: Set[str], flow_id: str
+    ) -> bool:
+        invalid_slots = set(persist_slots) - flow_slots
+        is_valid = False if invalid_slots else True
+
+        if invalid_slots:
+            structlogger.error(
+                "validator.verify_slot_persistence_configuration.invalid_persist_slot",
+                flow=flow_id,
+                event_info=get_invalid_slot_persistence_config_error_message(
+                    flow_id, invalid_slots
+                ),
+            )
+        return is_valid

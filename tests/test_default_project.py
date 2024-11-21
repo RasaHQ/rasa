@@ -37,7 +37,8 @@ def test_default_project_has_no_warnings(
 
     write_yaml(config, "config.yml")
 
-    with pytest.warns() as warning_recorder:
+    # Record warnings, but do not raise exception if no warnings are recorded.
+    with pytest.warns(None) as warning_recorder:
         arg_namespace = parser.parse_args(["data", "validate"])
         rasa.cli.utils.validate_files(
             arg_namespace.fail_on_warnings,
