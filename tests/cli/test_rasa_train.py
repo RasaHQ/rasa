@@ -720,24 +720,21 @@ def test_training_logs_domain_correctly_when_using_domain_dir(
     parent_path = Path(__file__).parent
     default_template_path = parent_path / "../../rasa/cli/project_templates/default"
 
-    # Copy over the contents of the default project to the test directory
-    rasa.utils.common.copy_directory(default_template_path, Path(testdir.tmpdir))
-
     # Create 'domain' directory inside the test directory
     domain_dir_path = os.path.join(testdir.tmpdir, "domain")
     os.makedirs(domain_dir_path, exist_ok=True)
 
     # Move 'domain.yml' file into 'domain' directory
-    src_path = os.path.join(testdir.tmpdir, "domain.yml")
-    dst_path = os.path.join(domain_dir_path, "domain.yml")
+    src_path = default_template_path / "domain.yml"
+    dst_path = domain_dir_path + "domain.yml"
     shutil.move(src_path, dst_path)
 
     # Run the training with "domain=None" to simulate the "rasa train" command
     args = argparse.Namespace(
         domain=None,
-        config="config.yml",
-        data=["data"],
-        endpoints="endpoints.yml",
+        config=default_template_path / "config.yml",
+        data=[default_template_path / "data"],
+        endpoints=default_template_path / "endpoints.yml",
         skip_validation=True,
         out="models",
         force=False,
