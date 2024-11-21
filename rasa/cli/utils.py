@@ -477,3 +477,8 @@ def get_e2e_results_file_name(
         file_name = parent / f"{stem}_{result_type}.yml"
 
     return str(file_name)
+
+
+def is_skip_validation_flag_set() -> bool:
+    """Checks if the skip validation flag is set."""
+    return "--skip-validation" in sys.argv
