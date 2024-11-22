@@ -499,7 +499,7 @@ def test_test_step_as_dict_in_yaml_format(
                     "user": "book flight",
                     # Missing metadata here
                 },
-            ]
+            ],
         },
         {
             "test_case": "partial_metadata",
