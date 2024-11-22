@@ -1,7 +1,10 @@
 import logging
 from collections import OrderedDict
+from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Text, Union
+
+import structlog
 
 from rasa.e2e_test.assertions import Assertion
 from rasa.e2e_test.constants import (
@@ -24,6 +27,7 @@ from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
 from rasa.shared.exceptions import RasaException
 
 logger = logging.getLogger(__name__)
+structlogger = structlog.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -395,7 +399,7 @@ class TestCase:
             else:
                 steps.append(TestStep.from_dict(step))
 
-        return TestCase(
+        test_case = TestCase(
             name=input_test_case.get(KEY_TEST_CASE, "default"),
             steps=steps,
             file=file,
@@ -405,6 +409,73 @@ class TestCase:
             fixture_names=input_test_case.get(KEY_FIXTURES),
             metadata_name=input_test_case.get(KEY_METADATA),
         )
+        if test_case.uses_assertions():
+            test_case.validate_duplicate_user_messages_metadata()
+        return test_case
+
+    def validate_duplicate_user_messages_metadata(self) -> None:
+        """Validates that duplicate user messages use metadata correctly.
+
+        Ensures that each duplicate user message uses unique metadata.
+
+        Raises warnings if any issues are found.
+        """
+        docs_link = (
+            "https://rasa.com/docs/rasa-pro/testing/"
+            "e2e-testing-assertions/assertions-how-to-guide/"
+            "#how-to-handle-duplicate-user-text-messages-in-the-same-test-case"
+        )
+        no_metadata_event_info = (
+            "Test case '{name}' has duplicate user steps with text '{text}', "
+            "and user step at line {line} lacks metadata. When using "
+            "duplicate user messages, metadata should be set on each step to ensure "
+            f"correct processing. Please refer to the documentation: {docs_link}"
+        )
+        non_unique_metadata_event_info = (
+            "Test case '{name}' has duplicate user steps with text '{text}', "
+            "and user step at line {line} has duplicate metadata "
+            "name '{metadata_name}'. Metadata names should be unique for each user "
+            "step among duplicates. This may cause issues in processing "
+            f"user messages. Please refer to the documentation: {docs_link}"
+        )
+
+        message_steps = defaultdict(list)
+
+        # Collect user steps by text
+        for step in self.steps:
+            if step.actor == KEY_USER_INPUT and step.text:
+                message_steps[step.text].append(step)
+
+        # Check for duplicate messages
+        for text, steps in message_steps.items():
+            if len(steps) <= 1:
+                continue
+
+            metadata_names_used = set()
+            for step in steps:
+                if not step.metadata_name:
+                    structlogger.warning(
+                        "TestCase.validate_duplicate_user_messages_metadata.no_metadata",
+                        event_info=no_metadata_event_info.format(
+                            name=self.name,
+                            text=text,
+                            line=step.line,
+                        ),
+                    )
+                    break
+                elif step.metadata_name in metadata_names_used:
+                    structlogger.warning(
+                        "TestCase.validate_duplicate_user_messages_metadata.non_unique_metadata",
+                        event_info=non_unique_metadata_event_info.format(
+                            name=self.name,
+                            text=text,
+                            line=step.line,
+                            metadata_name=step.metadata_name,
+                        ),
+                    )
+                    break
+                else:
+                    metadata_names_used.add(step.metadata_name)
 
     def as_dict(self) -> Dict[Text, Any]:
         """Returns the test case as a dictionary."""
