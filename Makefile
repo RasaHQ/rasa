@@ -104,7 +104,10 @@ prepare-transformers: ## Download all models needed for testing transformers.
 prepare-tests-macos:  ## Install system requirements for running tests on macOS.
 	brew install wget graphviz || true
 
-prepare-tests-ubuntu:  ## Install system requirements for running tests on Ubuntu and Debian based systems.
+update-apt-get:  ## Update and upgrade apt-get
+	sudo apt-get update && sudo apt-get -y upgrade
+
+prepare-tests-ubuntu: update-apt-get ## Install system requirements for running tests on Ubuntu and Debian based systems.
 	sudo apt-get -y install graphviz graphviz-dev python-tk
 
 prepare-tests-windows:  ## Install system requirements for running tests on Windows.
