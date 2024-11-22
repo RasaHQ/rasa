@@ -2634,3 +2634,125 @@ def test_validate_custom_slot_mappings_with_action_property_success(
     captured = capsys.readouterr()
     log_level = "error"
     assert log_level not in captured.out
+
+
+def test_verify_slot_persistence_configuration_duplicate() -> None:
+    flows = flows_from_str(
+        """
+        flows:
+          flow_a:
+            description: Test that duplicate slot persistence configs are validated.
+            persisted_slots:
+            - slot_a
+            steps:
+            - collect: slot_a
+              reset_after_flow_ends: false
+        """
+    )
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        slots:
+          slot_a:
+            type: text
+            mappings: []
+        """
+    )
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), flows, None)
+
+    expected_log_level = "error"
+    expected_log_event = (
+        "validator.verify_slot_persistence_configuration.duplicate_config"
+    )
+    expected_log_message = (
+        "Flow with id 'flow_a' uses the 'reset_after_flow_ends' property "
+        "in collect step 'slot_a' and also the "
+        "'persisted_slots' property at the flow level. "
+        "Please use only one of the two configuration methods."
+    )
+
+    with structlog.testing.capture_logs() as caplog:
+        assert not validator.verify_slot_persistence_configuration()
+        logs = filter_logs(
+            caplog, expected_log_event, expected_log_level, [expected_log_message]
+        )
+        assert len(logs) == 1
+
+
+def test_verify_slot_persistence_configuration_invalid_slots() -> None:
+    flows = flows_from_str(
+        """
+        flows:
+          flow_a:
+            description: Test that duplicate slot persistence configs are validated.
+            persisted_slots:
+            - slot_a
+            - invalid_slot
+            steps:
+            - collect: slot_a
+        """
+    )
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        slots:
+          slot_a:
+            type: text
+            mappings: []
+        """
+    )
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), flows, None)
+
+    expected_log_level = "error"
+    expected_log_event = (
+        "validator.verify_slot_persistence_configuration.invalid_persist_slot"
+    )
+    expected_log_message = (
+        "Flow with id 'flow_a' lists slot(s) '{'invalid_slot'}' in the "
+        "'persisted_slots' property. However these slots are "
+        "neither used in a collect step nor a set_slot step of the flow. "
+        "Please remove such slots from the 'persisted_slots' property."
+    )
+
+    with structlog.testing.capture_logs() as caplog:
+        assert not validator.verify_slot_persistence_configuration()
+        logs = filter_logs(
+            caplog, expected_log_event, expected_log_level, [expected_log_message]
+        )
+        assert len(logs) == 1
+
+
+def test_verify_slot_persistence_configuration_raises_deprecation_warning() -> None:
+    flows = flows_from_str(
+        """
+        flows:
+          flow_a:
+            description: Test that duplicate slot persistence configs are validated.
+            steps:
+            - collect: slot_a
+              reset_after_flow_ends: false
+        """
+    )
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        slots:
+          slot_a:
+            type: text
+            mappings: []
+        """
+    )
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), flows, None)
+
+    deprecation_message = (
+        "Configuring 'reset_after_flow_ends' in collect step 'slot_a' is deprecated "
+        "and will be removed in Rasa Pro 4.0.0. In flow id 'flow_a', please use "
+        "the 'persisted_slots' property at the flow level instead."
+    )
+
+    with pytest.warns(FutureWarning) as record:
+        assert validator.verify_slot_persistence_configuration()
+
+    assert len(record) == 1
+    assert record[0].message.args[0] == deprecation_message
+    assert isinstance(record[0].message, FutureWarning)
