@@ -5,6 +5,7 @@ import litellm
 import pytest
 import structlog
 from pytest import MonkeyPatch
+
 from rasa.shared.constants import (
     AZURE_API_BASE_ENV_VAR,
     AZURE_API_KEY_ENV_VAR,
@@ -87,7 +88,7 @@ class TestAzureOpenAIEmbeddingClient:
             "api_version": "v1",
             "model": "azure/some_azure_deployment",
             # API key is added through environment variable
-            "api_key": "my key",
+            "api_key": AZURE_API_KEY_ENV_VAR,
         }
 
     def test_validate_documents_pass(self, client: AzureOpenAIEmbeddingClient) -> None:
@@ -211,14 +212,14 @@ class TestAzureOpenAIEmbeddingClient:
         # Then
         assert len(record) == 3
         assert record[0].message.args[0] == (
+            "Usage of 'OPENAI_API_KEY' environment variable for setting the API key of "
+            "Azure OpenAI client is deprecated and will be removed in 4.0.0. Please "
+            "use 'AZURE_API_KEY' instead."
+        )
+        assert record[1].message.args[0] == (
             "Usage of OPENAI_API_BASE environment variable for setting the API base of "
             "Azure OpenAI client is deprecated and will be removed in 4.0.0. Please "
             "use AZURE_API_BASE instead."
-        )
-        assert record[1].message.args[0] == (
-            "Usage of OPENAI_API_KEY environment variable for setting the API key of "
-            "Azure OpenAI client is deprecated and will be removed in 4.0.0. Please "
-            "use AZURE_API_KEY instead."
         )
         assert record[2].message.args[0] == (
             "Usage of OPENAI_API_VERSION environment variable for setting the API "
@@ -270,10 +271,12 @@ class TestAzureOpenAIEmbeddingClient:
         # Given
         # Did not set the required environment variables
         # api_base, api_key, api_version
+
         config = {
             "provider": "azure",
             "deployment": "some_azure_deployment",
             "model": "gpt-2024",
+            "api_key": "non-existing-key",
         }
 
         # When
@@ -288,10 +291,9 @@ class TestAzureOpenAIEmbeddingClient:
         logs = filter_logs(caplog, expected_event, expected_log_level, [])
 
         # Then
-        assert len(logs) == 3
+        assert len(logs) == 2
         event_info_string = " ".join([log["event_info"] for log in logs])
         assert "AZURE_API_BASE" in event_info_string
-        assert "AZURE_API_KEY" in event_info_string
         assert "AZURE_API_VERSION" in event_info_string
         assert str(exc.value) == (
             "Missing required environment variables/config keys for API calls."
@@ -457,3 +459,56 @@ class TestAzureOpenAIEmbeddingClient:
 
         assert "timeout" in client._extra_parameters
         assert client._extra_parameters["timeout"] == 7
+
+    def test_resolve_api_key_env_var_from_extra_parameters(self):
+        client = AzureOpenAIEmbeddingClient(
+            deployment="test_deployment",
+            api_base="https://my.api.base.com/my_model",
+            api_version="2023-01-01",
+            api_type="azure",
+            api_key="${API_KEY}",
+        )
+
+        assert client._resolve_api_key_env_var() == "${API_KEY}"
+
+    @patch.dict(os.environ, {AZURE_API_KEY_ENV_VAR: "azure_api_key"})
+    def test_resolve_api_key_env_var_from_azure_env_var(self):
+        client = AzureOpenAIEmbeddingClient(
+            deployment="test_deployment",
+            api_base="https://my.api.base.com/my_model",
+            api_version="2023-01-01",
+            api_type="azure",
+        )
+        client._extra_parameters = {}
+        assert client._resolve_api_key_env_var() == AZURE_API_KEY_ENV_VAR
+
+    @patch.dict(os.environ, {OPENAI_API_KEY_ENV_VAR: "openai_api_key"})
+    def test_resolve_api_key_env_var_from_openai_env_var(self):
+        client = AzureOpenAIEmbeddingClient(
+            deployment="test_deployment",
+            api_base="https://my.api.base.com/my_model",
+            api_version="2023-01-01",
+            api_type="azure",
+        )
+        client._extra_parameters = {}
+        with pytest.warns(FutureWarning):
+            assert client._resolve_api_key_env_var() == OPENAI_API_KEY_ENV_VAR
+
+    def test_resolve_api_key_env_var_not_set(
+        self,
+        monkeypatch: MonkeyPatch,
+    ):
+        monkeypatch.setenv(AZURE_API_KEY_ENV_VAR, "my key")
+
+        client = AzureOpenAIEmbeddingClient(
+            deployment="test_deployment",
+            api_base="https://my.api.base.com/my_model",
+            api_version="2023-01-01",
+            api_type="azure",
+        )
+
+        monkeypatch.delenv(AZURE_API_KEY_ENV_VAR, False)
+        monkeypatch.delenv(OPENAI_API_KEY_ENV_VAR, False)
+
+        with pytest.raises(ProviderClientValidationError):
+            client._resolve_api_key_env_var()
