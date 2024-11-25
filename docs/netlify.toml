@@ -202,3 +202,43 @@ to = "/docs/rasa/deploy/deploy-rasa/"
 [[redirects]]
 from = "/docs/rasa/action-server/deploy-action-server"
 to = "/docs/rasa/deploy/deploy-action-server/"
+
+[[redirects]]
+from = "/docs/rasa/user-guide/how-to-deploy/"
+to = "/docs/rasa/deploy/deploy-rasa/"
+
+[[redirects]]
+from = "/docs/rasa/how-to-deploy/"
+to = "/docs/rasa/deploy/deploy-rasa/"
+
+[[redirects]]
+from = "/docs/studio/user-guide/flow-builder-introduction/"
+to = "/docs/studio/user-guide/flow-builder/introduction/"
+
+[[redirects]]
+from = "/docs/rasa/training-data-format.mdx"
+to = "/docs/rasa/training-data-format/"
+
+[[redirects]]
+from = "/docs/rasa/api/tensorflow_usage/"
+to = "/docs/rasa/reference/rasa/utils/tensorflow/models/"
+
+[[redirects]]
+from = "/docs/rasa/api/events/"
+to = "/docs/rasa/action-server/events/"
+
+[[redirects]]
+from = "/docs/rasa/1.10.8/api/http-api/"
+to = "/docs/rasa/http-api/"
+
+[[redirects]]
+from = "/docs/rasa/1.10.8/api/http-api/"
+to = "/docs/rasa/http-api/"
+
+[[redirects]]
+from = "/docs/rasa/nlu/language-support/"
+to = "/docs/rasa/language-support/"
+
+[[redirects]]
+from = "/docs/rasa/api/tracker/"
+to = "/docs/rasa/action-server/sdk-tracker/"
