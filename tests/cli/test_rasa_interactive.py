@@ -1,11 +1,12 @@
 import argparse
 from typing import Callable, Text
-from unittest.mock import ANY, MagicMock, Mock
+from unittest.mock import ANY, Mock
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.pytester import RunResult
 
+import rasa.api
 from rasa.cli import interactive, train
 from rasa.core.train import do_interactive_learning
 from rasa.core.training import interactive as interactive_learning
@@ -73,14 +74,14 @@ def test_pass_arguments_to_rasa_train(
     interactive._set_not_required_args(args)
 
     # Mock actual training
-    mock_train_all = MagicMock(return_value=TrainingResult(code=0))
-    monkeypatch.setattr("rasa.cli.train.train_all", mock_train_all)
+    mock = Mock(return_value=TrainingResult(code=0))
+    monkeypatch.setattr(rasa.api, "train", mock.method)
 
     # If the `Namespace` object does not have all required fields this will throw
     train.run_training(args)
 
     # Assert `train` was actually called
-    mock_train_all.assert_called_once()
+    mock.method.assert_called_once()
 
 
 def test_train_called_when_no_model_passed(

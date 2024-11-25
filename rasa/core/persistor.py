@@ -82,14 +82,16 @@ def get_persistor(storage: StorageType) -> Optional[Persistor]:
     Currently, `aws`, `gcs`, `azure` and providing module paths are supported remote
     storages.
     """
-    if storage == RemoteStorageType.AWS:
+    storage = storage.value if isinstance(storage, RemoteStorageType) else storage
+
+    if storage == RemoteStorageType.AWS.value:
         return AWSPersistor(
             os.environ.get(BUCKET_NAME_ENV), os.environ.get(AWS_ENDPOINT_URL_ENV)
         )
-    if storage == RemoteStorageType.GCS:
+    if storage == RemoteStorageType.GCS.value:
         return GCSPersistor(os.environ.get(BUCKET_NAME_ENV))
 
-    if storage == RemoteStorageType.AZURE:
+    if storage == RemoteStorageType.AZURE.value:
         return AzurePersistor(
             os.environ.get(AZURE_CONTAINER_ENV),
             os.environ.get(AZURE_ACCOUNT_NAME_ENV),
@@ -123,36 +125,24 @@ class Persistor(abc.ABC):
         """Downloads a model that has been persisted to cloud storage.
 
         Downloaded model will be saved to the `target_path`.
-        If `target_path` is a directory, the model will be downloaded to that directory.
-        If `target_path` is a file, the model will be downloaded to that file.
+        If `target_path` is a directory, the model will be saved to that directory.
+        If `target_path` is a file, the model will be saved to that file.
 
         Args:
             model_name: The name of the model to retrieve.
-            target_path: The path to which the model should be downloaded.
+            target_path: The path to which the model should be saved.
         """
         tar_name = model_name
         if not model_name.endswith(MODEL_ARCHIVE_EXTENSION):
             # ensure backward compatibility
             tar_name = self._tar_name(model_name)
-        remote_object_path = self._create_file_key(tar_name)
-        self._retrieve_tar(remote_object_path)
+        tar_name = self._create_file_key(tar_name)
+        self._retrieve_tar(tar_name)
+        self._copy(os.path.basename(tar_name), target_path)
 
-        target_tar_file_name = os.path.basename(tar_name)
         if os.path.isdir(target_path):
-            target_path = os.path.join(target_path, target_tar_file_name)
+            return os.path.join(target_path, model_name)
 
-        if not os.path.exists(target_path):
-            structlogger.debug(
-                "persistor.retrieve.copy_model",
-                event_info=f"Copying model '{target_tar_file_name}' to "
-                f"'{target_path}'.",
-            )
-            self._copy(target_tar_file_name, target_path)
-
-        structlogger.debug(
-            "persistor.retrieve.model_retrieved",
-            event_info=f"Model retrieved and saved to '{target_path}'.",
-        )
         return target_path
 
     @abc.abstractmethod
@@ -272,11 +262,6 @@ class AWSPersistor(Persistor):
 
     def _persist_tar(self, file_key: Text, tar_path: Text) -> None:
         """Uploads a model persisted in the `target_dir` to s3."""
-        structlogger.debug(
-            "aws_persistor.persist_tar.uploading_model",
-            event_info=f"Uploading tar archive {file_key} to "
-            f"s3 bucket '{self.bucket_name}'.",
-        )
         with open(tar_path, "rb") as f:
             self.s3.Object(self.bucket_name, file_key).put(Body=f)
 
@@ -344,7 +329,7 @@ class GCSPersistor(Persistor):
     def _retrieve_tar(self, target_filename: Text) -> None:
         """Downloads a model that has previously been persisted to GCS."""
         blob = self.bucket.blob(target_filename)
-        blob.download_to_filename(os.path.basename(target_filename))
+        blob.download_to_filename(target_filename)
 
 
 class AzurePersistor(Persistor):
@@ -385,19 +370,12 @@ class AzurePersistor(Persistor):
     def _persist_tar(self, file_key: Text, tar_path: Text) -> None:
         """Uploads a model persisted in the `target_dir` to Azure."""
         with open(tar_path, "rb") as data:
-            self._container_client().upload_blob(
-                name=file_key,
-                data=data,
-                # overwrite is set to True to keep in line with
-                # how GCS and AWS APIs work this enables easy
-                # updating of models in the cloud
-                overwrite=True,
-            )
+            self._container_client().upload_blob(name=file_key, data=data)
 
     def _retrieve_tar(self, target_filename: Text) -> None:
         """Downloads a model that has previously been persisted to Azure."""
         blob_client = self._container_client().get_blob_client(target_filename)
 
-        with open(os.path.basename(target_filename), "wb") as blob:
+        with open(target_filename, "wb") as blob:
             download_stream = blob_client.download_blob()
             blob.write(download_stream.readall())

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import shutil
 import sys
 import tempfile
@@ -7,21 +8,19 @@ import uuid
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
+from tarsafe import TarSafe
 from typing import Generator, Optional, Text, Tuple, Union
 
-import structlog
-from tarsafe import TarSafe
-
-import rasa.model
-import rasa.shared.utils.io
 import rasa.utils.common
+import rasa.shared.utils.io
+from rasa.engine.storage.storage import ModelMetadata, ModelStorage
 from rasa.engine.graph import GraphModelConfiguration
 from rasa.engine.storage.resource import Resource
-from rasa.engine.storage.storage import ModelMetadata, ModelStorage
 from rasa.exceptions import UnsupportedModelVersionError
 from rasa.shared.core.domain import Domain
+import rasa.model
 
-structlogger = structlog.get_logger()
+logger = logging.getLogger(__name__)
 
 # Paths within model archive
 MODEL_ARCHIVE_COMPONENTS_DIR = "components"
@@ -87,14 +86,7 @@ class LocalModelStorage(ModelStorage):
             cls._extract_archive_to_directory(
                 model_archive_path, temporary_directory_path
             )
-            structlogger.debug(
-                "local_model_storage.from_model_archive",
-                event_info=(
-                    f"Extracted model '{model_archive_path}' to "
-                    f"'{temporary_directory_path}'."
-                ),
-            )
-
+            logger.debug(f"Extracted model to '{temporary_directory_path}'.")
             cls._initialize_model_storage_from_model_archive(
                 temporary_directory_path, storage_path
             )
@@ -150,10 +142,6 @@ class LocalModelStorage(ModelStorage):
         temporary_directory: Path, storage_path: Path
     ) -> None:
         for path in (temporary_directory / MODEL_ARCHIVE_COMPONENTS_DIR).glob("*"):
-            structlogger.debug(
-                "local_model_storage._initialize_model_storage_from_model_archive",
-                event_info=f"Moving '{path}' to '{storage_path}'.",
-            )
             shutil.move(str(path), str(storage_path))
 
     @staticmethod
@@ -167,10 +155,7 @@ class LocalModelStorage(ModelStorage):
     @contextmanager
     def write_to(self, resource: Resource) -> Generator[Path, None, None]:
         """Persists data for a resource (see parent class for full docstring)."""
-        structlogger.debug(
-            "local_model_storage.write_to.resource_write_requested",
-            event_info=f"Resource '{resource.name}' was requested for writing.",
-        )
+        logger.debug(f"Resource '{resource.name}' was requested for writing.")
         directory = self._directory_for_resource(resource)
 
         if not directory.exists():
@@ -178,10 +163,7 @@ class LocalModelStorage(ModelStorage):
 
         yield directory
 
-        structlogger.debug(
-            "local_model_storage.write_to.resource_persisted",
-            event_info=f"Resource '{resource.name}' was persisted.",
-        )
+        logger.debug(f"Resource '{resource.name}' was persisted.")
 
     def _directory_for_resource(self, resource: Resource) -> Path:
         return self._storage_path / resource.name
@@ -189,10 +171,7 @@ class LocalModelStorage(ModelStorage):
     @contextmanager
     def read_from(self, resource: Resource) -> Generator[Path, None, None]:
         """Provides the data of a `Resource` (see parent class for full docstring)."""
-        structlogger.debug(
-            "local_model_storage.read_from",
-            event_info=f"Resource '{resource.name}' was requested for reading.",
-        )
+        logger.debug(f"Resource '{resource.name}' was requested for reading.")
         directory = self._directory_for_resource(resource)
 
         if not directory.exists():
@@ -214,12 +193,7 @@ class LocalModelStorage(ModelStorage):
         domain: Domain,
     ) -> ModelMetadata:
         """Creates model package (see parent class for full docstring)."""
-        structlogger.debug(
-            "local_model_storage.create_model_package.started",
-            event_info=(
-                f"Start to created model " f"package for path '{model_archive_path}'.",
-            ),
-        )
+        logger.debug(f"Start to created model package for path '{model_archive_path}'.")
 
         with windows_safe_temporary_directory() as temp_dir:
             temporary_directory = Path(temp_dir)
@@ -240,10 +214,7 @@ class LocalModelStorage(ModelStorage):
             with TarSafe.open(model_archive_path, "w:gz") as tar:
                 tar.add(temporary_directory, arcname="")
 
-        structlogger.debug(
-            "local_model_storage.create_model_package.finished",
-            event_info=f"Model package created in path '{model_archive_path}'.",
-        )
+        logger.debug(f"Model package created in path '{model_archive_path}'.")
 
         return model_metadata
 
