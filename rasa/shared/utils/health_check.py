@@ -3,9 +3,9 @@ from typing import Optional, Dict, Any
 
 from rasa.shared.constants import (
     LLM_API_HEALTH_CHECK_ENV_VAR,
-    LLM_API_HEALTH_DEFAULT_VALUE,
     MODELS_CONFIG_KEY,
     MODEL_GROUP_ID_CONFIG_KEY,
+    LLM_API_HEALTH_CHECK_DEFAULT_VALUE,
 )
 from rasa.shared.exceptions import ProviderClientValidationError
 from rasa.shared.providers.embedding.embedding_client import EmbeddingClient
@@ -81,7 +81,9 @@ def perform_training_time_llm_health_check(
     )
 
     if (
-        os.getenv(LLM_API_HEALTH_CHECK_ENV_VAR, LLM_API_HEALTH_DEFAULT_VALUE).lower()
+        os.getenv(
+            LLM_API_HEALTH_CHECK_ENV_VAR, LLM_API_HEALTH_CHECK_DEFAULT_VALUE
+        ).lower()
         == "true"
     ):
         train_model_name: Optional[str] = None
@@ -134,7 +136,9 @@ def perform_training_time_embeddings_health_check(
         model name from the API response or `None` if LLM_API_HEALTH_CHECK is false
     """
     if (
-        os.getenv(LLM_API_HEALTH_CHECK_ENV_VAR, LLM_API_HEALTH_DEFAULT_VALUE).lower()
+        os.getenv(
+            LLM_API_HEALTH_CHECK_ENV_VAR, LLM_API_HEALTH_CHECK_DEFAULT_VALUE
+        ).lower()
         == "true"
     ):
         train_model_name: Optional[str] = None
@@ -188,7 +192,9 @@ def perform_inference_time_llm_health_check(
     (configs that have the `models` key).
     """
     if (
-        os.getenv(LLM_API_HEALTH_CHECK_ENV_VAR, LLM_API_HEALTH_DEFAULT_VALUE).lower()
+        os.getenv(
+            LLM_API_HEALTH_CHECK_ENV_VAR, LLM_API_HEALTH_CHECK_DEFAULT_VALUE
+        ).lower()
         == "true"
     ):
         structlogger.info(
@@ -284,7 +290,9 @@ def perform_inference_time_embeddings_health_check(
     (configs that have the `models` key).
     """
     if (
-        os.getenv(LLM_API_HEALTH_CHECK_ENV_VAR, LLM_API_HEALTH_DEFAULT_VALUE).lower()
+        os.getenv(
+            LLM_API_HEALTH_CHECK_ENV_VAR, LLM_API_HEALTH_CHECK_DEFAULT_VALUE
+        ).lower()
         == "true"
     ):
         structlogger.info(

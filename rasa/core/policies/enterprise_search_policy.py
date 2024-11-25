@@ -52,6 +52,8 @@ from rasa.shared.constants import (
     PROVIDER_CONFIG_KEY,
     OPENAI_PROVIDER,
     TIMEOUT_CONFIG_KEY,
+    MODEL_NAME_CONFIG_KEY,
+    MODEL_GROUP_CONFIG_KEY,
 )
 from rasa.shared.core.constants import (
     ACTION_CANCEL_FLOW,
@@ -205,9 +207,11 @@ class EnterpriseSearchPolicy(Policy):
         """Constructs a new Policy object."""
         super().__init__(config, model_storage, resource, execution_context, featurizer)
 
+        # Resolve LLM config
         self.config[LLM_CONFIG_KEY] = resolve_model_client_config(
             self.config.get(LLM_CONFIG_KEY), EnterpriseSearchPolicy.__name__
         )
+        # Resolve embeddings config
         self.config[EMBEDDINGS_CONFIG_KEY] = resolve_model_client_config(
             self.config.get(EMBEDDINGS_CONFIG_KEY), EnterpriseSearchPolicy.__name__
         )
@@ -217,18 +221,20 @@ class EnterpriseSearchPolicy(Policy):
         self.vector_store_config = self.config.get(
             VECTOR_STORE_PROPERTY, DEFAULT_VECTOR_STORE
         )
+
         # Embeddings configuration for encoding the search query
-        self.embeddings_config = self.config.get(
-            EMBEDDINGS_CONFIG_KEY, DEFAULT_EMBEDDINGS_CONFIG
+        self.embeddings_config = (
+            self.config[EMBEDDINGS_CONFIG_KEY] or DEFAULT_EMBEDDINGS_CONFIG
         )
+
+        # LLM Configuration for response generation
+        self.llm_config = self.config[LLM_CONFIG_KEY] or DEFAULT_LLM_CONFIG
+
         # Maximum number of turns to include in the prompt
         self.max_history = self.config.get(POLICY_MAX_HISTORY)
 
         # Maximum number of messages to include in the search query
         self.max_messages_in_query = self.config.get(MAX_MESSAGES_IN_QUERY_KEY, 2)
-
-        # LLM Configuration for response generation
-        self.llm_config = self.config.get(LLM_CONFIG_KEY, DEFAULT_LLM_CONFIG)
 
         # boolean to enable/disable tracing of prompt tokens
         self.trace_prompt_tokens = self.config.get(TRACE_TOKENS_PROPERTY, False)
@@ -258,9 +264,16 @@ class EnterpriseSearchPolicy(Policy):
         Returns:
         The embedder.
         """
+        # Copy the config so original config is not modified
+        config = config.copy()
+        # Resolve config and instantiate the embedding client
+        config[EMBEDDINGS_CONFIG_KEY] = resolve_model_client_config(
+            config.get(EMBEDDINGS_CONFIG_KEY), EnterpriseSearchPolicy.__name__
+        )
         client = embedder_factory(
             config.get(EMBEDDINGS_CONFIG_KEY), DEFAULT_EMBEDDINGS_CONFIG
         )
+        # Wrap the embedding client in the adapter
         return _LangchainEmbeddingClientAdapter(client)
 
     def train(  # type: ignore[override]
@@ -326,17 +339,16 @@ class EnterpriseSearchPolicy(Policy):
         # telemetry call to track training completion
         track_enterprise_search_policy_train_completed(
             vector_store_type=store_type,
-            # TODO https://rasahq.atlassian.net/browse/ENG-1481
-            # embeddings_type=self.embeddings_config.get(PROVIDER_CONFIG_KEY),
-            # embeddings_model=self.embeddings_config.get(MODEL_CONFIG_KEY)
-            # or self.embeddings_config.get(MODEL_NAME_CONFIG_KEY),
-            # llm_type=self.llm_config.get(PROVIDER_CONFIG_KEY),
-            # llm_model=self.llm_config.get(MODEL_CONFIG_KEY)
-            # or self.llm_config.get(MODEL_NAME_CONFIG_KEY),
-            embeddings_type=None,
-            embeddings_model=None,
-            llm_type=None,
-            llm_model=None,
+            embeddings_type=self.embeddings_config.get(PROVIDER_CONFIG_KEY),
+            embeddings_model=self.embeddings_config.get(MODEL_CONFIG_KEY)
+            or self.embeddings_config.get(MODEL_NAME_CONFIG_KEY),
+            embeddings_model_group_id=self.embeddings_config.get(
+                MODEL_GROUP_CONFIG_KEY
+            ),
+            llm_type=self.llm_config.get(PROVIDER_CONFIG_KEY),
+            llm_model=self.llm_config.get(MODEL_CONFIG_KEY)
+            or self.llm_config.get(MODEL_NAME_CONFIG_KEY),
+            llm_model_group_id=self.llm_config.get(MODEL_GROUP_CONFIG_KEY),
             citation_enabled=self.citation_enabled,
         )
         self.persist()
@@ -528,17 +540,16 @@ class EnterpriseSearchPolicy(Policy):
         # telemetry call to track policy prediction
         track_enterprise_search_policy_predict(
             vector_store_type=self.vector_store_config.get(VECTOR_STORE_TYPE_PROPERTY),
-            # TODO https://rasahq.atlassian.net/browse/ENG-1481
-            # embeddings_type=self.embeddings_config.get(PROVIDER_CONFIG_KEY),
-            # embeddings_model=self.embeddings_config.get(MODEL_CONFIG_KEY)
-            # or self.embeddings_config.get(MODEL_NAME_CONFIG_KEY),
-            # llm_type=self.llm_config.get(PROVIDER_CONFIG_KEY),
-            # llm_model=self.llm_config.get(MODEL_CONFIG_KEY)
-            # or self.llm_config.get(MODEL_NAME_CONFIG_KEY),
-            embeddings_type=None,
-            embeddings_model=None,
-            llm_type=None,
-            llm_model=None,
+            embeddings_type=self.embeddings_config.get(PROVIDER_CONFIG_KEY),
+            embeddings_model=self.embeddings_config.get(MODEL_CONFIG_KEY)
+            or self.embeddings_config.get(MODEL_NAME_CONFIG_KEY),
+            embeddings_model_group_id=self.embeddings_config.get(
+                MODEL_GROUP_CONFIG_KEY
+            ),
+            llm_type=self.llm_config.get(PROVIDER_CONFIG_KEY),
+            llm_model=self.llm_config.get(MODEL_CONFIG_KEY)
+            or self.llm_config.get(MODEL_NAME_CONFIG_KEY),
+            llm_model_group_id=self.llm_config.get(MODEL_GROUP_CONFIG_KEY),
             citation_enabled=self.citation_enabled,
         )
         return self._create_prediction(
@@ -706,11 +717,8 @@ class EnterpriseSearchPolicy(Policy):
             VECTOR_STORE_TYPE_PROPERTY
         )
 
-        config[EMBEDDINGS_CONFIG_KEY] = resolve_model_client_config(
-            config.get(EMBEDDINGS_CONFIG_KEY), EnterpriseSearchPolicy.__name__
-        )
-
         embeddings = cls._create_plain_embedder(config)
+
         logger.info("enterprise_search_policy.load", config=config)
         if store_type == DEFAULT_VECTOR_STORE_TYPE:
             # if a vector store is not specified,

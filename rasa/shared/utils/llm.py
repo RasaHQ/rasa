@@ -253,7 +253,75 @@ def sanitize_message_for_prompt(text: Optional[str]) -> str:
 def combine_custom_and_default_config(
     custom_config: Optional[Dict[str, Any]], default_config: Dict[str, Any]
 ) -> Dict[Text, Any]:
-    """Merges the given llm config with the default config.
+    """Merges the given model configuration with the default configuration.
+
+    This method supports both single model configurations and model group configurations
+    (configs that have the `models` key).
+
+    If `custom_config` is a single model configuration, it merges `custom_config` with
+    `default_config`, which is also a single model configuration.
+
+    If `custom_config` is a model group configuration (contains the `models` key), it
+    applies the merging process to each model configuration within the group
+    individually, merging each with the `default_config`.
+
+    Note that `default_config` is always a single model configuration.
+
+    The method ensures that the provider is set and all deprecated keys are resolved,
+    resulting in a valid client configuration.
+
+    Args:
+        custom_config: The custom configuration containing values to overwrite defaults.
+            Can be a single model configuration or a model group configuration with a
+            `models` key.
+        default_config: The default configuration, which is a single model
+            configuration.
+
+    Returns:
+        The merged configuration, either a single model configuration or a model group
+        configuration with merged models.
+    """
+    if custom_config and MODELS_CONFIG_KEY in custom_config:
+        return _combine_model_groups_configs_with_default_config(
+            custom_config, default_config
+        )
+    else:
+        return _combine_single_model_configs(custom_config, default_config)
+
+
+def _combine_model_groups_configs_with_default_config(
+    model_group_config: Dict[str, Any], default_config: Dict[str, Any]
+) -> Dict[Text, Any]:
+    """Merges each model configuration within a model group with the default
+    configuration.
+
+    This method processes model group configurations by applying the merging process to
+    each model configuration within the group individually.
+
+    Args:
+        model_group_config: The model group configuration containing a list of model
+            configurations under the `models` key.
+        default_config: The default configuration for a single model.
+
+    Returns:
+        The merged model group configuration with each model configuration merged
+        with the default configuration.
+    """
+    model_group_config = deepcopy(model_group_config)
+    model_group_config_combined_with_defaults = [
+        _combine_single_model_configs(model_config, default_config)
+        for model_config in model_group_config[MODELS_CONFIG_KEY]
+    ]
+    # Update the custom models config with the combined config.
+    model_group_config[MODELS_CONFIG_KEY] = model_group_config_combined_with_defaults
+    return model_group_config
+
+
+@_cache_combine_custom_and_default_configs
+def _combine_single_model_configs(
+    custom_config: Optional[Dict[str, Any]], default_config: Dict[str, Any]
+) -> Dict[Text, Any]:
+    """Merges the given model config with the default config.
 
     This method guarantees that the provider is set and all the deprecated keys are
     resolved. Hence, produces only a valid client config.
@@ -426,18 +494,10 @@ def llm_router_factory(
         LiteLLMRouterLLMClient,
     )
 
-    _router_config_copy = deepcopy(router_config)
-
-    # Combine the custom config with the default config for each model.
-    custom_config_combined_with_defaults = [
-        combine_custom_and_default_config(model_config, default_model_config)
-        for model_config in router_config[MODELS_CONFIG_KEY]
-    ]
-
-    # Update the custom models config with the combined config.
-    _router_config_copy[MODELS_CONFIG_KEY] = custom_config_combined_with_defaults
-
-    return LiteLLMRouterLLMClient.from_config(_router_config_copy)
+    combined_config = _combine_model_groups_configs_with_default_config(
+        router_config, default_model_config
+    )
+    return LiteLLMRouterLLMClient.from_config(combined_config)
 
 
 def llm_client_factory(
@@ -561,18 +621,11 @@ def embedder_router_factory(
         LiteLLMRouterEmbeddingClient,
     )
 
-    _router_config_copy = deepcopy(router_config)
+    combined_config = _combine_model_groups_configs_with_default_config(
+        router_config, default_model_config
+    )
 
-    # Combine the custom config with the default config for each model.
-    custom_config_combined_with_defaults = [
-        combine_custom_and_default_config(model_config, default_model_config)
-        for model_config in router_config[MODELS_CONFIG_KEY]
-    ]
-
-    # Update the custom models config with the combined config.
-    _router_config_copy[MODELS_CONFIG_KEY] = custom_config_combined_with_defaults
-
-    return LiteLLMRouterEmbeddingClient.from_config(_router_config_copy)
+    return LiteLLMRouterEmbeddingClient.from_config(combined_config)
 
 
 def embedder_client_factory(

@@ -105,16 +105,15 @@ class FlowRetrieval:
     ):
         config = {**self.get_default_config(), **config}
         self.config = self.validate_config(config)
+        self.config[EMBEDDINGS_CONFIG_KEY] = resolve_model_client_config(
+            self.config.get(EMBEDDINGS_CONFIG_KEY), FlowRetrieval.__name__
+        )
         self.vector_store: Optional[FAISS] = None
         self.flow_document_template = get_prompt_template(
             None, DEFAULT_FLOW_DOCUMENT_TEMPLATE
         )
         self._model_storage = model_storage
         self._resource = resource
-
-        self.config[EMBEDDINGS_CONFIG_KEY] = resolve_model_client_config(
-            self.config.get(EMBEDDINGS_CONFIG_KEY), FlowRetrieval.__name__
-        )
 
     @classmethod
     def validate_config(cls, config: Dict[Text, Any]) -> Dict[Text, Any]:
@@ -230,9 +229,16 @@ class FlowRetrieval:
         Returns:
             The embedder.
         """
+        # Copy the config so original config is not modified
+        config = config.copy()
+        # Resolve config and instantiate the embedding client
+        config[EMBEDDINGS_CONFIG_KEY] = resolve_model_client_config(
+            config.get(EMBEDDINGS_CONFIG_KEY), FlowRetrieval.__name__
+        )
         client = embedder_factory(
             config.get(EMBEDDINGS_CONFIG_KEY), DEFAULT_EMBEDDINGS_CONFIG
         )
+        # Wrap the embedding client in the adapter
         return _LangchainEmbeddingClientAdapter(client)
 
     def persist(self) -> None:

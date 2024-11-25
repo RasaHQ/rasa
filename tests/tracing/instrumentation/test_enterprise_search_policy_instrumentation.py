@@ -1,19 +1,24 @@
+import json
 import logging
 import tempfile
 import uuid
-from typing import Sequence
+from typing import Sequence, Dict, Any
 from unittest.mock import Mock
-
 from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
+import pytest
 from pytest import LogCaptureFixture, MonkeyPatch
 
 from rasa.core import EnterpriseSearchPolicy
+from rasa.core.policies.enterprise_search_policy import DEFAULT_EMBEDDINGS_CONFIG
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.tracing.instrumentation import instrumentation
-from tests.tracing.instrumentation.conftest import MockInformationRetrieval
+from tests.tracing.instrumentation.conftest import (
+    MockInformationRetrieval,
+    MockAvailableEndpoints,
+)
 
 
 async def test_tracing_enterprise_search_policy_generate_llm_answer_default_config(
@@ -50,21 +55,99 @@ async def test_tracing_enterprise_search_policy_generate_llm_answer_default_conf
 
     assert captured_span.attributes == {
         "class_name": "EnterpriseSearchPolicy",
-        "llm_model": "gpt-3.5-turbo",
+        # llm attributes
         "llm_type": "openai",
-        "embeddings": "null",
+        "llm_model": "gpt-3.5-turbo",
+        "llm_model_group_id": "None",
         "llm_temperature": "0.0",
+        "llm_request_timeout": "10",
+        # embeddings attributes
+        "embeddings_model": "text-embedding-ada-002",
+        "embeddings_type": "openai",
+        "embeddings_model_group_id": "None",
+        # deprecated
         "request_timeout": "10",
+        "embeddings": json.dumps(DEFAULT_EMBEDDINGS_CONFIG, sort_keys=True),
     }
 
 
+@pytest.mark.parametrize(
+    "config, expected",
+    [
+        (
+            {
+                "llm": {
+                    "model": "gpt-4",
+                    "request_timeout": 15,
+                    "temperature": 0.7,
+                },
+                "embeddings": {"model": "text-embedding-ada-002"},
+            },
+            {
+                # "class_name": "EnterpriseSearchPolicy",
+                # llm attributes
+                "llm_type": "openai",
+                "llm_model": "gpt-4",
+                "llm_model_group_id": "None",
+                "llm_temperature": "0.7",
+                "llm_request_timeout": "15",
+                # embeddings attributes
+                "embeddings_model": "text-embedding-ada-002",
+                "embeddings_type": "openai",
+                "embeddings_model_group_id": "None",
+                # deprecated
+                "request_timeout": "15",
+                "embeddings": json.dumps(
+                    {
+                        "model": "text-embedding-ada-002",
+                        "provider": "openai",
+                        # all of this is automatically filled by
+                        # configuration parser
+                        "api_base": None,
+                        "api_version": None,
+                        "api_type": "openai",
+                    },
+                    sort_keys=True,
+                ),
+            },
+        ),
+        (
+            {
+                "llm": {
+                    "model_group": "llm-model-group",
+                },
+                "embeddings": {"model_group": "embedding-model-group"},
+            },
+            {
+                # llm attributes
+                "llm_type": "None",
+                "llm_model": "None",
+                "llm_model_group_id": "llm-model-group",
+                "llm_temperature": "None",
+                "llm_request_timeout": "None",
+                # embeddings attributes
+                "embeddings_model": "None",
+                "embeddings_type": "None",
+                "embeddings_model_group_id": "embedding-model-group",
+                # deprecated
+                "request_timeout": "None",
+                "embeddings": json.dumps(
+                    MockAvailableEndpoints().model_groups[1], sort_keys=True
+                ),
+            },
+        ),
+    ],
+)
 async def test_tracing_enterprise_search_policy_generate_llm_answer_custom_config(
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
     previous_num_captured_spans: int,
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
+    config: Dict[str, Any],
+    expected: Dict[str, Any],
     monkeypatch: MonkeyPatch,
+    mock_available_endpoints: MockAvailableEndpoints,
 ) -> None:
     """Test that the instrumentation traces custom configuration for the EnterpriseSearchPolicy."""  # noqa: E501
     # In order to avoid race conditions when tests are run on the same
@@ -83,14 +166,7 @@ async def test_tracing_enterprise_search_policy_generate_llm_answer_custom_confi
         )
 
         policy = component_class(
-            config={
-                "llm": {
-                    "model": "gpt-4",
-                    "request_timeout": 15,
-                    "temperature": 0.7,
-                },
-                "embeddings": {"model": "text-embedding-ada-002"},
-            },
+            config=config,
             model_storage=default_model_storage,
             resource=Resource("enterprisesearchpolicy"),
             execution_context=default_execution_context,
@@ -105,14 +181,11 @@ async def test_tracing_enterprise_search_policy_generate_llm_answer_custom_confi
         captured_span = captured_spans[-1]
         assert captured_span.name == "EnterpriseSearchPolicy._generate_llm_answer"
 
-        assert captured_span.attributes == {
-            "class_name": "EnterpriseSearchPolicy",
-            "llm_model": "gpt-4",
-            "llm_type": "openai",
-            "embeddings": '{"model": "text-embedding-ada-002"}',
-            "llm_temperature": "0.7",
-            "request_timeout": "15",
+        expected_attributes = {
+            "class_name": component_class.__name__,
         }
+        expected_attributes.update(expected)
+        assert captured_span.attributes == expected_attributes
 
 
 async def test_tracing_enterprise_search_policy_generate_llm_answer_len_prompt_tokens(
@@ -158,12 +231,20 @@ async def test_tracing_enterprise_search_policy_generate_llm_answer_len_prompt_t
 
         assert captured_span.attributes == {
             "class_name": "EnterpriseSearchPolicy",
-            "llm_model": "gpt-3.5-turbo",
-            "llm_type": "openai",
-            "llm_temperature": "0.0",
-            "request_timeout": "10",
-            "embeddings": "null",
             "len_prompt_tokens": "6",
+            # llm attributes
+            "llm_type": "openai",
+            "llm_model": "gpt-3.5-turbo",
+            "llm_model_group_id": "None",
+            "llm_temperature": "0.0",
+            "llm_request_timeout": "10",
+            # embeddings attributes
+            "embeddings_model": "text-embedding-ada-002",
+            "embeddings_type": "openai",
+            "embeddings_model_group_id": "None",
+            # deprecated
+            "request_timeout": "10",
+            "embeddings": json.dumps(DEFAULT_EMBEDDINGS_CONFIG, sort_keys=True),
         }
 
 

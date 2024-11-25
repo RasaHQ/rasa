@@ -43,6 +43,7 @@ from rasa.shared.constants import (
     PROVIDER_CONFIG_KEY,
     OPENAI_PROVIDER,
     TIMEOUT_CONFIG_KEY,
+    MODEL_GROUP_CONFIG_KEY,
 )
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.shared.core.constants import ACTION_TRIGGER_CHITCHAT
@@ -439,22 +440,24 @@ class IntentlessPolicy(Policy):
         """Constructs a new Policy object."""
         super().__init__(config, model_storage, resource, execution_context, featurizer)
 
+        # Resolve LLM config
+        self.config[LLM_CONFIG_KEY] = resolve_model_client_config(
+            self.config.get(LLM_CONFIG_KEY), IntentlessPolicy.__name__
+        )
+
+        # Resolve embeddings config
+        self.config[EMBEDDINGS_CONFIG_KEY] = resolve_model_client_config(
+            self.config.get(EMBEDDINGS_CONFIG_KEY), IntentlessPolicy.__name__
+        )
+
         self.nlu_abstention_threshold: float = self.config[NLU_ABSTENTION_THRESHOLD]
         self.response_index = responses_docsearch
         self.conversation_samples_index = samples_docsearch
-
+        self.embedder = self._create_plain_embedder(config)
         self.prompt_template = prompt_template or rasa.shared.utils.io.read_file(
             self.config[PROMPT_CONFIG_KEY]
         )
         self.trace_prompt_tokens = self.config.get("trace_prompt_tokens", False)
-
-        self.config[LLM_CONFIG_KEY] = resolve_model_client_config(
-            self.config.get(LLM_CONFIG_KEY), IntentlessPolicy.__name__
-        )
-        self.config[EMBEDDINGS_CONFIG_KEY] = resolve_model_client_config(
-            self.config.get(EMBEDDINGS_CONFIG_KEY), IntentlessPolicy.__name__
-        )
-        self.embedder = self._create_plain_embedder(config)
 
     @classmethod
     def _create_plain_embedder(cls, config: Dict[Text, Any]) -> Embeddings:
@@ -463,9 +466,16 @@ class IntentlessPolicy(Policy):
         Returns:
         The embedder.
         """
+        # Copy the config so original config is not modified
+        config.copy()
+        # Resolve config and instantiate the embedding client
+        config[EMBEDDINGS_CONFIG_KEY] = resolve_model_client_config(
+            config.get(EMBEDDINGS_CONFIG_KEY), IntentlessPolicy.__name__
+        )
         client = embedder_factory(
             config.get(EMBEDDINGS_CONFIG_KEY), DEFAULT_EMBEDDINGS_CONFIG
         )
+        # Wrap the embedding client in the adapter
         return _LangchainEmbeddingClientAdapter(client)
 
     def embeddings_property(self, prop: str) -> Optional[str]:
@@ -556,9 +566,11 @@ class IntentlessPolicy(Policy):
             embeddings_type=self.embeddings_property(PROVIDER_CONFIG_KEY),
             embeddings_model=self.embeddings_property(MODEL_CONFIG_KEY)
             or self.embeddings_property(MODEL_NAME_CONFIG_KEY),
+            embeddings_model_group_id=self.embeddings_property(MODEL_GROUP_CONFIG_KEY),
             llm_type=self.llm_property(PROVIDER_CONFIG_KEY),
             llm_model=self.llm_property(MODEL_CONFIG_KEY)
             or self.llm_property(MODEL_NAME_CONFIG_KEY),
+            llm_model_group_id=self.llm_property(MODEL_GROUP_CONFIG_KEY),
         )
 
         self.persist()
@@ -638,9 +650,11 @@ class IntentlessPolicy(Policy):
             embeddings_type=self.embeddings_property(PROVIDER_CONFIG_KEY),
             embeddings_model=self.embeddings_property(MODEL_CONFIG_KEY)
             or self.embeddings_property(MODEL_NAME_CONFIG_KEY),
+            embeddings_model_group_id=self.embeddings_property(MODEL_GROUP_CONFIG_KEY),
             llm_type=self.llm_property(PROVIDER_CONFIG_KEY),
             llm_model=self.llm_property(MODEL_CONFIG_KEY)
             or self.llm_property(MODEL_NAME_CONFIG_KEY),
+            llm_model_group_id=self.llm_property(MODEL_GROUP_CONFIG_KEY),
             score=score,
         )
 

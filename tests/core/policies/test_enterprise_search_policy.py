@@ -1278,8 +1278,8 @@ def test_enterprise_search_policy_init_with_different_llm_configs(
     generator = EnterpriseSearchPolicy(
         config, default_model_storage, resource, default_execution_context
     )
-    assert generator.config[LLM_CONFIG_KEY] == expected_llm_config
-    assert generator.config[EMBEDDINGS_CONFIG_KEY] == expected_embedding_config
+    assert generator.config.get(LLM_CONFIG_KEY) == expected_llm_config
+    assert generator.config.get(EMBEDDINGS_CONFIG_KEY) == expected_embedding_config
 
 
 def test_enterprise_search_policy_persist_config(

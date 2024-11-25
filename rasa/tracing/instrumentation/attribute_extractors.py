@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text, Tuple, Union
 
 import tiktoken
 from numpy import ndarray
+from rasa.dialogue_understanding.generator.constants import FLOW_RETRIEVAL_KEY
 from rasa_sdk.grpc_py import action_webhook_pb2
 
 from rasa.core.actions.action import DirectCustomActionExecutor
@@ -19,6 +20,7 @@ from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import TrackerStore
 from rasa.dialogue_understanding.commands import Command
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
+from rasa.dialogue_understanding.generator import LLMBasedCommandGenerator
 from rasa.engine.graph import ExecutionContext, GraphModelConfiguration, GraphNode
 from rasa.engine.training.graph_trainer import GraphTrainer
 from rasa.shared.constants import (
@@ -27,6 +29,8 @@ from rasa.shared.constants import (
     PROVIDER_CONFIG_KEY,
     TIMEOUT_CONFIG_KEY,
     DEPLOYMENT_CONFIG_KEY,
+    MODEL_GROUP_ID_CONFIG_KEY,
+    LLM_CONFIG_KEY,
 )
 from rasa.shared.core.constants import REQUESTED_SLOT
 from rasa.shared.core.domain import Domain
@@ -50,10 +54,7 @@ if TYPE_CHECKING:
     from rasa.core.policies.enterprise_search_policy import EnterpriseSearchPolicy
     from rasa.core.policies.intentless_policy import IntentlessPolicy
     from rasa.core.policies.policy import PolicyPrediction
-    from rasa.dialogue_understanding.generator import (
-        CommandGenerator,
-        LLMBasedCommandGenerator,
-    )
+    from rasa.dialogue_understanding.generator import CommandGenerator
 
 # This file contains all attribute extractors for tracing instrumentation.
 # These are functions that are applied to the arguments of the wrapped function to be
@@ -300,22 +301,49 @@ def extract_attrs_for_command(
     }
 
 
-def extract_llm_config(self: Any, default_llm_config: Dict[str, Any]) -> Dict[str, Any]:
+def extract_llm_config(
+    self: Any,
+    default_llm_config: Dict[str, Any],
+    default_embeddings_config: Dict[str, Any],
+) -> Dict[str, Any]:
     if isinstance(self, ContextualResponseRephraser):
-        config = self.nlg_endpoint.kwargs
+        # ContextualResponseRephraser is not a graph component, so it's
+        # not having a full config.
+        config = {"llm": self.llm_config}
     else:
         config = self.config
 
     llm_property = combine_custom_and_default_config(
-        config.get("llm"), default_llm_config
+        config.get(LLM_CONFIG_KEY), default_llm_config
     )
+
+    if isinstance(self, LLMBasedCommandGenerator):
+        flow_retrieval_config = config.get(FLOW_RETRIEVAL_KEY, {}) or {}
+        embeddings_property = combine_custom_and_default_config(
+            flow_retrieval_config.get(EMBEDDINGS_CONFIG_KEY),
+            default_embeddings_config,
+        )
+    else:
+        embeddings_property = combine_custom_and_default_config(
+            config.get(EMBEDDINGS_CONFIG_KEY), default_embeddings_config
+        )
 
     attributes = {
         "class_name": self.__class__.__name__,
+        # llm client attributes
         "llm_model": str(llm_property.get(MODEL_CONFIG_KEY)),
         "llm_type": str(llm_property.get(PROVIDER_CONFIG_KEY)),
-        "embeddings": json.dumps(config.get(EMBEDDINGS_CONFIG_KEY, {})),
+        "llm_model_group_id": str(llm_property.get(MODEL_GROUP_ID_CONFIG_KEY)),
         "llm_temperature": str(llm_property.get("temperature")),
+        "llm_request_timeout": str(llm_property.get(TIMEOUT_CONFIG_KEY)),
+        # embedding client attributes
+        "embeddings_model": str(embeddings_property.get(MODEL_CONFIG_KEY)),
+        "embeddings_type": str(embeddings_property.get(PROVIDER_CONFIG_KEY)),
+        "embeddings_model_group_id": str(
+            embeddings_property.get(MODEL_GROUP_ID_CONFIG_KEY)
+        ),
+        # TODO: Keeping this to avoid potential breaking changes
+        "embeddings": json.dumps(embeddings_property, sort_keys=True),
         "request_timeout": str(llm_property.get(TIMEOUT_CONFIG_KEY)),
     }
 
@@ -329,11 +357,16 @@ def extract_attrs_for_llm_based_command_generator(
     self: "LLMBasedCommandGenerator",
     prompt: str,
 ) -> Dict[str, Any]:
-    from rasa.dialogue_understanding.generator.constants import (
-        DEFAULT_LLM_CONFIG,
+    from rasa.dialogue_understanding.generator.constants import DEFAULT_LLM_CONFIG
+    from rasa.dialogue_understanding.generator.flow_retrieval import (
+        DEFAULT_EMBEDDINGS_CONFIG,
     )
 
-    attributes = extract_llm_config(self, default_llm_config=DEFAULT_LLM_CONFIG)
+    attributes = extract_llm_config(
+        self,
+        default_llm_config=DEFAULT_LLM_CONFIG,
+        default_embeddings_config=DEFAULT_EMBEDDINGS_CONFIG,
+    )
 
     return extend_attributes_with_prompt_tokens_length(self, attributes, prompt)
 
@@ -344,7 +377,12 @@ def extract_attrs_for_contextual_response_rephraser(
 ) -> Dict[str, Any]:
     from rasa.core.nlg.contextual_response_rephraser import DEFAULT_LLM_CONFIG
 
-    attributes = extract_llm_config(self, default_llm_config=DEFAULT_LLM_CONFIG)
+    attributes = extract_llm_config(
+        self,
+        default_llm_config=DEFAULT_LLM_CONFIG,
+        # rephraser is not using embeddings
+        default_embeddings_config={},
+    )
 
     return extend_attributes_with_prompt_tokens_length(self, attributes, prompt)
 
@@ -355,7 +393,12 @@ def extract_attrs_for_create_history(
 ) -> Dict[str, Any]:
     from rasa.core.nlg.contextual_response_rephraser import DEFAULT_LLM_CONFIG
 
-    return extract_llm_config(self, default_llm_config=DEFAULT_LLM_CONFIG)
+    return extract_llm_config(
+        self,
+        default_llm_config=DEFAULT_LLM_CONFIG,
+        # rephraser is not using embeddings
+        default_embeddings_config={},
+    )
 
 
 def extract_attrs_for_generate(
@@ -580,9 +623,16 @@ def extract_attrs_for_intentless_policy_find_closest_response(
 def extract_attrs_for_intentless_policy_generate_llm_answer(
     self: "IntentlessPolicy", llm: "BaseLLM", prompt: str
 ) -> Dict[str, Any]:
-    from rasa.core.policies.intentless_policy import DEFAULT_LLM_CONFIG
+    from rasa.core.policies.intentless_policy import (
+        DEFAULT_LLM_CONFIG,
+        DEFAULT_EMBEDDINGS_CONFIG,
+    )
 
-    attributes = extract_llm_config(self, default_llm_config=DEFAULT_LLM_CONFIG)
+    attributes = extract_llm_config(
+        self,
+        default_llm_config=DEFAULT_LLM_CONFIG,
+        default_embeddings_config=DEFAULT_EMBEDDINGS_CONFIG,
+    )
 
     return extend_attributes_with_prompt_tokens_length(self, attributes, prompt)
 
@@ -590,9 +640,16 @@ def extract_attrs_for_intentless_policy_generate_llm_answer(
 def extract_attrs_for_enterprise_search_generate_llm_answer(
     self: "EnterpriseSearchPolicy", llm: "BaseLLM", prompt: str
 ) -> Dict[str, Any]:
-    from rasa.core.policies.enterprise_search_policy import DEFAULT_LLM_CONFIG
+    from rasa.core.policies.enterprise_search_policy import (
+        DEFAULT_LLM_CONFIG,
+        DEFAULT_EMBEDDINGS_CONFIG,
+    )
 
-    attributes = extract_llm_config(self, default_llm_config=DEFAULT_LLM_CONFIG)
+    attributes = extract_llm_config(
+        self,
+        default_llm_config=DEFAULT_LLM_CONFIG,
+        default_embeddings_config=DEFAULT_EMBEDDINGS_CONFIG,
+    )
 
     return extend_attributes_with_prompt_tokens_length(self, attributes, prompt)
 

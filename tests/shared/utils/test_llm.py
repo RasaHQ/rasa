@@ -2443,7 +2443,7 @@ def test_ensure_cache_creates_creates_diskcache_sqlite_db(
         ),
     ),
 )
-def test_combine_custom_and_default_config(
+def test_combine_custom_and_default_config_combining_single_model_configurations(
     custom_config: Dict[str, Any], expected_combined_config: Dict[str, Any]
 ) -> None:
     default_config = {
@@ -2467,7 +2467,7 @@ def test_combine_custom_and_default_config(
         },
     ),
 )
-def test_combine_custom_and_default_config_throw_error(
+def test_combine_custom_and_default_config_combining_single_model_configurations_throw_error(  # noqa 501
     custom_config: Dict[str, Any],
 ) -> None:
     default_config = {
@@ -2480,6 +2480,64 @@ def test_combine_custom_and_default_config_throw_error(
 
     with pytest.raises(SystemExit):
         combine_custom_and_default_config(custom_config, default_config)
+
+
+def test_combine_custom_and_default_config_combining_model_group_configuration() -> (
+    None
+):
+    # Given
+    model_configs = [
+        {"provider": "openai", "model": "gpt-4"},
+        {"provider": "cohere", "model": "test-cohere", "api_key": "test"},
+        {
+            "provider": "azure",
+            "deployment": "test-deployment",
+            "api_key": "test",
+            "api_base": "test-api-base",
+            "api_version": "v1",
+        },
+    ]
+    expected_combined_configs = [
+        {
+            "provider": "openai",
+            "api_type": "openai",
+            "api_base": None,  # automatically set by config parser
+            "api_version": None,  # automatically set by config parser
+            "model": "gpt-4",
+            "temperature": 0.0,
+            "max_tokens": 256,
+            "timeout": 7,
+        },
+        {"provider": "cohere", "model": "test-cohere", "api_key": "test"},
+        {
+            "provider": "azure",
+            "deployment": "test-deployment",
+            "api_key": "test",
+            "api_base": "test-api-base",
+            "api_type": "azure",  # automatically set by config parser
+            "api_version": "v1",
+            "model": None,  # automatically set by config parser
+        },
+    ]
+    default_config = {
+        "provider": "openai",
+        "model": "test-gpt",
+        "temperature": 0.0,
+        "max_tokens": 256,
+        "timeout": 7,
+    }
+    model_group_config = {"id": "test-model-group", "models": model_configs}
+    expected_model_group_config = {
+        "id": "test-model-group",
+        "models": expected_combined_configs,
+    }
+
+    # When
+    combined_config = combine_custom_and_default_config(
+        model_group_config, default_config
+    )
+
+    assert combined_config == expected_model_group_config
 
 
 class MockAvailableEndpoints:

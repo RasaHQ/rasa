@@ -1,3 +1,4 @@
+import json
 import logging
 from typing import Any, Dict, Generator, Optional, Sequence
 from unittest.mock import Mock, patch
@@ -8,7 +9,9 @@ from pytest import LogCaptureFixture
 from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 
-from rasa.core.policies.intentless_policy import IntentlessPolicy
+from rasa.core.policies.intentless_policy import (
+    IntentlessPolicy,
+)
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
@@ -323,12 +326,29 @@ async def test_tracing_intentless_policy_generate_llm_answer_len_prompt_tokens(
 
     assert captured_span.attributes == {
         "class_name": "IntentlessPolicy",
-        "llm_model": "gpt-3.5-turbo",
-        "llm_type": "openai",
-        "embeddings": '{"provider": "openai", "model": "text-embedding-ada-002"}',
-        "llm_temperature": "0.0",
-        "request_timeout": "5",
         "len_prompt_tokens": "6",
+        # llm attributes
+        "llm_type": "openai",
+        "llm_model": "gpt-3.5-turbo",
+        "llm_model_group_id": "None",
+        "llm_temperature": "0.0",
+        "llm_request_timeout": "5",
+        # embeddings attributes
+        "embeddings_model": "text-embedding-ada-002",
+        "embeddings_type": "openai",
+        "embeddings_model_group_id": "None",
+        # deprecated
+        "request_timeout": "5",
+        "embeddings": json.dumps(
+            {
+                "provider": "openai",
+                "model": "text-embedding-ada-002",
+                "api_base": None,
+                "api_version": None,
+                "api_type": "openai",
+            },
+            sort_keys=True,
+        ),
     }
 
 

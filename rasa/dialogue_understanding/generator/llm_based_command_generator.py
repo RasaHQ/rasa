@@ -67,13 +67,12 @@ class LLMBasedCommandGenerator(GraphComponent, CommandGenerator, ABC):
     ) -> None:
         super().__init__(config)
         self.config = {**self.get_default_config(), **config}
-        self._model_storage = model_storage
-        self._resource = resource
-        self.flow_retrieval: Optional[FlowRetrieval]
-
         self.config[LLM_CONFIG_KEY] = resolve_model_client_config(
             self.config.get(LLM_CONFIG_KEY), LLMBasedCommandGenerator.__name__
         )
+        self._model_storage = model_storage
+        self._resource = resource
+        self.flow_retrieval: Optional[FlowRetrieval]
 
         if self.enabled_flow_retrieval:
             self.flow_retrieval = FlowRetrieval(

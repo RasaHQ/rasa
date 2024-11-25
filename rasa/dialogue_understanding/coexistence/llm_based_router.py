@@ -102,6 +102,9 @@ class LLMBasedRouter(GraphComponent):
         prompt_template: Optional[str] = None,
     ) -> None:
         self.config = {**self.get_default_config(), **config}
+        self.config[LLM_CONFIG_KEY] = resolve_model_client_config(
+            self.config.get(LLM_CONFIG_KEY), LLMBasedRouter.__name__
+        )
 
         self.prompt_template = (
             prompt_template
@@ -114,10 +117,6 @@ class LLMBasedRouter(GraphComponent):
         self._model_storage = model_storage
         self._resource = resource
         self.validate_config()
-
-        self.config[LLM_CONFIG_KEY] = resolve_model_client_config(
-            self.config.get(LLM_CONFIG_KEY), LLMBasedRouter.__name__
-        )
 
     def validate_config(self) -> None:
         """Validate the config of the router."""
