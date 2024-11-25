@@ -45,7 +45,7 @@ class DomainProvider(GraphComponent):
     ) -> DomainProvider:
         """Creates provider using a persisted version of itself."""
         with model_storage.read_from(resource) as resource_directory:
-            domain = Domain.from_path(resource_directory)
+            domain = Domain.from_path(resource_directory, is_validated=True)
         return cls(model_storage, resource, domain)
 
     def _persist(self, domain: Domain) -> None:

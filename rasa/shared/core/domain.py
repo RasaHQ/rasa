@@ -188,20 +188,21 @@ class Domain:
         return domain
 
     @classmethod
-    def from_path(cls, path: Union[Text, Path]) -> "Domain":
+    def from_path(cls, path: Union[Text, Path], is_validated: bool = False) -> "Domain":
         """Loads the `Domain` from a path."""
+        logger.debug(f"Loading from {path}")
         path = os.path.abspath(path)
 
         if os.path.isfile(path):
             domain = cls.from_file(path)
         elif os.path.isdir(path):
-            domain = cls.from_directory(path)
+            domain = cls.from_directory(path, is_validated=is_validated)
         else:
             raise InvalidDomain(
                 "Failed to load domain specification from '{}'. "
                 "File not found!".format(os.path.abspath(path))
             )
-
+        logger.debug(f"done loading domain from {path}")
         return domain
 
     @classmethod
@@ -287,20 +288,30 @@ class Domain:
         return SessionConfig(session_expiration_time_min, carry_over_slots)
 
     @classmethod
-    def from_directory(cls, path: Text) -> "Domain":
+    def from_directory(cls, path: Text, is_validated: bool = False) -> "Domain":
         """Loads and merges multiple domain files recursively from a directory tree."""
         combined: Dict[Text, Any] = {}
         for root, _, files in os.walk(path, followlinks=True):
             for file in files:
+                logger.debug(f"Processing {file=}")
                 full_path = os.path.join(root, file)
-                if Domain.is_domain_file(full_path):
-                    _ = Domain.from_file(full_path)  # does the validation here only
-                    other_dict = rasa.shared.utils.io.read_yaml(
-                        rasa.shared.utils.io.read_file(full_path)
-                    )
+                logger.debug(f"Checking file type of {file=}")
+                if other_dict := Domain.is_domain_file(full_path):
+                    if not is_validated:
+                        logger.debug(f"Validating {file=}")
+                        _ = Domain.from_dict(
+                            other_dict
+                        )  # does the validation here only
+                        # logger.debug(f"Reading {file=}")
+                        # other_dict = rasa.shared.utils.io.read_yaml(
+                        #     rasa.shared.utils.io.read_file(full_path)
+                        # )
+                    logger.debug(f"Merging {file=}")
                     combined = Domain.merge_domain_dicts(other_dict, combined)
 
+        logger.debug("Building domain from dict.")
         domain = Domain.from_dict(combined)
+        logger.debug(f"Merged domain from directory {path=}")
         return domain
 
     def merge(
@@ -1795,14 +1806,16 @@ class Domain:
         return self.as_dict() == Domain.empty().as_dict()
 
     @staticmethod
-    def is_domain_file(filename: Union[Text, Path]) -> bool:
+    def is_domain_file(
+        filename: Union[Text, Path]
+    ) -> Union[bool, Dict[str, Any], List[Any]]:
         """Checks whether the given file path is a Rasa domain file.
 
         Args:
             filename: Path of the file which should be checked.
 
         Returns:
-            `True` if it's a domain file, otherwise `False`.
+            a domain file, otherwise `False`.
 
         Raises:
             YamlException: if the file seems to be a YAML file (extension) but
@@ -1824,7 +1837,10 @@ class Domain:
             )
             return False
 
-        return any(key in content for key in ALL_DOMAIN_KEYS)
+        if any(key in content for key in ALL_DOMAIN_KEYS):
+            return content
+        else:
+            return False
 
     def required_slots_for_form(self, form_name: Text) -> List[Text]:
         """Retrieve the list of required slot names for a form defined in the domain.
