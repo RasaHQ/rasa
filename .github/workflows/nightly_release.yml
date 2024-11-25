@@ -101,7 +101,7 @@ jobs:
           credentials_json: '${{ secrets.RASA_OSS_RELEASE_ACCOUNT_KEY }}'
 
       - name: 'Set up Cloud SDK'
-        uses: 'google-github-actions/setup-gcloud@62d4898025f6041e16b1068643bfc5a696863587'
+        uses: 'google-github-actions/setup-gcloud@5a5f7b85fca43e76e53463acaa9d408a03c98d3a'
 
       - name: Release via GCP Artifact Registry
         run: |
